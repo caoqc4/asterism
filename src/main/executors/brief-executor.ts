@@ -16,6 +16,10 @@ function formatDecisionLine(title: string, status: string): string {
   return `- ${title} [${status}]`;
 }
 
+function formatRecommendedAction(label: string, reason: string, priority: string): string {
+  return `- [${priority}] ${label} | ${reason}`;
+}
+
 export function buildFallbackBrief(homeData: HomeBriefData, kind: string): string {
   const taskLines = homeData.recentTasks.length
     ? homeData.recentTasks
@@ -64,6 +68,15 @@ export function buildFallbackBrief(homeData: HomeBriefData, kind: string): strin
           .map((task) => formatTaskLine(task.title, task.waitingReason ?? task.state))
           .join('\n')
       : '- 当前没有等待中任务',
+    '',
+    '推荐动作：',
+    homeData.recommendedActions.length
+      ? homeData.recommendedActions
+          .map((action) =>
+            formatRecommendedAction(action.label, action.reason, action.priority),
+          )
+          .join('\n')
+      : '- 当前没有推荐动作',
     '',
     '待拍板事项：',
     decisionLines,
@@ -126,6 +139,13 @@ function buildPrompt(homeData: HomeBriefData, kind: string): string {
     ...(homeData.missingNextStepTasks.length
       ? homeData.missingNextStepTasks.map(
           (task) => `- ${task.title} | ${task.state} | summary=${task.summary ?? '无摘要'}`,
+        )
+      : ['- 无']),
+    '',
+    '推荐动作：',
+    ...(homeData.recommendedActions.length
+      ? homeData.recommendedActions.map((action) =>
+          formatRecommendedAction(action.label, action.reason, action.priority),
         )
       : ['- 无']),
   ].join('\n');

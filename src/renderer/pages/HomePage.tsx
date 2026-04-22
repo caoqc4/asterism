@@ -98,6 +98,35 @@ export function HomePage({ ping, status, aiStatus, briefData }: HomePageProps) {
       </article>
 
       <article className="panel">
+        <h2>Recommended Actions</h2>
+        <div className="task-list">
+          {briefData?.recommendedActions.length ? (
+            briefData.recommendedActions.map((action) => (
+              <div
+                className={`task-card ${
+                  action.priority === 'high'
+                    ? 'task-card-danger'
+                    : action.priority === 'medium'
+                      ? 'task-card-warning'
+                      : 'task-card-muted'
+                }`}
+                key={action.id}
+              >
+                <div className="task-row">
+                  <strong>{action.label}</strong>
+                  <span className="status">{action.priority}</span>
+                </div>
+                <p className="meta">{action.reason}</p>
+                {action.taskId ? <p className="meta">taskId: {action.taskId}</p> : null}
+              </div>
+            ))
+          ) : (
+            <p className="meta">当前没有推荐动作。</p>
+          )}
+        </div>
+      </article>
+
+      <article className="panel">
         <h2>Recent Tasks</h2>
         <div className="task-list">
           {briefData?.recentTasks.length ? (

@@ -3,6 +3,14 @@ import type { SchedulerStatus } from './scheduler.js';
 import type { DecisionRecord } from './decision.js';
 import type { TaskRecord } from './task.js';
 
+export type RecommendedAction = {
+  id: string;
+  label: string;
+  reason: string;
+  taskId: string | null;
+  priority: 'high' | 'medium' | 'low';
+};
+
 export type HomeBriefData = {
   activeTaskCount: number;
   pendingDecisionCount: number;
@@ -16,6 +24,7 @@ export type HomeBriefData = {
   highRiskTasks: TaskRecord[];
   missingNextStepTasks: TaskRecord[];
   pendingDecisions: DecisionRecord[];
+  recommendedActions: RecommendedAction[];
   recentBriefSnapshots: BriefSnapshotRecord[];
   schedulerStatus: SchedulerStatus;
 };

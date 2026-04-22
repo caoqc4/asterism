@@ -106,5 +106,48 @@ describe('HomeBriefService', () => {
     expect(homeData.waitingTasks.map((task) => task.id)).toEqual(['task_waiting']);
     expect(homeData.highRiskTasks.map((task) => task.id)).toEqual(['task_risk']);
     expect(homeData.missingNextStepTasks.map((task) => task.id)).toEqual(['task_missing']);
+    expect(homeData.recommendedActions.map((action) => action.id)).toEqual([
+      'risk:task_risk',
+      'decision:decision_1',
+      'waiting:task_waiting',
+      'next-step:task_missing',
+    ]);
+  });
+
+  it('returns a steady-state recommendation when there is no urgent work', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_done',
+            title: 'Done task',
+            state: 'completed',
+            nextStep: 'Archive it',
+          }),
+        ]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.recommendedActions).toEqual([
+      {
+        id: 'steady-state',
+        label: '当前无需额外干预',
+        reason: '暂时没有高风险、等待阻塞或缺少下一步的活跃任务。',
+        taskId: null,
+        priority: 'low',
+      },
+    ]);
   });
 });
