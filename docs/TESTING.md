@@ -24,6 +24,7 @@ Current test files:
 - `src/main/db/repositories/brief-snapshot-repository.integration.test.ts`
 - `src/main/db/repositories/waiting-item-repository.integration.test.ts`
 - `src/main/db/repositories/artifact-repository.integration.test.ts`
+- `src/main/db/repositories/source-context-repository.integration.test.ts`
 - `src/main/ipc/handlers.test.ts`
 - `src/main/preload.test.ts`
 - `src/renderer/App.test.tsx`
@@ -65,6 +66,8 @@ Covered today:
   active waiting-item upserts and resolution behavior
 - `ArtifactRepository`
   artifact persistence, recent ordering, and timeline writes
+- `SourceContextRepository`
+  source-context creation, updates, archiving, and active-task listing behavior
 
 These tests verify real SQLite behavior rather than mocked repository calls.
 
@@ -105,12 +108,14 @@ Covered today:
 - `Tasks quick run submission`
 - `Tasks related activity -> Decisions / Runs`
 - `Tasks timeline -> Decisions / Runs`
+- `Tasks source context create / edit flow`
 - `Decisions` page current-focus and queue navigation
 - `Decisions / Runs -> Tasks` follow-up return flows
 - `Decisions / Runs` related-task timeline context
 - `Decisions / Runs` related-task timeline follow-up actions
 - `Settings save flow`
 - `waiting item` visibility and direct resolution
+- `source context` visibility plus create/edit interactions in task detail
 - `Decision cancel -> task signal refresh`
 - `Run failed -> task signal refresh`
 - `Decision action -> Home brief refresh`
