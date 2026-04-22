@@ -97,6 +97,21 @@ function formatTimelineBadge(type: string): string {
   }
 }
 
+function getTimelineToneClass(type: string): string {
+  switch (type) {
+    case 'task.risk_changed':
+      return 'timeline-item-risk';
+    case 'task.waiting_changed':
+      return 'timeline-item-waiting';
+    case 'task.transitioned':
+      return 'timeline-item-state';
+    case 'task.next_step_changed':
+      return 'timeline-item-next-step';
+    default:
+      return 'timeline-item-default';
+  }
+}
+
 function formatTimelineSummary(event: TimelineEventRecord): string {
   const payload = safeParsePayload(event.payload);
 
@@ -626,10 +641,14 @@ export function TasksPage({
               <h3>Timeline</h3>
               <div className="timeline-list">
                 {detail.timeline.map((event) => (
-                  <div className="timeline-item" key={event.id}>
+                  <div className={`timeline-item ${getTimelineToneClass(event.type)}`} key={event.id}>
                     <div className="task-row">
                       <strong>{formatTimelineSummary(event)}</strong>
-                      <span className="signal-pill">{formatTimelineBadge(event.type)}</span>
+                      <span
+                        className={`signal-pill timeline-badge ${getTimelineToneClass(event.type)}`}
+                      >
+                        {formatTimelineBadge(event.type)}
+                      </span>
                     </div>
                     <p className="meta">{event.createdAt}</p>
                   </div>
