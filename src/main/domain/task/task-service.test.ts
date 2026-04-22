@@ -93,4 +93,57 @@ describe('TaskService', () => {
       }),
     ).rejects.toThrow('Task not found: missing_task');
   });
+
+  it('annotates a cancelled decision back onto the task', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn().mockResolvedValue({
+        ...buildRecord('planned'),
+        riskLevel: 'medium',
+        riskNote: '相关决策已取消：Need approval',
+        nextStep: '确认该任务是否还需要继续推进，或改走无需拍板的路径。',
+      }),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never);
+
+    const result = await service.annotateDecisionCancelled('task_1', 'Need approval');
+
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextStep: '确认该任务是否还需要继续推进，或改走无需拍板的路径。',
+      waitingReason: null,
+      riskLevel: 'medium',
+      riskNote: '相关决策已取消：Need approval',
+    });
+    expect(result.riskLevel).toBe('medium');
+  });
+
+  it('annotates a failed run as a high-risk signal', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('running')),
+      update: vi.fn().mockResolvedValue({
+        ...buildRecord('running'),
+        riskLevel: 'high',
+        riskNote: 'Executor exploded',
+        nextStep: '检查失败原因，修正输入或上下文后再决定是否重试。',
+      }),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never);
+
+    const result = await service.annotateRunFailed('task_1', 'Executor exploded');
+
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextStep: '检查失败原因，修正输入或上下文后再决定是否重试。',
+      riskLevel: 'high',
+      riskNote: 'Executor exploded',
+    });
+    expect(result.riskLevel).toBe('high');
+  });
 });

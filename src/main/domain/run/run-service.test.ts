@@ -65,6 +65,7 @@ describe('RunService', () => {
     const taskService = {
       getDetail: vi.fn().mockResolvedValue(buildTaskDetail('planned')),
       transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('running')),
+      annotateRunFailed: vi.fn(),
     };
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
@@ -138,6 +139,11 @@ describe('RunService', () => {
     const taskService = {
       getDetail: vi.fn().mockResolvedValue(buildTaskDetail('planned')),
       transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('running')),
+      annotateRunFailed: vi.fn().mockResolvedValue({
+        ...buildTaskRecord('running'),
+        riskLevel: 'high',
+        riskNote: 'Executor exploded',
+      }),
     };
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
@@ -168,6 +174,7 @@ describe('RunService', () => {
       'system',
       'Executor exploded',
     );
+    expect(taskService.annotateRunFailed).toHaveBeenCalledWith('task_1', 'Executor exploded');
     expect(result.status).toBe('failed');
     expect(result.failureReason).toBe('Executor exploded');
   });
@@ -182,6 +189,7 @@ describe('RunService', () => {
     const taskService = {
       getDetail: vi.fn().mockResolvedValue(null),
       transitionIfAllowed: vi.fn(),
+      annotateRunFailed: vi.fn(),
     };
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn(),
@@ -221,6 +229,7 @@ describe('RunService', () => {
     const taskService = {
       getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       transitionIfAllowed: vi.fn(),
+      annotateRunFailed: vi.fn(),
     };
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({

@@ -49,7 +49,15 @@ export class RunService {
       return await this.runRepository.updateResult(created.id, 'completed', output, 'ai');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown executor error';
-      return this.runRepository.updateResult(created.id, 'failed', message, 'system', message);
+      const failed = await this.runRepository.updateResult(
+        created.id,
+        'failed',
+        message,
+        'system',
+        message,
+      );
+      await this.taskService.annotateRunFailed(input.taskId, message);
+      return failed;
     }
   }
 }

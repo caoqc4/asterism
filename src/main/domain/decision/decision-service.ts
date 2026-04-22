@@ -37,6 +37,10 @@ export class DecisionService {
       await this.taskService.transitionIfAllowed(updated.taskId, 'waiting_external');
     }
 
+    if (input.action === 'cancel') {
+      await this.taskService.annotateDecisionCancelled(updated.taskId, updated.title);
+    }
+
     return updated;
   }
 }

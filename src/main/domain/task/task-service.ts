@@ -83,4 +83,35 @@ export class TaskService {
 
     return this.repository.transition({ id, nextState });
   }
+
+  async annotateDecisionCancelled(taskId: string, decisionTitle: string): Promise<TaskRecord> {
+    const detail = await this.repository.getDetail(taskId);
+
+    if (!detail) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
+
+    return this.repository.update({
+      id: taskId,
+      nextStep: '确认该任务是否还需要继续推进，或改走无需拍板的路径。',
+      waitingReason: null,
+      riskLevel: detail.riskLevel === 'high' ? 'high' : 'medium',
+      riskNote: `相关决策已取消：${decisionTitle}`,
+    });
+  }
+
+  async annotateRunFailed(taskId: string, failureReason: string): Promise<TaskRecord> {
+    const detail = await this.repository.getDetail(taskId);
+
+    if (!detail) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
+
+    return this.repository.update({
+      id: taskId,
+      nextStep: '检查失败原因，修正输入或上下文后再决定是否重试。',
+      riskLevel: 'high',
+      riskNote: failureReason,
+    });
+  }
 }

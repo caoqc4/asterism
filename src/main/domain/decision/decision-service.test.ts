@@ -56,6 +56,7 @@ describe('DecisionService', () => {
     const taskService = {
       getDetail: vi.fn().mockResolvedValue(buildTaskDetail()),
       transitionIfAllowed: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
     };
     const service = new DecisionService(decisionRepository as never, taskService as never);
 
@@ -81,6 +82,7 @@ describe('DecisionService', () => {
     const taskService = {
       getDetail: vi.fn().mockResolvedValue(null),
       transitionIfAllowed: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
     };
     const service = new DecisionService(decisionRepository as never, taskService as never);
 
@@ -105,6 +107,7 @@ describe('DecisionService', () => {
     const taskService = {
       getDetail: vi.fn(),
       transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionCancelled: vi.fn(),
     };
     const service = new DecisionService(decisionRepository as never, taskService as never);
 
@@ -133,6 +136,7 @@ describe('DecisionService', () => {
     const taskService = {
       getDetail: vi.fn(),
       transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('waiting_external')),
+      annotateDecisionCancelled: vi.fn(),
     };
     const service = new DecisionService(decisionRepository as never, taskService as never);
 
@@ -146,5 +150,33 @@ describe('DecisionService', () => {
       'waiting_external',
     );
     expect(result.status).toBe('deferred');
+  });
+
+  it('writes a task signal when a decision is cancelled', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord(),
+        status: 'cancelled',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      transitionIfAllowed: vi.fn(),
+      annotateDecisionCancelled: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+    };
+    const service = new DecisionService(decisionRepository as never, taskService as never);
+
+    const result = await service.act({
+      id: 'decision_1',
+      action: 'cancel',
+    });
+
+    expect(taskService.annotateDecisionCancelled).toHaveBeenCalledWith(
+      'task_1',
+      'Need approval',
+    );
+    expect(result.status).toBe('cancelled');
   });
 });
