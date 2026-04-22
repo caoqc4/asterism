@@ -318,6 +318,71 @@ describe('App UI flow', () => {
     expect(screen.getByText('system')).toBeTruthy();
   });
 
+  it('renders timeline events as readable summaries with badges', async () => {
+    const user = userEvent.setup();
+
+    const timelineTask = buildTaskRecord({
+      id: 'task_timeline',
+      title: 'Timeline task',
+      state: 'running',
+      riskLevel: 'high',
+      riskNote: 'Dependency blocked',
+    });
+
+    const timelineApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([timelineTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== timelineTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(timelineTask),
+          timeline: [
+            {
+              id: 'timeline_risk',
+              taskId: timelineTask.id,
+              type: 'task.risk_changed',
+              payload: JSON.stringify({
+                from: { level: 'medium', note: 'Review lagging' },
+                to: { level: 'high', note: 'Dependency blocked' },
+              }),
+              createdAt: '2026-01-01T01:00:00.000Z',
+            },
+            {
+              id: 'timeline_next',
+              taskId: timelineTask.id,
+              type: 'task.next_step_changed',
+              payload: JSON.stringify({
+                from: 'Check status',
+                to: 'Escalate dependency owner',
+              }),
+              createdAt: '2026-01-01T00:30:00.000Z',
+            },
+          ],
+        };
+      }),
+    };
+
+    window.api = timelineApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /timeline task/i }));
+    await screen.findByRole('heading', { name: 'Timeline task' });
+
+    expect(
+      screen.getByText('风险从 medium（Review lagging）调整为 high（Dependency blocked）'),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('下一步从“Check status”调整为“Escalate dependency owner”'),
+    ).toBeTruthy();
+    expect(screen.getByText('风险')).toBeTruthy();
+    expect(screen.getByText('下一步')).toBeTruthy();
+  });
+
   it('reflects cancelled decisions in task signals after a refresh event', async () => {
     const user = userEvent.setup();
 

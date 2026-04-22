@@ -8,6 +8,7 @@ import type {
   TaskRiskLevel,
   TaskRecord,
   TaskState,
+  TimelineEventRecord,
   UpdateTaskInput,
 } from '@shared/types/task';
 
@@ -55,6 +56,69 @@ function buildTaskBadges(task: TaskRecord): string[] {
   }
 
   return badges;
+}
+
+function safeParsePayload(payload: string | null): Record<string, unknown> | null {
+  if (!payload) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(payload) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') {
+    return '未填写';
+  }
+
+  return String(value);
+}
+
+function formatTimelineBadge(type: string): string {
+  switch (type) {
+    case 'task.created':
+      return '创建';
+    case 'task.transitioned':
+      return '状态';
+    case 'task.next_step_changed':
+      return '下一步';
+    case 'task.waiting_changed':
+      return '等待';
+    case 'task.risk_changed':
+      return '风险';
+    case 'task.updated':
+      return '更新';
+    default:
+      return type;
+  }
+}
+
+function formatTimelineSummary(event: TimelineEventRecord): string {
+  const payload = safeParsePayload(event.payload);
+
+  switch (event.type) {
+    case 'task.created':
+      return `创建任务：${formatValue(payload?.title)}`;
+    case 'task.transitioned':
+      return `状态从 ${formatValue(payload?.from)} 变更为 ${formatValue(payload?.to)}`;
+    case 'task.next_step_changed':
+      return `下一步从“${formatValue(payload?.from)}”调整为“${formatValue(payload?.to)}”`;
+    case 'task.waiting_changed':
+      return `等待原因从“${formatValue(payload?.from)}”调整为“${formatValue(payload?.to)}”`;
+    case 'task.risk_changed': {
+      const from = (payload?.from as Record<string, unknown> | undefined) ?? {};
+      const to = (payload?.to as Record<string, unknown> | undefined) ?? {};
+      return `风险从 ${formatValue(from.level)}（${formatValue(from.note)}）调整为 ${formatValue(to.level)}（${formatValue(to.note)}）`;
+    }
+    case 'task.updated':
+      return '任务字段已更新';
+    default:
+      return event.type;
+  }
 }
 
 type TasksPageProps = {
@@ -563,9 +627,11 @@ export function TasksPage({
               <div className="timeline-list">
                 {detail.timeline.map((event) => (
                   <div className="timeline-item" key={event.id}>
-                    <strong>{event.type}</strong>
+                    <div className="task-row">
+                      <strong>{formatTimelineSummary(event)}</strong>
+                      <span className="signal-pill">{formatTimelineBadge(event.type)}</span>
+                    </div>
                     <p className="meta">{event.createdAt}</p>
-                    <p className="meta">{event.payload ?? '无 payload'}</p>
                   </div>
                 ))}
               </div>
