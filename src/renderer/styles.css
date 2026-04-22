@@ -373,6 +373,12 @@ button {
   font-size: 13px;
 }
 
+.timeline-action {
+  margin-top: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
 .brief-preview {
   display: -webkit-box;
   overflow: hidden;

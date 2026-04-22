@@ -23,6 +23,22 @@ function hasFieldChanged(currentValue: string | null, nextValue: string | null):
 }
 
 export class TaskRepository {
+  async appendTimelineEvent(
+    taskId: string,
+    type: string,
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    const db = initDatabase();
+
+    await db.insert(timelineEvents).values({
+      id: generateId('timeline'),
+      taskId,
+      type,
+      payload: JSON.stringify(payload),
+      createdAt: nowIso(),
+    });
+  }
+
   async list(): Promise<TaskRecord[]> {
     const db = initDatabase();
     const rows = await db.select().from(tasks).orderBy(desc(tasks.updatedAt));

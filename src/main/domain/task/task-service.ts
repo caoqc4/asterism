@@ -125,23 +125,37 @@ export class TaskService {
   async annotateDecisionCancelled(taskId: string, decisionTitle: string): Promise<TaskRecord> {
     const detail = await this.getExistingTaskOrThrow(taskId);
 
-    return this.repository.update({
+    const updated = await this.repository.update({
       id: taskId,
       nextStep: '确认该任务是否还需要继续推进，或改走无需拍板的路径。',
       waitingReason: null,
       riskLevel: detail.riskLevel === 'high' ? 'high' : 'medium',
       riskNote: `相关决策已取消：${decisionTitle}`,
     });
+
+    await this.repository.appendTimelineEvent(taskId, 'task.decision_cancelled', {
+      decisionTitle,
+      suggestedAction: '创建新的 Decision，或改走无需拍板的路径',
+    });
+
+    return updated;
   }
 
   async annotateRunFailed(taskId: string, failureReason: string): Promise<TaskRecord> {
     await this.getExistingTaskOrThrow(taskId);
 
-    return this.repository.update({
+    const updated = await this.repository.update({
       id: taskId,
       nextStep: '检查失败原因，修正输入或上下文后再决定是否重试。',
       riskLevel: 'high',
       riskNote: failureReason,
     });
+
+    await this.repository.appendTimelineEvent(taskId, 'task.run_failed', {
+      failureReason,
+      suggestedAction: '检查失败原因并准备重试 Run',
+    });
+
+    return updated;
   }
 }

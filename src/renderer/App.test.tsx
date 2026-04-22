@@ -478,6 +478,70 @@ describe('App UI flow', () => {
     });
   });
 
+  it('prefills quick actions from failure timeline suggestions', async () => {
+    const user = userEvent.setup();
+
+    const actionTask = buildTaskRecord({
+      id: 'task_timeline_action',
+      title: 'Timeline action task',
+      state: 'running',
+    });
+
+    const actionApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([actionTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== actionTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(actionTask),
+          timeline: [
+            {
+              id: 'timeline_cancelled',
+              taskId: actionTask.id,
+              type: 'task.decision_cancelled',
+              payload: JSON.stringify({
+                decisionTitle: 'Approve budget path',
+              }),
+              createdAt: '2026-01-01T02:00:00.000Z',
+            },
+            {
+              id: 'timeline_failed',
+              taskId: actionTask.id,
+              type: 'task.run_failed',
+              payload: JSON.stringify({
+                failureReason: 'Executor exploded',
+              }),
+              createdAt: '2026-01-01T01:00:00.000Z',
+            },
+          ],
+        };
+      }),
+    };
+
+    window.api = actionApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /timeline action task/i }));
+    await screen.findByRole('heading', { name: 'Timeline action task' });
+
+    await user.click(screen.getByRole('button', { name: '准备重试 Run' }));
+
+    expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toContain(
+      'Executor exploded',
+    );
+
+    await user.click(screen.getByRole('button', { name: '生成新的 Decision' }));
+
+    expect((screen.getByLabelText('决策标题') as HTMLInputElement).value).toBe(
+      'Timeline action task 重新拍板',
+    );
+  });
+
   it('reflects cancelled decisions in task signals after a refresh event', async () => {
     const user = userEvent.setup();
 

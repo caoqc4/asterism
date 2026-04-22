@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
 import type { CreateRunInput, RunRecord } from '@shared/types/run';
@@ -84,6 +84,10 @@ function formatTimelineBadge(type: string): string {
   switch (type) {
     case 'task.created':
       return '创建';
+    case 'task.decision_cancelled':
+      return '决策取消';
+    case 'task.run_failed':
+      return '执行失败';
     case 'task.transitioned':
       return '状态';
     case 'task.next_step_changed':
@@ -101,6 +105,8 @@ function formatTimelineBadge(type: string): string {
 
 function getTimelineToneClass(type: string): string {
   switch (type) {
+    case 'task.decision_cancelled':
+    case 'task.run_failed':
     case 'task.risk_changed':
       return 'timeline-item-risk';
     case 'task.waiting_changed':
@@ -120,6 +126,10 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
   switch (event.type) {
     case 'task.created':
       return `创建任务：${formatValue(payload?.title)}`;
+    case 'task.decision_cancelled':
+      return `相关决策已取消：${formatValue(payload?.decisionTitle)}`;
+    case 'task.run_failed':
+      return `执行失败：${formatValue(payload?.failureReason)}`;
     case 'task.transitioned':
       return `状态从 ${formatValue(payload?.from)} 变更为 ${formatValue(payload?.to)}`;
     case 'task.next_step_changed':
@@ -135,6 +145,17 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
       return '任务字段已更新';
     default:
       return event.type;
+  }
+}
+
+function getTimelineActionLabel(type: string): string | null {
+  switch (type) {
+    case 'task.decision_cancelled':
+      return '生成新的 Decision';
+    case 'task.run_failed':
+      return '准备重试 Run';
+    default:
+      return null;
   }
 }
 
@@ -185,6 +206,7 @@ export function TasksPage({
   const [detailError, setDetailError] = useState<string | null>(null);
   const [transitionError, setTransitionError] = useState<string | null>(null);
   const [showAllTimeline, setShowAllTimeline] = useState(false);
+  const quickActionsRef = useRef<HTMLDivElement | null>(null);
 
   function updateDraftRiskLevel(nextRiskLevel: TaskRiskLevel) {
     setDraftRiskLevel(nextRiskLevel);
@@ -344,6 +366,29 @@ export function TasksPage({
       instructions: quickRunInstructions.trim(),
     });
     await onRefresh();
+  }
+
+  function handleTimelineAction(event: TimelineEventRecord) {
+    if (!detail) {
+      return;
+    }
+
+    const payload = safeParsePayload(event.payload);
+
+    if (event.type === 'task.decision_cancelled') {
+      setQuickDecisionTitle(`${detail.title} 重新拍板`);
+    }
+
+    if (event.type === 'task.run_failed') {
+      setQuickRunType('draft');
+      setQuickRunInstructions(
+        `请先处理这个失败原因，再准备新的执行内容：${formatValue(payload?.failureReason)}`,
+      );
+    }
+
+    if (typeof quickActionsRef.current?.scrollIntoView === 'function') {
+      quickActionsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   const relatedDecisions = detail
@@ -529,7 +574,7 @@ export function TasksPage({
 
             <div className="transition-group">
               <h3>Quick Actions</h3>
-              <div className="quick-actions-grid">
+              <div className="quick-actions-grid" ref={quickActionsRef}>
                 <form className="stack task-card quick-action-card" onSubmit={handleQuickDecision}>
                   <strong>创建 Decision</strong>
                   <label>
@@ -672,6 +717,15 @@ export function TasksPage({
                       </span>
                     </div>
                     <p className="meta">{event.createdAt}</p>
+                    {getTimelineActionLabel(event.type) ? (
+                      <button
+                        className="ghost-button timeline-action"
+                        onClick={() => handleTimelineAction(event)}
+                        type="button"
+                      >
+                        {getTimelineActionLabel(event.type)}
+                      </button>
+                    ) : null}
                   </div>
                 ))}
               </div>

@@ -243,6 +243,7 @@ describe('TaskService', () => {
         riskNote: '相关决策已取消：Need approval',
         nextStep: '确认该任务是否还需要继续推进，或改走无需拍板的路径。',
       }),
+      appendTimelineEvent: vi.fn(),
       transition: vi.fn(),
     };
     const service = new TaskService(repository as never);
@@ -256,6 +257,14 @@ describe('TaskService', () => {
       riskLevel: 'medium',
       riskNote: '相关决策已取消：Need approval',
     });
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith(
+      'task_1',
+      'task.decision_cancelled',
+      {
+        decisionTitle: 'Need approval',
+        suggestedAction: '创建新的 Decision，或改走无需拍板的路径',
+      },
+    );
     expect(result.riskLevel).toBe('medium');
   });
 
@@ -270,6 +279,7 @@ describe('TaskService', () => {
         riskNote: 'Executor exploded',
         nextStep: '检查失败原因，修正输入或上下文后再决定是否重试。',
       }),
+      appendTimelineEvent: vi.fn(),
       transition: vi.fn(),
     };
     const service = new TaskService(repository as never);
@@ -281,6 +291,10 @@ describe('TaskService', () => {
       nextStep: '检查失败原因，修正输入或上下文后再决定是否重试。',
       riskLevel: 'high',
       riskNote: 'Executor exploded',
+    });
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'task.run_failed', {
+      failureReason: 'Executor exploded',
+      suggestedAction: '检查失败原因并准备重试 Run',
     });
     expect(result.riskLevel).toBe('high');
   });
