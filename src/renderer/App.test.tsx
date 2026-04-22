@@ -230,6 +230,9 @@ describe('App UI flow', () => {
     render(<App />);
 
     await screen.findByText('Waiting for reviewer confirmation');
+    expect(
+      screen.getByText('active waiting item · since 2026-01-01T00:00:00.000Z'),
+    ).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: /tasks/i }));
     await user.click(await screen.findByRole('button', { name: /waiting task/i }));

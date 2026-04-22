@@ -182,6 +182,11 @@ export function HomePage({ ping, status, aiStatus, briefData, onOpenTask }: Home
                   <span className="status">{task.state}</span>
                 </div>
                 <p className="meta">{task.activeWaitingItem?.reason || task.waitingReason || '未填写等待原因'}</p>
+                {task.activeWaitingItem ? (
+                  <p className="meta">
+                    active waiting item · since {task.activeWaitingItem.createdAt}
+                  </p>
+                ) : null}
                 {task.nextStep ? <p className="meta">恢复后下一步：{task.nextStep}</p> : null}
               </div>
             ))
