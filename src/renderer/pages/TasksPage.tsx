@@ -150,7 +150,7 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
     case 'waiting_item.updated':
       return `更新等待项：${formatValue(payload?.reason)}`;
     case 'waiting_item.resolved':
-      return `解除等待项：${formatValue(payload?.reason)}`;
+      return `解除等待项：${formatValue(payload?.reason)}，任务恢复到 ${formatValue(payload?.nextState)}`;
     case 'task.risk_changed': {
       const from = (payload?.from as Record<string, unknown> | undefined) ?? {};
       const to = (payload?.to as Record<string, unknown> | undefined) ?? {};

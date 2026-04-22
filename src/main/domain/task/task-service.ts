@@ -51,6 +51,7 @@ export class TaskService {
         waitingItemId: resolved.id,
         reason: resolved.reason,
         resolvedAt: resolved.resolvedAt,
+        nextState: state,
       });
     }
   }

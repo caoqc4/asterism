@@ -447,6 +447,18 @@ describe('App UI flow', () => {
               }),
               createdAt: '2026-01-01T00:00:00.000Z',
             },
+            {
+              id: 'timeline_waiting_item_resolved',
+              taskId: timelineTask.id,
+              type: 'waiting_item.resolved',
+              payload: JSON.stringify({
+                waitingItemId: 'waiting_1',
+                reason: 'Waiting for vendor confirmation',
+                resolvedAt: '2026-01-01T02:00:00.000Z',
+                nextState: 'planned',
+              }),
+              createdAt: '2026-01-01T00:00:00.000Z',
+            },
           ],
         };
       }),
@@ -467,6 +479,9 @@ describe('App UI flow', () => {
       screen.getByText('下一步从“Check status”调整为“Escalate dependency owner”'),
     ).toBeTruthy();
     expect(screen.getByText('创建等待项：Waiting for vendor confirmation')).toBeTruthy();
+    expect(
+      screen.getByText('解除等待项：Waiting for vendor confirmation，任务恢复到 planned'),
+    ).toBeTruthy();
     expect(screen.getByText('风险')).toBeTruthy();
     expect(screen.getByText('下一步')).toBeTruthy();
     expect(screen.getAllByText('等待项').length).toBeGreaterThan(0);
