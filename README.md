@@ -6,13 +6,14 @@ This repository currently contains an Electron + React + TypeScript prototype wi
 
 - task creation, structured task signals, detail editing, and state transitions
 - decision request creation, actions, and task linkage with task-side follow-up semantics
-- run triggering for `draft` and `summarize`, with task linkage, failure signals, and task restoration after runs settle
+- run triggering for `draft` and `summarize`, with task linkage, failure signals, task restoration after runs settle, and dynamic process-template selection before execution
 - local brief snapshot generation with recommended actions, recent artifact context, recent lifecycle activity, and intent-aware navigation plus lightweight follow-up actions for task follow-up and object-review flows
 - task-scoped timeline events with readable summaries, subtle event tones, lightweight action shortcuts, and direct `Decision / Run` object entry from key task events
 - waiting item lifecycle tracking with direct resolution and task/detail/home visibility
 - text artifacts generated from successful runs, surfaced in task detail, timeline actions, home brief, and recommended-action semantics
 - source context items for task-linked external materials, with task-detail create/edit/archive flows and lifecycle timeline events
 - process context templates for task-linked working methods, with reusable template creation, task binding, and lifecycle timeline events
+- run-time process-template selector that can decide whether to use bound task methods before execution, then record selected/skipped outcomes in task timelines
 - decision and run pages organized as object work surfaces with a current focus, action desk, queue, direct return paths into task follow-up work, lightweight related-task timeline context, and timeline-based follow-up actions
 - local scheduler with config-driven enable/disable
 - local configuration via `config.json` plus system keychain for secrets
@@ -129,6 +130,7 @@ What exists today:
 - decision and run pages acting as object work surfaces, with queue navigation, focused detail/action areas, direct return-to-task follow-up entrypoints, lightweight related-task timeline explanations, and timeline-based follow-up actions
 - task-side objects now established: active `waiting items`, text `artifacts`, editable `source context` materials, and reusable `process context` templates
 - decision and run actions now write back clearer task semantics, including follow-up next steps, waiting reasons, and lifecycle timeline events
+- run execution now evaluates bound process templates with a Claude-skills-style selector instead of blindly injecting every template into every run
 - config + keychain setup
 - service tests and SQLite repository integration coverage
 - IPC handler coverage for critical event-emitting entrypoints

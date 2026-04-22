@@ -44,7 +44,7 @@ Covered today:
 - `DecisionService`
   task existence checks plus decision-to-task lifecycle linkage
 - `RunService`
-  successful execution path, failure path, task restoration after settled runs, and artifact creation on successful output
+  successful execution path, failure path, task restoration after settled runs, artifact creation on successful output, and process-template selector behavior
 - `HomeBriefService`
   waiting, risk, missing-next-step, recommended actions, recent artifacts, recent lifecycle activity, and artifact-aware brief semantics
 - `SchedulerService`
