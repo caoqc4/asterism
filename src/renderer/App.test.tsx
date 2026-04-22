@@ -317,6 +317,50 @@ describe('App UI flow', () => {
     expect(screen.getByText("Linked to the task's current waiting state.")).toBeTruthy();
   });
 
+  it('opens waiting tasks from home key signals with follow-up guidance', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    const waitingSignalButton = await screen.findByRole('button', {
+      name: /Waiting task.*waiting_external.*Waiting for reviewer confirmation/i,
+    });
+
+    await user.click(waitingSignalButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Waiting task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '跟进并确认是否解除等待：Waiting for reviewer confirmation',
+    );
+  });
+
+  it('opens high-risk tasks from home key signals with risk review guidance', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    const riskSignalButton = (await screen.findAllByText('High risk task'))
+      .map((node) => node.closest('button'))
+      .find((button) => button?.className.includes('task-card-danger task-card-button'));
+    expect(riskSignalButton).toBeTruthy();
+
+    await user.click(riskSignalButton!);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '处理当前风险并确认是否需要降级：Deadline slipping',
+    );
+    expect((screen.getByLabelText('Risk Note') as HTMLTextAreaElement).value).toBe(
+      'Deadline slipping',
+    );
+  });
+
   it('offers a direct action to resolve the current waiting item', async () => {
     const user = userEvent.setup();
 

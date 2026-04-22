@@ -34,6 +34,54 @@ export function HomePage({
   onOpenAction,
   onOpenArtifact,
 }: HomePageProps) {
+  function openWaitingTask(task: HomeBriefData['waitingTasks'][number]) {
+    onOpenAction({
+      id: `home-waiting:${task.id}`,
+      label: `跟进等待中的任务：${task.title}`,
+      reason: task.activeWaitingItem?.reason ?? task.waitingReason ?? '该任务处于等待状态，需要恢复推进。',
+      taskId: task.id,
+      priority: 'medium',
+      intent: {
+        type: 'focus_waiting_follow_up',
+        focusArea: 'detail',
+        prefillNextStep: `跟进并确认是否解除等待：${
+          task.activeWaitingItem?.reason ?? task.waitingReason ?? task.title
+        }`,
+      },
+    });
+  }
+
+  function openRiskTask(task: HomeBriefData['highRiskTasks'][number]) {
+    onOpenAction({
+      id: `home-risk:${task.id}`,
+      label: `优先处理高风险任务：${task.title}`,
+      reason: task.riskNote ?? '该任务当前处于高风险状态。',
+      taskId: task.id,
+      priority: 'high',
+      intent: {
+        type: 'focus_risk_review',
+        focusArea: 'detail',
+        prefillNextStep: `处理当前风险并确认是否需要降级：${task.riskNote ?? task.title}`,
+        prefillRiskLevel: 'high',
+        prefillRiskNote: task.riskNote,
+      },
+    });
+  }
+
+  function openNextStepTask(task: HomeBriefData['missingNextStepTasks'][number]) {
+    onOpenAction({
+      id: `home-next-step:${task.id}`,
+      label: `补充下一步：${task.title}`,
+      reason: '该任务仍缺少明确下一步，后续推进成本会升高。',
+      taskId: task.id,
+      priority: 'medium',
+      intent: {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+      },
+    });
+  }
+
   return (
     <section className="page-grid">
       <article className="panel hero page-hero">
@@ -197,7 +245,12 @@ export function HomePage({
             <strong>Waiting Tasks</strong>
             {briefData?.waitingTasks.length ? (
               briefData.waitingTasks.map((task) => (
-                <div className="task-card task-card-warning" key={task.id}>
+                <button
+                  className="task-card task-card-warning task-card-button"
+                  key={task.id}
+                  onClick={() => openWaitingTask(task)}
+                  type="button"
+                >
                   <div className="task-row">
                     <strong>{task.title}</strong>
                     <span className="status">{task.state}</span>
@@ -209,7 +262,7 @@ export function HomePage({
                     </p>
                   ) : null}
                   {task.nextStep ? <p className="meta">恢复后下一步：{task.nextStep}</p> : null}
-                </div>
+                </button>
               ))
             ) : (
               <p className="meta">当前没有等待中任务。</p>
@@ -220,14 +273,19 @@ export function HomePage({
             <strong>High Risk Tasks</strong>
             {briefData?.highRiskTasks.length ? (
               briefData.highRiskTasks.map((task) => (
-                <div className="task-card task-card-danger" key={task.id}>
+                <button
+                  className="task-card task-card-danger task-card-button"
+                  key={task.id}
+                  onClick={() => openRiskTask(task)}
+                  type="button"
+                >
                   <div className="task-row">
                     <strong>{task.title}</strong>
                     <span className="status">{task.riskLevel}</span>
                   </div>
                   <p className="meta">{task.riskNote || task.summary || task.id}</p>
                   {task.nextStep ? <p className="meta">下一步：{task.nextStep}</p> : null}
-                </div>
+                </button>
               ))
             ) : (
               <p className="meta">当前没有高风险任务。</p>
@@ -238,13 +296,18 @@ export function HomePage({
             <strong>Needs Next Step</strong>
             {briefData?.missingNextStepTasks.length ? (
               briefData.missingNextStepTasks.map((task) => (
-                <div className="task-card task-card-muted" key={task.id}>
+                <button
+                  className="task-card task-card-muted task-card-button"
+                  key={task.id}
+                  onClick={() => openNextStepTask(task)}
+                  type="button"
+                >
                   <div className="task-row">
                     <strong>{task.title}</strong>
                     <span className="status">{task.state}</span>
                   </div>
                   <p className="meta">{task.summary || '还没有补充摘要'}</p>
-                </div>
+                </button>
               ))
             ) : (
               <p className="meta">当前所有活跃任务都已经有下一步。</p>
