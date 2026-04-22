@@ -27,6 +27,17 @@ function toRecord(row: typeof artifacts.$inferSelect): ArtifactRecord {
 }
 
 export class ArtifactRepository {
+  async listRecent(limit = 5): Promise<ArtifactRecord[]> {
+    const db = initDatabase();
+    const rows = await db
+      .select()
+      .from(artifacts)
+      .orderBy(desc(artifacts.updatedAt))
+      .limit(limit);
+
+    return rows.map(toRecord);
+  }
+
   async listRecentForTask(taskId: string, limit = 5): Promise<ArtifactRecord[]> {
     const db = initDatabase();
     const rows = await db

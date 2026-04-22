@@ -1,5 +1,6 @@
 import { RunRepository } from '../../db/repositories/run-repository.js';
 import { BriefSnapshotRepository } from '../../db/repositories/brief-snapshot-repository.js';
+import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { SchedulerService } from '../../scheduler/scheduler-service.js';
 import type { HomeBriefData, RecommendedAction } from '../../../shared/types/brief.js';
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
@@ -74,6 +75,7 @@ export class HomeBriefService {
     private readonly waitingItemRepository: WaitingItemRepository,
     private readonly decisionRepository: DecisionRepository,
     private readonly runRepository: RunRepository,
+    private readonly artifactRepository: ArtifactRepository,
     private readonly briefSnapshotRepository: BriefSnapshotRepository,
     private readonly getSchedulerStatus: () => SchedulerService | null,
   ) {}
@@ -88,10 +90,11 @@ export class HomeBriefService {
   }
 
   async getHomeData(): Promise<HomeBriefData> {
-    const [taskRows, decisions, runs, recentBriefSnapshots] = await Promise.all([
+    const [taskRows, decisions, runs, recentArtifacts, recentBriefSnapshots] = await Promise.all([
       this.taskRepository.list(),
       this.decisionRepository.list(),
       this.runRepository.list(),
+      this.artifactRepository.listRecent(5),
       this.briefSnapshotRepository.listRecent(5),
     ]);
     const tasks = await this.attachActiveWaitingItems(taskRows);
@@ -129,6 +132,7 @@ export class HomeBriefService {
       missingNextStepTasks: missingNextStepTasks.slice(0, 5),
       pendingDecisions: pendingDecisions.slice(0, 5),
       recommendedActions,
+      recentArtifacts,
       recentBriefSnapshots,
       schedulerStatus: scheduler?.getStatus() ?? {
         enabled: false,

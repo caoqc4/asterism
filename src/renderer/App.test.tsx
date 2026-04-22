@@ -149,6 +149,14 @@ describe('App UI flow', () => {
         priority: 'high',
       },
     ],
+    recentArtifacts: [
+      buildArtifact({
+        taskId: riskTask.id,
+        sourceId: 'run_home_1',
+        title: 'draft output',
+        content: 'Escalation draft for the owner.',
+      }),
+    ],
     recentBriefSnapshots: [],
     schedulerStatus: {
       enabled: false,
@@ -341,6 +349,15 @@ describe('App UI flow', () => {
     expect(screen.getByText('draft output')).toBeTruthy();
     expect(screen.getByText('source: run · run_artifact_1')).toBeTruthy();
     expect(screen.getByText('Drafted message to the customer.')).toBeTruthy();
+  });
+
+  it('shows recent artifacts on the home brief', async () => {
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Recent Artifacts' })).toBeTruthy();
+    expect(screen.getByText('draft output')).toBeTruthy();
+    expect(screen.getByText('source: run · run_home_1')).toBeTruthy();
+    expect(screen.getByText('Escalation draft for the owner.')).toBeTruthy();
   });
 
   it('prefills next step and run input from artifact timeline suggestions', async () => {

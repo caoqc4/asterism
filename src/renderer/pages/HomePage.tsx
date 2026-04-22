@@ -235,6 +235,28 @@ export function HomePage({ ping, status, aiStatus, briefData, onOpenTask }: Home
       </article>
 
       <article className="panel">
+        <h2>Recent Artifacts</h2>
+        <div className="task-list">
+          {briefData?.recentArtifacts.length ? (
+            briefData.recentArtifacts.map((artifact) => (
+              <div className="task-card" key={artifact.id}>
+                <div className="task-row">
+                  <strong>{artifact.title}</strong>
+                  <span className="status">{artifact.kind}</span>
+                </div>
+                <p className="meta">
+                  source: {artifact.sourceType} · {artifact.sourceId}
+                </p>
+                <p className="meta brief-preview">{artifact.content}</p>
+              </div>
+            ))
+          ) : (
+            <p className="meta">当前还没有最近产物。</p>
+          )}
+        </div>
+      </article>
+
+      <article className="panel">
         <h2>Recent Brief Snapshots</h2>
         <div className="task-list">
           {briefData?.recentBriefSnapshots.length ? (

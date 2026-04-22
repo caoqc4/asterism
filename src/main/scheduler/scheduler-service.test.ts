@@ -40,6 +40,7 @@ function buildHomeData(): HomeBriefData {
     missingNextStepTasks: [],
     pendingDecisions: [],
     recommendedActions: [],
+    recentArtifacts: [],
     recentBriefSnapshots: [],
     schedulerStatus: {
       enabled: true,

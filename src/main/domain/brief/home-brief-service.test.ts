@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { DecisionRecord } from '../../../shared/types/decision.js';
 import type { RunRecord } from '../../../shared/types/run.js';
 import type { TaskRecord } from '../../../shared/types/task.js';
@@ -60,6 +61,20 @@ function buildRun(partial: Partial<RunRecord>): RunRecord {
   };
 }
 
+function buildArtifact(partial: Partial<ArtifactRecord>): ArtifactRecord {
+  return {
+    id: partial.id ?? 'artifact_1',
+    taskId: partial.taskId ?? 'task_1',
+    sourceType: partial.sourceType ?? 'run',
+    sourceId: partial.sourceId ?? 'run_1',
+    kind: partial.kind ?? 'run_output',
+    title: partial.title ?? 'draft output',
+    content: partial.content ?? 'Generated output',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+  };
+}
+
 describe('HomeBriefService', () => {
   it('aggregates waiting, high-risk, and missing-next-step task signals', async () => {
     const service = new HomeBriefService(
@@ -113,6 +128,15 @@ describe('HomeBriefService', () => {
         list: vi.fn().mockResolvedValue([buildRun({}), buildRun({ id: 'run_2' })]),
       } as never,
       {
+        listRecent: vi.fn().mockResolvedValue([
+          buildArtifact({
+            taskId: 'task_risk',
+            sourceId: 'run_2',
+            content: 'Escalation draft',
+          }),
+        ]),
+      } as never,
+      {
         listRecent: vi.fn().mockResolvedValue([]),
       } as never,
       () => null,
@@ -139,6 +163,7 @@ describe('HomeBriefService', () => {
     expect(homeData.waitingTasks[0]?.activeWaitingItem?.reason).toBe(
       'Waiting for reviewer confirmation',
     );
+    expect(homeData.recentArtifacts[0]?.content).toBe('Escalation draft');
     expect(homeData.recommendedActions.find((action) => action.id === 'waiting:task_waiting')?.reason).toBe(
       'Waiting for reviewer confirmation',
     );
@@ -164,6 +189,9 @@ describe('HomeBriefService', () => {
       } as never,
       {
         list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
       } as never,
       {
         listRecent: vi.fn().mockResolvedValue([]),

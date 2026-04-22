@@ -1,3 +1,4 @@
+import type { ArtifactRecord } from './artifact.js';
 import type { BriefSnapshotRecord } from './brief-snapshot.js';
 import type { SchedulerStatus } from './scheduler.js';
 import type { DecisionRecord } from './decision.js';
@@ -25,6 +26,7 @@ export type HomeBriefData = {
   missingNextStepTasks: TaskRecord[];
   pendingDecisions: DecisionRecord[];
   recommendedActions: RecommendedAction[];
+  recentArtifacts: ArtifactRecord[];
   recentBriefSnapshots: BriefSnapshotRecord[];
   schedulerStatus: SchedulerStatus;
 };

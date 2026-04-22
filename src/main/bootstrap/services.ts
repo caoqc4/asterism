@@ -29,6 +29,7 @@ const homeBriefService = new HomeBriefService(
   waitingItemRepository,
   decisionRepository,
   runRepository,
+  artifactRepository,
   briefSnapshotRepository,
   () => schedulerService,
 );
