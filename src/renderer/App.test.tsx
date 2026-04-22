@@ -828,6 +828,69 @@ describe('App UI flow', () => {
     );
   });
 
+  it('shows related task timeline context on the decisions page', async () => {
+    const user = userEvent.setup();
+
+    const decisionTimelineApi: ElectronApi = {
+      ...mockApi,
+      getTaskDetail: vi.fn(async (taskId: string) => {
+        if (taskId !== riskTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(riskTask),
+          timeline: [
+            {
+              id: 'timeline_decision_approved',
+              taskId: riskTask.id,
+              type: 'task.decision_approved',
+              payload: JSON.stringify({
+                decisionId: 'decision_2',
+                decisionTitle: 'Approve escalation path',
+                nextState: 'planned',
+              }),
+              createdAt: '2026-01-01T02:00:00.000Z',
+            },
+            {
+              id: 'timeline_waiting',
+              taskId: riskTask.id,
+              type: 'task.waiting_changed',
+              payload: JSON.stringify({
+                from: null,
+                to: '等待重新拍板：Approve escalation path',
+              }),
+              createdAt: '2026-01-01T01:30:00.000Z',
+            },
+            {
+              id: 'timeline_next_step',
+              taskId: riskTask.id,
+              type: 'task.next_step_changed',
+              payload: JSON.stringify({
+                from: null,
+                to: '已获批准，继续推进：Approve escalation path',
+              }),
+              createdAt: '2026-01-01T01:00:00.000Z',
+            },
+          ],
+        };
+      }),
+    };
+
+    window.api = decisionTimelineApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /home/i }));
+    await user.click(await screen.findByRole('button', { name: '查看 Decision' }));
+
+    await screen.findByRole('heading', { name: '待拍板事项' });
+    await screen.findByText('Related Task Timeline');
+    expect(screen.getByText('决策已批准：Approve escalation path')).toBeTruthy();
+    expect(screen.getByText('等待原因调整为“等待重新拍板：Approve escalation path”')).toBeTruthy();
+    expect(screen.getByText('下一步调整为“已获批准，继续推进：Approve escalation path”')).toBeTruthy();
+  });
+
   it('returns from the runs page to the related task with follow-up guidance', async () => {
     const user = userEvent.setup();
 

@@ -2,7 +2,77 @@ import { useEffect, useState } from 'react';
 
 import type { RecommendedActionIntent } from '@shared/types/brief';
 import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
-import type { TaskRecord } from '@shared/types/task';
+import type { TaskDetail, TaskRecord, TimelineEventRecord } from '@shared/types/task';
+
+const RELATED_TIMELINE_PREVIEW_COUNT = 4;
+
+function safeParsePayload(payload: string | null): Record<string, unknown> | null {
+  if (!payload) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(payload) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') {
+    return '未填写';
+  }
+
+  return String(value);
+}
+
+function formatRelatedTimelineSummary(event: TimelineEventRecord): string {
+  const payload = safeParsePayload(event.payload);
+
+  switch (event.type) {
+    case 'task.decision_approved':
+      return `决策已批准：${formatValue(payload?.decisionTitle)}`;
+    case 'task.decision_deferred':
+      return `决策已延后：${formatValue(payload?.decisionTitle)}，等待：${formatValue(payload?.waitingReason)}`;
+    case 'task.decision_cancelled':
+      return `决策已取消：${formatValue(payload?.decisionTitle)}`;
+    case 'task.waiting_changed':
+      return `等待原因调整为“${formatValue(payload?.to)}”`;
+    case 'task.risk_changed': {
+      const to = (payload?.to as Record<string, unknown> | undefined) ?? {};
+      return `风险更新为 ${formatValue(to.level)}（${formatValue(to.note)}）`;
+    }
+    case 'task.next_step_changed':
+      return `下一步调整为“${formatValue(payload?.to)}”`;
+    default:
+      return event.type;
+  }
+}
+
+function getRelatedTimeline(events: TimelineEventRecord[], decisionTitle: string): TimelineEventRecord[] {
+  return events
+    .filter((event) => {
+      if (
+        event.type === 'task.decision_approved' ||
+        event.type === 'task.decision_deferred' ||
+        event.type === 'task.decision_cancelled'
+      ) {
+        const payload = safeParsePayload(event.payload);
+        return payload?.decisionTitle === decisionTitle;
+      }
+
+      if (
+        event.type === 'task.waiting_changed' ||
+        event.type === 'task.risk_changed' ||
+        event.type === 'task.next_step_changed'
+      ) {
+        return true;
+      }
+
+      return false;
+    })
+    .slice(0, RELATED_TIMELINE_PREVIEW_COUNT);
+}
 
 type DecisionsPageProps = {
   decisions: DecisionRecord[];
@@ -26,6 +96,7 @@ export function DecisionsPage({
   const [selectedDecisionId, setSelectedDecisionId] = useState<string | null>(
     focusedDecisionId ?? decisions[0]?.id ?? null,
   );
+  const [relatedTaskDetail, setRelatedTaskDetail] = useState<TaskDetail | null>(null);
   const [form, setForm] = useState<CreateDecisionInput>({
     taskId: tasks[0]?.id ?? '',
     title: '',
@@ -49,6 +120,29 @@ export function DecisionsPage({
   }, [decisions, focusedDecisionId, onDecisionFocusConsumed]);
 
   const detail = decisions.find((decision) => decision.id === selectedDecisionId) ?? null;
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadRelatedTaskDetail() {
+      if (!detail?.taskId) {
+        setRelatedTaskDetail(null);
+        return;
+      }
+
+      const nextDetail = await window.api.getTaskDetail(detail.taskId);
+
+      if (mounted) {
+        setRelatedTaskDetail(nextDetail);
+      }
+    }
+
+    void loadRelatedTaskDetail();
+
+    return () => {
+      mounted = false;
+    };
+  }, [detail?.id, detail?.taskId]);
 
   return (
     <section className="tasks-layout">
@@ -122,6 +216,24 @@ export function DecisionsPage({
                   >
                     取消
                   </button>
+                </div>
+              </div>
+              <div className="timeline-item">
+                <strong>Related Task Timeline</strong>
+                <div className="timeline-list">
+                  {getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.title).length ? (
+                    getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.title).map((event) => (
+                      <div className="timeline-item" key={event.id}>
+                        <div className="task-row">
+                          <strong>{event.type}</strong>
+                          <span className="status">{event.createdAt}</span>
+                        </div>
+                        <p className="meta">{formatRelatedTimelineSummary(event)}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="meta">当前没有和这条 decision 强相关的最近任务历史。</p>
+                  )}
                 </div>
               </div>
             </div>
