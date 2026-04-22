@@ -1,0 +1,8 @@
+node_modules
+dist
+dist-electron
+release
+.icon-icns
+.DS_Store
+npm-debug.log*
+doc_privice

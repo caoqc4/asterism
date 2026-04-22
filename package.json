@@ -1,0 +1,69 @@
+{
+  "name": "taskplane",
+  "productName": "Taskplane",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A local-first desktop workbench for tasks, decisions, runs, and briefs.",
+  "author": "Taskplane contributors",
+  "type": "module",
+  "main": "dist-electron/main/index.js",
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:main\" \"npm:dev:electron\"",
+    "dev:renderer": "vite",
+    "dev:main": "tsc -p tsconfig.electron.json --watch --preserveWatchOutput",
+    "dev:electron": "wait-on tcp:5173 file:dist-electron/main/index.js && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .",
+    "build": "npm run build:renderer && npm run build:main",
+    "build:renderer": "vite build",
+    "build:main": "tsc -p tsconfig.electron.json",
+    "lint": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.electron.json",
+    "dist:mac:dir": "npm run build && node node_modules/electron-builder/cli.js --mac dir",
+    "dist:mac": "npm run build && node node_modules/electron-builder/cli.js --mac"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.71",
+    "@ai-sdk/openai": "^3.0.53",
+    "@types/better-sqlite3": "^7.6.13",
+    "ai": "^6.0.168",
+    "better-sqlite3": "^12.9.0",
+    "drizzle-orm": "^0.45.2",
+    "keytar": "^7.9.0",
+    "node-cron": "^4.2.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^36.2.0",
+    "electron-builder": "^26.8.1",
+    "typescript": "^5.8.3",
+    "vite": "^5.4.19",
+    "wait-on": "^8.0.3"
+  },
+  "build": {
+    "appId": "com.taskplane.app",
+    "productName": "Taskplane",
+    "directories": {
+      "buildResources": "build-resources",
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "build-resources/icon.png",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    }
+  }
+}

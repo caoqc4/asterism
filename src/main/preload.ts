@@ -1,0 +1,35 @@
+import { contextBridge, ipcRenderer } from 'electron';
+
+import type { ElectronApi } from '../shared/types/ipc.js';
+import { APP_EVENT_CHANNEL } from './ipc/event-bus.js';
+
+const api: ElectronApi = {
+  ping: () => ipcRenderer.invoke('app:ping'),
+  getAiConfigStatus: () => ipcRenderer.invoke('settings:getAiConfigStatus'),
+  setAiConfig: (input) => ipcRenderer.invoke('settings:setAiConfig', input),
+  listTasks: () => ipcRenderer.invoke('task:list'),
+  createTask: (input) => ipcRenderer.invoke('task:create', input),
+  getTaskDetail: (taskId) => ipcRenderer.invoke('task:getDetail', taskId),
+  updateTask: (input) => ipcRenderer.invoke('task:update', input),
+  transitionTask: (input) => ipcRenderer.invoke('task:transition', input),
+  listDecisions: () => ipcRenderer.invoke('decision:list'),
+  createDecision: (input) => ipcRenderer.invoke('decision:create', input),
+  actOnDecision: (input) => ipcRenderer.invoke('decision:act', input),
+  getHomeBrief: () => ipcRenderer.invoke('brief:getHomeData'),
+  listRuns: () => ipcRenderer.invoke('run:list'),
+  getRunDetail: (runId) => ipcRenderer.invoke('run:getDetail', runId),
+  triggerRun: (input) => ipcRenderer.invoke('run:trigger', input),
+  subscribeToEvents: (listener) => {
+    const wrapped = (_event: Electron.IpcRendererEvent, payload: Parameters<typeof listener>[0]) => {
+      listener(payload);
+    };
+
+    ipcRenderer.on(APP_EVENT_CHANNEL, wrapped);
+
+    return () => {
+      ipcRenderer.removeListener(APP_EVENT_CHANNEL, wrapped);
+    };
+  },
+};
+
+contextBridge.exposeInMainWorld('api', api);
