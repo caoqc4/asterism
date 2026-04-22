@@ -134,6 +134,24 @@ describe('App UI flow', () => {
     }),
   ];
 
+  const createdDecision = {
+    id: 'decision_created',
+    taskId: riskTask.id,
+    title: 'Escalate budget approval now',
+    status: 'pending' as const,
+    createdAt: '2026-01-02T00:00:00.000Z',
+    updatedAt: '2026-01-02T00:00:00.000Z',
+  };
+
+  const createdRun = buildRunRecord({
+    id: 'run_created',
+    taskId: riskTask.id,
+    type: 'summarize',
+    status: 'pending',
+    instructions: 'Summarize blockers before escalation',
+    updatedAt: '2026-01-02T00:00:00.000Z',
+  });
+
   const mockApi: ElectronApi = {
     ping: vi.fn().mockResolvedValue({
       message: 'pong from main',
@@ -147,12 +165,12 @@ describe('App UI flow', () => {
     updateTask: vi.fn(),
     transitionTask: vi.fn(),
     listDecisions: vi.fn().mockResolvedValue(briefData.pendingDecisions),
-    createDecision: vi.fn(),
+    createDecision: vi.fn().mockResolvedValue(createdDecision),
     actOnDecision: vi.fn(),
     getHomeBrief: vi.fn().mockResolvedValue(briefData),
     listRuns: vi.fn().mockResolvedValue(runs),
     getRunDetail: vi.fn(),
-    triggerRun: vi.fn(),
+    triggerRun: vi.fn().mockResolvedValue(createdRun),
     subscribeToEvents: vi.fn().mockImplementation(() => () => {}),
   };
 
@@ -185,5 +203,52 @@ describe('App UI flow', () => {
     expect(window.location.hash).toBe('#tasks');
     expect(mockApi.getTaskDetail).toHaveBeenCalledWith(riskTask.id);
     expect((screen.getByLabelText('Risk Note') as HTMLTextAreaElement).value).toBe('Deadline slipping');
+  });
+
+  it('submits a quick decision from task detail', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /high risk task/i }));
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    const decisionTitleInput = screen.getByLabelText('决策标题');
+    await user.clear(decisionTitleInput);
+    await user.type(decisionTitleInput, 'Escalate budget approval now');
+
+    await user.click(screen.getByRole('button', { name: '提交 Decision' }));
+
+    await waitFor(() => {
+      expect(mockApi.createDecision).toHaveBeenCalledWith({
+        taskId: riskTask.id,
+        title: 'Escalate budget approval now',
+      });
+    });
+  });
+
+  it('submits a quick run from task detail', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /high risk task/i }));
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    await user.selectOptions(screen.getByLabelText('Run 类型'), 'summarize');
+
+    const instructionsInput = screen.getByLabelText('附加要求');
+    await user.clear(instructionsInput);
+    await user.type(instructionsInput, 'Summarize blockers before escalation');
+
+    await user.click(screen.getByRole('button', { name: '触发 Run' }));
+
+    await waitFor(() => {
+      expect(mockApi.triggerRun).toHaveBeenCalledWith({
+        taskId: riskTask.id,
+        type: 'summarize',
+        instructions: 'Summarize blockers before escalation',
+      });
+    });
   });
 });
