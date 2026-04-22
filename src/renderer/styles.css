@@ -412,6 +412,12 @@ button {
   gap: 12px;
 }
 
+.home-signal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
 .metric-card {
   padding: 16px;
   border-radius: 16px;
@@ -467,7 +473,8 @@ textarea {
   .page-grid,
   .tasks-layout,
   .metric-grid,
-  .detail-cluster-grid {
+  .detail-cluster-grid,
+  .home-signal-grid {
     grid-template-columns: 1fr;
   }
 }

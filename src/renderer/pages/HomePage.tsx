@@ -100,7 +100,7 @@ export function HomePage({ ping, status, aiStatus, briefData, onOpenTask }: Home
         </div>
       </article>
 
-      <article className="panel">
+      <article className="panel page-hero">
         <h2>Recommended Actions</h2>
         <div className="task-list">
           {briefData?.recommendedActions.length ? (
@@ -127,109 +127,6 @@ export function HomePage({ ping, status, aiStatus, briefData, onOpenTask }: Home
             ))
           ) : (
             <p className="meta">当前没有推荐动作。</p>
-          )}
-        </div>
-      </article>
-
-      <article className="panel">
-        <h2>Recent Tasks</h2>
-        <div className="task-list">
-          {briefData?.recentTasks.length ? (
-            briefData.recentTasks.map((task) => (
-              <div className="task-card" key={task.id}>
-                <div className="task-row">
-                  <strong>{task.title}</strong>
-                  <span className="status">{task.state}</span>
-                </div>
-                <p className="meta">{task.summary || task.id}</p>
-                {renderTaskSignal(task) ? <p className="meta">{renderTaskSignal(task)}</p> : null}
-              </div>
-            ))
-          ) : (
-            <p className="meta">还没有任务。</p>
-          )}
-        </div>
-      </article>
-
-      <article className="panel">
-        <h2>High Risk Tasks</h2>
-        <div className="task-list">
-          {briefData?.highRiskTasks.length ? (
-            briefData.highRiskTasks.map((task) => (
-              <div className="task-card task-card-danger" key={task.id}>
-                <div className="task-row">
-                  <strong>{task.title}</strong>
-                  <span className="status">{task.riskLevel}</span>
-                </div>
-                <p className="meta">{task.riskNote || task.summary || task.id}</p>
-                {task.nextStep ? <p className="meta">下一步：{task.nextStep}</p> : null}
-              </div>
-            ))
-          ) : (
-            <p className="meta">当前没有高风险任务。</p>
-          )}
-        </div>
-      </article>
-
-      <article className="panel">
-        <h2>Waiting Tasks</h2>
-        <div className="task-list">
-          {briefData?.waitingTasks.length ? (
-            briefData.waitingTasks.map((task) => (
-              <div className="task-card task-card-warning" key={task.id}>
-                <div className="task-row">
-                  <strong>{task.title}</strong>
-                  <span className="status">{task.state}</span>
-                </div>
-                <p className="meta">{task.activeWaitingItem?.reason || task.waitingReason || '未填写等待原因'}</p>
-                {task.activeWaitingItem ? (
-                  <p className="meta">
-                    active waiting item · since {task.activeWaitingItem.createdAt}
-                  </p>
-                ) : null}
-                {task.nextStep ? <p className="meta">恢复后下一步：{task.nextStep}</p> : null}
-              </div>
-            ))
-          ) : (
-            <p className="meta">当前没有等待中任务。</p>
-          )}
-        </div>
-      </article>
-
-      <article className="panel">
-        <h2>Needs Next Step</h2>
-        <div className="task-list">
-          {briefData?.missingNextStepTasks.length ? (
-            briefData.missingNextStepTasks.map((task) => (
-              <div className="task-card task-card-muted" key={task.id}>
-                <div className="task-row">
-                  <strong>{task.title}</strong>
-                  <span className="status">{task.state}</span>
-                </div>
-                <p className="meta">{task.summary || '还没有补充摘要'}</p>
-              </div>
-            ))
-          ) : (
-            <p className="meta">当前所有活跃任务都已经有下一步。</p>
-          )}
-        </div>
-      </article>
-
-      <article className="panel">
-        <h2>Pending Decisions</h2>
-        <div className="task-list">
-          {briefData?.pendingDecisions.length ? (
-            briefData.pendingDecisions.map((decision) => (
-              <div className="task-card" key={decision.id}>
-                <div className="task-row">
-                  <strong>{decision.title}</strong>
-                  <span className="status">{decision.status}</span>
-                </div>
-                <p className="meta">{decision.taskId}</p>
-              </div>
-            ))
-          ) : (
-            <p className="meta">当前没有待拍板事项。</p>
           )}
         </div>
       </article>
@@ -275,6 +172,108 @@ export function HomePage({ ping, status, aiStatus, briefData, onOpenTask }: Home
             ))
           ) : (
             <p className="meta">还没有生成过 brief snapshot。</p>
+          )}
+        </div>
+      </article>
+
+      <article className="panel">
+        <h2>Key Signals</h2>
+        <div className="home-signal-grid">
+          <section className="timeline-list">
+            <strong>Waiting Tasks</strong>
+            {briefData?.waitingTasks.length ? (
+              briefData.waitingTasks.map((task) => (
+                <div className="task-card task-card-warning" key={task.id}>
+                  <div className="task-row">
+                    <strong>{task.title}</strong>
+                    <span className="status">{task.state}</span>
+                  </div>
+                  <p className="meta">{task.activeWaitingItem?.reason || task.waitingReason || '未填写等待原因'}</p>
+                  {task.activeWaitingItem ? (
+                    <p className="meta">
+                      active waiting item · since {task.activeWaitingItem.createdAt}
+                    </p>
+                  ) : null}
+                  {task.nextStep ? <p className="meta">恢复后下一步：{task.nextStep}</p> : null}
+                </div>
+              ))
+            ) : (
+              <p className="meta">当前没有等待中任务。</p>
+            )}
+          </section>
+
+          <section className="timeline-list">
+            <strong>High Risk Tasks</strong>
+            {briefData?.highRiskTasks.length ? (
+              briefData.highRiskTasks.map((task) => (
+                <div className="task-card task-card-danger" key={task.id}>
+                  <div className="task-row">
+                    <strong>{task.title}</strong>
+                    <span className="status">{task.riskLevel}</span>
+                  </div>
+                  <p className="meta">{task.riskNote || task.summary || task.id}</p>
+                  {task.nextStep ? <p className="meta">下一步：{task.nextStep}</p> : null}
+                </div>
+              ))
+            ) : (
+              <p className="meta">当前没有高风险任务。</p>
+            )}
+          </section>
+
+          <section className="timeline-list">
+            <strong>Needs Next Step</strong>
+            {briefData?.missingNextStepTasks.length ? (
+              briefData.missingNextStepTasks.map((task) => (
+                <div className="task-card task-card-muted" key={task.id}>
+                  <div className="task-row">
+                    <strong>{task.title}</strong>
+                    <span className="status">{task.state}</span>
+                  </div>
+                  <p className="meta">{task.summary || '还没有补充摘要'}</p>
+                </div>
+              ))
+            ) : (
+              <p className="meta">当前所有活跃任务都已经有下一步。</p>
+            )}
+          </section>
+        </div>
+      </article>
+
+      <article className="panel">
+        <h2>Recent Tasks</h2>
+        <div className="task-list">
+          {briefData?.recentTasks.length ? (
+            briefData.recentTasks.map((task) => (
+              <div className="task-card" key={task.id}>
+                <div className="task-row">
+                  <strong>{task.title}</strong>
+                  <span className="status">{task.state}</span>
+                </div>
+                <p className="meta">{task.summary || task.id}</p>
+                {renderTaskSignal(task) ? <p className="meta">{renderTaskSignal(task)}</p> : null}
+              </div>
+            ))
+          ) : (
+            <p className="meta">还没有任务。</p>
+          )}
+        </div>
+      </article>
+
+      <article className="panel">
+        <h2>Pending Decisions</h2>
+        <div className="task-list">
+          {briefData?.pendingDecisions.length ? (
+            briefData.pendingDecisions.map((decision) => (
+              <div className="task-card" key={decision.id}>
+                <div className="task-row">
+                  <strong>{decision.title}</strong>
+                  <span className="status">{decision.status}</span>
+                </div>
+                <p className="meta">{decision.taskId}</p>
+              </div>
+            ))
+          ) : (
+            <p className="meta">当前没有待拍板事项。</p>
           )}
         </div>
       </article>
