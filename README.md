@@ -116,6 +116,7 @@ What exists today:
 - core task / decision / run / brief flows
 - config + keychain setup
 - local macOS packaging pipeline
+- GitHub Actions CI for `test + lint + build`
 
 What is still in progress:
 
