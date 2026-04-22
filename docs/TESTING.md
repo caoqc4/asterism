@@ -104,6 +104,7 @@ Covered today:
 - `Tasks quick decision submission`
 - `Tasks quick run submission`
 - `Tasks related activity -> Decisions / Runs`
+- `Tasks timeline -> Decisions / Runs`
 - `Decisions` page current-focus and queue navigation
 - `Decisions / Runs -> Tasks` follow-up return flows
 - `Decisions / Runs` related-task timeline context
@@ -118,6 +119,7 @@ Covered today:
 - `Runs` page current-focus detail inspection
 - Timeline readable summaries and compact expansion behavior
 - Timeline action shortcuts for failed, waiting, risk, and artifact events
+- Timeline object entry shortcuts for decision, run, and run-backed artifact events
 - task detail artifact visibility and Home recent-artifact visibility
 - task detail current-snapshot/action-desk/activity-feed presentation paths
 
