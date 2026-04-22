@@ -59,6 +59,7 @@ describe('TaskService', () => {
       transition: vi.fn().mockResolvedValue(buildRecord('running')),
     };
     const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
       resolveActive: vi.fn(),
     };
@@ -87,6 +88,7 @@ describe('TaskService', () => {
       transition: vi.fn(),
     };
     const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
       resolveActive: vi.fn(),
     } as never);
@@ -109,6 +111,7 @@ describe('TaskService', () => {
       transition: vi.fn(),
     };
     const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
       resolveActive: vi.fn(),
     };
@@ -136,6 +139,7 @@ describe('TaskService', () => {
       }),
     };
     const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
       resolveActive: vi.fn(),
     };
@@ -167,6 +171,7 @@ describe('TaskService', () => {
       }),
     };
     const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
       resolveActive: vi.fn(),
     };
@@ -194,6 +199,7 @@ describe('TaskService', () => {
       transition: vi.fn(),
     };
     const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
       resolveActive: vi.fn(),
     } as never);
@@ -222,6 +228,7 @@ describe('TaskService', () => {
       transition: vi.fn(),
     };
     const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
       resolveActive: vi.fn(),
     } as never);
@@ -252,6 +259,7 @@ describe('TaskService', () => {
       transition: vi.fn(),
     };
     const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
       resolveActive: vi.fn(),
     };
@@ -282,6 +290,7 @@ describe('TaskService', () => {
       transition: vi.fn(),
     };
     const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
       resolveActive: vi.fn(),
     } as never);
@@ -309,6 +318,7 @@ describe('TaskService', () => {
       transition: vi.fn(),
     };
     const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
       resolveActive: vi.fn(),
     };
@@ -337,6 +347,7 @@ describe('TaskService', () => {
       transition: vi.fn(),
     };
     const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
       resolveActive: vi.fn(),
     };
@@ -378,6 +389,7 @@ describe('TaskService', () => {
       transition: vi.fn(),
     };
     const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
       resolveActive: vi.fn(),
     };

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { DecisionRecord } from '../../../shared/types/decision.js';
 import type { RunRecord } from '../../../shared/types/run.js';
 import type { TaskRecord } from '../../../shared/types/task.js';
+import type { WaitingItemRecord } from '../../../shared/types/waiting-item.js';
 import { HomeBriefService } from './home-brief-service.js';
 
 function buildTask(partial: Partial<TaskRecord>): TaskRecord {
@@ -13,10 +14,23 @@ function buildTask(partial: Partial<TaskRecord>): TaskRecord {
     state: partial.state ?? 'planned',
     nextStep: partial.nextStep ?? null,
     waitingReason: partial.waitingReason ?? null,
+    activeWaitingItem: partial.activeWaitingItem ?? null,
     riskLevel: partial.riskLevel ?? 'none',
     riskNote: partial.riskNote ?? null,
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+  };
+}
+
+function buildWaitingItem(partial: Partial<WaitingItemRecord>): WaitingItemRecord {
+  return {
+    id: partial.id ?? 'waiting_1',
+    taskId: partial.taskId ?? 'task_1',
+    reason: partial.reason ?? 'Waiting',
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    resolvedAt: partial.resolvedAt ?? null,
   };
 }
 
@@ -80,6 +94,16 @@ describe('HomeBriefService', () => {
         ]),
       } as never,
       {
+        getActiveForTask: vi.fn().mockImplementation(async (taskId: string) =>
+          taskId === 'task_waiting'
+            ? buildWaitingItem({
+                taskId,
+                reason: 'Waiting for reviewer confirmation',
+              })
+            : null,
+        ),
+      } as never,
+      {
         list: vi.fn().mockResolvedValue([
           buildDecision({ status: 'pending' }),
           buildDecision({ id: 'decision_2', status: 'approved' }),
@@ -112,6 +136,12 @@ describe('HomeBriefService', () => {
       'waiting:task_waiting',
       'next-step:task_missing',
     ]);
+    expect(homeData.waitingTasks[0]?.activeWaitingItem?.reason).toBe(
+      'Waiting for reviewer confirmation',
+    );
+    expect(homeData.recommendedActions.find((action) => action.id === 'waiting:task_waiting')?.reason).toBe(
+      'Waiting for reviewer confirmation',
+    );
   });
 
   it('returns a steady-state recommendation when there is no urgent work', async () => {
@@ -125,6 +155,9 @@ describe('HomeBriefService', () => {
             nextStep: 'Archive it',
           }),
         ]),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
       } as never,
       {
         list: vi.fn().mockResolvedValue([]),

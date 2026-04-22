@@ -4,6 +4,8 @@ import { SchedulerService } from '../../scheduler/scheduler-service.js';
 import type { HomeBriefData, RecommendedAction } from '../../../shared/types/brief.js';
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
+import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
+import type { TaskRecord } from '../../../shared/types/task.js';
 
 function buildRecommendedActions(params: {
   highRiskTasks: HomeBriefData['highRiskTasks'];
@@ -37,7 +39,7 @@ function buildRecommendedActions(params: {
     actions.push({
       id: `waiting:${task.id}`,
       label: `跟进等待中的任务：${task.title}`,
-      reason: task.waitingReason ?? '该任务处于等待状态，需要恢复推进。',
+      reason: task.activeWaitingItem?.reason ?? task.waitingReason ?? '该任务处于等待状态，需要恢复推进。',
       taskId: task.id,
       priority: 'medium',
     });
@@ -69,25 +71,39 @@ function buildRecommendedActions(params: {
 export class HomeBriefService {
   constructor(
     private readonly taskRepository: TaskRepository,
+    private readonly waitingItemRepository: WaitingItemRepository,
     private readonly decisionRepository: DecisionRepository,
     private readonly runRepository: RunRepository,
     private readonly briefSnapshotRepository: BriefSnapshotRepository,
     private readonly getSchedulerStatus: () => SchedulerService | null,
   ) {}
 
+  private async attachActiveWaitingItems(tasks: TaskRecord[]): Promise<TaskRecord[]> {
+    return Promise.all(
+      tasks.map(async (task) => ({
+        ...task,
+        activeWaitingItem: await this.waitingItemRepository.getActiveForTask(task.id),
+      })),
+    );
+  }
+
   async getHomeData(): Promise<HomeBriefData> {
-    const [tasks, decisions, runs, recentBriefSnapshots] = await Promise.all([
+    const [taskRows, decisions, runs, recentBriefSnapshots] = await Promise.all([
       this.taskRepository.list(),
       this.decisionRepository.list(),
       this.runRepository.list(),
       this.briefSnapshotRepository.listRecent(5),
     ]);
+    const tasks = await this.attachActiveWaitingItems(taskRows);
 
     const activeTasks = tasks.filter((task) => !['completed', 'archived'].includes(task.state));
     const completedTasks = tasks.filter((task) => task.state === 'completed');
     const pendingDecisions = decisions.filter((decision) => decision.status === 'pending');
     const waitingTasks = tasks.filter(
-      (task) => task.state === 'waiting_external' || Boolean(task.waitingReason),
+      (task) =>
+        task.state === 'waiting_external' ||
+        Boolean(task.activeWaitingItem?.reason) ||
+        Boolean(task.waitingReason),
     );
     const highRiskTasks = tasks.filter((task) => task.riskLevel === 'high');
     const missingNextStepTasks = activeTasks.filter((task) => !task.nextStep?.trim());

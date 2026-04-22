@@ -589,7 +589,7 @@ export function TasksPage({
                 </div>
                 <div className="timeline-item">
                   <strong>Waiting Reason</strong>
-                  <p className="meta">{detail.waitingReason ?? '未填写'}</p>
+                  <p className="meta">{detail.activeWaitingItem?.reason ?? detail.waitingReason ?? '未填写'}</p>
                 </div>
                 <div className="timeline-item">
                   <strong>Risk</strong>

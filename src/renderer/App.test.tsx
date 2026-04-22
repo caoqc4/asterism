@@ -10,6 +10,7 @@ import type { ElectronApi } from '@shared/types/ipc';
 import type { RunRecord } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { TaskDetail, TaskRecord } from '@shared/types/task';
+import type { WaitingItemRecord } from '@shared/types/waiting-item';
 import { App } from './App';
 
 function buildTaskRecord(partial: Partial<TaskRecord>): TaskRecord {
@@ -20,10 +21,23 @@ function buildTaskRecord(partial: Partial<TaskRecord>): TaskRecord {
     state: partial.state ?? 'planned',
     nextStep: partial.nextStep ?? null,
     waitingReason: partial.waitingReason ?? null,
+    activeWaitingItem: partial.activeWaitingItem ?? null,
     riskLevel: partial.riskLevel ?? 'none',
     riskNote: partial.riskNote ?? null,
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+  };
+}
+
+function buildWaitingItem(partial: Partial<WaitingItemRecord>): WaitingItemRecord {
+  return {
+    id: partial.id ?? 'waiting_1',
+    taskId: partial.taskId ?? 'task_1',
+    reason: partial.reason ?? 'Waiting',
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    resolvedAt: partial.resolvedAt ?? null,
   };
 }
 
@@ -55,6 +69,10 @@ describe('App UI flow', () => {
     title: 'Waiting task',
     state: 'waiting_external',
     waitingReason: 'Waiting for reply',
+    activeWaitingItem: buildWaitingItem({
+      taskId: 'task_waiting',
+      reason: 'Waiting for reviewer confirmation',
+    }),
     nextStep: 'Follow up tomorrow',
   });
   const riskTask = buildTaskRecord({
@@ -204,6 +222,20 @@ describe('App UI flow', () => {
     expect(window.location.hash).toBe('#tasks');
     expect(mockApi.getTaskDetail).toHaveBeenCalledWith(riskTask.id);
     expect((screen.getByLabelText('Risk Note') as HTMLTextAreaElement).value).toBe('Deadline slipping');
+  });
+
+  it('prefers active waiting items in waiting surfaces', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await screen.findByText('Waiting for reviewer confirmation');
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /waiting task/i }));
+    await screen.findByRole('heading', { name: 'Waiting task' });
+
+    expect(screen.getByText('Waiting for reviewer confirmation')).toBeTruthy();
   });
 
   it('submits a quick decision from task detail', async () => {

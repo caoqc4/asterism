@@ -5,7 +5,9 @@ import type { PingResponse } from '@shared/types/ipc';
 function renderTaskSignal(task: HomeBriefData['recentTasks'][number]) {
   return [
     task.nextStep ? `下一步：${task.nextStep}` : null,
-    task.waitingReason ? `等待：${task.waitingReason}` : null,
+    task.activeWaitingItem?.reason ?? task.waitingReason
+      ? `等待：${task.activeWaitingItem?.reason ?? task.waitingReason}`
+      : null,
     task.riskLevel !== 'none'
       ? `风险：${task.riskLevel}${task.riskNote ? ` · ${task.riskNote}` : ''}`
       : null,
@@ -179,7 +181,7 @@ export function HomePage({ ping, status, aiStatus, briefData, onOpenTask }: Home
                   <strong>{task.title}</strong>
                   <span className="status">{task.state}</span>
                 </div>
-                <p className="meta">{task.waitingReason || '未填写等待原因'}</p>
+                <p className="meta">{task.activeWaitingItem?.reason || task.waitingReason || '未填写等待原因'}</p>
                 {task.nextStep ? <p className="meta">恢复后下一步：{task.nextStep}</p> : null}
               </div>
             ))

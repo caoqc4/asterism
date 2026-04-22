@@ -1,3 +1,5 @@
+import type { WaitingItemRecord } from './waiting-item.js';
+
 export type TaskState =
   | 'captured'
   | 'triaged'
@@ -16,6 +18,7 @@ export type TaskRecord = {
   state: TaskState;
   nextStep: string | null;
   waitingReason: string | null;
+  activeWaitingItem?: WaitingItemRecord | null;
   riskLevel: TaskRiskLevel;
   riskNote: string | null;
   createdAt: string;

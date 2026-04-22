@@ -38,6 +38,15 @@ export class TaskService {
     await this.waitingItemRepository.resolveActive(taskId);
   }
 
+  private async attachActiveWaitingItem<T extends TaskRecord | TaskDetail>(task: T): Promise<T> {
+    const activeWaitingItem = await this.waitingItemRepository.getActiveForTask(task.id);
+
+    return {
+      ...task,
+      activeWaitingItem,
+    };
+  }
+
   private async getExistingTaskOrThrow(taskId: string): Promise<TaskDetail> {
     const detail = await this.repository.getDetail(taskId);
 
@@ -48,16 +57,25 @@ export class TaskService {
     return detail;
   }
 
-  list(): Promise<TaskRecord[]> {
-    return this.repository.list();
+  async list(): Promise<TaskRecord[]> {
+    const tasks = await this.repository.list();
+
+    return Promise.all(tasks.map((task) => this.attachActiveWaitingItem(task)));
   }
 
-  create(input: CreateTaskInput): Promise<TaskRecord> {
-    return this.repository.create(input);
+  async create(input: CreateTaskInput): Promise<TaskRecord> {
+    const created = await this.repository.create(input);
+    return this.attachActiveWaitingItem(created);
   }
 
-  getDetail(taskId: string): Promise<TaskDetail | null> {
-    return this.repository.getDetail(taskId);
+  async getDetail(taskId: string): Promise<TaskDetail | null> {
+    const detail = await this.repository.getDetail(taskId);
+
+    if (!detail) {
+      return null;
+    }
+
+    return this.attachActiveWaitingItem(detail);
   }
 
   async update(input: UpdateTaskInput): Promise<TaskRecord> {
@@ -86,7 +104,7 @@ export class TaskService {
       await this.syncWaitingItem(updated.id, detail.state, updated.waitingReason);
     }
 
-    return updated;
+    return this.attachActiveWaitingItem(updated);
   }
 
   async transition(input: TransitionTaskInput): Promise<TaskRecord> {
@@ -115,25 +133,26 @@ export class TaskService {
 
     await this.syncWaitingItem(updated.id, updated.state, updated.waitingReason);
 
-    return updated;
+    return this.attachActiveWaitingItem(updated);
   }
 
   async transitionIfAllowed(id: string, nextState: TaskState): Promise<TaskRecord | null> {
     const detail = await this.getExistingTaskOrThrow(id);
 
     if (detail.state === nextState) {
-      return {
+      return this.attachActiveWaitingItem({
         id: detail.id,
         title: detail.title,
         summary: detail.summary,
         state: detail.state,
         nextStep: detail.nextStep,
         waitingReason: detail.waitingReason,
+        activeWaitingItem: detail.activeWaitingItem ?? null,
         riskLevel: detail.riskLevel,
         riskNote: detail.riskNote,
         createdAt: detail.createdAt,
         updatedAt: detail.updatedAt,
-      };
+      });
     }
 
     const nextStates = allowedTransitions[detail.state];
@@ -150,7 +169,7 @@ export class TaskService {
 
     await this.syncWaitingItem(updated.id, updated.state, updated.waitingReason);
 
-    return updated;
+    return this.attachActiveWaitingItem(updated);
   }
 
   async annotateDecisionCancelled(taskId: string, decisionTitle: string): Promise<TaskRecord> {
@@ -171,7 +190,7 @@ export class TaskService {
       suggestedAction: '创建新的 Decision，或改走无需拍板的路径',
     });
 
-    return updated;
+    return this.attachActiveWaitingItem(updated);
   }
 
   async annotateRunFailed(taskId: string, failureReason: string): Promise<TaskRecord> {
@@ -191,6 +210,6 @@ export class TaskService {
       suggestedAction: '检查失败原因并准备重试 Run',
     });
 
-    return updated;
+    return this.attachActiveWaitingItem(updated);
   }
 }

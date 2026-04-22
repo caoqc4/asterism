@@ -24,6 +24,7 @@ const waitingItemRepository = new WaitingItemRepository();
 let schedulerService: SchedulerService | null = null;
 const homeBriefService = new HomeBriefService(
   taskRepository,
+  waitingItemRepository,
   decisionRepository,
   runRepository,
   briefSnapshotRepository,
