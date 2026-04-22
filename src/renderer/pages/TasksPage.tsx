@@ -156,6 +156,8 @@ function getTimelineActionLabel(type: string): string | null {
       return '准备重试 Run';
     case 'task.waiting_changed':
       return '补跟进动作';
+    case 'task.risk_changed':
+      return '处理风险';
     default:
       return null;
   }
@@ -393,8 +395,25 @@ export function TasksPage({
       setDraftNextStep(`跟进并确认是否解除等待：${formatValue(payload?.to)}`);
     }
 
+    if (event.type === 'task.risk_changed') {
+      const nextRisk = (payload?.to as Record<string, unknown> | undefined) ?? {};
+      const nextRiskLevel = nextRisk.level;
+      const nextRiskNote = formatValue(nextRisk.note);
+
+      if (nextRiskLevel && ['none', 'low', 'medium', 'high'].includes(String(nextRiskLevel))) {
+        setDraftRiskLevel(nextRiskLevel as TaskRiskLevel);
+      }
+
+      setDraftRiskNote(nextRiskNote === '未填写' ? '' : nextRiskNote);
+      setDraftNextStep(
+        `处理当前风险并确认是否需要降级：${nextRiskNote === '未填写' ? '补充风险说明' : nextRiskNote}`,
+      );
+    }
+
     const focusTarget =
-      event.type === 'task.waiting_changed' ? detailFormRef.current : quickActionsRef.current;
+      event.type === 'task.waiting_changed' || event.type === 'task.risk_changed'
+        ? detailFormRef.current
+        : quickActionsRef.current;
 
     if (typeof focusTarget?.scrollIntoView === 'function') {
       focusTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });

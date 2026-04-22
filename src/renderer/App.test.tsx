@@ -592,6 +592,61 @@ describe('App UI flow', () => {
     );
   });
 
+  it('prefills risk recovery fields from risk timeline suggestions', async () => {
+    const user = userEvent.setup();
+
+    const riskActionTask = buildTaskRecord({
+      id: 'task_timeline_risk_action',
+      title: 'Timeline risk task',
+      state: 'running',
+      riskLevel: 'high',
+    });
+
+    const riskActionApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([riskActionTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== riskActionTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(riskActionTask),
+          timeline: [
+            {
+              id: 'timeline_risk_action',
+              taskId: riskActionTask.id,
+              type: 'task.risk_changed',
+              payload: JSON.stringify({
+                from: { level: 'medium', note: 'Review lagging' },
+                to: { level: 'high', note: 'Dependency blocked' },
+              }),
+              createdAt: '2026-01-01T01:00:00.000Z',
+            },
+          ],
+        };
+      }),
+    };
+
+    window.api = riskActionApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /timeline risk task/i }));
+    await screen.findByRole('heading', { name: 'Timeline risk task' });
+
+    await user.click(screen.getByRole('button', { name: '处理风险' }));
+
+    expect((screen.getByLabelText('Risk Level') as HTMLSelectElement).value).toBe('high');
+    expect((screen.getByLabelText('Risk Note') as HTMLTextAreaElement).value).toBe(
+      'Dependency blocked',
+    );
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '处理当前风险并确认是否需要降级：Dependency blocked',
+    );
+  });
+
   it('reflects cancelled decisions in task signals after a refresh event', async () => {
     const user = userEvent.setup();
 
