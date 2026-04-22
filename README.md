@@ -7,7 +7,7 @@ This repository currently contains an Electron + React + TypeScript prototype wi
 - task creation, structured task signals, detail editing, and state transitions
 - decision request creation, actions, and task linkage
 - run triggering for `draft` and `summarize`, with task linkage and failure signals
-- local brief snapshot generation with recommended actions and recent artifact context
+- local brief snapshot generation with recommended actions, recent artifact context, and intent-aware navigation into task follow-up flows
 - task-scoped timeline events with readable summaries, subtle event tones, and lightweight action shortcuts
 - waiting item lifecycle tracking with direct resolution and task/detail/home visibility
 - text artifacts generated from successful runs, surfaced in task detail, timeline actions, home brief, and recommended-action semantics
@@ -120,7 +120,7 @@ What exists today:
 - local desktop workbench architecture
 - core task / decision / run / brief flows
 - structured task signals: `nextStep`, `waitingReason`, `riskLevel`, `riskNote`
-- home brief organized around recommended actions, recent artifacts, recent brief snapshots, and key signals
+- home brief organized around recommended actions, recent artifacts, recent brief snapshots, and key signals, with direct intent-aware entry into task follow-up work
 - task detail organized into a current snapshot, action desk, and activity feed
 - task detail with quick actions, related decisions/runs, active waiting items, recent artifacts, and a task-lifecycle timeline with lightweight suggested actions
 - task-side objects now established: active `waiting items` and text `artifacts`

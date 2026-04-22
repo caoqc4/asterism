@@ -96,6 +96,8 @@ These tests protect the boundary between the Electron main process and the rende
 Covered today:
 
 - `Home recommended action -> Tasks detail`
+- `Home recent artifact -> Tasks detail continuation`
+- `Home key signals -> Tasks detail follow-up intent`
 - `Tasks quick decision submission`
 - `Tasks quick run submission`
 - `Settings save flow`
