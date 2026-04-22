@@ -275,6 +275,23 @@ describe('App UI flow', () => {
     expect(mockApi.updateTask).not.toHaveBeenCalled();
   });
 
+  it('clears the visible risk note when lowering a high-risk task', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', {
+      name: /优先处理高风险任务：High risk task/i,
+    }));
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    await user.selectOptions(screen.getByLabelText('Risk Level'), 'medium');
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('Risk Note') as HTMLTextAreaElement).value).toBe('');
+    });
+  });
+
   it('shows failed run detail on the runs page', async () => {
     const user = userEvent.setup();
 

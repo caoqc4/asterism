@@ -46,14 +46,24 @@ export class TaskService {
   async update(input: UpdateTaskInput): Promise<TaskRecord> {
     const detail = await this.getExistingTaskOrThrow(input.id);
     const nextRiskLevel = input.riskLevel ?? detail.riskLevel;
+    const providedRiskNote = input.riskNote?.trim() || null;
     const nextRiskNote =
-      input.riskNote === undefined ? detail.riskNote : input.riskNote?.trim() || null;
+      input.riskNote === undefined
+        ? nextRiskLevel === 'high'
+          ? detail.riskNote
+          : detail.riskLevel === 'high'
+            ? null
+            : detail.riskNote
+        : providedRiskNote;
 
     if (nextRiskLevel === 'high' && !nextRiskNote) {
       throw new Error('Risk note is required when setting task risk to high');
     }
 
-    return this.repository.update(input);
+    return this.repository.update({
+      ...input,
+      riskNote: nextRiskNote,
+    });
   }
 
   async transition(input: TransitionTaskInput): Promise<TaskRecord> {

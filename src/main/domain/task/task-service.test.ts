@@ -180,9 +180,38 @@ describe('TaskService', () => {
     expect(repository.update).toHaveBeenCalledWith({
       id: 'task_1',
       title: 'Updated title',
+      riskNote: 'Existing high risk note',
     });
     expect(result.riskLevel).toBe('high');
     expect(result.riskNote).toBe('Existing high risk note');
+  });
+
+  it('clears stale high-risk notes when lowering risk without a new note', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildHighRiskDetail('running')),
+      update: vi.fn().mockResolvedValue({
+        ...buildRecord('running'),
+        riskLevel: 'medium',
+        riskNote: null,
+      }),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never);
+
+    const result = await service.update({
+      id: 'task_1',
+      riskLevel: 'medium',
+    });
+
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'task_1',
+      riskLevel: 'medium',
+      riskNote: null,
+    });
+    expect(result.riskLevel).toBe('medium');
+    expect(result.riskNote).toBeNull();
   });
 
   it('throws when the task does not exist', async () => {

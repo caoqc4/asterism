@@ -104,6 +104,22 @@ export function TasksPage({
   const [detailError, setDetailError] = useState<string | null>(null);
   const [transitionError, setTransitionError] = useState<string | null>(null);
 
+  function updateDraftRiskLevel(nextRiskLevel: TaskRiskLevel) {
+    setDraftRiskLevel(nextRiskLevel);
+
+    if (detailError) {
+      setDetailError(null);
+    }
+
+    if (
+      nextRiskLevel !== 'high' &&
+      detail?.riskLevel === 'high' &&
+      draftRiskNote === (detail.riskNote ?? '')
+    ) {
+      setDraftRiskNote('');
+    }
+  }
+
   useEffect(() => {
     if (!selectedTaskId && tasks[0]) {
       setSelectedTaskId(tasks[0].id);
@@ -375,12 +391,7 @@ export function TasksPage({
                 Risk Level
                 <select
                   value={draftRiskLevel}
-                  onChange={(event) => {
-                    setDraftRiskLevel(event.target.value as TaskRiskLevel);
-                    if (detailError) {
-                      setDetailError(null);
-                    }
-                  }}
+                  onChange={(event) => updateDraftRiskLevel(event.target.value as TaskRiskLevel)}
                 >
                   {riskOptions.map((riskLevel) => (
                     <option key={riskLevel} value={riskLevel}>
