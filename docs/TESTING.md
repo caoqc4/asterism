@@ -101,6 +101,7 @@ Covered today:
 - `Tasks quick decision submission`
 - `Tasks quick run submission`
 - `Tasks related activity -> Decisions / Runs`
+- `Decisions` page current-focus and queue navigation
 - `Settings save flow`
 - `waiting item` visibility and direct resolution
 - `Decision cancel -> task signal refresh`
@@ -108,7 +109,7 @@ Covered today:
 - `Decision action -> Home brief refresh`
 - `Run failed -> Home brief refresh`
 - `Task transition -> Home signal refresh`
-- `Runs` page detail inspection
+- `Runs` page current-focus detail inspection
 - Timeline readable summaries and compact expansion behavior
 - Timeline action shortcuts for failed, waiting, risk, and artifact events
 - task detail artifact visibility and Home recent-artifact visibility

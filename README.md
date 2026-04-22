@@ -11,6 +11,7 @@ This repository currently contains an Electron + React + TypeScript prototype wi
 - task-scoped timeline events with readable summaries, subtle event tones, and lightweight action shortcuts
 - waiting item lifecycle tracking with direct resolution and task/detail/home visibility
 - text artifacts generated from successful runs, surfaced in task detail, timeline actions, home brief, and recommended-action semantics
+- decision and run pages organized as object work surfaces with a current focus, action desk, and queue
 - local scheduler with config-driven enable/disable
 - local configuration via `config.json` plus system keychain for secrets
 - SQLite-backed repository integration tests plus GitHub Actions CI
@@ -123,6 +124,7 @@ What exists today:
 - home brief organized around recommended actions, recent artifacts, recent brief snapshots, and key signals, with direct intent-aware entry into task follow-up work
 - task detail organized into a current snapshot, action desk, and activity feed
 - task detail acting as a task work surface, with quick actions, active waiting items, recent artifacts, related decisions/runs, and a task-lifecycle timeline with lightweight suggested actions
+- decision and run pages acting as object work surfaces, with queue navigation and focused detail/action areas
 - task-side objects now established: active `waiting items` and text `artifacts`
 - config + keychain setup
 - service tests and SQLite repository integration coverage
