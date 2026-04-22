@@ -196,6 +196,8 @@ export function App() {
         ) : null}
         {route === 'tasks' ? (
           <TasksPage
+            decisions={decisions}
+            runs={runs}
             tasks={tasks}
             onCreateDecision={handleCreateDecision}
             onCreateTask={handleCreateTask}

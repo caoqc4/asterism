@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
-import type { CreateDecisionInput } from '@shared/types/decision';
-import type { CreateRunInput } from '@shared/types/run';
+import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
+import type { CreateRunInput, RunRecord } from '@shared/types/run';
 import type {
   CreateTaskInput,
   TaskDetail,
@@ -24,6 +24,8 @@ const transitionOptions: Record<TaskState, TaskState[]> = {
 };
 
 type TasksPageProps = {
+  decisions: DecisionRecord[];
+  runs: RunRecord[];
   tasks: TaskRecord[];
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
   onRefresh: () => Promise<void>;
@@ -34,6 +36,8 @@ type TasksPageProps = {
 };
 
 export function TasksPage({
+  decisions,
+  runs,
   tasks,
   onCreateDecision,
   onRefresh,
@@ -167,6 +171,20 @@ export function TasksPage({
     });
     await onRefresh();
   }
+
+  const relatedDecisions = detail
+    ? decisions
+        .filter((decision) => decision.taskId === detail.id)
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+        .slice(0, 5)
+    : [];
+
+  const relatedRuns = detail
+    ? runs
+        .filter((run) => run.taskId === detail.id)
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+        .slice(0, 5)
+    : [];
 
   return (
     <section className="tasks-layout">
@@ -328,6 +346,48 @@ export function TasksPage({
                   </label>
                   <button type="submit">触发 Run</button>
                 </form>
+              </div>
+            </div>
+
+            <div className="transition-group">
+              <h3>Related Activity</h3>
+              <div className="related-grid">
+                <div className="timeline-list">
+                  <strong>Decisions</strong>
+                  {relatedDecisions.length ? (
+                    relatedDecisions.map((decision) => (
+                      <div className="timeline-item" key={decision.id}>
+                        <div className="task-row">
+                          <strong>{decision.title}</strong>
+                          <span className="status">{decision.status}</span>
+                        </div>
+                        <p className="meta">{decision.updatedAt}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="meta">当前任务还没有关联 decision。</p>
+                  )}
+                </div>
+
+                <div className="timeline-list">
+                  <strong>Recent Runs</strong>
+                  {relatedRuns.length ? (
+                    relatedRuns.map((run) => (
+                      <div className="timeline-item" key={run.id}>
+                        <div className="task-row">
+                          <strong>{run.type}</strong>
+                          <span className="status">{run.status}</span>
+                        </div>
+                        <p className="meta">
+                          {run.outputSource ? `来源：${run.outputSource}` : '来源：尚未产生'}
+                        </p>
+                        <p className="meta">{run.updatedAt}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="meta">当前任务还没有关联 run。</p>
+                  )}
+                </div>
               </div>
             </div>
 
