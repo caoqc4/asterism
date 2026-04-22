@@ -5,12 +5,14 @@ import { SchedulerService } from '../../scheduler/scheduler-service.js';
 import type {
   HomeActivityRecord,
   HomeBriefData,
+  HomeSourceContextRecord,
   RecommendedAction,
 } from '../../../shared/types/brief.js';
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
 import { TaskProcessBindingRepository } from '../../db/repositories/task-process-binding-repository.js';
+import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
 import type { TaskRecord } from '../../../shared/types/task.js';
 import type { BriefProcessTemplateCandidate } from '../../../shared/types/brief.js';
 
@@ -133,6 +135,7 @@ export class HomeBriefService {
     private readonly decisionRepository: DecisionRepository,
     private readonly runRepository: RunRepository,
     private readonly artifactRepository: ArtifactRepository,
+    private readonly sourceContextRepository: SourceContextRepository | null = null,
     private readonly briefSnapshotRepository: BriefSnapshotRepository,
     private readonly getSchedulerStatus: () => SchedulerService | null,
     private readonly taskProcessBindingRepository: TaskProcessBindingRepository | null = null,
@@ -233,6 +236,30 @@ export class HomeBriefService {
       .slice(0, 5);
   }
 
+  private async buildRecentSourceContexts(
+    activeTasks: TaskRecord[],
+  ): Promise<HomeSourceContextRecord[]> {
+    if (!this.sourceContextRepository || activeTasks.length === 0) {
+      return [];
+    }
+
+    const taskTitleById = new Map(activeTasks.map((task) => [task.id, task.title]));
+    const items = await this.sourceContextRepository.listActiveForTasks(
+      activeTasks.map((task) => task.id),
+    );
+
+    return items.slice(0, 5).map((item) => ({
+      id: item.id,
+      taskId: item.taskId,
+      taskTitle: taskTitleById.get(item.taskId) ?? item.taskId,
+      title: item.title,
+      kind: item.kind,
+      uri: item.uri,
+      note: item.note,
+      updatedAt: item.updatedAt,
+    }));
+  }
+
   async getHomeData(): Promise<HomeBriefData> {
     const [taskRows, decisions, runs, recentArtifacts, recentBriefSnapshots] = await Promise.all([
       this.taskRepository.list(),
@@ -256,6 +283,7 @@ export class HomeBriefService {
     const missingNextStepTasks = activeTasks.filter((task) => !task.nextStep?.trim());
     const scheduler = this.getSchedulerStatus();
     const recentActivity = this.buildRecentActivity(tasks, decisions, runs);
+    const recentSourceContexts = await this.buildRecentSourceContexts(activeTasks);
     const processTemplateCandidates = await this.buildProcessTemplateCandidates(activeTasks);
     const recommendedActions = buildRecommendedActions({
       activeTasks: activeTasks.slice(0, 10),
@@ -281,6 +309,7 @@ export class HomeBriefService {
       pendingDecisions: pendingDecisions.slice(0, 5),
       recommendedActions,
       recentArtifacts,
+      recentSourceContexts,
       recentActivity,
       recentBriefSnapshots,
       processTemplateCandidates,

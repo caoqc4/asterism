@@ -11,12 +11,14 @@ export type RecommendedActionIntent = {
     | 'focus_next_step'
     | 'focus_waiting_follow_up'
     | 'focus_risk_review'
-    | 'continue_from_artifact';
+    | 'continue_from_artifact'
+    | 'focus_source_context';
   focusArea?: 'detail' | 'quick-actions';
   prefillNextStep?: string | null;
   prefillRunInstructions?: string | null;
   prefillRiskLevel?: TaskRiskLevel | null;
   prefillRiskNote?: string | null;
+  sourceContextId?: string | null;
 };
 
 export type RecommendedAction = {
@@ -36,6 +38,17 @@ export type HomeActivityRecord = {
   taskTitle: string;
   title: string;
   status: string;
+  updatedAt: string;
+};
+
+export type HomeSourceContextRecord = {
+  id: string;
+  taskId: string;
+  taskTitle: string;
+  title: string;
+  kind: string;
+  uri: string | null;
+  note: string | null;
   updatedAt: string;
 };
 
@@ -66,6 +79,7 @@ export type HomeBriefData = {
   pendingDecisions: DecisionRecord[];
   recommendedActions: RecommendedAction[];
   recentArtifacts: ArtifactRecord[];
+  recentSourceContexts: HomeSourceContextRecord[];
   recentActivity: HomeActivityRecord[];
   recentBriefSnapshots: BriefSnapshotRecord[];
   schedulerStatus: SchedulerStatus;

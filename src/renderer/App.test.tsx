@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import type { HomeBriefData } from '@shared/types/brief';
+import type { HomeBriefData, HomeSourceContextRecord } from '@shared/types/brief';
 import type { DecisionRecord } from '@shared/types/decision';
 import type { ElectronApi } from '@shared/types/ipc';
 import type {
@@ -105,6 +105,21 @@ function buildSourceContext(partial: Partial<SourceContextRecord>): SourceContex
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
     archivedAt: partial.archivedAt ?? null,
+  };
+}
+
+function buildHomeSourceContext(
+  partial: Partial<HomeSourceContextRecord>,
+): HomeSourceContextRecord {
+  return {
+    id: partial.id ?? 'source_context_home_1',
+    taskId: partial.taskId ?? 'task_1',
+    taskTitle: partial.taskTitle ?? 'Task',
+    title: partial.title ?? 'Reference doc',
+    kind: partial.kind ?? 'doc',
+    uri: partial.uri ?? 'https://example.com/reference',
+    note: partial.note ?? 'Helpful source',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
   };
 }
 
@@ -233,6 +248,18 @@ describe('App UI flow', () => {
         sourceId: 'run_home_1',
         title: 'draft output',
         content: 'Escalation draft for the owner.',
+      }),
+    ],
+    recentSourceContexts: [
+      buildHomeSourceContext({
+        id: 'source_context_home_1',
+        taskId: riskTask.id,
+        taskTitle: riskTask.title,
+        title: 'Owner escalation memo',
+        kind: 'doc',
+        uri: 'https://example.com/escalation-memo',
+        note: 'Contains the latest escalation framing.',
+        updatedAt: '2026-01-01T00:45:00.000Z',
       }),
     ],
     recentActivity: [
@@ -665,6 +692,90 @@ describe('App UI flow', () => {
     );
     expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toContain(
       'Escalation draft for the owner.',
+    );
+  });
+
+  it('opens key source materials from home and focuses the source context editor', async () => {
+    const user = userEvent.setup();
+
+    const sourceTask = buildTaskRecord({
+      id: 'task_source_home',
+      title: 'Source home task',
+      state: 'planned',
+      nextStep: '整理来源材料',
+    });
+
+    const sourceItem = buildSourceContext({
+      id: 'source_context_home_focus',
+      taskId: sourceTask.id,
+      title: 'Partner domain list',
+      kind: 'website_list',
+      uri: null,
+      note: '外链建设的目标站点列表',
+      content: 'example.com\nsample.org',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+
+    const sourceHomeApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([sourceTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== sourceTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(sourceTask),
+          sourceContexts: [sourceItem],
+        };
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 1,
+        waitingTaskCount: 0,
+        highRiskTaskCount: 0,
+        missingNextStepTaskCount: 0,
+        recentTasks: [sourceTask],
+        waitingTasks: [],
+        highRiskTasks: [],
+        missingNextStepTasks: [],
+        recommendedActions: [],
+        recentArtifacts: [],
+        recentSourceContexts: [
+          buildHomeSourceContext({
+            id: sourceItem.id,
+            taskId: sourceTask.id,
+            taskTitle: sourceTask.title,
+            title: sourceItem.title,
+            kind: sourceItem.kind,
+            uri: sourceItem.uri,
+            note: sourceItem.note,
+            updatedAt: sourceItem.updatedAt,
+          }),
+        ],
+        recentActivity: [],
+      }),
+    };
+
+    window.api = sourceHomeApi;
+
+    render(<App />);
+
+    const sourceButton = await screen.findByRole('button', {
+      name: /Partner domain list.*website_list.*task: Source home task/i,
+    });
+    await user.click(sourceButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Source home task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('来源标题') as HTMLInputElement).value).toBe('Partner domain list');
+    expect((screen.getByLabelText('来源类型') as HTMLSelectElement).value).toBe('website_list');
+    expect((screen.getByLabelText('说明') as HTMLTextAreaElement).value).toBe('外链建设的目标站点列表');
+    expect((screen.getByLabelText('补充内容') as HTMLTextAreaElement).value).toContain('example.com');
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '基于来源材料继续推进：Partner domain list',
     );
   });
 
@@ -1858,9 +1969,14 @@ describe('App UI flow', () => {
       note: 'Primary rollout PR',
     });
 
-    await screen.findByText('Reference PR');
+    expect((await screen.findAllByText('Reference PR')).length).toBeGreaterThan(0);
 
-    const existingSourceCard = screen.getByText('Launch brief').closest('.timeline-item');
+    const sourceContextSection = screen
+      .getByRole('heading', { name: 'Source Context' })
+      .closest('.transition-group');
+    const existingSourceCard = within(sourceContextSection as HTMLElement)
+      .getAllByText('Launch brief')[0]
+      ?.closest('.timeline-item');
     expect(existingSourceCard).not.toBeNull();
 
     await user.click(
@@ -1872,7 +1988,7 @@ describe('App UI flow', () => {
     await user.click(screen.getByRole('button', { name: '保存来源' }));
 
     expect(sourceApi.updateSourceContext).toHaveBeenCalled();
-    await screen.findByText('Updated brief note');
+    expect((await screen.findAllByText('Updated brief note')).length).toBeGreaterThan(0);
 
     await user.click(
       within(existingSourceCard as HTMLElement).getByRole('button', { name: '归档来源' }),

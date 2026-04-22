@@ -4,6 +4,7 @@ import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { DecisionRecord } from '../../../shared/types/decision.js';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
 import type { RunRecord } from '../../../shared/types/run.js';
+import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import type { TaskRecord } from '../../../shared/types/task.js';
 import type { WaitingItemRecord } from '../../../shared/types/waiting-item.js';
 import { HomeBriefService } from './home-brief-service.js';
@@ -100,6 +101,22 @@ function buildAppliedProcessTemplate(
   };
 }
 
+function buildSourceContext(partial: Partial<SourceContextRecord>): SourceContextRecord {
+  return {
+    id: partial.id ?? 'source_context_1',
+    taskId: partial.taskId ?? 'task_1',
+    title: partial.title ?? 'Reference doc',
+    kind: partial.kind ?? 'doc',
+    uri: partial.uri ?? 'https://example.com/reference',
+    content: partial.content ?? null,
+    note: partial.note ?? 'Use this as the primary source',
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    archivedAt: partial.archivedAt ?? null,
+  };
+}
+
 describe('HomeBriefService', () => {
   it('aggregates waiting, high-risk, and missing-next-step task signals', async () => {
     const service = new HomeBriefService(
@@ -162,6 +179,17 @@ describe('HomeBriefService', () => {
         ]),
       } as never,
       {
+        listActiveForTasks: vi.fn().mockResolvedValue([
+          buildSourceContext({
+            id: 'source_context_risk',
+            taskId: 'task_risk',
+            title: 'Escalation source memo',
+            note: 'Contains the latest owner-facing language',
+            updatedAt: '2026-01-01T01:30:00.000Z',
+          }),
+        ]),
+      } as never,
+      {
         listRecent: vi.fn().mockResolvedValue([]),
       } as never,
       () => null,
@@ -218,6 +246,18 @@ describe('HomeBriefService', () => {
       'Waiting for reviewer confirmation',
     );
     expect(homeData.recentArtifacts[0]?.content).toBe('Escalation draft');
+    expect(homeData.recentSourceContexts).toEqual([
+      {
+        id: 'source_context_risk',
+        taskId: 'task_risk',
+        taskTitle: 'High risk task',
+        title: 'Escalation source memo',
+        kind: 'doc',
+        uri: 'https://example.com/reference',
+        note: 'Contains the latest owner-facing language',
+        updatedAt: '2026-01-01T01:30:00.000Z',
+      },
+    ]);
     expect(homeData.processTemplateCandidates).toEqual([
       {
         id: 'process_template_risk',
@@ -277,6 +317,9 @@ describe('HomeBriefService', () => {
         listRecent: vi.fn().mockResolvedValue([]),
       } as never,
       {
+        listActiveForTasks: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
         listRecent: vi.fn().mockResolvedValue([]),
       } as never,
       () => null,
@@ -328,6 +371,9 @@ describe('HomeBriefService', () => {
             title: 'completed draft',
           }),
         ]),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([]),
       } as never,
       {
         listRecent: vi.fn().mockResolvedValue([]),

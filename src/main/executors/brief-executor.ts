@@ -75,6 +75,14 @@ export function buildFallbackBrief(
         )
         .join('\n')
     : '- 最近没有关键决策或执行动态';
+  const sourceContextLines = homeData.recentSourceContexts.length
+    ? homeData.recentSourceContexts
+        .map(
+          (item) =>
+            `- ${item.title} [${item.kind}] | task=${item.taskTitle}${item.note ? ` | ${item.note}` : ''}`,
+        )
+        .join('\n')
+    : '- 最近没有关键来源材料';
   const templateLines = selectedTemplates.length
     ? selectedTemplates.map((template) => formatTemplateLine(template)).join('\n')
     : '- 本次未额外参考方法模板';
@@ -121,6 +129,9 @@ export function buildFallbackBrief(
     '',
     '最近动态：',
     activityLines,
+    '',
+    '关键来源材料：',
+    sourceContextLines,
     '',
     '本次参考的方法模板：',
     templateLines,
@@ -215,6 +226,14 @@ function buildPrompt(
     ...(homeData.recentActivity.length
       ? homeData.recentActivity.map((event) =>
           formatRecentActivityLine(event.sourceType, event.title, event.status, event.taskTitle),
+        )
+      : ['- 无']),
+    '',
+    '关键来源材料：',
+    ...(homeData.recentSourceContexts.length
+      ? homeData.recentSourceContexts.map(
+          (item) =>
+            `- ${item.title} | ${item.kind} | task=${item.taskTitle}${item.note ? ` | note=${item.note}` : ''}${item.uri ? ` | uri=${item.uri}` : ''}`,
         )
       : ['- 无']),
     '',

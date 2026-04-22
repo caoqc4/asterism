@@ -24,6 +24,7 @@ function buildHomeData(): HomeBriefData {
     pendingDecisions: [],
     recommendedActions: [],
     recentArtifacts: [],
+    recentSourceContexts: [],
     recentActivity: [],
     recentBriefSnapshots: [],
     schedulerStatus: {

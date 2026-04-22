@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 
 import type {
   CreateSourceContextInput,
@@ -43,6 +43,26 @@ export class SourceContextRepository {
       .select()
       .from(sourceContexts)
       .where(and(eq(sourceContexts.taskId, taskId), eq(sourceContexts.status, 'active')))
+      .orderBy(desc(sourceContexts.updatedAt));
+
+    return rows.map(toRecord);
+  }
+
+  async listActiveForTasks(taskIds: string[]): Promise<SourceContextRecord[]> {
+    if (taskIds.length === 0) {
+      return [];
+    }
+
+    const db = initDatabase();
+    const rows = await db
+      .select()
+      .from(sourceContexts)
+      .where(
+        and(
+          inArray(sourceContexts.taskId, taskIds),
+          eq(sourceContexts.status, 'active'),
+        ),
+      )
       .orderBy(desc(sourceContexts.updatedAt));
 
     return rows.map(toRecord);

@@ -106,6 +106,7 @@ Covered today:
 
 - `Home recommended action -> Tasks detail`
 - `Home recent artifact -> Tasks detail continuation`
+- `Home key source material -> Tasks source-context focus`
 - `Home recent activity -> Tasks detail follow-up intent`
 - `Home recent activity -> Decisions / Runs`
 - `Home recent activity` lightweight follow-up actions
@@ -124,7 +125,7 @@ Covered today:
 - `Decisions / Runs` related-task timeline follow-up actions
 - `Settings save flow`
 - `waiting item` visibility and direct resolution
-- `source context` visibility plus create/edit interactions in task detail
+- `source context` visibility plus create/edit interactions in task detail and source-focused recovery from Home
 - `process context` visibility plus create/bind/remove interactions in task detail
 - `Decision cancel -> task signal refresh`
 - `Run failed -> task signal refresh`

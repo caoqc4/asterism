@@ -427,6 +427,7 @@ export function TasksPage({
   const [showAllTimeline, setShowAllTimeline] = useState(false);
   const detailFormRef = useRef<HTMLFormElement | null>(null);
   const quickActionsRef = useRef<HTMLDivElement | null>(null);
+  const sourceContextSectionRef = useRef<HTMLDivElement | null>(null);
 
   function updateDraftRiskLevel(nextRiskLevel: TaskRiskLevel) {
     setDraftRiskLevel(nextRiskLevel);
@@ -485,8 +486,22 @@ export function TasksPage({
       setDraftRiskNote(intent.prefillRiskNote ?? '');
     }
 
+    if (intent?.sourceContextId) {
+      const matchedSourceContext = detail.sourceContexts.find(
+        (item) => item.id === intent.sourceContextId,
+      );
+
+      if (matchedSourceContext) {
+        populateSourceContextForm(matchedSourceContext);
+      }
+    }
+
     const focusTarget =
-      intent?.focusArea === 'quick-actions' ? quickActionsRef.current : detailFormRef.current;
+      intent?.type === 'focus_source_context'
+        ? sourceContextSectionRef.current
+        : intent?.focusArea === 'quick-actions'
+          ? quickActionsRef.current
+          : detailFormRef.current;
 
     if (typeof focusTarget?.scrollIntoView === 'function') {
       focusTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1193,6 +1208,34 @@ export function TasksPage({
                       ))
                     ) : (
                       <p className="meta">当前任务还没有沉淀出 artifact。</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="transition-group detail-card-group" ref={sourceContextSectionRef}>
+                  <h3>Key Source Materials</h3>
+                  <div className="timeline-list">
+                    {detail.sourceContexts.length ? (
+                      detail.sourceContexts.slice(0, 2).map((item) => (
+                        <button
+                          className="task-card task-card-button task-card-muted"
+                          key={`key-source:${item.id}`}
+                          onClick={() => populateSourceContextForm(item)}
+                          type="button"
+                        >
+                          <div className="task-row">
+                            <strong>{item.title}</strong>
+                            <span className="signal-pill timeline-badge timeline-item-default">
+                              {formatSourceContextKind(item.kind)}
+                            </span>
+                          </div>
+                          {item.note ? <p className="meta">{item.note}</p> : null}
+                          {item.uri ? <p className="meta brief-preview">{item.uri}</p> : null}
+                          <p className="meta">最近更新：{item.updatedAt}</p>
+                        </button>
+                      ))
+                    ) : (
+                      <p className="meta">当前还没有关键来源材料。</p>
                     )}
                   </div>
                 </div>

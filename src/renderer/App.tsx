@@ -4,6 +4,7 @@ import type { ArtifactRecord } from '@shared/types/artifact';
 import type {
   HomeActivityRecord,
   HomeBriefData,
+  HomeSourceContextRecord,
   RecommendedActionIntent,
   RecommendedAction,
 } from '@shared/types/brief';
@@ -276,6 +277,15 @@ export function App() {
     });
   }
 
+  function handleOpenSourceContext(sourceContext: HomeSourceContextRecord) {
+    handleOpenTask(sourceContext.taskId, {
+      type: 'focus_source_context',
+      focusArea: 'detail',
+      sourceContextId: sourceContext.id,
+      prefillNextStep: `基于来源材料继续推进：${sourceContext.title}`,
+    });
+  }
+
   function handleOpenActivity(activity: HomeActivityRecord) {
     if (activity.sourceType === 'decision') {
       if (activity.status === 'approved') {
@@ -373,6 +383,7 @@ export function App() {
             onOpenActivity={handleOpenActivity}
             onOpenActivityObject={handleOpenActivityObject}
             onOpenArtifact={handleOpenArtifact}
+            onOpenSourceContext={handleOpenSourceContext}
             ping={ping}
             status={status}
           />

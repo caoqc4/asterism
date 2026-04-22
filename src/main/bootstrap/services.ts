@@ -36,6 +36,7 @@ const homeBriefService = new HomeBriefService(
   decisionRepository,
   runRepository,
   artifactRepository,
+  sourceContextRepository,
   briefSnapshotRepository,
   () => schedulerService,
   taskProcessBindingRepository,

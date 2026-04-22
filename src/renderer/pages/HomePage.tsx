@@ -1,4 +1,9 @@
-import type { HomeActivityRecord, HomeBriefData, RecommendedAction } from '@shared/types/brief';
+import type {
+  HomeActivityRecord,
+  HomeBriefData,
+  HomeSourceContextRecord,
+  RecommendedAction,
+} from '@shared/types/brief';
 import type { ArtifactRecord } from '@shared/types/artifact';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { PingResponse } from '@shared/types/ipc';
@@ -46,6 +51,7 @@ type HomePageProps = {
   onOpenActivity: (activity: HomeActivityRecord) => void;
   onOpenActivityObject: (activity: HomeActivityRecord) => void;
   onOpenArtifact: (artifact: ArtifactRecord) => void;
+  onOpenSourceContext: (sourceContext: HomeSourceContextRecord) => void;
 };
 
 export function HomePage({
@@ -57,6 +63,7 @@ export function HomePage({
   onOpenActivity,
   onOpenActivityObject,
   onOpenArtifact,
+  onOpenSourceContext,
 }: HomePageProps) {
   function openWaitingTask(task: HomeBriefData['waitingTasks'][number]) {
     onOpenAction({
@@ -235,6 +242,33 @@ export function HomePage({
             ))
           ) : (
             <p className="meta">当前还没有最近产物。</p>
+          )}
+        </div>
+      </article>
+
+      <article className="panel">
+        <h2>Key Source Materials</h2>
+        <div className="task-list">
+          {briefData?.recentSourceContexts.length ? (
+            briefData.recentSourceContexts.map((sourceContext) => (
+              <button
+                className="task-card task-card-button task-card-muted"
+                key={sourceContext.id}
+                onClick={() => onOpenSourceContext(sourceContext)}
+                type="button"
+              >
+                <div className="task-row">
+                  <strong>{sourceContext.title}</strong>
+                  <span className="status">{sourceContext.kind}</span>
+                </div>
+                <p className="meta">task: {sourceContext.taskTitle}</p>
+                {sourceContext.note ? <p className="meta">{sourceContext.note}</p> : null}
+                {sourceContext.uri ? <p className="meta brief-preview">{sourceContext.uri}</p> : null}
+                <p className="meta">最近更新：{sourceContext.updatedAt}</p>
+              </button>
+            ))
+          ) : (
+            <p className="meta">当前还没有关键来源材料。</p>
           )}
         </div>
       </article>
