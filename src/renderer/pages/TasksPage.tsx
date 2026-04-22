@@ -619,239 +619,271 @@ export function TasksPage({
               <button type="submit">保存详情</button>
             </form>
 
-            <div className="transition-group">
-              <h3>Task Signals</h3>
-              <div className="timeline-list">
-                <div className="timeline-item">
-                  <strong>Next Step</strong>
-                  <p className="meta">{detail.nextStep ?? '未填写'}</p>
+            <div className="transition-group detail-stage">
+              <div className="detail-stage-head">
+                <div>
+                  <p className="eyebrow">Current Snapshot</p>
+                  <h3>当前状态与对象</h3>
                 </div>
-                <div className="timeline-item">
-                  <strong>Waiting Reason</strong>
-                  <p className="meta">{detail.activeWaitingItem?.reason ?? detail.waitingReason ?? '未填写'}</p>
-                  {detail.activeWaitingItem ? (
-                    <p className="meta">
-                      waiting item · {detail.activeWaitingItem.status} · since {detail.activeWaitingItem.createdAt}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="timeline-item">
-                  <strong>Risk</strong>
-                  <p className="meta">
-                    {detail.riskLevel}
-                    {detail.riskNote ? ` · ${detail.riskNote}` : ''}
-                  </p>
-                </div>
+                <p className="meta">先看这条任务现在的信号、等待对象和已有产物。</p>
               </div>
-            </div>
-
-            {detail.activeWaitingItem ? (
-              <div className="transition-group">
-                <h3>Current Waiting Item</h3>
-                <div className="timeline-list">
-                  <div className="timeline-item timeline-item-waiting">
-                    <div className="task-row">
-                      <strong>{detail.activeWaitingItem.reason}</strong>
-                      <span className="signal-pill timeline-badge timeline-item-waiting">
-                        {detail.activeWaitingItem.status}
-                      </span>
+              <div className="detail-cluster-grid">
+                <div className="transition-group detail-card-group">
+                  <h3>Task Signals</h3>
+                  <div className="timeline-list">
+                    <div className="timeline-item">
+                      <strong>Next Step</strong>
+                      <p className="meta">{detail.nextStep ?? '未填写'}</p>
                     </div>
-                    <p className="meta">Started at {detail.activeWaitingItem.createdAt}</p>
-                    <p className="meta">Linked to the task&apos;s current waiting state.</p>
-                    {detail.state === 'waiting_external' ? (
-                      <button
-                        className="ghost-button timeline-action"
-                        onClick={() => void handleTransition('planned')}
-                        type="button"
-                      >
-                        解除等待
-                      </button>
-                    ) : null}
+                    <div className="timeline-item">
+                      <strong>Waiting Reason</strong>
+                      <p className="meta">{detail.activeWaitingItem?.reason ?? detail.waitingReason ?? '未填写'}</p>
+                      {detail.activeWaitingItem ? (
+                        <p className="meta">
+                          waiting item · {detail.activeWaitingItem.status} · since {detail.activeWaitingItem.createdAt}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="timeline-item">
+                      <strong>Risk</strong>
+                      <p className="meta">
+                        {detail.riskLevel}
+                        {detail.riskNote ? ` · ${detail.riskNote}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {detail.activeWaitingItem ? (
+                  <div className="transition-group detail-card-group">
+                    <h3>Current Waiting Item</h3>
+                    <div className="timeline-list">
+                      <div className="timeline-item timeline-item-waiting">
+                        <div className="task-row">
+                          <strong>{detail.activeWaitingItem.reason}</strong>
+                          <span className="signal-pill timeline-badge timeline-item-waiting">
+                            {detail.activeWaitingItem.status}
+                          </span>
+                        </div>
+                        <p className="meta">Started at {detail.activeWaitingItem.createdAt}</p>
+                        <p className="meta">Linked to the task&apos;s current waiting state.</p>
+                        {detail.state === 'waiting_external' ? (
+                          <button
+                            className="ghost-button timeline-action"
+                            onClick={() => void handleTransition('planned')}
+                            type="button"
+                          >
+                            解除等待
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="transition-group detail-card-group">
+                  <h3>Recent Artifacts</h3>
+                  <div className="timeline-list">
+                    {detail.artifacts.length ? (
+                      detail.artifacts.map((artifact) => (
+                        <div className="timeline-item timeline-item-next-step" key={artifact.id}>
+                          <div className="task-row">
+                            <strong>{artifact.title}</strong>
+                            <span className="signal-pill timeline-badge timeline-item-next-step">
+                              {artifact.kind}
+                            </span>
+                          </div>
+                          <p className="meta">
+                            source: {artifact.sourceType} · {artifact.sourceId}
+                          </p>
+                          <p className="meta brief-preview">{artifact.content}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="meta">当前任务还没有沉淀出 artifact。</p>
+                    )}
                   </div>
                 </div>
               </div>
-            ) : null}
-
-            <div className="transition-group">
-              <h3>Quick Actions</h3>
-              <div className="quick-actions-grid" ref={quickActionsRef}>
-                <form className="stack task-card quick-action-card" onSubmit={handleQuickDecision}>
-                  <strong>创建 Decision</strong>
-                  <label>
-                    决策标题
-                    <input
-                      value={quickDecisionTitle}
-                      onChange={(event) => setQuickDecisionTitle(event.target.value)}
-                    />
-                  </label>
-                  <button type="submit">提交 Decision</button>
-                </form>
-
-                <form className="stack task-card quick-action-card" onSubmit={handleQuickRun}>
-                  <strong>触发 Run</strong>
-                  <label>
-                    Run 类型
-                    <select
-                      value={quickRunType}
-                      onChange={(event) =>
-                        setQuickRunType(event.target.value as CreateRunInput['type'])
-                      }
-                    >
-                      <option value="draft">draft</option>
-                      <option value="summarize">summarize</option>
-                    </select>
-                  </label>
-                  <label>
-                    附加要求
-                    <textarea
-                      rows={3}
-                      value={quickRunInstructions}
-                      onChange={(event) => setQuickRunInstructions(event.target.value)}
-                    />
-                  </label>
-                  <button type="submit">触发 Run</button>
-                </form>
-              </div>
             </div>
 
-            <div className="transition-group">
-              <h3>Related Activity</h3>
-              <div className="related-grid">
-                <div className="timeline-list">
-                  <strong>Decisions</strong>
-                  {relatedDecisions.length ? (
-                    relatedDecisions.map((decision) => (
-                      <div className="timeline-item" key={decision.id}>
-                        <div className="task-row">
-                          <strong>{decision.title}</strong>
-                          <span className="status">{decision.status}</span>
-                        </div>
-                        <p className="meta">{decision.updatedAt}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="meta">当前任务还没有关联 decision。</p>
-                  )}
+            <div className="transition-group detail-stage">
+              <div className="detail-stage-head">
+                <div>
+                  <p className="eyebrow">Action Desk</p>
+                  <h3>动作与状态流转</h3>
+                </div>
+                <p className="meta">中间这一层只放推进任务的动作，避免和历史信息混在一起。</p>
+              </div>
+              <div className="detail-cluster-grid">
+                <div className="transition-group detail-card-group">
+                  <h3>Quick Actions</h3>
+                  <div className="quick-actions-grid" ref={quickActionsRef}>
+                    <form className="stack task-card quick-action-card" onSubmit={handleQuickDecision}>
+                      <strong>创建 Decision</strong>
+                      <label>
+                        决策标题
+                        <input
+                          value={quickDecisionTitle}
+                          onChange={(event) => setQuickDecisionTitle(event.target.value)}
+                        />
+                      </label>
+                      <button type="submit">提交 Decision</button>
+                    </form>
+
+                    <form className="stack task-card quick-action-card" onSubmit={handleQuickRun}>
+                      <strong>触发 Run</strong>
+                      <label>
+                        Run 类型
+                        <select
+                          value={quickRunType}
+                          onChange={(event) =>
+                            setQuickRunType(event.target.value as CreateRunInput['type'])
+                          }
+                        >
+                          <option value="draft">draft</option>
+                          <option value="summarize">summarize</option>
+                        </select>
+                      </label>
+                      <label>
+                        附加要求
+                        <textarea
+                          rows={3}
+                          value={quickRunInstructions}
+                          onChange={(event) => setQuickRunInstructions(event.target.value)}
+                        />
+                      </label>
+                      <button type="submit">触发 Run</button>
+                    </form>
+                  </div>
                 </div>
 
-                <div className="timeline-list">
-                  <strong>Recent Runs</strong>
-                  {relatedRuns.length ? (
-                    relatedRuns.map((run) => (
-                      <div className="timeline-item" key={run.id}>
-                        <div className="task-row">
-                          <strong>{run.type}</strong>
-                          <span className="status">{run.status}</span>
-                        </div>
-                        <p className="meta">
-                          {run.outputSource ? `来源：${run.outputSource}` : '来源：尚未产生'}
-                        </p>
-                        <p className="meta">{run.updatedAt}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="meta">当前任务还没有关联 run。</p>
-                  )}
+                <div className="transition-group detail-card-group">
+                  <h3>状态流转</h3>
+                  <div className="stack">
+                    <label>
+                      Waiting Transition Reason
+                      <input
+                        placeholder="例如：等待外部审批 / 客户回复 / 法务确认"
+                        value={transitionWaitingReason}
+                        onChange={(event) => {
+                          setTransitionWaitingReason(event.target.value);
+                          if (transitionError) {
+                            setTransitionError(null);
+                          }
+                        }}
+                      />
+                    </label>
+                    {transitionError ? <p className="meta">{transitionError}</p> : null}
+                  </div>
+                  <div className="chip-row">
+                    {transitionOptions[detail.state].length === 0 ? (
+                      <p className="meta">当前状态没有可用的下一步。</p>
+                    ) : (
+                      transitionOptions[detail.state].map((nextState) => (
+                        <button
+                          className="ghost-button"
+                          key={nextState}
+                          onClick={() => void handleTransition(nextState)}
+                          type="button"
+                        >
+                          转到 {nextState}
+                        </button>
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="transition-group">
-              <h3>Recent Artifacts</h3>
-              <div className="timeline-list">
-                {detail.artifacts.length ? (
-                  detail.artifacts.map((artifact) => (
-                    <div className="timeline-item timeline-item-next-step" key={artifact.id}>
-                      <div className="task-row">
-                        <strong>{artifact.title}</strong>
-                        <span className="signal-pill timeline-badge timeline-item-next-step">
-                          {artifact.kind}
-                        </span>
-                      </div>
-                      <p className="meta">
-                        source: {artifact.sourceType} · {artifact.sourceId}
-                      </p>
-                      <p className="meta brief-preview">{artifact.content}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="meta">当前任务还没有沉淀出 artifact。</p>
-                )}
+            <div className="transition-group detail-stage">
+              <div className="detail-stage-head">
+                <div>
+                  <p className="eyebrow">Activity Feed</p>
+                  <h3>关联活动与任务历史</h3>
+                </div>
+                <p className="meta">最后再看相关对象和 Timeline，更容易分清“当前”与“历史”。</p>
               </div>
-            </div>
 
-            <div className="transition-group">
-              <h3>状态流转</h3>
-              <div className="stack">
-                <label>
-                  Waiting Transition Reason
-                  <input
-                    placeholder="例如：等待外部审批 / 客户回复 / 法务确认"
-                    value={transitionWaitingReason}
-                    onChange={(event) => {
-                      setTransitionWaitingReason(event.target.value);
-                      if (transitionError) {
-                        setTransitionError(null);
-                      }
-                    }}
-                  />
-                </label>
-                {transitionError ? <p className="meta">{transitionError}</p> : null}
+              <div className="transition-group detail-card-group">
+                <h3>Related Activity</h3>
+                <div className="related-grid">
+                  <div className="timeline-list">
+                    <strong>Decisions</strong>
+                    {relatedDecisions.length ? (
+                      relatedDecisions.map((decision) => (
+                        <div className="timeline-item" key={decision.id}>
+                          <div className="task-row">
+                            <strong>{decision.title}</strong>
+                            <span className="status">{decision.status}</span>
+                          </div>
+                          <p className="meta">{decision.updatedAt}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="meta">当前任务还没有关联 decision。</p>
+                    )}
+                  </div>
+
+                  <div className="timeline-list">
+                    <strong>Recent Runs</strong>
+                    {relatedRuns.length ? (
+                      relatedRuns.map((run) => (
+                        <div className="timeline-item" key={run.id}>
+                          <div className="task-row">
+                            <strong>{run.type}</strong>
+                            <span className="status">{run.status}</span>
+                          </div>
+                          <p className="meta">
+                            {run.outputSource ? `来源：${run.outputSource}` : '来源：尚未产生'}
+                          </p>
+                          <p className="meta">{run.updatedAt}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="meta">当前任务还没有关联 run。</p>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="chip-row">
-                {transitionOptions[detail.state].length === 0 ? (
-                  <p className="meta">当前状态没有可用的下一步。</p>
-                ) : (
-                  transitionOptions[detail.state].map((nextState) => (
+
+              <div className="transition-group detail-card-group">
+                <div className="task-row">
+                  <h3>Timeline</h3>
+                  {detail.timeline.length > TIMELINE_PREVIEW_COUNT ? (
                     <button
-                      className="ghost-button"
-                      key={nextState}
-                      onClick={() => void handleTransition(nextState)}
+                      className="ghost-button timeline-toggle"
+                      onClick={() => setShowAllTimeline((current) => !current)}
                       type="button"
                     >
-                      转到 {nextState}
+                      {showAllTimeline ? '收起旧事件' : `展开全部 (${detail.timeline.length})`}
                     </button>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div className="transition-group">
-              <div className="task-row">
-                <h3>Timeline</h3>
-                {detail.timeline.length > TIMELINE_PREVIEW_COUNT ? (
-                  <button
-                    className="ghost-button timeline-toggle"
-                    onClick={() => setShowAllTimeline((current) => !current)}
-                    type="button"
-                  >
-                    {showAllTimeline ? '收起旧事件' : `展开全部 (${detail.timeline.length})`}
-                  </button>
-                ) : null}
-              </div>
-              <div className="timeline-list">
-                {visibleTimeline.map((event) => (
-                  <div className={`timeline-item ${getTimelineToneClass(event.type)}`} key={event.id}>
-                    <div className="task-row">
-                      <strong>{formatTimelineSummary(event)}</strong>
-                      <span
-                        className={`signal-pill timeline-badge ${getTimelineToneClass(event.type)}`}
-                      >
-                        {formatTimelineBadge(event.type)}
-                      </span>
+                  ) : null}
+                </div>
+                <div className="timeline-list">
+                  {visibleTimeline.map((event) => (
+                    <div className={`timeline-item ${getTimelineToneClass(event.type)}`} key={event.id}>
+                      <div className="task-row">
+                        <strong>{formatTimelineSummary(event)}</strong>
+                        <span
+                          className={`signal-pill timeline-badge ${getTimelineToneClass(event.type)}`}
+                        >
+                          {formatTimelineBadge(event.type)}
+                        </span>
+                      </div>
+                      <p className="meta">{event.createdAt}</p>
+                      {getTimelineActionLabel(event.type) ? (
+                        <button
+                          className="ghost-button timeline-action"
+                          onClick={() => handleTimelineAction(event)}
+                          type="button"
+                        >
+                          {getTimelineActionLabel(event.type)}
+                        </button>
+                      ) : null}
                     </div>
-                    <p className="meta">{event.createdAt}</p>
-                    {getTimelineActionLabel(event.type) ? (
-                      <button
-                        className="ghost-button timeline-action"
-                        onClick={() => handleTimelineAction(event)}
-                        type="button"
-                      >
-                        {getTimelineActionLabel(event.type)}
-                      </button>
-                    ) : null}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </>

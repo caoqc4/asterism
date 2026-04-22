@@ -296,6 +296,26 @@ button {
   margin-top: 24px;
 }
 
+.detail-stage {
+  padding-top: 6px;
+}
+
+.detail-stage-head {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.detail-cluster-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.detail-card-group {
+  margin-top: 0;
+}
+
 .chip-row {
   display: flex;
   flex-wrap: wrap;
@@ -446,7 +466,8 @@ textarea {
 
   .page-grid,
   .tasks-layout,
-  .metric-grid {
+  .metric-grid,
+  .detail-cluster-grid {
     grid-template-columns: 1fr;
   }
 }
