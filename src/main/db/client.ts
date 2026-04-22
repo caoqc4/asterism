@@ -11,9 +11,14 @@ const { app } = electron;
 
 let sqlite: Database.Database | null = null;
 let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
+let userDataPathOverride: string | null = null;
+
+function getUserDataPath(): string {
+  return userDataPathOverride ?? app.getPath('userData');
+}
 
 function ensureDatabaseFile(): string {
-  const userDataPath = app.getPath('userData');
+  const userDataPath = getUserDataPath();
   fs.mkdirSync(userDataPath, { recursive: true });
   const targetPath = path.join(userDataPath, 'taskplane.db');
   const legacyPath = path.join(userDataPath, 'supersecretary.db');
@@ -125,4 +130,9 @@ export function closeDatabase(): void {
     sqlite = null;
     db = null;
   }
+}
+
+export function setDatabaseUserDataPathForTests(nextPath: string | null): void {
+  closeDatabase();
+  userDataPathOverride = nextPath;
 }
