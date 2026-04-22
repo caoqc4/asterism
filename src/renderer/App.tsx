@@ -252,6 +252,15 @@ export function App() {
     });
   }
 
+  function handleOpenActivityObject(activity: HomeActivityRecord) {
+    if (activity.sourceType === 'decision') {
+      handleOpenDecision(activity.sourceId);
+      return;
+    }
+
+    handleOpenRun(activity.sourceId);
+  }
+
   function handleOpenDecision(decisionId: string) {
     setFocusedDecisionId(decisionId);
     setRoute('decisions');
@@ -295,6 +304,7 @@ export function App() {
             briefData={briefData}
             onOpenAction={handleOpenRecommendedAction}
             onOpenActivity={handleOpenActivity}
+            onOpenActivityObject={handleOpenActivityObject}
             onOpenArtifact={handleOpenArtifact}
             ping={ping}
             status={status}

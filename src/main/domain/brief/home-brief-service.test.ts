@@ -168,6 +168,7 @@ describe('HomeBriefService', () => {
     ]);
     expect(homeData.recentActivity[0]).toMatchObject({
       sourceType: 'decision',
+      sourceId: 'decision_2',
       taskTitle: 'task_1',
       status: 'approved',
     });

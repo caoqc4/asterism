@@ -243,6 +243,11 @@ button {
   cursor: pointer;
 }
 
+.task-card-button-shell {
+  padding: 0;
+  background: transparent;
+}
+
 .signal-row {
   display: flex;
   flex-wrap: wrap;

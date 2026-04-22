@@ -156,6 +156,7 @@ export class HomeBriefService {
       .map((decision) => ({
         id: `decision:${decision.id}`,
         sourceType: 'decision',
+        sourceId: decision.id,
         taskId: decision.taskId,
         taskTitle: taskTitleById.get(decision.taskId) ?? decision.taskId,
         title: decision.title,
@@ -168,6 +169,7 @@ export class HomeBriefService {
       .map((run) => ({
         id: `run:${run.id}`,
         sourceType: 'run',
+        sourceId: run.id,
         taskId: run.taskId,
         taskTitle: taskTitleById.get(run.taskId) ?? run.taskId,
         title: run.type,

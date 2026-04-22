@@ -181,6 +181,7 @@ describe('App UI flow', () => {
       {
         id: 'decision:decision_2',
         sourceType: 'decision',
+        sourceId: 'decision_2',
         taskId: riskTask.id,
         taskTitle: riskTask.title,
         title: 'Approve escalation path',
@@ -190,6 +191,7 @@ describe('App UI flow', () => {
       {
         id: 'run:run_1',
         sourceType: 'run',
+        sourceId: 'run_1',
         taskId: riskTask.id,
         taskTitle: riskTask.title,
         title: 'draft',
@@ -205,6 +207,18 @@ describe('App UI flow', () => {
       lastRunSweepAt: null,
     },
   };
+
+  const decisions: DecisionRecord[] = [
+    briefData.pendingDecisions[0]!,
+    {
+      id: 'decision_2',
+      taskId: riskTask.id,
+      title: 'Approve escalation path',
+      status: 'approved',
+      createdAt: '2026-01-01T00:30:00.000Z',
+      updatedAt: '2026-01-01T01:00:00.000Z',
+    },
+  ];
 
   const runs: RunRecord[] = [
     buildRunRecord({
@@ -247,12 +261,12 @@ describe('App UI flow', () => {
     getTaskDetail: vi.fn(async (taskId: string) => taskDetails[taskId] ?? null),
     updateTask: vi.fn(),
     transitionTask: vi.fn(),
-    listDecisions: vi.fn().mockResolvedValue(briefData.pendingDecisions),
+    listDecisions: vi.fn().mockResolvedValue(decisions),
     createDecision: vi.fn().mockResolvedValue(createdDecision),
     actOnDecision: vi.fn(),
     getHomeBrief: vi.fn().mockResolvedValue(briefData),
     listRuns: vi.fn().mockResolvedValue(runs),
-    getRunDetail: vi.fn(),
+    getRunDetail: vi.fn(async (runId: string) => runs.find((run) => run.id === runId) ?? null),
     triggerRun: vi.fn().mockResolvedValue(createdRun),
     subscribeToEvents: vi.fn().mockImplementation(() => () => {}),
   };
@@ -511,6 +525,33 @@ describe('App UI flow', () => {
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
       '已获批准，继续推进：Approve escalation path',
     );
+  });
+
+  it('opens decision and run objects directly from home recent activity', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    const viewDecisionButton = await screen.findByRole('button', { name: '查看 Decision' });
+    await user.click(viewDecisionButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Approve escalation path' })).toBeTruthy();
+    });
+
+    expect(window.location.hash).toBe('#decisions');
+
+    await user.click(screen.getByRole('button', { name: /home/i }));
+
+    const viewRunButton = await screen.findByRole('button', { name: '查看 Run' });
+    await user.click(viewRunButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'draft / failed' })).toBeTruthy();
+    });
+
+    expect(window.location.hash).toBe('#runs');
+    expect(screen.getByText('Executor exploded')).toBeTruthy();
   });
 
   it('prefills next step and run input from artifact timeline suggestions', async () => {
