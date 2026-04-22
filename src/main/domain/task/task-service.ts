@@ -57,7 +57,13 @@ export class TaskService {
       throw new Error('Waiting reason is required when transitioning to waiting_external');
     }
 
-    return this.repository.transition(input);
+    return this.repository.transition({
+      ...input,
+      waitingReason:
+        input.nextState === 'waiting_external'
+          ? input.waitingReason ?? detail.waitingReason
+          : null,
+    });
   }
 
   async transitionIfAllowed(id: string, nextState: TaskState): Promise<TaskRecord | null> {
@@ -88,7 +94,11 @@ export class TaskService {
       return null;
     }
 
-    return this.repository.transition({ id, nextState });
+    return this.repository.transition({
+      id,
+      nextState,
+      waitingReason: nextState === 'waiting_external' ? detail.waitingReason : null,
+    });
   }
 
   async annotateDecisionCancelled(taskId: string, decisionTitle: string): Promise<TaskRecord> {

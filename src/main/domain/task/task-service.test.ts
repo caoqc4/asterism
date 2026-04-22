@@ -19,6 +19,13 @@ function buildDetail(state: TaskDetail['state']): TaskDetail {
   };
 }
 
+function buildWaitingDetail(state: TaskDetail['state']): TaskDetail {
+  return {
+    ...buildDetail(state),
+    waitingReason: 'Waiting for external approval',
+  };
+}
+
 function buildRecord(state: TaskRecord['state']): TaskRecord {
   return {
     id: 'task_1',
@@ -53,6 +60,7 @@ describe('TaskService', () => {
     expect(repository.transition).toHaveBeenCalledWith({
       id: 'task_1',
       nextState: 'running',
+      waitingReason: null,
     });
     expect(result.state).toBe('running');
   });
@@ -93,6 +101,32 @@ describe('TaskService', () => {
       }),
     ).rejects.toThrow('Waiting reason is required when transitioning to waiting_external');
     expect(repository.transition).not.toHaveBeenCalled();
+  });
+
+  it('clears waiting reason when transitioning out of waiting_external', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildWaitingDetail('waiting_external')),
+      update: vi.fn(),
+      transition: vi.fn().mockResolvedValue({
+        ...buildRecord('planned'),
+        waitingReason: null,
+      }),
+    };
+    const service = new TaskService(repository as never);
+
+    const result = await service.transition({
+      id: 'task_1',
+      nextState: 'planned',
+    });
+
+    expect(repository.transition).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextState: 'planned',
+      waitingReason: null,
+    });
+    expect(result.waitingReason).toBeNull();
   });
 
   it('throws when the task does not exist', async () => {

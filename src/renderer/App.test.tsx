@@ -879,6 +879,95 @@ describe('App UI flow', () => {
     expect(screen.getAllByText('Waiting on stakeholder approval').length).toBeGreaterThan(0);
   });
 
+  it('clears waiting signals after a task leaves waiting_external', async () => {
+    const user = userEvent.setup();
+
+    let currentTasks: TaskRecord[] = [waitingTask, riskTask];
+    let currentTaskDetails: Record<string, TaskDetail> = {
+      [waitingTask.id]: buildTaskDetail(waitingTask),
+      [riskTask.id]: buildTaskDetail(riskTask),
+    };
+    let currentBriefData: HomeBriefData = {
+      ...briefData,
+      waitingTaskCount: 1,
+      waitingTasks: [waitingTask],
+      recommendedActions: [
+        {
+          id: `waiting:${waitingTask.id}`,
+          label: `跟进等待中的任务：${waitingTask.title}`,
+          reason: waitingTask.waitingReason ?? 'Waiting',
+          taskId: waitingTask.id,
+          priority: 'medium',
+        },
+      ],
+    };
+
+    const eventingApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn(async () => currentTasks),
+      getTaskDetail: vi.fn(async (taskId: string) => currentTaskDetails[taskId] ?? null),
+      getHomeBrief: vi.fn(async () => currentBriefData),
+      transitionTask: vi.fn().mockImplementation(async ({ id, nextState }) => {
+        const updatedTask = buildTaskRecord({
+          ...waitingTask,
+          id,
+          state: nextState,
+          waitingReason: null,
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        });
+
+        currentTasks = currentTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task));
+        currentTaskDetails = {
+          ...currentTaskDetails,
+          [updatedTask.id]: buildTaskDetail(updatedTask),
+        };
+        currentBriefData = {
+          ...currentBriefData,
+          waitingTaskCount: 0,
+          waitingTasks: [],
+          recentTasks: [updatedTask, riskTask],
+          recommendedActions: [
+            {
+              id: `risk:${riskTask.id}`,
+              label: `优先处理高风险任务：${riskTask.title}`,
+              reason: 'Deadline slipping',
+              taskId: riskTask.id,
+              priority: 'high',
+            },
+          ],
+        };
+
+        return updatedTask;
+      }),
+    };
+
+    window.api = eventingApi;
+
+    render(<App />);
+
+    await screen.findByRole('button', { name: /跟进等待中的任务：Waiting task/i });
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /waiting task/i }));
+    await screen.findByRole('heading', { name: 'Waiting task' });
+    await user.click(screen.getByRole('button', { name: '转到 planned' }));
+
+    await waitFor(() => {
+      expect(eventingApi.transitionTask).toHaveBeenCalledWith({
+        id: waitingTask.id,
+        nextState: 'planned',
+        waitingReason: undefined,
+      });
+    });
+
+    await user.click(screen.getByRole('button', { name: /home/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('当前没有等待中任务。')).toBeTruthy();
+    });
+
+    expect(screen.queryByRole('button', { name: /跟进等待中的任务：Waiting task/i })).toBeNull();
+  });
+
   it('blocks waiting transitions in the UI until a waiting reason is provided', async () => {
     const user = userEvent.setup();
 
