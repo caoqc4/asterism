@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 
 import type { ArtifactRecord } from '@shared/types/artifact';
-import type { HomeBriefData, RecommendedActionIntent, RecommendedAction } from '@shared/types/brief';
+import type {
+  HomeActivityRecord,
+  HomeBriefData,
+  RecommendedActionIntent,
+  RecommendedAction,
+} from '@shared/types/brief';
 import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
 import type { AppEvent } from '@shared/types/events';
 import type { PingResponse } from '@shared/types/ipc';
@@ -204,6 +209,49 @@ export function App() {
     });
   }
 
+  function handleOpenActivity(activity: HomeActivityRecord) {
+    if (activity.sourceType === 'decision') {
+      if (activity.status === 'approved') {
+        handleOpenTask(activity.taskId, {
+          type: 'focus_next_step',
+          focusArea: 'detail',
+          prefillNextStep: `已获批准，继续推进：${activity.title}`,
+        });
+        return;
+      }
+
+      if (activity.status === 'deferred') {
+        handleOpenTask(activity.taskId, {
+          type: 'focus_waiting_follow_up',
+          focusArea: 'detail',
+          prefillNextStep: '跟进该决策是否可以恢复拍板，或准备替代推进路径。',
+        });
+        return;
+      }
+
+      handleOpenTask(activity.taskId, {
+        type: 'open_task',
+        focusArea: 'quick-actions',
+      });
+      return;
+    }
+
+    if (activity.status === 'failed') {
+      handleOpenTask(activity.taskId, {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+        prefillNextStep: `检查最近一次 ${activity.title} run 的失败原因，并决定是否重试。`,
+      });
+      return;
+    }
+
+    handleOpenTask(activity.taskId, {
+      type: 'focus_next_step',
+      focusArea: 'detail',
+      prefillNextStep: `审阅最近一次 ${activity.title} run 的结果，并决定是否继续推进。`,
+    });
+  }
+
   function handleOpenDecision(decisionId: string) {
     setFocusedDecisionId(decisionId);
     setRoute('decisions');
@@ -246,6 +294,7 @@ export function App() {
             aiStatus={aiStatus}
             briefData={briefData}
             onOpenAction={handleOpenRecommendedAction}
+            onOpenActivity={handleOpenActivity}
             onOpenArtifact={handleOpenArtifact}
             ping={ping}
             status={status}

@@ -1,4 +1,4 @@
-import type { HomeBriefData, RecommendedAction } from '@shared/types/brief';
+import type { HomeActivityRecord, HomeBriefData, RecommendedAction } from '@shared/types/brief';
 import type { ArtifactRecord } from '@shared/types/artifact';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { PingResponse } from '@shared/types/ipc';
@@ -23,6 +23,7 @@ type HomePageProps = {
   aiStatus: AiConfigStatus | null;
   briefData: HomeBriefData | null;
   onOpenAction: (action: RecommendedAction) => void;
+  onOpenActivity: (activity: HomeActivityRecord) => void;
   onOpenArtifact: (artifact: ArtifactRecord) => void;
 };
 
@@ -32,6 +33,7 @@ export function HomePage({
   aiStatus,
   briefData,
   onOpenAction,
+  onOpenActivity,
   onOpenArtifact,
 }: HomePageProps) {
   function openWaitingTask(task: HomeBriefData['waitingTasks'][number]) {
@@ -220,14 +222,19 @@ export function HomePage({
         <div className="task-list">
           {briefData?.recentActivity?.length ? (
             briefData.recentActivity.map((event) => (
-              <div className="task-card" key={event.id}>
+              <button
+                className="task-card task-card-button"
+                key={event.id}
+                onClick={() => onOpenActivity(event)}
+                type="button"
+              >
                 <div className="task-row">
                   <strong>{event.sourceType === 'decision' ? event.title : `${event.title} run`}</strong>
                   <span className="status">{event.status}</span>
                 </div>
                 <p className="meta">task: {event.taskTitle}</p>
                 <p className="meta">{event.updatedAt}</p>
-              </div>
+              </button>
             ))
           ) : (
             <p className="meta">最近没有关键决策或执行动态。</p>

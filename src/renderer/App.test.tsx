@@ -493,6 +493,26 @@ describe('App UI flow', () => {
     );
   });
 
+  it('opens recent activity from home with follow-up guidance', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    const activityButton = await screen.findByRole('button', {
+      name: /Approve escalation path.*approved.*task: High risk task/i,
+    });
+
+    await user.click(activityButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '已获批准，继续推进：Approve escalation path',
+    );
+  });
+
   it('prefills next step and run input from artifact timeline suggestions', async () => {
     const user = userEvent.setup();
 
