@@ -122,7 +122,7 @@ What exists today:
 - structured task signals: `nextStep`, `waitingReason`, `riskLevel`, `riskNote`
 - home brief organized around recommended actions, recent artifacts, recent brief snapshots, and key signals, with direct intent-aware entry into task follow-up work
 - task detail organized into a current snapshot, action desk, and activity feed
-- task detail with quick actions, related decisions/runs, active waiting items, recent artifacts, and a task-lifecycle timeline with lightweight suggested actions
+- task detail acting as a task work surface, with quick actions, active waiting items, recent artifacts, related decisions/runs, and a task-lifecycle timeline with lightweight suggested actions
 - task-side objects now established: active `waiting items` and text `artifacts`
 - config + keychain setup
 - service tests and SQLite repository integration coverage

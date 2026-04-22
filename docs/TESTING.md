@@ -100,6 +100,7 @@ Covered today:
 - `Home key signals -> Tasks detail follow-up intent`
 - `Tasks quick decision submission`
 - `Tasks quick run submission`
+- `Tasks related activity -> Decisions / Runs`
 - `Settings save flow`
 - `waiting item` visibility and direct resolution
 - `Decision cancel -> task signal refresh`
