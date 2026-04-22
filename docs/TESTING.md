@@ -7,6 +7,7 @@ Taskplane currently uses a layered testing strategy:
 - service-level unit tests for domain and config logic
 - SQLite-backed integration tests for repository behavior
 - renderer `jsdom` interaction tests for key control-plane flows
+- IPC handler tests for event-emitting main-process entrypoints
 - GitHub Actions CI for `test + lint + build`
 
 Current test files:
@@ -20,6 +21,8 @@ Current test files:
 - `src/main/db/repositories/task-repository.integration.test.ts`
 - `src/main/db/repositories/run-repository.integration.test.ts`
 - `src/main/db/repositories/decision-repository.integration.test.ts`
+- `src/main/db/repositories/brief-snapshot-repository.integration.test.ts`
+- `src/main/ipc/handlers.test.ts`
 - `src/renderer/App.test.tsx`
 
 ## Coverage Map
@@ -53,8 +56,23 @@ Covered today:
   run creation, result persistence, stale run queries
 - `DecisionRepository`
   decision creation, action persistence, timeline writes
+- `BriefSnapshotRepository`
+  source persistence, fallback reasons, recent ordering, and limit behavior
 
 These tests verify real SQLite behavior rather than mocked repository calls.
+
+### IPC handler tests
+
+Covered today:
+
+- `settings:setAiConfig`
+  config writes, scheduler start/stop decisions, `settings.changed`
+- `decision:act`
+  decision action routing plus `decision.changed` and `task.changed`
+- `run:trigger`
+  run trigger routing plus `run.changed`, `task.changed`, and `brief.changed`
+
+These tests protect the main-process edge where renderer calls become domain actions and event broadcasts.
 
 ### Renderer interaction tests
 
@@ -63,10 +81,12 @@ Covered today:
 - `Home recommended action -> Tasks detail`
 - `Tasks quick decision submission`
 - `Tasks quick run submission`
+- `Settings save flow`
 - `Decision cancel -> task signal refresh`
 - `Run failed -> task signal refresh`
 - `Decision action -> Home brief refresh`
 - `Run failed -> Home brief refresh`
+- `Task transition -> Home signal refresh`
 
 These tests focus on high-value control-plane interactions rather than broad page rendering snapshots.
 
@@ -74,12 +94,10 @@ These tests focus on high-value control-plane interactions rather than broad pag
 
 Still missing or intentionally light:
 
-- renderer coverage for `Settings` interactions
 - renderer coverage for `Runs` page detail inspection
-- renderer coverage for explicit task state transitions from the UI
-- repository integration coverage for `brief snapshots`
-- IPC handler-focused tests
 - preload bridge contract tests
+- renderer coverage for more explicit `Runs` page state changes
+- finer Home scheduler-state refresh assertions
 - end-to-end packaged-app tests
 
 ## Current Quality Gates
@@ -101,9 +119,9 @@ GitHub Actions runs the same checks on:
 
 Recommended next additions:
 
-1. `BriefSnapshotRepository` integration test
-2. renderer test for task state transition affecting Home signals
-3. renderer test for Settings save and scheduler toggle flow
-4. a small IPC-focused test slice for critical handlers
+1. renderer test for `Runs` page detail and refresh behavior
+2. preload bridge contract tests
+3. IPC coverage for one or two additional task-oriented handlers
+4. a small packaged-app or smoke-style end-to-end verification path
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

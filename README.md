@@ -121,6 +121,7 @@ What exists today:
 - task detail with quick actions plus related decisions and runs
 - config + keychain setup
 - service tests and SQLite repository integration coverage
+- IPC handler coverage for critical event-emitting entrypoints
 - renderer interaction coverage for key control-plane flows
 - local macOS packaging pipeline
 - GitHub Actions CI for `test + lint + build`
