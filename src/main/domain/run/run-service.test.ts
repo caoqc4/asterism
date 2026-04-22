@@ -163,6 +163,7 @@ describe('RunService', () => {
     expect(processTemplateSelector.select).toHaveBeenCalled();
     expect(taskService.annotateProcessTemplateSelected).toHaveBeenCalledWith(
       'task_1',
+      'run',
       'run_1',
       ['process_template_1'],
       ['Outreach skill'],
@@ -270,6 +271,7 @@ describe('RunService', () => {
 
     expect(taskService.annotateProcessTemplateSkipped).toHaveBeenCalledWith(
       'task_1',
+      'run',
       'run_1',
       '当前无明显匹配模板。',
       0,
@@ -398,6 +400,7 @@ describe('RunService', () => {
     expect(artifactRepository.createFromRun).toHaveBeenCalled();
     expect(taskService.annotateProcessTemplateSkipped).toHaveBeenCalledWith(
       'task_1',
+      'run',
       'run_1',
       'process template selector 不可用：selector unavailable',
       1,

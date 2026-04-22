@@ -29,6 +29,7 @@ const { handleMock, emitAppEventMock, servicesMock } = vi.hoisted(() => ({
     },
     decisionService: {
       list: vi.fn(),
+      draft: vi.fn(),
       create: vi.fn(),
       act: vi.fn(),
     },
@@ -145,6 +146,35 @@ describe('registerIpcHandlers', () => {
     expect(emitAppEventMock).toHaveBeenNthCalledWith(1, 'decision.changed', 'decision_1');
     expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
     expect(result.status).toBe('cancelled');
+  });
+
+  it('routes decision drafts without emitting entity-change events', async () => {
+    servicesMock.decisionService.draft.mockResolvedValue({
+      taskId: 'task_1',
+      title: 'Approve launch note',
+      rationale: 'Current task needs explicit stakeholder approval.',
+      source: 'ai',
+      selectedTemplateIds: ['process_template_1'],
+      selectedTemplateTitles: ['Approval skill'],
+      selectionReason: 'This task is awaiting stakeholder sign-off.',
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; note?: string | null }],
+      Awaited<ReturnType<typeof servicesMock.decisionService.draft>>
+    >('decision:draft');
+
+    const result = await handler({}, {
+      taskId: 'task_1',
+      note: 'Need stakeholder sign-off',
+    });
+
+    expect(servicesMock.decisionService.draft).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      note: 'Need stakeholder sign-off',
+    });
+    expect(emitAppEventMock).not.toHaveBeenCalled();
+    expect(result.title).toBe('Approve launch note');
   });
 
   it('emits task.changed after source context writes', async () => {

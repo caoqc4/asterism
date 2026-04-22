@@ -437,13 +437,15 @@ export class TaskService {
 
   async annotateProcessTemplateSelected(
     taskId: string,
-    runId: string,
+    sourceType: 'run' | 'decision_draft',
+    sourceId: string,
     templateIds: string[],
     titles: string[],
     reason: string,
   ): Promise<void> {
     await this.repository.appendTimelineEvent(taskId, 'process_template.selected', {
-      runId,
+      sourceType,
+      sourceId,
       templateIds,
       titles,
       reason,
@@ -452,12 +454,14 @@ export class TaskService {
 
   async annotateProcessTemplateSkipped(
     taskId: string,
-    runId: string,
+    sourceType: 'run' | 'decision_draft',
+    sourceId: string,
     reason: string,
     candidateCount: number,
   ): Promise<void> {
     await this.repository.appendTimelineEvent(taskId, 'process_template.skipped', {
-      runId,
+      sourceType,
+      sourceId,
       reason,
       candidateCount,
     });

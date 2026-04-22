@@ -80,7 +80,11 @@ const services = {
   schedulerService,
 };
 
-services.decisionService = new DecisionService(decisionRepository, services.taskService);
+services.decisionService = new DecisionService(
+  decisionRepository,
+  services.taskService,
+  aiConfigService,
+);
 services.runService = new RunService(
   runRepository,
   services.taskService,

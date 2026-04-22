@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import type { RecommendedActionIntent } from '@shared/types/brief';
-import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
+import type { CreateDecisionInput, DecisionDraftRecord, DecisionRecord } from '@shared/types/decision';
 import type { TaskDetail, TaskRecord, TimelineEventRecord } from '@shared/types/task';
 
 const RELATED_TIMELINE_PREVIEW_COUNT = 4;
@@ -93,6 +93,7 @@ type DecisionsPageProps = {
   tasks: TaskRecord[];
   onOpenTask: (taskId: string, intent: RecommendedActionIntent) => void;
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
+  onDraftDecision: (taskId: string, note?: string | null) => Promise<DecisionDraftRecord>;
   onAct: (id: string, action: 'approve' | 'defer' | 'cancel') => Promise<void>;
   onDecisionFocusConsumed: () => void;
 };
@@ -103,6 +104,7 @@ export function DecisionsPage({
   tasks,
   onOpenTask,
   onCreateDecision,
+  onDraftDecision,
   onAct,
   onDecisionFocusConsumed,
 }: DecisionsPageProps) {
@@ -114,6 +116,8 @@ export function DecisionsPage({
     taskId: tasks[0]?.id ?? '',
     title: '',
   });
+  const [draftNote, setDraftNote] = useState('');
+  const [draftRationale, setDraftRationale] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selectedDecisionId && decisions[0]) {
@@ -322,6 +326,36 @@ export function DecisionsPage({
                 onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
               />
             </label>
+            <label>
+              拍板背景
+              <textarea
+                rows={3}
+                value={draftNote}
+                onChange={(event) => setDraftNote(event.target.value)}
+              />
+            </label>
+            {draftRationale ? <p className="meta">{draftRationale}</p> : null}
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={async () => {
+                if (!form.taskId) {
+                  return;
+                }
+
+                const draft = await onDraftDecision(form.taskId, draftNote.trim() || null);
+                setForm((current) => ({ ...current, title: draft.title }));
+                setDraftRationale(
+                  `${draft.source === 'ai' ? 'AI 草拟' : 'Fallback 草拟'}：${draft.rationale}${
+                    draft.selectedTemplateTitles.length
+                      ? ` | 模板：${draft.selectedTemplateTitles.join('、')}`
+                      : ''
+                  }`,
+                );
+              }}
+            >
+              草拟 Decision
+            </button>
             <button type="submit">创建 Decision</button>
           </form>
         </div>

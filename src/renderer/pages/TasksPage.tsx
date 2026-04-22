@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type { RecommendedActionIntent } from '@shared/types/brief';
-import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
+import type { CreateDecisionInput, DecisionDraftRecord, DecisionRecord } from '@shared/types/decision';
 import type {
   ApplyProcessTemplateInput,
   AppliedProcessTemplateRecord,
@@ -265,10 +265,14 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
       return `挂载方法模板：${formatValue(payload?.title)} [${formatValue(payload?.kind)}]`;
     case 'process_template.removed':
       return `移除方法模板：${formatValue(payload?.title)} [${formatValue(payload?.kind)}]`;
-    case 'process_template.selected':
-      return `本次执行选择方法模板：${formatValue((payload?.titles as string[] | undefined)?.join('、'))}；原因：${formatValue(payload?.reason)}`;
-    case 'process_template.skipped':
-      return `本次执行未调用方法模板；原因：${formatValue(payload?.reason)}`;
+    case 'process_template.selected': {
+      const sourceType = payload?.sourceType === 'decision_draft' ? '决策草拟' : '执行';
+      return `本次${sourceType}选择方法模板：${formatValue((payload?.titles as string[] | undefined)?.join('、'))}；原因：${formatValue(payload?.reason)}`;
+    }
+    case 'process_template.skipped': {
+      const sourceType = payload?.sourceType === 'decision_draft' ? '决策草拟' : '执行';
+      return `本次${sourceType}未调用方法模板；原因：${formatValue(payload?.reason)}`;
+    }
     case 'task.risk_changed': {
       const from = (payload?.from as Record<string, unknown> | undefined) ?? {};
       const to = (payload?.to as Record<string, unknown> | undefined) ?? {};
@@ -344,6 +348,7 @@ type TasksPageProps = {
   onApplyProcessTemplate: (input: ApplyProcessTemplateInput) => Promise<AppliedProcessTemplateRecord>;
   onArchiveProcessTemplate: (id: string) => Promise<ProcessTemplateRecord>;
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
+  onDraftDecision: (taskId: string, note?: string | null) => Promise<DecisionDraftRecord>;
   onCreateProcessTemplate: (input: CreateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
   onCreateSourceContext: (input: CreateSourceContextInput) => Promise<SourceContextRecord>;
   onArchiveSourceContext: (id: string) => Promise<SourceContextRecord>;
@@ -372,6 +377,7 @@ export function TasksPage({
   onApplyProcessTemplate,
   onArchiveProcessTemplate,
   onCreateDecision,
+  onDraftDecision,
   onCreateProcessTemplate,
   onCreateSourceContext,
   onArchiveSourceContext,
@@ -397,6 +403,8 @@ export function TasksPage({
   const [draftRiskLevel, setDraftRiskLevel] = useState<TaskRiskLevel>('none');
   const [draftRiskNote, setDraftRiskNote] = useState('');
   const [quickDecisionTitle, setQuickDecisionTitle] = useState('');
+  const [quickDecisionNote, setQuickDecisionNote] = useState('');
+  const [quickDecisionRationale, setQuickDecisionRationale] = useState<string | null>(null);
   const [quickRunType, setQuickRunType] = useState<CreateRunInput['type']>('draft');
   const [quickRunInstructions, setQuickRunInstructions] = useState('');
   const [transitionWaitingReason, setTransitionWaitingReason] = useState('');
@@ -527,6 +535,8 @@ export function TasksPage({
         setQuickDecisionTitle(
           nextDetail ? `${nextDetail.title} 需要拍板` : '',
         );
+        setQuickDecisionNote(nextDetail?.nextStep ?? '');
+        setQuickDecisionRationale(null);
         setQuickRunInstructions(nextDetail?.nextStep ?? nextDetail?.summary ?? '');
       }
     }
@@ -608,7 +618,25 @@ export function TasksPage({
       taskId: detail.id,
       title: quickDecisionTitle.trim(),
     });
+    setQuickDecisionTitle(`${detail.title} 需要拍板`);
+    setQuickDecisionRationale(null);
     await onRefresh();
+  }
+
+  async function handleDraftQuickDecision() {
+    if (!detail) {
+      return;
+    }
+
+    const draft = await onDraftDecision(detail.id, quickDecisionNote.trim() || null);
+    setQuickDecisionTitle(draft.title);
+    setQuickDecisionRationale(
+      `${draft.source === 'ai' ? 'AI 草拟' : 'Fallback 草拟'}：${draft.rationale}${
+        draft.selectedTemplateTitles.length
+          ? ` | 模板：${draft.selectedTemplateTitles.join('、')}`
+          : ''
+      }`,
+    );
   }
 
   async function handleQuickRun(event: React.FormEvent<HTMLFormElement>) {
@@ -1456,6 +1484,18 @@ export function TasksPage({
                           onChange={(event) => setQuickDecisionTitle(event.target.value)}
                         />
                       </label>
+                      <label>
+                        拍板背景
+                        <textarea
+                          rows={3}
+                          value={quickDecisionNote}
+                          onChange={(event) => setQuickDecisionNote(event.target.value)}
+                        />
+                      </label>
+                      {quickDecisionRationale ? <p className="meta">{quickDecisionRationale}</p> : null}
+                      <button type="button" className="ghost-button" onClick={() => void handleDraftQuickDecision()}>
+                        草拟 Decision
+                      </button>
                       <button type="submit">提交 Decision</button>
                     </form>
 

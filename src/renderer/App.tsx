@@ -7,7 +7,7 @@ import type {
   RecommendedActionIntent,
   RecommendedAction,
 } from '@shared/types/brief';
-import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
+import type { CreateDecisionInput, DecisionDraftRecord, DecisionRecord } from '@shared/types/decision';
 import type { AppEvent } from '@shared/types/events';
 import type { PingResponse } from '@shared/types/ipc';
 import type {
@@ -224,6 +224,13 @@ export function App() {
     setBriefData(await window.api.getHomeBrief());
   }
 
+  async function handleDraftDecision(taskId: string, note?: string | null): Promise<DecisionDraftRecord> {
+    return window.api.draftDecision({
+      taskId,
+      note,
+    });
+  }
+
   async function handleDecisionAction(
     id: string,
     action: 'approve' | 'defer' | 'cancel',
@@ -379,6 +386,7 @@ export function App() {
             onApplyProcessTemplate={handleApplyProcessTemplate}
             onArchiveProcessTemplate={handleArchiveProcessTemplate}
             onCreateDecision={handleCreateDecision}
+            onDraftDecision={handleDraftDecision}
             onCreateProcessTemplate={handleCreateProcessTemplate}
             onCreateTask={handleCreateTask}
             onCreateSourceContext={handleCreateSourceContext}
@@ -403,6 +411,7 @@ export function App() {
             onOpenTask={handleOpenTask}
             onAct={handleDecisionAction}
             onCreateDecision={handleCreateDecision}
+            onDraftDecision={handleDraftDecision}
             onDecisionFocusConsumed={() => setFocusedDecisionId(null)}
           />
         ) : null}

@@ -51,6 +51,7 @@ function getExposedApi() {
     applyProcessTemplate: (input: unknown) => Promise<unknown>;
     removeProcessTemplate: (bindingId: string) => Promise<unknown>;
     listDecisions: () => Promise<unknown>;
+    draftDecision: (input: unknown) => Promise<unknown>;
     createDecision: (input: unknown) => Promise<unknown>;
     actOnDecision: (input: unknown) => Promise<unknown>;
     getHomeBrief: () => Promise<unknown>;
@@ -111,6 +112,7 @@ describe('preload bridge', () => {
       templateId: 'process_template_1',
     };
     const createDecisionInput = { taskId: 'task_1', title: 'Approve launch note' };
+    const draftDecisionInput = { taskId: 'task_1', note: 'Need stakeholder sign-off' };
     const decisionActionInput = { id: 'decision_1', action: 'approve' };
     const createRunInput = { taskId: 'task_1', type: 'summarize', instructions: 'Summarize blockers' };
 
@@ -131,6 +133,7 @@ describe('preload bridge', () => {
     await api.applyProcessTemplate(applyProcessTemplateInput);
     await api.removeProcessTemplate('task_process_binding_1');
     await api.listDecisions();
+    await api.draftDecision(draftDecisionInput);
     await api.createDecision(createDecisionInput);
     await api.actOnDecision(decisionActionInput);
     await api.getHomeBrief();
@@ -156,6 +159,7 @@ describe('preload bridge', () => {
       ['processTemplate:apply', applyProcessTemplateInput],
       ['processTemplate:remove', 'task_process_binding_1'],
       ['decision:list'],
+      ['decision:draft', draftDecisionInput],
       ['decision:create', createDecisionInput],
       ['decision:act', decisionActionInput],
       ['brief:getHomeData'],

@@ -42,7 +42,7 @@ Covered today:
 - `TaskService`
   transitions, invalid transitions, signal updates, decision annotations, and run-settlement annotations
 - `DecisionService`
-  task existence checks plus decision-to-task lifecycle linkage
+  task existence checks, decision-to-task lifecycle linkage, and AI/fallback decision-draft composition
 - `RunService`
   successful execution path, failure path, task restoration after settled runs, artifact creation on successful output, and process-template selector behavior
 - `HomeBriefService`
@@ -117,6 +117,7 @@ Covered today:
 - `Tasks timeline -> Decisions / Runs`
 - `Tasks source context create / edit flow`
 - `Tasks process context create / apply / remove flow`
+- `Tasks quick decision draft flow`
 - `Decisions` page current-focus and queue navigation
 - `Decisions / Runs -> Tasks` follow-up return flows
 - `Decisions / Runs` related-task timeline context

@@ -78,6 +78,7 @@ export class RunService {
       if (selection.shouldUse) {
         await this.taskService.annotateProcessTemplateSelected(
           input.taskId,
+          'run',
           created.id,
           selection.selectedTemplates.map((item) => item.id),
           selection.selectedTemplates.map((item) => item.title),
@@ -86,6 +87,7 @@ export class RunService {
       } else {
         await this.taskService.annotateProcessTemplateSkipped(
           input.taskId,
+          'run',
           created.id,
           selection.reason,
           taskForExecution.processTemplates.length,

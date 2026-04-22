@@ -4,7 +4,13 @@ export type PingResponse = {
 };
 
 import type { HomeBriefData } from './brief.js';
-import type { CreateDecisionInput, DecisionActionInput, DecisionRecord } from './decision.js';
+import type {
+  CreateDecisionInput,
+  DecisionActionInput,
+  DecisionDraftRecord,
+  DecisionRecord,
+  DraftDecisionInput,
+} from './decision.js';
 import type { AppEvent } from './events.js';
 import type {
   AppliedProcessTemplateRecord,
@@ -46,6 +52,7 @@ export type ElectronApi = {
   applyProcessTemplate: (input: ApplyProcessTemplateInput) => Promise<AppliedProcessTemplateRecord>;
   removeProcessTemplate: (bindingId: string) => Promise<AppliedProcessTemplateRecord>;
   listDecisions: () => Promise<DecisionRecord[]>;
+  draftDecision: (input: DraftDecisionInput) => Promise<DecisionDraftRecord>;
   createDecision: (input: CreateDecisionInput) => Promise<DecisionRecord>;
   actOnDecision: (input: DecisionActionInput) => Promise<DecisionRecord>;
   getHomeBrief: () => Promise<HomeBriefData>;

@@ -414,6 +414,15 @@ describe('App UI flow', () => {
       }),
     ),
     listDecisions: vi.fn().mockResolvedValue(decisions),
+    draftDecision: vi.fn().mockResolvedValue({
+      taskId: riskTask.id,
+      title: 'Approve escalation path',
+      rationale: 'Current task needs explicit approval before budget escalation.',
+      source: 'ai',
+      selectedTemplateIds: ['process_template_1'],
+      selectedTemplateTitles: ['Approval skill'],
+      selectionReason: 'This task is awaiting stakeholder approval.',
+    }),
     createDecision: vi.fn().mockResolvedValue(createdDecision),
     actOnDecision: vi.fn(),
     getHomeBrief: vi.fn().mockResolvedValue(briefData),
@@ -842,6 +851,35 @@ describe('App UI flow', () => {
         title: 'Escalate budget approval now',
       });
     });
+  });
+
+  it('drafts a quick decision from task detail', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    const riskTaskCard = (await screen.findByText('High risk task')).closest('button');
+    expect(riskTaskCard).toBeTruthy();
+    await user.click(riskTaskCard!);
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    const backgroundInput = screen.getByLabelText('拍板背景');
+    await user.clear(backgroundInput);
+    await user.type(backgroundInput, 'Need stakeholder sign-off');
+    await user.click(screen.getByRole('button', { name: '草拟 Decision' }));
+
+    await waitFor(() => {
+      expect(mockApi.draftDecision).toHaveBeenCalledWith({
+        taskId: riskTask.id,
+        note: 'Need stakeholder sign-off',
+      });
+    });
+
+    expect((screen.getByLabelText('决策标题') as HTMLInputElement).value).toBe(
+      'Approve escalation path',
+    );
+    expect(screen.getByText(/AI 草拟：Current task needs explicit approval before budget escalation\./)).toBeTruthy();
   });
 
   it('submits a quick run from task detail', async () => {

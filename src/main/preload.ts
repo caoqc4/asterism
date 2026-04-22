@@ -23,6 +23,7 @@ const api: ElectronApi = {
   applyProcessTemplate: (input) => ipcRenderer.invoke('processTemplate:apply', input),
   removeProcessTemplate: (bindingId) => ipcRenderer.invoke('processTemplate:remove', bindingId),
   listDecisions: () => ipcRenderer.invoke('decision:list'),
+  draftDecision: (input) => ipcRenderer.invoke('decision:draft', input),
   createDecision: (input) => ipcRenderer.invoke('decision:create', input),
   actOnDecision: (input) => ipcRenderer.invoke('decision:act', input),
   getHomeBrief: () => ipcRenderer.invoke('brief:getHomeData'),

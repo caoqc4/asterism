@@ -14,6 +14,21 @@ export type CreateDecisionInput = {
   title: string;
 };
 
+export type DraftDecisionInput = {
+  taskId: string;
+  note?: string | null;
+};
+
+export type DecisionDraftRecord = {
+  taskId: string;
+  title: string;
+  rationale: string;
+  source: 'ai' | 'fallback';
+  selectedTemplateIds: string[];
+  selectedTemplateTitles: string[];
+  selectionReason: string;
+};
+
 export type DecisionActionInput = {
   id: string;
   action: 'approve' | 'defer' | 'cancel';

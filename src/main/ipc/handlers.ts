@@ -1,7 +1,7 @@
 import electron from 'electron';
 
 import type { PingResponse } from '../../shared/types/ipc.js';
-import type { CreateDecisionInput, DecisionActionInput } from '../../shared/types/decision.js';
+import type { CreateDecisionInput, DecisionActionInput, DraftDecisionInput } from '../../shared/types/decision.js';
 import type {
   ApplyProcessTemplateInput,
   CreateProcessTemplateInput,
@@ -118,6 +118,10 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('decision:list', async () => {
     return getServices().decisionService.list();
+  });
+
+  ipcMain.handle('decision:draft', async (_event, input: DraftDecisionInput) => {
+    return getServices().decisionService.draft(input);
   });
 
   ipcMain.handle('decision:create', async (_event, input: CreateDecisionInput) => {
