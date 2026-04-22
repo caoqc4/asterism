@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import type { ArtifactRecord } from '@shared/types/artifact';
 import type { HomeBriefData, RecommendedActionIntent, RecommendedAction } from '@shared/types/brief';
 import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
 import type { AppEvent } from '@shared/types/events';
@@ -190,6 +191,17 @@ export function App() {
     handleOpenTask(action.taskId, action.intent ?? null);
   }
 
+  function handleOpenArtifact(artifact: ArtifactRecord) {
+    handleOpenTask(artifact.taskId, {
+      type: 'continue_from_artifact',
+      focusArea: 'detail',
+      prefillNextStep: `基于产物继续推进：${artifact.title}`,
+      prefillRunInstructions: artifact.content
+        ? `请基于这份已有产物继续扩展、改写或整理：${artifact.content}`
+        : `请基于已有产物继续推进：${artifact.title}`,
+    });
+  }
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -222,6 +234,7 @@ export function App() {
             aiStatus={aiStatus}
             briefData={briefData}
             onOpenAction={handleOpenRecommendedAction}
+            onOpenArtifact={handleOpenArtifact}
             ping={ping}
             status={status}
           />

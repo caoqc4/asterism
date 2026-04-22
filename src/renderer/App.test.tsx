@@ -406,6 +406,29 @@ describe('App UI flow', () => {
     expect(screen.getByText('Escalation draft for the owner.')).toBeTruthy();
   });
 
+  it('opens artifact continuation from the home artifact list', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    const artifactButton = await screen.findByRole('button', {
+      name: /draft output.*run_output.*source: run/i,
+    });
+
+    await user.click(artifactButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '基于产物继续推进：draft output',
+    );
+    expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toContain(
+      'Escalation draft for the owner.',
+    );
+  });
+
   it('prefills next step and run input from artifact timeline suggestions', async () => {
     const user = userEvent.setup();
 

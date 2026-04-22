@@ -1,4 +1,5 @@
 import type { HomeBriefData, RecommendedAction } from '@shared/types/brief';
+import type { ArtifactRecord } from '@shared/types/artifact';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { PingResponse } from '@shared/types/ipc';
 
@@ -22,9 +23,17 @@ type HomePageProps = {
   aiStatus: AiConfigStatus | null;
   briefData: HomeBriefData | null;
   onOpenAction: (action: RecommendedAction) => void;
+  onOpenArtifact: (artifact: ArtifactRecord) => void;
 };
 
-export function HomePage({ ping, status, aiStatus, briefData, onOpenAction }: HomePageProps) {
+export function HomePage({
+  ping,
+  status,
+  aiStatus,
+  briefData,
+  onOpenAction,
+  onOpenArtifact,
+}: HomePageProps) {
   return (
     <section className="page-grid">
       <article className="panel hero page-hero">
@@ -136,7 +145,12 @@ export function HomePage({ ping, status, aiStatus, briefData, onOpenAction }: Ho
         <div className="task-list">
           {briefData?.recentArtifacts.length ? (
             briefData.recentArtifacts.map((artifact) => (
-              <div className="task-card" key={artifact.id}>
+              <button
+                className="task-card task-card-button task-card-muted"
+                key={artifact.id}
+                onClick={() => onOpenArtifact(artifact)}
+                type="button"
+              >
                 <div className="task-row">
                   <strong>{artifact.title}</strong>
                   <span className="status">{artifact.kind}</span>
@@ -145,7 +159,7 @@ export function HomePage({ ping, status, aiStatus, briefData, onOpenAction }: Ho
                   source: {artifact.sourceType} · {artifact.sourceId}
                 </p>
                 <p className="meta brief-preview">{artifact.content}</p>
-              </div>
+              </button>
             ))
           ) : (
             <p className="meta">当前还没有最近产物。</p>
