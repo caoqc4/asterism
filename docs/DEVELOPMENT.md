@@ -65,7 +65,7 @@ Main-process rules:
 - `db/`
   SQLite bootstrap, repositories, and repository integration test support.
 - `domain/`
-  Task, decision, run, and brief services plus task signal linkage and task-side object semantics.
+  Task, decision, run, and brief services plus task signal linkage, task-side object semantics, and deeper decision/run-to-task lifecycle annotations.
 - `executors/`
   AI-backed execution logic.
 - `scheduler/`
@@ -96,7 +96,7 @@ Main-process rules:
 
 ## Test Coverage Today
 
-- Service-level tests cover config, task, decision, run, scheduler, and home brief logic.
+- Service-level tests cover config, task, decision, run, scheduler, and home brief logic, including deeper decision/run-to-task lifecycle annotations.
 - SQLite integration tests currently cover `TaskRepository`, `RunRepository`, `DecisionRepository`, `BriefSnapshotRepository`, `WaitingItemRepository`, and `ArtifactRepository`.
 - IPC handler tests cover critical event-emitting channels such as settings save, decision action, and run trigger.
 - Renderer interaction tests cover the main control-plane flows from Home, Tasks, Decisions, Runs, Settings, timeline actions, waiting item flows, artifact flows, home intent-navigation flows, task related-activity navigation, and failed Run refresh paths.

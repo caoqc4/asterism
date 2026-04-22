@@ -37,11 +37,11 @@ Covered today:
 - `AppConfigService`
   config defaults, persistence, migration behavior
 - `TaskService`
-  transitions, invalid transitions, signal updates
+  transitions, invalid transitions, signal updates, decision annotations, and run-settlement annotations
 - `DecisionService`
-  task existence checks and decision-to-task linkage
+  task existence checks plus decision-to-task lifecycle linkage
 - `RunService`
-  successful execution path, failure path, task linkage, artifact creation on successful output
+  successful execution path, failure path, task restoration after settled runs, and artifact creation on successful output
 - `HomeBriefService`
   waiting, risk, missing-next-step, recommended actions, recent artifacts, and artifact-aware brief semantics
 - `SchedulerService`

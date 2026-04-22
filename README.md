@@ -5,8 +5,8 @@ Taskplane is a local-first desktop workbench for turning signals into long-lived
 This repository currently contains an Electron + React + TypeScript prototype with:
 
 - task creation, structured task signals, detail editing, and state transitions
-- decision request creation, actions, and task linkage
-- run triggering for `draft` and `summarize`, with task linkage and failure signals
+- decision request creation, actions, and task linkage with task-side follow-up semantics
+- run triggering for `draft` and `summarize`, with task linkage, failure signals, and task restoration after runs settle
 - local brief snapshot generation with recommended actions, recent artifact context, and intent-aware navigation into task follow-up flows
 - task-scoped timeline events with readable summaries, subtle event tones, and lightweight action shortcuts
 - waiting item lifecycle tracking with direct resolution and task/detail/home visibility
@@ -126,6 +126,7 @@ What exists today:
 - task detail acting as a task work surface, with quick actions, active waiting items, recent artifacts, related decisions/runs, and a task-lifecycle timeline with lightweight suggested actions
 - decision and run pages acting as object work surfaces, with queue navigation and focused detail/action areas
 - task-side objects now established: active `waiting items` and text `artifacts`
+- decision and run actions now write back clearer task semantics, including follow-up next steps, waiting reasons, and lifecycle timeline events
 - config + keychain setup
 - service tests and SQLite repository integration coverage
 - IPC handler coverage for critical event-emitting entrypoints
