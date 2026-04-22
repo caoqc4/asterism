@@ -99,6 +99,7 @@ Covered today:
 - `Home recent artifact -> Tasks detail continuation`
 - `Home recent activity -> Tasks detail follow-up intent`
 - `Home recent activity -> Decisions / Runs`
+- `Home recent activity` lightweight follow-up actions
 - `Home key signals -> Tasks detail follow-up intent`
 - `Tasks quick decision submission`
 - `Tasks quick run submission`

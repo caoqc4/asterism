@@ -76,7 +76,7 @@ Main-process rules:
 ## Current Product Surfaces
 
 - `Home`
-  Prioritized control surface with recommended actions first, then recent artifacts, recent lifecycle activity, recent brief snapshots, and key signals such as waiting, risk, and missing-next-step tasks. These home surfaces now act as intent-aware entrypoints into task follow-up work, not just passive status cards. Recent lifecycle activity now supports both returning to the related task with a follow-up draft and directly opening the linked `Decision` or `Run` object for closer review.
+  Prioritized control surface with recommended actions first, then recent artifacts, recent lifecycle activity, recent brief snapshots, and key signals such as waiting, risk, and missing-next-step tasks. These home surfaces now act as intent-aware entrypoints into task follow-up work, not just passive status cards. Recent lifecycle activity now supports both returning to the related task with a follow-up draft, directly opening the linked `Decision` or `Run` object for closer review, and triggering lightweight follow-up actions for the clearest recent outcomes.
 - `Tasks`
   Primary task workbench organized into a current snapshot, an action desk, and an activity feed. It includes structured task signals, active waiting items, recent artifacts, quick decision/run actions, related activity, and a task-lifecycle timeline that can surface lightweight follow-up actions. The related-activity area now also acts as an entrypoint into the linked `Decision` and `Run` objects themselves.
 - `Decisions`
@@ -99,7 +99,7 @@ Main-process rules:
 - Service-level tests cover config, task, decision, run, scheduler, and home brief logic, including deeper decision/run-to-task lifecycle annotations.
 - SQLite integration tests currently cover `TaskRepository`, `RunRepository`, `DecisionRepository`, `BriefSnapshotRepository`, `WaitingItemRepository`, and `ArtifactRepository`.
 - IPC handler tests cover critical event-emitting channels such as settings save, decision action, and run trigger.
-- Renderer interaction tests cover the main control-plane flows from Home, Tasks, Decisions, Runs, Settings, timeline actions, waiting item flows, artifact flows, home intent-navigation flows, recent-activity follow-up entry flows, recent-activity object entry flows, task related-activity navigation, decision/run return-to-task flows, related-task timeline slices on object pages, timeline-driven follow-up actions on object pages, and failed Run refresh paths.
+- Renderer interaction tests cover the main control-plane flows from Home, Tasks, Decisions, Runs, Settings, timeline actions, waiting item flows, artifact flows, home intent-navigation flows, recent-activity follow-up entry flows, recent-activity object entry flows, recent-activity follow-up actions, task related-activity navigation, decision/run return-to-task flows, related-task timeline slices on object pages, timeline-driven follow-up actions on object pages, and failed Run refresh paths.
 - GitHub Actions runs `npm run test`, `npm run lint`, and `npm run build` on every push to `main` and on pull requests.
 
 For the current coverage map and recommended next targets, see [TESTING.md](TESTING.md).

@@ -7,7 +7,7 @@ This repository currently contains an Electron + React + TypeScript prototype wi
 - task creation, structured task signals, detail editing, and state transitions
 - decision request creation, actions, and task linkage with task-side follow-up semantics
 - run triggering for `draft` and `summarize`, with task linkage, failure signals, and task restoration after runs settle
-- local brief snapshot generation with recommended actions, recent artifact context, recent lifecycle activity, and intent-aware navigation into task follow-up and object-review flows
+- local brief snapshot generation with recommended actions, recent artifact context, recent lifecycle activity, and intent-aware navigation plus lightweight follow-up actions for task follow-up and object-review flows
 - task-scoped timeline events with readable summaries, subtle event tones, and lightweight action shortcuts
 - waiting item lifecycle tracking with direct resolution and task/detail/home visibility
 - text artifacts generated from successful runs, surfaced in task detail, timeline actions, home brief, and recommended-action semantics
@@ -121,7 +121,7 @@ What exists today:
 - local desktop workbench architecture
 - core task / decision / run / brief flows
 - structured task signals: `nextStep`, `waitingReason`, `riskLevel`, `riskNote`
-- home brief organized around recommended actions, recent artifacts, recent lifecycle activity, recent brief snapshots, and key signals, with direct intent-aware entry into task follow-up work across artifacts, lifecycle activity, and task signals, plus direct `Decision / Run` object entry from recent activity
+- home brief organized around recommended actions, recent artifacts, recent lifecycle activity, recent brief snapshots, and key signals, with direct intent-aware entry into task follow-up work across artifacts, lifecycle activity, and task signals, plus direct `Decision / Run` object entry and lightweight follow-up actions from recent activity
 - task detail organized into a current snapshot, action desk, and activity feed
 - task detail acting as a task work surface, with quick actions, active waiting items, recent artifacts, related decisions/runs, and a task-lifecycle timeline with lightweight suggested actions
 - decision and run pages acting as object work surfaces, with queue navigation, focused detail/action areas, direct return-to-task follow-up entrypoints, lightweight related-task timeline explanations, and timeline-based follow-up actions
