@@ -23,6 +23,40 @@ const transitionOptions: Record<TaskState, TaskState[]> = {
   archived: [],
 };
 
+function getTaskCardTone(task: TaskRecord): string {
+  if (task.riskLevel === 'high') {
+    return 'task-card-danger';
+  }
+
+  if (task.state === 'waiting_external' || task.waitingReason) {
+    return 'task-card-warning';
+  }
+
+  if (!task.nextStep && !['completed', 'archived'].includes(task.state)) {
+    return 'task-card-muted';
+  }
+
+  return '';
+}
+
+function buildTaskBadges(task: TaskRecord): string[] {
+  const badges: string[] = [];
+
+  if (task.riskLevel !== 'none') {
+    badges.push(`risk:${task.riskLevel}`);
+  }
+
+  if (task.state === 'waiting_external' || task.waitingReason) {
+    badges.push('waiting');
+  }
+
+  if (!task.nextStep && !['completed', 'archived'].includes(task.state)) {
+    badges.push('next-step?');
+  }
+
+  return badges;
+}
+
 type TasksPageProps = {
   decisions: DecisionRecord[];
   runs: RunRecord[];
@@ -208,7 +242,7 @@ export function TasksPage({
           ) : (
             tasks.map((task) => (
               <button
-                className={`task-card task-card-button ${
+                className={`task-card task-card-button ${getTaskCardTone(task)} ${
                   task.id === selectedTaskId ? 'task-card-active' : ''
                 }`}
                 key={task.id}
@@ -220,6 +254,17 @@ export function TasksPage({
                   <span className="status">{task.state}</span>
                 </div>
                 <p className="meta">{task.summary || task.id}</p>
+                {buildTaskBadges(task).length ? (
+                  <div className="signal-row">
+                    {buildTaskBadges(task).map((badge) => (
+                      <span className="signal-pill" key={badge}>
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+                {task.nextStep ? <p className="meta">下一步：{task.nextStep}</p> : null}
+                {task.waitingReason ? <p className="meta">等待：{task.waitingReason}</p> : null}
               </button>
             ))
           )}

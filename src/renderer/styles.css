@@ -243,6 +243,24 @@ button {
   cursor: pointer;
 }
 
+.signal-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.signal-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.08);
+  color: #374151;
+  font-size: 12px;
+  line-height: 1;
+}
+
 .task-card-active {
   border-color: rgba(31, 41, 55, 0.12);
   background: rgba(255, 255, 255, 0.92);
