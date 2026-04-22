@@ -52,4 +52,5 @@ export type UpdateTaskInput = {
 export type TransitionTaskInput = {
   id: string;
   nextState: TaskState;
+  waitingReason?: string | null;
 };

@@ -67,7 +67,11 @@ type TasksPageProps = {
   onCreateTask: (input: CreateTaskInput) => Promise<void>;
   onTriggerRun: (input: CreateRunInput) => Promise<void>;
   onUpdateTask: (input: UpdateTaskInput) => Promise<TaskRecord>;
-  onTransitionTask: (taskId: string, nextState: TaskState) => Promise<TaskRecord>;
+  onTransitionTask: (
+    taskId: string,
+    nextState: TaskState,
+    waitingReason?: string,
+  ) => Promise<TaskRecord>;
   onTaskFocusConsumed: () => void;
 };
 
@@ -96,6 +100,8 @@ export function TasksPage({
   const [quickDecisionTitle, setQuickDecisionTitle] = useState('');
   const [quickRunType, setQuickRunType] = useState<CreateRunInput['type']>('draft');
   const [quickRunInstructions, setQuickRunInstructions] = useState('');
+  const [transitionWaitingReason, setTransitionWaitingReason] = useState('');
+  const [transitionError, setTransitionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selectedTaskId && tasks[0]) {
@@ -135,6 +141,8 @@ export function TasksPage({
         setDraftWaitingReason(nextDetail?.waitingReason ?? '');
         setDraftRiskLevel(nextDetail?.riskLevel ?? 'none');
         setDraftRiskNote(nextDetail?.riskNote ?? '');
+        setTransitionWaitingReason(nextDetail?.waitingReason ?? '');
+        setTransitionError(null);
         setQuickDecisionTitle(
           nextDetail ? `${nextDetail.title} 需要拍板` : '',
         );
@@ -188,7 +196,14 @@ export function TasksPage({
       return;
     }
 
-    await onTransitionTask(detail.id, nextState);
+    if (nextState === 'waiting_external' && !transitionWaitingReason.trim()) {
+      setTransitionError('转入 waiting_external 前，请先填写等待原因。');
+      return;
+    }
+
+    setTransitionError(null);
+
+    await onTransitionTask(detail.id, nextState, nextState === 'waiting_external' ? transitionWaitingReason : undefined);
     await onRefresh();
     const nextDetail = await window.api.getTaskDetail(detail.id);
     setDetail(nextDetail);
@@ -455,6 +470,22 @@ export function TasksPage({
 
             <div className="transition-group">
               <h3>状态流转</h3>
+              <div className="stack">
+                <label>
+                  Waiting Transition Reason
+                  <input
+                    placeholder="例如：等待外部审批 / 客户回复 / 法务确认"
+                    value={transitionWaitingReason}
+                    onChange={(event) => {
+                      setTransitionWaitingReason(event.target.value);
+                      if (transitionError) {
+                        setTransitionError(null);
+                      }
+                    }}
+                  />
+                </label>
+                {transitionError ? <p className="meta">{transitionError}</p> : null}
+              </div>
               <div className="chip-row">
                 {transitionOptions[detail.state].length === 0 ? (
                   <p className="meta">当前状态没有可用的下一步。</p>

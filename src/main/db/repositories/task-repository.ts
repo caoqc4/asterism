@@ -189,11 +189,16 @@ export class TaskRepository {
     }
 
     const timestamp = nowIso();
+    const nextWaitingReason =
+      input.waitingReason === undefined
+        ? current.waitingReason
+        : input.waitingReason?.trim() || null;
 
     await db
       .update(tasks)
       .set({
         state: input.nextState,
+        waitingReason: nextWaitingReason,
         updatedAt: timestamp,
       })
       .where(eq(tasks.id, input.id));
@@ -202,7 +207,11 @@ export class TaskRepository {
       id: generateId('timeline'),
       taskId: input.id,
       type: 'task.transitioned',
-      payload: JSON.stringify({ from: current.state, to: input.nextState }),
+      payload: JSON.stringify({
+        from: current.state,
+        to: input.nextState,
+        waitingReason: nextWaitingReason,
+      }),
       createdAt: timestamp,
     });
 

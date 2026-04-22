@@ -856,12 +856,15 @@ describe('App UI flow', () => {
     await user.click(screen.getByRole('button', { name: /tasks/i }));
     await user.click(await screen.findByRole('button', { name: /high risk task/i }));
     await screen.findByRole('heading', { name: 'High risk task' });
+    await user.clear(screen.getByLabelText('Waiting Transition Reason'));
+    await user.type(screen.getByLabelText('Waiting Transition Reason'), 'Waiting on stakeholder approval');
     await user.click(screen.getByRole('button', { name: '转到 waiting_external' }));
 
     await waitFor(() => {
       expect(eventingApi.transitionTask).toHaveBeenCalledWith({
         id: riskTask.id,
         nextState: 'waiting_external',
+        waitingReason: 'Waiting on stakeholder approval',
       });
     });
 
@@ -874,5 +877,21 @@ describe('App UI flow', () => {
     });
 
     expect(screen.getAllByText('Waiting on stakeholder approval').length).toBeGreaterThan(0);
+  });
+
+  it('blocks waiting transitions in the UI until a waiting reason is provided', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /high risk task/i }));
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    await user.clear(screen.getByLabelText('Waiting Transition Reason'));
+    await user.click(screen.getByRole('button', { name: '转到 waiting_external' }));
+
+    expect(screen.getByText('转入 waiting_external 前，请先填写等待原因。')).toBeTruthy();
+    expect(mockApi.transitionTask).not.toHaveBeenCalled();
   });
 });

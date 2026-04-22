@@ -50,6 +50,13 @@ export class TaskService {
       throw new Error(`Invalid transition: ${detail.state} -> ${input.nextState}`);
     }
 
+    if (
+      input.nextState === 'waiting_external' &&
+      !(input.waitingReason?.trim() || detail.waitingReason?.trim())
+    ) {
+      throw new Error('Waiting reason is required when transitioning to waiting_external');
+    }
+
     return this.repository.transition(input);
   }
 

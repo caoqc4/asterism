@@ -135,8 +135,12 @@ export function App() {
     return updated;
   }
 
-  async function handleTransitionTask(taskId: string, nextState: TaskState) {
-    const updated = await window.api.transitionTask({ id: taskId, nextState });
+  async function handleTransitionTask(
+    taskId: string,
+    nextState: TaskState,
+    waitingReason?: string,
+  ) {
+    const updated = await window.api.transitionTask({ id: taskId, nextState, waitingReason });
     setTasks((current) => current.map((task) => (task.id === updated.id ? updated : task)));
     setBriefData(await window.api.getHomeBrief());
     return updated;

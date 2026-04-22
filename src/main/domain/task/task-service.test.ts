@@ -76,6 +76,25 @@ describe('TaskService', () => {
     expect(repository.transition).not.toHaveBeenCalled();
   });
 
+  it('requires a waiting reason when transitioning to waiting_external', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('running')),
+      update: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never);
+
+    await expect(
+      service.transition({
+        id: 'task_1',
+        nextState: 'waiting_external',
+      }),
+    ).rejects.toThrow('Waiting reason is required when transitioning to waiting_external');
+    expect(repository.transition).not.toHaveBeenCalled();
+  });
+
   it('throws when the task does not exist', async () => {
     const repository = {
       list: vi.fn(),
