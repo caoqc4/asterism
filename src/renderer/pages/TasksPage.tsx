@@ -4,6 +4,12 @@ import type { RecommendedActionIntent } from '@shared/types/brief';
 import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
 import type { CreateRunInput, RunRecord } from '@shared/types/run';
 import type {
+  CreateSourceContextInput,
+  SourceContextKind,
+  SourceContextRecord,
+  UpdateSourceContextInput,
+} from '@shared/types/source-context';
+import type {
   CreateTaskInput,
   TaskDetail,
   TaskRiskLevel,
@@ -14,6 +20,14 @@ import type {
 } from '@shared/types/task';
 
 const riskOptions: TaskRiskLevel[] = ['none', 'low', 'medium', 'high'];
+const sourceContextKindOptions: SourceContextKind[] = [
+  'link',
+  'doc',
+  'issue',
+  'pr',
+  'website_list',
+  'note',
+];
 
 const transitionOptions: Record<TaskState, TaskState[]> = {
   captured: ['triaged', 'planned', 'archived'],
@@ -73,6 +87,23 @@ function safeParsePayload(payload: string | null): Record<string, unknown> | nul
   }
 }
 
+function formatSourceContextKind(kind: SourceContextKind): string {
+  switch (kind) {
+    case 'doc':
+      return '文档';
+    case 'issue':
+      return 'Issue';
+    case 'pr':
+      return 'PR';
+    case 'website_list':
+      return '网站列表';
+    case 'note':
+      return '备注';
+    default:
+      return '链接';
+  }
+}
+
 function formatValue(value: unknown): string {
   if (value === null || value === undefined || value === '') {
     return '未填写';
@@ -109,6 +140,12 @@ function formatTimelineBadge(type: string): string {
       return '等待项';
     case 'artifact.created':
       return '产物';
+    case 'source_context.created':
+      return '来源';
+    case 'source_context.updated':
+      return '来源';
+    case 'source_context.archived':
+      return '来源';
     case 'task.risk_changed':
       return '风险';
     case 'task.updated':
@@ -136,6 +173,10 @@ function getTimelineToneClass(type: string): string {
       return 'timeline-item-waiting';
     case 'artifact.created':
       return 'timeline-item-next-step';
+    case 'source_context.created':
+    case 'source_context.updated':
+    case 'source_context.archived':
+      return 'timeline-item-default';
     case 'task.transitioned':
       return 'timeline-item-state';
     case 'task.next_step_changed':
@@ -175,6 +216,12 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
       return `解除等待项：${formatValue(payload?.reason)}，任务恢复到 ${formatValue(payload?.nextState)}`;
     case 'artifact.created':
       return `生成任务产物：${formatValue(payload?.title)}`;
+    case 'source_context.created':
+      return `新增来源材料：${formatValue(payload?.title)}`;
+    case 'source_context.updated':
+      return `更新来源材料：${formatValue(payload?.title)}`;
+    case 'source_context.archived':
+      return `归档来源材料：${formatValue(payload?.title)}`;
     case 'task.risk_changed': {
       const from = (payload?.from as Record<string, unknown> | undefined) ?? {};
       const to = (payload?.to as Record<string, unknown> | undefined) ?? {};
@@ -248,11 +295,14 @@ type TasksPageProps = {
   runs: RunRecord[];
   tasks: TaskRecord[];
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
+  onCreateSourceContext: (input: CreateSourceContextInput) => Promise<SourceContextRecord>;
+  onArchiveSourceContext: (id: string) => Promise<SourceContextRecord>;
   onOpenDecision: (decisionId: string) => void;
   onOpenRun: (runId: string) => void;
   onRefresh: () => Promise<void>;
   onCreateTask: (input: CreateTaskInput) => Promise<void>;
   onTriggerRun: (input: CreateRunInput) => Promise<void>;
+  onUpdateSourceContext: (input: UpdateSourceContextInput) => Promise<SourceContextRecord>;
   onUpdateTask: (input: UpdateTaskInput) => Promise<TaskRecord>;
   onTransitionTask: (
     taskId: string,
@@ -268,11 +318,14 @@ export function TasksPage({
   runs,
   tasks,
   onCreateDecision,
+  onCreateSourceContext,
+  onArchiveSourceContext,
   onOpenDecision,
   onOpenRun,
   onRefresh,
   onCreateTask,
   onTriggerRun,
+  onUpdateSourceContext,
   onUpdateTask,
   onTransitionTask,
   onTaskFocusConsumed,
@@ -290,6 +343,13 @@ export function TasksPage({
   const [quickRunType, setQuickRunType] = useState<CreateRunInput['type']>('draft');
   const [quickRunInstructions, setQuickRunInstructions] = useState('');
   const [transitionWaitingReason, setTransitionWaitingReason] = useState('');
+  const [sourceContextEditingId, setSourceContextEditingId] = useState<string | null>(null);
+  const [sourceContextTitle, setSourceContextTitle] = useState('');
+  const [sourceContextKind, setSourceContextKind] = useState<SourceContextKind>('link');
+  const [sourceContextUri, setSourceContextUri] = useState('');
+  const [sourceContextContent, setSourceContextContent] = useState('');
+  const [sourceContextNote, setSourceContextNote] = useState('');
+  const [sourceContextError, setSourceContextError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [transitionError, setTransitionError] = useState<string | null>(null);
   const [showAllTimeline, setShowAllTimeline] = useState(false);
@@ -383,6 +443,13 @@ export function TasksPage({
         setDraftRiskLevel(nextDetail?.riskLevel ?? 'none');
         setDraftRiskNote(nextDetail?.riskNote ?? '');
         setTransitionWaitingReason(nextDetail?.waitingReason ?? '');
+        setSourceContextEditingId(null);
+        setSourceContextTitle('');
+        setSourceContextKind('link');
+        setSourceContextUri('');
+        setSourceContextContent('');
+        setSourceContextNote('');
+        setSourceContextError(null);
         setDetailError(null);
         setTransitionError(null);
         setShowAllTimeline(false);
@@ -486,6 +553,89 @@ export function TasksPage({
       instructions: quickRunInstructions.trim(),
     });
     await onRefresh();
+  }
+
+  function populateSourceContextForm(item: SourceContextRecord) {
+    setSourceContextEditingId(item.id);
+    setSourceContextTitle(item.title);
+    setSourceContextKind(item.kind);
+    setSourceContextUri(item.uri ?? '');
+    setSourceContextContent(item.content ?? '');
+    setSourceContextNote(item.note ?? '');
+    setSourceContextError(null);
+  }
+
+  function resetSourceContextForm() {
+    setSourceContextEditingId(null);
+    setSourceContextTitle('');
+    setSourceContextKind('link');
+    setSourceContextUri('');
+    setSourceContextContent('');
+    setSourceContextNote('');
+    setSourceContextError(null);
+  }
+
+  async function handleSaveSourceContext(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!detail) {
+      return;
+    }
+
+    if (!sourceContextTitle.trim()) {
+      setSourceContextError('请先填写来源标题。');
+      return;
+    }
+
+    if (
+      ['link', 'doc', 'issue', 'pr'].includes(sourceContextKind) &&
+      !sourceContextUri.trim()
+    ) {
+      setSourceContextError('该来源类型需要填写链接。');
+      return;
+    }
+
+    setSourceContextError(null);
+
+    if (sourceContextEditingId) {
+      await onUpdateSourceContext({
+        id: sourceContextEditingId,
+        title: sourceContextTitle,
+        kind: sourceContextKind,
+        uri: sourceContextUri,
+        content: sourceContextContent,
+        note: sourceContextNote,
+      });
+    } else {
+      await onCreateSourceContext({
+        taskId: detail.id,
+        title: sourceContextTitle,
+        kind: sourceContextKind,
+        uri: sourceContextUri,
+        content: sourceContextContent,
+        note: sourceContextNote,
+      });
+    }
+
+    await onRefresh();
+    const nextDetail = await window.api.getTaskDetail(detail.id);
+    setDetail(nextDetail);
+    resetSourceContextForm();
+  }
+
+  async function handleArchiveCurrentSourceContext(id: string) {
+    if (!detail) {
+      return;
+    }
+
+    await onArchiveSourceContext(id);
+    await onRefresh();
+    const nextDetail = await window.api.getTaskDetail(detail.id);
+    setDetail(nextDetail);
+
+    if (sourceContextEditingId === id) {
+      resetSourceContextForm();
+    }
   }
 
   function handleTimelineAction(event: TimelineEventRecord) {
@@ -836,6 +986,125 @@ export function TasksPage({
                       <p className="meta">当前任务还没有沉淀出 artifact。</p>
                     )}
                   </div>
+                </div>
+
+                <div className="transition-group detail-card-group">
+                  <h3>Source Context</h3>
+                  <div className="timeline-list">
+                    {detail.sourceContexts.length ? (
+                      detail.sourceContexts.map((item) => (
+                        <div className="timeline-item" key={item.id}>
+                          <div className="task-row">
+                            <strong>{item.title}</strong>
+                            <span className="signal-pill timeline-badge timeline-item-default">
+                              {formatSourceContextKind(item.kind)}
+                            </span>
+                          </div>
+                          {item.uri ? (
+                            <p className="meta">
+                              <a href={item.uri} rel="noreferrer" target="_blank">
+                                {item.uri}
+                              </a>
+                            </p>
+                          ) : null}
+                          {item.note ? <p className="meta">{item.note}</p> : null}
+                          {item.content ? (
+                            <p className="meta brief-preview">{item.content}</p>
+                          ) : null}
+                          <div className="timeline-actions">
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => populateSourceContextForm(item)}
+                              type="button"
+                            >
+                              编辑来源
+                            </button>
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => void handleArchiveCurrentSourceContext(item.id)}
+                              type="button"
+                            >
+                              归档来源
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="meta">当前任务还没有挂载来源材料。</p>
+                    )}
+                  </div>
+                  <form className="stack" onSubmit={handleSaveSourceContext}>
+                    <label>
+                      来源标题
+                      <input
+                        value={sourceContextTitle}
+                        onChange={(event) => {
+                          setSourceContextTitle(event.target.value);
+                          if (sourceContextError) {
+                            setSourceContextError(null);
+                          }
+                        }}
+                      />
+                    </label>
+                    <label>
+                      来源类型
+                      <select
+                        value={sourceContextKind}
+                        onChange={(event) =>
+                          setSourceContextKind(event.target.value as SourceContextKind)
+                        }
+                      >
+                        {sourceContextKindOptions.map((kind) => (
+                          <option key={kind} value={kind}>
+                            {formatSourceContextKind(kind)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      链接 / URI
+                      <input
+                        value={sourceContextUri}
+                        onChange={(event) => {
+                          setSourceContextUri(event.target.value);
+                          if (sourceContextError) {
+                            setSourceContextError(null);
+                          }
+                        }}
+                      />
+                    </label>
+                    <label>
+                      说明
+                      <textarea
+                        rows={2}
+                        value={sourceContextNote}
+                        onChange={(event) => setSourceContextNote(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      补充内容
+                      <textarea
+                        rows={3}
+                        value={sourceContextContent}
+                        onChange={(event) => setSourceContextContent(event.target.value)}
+                      />
+                    </label>
+                    {sourceContextError ? <p className="meta">{sourceContextError}</p> : null}
+                    <div className="timeline-actions">
+                      <button type="submit">
+                        {sourceContextEditingId ? '保存来源' : '新增来源'}
+                      </button>
+                      {sourceContextEditingId ? (
+                        <button
+                          className="ghost-button"
+                          onClick={resetSourceContextForm}
+                          type="button"
+                        >
+                          取消编辑
+                        </button>
+                      ) : null}
+                    </div>
+                  </form>
                 </div>
               </div>
             </div>

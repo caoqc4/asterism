@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import type { HomeBriefData } from '@shared/types/brief';
@@ -9,6 +9,7 @@ import type { DecisionRecord } from '@shared/types/decision';
 import type { ElectronApi } from '@shared/types/ipc';
 import type { RunRecord } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
+import type { SourceContextRecord } from '@shared/types/source-context';
 import type { TaskDetail, TaskRecord } from '@shared/types/task';
 import type { ArtifactRecord } from '@shared/types/artifact';
 import type { WaitingItemRecord } from '@shared/types/waiting-item';
@@ -46,7 +47,24 @@ function buildTaskDetail(task: TaskRecord): TaskDetail {
   return {
     ...task,
     artifacts: [],
+    sourceContexts: [],
     timeline: [],
+  };
+}
+
+function buildSourceContext(partial: Partial<SourceContextRecord>): SourceContextRecord {
+  return {
+    id: partial.id ?? 'source_context_1',
+    taskId: partial.taskId ?? 'task_1',
+    title: partial.title ?? 'Reference doc',
+    kind: partial.kind ?? 'doc',
+    uri: partial.uri ?? 'https://example.com/reference',
+    content: partial.content ?? null,
+    note: partial.note ?? 'Helpful source',
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    archivedAt: partial.archivedAt ?? null,
   };
 }
 
@@ -281,6 +299,38 @@ describe('App UI flow', () => {
     getTaskDetail: vi.fn(async (taskId: string) => taskDetails[taskId] ?? null),
     updateTask: vi.fn(),
     transitionTask: vi.fn(),
+    createSourceContext: vi.fn().mockImplementation(async (input) =>
+      buildSourceContext({
+        taskId: input.taskId,
+        title: input.title,
+        kind: input.kind,
+        uri: input.uri ?? null,
+        content: input.content ?? null,
+        note: input.note ?? null,
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ),
+    updateSourceContext: vi.fn().mockImplementation(async (input) =>
+      buildSourceContext({
+        id: input.id,
+        taskId: riskTask.id,
+        title: 'Reference doc',
+        kind: 'doc',
+        uri: 'https://example.com/reference',
+        content: null,
+        note: input.note ?? 'Updated note',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ),
+    archiveSourceContext: vi.fn().mockImplementation(async (id) =>
+      buildSourceContext({
+        id,
+        taskId: riskTask.id,
+        status: 'archived',
+        archivedAt: '2026-01-02T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ),
     listDecisions: vi.fn().mockResolvedValue(decisions),
     createDecision: vi.fn().mockResolvedValue(createdDecision),
     actOnDecision: vi.fn(),
@@ -1574,6 +1624,141 @@ describe('App UI flow', () => {
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
       '处理当前风险并确认是否需要降级：Dependency blocked',
     );
+  });
+
+  it('creates and edits source context items from task detail', async () => {
+    const user = userEvent.setup();
+
+    const sourceTask = buildTaskRecord({
+      id: 'task_source_context',
+      title: 'Source context task',
+      state: 'planned',
+    });
+
+    let currentDetail: TaskDetail = {
+      ...buildTaskDetail(sourceTask),
+      sourceContexts: [
+        buildSourceContext({
+          id: 'source_context_existing',
+          taskId: sourceTask.id,
+          title: 'Launch brief',
+          kind: 'doc',
+          uri: 'https://example.com/brief',
+          note: 'Original brief',
+        }),
+      ],
+    };
+
+    const sourceApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([sourceTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== sourceTask.id) {
+          return null;
+        }
+
+        return currentDetail;
+      }),
+      createSourceContext: vi.fn().mockImplementation(async (input) => {
+        const created = buildSourceContext({
+          id: 'source_context_created',
+          taskId: input.taskId,
+          title: input.title,
+          kind: input.kind,
+          uri: input.uri ?? null,
+          content: input.content ?? null,
+          note: input.note ?? null,
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        });
+        currentDetail = {
+          ...currentDetail,
+          sourceContexts: [created, ...currentDetail.sourceContexts],
+        };
+        return created;
+      }),
+      updateSourceContext: vi.fn().mockImplementation(async (input) => {
+        const updated = buildSourceContext({
+          id: input.id,
+          taskId: sourceTask.id,
+          title: input.title ?? 'Launch brief',
+          kind: input.kind ?? 'doc',
+          uri: input.uri ?? 'https://example.com/brief',
+          content: input.content ?? null,
+          note: input.note ?? null,
+          updatedAt: '2026-01-03T00:00:00.000Z',
+        });
+        currentDetail = {
+          ...currentDetail,
+          sourceContexts: currentDetail.sourceContexts.map((item) =>
+            item.id === updated.id ? updated : item,
+          ),
+        };
+        return updated;
+      }),
+      archiveSourceContext: vi.fn().mockImplementation(async (id: string) => {
+        const archived = buildSourceContext({
+          id,
+          taskId: sourceTask.id,
+          title: 'Launch brief',
+          kind: 'doc',
+          uri: 'https://example.com/brief',
+          note: 'Updated brief note',
+          status: 'archived',
+          archivedAt: '2026-01-04T00:00:00.000Z',
+        });
+        currentDetail = {
+          ...currentDetail,
+          sourceContexts: currentDetail.sourceContexts.filter((item) => item.id !== id),
+        };
+        return archived;
+      }),
+    };
+
+    window.api = sourceApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /source context task/i }));
+    await screen.findByRole('heading', { name: 'Source context task' });
+
+    await user.type(screen.getByLabelText('来源标题'), 'Reference PR');
+    await user.selectOptions(screen.getByLabelText('来源类型'), 'pr');
+    await user.type(screen.getByLabelText('链接 / URI'), 'https://example.com/pr/1');
+    await user.type(screen.getByLabelText('说明'), 'Primary rollout PR');
+
+    await user.click(screen.getByRole('button', { name: '新增来源' }));
+
+    expect(sourceApi.createSourceContext).toHaveBeenCalledWith({
+      taskId: sourceTask.id,
+      title: 'Reference PR',
+      kind: 'pr',
+      uri: 'https://example.com/pr/1',
+      content: '',
+      note: 'Primary rollout PR',
+    });
+
+    await screen.findByText('Reference PR');
+
+    const existingSourceCard = screen.getByText('Launch brief').closest('.timeline-item');
+    expect(existingSourceCard).not.toBeNull();
+
+    await user.click(
+      within(existingSourceCard as HTMLElement).getByRole('button', { name: '编辑来源' }),
+    );
+    const noteField = screen.getByLabelText('说明') as HTMLTextAreaElement;
+    await user.clear(noteField);
+    await user.type(noteField, 'Updated brief note');
+    await user.click(screen.getByRole('button', { name: '保存来源' }));
+
+    expect(sourceApi.updateSourceContext).toHaveBeenCalled();
+    await screen.findByText('Updated brief note');
+
+    await user.click(
+      within(existingSourceCard as HTMLElement).getByRole('button', { name: '归档来源' }),
+    );
+
+    expect(sourceApi.archiveSourceContext).toHaveBeenCalled();
   });
 
   it('reflects cancelled decisions in task signals after a refresh event', async () => {

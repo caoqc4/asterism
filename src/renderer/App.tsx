@@ -12,6 +12,10 @@ import type { AppEvent } from '@shared/types/events';
 import type { PingResponse } from '@shared/types/ipc';
 import type { CreateRunInput, RunRecord } from '@shared/types/run';
 import type { AiConfigInput, AiConfigStatus } from '@shared/types/settings';
+import type {
+  CreateSourceContextInput,
+  UpdateSourceContextInput,
+} from '@shared/types/source-context';
 import type { TaskRecord, TaskState, UpdateTaskInput } from '@shared/types/task';
 
 import { getRouteFromHash, setRoute, type AppRoute } from './lib/router';
@@ -156,6 +160,33 @@ export function App() {
     setTasks((current) => current.map((task) => (task.id === updated.id ? updated : task)));
     setBriefData(await window.api.getHomeBrief());
     return updated;
+  }
+
+  async function handleCreateSourceContext(input: CreateSourceContextInput) {
+    const created = await window.api.createSourceContext(input);
+    setTasks((current) =>
+      current.map((task) => (task.id === created.taskId ? { ...task, updatedAt: created.updatedAt } : task)),
+    );
+    setBriefData(await window.api.getHomeBrief());
+    return created;
+  }
+
+  async function handleUpdateSourceContext(input: UpdateSourceContextInput) {
+    const updated = await window.api.updateSourceContext(input);
+    setTasks((current) =>
+      current.map((task) => (task.id === updated.taskId ? { ...task, updatedAt: updated.updatedAt } : task)),
+    );
+    setBriefData(await window.api.getHomeBrief());
+    return updated;
+  }
+
+  async function handleArchiveSourceContext(id: string) {
+    const archived = await window.api.archiveSourceContext(id);
+    setTasks((current) =>
+      current.map((task) => (task.id === archived.taskId ? { ...task, updatedAt: archived.updatedAt } : task)),
+    );
+    setBriefData(await window.api.getHomeBrief());
+    return archived;
   }
 
   async function handleCreateDecision(input: CreateDecisionInput) {
@@ -318,11 +349,14 @@ export function App() {
             tasks={tasks}
             onCreateDecision={handleCreateDecision}
             onCreateTask={handleCreateTask}
+            onCreateSourceContext={handleCreateSourceContext}
+            onArchiveSourceContext={handleArchiveSourceContext}
             onOpenDecision={handleOpenDecision}
             onOpenRun={handleOpenRun}
             onRefresh={loadShellData}
             onTransitionTask={handleTransitionTask}
             onTriggerRun={handleTriggerRun}
+            onUpdateSourceContext={handleUpdateSourceContext}
             onUpdateTask={handleUpdateTask}
             onTaskFocusConsumed={() => setFocusedTaskRequest(null)}
           />

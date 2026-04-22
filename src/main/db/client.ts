@@ -106,6 +106,20 @@ function bootstrapTables(connection: Database.Database): void {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS source_contexts (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      uri TEXT,
+      content TEXT,
+      note TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      archived_at TEXT
+    );
   `);
 
   ensureColumn(connection, 'runs', 'instructions', 'TEXT');
@@ -121,6 +135,12 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'waiting_items', 'status', "TEXT NOT NULL DEFAULT 'active'");
   ensureColumn(connection, 'waiting_items', 'updated_at', 'TEXT');
   ensureColumn(connection, 'waiting_items', 'resolved_at', 'TEXT');
+  ensureColumn(connection, 'source_contexts', 'uri', 'TEXT');
+  ensureColumn(connection, 'source_contexts', 'content', 'TEXT');
+  ensureColumn(connection, 'source_contexts', 'note', 'TEXT');
+  ensureColumn(connection, 'source_contexts', 'status', "TEXT NOT NULL DEFAULT 'active'");
+  ensureColumn(connection, 'source_contexts', 'updated_at', 'TEXT');
+  ensureColumn(connection, 'source_contexts', 'archived_at', 'TEXT');
 }
 
 function ensureColumn(

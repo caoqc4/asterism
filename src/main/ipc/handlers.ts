@@ -4,6 +4,7 @@ import type { PingResponse } from '../../shared/types/ipc.js';
 import type { CreateDecisionInput, DecisionActionInput } from '../../shared/types/decision.js';
 import type { CreateRunInput } from '../../shared/types/run.js';
 import type { AiConfigInput } from '../../shared/types/settings.js';
+import type { CreateSourceContextInput, UpdateSourceContextInput } from '../../shared/types/source-context.js';
 import type {
   CreateTaskInput,
   TransitionTaskInput,
@@ -66,6 +67,24 @@ export function registerIpcHandlers(): void {
     const updated = await getServices().taskService.transition(input);
     emitAppEvent('task.changed', updated.id);
     return updated;
+  });
+
+  ipcMain.handle('sourceContext:create', async (_event, input: CreateSourceContextInput) => {
+    const created = await getServices().taskService.createSourceContext(input);
+    emitAppEvent('task.changed', created.taskId);
+    return created;
+  });
+
+  ipcMain.handle('sourceContext:update', async (_event, input: UpdateSourceContextInput) => {
+    const updated = await getServices().taskService.updateSourceContext(input);
+    emitAppEvent('task.changed', updated.taskId);
+    return updated;
+  });
+
+  ipcMain.handle('sourceContext:archive', async (_event, id: string) => {
+    const archived = await getServices().taskService.archiveSourceContext(id);
+    emitAppEvent('task.changed', archived.taskId);
+    return archived;
   });
 
   ipcMain.handle('decision:list', async () => {

@@ -1,4 +1,5 @@
 import type { ArtifactRecord } from './artifact.js';
+import type { SourceContextRecord } from './source-context.js';
 import type { WaitingItemRecord } from './waiting-item.js';
 
 export type TaskState =
@@ -28,6 +29,7 @@ export type TaskRecord = {
 
 export type TaskDetail = TaskRecord & {
   artifacts: ArtifactRecord[];
+  sourceContexts: SourceContextRecord[];
   timeline: TimelineEventRecord[];
 };
 

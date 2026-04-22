@@ -42,6 +42,9 @@ function getExposedApi() {
     getTaskDetail: (taskId: string) => Promise<unknown>;
     updateTask: (input: unknown) => Promise<unknown>;
     transitionTask: (input: unknown) => Promise<unknown>;
+    createSourceContext: (input: unknown) => Promise<unknown>;
+    updateSourceContext: (input: unknown) => Promise<unknown>;
+    archiveSourceContext: (id: string) => Promise<unknown>;
     listDecisions: () => Promise<unknown>;
     createDecision: (input: unknown) => Promise<unknown>;
     actOnDecision: (input: unknown) => Promise<unknown>;
@@ -77,6 +80,17 @@ describe('preload bridge', () => {
     const createTaskInput = { title: 'Ship preload tests' };
     const updateTaskInput = { id: 'task_1', title: 'Updated title' };
     const transitionTaskInput = { id: 'task_1', nextState: 'planned' };
+    const createSourceContextInput = {
+      taskId: 'task_1',
+      title: 'PRD',
+      kind: 'doc',
+      uri: 'https://example.com/prd',
+      note: 'Primary product doc',
+    };
+    const updateSourceContextInput = {
+      id: 'source_context_1',
+      note: 'Updated note',
+    };
     const createDecisionInput = { taskId: 'task_1', title: 'Approve launch note' };
     const decisionActionInput = { id: 'decision_1', action: 'approve' };
     const createRunInput = { taskId: 'task_1', type: 'summarize', instructions: 'Summarize blockers' };
@@ -89,6 +103,9 @@ describe('preload bridge', () => {
     await api.getTaskDetail('task_1');
     await api.updateTask(updateTaskInput);
     await api.transitionTask(transitionTaskInput);
+    await api.createSourceContext(createSourceContextInput);
+    await api.updateSourceContext(updateSourceContextInput);
+    await api.archiveSourceContext('source_context_1');
     await api.listDecisions();
     await api.createDecision(createDecisionInput);
     await api.actOnDecision(decisionActionInput);
@@ -106,6 +123,9 @@ describe('preload bridge', () => {
       ['task:getDetail', 'task_1'],
       ['task:update', updateTaskInput],
       ['task:transition', transitionTaskInput],
+      ['sourceContext:create', createSourceContextInput],
+      ['sourceContext:update', updateSourceContextInput],
+      ['sourceContext:archive', 'source_context_1'],
       ['decision:list'],
       ['decision:create', createDecisionInput],
       ['decision:act', decisionActionInput],

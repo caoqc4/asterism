@@ -6,7 +6,13 @@ import type {
   TransitionTaskInput,
   UpdateTaskInput,
 } from '../../../shared/types/task.js';
+import type {
+  CreateSourceContextInput,
+  SourceContextRecord,
+  UpdateSourceContextInput,
+} from '../../../shared/types/source-context.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
+import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
 
@@ -25,6 +31,7 @@ export class TaskService {
     private readonly repository: TaskRepository,
     private readonly waitingItemRepository: WaitingItemRepository,
     private readonly artifactRepository: ArtifactRepository | null = null,
+    private readonly sourceContextRepository: SourceContextRepository | null = null,
   ) {}
 
   private async syncWaitingItem(
@@ -78,6 +85,17 @@ export class TaskService {
     };
   }
 
+  private async attachSourceContexts(detail: TaskDetail): Promise<TaskDetail> {
+    const sourceContexts = this.sourceContextRepository
+      ? await this.sourceContextRepository.listActiveForTask(detail.id)
+      : [];
+
+    return {
+      ...detail,
+      sourceContexts,
+    };
+  }
+
   private async getExistingTaskOrThrow(taskId: string): Promise<TaskDetail> {
     const detail = await this.repository.getDetail(taskId);
 
@@ -128,7 +146,9 @@ export class TaskService {
       return null;
     }
 
-    return this.attachArtifacts(await this.attachActiveWaitingItem(detail));
+    return this.attachSourceContexts(
+      await this.attachArtifacts(await this.attachActiveWaitingItem(detail)),
+    );
   }
 
   async update(input: UpdateTaskInput): Promise<TaskRecord> {
@@ -386,5 +406,57 @@ export class TaskService {
     });
 
     return this.attachActiveWaitingItem(updated);
+  }
+
+  async createSourceContext(input: CreateSourceContextInput): Promise<SourceContextRecord> {
+    await this.getExistingTaskOrThrow(input.taskId);
+
+    if (!this.sourceContextRepository) {
+      throw new Error('Source context repository is not configured');
+    }
+
+    const created = await this.sourceContextRepository.create(input);
+
+    await this.repository.appendTimelineEvent(input.taskId, 'source_context.created', {
+      sourceContextId: created.id,
+      title: created.title,
+      kind: created.kind,
+      uri: created.uri,
+    });
+
+    return created;
+  }
+
+  async updateSourceContext(input: UpdateSourceContextInput): Promise<SourceContextRecord> {
+    if (!this.sourceContextRepository) {
+      throw new Error('Source context repository is not configured');
+    }
+
+    const updated = await this.sourceContextRepository.update(input);
+
+    await this.repository.appendTimelineEvent(updated.taskId, 'source_context.updated', {
+      sourceContextId: updated.id,
+      title: updated.title,
+      kind: updated.kind,
+      uri: updated.uri,
+    });
+
+    return updated;
+  }
+
+  async archiveSourceContext(id: string): Promise<SourceContextRecord> {
+    if (!this.sourceContextRepository) {
+      throw new Error('Source context repository is not configured');
+    }
+
+    const archived = await this.sourceContextRepository.archive(id);
+
+    await this.repository.appendTimelineEvent(archived.taskId, 'source_context.archived', {
+      sourceContextId: archived.id,
+      title: archived.title,
+      kind: archived.kind,
+    });
+
+    return archived;
   }
 }

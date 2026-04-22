@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { TaskDetail, TaskRecord } from '../../../shared/types/task.js';
+import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import { TaskService } from './task-service.js';
 
 function buildDetail(state: TaskDetail['state']): TaskDetail {
@@ -16,6 +17,7 @@ function buildDetail(state: TaskDetail['state']): TaskDetail {
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     artifacts: [],
+    sourceContexts: [],
     timeline: [],
   };
 }
@@ -47,6 +49,22 @@ function buildRecord(state: TaskRecord['state']): TaskRecord {
     riskNote: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+
+function buildSourceContextRecord(partial: Partial<SourceContextRecord> = {}): SourceContextRecord {
+  return {
+    id: partial.id ?? 'source_context_1',
+    taskId: partial.taskId ?? 'task_1',
+    title: partial.title ?? 'PRD',
+    kind: partial.kind ?? 'doc',
+    uri: partial.uri ?? 'https://example.com/prd',
+    content: partial.content ?? null,
+    note: partial.note ?? 'Primary doc',
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    archivedAt: partial.archivedAt ?? null,
   };
 }
 
@@ -655,5 +673,99 @@ describe('TaskService', () => {
     });
     expect(result.state).toBe('planned');
     expect(result.nextStep).toBe('审阅最新 draft 产物，并决定是否继续推进。');
+  });
+
+  it('creates a source context item and records a lifecycle event', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const sourceContexts = {
+      listActiveForTask: vi.fn().mockResolvedValue([]),
+      create: vi.fn().mockResolvedValue(buildSourceContextRecord()),
+      update: vi.fn(),
+      archive: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      sourceContexts as never,
+    );
+
+    const result = await service.createSourceContext({
+      taskId: 'task_1',
+      title: 'PRD',
+      kind: 'doc',
+      uri: 'https://example.com/prd',
+      note: 'Primary doc',
+    });
+
+    expect(sourceContexts.create).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      title: 'PRD',
+      kind: 'doc',
+      uri: 'https://example.com/prd',
+      note: 'Primary doc',
+    });
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'source_context.created', {
+      sourceContextId: 'source_context_1',
+      title: 'PRD',
+      kind: 'doc',
+      uri: 'https://example.com/prd',
+    });
+    expect(result.id).toBe('source_context_1');
+  });
+
+  it('archives a source context item and records a lifecycle event', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const sourceContexts = {
+      listActiveForTask: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      update: vi.fn(),
+      archive: vi.fn().mockResolvedValue(
+        buildSourceContextRecord({
+          status: 'archived',
+          archivedAt: '2026-01-02T00:00:00.000Z',
+        }),
+      ),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      sourceContexts as never,
+    );
+
+    const result = await service.archiveSourceContext('source_context_1');
+
+    expect(sourceContexts.archive).toHaveBeenCalledWith('source_context_1');
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'source_context.archived', {
+      sourceContextId: 'source_context_1',
+      title: 'PRD',
+      kind: 'doc',
+    });
+    expect(result.status).toBe('archived');
   });
 });

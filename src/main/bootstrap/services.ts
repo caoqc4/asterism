@@ -4,6 +4,7 @@ import { BriefSnapshotRepository } from '../db/repositories/brief-snapshot-repos
 import { DecisionRepository } from '../db/repositories/decision-repository.js';
 import { ArtifactRepository } from '../db/repositories/artifact-repository.js';
 import { RunRepository } from '../db/repositories/run-repository.js';
+import { SourceContextRepository } from '../db/repositories/source-context-repository.js';
 import { TaskRepository } from '../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../db/repositories/waiting-item-repository.js';
 import { HomeBriefService } from '../domain/brief/home-brief-service.js';
@@ -21,6 +22,7 @@ const taskRepository = new TaskRepository();
 const decisionRepository = new DecisionRepository();
 const runRepository = new RunRepository();
 const artifactRepository = new ArtifactRepository();
+const sourceContextRepository = new SourceContextRepository();
 const briefSnapshotRepository = new BriefSnapshotRepository();
 const waitingItemRepository = new WaitingItemRepository();
 let schedulerService: SchedulerService | null = null;
@@ -52,10 +54,16 @@ const services = {
   briefSnapshotRepository,
   waitingItemRepository,
   artifactRepository,
+  sourceContextRepository,
   appConfigService,
   textExecutor,
   briefExecutor,
-  taskService: new TaskService(taskRepository, waitingItemRepository, artifactRepository),
+  taskService: new TaskService(
+    taskRepository,
+    waitingItemRepository,
+    artifactRepository,
+    sourceContextRepository,
+  ),
   decisionService: null as unknown as DecisionService,
   runService: null as unknown as RunService,
   homeBriefService,

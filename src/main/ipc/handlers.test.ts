@@ -18,6 +18,9 @@ const { handleMock, emitAppEventMock, servicesMock } = vi.hoisted(() => ({
       getDetail: vi.fn(),
       update: vi.fn(),
       transition: vi.fn(),
+      createSourceContext: vi.fn(),
+      updateSourceContext: vi.fn(),
+      archiveSourceContext: vi.fn(),
     },
     decisionService: {
       list: vi.fn(),
@@ -137,6 +140,45 @@ describe('registerIpcHandlers', () => {
     expect(emitAppEventMock).toHaveBeenNthCalledWith(1, 'decision.changed', 'decision_1');
     expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
     expect(result.status).toBe('cancelled');
+  });
+
+  it('emits task.changed after source context writes', async () => {
+    servicesMock.taskService.createSourceContext.mockResolvedValue({
+      id: 'source_context_1',
+      taskId: 'task_1',
+      title: 'PRD',
+      kind: 'doc',
+      uri: 'https://example.com/prd',
+      content: null,
+      note: 'Primary product doc',
+      status: 'active',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      archivedAt: null,
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; title: string; kind: string; uri?: string; note?: string }],
+      Awaited<ReturnType<typeof servicesMock.taskService.createSourceContext>>
+    >('sourceContext:create');
+
+    const result = await handler({}, {
+      taskId: 'task_1',
+      title: 'PRD',
+      kind: 'doc',
+      uri: 'https://example.com/prd',
+      note: 'Primary product doc',
+    });
+
+    expect(servicesMock.taskService.createSourceContext).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      title: 'PRD',
+      kind: 'doc',
+      uri: 'https://example.com/prd',
+      note: 'Primary product doc',
+    });
+    expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
+    expect(result.id).toBe('source_context_1');
   });
 
   it('emits run, task, and brief events after a run trigger', async () => {

@@ -9,6 +9,11 @@ import type { AppEvent } from './events.js';
 import type { CreateRunInput, RunRecord } from './run.js';
 import type { AiConfigInput, AiConfigStatus } from './settings.js';
 import type {
+  CreateSourceContextInput,
+  SourceContextRecord,
+  UpdateSourceContextInput,
+} from './source-context.js';
+import type {
   CreateTaskInput,
   TaskDetail,
   TaskRecord,
@@ -25,6 +30,9 @@ export type ElectronApi = {
   getTaskDetail: (taskId: string) => Promise<TaskDetail | null>;
   updateTask: (input: UpdateTaskInput) => Promise<TaskRecord>;
   transitionTask: (input: TransitionTaskInput) => Promise<TaskRecord>;
+  createSourceContext: (input: CreateSourceContextInput) => Promise<SourceContextRecord>;
+  updateSourceContext: (input: UpdateSourceContextInput) => Promise<SourceContextRecord>;
+  archiveSourceContext: (id: string) => Promise<SourceContextRecord>;
   listDecisions: () => Promise<DecisionRecord[]>;
   createDecision: (input: CreateDecisionInput) => Promise<DecisionRecord>;
   actOnDecision: (input: DecisionActionInput) => Promise<DecisionRecord>;

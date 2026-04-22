@@ -125,6 +125,7 @@ export class TaskRepository {
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
       artifacts: [],
+      sourceContexts: [],
       timeline: timeline.map((event) => ({
         id: event.id,
         taskId: event.taskId,

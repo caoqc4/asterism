@@ -73,3 +73,17 @@ export const artifacts = sqliteTable('artifacts', {
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
+
+export const sourceContexts = sqliteTable('source_contexts', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull(),
+  title: text('title').notNull(),
+  kind: text('kind').notNull(),
+  uri: text('uri'),
+  content: text('content'),
+  note: text('note'),
+  status: text('status').notNull().default('active'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  archivedAt: text('archived_at'),
+});
