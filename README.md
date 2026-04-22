@@ -12,6 +12,7 @@ This repository currently contains an Electron + React + TypeScript prototype wi
 - waiting item lifecycle tracking with direct resolution and task/detail/home visibility
 - text artifacts generated from successful runs, surfaced in task detail, timeline actions, home brief, and recommended-action semantics
 - source context items for task-linked external materials, with task-detail create/edit/archive flows and lifecycle timeline events
+- process context templates for task-linked working methods, with reusable template creation, task binding, and lifecycle timeline events
 - decision and run pages organized as object work surfaces with a current focus, action desk, queue, direct return paths into task follow-up work, lightweight related-task timeline context, and timeline-based follow-up actions
 - local scheduler with config-driven enable/disable
 - local configuration via `config.json` plus system keychain for secrets
@@ -124,9 +125,9 @@ What exists today:
 - structured task signals: `nextStep`, `waitingReason`, `riskLevel`, `riskNote`
 - home brief organized around recommended actions, recent artifacts, recent lifecycle activity, recent brief snapshots, and key signals, with direct intent-aware entry into task follow-up work across artifacts, lifecycle activity, and task signals, plus direct `Decision / Run` object entry and lightweight follow-up actions from recent activity
 - task detail organized into a current snapshot, action desk, and activity feed
-- task detail acting as a task work surface, with quick actions, active waiting items, recent artifacts, source context materials, related decisions/runs, and a task-lifecycle timeline with lightweight suggested actions plus direct entry into related `Decision / Run` objects from key lifecycle events
+- task detail acting as a task work surface, with quick actions, active waiting items, recent artifacts, source context materials, process context templates, related decisions/runs, and a task-lifecycle timeline with lightweight suggested actions plus direct entry into related `Decision / Run` objects from key lifecycle events
 - decision and run pages acting as object work surfaces, with queue navigation, focused detail/action areas, direct return-to-task follow-up entrypoints, lightweight related-task timeline explanations, and timeline-based follow-up actions
-- task-side objects now established: active `waiting items`, text `artifacts`, and editable `source context` materials
+- task-side objects now established: active `waiting items`, text `artifacts`, editable `source context` materials, and reusable `process context` templates
 - decision and run actions now write back clearer task semantics, including follow-up next steps, waiting reasons, and lifecycle timeline events
 - config + keychain setup
 - service tests and SQLite repository integration coverage
