@@ -1,18 +1,29 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { RunRecord } from '../../../shared/types/run.js';
-import type { TaskDetail } from '../../../shared/types/task.js';
+import type { TaskDetail, TaskRecord } from '../../../shared/types/task.js';
 import { RunService } from './run-service.js';
 
-function buildTaskDetail(): TaskDetail {
+function buildTaskDetail(state: TaskDetail['state'] = 'planned'): TaskDetail {
   return {
     id: 'task_1',
     title: 'Task 1',
     summary: 'Summary',
-    state: 'planned',
+    state,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     timeline: [],
+  };
+}
+
+function buildTaskRecord(state: TaskRecord['state']): TaskRecord {
+  return {
+    id: 'task_1',
+    title: 'Task 1',
+    summary: 'Summary',
+    state,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:01.000Z',
   };
 }
 
@@ -43,8 +54,9 @@ describe('RunService', () => {
         outputSource: 'ai',
       }),
     };
-    const taskRepository = {
-      getDetail: vi.fn().mockResolvedValue(buildTaskDetail()),
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('planned')),
+      transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('running')),
     };
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
@@ -58,7 +70,7 @@ describe('RunService', () => {
     };
     const service = new RunService(
       runRepository as never,
-      taskRepository as never,
+      taskService as never,
       aiConfigService as never,
       textExecutor as never,
     );
@@ -69,7 +81,8 @@ describe('RunService', () => {
       instructions: 'Please draft this',
     });
 
-    expect(taskRepository.getDetail).toHaveBeenCalledWith('task_1');
+    expect(taskService.getDetail).toHaveBeenCalledWith('task_1');
+    expect(taskService.transitionIfAllowed).toHaveBeenCalledWith('task_1', 'running');
     expect(runRepository.create).toHaveBeenCalledWith({
       taskId: 'task_1',
       type: 'draft',
@@ -77,7 +90,11 @@ describe('RunService', () => {
     });
     expect(aiConfigService.resolveRuntimeConfig).toHaveBeenCalled();
     expect(textExecutor.execute).toHaveBeenCalledWith(
-      buildTaskDetail(),
+      {
+        ...buildTaskDetail('planned'),
+        state: 'running',
+        updatedAt: '2026-01-01T00:00:01.000Z',
+      },
       {
         taskId: 'task_1',
         type: 'draft',
@@ -110,8 +127,9 @@ describe('RunService', () => {
         failureReason: 'Executor exploded',
       }),
     };
-    const taskRepository = {
-      getDetail: vi.fn().mockResolvedValue(buildTaskDetail()),
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('planned')),
+      transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('running')),
     };
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
@@ -125,7 +143,7 @@ describe('RunService', () => {
     };
     const service = new RunService(
       runRepository as never,
-      taskRepository as never,
+      taskService as never,
       aiConfigService as never,
       textExecutor as never,
     );
@@ -153,8 +171,9 @@ describe('RunService', () => {
       create: vi.fn(),
       updateResult: vi.fn(),
     };
-    const taskRepository = {
+    const taskService = {
       getDetail: vi.fn().mockResolvedValue(null),
+      transitionIfAllowed: vi.fn(),
     };
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn(),
@@ -164,7 +183,7 @@ describe('RunService', () => {
     };
     const service = new RunService(
       runRepository as never,
-      taskRepository as never,
+      taskService as never,
       aiConfigService as never,
       textExecutor as never,
     );
@@ -178,5 +197,57 @@ describe('RunService', () => {
 
     expect(runRepository.create).not.toHaveBeenCalled();
     expect(textExecutor.execute).not.toHaveBeenCalled();
+  });
+
+  it('does not auto-transition when the task is already running', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn(),
+      create: vi.fn().mockResolvedValue(buildRunRecord('pending')),
+      updateResult: vi.fn().mockResolvedValue({
+        ...buildRunRecord('completed'),
+        output: 'Generated output',
+        outputSource: 'ai',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
+      transitionIfAllowed: vi.fn(),
+    };
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn().mockResolvedValue('Generated output'),
+    };
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      aiConfigService as never,
+      textExecutor as never,
+    );
+
+    await service.trigger({
+      taskId: 'task_1',
+      type: 'draft',
+    });
+
+    expect(taskService.transitionIfAllowed).not.toHaveBeenCalled();
+    expect(textExecutor.execute).toHaveBeenCalledWith(
+      buildTaskDetail('running'),
+      {
+        taskId: 'task_1',
+        type: 'draft',
+      },
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+      },
+    );
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { DecisionRecord } from '../../../shared/types/decision.js';
-import type { TaskDetail } from '../../../shared/types/task.js';
+import type { TaskDetail, TaskRecord } from '../../../shared/types/task.js';
 import { DecisionService } from './decision-service.js';
 
 function buildTaskDetail(): TaskDetail {
@@ -27,6 +27,17 @@ function buildDecisionRecord(): DecisionRecord {
   };
 }
 
+function buildTaskRecord(state: TaskRecord['state']): TaskRecord {
+  return {
+    id: 'task_1',
+    title: 'Task 1',
+    summary: 'Summary',
+    state,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+
 describe('DecisionService', () => {
   it('creates a decision when the task exists', async () => {
     const decisionRepository = {
@@ -34,17 +45,18 @@ describe('DecisionService', () => {
       create: vi.fn().mockResolvedValue(buildDecisionRecord()),
       act: vi.fn(),
     };
-    const taskRepository = {
+    const taskService = {
       getDetail: vi.fn().mockResolvedValue(buildTaskDetail()),
+      transitionIfAllowed: vi.fn(),
     };
-    const service = new DecisionService(decisionRepository as never, taskRepository as never);
+    const service = new DecisionService(decisionRepository as never, taskService as never);
 
     const result = await service.create({
       taskId: 'task_1',
       title: 'Need approval',
     });
 
-    expect(taskRepository.getDetail).toHaveBeenCalledWith('task_1');
+    expect(taskService.getDetail).toHaveBeenCalledWith('task_1');
     expect(decisionRepository.create).toHaveBeenCalledWith({
       taskId: 'task_1',
       title: 'Need approval',
@@ -58,10 +70,11 @@ describe('DecisionService', () => {
       create: vi.fn(),
       act: vi.fn(),
     };
-    const taskRepository = {
+    const taskService = {
       getDetail: vi.fn().mockResolvedValue(null),
+      transitionIfAllowed: vi.fn(),
     };
-    const service = new DecisionService(decisionRepository as never, taskRepository as never);
+    const service = new DecisionService(decisionRepository as never, taskService as never);
 
     await expect(
       service.create({
@@ -81,10 +94,11 @@ describe('DecisionService', () => {
         status: 'approved',
       }),
     };
-    const taskRepository = {
+    const taskService = {
       getDetail: vi.fn(),
+      transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
     };
-    const service = new DecisionService(decisionRepository as never, taskRepository as never);
+    const service = new DecisionService(decisionRepository as never, taskService as never);
 
     const result = await service.act({
       id: 'decision_1',
@@ -95,6 +109,34 @@ describe('DecisionService', () => {
       id: 'decision_1',
       action: 'approve',
     });
+    expect(taskService.transitionIfAllowed).toHaveBeenCalledWith('task_1', 'planned');
     expect(result.status).toBe('approved');
+  });
+
+  it('moves the task to waiting_external when a decision is deferred', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord(),
+        status: 'deferred',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('waiting_external')),
+    };
+    const service = new DecisionService(decisionRepository as never, taskService as never);
+
+    const result = await service.act({
+      id: 'decision_1',
+      action: 'defer',
+    });
+
+    expect(taskService.transitionIfAllowed).toHaveBeenCalledWith(
+      'task_1',
+      'waiting_external',
+    );
+    expect(result.status).toBe('deferred');
   });
 });

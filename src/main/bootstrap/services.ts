@@ -48,12 +48,20 @@ const services = {
   textExecutor,
   briefExecutor,
   taskService: new TaskService(taskRepository),
-  decisionService: new DecisionService(decisionRepository, taskRepository),
-  runService: new RunService(runRepository, taskRepository, aiConfigService, textExecutor),
+  decisionService: null as unknown as DecisionService,
+  runService: null as unknown as RunService,
   homeBriefService,
   aiConfigService,
   schedulerService,
 };
+
+services.decisionService = new DecisionService(decisionRepository, services.taskService);
+services.runService = new RunService(
+  runRepository,
+  services.taskService,
+  aiConfigService,
+  textExecutor,
+);
 
 export function initServices() {
   if (!initialized) {

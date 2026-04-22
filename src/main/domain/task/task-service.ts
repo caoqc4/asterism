@@ -52,4 +52,31 @@ export class TaskService {
 
     return this.repository.transition(input);
   }
+
+  async transitionIfAllowed(id: string, nextState: TaskState): Promise<TaskRecord | null> {
+    const detail = await this.repository.getDetail(id);
+
+    if (!detail) {
+      throw new Error(`Task not found: ${id}`);
+    }
+
+    if (detail.state === nextState) {
+      return {
+        id: detail.id,
+        title: detail.title,
+        summary: detail.summary,
+        state: detail.state,
+        createdAt: detail.createdAt,
+        updatedAt: detail.updatedAt,
+      };
+    }
+
+    const nextStates = allowedTransitions[detail.state];
+
+    if (!nextStates.includes(nextState)) {
+      return null;
+    }
+
+    return this.repository.transition({ id, nextState });
+  }
 }
