@@ -63,15 +63,28 @@ Main-process rules:
 - `config/`
   Local config file loading and writing.
 - `db/`
-  SQLite bootstrap and repositories.
+  SQLite bootstrap, repositories, and repository integration test support.
 - `domain/`
-  Task, decision, run, and brief services.
+  Task, decision, run, and brief services plus task signal linkage.
 - `executors/`
   AI-backed execution logic.
 - `scheduler/`
   Local cron-based jobs and recovery logic.
 - `ipc/`
   request handlers and event bus.
+
+## Current Product Surfaces
+
+- `Home`
+  Brief-style overview with waiting, risk, missing-next-step, and recommended actions.
+- `Tasks`
+  Primary task workbench with structured task signals, quick decision/run actions, and related activity.
+- `Decisions`
+  Decision queue with approve/defer/cancel actions.
+- `Runs`
+  Run trigger and result inspection.
+- `Settings`
+  Provider, model, API key, and scheduler configuration.
 
 ## Typical Development Flow
 
@@ -80,6 +93,12 @@ Main-process rules:
 3. Expose capability through preload and IPC.
 4. Wire the renderer page to the new contract.
 5. Run `npm run lint`, `npm run test`, and `npm run build`.
+
+## Test Coverage Today
+
+- Service-level tests cover config, task, decision, run, scheduler, and home brief logic.
+- SQLite integration tests currently cover `TaskRepository`, `RunRepository`, and `DecisionRepository`.
+- GitHub Actions runs `npm run test`, `npm run lint`, and `npm run build` on every push to `main` and on pull requests.
 
 ## Native Dependencies
 

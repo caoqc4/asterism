@@ -4,12 +4,13 @@ Taskplane is a local-first desktop workbench for turning signals into long-lived
 
 This repository currently contains an Electron + React + TypeScript prototype with:
 
-- task creation, detail editing, and state transitions
-- decision request creation and actions
-- run triggering for `draft` and `summarize`
-- local brief snapshot generation
+- task creation, structured task signals, detail editing, and state transitions
+- decision request creation, actions, and task linkage
+- run triggering for `draft` and `summarize`, with task linkage and failure signals
+- local brief snapshot generation with recommended actions
 - local scheduler with config-driven enable/disable
 - local configuration via `config.json` plus system keychain for secrets
+- SQLite-backed repository integration tests plus GitHub Actions CI
 
 ## Current Stack
 
@@ -114,13 +115,17 @@ What exists today:
 
 - local desktop workbench architecture
 - core task / decision / run / brief flows
+- structured task signals: `nextStep`, `waitingReason`, `riskLevel`, `riskNote`
+- home brief with waiting, risk, missing-next-step, and recommended action surfaces
+- task detail with quick actions plus related decisions and runs
 - config + keychain setup
+- service tests and SQLite repository integration coverage
 - local macOS packaging pipeline
 - GitHub Actions CI for `test + lint + build`
 
 What is still in progress:
 
-- deeper workflow semantics and business rules
-- test coverage
+- deeper workflow semantics and richer task-side objects
+- broader persistence and UI coverage
 - final branding and product polish
 - signed and notarized releases
