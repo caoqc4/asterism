@@ -208,6 +208,36 @@ function getTimelineActionLabel(type: string): string | null {
   }
 }
 
+function getTimelineObjectLabel(event: TimelineEventRecord): string | null {
+  const payload = safeParsePayload(event.payload);
+
+  if (
+    ['task.decision_approved', 'task.decision_deferred', 'task.decision_cancelled'].includes(
+      event.type,
+    ) &&
+    typeof payload?.decisionId === 'string'
+  ) {
+    return '查看 Decision';
+  }
+
+  if (
+    ['task.run_failed', 'task.run_completed'].includes(event.type) &&
+    typeof payload?.runId === 'string'
+  ) {
+    return '查看 Run';
+  }
+
+  if (
+    event.type === 'artifact.created' &&
+    payload?.sourceType === 'run' &&
+    typeof payload?.sourceId === 'string'
+  ) {
+    return '查看 Run';
+  }
+
+  return null;
+}
+
 type TasksPageProps = {
   decisions: DecisionRecord[];
   focusedTaskRequest: {
@@ -529,6 +559,36 @@ export function TasksPage({
 
     if (typeof focusTarget?.scrollIntoView === 'function') {
       focusTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function handleTimelineObjectOpen(event: TimelineEventRecord) {
+    const payload = safeParsePayload(event.payload);
+
+    if (
+      ['task.decision_approved', 'task.decision_deferred', 'task.decision_cancelled'].includes(
+        event.type,
+      ) &&
+      typeof payload?.decisionId === 'string'
+    ) {
+      onOpenDecision(payload.decisionId);
+      return;
+    }
+
+    if (
+      ['task.run_failed', 'task.run_completed'].includes(event.type) &&
+      typeof payload?.runId === 'string'
+    ) {
+      onOpenRun(payload.runId);
+      return;
+    }
+
+    if (
+      event.type === 'artifact.created' &&
+      payload?.sourceType === 'run' &&
+      typeof payload?.sourceId === 'string'
+    ) {
+      onOpenRun(payload.sourceId);
     }
   }
 
@@ -955,14 +1015,27 @@ export function TasksPage({
                         </span>
                       </div>
                       <p className="meta">{event.createdAt}</p>
-                      {getTimelineActionLabel(event.type) ? (
-                        <button
-                          className="ghost-button timeline-action"
-                          onClick={() => handleTimelineAction(event)}
-                          type="button"
-                        >
-                          {getTimelineActionLabel(event.type)}
-                        </button>
+                      {getTimelineActionLabel(event.type) || getTimelineObjectLabel(event) ? (
+                        <div className="timeline-actions">
+                          {getTimelineActionLabel(event.type) ? (
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => handleTimelineAction(event)}
+                              type="button"
+                            >
+                              {getTimelineActionLabel(event.type)}
+                            </button>
+                          ) : null}
+                          {getTimelineObjectLabel(event) ? (
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => handleTimelineObjectOpen(event)}
+                              type="button"
+                            >
+                              {getTimelineObjectLabel(event)}
+                            </button>
+                          ) : null}
+                        </div>
                       ) : null}
                     </div>
                   ))}

@@ -57,7 +57,12 @@ export class RunService {
           content: output,
         });
       }
-      await this.taskService.annotateRunCompleted(input.taskId, input.type, Boolean(output?.trim()));
+      await this.taskService.annotateRunCompleted(
+        input.taskId,
+        input.type,
+        Boolean(output?.trim()),
+        completed.id,
+      );
       return completed;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown executor error';
@@ -68,7 +73,7 @@ export class RunService {
         'system',
         message,
       );
-      await this.taskService.annotateRunFailed(input.taskId, message);
+      await this.taskService.annotateRunFailed(input.taskId, message, failed.id);
       return failed;
     }
   }

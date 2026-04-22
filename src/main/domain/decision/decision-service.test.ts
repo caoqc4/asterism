@@ -124,7 +124,11 @@ describe('DecisionService', () => {
       id: 'decision_1',
       action: 'approve',
     });
-    expect(taskService.annotateDecisionApproved).toHaveBeenCalledWith('task_1', 'Need approval');
+    expect(taskService.annotateDecisionApproved).toHaveBeenCalledWith(
+      'task_1',
+      'Need approval',
+      'decision_1',
+    );
     expect(result.status).toBe('approved');
   });
 
@@ -150,7 +154,11 @@ describe('DecisionService', () => {
       action: 'defer',
     });
 
-    expect(taskService.annotateDecisionDeferred).toHaveBeenCalledWith('task_1', 'Need approval');
+    expect(taskService.annotateDecisionDeferred).toHaveBeenCalledWith(
+      'task_1',
+      'Need approval',
+      'decision_1',
+    );
     expect(result.status).toBe('deferred');
   });
 
@@ -179,6 +187,7 @@ describe('DecisionService', () => {
     expect(taskService.annotateDecisionCancelled).toHaveBeenCalledWith(
       'task_1',
       'Need approval',
+      'decision_1',
     );
     expect(result.status).toBe('cancelled');
   });

@@ -428,7 +428,7 @@ describe('TaskService', () => {
     };
     const service = new TaskService(repository as never, waitingItems as never);
 
-    const result = await service.annotateDecisionCancelled('task_1', 'Need approval');
+    const result = await service.annotateDecisionCancelled('task_1', 'Need approval', 'decision_1');
 
     expect(repository.update).toHaveBeenCalledWith({
       id: 'task_1',
@@ -442,6 +442,7 @@ describe('TaskService', () => {
       'task_1',
       'task.decision_cancelled',
       {
+        decisionId: 'decision_1',
         decisionTitle: 'Need approval',
         suggestedAction: '创建新的 Decision，或改走无需拍板的路径',
       },
@@ -472,7 +473,7 @@ describe('TaskService', () => {
     };
     const service = new TaskService(repository as never, waitingItems as never);
 
-    const result = await service.annotateDecisionApproved('task_1', 'Need approval');
+    const result = await service.annotateDecisionApproved('task_1', 'Need approval', 'decision_1');
 
     expect(repository.transition).toHaveBeenCalledWith({
       id: 'task_1',
@@ -485,6 +486,7 @@ describe('TaskService', () => {
       waitingReason: null,
     });
     expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'task.decision_approved', {
+      decisionId: 'decision_1',
       decisionTitle: 'Need approval',
       nextState: 'planned',
       suggestedAction: '基于已批准决策继续推进任务',
@@ -527,7 +529,7 @@ describe('TaskService', () => {
     };
     const service = new TaskService(repository as never, waitingItems as never);
 
-    const result = await service.annotateDecisionDeferred('task_1', 'Need approval');
+    const result = await service.annotateDecisionDeferred('task_1', 'Need approval', 'decision_1');
 
     expect(repository.transition).toHaveBeenCalledWith({
       id: 'task_1',
@@ -553,6 +555,7 @@ describe('TaskService', () => {
       'task_1',
       'task.decision_deferred',
       {
+        decisionId: 'decision_1',
         decisionTitle: 'Need approval',
         waitingReason: '等待重新拍板：Need approval',
         suggestedAction: '跟进拍板时机，或准备替代路径',
@@ -588,7 +591,7 @@ describe('TaskService', () => {
     };
     const service = new TaskService(repository as never, waitingItems as never);
 
-    const result = await service.annotateRunFailed('task_1', 'Executor exploded');
+    const result = await service.annotateRunFailed('task_1', 'Executor exploded', 'run_1');
 
     expect(repository.update).toHaveBeenCalledWith({
       id: 'task_1',
@@ -603,6 +606,7 @@ describe('TaskService', () => {
     });
     expect(waitingItems.resolveActive).toHaveBeenCalledWith('task_1');
     expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'task.run_failed', {
+      runId: 'run_1',
       failureReason: 'Executor exploded',
       suggestedAction: '检查失败原因并准备重试 Run',
     });
@@ -631,7 +635,7 @@ describe('TaskService', () => {
     };
     const service = new TaskService(repository as never, waitingItems as never);
 
-    const result = await service.annotateRunCompleted('task_1', 'draft', true);
+    const result = await service.annotateRunCompleted('task_1', 'draft', true, 'run_1');
 
     expect(repository.transition).toHaveBeenCalledWith({
       id: 'task_1',
@@ -643,6 +647,7 @@ describe('TaskService', () => {
       nextStep: '审阅最新 draft 产物，并决定是否继续推进。',
     });
     expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'task.run_completed', {
+      runId: 'run_1',
       runType: 'draft',
       nextState: 'planned',
       hasOutput: true,

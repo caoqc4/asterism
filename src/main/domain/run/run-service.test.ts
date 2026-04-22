@@ -148,7 +148,12 @@ describe('RunService', () => {
       runType: 'draft',
       content: 'Generated output',
     });
-    expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'draft', true);
+    expect(taskService.annotateRunCompleted).toHaveBeenCalledWith(
+      'task_1',
+      'draft',
+      true,
+      'run_1',
+    );
     expect(result.status).toBe('completed');
   });
 
@@ -208,7 +213,11 @@ describe('RunService', () => {
       'Executor exploded',
     );
     expect(taskService.annotateRunCompleted).not.toHaveBeenCalled();
-    expect(taskService.annotateRunFailed).toHaveBeenCalledWith('task_1', 'Executor exploded');
+    expect(taskService.annotateRunFailed).toHaveBeenCalledWith(
+      'task_1',
+      'Executor exploded',
+      'run_1',
+    );
     expect(artifactRepository.createFromRun).not.toHaveBeenCalled();
     expect(result.status).toBe('failed');
     expect(result.failureReason).toBe('Executor exploded');
@@ -300,7 +309,12 @@ describe('RunService', () => {
     });
 
     expect(taskService.transitionIfAllowed).not.toHaveBeenCalled();
-    expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'draft', true);
+    expect(taskService.annotateRunCompleted).toHaveBeenCalledWith(
+      'task_1',
+      'draft',
+      true,
+      'run_1',
+    );
     expect(artifactRepository.createFromRun).toHaveBeenCalled();
     expect(textExecutor.execute).toHaveBeenCalledWith(
       buildTaskDetail('running'),

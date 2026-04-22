@@ -225,7 +225,11 @@ export class TaskService {
     return this.attachActiveWaitingItem(updated);
   }
 
-  async annotateDecisionCancelled(taskId: string, decisionTitle: string): Promise<TaskRecord> {
+  async annotateDecisionCancelled(
+    taskId: string,
+    decisionTitle: string,
+    decisionId?: string,
+  ): Promise<TaskRecord> {
     const detail = await this.getExistingTaskOrThrow(taskId);
 
     const updated = await this.repository.update({
@@ -239,6 +243,7 @@ export class TaskService {
     await this.syncWaitingItem(updated.id, detail.state, updated.waitingReason);
 
     await this.repository.appendTimelineEvent(taskId, 'task.decision_cancelled', {
+      decisionId,
       decisionTitle,
       suggestedAction: '创建新的 Decision，或改走无需拍板的路径',
     });
@@ -246,7 +251,11 @@ export class TaskService {
     return this.attachActiveWaitingItem(updated);
   }
 
-  async annotateDecisionApproved(taskId: string, decisionTitle: string): Promise<TaskRecord> {
+  async annotateDecisionApproved(
+    taskId: string,
+    decisionTitle: string,
+    decisionId?: string,
+  ): Promise<TaskRecord> {
     const detail = await this.getExistingTaskOrThrow(taskId);
     const nextState =
       detail.state === 'waiting_external'
@@ -284,6 +293,7 @@ export class TaskService {
     });
 
     await this.repository.appendTimelineEvent(taskId, 'task.decision_approved', {
+      decisionId,
       decisionTitle,
       nextState: transitioned.state,
       suggestedAction: '基于已批准决策继续推进任务',
@@ -292,7 +302,11 @@ export class TaskService {
     return this.attachActiveWaitingItem(updated);
   }
 
-  async annotateDecisionDeferred(taskId: string, decisionTitle: string): Promise<TaskRecord> {
+  async annotateDecisionDeferred(
+    taskId: string,
+    decisionTitle: string,
+    decisionId?: string,
+  ): Promise<TaskRecord> {
     await this.getExistingTaskOrThrow(taskId);
 
     const waitingReason = `等待重新拍板：${decisionTitle}`;
@@ -311,6 +325,7 @@ export class TaskService {
     });
 
     await this.repository.appendTimelineEvent(taskId, 'task.decision_deferred', {
+      decisionId,
       decisionTitle,
       waitingReason,
       suggestedAction: '跟进拍板时机，或准备替代路径',
@@ -319,7 +334,11 @@ export class TaskService {
     return this.attachActiveWaitingItem(updated);
   }
 
-  async annotateRunFailed(taskId: string, failureReason: string): Promise<TaskRecord> {
+  async annotateRunFailed(
+    taskId: string,
+    failureReason: string,
+    runId?: string,
+  ): Promise<TaskRecord> {
     const detail = await this.restoreTaskAfterRun(await this.getExistingTaskOrThrow(taskId));
 
     const updated = await this.repository.update({
@@ -332,6 +351,7 @@ export class TaskService {
     await this.syncWaitingItem(updated.id, detail.state, updated.waitingReason);
 
     await this.repository.appendTimelineEvent(taskId, 'task.run_failed', {
+      runId,
       failureReason,
       suggestedAction: '检查失败原因并准备重试 Run',
     });
@@ -343,6 +363,7 @@ export class TaskService {
     taskId: string,
     runType: 'draft' | 'summarize',
     hasOutput: boolean,
+    runId?: string,
   ): Promise<TaskRecord> {
     const detail = await this.restoreTaskAfterRun(await this.getExistingTaskOrThrow(taskId));
     const nextStep = hasOutput
@@ -357,6 +378,7 @@ export class TaskService {
     await this.syncWaitingItem(updated.id, detail.state, updated.waitingReason);
 
     await this.repository.appendTimelineEvent(taskId, 'task.run_completed', {
+      runId,
       runType,
       nextState: detail.state,
       hasOutput,

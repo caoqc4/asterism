@@ -404,6 +404,17 @@ button {
   font-size: 13px;
 }
 
+.timeline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.timeline-actions .timeline-action {
+  margin-top: 0;
+}
+
 .brief-preview {
   display: -webkit-box;
   overflow: hidden;

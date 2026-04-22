@@ -1354,6 +1354,7 @@ describe('App UI flow', () => {
               taskId: actionTask.id,
               type: 'task.decision_cancelled',
               payload: JSON.stringify({
+                decisionId: 'decision_1',
                 decisionTitle: 'Approve budget path',
               }),
               createdAt: '2026-01-01T02:00:00.000Z',
@@ -1363,6 +1364,7 @@ describe('App UI flow', () => {
               taskId: actionTask.id,
               type: 'task.run_failed',
               payload: JSON.stringify({
+                runId: 'run_1',
                 failureReason: 'Executor exploded',
               }),
               createdAt: '2026-01-01T01:00:00.000Z',
@@ -1391,6 +1393,82 @@ describe('App UI flow', () => {
     expect((screen.getByLabelText('决策标题') as HTMLInputElement).value).toBe(
       'Timeline action task 重新拍板',
     );
+  });
+
+  it('opens related decision and run objects from task timeline events', async () => {
+    const user = userEvent.setup();
+
+    const timelineObjectTask = buildTaskRecord({
+      id: 'task_timeline_objects',
+      title: 'Timeline object task',
+      state: 'planned',
+    });
+
+    const timelineObjectApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([timelineObjectTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== timelineObjectTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(timelineObjectTask),
+          timeline: [
+            {
+              id: 'timeline_decision_object',
+              taskId: timelineObjectTask.id,
+              type: 'task.decision_approved',
+              payload: JSON.stringify({
+                decisionId: 'decision_1',
+                decisionTitle: 'Legal sign-off',
+                nextState: 'planned',
+              }),
+              createdAt: '2026-01-01T02:00:00.000Z',
+            },
+            {
+              id: 'timeline_run_object',
+              taskId: timelineObjectTask.id,
+              type: 'task.run_completed',
+              payload: JSON.stringify({
+                runId: 'run_1',
+                runType: 'draft',
+                nextState: 'planned',
+                hasOutput: true,
+              }),
+              createdAt: '2026-01-01T01:00:00.000Z',
+            },
+          ],
+        };
+      }),
+    };
+
+    window.api = timelineObjectApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /timeline object task/i }));
+    await screen.findByRole('heading', { name: 'Timeline object task' });
+
+    const timelineObjectButtons = await screen.findAllByRole('button', { name: '查看 Decision' });
+    await user.click(timelineObjectButtons[0]!);
+
+    await waitFor(() => {
+      expect(window.location.hash).toBe('#decisions');
+      expect(screen.getByRole('heading', { name: '待拍板事项' })).toBeTruthy();
+    });
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /timeline object task/i }));
+    await screen.findByRole('heading', { name: 'Timeline object task' });
+
+    const runObjectButtons = await screen.findAllByRole('button', { name: '查看 Run' });
+    await user.click(runObjectButtons[0]!);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'draft / failed' })).toBeTruthy();
+    });
   });
 
   it('prefills next step from waiting timeline suggestions', async () => {
