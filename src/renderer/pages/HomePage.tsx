@@ -259,7 +259,10 @@ export function HomePage({
               >
                 <div className="task-row">
                   <strong>{sourceContext.title}</strong>
-                  <span className="status">{sourceContext.kind}</span>
+                  <span className="status">
+                    {sourceContext.kind}
+                    {sourceContext.isKey ? ' · key' : ''}
+                  </span>
                 </div>
                 <p className="meta">task: {sourceContext.taskTitle}</p>
                 {sourceContext.note ? <p className="meta">{sourceContext.note}</p> : null}

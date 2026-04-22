@@ -411,6 +411,7 @@ export function TasksPage({
   const [sourceContextEditingId, setSourceContextEditingId] = useState<string | null>(null);
   const [sourceContextTitle, setSourceContextTitle] = useState('');
   const [sourceContextKind, setSourceContextKind] = useState<SourceContextKind>('link');
+  const [sourceContextIsKey, setSourceContextIsKey] = useState(false);
   const [sourceContextUri, setSourceContextUri] = useState('');
   const [sourceContextContent, setSourceContextContent] = useState('');
   const [sourceContextNote, setSourceContextNote] = useState('');
@@ -533,6 +534,7 @@ export function TasksPage({
         setSourceContextEditingId(null);
         setSourceContextTitle('');
         setSourceContextKind('link');
+        setSourceContextIsKey(false);
         setSourceContextUri('');
         setSourceContextContent('');
         setSourceContextNote('');
@@ -673,6 +675,7 @@ export function TasksPage({
     setSourceContextEditingId(item.id);
     setSourceContextTitle(item.title);
     setSourceContextKind(item.kind);
+    setSourceContextIsKey(item.isKey);
     setSourceContextUri(item.uri ?? '');
     setSourceContextContent(item.content ?? '');
     setSourceContextNote(item.note ?? '');
@@ -683,6 +686,7 @@ export function TasksPage({
     setSourceContextEditingId(null);
     setSourceContextTitle('');
     setSourceContextKind('link');
+    setSourceContextIsKey(false);
     setSourceContextUri('');
     setSourceContextContent('');
     setSourceContextNote('');
@@ -736,6 +740,7 @@ export function TasksPage({
         id: sourceContextEditingId,
         title: sourceContextTitle,
         kind: sourceContextKind,
+        isKey: sourceContextIsKey,
         uri: sourceContextUri,
         content: sourceContextContent,
         note: sourceContextNote,
@@ -745,6 +750,7 @@ export function TasksPage({
         taskId: detail.id,
         title: sourceContextTitle,
         kind: sourceContextKind,
+        isKey: sourceContextIsKey,
         uri: sourceContextUri,
         content: sourceContextContent,
         note: sourceContextNote,
@@ -1227,6 +1233,7 @@ export function TasksPage({
                             <strong>{item.title}</strong>
                             <span className="signal-pill timeline-badge timeline-item-default">
                               {formatSourceContextKind(item.kind)}
+                              {item.isKey ? ' · key' : ''}
                             </span>
                           </div>
                           {item.note ? <p className="meta">{item.note}</p> : null}
@@ -1250,6 +1257,7 @@ export function TasksPage({
                             <strong>{item.title}</strong>
                             <span className="signal-pill timeline-badge timeline-item-default">
                               {formatSourceContextKind(item.kind)}
+                              {item.isKey ? ' · key' : ''}
                             </span>
                           </div>
                           {item.uri ? (
@@ -1312,6 +1320,14 @@ export function TasksPage({
                           </option>
                         ))}
                       </select>
+                    </label>
+                    <label className="checkbox-row">
+                      <input
+                        checked={sourceContextIsKey}
+                        onChange={(event) => setSourceContextIsKey(event.target.checked)}
+                        type="checkbox"
+                      />
+                      标记为关键来源
                     </label>
                     <label>
                       链接 / URI

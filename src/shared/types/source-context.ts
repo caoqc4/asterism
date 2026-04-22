@@ -7,6 +7,7 @@ export type SourceContextRecord = {
   taskId: string;
   title: string;
   kind: SourceContextKind;
+  isKey: boolean;
   uri: string | null;
   content: string | null;
   note: string | null;
@@ -20,6 +21,7 @@ export type CreateSourceContextInput = {
   taskId: string;
   title: string;
   kind: SourceContextKind;
+  isKey?: boolean;
   uri?: string | null;
   content?: string | null;
   note?: string | null;
@@ -29,6 +31,7 @@ export type UpdateSourceContextInput = {
   id: string;
   title?: string;
   kind?: SourceContextKind;
+  isKey?: boolean;
   uri?: string | null;
   content?: string | null;
   note?: string | null;

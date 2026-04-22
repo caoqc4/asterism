@@ -298,16 +298,26 @@ export class HomeBriefService {
       activeTasks.map((task) => task.id),
     );
 
-    return items.slice(0, 5).map((item) => ({
+    return [...items]
+      .sort((left, right) => {
+        if (left.isKey !== right.isKey) {
+          return left.isKey ? -1 : 1;
+        }
+
+        return right.updatedAt.localeCompare(left.updatedAt);
+      })
+      .slice(0, 5)
+      .map((item) => ({
       id: item.id,
       taskId: item.taskId,
       taskTitle: taskTitleById.get(item.taskId) ?? item.taskId,
       title: item.title,
       kind: item.kind,
+      isKey: item.isKey,
       uri: item.uri,
       note: item.note,
       updatedAt: item.updatedAt,
-    }));
+      }));
   }
 
   async getHomeData(): Promise<HomeBriefData> {

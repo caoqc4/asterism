@@ -183,6 +183,7 @@ describe('registerIpcHandlers', () => {
       taskId: 'task_1',
       title: 'PRD',
       kind: 'doc',
+      isKey: false,
       uri: 'https://example.com/prd',
       content: null,
       note: 'Primary product doc',

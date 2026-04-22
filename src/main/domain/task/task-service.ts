@@ -480,6 +480,7 @@ export class TaskService {
       sourceContextId: created.id,
       title: created.title,
       kind: created.kind,
+      isKey: created.isKey,
       uri: created.uri,
     });
 
@@ -497,6 +498,7 @@ export class TaskService {
       sourceContextId: updated.id,
       title: updated.title,
       kind: updated.kind,
+      isKey: updated.isKey,
       uri: updated.uri,
     });
 
@@ -514,6 +516,7 @@ export class TaskService {
       sourceContextId: archived.id,
       title: archived.title,
       kind: archived.kind,
+      isKey: archived.isKey,
     });
 
     return archived;

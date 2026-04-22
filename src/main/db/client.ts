@@ -112,6 +112,7 @@ function bootstrapTables(connection: Database.Database): void {
       task_id TEXT NOT NULL,
       title TEXT NOT NULL,
       kind TEXT NOT NULL,
+      is_key TEXT NOT NULL DEFAULT 'false',
       uri TEXT,
       content TEXT,
       note TEXT,
@@ -162,6 +163,7 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'source_contexts', 'uri', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'content', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'note', 'TEXT');
+  ensureColumn(connection, 'source_contexts', 'is_key', "TEXT NOT NULL DEFAULT 'false'");
   ensureColumn(connection, 'source_contexts', 'status', "TEXT NOT NULL DEFAULT 'active'");
   ensureColumn(connection, 'source_contexts', 'updated_at', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'archived_at', 'TEXT');

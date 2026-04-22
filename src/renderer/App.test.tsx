@@ -98,6 +98,7 @@ function buildSourceContext(partial: Partial<SourceContextRecord>): SourceContex
     taskId: partial.taskId ?? 'task_1',
     title: partial.title ?? 'Reference doc',
     kind: partial.kind ?? 'doc',
+    isKey: partial.isKey ?? false,
     uri: partial.uri ?? 'https://example.com/reference',
     content: partial.content ?? null,
     note: partial.note ?? 'Helpful source',
@@ -117,6 +118,7 @@ function buildHomeSourceContext(
     taskTitle: partial.taskTitle ?? 'Task',
     title: partial.title ?? 'Reference doc',
     kind: partial.kind ?? 'doc',
+    isKey: partial.isKey ?? false,
     uri: partial.uri ?? 'https://example.com/reference',
     note: partial.note ?? 'Helpful source',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
@@ -1981,6 +1983,7 @@ describe('App UI flow', () => {
           taskId: input.taskId,
           title: input.title,
           kind: input.kind,
+          isKey: input.isKey ?? false,
           uri: input.uri ?? null,
           content: input.content ?? null,
           note: input.note ?? null,
@@ -1998,6 +2001,7 @@ describe('App UI flow', () => {
           taskId: sourceTask.id,
           title: input.title ?? 'Launch brief',
           kind: input.kind ?? 'doc',
+          isKey: input.isKey ?? false,
           uri: input.uri ?? 'https://example.com/brief',
           content: input.content ?? null,
           note: input.note ?? null,
@@ -2049,6 +2053,7 @@ describe('App UI flow', () => {
       taskId: sourceTask.id,
       title: 'Reference PR',
       kind: 'pr',
+      isKey: false,
       uri: 'https://example.com/pr/1',
       content: '',
       note: 'Primary rollout PR',
@@ -2070,10 +2075,20 @@ describe('App UI flow', () => {
     const noteField = screen.getByLabelText('说明') as HTMLTextAreaElement;
     await user.clear(noteField);
     await user.type(noteField, 'Updated brief note');
+    await user.click(screen.getByLabelText('标记为关键来源'));
     await user.click(screen.getByRole('button', { name: '保存来源' }));
 
-    expect(sourceApi.updateSourceContext).toHaveBeenCalled();
+    expect(sourceApi.updateSourceContext).toHaveBeenCalledWith({
+      id: 'source_context_existing',
+      title: 'Launch brief',
+      kind: 'doc',
+      isKey: true,
+      uri: 'https://example.com/brief',
+      content: '',
+      note: 'Updated brief note',
+    });
     expect((await screen.findAllByText('Updated brief note')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/key/).length).toBeGreaterThan(0);
 
     await user.click(
       within(existingSourceCard as HTMLElement).getByRole('button', { name: '归档来源' }),

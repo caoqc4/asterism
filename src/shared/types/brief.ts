@@ -47,6 +47,7 @@ export type HomeSourceContextRecord = {
   taskTitle: string;
   title: string;
   kind: string;
+  isKey: boolean;
   uri: string | null;
   note: string | null;
   updatedAt: string;

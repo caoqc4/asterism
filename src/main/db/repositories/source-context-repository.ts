@@ -20,12 +20,23 @@ function normalizeValue(value: string | null | undefined): string | null {
   return value?.trim() ? value.trim() : null;
 }
 
+function sortSourceContexts(rows: SourceContextRecord[]): SourceContextRecord[] {
+  return [...rows].sort((left, right) => {
+    if (left.isKey !== right.isKey) {
+      return left.isKey ? -1 : 1;
+    }
+
+    return right.updatedAt.localeCompare(left.updatedAt);
+  });
+}
+
 function toRecord(row: typeof sourceContexts.$inferSelect): SourceContextRecord {
   return {
     id: row.id,
     taskId: row.taskId,
     title: row.title,
     kind: row.kind as SourceContextRecord['kind'],
+    isKey: row.isKey === 'true',
     uri: row.uri,
     content: row.content,
     note: row.note,
@@ -45,7 +56,7 @@ export class SourceContextRepository {
       .where(and(eq(sourceContexts.taskId, taskId), eq(sourceContexts.status, 'active')))
       .orderBy(desc(sourceContexts.updatedAt));
 
-    return rows.map(toRecord);
+    return sortSourceContexts(rows.map(toRecord));
   }
 
   async listActiveForTasks(taskIds: string[]): Promise<SourceContextRecord[]> {
@@ -65,7 +76,7 @@ export class SourceContextRepository {
       )
       .orderBy(desc(sourceContexts.updatedAt));
 
-    return rows.map(toRecord);
+    return sortSourceContexts(rows.map(toRecord));
   }
 
   async create(input: CreateSourceContextInput): Promise<SourceContextRecord> {
@@ -78,6 +89,7 @@ export class SourceContextRepository {
       taskId: input.taskId,
       title: input.title.trim(),
       kind: input.kind,
+      isKey: input.isKey ? 'true' : 'false',
       uri: normalizeValue(input.uri),
       content: normalizeValue(input.content),
       note: normalizeValue(input.note),
@@ -113,6 +125,7 @@ export class SourceContextRepository {
       .set({
         title: input.title?.trim() || current.title,
         kind: input.kind ?? current.kind,
+        isKey: input.isKey === undefined ? current.isKey : input.isKey ? 'true' : 'false',
         uri: input.uri === undefined ? current.uri : normalizeValue(input.uri),
         content: input.content === undefined ? current.content : normalizeValue(input.content),
         note: input.note === undefined ? current.note : normalizeValue(input.note),

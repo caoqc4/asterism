@@ -107,6 +107,7 @@ function buildSourceContext(partial: Partial<SourceContextRecord>): SourceContex
     taskId: partial.taskId ?? 'task_1',
     title: partial.title ?? 'Reference doc',
     kind: partial.kind ?? 'doc',
+    isKey: partial.isKey ?? false,
     uri: partial.uri ?? 'https://example.com/reference',
     content: partial.content ?? null,
     note: partial.note ?? 'Use this as the primary source',
@@ -253,6 +254,7 @@ describe('HomeBriefService', () => {
         taskTitle: 'High risk task',
         title: 'Escalation source memo',
         kind: 'doc',
+        isKey: false,
         uri: 'https://example.com/reference',
         note: 'Contains the latest owner-facing language',
         updatedAt: '2026-01-01T01:30:00.000Z',
@@ -487,6 +489,71 @@ describe('HomeBriefService', () => {
         focusArea: 'detail',
         sourceContextId: 'source_context_missing',
         prefillNextStep: '先吸收来源材料，再补下一步：Research notes',
+      },
+    });
+  });
+
+  it('prioritizes key source contexts ahead of newer non-key sources', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_key_source',
+            title: 'Key source task',
+            state: 'planned',
+            nextStep: 'Review source updates',
+          }),
+        ]),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([
+          buildSourceContext({
+            id: 'source_context_non_key',
+            taskId: 'task_key_source',
+            title: 'Fresh non-key memo',
+            isKey: false,
+            updatedAt: '2026-01-03T00:00:00.000Z',
+          }),
+          buildSourceContext({
+            id: 'source_context_key',
+            taskId: 'task_key_source',
+            title: 'Pinned source brief',
+            isKey: true,
+            updatedAt: '2026-01-02T00:00:00.000Z',
+          }),
+        ]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+      null,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.recentSourceContexts.map((item) => item.id)).toEqual([
+      'source_context_key',
+      'source_context_non_key',
+    ]);
+    expect(homeData.recommendedActions[0]).toMatchObject({
+      id: 'source-context:source_context_key',
+      label: '基于最新来源继续推进：Key source task',
+      intent: {
+        type: 'focus_source_context',
+        sourceContextId: 'source_context_key',
       },
     });
   });

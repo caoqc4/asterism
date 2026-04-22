@@ -79,6 +79,7 @@ export const sourceContexts = sqliteTable('source_contexts', {
   taskId: text('task_id').notNull(),
   title: text('title').notNull(),
   kind: text('kind').notNull(),
+  isKey: text('is_key').notNull().default('false'),
   uri: text('uri'),
   content: text('content'),
   note: text('note'),

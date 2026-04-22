@@ -64,6 +64,7 @@ function buildSourceContextRecord(partial: Partial<SourceContextRecord> = {}): S
     taskId: partial.taskId ?? 'task_1',
     title: partial.title ?? 'PRD',
     kind: partial.kind ?? 'doc',
+    isKey: partial.isKey ?? false,
     uri: partial.uri ?? 'https://example.com/prd',
     content: partial.content ?? null,
     note: partial.note ?? 'Primary doc',
@@ -761,6 +762,7 @@ describe('TaskService', () => {
       sourceContextId: 'source_context_1',
       title: 'PRD',
       kind: 'doc',
+      isKey: false,
       uri: 'https://example.com/prd',
     });
     expect(result.id).toBe('source_context_1');
@@ -805,6 +807,7 @@ describe('TaskService', () => {
       sourceContextId: 'source_context_1',
       title: 'PRD',
       kind: 'doc',
+      isKey: false,
     });
     expect(result.status).toBe('archived');
   });

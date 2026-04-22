@@ -43,6 +43,7 @@ describe('SourceContextRepository integration', () => {
 
     const updated = await sourceContextRepository.update({
       id: created.id,
+      isKey: true,
       note: 'Updated note',
       content: 'Key product assumptions',
     });
@@ -52,12 +53,45 @@ describe('SourceContextRepository integration', () => {
     const activeAfterArchive = await sourceContextRepository.listActiveForTask(task.id);
 
     expect(created.status).toBe('active');
+    expect(created.isKey).toBe(false);
+    expect(updated.isKey).toBe(true);
     expect(updated.note).toBe('Updated note');
     expect(updated.content).toBe('Key product assumptions');
     expect(activeBeforeArchive).toHaveLength(1);
     expect(activeBeforeArchive[0]?.id).toBe(created.id);
+    expect(activeBeforeArchive[0]?.isKey).toBe(true);
     expect(archived.status).toBe('archived');
     expect(archived.archivedAt).toBeTruthy();
     expect(activeAfterArchive).toHaveLength(0);
+  });
+
+  it('lists key source context items before newer non-key items', async () => {
+    const task = await taskRepository.create({ title: 'Prioritize key materials' });
+
+    const nonKey = await sourceContextRepository.create({
+      taskId: task.id,
+      title: 'Fresh memo',
+      kind: 'doc',
+      note: 'Recently updated but not pinned',
+    });
+
+    const key = await sourceContextRepository.create({
+      taskId: task.id,
+      title: 'Pinned source',
+      kind: 'doc',
+      isKey: true,
+      note: 'Most important source',
+    });
+
+    await sourceContextRepository.update({
+      id: nonKey.id,
+      note: 'Most recently touched non-key source',
+    });
+
+    const listed = await sourceContextRepository.listActiveForTask(task.id);
+
+    expect(listed.map((item) => item.id)).toEqual([key.id, nonKey.id]);
+    expect(listed[0]?.isKey).toBe(true);
+    expect(listed[1]?.isKey).toBe(false);
   });
 });
