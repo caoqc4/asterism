@@ -1,5 +1,6 @@
 import type { ArtifactRecord } from './artifact.js';
 import type { BriefSnapshotRecord } from './brief-snapshot.js';
+import type { ProcessTemplateKind } from './process-template.js';
 import type { SchedulerStatus } from './scheduler.js';
 import type { DecisionRecord } from './decision.js';
 import type { TaskRecord, TaskRiskLevel } from './task.js';
@@ -38,6 +39,18 @@ export type HomeActivityRecord = {
   updatedAt: string;
 };
 
+export type BriefProcessTemplateCandidate = {
+  id: string;
+  title: string;
+  summary: string | null;
+  content: string;
+  kind: ProcessTemplateKind;
+  tags: string[];
+  taskIds: string[];
+  taskTitles: string[];
+  notes: string[];
+};
+
 export type HomeBriefData = {
   activeTaskCount: number;
   pendingDecisionCount: number;
@@ -56,4 +69,5 @@ export type HomeBriefData = {
   recentActivity: HomeActivityRecord[];
   recentBriefSnapshots: BriefSnapshotRecord[];
   schedulerStatus: SchedulerStatus;
+  processTemplateCandidates?: BriefProcessTemplateCandidate[];
 };

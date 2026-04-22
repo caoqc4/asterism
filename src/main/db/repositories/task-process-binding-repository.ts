@@ -84,6 +84,50 @@ export class TaskProcessBindingRepository {
       .filter((record): record is AppliedProcessTemplateRecord => Boolean(record));
   }
 
+  async listActiveForTasks(taskIds: string[]): Promise<AppliedProcessTemplateRecord[]> {
+    if (taskIds.length === 0) {
+      return [];
+    }
+
+    const db = initDatabase();
+    const bindings = await db
+      .select()
+      .from(taskProcessBindings)
+      .where(
+        and(
+          inArray(taskProcessBindings.taskId, taskIds),
+          eq(taskProcessBindings.status, 'active'),
+        ),
+      )
+      .orderBy(desc(taskProcessBindings.updatedAt));
+
+    if (bindings.length === 0) {
+      return [];
+    }
+
+    const templates = await db
+      .select()
+      .from(processTemplates)
+      .where(
+        and(
+          inArray(
+            processTemplates.id,
+            bindings.map((binding) => binding.templateId),
+          ),
+          eq(processTemplates.status, 'active'),
+        ),
+      );
+
+    const templateById = new Map(templates.map((template) => [template.id, template]));
+
+    return bindings
+      .map((binding) => {
+        const template = templateById.get(binding.templateId);
+        return template ? toAppliedRecord(binding, template) : null;
+      })
+      .filter((record): record is AppliedProcessTemplateRecord => Boolean(record));
+  }
+
   async apply(input: ApplyProcessTemplateInput): Promise<{
     action: 'created' | 'reactivated' | 'existing';
     binding: AppliedProcessTemplateRecord;

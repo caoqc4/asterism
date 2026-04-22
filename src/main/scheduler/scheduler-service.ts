@@ -3,6 +3,7 @@ import cron, { type ScheduledTask } from 'node-cron';
 import type { SchedulerStatus } from '../../shared/types/scheduler.js';
 import { AppConfigService } from '../config/app-config-service.js';
 import { BriefSnapshotRepository } from '../db/repositories/brief-snapshot-repository.js';
+import { BriefProcessTemplateSelector } from '../domain/brief/process-template-selector.js';
 import { RunRepository } from '../db/repositories/run-repository.js';
 import { HomeBriefService } from '../domain/brief/home-brief-service.js';
 import { BriefExecutor, buildFallbackBrief } from '../executors/brief-executor.js';
@@ -25,6 +26,7 @@ export class SchedulerService {
     private readonly runRepository: RunRepository,
     private readonly aiConfigService: AiConfigService,
     private readonly briefExecutor: BriefExecutor,
+    private readonly briefProcessTemplateSelector: BriefProcessTemplateSelector = new BriefProcessTemplateSelector(),
   ) {}
 
   async start(): Promise<void> {
@@ -84,17 +86,36 @@ export class SchedulerService {
 
   private async generateScheduledBrief(kind: string): Promise<void> {
     const homeData = await this.homeBriefService.getHomeData();
-    let payload = buildFallbackBrief(homeData, kind);
+    let selectedTemplates = [] as NonNullable<typeof homeData.processTemplateCandidates>;
+    let payload = buildFallbackBrief(homeData, kind, selectedTemplates);
     let source: 'ai' | 'fallback' = 'fallback';
     let fallbackReason: string | null = 'AI brief executor not attempted.';
 
     try {
       const runtimeConfig = await this.aiConfigService.resolveRuntimeConfig();
-      payload = await this.briefExecutor.execute(homeData, kind, runtimeConfig);
+      if ((homeData.processTemplateCandidates?.length ?? 0) > 0) {
+        try {
+          const selection = await this.briefProcessTemplateSelector.select(
+            homeData,
+            kind,
+            runtimeConfig,
+          );
+
+          if (selection.shouldUse) {
+            selectedTemplates = selection.selectedTemplates;
+          }
+        } catch {
+          selectedTemplates = [];
+        }
+      }
+
+      payload = await this.briefExecutor.execute(homeData, kind, runtimeConfig, {
+        selectedTemplates,
+      });
       source = 'ai';
       fallbackReason = null;
     } catch (error) {
-      payload = buildFallbackBrief(homeData, kind);
+      payload = buildFallbackBrief(homeData, kind, selectedTemplates);
       source = 'fallback';
       fallbackReason = error instanceof Error ? error.message : 'Unknown brief executor error';
     }

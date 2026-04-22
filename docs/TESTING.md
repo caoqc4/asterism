@@ -46,9 +46,9 @@ Covered today:
 - `RunService`
   successful execution path, failure path, task restoration after settled runs, artifact creation on successful output, and process-template selector behavior
 - `HomeBriefService`
-  waiting, risk, missing-next-step, recommended actions, recent artifacts, recent lifecycle activity, and artifact-aware brief semantics
+  waiting, risk, missing-next-step, recommended actions, recent artifacts, recent lifecycle activity, artifact-aware brief semantics, and active-task process-template candidate aggregation
 - `SchedulerService`
-  startup behavior, cron registration, fallback brief generation
+  startup behavior, cron registration, fallback brief generation, and brief-time process-template selector behavior
 
 These tests protect core business semantics before SQLite or renderer concerns enter the picture.
 
@@ -109,6 +109,7 @@ Covered today:
 - `Home recent activity -> Tasks detail follow-up intent`
 - `Home recent activity -> Decisions / Runs`
 - `Home recent activity` lightweight follow-up actions
+- `Home brief` process-template-aware scheduling path
 - `Home key signals -> Tasks detail follow-up intent`
 - `Tasks quick decision submission`
 - `Tasks quick run submission`

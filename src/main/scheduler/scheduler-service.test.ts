@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { HomeBriefData } from '../../shared/types/brief.js';
+import type { BriefProcessTemplateCandidate } from '../../shared/types/brief.js';
 import type { RunRecord } from '../../shared/types/run.js';
 
 const scheduledJobs: Array<{
@@ -43,12 +44,29 @@ function buildHomeData(): HomeBriefData {
     recentArtifacts: [],
     recentActivity: [],
     recentBriefSnapshots: [],
+    processTemplateCandidates: [],
     schedulerStatus: {
       enabled: true,
       running: false,
       lastBriefAt: null,
       lastRunSweepAt: null,
     },
+  };
+}
+
+function buildBriefTemplateCandidate(
+  partial: Partial<BriefProcessTemplateCandidate> = {},
+): BriefProcessTemplateCandidate {
+  return {
+    id: partial.id ?? 'process_template_1',
+    title: partial.title ?? 'Risk review skill',
+    summary: partial.summary ?? 'Prioritize risk and blockers',
+    content: partial.content ?? '1. Review risks\n2. Highlight blockers',
+    kind: partial.kind ?? 'skill',
+    tags: partial.tags ?? ['risk'],
+    taskIds: partial.taskIds ?? ['task_1'],
+    taskTitles: partial.taskTitles ?? ['Task 1'],
+    notes: partial.notes ?? ['Use for risky work'],
   };
 }
 
@@ -114,6 +132,10 @@ describe('SchedulerService', () => {
   });
 
   it('runs startup recovery and schedules jobs when enabled', async () => {
+    const homeData = {
+      ...buildHomeData(),
+      processTemplateCandidates: [buildBriefTemplateCandidate()],
+    };
     const runRepository = {
       listIncompleteOlderThan: vi.fn().mockResolvedValue([buildRunRecord()]),
       updateResult: vi.fn().mockResolvedValue({
@@ -128,7 +150,7 @@ describe('SchedulerService', () => {
       create: vi.fn().mockResolvedValue(undefined),
     };
     const homeBriefService = {
-      getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      getHomeData: vi.fn().mockResolvedValue(homeData),
     };
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
@@ -140,6 +162,13 @@ describe('SchedulerService', () => {
     };
     const briefExecutor = {
       execute: vi.fn().mockResolvedValue('AI brief'),
+    };
+    const briefProcessTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: true,
+        selectedTemplates: [buildBriefTemplateCandidate()],
+        reason: '当前局势风险突出，适合参考风险审阅模板。',
+      }),
     };
     const { SchedulerService } = await import('./scheduler-service.js');
     const service = new SchedulerService(
@@ -155,6 +184,7 @@ describe('SchedulerService', () => {
       runRepository as never,
       aiConfigService as never,
       briefExecutor as never,
+      briefProcessTemplateSelector as never,
     );
 
     await service.start();
@@ -169,7 +199,21 @@ describe('SchedulerService', () => {
     );
     expect(homeBriefService.getHomeData).toHaveBeenCalledTimes(1);
     expect(aiConfigService.resolveRuntimeConfig).toHaveBeenCalledTimes(1);
+    expect(briefProcessTemplateSelector.select).toHaveBeenCalledTimes(1);
     expect(briefExecutor.execute).toHaveBeenCalledTimes(1);
+    expect(briefExecutor.execute).toHaveBeenCalledWith(
+      homeData,
+      'startup',
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: { enableScheduler: true },
+      },
+      {
+        selectedTemplates: [buildBriefTemplateCandidate()],
+      },
+    );
     expect(briefSnapshotRepository.create).toHaveBeenCalledWith(
       'startup',
       'AI brief',
@@ -217,6 +261,9 @@ describe('SchedulerService', () => {
       {
         execute: vi.fn(),
       } as never,
+      {
+        select: vi.fn(),
+      } as never,
     );
 
     await service.start();
@@ -227,6 +274,71 @@ describe('SchedulerService', () => {
       expect.stringContaining('Taskplane Brief (startup)'),
       'fallback',
       'AI API Key is not configured in system Keychain.',
+    );
+  });
+
+  it('falls back to plain brief generation when brief template selection fails', async () => {
+    const homeData = {
+      ...buildHomeData(),
+      processTemplateCandidates: [buildBriefTemplateCandidate()],
+    };
+    const briefSnapshotRepository = {
+      create: vi.fn().mockResolvedValue(undefined),
+    };
+    const briefExecutor = {
+      execute: vi.fn().mockResolvedValue('AI brief without templates'),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(homeData),
+      } as never,
+      briefSnapshotRepository as never,
+      {
+        listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+        updateResult: vi.fn(),
+      } as never,
+      {
+        resolveRuntimeConfig: vi.fn().mockResolvedValue({
+          provider: 'anthropic',
+          model: 'claude-3-5-sonnet-latest',
+          apiKey: 'secret',
+          featureFlags: { enableScheduler: true },
+        }),
+      } as never,
+      briefExecutor as never,
+      {
+        select: vi.fn().mockRejectedValue(new Error('Selector exploded')),
+      } as never,
+    );
+
+    await service.start();
+
+    expect(briefExecutor.execute).toHaveBeenCalledWith(
+      homeData,
+      'startup',
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: { enableScheduler: true },
+      },
+      {
+        selectedTemplates: [],
+      },
+    );
+    expect(briefSnapshotRepository.create).toHaveBeenCalledWith(
+      'startup',
+      'AI brief without templates',
+      'ai',
+      null,
     );
   });
 });

@@ -38,6 +38,7 @@ const homeBriefService = new HomeBriefService(
   artifactRepository,
   briefSnapshotRepository,
   () => schedulerService,
+  taskProcessBindingRepository,
 );
 const textExecutor = new TextExecutor();
 const briefExecutor = new BriefExecutor();

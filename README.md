@@ -131,6 +131,7 @@ What exists today:
 - task-side objects now established: active `waiting items`, text `artifacts`, editable `source context` materials, and reusable `process context` templates
 - decision and run actions now write back clearer task semantics, including follow-up next steps, waiting reasons, and lifecycle timeline events
 - run execution now evaluates bound process templates with a Claude-skills-style selector instead of blindly injecting every template into every run
+- brief generation now also evaluates active-task process templates with a separate selector, using them as optional summarization perspectives rather than fixed execution steps
 - config + keychain setup
 - service tests and SQLite repository integration coverage
 - IPC handler coverage for critical event-emitting entrypoints

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { DecisionRecord } from '../../../shared/types/decision.js';
+import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
 import type { RunRecord } from '../../../shared/types/run.js';
 import type { TaskRecord } from '../../../shared/types/task.js';
 import type { WaitingItemRecord } from '../../../shared/types/waiting-item.js';
@@ -75,6 +76,30 @@ function buildArtifact(partial: Partial<ArtifactRecord>): ArtifactRecord {
   };
 }
 
+function buildAppliedProcessTemplate(
+  partial: Partial<AppliedProcessTemplateRecord>,
+): AppliedProcessTemplateRecord {
+  return {
+    id: partial.id ?? 'process_template_1',
+    title: partial.title ?? 'Risk review skill',
+    summary: partial.summary ?? 'Prioritize risk and blockers',
+    content: partial.content ?? '1. Review risks\n2. Highlight blockers',
+    kind: partial.kind ?? 'skill',
+    tags: partial.tags ?? ['risk'],
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    archivedAt: partial.archivedAt ?? null,
+    bindingId: partial.bindingId ?? 'task_process_binding_1',
+    taskId: partial.taskId ?? 'task_1',
+    bindingStatus: partial.bindingStatus ?? 'active',
+    bindingNote: partial.bindingNote ?? null,
+    boundAt: partial.boundAt ?? '2026-01-01T00:00:00.000Z',
+    bindingUpdatedAt: partial.bindingUpdatedAt ?? '2026-01-01T00:00:00.000Z',
+    removedAt: partial.removedAt ?? null,
+  };
+}
+
 describe('HomeBriefService', () => {
   it('aggregates waiting, high-risk, and missing-next-step task signals', async () => {
     const service = new HomeBriefService(
@@ -140,6 +165,23 @@ describe('HomeBriefService', () => {
         listRecent: vi.fn().mockResolvedValue([]),
       } as never,
       () => null,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([
+          buildAppliedProcessTemplate({
+            id: 'process_template_risk',
+            title: 'Risk review skill',
+            taskId: 'task_risk',
+            bindingNote: 'Use for escalation and risk-heavy work',
+          }),
+          buildAppliedProcessTemplate({
+            id: 'process_template_risk',
+            title: 'Risk review skill',
+            taskId: 'task_waiting',
+            bindingId: 'task_process_binding_2',
+            bindingNote: 'Also helps summarize waiting blockers',
+          }),
+        ]),
+      } as never,
     );
 
     const homeData = await service.getHomeData();
@@ -176,6 +218,22 @@ describe('HomeBriefService', () => {
       'Waiting for reviewer confirmation',
     );
     expect(homeData.recentArtifacts[0]?.content).toBe('Escalation draft');
+    expect(homeData.processTemplateCandidates).toEqual([
+      {
+        id: 'process_template_risk',
+        title: 'Risk review skill',
+        summary: 'Prioritize risk and blockers',
+        content: '1. Review risks\n2. Highlight blockers',
+        kind: 'skill',
+        tags: ['risk'],
+        taskIds: ['task_risk', 'task_waiting'],
+        taskTitles: ['High risk task', 'Waiting task'],
+        notes: [
+          'Use for escalation and risk-heavy work',
+          'Also helps summarize waiting blockers',
+        ],
+      },
+    ]);
     expect(homeData.recommendedActions.find((action) => action.id === 'waiting:task_waiting')?.reason).toBe(
       'Waiting for reviewer confirmation',
     );
@@ -222,6 +280,7 @@ describe('HomeBriefService', () => {
         listRecent: vi.fn().mockResolvedValue([]),
       } as never,
       () => null,
+      null,
     );
 
     const homeData = await service.getHomeData();
@@ -239,6 +298,7 @@ describe('HomeBriefService', () => {
       },
     ]);
     expect(homeData.recentActivity).toEqual([]);
+    expect(homeData.processTemplateCandidates).toEqual([]);
   });
 
   it('does not recommend artifact follow-up when the artifact belongs to an inactive task', async () => {
@@ -273,6 +333,7 @@ describe('HomeBriefService', () => {
         listRecent: vi.fn().mockResolvedValue([]),
       } as never,
       () => null,
+      null,
     );
 
     const homeData = await service.getHomeData();

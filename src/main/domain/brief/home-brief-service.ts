@@ -10,7 +10,9 @@ import type {
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
+import { TaskProcessBindingRepository } from '../../db/repositories/task-process-binding-repository.js';
 import type { TaskRecord } from '../../../shared/types/task.js';
+import type { BriefProcessTemplateCandidate } from '../../../shared/types/brief.js';
 
 function buildRecommendedActions(params: {
   activeTasks: HomeBriefData['recentTasks'];
@@ -133,7 +135,56 @@ export class HomeBriefService {
     private readonly artifactRepository: ArtifactRepository,
     private readonly briefSnapshotRepository: BriefSnapshotRepository,
     private readonly getSchedulerStatus: () => SchedulerService | null,
+    private readonly taskProcessBindingRepository: TaskProcessBindingRepository | null = null,
   ) {}
+
+  private async buildProcessTemplateCandidates(
+    activeTasks: TaskRecord[],
+  ): Promise<BriefProcessTemplateCandidate[]> {
+    if (!this.taskProcessBindingRepository || activeTasks.length === 0) {
+      return [];
+    }
+
+    const appliedTemplates = await this.taskProcessBindingRepository.listActiveForTasks(
+      activeTasks.map((task) => task.id),
+    );
+
+    const taskTitleById = new Map(activeTasks.map((task) => [task.id, task.title]));
+    const aggregated = new Map<string, BriefProcessTemplateCandidate>();
+
+    for (const item of appliedTemplates) {
+      const current = aggregated.get(item.id);
+      const taskTitle = taskTitleById.get(item.taskId) ?? item.taskId;
+      const note = item.bindingNote?.trim();
+
+      if (!current) {
+        aggregated.set(item.id, {
+          id: item.id,
+          title: item.title,
+          summary: item.summary,
+          content: item.content,
+          kind: item.kind,
+          tags: item.tags,
+          taskIds: [item.taskId],
+          taskTitles: [taskTitle],
+          notes: note ? [note] : [],
+        });
+        continue;
+      }
+
+      if (!current.taskIds.includes(item.taskId)) {
+        current.taskIds.push(item.taskId);
+      }
+      if (!current.taskTitles.includes(taskTitle)) {
+        current.taskTitles.push(taskTitle);
+      }
+      if (note && !current.notes.includes(note)) {
+        current.notes.push(note);
+      }
+    }
+
+    return [...aggregated.values()].slice(0, 8);
+  }
 
   private async attachActiveWaitingItems(tasks: TaskRecord[]): Promise<TaskRecord[]> {
     return Promise.all(
@@ -205,6 +256,7 @@ export class HomeBriefService {
     const missingNextStepTasks = activeTasks.filter((task) => !task.nextStep?.trim());
     const scheduler = this.getSchedulerStatus();
     const recentActivity = this.buildRecentActivity(tasks, decisions, runs);
+    const processTemplateCandidates = await this.buildProcessTemplateCandidates(activeTasks);
     const recommendedActions = buildRecommendedActions({
       activeTasks: activeTasks.slice(0, 10),
       highRiskTasks,
@@ -231,6 +283,7 @@ export class HomeBriefService {
       recentArtifacts,
       recentActivity,
       recentBriefSnapshots,
+      processTemplateCandidates,
       schedulerStatus: scheduler?.getStatus() ?? {
         enabled: false,
         running: false,

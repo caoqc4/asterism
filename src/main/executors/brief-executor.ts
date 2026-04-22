@@ -1,6 +1,9 @@
 import { generateText } from 'ai';
 
-import type { HomeBriefData } from '../../shared/types/brief.js';
+import type {
+  BriefProcessTemplateCandidate,
+  HomeBriefData,
+} from '../../shared/types/brief.js';
 import type { RuntimeAiConfig } from '../keychain/ai-config-service.js';
 import { getLanguageModel } from './ai-client.js';
 
@@ -29,7 +32,15 @@ function formatRecentActivityLine(
   return `- ${sourceType}:${title} [${status}] | task=${taskTitle}`;
 }
 
-export function buildFallbackBrief(homeData: HomeBriefData, kind: string): string {
+function formatTemplateLine(template: BriefProcessTemplateCandidate): string {
+  return `- ${template.title} [${template.kind}] | tasks=${template.taskTitles.join(' / ')}`;
+}
+
+export function buildFallbackBrief(
+  homeData: HomeBriefData,
+  kind: string,
+  selectedTemplates: BriefProcessTemplateCandidate[] = [],
+): string {
   const taskLines = homeData.recentTasks.length
     ? homeData.recentTasks
         .map(
@@ -64,6 +75,9 @@ export function buildFallbackBrief(homeData: HomeBriefData, kind: string): strin
         )
         .join('\n')
     : '- 最近没有关键决策或执行动态';
+  const templateLines = selectedTemplates.length
+    ? selectedTemplates.map((template) => formatTemplateLine(template)).join('\n')
+    : '- 本次未额外参考方法模板';
 
   return [
     `Taskplane Brief (${kind})`,
@@ -108,12 +122,19 @@ export function buildFallbackBrief(homeData: HomeBriefData, kind: string): strin
     '最近动态：',
     activityLines,
     '',
+    '本次参考的方法模板：',
+    templateLines,
+    '',
     '待拍板事项：',
     decisionLines,
   ].join('\n');
 }
 
-function buildPrompt(homeData: HomeBriefData, kind: string): string {
+function buildPrompt(
+  homeData: HomeBriefData,
+  kind: string,
+  selectedTemplates: BriefProcessTemplateCandidate[],
+): string {
   return [
     `请将以下任务控制台数据整理成一段适合知识工作者快速阅读的 brief。当前 brief 类型：${kind}。`,
     '输出要求：',
@@ -121,6 +142,9 @@ function buildPrompt(homeData: HomeBriefData, kind: string): string {
     '2. 然后给 3 到 6 条重点，优先写任务、决策和执行动态。',
     '3. 如果当前没有明显风险，也要明确说明。',
     '4. 输出必须是人类可直接阅读的中文 brief，不要输出 JSON。',
+    selectedTemplates.length
+      ? '5. 请参考附带的方法模板组织摘要重点，但不要机械照抄模板原文。'
+      : '5. 根据局势自然组织重点，不需要强行套模板。',
     '',
     `活跃任务数：${homeData.activeTaskCount}`,
     `待决策数：${homeData.pendingDecisionCount}`,
@@ -193,14 +217,30 @@ function buildPrompt(homeData: HomeBriefData, kind: string): string {
           formatRecentActivityLine(event.sourceType, event.title, event.status, event.taskTitle),
         )
       : ['- 无']),
+    '',
+    '本次可参考的方法模板：',
+    ...(selectedTemplates.length
+      ? selectedTemplates.map(
+          (template) =>
+            `- ${template.title} | ${template.kind} | tasks=${template.taskTitles.join(' / ')} | tags=${template.tags.join(', ') || 'none'} | summary=${template.summary ?? '暂无'} | content=${template.content}`,
+        )
+      : ['- 无']),
   ].join('\n');
 }
 
 export class BriefExecutor {
-  async execute(homeData: HomeBriefData, kind: string, config: RuntimeAiConfig): Promise<string> {
+  async execute(
+    homeData: HomeBriefData,
+    kind: string,
+    config: RuntimeAiConfig,
+    options: {
+      selectedTemplates?: BriefProcessTemplateCandidate[];
+    } = {},
+  ): Promise<string> {
+    const selectedTemplates = options.selectedTemplates ?? [];
     const { text } = await generateText({
       model: getLanguageModel(config),
-      prompt: buildPrompt(homeData, kind),
+      prompt: buildPrompt(homeData, kind, selectedTemplates),
     });
 
     return text.trim();
