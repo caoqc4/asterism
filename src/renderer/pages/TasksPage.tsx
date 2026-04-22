@@ -154,6 +154,8 @@ function getTimelineActionLabel(type: string): string | null {
       return '生成新的 Decision';
     case 'task.run_failed':
       return '准备重试 Run';
+    case 'task.waiting_changed':
+      return '补跟进动作';
     default:
       return null;
   }
@@ -206,6 +208,7 @@ export function TasksPage({
   const [detailError, setDetailError] = useState<string | null>(null);
   const [transitionError, setTransitionError] = useState<string | null>(null);
   const [showAllTimeline, setShowAllTimeline] = useState(false);
+  const detailFormRef = useRef<HTMLFormElement | null>(null);
   const quickActionsRef = useRef<HTMLDivElement | null>(null);
 
   function updateDraftRiskLevel(nextRiskLevel: TaskRiskLevel) {
@@ -386,8 +389,15 @@ export function TasksPage({
       );
     }
 
-    if (typeof quickActionsRef.current?.scrollIntoView === 'function') {
-      quickActionsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (event.type === 'task.waiting_changed') {
+      setDraftNextStep(`跟进并确认是否解除等待：${formatValue(payload?.to)}`);
+    }
+
+    const focusTarget =
+      event.type === 'task.waiting_changed' ? detailFormRef.current : quickActionsRef.current;
+
+    if (typeof focusTarget?.scrollIntoView === 'function') {
+      focusTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
 
@@ -471,7 +481,7 @@ export function TasksPage({
         </div>
         {detail ? (
           <>
-            <form className="stack" onSubmit={handleSaveDetail}>
+            <form className="stack" onSubmit={handleSaveDetail} ref={detailFormRef}>
               <label>
                 标题
                 <input

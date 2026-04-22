@@ -542,6 +542,56 @@ describe('App UI flow', () => {
     );
   });
 
+  it('prefills next step from waiting timeline suggestions', async () => {
+    const user = userEvent.setup();
+
+    const waitingActionTask = buildTaskRecord({
+      id: 'task_timeline_waiting_action',
+      title: 'Timeline waiting task',
+      state: 'waiting_external',
+    });
+
+    const waitingActionApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([waitingActionTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== waitingActionTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(waitingActionTask),
+          timeline: [
+            {
+              id: 'timeline_waiting_action',
+              taskId: waitingActionTask.id,
+              type: 'task.waiting_changed',
+              payload: JSON.stringify({
+                from: null,
+                to: 'Waiting for legal review',
+              }),
+              createdAt: '2026-01-01T01:00:00.000Z',
+            },
+          ],
+        };
+      }),
+    };
+
+    window.api = waitingActionApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /timeline waiting task/i }));
+    await screen.findByRole('heading', { name: 'Timeline waiting task' });
+
+    await user.click(screen.getByRole('button', { name: '补跟进动作' }));
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '跟进并确认是否解除等待：Waiting for legal review',
+    );
+  });
+
   it('reflects cancelled decisions in task signals after a refresh event', async () => {
     const user = userEvent.setup();
 
