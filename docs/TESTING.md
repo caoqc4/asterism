@@ -43,7 +43,7 @@ Covered today:
 - `RunService`
   successful execution path, failure path, task restoration after settled runs, and artifact creation on successful output
 - `HomeBriefService`
-  waiting, risk, missing-next-step, recommended actions, recent artifacts, and artifact-aware brief semantics
+  waiting, risk, missing-next-step, recommended actions, recent artifacts, recent lifecycle activity, and artifact-aware brief semantics
 - `SchedulerService`
   startup behavior, cron registration, fallback brief generation
 

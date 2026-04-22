@@ -76,7 +76,7 @@ Main-process rules:
 ## Current Product Surfaces
 
 - `Home`
-  Prioritized control surface with recommended actions first, then recent artifacts, recent brief snapshots, and key signals such as waiting, risk, and missing-next-step tasks. These home surfaces now act as intent-aware entrypoints into task follow-up work, not just passive status cards.
+  Prioritized control surface with recommended actions first, then recent artifacts, recent lifecycle activity, recent brief snapshots, and key signals such as waiting, risk, and missing-next-step tasks. These home surfaces now act as intent-aware entrypoints into task follow-up work, not just passive status cards.
 - `Tasks`
   Primary task workbench organized into a current snapshot, an action desk, and an activity feed. It includes structured task signals, active waiting items, recent artifacts, quick decision/run actions, related activity, and a task-lifecycle timeline that can surface lightweight follow-up actions. The related-activity area now also acts as an entrypoint into the linked `Decision` and `Run` objects themselves.
 - `Decisions`
