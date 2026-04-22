@@ -22,6 +22,8 @@ Current test files:
 - `src/main/db/repositories/run-repository.integration.test.ts`
 - `src/main/db/repositories/decision-repository.integration.test.ts`
 - `src/main/db/repositories/brief-snapshot-repository.integration.test.ts`
+- `src/main/db/repositories/waiting-item-repository.integration.test.ts`
+- `src/main/db/repositories/artifact-repository.integration.test.ts`
 - `src/main/ipc/handlers.test.ts`
 - `src/main/preload.test.ts`
 - `src/renderer/App.test.tsx`
@@ -39,9 +41,9 @@ Covered today:
 - `DecisionService`
   task existence checks and decision-to-task linkage
 - `RunService`
-  successful execution path, failure path, task linkage
+  successful execution path, failure path, task linkage, artifact creation on successful output
 - `HomeBriefService`
-  waiting, risk, missing-next-step, recommended actions
+  waiting, risk, missing-next-step, recommended actions, recent artifacts
 - `SchedulerService`
   startup behavior, cron registration, fallback brief generation
 
@@ -59,6 +61,10 @@ Covered today:
   decision creation, action persistence, timeline writes
 - `BriefSnapshotRepository`
   source persistence, fallback reasons, recent ordering, and limit behavior
+- `WaitingItemRepository`
+  active waiting-item upserts and resolution behavior
+- `ArtifactRepository`
+  artifact persistence, recent ordering, and timeline writes
 
 These tests verify real SQLite behavior rather than mocked repository calls.
 
@@ -93,6 +99,7 @@ Covered today:
 - `Tasks quick decision submission`
 - `Tasks quick run submission`
 - `Settings save flow`
+- `waiting item` visibility and direct resolution
 - `Decision cancel -> task signal refresh`
 - `Run failed -> task signal refresh`
 - `Decision action -> Home brief refresh`
@@ -100,7 +107,8 @@ Covered today:
 - `Task transition -> Home signal refresh`
 - `Runs` page detail inspection
 - Timeline readable summaries and compact expansion behavior
-- Timeline action shortcuts for failed, waiting, and risk events
+- Timeline action shortcuts for failed, waiting, risk, and artifact events
+- task detail artifact visibility and Home recent-artifact visibility
 
 These tests focus on high-value control-plane interactions rather than broad page rendering snapshots.
 
