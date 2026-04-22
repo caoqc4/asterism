@@ -94,6 +94,12 @@ function formatTimelineBadge(type: string): string {
       return '下一步';
     case 'task.waiting_changed':
       return '等待';
+    case 'waiting_item.created':
+      return '等待项';
+    case 'waiting_item.updated':
+      return '等待项';
+    case 'waiting_item.resolved':
+      return '等待项';
     case 'task.risk_changed':
       return '风险';
     case 'task.updated':
@@ -110,6 +116,9 @@ function getTimelineToneClass(type: string): string {
     case 'task.risk_changed':
       return 'timeline-item-risk';
     case 'task.waiting_changed':
+    case 'waiting_item.created':
+    case 'waiting_item.updated':
+    case 'waiting_item.resolved':
       return 'timeline-item-waiting';
     case 'task.transitioned':
       return 'timeline-item-state';
@@ -136,6 +145,12 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
       return `下一步从“${formatValue(payload?.from)}”调整为“${formatValue(payload?.to)}”`;
     case 'task.waiting_changed':
       return `等待原因从“${formatValue(payload?.from)}”调整为“${formatValue(payload?.to)}”`;
+    case 'waiting_item.created':
+      return `创建等待项：${formatValue(payload?.reason)}`;
+    case 'waiting_item.updated':
+      return `更新等待项：${formatValue(payload?.reason)}`;
+    case 'waiting_item.resolved':
+      return `解除等待项：${formatValue(payload?.reason)}`;
     case 'task.risk_changed': {
       const from = (payload?.from as Record<string, unknown> | undefined) ?? {};
       const to = (payload?.to as Record<string, unknown> | undefined) ?? {};

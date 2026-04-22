@@ -56,12 +56,21 @@ describe('TaskService', () => {
       create: vi.fn(),
       getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
       update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
       transition: vi.fn().mockResolvedValue(buildRecord('running')),
     };
     const waitingItems = {
       getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
-      resolveActive: vi.fn(),
+      resolveActive: vi.fn().mockResolvedValue({
+        id: 'waiting_1',
+        taskId: 'task_1',
+        reason: 'Waiting for external approval',
+        status: 'resolved',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T01:00:00.000Z',
+        resolvedAt: '2026-01-01T01:00:00.000Z',
+      }),
     };
     const service = new TaskService(repository as never, waitingItems as never);
 
@@ -76,6 +85,13 @@ describe('TaskService', () => {
       waitingReason: null,
     });
     expect(waitingItems.resolveActive).toHaveBeenCalledWith('task_1');
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith(
+      'task_1',
+      'waiting_item.resolved',
+      expect.objectContaining({
+        waitingItemId: 'waiting_1',
+      }),
+    );
     expect(result.state).toBe('running');
   });
 
@@ -133,6 +149,7 @@ describe('TaskService', () => {
       create: vi.fn(),
       getDetail: vi.fn().mockResolvedValue(buildWaitingDetail('waiting_external')),
       update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
       transition: vi.fn().mockResolvedValue({
         ...buildRecord('planned'),
         waitingReason: null,
@@ -141,7 +158,15 @@ describe('TaskService', () => {
     const waitingItems = {
       getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
-      resolveActive: vi.fn(),
+      resolveActive: vi.fn().mockResolvedValue({
+        id: 'waiting_1',
+        taskId: 'task_1',
+        reason: 'Waiting for external approval',
+        status: 'resolved',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T01:00:00.000Z',
+        resolvedAt: '2026-01-01T01:00:00.000Z',
+      }),
     };
     const service = new TaskService(repository as never, waitingItems as never);
 
@@ -156,6 +181,13 @@ describe('TaskService', () => {
       waitingReason: null,
     });
     expect(waitingItems.resolveActive).toHaveBeenCalledWith('task_1');
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith(
+      'task_1',
+      'waiting_item.resolved',
+      expect.objectContaining({
+        waitingItemId: 'waiting_1',
+      }),
+    );
     expect(result.waitingReason).toBeNull();
   });
 
@@ -165,6 +197,7 @@ describe('TaskService', () => {
       create: vi.fn(),
       getDetail: vi.fn().mockResolvedValue(buildDetail('running')),
       update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
       transition: vi.fn().mockResolvedValue({
         ...buildRecord('waiting_external'),
         waitingReason: 'Waiting for finance confirmation',
@@ -172,7 +205,18 @@ describe('TaskService', () => {
     };
     const waitingItems = {
       getActiveForTask: vi.fn().mockResolvedValue(null),
-      upsertActive: vi.fn(),
+      upsertActive: vi.fn().mockResolvedValue({
+        action: 'created',
+        item: {
+          id: 'waiting_1',
+          taskId: 'task_1',
+          reason: 'Waiting for finance confirmation',
+          status: 'active',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          resolvedAt: null,
+        },
+      }),
       resolveActive: vi.fn(),
     };
     const service = new TaskService(repository as never, waitingItems as never);
@@ -186,6 +230,14 @@ describe('TaskService', () => {
     expect(waitingItems.upsertActive).toHaveBeenCalledWith(
       'task_1',
       'Waiting for finance confirmation',
+    );
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith(
+      'task_1',
+      'waiting_item.created',
+      expect.objectContaining({
+        waitingItemId: 'waiting_1',
+        reason: 'Waiting for finance confirmation',
+      }),
     );
     expect(waitingItems.resolveActive).not.toHaveBeenCalled();
   });
@@ -256,11 +308,23 @@ describe('TaskService', () => {
         ...buildRecord('waiting_external'),
         waitingReason: 'Waiting for revised proposal',
       }),
+      appendTimelineEvent: vi.fn(),
       transition: vi.fn(),
     };
     const waitingItems = {
       getActiveForTask: vi.fn().mockResolvedValue(null),
-      upsertActive: vi.fn(),
+      upsertActive: vi.fn().mockResolvedValue({
+        action: 'updated',
+        item: {
+          id: 'waiting_1',
+          taskId: 'task_1',
+          reason: 'Waiting for revised proposal',
+          status: 'active',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T01:00:00.000Z',
+          resolvedAt: null,
+        },
+      }),
       resolveActive: vi.fn(),
     };
     const service = new TaskService(repository as never, waitingItems as never);
@@ -273,6 +337,14 @@ describe('TaskService', () => {
     expect(waitingItems.upsertActive).toHaveBeenCalledWith(
       'task_1',
       'Waiting for revised proposal',
+    );
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith(
+      'task_1',
+      'waiting_item.updated',
+      expect.objectContaining({
+        waitingItemId: 'waiting_1',
+        reason: 'Waiting for revised proposal',
+      }),
     );
     expect(result.waitingReason).toBe('Waiting for revised proposal');
   });
@@ -320,7 +392,7 @@ describe('TaskService', () => {
     const waitingItems = {
       getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
-      resolveActive: vi.fn(),
+      resolveActive: vi.fn().mockResolvedValue(null),
     };
     const service = new TaskService(repository as never, waitingItems as never);
 
@@ -349,7 +421,7 @@ describe('TaskService', () => {
     const waitingItems = {
       getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
-      resolveActive: vi.fn(),
+      resolveActive: vi.fn().mockResolvedValue(null),
     };
     const service = new TaskService(repository as never, waitingItems as never);
 
@@ -391,7 +463,7 @@ describe('TaskService', () => {
     const waitingItems = {
       getActiveForTask: vi.fn().mockResolvedValue(null),
       upsertActive: vi.fn(),
-      resolveActive: vi.fn(),
+      resolveActive: vi.fn().mockResolvedValue(null),
     };
     const service = new TaskService(repository as never, waitingItems as never);
 

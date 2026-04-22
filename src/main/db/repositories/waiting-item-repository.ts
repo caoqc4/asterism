@@ -37,7 +37,10 @@ export class WaitingItemRepository {
     return row ? mapWaitingItem(row) : null;
   }
 
-  async upsertActive(taskId: string, reason: string): Promise<WaitingItemRecord> {
+  async upsertActive(
+    taskId: string,
+    reason: string,
+  ): Promise<{ item: WaitingItemRecord; action: 'created' | 'updated' }> {
     const db = initDatabase();
     const trimmedReason = reason.trim();
     const timestamp = nowIso();
@@ -54,7 +57,10 @@ export class WaitingItemRepository {
         .where(eq(waitingItems.id, active.id));
 
       const [updated] = await db.select().from(waitingItems).where(eq(waitingItems.id, active.id)).limit(1);
-      return mapWaitingItem(updated);
+      return {
+        item: mapWaitingItem(updated),
+        action: 'updated',
+      };
     }
 
     const id = generateId('waiting');
@@ -69,12 +75,20 @@ export class WaitingItemRepository {
     });
 
     const [created] = await db.select().from(waitingItems).where(eq(waitingItems.id, id)).limit(1);
-    return mapWaitingItem(created);
+    return {
+      item: mapWaitingItem(created),
+      action: 'created',
+    };
   }
 
-  async resolveActive(taskId: string): Promise<void> {
+  async resolveActive(taskId: string): Promise<WaitingItemRecord | null> {
     const db = initDatabase();
     const timestamp = nowIso();
+    const active = await this.getActiveForTask(taskId);
+
+    if (!active) {
+      return null;
+    }
 
     await db
       .update(waitingItems)
@@ -83,6 +97,10 @@ export class WaitingItemRepository {
         updatedAt: timestamp,
         resolvedAt: timestamp,
       })
-      .where(and(eq(waitingItems.taskId, taskId), eq(waitingItems.status, 'active')));
+      .where(eq(waitingItems.id, active.id));
+
+    const [resolved] = await db.select().from(waitingItems).where(eq(waitingItems.id, active.id)).limit(1);
+
+    return mapWaitingItem(resolved);
   }
 }

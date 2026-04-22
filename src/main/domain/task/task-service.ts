@@ -31,11 +31,28 @@ export class TaskService {
     waitingReason: string | null,
   ): Promise<void> {
     if (state === 'waiting_external' && waitingReason?.trim()) {
-      await this.waitingItemRepository.upsertActive(taskId, waitingReason);
+      const result = await this.waitingItemRepository.upsertActive(taskId, waitingReason);
+      await this.repository.appendTimelineEvent(
+        taskId,
+        result.action === 'created' ? 'waiting_item.created' : 'waiting_item.updated',
+        {
+          waitingItemId: result.item.id,
+          reason: result.item.reason,
+          status: result.item.status,
+        },
+      );
       return;
     }
 
-    await this.waitingItemRepository.resolveActive(taskId);
+    const resolved = await this.waitingItemRepository.resolveActive(taskId);
+
+    if (resolved) {
+      await this.repository.appendTimelineEvent(taskId, 'waiting_item.resolved', {
+        waitingItemId: resolved.id,
+        reason: resolved.reason,
+        resolvedAt: resolved.resolvedAt,
+      });
+    }
   }
 
   private async attachActiveWaitingItem<T extends TaskRecord | TaskDetail>(task: T): Promise<T> {

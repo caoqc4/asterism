@@ -37,7 +37,9 @@ describe('WaitingItemRepository integration', () => {
     const second = await waitingItemRepository.upsertActive(task.id, 'Waiting for revised contract');
     const active = await waitingItemRepository.getActiveForTask(task.id);
 
-    expect(second.id).toBe(first.id);
+    expect(first.action).toBe('created');
+    expect(second.action).toBe('updated');
+    expect(second.item.id).toBe(first.item.id);
     expect(active?.reason).toBe('Waiting for revised contract');
     expect(active?.status).toBe('active');
   });
@@ -46,10 +48,12 @@ describe('WaitingItemRepository integration', () => {
     const task = await taskRepository.create({ title: 'Wait for finance sign-off' });
 
     await waitingItemRepository.upsertActive(task.id, 'Waiting for finance sign-off');
-    await waitingItemRepository.resolveActive(task.id);
+    const resolved = await waitingItemRepository.resolveActive(task.id);
 
     const active = await waitingItemRepository.getActiveForTask(task.id);
 
+    expect(resolved?.status).toBe('resolved');
+    expect(resolved?.resolvedAt).toBeTruthy();
     expect(active).toBeNull();
   });
 });
