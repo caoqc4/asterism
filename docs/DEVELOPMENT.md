@@ -80,9 +80,9 @@ Main-process rules:
 - `Tasks`
   Primary task workbench organized into a current snapshot, an action desk, and an activity feed. It includes structured task signals, active waiting items, recent artifacts, quick decision/run actions, related activity, and a task-lifecycle timeline that can surface lightweight follow-up actions. The related-activity area now also acts as an entrypoint into the linked `Decision` and `Run` objects themselves.
 - `Decisions`
-  Decision work surface with a current focus, an action desk, and a decision queue.
+  Decision work surface with a current focus, an action desk, and a decision queue. The current-focus area can now route directly back into the related task with follow-up guidance shaped by the decision status.
 - `Runs`
-  Run work surface with a current focus, an action desk, and a run queue.
+  Run work surface with a current focus, an action desk, and a run queue. The current-focus area can now route directly back into the related task with follow-up guidance shaped by the run result.
 - `Settings`
   Provider, model, API key, and scheduler configuration.
 
@@ -99,7 +99,7 @@ Main-process rules:
 - Service-level tests cover config, task, decision, run, scheduler, and home brief logic, including deeper decision/run-to-task lifecycle annotations.
 - SQLite integration tests currently cover `TaskRepository`, `RunRepository`, `DecisionRepository`, `BriefSnapshotRepository`, `WaitingItemRepository`, and `ArtifactRepository`.
 - IPC handler tests cover critical event-emitting channels such as settings save, decision action, and run trigger.
-- Renderer interaction tests cover the main control-plane flows from Home, Tasks, Decisions, Runs, Settings, timeline actions, waiting item flows, artifact flows, home intent-navigation flows, recent-activity follow-up entry flows, recent-activity object entry flows, task related-activity navigation, and failed Run refresh paths.
+- Renderer interaction tests cover the main control-plane flows from Home, Tasks, Decisions, Runs, Settings, timeline actions, waiting item flows, artifact flows, home intent-navigation flows, recent-activity follow-up entry flows, recent-activity object entry flows, task related-activity navigation, decision/run return-to-task flows, and failed Run refresh paths.
 - GitHub Actions runs `npm run test`, `npm run lint`, and `npm run build` on every push to `main` and on pull requests.
 
 For the current coverage map and recommended next targets, see [TESTING.md](TESTING.md).

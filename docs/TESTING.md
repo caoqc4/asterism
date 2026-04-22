@@ -104,6 +104,7 @@ Covered today:
 - `Tasks quick run submission`
 - `Tasks related activity -> Decisions / Runs`
 - `Decisions` page current-focus and queue navigation
+- `Decisions / Runs -> Tasks` follow-up return flows
 - `Settings save flow`
 - `waiting item` visibility and direct resolution
 - `Decision cancel -> task signal refresh`
