@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import electron from 'electron';
 
 import type { PingResponse } from '../../shared/types/ipc.js';
 import type { CreateDecisionInput, DecisionActionInput } from '../../shared/types/decision.js';
@@ -14,6 +14,7 @@ import { getServices } from '../bootstrap/services.js';
 import { emitAppEvent } from './event-bus.js';
 
 const PING_CHANNEL = 'app:ping';
+const { ipcMain } = electron;
 
 export function registerIpcHandlers(): void {
   ipcMain.handle(PING_CHANNEL, async (): Promise<PingResponse> => {

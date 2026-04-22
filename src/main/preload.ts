@@ -1,7 +1,9 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import electron from 'electron';
 
 import type { ElectronApi } from '../shared/types/ipc.js';
 import { APP_EVENT_CHANNEL } from './ipc/event-bus.js';
+
+const { contextBridge, ipcRenderer } = electron;
 
 const api: ElectronApi = {
   ping: () => ipcRenderer.invoke('app:ping'),

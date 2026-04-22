@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import electron from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -6,10 +6,12 @@ import { initServices } from './bootstrap/services.js';
 import { registerIpcHandlers } from './ipc/handlers.js';
 import { closeDatabase } from './db/client.js';
 
+const { app, BrowserWindow } = electron;
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-let mainWindow: BrowserWindow | null = null;
+let mainWindow: InstanceType<typeof BrowserWindow> | null = null;
 
 function createMainWindow(): void {
   mainWindow = new BrowserWindow({

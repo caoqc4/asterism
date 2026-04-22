@@ -1,7 +1,6 @@
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
-
-import { app } from 'electron';
 
 import type { AiProvider, AppConfigFile, FeatureFlags } from '../../shared/types/settings.js';
 
@@ -16,18 +15,29 @@ const DEFAULT_CONFIG: AppConfigFile = {
   updatedAt: new Date(0).toISOString(),
 };
 
-function getUserDataPath(): string {
-  const userDataPath = app.getPath('userData');
+const require = createRequire(import.meta.url);
+
+function defaultUserDataPathResolver(): string {
+  const electron = require('electron') as typeof import('electron');
+  return electron.app.getPath('userData');
+}
+
+function ensureUserDataPath(userDataPath: string): string {
   fs.mkdirSync(userDataPath, { recursive: true });
   return userDataPath;
 }
 
-export function getConfigPath(): string {
-  return path.join(getUserDataPath(), 'config.json');
+function getUserDataPath(userDataPathResolver: () => string): string {
+  const userDataPath = userDataPathResolver();
+  return ensureUserDataPath(userDataPath);
 }
 
-function getLegacySettingsPath(): string {
-  return path.join(getUserDataPath(), 'settings.json');
+export function getConfigPath(userDataPathResolver: () => string = defaultUserDataPathResolver): string {
+  return path.join(getUserDataPath(userDataPathResolver), 'config.json');
+}
+
+function getLegacySettingsPath(userDataPathResolver: () => string = defaultUserDataPathResolver): string {
+  return path.join(getUserDataPath(userDataPathResolver), 'settings.json');
 }
 
 function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
@@ -43,15 +53,18 @@ function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
 }
 
 export class AppConfigService {
-  read(): AppConfigFile {
-    const configPath = getConfigPath();
+  constructor(private readonly userDataPathResolver: () => string = defaultUserDataPathResolver) {}
 
-    if (fs.existsSync(configPath)) {
-      const raw = fs.readFileSync(configPath, 'utf8');
-      return sanitizeConfig(JSON.parse(raw) as Partial<AppConfigFile>);
+  read(): AppConfigFile {
+    const configPath = getConfigPath(this.userDataPathResolver);
+
+    const current = this.readExistingConfig();
+
+    if (current) {
+      return current;
     }
 
-    const legacyPath = getLegacySettingsPath();
+    const legacyPath = getLegacySettingsPath(this.userDataPathResolver);
 
     if (fs.existsSync(legacyPath)) {
       const raw = fs.readFileSync(legacyPath, 'utf8');
@@ -69,30 +82,39 @@ export class AppConfigService {
       return migrated;
     }
 
-    this.write(DEFAULT_CONFIG);
-    return DEFAULT_CONFIG;
+    const initial = sanitizeConfig(DEFAULT_CONFIG);
+    fs.writeFileSync(configPath, JSON.stringify(initial, null, 2), 'utf8');
+    return initial;
   }
 
   write(next: Partial<AppConfigFile>): AppConfigFile {
+    const current = this.readExistingConfig() ?? sanitizeConfig(DEFAULT_CONFIG);
     const merged = sanitizeConfig({
-      ...this.safeRead(),
+      ...current,
       ...next,
       featureFlags: {
-        ...this.safeRead().featureFlags,
+        ...current.featureFlags,
         ...(next.featureFlags ?? {}),
       },
       updatedAt: new Date().toISOString(),
     });
 
-    fs.writeFileSync(getConfigPath(), JSON.stringify(merged, null, 2), 'utf8');
+    fs.writeFileSync(getConfigPath(this.userDataPathResolver), JSON.stringify(merged, null, 2), 'utf8');
     return merged;
   }
 
-  private safeRead(): AppConfigFile {
+  private readExistingConfig(): AppConfigFile | null {
+    const configPath = getConfigPath(this.userDataPathResolver);
+
     try {
-      return this.read();
+      if (!fs.existsSync(configPath)) {
+        return null;
+      }
+
+      const raw = fs.readFileSync(configPath, 'utf8');
+      return sanitizeConfig(JSON.parse(raw) as Partial<AppConfigFile>);
     } catch {
-      return DEFAULT_CONFIG;
+      return null;
     }
   }
 }

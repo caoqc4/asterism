@@ -31,6 +31,12 @@ npm run dev
 npm run lint
 ```
 
+### Test
+
+```bash
+npm run test
+```
+
 ### Build
 
 ```bash
@@ -73,7 +79,7 @@ Main-process rules:
 2. Implement main-process services and repositories.
 3. Expose capability through preload and IPC.
 4. Wire the renderer page to the new contract.
-5. Run `npm run lint` and `npm run build`.
+5. Run `npm run lint`, `npm run test`, and `npm run build`.
 
 ## Native Dependencies
 

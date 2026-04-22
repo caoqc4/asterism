@@ -61,6 +61,12 @@ npm run build
 npm run lint
 ```
 
+### 5. Run tests
+
+```bash
+npm run test
+```
+
 ## Release Commands
 
 ### Produce a local macOS unpacked app

@@ -1,6 +1,8 @@
-import { BrowserWindow } from 'electron';
+import electron from 'electron';
 
 import type { AppEvent, AppEventType } from '../../shared/types/events.js';
+
+const { BrowserWindow } = electron;
 
 const APP_EVENT_CHANNEL = 'app:event';
 
