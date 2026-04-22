@@ -24,6 +24,8 @@ const transitionOptions: Record<TaskState, TaskState[]> = {
   archived: [],
 };
 
+const TIMELINE_PREVIEW_COUNT = 5;
+
 function getTaskCardTone(task: TaskRecord): string {
   if (task.riskLevel === 'high') {
     return 'task-card-danger';
@@ -182,6 +184,7 @@ export function TasksPage({
   const [transitionWaitingReason, setTransitionWaitingReason] = useState('');
   const [detailError, setDetailError] = useState<string | null>(null);
   const [transitionError, setTransitionError] = useState<string | null>(null);
+  const [showAllTimeline, setShowAllTimeline] = useState(false);
 
   function updateDraftRiskLevel(nextRiskLevel: TaskRiskLevel) {
     setDraftRiskLevel(nextRiskLevel);
@@ -240,6 +243,7 @@ export function TasksPage({
         setTransitionWaitingReason(nextDetail?.waitingReason ?? '');
         setDetailError(null);
         setTransitionError(null);
+        setShowAllTimeline(false);
         setQuickDecisionTitle(
           nextDetail ? `${nextDetail.title} 需要拍板` : '',
         );
@@ -354,6 +358,12 @@ export function TasksPage({
         .filter((run) => run.taskId === detail.id)
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
         .slice(0, 5)
+    : [];
+
+  const visibleTimeline = detail
+    ? showAllTimeline
+      ? detail.timeline
+      : detail.timeline.slice(0, TIMELINE_PREVIEW_COUNT)
     : [];
 
   return (
@@ -638,9 +648,20 @@ export function TasksPage({
             </div>
 
             <div className="transition-group">
-              <h3>Timeline</h3>
+              <div className="task-row">
+                <h3>Timeline</h3>
+                {detail.timeline.length > TIMELINE_PREVIEW_COUNT ? (
+                  <button
+                    className="ghost-button timeline-toggle"
+                    onClick={() => setShowAllTimeline((current) => !current)}
+                    type="button"
+                  >
+                    {showAllTimeline ? '收起旧事件' : `展开全部 (${detail.timeline.length})`}
+                  </button>
+                ) : null}
+              </div>
               <div className="timeline-list">
-                {detail.timeline.map((event) => (
+                {visibleTimeline.map((event) => (
                   <div className={`timeline-item ${getTimelineToneClass(event.type)}`} key={event.id}>
                     <div className="task-row">
                       <strong>{formatTimelineSummary(event)}</strong>

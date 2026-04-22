@@ -383,6 +383,101 @@ describe('App UI flow', () => {
     expect(screen.getByText('下一步')).toBeTruthy();
   });
 
+  it('shows a compact timeline preview with expand and collapse controls', async () => {
+    const user = userEvent.setup();
+
+    const timelineTask = buildTaskRecord({
+      id: 'task_timeline_preview',
+      title: 'Timeline preview task',
+      state: 'running',
+    });
+
+    const timelineEvents = [
+      {
+        id: 'timeline_1',
+        taskId: timelineTask.id,
+        type: 'task.created',
+        payload: JSON.stringify({ title: timelineTask.title }),
+        createdAt: '2026-01-01T06:00:00.000Z',
+      },
+      {
+        id: 'timeline_2',
+        taskId: timelineTask.id,
+        type: 'task.updated',
+        payload: JSON.stringify({ summary: 'Updated summary' }),
+        createdAt: '2026-01-01T05:00:00.000Z',
+      },
+      {
+        id: 'timeline_3',
+        taskId: timelineTask.id,
+        type: 'task.next_step_changed',
+        payload: JSON.stringify({ from: null, to: 'Prepare draft' }),
+        createdAt: '2026-01-01T04:00:00.000Z',
+      },
+      {
+        id: 'timeline_4',
+        taskId: timelineTask.id,
+        type: 'task.waiting_changed',
+        payload: JSON.stringify({ from: null, to: 'Waiting for review' }),
+        createdAt: '2026-01-01T03:00:00.000Z',
+      },
+      {
+        id: 'timeline_5',
+        taskId: timelineTask.id,
+        type: 'task.risk_changed',
+        payload: JSON.stringify({
+          from: { level: 'low', note: null },
+          to: { level: 'medium', note: 'Review may slip' },
+        }),
+        createdAt: '2026-01-01T02:00:00.000Z',
+      },
+      {
+        id: 'timeline_6',
+        taskId: timelineTask.id,
+        type: 'task.transitioned',
+        payload: JSON.stringify({ from: 'planned', to: 'running' }),
+        createdAt: '2026-01-01T01:00:00.000Z',
+      },
+    ];
+
+    const timelineApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([timelineTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== timelineTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(timelineTask),
+          timeline: timelineEvents,
+        };
+      }),
+    };
+
+    window.api = timelineApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /timeline preview task/i }));
+    await screen.findByRole('heading', { name: 'Timeline preview task' });
+
+    expect(screen.getByRole('button', { name: '展开全部 (6)' })).toBeTruthy();
+    expect(screen.queryByText('状态从 planned 变更为 running')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '展开全部 (6)' }));
+
+    expect(screen.getByText('状态从 planned 变更为 running')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '收起旧事件' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '收起旧事件' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('状态从 planned 变更为 running')).toBeNull();
+    });
+  });
+
   it('reflects cancelled decisions in task signals after a refresh event', async () => {
     const user = userEvent.setup();
 
