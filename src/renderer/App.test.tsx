@@ -349,4 +349,114 @@ describe('App UI flow', () => {
       '确认该任务是否还需要继续推进，或改走无需拍板的路径。',
     );
   });
+
+  it('reflects failed runs in task signals after a refresh event', async () => {
+    const user = userEvent.setup();
+
+    let currentTasks: TaskRecord[] = [waitingTask, riskTask];
+    let currentTaskDetails: Record<string, TaskDetail> = {
+      [waitingTask.id]: buildTaskDetail(waitingTask),
+      [riskTask.id]: buildTaskDetail(riskTask),
+    };
+    let currentRuns: RunRecord[] = [...runs];
+    let currentBriefData: HomeBriefData = {
+      ...briefData,
+      recentRunCount: runs.length,
+    };
+    let subscriber:
+      | ((event: {
+          type: 'run.changed' | 'task.changed' | 'brief.changed';
+          at: string;
+        }) => void)
+      | null = null;
+
+    const eventingApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn(async () => currentTasks),
+      getTaskDetail: vi.fn(async (taskId: string) => currentTaskDetails[taskId] ?? null),
+      listRuns: vi.fn(async () => currentRuns),
+      getHomeBrief: vi.fn(async () => currentBriefData),
+      subscribeToEvents: vi.fn().mockImplementation((callback) => {
+        subscriber = callback;
+        return () => {
+          subscriber = null;
+        };
+      }),
+      triggerRun: vi.fn().mockImplementation(async (input) => {
+        const failedRun = buildRunRecord({
+          id: 'run_failed',
+          taskId: input.taskId,
+          type: input.type,
+          status: 'failed',
+          instructions: input.instructions ?? null,
+          output: 'Missing API key',
+          outputSource: 'system',
+          failureReason: 'Missing API key',
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        });
+
+        currentRuns = [failedRun, ...currentRuns];
+
+        const updatedTask = buildTaskRecord({
+          ...riskTask,
+          nextStep: '检查失败原因，修正输入或上下文后再决定是否重试。',
+          riskLevel: 'high',
+          riskNote: 'Missing API key',
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        });
+
+        currentTasks = currentTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task));
+        currentTaskDetails = {
+          ...currentTaskDetails,
+          [updatedTask.id]: buildTaskDetail(updatedTask),
+        };
+        currentBriefData = {
+          ...currentBriefData,
+          highRiskTasks: [updatedTask],
+          recentTasks: [waitingTask, updatedTask],
+          recentRunCount: currentRuns.length,
+        };
+
+        subscriber?.({ type: 'run.changed', at: '2026-01-02T00:00:00.000Z' });
+        subscriber?.({ type: 'task.changed', at: '2026-01-02T00:00:00.000Z' });
+        subscriber?.({ type: 'brief.changed', at: '2026-01-02T00:00:00.000Z' });
+
+        return failedRun;
+      }),
+    };
+
+    window.api = eventingApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /high risk task/i }));
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    await user.selectOptions(screen.getByLabelText('Run 类型'), 'summarize');
+
+    const instructionsInput = screen.getByLabelText('附加要求');
+    await user.clear(instructionsInput);
+    await user.type(instructionsInput, 'Summarize blockers with current config');
+
+    await user.click(screen.getByRole('button', { name: '触发 Run' }));
+
+    await waitFor(() => {
+      expect(eventingApi.triggerRun).toHaveBeenCalledWith({
+        taskId: riskTask.id,
+        type: 'summarize',
+        instructions: 'Summarize blockers with current config',
+      });
+    });
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('Risk Note') as HTMLTextAreaElement).value).toBe(
+        'Missing API key',
+      );
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '检查失败原因，修正输入或上下文后再决定是否重试。',
+    );
+  });
 });
