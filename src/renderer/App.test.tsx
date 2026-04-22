@@ -547,4 +547,122 @@ describe('App UI flow', () => {
 
     expect(screen.queryByRole('button', { name: /尽快拍板：Approve escalation path/i })).toBeNull();
   });
+
+  it('refreshes home brief after a failed run changes risk and recommendations', async () => {
+    const user = userEvent.setup();
+
+    let currentTasks: TaskRecord[] = [waitingTask, riskTask];
+    let currentRuns: RunRecord[] = [...runs];
+    let currentBriefData: HomeBriefData = {
+      ...briefData,
+      recentRunCount: currentRuns.length,
+      recommendedActions: [
+        {
+          id: `risk:${riskTask.id}`,
+          label: `优先处理高风险任务：${riskTask.title}`,
+          reason: 'Deadline slipping',
+          taskId: riskTask.id,
+          priority: 'high',
+        },
+      ],
+    };
+    let subscriber:
+      | ((event: {
+          type: 'run.changed' | 'task.changed' | 'brief.changed';
+          at: string;
+        }) => void)
+      | null = null;
+
+    const eventingApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn(async () => currentTasks),
+      listRuns: vi.fn(async () => currentRuns),
+      getHomeBrief: vi.fn(async () => currentBriefData),
+      subscribeToEvents: vi.fn().mockImplementation((callback) => {
+        subscriber = callback;
+        return () => {
+          subscriber = null;
+        };
+      }),
+      triggerRun: vi.fn().mockImplementation(async (input) => {
+        const failedRun = buildRunRecord({
+          id: 'run_failed_home',
+          taskId: input.taskId,
+          type: input.type,
+          status: 'failed',
+          instructions: input.instructions ?? null,
+          output: 'Missing API key',
+          outputSource: 'system',
+          failureReason: 'Missing API key',
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        });
+
+        currentRuns = [failedRun, ...currentRuns];
+
+        const updatedTask = buildTaskRecord({
+          ...riskTask,
+          nextStep: '检查失败原因，修正输入或上下文后再决定是否重试。',
+          riskLevel: 'high',
+          riskNote: 'Missing API key',
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        });
+
+        currentTasks = currentTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task));
+        currentBriefData = {
+          ...currentBriefData,
+          recentRunCount: currentRuns.length,
+          highRiskTasks: [updatedTask],
+          recentTasks: [waitingTask, updatedTask],
+          recommendedActions: [
+            {
+              id: `risk:${updatedTask.id}`,
+              label: `优先处理高风险任务：${updatedTask.title}`,
+              reason: 'Missing API key',
+              taskId: updatedTask.id,
+              priority: 'high',
+            },
+          ],
+        };
+
+        subscriber?.({ type: 'run.changed', at: '2026-01-02T00:00:00.000Z' });
+        subscriber?.({ type: 'task.changed', at: '2026-01-02T00:00:00.000Z' });
+        subscriber?.({ type: 'brief.changed', at: '2026-01-02T00:00:00.000Z' });
+
+        return failedRun;
+      }),
+    };
+
+    window.api = eventingApi;
+
+    render(<App />);
+
+    await screen.findByRole('button', { name: /优先处理高风险任务：High risk task/i });
+    expect(screen.getAllByText('Deadline slipping').length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /high risk task/i }));
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    await user.selectOptions(screen.getByLabelText('Run 类型'), 'summarize');
+    const instructionsInput = screen.getByLabelText('附加要求');
+    await user.clear(instructionsInput);
+    await user.type(instructionsInput, 'Retry with missing key state');
+    await user.click(screen.getByRole('button', { name: '触发 Run' }));
+
+    await waitFor(() => {
+      expect(eventingApi.triggerRun).toHaveBeenCalledWith({
+        taskId: riskTask.id,
+        type: 'summarize',
+        instructions: 'Retry with missing key state',
+      });
+    });
+
+    await user.click(screen.getByRole('button', { name: /home/i }));
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Missing API key').length).toBeGreaterThan(0);
+    });
+
+    expect(screen.queryAllByText('Deadline slipping').length).toBe(0);
+  });
 });
