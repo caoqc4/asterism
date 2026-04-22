@@ -49,6 +49,19 @@ function formatRelatedTimelineSummary(event: TimelineEventRecord): string {
   }
 }
 
+function getRelatedTimelineActionLabel(event: TimelineEventRecord): string | null {
+  switch (event.type) {
+    case 'task.decision_approved':
+      return '继续推进任务';
+    case 'task.decision_deferred':
+      return '跟进拍板进度';
+    case 'task.decision_cancelled':
+      return '重新评估决策';
+    default:
+      return null;
+  }
+}
+
 function getRelatedTimeline(events: TimelineEventRecord[], decisionTitle: string): TimelineEventRecord[] {
   return events
     .filter((event) => {
@@ -229,6 +242,33 @@ export function DecisionsPage({
                           <span className="status">{event.createdAt}</span>
                         </div>
                         <p className="meta">{formatRelatedTimelineSummary(event)}</p>
+                        {getRelatedTimelineActionLabel(event) ? (
+                          <div className="chip-row">
+                            <button
+                              className="ghost-button"
+                              onClick={() =>
+                                onOpenTask(detail.taskId, {
+                                  type:
+                                    event.type === 'task.decision_deferred'
+                                      ? 'focus_waiting_follow_up'
+                                      : event.type === 'task.decision_cancelled'
+                                        ? 'focus_risk_review'
+                                        : 'focus_next_step',
+                                  focusArea: 'detail',
+                                  prefillNextStep:
+                                    event.type === 'task.decision_approved'
+                                      ? `已获批准，继续推进：${detail.title}`
+                                      : event.type === 'task.decision_deferred'
+                                        ? `跟进该决策是否可以恢复拍板：${detail.title}`
+                                        : `重新评估该决策并确定替代推进路径：${detail.title}`,
+                                })
+                              }
+                              type="button"
+                            >
+                              {getRelatedTimelineActionLabel(event)}
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
                     ))
                   ) : (
