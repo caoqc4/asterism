@@ -4,6 +4,10 @@ import type { CreateRunInput, RunRecord } from '../../../shared/types/run.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { RunRepository } from '../../db/repositories/run-repository.js';
 import { TaskService } from '../task/task-service.js';
+import {
+  ProcessTemplateSelector,
+  type ProcessTemplateSelectionResult,
+} from './process-template-selector.js';
 
 export class RunService {
   constructor(
@@ -12,6 +16,7 @@ export class RunService {
     private readonly artifactRepository: ArtifactRepository,
     private readonly aiConfigService: AiConfigService,
     private readonly textExecutor: TextExecutor,
+    private readonly processTemplateSelector: ProcessTemplateSelector = new ProcessTemplateSelector(),
   ) {}
 
   list(): Promise<RunRecord[]> {
@@ -47,7 +52,49 @@ export class RunService {
 
     try {
       const runtimeConfig = await this.aiConfigService.resolveRuntimeConfig();
-      const output = await this.textExecutor.execute(taskForExecution, input, runtimeConfig);
+      let selection: ProcessTemplateSelectionResult = {
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: '当前未评估 process template。',
+      };
+
+      try {
+        selection = await this.processTemplateSelector.select(
+          taskForExecution,
+          input,
+          runtimeConfig,
+        );
+      } catch (error) {
+        selection = {
+          shouldUse: false,
+          selectedTemplates: [],
+          reason:
+            error instanceof Error
+              ? `process template selector 不可用：${error.message}`
+              : 'process template selector 不可用。',
+        };
+      }
+
+      if (selection.shouldUse) {
+        await this.taskService.annotateProcessTemplateSelected(
+          input.taskId,
+          created.id,
+          selection.selectedTemplates.map((item) => item.id),
+          selection.selectedTemplates.map((item) => item.title),
+          selection.reason,
+        );
+      } else {
+        await this.taskService.annotateProcessTemplateSkipped(
+          input.taskId,
+          created.id,
+          selection.reason,
+          taskForExecution.processTemplates.length,
+        );
+      }
+
+      const output = await this.textExecutor.execute(taskForExecution, input, runtimeConfig, {
+        selectedTemplates: selection.shouldUse ? selection.selectedTemplates : [],
+      });
       const completed = await this.runRepository.updateResult(created.id, 'completed', output, 'ai');
       if (output?.trim()) {
         await this.artifactRepository.createFromRun({

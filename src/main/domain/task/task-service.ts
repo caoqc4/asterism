@@ -435,6 +435,34 @@ export class TaskService {
     return this.attachActiveWaitingItem(updated);
   }
 
+  async annotateProcessTemplateSelected(
+    taskId: string,
+    runId: string,
+    templateIds: string[],
+    titles: string[],
+    reason: string,
+  ): Promise<void> {
+    await this.repository.appendTimelineEvent(taskId, 'process_template.selected', {
+      runId,
+      templateIds,
+      titles,
+      reason,
+    });
+  }
+
+  async annotateProcessTemplateSkipped(
+    taskId: string,
+    runId: string,
+    reason: string,
+    candidateCount: number,
+  ): Promise<void> {
+    await this.repository.appendTimelineEvent(taskId, 'process_template.skipped', {
+      runId,
+      reason,
+      candidateCount,
+    });
+  }
+
   async createSourceContext(input: CreateSourceContextInput): Promise<SourceContextRecord> {
     await this.getExistingTaskOrThrow(input.taskId);
 

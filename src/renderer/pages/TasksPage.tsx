@@ -177,6 +177,10 @@ function formatTimelineBadge(type: string): string {
       return '方法';
     case 'process_template.removed':
       return '方法';
+    case 'process_template.selected':
+      return '方法';
+    case 'process_template.skipped':
+      return '方法';
     case 'task.risk_changed':
       return '风险';
     case 'task.updated':
@@ -209,6 +213,8 @@ function getTimelineToneClass(type: string): string {
     case 'source_context.archived':
     case 'process_template.applied':
     case 'process_template.removed':
+    case 'process_template.selected':
+    case 'process_template.skipped':
       return 'timeline-item-default';
     case 'task.transitioned':
       return 'timeline-item-state';
@@ -259,6 +265,10 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
       return `挂载方法模板：${formatValue(payload?.title)} [${formatValue(payload?.kind)}]`;
     case 'process_template.removed':
       return `移除方法模板：${formatValue(payload?.title)} [${formatValue(payload?.kind)}]`;
+    case 'process_template.selected':
+      return `本次执行选择方法模板：${formatValue((payload?.titles as string[] | undefined)?.join('、'))}；原因：${formatValue(payload?.reason)}`;
+    case 'process_template.skipped':
+      return `本次执行未调用方法模板；原因：${formatValue(payload?.reason)}`;
     case 'task.risk_changed': {
       const from = (payload?.from as Record<string, unknown> | undefined) ?? {};
       const to = (payload?.to as Record<string, unknown> | undefined) ?? {};

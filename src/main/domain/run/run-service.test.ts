@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { ArtifactRecord } from '../../../shared/types/artifact.js';
+import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
 import type { RunRecord } from '../../../shared/types/run.js';
 import type { TaskDetail, TaskRecord } from '../../../shared/types/task.js';
 import { RunService } from './run-service.js';
@@ -69,6 +70,30 @@ function buildArtifactRecord(): ArtifactRecord {
   };
 }
 
+function buildAppliedTemplate(
+  partial: Partial<AppliedProcessTemplateRecord> = {},
+): AppliedProcessTemplateRecord {
+  return {
+    id: partial.id ?? 'process_template_1',
+    title: partial.title ?? 'Outreach skill',
+    summary: partial.summary ?? 'Use outreach workflow',
+    content: partial.content ?? '1. Review sources\n2. Draft outreach',
+    kind: partial.kind ?? 'skill',
+    tags: partial.tags ?? ['outreach'],
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    archivedAt: partial.archivedAt ?? null,
+    bindingId: partial.bindingId ?? 'task_process_binding_1',
+    taskId: partial.taskId ?? 'task_1',
+    bindingStatus: partial.bindingStatus ?? 'active',
+    bindingNote: partial.bindingNote ?? null,
+    boundAt: partial.boundAt ?? '2026-01-01T00:00:00.000Z',
+    bindingUpdatedAt: partial.bindingUpdatedAt ?? '2026-01-01T00:00:00.000Z',
+    removedAt: partial.removedAt ?? null,
+  };
+}
+
 describe('RunService', () => {
   it('completes a run when the executor succeeds', async () => {
     const runRepository = {
@@ -82,10 +107,15 @@ describe('RunService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('planned')),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildTaskDetail('planned'),
+        processTemplates: [buildAppliedTemplate()],
+      }),
       transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('running')),
       annotateRunCompleted: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateRunFailed: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
     };
     const artifactRepository = {
       createFromRun: vi.fn().mockResolvedValue(buildArtifactRecord()),
@@ -100,12 +130,20 @@ describe('RunService', () => {
     const textExecutor = {
       execute: vi.fn().mockResolvedValue('Generated output'),
     };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: true,
+        selectedTemplates: [buildAppliedTemplate()],
+        reason: '当前 run 是外联草稿，适合调用 outreach skill。',
+      }),
+    };
     const service = new RunService(
       runRepository as never,
       taskService as never,
       artifactRepository as never,
       aiConfigService as never,
       textExecutor as never,
+      processTemplateSelector as never,
     );
 
     const result = await service.trigger({
@@ -122,9 +160,18 @@ describe('RunService', () => {
       instructions: 'Please draft this',
     });
     expect(aiConfigService.resolveRuntimeConfig).toHaveBeenCalled();
+    expect(processTemplateSelector.select).toHaveBeenCalled();
+    expect(taskService.annotateProcessTemplateSelected).toHaveBeenCalledWith(
+      'task_1',
+      'run_1',
+      ['process_template_1'],
+      ['Outreach skill'],
+      '当前 run 是外联草稿，适合调用 outreach skill。',
+    );
     expect(textExecutor.execute).toHaveBeenCalledWith(
       {
         ...buildTaskDetail('planned'),
+        processTemplates: [buildAppliedTemplate()],
         state: 'running',
         updatedAt: '2026-01-01T00:00:01.000Z',
       },
@@ -137,6 +184,9 @@ describe('RunService', () => {
         provider: 'anthropic',
         model: 'claude-3-5-sonnet-latest',
         apiKey: 'secret',
+      },
+      {
+        selectedTemplates: [buildAppliedTemplate()],
       },
     );
     expect(runRepository.updateResult).toHaveBeenCalledWith(
@@ -181,6 +231,8 @@ describe('RunService', () => {
         riskLevel: 'high',
         riskNote: 'Executor exploded',
       }),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
     };
     const artifactRepository = {
       createFromRun: vi.fn(),
@@ -195,12 +247,20 @@ describe('RunService', () => {
     const textExecutor = {
       execute: vi.fn().mockRejectedValue(new Error('Executor exploded')),
     };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: '当前无明显匹配模板。',
+      }),
+    };
     const service = new RunService(
       runRepository as never,
       taskService as never,
       artifactRepository as never,
       aiConfigService as never,
       textExecutor as never,
+      processTemplateSelector as never,
     );
 
     const result = await service.trigger({
@@ -208,6 +268,12 @@ describe('RunService', () => {
       type: 'draft',
     });
 
+    expect(taskService.annotateProcessTemplateSkipped).toHaveBeenCalledWith(
+      'task_1',
+      'run_1',
+      '当前无明显匹配模板。',
+      0,
+    );
     expect(runRepository.updateResult).toHaveBeenCalledWith(
       'run_1',
       'failed',
@@ -238,6 +304,8 @@ describe('RunService', () => {
       transitionIfAllowed: vi.fn(),
       annotateRunCompleted: vi.fn(),
       annotateRunFailed: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
     };
     const artifactRepository = {
       createFromRun: vi.fn(),
@@ -280,10 +348,15 @@ describe('RunService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildTaskDetail('running'),
+        processTemplates: [buildAppliedTemplate()],
+      }),
       transitionIfAllowed: vi.fn(),
       annotateRunCompleted: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateRunFailed: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
     };
     const artifactRepository = {
       createFromRun: vi.fn().mockResolvedValue(buildArtifactRecord()),
@@ -298,12 +371,16 @@ describe('RunService', () => {
     const textExecutor = {
       execute: vi.fn().mockResolvedValue('Generated output'),
     };
+    const processTemplateSelector = {
+      select: vi.fn().mockRejectedValue(new Error('selector unavailable')),
+    };
     const service = new RunService(
       runRepository as never,
       taskService as never,
       artifactRepository as never,
       aiConfigService as never,
       textExecutor as never,
+      processTemplateSelector as never,
     );
 
     await service.trigger({
@@ -319,8 +396,17 @@ describe('RunService', () => {
       'run_1',
     );
     expect(artifactRepository.createFromRun).toHaveBeenCalled();
+    expect(taskService.annotateProcessTemplateSkipped).toHaveBeenCalledWith(
+      'task_1',
+      'run_1',
+      'process template selector 不可用：selector unavailable',
+      1,
+    );
     expect(textExecutor.execute).toHaveBeenCalledWith(
-      buildTaskDetail('running'),
+      {
+        ...buildTaskDetail('running'),
+        processTemplates: [buildAppliedTemplate()],
+      },
       {
         taskId: 'task_1',
         type: 'draft',
@@ -329,6 +415,9 @@ describe('RunService', () => {
         provider: 'anthropic',
         model: 'claude-3-5-sonnet-latest',
         apiKey: 'secret',
+      },
+      {
+        selectedTemplates: [],
       },
     );
   });

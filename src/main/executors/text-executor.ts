@@ -1,11 +1,20 @@
 import { generateText } from 'ai';
 
+import type { AppliedProcessTemplateRecord } from '../../shared/types/process-template.js';
 import type { RuntimeAiConfig } from '../keychain/ai-config-service.js';
 import type { CreateRunInput } from '../../shared/types/run.js';
 import type { TaskDetail } from '../../shared/types/task.js';
 import { getLanguageModel } from './ai-client.js';
 
-function buildPrompt(task: TaskDetail, input: CreateRunInput): string {
+type ExecuteOptions = {
+  selectedTemplates?: AppliedProcessTemplateRecord[];
+};
+
+function buildPrompt(
+  task: TaskDetail,
+  input: CreateRunInput,
+  options: ExecuteOptions = {},
+): string {
   const summary = task.summary ? `任务摘要：${task.summary}` : '任务摘要：暂无';
   const extra = input.instructions?.trim() ? `附加要求：${input.instructions.trim()}` : '附加要求：无';
   const nextStep = task.nextStep ? `建议下一步：${task.nextStep}` : '建议下一步：暂无';
@@ -14,6 +23,15 @@ function buildPrompt(task: TaskDetail, input: CreateRunInput): string {
     task.riskLevel === 'none'
       ? '风险：当前未标记明显风险'
       : `风险：${task.riskLevel}${task.riskNote ? ` - ${task.riskNote}` : ''}`;
+  const processContext = options.selectedTemplates?.length
+    ? [
+        '执行时参考以下方法模板：',
+        ...options.selectedTemplates.map(
+          (item) =>
+            `- ${item.title} [${item.kind}]${item.summary ? ` | ${item.summary}` : ''}\n${item.content}`,
+        ),
+      ].join('\n')
+    : '执行时参考以下方法模板：暂无';
 
   if (input.type === 'draft') {
     return [
@@ -26,6 +44,7 @@ function buildPrompt(task: TaskDetail, input: CreateRunInput): string {
       nextStep,
       waitingReason,
       risk,
+      processContext,
       extra,
     ].join('\n');
   }
@@ -41,15 +60,21 @@ function buildPrompt(task: TaskDetail, input: CreateRunInput): string {
     nextStep,
     waitingReason,
     risk,
+    processContext,
     extra,
   ].join('\n');
 }
 
 export class TextExecutor {
-  async execute(task: TaskDetail, input: CreateRunInput, config: RuntimeAiConfig): Promise<string> {
+  async execute(
+    task: TaskDetail,
+    input: CreateRunInput,
+    config: RuntimeAiConfig,
+    options: ExecuteOptions = {},
+  ): Promise<string> {
     const { text } = await generateText({
       model: getLanguageModel(config),
-      prompt: buildPrompt(task, input),
+      prompt: buildPrompt(task, input, options),
     });
 
     return text.trim();
