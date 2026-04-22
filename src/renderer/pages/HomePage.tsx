@@ -17,6 +17,18 @@ function renderTaskSignal(task: HomeBriefData['recentTasks'][number]) {
     .join(' | ');
 }
 
+function getActivityActionLabel(activity: HomeActivityRecord): string | null {
+  if (activity.sourceType === 'decision' && activity.status === 'approved') {
+    return '继续推进任务';
+  }
+
+  if (activity.sourceType === 'run' && activity.status === 'failed') {
+    return '处理失败结果';
+  }
+
+  return null;
+}
+
 type HomePageProps = {
   ping: PingResponse | null;
   status: 'idle' | 'loading' | 'ready' | 'error';
@@ -239,6 +251,15 @@ export function HomePage({
                   <p className="meta">{event.updatedAt}</p>
                 </button>
                 <div className="chip-row">
+                  {getActivityActionLabel(event) ? (
+                    <button
+                      className="ghost-button"
+                      onClick={() => onOpenActivity(event)}
+                      type="button"
+                    >
+                      {getActivityActionLabel(event)}
+                    </button>
+                  ) : null}
                   <button
                     className="ghost-button"
                     onClick={() => onOpenActivityObject(event)}

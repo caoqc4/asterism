@@ -527,6 +527,24 @@ describe('App UI flow', () => {
     );
   });
 
+  it('opens task follow-up directly from home recent activity actions', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    const actionButton = await screen.findByRole('button', { name: '处理失败结果' });
+    await user.click(actionButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect(window.location.hash).toBe('#tasks');
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '检查最近一次 draft run 的失败原因，并决定是否重试。',
+    );
+  });
+
   it('opens decision and run objects directly from home recent activity', async () => {
     const user = userEvent.setup();
 
