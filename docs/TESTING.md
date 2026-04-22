@@ -106,6 +106,7 @@ Covered today:
 - `Decisions` page current-focus and queue navigation
 - `Decisions / Runs -> Tasks` follow-up return flows
 - `Decisions / Runs` related-task timeline context
+- `Decisions / Runs` related-task timeline follow-up actions
 - `Settings save flow`
 - `waiting item` visibility and direct resolution
 - `Decision cancel -> task signal refresh`
