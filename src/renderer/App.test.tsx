@@ -656,6 +656,56 @@ describe('App UI flow', () => {
     expect(screen.getByText('system')).toBeTruthy();
   });
 
+  it('opens related decisions from the task activity feed', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    const riskTaskCard = (await screen.findByText('High risk task')).closest('button');
+    expect(riskTaskCard).toBeTruthy();
+    await user.click(riskTaskCard!);
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    await user.click(screen.getByRole('button', { name: /Approve escalation path.*pending/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: '待拍板事项' })).toBeTruthy();
+    });
+
+    expect(window.location.hash).toBe('#decisions');
+  });
+
+  it('opens related runs from the task activity feed', async () => {
+    const user = userEvent.setup();
+
+    const runDetailApi: ElectronApi = {
+      ...mockApi,
+      getRunDetail: vi.fn(async (runId: string) =>
+        runs.find((run) => run.id === runId) ?? null,
+      ),
+    };
+
+    window.api = runDetailApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    const riskTaskCard = (await screen.findByText('High risk task')).closest('button');
+    expect(riskTaskCard).toBeTruthy();
+    await user.click(riskTaskCard!);
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    await user.click(screen.getByRole('button', { name: /draft.*failed.*来源：system/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'draft / failed' })).toBeTruthy();
+    });
+
+    expect(window.location.hash).toBe('#runs');
+    expect(runDetailApi.getRunDetail).toHaveBeenCalledWith('run_1');
+  });
+
   it('renders timeline events as readable summaries with badges', async () => {
     const user = userEvent.setup();
 

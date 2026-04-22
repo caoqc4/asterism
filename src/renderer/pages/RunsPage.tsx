@@ -4,13 +4,22 @@ import type { CreateRunInput, RunRecord } from '@shared/types/run';
 import type { TaskRecord } from '@shared/types/task';
 
 type RunsPageProps = {
+  focusedRunId: string | null;
   runs: RunRecord[];
   tasks: TaskRecord[];
   onRefresh: () => Promise<void>;
+  onRunFocusConsumed: () => void;
   onTriggerRun: (input: CreateRunInput) => Promise<void>;
 };
 
-export function RunsPage({ runs, tasks, onRefresh, onTriggerRun }: RunsPageProps) {
+export function RunsPage({
+  focusedRunId,
+  runs,
+  tasks,
+  onRefresh,
+  onRunFocusConsumed,
+  onTriggerRun,
+}: RunsPageProps) {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(runs[0]?.id ?? null);
   const [detail, setDetail] = useState<RunRecord | null>(null);
   const [form, setForm] = useState<CreateRunInput>({
@@ -24,6 +33,17 @@ export function RunsPage({ runs, tasks, onRefresh, onTriggerRun }: RunsPageProps
       setSelectedRunId(runs[0].id);
     }
   }, [runs, selectedRunId]);
+
+  useEffect(() => {
+    if (!focusedRunId) {
+      return;
+    }
+
+    if (runs.some((run) => run.id === focusedRunId)) {
+      setSelectedRunId(focusedRunId);
+      onRunFocusConsumed();
+    }
+  }, [focusedRunId, onRunFocusConsumed, runs]);
 
   useEffect(() => {
     let mounted = true;

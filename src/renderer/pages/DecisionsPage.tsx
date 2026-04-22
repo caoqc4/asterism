@@ -1,25 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
 import type { TaskRecord } from '@shared/types/task';
 
 type DecisionsPageProps = {
   decisions: DecisionRecord[];
+  focusedDecisionId: string | null;
   tasks: TaskRecord[];
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
   onAct: (id: string, action: 'approve' | 'defer' | 'cancel') => Promise<void>;
+  onDecisionFocusConsumed: () => void;
 };
 
 export function DecisionsPage({
   decisions,
+  focusedDecisionId,
   tasks,
   onCreateDecision,
   onAct,
+  onDecisionFocusConsumed,
 }: DecisionsPageProps) {
   const [form, setForm] = useState<CreateDecisionInput>({
     taskId: tasks[0]?.id ?? '',
     title: '',
   });
+
+  useEffect(() => {
+    if (!focusedDecisionId) {
+      return;
+    }
+
+    if (decisions.some((decision) => decision.id === focusedDecisionId)) {
+      onDecisionFocusConsumed();
+    }
+  }, [decisions, focusedDecisionId, onDecisionFocusConsumed]);
 
   return (
     <section className="page-grid">
@@ -74,7 +88,10 @@ export function DecisionsPage({
             <p className="meta">还没有决策请求。</p>
           ) : (
             decisions.map((decision) => (
-              <div className="task-card" key={decision.id}>
+              <div
+                className={`task-card ${decision.id === focusedDecisionId ? 'task-card-active' : ''}`}
+                key={decision.id}
+              >
                 <div className="task-row">
                   <strong>{decision.title}</strong>
                   <span className="status">{decision.status}</span>

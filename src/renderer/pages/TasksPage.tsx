@@ -197,6 +197,8 @@ type TasksPageProps = {
   runs: RunRecord[];
   tasks: TaskRecord[];
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
+  onOpenDecision: (decisionId: string) => void;
+  onOpenRun: (runId: string) => void;
   onRefresh: () => Promise<void>;
   onCreateTask: (input: CreateTaskInput) => Promise<void>;
   onTriggerRun: (input: CreateRunInput) => Promise<void>;
@@ -215,6 +217,8 @@ export function TasksPage({
   runs,
   tasks,
   onCreateDecision,
+  onOpenDecision,
+  onOpenRun,
   onRefresh,
   onCreateTask,
   onTriggerRun,
@@ -849,13 +853,18 @@ export function TasksPage({
                     <strong>Decisions</strong>
                     {relatedDecisions.length ? (
                       relatedDecisions.map((decision) => (
-                        <div className="timeline-item" key={decision.id}>
+                        <button
+                          className="timeline-item task-card-button"
+                          key={decision.id}
+                          onClick={() => onOpenDecision(decision.id)}
+                          type="button"
+                        >
                           <div className="task-row">
                             <strong>{decision.title}</strong>
                             <span className="status">{decision.status}</span>
                           </div>
                           <p className="meta">{decision.updatedAt}</p>
-                        </div>
+                        </button>
                       ))
                     ) : (
                       <p className="meta">当前任务还没有关联 decision。</p>
@@ -866,7 +875,12 @@ export function TasksPage({
                     <strong>Recent Runs</strong>
                     {relatedRuns.length ? (
                       relatedRuns.map((run) => (
-                        <div className="timeline-item" key={run.id}>
+                        <button
+                          className="timeline-item task-card-button"
+                          key={run.id}
+                          onClick={() => onOpenRun(run.id)}
+                          type="button"
+                        >
                           <div className="task-row">
                             <strong>{run.type}</strong>
                             <span className="status">{run.status}</span>
@@ -875,7 +889,7 @@ export function TasksPage({
                             {run.outputSource ? `来源：${run.outputSource}` : '来源：尚未产生'}
                           </p>
                           <p className="meta">{run.updatedAt}</p>
-                        </div>
+                        </button>
                       ))
                     ) : (
                       <p className="meta">当前任务还没有关联 run。</p>

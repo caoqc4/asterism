@@ -31,6 +31,8 @@ export function App() {
     taskId: string;
     intent: RecommendedActionIntent | null;
   } | null>(null);
+  const [focusedDecisionId, setFocusedDecisionId] = useState<string | null>(null);
+  const [focusedRunId, setFocusedRunId] = useState<string | null>(null);
   const [ping, setPing] = useState<PingResponse | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [aiStatus, setAiStatus] = useState<AiConfigStatus | null>(null);
@@ -202,6 +204,16 @@ export function App() {
     });
   }
 
+  function handleOpenDecision(decisionId: string) {
+    setFocusedDecisionId(decisionId);
+    setRoute('decisions');
+  }
+
+  function handleOpenRun(runId: string) {
+    setFocusedRunId(runId);
+    setRoute('runs');
+  }
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -247,6 +259,8 @@ export function App() {
             tasks={tasks}
             onCreateDecision={handleCreateDecision}
             onCreateTask={handleCreateTask}
+            onOpenDecision={handleOpenDecision}
+            onOpenRun={handleOpenRun}
             onRefresh={loadShellData}
             onTransitionTask={handleTransitionTask}
             onTriggerRun={handleTriggerRun}
@@ -257,13 +271,22 @@ export function App() {
         {route === 'decisions' ? (
           <DecisionsPage
             decisions={decisions}
+            focusedDecisionId={focusedDecisionId}
             tasks={tasks}
             onAct={handleDecisionAction}
             onCreateDecision={handleCreateDecision}
+            onDecisionFocusConsumed={() => setFocusedDecisionId(null)}
           />
         ) : null}
         {route === 'runs' ? (
-          <RunsPage runs={runs} tasks={tasks} onRefresh={loadShellData} onTriggerRun={handleTriggerRun} />
+          <RunsPage
+            focusedRunId={focusedRunId}
+            runs={runs}
+            tasks={tasks}
+            onRefresh={loadShellData}
+            onRunFocusConsumed={() => setFocusedRunId(null)}
+            onTriggerRun={handleTriggerRun}
+          />
         ) : null}
         {route === 'settings' ? (
           <SettingsPage
