@@ -31,7 +31,13 @@ function buildHomeData(): HomeBriefData {
     pendingDecisionCount: 1,
     completedTaskCount: 3,
     recentRunCount: 4,
+    waitingTaskCount: 1,
+    highRiskTaskCount: 1,
+    missingNextStepTaskCount: 1,
     recentTasks: [],
+    waitingTasks: [],
+    highRiskTasks: [],
+    missingNextStepTasks: [],
     pendingDecisions: [],
     recentBriefSnapshots: [],
     schedulerStatus: {

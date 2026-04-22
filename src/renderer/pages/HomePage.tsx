@@ -2,6 +2,18 @@ import type { HomeBriefData } from '@shared/types/brief';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { PingResponse } from '@shared/types/ipc';
 
+function renderTaskSignal(task: HomeBriefData['recentTasks'][number]) {
+  return [
+    task.nextStep ? `下一步：${task.nextStep}` : null,
+    task.waitingReason ? `等待：${task.waitingReason}` : null,
+    task.riskLevel !== 'none'
+      ? `风险：${task.riskLevel}${task.riskNote ? ` · ${task.riskNote}` : ''}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}
+
 type HomePageProps = {
   ping: PingResponse | null;
   status: 'idle' | 'loading' | 'ready' | 'error';
@@ -70,6 +82,18 @@ export function HomePage({ ping, status, aiStatus, briefData }: HomePageProps) {
             <span className="metric-label">Recent Runs</span>
             <strong>{briefData?.recentRunCount ?? 0}</strong>
           </div>
+          <div className="metric-card metric-card-warning">
+            <span className="metric-label">Waiting</span>
+            <strong>{briefData?.waitingTaskCount ?? 0}</strong>
+          </div>
+          <div className="metric-card metric-card-danger">
+            <span className="metric-label">High Risk</span>
+            <strong>{briefData?.highRiskTaskCount ?? 0}</strong>
+          </div>
+          <div className="metric-card metric-card-muted">
+            <span className="metric-label">Missing Next Step</span>
+            <strong>{briefData?.missingNextStepTaskCount ?? 0}</strong>
+          </div>
         </div>
       </article>
 
@@ -84,10 +108,70 @@ export function HomePage({ ping, status, aiStatus, briefData }: HomePageProps) {
                   <span className="status">{task.state}</span>
                 </div>
                 <p className="meta">{task.summary || task.id}</p>
+                {renderTaskSignal(task) ? <p className="meta">{renderTaskSignal(task)}</p> : null}
               </div>
             ))
           ) : (
             <p className="meta">还没有任务。</p>
+          )}
+        </div>
+      </article>
+
+      <article className="panel">
+        <h2>High Risk Tasks</h2>
+        <div className="task-list">
+          {briefData?.highRiskTasks.length ? (
+            briefData.highRiskTasks.map((task) => (
+              <div className="task-card task-card-danger" key={task.id}>
+                <div className="task-row">
+                  <strong>{task.title}</strong>
+                  <span className="status">{task.riskLevel}</span>
+                </div>
+                <p className="meta">{task.riskNote || task.summary || task.id}</p>
+                {task.nextStep ? <p className="meta">下一步：{task.nextStep}</p> : null}
+              </div>
+            ))
+          ) : (
+            <p className="meta">当前没有高风险任务。</p>
+          )}
+        </div>
+      </article>
+
+      <article className="panel">
+        <h2>Waiting Tasks</h2>
+        <div className="task-list">
+          {briefData?.waitingTasks.length ? (
+            briefData.waitingTasks.map((task) => (
+              <div className="task-card task-card-warning" key={task.id}>
+                <div className="task-row">
+                  <strong>{task.title}</strong>
+                  <span className="status">{task.state}</span>
+                </div>
+                <p className="meta">{task.waitingReason || '未填写等待原因'}</p>
+                {task.nextStep ? <p className="meta">恢复后下一步：{task.nextStep}</p> : null}
+              </div>
+            ))
+          ) : (
+            <p className="meta">当前没有等待中任务。</p>
+          )}
+        </div>
+      </article>
+
+      <article className="panel">
+        <h2>Needs Next Step</h2>
+        <div className="task-list">
+          {briefData?.missingNextStepTasks.length ? (
+            briefData.missingNextStepTasks.map((task) => (
+              <div className="task-card task-card-muted" key={task.id}>
+                <div className="task-row">
+                  <strong>{task.title}</strong>
+                  <span className="status">{task.state}</span>
+                </div>
+                <p className="meta">{task.summary || '还没有补充摘要'}</p>
+              </div>
+            ))
+          ) : (
+            <p className="meta">当前所有活跃任务都已经有下一步。</p>
           )}
         </div>
       </article>

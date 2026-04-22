@@ -25,6 +25,11 @@ export class HomeBriefService {
     const activeTasks = tasks.filter((task) => !['completed', 'archived'].includes(task.state));
     const completedTasks = tasks.filter((task) => task.state === 'completed');
     const pendingDecisions = decisions.filter((decision) => decision.status === 'pending');
+    const waitingTasks = tasks.filter(
+      (task) => task.state === 'waiting_external' || Boolean(task.waitingReason),
+    );
+    const highRiskTasks = tasks.filter((task) => task.riskLevel === 'high');
+    const missingNextStepTasks = activeTasks.filter((task) => !task.nextStep?.trim());
     const scheduler = this.getSchedulerStatus();
 
     return {
@@ -32,7 +37,13 @@ export class HomeBriefService {
       pendingDecisionCount: pendingDecisions.length,
       completedTaskCount: completedTasks.length,
       recentRunCount: runs.length,
+      waitingTaskCount: waitingTasks.length,
+      highRiskTaskCount: highRiskTasks.length,
+      missingNextStepTaskCount: missingNextStepTasks.length,
       recentTasks: tasks.slice(0, 5),
+      waitingTasks: waitingTasks.slice(0, 5),
+      highRiskTasks: highRiskTasks.slice(0, 5),
+      missingNextStepTasks: missingNextStepTasks.slice(0, 5),
       pendingDecisions: pendingDecisions.slice(0, 5),
       recentBriefSnapshots,
       schedulerStatus: scheduler?.getStatus() ?? {

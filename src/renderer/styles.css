@@ -216,6 +216,18 @@ button {
   background: rgba(17, 24, 39, 0.04);
 }
 
+.task-card-warning {
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.task-card-danger {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.task-card-muted {
+  background: rgba(107, 114, 128, 0.1);
+}
+
 .task-row {
   display: flex;
   align-items: center;
@@ -290,6 +302,18 @@ button {
   padding: 16px;
   border-radius: 16px;
   background: rgba(17, 24, 39, 0.04);
+}
+
+.metric-card-warning {
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.metric-card-danger {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.metric-card-muted {
+  background: rgba(107, 114, 128, 0.1);
 }
 
 .metric-label {

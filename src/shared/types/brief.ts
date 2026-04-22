@@ -8,7 +8,13 @@ export type HomeBriefData = {
   pendingDecisionCount: number;
   completedTaskCount: number;
   recentRunCount: number;
+  waitingTaskCount: number;
+  highRiskTaskCount: number;
+  missingNextStepTaskCount: number;
   recentTasks: TaskRecord[];
+  waitingTasks: TaskRecord[];
+  highRiskTasks: TaskRecord[];
+  missingNextStepTasks: TaskRecord[];
   pendingDecisions: DecisionRecord[];
   recentBriefSnapshots: BriefSnapshotRecord[];
   schedulerStatus: SchedulerStatus;

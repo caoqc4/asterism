@@ -44,9 +44,26 @@ export function buildFallbackBrief(homeData: HomeBriefData, kind: string): strin
     `待决策：${homeData.pendingDecisionCount}`,
     `已完成：${homeData.completedTaskCount}`,
     `最近 Runs：${homeData.recentRunCount}`,
+    `等待中任务：${homeData.waitingTaskCount}`,
+    `高风险任务：${homeData.highRiskTaskCount}`,
+    `缺少下一步：${homeData.missingNextStepTaskCount}`,
     '',
     '最近任务：',
     taskLines,
+    '',
+    '高风险任务：',
+    homeData.highRiskTasks.length
+      ? homeData.highRiskTasks
+          .map((task) => formatTaskLine(task.title, `${task.state} / ${task.riskLevel}`))
+          .join('\n')
+      : '- 当前没有高风险任务',
+    '',
+    '等待中任务：',
+    homeData.waitingTasks.length
+      ? homeData.waitingTasks
+          .map((task) => formatTaskLine(task.title, task.waitingReason ?? task.state))
+          .join('\n')
+      : '- 当前没有等待中任务',
     '',
     '待拍板事项：',
     decisionLines,
@@ -66,6 +83,9 @@ function buildPrompt(homeData: HomeBriefData, kind: string): string {
     `待决策数：${homeData.pendingDecisionCount}`,
     `已完成任务数：${homeData.completedTaskCount}`,
     `最近 run 数：${homeData.recentRunCount}`,
+    `等待中任务数：${homeData.waitingTaskCount}`,
+    `高风险任务数：${homeData.highRiskTaskCount}`,
+    `缺少下一步任务数：${homeData.missingNextStepTaskCount}`,
     '',
     '最近任务：',
     ...(homeData.recentTasks.length
@@ -83,6 +103,29 @@ function buildPrompt(homeData: HomeBriefData, kind: string): string {
     ...(homeData.pendingDecisions.length
       ? homeData.pendingDecisions.map(
           (decision) => `- ${decision.title} | ${decision.status} | task=${decision.taskId}`,
+        )
+      : ['- 无']),
+    '',
+    '高风险任务：',
+    ...(homeData.highRiskTasks.length
+      ? homeData.highRiskTasks.map(
+          (task) =>
+            `- ${task.title} | ${task.state} | risk=${task.riskLevel}${task.riskNote ? `:${task.riskNote}` : ''}`,
+        )
+      : ['- 无']),
+    '',
+    '等待中任务：',
+    ...(homeData.waitingTasks.length
+      ? homeData.waitingTasks.map(
+          (task) =>
+            `- ${task.title} | ${task.state} | waiting=${task.waitingReason ?? '无'} | next=${task.nextStep ?? '无'}`,
+        )
+      : ['- 无']),
+    '',
+    '缺少下一步的任务：',
+    ...(homeData.missingNextStepTasks.length
+      ? homeData.missingNextStepTasks.map(
+          (task) => `- ${task.title} | ${task.state} | summary=${task.summary ?? '无摘要'}`,
         )
       : ['- 无']),
   ].join('\n');
