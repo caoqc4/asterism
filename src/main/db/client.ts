@@ -33,6 +33,10 @@ function bootstrapTables(connection: Database.Database): void {
       title TEXT NOT NULL,
       summary TEXT,
       state TEXT NOT NULL DEFAULT 'captured',
+      next_step TEXT,
+      waiting_reason TEXT,
+      risk_level TEXT NOT NULL DEFAULT 'none',
+      risk_note TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -81,6 +85,10 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'runs', 'output', 'TEXT');
   ensureColumn(connection, 'runs', 'output_source', 'TEXT');
   ensureColumn(connection, 'runs', 'failure_reason', 'TEXT');
+  ensureColumn(connection, 'tasks', 'next_step', 'TEXT');
+  ensureColumn(connection, 'tasks', 'waiting_reason', 'TEXT');
+  ensureColumn(connection, 'tasks', 'risk_level', "TEXT NOT NULL DEFAULT 'none'");
+  ensureColumn(connection, 'tasks', 'risk_note', 'TEXT');
   ensureColumn(connection, 'brief_snapshots', 'source', "TEXT NOT NULL DEFAULT 'fallback'");
   ensureColumn(connection, 'brief_snapshots', 'fallback_reason', 'TEXT');
 }

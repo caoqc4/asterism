@@ -66,6 +66,10 @@ export class TaskService {
         title: detail.title,
         summary: detail.summary,
         state: detail.state,
+        nextStep: detail.nextStep,
+        waitingReason: detail.waitingReason,
+        riskLevel: detail.riskLevel,
+        riskNote: detail.riskNote,
         createdAt: detail.createdAt,
         updatedAt: detail.updatedAt,
       };

@@ -28,6 +28,10 @@ export class TaskRepository {
       title: row.title,
       summary: row.summary,
       state: row.state as TaskRecord['state'],
+      nextStep: row.nextStep,
+      waitingReason: row.waitingReason,
+      riskLevel: row.riskLevel as TaskRecord['riskLevel'],
+      riskNote: row.riskNote,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     }));
@@ -43,6 +47,10 @@ export class TaskRepository {
       title: input.title.trim(),
       summary: input.summary?.trim() || null,
       state: 'captured',
+      nextStep: null,
+      waitingReason: null,
+      riskLevel: 'none',
+      riskNote: null,
       createdAt: timestamp,
       updatedAt: timestamp,
     });
@@ -62,6 +70,10 @@ export class TaskRepository {
       title: created.title,
       summary: created.summary,
       state: created.state as TaskRecord['state'],
+      nextStep: created.nextStep,
+      waitingReason: created.waitingReason,
+      riskLevel: created.riskLevel as TaskRecord['riskLevel'],
+      riskNote: created.riskNote,
       createdAt: created.createdAt,
       updatedAt: created.updatedAt,
     };
@@ -86,6 +98,10 @@ export class TaskRepository {
       title: task.title,
       summary: task.summary,
       state: task.state as TaskRecord['state'],
+      nextStep: task.nextStep,
+      waitingReason: task.waitingReason,
+      riskLevel: task.riskLevel as TaskRecord['riskLevel'],
+      riskNote: task.riskNote,
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
       timeline: timeline.map((event) => ({
@@ -109,6 +125,15 @@ export class TaskRepository {
     const nextTitle = input.title?.trim() ? input.title.trim() : current.title;
     const nextSummary =
       input.summary === undefined ? current.summary : input.summary?.trim() || null;
+    const nextStep =
+      input.nextStep === undefined ? current.nextStep : input.nextStep?.trim() || null;
+    const nextWaitingReason =
+      input.waitingReason === undefined
+        ? current.waitingReason
+        : input.waitingReason?.trim() || null;
+    const nextRiskLevel = input.riskLevel ?? (current.riskLevel as TaskRecord['riskLevel']);
+    const nextRiskNote =
+      input.riskNote === undefined ? current.riskNote : input.riskNote?.trim() || null;
     const timestamp = nowIso();
 
     await db
@@ -116,6 +141,10 @@ export class TaskRepository {
       .set({
         title: nextTitle,
         summary: nextSummary,
+        nextStep,
+        waitingReason: nextWaitingReason,
+        riskLevel: nextRiskLevel,
+        riskNote: nextRiskNote,
         updatedAt: timestamp,
       })
       .where(eq(tasks.id, input.id));
@@ -124,7 +153,14 @@ export class TaskRepository {
       id: generateId('timeline'),
       taskId: input.id,
       type: 'task.updated',
-      payload: JSON.stringify({ title: nextTitle, summary: nextSummary }),
+      payload: JSON.stringify({
+        title: nextTitle,
+        summary: nextSummary,
+        nextStep,
+        waitingReason: nextWaitingReason,
+        riskLevel: nextRiskLevel,
+        riskNote: nextRiskNote,
+      }),
       createdAt: timestamp,
     });
 
@@ -135,6 +171,10 @@ export class TaskRepository {
       title: updated.title,
       summary: updated.summary,
       state: updated.state as TaskRecord['state'],
+      nextStep: updated.nextStep,
+      waitingReason: updated.waitingReason,
+      riskLevel: updated.riskLevel as TaskRecord['riskLevel'],
+      riskNote: updated.riskNote,
       createdAt: updated.createdAt,
       updatedAt: updated.updatedAt,
     };
@@ -173,6 +213,10 @@ export class TaskRepository {
       title: updated.title,
       summary: updated.summary,
       state: updated.state as TaskRecord['state'],
+      nextStep: updated.nextStep,
+      waitingReason: updated.waitingReason,
+      riskLevel: updated.riskLevel as TaskRecord['riskLevel'],
+      riskNote: updated.riskNote,
       createdAt: updated.createdAt,
       updatedAt: updated.updatedAt,
     };

@@ -8,6 +8,12 @@ import { getLanguageModel } from './ai-client.js';
 function buildPrompt(task: TaskDetail, input: CreateRunInput): string {
   const summary = task.summary ? `任务摘要：${task.summary}` : '任务摘要：暂无';
   const extra = input.instructions?.trim() ? `附加要求：${input.instructions.trim()}` : '附加要求：无';
+  const nextStep = task.nextStep ? `建议下一步：${task.nextStep}` : '建议下一步：暂无';
+  const waitingReason = task.waitingReason ? `等待原因：${task.waitingReason}` : '等待原因：暂无';
+  const risk =
+    task.riskLevel === 'none'
+      ? '风险：当前未标记明显风险'
+      : `风险：${task.riskLevel}${task.riskNote ? ` - ${task.riskNote}` : ''}`;
 
   if (input.type === 'draft') {
     return [
@@ -17,6 +23,9 @@ function buildPrompt(task: TaskDetail, input: CreateRunInput): string {
       '2. 如果上下文不足，请先基于现有信息给出合理的初稿。',
       `任务标题：${task.title}`,
       summary,
+      nextStep,
+      waitingReason,
+      risk,
       extra,
     ].join('\n');
   }
@@ -29,6 +38,9 @@ function buildPrompt(task: TaskDetail, input: CreateRunInput): string {
     '3. 如果存在下一步建议，请单独列出。',
     `任务标题：${task.title}`,
     summary,
+    nextStep,
+    waitingReason,
+    risk,
     extra,
   ].join('\n');
 }

@@ -8,13 +8,28 @@ function formatTaskLine(title: string, state: string): string {
   return `- ${title} [${state}]`;
 }
 
+function formatTaskContext(nextStep: string | null, waitingReason: string | null, riskLabel: string): string {
+  return [`next=${nextStep ?? '无'}`, `waiting=${waitingReason ?? '无'}`, `risk=${riskLabel}`].join(' | ');
+}
+
 function formatDecisionLine(title: string, status: string): string {
   return `- ${title} [${status}]`;
 }
 
 export function buildFallbackBrief(homeData: HomeBriefData, kind: string): string {
   const taskLines = homeData.recentTasks.length
-    ? homeData.recentTasks.map((task) => formatTaskLine(task.title, task.state)).join('\n')
+    ? homeData.recentTasks
+        .map(
+          (task) =>
+            `${formatTaskLine(task.title, task.state)}\n  ${formatTaskContext(
+              task.nextStep,
+              task.waitingReason,
+              task.riskLevel === 'none'
+                ? 'none'
+                : `${task.riskLevel}${task.riskNote ? `:${task.riskNote}` : ''}`,
+            )}`,
+        )
+        .join('\n')
     : '- 当前没有任务';
   const decisionLines = homeData.pendingDecisions.length
     ? homeData.pendingDecisions
@@ -54,7 +69,14 @@ function buildPrompt(homeData: HomeBriefData, kind: string): string {
     '',
     '最近任务：',
     ...(homeData.recentTasks.length
-      ? homeData.recentTasks.map((task) => `- ${task.title} | ${task.state} | ${task.summary ?? '无摘要'}`)
+      ? homeData.recentTasks.map(
+          (task) =>
+            `- ${task.title} | ${task.state} | ${task.summary ?? '无摘要'} | next=${task.nextStep ?? '无'} | waiting=${task.waitingReason ?? '无'} | risk=${
+              task.riskLevel === 'none'
+                ? 'none'
+                : `${task.riskLevel}${task.riskNote ? `:${task.riskNote}` : ''}`
+            }`,
+        )
       : ['- 无']),
     '',
     '待决策事项：',

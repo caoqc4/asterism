@@ -5,6 +5,10 @@ export const tasks = sqliteTable('tasks', {
   title: text('title').notNull(),
   summary: text('summary'),
   state: text('state').notNull().default('captured'),
+  nextStep: text('next_step'),
+  waitingReason: text('waiting_reason'),
+  riskLevel: text('risk_level').notNull().default('none'),
+  riskNote: text('risk_note'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });

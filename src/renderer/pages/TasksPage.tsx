@@ -3,10 +3,13 @@ import { useEffect, useState } from 'react';
 import type {
   CreateTaskInput,
   TaskDetail,
+  TaskRiskLevel,
   TaskRecord,
   TaskState,
   UpdateTaskInput,
 } from '@shared/types/task';
+
+const riskOptions: TaskRiskLevel[] = ['none', 'low', 'medium', 'high'];
 
 const transitionOptions: Record<TaskState, TaskState[]> = {
   captured: ['triaged', 'planned', 'archived'],
@@ -38,6 +41,10 @@ export function TasksPage({
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [draftTitle, setDraftTitle] = useState('');
   const [draftSummary, setDraftSummary] = useState('');
+  const [draftNextStep, setDraftNextStep] = useState('');
+  const [draftWaitingReason, setDraftWaitingReason] = useState('');
+  const [draftRiskLevel, setDraftRiskLevel] = useState<TaskRiskLevel>('none');
+  const [draftRiskNote, setDraftRiskNote] = useState('');
 
   useEffect(() => {
     if (!selectedTaskId && tasks[0]) {
@@ -60,6 +67,10 @@ export function TasksPage({
         setDetail(nextDetail);
         setDraftTitle(nextDetail?.title ?? '');
         setDraftSummary(nextDetail?.summary ?? '');
+        setDraftNextStep(nextDetail?.nextStep ?? '');
+        setDraftWaitingReason(nextDetail?.waitingReason ?? '');
+        setDraftRiskLevel(nextDetail?.riskLevel ?? 'none');
+        setDraftRiskNote(nextDetail?.riskNote ?? '');
       }
     }
 
@@ -93,6 +104,10 @@ export function TasksPage({
       id: detail.id,
       title: draftTitle,
       summary: draftSummary,
+      nextStep: draftNextStep,
+      waitingReason: draftWaitingReason,
+      riskLevel: draftRiskLevel,
+      riskNote: draftRiskNote,
     });
 
     await onRefresh();
@@ -173,8 +188,64 @@ export function TasksPage({
                   onChange={(event) => setDraftSummary(event.target.value)}
                 />
               </label>
+              <label>
+                Next Step
+                <input
+                  value={draftNextStep}
+                  onChange={(event) => setDraftNextStep(event.target.value)}
+                />
+              </label>
+              <label>
+                Waiting Reason
+                <input
+                  value={draftWaitingReason}
+                  onChange={(event) => setDraftWaitingReason(event.target.value)}
+                />
+              </label>
+              <label>
+                Risk Level
+                <select
+                  value={draftRiskLevel}
+                  onChange={(event) => setDraftRiskLevel(event.target.value as TaskRiskLevel)}
+                >
+                  {riskOptions.map((riskLevel) => (
+                    <option key={riskLevel} value={riskLevel}>
+                      {riskLevel}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Risk Note
+                <textarea
+                  rows={3}
+                  value={draftRiskNote}
+                  onChange={(event) => setDraftRiskNote(event.target.value)}
+                />
+              </label>
               <button type="submit">保存详情</button>
             </form>
+
+            <div className="transition-group">
+              <h3>Task Signals</h3>
+              <div className="timeline-list">
+                <div className="timeline-item">
+                  <strong>Next Step</strong>
+                  <p className="meta">{detail.nextStep ?? '未填写'}</p>
+                </div>
+                <div className="timeline-item">
+                  <strong>Waiting Reason</strong>
+                  <p className="meta">{detail.waitingReason ?? '未填写'}</p>
+                </div>
+                <div className="timeline-item">
+                  <strong>Risk</strong>
+                  <p className="meta">
+                    {detail.riskLevel}
+                    {detail.riskNote ? ` · ${detail.riskNote}` : ''}
+                  </p>
+                </div>
+              </div>
+            </div>
 
             <div className="transition-group">
               <h3>状态流转</h3>
