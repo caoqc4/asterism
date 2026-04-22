@@ -84,6 +84,16 @@ function bootstrapTables(connection: Database.Database): void {
       fallback_reason TEXT,
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS waiting_items (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      resolved_at TEXT
+    );
   `);
 
   ensureColumn(connection, 'runs', 'instructions', 'TEXT');
@@ -96,6 +106,9 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'tasks', 'risk_note', 'TEXT');
   ensureColumn(connection, 'brief_snapshots', 'source', "TEXT NOT NULL DEFAULT 'fallback'");
   ensureColumn(connection, 'brief_snapshots', 'fallback_reason', 'TEXT');
+  ensureColumn(connection, 'waiting_items', 'status', "TEXT NOT NULL DEFAULT 'active'");
+  ensureColumn(connection, 'waiting_items', 'updated_at', 'TEXT');
+  ensureColumn(connection, 'waiting_items', 'resolved_at', 'TEXT');
 }
 
 function ensureColumn(

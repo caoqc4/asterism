@@ -51,3 +51,13 @@ export const briefSnapshots = sqliteTable('brief_snapshots', {
   fallbackReason: text('fallback_reason'),
   createdAt: text('created_at').notNull(),
 });
+
+export const waitingItems = sqliteTable('waiting_items', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull(),
+  reason: text('reason').notNull(),
+  status: text('status').notNull().default('active'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  resolvedAt: text('resolved_at'),
+});

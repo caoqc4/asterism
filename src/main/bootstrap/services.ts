@@ -4,6 +4,7 @@ import { BriefSnapshotRepository } from '../db/repositories/brief-snapshot-repos
 import { DecisionRepository } from '../db/repositories/decision-repository.js';
 import { RunRepository } from '../db/repositories/run-repository.js';
 import { TaskRepository } from '../db/repositories/task-repository.js';
+import { WaitingItemRepository } from '../db/repositories/waiting-item-repository.js';
 import { HomeBriefService } from '../domain/brief/home-brief-service.js';
 import { DecisionService } from '../domain/decision/decision-service.js';
 import { RunService } from '../domain/run/run-service.js';
@@ -19,6 +20,7 @@ const taskRepository = new TaskRepository();
 const decisionRepository = new DecisionRepository();
 const runRepository = new RunRepository();
 const briefSnapshotRepository = new BriefSnapshotRepository();
+const waitingItemRepository = new WaitingItemRepository();
 let schedulerService: SchedulerService | null = null;
 const homeBriefService = new HomeBriefService(
   taskRepository,
@@ -44,10 +46,11 @@ const services = {
   decisionRepository,
   runRepository,
   briefSnapshotRepository,
+  waitingItemRepository,
   appConfigService,
   textExecutor,
   briefExecutor,
-  taskService: new TaskService(taskRepository),
+  taskService: new TaskService(taskRepository, waitingItemRepository),
   decisionService: null as unknown as DecisionService,
   runService: null as unknown as RunService,
   homeBriefService,

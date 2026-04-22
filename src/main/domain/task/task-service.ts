@@ -7,6 +7,7 @@ import type {
   UpdateTaskInput,
 } from '../../../shared/types/task.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
+import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
 
 const allowedTransitions: Record<TaskState, TaskState[]> = {
   captured: ['triaged', 'planned', 'archived'],
@@ -19,7 +20,23 @@ const allowedTransitions: Record<TaskState, TaskState[]> = {
 };
 
 export class TaskService {
-  constructor(private readonly repository: TaskRepository) {}
+  constructor(
+    private readonly repository: TaskRepository,
+    private readonly waitingItemRepository: WaitingItemRepository,
+  ) {}
+
+  private async syncWaitingItem(
+    taskId: string,
+    state: TaskState,
+    waitingReason: string | null,
+  ): Promise<void> {
+    if (state === 'waiting_external' && waitingReason?.trim()) {
+      await this.waitingItemRepository.upsertActive(taskId, waitingReason);
+      return;
+    }
+
+    await this.waitingItemRepository.resolveActive(taskId);
+  }
 
   private async getExistingTaskOrThrow(taskId: string): Promise<TaskDetail> {
     const detail = await this.repository.getDetail(taskId);
@@ -60,10 +77,16 @@ export class TaskService {
       throw new Error('Risk note is required when setting task risk to high');
     }
 
-    return this.repository.update({
+    const updated = await this.repository.update({
       ...input,
       riskNote: nextRiskNote,
     });
+
+    if (input.waitingReason !== undefined || detail.state === 'waiting_external') {
+      await this.syncWaitingItem(updated.id, detail.state, updated.waitingReason);
+    }
+
+    return updated;
   }
 
   async transition(input: TransitionTaskInput): Promise<TaskRecord> {
@@ -82,13 +105,17 @@ export class TaskService {
       throw new Error('Waiting reason is required when transitioning to waiting_external');
     }
 
-    return this.repository.transition({
+    const updated = await this.repository.transition({
       ...input,
       waitingReason:
         input.nextState === 'waiting_external'
           ? input.waitingReason ?? detail.waitingReason
           : null,
     });
+
+    await this.syncWaitingItem(updated.id, updated.state, updated.waitingReason);
+
+    return updated;
   }
 
   async transitionIfAllowed(id: string, nextState: TaskState): Promise<TaskRecord | null> {
@@ -115,11 +142,15 @@ export class TaskService {
       return null;
     }
 
-    return this.repository.transition({
+    const updated = await this.repository.transition({
       id,
       nextState,
       waitingReason: nextState === 'waiting_external' ? detail.waitingReason : null,
     });
+
+    await this.syncWaitingItem(updated.id, updated.state, updated.waitingReason);
+
+    return updated;
   }
 
   async annotateDecisionCancelled(taskId: string, decisionTitle: string): Promise<TaskRecord> {
@@ -133,6 +164,8 @@ export class TaskService {
       riskNote: `相关决策已取消：${decisionTitle}`,
     });
 
+    await this.syncWaitingItem(updated.id, detail.state, updated.waitingReason);
+
     await this.repository.appendTimelineEvent(taskId, 'task.decision_cancelled', {
       decisionTitle,
       suggestedAction: '创建新的 Decision，或改走无需拍板的路径',
@@ -142,7 +175,7 @@ export class TaskService {
   }
 
   async annotateRunFailed(taskId: string, failureReason: string): Promise<TaskRecord> {
-    await this.getExistingTaskOrThrow(taskId);
+    const detail = await this.getExistingTaskOrThrow(taskId);
 
     const updated = await this.repository.update({
       id: taskId,
@@ -150,6 +183,8 @@ export class TaskService {
       riskLevel: 'high',
       riskNote: failureReason,
     });
+
+    await this.syncWaitingItem(updated.id, detail.state, updated.waitingReason);
 
     await this.repository.appendTimelineEvent(taskId, 'task.run_failed', {
       failureReason,

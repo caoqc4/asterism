@@ -58,7 +58,11 @@ describe('TaskService', () => {
       update: vi.fn(),
       transition: vi.fn().mockResolvedValue(buildRecord('running')),
     };
-    const service = new TaskService(repository as never);
+    const waitingItems = {
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
 
     const result = await service.transition({
       id: 'task_1',
@@ -70,6 +74,7 @@ describe('TaskService', () => {
       nextState: 'running',
       waitingReason: null,
     });
+    expect(waitingItems.resolveActive).toHaveBeenCalledWith('task_1');
     expect(result.state).toBe('running');
   });
 
@@ -81,7 +86,10 @@ describe('TaskService', () => {
       update: vi.fn(),
       transition: vi.fn(),
     };
-    const service = new TaskService(repository as never);
+    const service = new TaskService(repository as never, {
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
 
     await expect(
       service.transition({
@@ -100,7 +108,11 @@ describe('TaskService', () => {
       update: vi.fn(),
       transition: vi.fn(),
     };
-    const service = new TaskService(repository as never);
+    const waitingItems = {
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
 
     await expect(
       service.transition({
@@ -109,6 +121,7 @@ describe('TaskService', () => {
       }),
     ).rejects.toThrow('Waiting reason is required when transitioning to waiting_external');
     expect(repository.transition).not.toHaveBeenCalled();
+    expect(waitingItems.upsertActive).not.toHaveBeenCalled();
   });
 
   it('clears waiting reason when transitioning out of waiting_external', async () => {
@@ -122,7 +135,11 @@ describe('TaskService', () => {
         waitingReason: null,
       }),
     };
-    const service = new TaskService(repository as never);
+    const waitingItems = {
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
 
     const result = await service.transition({
       id: 'task_1',
@@ -134,7 +151,38 @@ describe('TaskService', () => {
       nextState: 'planned',
       waitingReason: null,
     });
+    expect(waitingItems.resolveActive).toHaveBeenCalledWith('task_1');
     expect(result.waitingReason).toBeNull();
+  });
+
+  it('creates or updates an active waiting item when transitioning into waiting_external', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('running')),
+      update: vi.fn(),
+      transition: vi.fn().mockResolvedValue({
+        ...buildRecord('waiting_external'),
+        waitingReason: 'Waiting for finance confirmation',
+      }),
+    };
+    const waitingItems = {
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
+
+    await service.transition({
+      id: 'task_1',
+      nextState: 'waiting_external',
+      waitingReason: 'Waiting for finance confirmation',
+    });
+
+    expect(waitingItems.upsertActive).toHaveBeenCalledWith(
+      'task_1',
+      'Waiting for finance confirmation',
+    );
+    expect(waitingItems.resolveActive).not.toHaveBeenCalled();
   });
 
   it('requires a risk note when updating a task to high risk', async () => {
@@ -145,7 +193,10 @@ describe('TaskService', () => {
       update: vi.fn(),
       transition: vi.fn(),
     };
-    const service = new TaskService(repository as never);
+    const service = new TaskService(repository as never, {
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
 
     await expect(
       service.update({
@@ -170,7 +221,10 @@ describe('TaskService', () => {
       }),
       transition: vi.fn(),
     };
-    const service = new TaskService(repository as never);
+    const service = new TaskService(repository as never, {
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
 
     const result = await service.update({
       id: 'task_1',
@@ -186,6 +240,35 @@ describe('TaskService', () => {
     expect(result.riskNote).toBe('Existing high risk note');
   });
 
+  it('syncs the active waiting item when updating waiting reason on a waiting task', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildWaitingDetail('waiting_external')),
+      update: vi.fn().mockResolvedValue({
+        ...buildRecord('waiting_external'),
+        waitingReason: 'Waiting for revised proposal',
+      }),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
+
+    const result = await service.update({
+      id: 'task_1',
+      waitingReason: 'Waiting for revised proposal',
+    });
+
+    expect(waitingItems.upsertActive).toHaveBeenCalledWith(
+      'task_1',
+      'Waiting for revised proposal',
+    );
+    expect(result.waitingReason).toBe('Waiting for revised proposal');
+  });
+
   it('clears stale high-risk notes when lowering risk without a new note', async () => {
     const repository = {
       list: vi.fn(),
@@ -198,7 +281,10 @@ describe('TaskService', () => {
       }),
       transition: vi.fn(),
     };
-    const service = new TaskService(repository as never);
+    const service = new TaskService(repository as never, {
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
 
     const result = await service.update({
       id: 'task_1',
@@ -222,7 +308,11 @@ describe('TaskService', () => {
       update: vi.fn(),
       transition: vi.fn(),
     };
-    const service = new TaskService(repository as never);
+    const waitingItems = {
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
 
     await expect(
       service.transition({
@@ -246,7 +336,11 @@ describe('TaskService', () => {
       appendTimelineEvent: vi.fn(),
       transition: vi.fn(),
     };
-    const service = new TaskService(repository as never);
+    const waitingItems = {
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
 
     const result = await service.annotateDecisionCancelled('task_1', 'Need approval');
 
@@ -257,6 +351,7 @@ describe('TaskService', () => {
       riskLevel: 'medium',
       riskNote: '相关决策已取消：Need approval',
     });
+    expect(waitingItems.resolveActive).toHaveBeenCalledWith('task_1');
     expect(repository.appendTimelineEvent).toHaveBeenCalledWith(
       'task_1',
       'task.decision_cancelled',
@@ -282,7 +377,11 @@ describe('TaskService', () => {
       appendTimelineEvent: vi.fn(),
       transition: vi.fn(),
     };
-    const service = new TaskService(repository as never);
+    const waitingItems = {
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
 
     const result = await service.annotateRunFailed('task_1', 'Executor exploded');
 
@@ -292,6 +391,7 @@ describe('TaskService', () => {
       riskLevel: 'high',
       riskNote: 'Executor exploded',
     });
+    expect(waitingItems.resolveActive).toHaveBeenCalledWith('task_1');
     expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'task.run_failed', {
       failureReason: 'Executor exploded',
       suggestedAction: '检查失败原因并准备重试 Run',
