@@ -22,8 +22,16 @@ function getActivityActionLabel(activity: HomeActivityRecord): string | null {
     return '继续推进任务';
   }
 
+  if (activity.sourceType === 'decision' && activity.status === 'deferred') {
+    return '跟进拍板进度';
+  }
+
   if (activity.sourceType === 'run' && activity.status === 'failed') {
     return '处理失败结果';
+  }
+
+  if (activity.sourceType === 'run' && activity.status === 'completed') {
+    return '基于结果继续推进';
   }
 
   return null;

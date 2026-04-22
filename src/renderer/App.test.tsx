@@ -189,6 +189,16 @@ describe('App UI flow', () => {
         updatedAt: '2026-01-01T01:00:00.000Z',
       },
       {
+        id: 'decision:decision_3',
+        sourceType: 'decision',
+        sourceId: 'decision_3',
+        taskId: riskTask.id,
+        taskTitle: riskTask.title,
+        title: 'Follow up compliance sign-off',
+        status: 'deferred',
+        updatedAt: '2026-01-01T00:30:00.000Z',
+      },
+      {
         id: 'run:run_1',
         sourceType: 'run',
         sourceId: 'run_1',
@@ -197,6 +207,16 @@ describe('App UI flow', () => {
         title: 'draft',
         status: 'failed',
         updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      {
+        id: 'run:run_2',
+        sourceType: 'run',
+        sourceId: 'run_2',
+        taskId: riskTask.id,
+        taskTitle: riskTask.title,
+        title: 'summarize',
+        status: 'completed',
+        updatedAt: '2025-12-31T23:30:00.000Z',
       },
     ],
     recentBriefSnapshots: [],
@@ -545,12 +565,42 @@ describe('App UI flow', () => {
     );
   });
 
+  it('opens deferred decision and completed run follow-up actions from home recent activity', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    const followDecisionButton = await screen.findByRole('button', { name: '跟进拍板进度' });
+    await user.click(followDecisionButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '跟进该决策是否可以恢复拍板，或准备替代推进路径。',
+    );
+
+    await user.click(screen.getByRole('button', { name: /home/i }));
+
+    const continueRunButton = await screen.findByRole('button', { name: '基于结果继续推进' });
+    await user.click(continueRunButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '审阅最近一次 summarize run 的结果，并决定是否继续推进。',
+    );
+  });
+
   it('opens decision and run objects directly from home recent activity', async () => {
     const user = userEvent.setup();
 
     render(<App />);
 
-    const viewDecisionButton = await screen.findByRole('button', { name: '查看 Decision' });
+    const viewDecisionButton = (await screen.findAllByRole('button', { name: '查看 Decision' }))[0];
     await user.click(viewDecisionButton);
 
     await waitFor(() => {
@@ -561,7 +611,7 @@ describe('App UI flow', () => {
 
     await user.click(screen.getByRole('button', { name: /home/i }));
 
-    const viewRunButton = await screen.findByRole('button', { name: '查看 Run' });
+    const viewRunButton = (await screen.findAllByRole('button', { name: '查看 Run' }))[0];
     await user.click(viewRunButton);
 
     await waitFor(() => {
@@ -880,7 +930,7 @@ describe('App UI flow', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /home/i }));
-    await user.click(await screen.findByRole('button', { name: '查看 Decision' }));
+    await user.click((await screen.findAllByRole('button', { name: '查看 Decision' }))[0]);
 
     await screen.findByRole('heading', { name: '待拍板事项' });
 
@@ -951,7 +1001,7 @@ describe('App UI flow', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /home/i }));
-    await user.click(await screen.findByRole('button', { name: '查看 Decision' }));
+    await user.click((await screen.findAllByRole('button', { name: '查看 Decision' }))[0]);
 
     await screen.findByRole('heading', { name: '待拍板事项' });
     await screen.findByText('Related Task Timeline');
@@ -994,7 +1044,7 @@ describe('App UI flow', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /home/i }));
-    await user.click(await screen.findByRole('button', { name: '查看 Decision' }));
+    await user.click((await screen.findAllByRole('button', { name: '查看 Decision' }))[0]);
 
     await screen.findByRole('heading', { name: '待拍板事项' });
 
