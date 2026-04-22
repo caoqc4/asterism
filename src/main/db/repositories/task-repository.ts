@@ -124,6 +124,7 @@ export class TaskRepository {
       riskNote: task.riskNote,
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
+      artifacts: [],
       timeline: timeline.map((event) => ({
         id: event.id,
         taskId: event.taskId,

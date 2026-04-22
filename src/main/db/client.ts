@@ -94,6 +94,18 @@ function bootstrapTables(connection: Database.Database): void {
       updated_at TEXT NOT NULL,
       resolved_at TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS artifacts (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      source_type TEXT NOT NULL,
+      source_id TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
   `);
 
   ensureColumn(connection, 'runs', 'instructions', 'TEXT');

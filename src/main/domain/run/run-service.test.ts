@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { RunRecord } from '../../../shared/types/run.js';
 import type { TaskDetail, TaskRecord } from '../../../shared/types/task.js';
 import { RunService } from './run-service.js';
@@ -16,6 +17,7 @@ function buildTaskDetail(state: TaskDetail['state'] = 'planned'): TaskDetail {
     riskNote: 'Need confirmation soon',
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
+    artifacts: [],
     timeline: [],
   };
 }
@@ -50,6 +52,20 @@ function buildRunRecord(status: RunRecord['status']): RunRecord {
   };
 }
 
+function buildArtifactRecord(): ArtifactRecord {
+  return {
+    id: 'artifact_1',
+    taskId: 'task_1',
+    sourceType: 'run',
+    sourceId: 'run_1',
+    kind: 'run_output',
+    title: 'draft output',
+    content: 'Generated output',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+
 describe('RunService', () => {
   it('completes a run when the executor succeeds', async () => {
     const runRepository = {
@@ -67,6 +83,9 @@ describe('RunService', () => {
       transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('running')),
       annotateRunFailed: vi.fn(),
     };
+    const artifactRepository = {
+      createFromRun: vi.fn().mockResolvedValue(buildArtifactRecord()),
+    };
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'anthropic',
@@ -80,6 +99,7 @@ describe('RunService', () => {
     const service = new RunService(
       runRepository as never,
       taskService as never,
+      artifactRepository as never,
       aiConfigService as never,
       textExecutor as never,
     );
@@ -121,6 +141,12 @@ describe('RunService', () => {
       'Generated output',
       'ai',
     );
+    expect(artifactRepository.createFromRun).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      runId: 'run_1',
+      runType: 'draft',
+      content: 'Generated output',
+    });
     expect(result.status).toBe('completed');
   });
 
@@ -145,6 +171,9 @@ describe('RunService', () => {
         riskNote: 'Executor exploded',
       }),
     };
+    const artifactRepository = {
+      createFromRun: vi.fn(),
+    };
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'openai',
@@ -158,6 +187,7 @@ describe('RunService', () => {
     const service = new RunService(
       runRepository as never,
       taskService as never,
+      artifactRepository as never,
       aiConfigService as never,
       textExecutor as never,
     );
@@ -175,6 +205,7 @@ describe('RunService', () => {
       'Executor exploded',
     );
     expect(taskService.annotateRunFailed).toHaveBeenCalledWith('task_1', 'Executor exploded');
+    expect(artifactRepository.createFromRun).not.toHaveBeenCalled();
     expect(result.status).toBe('failed');
     expect(result.failureReason).toBe('Executor exploded');
   });
@@ -191,6 +222,9 @@ describe('RunService', () => {
       transitionIfAllowed: vi.fn(),
       annotateRunFailed: vi.fn(),
     };
+    const artifactRepository = {
+      createFromRun: vi.fn(),
+    };
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn(),
     };
@@ -200,6 +234,7 @@ describe('RunService', () => {
     const service = new RunService(
       runRepository as never,
       taskService as never,
+      artifactRepository as never,
       aiConfigService as never,
       textExecutor as never,
     );
@@ -212,6 +247,7 @@ describe('RunService', () => {
     ).rejects.toThrow('Task not found: missing_task');
 
     expect(runRepository.create).not.toHaveBeenCalled();
+    expect(artifactRepository.createFromRun).not.toHaveBeenCalled();
     expect(textExecutor.execute).not.toHaveBeenCalled();
   });
 
@@ -231,6 +267,9 @@ describe('RunService', () => {
       transitionIfAllowed: vi.fn(),
       annotateRunFailed: vi.fn(),
     };
+    const artifactRepository = {
+      createFromRun: vi.fn().mockResolvedValue(buildArtifactRecord()),
+    };
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'anthropic',
@@ -244,6 +283,7 @@ describe('RunService', () => {
     const service = new RunService(
       runRepository as never,
       taskService as never,
+      artifactRepository as never,
       aiConfigService as never,
       textExecutor as never,
     );
@@ -254,6 +294,7 @@ describe('RunService', () => {
     });
 
     expect(taskService.transitionIfAllowed).not.toHaveBeenCalled();
+    expect(artifactRepository.createFromRun).toHaveBeenCalled();
     expect(textExecutor.execute).toHaveBeenCalledWith(
       buildTaskDetail('running'),
       {

@@ -100,6 +100,8 @@ function formatTimelineBadge(type: string): string {
       return '等待项';
     case 'waiting_item.resolved':
       return '等待项';
+    case 'artifact.created':
+      return '产物';
     case 'task.risk_changed':
       return '风险';
     case 'task.updated':
@@ -120,6 +122,8 @@ function getTimelineToneClass(type: string): string {
     case 'waiting_item.updated':
     case 'waiting_item.resolved':
       return 'timeline-item-waiting';
+    case 'artifact.created':
+      return 'timeline-item-next-step';
     case 'task.transitioned':
       return 'timeline-item-state';
     case 'task.next_step_changed':
@@ -151,6 +155,8 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
       return `更新等待项：${formatValue(payload?.reason)}`;
     case 'waiting_item.resolved':
       return `解除等待项：${formatValue(payload?.reason)}，任务恢复到 ${formatValue(payload?.nextState)}`;
+    case 'artifact.created':
+      return `生成任务产物：${formatValue(payload?.title)}`;
     case 'task.risk_changed': {
       const from = (payload?.from as Record<string, unknown> | undefined) ?? {};
       const to = (payload?.to as Record<string, unknown> | undefined) ?? {};
@@ -729,6 +735,30 @@ export function TasksPage({
                     <p className="meta">当前任务还没有关联 run。</p>
                   )}
                 </div>
+              </div>
+            </div>
+
+            <div className="transition-group">
+              <h3>Recent Artifacts</h3>
+              <div className="timeline-list">
+                {detail.artifacts.length ? (
+                  detail.artifacts.map((artifact) => (
+                    <div className="timeline-item timeline-item-next-step" key={artifact.id}>
+                      <div className="task-row">
+                        <strong>{artifact.title}</strong>
+                        <span className="signal-pill timeline-badge timeline-item-next-step">
+                          {artifact.kind}
+                        </span>
+                      </div>
+                      <p className="meta">
+                        source: {artifact.sourceType} · {artifact.sourceId}
+                      </p>
+                      <p className="meta brief-preview">{artifact.content}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="meta">当前任务还没有沉淀出 artifact。</p>
+                )}
               </div>
             </div>
 

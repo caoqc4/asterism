@@ -6,6 +6,7 @@ import type {
   TransitionTaskInput,
   UpdateTaskInput,
 } from '../../../shared/types/task.js';
+import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
 
@@ -23,6 +24,7 @@ export class TaskService {
   constructor(
     private readonly repository: TaskRepository,
     private readonly waitingItemRepository: WaitingItemRepository,
+    private readonly artifactRepository: ArtifactRepository | null = null,
   ) {}
 
   private async syncWaitingItem(
@@ -65,6 +67,17 @@ export class TaskService {
     };
   }
 
+  private async attachArtifacts(detail: TaskDetail): Promise<TaskDetail> {
+    const artifacts = this.artifactRepository
+      ? await this.artifactRepository.listRecentForTask(detail.id)
+      : [];
+
+    return {
+      ...detail,
+      artifacts,
+    };
+  }
+
   private async getExistingTaskOrThrow(taskId: string): Promise<TaskDetail> {
     const detail = await this.repository.getDetail(taskId);
 
@@ -93,7 +106,7 @@ export class TaskService {
       return null;
     }
 
-    return this.attachActiveWaitingItem(detail);
+    return this.attachArtifacts(await this.attachActiveWaitingItem(detail));
   }
 
   async update(input: UpdateTaskInput): Promise<TaskRecord> {

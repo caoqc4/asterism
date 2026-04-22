@@ -10,6 +10,7 @@ import type { ElectronApi } from '@shared/types/ipc';
 import type { RunRecord } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { TaskDetail, TaskRecord } from '@shared/types/task';
+import type { ArtifactRecord } from '@shared/types/artifact';
 import type { WaitingItemRecord } from '@shared/types/waiting-item';
 import { App } from './App';
 
@@ -44,7 +45,22 @@ function buildWaitingItem(partial: Partial<WaitingItemRecord>): WaitingItemRecor
 function buildTaskDetail(task: TaskRecord): TaskDetail {
   return {
     ...task,
+    artifacts: [],
     timeline: [],
+  };
+}
+
+function buildArtifact(partial: Partial<ArtifactRecord>): ArtifactRecord {
+  return {
+    id: partial.id ?? 'artifact_1',
+    taskId: partial.taskId ?? 'task_1',
+    sourceType: partial.sourceType ?? 'run',
+    sourceId: partial.sourceId ?? 'run_1',
+    kind: partial.kind ?? 'run_output',
+    title: partial.title ?? 'draft output',
+    content: partial.content ?? 'Generated output',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
   };
 }
 
@@ -280,6 +296,51 @@ describe('App UI flow', () => {
         waitingReason: undefined,
       });
     });
+  });
+
+  it('shows recent artifacts on task detail', async () => {
+    const user = userEvent.setup();
+
+    const artifactTask = buildTaskRecord({
+      id: 'task_artifact',
+      title: 'Artifact task',
+      state: 'running',
+    });
+
+    const artifactApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([artifactTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== artifactTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(artifactTask),
+          artifacts: [
+            buildArtifact({
+              taskId: artifactTask.id,
+              sourceId: 'run_artifact_1',
+              title: 'draft output',
+              content: 'Drafted message to the customer.',
+            }),
+          ],
+        };
+      }),
+    };
+
+    window.api = artifactApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /artifact task/i }));
+    await screen.findByRole('heading', { name: 'Artifact task' });
+
+    expect(screen.getByRole('heading', { name: 'Recent Artifacts' })).toBeTruthy();
+    expect(screen.getByText('draft output')).toBeTruthy();
+    expect(screen.getByText('source: run · run_artifact_1')).toBeTruthy();
+    expect(screen.getByText('Drafted message to the customer.')).toBeTruthy();
   });
 
   it('submits a quick decision from task detail', async () => {

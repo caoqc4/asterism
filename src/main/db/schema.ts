@@ -61,3 +61,15 @@ export const waitingItems = sqliteTable('waiting_items', {
   updatedAt: text('updated_at').notNull(),
   resolvedAt: text('resolved_at'),
 });
+
+export const artifacts = sqliteTable('artifacts', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull(),
+  sourceType: text('source_type').notNull(),
+  sourceId: text('source_id').notNull(),
+  kind: text('kind').notNull(),
+  title: text('title').notNull(),
+  content: text('content').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});

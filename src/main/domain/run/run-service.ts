@@ -1,6 +1,7 @@
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
 import type { CreateRunInput, RunRecord } from '../../../shared/types/run.js';
+import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { RunRepository } from '../../db/repositories/run-repository.js';
 import { TaskService } from '../task/task-service.js';
 
@@ -8,6 +9,7 @@ export class RunService {
   constructor(
     private readonly runRepository: RunRepository,
     private readonly taskService: TaskService,
+    private readonly artifactRepository: ArtifactRepository,
     private readonly aiConfigService: AiConfigService,
     private readonly textExecutor: TextExecutor,
   ) {}
@@ -46,7 +48,16 @@ export class RunService {
     try {
       const runtimeConfig = await this.aiConfigService.resolveRuntimeConfig();
       const output = await this.textExecutor.execute(taskForExecution, input, runtimeConfig);
-      return await this.runRepository.updateResult(created.id, 'completed', output, 'ai');
+      const completed = await this.runRepository.updateResult(created.id, 'completed', output, 'ai');
+      if (output?.trim()) {
+        await this.artifactRepository.createFromRun({
+          taskId: input.taskId,
+          runId: completed.id,
+          runType: input.type,
+          content: output,
+        });
+      }
+      return completed;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown executor error';
       const failed = await this.runRepository.updateResult(

@@ -2,6 +2,7 @@ import { AppConfigService } from '../config/app-config-service.js';
 import { initDatabase } from '../db/client.js';
 import { BriefSnapshotRepository } from '../db/repositories/brief-snapshot-repository.js';
 import { DecisionRepository } from '../db/repositories/decision-repository.js';
+import { ArtifactRepository } from '../db/repositories/artifact-repository.js';
 import { RunRepository } from '../db/repositories/run-repository.js';
 import { TaskRepository } from '../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../db/repositories/waiting-item-repository.js';
@@ -19,6 +20,7 @@ const appConfigService = new AppConfigService();
 const taskRepository = new TaskRepository();
 const decisionRepository = new DecisionRepository();
 const runRepository = new RunRepository();
+const artifactRepository = new ArtifactRepository();
 const briefSnapshotRepository = new BriefSnapshotRepository();
 const waitingItemRepository = new WaitingItemRepository();
 let schedulerService: SchedulerService | null = null;
@@ -48,10 +50,11 @@ const services = {
   runRepository,
   briefSnapshotRepository,
   waitingItemRepository,
+  artifactRepository,
   appConfigService,
   textExecutor,
   briefExecutor,
-  taskService: new TaskService(taskRepository, waitingItemRepository),
+  taskService: new TaskService(taskRepository, waitingItemRepository, artifactRepository),
   decisionService: null as unknown as DecisionService,
   runService: null as unknown as RunService,
   homeBriefService,
@@ -63,6 +66,7 @@ services.decisionService = new DecisionService(decisionRepository, services.task
 services.runService = new RunService(
   runRepository,
   services.taskService,
+  artifactRepository,
   aiConfigService,
   textExecutor,
 );
