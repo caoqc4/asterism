@@ -758,4 +758,95 @@ describe('App UI flow', () => {
       expect(screen.getByText(/已配置 openai \/ gpt-5.4-mini/i)).toBeTruthy();
     });
   });
+
+  it('refreshes home signals after a task transitions into waiting', async () => {
+    const user = userEvent.setup();
+
+    let currentTasks: TaskRecord[] = [waitingTask, riskTask];
+    let currentTaskDetails: Record<string, TaskDetail> = {
+      [waitingTask.id]: buildTaskDetail(waitingTask),
+      [riskTask.id]: buildTaskDetail(riskTask),
+    };
+    let currentBriefData: HomeBriefData = {
+      ...briefData,
+      waitingTaskCount: 1,
+      waitingTasks: [waitingTask],
+      recommendedActions: [
+        {
+          id: `risk:${riskTask.id}`,
+          label: `优先处理高风险任务：${riskTask.title}`,
+          reason: 'Deadline slipping',
+          taskId: riskTask.id,
+          priority: 'high',
+        },
+      ],
+    };
+
+    const eventingApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn(async () => currentTasks),
+      getTaskDetail: vi.fn(async (taskId: string) => currentTaskDetails[taskId] ?? null),
+      getHomeBrief: vi.fn(async () => currentBriefData),
+      transitionTask: vi.fn().mockImplementation(async ({ id, nextState }) => {
+        const updatedTask = buildTaskRecord({
+          ...riskTask,
+          id,
+          state: nextState,
+          waitingReason: 'Waiting on stakeholder approval',
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        });
+
+        currentTasks = currentTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task));
+        currentTaskDetails = {
+          ...currentTaskDetails,
+          [updatedTask.id]: buildTaskDetail(updatedTask),
+        };
+        currentBriefData = {
+          ...currentBriefData,
+          waitingTaskCount: 2,
+          waitingTasks: [waitingTask, updatedTask],
+          recentTasks: [waitingTask, updatedTask],
+          recommendedActions: [
+            {
+              id: `waiting:${updatedTask.id}`,
+              label: `跟进等待中的任务：${updatedTask.title}`,
+              reason: 'Waiting on stakeholder approval',
+              taskId: updatedTask.id,
+              priority: 'medium',
+            },
+          ],
+        };
+
+        return updatedTask;
+      }),
+    };
+
+    window.api = eventingApi;
+
+    render(<App />);
+
+    expect(screen.queryByRole('button', { name: /跟进等待中的任务：High risk task/i })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /high risk task/i }));
+    await screen.findByRole('heading', { name: 'High risk task' });
+    await user.click(screen.getByRole('button', { name: '转到 waiting_external' }));
+
+    await waitFor(() => {
+      expect(eventingApi.transitionTask).toHaveBeenCalledWith({
+        id: riskTask.id,
+        nextState: 'waiting_external',
+      });
+    });
+
+    await user.click(screen.getByRole('button', { name: /home/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /跟进等待中的任务：High risk task/i }),
+      ).toBeTruthy();
+    });
+
+    expect(screen.getAllByText('Waiting on stakeholder approval').length).toBeGreaterThan(0);
+  });
 });
