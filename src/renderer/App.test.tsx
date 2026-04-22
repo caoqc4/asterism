@@ -665,4 +665,97 @@ describe('App UI flow', () => {
 
     expect(screen.queryAllByText('Deadline slipping').length).toBe(0);
   });
+
+  it('saves settings and refreshes scheduler state across pages', async () => {
+    const user = userEvent.setup();
+
+    let currentAiStatus: AiConfigStatus = { ...aiStatus };
+    let currentBriefData: HomeBriefData = {
+      ...briefData,
+      schedulerStatus: {
+        enabled: false,
+        running: false,
+        lastBriefAt: null,
+        lastRunSweepAt: null,
+      },
+    };
+    let subscriber: ((event: { type: 'settings.changed'; at: string }) => void) | null = null;
+
+    const eventingApi: ElectronApi = {
+      ...mockApi,
+      getAiConfigStatus: vi.fn(async () => currentAiStatus),
+      getHomeBrief: vi.fn(async () => currentBriefData),
+      subscribeToEvents: vi.fn().mockImplementation((callback) => {
+        subscriber = callback;
+        return () => {
+          subscriber = null;
+        };
+      }),
+      setAiConfig: vi.fn().mockImplementation(async (input) => {
+        currentAiStatus = {
+          configured: true,
+          apiKeyStored: true,
+          provider: input.provider,
+          model: input.model,
+          updatedAt: '2026-01-02T00:00:00.000Z',
+          configPath: '/tmp/config.json',
+          featureFlags: {
+            enableScheduler: input.featureFlags.enableScheduler,
+          },
+        };
+
+        currentBriefData = {
+          ...currentBriefData,
+          schedulerStatus: {
+            enabled: input.featureFlags.enableScheduler,
+            running: input.featureFlags.enableScheduler,
+            lastBriefAt: null,
+            lastRunSweepAt: null,
+          },
+        };
+
+        subscriber?.({ type: 'settings.changed', at: '2026-01-02T00:00:00.000Z' });
+
+        return currentAiStatus;
+      }),
+    };
+
+    window.api = eventingApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /settings/i }));
+    await screen.findByRole('heading', { name: 'AI Provider 与本地密钥存储' });
+
+    await user.selectOptions(screen.getByLabelText('Provider'), 'openai');
+    const modelInput = screen.getByLabelText('Model');
+    await user.clear(modelInput);
+    await user.type(modelInput, 'gpt-5.4-mini');
+    await user.type(screen.getByLabelText('API Key'), 'sk-test-key');
+    await user.click(screen.getByLabelText('启用本地 scheduler'));
+    await user.click(screen.getByRole('button', { name: '保存到 Main / Keychain' }));
+
+    await waitFor(() => {
+      expect(eventingApi.setAiConfig).toHaveBeenCalledWith({
+        provider: 'openai',
+        model: 'gpt-5.4-mini',
+        apiKey: 'sk-test-key',
+        featureFlags: {
+          enableScheduler: true,
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/已配置 openai \/ gpt-5.4-mini/i)).toBeTruthy();
+    });
+
+    expect(screen.getByText(/Scheduler 开关：启用/)).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: /home/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/已配置 openai \/ gpt-5.4-mini/i)).toBeTruthy();
+    });
+  });
 });
