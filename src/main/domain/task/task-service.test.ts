@@ -90,6 +90,7 @@ describe('TaskService', () => {
       'waiting_item.resolved',
       expect.objectContaining({
         waitingItemId: 'waiting_1',
+        nextState: 'running',
       }),
     );
     expect(result.state).toBe('running');
@@ -186,6 +187,7 @@ describe('TaskService', () => {
       'waiting_item.resolved',
       expect.objectContaining({
         waitingItemId: 'waiting_1',
+        nextState: 'planned',
       }),
     );
     expect(result.waitingReason).toBeNull();
