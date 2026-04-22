@@ -621,6 +621,24 @@ export function TasksPage({
               </div>
             </div>
 
+            {detail.activeWaitingItem ? (
+              <div className="transition-group">
+                <h3>Current Waiting Item</h3>
+                <div className="timeline-list">
+                  <div className="timeline-item timeline-item-waiting">
+                    <div className="task-row">
+                      <strong>{detail.activeWaitingItem.reason}</strong>
+                      <span className="signal-pill timeline-badge timeline-item-waiting">
+                        {detail.activeWaitingItem.status}
+                      </span>
+                    </div>
+                    <p className="meta">Started at {detail.activeWaitingItem.createdAt}</p>
+                    <p className="meta">Linked to the task&apos;s current waiting state.</p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
             <div className="transition-group">
               <h3>Quick Actions</h3>
               <div className="quick-actions-grid" ref={quickActionsRef}>

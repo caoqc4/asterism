@@ -235,10 +235,13 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /waiting task/i }));
     await screen.findByRole('heading', { name: 'Waiting task' });
 
-    expect(screen.getByText('Waiting for reviewer confirmation')).toBeTruthy();
+    expect(screen.getAllByText('Waiting for reviewer confirmation').length).toBeGreaterThan(0);
     expect(
       screen.getByText('waiting item · active · since 2026-01-01T00:00:00.000Z'),
     ).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Current Waiting Item' })).toBeTruthy();
+    expect(screen.getByText('Started at 2026-01-01T00:00:00.000Z')).toBeTruthy();
+    expect(screen.getByText("Linked to the task's current waiting state.")).toBeTruthy();
   });
 
   it('submits a quick decision from task detail', async () => {
