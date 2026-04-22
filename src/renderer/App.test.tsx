@@ -247,6 +247,41 @@ describe('App UI flow', () => {
     expect(screen.getByText("Linked to the task's current waiting state.")).toBeTruthy();
   });
 
+  it('offers a direct action to resolve the current waiting item', async () => {
+    const user = userEvent.setup();
+
+    const resolveWaitingApi: ElectronApi = {
+      ...mockApi,
+      transitionTask: vi.fn().mockResolvedValue(
+        buildTaskRecord({
+          ...waitingTask,
+          state: 'planned',
+          waitingReason: null,
+          activeWaitingItem: null,
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        }),
+      ),
+    };
+
+    window.api = resolveWaitingApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /waiting task/i }));
+    await screen.findByRole('heading', { name: 'Waiting task' });
+
+    await user.click(screen.getByRole('button', { name: '解除等待' }));
+
+    await waitFor(() => {
+      expect(resolveWaitingApi.transitionTask).toHaveBeenCalledWith({
+        id: waitingTask.id,
+        nextState: 'planned',
+        waitingReason: undefined,
+      });
+    });
+  });
+
   it('submits a quick decision from task detail', async () => {
     const user = userEvent.setup();
 

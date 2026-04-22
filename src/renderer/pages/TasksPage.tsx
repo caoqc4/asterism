@@ -634,6 +634,15 @@ export function TasksPage({
                     </div>
                     <p className="meta">Started at {detail.activeWaitingItem.createdAt}</p>
                     <p className="meta">Linked to the task&apos;s current waiting state.</p>
+                    {detail.state === 'waiting_external' ? (
+                      <button
+                        className="ghost-button timeline-action"
+                        onClick={() => void handleTransition('planned')}
+                        type="button"
+                      >
+                        解除等待
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </div>
