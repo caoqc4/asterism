@@ -25,6 +25,13 @@ function buildRecommendedActions(params: {
       reason: task.riskNote ?? '该任务当前处于高风险状态。',
       taskId: task.id,
       priority: 'high',
+      intent: {
+        type: 'focus_risk_review',
+        focusArea: 'detail',
+        prefillNextStep: `处理当前风险并确认是否需要降级：${task.riskNote ?? task.title}`,
+        prefillRiskLevel: 'high',
+        prefillRiskNote: task.riskNote,
+      },
     });
   }
 
@@ -35,6 +42,10 @@ function buildRecommendedActions(params: {
       reason: '该决策仍处于 pending，可能阻塞相关任务推进。',
       taskId: decision.taskId,
       priority: 'high',
+      intent: {
+        type: 'open_task',
+        focusArea: 'quick-actions',
+      },
     });
   }
 
@@ -45,6 +56,13 @@ function buildRecommendedActions(params: {
       reason: task.activeWaitingItem?.reason ?? task.waitingReason ?? '该任务处于等待状态，需要恢复推进。',
       taskId: task.id,
       priority: 'medium',
+      intent: {
+        type: 'focus_waiting_follow_up',
+        focusArea: 'detail',
+        prefillNextStep: `跟进并确认是否解除等待：${
+          task.activeWaitingItem?.reason ?? task.waitingReason ?? task.title
+        }`,
+      },
     });
   }
 
@@ -55,6 +73,10 @@ function buildRecommendedActions(params: {
       reason: '该任务仍缺少明确下一步，后续推进成本会升高。',
       taskId: task.id,
       priority: 'medium',
+      intent: {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+      },
     });
   }
 
@@ -71,6 +93,14 @@ function buildRecommendedActions(params: {
       reason: `${artifact.title} 已生成，可继续整理、扩展或发起下一轮执行。`,
       taskId: artifact.taskId,
       priority: 'low',
+      intent: {
+        type: 'continue_from_artifact',
+        focusArea: 'detail',
+        prefillNextStep: `基于产物继续推进：${artifact.title}`,
+        prefillRunInstructions: artifact.content
+          ? `请基于这份已有产物继续扩展、改写或整理：${artifact.content}`
+          : `请基于已有产物继续推进：${artifact.title}`,
+      },
     });
   }
 
@@ -81,6 +111,9 @@ function buildRecommendedActions(params: {
       reason: '暂时没有高风险、等待阻塞或缺少下一步的活跃任务。',
       taskId: null,
       priority: 'low',
+      intent: {
+        type: 'open_task',
+      },
     });
   }
 

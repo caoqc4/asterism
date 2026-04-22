@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
+import type { RecommendedActionIntent } from '@shared/types/brief';
 import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
 import type { CreateRunInput, RunRecord } from '@shared/types/run';
 import type {
@@ -188,7 +189,11 @@ function getTimelineActionLabel(type: string): string | null {
 
 type TasksPageProps = {
   decisions: DecisionRecord[];
-  focusedTaskId: string | null;
+  focusedTaskRequest: {
+    key: string;
+    taskId: string;
+    intent: RecommendedActionIntent | null;
+  } | null;
   runs: RunRecord[];
   tasks: TaskRecord[];
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
@@ -206,7 +211,7 @@ type TasksPageProps = {
 
 export function TasksPage({
   decisions,
-  focusedTaskId,
+  focusedTaskRequest,
   runs,
   tasks,
   onCreateDecision,
@@ -259,17 +264,49 @@ export function TasksPage({
   }, [selectedTaskId, tasks]);
 
   useEffect(() => {
-    if (!focusedTaskId) {
+    if (!focusedTaskRequest) {
       return;
     }
 
-    const taskExists = tasks.some((task) => task.id === focusedTaskId);
+    const taskExists = tasks.some((task) => task.id === focusedTaskRequest.taskId);
 
     if (taskExists) {
-      setSelectedTaskId(focusedTaskId);
-      onTaskFocusConsumed();
+      setSelectedTaskId(focusedTaskRequest.taskId);
     }
-  }, [focusedTaskId, onTaskFocusConsumed, tasks]);
+  }, [focusedTaskRequest, tasks]);
+
+  useEffect(() => {
+    if (!focusedTaskRequest || !detail || focusedTaskRequest.taskId !== detail.id) {
+      return;
+    }
+
+    const intent = focusedTaskRequest.intent;
+
+    if (intent?.prefillNextStep !== undefined) {
+      setDraftNextStep(intent.prefillNextStep ?? '');
+    }
+
+    if (intent?.prefillRunInstructions !== undefined) {
+      setQuickRunInstructions(intent.prefillRunInstructions ?? '');
+    }
+
+    if (intent?.prefillRiskLevel) {
+      setDraftRiskLevel(intent.prefillRiskLevel);
+    }
+
+    if (intent?.prefillRiskNote !== undefined) {
+      setDraftRiskNote(intent.prefillRiskNote ?? '');
+    }
+
+    const focusTarget =
+      intent?.focusArea === 'quick-actions' ? quickActionsRef.current : detailFormRef.current;
+
+    if (typeof focusTarget?.scrollIntoView === 'function') {
+      focusTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    onTaskFocusConsumed();
+  }, [detail, focusedTaskRequest, onTaskFocusConsumed]);
 
   useEffect(() => {
     let mounted = true;

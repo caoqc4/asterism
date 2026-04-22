@@ -168,6 +168,19 @@ describe('HomeBriefService', () => {
     expect(homeData.recommendedActions.find((action) => action.id === 'waiting:task_waiting')?.reason).toBe(
       'Waiting for reviewer confirmation',
     );
+    expect(homeData.recommendedActions.find((action) => action.id === 'risk:task_risk')?.intent).toEqual({
+      type: 'focus_risk_review',
+      focusArea: 'detail',
+      prefillNextStep: '处理当前风险并确认是否需要降级：Deadline slipping',
+      prefillRiskLevel: 'high',
+      prefillRiskNote: 'Deadline slipping',
+    });
+    expect(homeData.recommendedActions.find((action) => action.id === 'artifact:artifact_1')?.intent).toEqual({
+      type: 'continue_from_artifact',
+      focusArea: 'detail',
+      prefillNextStep: '基于产物继续推进：draft output',
+      prefillRunInstructions: '请基于这份已有产物继续扩展、改写或整理：Escalation draft',
+    });
   });
 
   it('returns a steady-state recommendation when there is no urgent work', async () => {
@@ -209,6 +222,9 @@ describe('HomeBriefService', () => {
         reason: '暂时没有高风险、等待阻塞或缺少下一步的活跃任务。',
         taskId: null,
         priority: 'low',
+        intent: {
+          type: 'open_task',
+        },
       },
     ]);
   });
@@ -256,6 +272,9 @@ describe('HomeBriefService', () => {
         reason: '暂时没有高风险、等待阻塞或缺少下一步的活跃任务。',
         taskId: null,
         priority: 'low',
+        intent: {
+          type: 'open_task',
+        },
       },
     ]);
   });

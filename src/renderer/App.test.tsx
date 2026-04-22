@@ -147,6 +147,26 @@ describe('App UI flow', () => {
         reason: riskTask.riskNote ?? 'High risk',
         taskId: riskTask.id,
         priority: 'high',
+        intent: {
+          type: 'focus_risk_review',
+          focusArea: 'detail',
+          prefillNextStep: '处理当前风险并确认是否需要降级：Deadline slipping',
+          prefillRiskLevel: 'high',
+          prefillRiskNote: 'Deadline slipping',
+        },
+      },
+      {
+        id: 'artifact:artifact_home_1',
+        label: `基于最新产物继续推进：${riskTask.title}`,
+        reason: 'draft output 已生成，可继续整理、扩展或发起下一轮执行。',
+        taskId: riskTask.id,
+        priority: 'low',
+        intent: {
+          type: 'continue_from_artifact',
+          focusArea: 'detail',
+          prefillNextStep: '基于产物继续推进：draft output',
+          prefillRunInstructions: '请基于这份已有产物继续扩展、改写或整理：Escalation draft for the owner.',
+        },
       },
     ],
     recentArtifacts: [
@@ -228,7 +248,7 @@ describe('App UI flow', () => {
     window.location.hash = '';
   });
 
-  it('opens the related task when a recommended action is clicked', async () => {
+  it('opens the related task and prefills detail guidance when a risk action is clicked', async () => {
     const user = userEvent.setup();
 
     render(<App />);
@@ -245,7 +265,33 @@ describe('App UI flow', () => {
 
     expect(window.location.hash).toBe('#tasks');
     expect(mockApi.getTaskDetail).toHaveBeenCalledWith(riskTask.id);
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '处理当前风险并确认是否需要降级：Deadline slipping',
+    );
     expect((screen.getByLabelText('Risk Note') as HTMLTextAreaElement).value).toBe('Deadline slipping');
+  });
+
+  it('prefills continuation inputs when an artifact action is clicked from home', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    const actionButton = await screen.findByRole('button', {
+      name: /基于最新产物继续推进：High risk task/i,
+    });
+
+    await user.click(actionButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '基于产物继续推进：draft output',
+    );
+    expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toContain(
+      'Escalation draft for the owner.',
+    );
   });
 
   it('prefers active waiting items in waiting surfaces', async () => {
@@ -430,7 +476,10 @@ describe('App UI flow', () => {
 
     render(<App />);
 
-    await user.click(await screen.findByRole('button', { name: /high risk task/i }));
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    const riskTaskCard = (await screen.findByText('High risk task')).closest('button');
+    expect(riskTaskCard).toBeTruthy();
+    await user.click(riskTaskCard!);
     await screen.findByRole('heading', { name: 'High risk task' });
 
     const decisionTitleInput = screen.getByLabelText('决策标题');
@@ -452,7 +501,10 @@ describe('App UI flow', () => {
 
     render(<App />);
 
-    await user.click(await screen.findByRole('button', { name: /high risk task/i }));
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    const riskTaskCard = (await screen.findByText('High risk task')).closest('button');
+    expect(riskTaskCard).toBeTruthy();
+    await user.click(riskTaskCard!);
     await screen.findByRole('heading', { name: 'High risk task' });
 
     await user.selectOptions(screen.getByLabelText('Run 类型'), 'summarize');

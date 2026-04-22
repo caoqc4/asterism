@@ -1,4 +1,4 @@
-import type { HomeBriefData } from '@shared/types/brief';
+import type { HomeBriefData, RecommendedAction } from '@shared/types/brief';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { PingResponse } from '@shared/types/ipc';
 
@@ -21,10 +21,10 @@ type HomePageProps = {
   status: 'idle' | 'loading' | 'ready' | 'error';
   aiStatus: AiConfigStatus | null;
   briefData: HomeBriefData | null;
-  onOpenTask: (taskId: string | null) => void;
+  onOpenAction: (action: RecommendedAction) => void;
 };
 
-export function HomePage({ ping, status, aiStatus, briefData, onOpenTask }: HomePageProps) {
+export function HomePage({ ping, status, aiStatus, briefData, onOpenAction }: HomePageProps) {
   return (
     <section className="page-grid">
       <article className="panel hero page-hero">
@@ -114,7 +114,7 @@ export function HomePage({ ping, status, aiStatus, briefData, onOpenTask }: Home
                       : 'task-card-muted'
                 }`}
                 key={action.id}
-                onClick={() => onOpenTask(action.taskId)}
+                onClick={() => onOpenAction(action)}
                 type="button"
               >
                 <div className="task-row">

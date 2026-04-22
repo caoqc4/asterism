@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { HomeBriefData } from '@shared/types/brief';
+import type { HomeBriefData, RecommendedActionIntent, RecommendedAction } from '@shared/types/brief';
 import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
 import type { AppEvent } from '@shared/types/events';
 import type { PingResponse } from '@shared/types/ipc';
@@ -25,7 +25,11 @@ const navItems: Array<{ id: AppRoute; label: string; description: string }> = [
 
 export function App() {
   const [route, setCurrentRoute] = useState<AppRoute>(() => getRouteFromHash(window.location.hash));
-  const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
+  const [focusedTaskRequest, setFocusedTaskRequest] = useState<{
+    key: string;
+    taskId: string;
+    intent: RecommendedActionIntent | null;
+  } | null>(null);
   const [ping, setPing] = useState<PingResponse | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [aiStatus, setAiStatus] = useState<AiConfigStatus | null>(null);
@@ -169,13 +173,21 @@ export function App() {
     setBriefData(await window.api.getHomeBrief());
   }
 
-  function handleOpenTask(taskId: string | null) {
+  function handleOpenTask(taskId: string | null, intent: RecommendedActionIntent | null = null) {
     if (!taskId) {
       return;
     }
 
-    setFocusedTaskId(taskId);
+    setFocusedTaskRequest({
+      key: `${taskId}:${intent?.type ?? 'open'}:${Date.now()}`,
+      taskId,
+      intent,
+    });
     setRoute('tasks');
+  }
+
+  function handleOpenRecommendedAction(action: RecommendedAction) {
+    handleOpenTask(action.taskId, action.intent ?? null);
   }
 
   return (
@@ -209,7 +221,7 @@ export function App() {
           <HomePage
             aiStatus={aiStatus}
             briefData={briefData}
-            onOpenTask={handleOpenTask}
+            onOpenAction={handleOpenRecommendedAction}
             ping={ping}
             status={status}
           />
@@ -217,7 +229,7 @@ export function App() {
         {route === 'tasks' ? (
           <TasksPage
             decisions={decisions}
-            focusedTaskId={focusedTaskId}
+            focusedTaskRequest={focusedTaskRequest}
             runs={runs}
             tasks={tasks}
             onCreateDecision={handleCreateDecision}
@@ -226,7 +238,7 @@ export function App() {
             onTransitionTask={handleTransitionTask}
             onTriggerRun={handleTriggerRun}
             onUpdateTask={handleUpdateTask}
-            onTaskFocusConsumed={() => setFocusedTaskId(null)}
+            onTaskFocusConsumed={() => setFocusedTaskRequest(null)}
           />
         ) : null}
         {route === 'decisions' ? (
