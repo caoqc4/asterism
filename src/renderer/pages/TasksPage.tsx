@@ -101,6 +101,7 @@ export function TasksPage({
   const [quickRunType, setQuickRunType] = useState<CreateRunInput['type']>('draft');
   const [quickRunInstructions, setQuickRunInstructions] = useState('');
   const [transitionWaitingReason, setTransitionWaitingReason] = useState('');
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [transitionError, setTransitionError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -142,6 +143,7 @@ export function TasksPage({
         setDraftRiskLevel(nextDetail?.riskLevel ?? 'none');
         setDraftRiskNote(nextDetail?.riskNote ?? '');
         setTransitionWaitingReason(nextDetail?.waitingReason ?? '');
+        setDetailError(null);
         setTransitionError(null);
         setQuickDecisionTitle(
           nextDetail ? `${nextDetail.title} 需要拍板` : '',
@@ -175,6 +177,13 @@ export function TasksPage({
     if (!detail) {
       return;
     }
+
+    if (draftRiskLevel === 'high' && !draftRiskNote.trim()) {
+      setDetailError('将风险等级设为 high 前，请先填写风险说明。');
+      return;
+    }
+
+    setDetailError(null);
 
     await onUpdateTask({
       id: detail.id,
@@ -315,35 +324,63 @@ export function TasksPage({
             <form className="stack" onSubmit={handleSaveDetail}>
               <label>
                 标题
-                <input value={draftTitle} onChange={(event) => setDraftTitle(event.target.value)} />
+                <input
+                  value={draftTitle}
+                  onChange={(event) => {
+                    setDraftTitle(event.target.value);
+                    if (detailError) {
+                      setDetailError(null);
+                    }
+                  }}
+                />
               </label>
               <label>
                 Summary
                 <textarea
                   rows={4}
                   value={draftSummary}
-                  onChange={(event) => setDraftSummary(event.target.value)}
+                  onChange={(event) => {
+                    setDraftSummary(event.target.value);
+                    if (detailError) {
+                      setDetailError(null);
+                    }
+                  }}
                 />
               </label>
               <label>
                 Next Step
                 <input
                   value={draftNextStep}
-                  onChange={(event) => setDraftNextStep(event.target.value)}
+                  onChange={(event) => {
+                    setDraftNextStep(event.target.value);
+                    if (detailError) {
+                      setDetailError(null);
+                    }
+                  }}
                 />
               </label>
               <label>
                 Waiting Reason
                 <input
                   value={draftWaitingReason}
-                  onChange={(event) => setDraftWaitingReason(event.target.value)}
+                  onChange={(event) => {
+                    setDraftWaitingReason(event.target.value);
+                    if (detailError) {
+                      setDetailError(null);
+                    }
+                  }}
                 />
               </label>
               <label>
                 Risk Level
                 <select
                   value={draftRiskLevel}
-                  onChange={(event) => setDraftRiskLevel(event.target.value as TaskRiskLevel)}
+                  onChange={(event) => {
+                    setDraftRiskLevel(event.target.value as TaskRiskLevel);
+                    if (detailError) {
+                      setDetailError(null);
+                    }
+                  }}
                 >
                   {riskOptions.map((riskLevel) => (
                     <option key={riskLevel} value={riskLevel}>
@@ -357,9 +394,15 @@ export function TasksPage({
                 <textarea
                   rows={3}
                   value={draftRiskNote}
-                  onChange={(event) => setDraftRiskNote(event.target.value)}
+                  onChange={(event) => {
+                    setDraftRiskNote(event.target.value);
+                    if (detailError) {
+                      setDetailError(null);
+                    }
+                  }}
                 />
               </label>
+              {detailError ? <p className="meta">{detailError}</p> : null}
               <button type="submit">保存详情</button>
             </form>
 

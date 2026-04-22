@@ -253,6 +253,28 @@ describe('App UI flow', () => {
     });
   });
 
+  it('blocks saving a high-risk task without a risk note', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /waiting task/i }));
+    await screen.findByRole('heading', { name: 'Waiting task' });
+
+    await user.selectOptions(screen.getByLabelText('Risk Level'), 'high');
+    const riskNoteInput = screen.getByLabelText('Risk Note');
+    await user.clear(riskNoteInput);
+
+    await user.click(screen.getByRole('button', { name: '保存详情' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('将风险等级设为 high 前，请先填写风险说明。')).toBeTruthy();
+    });
+
+    expect(mockApi.updateTask).not.toHaveBeenCalled();
+  });
+
   it('shows failed run detail on the runs page', async () => {
     const user = userEvent.setup();
 

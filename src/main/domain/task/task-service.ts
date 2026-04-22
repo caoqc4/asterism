@@ -21,6 +21,16 @@ const allowedTransitions: Record<TaskState, TaskState[]> = {
 export class TaskService {
   constructor(private readonly repository: TaskRepository) {}
 
+  private async getExistingTaskOrThrow(taskId: string): Promise<TaskDetail> {
+    const detail = await this.repository.getDetail(taskId);
+
+    if (!detail) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
+
+    return detail;
+  }
+
   list(): Promise<TaskRecord[]> {
     return this.repository.list();
   }
@@ -33,16 +43,21 @@ export class TaskService {
     return this.repository.getDetail(taskId);
   }
 
-  update(input: UpdateTaskInput): Promise<TaskRecord> {
+  async update(input: UpdateTaskInput): Promise<TaskRecord> {
+    const detail = await this.getExistingTaskOrThrow(input.id);
+    const nextRiskLevel = input.riskLevel ?? detail.riskLevel;
+    const nextRiskNote =
+      input.riskNote === undefined ? detail.riskNote : input.riskNote?.trim() || null;
+
+    if (nextRiskLevel === 'high' && !nextRiskNote) {
+      throw new Error('Risk note is required when setting task risk to high');
+    }
+
     return this.repository.update(input);
   }
 
   async transition(input: TransitionTaskInput): Promise<TaskRecord> {
-    const detail = await this.repository.getDetail(input.id);
-
-    if (!detail) {
-      throw new Error(`Task not found: ${input.id}`);
-    }
+    const detail = await this.getExistingTaskOrThrow(input.id);
 
     const nextStates = allowedTransitions[detail.state];
 
@@ -67,11 +82,7 @@ export class TaskService {
   }
 
   async transitionIfAllowed(id: string, nextState: TaskState): Promise<TaskRecord | null> {
-    const detail = await this.repository.getDetail(id);
-
-    if (!detail) {
-      throw new Error(`Task not found: ${id}`);
-    }
+    const detail = await this.getExistingTaskOrThrow(id);
 
     if (detail.state === nextState) {
       return {
@@ -102,11 +113,7 @@ export class TaskService {
   }
 
   async annotateDecisionCancelled(taskId: string, decisionTitle: string): Promise<TaskRecord> {
-    const detail = await this.repository.getDetail(taskId);
-
-    if (!detail) {
-      throw new Error(`Task not found: ${taskId}`);
-    }
+    const detail = await this.getExistingTaskOrThrow(taskId);
 
     return this.repository.update({
       id: taskId,
@@ -118,11 +125,7 @@ export class TaskService {
   }
 
   async annotateRunFailed(taskId: string, failureReason: string): Promise<TaskRecord> {
-    const detail = await this.repository.getDetail(taskId);
-
-    if (!detail) {
-      throw new Error(`Task not found: ${taskId}`);
-    }
+    await this.getExistingTaskOrThrow(taskId);
 
     return this.repository.update({
       id: taskId,

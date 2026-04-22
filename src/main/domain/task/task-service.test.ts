@@ -26,6 +26,14 @@ function buildWaitingDetail(state: TaskDetail['state']): TaskDetail {
   };
 }
 
+function buildHighRiskDetail(state: TaskDetail['state']): TaskDetail {
+  return {
+    ...buildDetail(state),
+    riskLevel: 'high',
+    riskNote: 'Existing high risk note',
+  };
+}
+
 function buildRecord(state: TaskRecord['state']): TaskRecord {
   return {
     id: 'task_1',
@@ -127,6 +135,54 @@ describe('TaskService', () => {
       waitingReason: null,
     });
     expect(result.waitingReason).toBeNull();
+  });
+
+  it('requires a risk note when updating a task to high risk', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never);
+
+    await expect(
+      service.update({
+        id: 'task_1',
+        riskLevel: 'high',
+        riskNote: '',
+      }),
+    ).rejects.toThrow('Risk note is required when setting task risk to high');
+    expect(repository.update).not.toHaveBeenCalled();
+  });
+
+  it('allows updates to existing high-risk tasks when a risk note already exists', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildHighRiskDetail('running')),
+      update: vi.fn().mockResolvedValue({
+        ...buildRecord('running'),
+        title: 'Updated title',
+        riskLevel: 'high',
+        riskNote: 'Existing high risk note',
+      }),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never);
+
+    const result = await service.update({
+      id: 'task_1',
+      title: 'Updated title',
+    });
+
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'task_1',
+      title: 'Updated title',
+    });
+    expect(result.riskLevel).toBe('high');
+    expect(result.riskNote).toBe('Existing high risk note');
   });
 
   it('throws when the task does not exist', async () => {
