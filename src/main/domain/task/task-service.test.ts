@@ -20,6 +20,22 @@ function buildDetail(state: TaskDetail['state']): TaskDetail {
     riskNote: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
+    resumeCard: {
+      summary: 'Resume summary',
+      currentState: `状态：${state}`,
+      latestChange: '最近没有新的生命周期变化。',
+      keySource: {
+        sourceContextId: null,
+        title: '暂无关键来源',
+        detail: null,
+      },
+      currentMethod: {
+        templateId: null,
+        title: '暂无方法模板',
+        detail: null,
+      },
+      nextSuggestedMove: 'Next step',
+    },
     artifacts: [],
     sourceContexts: [],
     processTemplates: [],
@@ -110,6 +126,77 @@ function buildAppliedProcessTemplateRecord(
 }
 
 describe('TaskService', () => {
+  it('builds a task resume card from current signals, materials, methods, and timeline', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('planned'),
+        nextStep: null,
+        timeline: [
+          {
+            id: 'timeline_1',
+            taskId: 'task_1',
+            type: 'source_context.updated',
+            payload: JSON.stringify({
+              title: 'Partner website shortlist',
+            }),
+            createdAt: '2026-01-02T00:00:00.000Z',
+          },
+        ],
+      }),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const artifacts = {
+      listRecentForTask: vi.fn().mockResolvedValue([]),
+    };
+    const sourceContexts = {
+      listActiveForTask: vi.fn().mockResolvedValue([
+        buildSourceContextRecord({
+          id: 'source_context_key',
+          title: 'Partner website shortlist',
+          isKey: true,
+          note: 'Latest approved outreach targets',
+        }),
+      ]),
+    };
+    const processTemplates = {
+      listActive: vi.fn().mockResolvedValue([]),
+    };
+    const bindings = {
+      listActiveForTask: vi.fn().mockResolvedValue([
+        buildAppliedProcessTemplateRecord({
+          id: 'process_template_outreach',
+          title: 'Outreach skill',
+          summary: 'Review targets before drafting',
+        }),
+      ]),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      artifacts as never,
+      sourceContexts as never,
+      processTemplates as never,
+      bindings as never,
+    );
+
+    const detail = await service.getDetail('task_1');
+
+    expect(detail?.resumeCard.summary).toContain('Partner website shortlist');
+    expect(detail?.resumeCard.latestChange).toBe('最近更新了来源材料：Partner website shortlist。');
+    expect(detail?.resumeCard.keySource.title).toBe('Partner website shortlist');
+    expect(detail?.resumeCard.currentMethod.title).toBe('Outreach skill');
+    expect(detail?.resumeCard.nextSuggestedMove).toBe('先查看关键来源：Partner website shortlist');
+  });
+
   it('allows valid state transitions', async () => {
     const repository = {
       list: vi.fn(),

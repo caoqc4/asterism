@@ -1133,14 +1133,50 @@ export function TasksPage({
             </form>
 
             <div className="transition-group detail-stage">
-              <div className="detail-stage-head">
-                <div>
-                  <p className="eyebrow">Current Snapshot</p>
-                  <h3>当前状态与对象</h3>
+                <div className="detail-stage-head">
+                  <div>
+                    <p className="eyebrow">Current Snapshot</p>
+                    <h3>当前状态与对象</h3>
+                  </div>
+                  <p className="meta">先看这条任务现在的信号、等待对象和已有产物。</p>
                 </div>
-                <p className="meta">先看这条任务现在的信号、等待对象和已有产物。</p>
-              </div>
               <div className="detail-cluster-grid">
+                <div className="transition-group detail-card-group detail-card-wide">
+                  <h3>Task Resume Card</h3>
+                  <div className="timeline-item timeline-item-state">
+                    <strong>Resume Summary</strong>
+                    <p className="meta">{detail.resumeCard.summary}</p>
+                    <div className="resume-grid">
+                      <div className="resume-cell">
+                        <strong>Current State</strong>
+                        <p className="meta">{detail.resumeCard.currentState}</p>
+                      </div>
+                      <div className="resume-cell">
+                        <strong>Latest Change</strong>
+                        <p className="meta">{detail.resumeCard.latestChange}</p>
+                      </div>
+                      <div className="resume-cell">
+                        <strong>Key Source</strong>
+                        <p className="meta">{detail.resumeCard.keySource.title}</p>
+                        {detail.resumeCard.keySource.detail ? (
+                          <p className="meta">{detail.resumeCard.keySource.detail}</p>
+                        ) : null}
+                      </div>
+                      <div className="resume-cell">
+                        <strong>Current Method</strong>
+                        <p className="meta">{detail.resumeCard.currentMethod.title}</p>
+                        {detail.resumeCard.currentMethod.detail ? (
+                          <p className="meta">{detail.resumeCard.currentMethod.detail}</p>
+                        ) : null}
+                      </div>
+                      <div className="resume-cell resume-cell-wide">
+                        <strong>Next Suggested Move</strong>
+                        <p className="meta">{detail.resumeCard.nextSuggestedMove}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="transition-group detail-card-group">
                   <h3>Task Signals</h3>
                   <div className="timeline-list">

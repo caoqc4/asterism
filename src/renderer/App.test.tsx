@@ -50,6 +50,22 @@ function buildWaitingItem(partial: Partial<WaitingItemRecord>): WaitingItemRecor
 function buildTaskDetail(task: TaskRecord): TaskDetail {
   return {
     ...task,
+    resumeCard: {
+      summary: `这条任务目前处于 ${task.state}。建议先做：${task.nextStep ?? '先补一个明确的下一步。'}`,
+      currentState: `状态：${task.state}`,
+      latestChange: '最近没有新的生命周期变化。',
+      keySource: {
+        sourceContextId: null,
+        title: '暂无关键来源',
+        detail: null,
+      },
+      currentMethod: {
+        templateId: null,
+        title: '暂无方法模板',
+        detail: null,
+      },
+      nextSuggestedMove: task.nextStep ?? '先补一个明确的下一步。',
+    },
     artifacts: [],
     sourceContexts: [],
     processTemplates: [],
@@ -539,6 +555,56 @@ describe('App UI flow', () => {
     expect(screen.getByRole('heading', { name: 'Current Waiting Item' })).toBeTruthy();
     expect(screen.getByText('Started at 2026-01-01T00:00:00.000Z')).toBeTruthy();
     expect(screen.getByText("Linked to the task's current waiting state.")).toBeTruthy();
+  });
+
+  it('shows a task resume card at the top of the current snapshot', async () => {
+    const user = userEvent.setup();
+
+    const resumeDetail = buildTaskDetail(riskTask);
+    resumeDetail.resumeCard = {
+      summary:
+        '这条任务目前处于 running，且存在高风险“Deadline slipping”。 最近一次执行失败：Model overloaded。 当前最关键的来源材料是“Owner escalation memo”。 当前采用的方法模板是“Risk review skill”。 建议先做：处理当前风险并确认是否需要降级：Deadline slipping',
+      currentState: '状态：running · 风险：high · Deadline slipping',
+      latestChange: '最近一次执行失败：Model overloaded。',
+      keySource: {
+        sourceContextId: 'source_context_resume',
+        title: 'Owner escalation memo',
+        detail: 'Contains the latest owner-facing language',
+      },
+      currentMethod: {
+        templateId: 'process_template_resume',
+        title: 'Risk review skill',
+        detail: 'Prioritize blockers before drafting',
+      },
+      nextSuggestedMove: '处理当前风险并确认是否需要降级：Deadline slipping',
+    };
+
+    const resumeApi: ElectronApi = {
+      ...mockApi,
+      getTaskDetail: vi.fn(async (taskId: string) => (taskId === riskTask.id ? resumeDetail : null)),
+    };
+
+    window.api = resumeApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /high risk task/i }));
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    const resumeSection = screen.getByRole('heading', { name: 'Task Resume Card' }).closest('.detail-card-group');
+
+    expect(resumeSection).not.toBeNull();
+    expect(
+      within(resumeSection as HTMLElement).getAllByText(/最近一次执行失败：Model overloaded/).length,
+    ).toBeGreaterThan(0);
+    expect(within(resumeSection as HTMLElement).getByText('Owner escalation memo')).toBeTruthy();
+    expect(within(resumeSection as HTMLElement).getByText('Risk review skill')).toBeTruthy();
+    expect(
+      within(resumeSection as HTMLElement).getByText(
+        '处理当前风险并确认是否需要降级：Deadline slipping',
+      ),
+    ).toBeTruthy();
   });
 
   it('opens waiting tasks from home key signals with follow-up guidance', async () => {

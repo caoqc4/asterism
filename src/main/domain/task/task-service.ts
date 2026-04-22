@@ -6,7 +6,9 @@ import type {
 import type {
   CreateTaskInput,
   TaskDetail,
+  TaskDetailBase,
   TaskRecord,
+  TaskResumeCardRecord,
   TaskState,
   TransitionTaskInput,
   UpdateTaskInput,
@@ -83,7 +85,7 @@ export class TaskService {
     };
   }
 
-  private async attachArtifacts(detail: TaskDetail): Promise<TaskDetail> {
+  private async attachArtifacts(detail: TaskDetailBase): Promise<TaskDetailBase> {
     const artifacts = this.artifactRepository
       ? await this.artifactRepository.listRecentForTask(detail.id)
       : [];
@@ -94,7 +96,7 @@ export class TaskService {
     };
   }
 
-  private async attachSourceContexts(detail: TaskDetail): Promise<TaskDetail> {
+  private async attachSourceContexts(detail: TaskDetailBase): Promise<TaskDetailBase> {
     const sourceContexts = this.sourceContextRepository
       ? await this.sourceContextRepository.listActiveForTask(detail.id)
       : [];
@@ -105,7 +107,7 @@ export class TaskService {
     };
   }
 
-  private async attachProcessTemplates(detail: TaskDetail): Promise<TaskDetail> {
+  private async attachProcessTemplates(detail: TaskDetailBase): Promise<TaskDetailBase> {
     const applied = this.taskProcessBindingRepository
       ? await this.taskProcessBindingRepository.listActiveForTask(detail.id)
       : [];
@@ -121,7 +123,122 @@ export class TaskService {
     };
   }
 
-  private async getExistingTaskOrThrow(taskId: string): Promise<TaskDetail> {
+  private formatResumeLatestChange(detail: TaskDetailBase): string {
+    const latestEvent = detail.timeline[0];
+
+    if (!latestEvent) {
+      return '最近没有新的生命周期变化。';
+    }
+
+    const payload = latestEvent.payload ? JSON.parse(latestEvent.payload) as Record<string, unknown> : null;
+
+    switch (latestEvent.type) {
+      case 'task.run_failed':
+        return `最近一次执行失败：${String(payload?.failureReason ?? '未记录失败原因')}。`;
+      case 'task.run_completed':
+        return `最近一次执行已完成，任务恢复到 ${String(payload?.nextState ?? 'planned')}。`;
+      case 'task.decision_approved':
+        return `最近一条决策已获批准：${String(payload?.decisionTitle ?? '未命名决策')}。`;
+      case 'task.decision_deferred':
+        return `最近一条决策被延后，当前等待：${String(payload?.waitingReason ?? '未填写')}。`;
+      case 'task.decision_cancelled':
+        return `最近一条决策已取消：${String(payload?.decisionTitle ?? '未命名决策')}。`;
+      case 'waiting_item.created':
+      case 'waiting_item.updated':
+        return `最近更新了等待项：${String(payload?.reason ?? '未填写')}。`;
+      case 'waiting_item.resolved':
+        return `最近解除等待项，任务恢复到 ${String(payload?.nextState ?? 'planned')}。`;
+      case 'source_context.created':
+      case 'source_context.updated':
+        return `最近更新了来源材料：${String(payload?.title ?? '未命名来源')}。`;
+      case 'artifact.created':
+        return `最近生成了产物：${String(payload?.title ?? '未命名产物')}。`;
+      case 'task.risk_changed':
+        return `最近调整了任务风险等级。`;
+      case 'task.next_step_changed':
+        return `最近更新了下一步。`;
+      case 'task.transitioned':
+        return `最近状态从 ${String(payload?.from ?? '未知')} 变更为 ${String(payload?.to ?? '未知')}。`;
+      default:
+        return '最近有新的任务活动。';
+    }
+  }
+
+  private buildResumeCard(detail: TaskDetailBase): TaskResumeCardRecord {
+    const keySource = detail.sourceContexts.find((item) => item.isKey) ?? detail.sourceContexts[0] ?? null;
+    const currentMethod = detail.processTemplates[0] ?? null;
+    const latestArtifact = detail.artifacts[0] ?? null;
+    const waitingReason = detail.activeWaitingItem?.reason ?? detail.waitingReason;
+
+    const currentStateParts = [`状态：${detail.state}`];
+
+    if (waitingReason) {
+      currentStateParts.push(`等待：${waitingReason}`);
+    }
+
+    if (detail.riskLevel !== 'none') {
+      currentStateParts.push(
+        `风险：${detail.riskLevel}${detail.riskNote ? ` · ${detail.riskNote}` : ''}`,
+      );
+    }
+
+    const latestChange = this.formatResumeLatestChange(detail);
+
+    let nextSuggestedMove = detail.nextStep?.trim() || '';
+
+    if (!nextSuggestedMove) {
+      if (waitingReason) {
+        nextSuggestedMove = `先跟进等待项：${waitingReason}`;
+      } else if (detail.riskLevel === 'high') {
+        nextSuggestedMove = `先处理当前风险：${detail.riskNote ?? detail.title}`;
+      } else if (keySource) {
+        nextSuggestedMove = `先查看关键来源：${keySource.title}`;
+      } else if (latestArtifact) {
+        nextSuggestedMove = `先基于最新产物继续推进：${latestArtifact.title}`;
+      } else {
+        nextSuggestedMove = '先补一个明确的下一步。';
+      }
+    }
+
+    const summaryParts = [
+      `这条任务目前处于 ${detail.state}${waitingReason ? `，正在等待“${waitingReason}”` : ''}${detail.riskLevel === 'high' && detail.riskNote ? `，且存在高风险“${detail.riskNote}”` : ''}。`,
+      latestChange,
+      keySource ? `当前最关键的来源材料是“${keySource.title}”。` : null,
+      currentMethod ? `当前采用的方法模板是“${currentMethod.title}”。` : null,
+      `建议先做：${nextSuggestedMove}`,
+    ].filter(Boolean);
+
+    return {
+      summary: summaryParts.join(' '),
+      currentState: currentStateParts.join(' · '),
+      latestChange,
+      keySource: keySource
+        ? {
+            sourceContextId: keySource.id,
+            title: keySource.title,
+            detail: keySource.note ?? keySource.uri,
+          }
+        : {
+            sourceContextId: null,
+            title: '暂无关键来源',
+            detail: null,
+          },
+      currentMethod: currentMethod
+        ? {
+            templateId: currentMethod.id,
+            title: currentMethod.title,
+            detail: currentMethod.summary ?? currentMethod.kind,
+          }
+        : {
+            templateId: null,
+            title: '暂无方法模板',
+            detail: null,
+          },
+      nextSuggestedMove,
+    };
+  }
+
+  private async getExistingTaskOrThrow(taskId: string): Promise<TaskDetailBase> {
     const detail = await this.repository.getDetail(taskId);
 
     if (!detail) {
@@ -131,7 +248,7 @@ export class TaskService {
     return detail;
   }
 
-  private async restoreTaskAfterRun(detail: TaskDetail): Promise<TaskDetail> {
+  private async restoreTaskAfterRun(detail: TaskDetailBase): Promise<TaskDetailBase> {
     if (detail.state !== 'running') {
       return detail;
     }
@@ -171,11 +288,16 @@ export class TaskService {
       return null;
     }
 
-    return this.attachProcessTemplates(
+    const enriched = await this.attachProcessTemplates(
       await this.attachSourceContexts(
         await this.attachArtifacts(await this.attachActiveWaitingItem(detail)),
       ),
     );
+
+    return {
+      ...enriched,
+      resumeCard: this.buildResumeCard(enriched),
+    };
   }
 
   async update(input: UpdateTaskInput): Promise<TaskRecord> {

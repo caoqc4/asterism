@@ -2,7 +2,7 @@ import { desc, eq } from 'drizzle-orm';
 
 import type {
   CreateTaskInput,
-  TaskDetail,
+  TaskDetailBase,
   TaskRecord,
   TransitionTaskInput,
   UpdateTaskInput,
@@ -99,7 +99,7 @@ export class TaskRepository {
     };
   }
 
-  async getDetail(taskId: string): Promise<TaskDetail | null> {
+  async getDetail(taskId: string): Promise<TaskDetailBase | null> {
     const db = initDatabase();
     const [task] = await db.select().from(tasks).where(eq(tasks.id, taskId)).limit(1);
 

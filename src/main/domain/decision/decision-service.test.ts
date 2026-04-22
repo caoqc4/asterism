@@ -25,6 +25,22 @@ function buildTaskDetail(): TaskDetail {
     riskNote: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
+    resumeCard: {
+      summary: 'Resume summary',
+      currentState: '状态：planned',
+      latestChange: '最近没有新的生命周期变化。',
+      keySource: {
+        sourceContextId: null,
+        title: '暂无关键来源',
+        detail: null,
+      },
+      currentMethod: {
+        templateId: null,
+        title: '暂无方法模板',
+        detail: null,
+      },
+      nextSuggestedMove: 'Move forward',
+    },
     artifacts: [],
     sourceContexts: [],
     processTemplates: [],

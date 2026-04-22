@@ -31,12 +31,33 @@ export type TaskRecord = {
   updatedAt: string;
 };
 
-export type TaskDetail = TaskRecord & {
+export type TaskResumeCardRecord = {
+  summary: string;
+  currentState: string;
+  latestChange: string;
+  keySource: {
+    sourceContextId: string | null;
+    title: string;
+    detail: string | null;
+  };
+  currentMethod: {
+    templateId: string | null;
+    title: string;
+    detail: string | null;
+  };
+  nextSuggestedMove: string;
+};
+
+export type TaskDetailBase = TaskRecord & {
   artifacts: ArtifactRecord[];
   sourceContexts: SourceContextRecord[];
   processTemplates: AppliedProcessTemplateRecord[];
   availableProcessTemplates: ProcessTemplateRecord[];
   timeline: TimelineEventRecord[];
+};
+
+export type TaskDetail = TaskDetailBase & {
+  resumeCard: TaskResumeCardRecord;
 };
 
 export type TimelineEventRecord = {

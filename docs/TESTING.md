@@ -40,7 +40,7 @@ Covered today:
 - `AppConfigService`
   config defaults, persistence, migration behavior
 - `TaskService`
-  transitions, invalid transitions, signal updates, decision annotations, and run-settlement annotations
+  transitions, invalid transitions, signal updates, task-resume derivation, decision annotations, and run-settlement annotations
 - `DecisionService`
   task existence checks, decision-to-task lifecycle linkage, and AI/fallback decision-draft composition
 - `RunService`
@@ -120,6 +120,7 @@ Covered today:
 - `Tasks timeline -> Decisions / Runs`
 - `Tasks source context create / edit flow`
 - `Tasks process context create / apply / remove flow`
+- `Tasks resume card visibility`
 - `Tasks quick decision draft flow`
 - `Decisions` page current-focus and queue navigation
 - `Decisions / Runs -> Tasks` follow-up return flows

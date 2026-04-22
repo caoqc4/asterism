@@ -321,6 +321,28 @@ button {
   margin-top: 0;
 }
 
+.detail-card-wide {
+  grid-column: 1 / -1;
+}
+
+.resume-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.resume-cell {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(59, 130, 246, 0.08);
+}
+
+.resume-cell-wide {
+  grid-column: 1 / -1;
+}
+
 .chip-row {
   display: flex;
   flex-wrap: wrap;
@@ -490,6 +512,7 @@ textarea {
   .tasks-layout,
   .metric-grid,
   .detail-cluster-grid,
+  .resume-grid,
   .home-signal-grid {
     grid-template-columns: 1fr;
   }
