@@ -43,7 +43,7 @@ Covered today:
 - `RunService`
   successful execution path, failure path, task linkage, artifact creation on successful output
 - `HomeBriefService`
-  waiting, risk, missing-next-step, recommended actions, recent artifacts
+  waiting, risk, missing-next-step, recommended actions, recent artifacts, and artifact-aware brief semantics
 - `SchedulerService`
   startup behavior, cron registration, fallback brief generation
 
@@ -109,6 +109,7 @@ Covered today:
 - Timeline readable summaries and compact expansion behavior
 - Timeline action shortcuts for failed, waiting, risk, and artifact events
 - task detail artifact visibility and Home recent-artifact visibility
+- task detail current-snapshot/action-desk/activity-feed presentation paths
 
 These tests focus on high-value control-plane interactions rather than broad page rendering snapshots.
 

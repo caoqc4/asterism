@@ -7,10 +7,10 @@ This repository currently contains an Electron + React + TypeScript prototype wi
 - task creation, structured task signals, detail editing, and state transitions
 - decision request creation, actions, and task linkage
 - run triggering for `draft` and `summarize`, with task linkage and failure signals
-- local brief snapshot generation with recommended actions
+- local brief snapshot generation with recommended actions and recent artifact context
 - task-scoped timeline events with readable summaries, subtle event tones, and lightweight action shortcuts
 - waiting item lifecycle tracking with direct resolution and task/detail/home visibility
-- text artifacts generated from successful runs, surfaced in task detail, timeline actions, and home brief
+- text artifacts generated from successful runs, surfaced in task detail, timeline actions, home brief, and recommended-action semantics
 - local scheduler with config-driven enable/disable
 - local configuration via `config.json` plus system keychain for secrets
 - SQLite-backed repository integration tests plus GitHub Actions CI
@@ -120,9 +120,10 @@ What exists today:
 - local desktop workbench architecture
 - core task / decision / run / brief flows
 - structured task signals: `nextStep`, `waitingReason`, `riskLevel`, `riskNote`
-- home brief with waiting, risk, missing-next-step, and recommended action surfaces
-- task detail with quick actions, related decisions/runs, recent artifacts, and a task-lifecycle timeline with lightweight suggested actions
-- object-like task-side models starting to emerge: active `waiting items` and text `artifacts`
+- home brief organized around recommended actions, recent artifacts, recent brief snapshots, and key signals
+- task detail organized into a current snapshot, action desk, and activity feed
+- task detail with quick actions, related decisions/runs, active waiting items, recent artifacts, and a task-lifecycle timeline with lightweight suggested actions
+- task-side objects now established: active `waiting items` and text `artifacts`
 - config + keychain setup
 - service tests and SQLite repository integration coverage
 - IPC handler coverage for critical event-emitting entrypoints
