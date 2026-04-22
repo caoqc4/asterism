@@ -5,6 +5,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import type { HomeBriefData } from '@shared/types/brief';
+import type { DecisionRecord } from '@shared/types/decision';
 import type { ElectronApi } from '@shared/types/ipc';
 import type { RunRecord } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
@@ -250,5 +251,102 @@ describe('App UI flow', () => {
         instructions: 'Summarize blockers before escalation',
       });
     });
+  });
+
+  it('reflects cancelled decisions in task signals after a refresh event', async () => {
+    const user = userEvent.setup();
+
+    let currentTasks: TaskRecord[] = [waitingTask, riskTask];
+    let currentTaskDetails: Record<string, TaskDetail> = {
+      [waitingTask.id]: buildTaskDetail(waitingTask),
+      [riskTask.id]: buildTaskDetail(riskTask),
+    };
+    let currentDecisions: DecisionRecord[] = [...briefData.pendingDecisions];
+    let currentBriefData: HomeBriefData = {
+      ...briefData,
+      pendingDecisions: [...briefData.pendingDecisions],
+    };
+    let subscriber: ((event: { type: 'task.changed' | 'decision.changed'; at: string }) => void) | null =
+      null;
+
+    const eventingApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn(async () => currentTasks),
+      getTaskDetail: vi.fn(async (taskId: string) => currentTaskDetails[taskId] ?? null),
+      listDecisions: vi.fn(async () => currentDecisions),
+      getHomeBrief: vi.fn(async () => currentBriefData),
+      subscribeToEvents: vi.fn().mockImplementation((callback) => {
+        subscriber = callback;
+        return () => {
+          subscriber = null;
+        };
+      }),
+      actOnDecision: vi.fn().mockImplementation(async ({ id, action }) => {
+        const updatedDecision: DecisionRecord = {
+          ...currentDecisions.find((decision) => decision.id === id)!,
+          status: action === 'cancel' ? 'cancelled' : 'pending',
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        };
+
+        currentDecisions = currentDecisions.map((decision) =>
+          decision.id === id ? updatedDecision : decision,
+        );
+
+        const updatedTask = buildTaskRecord({
+          ...riskTask,
+          nextStep: '确认该任务是否还需要继续推进，或改走无需拍板的路径。',
+          riskLevel: 'high',
+          riskNote: `相关决策已取消：${updatedDecision.title}`,
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        });
+
+        currentTasks = currentTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task));
+        currentTaskDetails = {
+          ...currentTaskDetails,
+          [updatedTask.id]: buildTaskDetail(updatedTask),
+        };
+        currentBriefData = {
+          ...currentBriefData,
+          pendingDecisionCount: 0,
+          pendingDecisions: [],
+          highRiskTasks: [updatedTask],
+          recentTasks: [waitingTask, updatedTask],
+        };
+
+        subscriber?.({ type: 'decision.changed', at: '2026-01-02T00:00:00.000Z' });
+        subscriber?.({ type: 'task.changed', at: '2026-01-02T00:00:00.000Z' });
+
+        return updatedDecision;
+      }),
+    };
+
+    window.api = eventingApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /decisions/i }));
+    await screen.findByRole('heading', { name: '待拍板事项' });
+
+    await user.click(screen.getByRole('button', { name: '取消' }));
+
+    await waitFor(() => {
+      expect(eventingApi.actOnDecision).toHaveBeenCalledWith({
+        id: 'decision_1',
+        action: 'cancel',
+      });
+    });
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /high risk task/i }));
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('Risk Note') as HTMLTextAreaElement).value).toBe(
+        '相关决策已取消：Approve escalation path',
+      );
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '确认该任务是否还需要继续推进，或改走无需拍板的路径。',
+    );
   });
 });
