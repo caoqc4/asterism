@@ -20,6 +20,15 @@ function formatRecommendedAction(label: string, reason: string, priority: string
   return `- [${priority}] ${label} | ${reason}`;
 }
 
+function formatRecentActivityLine(
+  sourceType: string,
+  title: string,
+  status: string,
+  taskTitle: string,
+): string {
+  return `- ${sourceType}:${title} [${status}] | task=${taskTitle}`;
+}
+
 export function buildFallbackBrief(homeData: HomeBriefData, kind: string): string {
   const taskLines = homeData.recentTasks.length
     ? homeData.recentTasks
@@ -48,6 +57,13 @@ export function buildFallbackBrief(homeData: HomeBriefData, kind: string): strin
         )
         .join('\n')
     : '- 当前没有最近产物';
+  const activityLines = homeData.recentActivity.length
+    ? homeData.recentActivity
+        .map((event) =>
+          formatRecentActivityLine(event.sourceType, event.title, event.status, event.taskTitle),
+        )
+        .join('\n')
+    : '- 最近没有关键决策或执行动态';
 
   return [
     `Taskplane Brief (${kind})`,
@@ -88,6 +104,9 @@ export function buildFallbackBrief(homeData: HomeBriefData, kind: string): strin
     '',
     '最近产物：',
     artifactLines,
+    '',
+    '最近动态：',
+    activityLines,
     '',
     '待拍板事项：',
     decisionLines,
@@ -165,6 +184,13 @@ function buildPrompt(homeData: HomeBriefData, kind: string): string {
       ? homeData.recentArtifacts.map(
           (artifact) =>
             `- ${artifact.title} | ${artifact.kind} | source=${artifact.sourceType}:${artifact.sourceId} | content=${artifact.content}`,
+          )
+      : ['- 无']),
+    '',
+    '最近动态：',
+    ...(homeData.recentActivity.length
+      ? homeData.recentActivity.map((event) =>
+          formatRecentActivityLine(event.sourceType, event.title, event.status, event.taskTitle),
         )
       : ['- 无']),
   ].join('\n');

@@ -41,6 +41,7 @@ function buildHomeData(): HomeBriefData {
     pendingDecisions: [],
     recommendedActions: [],
     recentArtifacts: [],
+    recentActivity: [],
     recentBriefSnapshots: [],
     schedulerStatus: {
       enabled: true,

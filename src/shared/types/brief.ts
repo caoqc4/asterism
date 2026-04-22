@@ -27,6 +27,16 @@ export type RecommendedAction = {
   intent?: RecommendedActionIntent;
 };
 
+export type HomeActivityRecord = {
+  id: string;
+  sourceType: 'decision' | 'run';
+  taskId: string;
+  taskTitle: string;
+  title: string;
+  status: string;
+  updatedAt: string;
+};
+
 export type HomeBriefData = {
   activeTaskCount: number;
   pendingDecisionCount: number;
@@ -42,6 +52,7 @@ export type HomeBriefData = {
   pendingDecisions: DecisionRecord[];
   recommendedActions: RecommendedAction[];
   recentArtifacts: ArtifactRecord[];
+  recentActivity: HomeActivityRecord[];
   recentBriefSnapshots: BriefSnapshotRecord[];
   schedulerStatus: SchedulerStatus;
 };

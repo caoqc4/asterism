@@ -216,6 +216,26 @@ export function HomePage({
       </article>
 
       <article className="panel">
+        <h2>Recent Activity</h2>
+        <div className="task-list">
+          {briefData?.recentActivity?.length ? (
+            briefData.recentActivity.map((event) => (
+              <div className="task-card" key={event.id}>
+                <div className="task-row">
+                  <strong>{event.sourceType === 'decision' ? event.title : `${event.title} run`}</strong>
+                  <span className="status">{event.status}</span>
+                </div>
+                <p className="meta">task: {event.taskTitle}</p>
+                <p className="meta">{event.updatedAt}</p>
+              </div>
+            ))
+          ) : (
+            <p className="meta">最近没有关键决策或执行动态。</p>
+          )}
+        </div>
+      </article>
+
+      <article className="panel">
         <h2>Recent Brief Snapshots</h2>
         <div className="task-list">
           {briefData?.recentBriefSnapshots.length ? (

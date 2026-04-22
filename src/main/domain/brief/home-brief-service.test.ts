@@ -161,6 +161,16 @@ describe('HomeBriefService', () => {
       'next-step:task_missing',
       'artifact:artifact_1',
     ]);
+    expect(homeData.recentActivity.map((event) => event.id)).toEqual([
+      'decision:decision_2',
+      'run:run_1',
+      'run:run_2',
+    ]);
+    expect(homeData.recentActivity[0]).toMatchObject({
+      sourceType: 'decision',
+      taskTitle: 'task_1',
+      status: 'approved',
+    });
     expect(homeData.waitingTasks[0]?.activeWaitingItem?.reason).toBe(
       'Waiting for reviewer confirmation',
     );
@@ -227,6 +237,7 @@ describe('HomeBriefService', () => {
         },
       },
     ]);
+    expect(homeData.recentActivity).toEqual([]);
   });
 
   it('does not recommend artifact follow-up when the artifact belongs to an inactive task', async () => {
@@ -277,5 +288,6 @@ describe('HomeBriefService', () => {
         },
       },
     ]);
+    expect(homeData.recentActivity).toEqual([]);
   });
 });

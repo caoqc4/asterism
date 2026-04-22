@@ -2,7 +2,11 @@ import { RunRepository } from '../../db/repositories/run-repository.js';
 import { BriefSnapshotRepository } from '../../db/repositories/brief-snapshot-repository.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { SchedulerService } from '../../scheduler/scheduler-service.js';
-import type { HomeBriefData, RecommendedAction } from '../../../shared/types/brief.js';
+import type {
+  HomeActivityRecord,
+  HomeBriefData,
+  RecommendedAction,
+} from '../../../shared/types/brief.js';
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
@@ -140,6 +144,42 @@ export class HomeBriefService {
     );
   }
 
+  private buildRecentActivity(
+    tasks: TaskRecord[],
+    decisions: Awaited<ReturnType<DecisionRepository['list']>>,
+    runs: Awaited<ReturnType<RunRepository['list']>>,
+  ): HomeActivityRecord[] {
+    const taskTitleById = new Map(tasks.map((task) => [task.id, task.title]));
+
+    const decisionEvents: HomeActivityRecord[] = decisions
+      .filter((decision) => decision.status !== 'pending')
+      .map((decision) => ({
+        id: `decision:${decision.id}`,
+        sourceType: 'decision',
+        taskId: decision.taskId,
+        taskTitle: taskTitleById.get(decision.taskId) ?? decision.taskId,
+        title: decision.title,
+        status: decision.status,
+        updatedAt: decision.updatedAt,
+      }));
+
+    const runEvents: HomeActivityRecord[] = runs
+      .filter((run) => run.status === 'completed' || run.status === 'failed')
+      .map((run) => ({
+        id: `run:${run.id}`,
+        sourceType: 'run',
+        taskId: run.taskId,
+        taskTitle: taskTitleById.get(run.taskId) ?? run.taskId,
+        title: run.type,
+        status: run.status,
+        updatedAt: run.updatedAt,
+      }));
+
+    return [...decisionEvents, ...runEvents]
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+      .slice(0, 5);
+  }
+
   async getHomeData(): Promise<HomeBriefData> {
     const [taskRows, decisions, runs, recentArtifacts, recentBriefSnapshots] = await Promise.all([
       this.taskRepository.list(),
@@ -162,6 +202,7 @@ export class HomeBriefService {
     const highRiskTasks = tasks.filter((task) => task.riskLevel === 'high');
     const missingNextStepTasks = activeTasks.filter((task) => !task.nextStep?.trim());
     const scheduler = this.getSchedulerStatus();
+    const recentActivity = this.buildRecentActivity(tasks, decisions, runs);
     const recommendedActions = buildRecommendedActions({
       activeTasks: activeTasks.slice(0, 10),
       highRiskTasks,
@@ -186,6 +227,7 @@ export class HomeBriefService {
       pendingDecisions: pendingDecisions.slice(0, 5),
       recommendedActions,
       recentArtifacts,
+      recentActivity,
       recentBriefSnapshots,
       schedulerStatus: scheduler?.getStatus() ?? {
         enabled: false,

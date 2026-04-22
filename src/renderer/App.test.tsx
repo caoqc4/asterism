@@ -177,6 +177,26 @@ describe('App UI flow', () => {
         content: 'Escalation draft for the owner.',
       }),
     ],
+    recentActivity: [
+      {
+        id: 'decision:decision_2',
+        sourceType: 'decision',
+        taskId: riskTask.id,
+        taskTitle: riskTask.title,
+        title: 'Approve escalation path',
+        status: 'approved',
+        updatedAt: '2026-01-01T01:00:00.000Z',
+      },
+      {
+        id: 'run:run_1',
+        sourceType: 'run',
+        taskId: riskTask.id,
+        taskTitle: riskTask.title,
+        title: 'draft',
+        status: 'failed',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+    ],
     recentBriefSnapshots: [],
     schedulerStatus: {
       enabled: false,
@@ -1338,7 +1358,7 @@ describe('App UI flow', () => {
     render(<App />);
 
     await screen.findByRole('button', { name: /尽快拍板：Approve escalation path/i });
-    expect(screen.getByText('Approve escalation path')).toBeTruthy();
+    expect(screen.getAllByText('Approve escalation path').length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole('button', { name: /decisions/i }));
     await screen.findByRole('heading', { name: '待拍板事项' });
