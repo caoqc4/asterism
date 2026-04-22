@@ -59,6 +59,7 @@ function buildTaskBadges(task: TaskRecord): string[] {
 
 type TasksPageProps = {
   decisions: DecisionRecord[];
+  focusedTaskId: string | null;
   runs: RunRecord[];
   tasks: TaskRecord[];
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
@@ -67,10 +68,12 @@ type TasksPageProps = {
   onTriggerRun: (input: CreateRunInput) => Promise<void>;
   onUpdateTask: (input: UpdateTaskInput) => Promise<TaskRecord>;
   onTransitionTask: (taskId: string, nextState: TaskState) => Promise<TaskRecord>;
+  onTaskFocusConsumed: () => void;
 };
 
 export function TasksPage({
   decisions,
+  focusedTaskId,
   runs,
   tasks,
   onCreateDecision,
@@ -79,6 +82,7 @@ export function TasksPage({
   onTriggerRun,
   onUpdateTask,
   onTransitionTask,
+  onTaskFocusConsumed,
 }: TasksPageProps) {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(tasks[0]?.id ?? null);
   const [detail, setDetail] = useState<TaskDetail | null>(null);
@@ -98,6 +102,19 @@ export function TasksPage({
       setSelectedTaskId(tasks[0].id);
     }
   }, [selectedTaskId, tasks]);
+
+  useEffect(() => {
+    if (!focusedTaskId) {
+      return;
+    }
+
+    const taskExists = tasks.some((task) => task.id === focusedTaskId);
+
+    if (taskExists) {
+      setSelectedTaskId(focusedTaskId);
+      onTaskFocusConsumed();
+    }
+  }, [focusedTaskId, onTaskFocusConsumed, tasks]);
 
   useEffect(() => {
     let mounted = true;

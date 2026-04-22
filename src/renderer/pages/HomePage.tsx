@@ -19,9 +19,10 @@ type HomePageProps = {
   status: 'idle' | 'loading' | 'ready' | 'error';
   aiStatus: AiConfigStatus | null;
   briefData: HomeBriefData | null;
+  onOpenTask: (taskId: string | null) => void;
 };
 
-export function HomePage({ ping, status, aiStatus, briefData }: HomePageProps) {
+export function HomePage({ ping, status, aiStatus, briefData, onOpenTask }: HomePageProps) {
   return (
     <section className="page-grid">
       <article className="panel hero page-hero">
@@ -102,7 +103,7 @@ export function HomePage({ ping, status, aiStatus, briefData }: HomePageProps) {
         <div className="task-list">
           {briefData?.recommendedActions.length ? (
             briefData.recommendedActions.map((action) => (
-              <div
+              <button
                 className={`task-card ${
                   action.priority === 'high'
                     ? 'task-card-danger'
@@ -111,6 +112,8 @@ export function HomePage({ ping, status, aiStatus, briefData }: HomePageProps) {
                       : 'task-card-muted'
                 }`}
                 key={action.id}
+                onClick={() => onOpenTask(action.taskId)}
+                type="button"
               >
                 <div className="task-row">
                   <strong>{action.label}</strong>
@@ -118,7 +121,7 @@ export function HomePage({ ping, status, aiStatus, briefData }: HomePageProps) {
                 </div>
                 <p className="meta">{action.reason}</p>
                 {action.taskId ? <p className="meta">taskId: {action.taskId}</p> : null}
-              </div>
+              </button>
             ))
           ) : (
             <p className="meta">当前没有推荐动作。</p>

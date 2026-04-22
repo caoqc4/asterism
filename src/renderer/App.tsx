@@ -25,6 +25,7 @@ const navItems: Array<{ id: AppRoute; label: string; description: string }> = [
 
 export function App() {
   const [route, setCurrentRoute] = useState<AppRoute>(() => getRouteFromHash(window.location.hash));
+  const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
   const [ping, setPing] = useState<PingResponse | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [aiStatus, setAiStatus] = useState<AiConfigStatus | null>(null);
@@ -164,6 +165,15 @@ export function App() {
     setBriefData(await window.api.getHomeBrief());
   }
 
+  function handleOpenTask(taskId: string | null) {
+    if (!taskId) {
+      return;
+    }
+
+    setFocusedTaskId(taskId);
+    setRoute('tasks');
+  }
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -192,11 +202,18 @@ export function App() {
 
       <section className="content">
         {route === 'home' ? (
-          <HomePage aiStatus={aiStatus} briefData={briefData} ping={ping} status={status} />
+          <HomePage
+            aiStatus={aiStatus}
+            briefData={briefData}
+            onOpenTask={handleOpenTask}
+            ping={ping}
+            status={status}
+          />
         ) : null}
         {route === 'tasks' ? (
           <TasksPage
             decisions={decisions}
+            focusedTaskId={focusedTaskId}
             runs={runs}
             tasks={tasks}
             onCreateDecision={handleCreateDecision}
@@ -205,6 +222,7 @@ export function App() {
             onTransitionTask={handleTransitionTask}
             onTriggerRun={handleTriggerRun}
             onUpdateTask={handleUpdateTask}
+            onTaskFocusConsumed={() => setFocusedTaskId(null)}
           />
         ) : null}
         {route === 'decisions' ? (
