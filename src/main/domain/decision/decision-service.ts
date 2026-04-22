@@ -30,11 +30,11 @@ export class DecisionService {
     const updated = await this.decisionRepository.act(input);
 
     if (input.action === 'approve') {
-      await this.taskService.transitionIfAllowed(updated.taskId, 'planned');
+      await this.taskService.annotateDecisionApproved(updated.taskId, updated.title);
     }
 
     if (input.action === 'defer') {
-      await this.taskService.transitionIfAllowed(updated.taskId, 'waiting_external');
+      await this.taskService.annotateDecisionDeferred(updated.taskId, updated.title);
     }
 
     if (input.action === 'cancel') {

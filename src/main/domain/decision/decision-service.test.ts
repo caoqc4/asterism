@@ -56,7 +56,8 @@ describe('DecisionService', () => {
     };
     const taskService = {
       getDetail: vi.fn().mockResolvedValue(buildTaskDetail()),
-      transitionIfAllowed: vi.fn(),
+      annotateDecisionApproved: vi.fn(),
+      annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
     };
     const service = new DecisionService(decisionRepository as never, taskService as never);
@@ -82,7 +83,8 @@ describe('DecisionService', () => {
     };
     const taskService = {
       getDetail: vi.fn().mockResolvedValue(null),
-      transitionIfAllowed: vi.fn(),
+      annotateDecisionApproved: vi.fn(),
+      annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
     };
     const service = new DecisionService(decisionRepository as never, taskService as never);
@@ -107,7 +109,8 @@ describe('DecisionService', () => {
     };
     const taskService = {
       getDetail: vi.fn(),
-      transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
     };
     const service = new DecisionService(decisionRepository as never, taskService as never);
@@ -121,7 +124,7 @@ describe('DecisionService', () => {
       id: 'decision_1',
       action: 'approve',
     });
-    expect(taskService.transitionIfAllowed).toHaveBeenCalledWith('task_1', 'planned');
+    expect(taskService.annotateDecisionApproved).toHaveBeenCalledWith('task_1', 'Need approval');
     expect(result.status).toBe('approved');
   });
 
@@ -136,7 +139,8 @@ describe('DecisionService', () => {
     };
     const taskService = {
       getDetail: vi.fn(),
-      transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('waiting_external')),
+      annotateDecisionApproved: vi.fn(),
+      annotateDecisionDeferred: vi.fn().mockResolvedValue(buildTaskRecord('waiting_external')),
       annotateDecisionCancelled: vi.fn(),
     };
     const service = new DecisionService(decisionRepository as never, taskService as never);
@@ -146,10 +150,7 @@ describe('DecisionService', () => {
       action: 'defer',
     });
 
-    expect(taskService.transitionIfAllowed).toHaveBeenCalledWith(
-      'task_1',
-      'waiting_external',
-    );
+    expect(taskService.annotateDecisionDeferred).toHaveBeenCalledWith('task_1', 'Need approval');
     expect(result.status).toBe('deferred');
   });
 
@@ -164,7 +165,8 @@ describe('DecisionService', () => {
     };
     const taskService = {
       getDetail: vi.fn(),
-      transitionIfAllowed: vi.fn(),
+      annotateDecisionApproved: vi.fn(),
+      annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
     };
     const service = new DecisionService(decisionRepository as never, taskService as never);

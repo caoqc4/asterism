@@ -449,6 +449,119 @@ describe('TaskService', () => {
     expect(result.riskLevel).toBe('medium');
   });
 
+  it('annotates an approved decision with a next step', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildWaitingDetail('waiting_external')),
+      update: vi.fn().mockResolvedValue({
+        ...buildRecord('planned'),
+        nextStep: '已获批准：Need approval，继续推进下一步。',
+        waitingReason: null,
+      }),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn().mockResolvedValue({
+        ...buildRecord('planned'),
+        waitingReason: null,
+      }),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn().mockResolvedValue(null),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
+
+    const result = await service.annotateDecisionApproved('task_1', 'Need approval');
+
+    expect(repository.transition).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextState: 'planned',
+      waitingReason: null,
+    });
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextStep: '已获批准：Need approval，继续推进下一步。',
+      waitingReason: null,
+    });
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'task.decision_approved', {
+      decisionTitle: 'Need approval',
+      nextState: 'planned',
+      suggestedAction: '基于已批准决策继续推进任务',
+    });
+    expect(result.state).toBe('planned');
+    expect(result.nextStep).toBe('已获批准：Need approval，继续推进下一步。');
+  });
+
+  it('annotates a deferred decision as a waiting signal', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn().mockResolvedValue({
+        ...buildRecord('waiting_external'),
+        nextStep: '跟进该决策是否可以恢复拍板，或准备替代推进路径。',
+        waitingReason: '等待重新拍板：Need approval',
+      }),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn().mockResolvedValue({
+        ...buildRecord('waiting_external'),
+        waitingReason: '等待重新拍板：Need approval',
+      }),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn().mockResolvedValue({
+        action: 'created',
+        item: {
+          id: 'waiting_1',
+          taskId: 'task_1',
+          reason: '等待重新拍板：Need approval',
+          status: 'active',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          resolvedAt: null,
+        },
+      }),
+      resolveActive: vi.fn(),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
+
+    const result = await service.annotateDecisionDeferred('task_1', 'Need approval');
+
+    expect(repository.transition).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextState: 'waiting_external',
+      waitingReason: '等待重新拍板：Need approval',
+    });
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextStep: '跟进该决策是否可以恢复拍板，或准备替代推进路径。',
+      waitingReason: '等待重新拍板：Need approval',
+    });
+    expect(repository.appendTimelineEvent).toHaveBeenNthCalledWith(
+      1,
+      'task_1',
+      'waiting_item.created',
+      expect.objectContaining({
+        waitingItemId: 'waiting_1',
+        reason: '等待重新拍板：Need approval',
+      }),
+    );
+    expect(repository.appendTimelineEvent).toHaveBeenNthCalledWith(
+      2,
+      'task_1',
+      'task.decision_deferred',
+      {
+        decisionTitle: 'Need approval',
+        waitingReason: '等待重新拍板：Need approval',
+        suggestedAction: '跟进拍板时机，或准备替代路径',
+      },
+    );
+    expect(result.state).toBe('waiting_external');
+    expect(result.waitingReason).toBe('等待重新拍板：Need approval');
+  });
+
   it('annotates a failed run as a high-risk signal', async () => {
     const repository = {
       list: vi.fn(),

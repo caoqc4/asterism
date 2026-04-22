@@ -85,6 +85,10 @@ function formatTimelineBadge(type: string): string {
   switch (type) {
     case 'task.created':
       return '创建';
+    case 'task.decision_approved':
+      return '决策批准';
+    case 'task.decision_deferred':
+      return '决策延后';
     case 'task.decision_cancelled':
       return '决策取消';
     case 'task.run_failed':
@@ -120,6 +124,9 @@ function getTimelineToneClass(type: string): string {
     case 'task.run_failed':
     case 'task.risk_changed':
       return 'timeline-item-risk';
+    case 'task.decision_approved':
+    case 'task.decision_deferred':
+      return 'timeline-item-state';
     case 'task.run_completed':
       return 'timeline-item-state';
     case 'task.waiting_changed':
@@ -144,6 +151,10 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
   switch (event.type) {
     case 'task.created':
       return `创建任务：${formatValue(payload?.title)}`;
+    case 'task.decision_approved':
+      return `决策已批准：${formatValue(payload?.decisionTitle)}，任务继续处于 ${formatValue(payload?.nextState)}`;
+    case 'task.decision_deferred':
+      return `决策已延后：${formatValue(payload?.decisionTitle)}，当前等待原因：${formatValue(payload?.waitingReason)}`;
     case 'task.decision_cancelled':
       return `相关决策已取消：${formatValue(payload?.decisionTitle)}`;
     case 'task.run_failed':
@@ -180,6 +191,10 @@ function getTimelineActionLabel(type: string): string | null {
   switch (type) {
     case 'task.decision_cancelled':
       return '生成新的 Decision';
+    case 'task.decision_approved':
+      return '继续推进任务';
+    case 'task.decision_deferred':
+      return '补跟进动作';
     case 'task.run_failed':
       return '准备重试 Run';
     case 'task.waiting_changed':
@@ -454,6 +469,15 @@ export function TasksPage({
       setQuickDecisionTitle(`${detail.title} 重新拍板`);
     }
 
+    if (event.type === 'task.decision_approved') {
+      setDraftNextStep(`已获批准，继续推进：${formatValue(payload?.decisionTitle)}`);
+    }
+
+    if (event.type === 'task.decision_deferred') {
+      setDraftNextStep('跟进该决策是否可以恢复拍板，或准备替代推进路径。');
+      setTransitionWaitingReason(formatValue(payload?.waitingReason));
+    }
+
     if (event.type === 'task.run_failed') {
       setQuickRunType('draft');
       setQuickRunInstructions(
@@ -495,6 +519,8 @@ export function TasksPage({
     }
 
     const focusTarget =
+      event.type === 'task.decision_approved' ||
+      event.type === 'task.decision_deferred' ||
       event.type === 'task.waiting_changed' ||
       event.type === 'task.risk_changed' ||
       event.type === 'artifact.created'

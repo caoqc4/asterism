@@ -246,6 +246,79 @@ export class TaskService {
     return this.attachActiveWaitingItem(updated);
   }
 
+  async annotateDecisionApproved(taskId: string, decisionTitle: string): Promise<TaskRecord> {
+    const detail = await this.getExistingTaskOrThrow(taskId);
+    const nextState =
+      detail.state === 'waiting_external'
+        ? 'planned'
+        : detail.state === 'running'
+          ? 'running'
+          : 'planned';
+
+    const transitioned =
+      detail.state !== nextState
+        ? await this.repository.transition({
+            id: taskId,
+            nextState,
+            waitingReason: null,
+          })
+        : {
+            id: detail.id,
+            title: detail.title,
+            summary: detail.summary,
+            state: detail.state,
+            nextStep: detail.nextStep,
+            waitingReason: detail.waitingReason,
+            riskLevel: detail.riskLevel,
+            riskNote: detail.riskNote,
+            createdAt: detail.createdAt,
+            updatedAt: detail.updatedAt,
+          };
+
+    await this.syncWaitingItem(transitioned.id, transitioned.state, transitioned.waitingReason);
+
+    const updated = await this.repository.update({
+      id: taskId,
+      nextStep: `已获批准：${decisionTitle}，继续推进下一步。`,
+      waitingReason: null,
+    });
+
+    await this.repository.appendTimelineEvent(taskId, 'task.decision_approved', {
+      decisionTitle,
+      nextState: transitioned.state,
+      suggestedAction: '基于已批准决策继续推进任务',
+    });
+
+    return this.attachActiveWaitingItem(updated);
+  }
+
+  async annotateDecisionDeferred(taskId: string, decisionTitle: string): Promise<TaskRecord> {
+    await this.getExistingTaskOrThrow(taskId);
+
+    const waitingReason = `等待重新拍板：${decisionTitle}`;
+    const transitioned = await this.repository.transition({
+      id: taskId,
+      nextState: 'waiting_external',
+      waitingReason,
+    });
+
+    await this.syncWaitingItem(transitioned.id, transitioned.state, transitioned.waitingReason);
+
+    const updated = await this.repository.update({
+      id: taskId,
+      nextStep: '跟进该决策是否可以恢复拍板，或准备替代推进路径。',
+      waitingReason,
+    });
+
+    await this.repository.appendTimelineEvent(taskId, 'task.decision_deferred', {
+      decisionTitle,
+      waitingReason,
+      suggestedAction: '跟进拍板时机，或准备替代路径',
+    });
+
+    return this.attachActiveWaitingItem(updated);
+  }
+
   async annotateRunFailed(taskId: string, failureReason: string): Promise<TaskRecord> {
     const detail = await this.restoreTaskAfterRun(await this.getExistingTaskOrThrow(taskId));
 
