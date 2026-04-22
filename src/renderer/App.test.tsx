@@ -343,6 +343,71 @@ describe('App UI flow', () => {
     expect(screen.getByText('Drafted message to the customer.')).toBeTruthy();
   });
 
+  it('prefills next step and run input from artifact timeline suggestions', async () => {
+    const user = userEvent.setup();
+
+    const artifactActionTask = buildTaskRecord({
+      id: 'task_timeline_artifact_action',
+      title: 'Timeline artifact task',
+      state: 'running',
+    });
+
+    const artifact = buildArtifact({
+      id: 'artifact_action_1',
+      taskId: artifactActionTask.id,
+      sourceId: 'run_artifact_action_1',
+      title: 'draft output',
+      content: 'Drafted message to the customer.',
+    });
+
+    const artifactActionApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([artifactActionTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== artifactActionTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(artifactActionTask),
+          artifacts: [artifact],
+          timeline: [
+            {
+              id: 'timeline_artifact_action',
+              taskId: artifactActionTask.id,
+              type: 'artifact.created',
+              payload: JSON.stringify({
+                artifactId: artifact.id,
+                sourceType: 'run',
+                sourceId: artifact.sourceId,
+                kind: artifact.kind,
+                title: artifact.title,
+              }),
+              createdAt: '2026-01-01T01:00:00.000Z',
+            },
+          ],
+        };
+      }),
+    };
+
+    window.api = artifactActionApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /timeline artifact task/i }));
+    await screen.findByRole('heading', { name: 'Timeline artifact task' });
+
+    await user.click(screen.getByRole('button', { name: '基于产物继续推进' }));
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '基于产物继续推进：draft output',
+    );
+    expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toContain(
+      'Drafted message to the customer.',
+    );
+  });
+
   it('submits a quick decision from task detail', async () => {
     const user = userEvent.setup();
 

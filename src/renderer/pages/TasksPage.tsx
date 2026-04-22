@@ -179,6 +179,8 @@ function getTimelineActionLabel(type: string): string | null {
       return '补跟进动作';
     case 'task.risk_changed':
       return '处理风险';
+    case 'artifact.created':
+      return '基于产物继续推进';
     default:
       return null;
   }
@@ -431,8 +433,24 @@ export function TasksPage({
       );
     }
 
+    if (event.type === 'artifact.created') {
+      const artifactId = payload?.artifactId;
+      const artifact = detail.artifacts.find((item) => item.id === artifactId);
+      const artifactTitle = artifact?.title ?? formatValue(payload?.title);
+      const artifactContent = artifact?.content ?? '';
+
+      setDraftNextStep(`基于产物继续推进：${artifactTitle}`);
+      setQuickRunInstructions(
+        artifactContent
+          ? `请基于这份已有产物继续扩展、改写或整理：${artifactContent}`
+          : `请基于已有产物继续推进：${artifactTitle}`,
+      );
+    }
+
     const focusTarget =
-      event.type === 'task.waiting_changed' || event.type === 'task.risk_changed'
+      event.type === 'task.waiting_changed' ||
+      event.type === 'task.risk_changed' ||
+      event.type === 'artifact.created'
         ? detailFormRef.current
         : quickActionsRef.current;
 
