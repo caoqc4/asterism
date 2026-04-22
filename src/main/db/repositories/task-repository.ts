@@ -18,6 +18,10 @@ function generateId(prefix: string): string {
   return `${prefix}_${crypto.randomUUID()}`;
 }
 
+function hasFieldChanged(currentValue: string | null, nextValue: string | null): boolean {
+  return (currentValue ?? null) !== (nextValue ?? null);
+}
+
 export class TaskRepository {
   async list(): Promise<TaskRecord[]> {
     const db = initDatabase();
@@ -149,20 +153,72 @@ export class TaskRepository {
       })
       .where(eq(tasks.id, input.id));
 
-    await db.insert(timelineEvents).values({
-      id: generateId('timeline'),
-      taskId: input.id,
-      type: 'task.updated',
-      payload: JSON.stringify({
-        title: nextTitle,
-        summary: nextSummary,
-        nextStep,
-        waitingReason: nextWaitingReason,
-        riskLevel: nextRiskLevel,
-        riskNote: nextRiskNote,
-      }),
-      createdAt: timestamp,
-    });
+    const timelineRows = [
+      {
+        id: generateId('timeline'),
+        taskId: input.id,
+        type: 'task.updated',
+        payload: JSON.stringify({
+          title: nextTitle,
+          summary: nextSummary,
+          nextStep,
+          waitingReason: nextWaitingReason,
+          riskLevel: nextRiskLevel,
+          riskNote: nextRiskNote,
+        }),
+        createdAt: timestamp,
+      },
+    ];
+
+    if (hasFieldChanged(current.nextStep, nextStep)) {
+      timelineRows.push({
+        id: generateId('timeline'),
+        taskId: input.id,
+        type: 'task.next_step_changed',
+        payload: JSON.stringify({
+          from: current.nextStep,
+          to: nextStep,
+        }),
+        createdAt: timestamp,
+      });
+    }
+
+    if (hasFieldChanged(current.waitingReason, nextWaitingReason)) {
+      timelineRows.push({
+        id: generateId('timeline'),
+        taskId: input.id,
+        type: 'task.waiting_changed',
+        payload: JSON.stringify({
+          from: current.waitingReason,
+          to: nextWaitingReason,
+        }),
+        createdAt: timestamp,
+      });
+    }
+
+    if (
+      current.riskLevel !== nextRiskLevel ||
+      hasFieldChanged(current.riskNote, nextRiskNote)
+    ) {
+      timelineRows.push({
+        id: generateId('timeline'),
+        taskId: input.id,
+        type: 'task.risk_changed',
+        payload: JSON.stringify({
+          from: {
+            level: current.riskLevel,
+            note: current.riskNote,
+          },
+          to: {
+            level: nextRiskLevel,
+            note: nextRiskNote,
+          },
+        }),
+        createdAt: timestamp,
+      });
+    }
+
+    await db.insert(timelineEvents).values(timelineRows);
 
     const [updated] = await db.select().from(tasks).where(eq(tasks.id, input.id)).limit(1);
 
@@ -203,17 +259,38 @@ export class TaskRepository {
       })
       .where(eq(tasks.id, input.id));
 
-    await db.insert(timelineEvents).values({
-      id: generateId('timeline'),
-      taskId: input.id,
-      type: 'task.transitioned',
-      payload: JSON.stringify({
-        from: current.state,
-        to: input.nextState,
-        waitingReason: nextWaitingReason,
-      }),
-      createdAt: timestamp,
-    });
+    const timelineRows = [
+      {
+        id: generateId('timeline'),
+        taskId: input.id,
+        type: 'task.transitioned',
+        payload: JSON.stringify({
+          from: current.state,
+          to: input.nextState,
+          waitingReason: nextWaitingReason,
+        }),
+        createdAt: timestamp,
+      },
+    ];
+
+    if (hasFieldChanged(current.waitingReason, nextWaitingReason)) {
+      timelineRows.push({
+        id: generateId('timeline'),
+        taskId: input.id,
+        type: 'task.waiting_changed',
+        payload: JSON.stringify({
+          from: current.waitingReason,
+          to: nextWaitingReason,
+          state: {
+            from: current.state,
+            to: input.nextState,
+          },
+        }),
+        createdAt: timestamp,
+      });
+    }
+
+    await db.insert(timelineEvents).values(timelineRows);
 
     const [updated] = await db.select().from(tasks).where(eq(tasks.id, input.id)).limit(1);
 

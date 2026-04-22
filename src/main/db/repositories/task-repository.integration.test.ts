@@ -67,8 +67,11 @@ describe('TaskRepository integration', () => {
     const detail = await repository.getDetail(created.id);
 
     expect(detail?.timeline.map((event) => event.type)).toContain('task.updated');
+    expect(detail?.timeline.map((event) => event.type)).toContain('task.next_step_changed');
+    expect(detail?.timeline.map((event) => event.type)).toContain('task.waiting_changed');
+    expect(detail?.timeline.map((event) => event.type)).toContain('task.risk_changed');
     expect(detail?.timeline.map((event) => event.type)).toContain('task.created');
-    expect(detail?.timeline).toHaveLength(2);
+    expect(detail?.timeline).toHaveLength(5);
   });
 
   it('transitions task state and preserves structured fields', async () => {
@@ -95,7 +98,27 @@ describe('TaskRepository integration', () => {
 
     expect(detail?.timeline.map((event) => event.type)).toContain('task.transitioned');
     expect(detail?.timeline.map((event) => event.type)).toContain('task.updated');
+    expect(detail?.timeline.map((event) => event.type)).toContain('task.next_step_changed');
+    expect(detail?.timeline.map((event) => event.type)).toContain('task.risk_changed');
     expect(detail?.timeline.map((event) => event.type)).toContain('task.created');
-    expect(detail?.timeline).toHaveLength(3);
+    expect(detail?.timeline).toHaveLength(5);
+  });
+
+  it('writes a waiting signal event when transitions change waiting reason', async () => {
+    const created = await repository.create({
+      title: 'Collect external sign-off',
+    });
+
+    await repository.transition({
+      id: created.id,
+      nextState: 'waiting_external',
+      waitingReason: 'Waiting for finance confirmation',
+    });
+
+    const detail = await repository.getDetail(created.id);
+    const waitingEvent = detail?.timeline.find((event) => event.type === 'task.waiting_changed');
+
+    expect(waitingEvent).toBeDefined();
+    expect(waitingEvent?.payload).toContain('Waiting for finance confirmation');
   });
 });
