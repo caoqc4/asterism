@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import type { CreateDecisionInput } from '@shared/types/decision';
+import type { CreateRunInput } from '@shared/types/run';
 import type {
   CreateTaskInput,
   TaskDetail,
@@ -23,16 +25,20 @@ const transitionOptions: Record<TaskState, TaskState[]> = {
 
 type TasksPageProps = {
   tasks: TaskRecord[];
+  onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
   onRefresh: () => Promise<void>;
   onCreateTask: (input: CreateTaskInput) => Promise<void>;
+  onTriggerRun: (input: CreateRunInput) => Promise<void>;
   onUpdateTask: (input: UpdateTaskInput) => Promise<TaskRecord>;
   onTransitionTask: (taskId: string, nextState: TaskState) => Promise<TaskRecord>;
 };
 
 export function TasksPage({
   tasks,
+  onCreateDecision,
   onRefresh,
   onCreateTask,
+  onTriggerRun,
   onUpdateTask,
   onTransitionTask,
 }: TasksPageProps) {
@@ -45,6 +51,9 @@ export function TasksPage({
   const [draftWaitingReason, setDraftWaitingReason] = useState('');
   const [draftRiskLevel, setDraftRiskLevel] = useState<TaskRiskLevel>('none');
   const [draftRiskNote, setDraftRiskNote] = useState('');
+  const [quickDecisionTitle, setQuickDecisionTitle] = useState('');
+  const [quickRunType, setQuickRunType] = useState<CreateRunInput['type']>('draft');
+  const [quickRunInstructions, setQuickRunInstructions] = useState('');
 
   useEffect(() => {
     if (!selectedTaskId && tasks[0]) {
@@ -71,6 +80,10 @@ export function TasksPage({
         setDraftWaitingReason(nextDetail?.waitingReason ?? '');
         setDraftRiskLevel(nextDetail?.riskLevel ?? 'none');
         setDraftRiskNote(nextDetail?.riskNote ?? '');
+        setQuickDecisionTitle(
+          nextDetail ? `${nextDetail.title} 需要拍板` : '',
+        );
+        setQuickRunInstructions(nextDetail?.nextStep ?? nextDetail?.summary ?? '');
       }
     }
 
@@ -124,6 +137,35 @@ export function TasksPage({
     await onRefresh();
     const nextDetail = await window.api.getTaskDetail(detail.id);
     setDetail(nextDetail);
+  }
+
+  async function handleQuickDecision(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!detail || !quickDecisionTitle.trim()) {
+      return;
+    }
+
+    await onCreateDecision({
+      taskId: detail.id,
+      title: quickDecisionTitle.trim(),
+    });
+    await onRefresh();
+  }
+
+  async function handleQuickRun(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!detail) {
+      return;
+    }
+
+    await onTriggerRun({
+      taskId: detail.id,
+      type: quickRunType,
+      instructions: quickRunInstructions.trim(),
+    });
+    await onRefresh();
   }
 
   return (
@@ -244,6 +286,48 @@ export function TasksPage({
                     {detail.riskNote ? ` · ${detail.riskNote}` : ''}
                   </p>
                 </div>
+              </div>
+            </div>
+
+            <div className="transition-group">
+              <h3>Quick Actions</h3>
+              <div className="quick-actions-grid">
+                <form className="stack task-card quick-action-card" onSubmit={handleQuickDecision}>
+                  <strong>创建 Decision</strong>
+                  <label>
+                    决策标题
+                    <input
+                      value={quickDecisionTitle}
+                      onChange={(event) => setQuickDecisionTitle(event.target.value)}
+                    />
+                  </label>
+                  <button type="submit">提交 Decision</button>
+                </form>
+
+                <form className="stack task-card quick-action-card" onSubmit={handleQuickRun}>
+                  <strong>触发 Run</strong>
+                  <label>
+                    Run 类型
+                    <select
+                      value={quickRunType}
+                      onChange={(event) =>
+                        setQuickRunType(event.target.value as CreateRunInput['type'])
+                      }
+                    >
+                      <option value="draft">draft</option>
+                      <option value="summarize">summarize</option>
+                    </select>
+                  </label>
+                  <label>
+                    附加要求
+                    <textarea
+                      rows={3}
+                      value={quickRunInstructions}
+                      onChange={(event) => setQuickRunInstructions(event.target.value)}
+                    />
+                  </label>
+                  <button type="submit">触发 Run</button>
+                </form>
               </div>
             </div>
 

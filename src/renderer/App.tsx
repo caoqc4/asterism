@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 
 import type { HomeBriefData } from '@shared/types/brief';
-import type { DecisionRecord } from '@shared/types/decision';
+import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
 import type { AppEvent } from '@shared/types/events';
 import type { PingResponse } from '@shared/types/ipc';
 import type { CreateRunInput, RunRecord } from '@shared/types/run';
 import type { AiConfigInput, AiConfigStatus } from '@shared/types/settings';
-import type { TaskRecord, TaskState } from '@shared/types/task';
+import type { TaskRecord, TaskState, UpdateTaskInput } from '@shared/types/task';
 
 import { getRouteFromHash, setRoute, type AppRoute } from './lib/router';
 import { DecisionsPage } from './pages/DecisionsPage';
@@ -127,7 +127,7 @@ export function App() {
     setBriefData(await window.api.getHomeBrief());
   }
 
-  async function handleUpdateTask(input: { id: string; title?: string; summary?: string | null }) {
+  async function handleUpdateTask(input: UpdateTaskInput) {
     const updated = await window.api.updateTask(input);
     setTasks((current) => current.map((task) => (task.id === updated.id ? updated : task)));
     setBriefData(await window.api.getHomeBrief());
@@ -141,7 +141,7 @@ export function App() {
     return updated;
   }
 
-  async function handleCreateDecision(input: { taskId: string; title: string }) {
+  async function handleCreateDecision(input: CreateDecisionInput) {
     const created = await window.api.createDecision(input);
     setDecisions((current) => [created, ...current]);
     setBriefData(await window.api.getHomeBrief());
@@ -197,9 +197,11 @@ export function App() {
         {route === 'tasks' ? (
           <TasksPage
             tasks={tasks}
+            onCreateDecision={handleCreateDecision}
             onCreateTask={handleCreateTask}
             onRefresh={loadShellData}
             onTransitionTask={handleTransitionTask}
+            onTriggerRun={handleTriggerRun}
             onUpdateTask={handleUpdateTask}
           />
         ) : null}

@@ -254,6 +254,16 @@ button {
   gap: 20px;
 }
 
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.quick-action-card {
+  align-content: start;
+}
+
 .section-head {
   margin-bottom: 16px;
 }
@@ -340,6 +350,10 @@ textarea {
 
   .content {
     padding: 20px 16px 36px;
+  }
+
+  .quick-actions-grid {
+    grid-template-columns: 1fr;
   }
 
   .page-grid,
