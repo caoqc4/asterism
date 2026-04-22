@@ -75,7 +75,7 @@ npm run dist:mac:dir
 npm run dist:mac
 ```
 
-See [docs/RELEASES.md](/Users/caoq/git/SuperSecretary/docs/RELEASES.md) for the current release scope.
+See [docs/RELEASES.md](docs/RELEASES.md) for the current release scope.
 
 ## Configuration
 
@@ -84,7 +84,7 @@ Taskplane uses a split configuration model:
 - non-sensitive config is stored in a local `config.json`
 - sensitive credentials such as API keys are stored in the OS keychain
 
-See [docs/CONFIGURATION.md](/Users/caoq/git/SuperSecretary/docs/CONFIGURATION.md) for details.
+See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for details.
 
 ## Development Notes
 
@@ -92,10 +92,28 @@ See [docs/CONFIGURATION.md](/Users/caoq/git/SuperSecretary/docs/CONFIGURATION.md
 - The current prototype favors clear architecture boundaries over polished production UI.
 - Renderer does not directly access SQLite or secrets. All business actions go through IPC to the Electron main process.
 
-For local development details, see [docs/DEVELOPMENT.md](/Users/caoq/git/SuperSecretary/docs/DEVELOPMENT.md).
+For local development details, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Contributing and Security
 
-- Contribution guide: [CONTRIBUTING.md](/Users/caoq/git/SuperSecretary/CONTRIBUTING.md)
-- Security policy: [SECURITY.md](/Users/caoq/git/SuperSecretary/SECURITY.md)
-- License: [LICENSE](/Users/caoq/git/SuperSecretary/LICENSE)
+- Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Security policy: [SECURITY.md](SECURITY.md)
+- License: [LICENSE](LICENSE)
+
+## Project Status
+
+Taskplane is currently a working prototype.
+
+What exists today:
+
+- local desktop workbench architecture
+- core task / decision / run / brief flows
+- config + keychain setup
+- local macOS packaging pipeline
+
+What is still in progress:
+
+- deeper workflow semantics and business rules
+- test coverage
+- final branding and product polish
+- signed and notarized releases

@@ -4,9 +4,9 @@ Thanks for contributing to Taskplane.
 
 ## Before You Start
 
-- Read [README.md](/Users/caoq/git/SuperSecretary/README.md)
-- Read [docs/DEVELOPMENT.md](/Users/caoq/git/SuperSecretary/docs/DEVELOPMENT.md)
-- Read [docs/CONFIGURATION.md](/Users/caoq/git/SuperSecretary/docs/CONFIGURATION.md)
+- Read [README.md](README.md)
+- Read [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+- Read [docs/CONFIGURATION.md](docs/CONFIGURATION.md)
 
 ## Project Principles
 
