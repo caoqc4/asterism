@@ -19,7 +19,7 @@ const transitionOptions: Record<TaskState, TaskState[]> = {
   captured: ['triaged', 'planned', 'archived'],
   triaged: ['planned', 'archived'],
   planned: ['running', 'waiting_external', 'completed', 'archived'],
-  running: ['waiting_external', 'completed', 'archived'],
+  running: ['planned', 'waiting_external', 'completed', 'archived'],
   waiting_external: ['planned', 'running', 'completed', 'archived'],
   completed: ['archived'],
   archived: [],
@@ -89,6 +89,8 @@ function formatTimelineBadge(type: string): string {
       return '决策取消';
     case 'task.run_failed':
       return '执行失败';
+    case 'task.run_completed':
+      return '执行完成';
     case 'task.transitioned':
       return '状态';
     case 'task.next_step_changed':
@@ -118,6 +120,8 @@ function getTimelineToneClass(type: string): string {
     case 'task.run_failed':
     case 'task.risk_changed':
       return 'timeline-item-risk';
+    case 'task.run_completed':
+      return 'timeline-item-state';
     case 'task.waiting_changed':
     case 'waiting_item.created':
     case 'waiting_item.updated':
@@ -144,6 +148,8 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
       return `相关决策已取消：${formatValue(payload?.decisionTitle)}`;
     case 'task.run_failed':
       return `执行失败：${formatValue(payload?.failureReason)}`;
+    case 'task.run_completed':
+      return `执行完成：${formatValue(payload?.runType)}，任务恢复到 ${formatValue(payload?.nextState)}`;
     case 'task.transitioned':
       return `状态从 ${formatValue(payload?.from)} 变更为 ${formatValue(payload?.to)}`;
     case 'task.next_step_changed':

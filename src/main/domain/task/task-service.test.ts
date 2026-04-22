@@ -455,13 +455,18 @@ describe('TaskService', () => {
       create: vi.fn(),
       getDetail: vi.fn().mockResolvedValue(buildDetail('running')),
       update: vi.fn().mockResolvedValue({
-        ...buildRecord('running'),
+        ...buildRecord('planned'),
         riskLevel: 'high',
         riskNote: 'Executor exploded',
         nextStep: '检查失败原因，修正输入或上下文后再决定是否重试。',
       }),
       appendTimelineEvent: vi.fn(),
-      transition: vi.fn(),
+      transition: vi
+        .fn()
+        .mockResolvedValueOnce({
+          ...buildRecord('planned'),
+          waitingReason: null,
+        }),
     };
     const waitingItems = {
       getActiveForTask: vi.fn().mockResolvedValue(null),
@@ -478,11 +483,59 @@ describe('TaskService', () => {
       riskLevel: 'high',
       riskNote: 'Executor exploded',
     });
+    expect(repository.transition).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextState: 'planned',
+      waitingReason: null,
+    });
     expect(waitingItems.resolveActive).toHaveBeenCalledWith('task_1');
     expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'task.run_failed', {
       failureReason: 'Executor exploded',
       suggestedAction: '检查失败原因并准备重试 Run',
     });
     expect(result.riskLevel).toBe('high');
+  });
+
+  it('annotates a completed run and restores the task to planned', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('running')),
+      update: vi.fn().mockResolvedValue({
+        ...buildRecord('planned'),
+        nextStep: '审阅最新 draft 产物，并决定是否继续推进。',
+      }),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn().mockResolvedValue({
+        ...buildRecord('planned'),
+        waitingReason: null,
+      }),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn().mockResolvedValue(null),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
+
+    const result = await service.annotateRunCompleted('task_1', 'draft', true);
+
+    expect(repository.transition).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextState: 'planned',
+      waitingReason: null,
+    });
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextStep: '审阅最新 draft 产物，并决定是否继续推进。',
+    });
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'task.run_completed', {
+      runType: 'draft',
+      nextState: 'planned',
+      hasOutput: true,
+      suggestedAction: '审阅最新产物并继续推进',
+    });
+    expect(result.state).toBe('planned');
+    expect(result.nextStep).toBe('审阅最新 draft 产物，并决定是否继续推进。');
   });
 });

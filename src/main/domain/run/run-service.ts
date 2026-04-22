@@ -57,6 +57,7 @@ export class RunService {
           content: output,
         });
       }
+      await this.taskService.annotateRunCompleted(input.taskId, input.type, Boolean(output?.trim()));
       return completed;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown executor error';

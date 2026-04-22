@@ -14,7 +14,7 @@ const allowedTransitions: Record<TaskState, TaskState[]> = {
   captured: ['triaged', 'planned', 'archived'],
   triaged: ['planned', 'archived'],
   planned: ['running', 'waiting_external', 'completed', 'archived'],
-  running: ['waiting_external', 'completed', 'archived'],
+  running: ['planned', 'waiting_external', 'completed', 'archived'],
   waiting_external: ['planned', 'running', 'completed', 'archived'],
   completed: ['archived'],
   archived: [],
@@ -86,6 +86,28 @@ export class TaskService {
     }
 
     return detail;
+  }
+
+  private async restoreTaskAfterRun(detail: TaskDetail): Promise<TaskDetail> {
+    if (detail.state !== 'running') {
+      return detail;
+    }
+
+    const transitioned = await this.repository.transition({
+      id: detail.id,
+      nextState: 'planned',
+      waitingReason: null,
+    });
+
+    await this.syncWaitingItem(transitioned.id, transitioned.state, transitioned.waitingReason);
+
+    return {
+      ...detail,
+      state: transitioned.state,
+      waitingReason: transitioned.waitingReason,
+      updatedAt: transitioned.updatedAt,
+      activeWaitingItem: null,
+    };
   }
 
   async list(): Promise<TaskRecord[]> {
@@ -225,7 +247,7 @@ export class TaskService {
   }
 
   async annotateRunFailed(taskId: string, failureReason: string): Promise<TaskRecord> {
-    const detail = await this.getExistingTaskOrThrow(taskId);
+    const detail = await this.restoreTaskAfterRun(await this.getExistingTaskOrThrow(taskId));
 
     const updated = await this.repository.update({
       id: taskId,
@@ -239,6 +261,33 @@ export class TaskService {
     await this.repository.appendTimelineEvent(taskId, 'task.run_failed', {
       failureReason,
       suggestedAction: '检查失败原因并准备重试 Run',
+    });
+
+    return this.attachActiveWaitingItem(updated);
+  }
+
+  async annotateRunCompleted(
+    taskId: string,
+    runType: 'draft' | 'summarize',
+    hasOutput: boolean,
+  ): Promise<TaskRecord> {
+    const detail = await this.restoreTaskAfterRun(await this.getExistingTaskOrThrow(taskId));
+    const nextStep = hasOutput
+      ? `审阅最新 ${runType} 产物，并决定是否继续推进。`
+      : `确认这次 ${runType} 执行结果，并决定是否需要补充新的输入。`;
+
+    const updated = await this.repository.update({
+      id: taskId,
+      nextStep,
+    });
+
+    await this.syncWaitingItem(updated.id, detail.state, updated.waitingReason);
+
+    await this.repository.appendTimelineEvent(taskId, 'task.run_completed', {
+      runType,
+      nextState: detail.state,
+      hasOutput,
+      suggestedAction: hasOutput ? '审阅最新产物并继续推进' : '确认执行结果并补充下一步',
     });
 
     return this.attachActiveWaitingItem(updated);

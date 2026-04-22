@@ -81,6 +81,7 @@ describe('RunService', () => {
     const taskService = {
       getDetail: vi.fn().mockResolvedValue(buildTaskDetail('planned')),
       transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('running')),
+      annotateRunCompleted: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateRunFailed: vi.fn(),
     };
     const artifactRepository = {
@@ -147,6 +148,7 @@ describe('RunService', () => {
       runType: 'draft',
       content: 'Generated output',
     });
+    expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'draft', true);
     expect(result.status).toBe('completed');
   });
 
@@ -165,6 +167,7 @@ describe('RunService', () => {
     const taskService = {
       getDetail: vi.fn().mockResolvedValue(buildTaskDetail('planned')),
       transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('running')),
+      annotateRunCompleted: vi.fn(),
       annotateRunFailed: vi.fn().mockResolvedValue({
         ...buildTaskRecord('running'),
         riskLevel: 'high',
@@ -204,6 +207,7 @@ describe('RunService', () => {
       'system',
       'Executor exploded',
     );
+    expect(taskService.annotateRunCompleted).not.toHaveBeenCalled();
     expect(taskService.annotateRunFailed).toHaveBeenCalledWith('task_1', 'Executor exploded');
     expect(artifactRepository.createFromRun).not.toHaveBeenCalled();
     expect(result.status).toBe('failed');
@@ -220,6 +224,7 @@ describe('RunService', () => {
     const taskService = {
       getDetail: vi.fn().mockResolvedValue(null),
       transitionIfAllowed: vi.fn(),
+      annotateRunCompleted: vi.fn(),
       annotateRunFailed: vi.fn(),
     };
     const artifactRepository = {
@@ -265,6 +270,7 @@ describe('RunService', () => {
     const taskService = {
       getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       transitionIfAllowed: vi.fn(),
+      annotateRunCompleted: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateRunFailed: vi.fn(),
     };
     const artifactRepository = {
@@ -294,6 +300,7 @@ describe('RunService', () => {
     });
 
     expect(taskService.transitionIfAllowed).not.toHaveBeenCalled();
+    expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'draft', true);
     expect(artifactRepository.createFromRun).toHaveBeenCalled();
     expect(textExecutor.execute).toHaveBeenCalledWith(
       buildTaskDetail('running'),
