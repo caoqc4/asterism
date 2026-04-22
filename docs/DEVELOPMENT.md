@@ -78,7 +78,7 @@ Main-process rules:
 - `Home`
   Brief-style overview with waiting, risk, missing-next-step, and recommended actions.
 - `Tasks`
-  Primary task workbench with structured task signals, quick decision/run actions, and related activity.
+  Primary task workbench with structured task signals, quick decision/run actions, related activity, and a task-lifecycle timeline that can surface lightweight follow-up actions.
 - `Decisions`
   Decision queue with approve/defer/cancel actions.
 - `Runs`
@@ -99,7 +99,7 @@ Main-process rules:
 - Service-level tests cover config, task, decision, run, scheduler, and home brief logic.
 - SQLite integration tests currently cover `TaskRepository`, `RunRepository`, `DecisionRepository`, and `BriefSnapshotRepository`.
 - IPC handler tests cover critical event-emitting channels such as settings save, decision action, and run trigger.
-- Renderer interaction tests cover the main control-plane flows from Home, Tasks, Decisions, Settings, and failed Run refresh paths.
+- Renderer interaction tests cover the main control-plane flows from Home, Tasks, Decisions, Settings, Timeline actions, and failed Run refresh paths.
 - GitHub Actions runs `npm run test`, `npm run lint`, and `npm run build` on every push to `main` and on pull requests.
 
 For the current coverage map and recommended next targets, see [TESTING.md](TESTING.md).

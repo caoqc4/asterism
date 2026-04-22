@@ -8,6 +8,7 @@ This repository currently contains an Electron + React + TypeScript prototype wi
 - decision request creation, actions, and task linkage
 - run triggering for `draft` and `summarize`, with task linkage and failure signals
 - local brief snapshot generation with recommended actions
+- task-scoped timeline events with readable summaries, subtle event tones, and lightweight action shortcuts
 - local scheduler with config-driven enable/disable
 - local configuration via `config.json` plus system keychain for secrets
 - SQLite-backed repository integration tests plus GitHub Actions CI
@@ -118,7 +119,7 @@ What exists today:
 - core task / decision / run / brief flows
 - structured task signals: `nextStep`, `waitingReason`, `riskLevel`, `riskNote`
 - home brief with waiting, risk, missing-next-step, and recommended action surfaces
-- task detail with quick actions plus related decisions and runs
+- task detail with quick actions, related decisions/runs, and a task-lifecycle timeline with lightweight suggested actions
 - config + keychain setup
 - service tests and SQLite repository integration coverage
 - IPC handler coverage for critical event-emitting entrypoints

@@ -23,6 +23,7 @@ Current test files:
 - `src/main/db/repositories/decision-repository.integration.test.ts`
 - `src/main/db/repositories/brief-snapshot-repository.integration.test.ts`
 - `src/main/ipc/handlers.test.ts`
+- `src/main/preload.test.ts`
 - `src/renderer/App.test.tsx`
 
 ## Coverage Map
@@ -51,7 +52,7 @@ These tests protect core business semantics before SQLite or renderer concerns e
 Covered today:
 
 - `TaskRepository`
-  task creation, signal persistence, timeline writes, transitions
+  task creation, signal persistence, structured timeline writes, transitions
 - `RunRepository`
   run creation, result persistence, stale run queries
 - `DecisionRepository`
@@ -74,6 +75,16 @@ Covered today:
 
 These tests protect the main-process edge where renderer calls become domain actions and event broadcasts.
 
+### Preload bridge tests
+
+Covered today:
+
+- `window.api` exposure through `contextBridge`
+- invoke-channel bindings for preload methods
+- event subscription forwarding plus unsubscribe behavior
+
+These tests protect the boundary between the Electron main process and the renderer workbench.
+
 ### Renderer interaction tests
 
 Covered today:
@@ -87,6 +98,9 @@ Covered today:
 - `Decision action -> Home brief refresh`
 - `Run failed -> Home brief refresh`
 - `Task transition -> Home signal refresh`
+- `Runs` page detail inspection
+- Timeline readable summaries and compact expansion behavior
+- Timeline action shortcuts for failed, waiting, and risk events
 
 These tests focus on high-value control-plane interactions rather than broad page rendering snapshots.
 
@@ -94,11 +108,10 @@ These tests focus on high-value control-plane interactions rather than broad pag
 
 Still missing or intentionally light:
 
-- renderer coverage for `Runs` page detail inspection
-- preload bridge contract tests
 - renderer coverage for more explicit `Runs` page state changes
 - finer Home scheduler-state refresh assertions
 - end-to-end packaged-app tests
+- richer timeline filtering, grouping, and very long-history rendering behavior
 
 ## Current Quality Gates
 
@@ -119,9 +132,9 @@ GitHub Actions runs the same checks on:
 
 Recommended next additions:
 
-1. renderer test for `Runs` page detail and refresh behavior
-2. preload bridge contract tests
-3. IPC coverage for one or two additional task-oriented handlers
-4. a small packaged-app or smoke-style end-to-end verification path
+1. renderer test for more explicit `Runs` page refresh and repeated trigger behavior
+2. IPC coverage for one or two additional task-oriented handlers
+3. a small packaged-app or smoke-style end-to-end verification path
+4. renderer coverage for richer timeline filtering or long-history behavior
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.
