@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import type { RecommendedActionIntent } from '@shared/types/brief';
 import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
 import type { TaskRecord } from '@shared/types/task';
 
@@ -7,6 +8,7 @@ type DecisionsPageProps = {
   decisions: DecisionRecord[];
   focusedDecisionId: string | null;
   tasks: TaskRecord[];
+  onOpenTask: (taskId: string, intent: RecommendedActionIntent) => void;
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
   onAct: (id: string, action: 'approve' | 'defer' | 'cancel') => Promise<void>;
   onDecisionFocusConsumed: () => void;
@@ -16,6 +18,7 @@ export function DecisionsPage({
   decisions,
   focusedDecisionId,
   tasks,
+  onOpenTask,
   onCreateDecision,
   onAct,
   onDecisionFocusConsumed,
@@ -75,6 +78,29 @@ export function DecisionsPage({
                 <p className="meta">关联任务：{detail.taskId}</p>
                 <p className="meta">更新时间：{detail.updatedAt}</p>
                 <div className="chip-row">
+                  <button
+                    className="ghost-button"
+                    onClick={() =>
+                      onOpenTask(detail.taskId, {
+                        type:
+                          detail.status === 'deferred'
+                            ? 'focus_waiting_follow_up'
+                            : detail.status === 'cancelled'
+                              ? 'focus_risk_review'
+                              : 'focus_next_step',
+                        focusArea: 'detail',
+                        prefillNextStep:
+                          detail.status === 'approved'
+                            ? `已获批准，继续推进：${detail.title}`
+                            : detail.status === 'deferred'
+                              ? `跟进该决策是否可以恢复拍板：${detail.title}`
+                              : `重新评估该决策并确定替代推进路径：${detail.title}`,
+                      })
+                    }
+                    type="button"
+                  >
+                    回到任务推进
+                  </button>
                   <button
                     className="ghost-button"
                     onClick={() => void onAct(detail.id, 'approve')}

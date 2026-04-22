@@ -332,6 +332,7 @@ export function App() {
             decisions={decisions}
             focusedDecisionId={focusedDecisionId}
             tasks={tasks}
+            onOpenTask={handleOpenTask}
             onAct={handleDecisionAction}
             onCreateDecision={handleCreateDecision}
             onDecisionFocusConsumed={() => setFocusedDecisionId(null)}

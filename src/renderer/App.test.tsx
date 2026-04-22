@@ -739,6 +739,29 @@ describe('App UI flow', () => {
     expect(screen.getByText('system')).toBeTruthy();
   });
 
+  it('returns from the decisions page to the related task with follow-up guidance', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /home/i }));
+    await user.click(await screen.findByRole('button', { name: '查看 Decision' }));
+
+    await screen.findByRole('heading', { name: '待拍板事项' });
+
+    const backToTaskButton = await screen.findByRole('button', { name: '回到任务推进' });
+    await user.click(backToTaskButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect(window.location.hash).toBe('#tasks');
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '已获批准，继续推进：Approve escalation path',
+    );
+  });
+
   it('returns from the runs page to the related task with follow-up guidance', async () => {
     const user = userEvent.setup();
 
