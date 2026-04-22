@@ -40,6 +40,14 @@ export function buildFallbackBrief(homeData: HomeBriefData, kind: string): strin
         .map((decision) => formatDecisionLine(decision.title, decision.status))
         .join('\n')
     : '- 当前没有待拍板事项';
+  const artifactLines = homeData.recentArtifacts.length
+    ? homeData.recentArtifacts
+        .map(
+          (artifact) =>
+            `- ${artifact.title} [${artifact.kind}] | source=${artifact.sourceType}:${artifact.sourceId}`,
+        )
+        .join('\n')
+    : '- 当前没有最近产物';
 
   return [
     `Taskplane Brief (${kind})`,
@@ -77,6 +85,9 @@ export function buildFallbackBrief(homeData: HomeBriefData, kind: string): strin
           )
           .join('\n')
       : '- 当前没有推荐动作',
+    '',
+    '最近产物：',
+    artifactLines,
     '',
     '待拍板事项：',
     decisionLines,
@@ -146,6 +157,14 @@ function buildPrompt(homeData: HomeBriefData, kind: string): string {
     ...(homeData.recommendedActions.length
       ? homeData.recommendedActions.map((action) =>
           formatRecommendedAction(action.label, action.reason, action.priority),
+        )
+      : ['- 无']),
+    '',
+    '最近产物：',
+    ...(homeData.recentArtifacts.length
+      ? homeData.recentArtifacts.map(
+          (artifact) =>
+            `- ${artifact.title} | ${artifact.kind} | source=${artifact.sourceType}:${artifact.sourceId} | content=${artifact.content}`,
         )
       : ['- 无']),
   ].join('\n');

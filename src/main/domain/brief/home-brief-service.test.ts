@@ -159,6 +159,7 @@ describe('HomeBriefService', () => {
       'decision:decision_1',
       'waiting:task_waiting',
       'next-step:task_missing',
+      'artifact:artifact_1',
     ]);
     expect(homeData.waitingTasks[0]?.activeWaitingItem?.reason).toBe(
       'Waiting for reviewer confirmation',
@@ -192,6 +193,53 @@ describe('HomeBriefService', () => {
       } as never,
       {
         listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.recommendedActions).toEqual([
+      {
+        id: 'steady-state',
+        label: '当前无需额外干预',
+        reason: '暂时没有高风险、等待阻塞或缺少下一步的活跃任务。',
+        taskId: null,
+        priority: 'low',
+      },
+    ]);
+  });
+
+  it('does not recommend artifact follow-up when the artifact belongs to an inactive task', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_done',
+            title: 'Done task',
+            state: 'completed',
+          }),
+        ]),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([
+          buildArtifact({
+            taskId: 'task_done',
+            title: 'completed draft',
+          }),
+        ]),
       } as never,
       {
         listRecent: vi.fn().mockResolvedValue([]),

@@ -9,10 +9,12 @@ import { WaitingItemRepository } from '../../db/repositories/waiting-item-reposi
 import type { TaskRecord } from '../../../shared/types/task.js';
 
 function buildRecommendedActions(params: {
+  activeTasks: HomeBriefData['recentTasks'];
   highRiskTasks: HomeBriefData['highRiskTasks'];
   pendingDecisions: HomeBriefData['pendingDecisions'];
   waitingTasks: HomeBriefData['waitingTasks'];
   missingNextStepTasks: HomeBriefData['missingNextStepTasks'];
+  recentArtifacts: HomeBriefData['recentArtifacts'];
 }): RecommendedAction[] {
   const actions: RecommendedAction[] = [];
 
@@ -53,6 +55,22 @@ function buildRecommendedActions(params: {
       reason: '该任务仍缺少明确下一步，后续推进成本会升高。',
       taskId: task.id,
       priority: 'medium',
+    });
+  }
+
+  for (const artifact of params.recentArtifacts) {
+    const task = params.activeTasks.find((item) => item.id === artifact.taskId);
+
+    if (!task) {
+      continue;
+    }
+
+    actions.push({
+      id: `artifact:${artifact.id}`,
+      label: `基于最新产物继续推进：${task.title}`,
+      reason: `${artifact.title} 已生成，可继续整理、扩展或发起下一轮执行。`,
+      taskId: artifact.taskId,
+      priority: 'low',
     });
   }
 
@@ -112,10 +130,12 @@ export class HomeBriefService {
     const missingNextStepTasks = activeTasks.filter((task) => !task.nextStep?.trim());
     const scheduler = this.getSchedulerStatus();
     const recommendedActions = buildRecommendedActions({
+      activeTasks: activeTasks.slice(0, 10),
       highRiskTasks,
       pendingDecisions: pendingDecisions.slice(0, 5),
       waitingTasks,
       missingNextStepTasks,
+      recentArtifacts,
     });
 
     return {
