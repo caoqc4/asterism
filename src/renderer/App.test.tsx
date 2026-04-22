@@ -253,6 +253,32 @@ describe('App UI flow', () => {
     });
   });
 
+  it('shows failed run detail on the runs page', async () => {
+    const user = userEvent.setup();
+
+    const runDetailApi: ElectronApi = {
+      ...mockApi,
+      getRunDetail: vi.fn(async (runId: string) =>
+        runs.find((run) => run.id === runId) ?? null,
+      ),
+    };
+
+    window.api = runDetailApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    await screen.findByRole('heading', { name: '执行队列' });
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'draft / failed' })).toBeTruthy();
+    });
+
+    expect(runDetailApi.getRunDetail).toHaveBeenCalledWith('run_1');
+    expect(screen.getByText('Executor exploded')).toBeTruthy();
+    expect(screen.getByText('system')).toBeTruthy();
+  });
+
   it('reflects cancelled decisions in task signals after a refresh event', async () => {
     const user = userEvent.setup();
 
