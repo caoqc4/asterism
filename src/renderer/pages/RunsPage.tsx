@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import type { RecommendedActionIntent } from '@shared/types/brief';
 import type { CreateRunInput, RunRecord } from '@shared/types/run';
 import type { TaskRecord } from '@shared/types/task';
 
@@ -7,6 +8,7 @@ type RunsPageProps = {
   focusedRunId: string | null;
   runs: RunRecord[];
   tasks: TaskRecord[];
+  onOpenTask: (taskId: string, intent: RecommendedActionIntent) => void;
   onRefresh: () => Promise<void>;
   onRunFocusConsumed: () => void;
   onTriggerRun: (input: CreateRunInput) => Promise<void>;
@@ -16,6 +18,7 @@ export function RunsPage({
   focusedRunId,
   runs,
   tasks,
+  onOpenTask,
   onRefresh,
   onRunFocusConsumed,
   onTriggerRun,
@@ -85,6 +88,26 @@ export function RunsPage({
             </div>
             <p className="meta">优先查看当前 run 的输入、输出、失败原因和来源。</p>
           </div>
+          {detail ? (
+            <div className="chip-row">
+              <button
+                className="ghost-button"
+                onClick={() =>
+                  onOpenTask(detail.taskId, {
+                    type: 'focus_next_step',
+                    focusArea: 'detail',
+                    prefillNextStep:
+                      detail.status === 'failed'
+                        ? `检查最近一次 ${detail.type} run 的失败原因，并决定是否重试。`
+                        : `审阅最近一次 ${detail.type} run 的结果，并决定是否继续推进。`,
+                  })
+                }
+                type="button"
+              >
+                回到任务推进
+              </button>
+            </div>
+          ) : null}
         </div>
         {detail ? (
           <div className="stack">

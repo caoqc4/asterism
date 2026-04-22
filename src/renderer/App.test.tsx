@@ -739,6 +739,36 @@ describe('App UI flow', () => {
     expect(screen.getByText('system')).toBeTruthy();
   });
 
+  it('returns from the runs page to the related task with follow-up guidance', async () => {
+    const user = userEvent.setup();
+
+    const runDetailApi: ElectronApi = {
+      ...mockApi,
+      getRunDetail: vi.fn(async (runId: string) =>
+        runs.find((run) => run.id === runId) ?? null,
+      ),
+    };
+
+    window.api = runDetailApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    await screen.findByRole('heading', { name: '执行记录' });
+
+    const backToTaskButton = await screen.findByRole('button', { name: '回到任务推进' });
+    await user.click(backToTaskButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect(window.location.hash).toBe('#tasks');
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '检查最近一次 draft run 的失败原因，并决定是否重试。',
+    );
+  });
+
   it('opens related decisions from the task activity feed', async () => {
     const user = userEvent.setup();
 
