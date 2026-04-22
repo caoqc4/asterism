@@ -121,7 +121,7 @@ What exists today:
 - local desktop workbench architecture
 - core task / decision / run / brief flows
 - structured task signals: `nextStep`, `waitingReason`, `riskLevel`, `riskNote`
-- home brief organized around recommended actions, recent artifacts, recent lifecycle activity, recent brief snapshots, and key signals, with direct intent-aware entry into task follow-up work
+- home brief organized around recommended actions, recent artifacts, recent lifecycle activity, recent brief snapshots, and key signals, with direct intent-aware entry into task follow-up work across artifacts, lifecycle activity, and task signals
 - task detail organized into a current snapshot, action desk, and activity feed
 - task detail acting as a task work surface, with quick actions, active waiting items, recent artifacts, related decisions/runs, and a task-lifecycle timeline with lightweight suggested actions
 - decision and run pages acting as object work surfaces, with queue navigation and focused detail/action areas
