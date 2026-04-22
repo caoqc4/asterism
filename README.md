@@ -11,7 +11,7 @@ This repository currently contains an Electron + React + TypeScript prototype wi
 - task-scoped timeline events with readable summaries, subtle event tones, and lightweight action shortcuts
 - waiting item lifecycle tracking with direct resolution and task/detail/home visibility
 - text artifacts generated from successful runs, surfaced in task detail, timeline actions, home brief, and recommended-action semantics
-- decision and run pages organized as object work surfaces with a current focus, action desk, queue, and direct return paths into task follow-up work
+- decision and run pages organized as object work surfaces with a current focus, action desk, queue, direct return paths into task follow-up work, and lightweight related-task timeline context
 - local scheduler with config-driven enable/disable
 - local configuration via `config.json` plus system keychain for secrets
 - SQLite-backed repository integration tests plus GitHub Actions CI
@@ -124,7 +124,7 @@ What exists today:
 - home brief organized around recommended actions, recent artifacts, recent lifecycle activity, recent brief snapshots, and key signals, with direct intent-aware entry into task follow-up work across artifacts, lifecycle activity, and task signals, plus direct `Decision / Run` object entry from recent activity
 - task detail organized into a current snapshot, action desk, and activity feed
 - task detail acting as a task work surface, with quick actions, active waiting items, recent artifacts, related decisions/runs, and a task-lifecycle timeline with lightweight suggested actions
-- decision and run pages acting as object work surfaces, with queue navigation, focused detail/action areas, and direct return-to-task follow-up entrypoints
+- decision and run pages acting as object work surfaces, with queue navigation, focused detail/action areas, direct return-to-task follow-up entrypoints, and lightweight related-task timeline explanations
 - task-side objects now established: active `waiting items` and text `artifacts`
 - decision and run actions now write back clearer task semantics, including follow-up next steps, waiting reasons, and lifecycle timeline events
 - config + keychain setup
