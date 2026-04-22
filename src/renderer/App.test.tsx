@@ -739,6 +739,72 @@ describe('App UI flow', () => {
     expect(screen.getByText('system')).toBeTruthy();
   });
 
+  it('shows related task timeline context on the runs page', async () => {
+    const user = userEvent.setup();
+
+    const runTimelineApi: ElectronApi = {
+      ...mockApi,
+      getRunDetail: vi.fn(async (runId: string) =>
+        runs.find((run) => run.id === runId) ?? null,
+      ),
+      getTaskDetail: vi.fn(async (taskId: string) => {
+        if (taskId !== riskTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(riskTask),
+          timeline: [
+            {
+              id: 'timeline_run_failed',
+              taskId: riskTask.id,
+              type: 'task.run_failed',
+              payload: JSON.stringify({
+                runId: 'run_1',
+                failureReason: 'Executor exploded',
+              }),
+              createdAt: '2026-01-01T02:00:00.000Z',
+            },
+            {
+              id: 'timeline_artifact',
+              taskId: riskTask.id,
+              type: 'artifact.created',
+              payload: JSON.stringify({
+                artifactId: 'artifact_1',
+                sourceType: 'run',
+                sourceId: 'run_1',
+                title: 'draft output',
+              }),
+              createdAt: '2026-01-01T01:30:00.000Z',
+            },
+            {
+              id: 'timeline_next_step',
+              taskId: riskTask.id,
+              type: 'task.next_step_changed',
+              payload: JSON.stringify({
+                from: null,
+                to: '检查失败原因并决定是否重试',
+              }),
+              createdAt: '2026-01-01T01:00:00.000Z',
+            },
+          ],
+        };
+      }),
+    };
+
+    window.api = runTimelineApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    await screen.findByRole('heading', { name: '执行记录' });
+
+    await screen.findByText('Related Task Timeline');
+    expect(screen.getByText('执行失败：Executor exploded')).toBeTruthy();
+    expect(screen.getByText('生成产物：draft output')).toBeTruthy();
+    expect(screen.getByText('下一步调整为“检查失败原因并决定是否重试”')).toBeTruthy();
+  });
+
   it('returns from the decisions page to the related task with follow-up guidance', async () => {
     const user = userEvent.setup();
 

@@ -2,7 +2,71 @@ import { useEffect, useState } from 'react';
 
 import type { RecommendedActionIntent } from '@shared/types/brief';
 import type { CreateRunInput, RunRecord } from '@shared/types/run';
-import type { TaskRecord } from '@shared/types/task';
+import type { TaskDetail, TaskRecord, TimelineEventRecord } from '@shared/types/task';
+
+const RELATED_TIMELINE_PREVIEW_COUNT = 4;
+
+function safeParsePayload(payload: string | null): Record<string, unknown> | null {
+  if (!payload) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(payload) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') {
+    return '未填写';
+  }
+
+  return String(value);
+}
+
+function formatRelatedTimelineSummary(event: TimelineEventRecord): string {
+  const payload = safeParsePayload(event.payload);
+
+  switch (event.type) {
+    case 'task.run_failed':
+      return `执行失败：${formatValue(payload?.failureReason)}`;
+    case 'task.run_completed':
+      return `执行完成：${formatValue(payload?.runType)}，任务恢复到 ${formatValue(payload?.nextState)}`;
+    case 'artifact.created':
+      return `生成产物：${formatValue(payload?.title)}`;
+    case 'task.risk_changed': {
+      const to = (payload?.to as Record<string, unknown> | undefined) ?? {};
+      return `风险更新为 ${formatValue(to.level)}（${formatValue(to.note)}）`;
+    }
+    case 'task.next_step_changed':
+      return `下一步调整为“${formatValue(payload?.to)}”`;
+    default:
+      return event.type;
+  }
+}
+
+function getRelatedTimeline(events: TimelineEventRecord[], runId: string): TimelineEventRecord[] {
+  return events
+    .filter((event) => {
+      if (event.type === 'task.run_failed' || event.type === 'task.run_completed') {
+        return true;
+      }
+
+      if (event.type === 'task.risk_changed' || event.type === 'task.next_step_changed') {
+        return true;
+      }
+
+      if (event.type === 'artifact.created') {
+        const payload = safeParsePayload(event.payload);
+        return payload?.sourceType === 'run' && payload?.sourceId === runId;
+      }
+
+      return false;
+    })
+    .slice(0, RELATED_TIMELINE_PREVIEW_COUNT);
+}
 
 type RunsPageProps = {
   focusedRunId: string | null;
@@ -25,6 +89,7 @@ export function RunsPage({
 }: RunsPageProps) {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(runs[0]?.id ?? null);
   const [detail, setDetail] = useState<RunRecord | null>(null);
+  const [relatedTaskDetail, setRelatedTaskDetail] = useState<TaskDetail | null>(null);
   const [form, setForm] = useState<CreateRunInput>({
     taskId: tasks[0]?.id ?? '',
     type: 'draft',
@@ -70,6 +135,29 @@ export function RunsPage({
       mounted = false;
     };
   }, [selectedRunId, runs]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadRelatedTaskDetail() {
+      if (!detail?.taskId) {
+        setRelatedTaskDetail(null);
+        return;
+      }
+
+      const nextDetail = await window.api.getTaskDetail(detail.taskId);
+
+      if (mounted) {
+        setRelatedTaskDetail(nextDetail);
+      }
+    }
+
+    void loadRelatedTaskDetail();
+
+    return () => {
+      mounted = false;
+    };
+  }, [detail?.id, detail?.taskId]);
 
   return (
     <section className="tasks-layout">
@@ -134,6 +222,24 @@ export function RunsPage({
             <div className="task-card">
               <strong>时间</strong>
               <p className="meta">{detail.createdAt}</p>
+            </div>
+            <div className="task-card">
+              <strong>Related Task Timeline</strong>
+              <div className="timeline-list">
+                {getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.id).length ? (
+                  getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.id).map((event) => (
+                    <div className="timeline-item" key={event.id}>
+                      <div className="task-row">
+                        <strong>{event.type}</strong>
+                        <span className="status">{event.createdAt}</span>
+                      </div>
+                      <p className="meta">{formatRelatedTimelineSummary(event)}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="meta">当前没有和这次 run 强相关的最近任务历史。</p>
+                )}
+              </div>
             </div>
           </div>
         ) : (
