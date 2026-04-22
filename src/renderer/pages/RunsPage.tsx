@@ -47,6 +47,17 @@ function formatRelatedTimelineSummary(event: TimelineEventRecord): string {
   }
 }
 
+function getRelatedTimelineActionLabel(event: TimelineEventRecord): string | null {
+  switch (event.type) {
+    case 'task.run_failed':
+      return '处理失败结果';
+    case 'task.run_completed':
+      return '基于结果继续推进';
+    default:
+      return null;
+  }
+}
+
 function getRelatedTimeline(events: TimelineEventRecord[], runId: string): TimelineEventRecord[] {
   return events
     .filter((event) => {
@@ -234,6 +245,26 @@ export function RunsPage({
                         <span className="status">{event.createdAt}</span>
                       </div>
                       <p className="meta">{formatRelatedTimelineSummary(event)}</p>
+                      {getRelatedTimelineActionLabel(event) ? (
+                        <div className="chip-row">
+                          <button
+                            className="ghost-button"
+                            onClick={() =>
+                              onOpenTask(detail.taskId, {
+                                type: 'focus_next_step',
+                                focusArea: 'detail',
+                                prefillNextStep:
+                                  event.type === 'task.run_failed'
+                                    ? `检查最近一次 ${detail.type} run 的失败原因，并决定是否重试。`
+                                    : `审阅最近一次 ${detail.type} run 的结果，并决定是否继续推进。`,
+                              })
+                            }
+                            type="button"
+                          >
+                            {getRelatedTimelineActionLabel(event)}
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
                   ))
                 ) : (

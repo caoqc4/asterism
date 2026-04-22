@@ -805,6 +805,57 @@ describe('App UI flow', () => {
     expect(screen.getByText('下一步调整为“检查失败原因并决定是否重试”')).toBeTruthy();
   });
 
+  it('opens task follow-up from run timeline actions on the runs page', async () => {
+    const user = userEvent.setup();
+
+    const runTimelineApi: ElectronApi = {
+      ...mockApi,
+      getRunDetail: vi.fn(async (runId: string) =>
+        runs.find((run) => run.id === runId) ?? null,
+      ),
+      getTaskDetail: vi.fn(async (taskId: string) => {
+        if (taskId !== riskTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(riskTask),
+          timeline: [
+            {
+              id: 'timeline_run_failed',
+              taskId: riskTask.id,
+              type: 'task.run_failed',
+              payload: JSON.stringify({
+                runId: 'run_1',
+                failureReason: 'Executor exploded',
+              }),
+              createdAt: '2026-01-01T02:00:00.000Z',
+            },
+          ],
+        };
+      }),
+    };
+
+    window.api = runTimelineApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    await screen.findByRole('heading', { name: '执行记录' });
+
+    const actionButton = await screen.findByRole('button', { name: '处理失败结果' });
+    await user.click(actionButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect(window.location.hash).toBe('#tasks');
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '检查最近一次 draft run 的失败原因，并决定是否重试。',
+    );
+  });
+
   it('returns from the decisions page to the related task with follow-up guidance', async () => {
     const user = userEvent.setup();
 
