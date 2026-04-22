@@ -6,6 +6,13 @@ export type PingResponse = {
 import type { HomeBriefData } from './brief.js';
 import type { CreateDecisionInput, DecisionActionInput, DecisionRecord } from './decision.js';
 import type { AppEvent } from './events.js';
+import type {
+  AppliedProcessTemplateRecord,
+  ApplyProcessTemplateInput,
+  CreateProcessTemplateInput,
+  ProcessTemplateRecord,
+  UpdateProcessTemplateInput,
+} from './process-template.js';
 import type { CreateRunInput, RunRecord } from './run.js';
 import type { AiConfigInput, AiConfigStatus } from './settings.js';
 import type {
@@ -33,6 +40,11 @@ export type ElectronApi = {
   createSourceContext: (input: CreateSourceContextInput) => Promise<SourceContextRecord>;
   updateSourceContext: (input: UpdateSourceContextInput) => Promise<SourceContextRecord>;
   archiveSourceContext: (id: string) => Promise<SourceContextRecord>;
+  createProcessTemplate: (input: CreateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
+  updateProcessTemplate: (input: UpdateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
+  archiveProcessTemplate: (id: string) => Promise<ProcessTemplateRecord>;
+  applyProcessTemplate: (input: ApplyProcessTemplateInput) => Promise<AppliedProcessTemplateRecord>;
+  removeProcessTemplate: (bindingId: string) => Promise<AppliedProcessTemplateRecord>;
   listDecisions: () => Promise<DecisionRecord[]>;
   createDecision: (input: CreateDecisionInput) => Promise<DecisionRecord>;
   actOnDecision: (input: DecisionActionInput) => Promise<DecisionRecord>;

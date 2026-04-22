@@ -10,6 +10,11 @@ import type {
 import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
 import type { AppEvent } from '@shared/types/events';
 import type { PingResponse } from '@shared/types/ipc';
+import type {
+  ApplyProcessTemplateInput,
+  CreateProcessTemplateInput,
+  UpdateProcessTemplateInput,
+} from '@shared/types/process-template';
 import type { CreateRunInput, RunRecord } from '@shared/types/run';
 import type { AiConfigInput, AiConfigStatus } from '@shared/types/settings';
 import type {
@@ -189,6 +194,30 @@ export function App() {
     return archived;
   }
 
+  async function handleCreateProcessTemplate(input: CreateProcessTemplateInput) {
+    return window.api.createProcessTemplate(input);
+  }
+
+  async function handleUpdateProcessTemplate(input: UpdateProcessTemplateInput) {
+    return window.api.updateProcessTemplate(input);
+  }
+
+  async function handleArchiveProcessTemplate(id: string) {
+    return window.api.archiveProcessTemplate(id);
+  }
+
+  async function handleApplyProcessTemplate(input: ApplyProcessTemplateInput) {
+    const applied = await window.api.applyProcessTemplate(input);
+    setBriefData(await window.api.getHomeBrief());
+    return applied;
+  }
+
+  async function handleRemoveProcessTemplate(bindingId: string) {
+    const removed = await window.api.removeProcessTemplate(bindingId);
+    setBriefData(await window.api.getHomeBrief());
+    return removed;
+  }
+
   async function handleCreateDecision(input: CreateDecisionInput) {
     const created = await window.api.createDecision(input);
     setDecisions((current) => [created, ...current]);
@@ -347,15 +376,20 @@ export function App() {
             focusedTaskRequest={focusedTaskRequest}
             runs={runs}
             tasks={tasks}
+            onApplyProcessTemplate={handleApplyProcessTemplate}
+            onArchiveProcessTemplate={handleArchiveProcessTemplate}
             onCreateDecision={handleCreateDecision}
+            onCreateProcessTemplate={handleCreateProcessTemplate}
             onCreateTask={handleCreateTask}
             onCreateSourceContext={handleCreateSourceContext}
             onArchiveSourceContext={handleArchiveSourceContext}
             onOpenDecision={handleOpenDecision}
             onOpenRun={handleOpenRun}
             onRefresh={loadShellData}
+            onRemoveProcessTemplate={handleRemoveProcessTemplate}
             onTransitionTask={handleTransitionTask}
             onTriggerRun={handleTriggerRun}
+            onUpdateProcessTemplate={handleUpdateProcessTemplate}
             onUpdateSourceContext={handleUpdateSourceContext}
             onUpdateTask={handleUpdateTask}
             onTaskFocusConsumed={() => setFocusedTaskRequest(null)}

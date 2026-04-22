@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import type {
+  AppliedProcessTemplateRecord,
+  ProcessTemplateRecord,
+} from '../../../shared/types/process-template.js';
 import type { TaskDetail, TaskRecord } from '../../../shared/types/task.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import { TaskService } from './task-service.js';
@@ -18,6 +22,8 @@ function buildDetail(state: TaskDetail['state']): TaskDetail {
     updatedAt: '2026-01-01T00:00:00.000Z',
     artifacts: [],
     sourceContexts: [],
+    processTemplates: [],
+    availableProcessTemplates: [],
     timeline: [],
   };
 }
@@ -65,6 +71,40 @@ function buildSourceContextRecord(partial: Partial<SourceContextRecord> = {}): S
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
     archivedAt: partial.archivedAt ?? null,
+  };
+}
+
+function buildProcessTemplateRecord(
+  partial: Partial<ProcessTemplateRecord> = {},
+): ProcessTemplateRecord {
+  return {
+    id: partial.id ?? 'process_template_1',
+    title: partial.title ?? 'Outreach skill',
+    summary: partial.summary ?? 'Use the outreach workflow',
+    content: partial.content ?? '1. Review the sources\n2. Draft the outreach note',
+    kind: partial.kind ?? 'skill',
+    tags: partial.tags ?? ['outreach'],
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    archivedAt: partial.archivedAt ?? null,
+  };
+}
+
+function buildAppliedProcessTemplateRecord(
+  partial: Partial<AppliedProcessTemplateRecord> = {},
+): AppliedProcessTemplateRecord {
+  const template = buildProcessTemplateRecord(partial);
+
+  return {
+    ...template,
+    bindingId: partial.bindingId ?? 'task_process_binding_1',
+    taskId: partial.taskId ?? 'task_1',
+    bindingStatus: partial.bindingStatus ?? 'active',
+    bindingNote: partial.bindingNote ?? null,
+    boundAt: partial.boundAt ?? '2026-01-01T00:00:00.000Z',
+    bindingUpdatedAt: partial.bindingUpdatedAt ?? '2026-01-01T00:00:00.000Z',
+    removedAt: partial.removedAt ?? null,
   };
 }
 
@@ -767,5 +807,99 @@ describe('TaskService', () => {
       kind: 'doc',
     });
     expect(result.status).toBe('archived');
+  });
+
+  it('applies a process template and records a lifecycle event', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const processBindings = {
+      listActiveForTask: vi.fn().mockResolvedValue([]),
+      apply: vi.fn().mockResolvedValue({
+        action: 'created',
+        binding: buildAppliedProcessTemplateRecord(),
+      }),
+      remove: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      processBindings as never,
+    );
+
+    const result = await service.applyProcessTemplate({
+      taskId: 'task_1',
+      templateId: 'process_template_1',
+    });
+
+    expect(processBindings.apply).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      templateId: 'process_template_1',
+    });
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'process_template.applied', {
+      templateId: 'process_template_1',
+      bindingId: 'task_process_binding_1',
+      title: 'Outreach skill',
+      kind: 'skill',
+    });
+    expect(result.bindingId).toBe('task_process_binding_1');
+  });
+
+  it('removes a process template binding and records a lifecycle event', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const processBindings = {
+      listActiveForTask: vi.fn().mockResolvedValue([]),
+      apply: vi.fn(),
+      remove: vi.fn().mockResolvedValue(
+        buildAppliedProcessTemplateRecord({
+          bindingStatus: 'removed',
+          removedAt: '2026-01-02T00:00:00.000Z',
+        }),
+      ),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      processBindings as never,
+    );
+
+    const result = await service.removeProcessTemplate('task_process_binding_1');
+
+    expect(processBindings.remove).toHaveBeenCalledWith('task_process_binding_1');
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'process_template.removed', {
+      templateId: 'process_template_1',
+      bindingId: 'task_process_binding_1',
+      title: 'Outreach skill',
+      kind: 'skill',
+    });
+    expect(result.bindingStatus).toBe('removed');
   });
 });

@@ -1,4 +1,8 @@
 import type { ArtifactRecord } from './artifact.js';
+import type {
+  AppliedProcessTemplateRecord,
+  ProcessTemplateRecord,
+} from './process-template.js';
 import type { SourceContextRecord } from './source-context.js';
 import type { WaitingItemRecord } from './waiting-item.js';
 
@@ -30,6 +34,8 @@ export type TaskRecord = {
 export type TaskDetail = TaskRecord & {
   artifacts: ArtifactRecord[];
   sourceContexts: SourceContextRecord[];
+  processTemplates: AppliedProcessTemplateRecord[];
+  availableProcessTemplates: ProcessTemplateRecord[];
   timeline: TimelineEventRecord[];
 };
 

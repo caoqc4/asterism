@@ -4,8 +4,10 @@ import { BriefSnapshotRepository } from '../db/repositories/brief-snapshot-repos
 import { DecisionRepository } from '../db/repositories/decision-repository.js';
 import { ArtifactRepository } from '../db/repositories/artifact-repository.js';
 import { RunRepository } from '../db/repositories/run-repository.js';
+import { ProcessTemplateRepository } from '../db/repositories/process-template-repository.js';
 import { SourceContextRepository } from '../db/repositories/source-context-repository.js';
 import { TaskRepository } from '../db/repositories/task-repository.js';
+import { TaskProcessBindingRepository } from '../db/repositories/task-process-binding-repository.js';
 import { WaitingItemRepository } from '../db/repositories/waiting-item-repository.js';
 import { HomeBriefService } from '../domain/brief/home-brief-service.js';
 import { DecisionService } from '../domain/decision/decision-service.js';
@@ -23,6 +25,8 @@ const decisionRepository = new DecisionRepository();
 const runRepository = new RunRepository();
 const artifactRepository = new ArtifactRepository();
 const sourceContextRepository = new SourceContextRepository();
+const processTemplateRepository = new ProcessTemplateRepository();
+const taskProcessBindingRepository = new TaskProcessBindingRepository();
 const briefSnapshotRepository = new BriefSnapshotRepository();
 const waitingItemRepository = new WaitingItemRepository();
 let schedulerService: SchedulerService | null = null;
@@ -55,6 +59,8 @@ const services = {
   waitingItemRepository,
   artifactRepository,
   sourceContextRepository,
+  processTemplateRepository,
+  taskProcessBindingRepository,
   appConfigService,
   textExecutor,
   briefExecutor,
@@ -63,6 +69,8 @@ const services = {
     waitingItemRepository,
     artifactRepository,
     sourceContextRepository,
+    processTemplateRepository,
+    taskProcessBindingRepository,
   ),
   decisionService: null as unknown as DecisionService,
   runService: null as unknown as RunService,

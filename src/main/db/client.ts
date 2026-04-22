@@ -120,6 +120,30 @@ function bootstrapTables(connection: Database.Database): void {
       updated_at TEXT NOT NULL,
       archived_at TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS process_templates (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      summary TEXT,
+      content TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      tags TEXT NOT NULL DEFAULT '[]',
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      archived_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS task_process_bindings (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      template_id TEXT NOT NULL,
+      note TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      removed_at TEXT
+    );
   `);
 
   ensureColumn(connection, 'runs', 'instructions', 'TEXT');
@@ -141,6 +165,17 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'source_contexts', 'status', "TEXT NOT NULL DEFAULT 'active'");
   ensureColumn(connection, 'source_contexts', 'updated_at', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'archived_at', 'TEXT');
+  ensureColumn(connection, 'process_templates', 'summary', 'TEXT');
+  ensureColumn(connection, 'process_templates', 'content', "TEXT NOT NULL DEFAULT ''");
+  ensureColumn(connection, 'process_templates', 'kind', "TEXT NOT NULL DEFAULT 'skill'");
+  ensureColumn(connection, 'process_templates', 'tags', "TEXT NOT NULL DEFAULT '[]'");
+  ensureColumn(connection, 'process_templates', 'status', "TEXT NOT NULL DEFAULT 'active'");
+  ensureColumn(connection, 'process_templates', 'updated_at', 'TEXT');
+  ensureColumn(connection, 'process_templates', 'archived_at', 'TEXT');
+  ensureColumn(connection, 'task_process_bindings', 'note', 'TEXT');
+  ensureColumn(connection, 'task_process_bindings', 'status', "TEXT NOT NULL DEFAULT 'active'");
+  ensureColumn(connection, 'task_process_bindings', 'updated_at', 'TEXT');
+  ensureColumn(connection, 'task_process_bindings', 'removed_at', 'TEXT');
 }
 
 function ensureColumn(

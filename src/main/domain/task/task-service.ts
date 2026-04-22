@@ -1,4 +1,9 @@
 import type {
+  ApplyProcessTemplateInput,
+  CreateProcessTemplateInput,
+  UpdateProcessTemplateInput,
+} from '../../../shared/types/process-template.js';
+import type {
   CreateTaskInput,
   TaskDetail,
   TaskRecord,
@@ -12,7 +17,9 @@ import type {
   UpdateSourceContextInput,
 } from '../../../shared/types/source-context.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
+import { ProcessTemplateRepository } from '../../db/repositories/process-template-repository.js';
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
+import { TaskProcessBindingRepository } from '../../db/repositories/task-process-binding-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
 
@@ -32,6 +39,8 @@ export class TaskService {
     private readonly waitingItemRepository: WaitingItemRepository,
     private readonly artifactRepository: ArtifactRepository | null = null,
     private readonly sourceContextRepository: SourceContextRepository | null = null,
+    private readonly processTemplateRepository: ProcessTemplateRepository | null = null,
+    private readonly taskProcessBindingRepository: TaskProcessBindingRepository | null = null,
   ) {}
 
   private async syncWaitingItem(
@@ -96,6 +105,22 @@ export class TaskService {
     };
   }
 
+  private async attachProcessTemplates(detail: TaskDetail): Promise<TaskDetail> {
+    const applied = this.taskProcessBindingRepository
+      ? await this.taskProcessBindingRepository.listActiveForTask(detail.id)
+      : [];
+    const available = this.processTemplateRepository
+      ? await this.processTemplateRepository.listActive()
+      : [];
+    const appliedIds = new Set(applied.map((item) => item.id));
+
+    return {
+      ...detail,
+      processTemplates: applied,
+      availableProcessTemplates: available.filter((item) => !appliedIds.has(item.id)),
+    };
+  }
+
   private async getExistingTaskOrThrow(taskId: string): Promise<TaskDetail> {
     const detail = await this.repository.getDetail(taskId);
 
@@ -146,8 +171,10 @@ export class TaskService {
       return null;
     }
 
-    return this.attachSourceContexts(
-      await this.attachArtifacts(await this.attachActiveWaitingItem(detail)),
+    return this.attachProcessTemplates(
+      await this.attachSourceContexts(
+        await this.attachArtifacts(await this.attachActiveWaitingItem(detail)),
+      ),
     );
   }
 
@@ -458,5 +485,64 @@ export class TaskService {
     });
 
     return archived;
+  }
+
+  async createProcessTemplate(input: CreateProcessTemplateInput) {
+    if (!this.processTemplateRepository) {
+      throw new Error('Process template repository not configured');
+    }
+
+    return this.processTemplateRepository.create(input);
+  }
+
+  async updateProcessTemplate(input: UpdateProcessTemplateInput) {
+    if (!this.processTemplateRepository) {
+      throw new Error('Process template repository not configured');
+    }
+
+    return this.processTemplateRepository.update(input);
+  }
+
+  async archiveProcessTemplate(id: string) {
+    if (!this.processTemplateRepository) {
+      throw new Error('Process template repository not configured');
+    }
+
+    return this.processTemplateRepository.archive(id);
+  }
+
+  async applyProcessTemplate(input: ApplyProcessTemplateInput) {
+    if (!this.taskProcessBindingRepository) {
+      throw new Error('Task process binding repository not configured');
+    }
+
+    const result = await this.taskProcessBindingRepository.apply(input);
+
+    if (result.action !== 'existing') {
+      await this.repository.appendTimelineEvent(input.taskId, 'process_template.applied', {
+        templateId: result.binding.id,
+        bindingId: result.binding.bindingId,
+        title: result.binding.title,
+        kind: result.binding.kind,
+      });
+    }
+
+    return result.binding;
+  }
+
+  async removeProcessTemplate(bindingId: string) {
+    if (!this.taskProcessBindingRepository) {
+      throw new Error('Task process binding repository not configured');
+    }
+
+    const removed = await this.taskProcessBindingRepository.remove(bindingId);
+    await this.repository.appendTimelineEvent(removed.taskId, 'process_template.removed', {
+      templateId: removed.id,
+      bindingId: removed.bindingId,
+      title: removed.title,
+      kind: removed.kind,
+    });
+
+    return removed;
   }
 }

@@ -21,6 +21,11 @@ const { handleMock, emitAppEventMock, servicesMock } = vi.hoisted(() => ({
       createSourceContext: vi.fn(),
       updateSourceContext: vi.fn(),
       archiveSourceContext: vi.fn(),
+      createProcessTemplate: vi.fn(),
+      updateProcessTemplate: vi.fn(),
+      archiveProcessTemplate: vi.fn(),
+      applyProcessTemplate: vi.fn(),
+      removeProcessTemplate: vi.fn(),
     },
     decisionService: {
       list: vi.fn(),
@@ -179,6 +184,45 @@ describe('registerIpcHandlers', () => {
     });
     expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
     expect(result.id).toBe('source_context_1');
+  });
+
+  it('emits task.changed after process template bindings change', async () => {
+    servicesMock.taskService.applyProcessTemplate.mockResolvedValue({
+      id: 'process_template_1',
+      title: 'Outreach skill',
+      summary: 'Workflow',
+      content: 'Do the thing',
+      kind: 'skill',
+      tags: ['outreach'],
+      status: 'active',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      archivedAt: null,
+      bindingId: 'task_process_binding_1',
+      taskId: 'task_1',
+      bindingStatus: 'active',
+      bindingNote: null,
+      boundAt: '2026-01-01T00:00:00.000Z',
+      bindingUpdatedAt: '2026-01-01T00:00:00.000Z',
+      removedAt: null,
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; templateId: string }],
+      Awaited<ReturnType<typeof servicesMock.taskService.applyProcessTemplate>>
+    >('processTemplate:apply');
+
+    const result = await handler({}, {
+      taskId: 'task_1',
+      templateId: 'process_template_1',
+    });
+
+    expect(servicesMock.taskService.applyProcessTemplate).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      templateId: 'process_template_1',
+    });
+    expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
+    expect(result.bindingId).toBe('task_process_binding_1');
   });
 
   it('emits run, task, and brief events after a run trigger', async () => {

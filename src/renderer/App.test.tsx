@@ -7,6 +7,10 @@ import userEvent from '@testing-library/user-event';
 import type { HomeBriefData } from '@shared/types/brief';
 import type { DecisionRecord } from '@shared/types/decision';
 import type { ElectronApi } from '@shared/types/ipc';
+import type {
+  AppliedProcessTemplateRecord,
+  ProcessTemplateRecord,
+} from '@shared/types/process-template';
 import type { RunRecord } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { SourceContextRecord } from '@shared/types/source-context';
@@ -48,7 +52,43 @@ function buildTaskDetail(task: TaskRecord): TaskDetail {
     ...task,
     artifacts: [],
     sourceContexts: [],
+    processTemplates: [],
+    availableProcessTemplates: [],
     timeline: [],
+  };
+}
+
+function buildProcessTemplate(
+  partial: Partial<ProcessTemplateRecord>,
+): ProcessTemplateRecord {
+  return {
+    id: partial.id ?? 'process_template_1',
+    title: partial.title ?? 'Outreach skill',
+    summary: partial.summary ?? 'Use the outreach workflow',
+    content: partial.content ?? '1. Review sources\n2. Draft outreach',
+    kind: partial.kind ?? 'skill',
+    tags: partial.tags ?? ['outreach'],
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    archivedAt: partial.archivedAt ?? null,
+  };
+}
+
+function buildAppliedProcessTemplate(
+  partial: Partial<AppliedProcessTemplateRecord>,
+): AppliedProcessTemplateRecord {
+  const template = buildProcessTemplate(partial);
+
+  return {
+    ...template,
+    bindingId: partial.bindingId ?? 'task_process_binding_1',
+    taskId: partial.taskId ?? 'task_1',
+    bindingStatus: partial.bindingStatus ?? 'active',
+    bindingNote: partial.bindingNote ?? null,
+    boundAt: partial.boundAt ?? '2026-01-01T00:00:00.000Z',
+    bindingUpdatedAt: partial.bindingUpdatedAt ?? '2026-01-01T00:00:00.000Z',
+    removedAt: partial.removedAt ?? null,
   };
 }
 
@@ -329,6 +369,48 @@ describe('App UI flow', () => {
         status: 'archived',
         archivedAt: '2026-01-02T00:00:00.000Z',
         updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ),
+    createProcessTemplate: vi.fn().mockImplementation(async (input) =>
+      buildProcessTemplate({
+        title: input.title,
+        summary: input.summary ?? null,
+        content: input.content,
+        kind: input.kind,
+        tags: input.tags ?? [],
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ),
+    updateProcessTemplate: vi.fn().mockImplementation(async (input) =>
+      buildProcessTemplate({
+        id: input.id,
+        title: input.title ?? 'Outreach skill',
+        summary: input.summary ?? 'Updated summary',
+        content: input.content ?? '1. Review sources\n2. Draft outreach',
+        kind: input.kind ?? 'skill',
+        tags: input.tags ?? ['outreach'],
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ),
+    archiveProcessTemplate: vi.fn().mockImplementation(async (id) =>
+      buildProcessTemplate({
+        id,
+        status: 'archived',
+        archivedAt: '2026-01-02T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ),
+    applyProcessTemplate: vi.fn().mockImplementation(async (input) =>
+      buildAppliedProcessTemplate({
+        id: input.templateId,
+        taskId: input.taskId,
+      }),
+    ),
+    removeProcessTemplate: vi.fn().mockImplementation(async (bindingId) =>
+      buildAppliedProcessTemplate({
+        bindingId,
+        bindingStatus: 'removed',
+        removedAt: '2026-01-02T00:00:00.000Z',
       }),
     ),
     listDecisions: vi.fn().mockResolvedValue(decisions),
@@ -1759,6 +1841,177 @@ describe('App UI flow', () => {
     );
 
     expect(sourceApi.archiveSourceContext).toHaveBeenCalled();
+  });
+
+  it('creates and applies process templates from task detail', async () => {
+    const user = userEvent.setup();
+
+    const processTask = buildTaskRecord({
+      id: 'task_process_context',
+      title: 'Process context task',
+      state: 'planned',
+    });
+
+    let currentDetail: TaskDetail = {
+      ...buildTaskDetail(processTask),
+      processTemplates: [
+        buildAppliedProcessTemplate({
+          id: 'process_template_existing',
+          bindingId: 'task_process_binding_existing',
+          taskId: processTask.id,
+          title: 'Launch checklist',
+          kind: 'checklist',
+          tags: ['launch'],
+        }),
+      ],
+      availableProcessTemplates: [
+        buildProcessTemplate({
+          id: 'process_template_library',
+          title: 'Outreach workflow',
+          kind: 'workflow',
+          tags: ['outreach'],
+        }),
+      ],
+    };
+
+    const processApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([processTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== processTask.id) {
+          return null;
+        }
+
+        return currentDetail;
+      }),
+      createProcessTemplate: vi.fn().mockImplementation(async (input) => {
+        const created = buildProcessTemplate({
+          id: 'process_template_created',
+          title: input.title,
+          summary: input.summary ?? null,
+          content: input.content,
+          kind: input.kind,
+          tags: input.tags ?? [],
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        });
+        currentDetail = {
+          ...currentDetail,
+          availableProcessTemplates: [created, ...currentDetail.availableProcessTemplates],
+        };
+        return created;
+      }),
+      applyProcessTemplate: vi.fn().mockImplementation(async (input) => {
+        const template =
+          currentDetail.availableProcessTemplates.find((item) => item.id === input.templateId) ??
+          buildProcessTemplate({
+            id: input.templateId,
+            title: 'Cold outreach skill',
+            kind: 'skill',
+            tags: ['outreach'],
+          });
+        const applied = buildAppliedProcessTemplate({
+          ...template,
+          bindingId: `binding:${input.templateId}`,
+          taskId: input.taskId,
+        });
+        currentDetail = {
+          ...currentDetail,
+          processTemplates: [applied, ...currentDetail.processTemplates],
+          availableProcessTemplates: currentDetail.availableProcessTemplates.filter(
+            (item) => item.id !== input.templateId,
+          ),
+        };
+        return applied;
+      }),
+      updateProcessTemplate: vi.fn().mockImplementation(async (input) => {
+        currentDetail = {
+          ...currentDetail,
+          processTemplates: currentDetail.processTemplates.map((item) =>
+            item.id === input.id
+              ? {
+                  ...item,
+                  summary: input.summary ?? item.summary,
+                }
+              : item,
+          ),
+        };
+        return buildProcessTemplate({
+          id: input.id,
+          title: 'Launch checklist',
+          kind: 'checklist',
+          tags: ['launch'],
+          summary: input.summary ?? 'Updated checklist',
+        });
+      }),
+      archiveProcessTemplate: vi.fn().mockImplementation(async (id: string) =>
+        buildProcessTemplate({
+          id,
+          status: 'archived',
+          archivedAt: '2026-01-03T00:00:00.000Z',
+        }),
+      ),
+      removeProcessTemplate: vi.fn().mockImplementation(async (bindingId: string) => {
+        const removed = currentDetail.processTemplates.find((item) => item.bindingId === bindingId)!;
+        currentDetail = {
+          ...currentDetail,
+          processTemplates: currentDetail.processTemplates.filter((item) => item.bindingId !== bindingId),
+          availableProcessTemplates: [
+            buildProcessTemplate(removed),
+            ...currentDetail.availableProcessTemplates,
+          ],
+        };
+        return {
+          ...removed,
+          bindingStatus: 'removed',
+          removedAt: '2026-01-04T00:00:00.000Z',
+        };
+      }),
+    };
+
+    window.api = processApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /process context task/i }));
+    await screen.findByRole('heading', { name: 'Process context task' });
+
+    await user.type(screen.getByLabelText('模板标题'), 'Cold outreach skill');
+    await user.type(screen.getByLabelText('简述'), 'Template for outreach tasks');
+    await user.type(screen.getByLabelText('标签'), 'outreach, review');
+    await user.type(screen.getByLabelText('模板内容'), '1. Review sources\n2. Draft outreach email');
+    await user.click(screen.getByRole('button', { name: '创建模板并挂载' }));
+
+    expect(processApi.createProcessTemplate).toHaveBeenCalledWith({
+      title: 'Cold outreach skill',
+      summary: 'Template for outreach tasks',
+      kind: 'skill',
+      tags: ['outreach', 'review'],
+      content: '1. Review sources\n2. Draft outreach email',
+    });
+    expect(processApi.applyProcessTemplate).toHaveBeenCalledWith({
+      taskId: processTask.id,
+      templateId: 'process_template_created',
+    });
+
+    await screen.findByText('Cold outreach skill');
+
+    const existingTemplateCard = screen.getByText('Launch checklist').closest('.timeline-item');
+    expect(existingTemplateCard).not.toBeNull();
+    await user.click(
+      within(existingTemplateCard as HTMLElement).getByRole('button', { name: '编辑模板' }),
+    );
+
+    const summaryField = screen.getByLabelText('简述') as HTMLInputElement;
+    await user.clear(summaryField);
+    await user.type(summaryField, 'Updated checklist summary');
+    await user.click(screen.getByRole('button', { name: '保存模板' }));
+    expect(processApi.updateProcessTemplate).toHaveBeenCalled();
+
+    await user.click(
+      within(existingTemplateCard as HTMLElement).getByRole('button', { name: '移除模板' }),
+    );
+    expect(processApi.removeProcessTemplate).toHaveBeenCalledWith('task_process_binding_existing');
   });
 
   it('reflects cancelled decisions in task signals after a refresh event', async () => {

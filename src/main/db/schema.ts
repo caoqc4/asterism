@@ -87,3 +87,27 @@ export const sourceContexts = sqliteTable('source_contexts', {
   updatedAt: text('updated_at').notNull(),
   archivedAt: text('archived_at'),
 });
+
+export const processTemplates = sqliteTable('process_templates', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  summary: text('summary'),
+  content: text('content').notNull(),
+  kind: text('kind').notNull(),
+  tags: text('tags').notNull().default('[]'),
+  status: text('status').notNull().default('active'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  archivedAt: text('archived_at'),
+});
+
+export const taskProcessBindings = sqliteTable('task_process_bindings', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull(),
+  templateId: text('template_id').notNull(),
+  note: text('note'),
+  status: text('status').notNull().default('active'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  removedAt: text('removed_at'),
+});

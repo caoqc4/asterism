@@ -2,6 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 
 import type { RecommendedActionIntent } from '@shared/types/brief';
 import type { CreateDecisionInput, DecisionRecord } from '@shared/types/decision';
+import type {
+  ApplyProcessTemplateInput,
+  AppliedProcessTemplateRecord,
+  CreateProcessTemplateInput,
+  ProcessTemplateKind,
+  ProcessTemplateRecord,
+  UpdateProcessTemplateInput,
+} from '@shared/types/process-template';
 import type { CreateRunInput, RunRecord } from '@shared/types/run';
 import type {
   CreateSourceContextInput,
@@ -27,6 +35,12 @@ const sourceContextKindOptions: SourceContextKind[] = [
   'pr',
   'website_list',
   'note',
+];
+const processTemplateKindOptions: ProcessTemplateKind[] = [
+  'skill',
+  'workflow',
+  'sop',
+  'checklist',
 ];
 
 const transitionOptions: Record<TaskState, TaskState[]> = {
@@ -104,6 +118,19 @@ function formatSourceContextKind(kind: SourceContextKind): string {
   }
 }
 
+function formatProcessTemplateKind(kind: ProcessTemplateKind): string {
+  switch (kind) {
+    case 'workflow':
+      return '流程';
+    case 'sop':
+      return 'SOP';
+    case 'checklist':
+      return '清单';
+    default:
+      return 'Skill';
+  }
+}
+
 function formatValue(value: unknown): string {
   if (value === null || value === undefined || value === '') {
     return '未填写';
@@ -146,6 +173,10 @@ function formatTimelineBadge(type: string): string {
       return '来源';
     case 'source_context.archived':
       return '来源';
+    case 'process_template.applied':
+      return '方法';
+    case 'process_template.removed':
+      return '方法';
     case 'task.risk_changed':
       return '风险';
     case 'task.updated':
@@ -176,6 +207,8 @@ function getTimelineToneClass(type: string): string {
     case 'source_context.created':
     case 'source_context.updated':
     case 'source_context.archived':
+    case 'process_template.applied':
+    case 'process_template.removed':
       return 'timeline-item-default';
     case 'task.transitioned':
       return 'timeline-item-state';
@@ -222,6 +255,10 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
       return `更新来源材料：${formatValue(payload?.title)}`;
     case 'source_context.archived':
       return `归档来源材料：${formatValue(payload?.title)}`;
+    case 'process_template.applied':
+      return `挂载方法模板：${formatValue(payload?.title)} [${formatValue(payload?.kind)}]`;
+    case 'process_template.removed':
+      return `移除方法模板：${formatValue(payload?.title)} [${formatValue(payload?.kind)}]`;
     case 'task.risk_changed': {
       const from = (payload?.from as Record<string, unknown> | undefined) ?? {};
       const to = (payload?.to as Record<string, unknown> | undefined) ?? {};
@@ -294,14 +331,19 @@ type TasksPageProps = {
   } | null;
   runs: RunRecord[];
   tasks: TaskRecord[];
+  onApplyProcessTemplate: (input: ApplyProcessTemplateInput) => Promise<AppliedProcessTemplateRecord>;
+  onArchiveProcessTemplate: (id: string) => Promise<ProcessTemplateRecord>;
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
+  onCreateProcessTemplate: (input: CreateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
   onCreateSourceContext: (input: CreateSourceContextInput) => Promise<SourceContextRecord>;
   onArchiveSourceContext: (id: string) => Promise<SourceContextRecord>;
   onOpenDecision: (decisionId: string) => void;
   onOpenRun: (runId: string) => void;
   onRefresh: () => Promise<void>;
   onCreateTask: (input: CreateTaskInput) => Promise<void>;
+  onRemoveProcessTemplate: (bindingId: string) => Promise<AppliedProcessTemplateRecord>;
   onTriggerRun: (input: CreateRunInput) => Promise<void>;
+  onUpdateProcessTemplate: (input: UpdateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
   onUpdateSourceContext: (input: UpdateSourceContextInput) => Promise<SourceContextRecord>;
   onUpdateTask: (input: UpdateTaskInput) => Promise<TaskRecord>;
   onTransitionTask: (
@@ -317,14 +359,19 @@ export function TasksPage({
   focusedTaskRequest,
   runs,
   tasks,
+  onApplyProcessTemplate,
+  onArchiveProcessTemplate,
   onCreateDecision,
+  onCreateProcessTemplate,
   onCreateSourceContext,
   onArchiveSourceContext,
   onOpenDecision,
   onOpenRun,
   onRefresh,
   onCreateTask,
+  onRemoveProcessTemplate,
   onTriggerRun,
+  onUpdateProcessTemplate,
   onUpdateSourceContext,
   onUpdateTask,
   onTransitionTask,
@@ -350,6 +397,13 @@ export function TasksPage({
   const [sourceContextContent, setSourceContextContent] = useState('');
   const [sourceContextNote, setSourceContextNote] = useState('');
   const [sourceContextError, setSourceContextError] = useState<string | null>(null);
+  const [processTemplateEditingId, setProcessTemplateEditingId] = useState<string | null>(null);
+  const [processTemplateTitle, setProcessTemplateTitle] = useState('');
+  const [processTemplateSummary, setProcessTemplateSummary] = useState('');
+  const [processTemplateKind, setProcessTemplateKind] = useState<ProcessTemplateKind>('skill');
+  const [processTemplateTags, setProcessTemplateTags] = useState('');
+  const [processTemplateContent, setProcessTemplateContent] = useState('');
+  const [processTemplateError, setProcessTemplateError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [transitionError, setTransitionError] = useState<string | null>(null);
   const [showAllTimeline, setShowAllTimeline] = useState(false);
@@ -450,6 +504,13 @@ export function TasksPage({
         setSourceContextContent('');
         setSourceContextNote('');
         setSourceContextError(null);
+        setProcessTemplateEditingId(null);
+        setProcessTemplateTitle('');
+        setProcessTemplateSummary('');
+        setProcessTemplateKind('skill');
+        setProcessTemplateTags('');
+        setProcessTemplateContent('');
+        setProcessTemplateError(null);
         setDetailError(null);
         setTransitionError(null);
         setShowAllTimeline(false);
@@ -575,6 +636,26 @@ export function TasksPage({
     setSourceContextError(null);
   }
 
+  function populateProcessTemplateForm(item: ProcessTemplateRecord) {
+    setProcessTemplateEditingId(item.id);
+    setProcessTemplateTitle(item.title);
+    setProcessTemplateSummary(item.summary ?? '');
+    setProcessTemplateKind(item.kind);
+    setProcessTemplateTags(item.tags.join(', '));
+    setProcessTemplateContent(item.content);
+    setProcessTemplateError(null);
+  }
+
+  function resetProcessTemplateForm() {
+    setProcessTemplateEditingId(null);
+    setProcessTemplateTitle('');
+    setProcessTemplateSummary('');
+    setProcessTemplateKind('skill');
+    setProcessTemplateTags('');
+    setProcessTemplateContent('');
+    setProcessTemplateError(null);
+  }
+
   async function handleSaveSourceContext(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -635,6 +716,96 @@ export function TasksPage({
 
     if (sourceContextEditingId === id) {
       resetSourceContextForm();
+    }
+  }
+
+  async function handleSaveProcessTemplate(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!detail) {
+      return;
+    }
+
+    if (!processTemplateTitle.trim()) {
+      setProcessTemplateError('请先填写模板标题。');
+      return;
+    }
+
+    if (!processTemplateContent.trim()) {
+      setProcessTemplateError('请先填写模板内容。');
+      return;
+    }
+
+    setProcessTemplateError(null);
+    const tags = processTemplateTags
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+
+    if (processTemplateEditingId) {
+      await onUpdateProcessTemplate({
+        id: processTemplateEditingId,
+        title: processTemplateTitle,
+        summary: processTemplateSummary,
+        kind: processTemplateKind,
+        tags,
+        content: processTemplateContent,
+      });
+    } else {
+      const created = await onCreateProcessTemplate({
+        title: processTemplateTitle,
+        summary: processTemplateSummary,
+        kind: processTemplateKind,
+        tags,
+        content: processTemplateContent,
+      });
+
+      await onApplyProcessTemplate({
+        taskId: detail.id,
+        templateId: created.id,
+      });
+    }
+
+    await onRefresh();
+    const nextDetail = await window.api.getTaskDetail(detail.id);
+    setDetail(nextDetail);
+    resetProcessTemplateForm();
+  }
+
+  async function handleApplyAvailableProcessTemplate(templateId: string) {
+    if (!detail) {
+      return;
+    }
+
+    await onApplyProcessTemplate({
+      taskId: detail.id,
+      templateId,
+    });
+    await onRefresh();
+    setDetail(await window.api.getTaskDetail(detail.id));
+  }
+
+  async function handleRemoveCurrentProcessTemplate(bindingId: string) {
+    if (!detail) {
+      return;
+    }
+
+    await onRemoveProcessTemplate(bindingId);
+    await onRefresh();
+    setDetail(await window.api.getTaskDetail(detail.id));
+  }
+
+  async function handleArchiveCurrentProcessTemplate(id: string) {
+    if (!detail) {
+      return;
+    }
+
+    await onArchiveProcessTemplate(id);
+    await onRefresh();
+    setDetail(await window.api.getTaskDetail(detail.id));
+
+    if (processTemplateEditingId === id) {
+      resetProcessTemplateForm();
     }
   }
 
@@ -1098,6 +1269,151 @@ export function TasksPage({
                         <button
                           className="ghost-button"
                           onClick={resetSourceContextForm}
+                          type="button"
+                        >
+                          取消编辑
+                        </button>
+                      ) : null}
+                    </div>
+                  </form>
+                </div>
+
+                <div className="transition-group detail-card-group">
+                  <h3>Process Context</h3>
+                  <div className="timeline-list">
+                    {detail.processTemplates.length ? (
+                      detail.processTemplates.map((item) => (
+                        <div className="timeline-item timeline-item-state" key={item.bindingId}>
+                          <div className="task-row">
+                            <strong>{item.title}</strong>
+                            <span className="signal-pill timeline-badge timeline-item-state">
+                              {formatProcessTemplateKind(item.kind)}
+                            </span>
+                          </div>
+                          {item.summary ? <p className="meta">{item.summary}</p> : null}
+                          {item.tags.length ? (
+                            <p className="meta">tags: {item.tags.join(', ')}</p>
+                          ) : null}
+                          <p className="meta">active template · bound at {item.boundAt}</p>
+                          <p className="meta brief-preview">{item.content}</p>
+                          <div className="timeline-actions">
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => populateProcessTemplateForm(item)}
+                              type="button"
+                            >
+                              编辑模板
+                            </button>
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => void handleRemoveCurrentProcessTemplate(item.bindingId)}
+                              type="button"
+                            >
+                              移除模板
+                            </button>
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => void handleArchiveCurrentProcessTemplate(item.id)}
+                              type="button"
+                            >
+                              归档模板
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="meta">当前任务还没有挂载方法模板。</p>
+                    )}
+                  </div>
+                  <div className="timeline-list">
+                    <div className="timeline-item">
+                      <strong>Template Library</strong>
+                      {detail.availableProcessTemplates.length ? (
+                        <div className="stack">
+                          {detail.availableProcessTemplates.map((item) => (
+                            <div className="task-row" key={item.id}>
+                              <div>
+                                <strong>{item.title}</strong>
+                                <p className="meta">
+                                  {formatProcessTemplateKind(item.kind)}
+                                  {item.summary ? ` · ${item.summary}` : ''}
+                                </p>
+                              </div>
+                              <button
+                                className="ghost-button timeline-action"
+                                onClick={() => void handleApplyAvailableProcessTemplate(item.id)}
+                                type="button"
+                              >
+                                挂载模板
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="meta">当前没有可挂载的其它模板。</p>
+                      )}
+                    </div>
+                  </div>
+                  <form className="stack" onSubmit={handleSaveProcessTemplate}>
+                    <label>
+                      模板标题
+                      <input
+                        value={processTemplateTitle}
+                        onChange={(event) => {
+                          setProcessTemplateTitle(event.target.value);
+                          if (processTemplateError) {
+                            setProcessTemplateError(null);
+                          }
+                        }}
+                      />
+                    </label>
+                    <label>
+                      模板类型
+                      <select
+                        value={processTemplateKind}
+                        onChange={(event) =>
+                          setProcessTemplateKind(event.target.value as ProcessTemplateKind)
+                        }
+                      >
+                        {processTemplateKindOptions.map((kind) => (
+                          <option key={kind} value={kind}>
+                            {formatProcessTemplateKind(kind)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      简述
+                      <input
+                        value={processTemplateSummary}
+                        onChange={(event) => setProcessTemplateSummary(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      标签
+                      <input
+                        placeholder="writing, outreach, review"
+                        value={processTemplateTags}
+                        onChange={(event) => setProcessTemplateTags(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      模板内容
+                      <textarea
+                        rows={5}
+                        value={processTemplateContent}
+                        onChange={(event) => setProcessTemplateContent(event.target.value)}
+                      />
+                    </label>
+                    {processTemplateError ? <p className="meta">{processTemplateError}</p> : null}
+                    <div className="timeline-actions">
+                      <button type="submit">
+                        {processTemplateEditingId ? '保存模板' : '创建模板并挂载'}
+                      </button>
+                      {processTemplateEditingId ? (
+                        <button
+                          className="ghost-button"
+                          onClick={resetProcessTemplateForm}
                           type="button"
                         >
                           取消编辑

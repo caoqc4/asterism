@@ -45,6 +45,11 @@ function getExposedApi() {
     createSourceContext: (input: unknown) => Promise<unknown>;
     updateSourceContext: (input: unknown) => Promise<unknown>;
     archiveSourceContext: (id: string) => Promise<unknown>;
+    createProcessTemplate: (input: unknown) => Promise<unknown>;
+    updateProcessTemplate: (input: unknown) => Promise<unknown>;
+    archiveProcessTemplate: (id: string) => Promise<unknown>;
+    applyProcessTemplate: (input: unknown) => Promise<unknown>;
+    removeProcessTemplate: (bindingId: string) => Promise<unknown>;
     listDecisions: () => Promise<unknown>;
     createDecision: (input: unknown) => Promise<unknown>;
     actOnDecision: (input: unknown) => Promise<unknown>;
@@ -91,6 +96,20 @@ describe('preload bridge', () => {
       id: 'source_context_1',
       note: 'Updated note',
     };
+    const createProcessTemplateInput = {
+      title: 'Outreach skill',
+      kind: 'skill',
+      content: 'Use the outreach flow',
+      tags: ['outreach'],
+    };
+    const updateProcessTemplateInput = {
+      id: 'process_template_1',
+      summary: 'Updated summary',
+    };
+    const applyProcessTemplateInput = {
+      taskId: 'task_1',
+      templateId: 'process_template_1',
+    };
     const createDecisionInput = { taskId: 'task_1', title: 'Approve launch note' };
     const decisionActionInput = { id: 'decision_1', action: 'approve' };
     const createRunInput = { taskId: 'task_1', type: 'summarize', instructions: 'Summarize blockers' };
@@ -106,6 +125,11 @@ describe('preload bridge', () => {
     await api.createSourceContext(createSourceContextInput);
     await api.updateSourceContext(updateSourceContextInput);
     await api.archiveSourceContext('source_context_1');
+    await api.createProcessTemplate(createProcessTemplateInput);
+    await api.updateProcessTemplate(updateProcessTemplateInput);
+    await api.archiveProcessTemplate('process_template_1');
+    await api.applyProcessTemplate(applyProcessTemplateInput);
+    await api.removeProcessTemplate('task_process_binding_1');
     await api.listDecisions();
     await api.createDecision(createDecisionInput);
     await api.actOnDecision(decisionActionInput);
@@ -126,6 +150,11 @@ describe('preload bridge', () => {
       ['sourceContext:create', createSourceContextInput],
       ['sourceContext:update', updateSourceContextInput],
       ['sourceContext:archive', 'source_context_1'],
+      ['processTemplate:create', createProcessTemplateInput],
+      ['processTemplate:update', updateProcessTemplateInput],
+      ['processTemplate:archive', 'process_template_1'],
+      ['processTemplate:apply', applyProcessTemplateInput],
+      ['processTemplate:remove', 'task_process_binding_1'],
       ['decision:list'],
       ['decision:create', createDecisionInput],
       ['decision:act', decisionActionInput],
