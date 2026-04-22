@@ -459,4 +459,92 @@ describe('App UI flow', () => {
       '检查失败原因，修正输入或上下文后再决定是否重试。',
     );
   });
+
+  it('refreshes home brief after a decision action changes the dashboard state', async () => {
+    const user = userEvent.setup();
+
+    let currentTasks: TaskRecord[] = [waitingTask, riskTask];
+    let currentDecisions: DecisionRecord[] = [...briefData.pendingDecisions];
+    let currentBriefData: HomeBriefData = {
+      ...briefData,
+      pendingDecisions: [...briefData.pendingDecisions],
+      recommendedActions: [
+        {
+          id: `decision:decision_1`,
+          label: '尽快拍板：Approve escalation path',
+          reason: '该决策仍处于 pending，可能阻塞相关任务推进。',
+          taskId: riskTask.id,
+          priority: 'high',
+        },
+        ...briefData.recommendedActions,
+      ],
+    };
+    let subscriber:
+      | ((event: {
+          type: 'decision.changed' | 'task.changed';
+          at: string;
+        }) => void)
+      | null = null;
+
+    const eventingApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn(async () => currentTasks),
+      listDecisions: vi.fn(async () => currentDecisions),
+      getHomeBrief: vi.fn(async () => currentBriefData),
+      subscribeToEvents: vi.fn().mockImplementation((callback) => {
+        subscriber = callback;
+        return () => {
+          subscriber = null;
+        };
+      }),
+      actOnDecision: vi.fn().mockImplementation(async ({ id, action }) => {
+        const updatedDecision: DecisionRecord = {
+          ...currentDecisions.find((decision) => decision.id === id)!,
+          status: action === 'cancel' ? 'cancelled' : 'pending',
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        };
+
+        currentDecisions = currentDecisions.map((decision) =>
+          decision.id === id ? updatedDecision : decision,
+        );
+        currentBriefData = {
+          ...currentBriefData,
+          pendingDecisionCount: 0,
+          pendingDecisions: [],
+          recommendedActions: briefData.recommendedActions,
+        };
+
+        subscriber?.({ type: 'decision.changed', at: '2026-01-02T00:00:00.000Z' });
+        subscriber?.({ type: 'task.changed', at: '2026-01-02T00:00:00.000Z' });
+
+        return updatedDecision;
+      }),
+    };
+
+    window.api = eventingApi;
+
+    render(<App />);
+
+    await screen.findByRole('button', { name: /尽快拍板：Approve escalation path/i });
+    expect(screen.getByText('Approve escalation path')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: /decisions/i }));
+    await screen.findByRole('heading', { name: '待拍板事项' });
+    await user.click(screen.getByRole('button', { name: '取消' }));
+
+    await waitFor(() => {
+      expect(eventingApi.actOnDecision).toHaveBeenCalledWith({
+        id: 'decision_1',
+        action: 'cancel',
+      });
+    });
+
+    await user.click(screen.getByRole('button', { name: /home/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('当前没有待拍板事项。')).toBeTruthy();
+    });
+
+    expect(screen.queryByRole('button', { name: /尽快拍板：Approve escalation path/i })).toBeNull();
+  });
 });
