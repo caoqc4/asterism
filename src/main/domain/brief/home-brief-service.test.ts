@@ -398,4 +398,96 @@ describe('HomeBriefService', () => {
     ]);
     expect(homeData.recentActivity).toEqual([]);
   });
+
+  it('recommends source-context follow-up when source materials are the best next handle', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_source_focus',
+            title: 'Source-driven task',
+            state: 'planned',
+            nextStep: 'Review the latest material',
+          }),
+          buildTask({
+            id: 'task_source_missing',
+            title: 'Missing-next-step task',
+            state: 'planned',
+            nextStep: null,
+          }),
+        ]),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([
+          buildSourceContext({
+            id: 'source_context_focus',
+            taskId: 'task_source_focus',
+            title: 'Partner website shortlist',
+            kind: 'website_list',
+            uri: null,
+            note: '最新整理的外链目标站点',
+            updatedAt: '2026-01-02T00:00:00.000Z',
+          }),
+          buildSourceContext({
+            id: 'source_context_missing',
+            taskId: 'task_source_missing',
+            title: 'Research notes',
+            kind: 'note',
+            uri: null,
+            note: '缺下一步前先回看这些整理笔记',
+            updatedAt: '2026-01-01T23:30:00.000Z',
+          }),
+        ]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+      null,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.recommendedActions.map((action) => action.id)).toEqual([
+      'next-step:task_source_missing',
+      'source-context:source_context_focus',
+      'source-context:next-step:source_context_missing',
+    ]);
+    expect(homeData.recommendedActions[1]).toMatchObject({
+      label: '基于最新来源继续推进：Source-driven task',
+      reason: '来源材料“Partner website shortlist”最近有更新，可据此继续推进。',
+      taskId: 'task_source_focus',
+      priority: 'low',
+      intent: {
+        type: 'focus_source_context',
+        focusArea: 'detail',
+        sourceContextId: 'source_context_focus',
+        prefillNextStep: '基于来源材料继续推进：Partner website shortlist',
+      },
+    });
+    expect(homeData.recommendedActions[2]).toMatchObject({
+      label: '先查看关键来源，再补下一步：Missing-next-step task',
+      reason: '该任务还缺少明确下一步，先参考来源材料“Research notes”。',
+      taskId: 'task_source_missing',
+      priority: 'medium',
+      intent: {
+        type: 'focus_source_context',
+        focusArea: 'detail',
+        sourceContextId: 'source_context_missing',
+        prefillNextStep: '先吸收来源材料，再补下一步：Research notes',
+      },
+    });
+  });
 });

@@ -107,6 +107,7 @@ Covered today:
 - `Home recommended action -> Tasks detail`
 - `Home recent artifact -> Tasks detail continuation`
 - `Home key source material -> Tasks source-context focus`
+- `Home source-context recommended action -> Tasks source-context focus`
 - `Home recent activity -> Tasks detail follow-up intent`
 - `Home recent activity -> Decisions / Runs`
 - `Home recent activity` lightweight follow-up actions

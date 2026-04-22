@@ -779,6 +779,91 @@ describe('App UI flow', () => {
     );
   });
 
+  it('opens source-context recommended actions with source-focused guidance', async () => {
+    const user = userEvent.setup();
+
+    const sourceTask = buildTaskRecord({
+      id: 'task_source_action',
+      title: 'Source action task',
+      state: 'planned',
+      nextStep: null,
+    });
+
+    const sourceItem = buildSourceContext({
+      id: 'source_context_action',
+      taskId: sourceTask.id,
+      title: 'Outreach research notes',
+      kind: 'note',
+      uri: null,
+      note: '先看这些资料再补下一步',
+      content: 'Need to compare domain authority and contactability.',
+    });
+
+    const sourceActionApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([sourceTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== sourceTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(sourceTask),
+          sourceContexts: [sourceItem],
+        };
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 1,
+        waitingTaskCount: 0,
+        highRiskTaskCount: 0,
+        missingNextStepTaskCount: 1,
+        recentTasks: [sourceTask],
+        waitingTasks: [],
+        highRiskTasks: [],
+        missingNextStepTasks: [sourceTask],
+        recommendedActions: [
+          {
+            id: 'source-context:next-step:source_context_action',
+            label: `先查看关键来源，再补下一步：${sourceTask.title}`,
+            reason: '该任务还缺少明确下一步，先参考来源材料“Outreach research notes”。',
+            taskId: sourceTask.id,
+            priority: 'medium',
+            intent: {
+              type: 'focus_source_context',
+              focusArea: 'detail',
+              sourceContextId: sourceItem.id,
+              prefillNextStep: '先吸收来源材料，再补下一步：Outreach research notes',
+            },
+          },
+        ],
+        recentArtifacts: [],
+        recentSourceContexts: [],
+        recentActivity: [],
+      }),
+    };
+
+    window.api = sourceActionApi;
+
+    render(<App />);
+
+    const actionButton = await screen.findByRole('button', {
+      name: /先查看关键来源，再补下一步：Source action task/i,
+    });
+    await user.click(actionButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Source action task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('来源标题') as HTMLInputElement).value).toBe(
+      'Outreach research notes',
+    );
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '先吸收来源材料，再补下一步：Outreach research notes',
+    );
+  });
+
   it('opens recent activity from home with follow-up guidance', async () => {
     const user = userEvent.setup();
 

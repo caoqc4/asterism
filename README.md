@@ -8,7 +8,7 @@ This repository currently contains an Electron + React + TypeScript prototype wi
 - decision request creation, actions, and task linkage with task-side follow-up semantics
 - run triggering for `draft` and `summarize`, with task linkage, failure signals, task restoration after runs settle, and dynamic process-template selection before execution
 - local brief snapshot generation with recommended actions, recent artifact context, recent lifecycle activity, and intent-aware navigation plus lightweight follow-up actions for task follow-up and object-review flows
-- source-context-aware home brief aggregation, including key source-material surfacing and source-focused task recovery flows
+- source-context-aware home brief aggregation, including key source-material surfacing, source-focused task recovery flows, and lightweight source-driven recommended actions
 - task-scoped timeline events with readable summaries, subtle event tones, lightweight action shortcuts, and direct `Decision / Run` object entry from key task events
 - waiting item lifecycle tracking with direct resolution and task/detail/home visibility
 - text artifacts generated from successful runs, surfaced in task detail, timeline actions, home brief, and recommended-action semantics
@@ -125,7 +125,7 @@ What exists today:
 - local desktop workbench architecture
 - core task / decision / run / brief flows
 - structured task signals: `nextStep`, `waitingReason`, `riskLevel`, `riskNote`
-- home brief organized around recommended actions, recent artifacts, key source materials, recent lifecycle activity, recent brief snapshots, and key signals, with direct intent-aware entry into task follow-up work across artifacts, source materials, lifecycle activity, and task signals, plus direct `Decision / Run` object entry and lightweight follow-up actions from recent activity
+- home brief organized around recommended actions, recent artifacts, key source materials, recent lifecycle activity, recent brief snapshots, and key signals, with direct intent-aware entry into task follow-up work across artifacts, source materials, lifecycle activity, and task signals, plus direct `Decision / Run` object entry, source-driven recovery suggestions, and lightweight follow-up actions from recent activity
 - task detail organized into a current snapshot, action desk, and activity feed
 - task detail acting as a task work surface, with quick actions, active waiting items, recent artifacts, key source materials, source context materials, process context templates, related decisions/runs, and a task-lifecycle timeline with lightweight suggested actions plus direct entry into related `Decision / Run` objects from key lifecycle events
 - decision and run pages acting as object work surfaces, with queue navigation, focused detail/action areas, direct return-to-task follow-up entrypoints, lightweight related-task timeline explanations, and timeline-based follow-up actions

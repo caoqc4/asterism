@@ -22,11 +22,16 @@ function buildRecommendedActions(params: {
   pendingDecisions: HomeBriefData['pendingDecisions'];
   waitingTasks: HomeBriefData['waitingTasks'];
   missingNextStepTasks: HomeBriefData['missingNextStepTasks'];
+  recentSourceContexts: HomeBriefData['recentSourceContexts'];
   recentArtifacts: HomeBriefData['recentArtifacts'];
 }): RecommendedAction[] {
   const actions: RecommendedAction[] = [];
+  const taskById = new Map(params.activeTasks.map((task) => [task.id, task]));
+  const blockedTaskIds = new Set<string>();
+  const missingNextStepTaskIds = new Set(params.missingNextStepTasks.map((task) => task.id));
 
   for (const task of params.highRiskTasks) {
+    blockedTaskIds.add(task.id);
     actions.push({
       id: `risk:${task.id}`,
       label: `优先处理高风险任务：${task.title}`,
@@ -44,6 +49,7 @@ function buildRecommendedActions(params: {
   }
 
   for (const decision of params.pendingDecisions) {
+    blockedTaskIds.add(decision.taskId);
     actions.push({
       id: `decision:${decision.id}`,
       label: `尽快拍板：${decision.title}`,
@@ -58,6 +64,7 @@ function buildRecommendedActions(params: {
   }
 
   for (const task of params.waitingTasks) {
+    blockedTaskIds.add(task.id);
     actions.push({
       id: `waiting:${task.id}`,
       label: `跟进等待中的任务：${task.title}`,
@@ -84,6 +91,49 @@ function buildRecommendedActions(params: {
       intent: {
         type: 'focus_next_step',
         focusArea: 'detail',
+      },
+    });
+  }
+
+  for (const sourceContext of params.recentSourceContexts) {
+    const task = taskById.get(sourceContext.taskId);
+
+    if (!task) {
+      continue;
+    }
+
+    if (missingNextStepTaskIds.has(task.id)) {
+      actions.push({
+        id: `source-context:next-step:${sourceContext.id}`,
+        label: `先查看关键来源，再补下一步：${task.title}`,
+        reason: `该任务还缺少明确下一步，先参考来源材料“${sourceContext.title}”。`,
+        taskId: task.id,
+        priority: 'medium',
+        intent: {
+          type: 'focus_source_context',
+          focusArea: 'detail',
+          sourceContextId: sourceContext.id,
+          prefillNextStep: `先吸收来源材料，再补下一步：${sourceContext.title}`,
+        },
+      });
+      continue;
+    }
+
+    if (blockedTaskIds.has(task.id)) {
+      continue;
+    }
+
+    actions.push({
+      id: `source-context:${sourceContext.id}`,
+      label: `基于最新来源继续推进：${task.title}`,
+      reason: `来源材料“${sourceContext.title}”最近有更新，可据此继续推进。`,
+      taskId: task.id,
+      priority: 'low',
+      intent: {
+        type: 'focus_source_context',
+        focusArea: 'detail',
+        sourceContextId: sourceContext.id,
+        prefillNextStep: `基于来源材料继续推进：${sourceContext.title}`,
       },
     });
   }
@@ -291,6 +341,7 @@ export class HomeBriefService {
       pendingDecisions: pendingDecisions.slice(0, 5),
       waitingTasks,
       missingNextStepTasks,
+      recentSourceContexts,
       recentArtifacts,
     });
 
