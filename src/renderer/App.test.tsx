@@ -236,6 +236,9 @@ describe('App UI flow', () => {
     await screen.findByRole('heading', { name: 'Waiting task' });
 
     expect(screen.getByText('Waiting for reviewer confirmation')).toBeTruthy();
+    expect(
+      screen.getByText('waiting item · active · since 2026-01-01T00:00:00.000Z'),
+    ).toBeTruthy();
   });
 
   it('submits a quick decision from task detail', async () => {

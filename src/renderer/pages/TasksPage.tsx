@@ -590,6 +590,11 @@ export function TasksPage({
                 <div className="timeline-item">
                   <strong>Waiting Reason</strong>
                   <p className="meta">{detail.activeWaitingItem?.reason ?? detail.waitingReason ?? '未填写'}</p>
+                  {detail.activeWaitingItem ? (
+                    <p className="meta">
+                      waiting item · {detail.activeWaitingItem.status} · since {detail.activeWaitingItem.createdAt}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="timeline-item">
                   <strong>Risk</strong>
