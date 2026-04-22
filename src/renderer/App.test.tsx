@@ -645,7 +645,9 @@ describe('App UI flow', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /runs/i }));
-    await screen.findByRole('heading', { name: '执行队列' });
+    await screen.findByRole('heading', { name: '执行记录' });
+    await screen.findByRole('heading', { name: 'Run Queue' });
+    await screen.findByText('Current Focus');
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'draft / failed' })).toBeTruthy();
