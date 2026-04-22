@@ -98,7 +98,10 @@ Main-process rules:
 
 - Service-level tests cover config, task, decision, run, scheduler, and home brief logic.
 - SQLite integration tests currently cover `TaskRepository`, `RunRepository`, and `DecisionRepository`.
+- Renderer interaction tests cover the main control-plane flows from Home, Tasks, Decisions, and failed Run refresh paths.
 - GitHub Actions runs `npm run test`, `npm run lint`, and `npm run build` on every push to `main` and on pull requests.
+
+For the current coverage map and recommended next targets, see [TESTING.md](TESTING.md).
 
 ## Native Dependencies
 

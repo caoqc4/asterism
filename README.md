@@ -100,6 +100,7 @@ See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for details.
 - Renderer does not directly access SQLite or secrets. All business actions go through IPC to the Electron main process.
 
 For local development details, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+For the current testing map, see [docs/TESTING.md](docs/TESTING.md).
 
 ## Contributing and Security
 
@@ -120,6 +121,7 @@ What exists today:
 - task detail with quick actions plus related decisions and runs
 - config + keychain setup
 - service tests and SQLite repository integration coverage
+- renderer interaction coverage for key control-plane flows
 - local macOS packaging pipeline
 - GitHub Actions CI for `test + lint + build`
 
