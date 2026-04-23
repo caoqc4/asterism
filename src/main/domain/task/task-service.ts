@@ -138,8 +138,7 @@ export class TaskService {
   private buildResumeLatestChange(detail: TaskDetailBase): TaskResumeCardRecord['latestChangeAction'] & {
     summary: string;
   } {
-    const latestEvent = detail.timeline.find((event) => !isResumeLatestChangeMetaEvent(event.type))
-      ?? detail.timeline[0];
+    const latestEvent = this.getLatestResumeRelevantEvent(detail);
 
     if (!latestEvent) {
       return {
@@ -277,6 +276,52 @@ export class TaskService {
     return `最近用于${sourceType}：${reason}`;
   }
 
+  private getLatestResumeRelevantEvent(detail: TaskDetailBase): TaskDetailBase['timeline'][number] | undefined {
+    return detail.timeline.find((event) => !isResumeLatestChangeMetaEvent(event.type))
+      ?? detail.timeline[0];
+  }
+
+  private getNextSuggestedMoveFromLatestChange(
+    detail: TaskDetailBase,
+  ): string | null {
+    const latestEvent = this.getLatestResumeRelevantEvent(detail);
+
+    if (!latestEvent?.payload) {
+      return null;
+    }
+
+    const payload = safeJsonParse(latestEvent.payload);
+
+    switch (latestEvent.type) {
+      case 'task.run_failed':
+        return '检查最近一次执行失败原因，并决定是否重试。';
+      case 'task.run_completed':
+        return '审阅最新执行结果，并决定是否继续推进。';
+      case 'task.decision_approved':
+        return `已获批准，继续推进：${String(payload?.decisionTitle ?? detail.title)}`;
+      case 'task.decision_deferred':
+        return '跟进该决策是否可以恢复拍板，或准备替代推进路径。';
+      case 'task.decision_cancelled':
+        return `重新评估该决策并确定替代推进路径：${String(payload?.decisionTitle ?? detail.title)}`;
+      case 'source_context.created':
+      case 'source_context.updated':
+        return `基于来源材料继续推进：${String(payload?.title ?? '最新来源材料')}`;
+      case 'artifact.created':
+        return `基于产物继续推进：${String(payload?.title ?? '最新产物')}`;
+      case 'waiting_item.created':
+      case 'waiting_item.updated':
+        return `先跟进等待项：${String(payload?.reason ?? detail.waitingReason ?? detail.title)}`;
+      case 'waiting_item.resolved':
+        return `确认解除等待后的下一步推进：${String(payload?.nextState ?? 'planned')}`;
+      case 'task.risk_changed':
+        return detail.riskLevel === 'high'
+          ? `先处理当前风险：${detail.riskNote ?? detail.title}`
+          : '确认风险变化后是否需要调整下一步。';
+      default:
+        return null;
+    }
+  }
+
   private getKeySourcePriorityReason(
     detail: TaskDetailBase,
     keySource: SourceContextRecord,
@@ -345,7 +390,11 @@ export class TaskService {
     let nextSuggestedMove = detail.nextStep?.trim() || '';
 
     if (!nextSuggestedMove) {
-      if (waitingReason) {
+      const lifecycleSuggestedMove = this.getNextSuggestedMoveFromLatestChange(detail);
+
+      if (lifecycleSuggestedMove) {
+        nextSuggestedMove = lifecycleSuggestedMove;
+      } else if (waitingReason) {
         nextSuggestedMove = `先跟进等待项：${waitingReason}`;
       } else if (detail.riskLevel === 'high') {
         nextSuggestedMove = `先处理当前风险：${detail.riskNote ?? detail.title}`;

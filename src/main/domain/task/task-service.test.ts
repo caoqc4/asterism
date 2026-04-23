@@ -226,7 +226,44 @@ describe('TaskService', () => {
     expect(detail?.resumeCard.currentMethod.selectionReason).toBe(
       '最近用于执行：来源材料已更新，适合先按 outreach 方法整理外链目标。',
     );
-    expect(detail?.resumeCard.nextSuggestedMove).toBe('先查看关键来源：Partner website shortlist');
+    expect(detail?.resumeCard.nextSuggestedMove).toBe('基于来源材料继续推进：Partner website shortlist');
+  });
+
+  it('prioritizes a clear lifecycle change when deriving the next suggested move', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('planned'),
+        nextStep: null,
+        timeline: [
+          {
+            id: 'timeline_run_failed',
+            taskId: 'task_1',
+            type: 'task.run_failed',
+            payload: JSON.stringify({
+              runId: 'run_1',
+              failureReason: 'Model overloaded',
+            }),
+            createdAt: '2026-01-02T01:00:00.000Z',
+          },
+        ],
+      }),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
+
+    const detail = await service.getDetail('task_1');
+
+    expect(detail?.resumeCard.latestChange).toBe('最近一次执行失败：Model overloaded。');
+    expect(detail?.resumeCard.nextSuggestedMove).toBe('检查最近一次执行失败原因，并决定是否重试。');
   });
 
   it('allows valid state transitions', async () => {

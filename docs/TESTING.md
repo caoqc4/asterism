@@ -122,7 +122,7 @@ Covered today:
 - `Tasks timeline -> Decisions / Runs`
 - `Tasks source context create / edit flow`
 - `Tasks process context create / apply / remove flow`
-- `Tasks resume card visibility, key-source prioritization explanation, method-selection explanation, and recovery actions`
+- `Tasks resume card visibility, key-source prioritization explanation, method-selection explanation, lifecycle-aware suggested-move derivation, and recovery actions`
 - `Tasks resume card latest-change object entry`
 - `Tasks quick decision draft flow`
 - `Decisions` page current-focus and queue navigation
