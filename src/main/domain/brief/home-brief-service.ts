@@ -41,6 +41,15 @@ type InternalRecommendedAction = RecommendedAction & {
   order: number;
 };
 
+type DependencyReevaluationRecord = {
+  taskId: string;
+  dependencyId: string;
+  upstreamTaskId: string;
+  upstreamTaskTitle: string;
+  status: 'upstream_ready' | 'upstream_unblocked';
+  updatedAt: string;
+};
+
 const LANE_ORDER: Record<PriorityLane, number> = {
   escalate_now: 0,
   unblock_or_decide: 1,
@@ -54,6 +63,7 @@ function buildRecommendedActions(params: {
   highRiskTasks: HomeBriefData['highRiskTasks'];
   pendingDecisions: HomeBriefData['pendingDecisions'];
   dependencyTasks: HomeTaskSliceRecord[];
+  dependencyReevaluationByTaskId: Map<string, DependencyReevaluationRecord>;
   waitingTasks: HomeBriefData['waitingTasks'];
   missingNextStepTasks: HomeBriefData['missingNextStepTasks'];
   recentSourceContexts: HomeBriefData['recentSourceContexts'];
@@ -110,20 +120,29 @@ function buildRecommendedActions(params: {
     }
 
     blockedTaskIds.add(task.id);
+    const dependencyReevaluation = params.dependencyReevaluationByTaskId.get(task.id);
     actions.push({
       id: `task-dependency:${task.activeDependency.id}`,
-      label: `先推动上游任务：${task.activeDependency.blockedByTaskTitle ?? task.title}`,
-      reason: `任务“${task.title}”当前依赖上游任务“${
-        task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'
-      }”先完成。`,
-      taskId: task.activeDependency.blockedByTaskId,
+      label: dependencyReevaluation
+        ? `重新判断依赖：${task.title}`
+        : `先推动上游任务：${task.activeDependency.blockedByTaskTitle ?? task.title}`,
+      reason: dependencyReevaluation
+        ? dependencyReevaluation.status === 'upstream_ready'
+          ? `上游任务“${dependencyReevaluation.upstreamTaskTitle}”已完成，可重新判断任务“${task.title}”是否解除依赖并继续推进。`
+          : `上游任务“${dependencyReevaluation.upstreamTaskTitle}”刚解除关键阻塞，可重新判断任务“${task.title}”是否恢复推进。`
+        : `任务“${task.title}”当前依赖上游任务“${
+            task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'
+          }”先完成。`,
+      taskId: dependencyReevaluation ? task.id : task.activeDependency.blockedByTaskId,
       priority: 'medium',
-      lane: 'unblock_or_decide',
+      lane: dependencyReevaluation ? 'continue_or_review' : 'unblock_or_decide',
       order: order++,
       intent: {
         type: 'focus_next_step',
         focusArea: 'detail',
-        prefillNextStep: `先完成这条上游任务，以解除对“${task.title}”的依赖。`,
+        prefillNextStep: dependencyReevaluation
+          ? `基于上游任务进展重新判断是否解除依赖：${dependencyReevaluation.upstreamTaskTitle}`
+          : `先完成这条上游任务，以解除对“${task.title}”的依赖。`,
       },
     });
   }
@@ -767,6 +786,68 @@ export class HomeBriefService {
     };
   }
 
+  private buildDependencyReevaluations(params: {
+    activeTasks: TaskListItemRecord[];
+    taskTimelines: Array<{
+      taskId: string;
+      taskTitle: string;
+      activeBlocker: TaskListItemRecord['activeBlocker'];
+      timeline: TimelineEventRecord[];
+    }>;
+  }): DependencyReevaluationRecord[] {
+    const taskById = new Map(params.activeTasks.map((task) => [task.id, task]));
+    const timelineByTaskId = new Map(params.taskTimelines.map((item) => [item.taskId, item.timeline]));
+
+    return params.activeTasks
+      .flatMap((task) => {
+        const dependency = task.activeDependency;
+
+        if (!dependency?.blockedByTaskId) {
+          return [];
+        }
+
+        const upstreamTask = taskById.get(dependency.blockedByTaskId);
+
+        if (!upstreamTask) {
+          return [];
+        }
+
+        const upstreamTimeline = timelineByTaskId.get(upstreamTask.id) ?? [];
+        const latestResolvedBlocker = upstreamTimeline
+          .filter((event) => event.type === 'blocker.resolved')
+          .sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0];
+
+        const candidates: DependencyReevaluationRecord[] = [];
+
+        if (upstreamTask.state === 'completed') {
+          candidates.push({
+            taskId: task.id,
+            dependencyId: dependency.id,
+            upstreamTaskId: upstreamTask.id,
+            upstreamTaskTitle: upstreamTask.title,
+            status: 'upstream_ready',
+            updatedAt: upstreamTask.updatedAt,
+          });
+        }
+
+        if (latestResolvedBlocker) {
+          candidates.push({
+            taskId: task.id,
+            dependencyId: dependency.id,
+            upstreamTaskId: upstreamTask.id,
+            upstreamTaskTitle: upstreamTask.title,
+            status: 'upstream_unblocked',
+            updatedAt: latestResolvedBlocker.createdAt,
+          });
+        }
+
+        return candidates
+          .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+          .slice(0, 1);
+      })
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+  }
+
   private buildRecentActivity(
     tasks: TaskListItemRecord[],
     decisions: Awaited<ReturnType<DecisionRepository['list']>>,
@@ -777,6 +858,7 @@ export class HomeBriefService {
       activeBlocker: TaskListItemRecord['activeBlocker'];
       timeline: TimelineEventRecord[];
     }>,
+    dependencyReevaluations: DependencyReevaluationRecord[],
   ): HomeActivityRecord[] {
     const taskTitleById = new Map(tasks.map((task) => [task.id, task.title]));
 
@@ -868,6 +950,19 @@ export class HomeBriefService {
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
       .slice(0, 5);
 
+    const dependencyEvents: HomeActivityRecord[] = dependencyReevaluations.map((item) => ({
+      id: `dependency:${item.dependencyId}:${item.status}`,
+      sourceType: 'dependency',
+      sourceId: item.dependencyId,
+      lane: 'continue_or_review',
+      relatedTaskId: item.upstreamTaskId,
+      taskId: item.taskId,
+      taskTitle: taskTitleById.get(item.taskId) ?? item.taskId,
+      title: item.upstreamTaskTitle,
+      status: item.status,
+      updatedAt: item.updatedAt,
+    }));
+
     const taskEvents: HomeActivityRecord[] = tasks
       .filter((task) => task.state === 'captured' || task.state === 'triaged')
       .map((task) => ({
@@ -882,7 +977,7 @@ export class HomeBriefService {
         updatedAt: task.updatedAt,
       }));
 
-    return [...decisionEvents, ...runEvents, ...blockerEvents, ...taskEvents]
+    return [...decisionEvents, ...runEvents, ...blockerEvents, ...dependencyEvents, ...taskEvents]
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
       .slice(0, 5);
   }
@@ -971,7 +1066,20 @@ export class HomeBriefService {
         timeline: (await this.taskRepository.getDetail(task.id))?.timeline ?? [],
       })),
     );
-    const recentActivity = this.buildRecentActivity(tasks, decisions, runs, taskTimelines);
+    const dependencyReevaluations = this.buildDependencyReevaluations({
+      activeTasks,
+      taskTimelines,
+    });
+    const dependencyReevaluationByTaskId = new Map(
+      dependencyReevaluations.map((item) => [item.taskId, item]),
+    );
+    const recentActivity = this.buildRecentActivity(
+      tasks,
+      decisions,
+      runs,
+      taskTimelines,
+      dependencyReevaluations,
+    );
     const recentSourceContexts = await this.buildRecentSourceContexts(activeTasks);
     const appliedTemplates = this.taskProcessBindingRepository
       ? await this.taskProcessBindingRepository.listActiveForTasks(activeTasks.map((task) => task.id))
@@ -1001,6 +1109,7 @@ export class HomeBriefService {
       highRiskTasks,
       pendingDecisions: pendingDecisions.slice(0, 5),
       dependencyTasks,
+      dependencyReevaluationByTaskId,
       waitingTasks,
       missingNextStepTasks,
       recentSourceContexts,
@@ -1016,6 +1125,7 @@ export class HomeBriefService {
       ...new Set([
         ...recentArtifacts.map((artifact) => artifact.taskId),
         ...recentSourceContexts.map((sourceContext) => sourceContext.taskId),
+        ...dependencyReevaluations.map((item) => item.taskId),
         ...recentActivity
           .filter(
             (activity) =>

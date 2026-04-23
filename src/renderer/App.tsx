@@ -493,6 +493,18 @@ export function App() {
       return;
     }
 
+    if (activity.sourceType === 'dependency') {
+      handleOpenTask(activity.taskId, {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+        prefillNextStep:
+          activity.status === 'upstream_ready'
+            ? `基于上游任务完成重新判断是否解除依赖：${activity.title}`
+            : `基于上游任务进展重新判断是否解除依赖：${activity.title}`,
+      });
+      return;
+    }
+
     if (activity.sourceType === 'decision') {
       if (activity.status === 'approved') {
         handleOpenTask(activity.taskId, {
@@ -566,6 +578,15 @@ export function App() {
   function handleOpenActivityObject(activity: HomeActivityRecord) {
     if (activity.sourceType === 'decision') {
       handleOpenDecision(activity.sourceId);
+      return;
+    }
+
+    if (activity.sourceType === 'dependency' && activity.relatedTaskId) {
+      handleOpenTask(activity.relatedTaskId, {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+        prefillNextStep: `先完成这条上游任务，以解除对“${activity.taskTitle}”的依赖。`,
+      });
       return;
     }
 

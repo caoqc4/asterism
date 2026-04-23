@@ -592,6 +592,24 @@ export function buildHomeResumeLatestChange(params: {
       };
     }
 
+    if (latestActivity.sourceType === 'dependency') {
+      return {
+        summary:
+          latestActivity.status === 'upstream_ready'
+            ? `上游任务已完成：${latestActivity.title}，可重新判断当前依赖。`
+            : `上游任务刚解除关键阻塞：${latestActivity.title}，可重新判断当前依赖。`,
+        action: {
+          label: null,
+          targetType: null,
+          targetId: null,
+        },
+        recentChange: {
+          kind: 'task_dependency_resolved',
+          title: latestActivity.title,
+        },
+      };
+    }
+
     return {
       summary: `最近执行动态：${latestActivity.title} · ${latestActivity.status}`,
       action: {

@@ -49,10 +49,11 @@ export type PriorityLane =
 
 export type HomeActivityRecord = {
   id: string;
-  sourceType: 'decision' | 'run' | 'blocker' | 'task';
+  sourceType: 'decision' | 'run' | 'blocker' | 'task' | 'dependency';
   sourceId: string;
   lane?: PriorityLane;
   relatedSourceContextId?: string | null;
+  relatedTaskId?: string | null;
   taskId: string;
   taskTitle: string;
   title: string;

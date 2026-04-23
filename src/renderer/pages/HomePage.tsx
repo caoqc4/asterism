@@ -16,6 +16,10 @@ function getActivityActionLabel(activity: HomeActivityRecord): string | null {
     return '补摘要与下一步';
   }
 
+  if (activity.sourceType === 'dependency') {
+    return '重新判断依赖';
+  }
+
   if (activity.sourceType === 'decision' && activity.status === 'approved') {
     return '继续推进任务';
   }
@@ -52,6 +56,10 @@ function getActivityStatusLabel(activity: HomeActivityRecord): string {
     return activity.status;
   }
 
+  if (activity.sourceType === 'dependency') {
+    return activity.status === 'upstream_ready' ? 'upstream ready' : 'upstream unblocked';
+  }
+
   if (activity.sourceType === 'blocker' && activity.status === 'source_updated') {
     return 'source updated';
   }
@@ -66,6 +74,10 @@ function getActivityTitle(activity: HomeActivityRecord): string {
 
   if (activity.sourceType === 'blocker' && activity.status === 'source_updated') {
     return `${activity.title} blocker`;
+  }
+
+  if (activity.sourceType === 'dependency') {
+    return `${activity.title} dependency`;
   }
 
   return activity.sourceType === 'decision'
@@ -599,6 +611,14 @@ export function HomePage({
                       type="button"
                     >
                       {event.sourceType === 'decision' ? '查看 Decision' : '查看 Run'}
+                    </button>
+                  ) : event.sourceType === 'dependency' && event.relatedTaskId ? (
+                    <button
+                      className="ghost-button"
+                      onClick={() => onOpenActivityObject(event)}
+                      type="button"
+                    >
+                      打开上游任务
                     </button>
                   ) : event.sourceType === 'blocker' && event.relatedSourceContextId ? (
                     <button

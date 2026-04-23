@@ -225,6 +225,7 @@ function buildActivity(
     sourceId: partial.sourceId ?? 'run_1',
     lane: partial.lane,
     relatedSourceContextId: partial.relatedSourceContextId ?? null,
+    relatedTaskId: partial.relatedTaskId ?? null,
     taskId: partial.taskId ?? 'task_1',
     taskTitle: partial.taskTitle ?? 'Task',
     title: partial.title ?? 'draft',
@@ -4242,6 +4243,93 @@ describe('App UI flow', () => {
     expect((screen.getByLabelText('来源标题') as HTMLInputElement).value).toBe('Partner master sheet');
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
       '基于来源更新重新判断是否解除阻塞：Need revised outreach list',
+    );
+  });
+
+  it('routes dependency activity into dependency re-evaluation and upstream entry from home', async () => {
+    const user = userEvent.setup();
+
+    const upstreamTask = buildTaskRecord({
+      id: 'task_dependency_upstream_activity',
+      title: 'Publish partner list',
+      state: 'completed',
+      nextStep: 'Share the final partner list',
+    });
+    const dependentTask = buildTaskRecord({
+      id: 'task_dependency_downstream_activity',
+      title: 'Draft outreach email',
+      state: 'planned',
+      nextStep: null,
+      activeDependency: buildTaskDependency({
+        id: 'task_dependency_activity_link',
+        taskId: 'task_dependency_downstream_activity',
+        blockedByTaskId: upstreamTask.id,
+        blockedByTaskTitle: upstreamTask.title,
+        reason: 'Need the approved partner list before drafting outreach.',
+      }),
+    });
+
+    const dependencyActivityApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([dependentTask, upstreamTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId === dependentTask.id) {
+          return buildTaskDetail(dependentTask);
+        }
+
+        if (taskId === upstreamTask.id) {
+          return buildTaskDetail(upstreamTask);
+        }
+
+        return null;
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 2,
+        recentTasks: [dependentTask, upstreamTask],
+        recentActivity: [
+          buildActivity({
+            id: 'dependency_activity_upstream_ready',
+            sourceType: 'dependency',
+            sourceId: 'task_dependency_activity_link',
+            relatedTaskId: upstreamTask.id,
+            taskId: dependentTask.id,
+            taskTitle: dependentTask.title,
+            title: upstreamTask.title,
+            status: 'upstream_ready',
+            lane: 'continue_or_review',
+          }),
+        ],
+      }),
+    };
+
+    window.api = dependencyActivityApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: '重新判断依赖' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Draft outreach email' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '基于上游任务完成重新判断是否解除依赖：Publish partner list',
+    );
+
+    window.location.hash = '#home';
+    cleanup();
+    window.api = dependencyActivityApi;
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: '打开上游任务' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Publish partner list' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '先完成这条上游任务，以解除对“Draft outreach email”的依赖。',
     );
   });
 
