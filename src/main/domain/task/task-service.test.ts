@@ -435,6 +435,69 @@ describe('TaskService', () => {
     expect(detail?.resumeCard.nextSuggestedMove).toBe('先补一句任务摘要，再明确下一步。');
   });
 
+  it('elevates stale dependencies into task resume summaries and latest change guidance', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId === 'task_upstream') {
+          return {
+            ...buildDetail('planned'),
+            id: 'task_upstream',
+            title: 'Finalize legal brief',
+            updatedAt: '2026-01-21T00:00:00.000Z',
+          };
+        }
+
+        return {
+          ...buildDetail('planned'),
+          nextStep: null,
+          timeline: [],
+        };
+      }),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const dependencies = {
+      getActiveForTask: vi.fn().mockResolvedValue(
+        buildTaskDependencyRecord({
+          id: 'task_dependency_stale_1',
+          taskId: 'task_1',
+          blockedByTaskId: 'task_upstream',
+          blockedByTaskTitle: 'Finalize legal brief',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        }),
+      ),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      null,
+      dependencies as never,
+    );
+
+    const detail = await service.getDetail('task_1');
+
+    expect(detail?.resumeCard.latestChange.summary).toBe(
+      '这条依赖链已持续较久：Finalize legal brief，值得优先升级处理。',
+    );
+    expect(detail?.resumeCard.summary).toContain(
+      '当前依赖链已持续较久：上游任务“Finalize legal brief”仍未打通，值得优先升级处理。',
+    );
+    expect(detail?.resumeCard.nextSuggestedMove).toBe('优先升级依赖链路：Finalize legal brief');
+  });
+
   it('creates and resolves blocker objects with task timeline events', async () => {
     const repository = {
       list: vi.fn(),

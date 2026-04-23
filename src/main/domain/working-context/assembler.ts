@@ -4,7 +4,11 @@ import type { AppliedProcessTemplateRecord } from '../../../shared/types/process
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import type { TaskDetailBase, TaskResumeCardRecord, TaskRiskLevel, TaskState, TimelineEventRecord } from '../../../shared/types/task.js';
 import { formatBlockerAgeLabel, getBlockerAgeReason, isStaleBlocker } from '../../../shared/working-context/blocker.js';
-import { formatDependencyAgeLabel, getDependencyAgeReason } from '../../../shared/working-context/dependency.js';
+import {
+  formatDependencyAgeLabel,
+  getDependencyAgeReason,
+  isStaleDependency,
+} from '../../../shared/working-context/dependency.js';
 
 type TimelineLite = Array<Pick<TimelineEventRecord, 'type' | 'payload'>>;
 
@@ -294,6 +298,10 @@ export function buildTaskResumeLatestChange(
     upstreamTaskTitle: string;
     status: 'upstream_ready' | 'upstream_unblocked';
   } | null,
+  activeDependency?: {
+    blockedByTaskTitle: string | null;
+    createdAt: string;
+  } | null,
 ): TaskResumeCardRecord['latestChange'] & {
   recentChange: WorkingContextRecentChange | null;
 } {
@@ -316,6 +324,27 @@ export function buildTaskResumeLatestChange(
   }
 
   const latestEvent = getLatestResumeRelevantTimelineEvent(timeline);
+
+  if (
+    activeDependency?.blockedByTaskTitle &&
+    isStaleDependency(activeDependency.createdAt) &&
+    (!latestEvent ||
+      latestEvent.type === 'task_dependency.created' ||
+      latestEvent.type === 'task_dependency.updated')
+  ) {
+    return {
+      summary: `这条依赖链已持续较久：${activeDependency.blockedByTaskTitle}，值得优先升级处理。`,
+      action: {
+        label: null,
+        targetType: null,
+        targetId: null,
+      },
+      recentChange: {
+        kind: 'task_dependency_changed',
+        title: activeDependency.blockedByTaskTitle,
+      },
+    };
+  }
 
   if (!latestEvent) {
     return {
@@ -742,6 +771,7 @@ export function deriveNextSuggestedMove(params: {
   blockerTitle?: string | null;
   blockerCreatedAt?: string | null;
   dependencyTitle?: string | null;
+  dependencyCreatedAt?: string | null;
   keySourceTitle?: string | null;
   latestArtifactTitle?: string | null;
   recentChange?: WorkingContextRecentChange | null;
@@ -785,7 +815,9 @@ export function deriveNextSuggestedMove(params: {
       case 'blocker_resolved':
         return `确认解除阻塞后的下一步推进：${recentChange.title ?? params.taskTitle}`;
       case 'task_dependency_changed':
-        return `先推动上游任务完成：${recentChange.title ?? params.dependencyTitle ?? params.taskTitle}`;
+        return params.dependencyCreatedAt && isStaleDependency(params.dependencyCreatedAt)
+          ? `优先升级依赖链路：${recentChange.title ?? params.dependencyTitle ?? params.taskTitle}`
+          : `先推动上游任务完成：${recentChange.title ?? params.dependencyTitle ?? params.taskTitle}`;
       case 'task_dependency_resolved':
         return `确认上游任务就绪后的下一步推进：${recentChange.title ?? params.dependencyTitle ?? params.taskTitle}`;
       case 'artifact_created':
@@ -814,7 +846,9 @@ export function deriveNextSuggestedMove(params: {
   }
 
   if (params.dependencyTitle) {
-    return `先推动上游任务完成：${params.dependencyTitle}`;
+    return params.dependencyCreatedAt && isStaleDependency(params.dependencyCreatedAt)
+      ? `优先升级依赖链路：${params.dependencyTitle}`
+      : `先推动上游任务完成：${params.dependencyTitle}`;
   }
 
   if (params.riskLevel === 'high') {

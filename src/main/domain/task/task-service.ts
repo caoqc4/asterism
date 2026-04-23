@@ -335,6 +335,12 @@ export class TaskService {
       detail.timeline,
       detail.state,
       detail.dependencyReevaluation,
+      detail.activeDependency
+        ? {
+            blockedByTaskTitle: detail.activeDependency.blockedByTaskTitle,
+            createdAt: detail.activeDependency.createdAt,
+          }
+        : null,
     );
     const nextSuggestedMove = deriveNextSuggestedMove({
       explicitNextStep: detail.nextStep,
@@ -347,6 +353,7 @@ export class TaskService {
       blockerTitle,
       blockerCreatedAt: detail.activeBlocker?.createdAt ?? null,
       dependencyTitle,
+      dependencyCreatedAt: detail.activeDependency?.createdAt ?? null,
       keySourceTitle: keySource?.title ?? null,
       latestArtifactTitle: latestArtifact?.title ?? null,
       recentChange: latestChange.recentChange,
@@ -356,6 +363,8 @@ export class TaskService {
       `这条任务目前处于 ${detail.state}${waitingReason ? `，正在等待“${waitingReason}”` : ''}${blockerTitle ? `，当前阻塞项是“${blockerTitle}”` : ''}${detail.riskLevel === 'high' && detail.riskNote ? `，且存在高风险“${detail.riskNote}”` : ''}。`,
       dependencyReevaluationReason
         ? `当前依赖已具备恢复推进条件：${dependencyReevaluationReason}`
+        : detail.activeDependency && getCurrentDependencyPriorityReason(detail.activeDependency, 'task')?.includes('建议优先推动上游任务或重新判断是否解除依赖')
+          ? `当前依赖链已持续较久：上游任务“${dependencyTitle}”仍未打通，值得优先升级处理。`
         : dependencyTitle
           ? `当前依赖上游任务“${dependencyTitle}”。`
           : null,
