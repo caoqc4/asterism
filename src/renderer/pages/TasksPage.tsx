@@ -1025,6 +1025,9 @@ export function TasksPage({
           })
           .slice(0, TIMELINE_PREVIEW_COUNT)
     : [];
+  const snapshotArtifact = detail?.artifacts[0] ?? null;
+  const snapshotSourceContext = detail?.sourceContexts[0] ?? null;
+  const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
 
   return (
     <section className="tasks-layout">
@@ -1255,6 +1258,7 @@ export function TasksPage({
 
                 <div className="transition-group detail-card-group">
                   <h3>Task Signals</h3>
+                  <p className="meta">这里只保留任务当前现态，不在这一层重复展开完整历史。</p>
                   <div className="timeline-list">
                     <div className="timeline-item">
                       <strong>Next Step</strong>
@@ -1282,6 +1286,7 @@ export function TasksPage({
                 {detail.activeWaitingItem ? (
                   <div className="transition-group detail-card-group">
                     <h3>Current Waiting Item</h3>
+                    <p className="meta">只显示当前正在生效的等待切片，更多历史放到 Timeline。</p>
                     <div className="timeline-list">
                       <div className="timeline-item timeline-item-waiting">
                         <div className="task-row">
@@ -1307,23 +1312,25 @@ export function TasksPage({
                 ) : null}
 
                 <div className="transition-group detail-card-group">
-                  <h3>Recent Artifacts</h3>
+                  <h3>Recent Artifact</h3>
+                  <p className="meta">这里只显示最新产物，避免把当前层做成产物归档区。</p>
                   <div className="timeline-list">
-                    {detail.artifacts.length ? (
-                      detail.artifacts.slice(0, 2).map((artifact) => (
-                        <div className="timeline-item timeline-item-next-step" key={artifact.id}>
-                          <div className="task-row">
-                            <strong>{artifact.title}</strong>
-                            <span className="signal-pill timeline-badge timeline-item-next-step">
-                              {artifact.kind}
-                            </span>
-                          </div>
-                          <p className="meta">
-                            source: {artifact.sourceType} · {artifact.sourceId}
-                          </p>
-                          <p className="meta brief-preview">{artifact.content}</p>
+                    {snapshotArtifact ? (
+                      <div className="timeline-item timeline-item-next-step" key={snapshotArtifact.id}>
+                        <div className="task-row">
+                          <strong>{snapshotArtifact.title}</strong>
+                          <span className="signal-pill timeline-badge timeline-item-next-step">
+                            {snapshotArtifact.kind}
+                          </span>
                         </div>
-                      ))
+                        <p className="meta">
+                          source: {snapshotArtifact.sourceType} · {snapshotArtifact.sourceId}
+                        </p>
+                        <p className="meta brief-preview">{snapshotArtifact.content}</p>
+                        {detail.artifacts.length > 1 ? (
+                          <p className="meta">其余 {detail.artifacts.length - 1} 条产物留在下方活动与历史层。</p>
+                        ) : null}
+                      </div>
                     ) : (
                       <p className="meta">当前任务还没有沉淀出 artifact。</p>
                     )}
@@ -1332,61 +1339,92 @@ export function TasksPage({
 
                 <div className="transition-group detail-card-group">
                   <h3>Key Source Materials</h3>
+                  <p className="meta">当前层只保留最关键的一条来源切片，完整材料管理下沉到 Context Studio。</p>
                   <div className="timeline-list">
-                    {detail.sourceContexts.length ? (
-                      detail.sourceContexts.slice(0, 2).map((item) => (
-                        <button
-                          className="task-card task-card-button task-card-muted"
-                          key={`key-source:${item.id}`}
-                          onClick={() => populateSourceContextForm(item)}
-                          type="button"
-                        >
-                          <div className="task-row">
-                            <strong>{item.title}</strong>
-                            <span className="signal-pill timeline-badge timeline-item-default">
-                              {formatSourceContextKind(item.kind)}
-                              {item.isKey ? ' · key' : ''}
-                            </span>
-                          </div>
-                          {item.note ? <p className="meta">{item.note}</p> : null}
-                          {item.uri ? <p className="meta brief-preview">{item.uri}</p> : null}
-                          <p className="meta">最近更新：{item.updatedAt}</p>
-                        </button>
-                      ))
+                    {snapshotSourceContext ? (
+                      <button
+                        className="task-card task-card-button task-card-muted"
+                        key={`key-source:${snapshotSourceContext.id}`}
+                        onClick={() => populateSourceContextForm(snapshotSourceContext)}
+                        type="button"
+                      >
+                        <div className="task-row">
+                          <strong>{snapshotSourceContext.title}</strong>
+                          <span className="signal-pill timeline-badge timeline-item-default">
+                            {formatSourceContextKind(snapshotSourceContext.kind)}
+                            {snapshotSourceContext.isKey ? ' · key' : ''}
+                          </span>
+                        </div>
+                        {snapshotSourceContext.note ? <p className="meta">{snapshotSourceContext.note}</p> : null}
+                        {snapshotSourceContext.uri ? (
+                          <p className="meta brief-preview">{snapshotSourceContext.uri}</p>
+                        ) : null}
+                        <p className="meta">最近更新：{snapshotSourceContext.updatedAt}</p>
+                        {detail.sourceContexts.length > 1 ? (
+                          <p className="meta">其余 {detail.sourceContexts.length - 1} 条来源材料移到 Context Studio。</p>
+                        ) : null}
+                      </button>
                     ) : (
                       <p className="meta">当前还没有关键来源材料。</p>
                     )}
                   </div>
+                  {snapshotSourceContext ? (
+                    <div className="timeline-actions">
+                      <button
+                        className="ghost-button timeline-action"
+                        onClick={() => focusSourceContext(snapshotSourceContext.id)}
+                        type="button"
+                      >
+                        前往 Context Studio 管理来源
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="transition-group detail-card-group">
                   <h3>Current Method</h3>
+                  <p className="meta">当前层只保留一个主方法切片，完整模板管理下沉到 Context Studio。</p>
                   <div className="timeline-list">
-                    {detail.processTemplates.length ? (
-                      detail.processTemplates.slice(0, 1).map((item) => (
-                        <div className="timeline-item timeline-item-state" key={`current-method:${item.bindingId}`}>
-                          <div className="task-row">
-                            <strong>{item.title}</strong>
-                            <span className="signal-pill timeline-badge timeline-item-state">
-                              {formatProcessTemplateKind(item.kind)}
-                            </span>
-                          </div>
-                          {item.summary ? <p className="meta">{item.summary}</p> : null}
-                          {item.tags.length ? <p className="meta">tags: {item.tags.join(', ')}</p> : null}
-                          {detail.resumeCard.currentMethod.selectionReason ? (
-                            <p className="meta">{detail.resumeCard.currentMethod.selectionReason}</p>
-                          ) : null}
-                          <div className="timeline-actions">
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => focusProcessTemplate(item.id)}
-                              type="button"
-                            >
-                              打开当前方法模板
-                            </button>
-                          </div>
+                    {snapshotProcessTemplate ? (
+                      <div
+                        className="timeline-item timeline-item-state"
+                        key={`current-method:${snapshotProcessTemplate.bindingId}`}
+                      >
+                        <div className="task-row">
+                          <strong>{snapshotProcessTemplate.title}</strong>
+                          <span className="signal-pill timeline-badge timeline-item-state">
+                            {formatProcessTemplateKind(snapshotProcessTemplate.kind)}
+                          </span>
                         </div>
-                      ))
+                        {snapshotProcessTemplate.summary ? (
+                          <p className="meta">{snapshotProcessTemplate.summary}</p>
+                        ) : null}
+                        {snapshotProcessTemplate.tags.length ? (
+                          <p className="meta">tags: {snapshotProcessTemplate.tags.join(', ')}</p>
+                        ) : null}
+                        {detail.resumeCard.currentMethod.selectionReason ? (
+                          <p className="meta">{detail.resumeCard.currentMethod.selectionReason}</p>
+                        ) : null}
+                        {detail.processTemplates.length > 1 ? (
+                          <p className="meta">其余 {detail.processTemplates.length - 1} 个方法模板移到 Context Studio。</p>
+                        ) : null}
+                        <div className="timeline-actions">
+                          <button
+                            className="ghost-button timeline-action"
+                            onClick={() => focusProcessTemplate(snapshotProcessTemplate.id)}
+                            type="button"
+                          >
+                            打开当前方法模板
+                          </button>
+                          <button
+                            className="ghost-button timeline-action"
+                            onClick={() => focusProcessTemplate(snapshotProcessTemplate.id)}
+                            type="button"
+                          >
+                            前往 Context Studio 管理方法
+                          </button>
+                        </div>
+                      </div>
                     ) : (
                       <p className="meta">当前任务还没有启用中的方法模板。</p>
                     )}

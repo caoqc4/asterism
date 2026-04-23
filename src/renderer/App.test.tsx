@@ -958,7 +958,7 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /artifact task/i }));
     await screen.findByRole('heading', { name: 'Artifact task' });
 
-    expect(screen.getByRole('heading', { name: 'Recent Artifacts' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Recent Artifact' })).toBeTruthy();
     expect(screen.getByText('draft output')).toBeTruthy();
     expect(screen.getByText('source: run · run_artifact_1')).toBeTruthy();
     expect(screen.getByText('Drafted message to the customer.')).toBeTruthy();
