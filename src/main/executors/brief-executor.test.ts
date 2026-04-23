@@ -33,6 +33,10 @@ function buildHomeBriefData(): HomeBriefData {
             targetId: 'decision_resume_brief',
           },
         },
+        currentBlocker: {
+          title: 'Legal approval pending',
+          priorityReason: '当前阻塞原因：Need formal sign-off',
+        },
         keySource: {
           sourceContextId: 'source_context_resume_brief',
           title: 'Launch memo',
@@ -71,6 +75,8 @@ describe('buildFallbackBrief', () => {
     expect(brief).toContain('Resume task');
     expect(brief).toContain('latest=最近决策动态：Approve launch · approved');
     expect(brief).toContain('next=已获批准，继续推进：Approve launch');
+    expect(brief).toContain('blocker=Legal approval pending');
+    expect(brief).toContain('blocker_reason=当前阻塞原因：Need formal sign-off');
     expect(brief).toContain('source=Launch memo');
     expect(brief).toContain('method=Launch workflow');
   });

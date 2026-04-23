@@ -11,8 +11,18 @@ function formatTaskLine(title: string, state: string): string {
   return `- ${title} [${state}]`;
 }
 
-function formatTaskContext(nextStep: string | null, waitingReason: string | null, riskLabel: string): string {
-  return [`next=${nextStep ?? '无'}`, `waiting=${waitingReason ?? '无'}`, `risk=${riskLabel}`].join(' | ');
+function formatTaskContext(
+  nextStep: string | null,
+  waitingReason: string | null,
+  blockerTitle: string | null,
+  riskLabel: string,
+): string {
+  return [
+    `next=${nextStep ?? '无'}`,
+    `waiting=${waitingReason ?? '无'}`,
+    `blocker=${blockerTitle ?? '无'}`,
+    `risk=${riskLabel}`,
+  ].join(' | ');
 }
 
 function formatDecisionLine(title: string, status: string): string {
@@ -48,6 +58,14 @@ function formatResumePreviewLine(preview: HomeBriefData['recentTaskResumes'][num
     parts.push(`source=${preview.keySource.title}`);
   }
 
+  if (preview.currentBlocker?.title) {
+    parts.push(`blocker=${preview.currentBlocker.title}`);
+  }
+
+  if (preview.currentBlocker?.priorityReason) {
+    parts.push(`blocker_reason=${preview.currentBlocker.priorityReason}`);
+  }
+
   if (preview.currentMethod.title) {
     parts.push(`method=${preview.currentMethod.title}`);
   }
@@ -67,6 +85,7 @@ export function buildFallbackBrief(
             `${formatTaskLine(task.title, task.state)}\n  ${formatTaskContext(
               task.nextStep,
               task.waitingReason,
+              task.activeBlocker?.title ?? null,
               task.riskLevel === 'none'
                 ? 'none'
                 : `${task.riskLevel}${task.riskNote ? `:${task.riskNote}` : ''}`,
@@ -194,7 +213,7 @@ function buildPrompt(
     ...(homeData.recentTasks.length
       ? homeData.recentTasks.map(
           (task) =>
-            `- ${task.title} | ${task.state} | ${task.summary ?? '无摘要'} | next=${task.nextStep ?? '无'} | waiting=${task.waitingReason ?? '无'} | risk=${
+            `- ${task.title} | ${task.state} | ${task.summary ?? '无摘要'} | next=${task.nextStep ?? '无'} | waiting=${task.waitingReason ?? '无'} | blocker=${task.activeBlocker?.title ?? '无'} | risk=${
               task.riskLevel === 'none'
                 ? 'none'
                 : `${task.riskLevel}${task.riskNote ? `:${task.riskNote}` : ''}`
@@ -221,7 +240,7 @@ function buildPrompt(
     ...(homeData.waitingTasks.length
       ? homeData.waitingTasks.map(
           (task) =>
-            `- ${task.title} | ${task.state} | waiting=${task.waitingReason ?? '无'} | next=${task.nextStep ?? '无'}`,
+            `- ${task.title} | ${task.state} | waiting=${task.waitingReason ?? '无'} | blocker=${task.activeBlocker?.title ?? '无'} | next=${task.nextStep ?? '无'}`,
         )
       : ['- 无']),
     '',
