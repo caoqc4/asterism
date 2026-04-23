@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
 import type { DraftDecisionInput } from '../../../shared/types/decision.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
+import { deriveTaskDetailPriorityLane, getPriorityLanePromptGuidance } from '../../../shared/working-context/priority-lanes.js';
 import type { RuntimeAiConfig } from '../../keychain/ai-config-service.js';
 import { getLanguageModel } from '../../executors/ai-client.js';
 
@@ -24,6 +25,7 @@ function buildSelectionPrompt(
   input: DraftDecisionInput,
   templates: AppliedProcessTemplateRecord[],
 ): string {
+  const lane = deriveTaskDetailPriorityLane(task);
   const sources = task.sourceContexts.length
     ? `来源材料：\n${task.sourceContexts
         .slice(0, 6)
@@ -56,6 +58,7 @@ function buildSelectionPrompt(
     `当前状态：${task.state}`,
     `当前 next step：${task.nextStep ?? '暂无'}`,
     `等待原因：${task.waitingReason ?? '暂无'}`,
+    getPriorityLanePromptGuidance(lane),
     `风险：${
       task.riskLevel === 'none'
         ? '当前未标记明显风险'

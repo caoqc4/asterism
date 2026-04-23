@@ -155,6 +155,7 @@ What exists today:
 - run execution now evaluates bound process templates with a Claude-skills-style selector instead of blindly injecting every template into every run
 - brief generation now also evaluates active-task process templates with a separate selector, using them as optional summarization perspectives rather than fixed execution steps
 - decision creation now supports AI-assisted draft composition, with a selector deciding whether attached process templates should shape the request before the user confirms creation
+- process-template selectors now also absorb `Priority Lanes` guidance, so the method-selection reasoning for runs, briefs, and decision drafts stays aligned with the same escalation/unblock/continue/clarify language already visible in the UI and prompt defaults
 - config + keychain setup
 - service tests and SQLite repository integration coverage
 - IPC handler coverage for critical event-emitting entrypoints

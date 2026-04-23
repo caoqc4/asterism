@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
 import type { CreateRunInput } from '../../../shared/types/run.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
+import { deriveTaskDetailPriorityLane, getPriorityLanePromptGuidance } from '../../../shared/working-context/priority-lanes.js';
 import type { RuntimeAiConfig } from '../../keychain/ai-config-service.js';
 import { getLanguageModel } from '../../executors/ai-client.js';
 
@@ -24,6 +25,7 @@ function buildSelectionPrompt(
   input: CreateRunInput,
   templates: AppliedProcessTemplateRecord[],
 ): string {
+  const lane = deriveTaskDetailPriorityLane(task);
   const summary = task.summary ? `任务摘要：${task.summary}` : '任务摘要：暂无';
   const nextStep = task.nextStep ? `当前 next step：${task.nextStep}` : '当前 next step：暂无';
   const waiting = task.waitingReason
@@ -66,6 +68,7 @@ function buildSelectionPrompt(
     summary,
     nextStep,
     waiting,
+    getPriorityLanePromptGuidance(lane),
     risk,
     sources,
     artifacts,

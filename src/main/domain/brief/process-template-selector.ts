@@ -2,6 +2,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 
 import type { BriefProcessTemplateCandidate, HomeBriefData } from '../../../shared/types/brief.js';
+import { getPriorityLanePromptGuidance } from '../../../shared/working-context/priority-lanes.js';
 import type { RuntimeAiConfig } from '../../keychain/ai-config-service.js';
 import { getLanguageModel } from '../../executors/ai-client.js';
 
@@ -22,6 +23,7 @@ function buildSelectionPrompt(
   kind: string,
   templates: BriefProcessTemplateCandidate[],
 ): string {
+  const lane = homeData.priorityLane ?? 'steady';
   const templateLines = templates
     .map(
       (item) =>
@@ -43,6 +45,7 @@ function buildSelectionPrompt(
     `等待中任务数：${homeData.waitingTaskCount}`,
     `高风险任务数：${homeData.highRiskTaskCount}`,
     `缺少下一步任务数：${homeData.missingNextStepTaskCount}`,
+    getPriorityLanePromptGuidance(lane),
     `最近动态：${homeData.recentActivity
       .map((event) => `${event.sourceType}:${event.title}[${event.status}]`)
       .join(' | ') || '无'}`,

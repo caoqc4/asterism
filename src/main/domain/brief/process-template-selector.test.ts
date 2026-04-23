@@ -113,6 +113,11 @@ describe('BriefProcessTemplateSelector', () => {
     );
 
     expect(generateObjectMock).toHaveBeenCalledTimes(1);
+    expect(generateObjectMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('当前优先级语义：稳态推进。组织输出时优先围绕现有下一步平稳推进。'),
+      }),
+    );
     expect(result).toEqual({
       shouldUse: true,
       selectedTemplates: homeData.processTemplateCandidates,
