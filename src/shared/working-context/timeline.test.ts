@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getTaskTimelinePreviewEvents } from './timeline.js';
+import { getTaskTimelinePreviewEvents, getTaskTimelineResponsibilitySummary } from './timeline.js';
 
 describe('getTaskTimelinePreviewEvents', () => {
   it('prioritizes lane-critical events ahead of weaker explanatory items in compact previews', () => {
@@ -43,5 +43,26 @@ describe('getTaskTimelinePreviewEvents', () => {
       'event_1',
       'event_2',
     ]);
+  });
+
+  it('derives responsibility summaries for blocker and dependency events', () => {
+    expect(
+      getTaskTimelineResponsibilitySummary({
+        type: 'blocker.created',
+        payload: JSON.stringify({
+          title: 'Legal approval pending',
+          owner: '法务团队确认',
+        }),
+      }),
+    ).toBe('当前由 法务团队确认 推动解除');
+
+    expect(
+      getTaskTimelineResponsibilitySummary({
+        type: 'task_dependency.created',
+        payload: JSON.stringify({
+          blockedByTaskTitle: 'Publish partner list',
+        }),
+      }),
+    ).toBe('当前主要由上游任务“Publish partner list”推进');
   });
 });

@@ -1054,6 +1054,7 @@ describe('HomeBriefService', () => {
       expect.objectContaining({
         sourceType: 'blocker',
         sourceId: 'blocker_activity_source',
+        responsibilitySummary: '当前由 Legal 推动解除',
         relatedSourceContextId: 'source_context_blocker_activity',
         taskId: 'task_blocker_source_activity',
         title: 'Need revised outreach list',

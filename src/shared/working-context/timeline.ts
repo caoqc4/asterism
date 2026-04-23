@@ -85,6 +85,7 @@ export function interpretTaskTimelineEvent(
   event: Pick<TimelineEventRecord, 'type' | 'payload'>,
 ): {
   summary: string;
+  responsibilitySummary: string | null;
   objectAction: {
     label: string | null;
     targetType: 'decision' | 'run' | 'source_context' | null;
@@ -98,6 +99,7 @@ export function interpretTaskTimelineEvent(
     case 'task.run_failed':
       return {
         summary: `最近一次执行失败：${String(payload?.failureReason ?? '未记录失败原因')}。`,
+        responsibilitySummary: null,
         objectAction: {
           label: payload?.runId ? '查看 Run' : null,
           targetType: payload?.runId ? 'run' : null,
@@ -111,6 +113,7 @@ export function interpretTaskTimelineEvent(
     case 'task.run_completed':
       return {
         summary: `最近一次执行已完成，任务恢复到 ${String(payload?.nextState ?? 'planned')}。`,
+        responsibilitySummary: null,
         objectAction: {
           label: payload?.runId ? '查看 Run' : null,
           targetType: payload?.runId ? 'run' : null,
@@ -124,6 +127,7 @@ export function interpretTaskTimelineEvent(
     case 'task.decision_approved':
       return {
         summary: `最近一条决策已获批准：${String(payload?.decisionTitle ?? '未命名决策')}。`,
+        responsibilitySummary: null,
         objectAction: {
           label: payload?.decisionId ? '查看 Decision' : null,
           targetType: payload?.decisionId ? 'decision' : null,
@@ -137,6 +141,7 @@ export function interpretTaskTimelineEvent(
     case 'task.decision_deferred':
       return {
         summary: `最近一条决策被延后，当前等待：${String(payload?.waitingReason ?? '未填写')}。`,
+        responsibilitySummary: null,
         objectAction: {
           label: payload?.decisionId ? '查看 Decision' : null,
           targetType: payload?.decisionId ? 'decision' : null,
@@ -151,6 +156,7 @@ export function interpretTaskTimelineEvent(
     case 'task.decision_cancelled':
       return {
         summary: `最近一条决策已取消：${String(payload?.decisionTitle ?? '未命名决策')}。`,
+        responsibilitySummary: null,
         objectAction: {
           label: payload?.decisionId ? '查看 Decision' : null,
           targetType: payload?.decisionId ? 'decision' : null,
@@ -164,6 +170,7 @@ export function interpretTaskTimelineEvent(
     case 'waiting_item.created':
       return {
         summary: `创建等待项：${String(payload?.reason ?? '未填写')}`,
+        responsibilitySummary: null,
         objectAction: { label: null, targetType: null, targetId: null },
         recentChange: {
           kind: 'waiting_item_changed',
@@ -173,6 +180,7 @@ export function interpretTaskTimelineEvent(
     case 'waiting_item.updated':
       return {
         summary: `更新等待项：${String(payload?.reason ?? '未填写')}`,
+        responsibilitySummary: null,
         objectAction: { label: null, targetType: null, targetId: null },
         recentChange: {
           kind: 'waiting_item_changed',
@@ -182,6 +190,7 @@ export function interpretTaskTimelineEvent(
     case 'waiting_item.resolved':
       return {
         summary: `解除等待项：${String(payload?.reason ?? '未填写')}，任务恢复到 ${String(payload?.nextState ?? 'planned')}`,
+        responsibilitySummary: null,
         objectAction: { label: null, targetType: null, targetId: null },
         recentChange: {
           kind: 'waiting_item_resolved',
@@ -192,6 +201,7 @@ export function interpretTaskTimelineEvent(
     case 'source_context.updated':
       return {
         summary: `最近更新了来源材料：${String(payload?.title ?? '未命名来源')}。`,
+        responsibilitySummary: null,
         objectAction: {
           label: payload?.sourceContextId ? '查看来源' : null,
           targetType: payload?.sourceContextId ? 'source_context' : null,
@@ -206,6 +216,10 @@ export function interpretTaskTimelineEvent(
     case 'blocker.updated':
       return {
         summary: `最近更新了阻塞项：${String(payload?.title ?? '未命名阻塞项')}。`,
+        responsibilitySummary:
+          typeof payload?.owner === 'string' && payload.owner.trim()
+            ? `当前由 ${payload.owner.trim()} 推动解除`
+            : null,
         objectAction: {
           label: payload?.sourceContextId ? '查看来源' : null,
           targetType: payload?.sourceContextId ? 'source_context' : null,
@@ -219,6 +233,10 @@ export function interpretTaskTimelineEvent(
     case 'blocker.resolved':
       return {
         summary: `最近解除阻塞项：${String(payload?.title ?? '未命名阻塞项')}。`,
+        responsibilitySummary:
+          typeof payload?.owner === 'string' && payload.owner.trim()
+            ? `当前由 ${payload.owner.trim()} 推动解除`
+            : null,
         objectAction: {
           label: payload?.sourceContextId ? '查看来源' : null,
           targetType: payload?.sourceContextId ? 'source_context' : null,
@@ -233,6 +251,10 @@ export function interpretTaskTimelineEvent(
     case 'task_dependency.updated':
       return {
         summary: `最近更新了任务依赖：${String(payload?.blockedByTaskTitle ?? '未命名上游任务')}。`,
+        responsibilitySummary:
+          typeof payload?.blockedByTaskTitle === 'string' && payload.blockedByTaskTitle.trim()
+            ? `当前主要由上游任务“${payload.blockedByTaskTitle.trim()}”推进`
+            : '当前主要由上游任务链路推进',
         objectAction: { label: null, targetType: null, targetId: null },
         recentChange: {
           kind: 'task_dependency_changed',
@@ -243,6 +265,10 @@ export function interpretTaskTimelineEvent(
     case 'task_dependency.resolved':
       return {
         summary: `最近解除任务依赖：${String(payload?.blockedByTaskTitle ?? '未命名上游任务')}。`,
+        responsibilitySummary:
+          typeof payload?.blockedByTaskTitle === 'string' && payload.blockedByTaskTitle.trim()
+            ? `当前主要由上游任务“${payload.blockedByTaskTitle.trim()}”推进`
+            : '当前主要由上游任务链路推进',
         objectAction: { label: null, targetType: null, targetId: null },
         recentChange: {
           kind: 'task_dependency_resolved',
@@ -254,6 +280,7 @@ export function interpretTaskTimelineEvent(
     case 'completion_criteria.updated':
       return {
         summary: `最近更新了完成标准：${String(payload?.text ?? '未命名完成标准')}。`,
+        responsibilitySummary: null,
         objectAction: { label: null, targetType: null, targetId: null },
         recentChange: {
           kind: 'completion_criteria_changed',
@@ -263,6 +290,7 @@ export function interpretTaskTimelineEvent(
     case 'completion_criteria.satisfied':
       return {
         summary: `最近满足了一条完成标准：${String(payload?.text ?? '未命名完成标准')}。`,
+        responsibilitySummary: null,
         objectAction: { label: null, targetType: null, targetId: null },
         recentChange: {
           kind: 'completion_criteria_changed',
@@ -272,6 +300,7 @@ export function interpretTaskTimelineEvent(
     case 'completion_criteria.reopened':
       return {
         summary: `最近重新打开了一条完成标准：${String(payload?.text ?? '未命名完成标准')}。`,
+        responsibilitySummary: null,
         objectAction: { label: null, targetType: null, targetId: null },
         recentChange: {
           kind: 'completion_criteria_changed',
@@ -281,6 +310,7 @@ export function interpretTaskTimelineEvent(
     case 'artifact.created':
       return {
         summary: `最近生成了产物：${String(payload?.title ?? '未命名产物')}。`,
+        responsibilitySummary: null,
         objectAction: {
           label: payload?.sourceType === 'run' && typeof payload?.sourceId === 'string' ? '查看 Run' : null,
           targetType: payload?.sourceType === 'run' && typeof payload?.sourceId === 'string' ? 'run' : null,
@@ -297,6 +327,7 @@ export function interpretTaskTimelineEvent(
         const to = (payload?.to as Record<string, unknown> | undefined) ?? {};
         return {
           summary: `风险从 ${String(from.level ?? '未填写')}（${String(from.note ?? '未填写')}）调整为 ${String(to.level ?? '未填写')}（${String(to.note ?? '未填写')}）`,
+          responsibilitySummary: null,
           objectAction: { label: null, targetType: null, targetId: null },
           recentChange: {
             kind: 'risk_changed',
@@ -306,22 +337,31 @@ export function interpretTaskTimelineEvent(
     case 'task.next_step_changed':
       return {
         summary: `下一步从“${String(payload?.from ?? '未填写')}”调整为“${String(payload?.to ?? '未填写')}”`,
+        responsibilitySummary: null,
         objectAction: { label: null, targetType: null, targetId: null },
         recentChange: { kind: 'unknown' },
       };
     case 'task.transitioned':
       return {
         summary: `状态从 ${String(payload?.from ?? '未知')} 变更为 ${String(payload?.to ?? '未知')}`,
+        responsibilitySummary: null,
         objectAction: { label: null, targetType: null, targetId: null },
         recentChange: { kind: 'unknown' },
       };
     default:
       return {
         summary: '最近有新的任务活动。',
+        responsibilitySummary: null,
         objectAction: { label: null, targetType: null, targetId: null },
         recentChange: { kind: 'unknown' },
       };
   }
+}
+
+export function getTaskTimelineResponsibilitySummary(
+  event: Pick<TimelineEventRecord, 'type' | 'payload'>,
+): string | null {
+  return interpretTaskTimelineEvent(event).responsibilitySummary;
 }
 
 export function getTaskTimelineFollowUpActionLabel(type: string): string | null {

@@ -50,6 +50,7 @@ import {
   getTaskTimelinePreviewEvents,
   getTaskTimelinePriority,
   getTaskTimelinePriorityLabel,
+  getTaskTimelineResponsibilitySummary,
   interpretTaskTimelineEvent,
 } from '@shared/working-context/timeline';
 import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
@@ -3095,6 +3096,9 @@ export function TasksPage({
                         </div>
                       </div>
                       <p className="meta">{event.createdAt}</p>
+                      {getTaskTimelineResponsibilitySummary(event) ? (
+                        <p className="meta">{getTaskTimelineResponsibilitySummary(event)}</p>
+                      ) : null}
                       {getTimelineActionLabel(event.type) || getTimelineObjectLabel(event) ? (
                         <div className="timeline-actions">
                           {getTimelineActionLabel(event.type) ? (

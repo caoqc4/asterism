@@ -7,6 +7,7 @@ import {
   getTaskTimelineFollowUpActionLabel,
   getTaskTimelineLane,
   getTaskTimelineLaneLabel,
+  getTaskTimelineResponsibilitySummary,
   interpretTaskTimelineEvent,
 } from '@shared/working-context/timeline';
 
@@ -259,6 +260,9 @@ export function DecisionsPage({
                           </div>
                         </div>
                         <p className="meta">{formatRelatedTimelineSummary(event)}</p>
+                        {getTaskTimelineResponsibilitySummary(event) ? (
+                          <p className="meta">{getTaskTimelineResponsibilitySummary(event)}</p>
+                        ) : null}
                         {getRelatedTimelineActionLabel(event) || getRelatedTimelineObjectLabel(event) ? (
                           <div className="chip-row">
                             {getRelatedTimelineActionLabel(event) ? (

@@ -255,6 +255,7 @@ function buildActivity(
     sourceType: partial.sourceType ?? 'run',
     sourceId: partial.sourceId ?? 'run_1',
     lane: partial.lane,
+    responsibilitySummary: partial.responsibilitySummary ?? null,
     relatedSourceContextId: partial.relatedSourceContextId ?? null,
     relatedTaskId: partial.relatedTaskId ?? null,
     taskId: partial.taskId ?? 'task_1',
@@ -4962,6 +4963,7 @@ describe('App UI flow', () => {
             id: 'blocker_activity_source_updated',
             sourceType: 'blocker',
             sourceId: 'blocker_activity_source_updated_id',
+            responsibilitySummary: '当前由 法务团队确认 推动解除',
             relatedSourceContextId: 'source_context_blocker_activity_home',
             taskId: blockerSourceTask.id,
             taskTitle: blockerSourceTask.title,
@@ -4975,6 +4977,8 @@ describe('App UI flow', () => {
     window.api = blockerActivityApi;
 
     render(<App />);
+
+    expect(await screen.findByText('当前由 法务团队确认 推动解除')).toBeTruthy();
 
     await user.click(await screen.findByRole('button', { name: '重新判断阻塞' }));
 
@@ -5121,6 +5125,7 @@ describe('App UI flow', () => {
             id: 'dependency_activity_created',
             sourceType: 'dependency',
             sourceId: 'task_dependency_created_link',
+            responsibilitySummary: '当前主要由上游任务“Publish partner list”推进',
             relatedTaskId: upstreamTask.id,
             taskId: dependentTask.id,
             taskTitle: dependentTask.title,
@@ -5135,6 +5140,8 @@ describe('App UI flow', () => {
     window.api = dependencyActivityApi;
 
     render(<App />);
+
+    expect(await screen.findByText('当前主要由上游任务“Publish partner list”推进')).toBeTruthy();
 
     await user.click(await screen.findByRole('button', { name: '先推动上游任务' }));
 

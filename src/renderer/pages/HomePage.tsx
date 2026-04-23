@@ -740,6 +740,9 @@ export function HomePage({
                     </div>
                   </div>
                   <p className="meta">task: {event.taskTitle}</p>
+                  {event.responsibilitySummary ? (
+                    <p className="meta">{event.responsibilitySummary}</p>
+                  ) : null}
                   <p className="meta">{event.updatedAt}</p>
                 </button>
                 <div className="chip-row">

@@ -54,6 +54,7 @@ export type HomeActivityRecord = {
   sourceType: 'decision' | 'run' | 'blocker' | 'task' | 'dependency';
   sourceId: string;
   lane?: PriorityLane;
+  responsibilitySummary?: string | null;
   relatedSourceContextId?: string | null;
   relatedTaskId?: string | null;
   taskId: string;
