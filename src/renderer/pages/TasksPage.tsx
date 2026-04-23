@@ -417,6 +417,57 @@ function getQuickRunGuidance(lane: PriorityLane | undefined): string {
   }
 }
 
+function isEarlyTaskState(state: TaskState | undefined): boolean {
+  return state === 'captured' || state === 'triaged';
+}
+
+function getPrimaryMoveConfig(detail: TaskDetail | null): Array<{
+  id: 'detail' | 'decision' | 'run' | 'transition';
+  label: string;
+}> {
+  if (!detail) {
+    return [];
+  }
+
+  if (isEarlyTaskState(detail.state)) {
+    return [
+      { id: 'detail', label: '补摘要与下一步' },
+      { id: 'decision', label: '判断是否需要拍板' },
+      { id: 'transition', label: '调整任务状态' },
+    ];
+  }
+
+  return [
+    { id: 'decision', label: '草拟或创建 Decision' },
+    { id: 'run', label: '配置并触发 Run' },
+    { id: 'transition', label: '调整任务状态' },
+  ];
+}
+
+function getActionDeskStageGuidance(detail: TaskDetail | null): string {
+  if (!detail) {
+    return '先给当前最常用的三个入口，详细配置再放到下方，不把中层做成工具箱。';
+  }
+
+  if (isEarlyTaskState(detail.state)) {
+    return '当前任务还在捕获/整理阶段，先补清摘要、下一步和是否需要拍板，再考虑执行动作。';
+  }
+
+  return '先给当前最常用的三个入口，详细配置再放到下方，不把中层做成工具箱。';
+}
+
+function getActionSetupGuidance(detail: TaskDetail | null): string {
+  if (!detail) {
+    return '需要补充上下文时，再使用这里的详细表单。';
+  }
+
+  if (isEarlyTaskState(detail.state)) {
+    return '当前仍以整理任务为主，Run 放在补清摘要、下一步和拍板判断之后。';
+  }
+
+  return '需要补充上下文时，再使用这里的详细表单。';
+}
+
 type TasksPageProps = {
   decisions: DecisionRecord[];
   focusedTaskRequest: {
@@ -971,9 +1022,11 @@ export function TasksPage({
     }
   }
 
-  function focusActionTarget(target: 'decision' | 'run' | 'transition') {
+  function focusActionTarget(target: 'detail' | 'decision' | 'run' | 'transition') {
     const node =
-      target === 'decision'
+      target === 'detail'
+        ? detailFormRef.current
+        : target === 'decision'
         ? quickDecisionCardRef.current
         : target === 'run'
           ? quickRunCardRef.current
@@ -1287,6 +1340,7 @@ export function TasksPage({
       ? detail.timeline
       : getTaskTimelinePreviewEvents(detail.timeline, TIMELINE_PREVIEW_COUNT)
     : [];
+  const primaryMoves = getPrimaryMoveConfig(detail);
   const snapshotArtifact = detail?.artifacts[0] ?? null;
   const snapshotSourceContext = detail?.sourceContexts[0] ?? null;
   const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
@@ -1824,40 +1878,29 @@ export function TasksPage({
                   <p className="eyebrow">Action Desk</p>
                   <h3>动作与状态流转</h3>
                 </div>
-                <p className="meta">先给当前最常用的三个入口，详细配置再放到下方，不把中层做成工具箱。</p>
+                <p className="meta">{getActionDeskStageGuidance(detail)}</p>
               </div>
               <div className="detail-cluster-grid">
                 <div className="transition-group detail-card-group detail-card-wide">
                   <h3>Primary Moves</h3>
                   <p className="meta">这里只前置最常用的推进入口，具体填写和状态选择放在下方。</p>
                   <div className="primary-moves-grid">
-                    <button
-                      className="ghost-button primary-move-button"
-                      onClick={() => focusActionTarget('decision')}
-                      type="button"
-                    >
-                      草拟或创建 Decision
-                    </button>
-                    <button
-                      className="ghost-button primary-move-button"
-                      onClick={() => focusActionTarget('run')}
-                      type="button"
-                    >
-                      配置并触发 Run
-                    </button>
-                    <button
-                      className="ghost-button primary-move-button"
-                      onClick={() => focusActionTarget('transition')}
-                      type="button"
-                    >
-                      调整任务状态
-                    </button>
+                    {primaryMoves.map((move) => (
+                      <button
+                        className="ghost-button primary-move-button"
+                        key={move.id}
+                        onClick={() => focusActionTarget(move.id)}
+                        type="button"
+                      >
+                        {move.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
                 <div className="transition-group detail-card-group" ref={sourceContextSectionRef}>
                   <h3>Action Setup</h3>
-                  <p className="meta">需要补充上下文时，再使用这里的详细表单。</p>
+                  <p className="meta">{getActionSetupGuidance(detail)}</p>
                   <div className="quick-actions-grid" ref={quickActionsRef}>
                     <form
                       className="stack task-card quick-action-card"

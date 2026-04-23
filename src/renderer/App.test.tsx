@@ -4738,4 +4738,54 @@ describe('App UI flow', () => {
     expect(resumePanel).toBeTruthy();
     expect(within(resumePanel as HTMLElement).getByText('先补清晰度')).toBeTruthy();
   });
+
+  it('reshapes the action desk toward task clarification for captured work', async () => {
+    const user = userEvent.setup();
+
+    const capturedTask = buildTaskRecord({
+      id: 'task_captured_action',
+      title: 'Captured action task',
+      state: 'captured',
+      nextStep: null,
+      updatedAt: '2026-01-04T00:00:00.000Z',
+    });
+
+    const capturedApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([capturedTask, waitingTask, riskTask]),
+      getTaskDetail: vi.fn(async (taskId: string) =>
+        taskId === capturedTask.id ? buildTaskDetail(capturedTask) : taskDetails[taskId] ?? null,
+      ),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        recentTasks: [capturedTask, ...briefData.recentTasks],
+        missingNextStepTasks: [capturedTask, ...briefData.missingNextStepTasks],
+      }),
+    };
+
+    window.api = capturedApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /captured action task/i }));
+    await screen.findByRole('heading', { name: 'Captured action task' });
+
+    const actionDesk = screen.getByRole('heading', { name: '动作与状态流转' }).closest('.detail-stage');
+    expect(actionDesk).toBeTruthy();
+    expect(
+      within(actionDesk as HTMLElement).getByText(
+        '当前任务还在捕获/整理阶段，先补清摘要、下一步和是否需要拍板，再考虑执行动作。',
+      ),
+    ).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).getByRole('button', { name: '补摘要与下一步' })).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).getByRole('button', { name: '判断是否需要拍板' })).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).getByRole('button', { name: '调整任务状态' })).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).queryByRole('button', { name: '配置并触发 Run' })).toBeNull();
+    expect(
+      within(actionDesk as HTMLElement).getByText(
+        '当前仍以整理任务为主，Run 放在补清摘要、下一步和拍板判断之后。',
+      ),
+    ).toBeTruthy();
+  });
 });
