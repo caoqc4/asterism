@@ -167,18 +167,25 @@ export function DecisionsPage({
               <p className="eyebrow">Current Focus</p>
               <h3>{detail ? detail.title : '当前没有待拍板事项'}</h3>
             </div>
-            <p className="meta">优先查看当前选中的 Decision，再决定批准、延后还是取消。</p>
+            <p className="meta">这里只承接当前这条拍板的局部判断：先看决策焦点，再决定是否处理，最后再回到任务继续推进。</p>
           </div>
 
           {detail ? (
-            <div className="timeline-list">
-              <div className="timeline-item">
+            <div className="detail-cluster-grid">
+              <div className="task-card detail-card-group">
+                <p className="eyebrow">Decision Snapshot</p>
                 <div className="task-row">
                   <strong>{detail.title}</strong>
                   <span className="status">{detail.status}</span>
                 </div>
                 <p className="meta">关联任务：{detail.taskId}</p>
                 <p className="meta">更新时间：{detail.updatedAt}</p>
+                <p className="meta">这里负责确认这次拍板本身是否应该推进、延后或取消，不承载整条任务的全部上下文。</p>
+              </div>
+              <div className="task-card detail-card-group">
+                <p className="eyebrow">Focus Moves</p>
+                <strong>先处理这条拍板</strong>
+                <p className="meta">只保留当前最值钱的局部动作；更完整的推进和上下文恢复仍然回到任务页处理。</p>
                 <div className="chip-row">
                   <button
                     className="ghost-button"
@@ -226,8 +233,10 @@ export function DecisionsPage({
                   </button>
                 </div>
               </div>
-              <div className="timeline-item">
-                <strong>Related Task Timeline</strong>
+              <div className="task-card detail-card-group detail-card-wide">
+                <p className="eyebrow">Related Task Timeline</p>
+                <strong>这条拍板如何改变了任务</strong>
+                <p className="meta">这里只截取最能解释当前 decision 的最近任务变化，帮助你判断处理完后该如何回流到主任务。</p>
                 <div className="timeline-list">
                   {getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.title).length ? (
                     getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.title).map((event) => (

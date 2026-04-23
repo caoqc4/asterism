@@ -169,57 +169,72 @@ export function RunsPage({
               <p className="eyebrow">Current Focus</p>
               <h3>{detail ? `${detail.type} / ${detail.status}` : '选择一个 run'}</h3>
             </div>
-            <p className="meta">优先查看当前 run 的输入、输出、失败原因和来源。</p>
+            <p className="meta">这里只承接当前这次执行的局部检查：先看结果，再判断怎么处理，然后回到任务继续推进。</p>
           </div>
-          {detail ? (
-            <div className="chip-row">
-              <button
-                className="ghost-button"
-                onClick={() =>
-                  onOpenTask(detail.taskId, {
-                    type: 'focus_next_step',
-                    focusArea: 'detail',
-                    prefillNextStep:
-                      detail.status === 'failed'
-                        ? `检查最近一次 ${detail.type} run 的失败原因，并决定是否重试。`
-                        : `审阅最近一次 ${detail.type} run 的结果，并决定是否继续推进。`,
-                  })
-                }
-                type="button"
-              >
-                回到任务推进
-              </button>
-            </div>
-          ) : null}
         </div>
         {detail ? (
-          <div className="stack">
-            <div className="task-card">
+          <div className="detail-cluster-grid">
+            <div className="task-card detail-card-group">
+              <p className="eyebrow">Run Snapshot</p>
+              <div className="task-row">
+                <strong>{detail.type}</strong>
+                <span className="status">{detail.status}</span>
+              </div>
+              <p className="meta">关联任务：{detail.taskId}</p>
+              <p className="meta">结果来源：{detail.outputSource || '尚未产生'}</p>
+              <p className="meta">这里负责确认这次执行本身是否成功、为什么失败，以及是否值得继续推进。</p>
+            </div>
+            <div className="task-card detail-card-group">
+              <p className="eyebrow">Focus Moves</p>
+              <strong>先处理这次执行结果</strong>
+              <p className="meta">只保留当前最关键的执行后续动作；更完整的恢复与上下文承接仍然回到任务页处理。</p>
+              <div className="chip-row">
+                <button
+                  className="ghost-button"
+                  onClick={() =>
+                    onOpenTask(detail.taskId, {
+                      type: 'focus_next_step',
+                      focusArea: 'detail',
+                      prefillNextStep:
+                        detail.status === 'failed'
+                          ? `检查最近一次 ${detail.type} run 的失败原因，并决定是否重试。`
+                          : `审阅最近一次 ${detail.type} run 的结果，并决定是否继续推进。`,
+                    })
+                  }
+                  type="button"
+                >
+                  回到任务推进
+                </button>
+              </div>
+            </div>
+            <div className="task-card detail-card-group">
               <strong>关联任务</strong>
               <p className="meta">{detail.taskId}</p>
             </div>
-            <div className="task-card">
+            <div className="task-card detail-card-group">
               <strong>附加要求</strong>
               <p className="meta">{detail.instructions || '无'}</p>
             </div>
-            <div className="task-card">
+            <div className="task-card detail-card-group">
               <strong>输出结果</strong>
               <p>{detail.output || '尚无输出'}</p>
             </div>
-            <div className="task-card">
+            <div className="task-card detail-card-group">
               <strong>结果来源</strong>
               <p className="meta">{detail.outputSource || '尚未产生'}</p>
             </div>
-            <div className="task-card">
+            <div className="task-card detail-card-group">
               <strong>失败原因</strong>
               <p className="meta">{detail.failureReason || '无'}</p>
             </div>
-            <div className="task-card">
+            <div className="task-card detail-card-group">
               <strong>时间</strong>
               <p className="meta">{detail.createdAt}</p>
             </div>
-            <div className="task-card">
-              <strong>Related Task Timeline</strong>
+            <div className="task-card detail-card-group detail-card-wide">
+              <p className="eyebrow">Related Task Timeline</p>
+              <strong>这次执行如何改变了任务</strong>
+              <p className="meta">这里只截取最能解释当前 run 的最近任务变化，帮助你判断处理完这次执行后该如何回流到主任务。</p>
               <div className="timeline-list">
                 {getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.id).length ? (
                   getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.id).map((event) => (
