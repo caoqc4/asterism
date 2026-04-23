@@ -48,7 +48,7 @@ export type PriorityLane =
 
 export type HomeActivityRecord = {
   id: string;
-  sourceType: 'decision' | 'run' | 'blocker';
+  sourceType: 'decision' | 'run' | 'blocker' | 'task';
   sourceId: string;
   lane?: PriorityLane;
   relatedSourceContextId?: string | null;

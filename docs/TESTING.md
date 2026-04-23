@@ -177,6 +177,7 @@ Covered today:
 - newly created tasks reopening into clarify-first task detail focus instead of only appearing in the list
 - early captured/triaged tasks reshaping the action desk toward clarification-first primary moves
 - early captured/triaged tasks using clarify-first resume wording in recovery surfaces instead of generic lifecycle fallback copy
+- early captured/triaged tasks surfacing as clarify-first home recent-activity items
 
 These tests focus on high-value control-plane interactions rather than broad page rendering snapshots.
 

@@ -438,6 +438,18 @@ export function App() {
   }
 
   function handleOpenActivity(activity: HomeActivityRecord) {
+    if (activity.sourceType === 'task') {
+      handleOpenTask(activity.taskId, {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+        prefillNextStep:
+          activity.status === 'captured'
+            ? '先补一句任务摘要，再明确下一步。'
+            : '先补清下一步，并判断这条任务是否需要正式拍板或继续执行。',
+      });
+      return;
+    }
+
     if (activity.sourceType === 'decision') {
       if (activity.status === 'approved') {
         handleOpenTask(activity.taskId, {

@@ -995,6 +995,61 @@ describe('HomeBriefService', () => {
     vi.useRealTimers();
   });
 
+  it('surfaces captured tasks as clarify-first recent activity', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_captured',
+            title: 'Captured task',
+            state: 'captured',
+            nextStep: null,
+            updatedAt: '2026-01-02T00:00:00.000Z',
+          }),
+        ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      null as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+      null,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.recentActivity).toContainEqual(
+      expect.objectContaining({
+        sourceType: 'task',
+        sourceId: 'task_captured',
+        taskId: 'task_captured',
+        taskTitle: 'Captured task',
+        title: 'Captured task',
+        status: 'captured',
+        lane: 'clarify',
+      }),
+    );
+    expect(homeData.recentTaskResumes[0]?.latestChange.summary).toBe(
+      '最近刚捕获这条任务，先补清摘要与下一步。',
+    );
+  });
+
   it('prioritizes the latest lifecycle change when deriving home resume preview suggestions', async () => {
     const service = new HomeBriefService(
       {

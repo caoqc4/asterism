@@ -459,6 +459,23 @@ export function buildTaskResumeLatestChange(
         },
       };
     case 'task.transitioned':
+      if (payload?.to === 'captured' || payload?.to === 'triaged') {
+        return {
+          summary:
+            payload.to === 'captured'
+              ? '最近刚捕获这条任务，先补清摘要与下一步。'
+              : '最近刚整理这条任务，先补清摘要与下一步。',
+          action: {
+            label: null,
+            targetType: null,
+            targetId: null,
+          },
+          recentChange: {
+            kind: 'unknown',
+          },
+        };
+      }
+
       return {
         summary: `最近状态从 ${String(payload?.from ?? '未知')} 变更为 ${String(payload?.to ?? '未知')}。`,
         action: {
@@ -498,6 +515,23 @@ export function buildHomeResumeLatestChange(params: {
   const { latestActivity, keySource, activeBlocker, taskState } = params;
 
   if (latestActivity) {
+    if (latestActivity.sourceType === 'task') {
+      return {
+        summary:
+          latestActivity.status === 'captured'
+            ? '最近刚捕获这条任务，先补清摘要与下一步。'
+            : '最近刚整理这条任务，先补清摘要与下一步。',
+        action: {
+          label: null,
+          targetType: null,
+          targetId: null,
+        },
+        recentChange: {
+          kind: 'unknown',
+        },
+      };
+    }
+
     if (latestActivity.sourceType === 'decision') {
       return {
         summary: `最近决策动态：${latestActivity.title} · ${latestActivity.status}`,

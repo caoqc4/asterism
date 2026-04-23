@@ -812,7 +812,21 @@ export class HomeBriefService {
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
       .slice(0, 5);
 
-    return [...decisionEvents, ...runEvents, ...blockerEvents]
+    const taskEvents: HomeActivityRecord[] = tasks
+      .filter((task) => task.state === 'captured' || task.state === 'triaged')
+      .map((task) => ({
+        id: `task:${task.id}:${task.updatedAt}`,
+        sourceType: 'task' as const,
+        sourceId: task.id,
+        lane: 'clarify' as const,
+        taskId: task.id,
+        taskTitle: task.title,
+        title: task.title,
+        status: task.state,
+        updatedAt: task.updatedAt,
+      }));
+
+    return [...decisionEvents, ...runEvents, ...blockerEvents, ...taskEvents]
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
       .slice(0, 5);
   }

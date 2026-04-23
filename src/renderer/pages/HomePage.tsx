@@ -12,6 +12,10 @@ import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
 import { getPriorityLaneLabel } from '@shared/working-context/priority-lanes';
 
 function getActivityActionLabel(activity: HomeActivityRecord): string | null {
+  if (activity.sourceType === 'task') {
+    return '补摘要与下一步';
+  }
+
   if (activity.sourceType === 'decision' && activity.status === 'approved') {
     return '继续推进任务';
   }
@@ -44,6 +48,10 @@ function getActivityActionLabel(activity: HomeActivityRecord): string | null {
 }
 
 function getActivityStatusLabel(activity: HomeActivityRecord): string {
+  if (activity.sourceType === 'task') {
+    return activity.status;
+  }
+
   if (activity.sourceType === 'blocker' && activity.status === 'source_updated') {
     return 'source updated';
   }
@@ -52,6 +60,10 @@ function getActivityStatusLabel(activity: HomeActivityRecord): string {
 }
 
 function getActivityTitle(activity: HomeActivityRecord): string {
+  if (activity.sourceType === 'task') {
+    return activity.status === 'captured' ? '新任务进入整理流程' : '任务进入整理阶段';
+  }
+
   if (activity.sourceType === 'blocker' && activity.status === 'source_updated') {
     return `${activity.title} blocker`;
   }
@@ -540,7 +552,7 @@ export function HomePage({
                       {getActivityActionLabel(event)}
                     </button>
                   ) : null}
-                  {event.sourceType !== 'blocker' ? (
+                  {event.sourceType === 'decision' || event.sourceType === 'run' ? (
                     <button
                       className="ghost-button"
                       onClick={() => onOpenActivityObject(event)}
@@ -548,7 +560,7 @@ export function HomePage({
                     >
                       {event.sourceType === 'decision' ? '查看 Decision' : '查看 Run'}
                     </button>
-                  ) : event.relatedSourceContextId ? (
+                  ) : event.sourceType === 'blocker' && event.relatedSourceContextId ? (
                     <button
                       className="ghost-button"
                       onClick={() => onOpenActivityObject(event)}

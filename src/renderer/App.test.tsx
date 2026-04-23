@@ -4801,4 +4801,56 @@ describe('App UI flow', () => {
       ),
     ).toBeTruthy();
   });
+
+  it('opens clarify-first task activity from home recent activity', async () => {
+    const user = userEvent.setup();
+
+    const capturedTask = buildTaskRecord({
+      id: 'task_captured_activity',
+      title: 'Captured activity task',
+      state: 'captured',
+      nextStep: null,
+      updatedAt: '2026-01-05T00:00:00.000Z',
+    });
+
+    const capturedActivityApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([capturedTask, waitingTask, riskTask]),
+      getTaskDetail: vi.fn(async (taskId: string) =>
+        taskId === capturedTask.id ? buildTaskDetail(capturedTask) : taskDetails[taskId] ?? null,
+      ),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        recentTasks: [capturedTask, ...briefData.recentTasks],
+        missingNextStepTasks: [capturedTask, ...briefData.missingNextStepTasks],
+        recentActivity: [
+          buildActivity({
+            id: 'task:task_captured_activity:2026-01-05T00:00:00.000Z',
+            sourceType: 'task',
+            sourceId: capturedTask.id,
+            taskId: capturedTask.id,
+            taskTitle: capturedTask.title,
+            title: capturedTask.title,
+            status: 'captured',
+            lane: 'clarify',
+            updatedAt: '2026-01-05T00:00:00.000Z',
+          }),
+        ],
+      }),
+    };
+
+    window.api = capturedActivityApi;
+
+    render(<App />);
+
+    const recentActivity = await screen.findByRole('heading', { name: 'Recent Activity' });
+    const activityCard = recentActivity.parentElement?.querySelector('.task-card');
+    expect(activityCard).toBeTruthy();
+    expect(within(activityCard as HTMLElement).getByText('新任务进入整理流程')).toBeTruthy();
+    await user.click(within(activityCard as HTMLElement).getByRole('button', { name: '补摘要与下一步' }));
+
+    expect(await screen.findByRole('heading', { name: 'Captured activity task' })).toBeTruthy();
+    expect(screen.getByText('这条任务刚进入系统，先补清摘要与下一步。')).toBeTruthy();
+    expect(screen.getByText('先补一句任务摘要，再明确下一步。')).toBeTruthy();
+  });
 });
