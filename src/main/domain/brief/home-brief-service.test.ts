@@ -700,4 +700,60 @@ describe('HomeBriefService', () => {
       },
     });
   });
+
+  it('prioritizes the latest lifecycle change when deriving home resume preview suggestions', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_resume_change',
+            title: 'Resume from latest change',
+            state: 'planned',
+            nextStep: null,
+            riskLevel: 'high',
+            riskNote: 'Needs escalation',
+          }),
+        ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([
+          buildDecision({
+            id: 'decision_resume_change',
+            taskId: 'task_resume_change',
+            title: 'Approve escalation path',
+            status: 'approved',
+            updatedAt: '2026-01-02T00:00:00.000Z',
+          }),
+        ]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+      null,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.recentTaskResumes).toHaveLength(1);
+    expect(homeData.recentTaskResumes[0]).toMatchObject({
+      taskId: 'task_resume_change',
+      latestChange: '最近决策动态：Approve escalation path · approved',
+      nextSuggestedMove: '已获批准，继续推进：Approve escalation path',
+      contextActionLabel: '继续推进任务',
+    });
+  });
 });

@@ -386,6 +386,55 @@ export class HomeBriefService {
     };
   }
 
+  private buildResumePreviewSuggestedMove(params: {
+    task: TaskRecord;
+    latestActivity: HomeActivityRecord | undefined;
+    keySource: HomeSourceContextRecord | null;
+  }): string {
+    const explicitNextStep = params.task.nextStep?.trim();
+
+    if (explicitNextStep) {
+      return explicitNextStep;
+    }
+
+    const { latestActivity, keySource, task } = params;
+    const waitingReason = task.activeWaitingItem?.reason ?? task.waitingReason;
+
+    if (latestActivity?.sourceType === 'decision' && latestActivity.status === 'approved') {
+      return `已获批准，继续推进：${latestActivity.title}`;
+    }
+
+    if (latestActivity?.sourceType === 'decision' && latestActivity.status === 'deferred') {
+      return '跟进该决策是否可以恢复拍板，或准备替代推进路径。';
+    }
+
+    if (latestActivity?.sourceType === 'decision' && latestActivity.status === 'cancelled') {
+      return `重新评估该决策并确定替代推进路径：${latestActivity.title}`;
+    }
+
+    if (latestActivity?.sourceType === 'run' && latestActivity.status === 'failed') {
+      return `检查最近一次 ${latestActivity.title} run 的失败原因，并决定是否重试。`;
+    }
+
+    if (latestActivity?.sourceType === 'run' && latestActivity.status === 'completed') {
+      return `审阅最近一次 ${latestActivity.title} run 的结果，并决定是否继续推进。`;
+    }
+
+    if (keySource) {
+      return `基于来源材料继续推进：${keySource.title}`;
+    }
+
+    if (waitingReason) {
+      return `先跟进等待项：${waitingReason}`;
+    }
+
+    if (task.riskLevel === 'high') {
+      return `先处理当前风险：${task.riskNote ?? task.title}`;
+    }
+
+    return '先补一个明确的下一步。';
+  }
+
   private async buildTaskResumePreviews(params: {
     recentTasks: TaskRecord[];
     recentActivity: HomeActivityRecord[];
@@ -429,15 +478,11 @@ export class HomeBriefService {
         keySource,
       });
 
-      const nextSuggestedMove =
-        task.nextStep?.trim() ||
-        (waitingReason
-          ? `先跟进等待项：${waitingReason}`
-          : task.riskLevel === 'high'
-            ? `先处理当前风险：${task.riskNote ?? task.title}`
-            : keySource
-              ? `先查看关键来源：${keySource.title}`
-              : '先补一个明确的下一步。');
+      const nextSuggestedMove = this.buildResumePreviewSuggestedMove({
+        task,
+        latestActivity,
+        keySource,
+      });
 
       let contextAction:
         | {
