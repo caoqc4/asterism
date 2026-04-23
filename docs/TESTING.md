@@ -174,6 +174,7 @@ Covered today:
 - task detail artifact visibility and Home recent-artifact visibility
 - task detail current-snapshot/action-desk/activity-feed presentation paths
 - lane-aware task transition guidance and recommended transition ordering in task detail
+- newly created tasks reopening into clarify-first task detail focus instead of only appearing in the list
 
 These tests focus on high-value control-plane interactions rather than broad page rendering snapshots.
 

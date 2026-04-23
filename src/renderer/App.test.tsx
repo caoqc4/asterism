@@ -4691,4 +4691,51 @@ describe('App UI flow', () => {
       '转到 archived',
     ]);
   });
+
+  it('opens newly created tasks in clarify mode and focuses the new task detail', async () => {
+    const user = userEvent.setup();
+
+    const createdTask = buildTaskRecord({
+      id: 'task_created',
+      title: 'Freshly captured task',
+      state: 'captured',
+      nextStep: null,
+      updatedAt: '2026-01-03T00:00:00.000Z',
+    });
+
+    const createTaskApi: ElectronApi = {
+      ...mockApi,
+      createTask: vi.fn().mockResolvedValue(createdTask),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        recentTasks: [createdTask, ...briefData.recentTasks],
+        missingNextStepTasks: [createdTask, ...briefData.missingNextStepTasks],
+      }),
+      getTaskDetail: vi.fn(async (taskId: string) =>
+        taskId === createdTask.id ? buildTaskDetail(createdTask) : taskDetails[taskId] ?? null,
+      ),
+    };
+
+    window.api = createTaskApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    expect(
+      screen.getByText('新任务创建后会先按「先补清晰度」语义打开，方便立刻补下一步。'),
+    ).toBeTruthy();
+
+    await user.type(screen.getByLabelText('新任务标题'), 'Freshly captured task');
+    await user.click(screen.getByRole('button', { name: '创建任务' }));
+
+    await waitFor(() => {
+      expect(createTaskApi.createTask).toHaveBeenCalledWith({ title: 'Freshly captured task' });
+    });
+
+    expect(await screen.findByRole('heading', { name: 'Freshly captured task' })).toBeTruthy();
+    expect(screen.getByText('状态：captured')).toBeTruthy();
+    const resumePanel = screen.getByText('Task Resume Card').closest('.transition-group');
+    expect(resumePanel).toBeTruthy();
+    expect(within(resumePanel as HTMLElement).getByText('先补清晰度')).toBeTruthy();
+  });
 });

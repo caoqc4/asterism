@@ -438,7 +438,7 @@ type TasksPageProps = {
   onOpenDecision: (decisionId: string) => void;
   onOpenRun: (runId: string) => void;
   onRefresh: () => Promise<void>;
-  onCreateTask: (input: CreateTaskInput) => Promise<void>;
+  onCreateTask: (input: CreateTaskInput) => Promise<TaskListItemRecord>;
   onRemoveProcessTemplate: (bindingId: string) => Promise<AppliedProcessTemplateRecord>;
   onResolveBlocker: (id: string) => Promise<BlockerRecord>;
   onTriggerRun: (input: CreateRunInput) => Promise<void>;
@@ -714,8 +714,9 @@ export function TasksPage({
       return;
     }
 
-    await onCreateTask({ title: newTaskTitle.trim() });
+    const created = await onCreateTask({ title: newTaskTitle.trim() });
     setNewTaskTitle('');
+    setSelectedTaskId(created.id);
     await onRefresh();
   }
 
@@ -1321,6 +1322,7 @@ export function TasksPage({
             新任务标题
             <input value={newTaskTitle} onChange={(event) => setNewTaskTitle(event.target.value)} />
           </label>
+          <p className="meta">新任务创建后会先按「先补清晰度」语义打开，方便立刻补下一步。</p>
           <button type="submit">创建任务</button>
         </form>
         <div className="task-list">

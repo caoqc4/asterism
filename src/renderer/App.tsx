@@ -245,6 +245,16 @@ export function App() {
     const created = await window.api.createTask(input);
     setTasks((current) => [created, ...current]);
     setBriefData(await window.api.getHomeBrief());
+    setFocusedTaskRequest({
+      key: `created:${created.id}:${created.updatedAt}`,
+      taskId: created.id,
+      intent: {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+      },
+    });
+    setCurrentRoute('tasks');
+    return created;
   }
 
   async function handleUpdateTask(input: UpdateTaskInput) {
