@@ -44,6 +44,7 @@ export type TaskResumeCardRecord = {
     sourceContextId: string | null;
     title: string;
     detail: string | null;
+    priorityReason: string | null;
   };
   currentMethod: {
     templateId: string | null;

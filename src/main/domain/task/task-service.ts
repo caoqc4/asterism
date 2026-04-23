@@ -277,6 +277,51 @@ export class TaskService {
     return `最近用于${sourceType}：${reason}`;
   }
 
+  private getKeySourcePriorityReason(
+    detail: TaskDetailBase,
+    keySource: SourceContextRecord,
+  ): string | null {
+    const sourceEvent = detail.timeline.find((event) => {
+      if (
+        (event.type !== 'source_context.created' && event.type !== 'source_context.updated')
+        || !event.payload
+      ) {
+        return false;
+      }
+
+      const payload = safeJsonParse(event.payload);
+      return payload?.sourceContextId === keySource.id;
+    });
+
+    const normalizedNote = keySource.note?.trim() || '';
+
+    if (keySource.isKey) {
+      if (normalizedNote) {
+        return `当前被标记为关键来源：${normalizedNote}`;
+      }
+
+      if (sourceEvent?.type === 'source_context.created') {
+        return '最近加入并标记为关键来源，建议优先参考。';
+      }
+
+      if (sourceEvent?.type === 'source_context.updated') {
+        return '最近更新并保留为关键来源，建议优先参考。';
+      }
+
+      return '当前被标记为关键来源，建议优先参考。';
+    }
+
+    if (sourceEvent?.type === 'source_context.updated') {
+      return '最近更新了该来源，建议先查看。';
+    }
+
+    if (sourceEvent?.type === 'source_context.created') {
+      return '最近加入了该来源，建议先查看。';
+    }
+
+    return normalizedNote ? `当前是最相关的来源材料：${normalizedNote}` : '当前是最相关的来源材料。';
+  }
+
   private buildResumeCard(detail: TaskDetailBase): TaskResumeCardRecord {
     const keySource = detail.sourceContexts.find((item) => item.isKey) ?? detail.sourceContexts[0] ?? null;
     const currentMethod = detail.processTemplates[0] ?? null;
@@ -335,11 +380,13 @@ export class TaskService {
             sourceContextId: keySource.id,
             title: keySource.title,
             detail: keySource.note ?? keySource.uri,
+            priorityReason: this.getKeySourcePriorityReason(detail, keySource),
           }
         : {
             sourceContextId: null,
             title: '暂无关键来源',
             detail: null,
+            priorityReason: null,
           },
       currentMethod: currentMethod
         ? {

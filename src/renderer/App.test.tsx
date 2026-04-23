@@ -63,6 +63,7 @@ function buildTaskDetail(task: TaskRecord): TaskDetail {
         sourceContextId: null,
         title: '暂无关键来源',
         detail: null,
+        priorityReason: null,
       },
       currentMethod: {
         templateId: null,
@@ -617,6 +618,7 @@ describe('App UI flow', () => {
         sourceContextId: 'source_context_resume',
         title: 'Owner escalation memo',
         detail: 'Contains the latest owner-facing language',
+        priorityReason: '当前被标记为关键来源：Contains the latest owner-facing language',
       },
       currentMethod: {
         templateId: 'process_template_resume',
@@ -647,6 +649,11 @@ describe('App UI flow', () => {
       within(resumeSection as HTMLElement).getAllByText(/最近一次执行失败：Model overloaded/).length,
     ).toBeGreaterThan(0);
     expect(within(resumeSection as HTMLElement).getByText('Owner escalation memo')).toBeTruthy();
+    expect(
+      within(resumeSection as HTMLElement).getByText(
+        '当前被标记为关键来源：Contains the latest owner-facing language',
+      ),
+    ).toBeTruthy();
     expect(within(resumeSection as HTMLElement).getByText('Risk review skill')).toBeTruthy();
     expect(
       within(resumeSection as HTMLElement).getByText(
@@ -701,6 +708,7 @@ describe('App UI flow', () => {
         sourceContextId: 'source_context_resume_action',
         title: 'Launch reference memo',
         detail: 'Most important source',
+        priorityReason: '当前被标记为关键来源：Most important source',
       },
       currentMethod: {
         templateId: 'process_template_resume_action',
@@ -772,6 +780,7 @@ describe('App UI flow', () => {
         sourceContextId: null,
         title: '暂无关键来源',
         detail: null,
+        priorityReason: null,
       },
       currentMethod: {
         templateId: null,

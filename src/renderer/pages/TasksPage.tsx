@@ -1237,6 +1237,9 @@ export function TasksPage({
                         {detail.resumeCard.keySource.detail ? (
                           <p className="meta">{detail.resumeCard.keySource.detail}</p>
                         ) : null}
+                        {detail.resumeCard.keySource.priorityReason ? (
+                          <p className="meta">{detail.resumeCard.keySource.priorityReason}</p>
+                        ) : null}
                       </div>
                       <div className="resume-cell">
                         <strong>Current Method</strong>

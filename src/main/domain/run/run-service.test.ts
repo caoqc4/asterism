@@ -31,6 +31,7 @@ function buildTaskDetail(state: TaskDetail['state'] = 'planned'): TaskDetail {
         sourceContextId: null,
         title: '暂无关键来源',
         detail: null,
+        priorityReason: null,
       },
       currentMethod: {
         templateId: null,
