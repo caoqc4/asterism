@@ -10,7 +10,7 @@ import type { AiConfigStatus } from '@shared/types/settings';
 import type { PingResponse } from '@shared/types/ipc';
 import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
 import { formatDependencyAgeLabel, getDependencyAgeReason } from '@shared/working-context/dependency';
-import { getPriorityLaneLabel } from '@shared/working-context/priority-lanes';
+import { getPriorityLaneContextLabel, getPriorityLaneLabel } from '@shared/working-context/priority-lanes';
 
 function getActivityActionLabel(activity: HomeActivityRecord): string | null {
   if (activity.sourceType === 'task') {
@@ -107,10 +107,17 @@ function getActivityTitle(activity: HomeActivityRecord): string {
 }
 
 function renderLaneHeading(title: string, lane: PriorityLane) {
+  const laneLabel = title === 'Closeout Tasks'
+    ? getPriorityLaneContextLabel({
+        lane,
+        completionProgress: { total: 1, satisfied: 1, open: 0 },
+      })
+    : getPriorityLaneLabel(lane);
+
   return (
     <div className="task-row section-heading-row">
       <strong>{title}</strong>
-      <span className={`status lane-status lane-status-${lane}`}>{getPriorityLaneLabel(lane)}</span>
+      <span className={`status lane-status lane-status-${lane}`}>{laneLabel}</span>
     </div>
   );
 }
@@ -589,7 +596,16 @@ export function HomePage({
                   <strong>{action.label}</strong>
                   <div className="task-row task-row-compact">
                     {getPriorityLaneLabel(action.lane) ? (
-                      <span className={`status lane-status lane-status-${action.lane}`}>{getPriorityLaneLabel(action.lane)}</span>
+                      <span className={`status lane-status lane-status-${action.lane}`}>
+                        {(action.id.startsWith('completion-ready:') || action.id.startsWith('near-completion:'))
+                          ? getPriorityLaneContextLabel({
+                              lane: action.lane,
+                              completionProgress: action.id.startsWith('completion-ready:')
+                                ? { total: 1, satisfied: 1, open: 0 }
+                                : { total: 2, satisfied: 1, open: 1 },
+                            })
+                          : getPriorityLaneLabel(action.lane)}
+                      </span>
                     ) : null}
                     <span className="status">{action.priority}</span>
                   </div>
@@ -1089,7 +1105,12 @@ export function HomePage({
                     <strong>{preview.taskTitle}</strong>
                     <div className="inline-statuses">
                       {getPriorityLaneLabel(preview.lane) ? (
-                        <span className={`status lane-status lane-status-${preview.lane}`}>{getPriorityLaneLabel(preview.lane)}</span>
+                        <span className={`status lane-status lane-status-${preview.lane}`}>
+                          {getPriorityLaneContextLabel({
+                            lane: preview.lane,
+                            completionProgress: preview.completionStatus,
+                          })}
+                        </span>
                       ) : null}
                       <span className="status">{preview.currentState}</span>
                     </div>

@@ -77,6 +77,11 @@ export type HomeTaskResumePreviewRecord = {
   taskId: string;
   taskTitle: string;
   lane?: PriorityLane;
+  completionStatus?: {
+    total: number;
+    satisfied: number;
+    open: number;
+  };
   currentState: string;
   latestChange: ResumeLatestChangeRecord;
   currentBlocker?: {

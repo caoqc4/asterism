@@ -910,6 +910,58 @@ describe('App UI flow', () => {
     ).toBeTruthy();
   });
 
+  it('shows a closeout-aware lane label on task resume cards', async () => {
+    const user = userEvent.setup();
+
+    const closeoutTask = buildTaskRecord({
+      id: 'task_closeout_resume',
+      title: 'Closeout resume task',
+      state: 'planned',
+      nextStep: 'Confirm final sign-off',
+    });
+
+    const closeoutDetail = buildTaskDetail(closeoutTask);
+    closeoutDetail.resumeCard = {
+      ...closeoutDetail.resumeCard,
+      completionStatus: {
+        total: 2,
+        satisfied: 1,
+        open: 1,
+        summary: '已满足 1/2 条完成标准',
+      },
+      nextSuggestedMove: '优先补齐最后一条完成标准，并判断“Closeout resume task”是否可以收尾。',
+    };
+
+    window.api = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([closeoutTask]),
+      getTaskDetail: vi.fn(async (taskId: string) => (taskId === closeoutTask.id ? closeoutDetail : null)),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        recentTasks: [closeoutTask],
+        completionReadyTaskCount: 0,
+        nearCompletionTaskCount: 1,
+        nearCompletionTasks: [
+          {
+            ...closeoutTask,
+            completionProgress: { total: 2, satisfied: 1, open: 1 },
+          },
+        ],
+      }),
+    };
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /closeout resume task/i }));
+    await screen.findByRole('heading', { name: 'Closeout resume task' });
+
+    const resumeSection = screen.getByRole('heading', { name: 'Task Resume Card' }).closest('.detail-card-group');
+
+    expect(resumeSection).not.toBeNull();
+    expect(within(resumeSection as HTMLElement).getByText('继续推进/复核 · 收尾判断')).toBeTruthy();
+  });
+
   it('uses task resume card actions to focus context and prefill the next step', async () => {
     const user = userEvent.setup();
 
@@ -1210,7 +1262,7 @@ describe('App UI flow', () => {
     const readyTaskText = await screen.findByText('Ready to finish task');
     const closeoutSection = screen.getByText('Closeout Tasks').closest('section');
     expect(closeoutSection).toBeTruthy();
-    expect(within(closeoutSection as HTMLElement).getByText('继续推进/复核')).toBeTruthy();
+    expect(within(closeoutSection as HTMLElement).getByText('继续推进/复核 · 收尾判断')).toBeTruthy();
     expect(readyTaskText).toBeTruthy();
     expect(within(closeoutSection as HTMLElement).getByText('Almost done task')).toBeTruthy();
 

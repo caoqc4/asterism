@@ -53,7 +53,7 @@ import {
 } from '@shared/working-context/timeline';
 import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
 import type { PriorityLane } from '@shared/types/brief';
-import { getPriorityLaneLabel } from '@shared/working-context/priority-lanes';
+import { getPriorityLaneContextLabel, getPriorityLaneLabel } from '@shared/working-context/priority-lanes';
 import {
   formatDependencyAgeLabel,
   getDependencyAgeReason,
@@ -776,7 +776,10 @@ export function TasksPage({
     summary: '尚未定义完成标准',
   };
   const resumeLane = detail ? taskPriorityLanes.get(detail.id) : undefined;
-  const resumeLaneLabel = getPriorityLaneLabel(resumeLane);
+  const resumeLaneLabel = getPriorityLaneContextLabel({
+    lane: resumeLane,
+    completionProgress: detail?.resumeCard.completionStatus,
+  });
   const quickDecisionGuidance = getQuickDecisionGuidance(resumeLane);
   const quickRunGuidance = getQuickRunGuidance(resumeLane);
   const taskDecisions = detail

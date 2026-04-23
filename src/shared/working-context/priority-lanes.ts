@@ -29,6 +29,46 @@ export function getPriorityLaneLabel(lane: PriorityLane | undefined): string | n
   return PRIORITY_LANE_LABELS[lane];
 }
 
+export function isCloseoutCompletionProgress(
+  progress:
+    | {
+        total: number;
+        satisfied: number;
+        open: number;
+      }
+    | undefined
+    | null,
+): boolean {
+  if (!progress || progress.total <= 0) {
+    return false;
+  }
+
+  return progress.open === 0 || (progress.satisfied > 0 && progress.open === 1);
+}
+
+export function getPriorityLaneContextLabel(params: {
+  lane: PriorityLane | undefined;
+  completionProgress?:
+    | {
+        total: number;
+        satisfied: number;
+        open: number;
+      }
+    | null;
+}): string | null {
+  const baseLabel = getPriorityLaneLabel(params.lane);
+
+  if (!baseLabel) {
+    return null;
+  }
+
+  if (params.lane === 'continue_or_review' && isCloseoutCompletionProgress(params.completionProgress)) {
+    return `${baseLabel} · 收尾判断`;
+  }
+
+  return baseLabel;
+}
+
 export function comparePriorityLanes(left: PriorityLane | undefined, right: PriorityLane | undefined): number {
   return PRIORITY_LANE_ORDER[left ?? 'steady'] - PRIORITY_LANE_ORDER[right ?? 'steady'];
 }

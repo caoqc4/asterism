@@ -826,6 +826,11 @@ export class HomeBriefService {
         taskId: task.id,
         taskTitle: task.title,
         lane: params.laneByTaskId.get(task.id) ?? 'steady',
+        completionStatus: task.completionProgress ?? {
+          total: 0,
+          satisfied: 0,
+          open: 0,
+        },
         currentState: currentStateParts.join(' · '),
         latestChange: {
           summary: latestChange.summary,
