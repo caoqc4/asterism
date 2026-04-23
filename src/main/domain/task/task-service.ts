@@ -24,6 +24,12 @@ import { SourceContextRepository } from '../../db/repositories/source-context-re
 import { TaskProcessBindingRepository } from '../../db/repositories/task-process-binding-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
+import {
+  buildTaskResumeLatestChange,
+  deriveNextSuggestedMove,
+  getCurrentMethodSelectionReason,
+  getKeySourcePriorityReason,
+} from '../working-context/assembler.js';
 
 const allowedTransitions: Record<TaskState, TaskState[]> = {
   captured: ['triaged', 'planned', 'archived'],
@@ -34,18 +40,6 @@ const allowedTransitions: Record<TaskState, TaskState[]> = {
   completed: ['archived'],
   archived: [],
 };
-
-function safeJsonParse(value: string): Record<string, unknown> | null {
-  try {
-    return JSON.parse(value) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
-function isResumeLatestChangeMetaEvent(type: string): boolean {
-  return type === 'process_template.selected' || type === 'process_template.skipped';
-}
 
 export class TaskService {
   constructor(
@@ -135,238 +129,6 @@ export class TaskService {
     };
   }
 
-  private buildResumeLatestChange(detail: TaskDetailBase): TaskResumeCardRecord['latestChangeAction'] & {
-    summary: string;
-  } {
-    const latestEvent = this.getLatestResumeRelevantEvent(detail);
-
-    if (!latestEvent) {
-      return {
-        summary: '最近没有新的生命周期变化。',
-        label: null,
-        targetType: null,
-        targetId: null,
-      };
-    }
-
-    const payload = latestEvent.payload ? JSON.parse(latestEvent.payload) as Record<string, unknown> : null;
-
-    switch (latestEvent.type) {
-      case 'task.run_failed':
-        return {
-          summary: `最近一次执行失败：${String(payload?.failureReason ?? '未记录失败原因')}。`,
-          label: payload?.runId ? '查看 Run' : null,
-          targetType: payload?.runId ? 'run' : null,
-          targetId: typeof payload?.runId === 'string' ? payload.runId : null,
-        };
-      case 'task.run_completed':
-        return {
-          summary: `最近一次执行已完成，任务恢复到 ${String(payload?.nextState ?? 'planned')}。`,
-          label: payload?.runId ? '查看 Run' : null,
-          targetType: payload?.runId ? 'run' : null,
-          targetId: typeof payload?.runId === 'string' ? payload.runId : null,
-        };
-      case 'task.decision_approved':
-        return {
-          summary: `最近一条决策已获批准：${String(payload?.decisionTitle ?? '未命名决策')}。`,
-          label: payload?.decisionId ? '查看 Decision' : null,
-          targetType: payload?.decisionId ? 'decision' : null,
-          targetId: typeof payload?.decisionId === 'string' ? payload.decisionId : null,
-        };
-      case 'task.decision_deferred':
-        return {
-          summary: `最近一条决策被延后，当前等待：${String(payload?.waitingReason ?? '未填写')}。`,
-          label: payload?.decisionId ? '查看 Decision' : null,
-          targetType: payload?.decisionId ? 'decision' : null,
-          targetId: typeof payload?.decisionId === 'string' ? payload.decisionId : null,
-        };
-      case 'task.decision_cancelled':
-        return {
-          summary: `最近一条决策已取消：${String(payload?.decisionTitle ?? '未命名决策')}。`,
-          label: payload?.decisionId ? '查看 Decision' : null,
-          targetType: payload?.decisionId ? 'decision' : null,
-          targetId: typeof payload?.decisionId === 'string' ? payload.decisionId : null,
-        };
-      case 'waiting_item.created':
-      case 'waiting_item.updated':
-        return {
-          summary: `最近更新了等待项：${String(payload?.reason ?? '未填写')}。`,
-          label: null,
-          targetType: null,
-          targetId: null,
-        };
-      case 'waiting_item.resolved':
-        return {
-          summary: `最近解除等待项，任务恢复到 ${String(payload?.nextState ?? 'planned')}。`,
-          label: null,
-          targetType: null,
-          targetId: null,
-        };
-      case 'source_context.created':
-      case 'source_context.updated':
-        return {
-          summary: `最近更新了来源材料：${String(payload?.title ?? '未命名来源')}。`,
-          label: payload?.sourceContextId ? '查看来源' : null,
-          targetType: payload?.sourceContextId ? 'source_context' : null,
-          targetId: typeof payload?.sourceContextId === 'string' ? payload.sourceContextId : null,
-        };
-      case 'artifact.created':
-        return {
-          summary: `最近生成了产物：${String(payload?.title ?? '未命名产物')}。`,
-          label: payload?.sourceType === 'run' && typeof payload?.sourceId === 'string' ? '查看 Run' : null,
-          targetType: payload?.sourceType === 'run' && typeof payload?.sourceId === 'string' ? 'run' : null,
-          targetId: payload?.sourceType === 'run' && typeof payload?.sourceId === 'string' ? payload.sourceId : null,
-        };
-      case 'task.risk_changed':
-        return {
-          summary: '最近调整了任务风险等级。',
-          label: null,
-          targetType: null,
-          targetId: null,
-        };
-      case 'task.next_step_changed':
-        return {
-          summary: '最近更新了下一步。',
-          label: null,
-          targetType: null,
-          targetId: null,
-        };
-      case 'task.transitioned':
-        return {
-          summary: `最近状态从 ${String(payload?.from ?? '未知')} 变更为 ${String(payload?.to ?? '未知')}。`,
-          label: null,
-          targetType: null,
-          targetId: null,
-        };
-      default:
-        return {
-          summary: '最近有新的任务活动。',
-          label: null,
-          targetType: null,
-          targetId: null,
-        };
-    }
-  }
-
-  private getCurrentMethodSelectionReason(
-    detail: TaskDetailBase,
-    templateId: string,
-  ): string | null {
-    const selectedEvent = detail.timeline.find((event) => {
-      if (event.type !== 'process_template.selected' || !event.payload) {
-        return false;
-      }
-
-      const payload = safeJsonParse(event.payload);
-      const templateIds = Array.isArray(payload?.templateIds) ? payload.templateIds : [];
-      return templateIds.includes(templateId);
-    });
-
-    if (!selectedEvent?.payload) {
-      return null;
-    }
-
-    const payload = safeJsonParse(selectedEvent.payload);
-    const reason = typeof payload?.reason === 'string' ? payload.reason.trim() : '';
-    if (!reason) {
-      return null;
-    }
-
-    const sourceType = payload?.sourceType === 'decision_draft' ? '决策草拟' : '执行';
-    return `最近用于${sourceType}：${reason}`;
-  }
-
-  private getLatestResumeRelevantEvent(detail: TaskDetailBase): TaskDetailBase['timeline'][number] | undefined {
-    return detail.timeline.find((event) => !isResumeLatestChangeMetaEvent(event.type))
-      ?? detail.timeline[0];
-  }
-
-  private getNextSuggestedMoveFromLatestChange(
-    detail: TaskDetailBase,
-  ): string | null {
-    const latestEvent = this.getLatestResumeRelevantEvent(detail);
-
-    if (!latestEvent?.payload) {
-      return null;
-    }
-
-    const payload = safeJsonParse(latestEvent.payload);
-
-    switch (latestEvent.type) {
-      case 'task.run_failed':
-        return '检查最近一次执行失败原因，并决定是否重试。';
-      case 'task.run_completed':
-        return '审阅最新执行结果，并决定是否继续推进。';
-      case 'task.decision_approved':
-        return `已获批准，继续推进：${String(payload?.decisionTitle ?? detail.title)}`;
-      case 'task.decision_deferred':
-        return '跟进该决策是否可以恢复拍板，或准备替代推进路径。';
-      case 'task.decision_cancelled':
-        return `重新评估该决策并确定替代推进路径：${String(payload?.decisionTitle ?? detail.title)}`;
-      case 'source_context.created':
-      case 'source_context.updated':
-        return `基于来源材料继续推进：${String(payload?.title ?? '最新来源材料')}`;
-      case 'artifact.created':
-        return `基于产物继续推进：${String(payload?.title ?? '最新产物')}`;
-      case 'waiting_item.created':
-      case 'waiting_item.updated':
-        return `先跟进等待项：${String(payload?.reason ?? detail.waitingReason ?? detail.title)}`;
-      case 'waiting_item.resolved':
-        return `确认解除等待后的下一步推进：${String(payload?.nextState ?? 'planned')}`;
-      case 'task.risk_changed':
-        return detail.riskLevel === 'high'
-          ? `先处理当前风险：${detail.riskNote ?? detail.title}`
-          : '确认风险变化后是否需要调整下一步。';
-      default:
-        return null;
-    }
-  }
-
-  private getKeySourcePriorityReason(
-    detail: TaskDetailBase,
-    keySource: SourceContextRecord,
-  ): string | null {
-    const sourceEvent = detail.timeline.find((event) => {
-      if (
-        (event.type !== 'source_context.created' && event.type !== 'source_context.updated')
-        || !event.payload
-      ) {
-        return false;
-      }
-
-      const payload = safeJsonParse(event.payload);
-      return payload?.sourceContextId === keySource.id;
-    });
-
-    const normalizedNote = keySource.note?.trim() || '';
-
-    if (keySource.isKey) {
-      if (normalizedNote) {
-        return `当前被标记为关键来源：${normalizedNote}`;
-      }
-
-      if (sourceEvent?.type === 'source_context.created') {
-        return '最近加入并标记为关键来源，建议优先参考。';
-      }
-
-      if (sourceEvent?.type === 'source_context.updated') {
-        return '最近更新并保留为关键来源，建议优先参考。';
-      }
-
-      return '当前被标记为关键来源，建议优先参考。';
-    }
-
-    if (sourceEvent?.type === 'source_context.updated') {
-      return '最近更新了该来源，建议先查看。';
-    }
-
-    if (sourceEvent?.type === 'source_context.created') {
-      return '最近加入了该来源，建议先查看。';
-    }
-
-    return normalizedNote ? `当前是最相关的来源材料：${normalizedNote}` : '当前是最相关的来源材料。';
-  }
-
   private buildResumeCard(detail: TaskDetailBase): TaskResumeCardRecord {
     const keySource = detail.sourceContexts.find((item) => item.isKey) ?? detail.sourceContexts[0] ?? null;
     const currentMethod = detail.processTemplates[0] ?? null;
@@ -385,27 +147,17 @@ export class TaskService {
       );
     }
 
-    const latestChange = this.buildResumeLatestChange(detail);
-
-    let nextSuggestedMove = detail.nextStep?.trim() || '';
-
-    if (!nextSuggestedMove) {
-      const lifecycleSuggestedMove = this.getNextSuggestedMoveFromLatestChange(detail);
-
-      if (lifecycleSuggestedMove) {
-        nextSuggestedMove = lifecycleSuggestedMove;
-      } else if (waitingReason) {
-        nextSuggestedMove = `先跟进等待项：${waitingReason}`;
-      } else if (detail.riskLevel === 'high') {
-        nextSuggestedMove = `先处理当前风险：${detail.riskNote ?? detail.title}`;
-      } else if (keySource) {
-        nextSuggestedMove = `先查看关键来源：${keySource.title}`;
-      } else if (latestArtifact) {
-        nextSuggestedMove = `先基于最新产物继续推进：${latestArtifact.title}`;
-      } else {
-        nextSuggestedMove = '先补一个明确的下一步。';
-      }
-    }
+    const latestChange = buildTaskResumeLatestChange(detail.timeline);
+    const nextSuggestedMove = deriveNextSuggestedMove({
+      explicitNextStep: detail.nextStep,
+      taskTitle: detail.title,
+      waitingReason,
+      riskLevel: detail.riskLevel,
+      riskNote: detail.riskNote,
+      keySourceTitle: keySource?.title ?? null,
+      latestArtifactTitle: latestArtifact?.title ?? null,
+      recentChange: latestChange.recentChange,
+    });
 
     const summaryParts = [
       `这条任务目前处于 ${detail.state}${waitingReason ? `，正在等待“${waitingReason}”` : ''}${detail.riskLevel === 'high' && detail.riskNote ? `，且存在高风险“${detail.riskNote}”` : ''}。`,
@@ -429,7 +181,11 @@ export class TaskService {
             sourceContextId: keySource.id,
             title: keySource.title,
             detail: keySource.note ?? keySource.uri,
-            priorityReason: this.getKeySourcePriorityReason(detail, keySource),
+            priorityReason: getKeySourcePriorityReason({
+              timeline: detail.timeline,
+              keySource,
+              audience: 'task',
+            }),
           }
         : {
             sourceContextId: null,
@@ -442,7 +198,11 @@ export class TaskService {
             templateId: currentMethod.id,
             title: currentMethod.title,
             detail: currentMethod.summary ?? currentMethod.kind,
-            selectionReason: this.getCurrentMethodSelectionReason(detail, currentMethod.id),
+            selectionReason: getCurrentMethodSelectionReason({
+              timeline: detail.timeline,
+              currentMethod,
+              audience: 'task',
+            }),
           }
         : {
             templateId: null,

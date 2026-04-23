@@ -16,14 +16,13 @@ import { TaskProcessBindingRepository } from '../../db/repositories/task-process
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
 import type { TaskRecord } from '../../../shared/types/task.js';
 import type { BriefProcessTemplateCandidate } from '../../../shared/types/brief.js';
-
-function safeJsonParse(value: string): Record<string, unknown> | null {
-  try {
-    return JSON.parse(value) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
+import {
+  buildHomeResumeLatestChange,
+  deriveNextSuggestedMove,
+  getCurrentMethodSelectionReason,
+  getKeySourcePriorityReason,
+  safeJsonParse,
+} from '../working-context/assembler.js';
 
 function buildRecommendedActions(params: {
   activeTasks: HomeBriefData['recentTasks'];
@@ -248,193 +247,6 @@ export class HomeBriefService {
     return [...aggregated.values()].slice(0, 8);
   }
 
-  private getKeySourcePreviewReason(params: {
-    keySource: HomeSourceContextRecord | null;
-    timeline: { type: string; payload: string | null }[];
-  }): string | null {
-    const { keySource, timeline } = params;
-
-    if (!keySource) {
-      return null;
-    }
-
-    const sourceEvent = timeline.find((event) => {
-      if (
-        (event.type !== 'source_context.created' && event.type !== 'source_context.updated')
-        || !event.payload
-      ) {
-        return false;
-      }
-
-      const payload = safeJsonParse(event.payload);
-      return payload?.sourceContextId === keySource.id;
-    });
-
-    const normalizedNote = keySource.note?.trim() || '';
-
-    if (keySource.isKey) {
-      if (normalizedNote) {
-        return `关键来源：${normalizedNote}`;
-      }
-
-      if (sourceEvent?.type === 'source_context.updated') {
-        return '最近更新并保留为关键来源。';
-      }
-
-      if (sourceEvent?.type === 'source_context.created') {
-        return '最近加入并标记为关键来源。';
-      }
-
-      return '当前被标记为关键来源。';
-    }
-
-    if (sourceEvent?.type === 'source_context.updated') {
-      return '最近更新了该来源。';
-    }
-
-    if (sourceEvent?.type === 'source_context.created') {
-      return '最近加入了该来源。';
-    }
-
-    return normalizedNote ? `来源说明：${normalizedNote}` : '当前最相关的来源材料。';
-  }
-
-  private getCurrentMethodPreviewReason(params: {
-    currentMethod: Awaited<ReturnType<TaskProcessBindingRepository['listActiveForTasks']>>[number] | null;
-    timeline: { type: string; payload: string | null }[];
-  }): string | null {
-    const { currentMethod, timeline } = params;
-
-    if (!currentMethod) {
-      return null;
-    }
-
-    const selectedEvent = timeline.find((event) => {
-      if (event.type !== 'process_template.selected' || !event.payload) {
-        return false;
-      }
-
-      const payload = safeJsonParse(event.payload);
-      const templateIds = Array.isArray(payload?.templateIds) ? payload.templateIds : [];
-      return templateIds.includes(currentMethod.id);
-    });
-
-    if (!selectedEvent?.payload) {
-      return currentMethod.summary ?? null;
-    }
-
-    const payload = safeJsonParse(selectedEvent.payload);
-    const reason = typeof payload?.reason === 'string' ? payload.reason.trim() : '';
-
-    if (!reason) {
-      return currentMethod.summary ?? null;
-    }
-
-    const sourceType = payload?.sourceType === 'decision_draft' ? '最近用于决策草拟' : '最近用于执行';
-    return `${sourceType}：${reason}`;
-  }
-
-  private buildResumePreviewLatestChange(params: {
-    latestActivity: HomeActivityRecord | undefined;
-    keySource: HomeSourceContextRecord | null;
-  }): {
-    summary: string;
-    action: HomeTaskResumePreviewRecord['latestChangeAction'];
-  } {
-    const { latestActivity, keySource } = params;
-
-    if (latestActivity) {
-      if (latestActivity.sourceType === 'decision') {
-        return {
-          summary: `最近决策动态：${latestActivity.title} · ${latestActivity.status}`,
-          action: {
-            label: '查看 Decision',
-            targetType: 'decision',
-            targetId: latestActivity.sourceId,
-          },
-        };
-      }
-
-      return {
-        summary: `最近执行动态：${latestActivity.title} · ${latestActivity.status}`,
-        action: {
-          label: '查看 Run',
-          targetType: 'run',
-          targetId: latestActivity.sourceId,
-        },
-      };
-    }
-
-    if (keySource) {
-      return {
-        summary: `最近关键来源更新：${keySource.title}`,
-        action: {
-          label: '查看来源',
-          targetType: 'source_context',
-          targetId: keySource.id,
-        },
-      };
-    }
-
-    return {
-      summary: '最近没有新的关键变化。',
-      action: {
-        label: null,
-        targetType: null,
-        targetId: null,
-      },
-    };
-  }
-
-  private buildResumePreviewSuggestedMove(params: {
-    task: TaskRecord;
-    latestActivity: HomeActivityRecord | undefined;
-    keySource: HomeSourceContextRecord | null;
-  }): string {
-    const explicitNextStep = params.task.nextStep?.trim();
-
-    if (explicitNextStep) {
-      return explicitNextStep;
-    }
-
-    const { latestActivity, keySource, task } = params;
-    const waitingReason = task.activeWaitingItem?.reason ?? task.waitingReason;
-
-    if (latestActivity?.sourceType === 'decision' && latestActivity.status === 'approved') {
-      return `已获批准，继续推进：${latestActivity.title}`;
-    }
-
-    if (latestActivity?.sourceType === 'decision' && latestActivity.status === 'deferred') {
-      return '跟进该决策是否可以恢复拍板，或准备替代推进路径。';
-    }
-
-    if (latestActivity?.sourceType === 'decision' && latestActivity.status === 'cancelled') {
-      return `重新评估该决策并确定替代推进路径：${latestActivity.title}`;
-    }
-
-    if (latestActivity?.sourceType === 'run' && latestActivity.status === 'failed') {
-      return `检查最近一次 ${latestActivity.title} run 的失败原因，并决定是否重试。`;
-    }
-
-    if (latestActivity?.sourceType === 'run' && latestActivity.status === 'completed') {
-      return `审阅最近一次 ${latestActivity.title} run 的结果，并决定是否继续推进。`;
-    }
-
-    if (keySource) {
-      return `基于来源材料继续推进：${keySource.title}`;
-    }
-
-    if (waitingReason) {
-      return `先跟进等待项：${waitingReason}`;
-    }
-
-    if (task.riskLevel === 'high') {
-      return `先处理当前风险：${task.riskNote ?? task.title}`;
-    }
-
-    return '先补一个明确的下一步。';
-  }
-
   private async buildTaskResumePreviews(params: {
     recentTasks: TaskRecord[];
     recentActivity: HomeActivityRecord[];
@@ -473,15 +285,19 @@ export class HomeBriefService {
         );
       }
 
-      const latestChange = this.buildResumePreviewLatestChange({
+      const latestChange = buildHomeResumeLatestChange({
         latestActivity,
         keySource,
       });
 
-      const nextSuggestedMove = this.buildResumePreviewSuggestedMove({
-        task,
-        latestActivity,
-        keySource,
+      const nextSuggestedMove = deriveNextSuggestedMove({
+        explicitNextStep: task.nextStep,
+        taskTitle: task.title,
+        waitingReason,
+        riskLevel: task.riskLevel,
+        riskNote: task.riskNote,
+        keySourceTitle: keySource?.title ?? null,
+        recentChange: latestChange.recentChange,
       });
 
       let contextAction:
@@ -590,14 +406,18 @@ export class HomeBriefService {
         latestChange: latestChange.summary,
         latestChangeAction: latestChange.action,
         keySourceTitle: keySource?.title ?? null,
-        keySourceReason: this.getKeySourcePreviewReason({
-          keySource,
-          timeline,
-        }),
+        keySourceReason: keySource
+          ? getKeySourcePriorityReason({
+              timeline,
+              keySource,
+              audience: 'home',
+            })
+          : null,
         currentMethodTitle: currentMethod?.title ?? null,
-        currentMethodReason: this.getCurrentMethodPreviewReason({
-          currentMethod,
+        currentMethodReason: getCurrentMethodSelectionReason({
           timeline,
+          currentMethod,
+          audience: 'home',
         }),
         nextSuggestedMove,
         sourceContextId: keySource?.id ?? null,
