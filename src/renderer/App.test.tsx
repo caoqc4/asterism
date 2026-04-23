@@ -1207,6 +1207,63 @@ describe('App UI flow', () => {
     ).toBeTruthy();
   });
 
+  it('uses clarify-first task list copy for newly captured work', async () => {
+    const user = userEvent.setup();
+
+    const capturedTask = buildTaskRecord({
+      id: 'task_lane_summary_captured',
+      title: 'Captured lane task',
+      state: 'captured',
+      summary: null,
+      nextStep: null,
+      updatedAt: '2026-01-06T00:00:00.000Z',
+    });
+    const steadyTask = buildTaskRecord({
+      id: 'task_lane_summary_steady_2',
+      title: 'Steady lane task',
+      state: 'planned',
+      nextStep: 'Continue outreach',
+      updatedAt: '2026-01-04T00:00:00.000Z',
+    });
+
+    window.api = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([steadyTask, capturedTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        const task =
+          [steadyTask, capturedTask].find((item) => item.id === taskId) ??
+          capturedTask;
+        return buildTaskDetail(task);
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 2,
+        recentTasks: [capturedTask, steadyTask],
+        missingNextStepTaskCount: 1,
+        missingNextStepTasks: [capturedTask],
+        waitingTaskCount: 0,
+        waitingTasks: [],
+        recommendedActions: [],
+      }),
+    };
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+
+    expect(
+      await screen.findByText(
+        /当前队列先处理新进入系统、还需整理清楚的任务；共 2 条任务，先补摘要、下一步和是否需要拍板。/,
+      ),
+    ).toBeTruthy();
+
+    const capturedButton = await screen.findByRole('button', { name: /Captured lane task/i });
+    expect(within(capturedButton).getByText('刚进入系统，先补一句任务摘要。')).toBeTruthy();
+    expect(
+      within(capturedButton).getByText('整理重点：先补一句任务摘要，再明确下一步。'),
+    ).toBeTruthy();
+  });
+
   it('offers a direct action to resolve the current waiting item', async () => {
     const user = userEvent.setup();
 

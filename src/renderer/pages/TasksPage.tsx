@@ -85,6 +85,38 @@ const transitionOptions: Record<TaskState, TaskState[]> = {
 
 const TIMELINE_PREVIEW_COUNT = 5;
 
+function isEarlyTask(task: Pick<TaskListItemRecord, 'state'>): boolean {
+  return task.state === 'captured' || task.state === 'triaged';
+}
+
+function getTaskCardSummary(task: TaskListItemRecord): string {
+  if (task.summary?.trim()) {
+    return task.summary;
+  }
+
+  if (isEarlyTask(task)) {
+    return task.state === 'captured'
+      ? '刚进入系统，先补一句任务摘要。'
+      : '刚完成初步整理，先补清摘要与下一步。';
+  }
+
+  return task.id;
+}
+
+function getTaskCardNextMoveHint(task: TaskListItemRecord): string | null {
+  if (task.nextStep) {
+    return `下一步：${task.nextStep}`;
+  }
+
+  if (isEarlyTask(task)) {
+    return task.state === 'captured'
+      ? '整理重点：先补一句任务摘要，再明确下一步。'
+      : '整理重点：先补清下一步，并判断是否需要拍板或执行。';
+  }
+
+  return null;
+}
+
 function getTaskCardTone(task: TaskListItemRecord): string {
   if (task.riskLevel === 'high') {
     return 'task-card-danger';
@@ -1357,6 +1389,8 @@ export function TasksPage({
   const taskQueueSummary =
     tasks.length === 0
       ? '当前没有任务，先创建一条开始流转。'
+      : orderedLaneLabels[0] === '先补清晰度' && tasks.some((task) => isEarlyTask(task))
+        ? `当前队列先处理新进入系统、还需整理清楚的任务；共 ${tasks.length} 条任务，先补摘要、下一步和是否需要拍板。`
       : orderedLaneLabels.length <= 1
         ? `当前队列按「${orderedLaneLabels[0] ?? '稳态推进'}」语义排序，共 ${tasks.length} 条任务。`
         : `当前队列会先处理「${orderedLaneLabels[0]}」，再到「${orderedLaneLabels[1]}」；共 ${tasks.length} 条任务，分布在 ${orderedLaneLabels.length} 个优先级层次。`;
@@ -1414,7 +1448,7 @@ export function TasksPage({
                         <span className="status">{task.state}</span>
                       </div>
                     </div>
-                    <p className="meta">{task.summary || task.id}</p>
+                    <p className="meta">{getTaskCardSummary(task)}</p>
                     {buildTaskBadges(task).length ? (
                       <div className="signal-row">
                         {buildTaskBadges(task).map((badge) => (
@@ -1424,7 +1458,9 @@ export function TasksPage({
                         ))}
                       </div>
                     ) : null}
-                    {task.nextStep ? <p className="meta">下一步：{task.nextStep}</p> : null}
+                    {getTaskCardNextMoveHint(task) ? (
+                      <p className="meta">{getTaskCardNextMoveHint(task)}</p>
+                    ) : null}
                     {task.waitingReason ? <p className="meta">等待：{task.waitingReason}</p> : null}
                   </button>
                 </div>
