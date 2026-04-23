@@ -61,6 +61,9 @@ function buildHomeBriefData(): HomeBriefData {
     ],
     recentActivity: [],
     recentBriefSnapshots: [],
+    priorityLane: 'unblock_or_decide',
+    priorityHeadline: '当前有 1 条任务需要先解阻塞或拍板',
+    priorityLede: '当前最值得先处理的是解阻塞与拍板条件。',
     schedulerStatus: {
       enabled: true,
       running: true,
@@ -83,5 +86,52 @@ describe('buildFallbackBrief', () => {
     expect(brief).toContain('blocker_reason=当前阻塞原因：Need formal sign-off');
     expect(brief).toContain('source=Launch memo');
     expect(brief).toContain('method=Launch workflow');
+    expect(brief).toContain('推荐动作：');
+    expect(brief).toContain('当前没有推荐动作');
+  });
+
+  it('groups recommended actions and recent activity by priority lane wording', () => {
+    const brief = buildFallbackBrief(
+      {
+        ...buildHomeBriefData(),
+        recommendedActions: [
+          {
+            id: 'action_escalate',
+            label: '优先升级阻塞项',
+            reason: '阻塞项已停留太久。',
+            taskId: 'task_resume_brief',
+            priority: 'high',
+            lane: 'escalate_now',
+          },
+          {
+            id: 'action_continue',
+            label: '基于结果继续推进',
+            reason: '最新 run 已完成。',
+            taskId: 'task_resume_brief',
+            priority: 'medium',
+            lane: 'continue_or_review',
+          },
+        ],
+        recentActivity: [
+          {
+            id: 'run_lane',
+            sourceType: 'run',
+            sourceId: 'run_1',
+            lane: 'continue_or_review',
+            taskId: 'task_resume_brief',
+            taskTitle: 'Resume task',
+            title: 'draft',
+            status: 'completed',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+      },
+      'startup',
+    );
+
+    expect(brief).toContain('立即升级：');
+    expect(brief).toContain('继续推进/复核：');
+    expect(brief).toContain('优先升级阻塞项');
+    expect(brief).toContain('run:draft [completed] | task=Resume task');
   });
 });

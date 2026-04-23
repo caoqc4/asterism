@@ -3,6 +3,7 @@ import { generateText } from 'ai';
 import type {
   BriefProcessTemplateCandidate,
   HomeBriefData,
+  PriorityLane,
 } from '../../shared/types/brief.js';
 import type { RuntimeAiConfig } from '../keychain/ai-config-service.js';
 import { getLanguageModel } from './ai-client.js';
@@ -44,6 +45,47 @@ function formatRecentActivityLine(
 
 function formatTemplateLine(template: BriefProcessTemplateCandidate): string {
   return `- ${template.title} [${template.kind}] | tasks=${template.taskTitles.join(' / ')}`;
+}
+
+const LANE_LABELS: Record<PriorityLane, string> = {
+  escalate_now: '立即升级',
+  unblock_or_decide: '先解阻塞/拍板',
+  continue_or_review: '继续推进/复核',
+  clarify: '先补清晰度',
+  steady: '稳态推进',
+};
+
+const LANE_ORDER: PriorityLane[] = [
+  'escalate_now',
+  'unblock_or_decide',
+  'continue_or_review',
+  'clarify',
+  'steady',
+];
+
+function formatLaneSection<T>(
+  items: T[],
+  getLane: (item: T) => PriorityLane | undefined,
+  formatItem: (item: T) => string,
+): string[] {
+  const grouped = new Map<PriorityLane, string[]>();
+
+  for (const item of items) {
+    const lane = getLane(item) ?? 'steady';
+    const bucket = grouped.get(lane) ?? [];
+    bucket.push(formatItem(item));
+    grouped.set(lane, bucket);
+  }
+
+  return LANE_ORDER.flatMap((lane) => {
+    const entries = grouped.get(lane);
+
+    if (!entries?.length) {
+      return [];
+    }
+
+    return [`${LANE_LABELS[lane]}：`, ...entries, ''];
+  }).filter((line, index, all) => !(line === '' && index === all.length - 1));
 }
 
 function formatResumePreviewLine(preview: HomeBriefData['recentTaskResumes'][number]): string {
@@ -127,6 +169,21 @@ export function buildFallbackBrief(
   const resumePreviewLines = homeData.recentTaskResumes.length
     ? homeData.recentTaskResumes.map((preview) => formatResumePreviewLine(preview)).join('\n')
     : '- 当前没有可恢复的任务预览';
+  const recommendedActionLines = homeData.recommendedActions.length
+    ? formatLaneSection(
+        homeData.recommendedActions,
+        (action) => action.lane,
+        (action) => formatRecommendedAction(action.label, action.reason, action.priority),
+      ).join('\n')
+    : '- 当前没有推荐动作';
+  const activityLaneLines = homeData.recentActivity.length
+    ? formatLaneSection(
+        homeData.recentActivity,
+        (event) => event.lane,
+        (event) =>
+          formatRecentActivityLine(event.sourceType, event.title, event.status, event.taskTitle),
+      ).join('\n')
+    : '- 最近没有关键决策或执行动态';
 
   return [
     `Taskplane Brief (${kind})`,
@@ -160,13 +217,7 @@ export function buildFallbackBrief(
       : '- 当前没有等待中任务',
     '',
     '推荐动作：',
-    homeData.recommendedActions.length
-      ? homeData.recommendedActions
-          .map((action) =>
-            formatRecommendedAction(action.label, action.reason, action.priority),
-          )
-          .join('\n')
-      : '- 当前没有推荐动作',
+    recommendedActionLines,
     '',
     '任务恢复预览：',
     resumePreviewLines,
@@ -175,7 +226,7 @@ export function buildFallbackBrief(
     artifactLines,
     '',
     '最近动态：',
-    activityLines,
+    activityLaneLines,
     '',
     '关键来源材料：',
     sourceContextLines,
@@ -197,7 +248,7 @@ function buildPrompt(
     `请将以下任务控制台数据整理成一段适合知识工作者快速阅读的 brief。当前 brief 类型：${kind}。`,
     '输出要求：',
     '1. 先用一句话概括当前局势。',
-    '2. 然后给 3 到 6 条重点，优先写任务、决策和执行动态。',
+    '2. 然后按优先级语义分段写 3 到 6 条重点，优先写“立即升级”“先解阻塞/拍板”，再写“继续推进/复核”与“先补清晰度”。',
     '3. 如果当前没有明显风险，也要明确说明。',
     '4. 输出必须是人类可直接阅读的中文 brief，不要输出 JSON。',
     selectedTemplates.length
@@ -258,8 +309,10 @@ function buildPrompt(
     '',
     '推荐动作：',
     ...(homeData.recommendedActions.length
-      ? homeData.recommendedActions.map((action) =>
-          formatRecommendedAction(action.label, action.reason, action.priority),
+      ? formatLaneSection(
+          homeData.recommendedActions,
+          (action) => action.lane,
+          (action) => formatRecommendedAction(action.label, action.reason, action.priority),
         )
       : ['- 无']),
     '',
@@ -278,8 +331,11 @@ function buildPrompt(
     '',
     '最近动态：',
     ...(homeData.recentActivity.length
-      ? homeData.recentActivity.map((event) =>
-          formatRecentActivityLine(event.sourceType, event.title, event.status, event.taskTitle),
+      ? formatLaneSection(
+          homeData.recentActivity,
+          (event) => event.lane,
+          (event) =>
+            formatRecentActivityLine(event.sourceType, event.title, event.status, event.taskTitle),
         )
       : ['- 无']),
     '',
