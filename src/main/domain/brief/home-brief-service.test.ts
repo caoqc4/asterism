@@ -270,6 +270,12 @@ describe('HomeBriefService', () => {
         currentMethodTitle: 'Risk review skill',
         nextSuggestedMove: 'Follow up on Friday',
         sourceContextId: null,
+        contextActionLabel: '跟进等待项',
+        contextActionIntent: {
+          type: 'focus_waiting_follow_up',
+          focusArea: 'detail',
+          prefillNextStep: 'Follow up on Friday',
+        },
       },
       {
         taskId: 'task_risk',
@@ -280,6 +286,14 @@ describe('HomeBriefService', () => {
         currentMethodTitle: 'Risk review skill',
         nextSuggestedMove: 'Escalate today',
         sourceContextId: 'source_context_risk',
+        contextActionLabel: '处理风险',
+        contextActionIntent: {
+          type: 'focus_risk_review',
+          focusArea: 'detail',
+          prefillNextStep: 'Escalate today',
+          prefillRiskLevel: 'high',
+          prefillRiskNote: 'Deadline slipping',
+        },
       },
       {
         taskId: 'task_missing',
@@ -290,6 +304,12 @@ describe('HomeBriefService', () => {
         currentMethodTitle: null,
         nextSuggestedMove: '先补一个明确的下一步。',
         sourceContextId: null,
+        contextActionLabel: '采用建议下一步',
+        contextActionIntent: {
+          type: 'focus_next_step',
+          focusArea: 'detail',
+          prefillNextStep: '先补一个明确的下一步。',
+        },
       },
       {
         taskId: 'task_done',
@@ -300,6 +320,12 @@ describe('HomeBriefService', () => {
         currentMethodTitle: null,
         nextSuggestedMove: '先补一个明确的下一步。',
         sourceContextId: null,
+        contextActionLabel: '采用建议下一步',
+        contextActionIntent: {
+          type: 'focus_next_step',
+          focusArea: 'detail',
+          prefillNextStep: '先补一个明确的下一步。',
+        },
       },
     ]);
     expect(homeData.processTemplateCandidates).toEqual([

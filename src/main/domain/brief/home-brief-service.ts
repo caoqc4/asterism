@@ -294,6 +294,46 @@ export class HomeBriefService {
               ? `先查看关键来源：${keySource.title}`
               : '先补一个明确的下一步。');
 
+      const contextAction =
+        waitingReason
+          ? {
+              label: '跟进等待项',
+              intent: {
+                type: 'focus_waiting_follow_up',
+                focusArea: 'detail',
+                prefillNextStep: nextSuggestedMove,
+              } as const,
+            }
+          : task.riskLevel === 'high'
+            ? {
+                label: '处理风险',
+                intent: {
+                  type: 'focus_risk_review',
+                  focusArea: 'detail',
+                  prefillNextStep: nextSuggestedMove,
+                  prefillRiskLevel: 'high',
+                  prefillRiskNote: task.riskNote,
+                } as const,
+              }
+            : keySource
+              ? {
+                  label: '查看关键来源',
+                  intent: {
+                    type: 'focus_source_context',
+                    focusArea: 'detail',
+                    sourceContextId: keySource.id,
+                    prefillNextStep: nextSuggestedMove,
+                  } as const,
+                }
+              : {
+                  label: '采用建议下一步',
+                  intent: {
+                    type: 'focus_next_step',
+                    focusArea: 'detail',
+                    prefillNextStep: nextSuggestedMove,
+                  } as const,
+                };
+
       return {
         taskId: task.id,
         taskTitle: task.title,
@@ -303,6 +343,8 @@ export class HomeBriefService {
         currentMethodTitle: currentMethod?.title ?? null,
         nextSuggestedMove,
         sourceContextId: keySource?.id ?? null,
+        contextActionLabel: contextAction.label,
+        contextActionIntent: contextAction.intent,
       };
     });
   }

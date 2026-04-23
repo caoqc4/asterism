@@ -114,6 +114,17 @@ export function HomePage({
     });
   }
 
+  function openTaskResumeContext(preview: HomeBriefData['recentTaskResumes'][number]) {
+    onOpenAction({
+      id: `resume-context:${preview.taskId}`,
+      label: `${preview.contextActionLabel}：${preview.taskTitle}`,
+      reason: preview.latestChange,
+      taskId: preview.taskId,
+      priority: 'medium',
+      intent: preview.contextActionIntent,
+    });
+  }
+
   return (
     <section className="page-grid">
       <article className="panel hero page-hero">
@@ -456,27 +467,13 @@ export function HomePage({
                   >
                     恢复任务
                   </button>
-                  {preview.sourceContextId ? (
-                    <button
-                      className="ghost-button"
-                      onClick={() =>
-                        onOpenSourceContext({
-                          id: preview.sourceContextId!,
-                          taskId: preview.taskId,
-                          taskTitle: preview.taskTitle,
-                          title: preview.keySourceTitle ?? '关键来源',
-                          kind: 'context',
-                          isKey: true,
-                          uri: null,
-                          note: preview.latestChange,
-                          updatedAt: '',
-                        })
-                      }
-                      type="button"
-                    >
-                      查看关键来源
-                    </button>
-                  ) : null}
+                  <button
+                    className="ghost-button"
+                    onClick={() => openTaskResumeContext(preview)}
+                    type="button"
+                  >
+                    {preview.contextActionLabel}
+                  </button>
                 </div>
               </div>
             ))

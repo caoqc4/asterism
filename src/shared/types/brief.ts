@@ -62,6 +62,8 @@ export type HomeTaskResumePreviewRecord = {
   currentMethodTitle: string | null;
   nextSuggestedMove: string;
   sourceContextId: string | null;
+  contextActionLabel: string;
+  contextActionIntent: RecommendedActionIntent;
 };
 
 export type BriefProcessTemplateCandidate = {

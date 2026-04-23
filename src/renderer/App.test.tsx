@@ -290,6 +290,14 @@ describe('App UI flow', () => {
         currentMethodTitle: 'Risk review skill',
         nextSuggestedMove: '已获批准，继续推进：Approve escalation path',
         sourceContextId: 'source_context_home_1',
+        contextActionLabel: '处理风险',
+        contextActionIntent: {
+          type: 'focus_risk_review',
+          focusArea: 'detail',
+          prefillNextStep: '已获批准，继续推进：Approve escalation path',
+          prefillRiskLevel: 'high',
+          prefillRiskNote: 'Deadline slipping',
+        },
       },
       {
         taskId: waitingTask.id,
@@ -300,6 +308,12 @@ describe('App UI flow', () => {
         currentMethodTitle: null,
         nextSuggestedMove: '跟进并确认是否解除等待：Waiting for legal review',
         sourceContextId: null,
+        contextActionLabel: '跟进等待项',
+        contextActionIntent: {
+          type: 'focus_waiting_follow_up',
+          focusArea: 'detail',
+          prefillNextStep: '跟进并确认是否解除等待：Waiting for legal review',
+        },
       },
     ],
     recentActivity: [
@@ -3055,6 +3069,28 @@ describe('App UI flow', () => {
 
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
       '已获批准，继续推进：Approve escalation path',
+    );
+  });
+
+  it('opens contextual resume actions from home previews', async () => {
+    const user = userEvent.setup();
+
+    window.api = mockApi;
+
+    render(<App />);
+
+    await screen.findByText('Resume Previews');
+    await user.click(screen.getByRole('button', { name: '处理风险' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '已获批准，继续推进：Approve escalation path',
+    );
+    expect((screen.getByLabelText('Risk Note') as HTMLTextAreaElement).value).toBe(
+      'Deadline slipping',
     );
   });
 
