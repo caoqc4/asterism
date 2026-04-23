@@ -337,6 +337,26 @@ button {
   grid-column: 1 / -1;
 }
 
+.studio-section {
+  margin-top: 16px;
+}
+
+.studio-section:first-of-type {
+  margin-top: 0;
+}
+
+.studio-section-head {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.studio-form {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(31, 41, 55, 0.08);
+}
+
 .resume-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

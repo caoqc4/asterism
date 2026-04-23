@@ -1706,49 +1706,60 @@ export function TasksPage({
               <div className="detail-cluster-grid">
                 <div className="transition-group detail-card-group">
                   <h3>Source Context</h3>
-                  <div className="timeline-list">
-                    {detail.sourceContexts.length ? (
-                      detail.sourceContexts.map((item) => (
-                        <div className="timeline-item" key={item.id}>
-                          <div className="task-row">
-                            <strong>{item.title}</strong>
-                            <span className="signal-pill timeline-badge timeline-item-default">
-                              {formatSourceContextKind(item.kind)}
-                              {item.isKey ? ' · key' : ''}
-                            </span>
+                  <p className="meta">这一层管理任务依赖的材料，不和方法模板混在一起。</p>
+                  <div className="studio-section">
+                    <div className="studio-section-head">
+                      <strong>Material Shelf</strong>
+                      <p className="meta">当前任务已挂载的来源材料。</p>
+                    </div>
+                    <div className="timeline-list">
+                      {detail.sourceContexts.length ? (
+                        detail.sourceContexts.map((item) => (
+                          <div className="timeline-item" key={item.id}>
+                            <div className="task-row">
+                              <strong>{item.title}</strong>
+                              <span className="signal-pill timeline-badge timeline-item-default">
+                                {formatSourceContextKind(item.kind)}
+                                {item.isKey ? ' · key' : ''}
+                              </span>
+                            </div>
+                            {item.uri ? (
+                              <p className="meta">
+                                <a href={item.uri} rel="noreferrer" target="_blank">
+                                  {item.uri}
+                                </a>
+                              </p>
+                            ) : null}
+                            {item.note ? <p className="meta">{item.note}</p> : null}
+                            {item.content ? <p className="meta brief-preview">{item.content}</p> : null}
+                            <div className="timeline-actions">
+                              <button
+                                className="ghost-button timeline-action"
+                                onClick={() => populateSourceContextForm(item)}
+                                type="button"
+                              >
+                                编辑来源
+                              </button>
+                              <button
+                                className="ghost-button timeline-action"
+                                onClick={() => void handleArchiveCurrentSourceContext(item.id)}
+                                type="button"
+                              >
+                                归档来源
+                              </button>
+                            </div>
                           </div>
-                          {item.uri ? (
-                            <p className="meta">
-                              <a href={item.uri} rel="noreferrer" target="_blank">
-                                {item.uri}
-                              </a>
-                            </p>
-                          ) : null}
-                          {item.note ? <p className="meta">{item.note}</p> : null}
-                          {item.content ? <p className="meta brief-preview">{item.content}</p> : null}
-                          <div className="timeline-actions">
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => populateSourceContextForm(item)}
-                              type="button"
-                            >
-                              编辑来源
-                            </button>
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => void handleArchiveCurrentSourceContext(item.id)}
-                              type="button"
-                            >
-                              归档来源
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="meta">当前任务还没有挂载来源材料。</p>
-                    )}
+                        ))
+                      ) : (
+                        <p className="meta">当前任务还没有挂载来源材料。</p>
+                      )}
+                    </div>
                   </div>
-                  <form className="stack" onSubmit={handleSaveSourceContext}>
+                  <form className="stack studio-form" onSubmit={handleSaveSourceContext}>
+                    <div className="studio-section-head">
+                      <strong>{sourceContextEditingId ? 'Edit Material' : 'Add Material'}</strong>
+                      <p className="meta">在这里维护来源标题、链接、说明和是否为关键来源。</p>
+                    </div>
                     <label>
                       来源标题
                       <input
@@ -1824,79 +1835,95 @@ export function TasksPage({
 
                 <div className="transition-group detail-card-group" ref={processContextSectionRef}>
                   <h3>Process Context</h3>
-                  <div className="timeline-list">
-                    {detail.processTemplates.length ? (
-                      detail.processTemplates.map((item) => (
-                        <div className="timeline-item timeline-item-state" key={item.bindingId}>
-                          <div className="task-row">
-                            <strong>{item.title}</strong>
-                            <span className="signal-pill timeline-badge timeline-item-state">
-                              {formatProcessTemplateKind(item.kind)}
-                            </span>
-                          </div>
-                          {item.summary ? <p className="meta">{item.summary}</p> : null}
-                          {item.tags.length ? <p className="meta">tags: {item.tags.join(', ')}</p> : null}
-                          <p className="meta">active template · bound at {item.boundAt}</p>
-                          <p className="meta brief-preview">{item.content}</p>
-                          <div className="timeline-actions">
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => populateProcessTemplateForm(item)}
-                              type="button"
-                            >
-                              编辑模板
-                            </button>
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => void handleRemoveCurrentProcessTemplate(item.bindingId)}
-                              type="button"
-                            >
-                              移除模板
-                            </button>
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => void handleArchiveCurrentProcessTemplate(item.id)}
-                              type="button"
-                            >
-                              归档模板
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="meta">当前任务还没有挂载方法模板。</p>
-                    )}
-                  </div>
-                  <div className="timeline-list">
-                    <div className="timeline-item">
-                      <strong>Template Library</strong>
-                      {detail.availableProcessTemplates.length ? (
-                        <div className="stack">
-                          {detail.availableProcessTemplates.map((item) => (
-                            <div className="task-row" key={item.id}>
-                              <div>
-                                <strong>{item.title}</strong>
-                                <p className="meta">
-                                  {formatProcessTemplateKind(item.kind)}
-                                  {item.summary ? ` · ${item.summary}` : ''}
-                                </p>
-                              </div>
+                  <p className="meta">这一层管理任务当前采用的方法和可复用模板库。</p>
+                  <div className="studio-section">
+                    <div className="studio-section-head">
+                      <strong>Active Methods</strong>
+                      <p className="meta">当前任务已挂载的方法模板。</p>
+                    </div>
+                    <div className="timeline-list">
+                      {detail.processTemplates.length ? (
+                        detail.processTemplates.map((item) => (
+                          <div className="timeline-item timeline-item-state" key={item.bindingId}>
+                            <div className="task-row">
+                              <strong>{item.title}</strong>
+                              <span className="signal-pill timeline-badge timeline-item-state">
+                                {formatProcessTemplateKind(item.kind)}
+                              </span>
+                            </div>
+                            {item.summary ? <p className="meta">{item.summary}</p> : null}
+                            {item.tags.length ? <p className="meta">tags: {item.tags.join(', ')}</p> : null}
+                            <p className="meta">active template · bound at {item.boundAt}</p>
+                            <p className="meta brief-preview">{item.content}</p>
+                            <div className="timeline-actions">
                               <button
                                 className="ghost-button timeline-action"
-                                onClick={() => void handleApplyAvailableProcessTemplate(item.id)}
+                                onClick={() => populateProcessTemplateForm(item)}
                                 type="button"
                               >
-                                挂载模板
+                                编辑模板
+                              </button>
+                              <button
+                                className="ghost-button timeline-action"
+                                onClick={() => void handleRemoveCurrentProcessTemplate(item.bindingId)}
+                                type="button"
+                              >
+                                移除模板
+                              </button>
+                              <button
+                                className="ghost-button timeline-action"
+                                onClick={() => void handleArchiveCurrentProcessTemplate(item.id)}
+                                type="button"
+                              >
+                                归档模板
                               </button>
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        ))
                       ) : (
-                        <p className="meta">当前没有可挂载的其它模板。</p>
+                        <p className="meta">当前任务还没有挂载方法模板。</p>
                       )}
                     </div>
                   </div>
-                  <form className="stack" onSubmit={handleSaveProcessTemplate}>
+                  <div className="studio-section">
+                    <div className="studio-section-head">
+                      <strong>Template Library</strong>
+                      <p className="meta">可复用的方法模板库，用来给当前任务补充方法卡。</p>
+                    </div>
+                    <div className="timeline-list">
+                      <div className="timeline-item">
+                        {detail.availableProcessTemplates.length ? (
+                          <div className="stack">
+                            {detail.availableProcessTemplates.map((item) => (
+                              <div className="task-row" key={item.id}>
+                                <div>
+                                  <strong>{item.title}</strong>
+                                  <p className="meta">
+                                    {formatProcessTemplateKind(item.kind)}
+                                    {item.summary ? ` · ${item.summary}` : ''}
+                                  </p>
+                                </div>
+                                <button
+                                  className="ghost-button timeline-action"
+                                  onClick={() => void handleApplyAvailableProcessTemplate(item.id)}
+                                  type="button"
+                                >
+                                  挂载模板
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="meta">当前没有可挂载的其它模板。</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <form className="stack studio-form" onSubmit={handleSaveProcessTemplate}>
+                    <div className="studio-section-head">
+                      <strong>{processTemplateEditingId ? 'Edit Template' : 'Create Template'}</strong>
+                      <p className="meta">维护可复用的方法卡，再决定是否挂到当前任务上。</p>
+                    </div>
                     <label>
                       模板标题
                       <input
