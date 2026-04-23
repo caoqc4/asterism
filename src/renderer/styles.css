@@ -235,6 +235,41 @@ button {
   gap: 12px;
 }
 
+.task-row-compact {
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.lane-status {
+  font-size: 12px;
+  padding: 4px 10px;
+}
+
+.lane-status-escalate_now {
+  background: rgba(239, 68, 68, 0.16);
+  color: #991b1b;
+}
+
+.lane-status-unblock_or_decide {
+  background: rgba(245, 158, 11, 0.16);
+  color: #92400e;
+}
+
+.lane-status-continue_or_review {
+  background: rgba(59, 130, 246, 0.14);
+  color: #1d4ed8;
+}
+
+.lane-status-clarify {
+  background: rgba(107, 114, 128, 0.14);
+  color: #374151;
+}
+
+.lane-status-steady {
+  background: rgba(16, 185, 129, 0.14);
+  color: #065f46;
+}
+
 .task-card-button {
   width: 100%;
   border: 1px solid transparent;

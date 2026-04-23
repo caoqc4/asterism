@@ -2,6 +2,7 @@ import type {
   HomeActivityRecord,
   HomeBriefData,
   HomeSourceContextRecord,
+  PriorityLane,
   RecommendedAction,
 } from '@shared/types/brief';
 import type { ArtifactRecord } from '@shared/types/artifact';
@@ -59,6 +60,23 @@ function getActivityTitle(activity: HomeActivityRecord): string {
     : activity.sourceType === 'run'
       ? `${activity.title} run`
       : `${activity.title} blocker`;
+}
+
+function getLaneLabel(lane: PriorityLane | undefined): string | null {
+  switch (lane) {
+    case 'escalate_now':
+      return '立即升级';
+    case 'unblock_or_decide':
+      return '先解阻塞/拍板';
+    case 'continue_or_review':
+      return '继续推进/复核';
+    case 'clarify':
+      return '先补清晰度';
+    case 'steady':
+      return '稳态推进';
+    default:
+      return null;
+  }
 }
 
 type HomePageProps = {
@@ -419,7 +437,12 @@ export function HomePage({
               >
                 <div className="task-row">
                   <strong>{action.label}</strong>
-                  <span className="status">{action.priority}</span>
+                  <div className="task-row task-row-compact">
+                    {getLaneLabel(action.lane) ? (
+                      <span className={`status lane-status lane-status-${action.lane}`}>{getLaneLabel(action.lane)}</span>
+                    ) : null}
+                    <span className="status">{action.priority}</span>
+                  </div>
                 </div>
                 <p className="meta">{action.reason}</p>
                 {action.taskId ? <p className="meta">taskId: {action.taskId}</p> : null}

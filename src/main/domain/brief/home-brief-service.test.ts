@@ -290,6 +290,13 @@ describe('HomeBriefService', () => {
       'waiting:task_waiting',
       'next-step:task_missing',
     ]);
+    expect(homeData.recommendedActions.map((action) => action.lane)).toEqual([
+      'escalate_now',
+      'unblock_or_decide',
+      'continue_or_review',
+      'clarify',
+      'clarify',
+    ]);
     expect(homeData.priorityLane).toBe('escalate_now');
     expect(homeData.priorityHeadline).toBe('当前有 1 个高风险任务需要优先处理');
     expect(homeData.recentActivity.map((event) => event.id)).toEqual([
@@ -456,6 +463,7 @@ describe('HomeBriefService', () => {
         reason: '暂时没有高风险、等待阻塞或缺少下一步的活跃任务。',
         taskId: null,
         priority: 'low',
+        lane: 'steady',
         intent: {
           type: 'open_task',
         },
@@ -514,6 +522,7 @@ describe('HomeBriefService', () => {
         reason: '暂时没有高风险、等待阻塞或缺少下一步的活跃任务。',
         taskId: null,
         priority: 'low',
+        lane: 'steady',
         intent: {
           type: 'open_task',
         },

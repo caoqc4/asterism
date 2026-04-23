@@ -4175,6 +4175,48 @@ describe('App UI flow', () => {
     ).toBeTruthy();
   });
 
+  it('shows lightweight priority lane labels on recommended actions', async () => {
+    const laneTask = buildTaskRecord({
+      id: 'task_lane_action',
+      title: 'Lane action task',
+      state: 'planned',
+      nextStep: 'Resolve blocker',
+    });
+
+    window.api = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([laneTask]),
+      getTaskDetail: vi.fn().mockResolvedValue(buildTaskDetail(laneTask)),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 1,
+        recentTasks: [laneTask],
+        recommendedActions: [
+          {
+            id: 'decision:lane',
+            label: '跟进拍板任务',
+            reason: '当前需要先完成拍板。',
+            taskId: 'task_lane_action',
+            priority: 'high',
+            lane: 'unblock_or_decide',
+            intent: {
+              type: 'open_task',
+              focusArea: 'quick-actions',
+            },
+          },
+        ],
+      }),
+    };
+
+    render(<App />);
+
+    const actionLabel = await screen.findByText('跟进拍板任务');
+    const actionCard = actionLabel.closest('button');
+    expect(actionCard).toBeTruthy();
+    expect(within(actionCard as HTMLElement).getByText('先解阻塞/拍板')).toBeTruthy();
+    expect(within(actionCard as HTMLElement).getByText('high')).toBeTruthy();
+  });
+
   it('opens task resume previews from home with a prefilled next step', async () => {
     const user = userEvent.setup();
 

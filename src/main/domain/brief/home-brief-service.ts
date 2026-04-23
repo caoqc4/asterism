@@ -301,7 +301,7 @@ function buildRecommendedActions(params: {
       return left.order - right.order;
     })
     .slice(0, 5)
-    .map(({ lane: _lane, order: _order, ...action }) => action);
+    .map(({ order: _order, ...action }) => action);
 }
 
 function classifyPriorityLane(params: {

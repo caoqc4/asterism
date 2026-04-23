@@ -35,6 +35,7 @@ export type RecommendedAction = {
   reason: string;
   taskId: string | null;
   priority: 'high' | 'medium' | 'low';
+  lane?: PriorityLane;
   intent?: RecommendedActionIntent;
 };
 
