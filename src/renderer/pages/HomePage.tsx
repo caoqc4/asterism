@@ -453,6 +453,12 @@ export function HomePage({
                     <span className="status">{preview.currentState}</span>
                   </div>
                   <p className="meta">{preview.latestChange.summary}</p>
+                  {preview.currentBlocker?.title ? (
+                    <p className="meta">当前阻塞：{preview.currentBlocker.title}</p>
+                  ) : null}
+                  {preview.currentBlocker?.priorityReason ? (
+                    <p className="meta">{preview.currentBlocker.priorityReason}</p>
+                  ) : null}
                   {preview.keySource.title ? (
                     <p className="meta">关键来源：{preview.keySource.title}</p>
                   ) : null}

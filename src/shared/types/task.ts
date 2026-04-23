@@ -67,6 +67,7 @@ export type TaskResumeCardRecord = {
     blockerId: string | null;
     title: string;
     detail: string | null;
+    priorityReason?: string | null;
   };
   keySource: ResumeKeySourceSliceRecord;
   currentMethod: ResumeCurrentMethodSliceRecord;

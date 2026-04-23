@@ -34,6 +34,7 @@ import { WaitingItemRepository } from '../../db/repositories/waiting-item-reposi
 import {
   buildTaskResumeLatestChange,
   deriveNextSuggestedMove,
+  getCurrentBlockerPriorityReason,
   getCurrentMethodSelectionReason,
   getKeySourcePriorityReason,
 } from '../working-context/assembler.js';
@@ -214,11 +215,16 @@ export class TaskService {
               (detail.activeBlocker.owner
                 ? `当前卡在 ${detail.activeBlocker.owner}`
                 : detail.activeBlocker.kind),
+            priorityReason: getCurrentBlockerPriorityReason({
+              blocker: detail.activeBlocker,
+              audience: 'task',
+            }),
           }
         : {
             blockerId: null,
             title: '暂无当前阻塞项',
             detail: null,
+            priorityReason: null,
           },
       keySource: keySource
         ? {

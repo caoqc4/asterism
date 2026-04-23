@@ -257,6 +257,7 @@ describe('TaskService', () => {
       blockerId: 'blocker_1',
       title: 'Legal approval pending',
       detail: 'Need formal sign-off before launch',
+      priorityReason: '当前主阻塞项：Need formal sign-off before launch',
     });
     expect(detail?.resumeCard.keySource.title).toBe('Partner website shortlist');
     expect(detail?.resumeCard.keySource.priorityReason).toBe(

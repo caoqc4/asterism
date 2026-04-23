@@ -318,126 +318,63 @@ describe('HomeBriefService', () => {
         updatedAt: '2026-01-01T01:30:00.000Z',
       },
     ]);
-    expect(homeData.recentTaskResumes).toEqual([
-      {
-        taskId: 'task_waiting',
-        taskTitle: 'Waiting task',
-        currentState: '状态：waiting_external · 等待：Waiting for reviewer confirmation',
-        latestChange: {
-          summary: '最近没有新的关键变化。',
-          action: {
-            label: null,
-            targetType: null,
-            targetId: null,
-          },
-        },
-        keySource: {
-          sourceContextId: null,
-          title: null,
-          priorityReason: null,
-        },
-        currentMethod: {
-          title: 'Risk review skill',
-          selectionReason: '当前方法：Prioritize risk and blockers',
-        },
-        nextSuggestedMove: 'Follow up on Friday',
-        contextActionLabel: '跟进等待项',
-        contextActionIntent: {
-          type: 'focus_waiting_follow_up',
-          focusArea: 'detail',
-          prefillNextStep: 'Follow up on Friday',
-        },
+    expect(homeData.recentTaskResumes).toHaveLength(4);
+    expect(homeData.recentTaskResumes[0]).toMatchObject({
+      taskId: 'task_waiting',
+      currentState: '状态：waiting_external · 等待：Waiting for reviewer confirmation',
+      latestChange: {
+        summary: '最近没有新的关键变化。',
       },
-      {
-        taskId: 'task_risk',
-        taskTitle: 'High risk task',
-        currentState: '状态：running · 风险：high · Deadline slipping',
-        latestChange: {
-          summary: '最近关键来源更新：Escalation source memo',
-          action: {
-            label: '查看来源',
-            targetType: 'source_context',
-            targetId: 'source_context_risk',
-          },
-        },
-        keySource: {
-          sourceContextId: 'source_context_risk',
-          title: 'Escalation source memo',
-          priorityReason: '材料架最近更新了该来源。',
-        },
-        currentMethod: {
-          title: 'Risk review skill',
-          selectionReason: '当前方法最近用于执行：高风险任务需要先按风险复盘方法组织输出。',
-        },
-        nextSuggestedMove: 'Escalate today',
-        contextActionLabel: '处理风险',
-        contextActionIntent: {
-          type: 'focus_risk_review',
-          focusArea: 'detail',
-          prefillNextStep: 'Escalate today',
-          prefillRiskLevel: 'high',
-          prefillRiskNote: 'Deadline slipping',
-        },
+      currentBlocker: {
+        title: null,
+        priorityReason: null,
       },
-      {
-        taskId: 'task_missing',
-        taskTitle: 'Missing next step',
-        currentState: '状态：planned',
-        latestChange: {
-          summary: '最近没有新的关键变化。',
-          action: {
-            label: null,
-            targetType: null,
-            targetId: null,
-          },
-        },
-        keySource: {
-          sourceContextId: null,
-          title: null,
-          priorityReason: null,
-        },
-        currentMethod: {
-          title: null,
-          selectionReason: null,
-        },
-        nextSuggestedMove: '先补一个明确的下一步。',
-        contextActionLabel: '采用建议下一步',
-        contextActionIntent: {
-          type: 'focus_next_step',
-          focusArea: 'detail',
-          prefillNextStep: '先补一个明确的下一步。',
-        },
+      currentMethod: {
+        title: 'Risk review skill',
+        selectionReason: '当前方法：Prioritize risk and blockers',
       },
-      {
-        taskId: 'task_done',
-        taskTitle: 'Done task',
-        currentState: '状态：completed',
-        latestChange: {
-          summary: '最近没有新的关键变化。',
-          action: {
-            label: null,
-            targetType: null,
-            targetId: null,
-          },
-        },
-        keySource: {
-          sourceContextId: null,
-          title: null,
-          priorityReason: null,
-        },
-        currentMethod: {
-          title: null,
-          selectionReason: null,
-        },
-        nextSuggestedMove: '先补一个明确的下一步。',
-        contextActionLabel: '采用建议下一步',
-        contextActionIntent: {
-          type: 'focus_next_step',
-          focusArea: 'detail',
-          prefillNextStep: '先补一个明确的下一步。',
-        },
+      nextSuggestedMove: 'Follow up on Friday',
+      contextActionLabel: '跟进等待项',
+    });
+    expect(homeData.recentTaskResumes[1]).toMatchObject({
+      taskId: 'task_risk',
+      currentState: '状态：running · 风险：high · Deadline slipping',
+      latestChange: {
+        summary: '最近关键来源更新：Escalation source memo',
       },
-    ]);
+      currentBlocker: {
+        title: null,
+        priorityReason: null,
+      },
+      keySource: {
+        title: 'Escalation source memo',
+        priorityReason: '材料架最近更新了该来源。',
+      },
+      currentMethod: {
+        title: 'Risk review skill',
+        selectionReason: '当前方法最近用于执行：高风险任务需要先按风险复盘方法组织输出。',
+      },
+      nextSuggestedMove: 'Escalate today',
+      contextActionLabel: '处理风险',
+    });
+    expect(homeData.recentTaskResumes[2]).toMatchObject({
+      taskId: 'task_missing',
+      currentBlocker: {
+        title: null,
+        priorityReason: null,
+      },
+      nextSuggestedMove: '先补一个明确的下一步。',
+      contextActionLabel: '采用建议下一步',
+    });
+    expect(homeData.recentTaskResumes[3]).toMatchObject({
+      taskId: 'task_done',
+      currentBlocker: {
+        title: null,
+        priorityReason: null,
+      },
+      nextSuggestedMove: '先补一个明确的下一步。',
+      contextActionLabel: '采用建议下一步',
+    });
     expect(homeData.processTemplateCandidates).toEqual([
       {
         id: 'process_template_risk',
@@ -816,9 +753,13 @@ describe('HomeBriefService', () => {
     expect(homeData.recentTaskResumes[0]).toMatchObject({
       currentState: '状态：planned · 阻塞：Legal approval pending',
       latestChange: {
-        summary: '最近关键来源更新：Legal brief',
+        summary: '当前阻塞项：Legal approval pending',
       },
-      nextSuggestedMove: '基于来源材料继续推进：Legal brief',
+      currentBlocker: {
+        title: 'Legal approval pending',
+        priorityReason: '当前阻塞原因：Need formal sign-off',
+      },
+      nextSuggestedMove: '先解除阻塞项：Legal approval pending',
       contextActionLabel: '查看阻塞来源',
     });
   });

@@ -1367,6 +1367,9 @@ export function TasksPage({
                         {resumeCurrentBlocker.detail ? (
                           <p className="meta">{resumeCurrentBlocker.detail}</p>
                         ) : null}
+                        {resumeCurrentBlocker.priorityReason ? (
+                          <p className="meta">{resumeCurrentBlocker.priorityReason}</p>
+                        ) : null}
                       </div>
                       <div className="resume-cell resume-cell-source-lane">
                         <strong>Key Source</strong>

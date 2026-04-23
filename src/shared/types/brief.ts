@@ -66,6 +66,10 @@ export type HomeTaskResumePreviewRecord = {
   taskTitle: string;
   currentState: string;
   latestChange: ResumeLatestChangeRecord;
+  currentBlocker?: {
+    title: string | null;
+    priorityReason: string | null;
+  };
   keySource: {
     sourceContextId: string | null;
     title: string | null;

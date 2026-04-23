@@ -21,6 +21,7 @@ import type { BriefProcessTemplateCandidate } from '../../../shared/types/brief.
 import {
   buildHomeResumeLatestChange,
   deriveNextSuggestedMove,
+  getCurrentBlockerPriorityReason,
   getCurrentMethodSelectionReason,
   getKeySourcePriorityReason,
   safeJsonParse,
@@ -470,6 +471,18 @@ export class HomeBriefService {
           summary: latestChange.summary,
           action: latestChange.action,
         },
+        currentBlocker: task.activeBlocker
+          ? {
+              title: task.activeBlocker.title,
+              priorityReason: getCurrentBlockerPriorityReason({
+                blocker: task.activeBlocker,
+                audience: 'home',
+              }),
+            }
+          : {
+              title: null,
+              priorityReason: null,
+            },
         keySource: {
           sourceContextId: keySource?.id ?? null,
           title: keySource?.title ?? null,

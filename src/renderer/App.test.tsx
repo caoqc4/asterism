@@ -83,6 +83,7 @@ function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
         blockerId: task.activeBlocker?.id ?? null,
         title: task.activeBlocker?.title ?? '暂无当前阻塞项',
         detail: task.activeBlocker?.detail ?? null,
+        priorityReason: null,
       },
       keySource: {
         sourceContextId: null,

@@ -190,6 +190,46 @@ export function getKeySourcePriorityReason(params: {
     : (audience === 'task' ? '当前材料架里最相关的来源材料。' : '当前最相关的来源材料。');
 }
 
+export function getCurrentBlockerPriorityReason(params: {
+  blocker: Pick<BlockerRecord, 'kind' | 'detail' | 'owner' | 'sourceContextId'>;
+  audience: 'task' | 'home';
+}): string {
+  const { blocker, audience } = params;
+
+  if (blocker.detail?.trim()) {
+    return audience === 'task'
+      ? `当前主阻塞项：${blocker.detail.trim()}`
+      : `当前阻塞原因：${blocker.detail.trim()}`;
+  }
+
+  if (blocker.owner?.trim()) {
+    return audience === 'task'
+      ? `当前主阻塞项卡在 ${blocker.owner.trim()}。`
+      : `当前阻塞对象：${blocker.owner.trim()}`;
+  }
+
+  switch (blocker.kind) {
+    case 'approval':
+      return audience === 'task' ? '当前主阻塞项是审批环节。' : '当前阻塞来自审批环节。';
+    case 'document_or_material':
+      return audience === 'task'
+        ? blocker.sourceContextId
+          ? '当前主阻塞项与材料缺口有关，可先查看关联来源。'
+          : '当前主阻塞项与资料或材料缺口有关。'
+        : blocker.sourceContextId
+          ? '当前阻塞与来源材料有关。'
+          : '当前阻塞与资料或材料有关。';
+    case 'external_person':
+      return audience === 'task' ? '当前主阻塞项卡在外部人员反馈。' : '当前阻塞来自外部人员反馈。';
+    case 'external_team':
+      return audience === 'task' ? '当前主阻塞项卡在外部团队协作。' : '当前阻塞来自外部团队协作。';
+    case 'system_or_tool':
+      return audience === 'task' ? '当前主阻塞项来自系统或工具限制。' : '当前阻塞来自系统或工具限制。';
+    default:
+      return audience === 'task' ? '当前主阻塞项仍待解除。' : '当前仍存在主阻塞项。';
+  }
+}
+
 export function buildTaskResumeLatestChange(
   timeline: TimelineLite,
 ): TaskResumeCardRecord['latestChange'] & {
@@ -468,21 +508,6 @@ export function buildHomeResumeLatestChange(params: {
     };
   }
 
-  if (keySource) {
-    return {
-      summary: `最近关键来源更新：${keySource.title}`,
-      action: {
-        label: '查看来源',
-        targetType: 'source_context',
-        targetId: keySource.id,
-      },
-      recentChange: {
-        kind: 'source_context_changed',
-        title: keySource.title,
-      },
-    };
-  }
-
   if (activeBlocker) {
     return {
       summary: `当前阻塞项：${activeBlocker.title}`,
@@ -494,6 +519,21 @@ export function buildHomeResumeLatestChange(params: {
       recentChange: {
         kind: 'blocker_changed',
         title: activeBlocker.title,
+      },
+    };
+  }
+
+  if (keySource) {
+    return {
+      summary: `最近关键来源更新：${keySource.title}`,
+      action: {
+        label: '查看来源',
+        targetType: 'source_context',
+        targetId: keySource.id,
+      },
+      recentChange: {
+        kind: 'source_context_changed',
+        title: keySource.title,
       },
     };
   }
