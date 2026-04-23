@@ -1244,6 +1244,9 @@ export function TasksPage({
                         {detail.resumeCard.currentMethod.detail ? (
                           <p className="meta">{detail.resumeCard.currentMethod.detail}</p>
                         ) : null}
+                        {detail.resumeCard.currentMethod.selectionReason ? (
+                          <p className="meta">{detail.resumeCard.currentMethod.selectionReason}</p>
+                        ) : null}
                       </div>
                       <div className="resume-cell resume-cell-wide">
                         <strong>Next Suggested Move</strong>

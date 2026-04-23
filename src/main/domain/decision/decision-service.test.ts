@@ -43,6 +43,7 @@ function buildTaskDetail(): TaskDetail {
         templateId: null,
         title: '暂无方法模板',
         detail: null,
+        selectionReason: null,
       },
       nextSuggestedMove: 'Move forward',
     },

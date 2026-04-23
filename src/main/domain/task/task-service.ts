@@ -35,6 +35,18 @@ const allowedTransitions: Record<TaskState, TaskState[]> = {
   archived: [],
 };
 
+function safeJsonParse(value: string): Record<string, unknown> | null {
+  try {
+    return JSON.parse(value) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function isResumeLatestChangeMetaEvent(type: string): boolean {
+  return type === 'process_template.selected' || type === 'process_template.skipped';
+}
+
 export class TaskService {
   constructor(
     private readonly repository: TaskRepository,
@@ -126,7 +138,8 @@ export class TaskService {
   private buildResumeLatestChange(detail: TaskDetailBase): TaskResumeCardRecord['latestChangeAction'] & {
     summary: string;
   } {
-    const latestEvent = detail.timeline[0];
+    const latestEvent = detail.timeline.find((event) => !isResumeLatestChangeMetaEvent(event.type))
+      ?? detail.timeline[0];
 
     if (!latestEvent) {
       return {
@@ -236,6 +249,34 @@ export class TaskService {
     }
   }
 
+  private getCurrentMethodSelectionReason(
+    detail: TaskDetailBase,
+    templateId: string,
+  ): string | null {
+    const selectedEvent = detail.timeline.find((event) => {
+      if (event.type !== 'process_template.selected' || !event.payload) {
+        return false;
+      }
+
+      const payload = safeJsonParse(event.payload);
+      const templateIds = Array.isArray(payload?.templateIds) ? payload.templateIds : [];
+      return templateIds.includes(templateId);
+    });
+
+    if (!selectedEvent?.payload) {
+      return null;
+    }
+
+    const payload = safeJsonParse(selectedEvent.payload);
+    const reason = typeof payload?.reason === 'string' ? payload.reason.trim() : '';
+    if (!reason) {
+      return null;
+    }
+
+    const sourceType = payload?.sourceType === 'decision_draft' ? '决策草拟' : '执行';
+    return `最近用于${sourceType}：${reason}`;
+  }
+
   private buildResumeCard(detail: TaskDetailBase): TaskResumeCardRecord {
     const keySource = detail.sourceContexts.find((item) => item.isKey) ?? detail.sourceContexts[0] ?? null;
     const currentMethod = detail.processTemplates[0] ?? null;
@@ -305,11 +346,13 @@ export class TaskService {
             templateId: currentMethod.id,
             title: currentMethod.title,
             detail: currentMethod.summary ?? currentMethod.kind,
+            selectionReason: this.getCurrentMethodSelectionReason(detail, currentMethod.id),
           }
         : {
             templateId: null,
             title: '暂无方法模板',
             detail: null,
+            selectionReason: null,
           },
       nextSuggestedMove,
     };

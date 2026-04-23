@@ -36,6 +36,7 @@ function buildTaskDetail(state: TaskDetail['state'] = 'planned'): TaskDetail {
         templateId: null,
         title: '暂无方法模板',
         detail: null,
+        selectionReason: null,
       },
       nextSuggestedMove: 'Draft the response',
     },

@@ -68,6 +68,7 @@ function buildTaskDetail(task: TaskRecord): TaskDetail {
         templateId: null,
         title: '暂无方法模板',
         detail: null,
+        selectionReason: null,
       },
       nextSuggestedMove: task.nextStep ?? '先补一个明确的下一步。',
     },
@@ -621,6 +622,7 @@ describe('App UI flow', () => {
         templateId: 'process_template_resume',
         title: 'Risk review skill',
         detail: 'Prioritize blockers before drafting',
+        selectionReason: '最近用于执行：风险高且存在阻塞，适合优先参考该方法。',
       },
       nextSuggestedMove: '处理当前风险并确认是否需要降级：Deadline slipping',
     };
@@ -646,6 +648,11 @@ describe('App UI flow', () => {
     ).toBeGreaterThan(0);
     expect(within(resumeSection as HTMLElement).getByText('Owner escalation memo')).toBeTruthy();
     expect(within(resumeSection as HTMLElement).getByText('Risk review skill')).toBeTruthy();
+    expect(
+      within(resumeSection as HTMLElement).getByText(
+        '最近用于执行：风险高且存在阻塞，适合优先参考该方法。',
+      ),
+    ).toBeTruthy();
     expect(
       within(resumeSection as HTMLElement).getByText(
         '处理当前风险并确认是否需要降级：Deadline slipping',
@@ -699,6 +706,7 @@ describe('App UI flow', () => {
         templateId: 'process_template_resume_action',
         title: 'Launch workflow',
         detail: 'Use the launch workflow',
+        selectionReason: null,
       },
       nextSuggestedMove: '基于来源材料继续推进：Launch reference memo',
     };
@@ -769,6 +777,7 @@ describe('App UI flow', () => {
         templateId: null,
         title: '暂无方法模板',
         detail: null,
+        selectionReason: null,
       },
       nextSuggestedMove: '已获批准：Approve launch，继续推进下一步。',
     };

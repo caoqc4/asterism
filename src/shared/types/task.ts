@@ -49,6 +49,7 @@ export type TaskResumeCardRecord = {
     templateId: string | null;
     title: string;
     detail: string | null;
+    selectionReason: string | null;
   };
   nextSuggestedMove: string;
 };
