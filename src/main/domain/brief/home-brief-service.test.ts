@@ -286,10 +286,12 @@ describe('HomeBriefService', () => {
     expect(homeData.recommendedActions.map((action) => action.id)).toEqual([
       'risk:task_risk',
       'decision:decision_1',
+      'artifact:artifact_1',
       'waiting:task_waiting',
       'next-step:task_missing',
-      'artifact:artifact_1',
     ]);
+    expect(homeData.priorityLane).toBe('escalate_now');
+    expect(homeData.priorityHeadline).toBe('当前有 1 个高风险任务需要优先处理');
     expect(homeData.recentActivity.map((event) => event.id)).toEqual([
       'decision:decision_2',
       'run:run_1',
@@ -584,23 +586,26 @@ describe('HomeBriefService', () => {
     const homeData = await service.getHomeData();
 
     expect(homeData.recommendedActions.map((action) => action.id)).toEqual([
-      'next-step:task_source_missing',
       'source-context:source_context_focus',
+      'next-step:task_source_missing',
       'source-context:next-step:source_context_missing',
     ]);
-    expect(homeData.recommendedActions[1]).toMatchObject({
-      label: '基于最新来源继续推进：Source-driven task',
-      reason: '来源材料“Partner website shortlist”最近有更新，可据此继续推进。',
-      taskId: 'task_source_focus',
-      priority: 'low',
-      intent: {
-        type: 'focus_source_context',
-        focusArea: 'detail',
-        sourceContextId: 'source_context_focus',
-        prefillNextStep: '基于来源材料继续推进：Partner website shortlist',
-      },
-    });
-    expect(homeData.recommendedActions[2]).toMatchObject({
+    expect(homeData.recommendedActions).toContainEqual(
+      expect.objectContaining({
+        label: '基于最新来源继续推进：Source-driven task',
+        reason: '来源材料“Partner website shortlist”最近有更新，可据此继续推进。',
+        taskId: 'task_source_focus',
+        priority: 'low',
+        intent: {
+          type: 'focus_source_context',
+          focusArea: 'detail',
+          sourceContextId: 'source_context_focus',
+          prefillNextStep: '基于来源材料继续推进：Partner website shortlist',
+        },
+      }),
+    );
+    expect(homeData.recommendedActions).toContainEqual(
+      expect.objectContaining({
       label: '先查看关键来源，再补下一步：Missing-next-step task',
       reason: '该任务还缺少明确下一步，先参考来源材料“Research notes”。',
       taskId: 'task_source_missing',
@@ -611,7 +616,8 @@ describe('HomeBriefService', () => {
         sourceContextId: 'source_context_missing',
         prefillNextStep: '先吸收来源材料，再补下一步：Research notes',
       },
-    });
+      }),
+    );
     expect(homeData.recentTaskResumes.map((item) => item.taskId)).toEqual([
       'task_source_focus',
       'task_source_missing',
@@ -831,7 +837,7 @@ describe('HomeBriefService', () => {
       },
     });
     expect(homeData.recommendedActions[1]).toMatchObject({
-      id: 'next-step:task_blocked',
+      id: 'source-context:blocker:source_context_blocker',
     });
     expect(homeData.recentTaskResumes[0]).toMatchObject({
       currentState: '状态：planned · 阻塞：Legal approval pending',

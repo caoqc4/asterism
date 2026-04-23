@@ -8,6 +8,7 @@ import type {
   HomeSourceContextRecord,
   HomeTaskSliceRecord,
   HomeTaskResumePreviewRecord,
+  PriorityLane,
   RecommendedAction,
 } from '../../../shared/types/brief.js';
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
@@ -33,6 +34,19 @@ import {
 } from '../working-context/assembler.js';
 import { isStaleBlocker } from '../../../shared/working-context/blocker.js';
 
+type InternalRecommendedAction = RecommendedAction & {
+  lane: PriorityLane;
+  order: number;
+};
+
+const LANE_ORDER: Record<PriorityLane, number> = {
+  escalate_now: 0,
+  unblock_or_decide: 1,
+  continue_or_review: 2,
+  clarify: 3,
+  steady: 4,
+};
+
 function buildRecommendedActions(params: {
   activeTasks: HomeBriefData['recentTasks'];
   highRiskTasks: HomeBriefData['highRiskTasks'];
@@ -42,10 +56,11 @@ function buildRecommendedActions(params: {
   recentSourceContexts: HomeBriefData['recentSourceContexts'];
   recentArtifacts: HomeBriefData['recentArtifacts'];
 }): RecommendedAction[] {
-  const actions: RecommendedAction[] = [];
+  const actions: InternalRecommendedAction[] = [];
   const taskById = new Map(params.activeTasks.map((task) => [task.id, task]));
   const blockedTaskIds = new Set<string>();
   const missingNextStepTaskIds = new Set(params.missingNextStepTasks.map((task) => task.id));
+  let order = 0;
   const compareBlockedTasks = (left: HomeTaskSliceRecord, right: HomeTaskSliceRecord) =>
     (left.activeBlocker?.createdAt ?? '').localeCompare(right.activeBlocker?.createdAt ?? '');
 
@@ -57,6 +72,8 @@ function buildRecommendedActions(params: {
       reason: task.riskNote ?? '该任务当前处于高风险状态。',
       taskId: task.id,
       priority: 'high',
+      lane: 'escalate_now',
+      order: order++,
       intent: {
         type: 'focus_risk_review',
         focusArea: 'detail',
@@ -75,6 +92,8 @@ function buildRecommendedActions(params: {
       reason: '该决策仍处于 pending，可能阻塞相关任务推进。',
       taskId: decision.taskId,
       priority: 'high',
+      lane: 'unblock_or_decide',
+      order: order++,
       intent: {
         type: 'open_task',
         focusArea: 'quick-actions',
@@ -90,6 +109,8 @@ function buildRecommendedActions(params: {
       reason: task.activeWaitingItem?.reason ?? task.waitingReason ?? '该任务处于等待状态，需要恢复推进。',
       taskId: task.id,
       priority: 'medium',
+      lane: 'clarify',
+      order: order++,
       intent: {
         type: 'focus_waiting_follow_up',
         focusArea: 'detail',
@@ -114,6 +135,8 @@ function buildRecommendedActions(params: {
       }),
       taskId: task.id,
       priority: isStaleBlocker(task.activeBlocker.createdAt) ? 'high' : 'medium',
+      lane: isStaleBlocker(task.activeBlocker.createdAt) ? 'escalate_now' : 'unblock_or_decide',
+      order: order++,
       intent: task.activeBlocker.sourceContextId
         ? {
             type: 'focus_source_context',
@@ -140,6 +163,8 @@ function buildRecommendedActions(params: {
       reason: '该任务仍缺少明确下一步，后续推进成本会升高。',
       taskId: task.id,
       priority: 'medium',
+      lane: 'clarify',
+      order: order++,
       intent: {
         type: 'focus_next_step',
         focusArea: 'detail',
@@ -164,6 +189,8 @@ function buildRecommendedActions(params: {
         reason: `阻塞来源材料“${sourceContext.title}”最近有更新，可重新判断是否解除当前阻塞。`,
         taskId: task.id,
         priority: isStaleBlocker(activeBlocker.createdAt) ? 'high' : 'medium',
+        lane: 'unblock_or_decide',
+        order: order++,
         intent: {
           type: 'focus_source_context',
           focusArea: 'detail',
@@ -181,6 +208,8 @@ function buildRecommendedActions(params: {
         reason: `该任务还缺少明确下一步，先参考来源材料“${sourceContext.title}”。`,
         taskId: task.id,
         priority: 'medium',
+        lane: 'clarify',
+        order: order++,
         intent: {
           type: 'focus_source_context',
           focusArea: 'detail',
@@ -201,6 +230,8 @@ function buildRecommendedActions(params: {
       reason: `来源材料“${sourceContext.title}”最近有更新，可据此继续推进。`,
       taskId: task.id,
       priority: 'low',
+      lane: 'continue_or_review',
+      order: order++,
       intent: {
         type: 'focus_source_context',
         focusArea: 'detail',
@@ -223,6 +254,8 @@ function buildRecommendedActions(params: {
       reason: `${artifact.title} 已生成，可继续整理、扩展或发起下一轮执行。`,
       taskId: artifact.taskId,
       priority: 'low',
+      lane: 'continue_or_review',
+      order: order++,
       intent: {
         type: 'continue_from_artifact',
         focusArea: 'detail',
@@ -241,13 +274,100 @@ function buildRecommendedActions(params: {
       reason: '暂时没有高风险、等待阻塞或缺少下一步的活跃任务。',
       taskId: null,
       priority: 'low',
+      lane: 'steady',
+      order: order++,
       intent: {
         type: 'open_task',
       },
     });
   }
 
-  return actions.slice(0, 5);
+  return actions
+    .sort((left, right) => {
+      const laneDiff = LANE_ORDER[left.lane] - LANE_ORDER[right.lane];
+
+      if (laneDiff !== 0) {
+        return laneDiff;
+      }
+
+      const priorityDiff =
+        (left.priority === 'high' ? 0 : left.priority === 'medium' ? 1 : 2) -
+        (right.priority === 'high' ? 0 : right.priority === 'medium' ? 1 : 2);
+
+      if (priorityDiff !== 0) {
+        return priorityDiff;
+      }
+
+      return left.order - right.order;
+    })
+    .slice(0, 5)
+    .map(({ lane: _lane, order: _order, ...action }) => action);
+}
+
+function classifyPriorityLane(params: {
+  escalationTaskCount: number;
+  highRiskTaskCount: number;
+  pendingDecisionCount: number;
+  blockerTaskCount: number;
+  blockerReevaluationCount: number;
+  continueOrReviewCount: number;
+  waitingTaskCount: number;
+  missingNextStepTaskCount: number;
+}): {
+  lane: PriorityLane;
+  headline: string;
+  lede: string;
+} {
+  if (params.escalationTaskCount > 0) {
+    return {
+      lane: 'escalate_now',
+      headline: `当前有 ${params.escalationTaskCount} 个阻塞项需要升级处理`,
+      lede: '当前最值得先处理的是 stale blocker；首页会优先把升级处理语义前置，再考虑普通阻塞、风险或等待恢复。',
+    };
+  }
+
+  if (params.highRiskTaskCount > 0) {
+    return {
+      lane: 'escalate_now',
+      headline: `当前有 ${params.highRiskTaskCount} 个高风险任务需要优先处理`,
+      lede: '当前最值得先处理的是高风险任务；首页会先把风险控制语义前置，再考虑普通解阻塞或继续推进动作。',
+    };
+  }
+
+  const unblockOrDecideCount =
+    params.pendingDecisionCount + params.blockerTaskCount + params.blockerReevaluationCount;
+
+  if (unblockOrDecideCount > 0) {
+    return {
+      lane: 'unblock_or_decide',
+      headline: `当前有 ${unblockOrDecideCount} 条任务需要先解阻塞或拍板`,
+      lede: '当前最值得先处理的是解阻塞与拍板条件；首页会优先提示 pending decision、active blocker 和 blocker 来源更新后的重新判断。',
+    };
+  }
+
+  if (params.continueOrReviewCount > 0) {
+    return {
+      lane: 'continue_or_review',
+      headline: `当前有 ${params.continueOrReviewCount} 条任务可继续推进或复核结果`,
+      lede: '当前主要工作不是救火，而是基于最新执行结果、产物或来源材料继续推进并完成复核。',
+    };
+  }
+
+  const clarifyCount = params.waitingTaskCount + params.missingNextStepTaskCount;
+
+  if (clarifyCount > 0) {
+    return {
+      lane: 'clarify',
+      headline: `当前有 ${clarifyCount} 条任务需要先补清晰度`,
+      lede: '当前优先补齐等待原因、下一步或上下文清晰度，避免这些任务继续停留在可恢复但不易推进的状态。',
+    };
+  }
+
+  return {
+    lane: 'steady',
+    headline: '本地优先控制台骨架已进入任务闭环阶段',
+    lede: '当前没有更强的升级、解阻塞或复核信号，首页以稳态任务恢复和局势观察为主。',
+  };
 }
 
 export class HomeBriefService {
@@ -770,6 +890,37 @@ export class HomeBriefService {
       recentArtifacts,
     });
 
+    const blockerReevaluationCount = recentSourceContexts.filter((sourceContext) =>
+      activeTasks.some(
+        (task) => task.id === sourceContext.taskId && task.activeBlocker?.sourceContextId === sourceContext.id,
+      ),
+    ).length;
+    const continueOrReviewCount = [
+      ...new Set([
+        ...recentArtifacts.map((artifact) => artifact.taskId),
+        ...recentSourceContexts.map((sourceContext) => sourceContext.taskId),
+        ...recentActivity
+          .filter(
+            (activity) =>
+              (activity.sourceType === 'run' &&
+                (activity.status === 'failed' || activity.status === 'completed')) ||
+              (activity.sourceType === 'decision' &&
+                (activity.status === 'approved' || activity.status === 'cancelled' || activity.status === 'deferred')),
+          )
+          .map((activity) => activity.taskId),
+      ]),
+    ].length;
+    const prioritySummary = classifyPriorityLane({
+      escalationTaskCount: escalationTasks.length,
+      highRiskTaskCount: highRiskTasks.length,
+      pendingDecisionCount: pendingDecisions.length,
+      blockerTaskCount: blockerTasks.length,
+      blockerReevaluationCount,
+      continueOrReviewCount,
+      waitingTaskCount: waitingTasks.length,
+      missingNextStepTaskCount: missingNextStepTasks.length,
+    });
+
     return {
       activeTaskCount: activeTasks.length,
       pendingDecisionCount: pendingDecisions.length,
@@ -796,6 +947,9 @@ export class HomeBriefService {
       recentActivity,
       recentBriefSnapshots,
       processTemplateCandidates,
+      priorityLane: prioritySummary.lane,
+      priorityHeadline: prioritySummary.headline,
+      priorityLede: prioritySummary.lede,
       schedulerStatus: scheduler?.getStatus() ?? {
         enabled: false,
         running: false,

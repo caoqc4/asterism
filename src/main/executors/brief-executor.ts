@@ -131,6 +131,9 @@ export function buildFallbackBrief(
   return [
     `Taskplane Brief (${kind})`,
     '',
+    `当前优先级语义：${homeData.priorityHeadline ?? '未识别'}`,
+    `${homeData.priorityLede ?? '当前以常规任务恢复为主。'}`,
+    '',
     `活跃任务：${homeData.activeTaskCount}`,
     `待决策：${homeData.pendingDecisionCount}`,
     `已完成：${homeData.completedTaskCount}`,
@@ -208,6 +211,8 @@ function buildPrompt(
     `等待中任务数：${homeData.waitingTaskCount}`,
     `高风险任务数：${homeData.highRiskTaskCount}`,
     `缺少下一步任务数：${homeData.missingNextStepTaskCount}`,
+    `当前优先级语义：${homeData.priorityHeadline ?? '未识别'}`,
+    `语义说明：${homeData.priorityLede ?? '当前以常规任务恢复为主。'}`,
     '',
     '最近任务：',
     ...(homeData.recentTasks.length

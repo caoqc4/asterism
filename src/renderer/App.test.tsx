@@ -4142,6 +4142,39 @@ describe('App UI flow', () => {
     ).toBeTruthy();
   });
 
+  it('uses priority lane headline copy from the home brief when provided', async () => {
+    const laneTask = buildTaskRecord({
+      id: 'task_lane_home',
+      title: 'Lane summary task',
+      state: 'planned',
+      nextStep: 'Review the decision',
+    });
+
+    const laneHomeApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([laneTask]),
+      getTaskDetail: vi.fn().mockResolvedValue(buildTaskDetail(laneTask)),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 1,
+        pendingDecisionCount: 1,
+        recentTasks: [laneTask],
+        priorityLane: 'unblock_or_decide',
+        priorityHeadline: '当前有 1 条任务需要先解阻塞或拍板',
+        priorityLede: '当前最值得先处理的是解阻塞与拍板条件；首页会优先提示 pending decision、active blocker 和 blocker 来源更新后的重新判断。',
+      }),
+    };
+
+    window.api = laneHomeApi;
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: '当前有 1 条任务需要先解阻塞或拍板' })).toBeTruthy();
+    expect(
+      screen.getByText('当前最值得先处理的是解阻塞与拍板条件；首页会优先提示 pending decision、active blocker 和 blocker 来源更新后的重新判断。'),
+    ).toBeTruthy();
+  });
+
   it('opens task resume previews from home with a prefilled next step', async () => {
     const user = userEvent.setup();
 

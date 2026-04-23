@@ -257,6 +257,10 @@ export function HomePage({
   }
 
   function getHomeHeadline(data: HomeBriefData | null) {
+    if (data?.priorityHeadline) {
+      return data.priorityHeadline;
+    }
+
     if (!data) {
       return '本地优先控制台骨架已进入任务闭环阶段';
     }
@@ -285,6 +289,10 @@ export function HomePage({
   }
 
   function getHomeLede(data: HomeBriefData | null) {
+    if (data?.priorityLede) {
+      return data.priorityLede;
+    }
+
     if (!data) {
       return '当前已经接通 Main 持有的 SQLite 与本地凭据存储。下一步可以继续把 Decisions、Runs 和 Brief 聚合查询接上。';
     }

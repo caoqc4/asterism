@@ -38,6 +38,13 @@ export type RecommendedAction = {
   intent?: RecommendedActionIntent;
 };
 
+export type PriorityLane =
+  | 'escalate_now'
+  | 'unblock_or_decide'
+  | 'continue_or_review'
+  | 'clarify'
+  | 'steady';
+
 export type HomeActivityRecord = {
   id: string;
   sourceType: 'decision' | 'run' | 'blocker';
@@ -131,4 +138,7 @@ export type HomeBriefData = {
   recentBriefSnapshots: BriefSnapshotRecord[];
   schedulerStatus: SchedulerStatus;
   processTemplateCandidates?: BriefProcessTemplateCandidate[];
+  priorityLane?: PriorityLane;
+  priorityHeadline?: string;
+  priorityLede?: string;
 };
