@@ -187,6 +187,7 @@ export class TaskService {
       riskLevel: detail.riskLevel,
       riskNote: detail.riskNote,
       blockerTitle,
+      blockerCreatedAt: detail.activeBlocker?.createdAt ?? null,
       keySourceTitle: keySource?.title ?? null,
       latestArtifactTitle: latestArtifact?.title ?? null,
       recentChange: latestChange.recentChange,

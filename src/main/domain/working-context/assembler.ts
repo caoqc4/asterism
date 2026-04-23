@@ -3,7 +3,7 @@ import type { BlockerRecord } from '../../../shared/types/blocker.js';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import type { TaskDetailBase, TaskResumeCardRecord, TaskRiskLevel, TimelineEventRecord } from '../../../shared/types/task.js';
-import { formatBlockerAgeLabel, getBlockerAgeReason } from '../../../shared/working-context/blocker.js';
+import { formatBlockerAgeLabel, getBlockerAgeReason, isStaleBlocker } from '../../../shared/working-context/blocker.js';
 
 type TimelineLite = Array<Pick<TimelineEventRecord, 'type' | 'payload'>>;
 
@@ -579,6 +579,7 @@ export function deriveNextSuggestedMove(params: {
   riskLevel: TaskRiskLevel;
   riskNote?: string | null;
   blockerTitle?: string | null;
+  blockerCreatedAt?: string | null;
   keySourceTitle?: string | null;
   latestArtifactTitle?: string | null;
   recentChange?: WorkingContextRecentChange | null;
@@ -608,7 +609,9 @@ export function deriveNextSuggestedMove(params: {
       case 'source_context_changed':
         return `基于来源材料继续推进：${recentChange.title ?? '最新来源材料'}`;
       case 'blocker_changed':
-        return `先解除阻塞项：${recentChange.title ?? params.blockerTitle ?? params.taskTitle}`;
+        return params.blockerCreatedAt && isStaleBlocker(params.blockerCreatedAt)
+          ? `优先升级当前阻塞项：${recentChange.title ?? params.blockerTitle ?? params.taskTitle}`
+          : `先解除阻塞项：${recentChange.title ?? params.blockerTitle ?? params.taskTitle}`;
       case 'blocker_resolved':
         return `确认解除阻塞后的下一步推进：${recentChange.title ?? params.taskTitle}`;
       case 'artifact_created':
@@ -631,7 +634,9 @@ export function deriveNextSuggestedMove(params: {
   }
 
   if (params.blockerTitle) {
-    return `先解除阻塞项：${params.blockerTitle}`;
+    return params.blockerCreatedAt && isStaleBlocker(params.blockerCreatedAt)
+      ? `优先升级当前阻塞项：${params.blockerTitle}`
+      : `先解除阻塞项：${params.blockerTitle}`;
   }
 
   if (params.riskLevel === 'high') {

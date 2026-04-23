@@ -11,6 +11,11 @@ export function getBlockerAgeDays(createdAt: string, nowIso: string = new Date()
   return Math.max(0, Math.floor((nowUtc - createdUtc) / 86_400_000));
 }
 
+export function isStaleBlocker(createdAt: string, nowIso?: string): boolean {
+  const days = getBlockerAgeDays(createdAt, nowIso);
+  return days !== null && days >= 7;
+}
+
 export function formatBlockerAgeLabel(createdAt: string, nowIso?: string): string {
   const days = getBlockerAgeDays(createdAt, nowIso);
   const dateLabel = createdAt.slice(0, 10);
@@ -34,7 +39,9 @@ export function getBlockerAgeReason(createdAt: string, audience: 'task' | 'home'
   }
 
   if (days >= 7) {
-    return audience === 'task' ? `已阻塞 ${days} 天，建议优先解除。` : `已阻塞 ${days} 天。`;
+    return audience === 'task'
+      ? `已阻塞 ${days} 天，建议升级处理。`
+      : `已阻塞 ${days} 天，值得优先处理。`;
   }
 
   if (days >= 1) {

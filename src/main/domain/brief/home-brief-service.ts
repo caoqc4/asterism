@@ -31,6 +31,7 @@ import {
   getKeySourcePriorityReason,
   safeJsonParse,
 } from '../working-context/assembler.js';
+import { isStaleBlocker } from '../../../shared/working-context/blocker.js';
 
 function buildRecommendedActions(params: {
   activeTasks: HomeBriefData['recentTasks'];
@@ -106,24 +107,28 @@ function buildRecommendedActions(params: {
 
     actions.push({
       id: `blocker:${task.activeBlocker.id}`,
-      label: `跟进当前阻塞项：${task.title}`,
+      label: `${isStaleBlocker(task.activeBlocker.createdAt) ? '优先升级阻塞项' : '跟进当前阻塞项'}：${task.title}`,
       reason: getCurrentBlockerPriorityReason({
         blocker: task.activeBlocker,
         audience: 'home',
       }),
       taskId: task.id,
-      priority: 'medium',
+      priority: isStaleBlocker(task.activeBlocker.createdAt) ? 'high' : 'medium',
       intent: task.activeBlocker.sourceContextId
         ? {
             type: 'focus_source_context',
             focusArea: 'detail',
             sourceContextId: task.activeBlocker.sourceContextId,
-            prefillNextStep: `先解除阻塞项，再继续推进：${task.activeBlocker.title}`,
+            prefillNextStep: isStaleBlocker(task.activeBlocker.createdAt)
+              ? `优先升级当前阻塞项：${task.activeBlocker.title}`
+              : `先解除阻塞项，再继续推进：${task.activeBlocker.title}`,
           }
         : {
             type: 'focus_next_step',
             focusArea: 'detail',
-            prefillNextStep: `先解除阻塞项，再继续推进：${task.activeBlocker.title}`,
+            prefillNextStep: isStaleBlocker(task.activeBlocker.createdAt)
+              ? `优先升级当前阻塞项：${task.activeBlocker.title}`
+              : `先解除阻塞项，再继续推进：${task.activeBlocker.title}`,
           },
     });
   }
@@ -347,10 +352,11 @@ export class HomeBriefService {
         waitingReason,
         riskLevel: task.riskLevel,
         riskNote: task.riskNote,
-        blockerTitle: task.activeBlocker?.title ?? null,
-        keySourceTitle: keySource?.title ?? null,
-        recentChange: latestChange.recentChange,
-      });
+      blockerTitle: task.activeBlocker?.title ?? null,
+      blockerCreatedAt: task.activeBlocker?.createdAt ?? null,
+      keySourceTitle: keySource?.title ?? null,
+      recentChange: latestChange.recentChange,
+    });
 
       let contextAction:
         | {
@@ -421,17 +427,19 @@ export class HomeBriefService {
         };
       } else if (task.activeBlocker?.sourceContextId) {
         contextAction = {
-          label: '查看阻塞来源',
+          label: isStaleBlocker(task.activeBlocker.createdAt) ? '升级处理阻塞项' : '查看阻塞来源',
           intent: {
-            type: 'focus_source_context',
+            type: isStaleBlocker(task.activeBlocker.createdAt) ? 'focus_next_step' : 'focus_source_context',
             focusArea: 'detail',
-            sourceContextId: task.activeBlocker.sourceContextId,
+            sourceContextId: isStaleBlocker(task.activeBlocker.createdAt)
+              ? undefined
+              : task.activeBlocker.sourceContextId,
             prefillNextStep: nextSuggestedMove,
           },
         };
       } else if (task.activeBlocker) {
         contextAction = {
-          label: '跟进阻塞项',
+          label: isStaleBlocker(task.activeBlocker.createdAt) ? '升级处理阻塞项' : '跟进阻塞项',
           intent: {
             type: 'focus_next_step',
             focusArea: 'detail',

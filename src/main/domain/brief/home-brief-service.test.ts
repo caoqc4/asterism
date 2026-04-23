@@ -745,8 +745,9 @@ describe('HomeBriefService', () => {
 
     expect(homeData.recommendedActions[0]).toMatchObject({
       id: 'blocker:blocker_1',
-      label: '跟进当前阻塞项：Blocked task',
-      reason: '当前阻塞原因：Need formal sign-off 已阻塞 9 天。',
+      label: '优先升级阻塞项：Blocked task',
+      reason: '当前阻塞原因：Need formal sign-off 已阻塞 9 天，值得优先处理。',
+      priority: 'high',
       intent: {
         type: 'focus_source_context',
         sourceContextId: 'source_context_blocker',
@@ -762,11 +763,11 @@ describe('HomeBriefService', () => {
       },
       currentBlocker: {
         title: 'Legal approval pending',
-        priorityReason: '当前阻塞原因：Need formal sign-off 已阻塞 9 天。',
+        priorityReason: '当前阻塞原因：Need formal sign-off 已阻塞 9 天，值得优先处理。',
         ageLabel: 'blocked since 2026-01-01 · 已阻塞 9 天',
       },
-      nextSuggestedMove: '先解除阻塞项：Legal approval pending',
-      contextActionLabel: '查看阻塞来源',
+      nextSuggestedMove: '优先升级当前阻塞项：Legal approval pending',
+      contextActionLabel: '升级处理阻塞项',
     });
 
     vi.useRealTimers();
@@ -815,7 +816,7 @@ describe('HomeBriefService', () => {
     const homeData = await service.getHomeData();
 
     expect(homeData.blockerTasks[0]?.title).toBe('Older blocked task');
-    expect(homeData.recommendedActions[0]?.label).toBe('跟进当前阻塞项：Older blocked task');
+    expect(homeData.recommendedActions[0]?.label).toBe('优先升级阻塞项：Older blocked task');
 
     vi.useRealTimers();
   });
