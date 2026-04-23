@@ -35,6 +35,11 @@ export type TaskResumeCardRecord = {
   summary: string;
   currentState: string;
   latestChange: string;
+  latestChangeAction: {
+    label: string | null;
+    targetType: 'decision' | 'run' | 'source_context' | null;
+    targetId: string | null;
+  };
   keySource: {
     sourceContextId: string | null;
     title: string;

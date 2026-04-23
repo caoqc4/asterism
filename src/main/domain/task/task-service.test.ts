@@ -24,6 +24,11 @@ function buildDetail(state: TaskDetail['state']): TaskDetail {
       summary: 'Resume summary',
       currentState: `状态：${state}`,
       latestChange: '最近没有新的生命周期变化。',
+      latestChangeAction: {
+        label: null,
+        targetType: null,
+        targetId: null,
+      },
       keySource: {
         sourceContextId: null,
         title: '暂无关键来源',
@@ -139,6 +144,7 @@ describe('TaskService', () => {
             taskId: 'task_1',
             type: 'source_context.updated',
             payload: JSON.stringify({
+              sourceContextId: 'source_context_key',
               title: 'Partner website shortlist',
             }),
             createdAt: '2026-01-02T00:00:00.000Z',
@@ -192,6 +198,11 @@ describe('TaskService', () => {
 
     expect(detail?.resumeCard.summary).toContain('Partner website shortlist');
     expect(detail?.resumeCard.latestChange).toBe('最近更新了来源材料：Partner website shortlist。');
+    expect(detail?.resumeCard.latestChangeAction).toEqual({
+      label: '查看来源',
+      targetType: 'source_context',
+      targetId: 'source_context_key',
+    });
     expect(detail?.resumeCard.keySource.title).toBe('Partner website shortlist');
     expect(detail?.resumeCard.currentMethod.title).toBe('Outreach skill');
     expect(detail?.resumeCard.nextSuggestedMove).toBe('先查看关键来源：Partner website shortlist');

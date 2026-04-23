@@ -762,6 +762,24 @@ export function TasksPage({
     }
   }
 
+  function openResumeLatestChange() {
+    if (!detail?.resumeCard.latestChangeAction.targetType || !detail.resumeCard.latestChangeAction.targetId) {
+      return;
+    }
+
+    if (detail.resumeCard.latestChangeAction.targetType === 'source_context') {
+      focusSourceContext(detail.resumeCard.latestChangeAction.targetId);
+      return;
+    }
+
+    if (detail.resumeCard.latestChangeAction.targetType === 'decision') {
+      onOpenDecision(detail.resumeCard.latestChangeAction.targetId);
+      return;
+    }
+
+    onOpenRun(detail.resumeCard.latestChangeAction.targetId);
+  }
+
   async function handleSaveSourceContext(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -1203,6 +1221,15 @@ export function TasksPage({
                       <div className="resume-cell">
                         <strong>Latest Change</strong>
                         <p className="meta">{detail.resumeCard.latestChange}</p>
+                        {detail.resumeCard.latestChangeAction.label ? (
+                          <button
+                            className="ghost-button timeline-action"
+                            onClick={openResumeLatestChange}
+                            type="button"
+                          >
+                            {detail.resumeCard.latestChangeAction.label}
+                          </button>
+                        ) : null}
                       </div>
                       <div className="resume-cell">
                         <strong>Key Source</strong>

@@ -54,6 +54,11 @@ function buildTaskDetail(task: TaskRecord): TaskDetail {
       summary: `这条任务目前处于 ${task.state}。建议先做：${task.nextStep ?? '先补一个明确的下一步。'}`,
       currentState: `状态：${task.state}`,
       latestChange: '最近没有新的生命周期变化。',
+      latestChangeAction: {
+        label: null,
+        targetType: null,
+        targetId: null,
+      },
       keySource: {
         sourceContextId: null,
         title: '暂无关键来源',
@@ -602,6 +607,11 @@ describe('App UI flow', () => {
         '这条任务目前处于 running，且存在高风险“Deadline slipping”。 最近一次执行失败：Model overloaded。 当前最关键的来源材料是“Owner escalation memo”。 当前采用的方法模板是“Risk review skill”。 建议先做：处理当前风险并确认是否需要降级：Deadline slipping',
       currentState: '状态：running · 风险：high · Deadline slipping',
       latestChange: '最近一次执行失败：Model overloaded。',
+      latestChangeAction: {
+        label: '查看 Run',
+        targetType: 'run',
+        targetId: 'run_resume_latest',
+      },
       keySource: {
         sourceContextId: 'source_context_resume',
         title: 'Owner escalation memo',
@@ -675,6 +685,11 @@ describe('App UI flow', () => {
       summary: 'Resume summary',
       currentState: '状态：planned',
       latestChange: '最近更新了来源材料：Launch reference memo。',
+      latestChangeAction: {
+        label: '查看来源',
+        targetType: 'source_context',
+        targetId: 'source_context_resume_action',
+      },
       keySource: {
         sourceContextId: 'source_context_resume_action',
         title: 'Launch reference memo',
@@ -724,6 +739,75 @@ describe('App UI flow', () => {
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
       '基于来源材料继续推进：Launch reference memo',
     );
+  });
+
+  it('opens latest-change context from the task resume card', async () => {
+    const user = userEvent.setup();
+
+    const resumeTask = buildTaskRecord({
+      id: 'task_resume_latest',
+      title: 'Resume latest task',
+      state: 'planned',
+    });
+
+    const resumeDetail = buildTaskDetail(resumeTask);
+    resumeDetail.resumeCard = {
+      summary: 'Resume summary',
+      currentState: '状态：planned',
+      latestChange: '最近一条决策已获批准：Approve launch。',
+      latestChangeAction: {
+        label: '查看 Decision',
+        targetType: 'decision',
+        targetId: 'decision_resume_latest',
+      },
+      keySource: {
+        sourceContextId: null,
+        title: '暂无关键来源',
+        detail: null,
+      },
+      currentMethod: {
+        templateId: null,
+        title: '暂无方法模板',
+        detail: null,
+      },
+      nextSuggestedMove: '已获批准：Approve launch，继续推进下一步。',
+    };
+
+    const resumeApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([resumeTask]),
+      getTaskDetail: vi.fn(async (taskId: string) => (taskId === resumeTask.id ? resumeDetail : null)),
+      listDecisions: vi.fn().mockResolvedValue([
+        {
+          id: 'decision_resume_latest',
+          taskId: resumeTask.id,
+          title: 'Approve launch',
+          status: 'approved',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T01:00:00.000Z',
+        },
+      ]),
+    };
+
+    window.api = resumeApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /resume latest task/i }));
+    await screen.findByRole('heading', { name: 'Resume latest task' });
+
+    const resumeSection = screen.getByRole('heading', { name: 'Task Resume Card' }).closest('.detail-card-group');
+    expect(resumeSection).not.toBeNull();
+
+    await user.click(
+      within(resumeSection as HTMLElement).getByRole('button', { name: '查看 Decision' }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: '待拍板事项' })).toBeTruthy();
+    });
+    expect(screen.getAllByText('Approve launch').length).toBeGreaterThan(0);
   });
 
   it('opens waiting tasks from home key signals with follow-up guidance', async () => {

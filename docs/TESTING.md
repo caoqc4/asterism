@@ -123,6 +123,7 @@ Covered today:
 - `Tasks source context create / edit flow`
 - `Tasks process context create / apply / remove flow`
 - `Tasks resume card visibility and recovery actions`
+- `Tasks resume card latest-change object entry`
 - `Tasks quick decision draft flow`
 - `Decisions` page current-focus and queue navigation
 - `Decisions / Runs -> Tasks` follow-up return flows

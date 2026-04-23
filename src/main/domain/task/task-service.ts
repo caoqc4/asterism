@@ -123,44 +123,116 @@ export class TaskService {
     };
   }
 
-  private formatResumeLatestChange(detail: TaskDetailBase): string {
+  private buildResumeLatestChange(detail: TaskDetailBase): TaskResumeCardRecord['latestChangeAction'] & {
+    summary: string;
+  } {
     const latestEvent = detail.timeline[0];
 
     if (!latestEvent) {
-      return '最近没有新的生命周期变化。';
+      return {
+        summary: '最近没有新的生命周期变化。',
+        label: null,
+        targetType: null,
+        targetId: null,
+      };
     }
 
     const payload = latestEvent.payload ? JSON.parse(latestEvent.payload) as Record<string, unknown> : null;
 
     switch (latestEvent.type) {
       case 'task.run_failed':
-        return `最近一次执行失败：${String(payload?.failureReason ?? '未记录失败原因')}。`;
+        return {
+          summary: `最近一次执行失败：${String(payload?.failureReason ?? '未记录失败原因')}。`,
+          label: payload?.runId ? '查看 Run' : null,
+          targetType: payload?.runId ? 'run' : null,
+          targetId: typeof payload?.runId === 'string' ? payload.runId : null,
+        };
       case 'task.run_completed':
-        return `最近一次执行已完成，任务恢复到 ${String(payload?.nextState ?? 'planned')}。`;
+        return {
+          summary: `最近一次执行已完成，任务恢复到 ${String(payload?.nextState ?? 'planned')}。`,
+          label: payload?.runId ? '查看 Run' : null,
+          targetType: payload?.runId ? 'run' : null,
+          targetId: typeof payload?.runId === 'string' ? payload.runId : null,
+        };
       case 'task.decision_approved':
-        return `最近一条决策已获批准：${String(payload?.decisionTitle ?? '未命名决策')}。`;
+        return {
+          summary: `最近一条决策已获批准：${String(payload?.decisionTitle ?? '未命名决策')}。`,
+          label: payload?.decisionId ? '查看 Decision' : null,
+          targetType: payload?.decisionId ? 'decision' : null,
+          targetId: typeof payload?.decisionId === 'string' ? payload.decisionId : null,
+        };
       case 'task.decision_deferred':
-        return `最近一条决策被延后，当前等待：${String(payload?.waitingReason ?? '未填写')}。`;
+        return {
+          summary: `最近一条决策被延后，当前等待：${String(payload?.waitingReason ?? '未填写')}。`,
+          label: payload?.decisionId ? '查看 Decision' : null,
+          targetType: payload?.decisionId ? 'decision' : null,
+          targetId: typeof payload?.decisionId === 'string' ? payload.decisionId : null,
+        };
       case 'task.decision_cancelled':
-        return `最近一条决策已取消：${String(payload?.decisionTitle ?? '未命名决策')}。`;
+        return {
+          summary: `最近一条决策已取消：${String(payload?.decisionTitle ?? '未命名决策')}。`,
+          label: payload?.decisionId ? '查看 Decision' : null,
+          targetType: payload?.decisionId ? 'decision' : null,
+          targetId: typeof payload?.decisionId === 'string' ? payload.decisionId : null,
+        };
       case 'waiting_item.created':
       case 'waiting_item.updated':
-        return `最近更新了等待项：${String(payload?.reason ?? '未填写')}。`;
+        return {
+          summary: `最近更新了等待项：${String(payload?.reason ?? '未填写')}。`,
+          label: null,
+          targetType: null,
+          targetId: null,
+        };
       case 'waiting_item.resolved':
-        return `最近解除等待项，任务恢复到 ${String(payload?.nextState ?? 'planned')}。`;
+        return {
+          summary: `最近解除等待项，任务恢复到 ${String(payload?.nextState ?? 'planned')}。`,
+          label: null,
+          targetType: null,
+          targetId: null,
+        };
       case 'source_context.created':
       case 'source_context.updated':
-        return `最近更新了来源材料：${String(payload?.title ?? '未命名来源')}。`;
+        return {
+          summary: `最近更新了来源材料：${String(payload?.title ?? '未命名来源')}。`,
+          label: payload?.sourceContextId ? '查看来源' : null,
+          targetType: payload?.sourceContextId ? 'source_context' : null,
+          targetId: typeof payload?.sourceContextId === 'string' ? payload.sourceContextId : null,
+        };
       case 'artifact.created':
-        return `最近生成了产物：${String(payload?.title ?? '未命名产物')}。`;
+        return {
+          summary: `最近生成了产物：${String(payload?.title ?? '未命名产物')}。`,
+          label: payload?.sourceType === 'run' && typeof payload?.sourceId === 'string' ? '查看 Run' : null,
+          targetType: payload?.sourceType === 'run' && typeof payload?.sourceId === 'string' ? 'run' : null,
+          targetId: payload?.sourceType === 'run' && typeof payload?.sourceId === 'string' ? payload.sourceId : null,
+        };
       case 'task.risk_changed':
-        return `最近调整了任务风险等级。`;
+        return {
+          summary: '最近调整了任务风险等级。',
+          label: null,
+          targetType: null,
+          targetId: null,
+        };
       case 'task.next_step_changed':
-        return `最近更新了下一步。`;
+        return {
+          summary: '最近更新了下一步。',
+          label: null,
+          targetType: null,
+          targetId: null,
+        };
       case 'task.transitioned':
-        return `最近状态从 ${String(payload?.from ?? '未知')} 变更为 ${String(payload?.to ?? '未知')}。`;
+        return {
+          summary: `最近状态从 ${String(payload?.from ?? '未知')} 变更为 ${String(payload?.to ?? '未知')}。`,
+          label: null,
+          targetType: null,
+          targetId: null,
+        };
       default:
-        return '最近有新的任务活动。';
+        return {
+          summary: '最近有新的任务活动。',
+          label: null,
+          targetType: null,
+          targetId: null,
+        };
     }
   }
 
@@ -182,7 +254,7 @@ export class TaskService {
       );
     }
 
-    const latestChange = this.formatResumeLatestChange(detail);
+    const latestChange = this.buildResumeLatestChange(detail);
 
     let nextSuggestedMove = detail.nextStep?.trim() || '';
 
@@ -202,7 +274,7 @@ export class TaskService {
 
     const summaryParts = [
       `这条任务目前处于 ${detail.state}${waitingReason ? `，正在等待“${waitingReason}”` : ''}${detail.riskLevel === 'high' && detail.riskNote ? `，且存在高风险“${detail.riskNote}”` : ''}。`,
-      latestChange,
+      latestChange.summary,
       keySource ? `当前最关键的来源材料是“${keySource.title}”。` : null,
       currentMethod ? `当前采用的方法模板是“${currentMethod.title}”。` : null,
       `建议先做：${nextSuggestedMove}`,
@@ -211,7 +283,12 @@ export class TaskService {
     return {
       summary: summaryParts.join(' '),
       currentState: currentStateParts.join(' · '),
-      latestChange,
+      latestChange: latestChange.summary,
+      latestChangeAction: {
+        label: latestChange.label,
+        targetType: latestChange.targetType,
+        targetId: latestChange.targetId,
+      },
       keySource: keySource
         ? {
             sourceContextId: keySource.id,
