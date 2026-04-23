@@ -58,6 +58,11 @@ export type HomeTaskResumePreviewRecord = {
   taskTitle: string;
   currentState: string;
   latestChange: string;
+  latestChangeAction: {
+    label: string | null;
+    targetType: 'decision' | 'run' | 'source_context' | null;
+    targetId: string | null;
+  };
   keySourceTitle: string | null;
   keySourceReason: string | null;
   currentMethodTitle: string | null;

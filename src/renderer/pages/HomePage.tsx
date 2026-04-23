@@ -38,6 +38,7 @@ type HomePageProps = {
   onOpenActivityObject: (activity: HomeActivityRecord) => void;
   onOpenArtifact: (artifact: ArtifactRecord) => void;
   onOpenSourceContext: (sourceContext: HomeSourceContextRecord) => void;
+  onOpenResumeLatestChange: (preview: HomeBriefData['recentTaskResumes'][number]) => void;
 };
 
 export function HomePage({
@@ -50,6 +51,7 @@ export function HomePage({
   onOpenActivityObject,
   onOpenArtifact,
   onOpenSourceContext,
+  onOpenResumeLatestChange,
 }: HomePageProps) {
   function openWaitingTask(task: HomeBriefData['waitingTasks'][number]) {
     onOpenAction({
@@ -466,6 +468,15 @@ export function HomePage({
                   <p className="meta">建议先做：{preview.nextSuggestedMove}</p>
                 </button>
                 <div className="chip-row">
+                  {preview.latestChangeAction.label ? (
+                    <button
+                      className="ghost-button"
+                      onClick={() => onOpenResumeLatestChange(preview)}
+                      type="button"
+                    >
+                      {preview.latestChangeAction.label}
+                    </button>
+                  ) : null}
                   <button
                     className="ghost-button"
                     onClick={() => openTaskResume(preview)}

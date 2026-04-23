@@ -334,6 +334,58 @@ export class HomeBriefService {
     return `${sourceType}：${reason}`;
   }
 
+  private buildResumePreviewLatestChange(params: {
+    latestActivity: HomeActivityRecord | undefined;
+    keySource: HomeSourceContextRecord | null;
+  }): {
+    summary: string;
+    action: HomeTaskResumePreviewRecord['latestChangeAction'];
+  } {
+    const { latestActivity, keySource } = params;
+
+    if (latestActivity) {
+      if (latestActivity.sourceType === 'decision') {
+        return {
+          summary: `最近决策动态：${latestActivity.title} · ${latestActivity.status}`,
+          action: {
+            label: '查看 Decision',
+            targetType: 'decision',
+            targetId: latestActivity.sourceId,
+          },
+        };
+      }
+
+      return {
+        summary: `最近执行动态：${latestActivity.title} · ${latestActivity.status}`,
+        action: {
+          label: '查看 Run',
+          targetType: 'run',
+          targetId: latestActivity.sourceId,
+        },
+      };
+    }
+
+    if (keySource) {
+      return {
+        summary: `最近关键来源更新：${keySource.title}`,
+        action: {
+          label: '查看来源',
+          targetType: 'source_context',
+          targetId: keySource.id,
+        },
+      };
+    }
+
+    return {
+      summary: '最近没有新的关键变化。',
+      action: {
+        label: null,
+        targetType: null,
+        targetId: null,
+      },
+    };
+  }
+
   private async buildTaskResumePreviews(params: {
     recentTasks: TaskRecord[];
     recentActivity: HomeActivityRecord[];
@@ -372,13 +424,10 @@ export class HomeBriefService {
         );
       }
 
-      const latestChange = latestActivity
-        ? latestActivity.sourceType === 'decision'
-          ? `最近决策动态：${latestActivity.title} · ${latestActivity.status}`
-          : `最近执行动态：${latestActivity.title} · ${latestActivity.status}`
-        : keySource
-          ? `最近关键来源更新：${keySource.title}`
-          : '最近没有新的关键变化。';
+      const latestChange = this.buildResumePreviewLatestChange({
+        latestActivity,
+        keySource,
+      });
 
       const nextSuggestedMove =
         task.nextStep?.trim() ||
@@ -434,7 +483,8 @@ export class HomeBriefService {
         taskId: task.id,
         taskTitle: task.title,
         currentState: currentStateParts.join(' · '),
-        latestChange,
+        latestChange: latestChange.summary,
+        latestChangeAction: latestChange.action,
         keySourceTitle: keySource?.title ?? null,
         keySourceReason: this.getKeySourcePreviewReason({
           keySource,

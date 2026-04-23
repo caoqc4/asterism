@@ -293,6 +293,11 @@ describe('App UI flow', () => {
         taskTitle: riskTask.title,
         currentState: '状态：running · 风险：high · Deadline slipping',
         latestChange: '最近决策动态：Approve escalation path · approved',
+        latestChangeAction: {
+          label: '查看 Decision',
+          targetType: 'decision',
+          targetId: 'decision_2',
+        },
         keySourceTitle: 'Owner escalation memo',
         keySourceReason: '关键来源：Contains the latest escalation framing.',
         currentMethodTitle: 'Risk review skill',
@@ -313,6 +318,11 @@ describe('App UI flow', () => {
         taskTitle: waitingTask.title,
         currentState: '状态：waiting_external · 等待：Waiting for legal review',
         latestChange: '最近没有新的关键变化。',
+        latestChangeAction: {
+          label: null,
+          targetType: null,
+          targetId: null,
+        },
         keySourceTitle: null,
         keySourceReason: null,
         currentMethodTitle: null,
@@ -3200,6 +3210,28 @@ describe('App UI flow', () => {
     expect((screen.getByLabelText('Risk Note') as HTMLTextAreaElement).value).toBe(
       'Deadline slipping',
     );
+  });
+
+  it('opens latest-change objects from home resume previews', async () => {
+    const user = userEvent.setup();
+
+    window.api = mockApi;
+
+    render(<App />);
+
+    const resumePanel = (await screen.findByText('Resume Previews')).closest('.panel');
+    expect(resumePanel).not.toBeNull();
+    const resumeCards = within(resumePanel as HTMLElement).getAllByText(/High risk task|Waiting task/);
+    expect(resumeCards.length).toBeGreaterThan(0);
+    const firstResumeCard = resumeCards[0]?.closest('.task-card');
+    expect(firstResumeCard).not.toBeNull();
+    await user.click(
+      within(firstResumeCard as HTMLElement).getByRole('button', { name: '查看 Decision' }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Approve escalation path' })).toBeTruthy();
+    });
   });
 
   it('clears waiting signals after a task leaves waiting_external', async () => {

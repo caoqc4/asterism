@@ -338,6 +338,27 @@ export function App() {
     handleOpenRun(activity.sourceId);
   }
 
+  function handleOpenResumeLatestChange(preview: HomeBriefData['recentTaskResumes'][number]) {
+    if (preview.latestChangeAction.targetType === 'decision' && preview.latestChangeAction.targetId) {
+      handleOpenDecision(preview.latestChangeAction.targetId);
+      return;
+    }
+
+    if (preview.latestChangeAction.targetType === 'run' && preview.latestChangeAction.targetId) {
+      handleOpenRun(preview.latestChangeAction.targetId);
+      return;
+    }
+
+    if (preview.latestChangeAction.targetType === 'source_context' && preview.latestChangeAction.targetId) {
+      handleOpenTask(preview.taskId, {
+        type: 'focus_source_context',
+        focusArea: 'detail',
+        sourceContextId: preview.latestChangeAction.targetId,
+        prefillNextStep: preview.nextSuggestedMove,
+      });
+    }
+  }
+
   function handleOpenDecision(decisionId: string) {
     setFocusedDecisionId(decisionId);
     setRoute('decisions');
@@ -383,6 +404,7 @@ export function App() {
             onOpenActivity={handleOpenActivity}
             onOpenActivityObject={handleOpenActivityObject}
             onOpenArtifact={handleOpenArtifact}
+            onOpenResumeLatestChange={handleOpenResumeLatestChange}
             onOpenSourceContext={handleOpenSourceContext}
             ping={ping}
             status={status}
