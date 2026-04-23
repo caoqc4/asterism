@@ -5581,14 +5581,86 @@ describe('App UI flow', () => {
 
     const transitionButtons = within(transitionSection as HTMLElement)
       .getAllByRole('button')
-      .map((button) => button.textContent);
+      .map((button) => button.textContent)
+      .filter((label): label is string => Boolean(label?.startsWith('转到 ')));
 
     expect(transitionButtons.slice(0, 4)).toEqual([
       '转到 planned',
       '转到 waiting_external',
-      '转到 completed',
+      '转到 completed（未定义完成标准）',
       '转到 archived',
     ]);
+  });
+
+  it('shows completion guidance before transitioning a task to completed', async () => {
+    const user = userEvent.setup();
+
+    const completionCriteria = [
+      buildCompletionCriteria({
+        id: 'criteria_open_1',
+        taskId: riskTask.id,
+        text: 'Stakeholder approved final brief',
+      }),
+      buildCompletionCriteria({
+        id: 'criteria_satisfied_1',
+        taskId: riskTask.id,
+        text: 'Draft delivered',
+        status: 'satisfied',
+        satisfiedAt: '2026-01-03T00:00:00.000Z',
+      }),
+    ];
+
+    const completionDetail: TaskDetail = {
+      ...buildTaskDetail(riskTask),
+      completionCriteria,
+      resumeCard: {
+        ...buildTaskDetail(riskTask).resumeCard,
+        completionStatus: {
+          total: 2,
+          satisfied: 1,
+          open: 1,
+          summary: '已满足 1/2 条完成标准',
+        },
+      },
+    };
+
+    const completionApi: ElectronApi = {
+      ...mockApi,
+      getTaskDetail: vi.fn(async (taskId: string) =>
+        taskId === riskTask.id ? completionDetail : taskDetails[taskId] ?? null,
+      ),
+    };
+
+    window.api = completionApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /high risk task/i }));
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    const transitionSection = screen
+      .getByRole('heading', { name: '状态流转' })
+      .closest('.transition-group');
+
+    expect(transitionSection).toBeTruthy();
+    expect(
+      within(transitionSection as HTMLElement).getByText(
+        '当前还有 1 条完成标准未满足：Stakeholder approved final brief。你仍可完成任务，但更建议先补齐这些收尾标准。',
+      ),
+    ).toBeTruthy();
+
+    expect(
+      within(transitionSection as HTMLElement).getByRole('button', {
+        name: '转到 completed（仍有 1 条未满足）',
+      }),
+    ).toBeTruthy();
+
+    await user.click(
+      within(transitionSection as HTMLElement).getByRole('button', { name: '打开 Completion Criteria' }),
+    );
+
+    expect(screen.getByRole('heading', { name: 'Current Completion Criteria' })).toBeTruthy();
   });
 
   it('opens newly created tasks in clarify mode and focuses the new task detail', async () => {

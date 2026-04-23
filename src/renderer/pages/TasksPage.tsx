@@ -752,6 +752,31 @@ export function TasksPage({
         hasWaitingContext: Boolean(detail.activeWaitingItem || detail.waitingReason),
       })
     : null;
+  const openCompletionCriteria = detail?.completionCriteria.filter((criteria) => criteria.status === 'open') ?? [];
+  const completionTransitionGuidance = detail
+    ? detail.state === 'completed' || detail.state === 'archived' || !transitionStates.includes('completed')
+      ? null
+      : resumeCompletionStatus.total === 0
+        ? {
+            tone: 'empty' as const,
+            summary: '当前还没有定义完成标准。你仍可完成任务，但更建议先补 1 到 3 条收尾标准，再判断是否真的可以结束。',
+            buttonLabel: '转到 completed（未定义完成标准）',
+          }
+        : resumeCompletionStatus.open > 0
+          ? {
+              tone: 'open' as const,
+              summary: `当前还有 ${resumeCompletionStatus.open} 条完成标准未满足：${openCompletionCriteria
+                .slice(0, 2)
+                .map((criteria) => criteria.text)
+                .join('；')}${openCompletionCriteria.length > 2 ? '；…' : ''}。你仍可完成任务，但更建议先补齐这些收尾标准。`,
+              buttonLabel: `转到 completed（仍有 ${resumeCompletionStatus.open} 条未满足）`,
+            }
+          : {
+              tone: 'ready' as const,
+              summary: '当前完成标准已全部满足。现在转到 completed 会更有依据。',
+              buttonLabel: '转到 completed（完成标准已满足）',
+            }
+    : null;
 
   function updateDraftRiskLevel(nextRiskLevel: TaskRiskLevel) {
     setDraftRiskLevel(nextRiskLevel);
@@ -2573,6 +2598,21 @@ export function TasksPage({
                     </label>
                     {transitionError ? <p className="meta">{transitionError}</p> : null}
                   </div>
+                  {completionTransitionGuidance ? (
+                    <div className="task-card stack">
+                      <strong>完成前判断</strong>
+                      <p className="meta">{completionTransitionGuidance.summary}</p>
+                      {completionTransitionGuidance.tone !== 'ready' ? (
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={focusCompletionCriteriaSection}
+                        >
+                          打开 Completion Criteria
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
                   <div className="chip-row">
                     {transitionStates.length === 0 ? (
                       <p className="meta">当前状态没有可用的下一步。</p>
@@ -2584,7 +2624,9 @@ export function TasksPage({
                           onClick={() => void handleTransition(nextState)}
                           type="button"
                         >
-                          转到 {nextState}
+                          {nextState === 'completed' && completionTransitionGuidance
+                            ? completionTransitionGuidance.buttonLabel
+                            : `转到 ${nextState}`}
                         </button>
                       ))
                     )}
