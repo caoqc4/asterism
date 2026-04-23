@@ -59,7 +59,9 @@ export type HomeTaskResumePreviewRecord = {
   currentState: string;
   latestChange: string;
   keySourceTitle: string | null;
+  keySourceReason: string | null;
   currentMethodTitle: string | null;
+  currentMethodReason: string | null;
   nextSuggestedMove: string;
   sourceContextId: string | null;
   contextActionLabel: string;

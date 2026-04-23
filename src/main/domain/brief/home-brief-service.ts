@@ -17,6 +17,14 @@ import { SourceContextRepository } from '../../db/repositories/source-context-re
 import type { TaskRecord } from '../../../shared/types/task.js';
 import type { BriefProcessTemplateCandidate } from '../../../shared/types/brief.js';
 
+function safeJsonParse(value: string): Record<string, unknown> | null {
+  try {
+    return JSON.parse(value) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 function buildRecommendedActions(params: {
   activeTasks: HomeBriefData['recentTasks'];
   highRiskTasks: HomeBriefData['highRiskTasks'];
@@ -240,12 +248,98 @@ export class HomeBriefService {
     return [...aggregated.values()].slice(0, 8);
   }
 
-  private buildTaskResumePreviews(params: {
+  private getKeySourcePreviewReason(params: {
+    keySource: HomeSourceContextRecord | null;
+    timeline: { type: string; payload: string | null }[];
+  }): string | null {
+    const { keySource, timeline } = params;
+
+    if (!keySource) {
+      return null;
+    }
+
+    const sourceEvent = timeline.find((event) => {
+      if (
+        (event.type !== 'source_context.created' && event.type !== 'source_context.updated')
+        || !event.payload
+      ) {
+        return false;
+      }
+
+      const payload = safeJsonParse(event.payload);
+      return payload?.sourceContextId === keySource.id;
+    });
+
+    const normalizedNote = keySource.note?.trim() || '';
+
+    if (keySource.isKey) {
+      if (normalizedNote) {
+        return `关键来源：${normalizedNote}`;
+      }
+
+      if (sourceEvent?.type === 'source_context.updated') {
+        return '最近更新并保留为关键来源。';
+      }
+
+      if (sourceEvent?.type === 'source_context.created') {
+        return '最近加入并标记为关键来源。';
+      }
+
+      return '当前被标记为关键来源。';
+    }
+
+    if (sourceEvent?.type === 'source_context.updated') {
+      return '最近更新了该来源。';
+    }
+
+    if (sourceEvent?.type === 'source_context.created') {
+      return '最近加入了该来源。';
+    }
+
+    return normalizedNote ? `来源说明：${normalizedNote}` : '当前最相关的来源材料。';
+  }
+
+  private getCurrentMethodPreviewReason(params: {
+    currentMethod: Awaited<ReturnType<TaskProcessBindingRepository['listActiveForTasks']>>[number] | null;
+    timeline: { type: string; payload: string | null }[];
+  }): string | null {
+    const { currentMethod, timeline } = params;
+
+    if (!currentMethod) {
+      return null;
+    }
+
+    const selectedEvent = timeline.find((event) => {
+      if (event.type !== 'process_template.selected' || !event.payload) {
+        return false;
+      }
+
+      const payload = safeJsonParse(event.payload);
+      const templateIds = Array.isArray(payload?.templateIds) ? payload.templateIds : [];
+      return templateIds.includes(currentMethod.id);
+    });
+
+    if (!selectedEvent?.payload) {
+      return currentMethod.summary ?? null;
+    }
+
+    const payload = safeJsonParse(selectedEvent.payload);
+    const reason = typeof payload?.reason === 'string' ? payload.reason.trim() : '';
+
+    if (!reason) {
+      return currentMethod.summary ?? null;
+    }
+
+    const sourceType = payload?.sourceType === 'decision_draft' ? '最近用于决策草拟' : '最近用于执行';
+    return `${sourceType}：${reason}`;
+  }
+
+  private async buildTaskResumePreviews(params: {
     recentTasks: TaskRecord[];
     recentActivity: HomeActivityRecord[];
     recentSourceContexts: HomeSourceContextRecord[];
     appliedTemplates: Awaited<ReturnType<TaskProcessBindingRepository['listActiveForTasks']>>;
-  }): HomeTaskResumePreviewRecord[] {
+  }): Promise<HomeTaskResumePreviewRecord[]> {
     const activityByTaskId = new Map<string, HomeActivityRecord>();
 
     for (const item of params.recentActivity) {
@@ -254,7 +348,7 @@ export class HomeBriefService {
       }
     }
 
-    return params.recentTasks.map((task) => {
+    return Promise.all(params.recentTasks.map(async (task) => {
       const latestActivity = activityByTaskId.get(task.id);
       const keySource =
         params.recentSourceContexts.find((item) => item.taskId === task.id && item.isKey) ??
@@ -262,6 +356,8 @@ export class HomeBriefService {
         null;
       const currentMethod =
         params.appliedTemplates.find((item) => item.taskId === task.id) ?? null;
+      const detail = await this.taskRepository.getDetail(task.id);
+      const timeline = detail?.timeline ?? [];
 
       const currentStateParts = [`状态：${task.state}`];
       const waitingReason = task.activeWaitingItem?.reason ?? task.waitingReason;
@@ -340,13 +436,21 @@ export class HomeBriefService {
         currentState: currentStateParts.join(' · '),
         latestChange,
         keySourceTitle: keySource?.title ?? null,
+        keySourceReason: this.getKeySourcePreviewReason({
+          keySource,
+          timeline,
+        }),
         currentMethodTitle: currentMethod?.title ?? null,
+        currentMethodReason: this.getCurrentMethodPreviewReason({
+          currentMethod,
+          timeline,
+        }),
         nextSuggestedMove,
         sourceContextId: keySource?.id ?? null,
         contextActionLabel: contextAction.label,
         contextActionIntent: contextAction.intent,
       };
-    });
+    }));
   }
 
   private async attachActiveWaitingItems(tasks: TaskRecord[]): Promise<TaskRecord[]> {
@@ -458,7 +562,7 @@ export class HomeBriefService {
       ? await this.taskProcessBindingRepository.listActiveForTasks(activeTasks.map((task) => task.id))
       : [];
     const processTemplateCandidates = await this.buildProcessTemplateCandidates(activeTasks);
-    const recentTaskResumes = this.buildTaskResumePreviews({
+    const recentTaskResumes = await this.buildTaskResumePreviews({
       recentTasks: tasks.slice(0, 5),
       recentActivity,
       recentSourceContexts,

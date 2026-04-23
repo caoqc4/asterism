@@ -294,7 +294,9 @@ describe('App UI flow', () => {
         currentState: '状态：running · 风险：high · Deadline slipping',
         latestChange: '最近决策动态：Approve escalation path · approved',
         keySourceTitle: 'Owner escalation memo',
+        keySourceReason: '关键来源：Contains the latest escalation framing.',
         currentMethodTitle: 'Risk review skill',
+        currentMethodReason: '最近用于执行：风险高且需要先复盘 blocker。',
         nextSuggestedMove: '已获批准，继续推进：Approve escalation path',
         sourceContextId: 'source_context_home_1',
         contextActionLabel: '处理风险',
@@ -312,7 +314,9 @@ describe('App UI flow', () => {
         currentState: '状态：waiting_external · 等待：Waiting for legal review',
         latestChange: '最近没有新的关键变化。',
         keySourceTitle: null,
+        keySourceReason: null,
         currentMethodTitle: null,
+        currentMethodReason: null,
         nextSuggestedMove: '跟进并确认是否解除等待：Waiting for legal review',
         sourceContextId: null,
         contextActionLabel: '跟进等待项',
@@ -3182,6 +3186,8 @@ describe('App UI flow', () => {
     render(<App />);
 
     await screen.findByText('Resume Previews');
+    expect(screen.getByText('关键来源：Contains the latest escalation framing.')).toBeTruthy();
+    expect(screen.getByText('最近用于执行：风险高且需要先复盘 blocker。')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '处理风险' }));
 
     await waitFor(() => {

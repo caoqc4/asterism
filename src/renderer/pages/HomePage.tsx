@@ -454,8 +454,14 @@ export function HomePage({
                   {preview.keySourceTitle ? (
                     <p className="meta">关键来源：{preview.keySourceTitle}</p>
                   ) : null}
+                  {preview.keySourceReason ? (
+                    <p className="meta">{preview.keySourceReason}</p>
+                  ) : null}
                   {preview.currentMethodTitle ? (
                     <p className="meta">当前方法：{preview.currentMethodTitle}</p>
+                  ) : null}
+                  {preview.currentMethodReason ? (
+                    <p className="meta">{preview.currentMethodReason}</p>
                   ) : null}
                   <p className="meta">建议先做：{preview.nextSuggestedMove}</p>
                 </button>

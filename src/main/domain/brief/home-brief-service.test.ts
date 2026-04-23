@@ -118,6 +118,20 @@ function buildSourceContext(partial: Partial<SourceContextRecord>): SourceContex
   };
 }
 
+function buildTimelineDetail(
+  events: Array<{ type: string; payload?: Record<string, unknown> | null }>,
+) {
+  return {
+    timeline: events.map((event, index) => ({
+      id: `timeline_${index}`,
+      taskId: 'task_1',
+      type: event.type,
+      payload: event.payload ? JSON.stringify(event.payload) : null,
+      createdAt: `2026-01-01T00:00:0${index}.000Z`,
+    })),
+  };
+}
+
 describe('HomeBriefService', () => {
   it('aggregates waiting, high-risk, and missing-next-step task signals', async () => {
     const service = new HomeBriefService(
@@ -150,6 +164,31 @@ describe('HomeBriefService', () => {
             state: 'completed',
           }),
         ]),
+        getDetail: vi.fn().mockImplementation(async (taskId: string) => {
+          if (taskId === 'task_risk') {
+            return buildTimelineDetail([
+              {
+                type: 'source_context.updated',
+                payload: {
+                  sourceContextId: 'source_context_risk',
+                  title: 'Escalation source memo',
+                },
+              },
+              {
+                type: 'process_template.selected',
+                payload: {
+                  sourceType: 'run',
+                  sourceId: 'run_1',
+                  templateIds: ['process_template_risk'],
+                  titles: ['Risk review skill'],
+                  reason: '高风险任务需要先按风险复盘方法组织输出。',
+                },
+              },
+            ]);
+          }
+
+          return buildTimelineDetail([]);
+        }),
       } as never,
       {
         getActiveForTask: vi.fn().mockImplementation(async (taskId: string) =>
@@ -267,7 +306,9 @@ describe('HomeBriefService', () => {
         currentState: '状态：waiting_external · 等待：Waiting for reviewer confirmation',
         latestChange: '最近没有新的关键变化。',
         keySourceTitle: null,
+        keySourceReason: null,
         currentMethodTitle: 'Risk review skill',
+        currentMethodReason: 'Prioritize risk and blockers',
         nextSuggestedMove: 'Follow up on Friday',
         sourceContextId: null,
         contextActionLabel: '跟进等待项',
@@ -283,7 +324,9 @@ describe('HomeBriefService', () => {
         currentState: '状态：running · 风险：high · Deadline slipping',
         latestChange: '最近关键来源更新：Escalation source memo',
         keySourceTitle: 'Escalation source memo',
+        keySourceReason: '最近更新了该来源。',
         currentMethodTitle: 'Risk review skill',
+        currentMethodReason: '最近用于执行：高风险任务需要先按风险复盘方法组织输出。',
         nextSuggestedMove: 'Escalate today',
         sourceContextId: 'source_context_risk',
         contextActionLabel: '处理风险',
@@ -301,7 +344,9 @@ describe('HomeBriefService', () => {
         currentState: '状态：planned',
         latestChange: '最近没有新的关键变化。',
         keySourceTitle: null,
+        keySourceReason: null,
         currentMethodTitle: null,
+        currentMethodReason: null,
         nextSuggestedMove: '先补一个明确的下一步。',
         sourceContextId: null,
         contextActionLabel: '采用建议下一步',
@@ -317,7 +362,9 @@ describe('HomeBriefService', () => {
         currentState: '状态：completed',
         latestChange: '最近没有新的关键变化。',
         keySourceTitle: null,
+        keySourceReason: null,
         currentMethodTitle: null,
+        currentMethodReason: null,
         nextSuggestedMove: '先补一个明确的下一步。',
         sourceContextId: null,
         contextActionLabel: '采用建议下一步',
@@ -373,6 +420,7 @@ describe('HomeBriefService', () => {
             nextStep: 'Archive it',
           }),
         ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
       } as never,
       {
         getActiveForTask: vi.fn().mockResolvedValue(null),
@@ -424,6 +472,7 @@ describe('HomeBriefService', () => {
             state: 'completed',
           }),
         ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
       } as never,
       {
         getActiveForTask: vi.fn().mockResolvedValue(null),
@@ -486,6 +535,7 @@ describe('HomeBriefService', () => {
             nextStep: null,
           }),
         ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
       } as never,
       {
         getActiveForTask: vi.fn().mockResolvedValue(null),
@@ -576,6 +626,7 @@ describe('HomeBriefService', () => {
             nextStep: 'Review source updates',
           }),
         ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
       } as never,
       {
         getActiveForTask: vi.fn().mockResolvedValue(null),
