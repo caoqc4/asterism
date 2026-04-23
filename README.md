@@ -18,6 +18,7 @@ This repository currently contains an Electron + React + TypeScript prototype wi
 - waiting item lifecycle tracking with direct resolution and task/detail/home visibility
 - text artifacts generated from successful runs, surfaced in task detail, timeline actions, home brief, and recommended-action semantics
 - source context items for task-linked external materials, with task-detail create/edit/archive flows, explicit key-source marking, home-brief surfacing, source-focused task recovery entrypoints, and lifecycle timeline events
+- blocker-linked source updates now feed recovery semantics too, so a freshly updated blocker source can tell the workbench and home surface to re-evaluate whether the current blocker should be cleared instead of only treating the update as generic source progress
 - process context templates for task-linked working methods, with reusable template creation, task binding, and lifecycle timeline events
 - run-time process-template selector that can decide whether to use bound task methods before execution, then record selected/skipped outcomes in task timelines
 - decision and run pages organized as object work surfaces with a current focus, action desk, queue, direct return paths into task follow-up work, lightweight related-task timeline context, shared timeline semantics, timeline-based follow-up actions, and direct object entry from related task timeline events when the recent context points to the current `Decision / Run`

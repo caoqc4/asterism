@@ -607,7 +607,9 @@ export function deriveNextSuggestedMove(params: {
       case 'decision_cancelled':
         return `重新评估该决策并确定替代推进路径：${recentChange.title ?? params.taskTitle}`;
       case 'source_context_changed':
-        return `基于来源材料继续推进：${recentChange.title ?? '最新来源材料'}`;
+        return params.blockerTitle
+          ? `基于来源更新重新判断是否解除阻塞：${params.blockerTitle}`
+          : `基于来源材料继续推进：${recentChange.title ?? '最新来源材料'}`;
       case 'blocker_changed':
         return params.blockerCreatedAt && isStaleBlocker(params.blockerCreatedAt)
           ? `优先升级当前阻塞项：${recentChange.title ?? params.blockerTitle ?? params.taskTitle}`

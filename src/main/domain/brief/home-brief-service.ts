@@ -154,6 +154,26 @@ function buildRecommendedActions(params: {
       continue;
     }
 
+    const activeBlocker = task.activeBlocker;
+    const blockerSourceMatch = activeBlocker && activeBlocker.sourceContextId === sourceContext.id;
+
+    if (blockerSourceMatch) {
+      actions.push({
+        id: `source-context:blocker:${sourceContext.id}`,
+        label: `基于来源更新重新判断阻塞：${task.title}`,
+        reason: `阻塞来源材料“${sourceContext.title}”最近有更新，可重新判断是否解除当前阻塞。`,
+        taskId: task.id,
+        priority: isStaleBlocker(activeBlocker.createdAt) ? 'high' : 'medium',
+        intent: {
+          type: 'focus_source_context',
+          focusArea: 'detail',
+          sourceContextId: sourceContext.id,
+          prefillNextStep: `基于来源更新重新判断是否解除阻塞：${activeBlocker.title}`,
+        },
+      });
+      continue;
+    }
+
     if (missingNextStepTaskIds.has(task.id)) {
       actions.push({
         id: `source-context:next-step:${sourceContext.id}`,

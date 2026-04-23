@@ -268,7 +268,9 @@ describe('TaskService', () => {
     expect(detail?.resumeCard.currentMethod.selectionReason).toBe(
       '当前任务最近采用该方法：来源材料已更新，适合先按 outreach 方法整理外链目标。',
     );
-    expect(detail?.resumeCard.nextSuggestedMove).toBe('基于来源材料继续推进：Partner website shortlist');
+    expect(detail?.resumeCard.nextSuggestedMove).toBe(
+      '基于来源更新重新判断是否解除阻塞：Legal approval pending',
+    );
     expect(detail?.resumeCard.currentState).toContain('阻塞：Legal approval pending');
   });
 

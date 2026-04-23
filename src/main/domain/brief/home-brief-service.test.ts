@@ -685,6 +685,83 @@ describe('HomeBriefService', () => {
     });
   });
 
+  it('recommends re-evaluating blockers when their linked source context updates', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_blocked_source',
+            title: 'Blocked by source update',
+            state: 'waiting_external',
+            nextStep: null,
+          }),
+        ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([
+          buildBlocker({
+            id: 'blocker_source',
+            taskId: 'task_blocked_source',
+            title: 'Partner list pending review',
+            kind: 'document_or_material',
+            detail: 'Need updated partner list before resuming outreach',
+            sourceContextId: 'source_context_blocker_link',
+            createdAt: '2026-01-02T00:00:00.000Z',
+          }),
+        ]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([
+          buildSourceContext({
+            id: 'source_context_blocker_link',
+            taskId: 'task_blocked_source',
+            title: 'Partner website shortlist',
+            kind: 'website_list',
+            uri: null,
+            note: '最新整理的合作站点清单',
+            updatedAt: '2026-01-03T00:00:00.000Z',
+          }),
+        ]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+      null,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.recommendedActions).toContainEqual(
+      expect.objectContaining({
+        id: 'source-context:blocker:source_context_blocker_link',
+        label: '基于来源更新重新判断阻塞：Blocked by source update',
+        reason: '阻塞来源材料“Partner website shortlist”最近有更新，可重新判断是否解除当前阻塞。',
+        taskId: 'task_blocked_source',
+        priority: 'high',
+        intent: {
+          type: 'focus_source_context',
+          focusArea: 'detail',
+          sourceContextId: 'source_context_blocker_link',
+          prefillNextStep: '基于来源更新重新判断是否解除阻塞：Partner list pending review',
+        },
+      }),
+    );
+  });
+
   it('surfaces active blockers in resume previews and recommended actions', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-10T00:00:00.000Z'));
