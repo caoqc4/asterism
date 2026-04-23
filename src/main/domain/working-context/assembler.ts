@@ -1,4 +1,5 @@
 import type { HomeActivityRecord, HomeTaskResumePreviewRecord } from '../../../shared/types/brief.js';
+import type { BlockerRecord } from '../../../shared/types/blocker.js';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import type { TaskDetailBase, TaskResumeCardRecord, TaskRiskLevel, TimelineEventRecord } from '../../../shared/types/task.js';
@@ -23,6 +24,14 @@ type WorkingContextRecentChange =
     }
   | {
       kind: 'source_context_changed';
+      title?: string;
+    }
+  | {
+      kind: 'blocker_changed';
+      title?: string;
+    }
+  | {
+      kind: 'blocker_resolved';
       title?: string;
     }
   | {
@@ -310,6 +319,33 @@ export function buildTaskResumeLatestChange(
           title: typeof payload?.title === 'string' ? payload.title : undefined,
         },
       };
+    case 'blocker.created':
+    case 'blocker.updated':
+      return {
+        summary: `最近更新了阻塞项：${String(payload?.title ?? '未命名阻塞项')}。`,
+        action: {
+          label: payload?.sourceContextId ? '查看来源' : null,
+          targetType: payload?.sourceContextId ? 'source_context' : null,
+          targetId: typeof payload?.sourceContextId === 'string' ? payload.sourceContextId : null,
+        },
+        recentChange: {
+          kind: 'blocker_changed',
+          title: typeof payload?.title === 'string' ? payload.title : undefined,
+        },
+      };
+    case 'blocker.resolved':
+      return {
+        summary: `最近解除阻塞项：${String(payload?.title ?? '未命名阻塞项')}。`,
+        action: {
+          label: payload?.sourceContextId ? '查看来源' : null,
+          targetType: payload?.sourceContextId ? 'source_context' : null,
+          targetId: typeof payload?.sourceContextId === 'string' ? payload.sourceContextId : null,
+        },
+        recentChange: {
+          kind: 'blocker_resolved',
+          title: typeof payload?.title === 'string' ? payload.title : undefined,
+        },
+      };
     case 'artifact.created':
       return {
         summary: `最近生成了产物：${String(payload?.title ?? '未命名产物')}。`,
@@ -382,12 +418,13 @@ export function buildTaskResumeLatestChange(
 export function buildHomeResumeLatestChange(params: {
   latestActivity: HomeActivityRecord | undefined;
   keySource: Pick<SourceContextRecord, 'id' | 'title'> | null;
+  activeBlocker?: Pick<BlockerRecord, 'id' | 'title' | 'sourceContextId'> | null;
 }): {
   summary: string;
   action: HomeTaskResumePreviewRecord['latestChange']['action'];
   recentChange: WorkingContextRecentChange | null;
 } {
-  const { latestActivity, keySource } = params;
+  const { latestActivity, keySource, activeBlocker } = params;
 
   if (latestActivity) {
     if (latestActivity.sourceType === 'decision') {
@@ -446,6 +483,21 @@ export function buildHomeResumeLatestChange(params: {
     };
   }
 
+  if (activeBlocker) {
+    return {
+      summary: `当前阻塞项：${activeBlocker.title}`,
+      action: {
+        label: activeBlocker.sourceContextId ? '查看来源' : null,
+        targetType: activeBlocker.sourceContextId ? 'source_context' : null,
+        targetId: activeBlocker.sourceContextId ?? null,
+      },
+      recentChange: {
+        kind: 'blocker_changed',
+        title: activeBlocker.title,
+      },
+    };
+  }
+
   return {
     summary: '最近没有新的关键变化。',
     action: {
@@ -463,6 +515,7 @@ export function deriveNextSuggestedMove(params: {
   waitingReason?: string | null;
   riskLevel: TaskRiskLevel;
   riskNote?: string | null;
+  blockerTitle?: string | null;
   keySourceTitle?: string | null;
   latestArtifactTitle?: string | null;
   recentChange?: WorkingContextRecentChange | null;
@@ -491,6 +544,10 @@ export function deriveNextSuggestedMove(params: {
         return `重新评估该决策并确定替代推进路径：${recentChange.title ?? params.taskTitle}`;
       case 'source_context_changed':
         return `基于来源材料继续推进：${recentChange.title ?? '最新来源材料'}`;
+      case 'blocker_changed':
+        return `先解除阻塞项：${recentChange.title ?? params.blockerTitle ?? params.taskTitle}`;
+      case 'blocker_resolved':
+        return `确认解除阻塞后的下一步推进：${recentChange.title ?? params.taskTitle}`;
       case 'artifact_created':
         return `基于产物继续推进：${recentChange.title ?? '最新产物'}`;
       case 'waiting_item_changed':
@@ -508,6 +565,10 @@ export function deriveNextSuggestedMove(params: {
 
   if (params.waitingReason) {
     return `先跟进等待项：${params.waitingReason}`;
+  }
+
+  if (params.blockerTitle) {
+    return `先解除阻塞项：${params.blockerTitle}`;
   }
 
   if (params.riskLevel === 'high') {

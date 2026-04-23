@@ -4,6 +4,7 @@ import type {
   AppliedProcessTemplateRecord,
   ProcessTemplateRecord,
 } from '../../../shared/types/process-template.js';
+import type { BlockerRecord } from '../../../shared/types/blocker.js';
 import type { TaskDetail, TaskRecord } from '../../../shared/types/task.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import { TaskService } from './task-service.js';
@@ -17,6 +18,7 @@ function buildDetail(state: TaskDetail['state']): TaskDetail {
     nextStep: 'Next step',
     waitingReason: null,
     activeWaitingItem: null,
+    activeBlocker: null,
     riskLevel: 'none',
     riskNote: null,
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -31,6 +33,11 @@ function buildDetail(state: TaskDetail['state']): TaskDetail {
           targetType: null,
           targetId: null,
         },
+      },
+      currentBlocker: {
+        blockerId: null,
+        title: '暂无当前阻塞项',
+        detail: null,
       },
       keySource: {
         sourceContextId: null,
@@ -51,6 +58,22 @@ function buildDetail(state: TaskDetail['state']): TaskDetail {
     processTemplates: [],
     availableProcessTemplates: [],
     timeline: [],
+  };
+}
+
+function buildBlockerRecord(partial: Partial<BlockerRecord> = {}): BlockerRecord {
+  return {
+    id: partial.id ?? 'blocker_1',
+    taskId: partial.taskId ?? 'task_1',
+    title: partial.title ?? 'Legal approval pending',
+    kind: partial.kind ?? 'approval',
+    detail: partial.detail ?? 'Need sign-off',
+    owner: partial.owner ?? 'Legal',
+    sourceContextId: partial.sourceContextId ?? null,
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    resolvedAt: partial.resolvedAt ?? null,
   };
 }
 
@@ -203,6 +226,14 @@ describe('TaskService', () => {
         }),
       ]),
     };
+    const blockers = {
+      getActiveForTask: vi.fn().mockResolvedValue(
+        buildBlockerRecord({
+          title: 'Legal approval pending',
+          detail: 'Need formal sign-off before launch',
+        }),
+      ),
+    };
     const service = new TaskService(
       repository as never,
       waitingItems as never,
@@ -210,6 +241,7 @@ describe('TaskService', () => {
       sourceContexts as never,
       processTemplates as never,
       bindings as never,
+      blockers as never,
     );
 
     const detail = await service.getDetail('task_1');
@@ -221,6 +253,11 @@ describe('TaskService', () => {
       targetType: 'source_context',
       targetId: 'source_context_key',
     });
+    expect(detail?.resumeCard.currentBlocker).toEqual({
+      blockerId: 'blocker_1',
+      title: 'Legal approval pending',
+      detail: 'Need formal sign-off before launch',
+    });
     expect(detail?.resumeCard.keySource.title).toBe('Partner website shortlist');
     expect(detail?.resumeCard.keySource.priorityReason).toBe(
       '当前在材料架中被标记为关键来源：Latest approved outreach targets',
@@ -230,6 +267,7 @@ describe('TaskService', () => {
       '当前任务最近采用该方法：来源材料已更新，适合先按 outreach 方法整理外链目标。',
     );
     expect(detail?.resumeCard.nextSuggestedMove).toBe('基于来源材料继续推进：Partner website shortlist');
+    expect(detail?.resumeCard.currentState).toContain('阻塞：Legal approval pending');
   });
 
   it('prioritizes a clear lifecycle change when deriving the next suggested move', async () => {
@@ -267,6 +305,83 @@ describe('TaskService', () => {
 
     expect(detail?.resumeCard.latestChange.summary).toBe('最近一次执行失败：Model overloaded。');
     expect(detail?.resumeCard.nextSuggestedMove).toBe('检查最近一次执行失败原因，并决定是否重试。');
+  });
+
+  it('creates and resolves blocker objects with task timeline events', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const blockers = {
+      getActiveForTask: vi.fn().mockResolvedValueOnce(null),
+      create: vi.fn().mockResolvedValue(
+        buildBlockerRecord({
+          title: 'Legal approval pending',
+          kind: 'approval',
+          detail: 'Need legal sign-off',
+        }),
+      ),
+      update: vi.fn(),
+      resolve: vi.fn().mockResolvedValue(
+        buildBlockerRecord({
+          status: 'resolved',
+          resolvedAt: '2026-01-02T00:00:00.000Z',
+        }),
+      ),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      blockers as never,
+    );
+
+    const created = await service.createBlocker({
+      taskId: 'task_1',
+      title: 'Legal approval pending',
+      kind: 'approval',
+      detail: 'Need legal sign-off',
+    });
+    const resolved = await service.resolveBlocker(created.id);
+
+    expect(blockers.create).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      title: 'Legal approval pending',
+      kind: 'approval',
+      detail: 'Need legal sign-off',
+    });
+    expect(repository.appendTimelineEvent).toHaveBeenNthCalledWith(
+      1,
+      'task_1',
+      'blocker.created',
+      expect.objectContaining({
+        blockerId: 'blocker_1',
+        title: 'Legal approval pending',
+      }),
+    );
+    expect(blockers.resolve).toHaveBeenCalledWith('blocker_1');
+    expect(repository.appendTimelineEvent).toHaveBeenNthCalledWith(
+      2,
+      'task_1',
+      'blocker.resolved',
+      expect.objectContaining({
+        blockerId: 'blocker_1',
+        status: 'resolved',
+      }),
+    );
+    expect(resolved.status).toBe('resolved');
   });
 
   it('allows valid state transitions', async () => {

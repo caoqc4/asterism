@@ -62,6 +62,20 @@ export const waitingItems = sqliteTable('waiting_items', {
   resolvedAt: text('resolved_at'),
 });
 
+export const blockers = sqliteTable('blockers', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull(),
+  title: text('title').notNull(),
+  kind: text('kind').notNull(),
+  detail: text('detail'),
+  owner: text('owner'),
+  sourceContextId: text('source_context_id'),
+  status: text('status').notNull().default('active'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  resolvedAt: text('resolved_at'),
+});
+
 export const artifacts = sqliteTable('artifacts', {
   id: text('id').primaryKey(),
   taskId: text('task_id').notNull(),

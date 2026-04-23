@@ -23,6 +23,14 @@ export type WorkingContextRecentChange =
       title?: string;
     }
   | {
+      kind: 'blocker_changed';
+      title?: string;
+    }
+  | {
+      kind: 'blocker_resolved';
+      title?: string;
+    }
+  | {
       kind: 'artifact_created';
       title?: string;
     }
@@ -180,6 +188,33 @@ export function interpretTaskTimelineEvent(
           title: typeof payload?.title === 'string' ? payload.title : undefined,
         },
       };
+    case 'blocker.created':
+    case 'blocker.updated':
+      return {
+        summary: `最近更新了阻塞项：${String(payload?.title ?? '未命名阻塞项')}。`,
+        objectAction: {
+          label: payload?.sourceContextId ? '查看来源' : null,
+          targetType: payload?.sourceContextId ? 'source_context' : null,
+          targetId: typeof payload?.sourceContextId === 'string' ? payload.sourceContextId : null,
+        },
+        recentChange: {
+          kind: 'blocker_changed',
+          title: typeof payload?.title === 'string' ? payload.title : undefined,
+        },
+      };
+    case 'blocker.resolved':
+      return {
+        summary: `最近解除阻塞项：${String(payload?.title ?? '未命名阻塞项')}。`,
+        objectAction: {
+          label: payload?.sourceContextId ? '查看来源' : null,
+          targetType: payload?.sourceContextId ? 'source_context' : null,
+          targetId: typeof payload?.sourceContextId === 'string' ? payload.sourceContextId : null,
+        },
+        recentChange: {
+          kind: 'blocker_resolved',
+          title: typeof payload?.title === 'string' ? payload.title : undefined,
+        },
+      };
     case 'artifact.created':
       return {
         summary: `最近生成了产物：${String(payload?.title ?? '未命名产物')}。`,
@@ -240,6 +275,9 @@ export function getTaskTimelineFollowUpActionLabel(type: string): string | null 
       return '补跟进动作';
     case 'task.risk_changed':
       return '处理风险';
+    case 'blocker.created':
+    case 'blocker.updated':
+      return '跟进阻塞项';
     case 'artifact.created':
       return '基于产物继续推进';
     default:
@@ -265,6 +303,9 @@ export function getTaskTimelinePriority(type: string): TaskTimelinePriority {
     case 'waiting_item.updated':
     case 'source_context.created':
     case 'source_context.updated':
+    case 'blocker.created':
+    case 'blocker.updated':
+    case 'blocker.resolved':
     case 'process_template.selected':
       return 'p2';
     default:

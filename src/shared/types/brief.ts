@@ -1,4 +1,5 @@
 import type { ArtifactRecord } from './artifact.js';
+import type { BlockerRecord } from './blocker.js';
 import type { BriefSnapshotRecord } from './brief-snapshot.js';
 import type { ProcessTemplateKind } from './process-template.js';
 import type { SchedulerStatus } from './scheduler.js';
@@ -84,6 +85,7 @@ export type HomeTaskSliceRecord = Pick<
   'id' | 'title' | 'summary' | 'state' | 'nextStep' | 'waitingReason' | 'riskLevel' | 'riskNote'
 > & {
   activeWaitingItem?: WaitingItemRecord | null;
+  activeBlocker?: BlockerRecord | null;
 };
 
 export type BriefProcessTemplateCandidate = {

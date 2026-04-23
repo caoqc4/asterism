@@ -4,6 +4,11 @@ import type {
   UpdateProcessTemplateInput,
 } from '../../../shared/types/process-template.js';
 import type {
+  BlockerRecord,
+  CreateBlockerInput,
+  UpdateBlockerInput,
+} from '../../../shared/types/blocker.js';
+import type {
   CreateTaskInput,
   TaskDetail,
   TaskDetailBase,
@@ -20,6 +25,7 @@ import type {
   UpdateSourceContextInput,
 } from '../../../shared/types/source-context.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
+import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
 import { ProcessTemplateRepository } from '../../db/repositories/process-template-repository.js';
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
 import { TaskProcessBindingRepository } from '../../db/repositories/task-process-binding-repository.js';
@@ -50,6 +56,7 @@ export class TaskService {
     private readonly sourceContextRepository: SourceContextRepository | null = null,
     private readonly processTemplateRepository: ProcessTemplateRepository | null = null,
     private readonly taskProcessBindingRepository: TaskProcessBindingRepository | null = null,
+    private readonly blockerRepository: BlockerRepository | null = null,
   ) {}
 
   private async syncWaitingItem(
@@ -85,19 +92,27 @@ export class TaskService {
 
   private async attachActiveWaitingItem(task: TaskRecord): Promise<TaskListItemRecord> {
     const activeWaitingItem = await this.waitingItemRepository.getActiveForTask(task.id);
+    const activeBlocker = this.blockerRepository
+      ? await this.blockerRepository.getActiveForTask(task.id)
+      : null;
 
     return {
       ...task,
       activeWaitingItem,
+      activeBlocker,
     };
   }
 
   private async attachDetailWaitingItem(detail: TaskDetailBase): Promise<TaskDetailBase> {
     const activeWaitingItem = await this.waitingItemRepository.getActiveForTask(detail.id);
+    const activeBlocker = this.blockerRepository
+      ? await this.blockerRepository.getActiveForTask(detail.id)
+      : null;
 
     return {
       ...detail,
       activeWaitingItem,
+      activeBlocker,
     };
   }
 
@@ -144,11 +159,16 @@ export class TaskService {
     const currentMethod = detail.processTemplates[0] ?? null;
     const latestArtifact = detail.artifacts[0] ?? null;
     const waitingReason = detail.activeWaitingItem?.reason ?? detail.waitingReason;
+    const blockerTitle = detail.activeBlocker?.title ?? null;
 
     const currentStateParts = [`状态：${detail.state}`];
 
     if (waitingReason) {
       currentStateParts.push(`等待：${waitingReason}`);
+    }
+
+    if (blockerTitle) {
+      currentStateParts.push(`阻塞：${blockerTitle}`);
     }
 
     if (detail.riskLevel !== 'none') {
@@ -164,13 +184,14 @@ export class TaskService {
       waitingReason,
       riskLevel: detail.riskLevel,
       riskNote: detail.riskNote,
+      blockerTitle,
       keySourceTitle: keySource?.title ?? null,
       latestArtifactTitle: latestArtifact?.title ?? null,
       recentChange: latestChange.recentChange,
     });
 
     const summaryParts = [
-      `这条任务目前处于 ${detail.state}${waitingReason ? `，正在等待“${waitingReason}”` : ''}${detail.riskLevel === 'high' && detail.riskNote ? `，且存在高风险“${detail.riskNote}”` : ''}。`,
+      `这条任务目前处于 ${detail.state}${waitingReason ? `，正在等待“${waitingReason}”` : ''}${blockerTitle ? `，当前阻塞项是“${blockerTitle}”` : ''}${detail.riskLevel === 'high' && detail.riskNote ? `，且存在高风险“${detail.riskNote}”` : ''}。`,
       latestChange.summary,
       keySource ? `当前最关键的来源材料是“${keySource.title}”。` : null,
       currentMethod ? `当前采用的方法模板是“${currentMethod.title}”。` : null,
@@ -184,6 +205,21 @@ export class TaskService {
         summary: latestChange.summary,
         action: latestChange.action,
       },
+      currentBlocker: detail.activeBlocker
+        ? {
+            blockerId: detail.activeBlocker.id,
+            title: detail.activeBlocker.title,
+            detail:
+              detail.activeBlocker.detail ??
+              (detail.activeBlocker.owner
+                ? `当前卡在 ${detail.activeBlocker.owner}`
+                : detail.activeBlocker.kind),
+          }
+        : {
+            blockerId: null,
+            title: '暂无当前阻塞项',
+            detail: null,
+          },
       keySource: keySource
         ? {
             sourceContextId: keySource.id,
@@ -251,6 +287,7 @@ export class TaskService {
       waitingReason: transitioned.waitingReason,
       updatedAt: transitioned.updatedAt,
       activeWaitingItem: null,
+      activeBlocker: detail.activeBlocker,
     };
   }
 
@@ -625,6 +662,83 @@ export class TaskService {
     });
 
     return archived;
+  }
+
+  async createBlocker(input: CreateBlockerInput): Promise<BlockerRecord> {
+    await this.getExistingTaskOrThrow(input.taskId);
+
+    if (!this.blockerRepository) {
+      throw new Error('Blocker repository is not configured');
+    }
+
+    const existing = await this.blockerRepository.getActiveForTask(input.taskId);
+    const blocker = existing
+      ? await this.blockerRepository.update({
+          id: existing.id,
+          title: input.title,
+          kind: input.kind,
+          detail: input.detail,
+          owner: input.owner,
+          sourceContextId: input.sourceContextId,
+        })
+      : await this.blockerRepository.create(input);
+
+    await this.repository.appendTimelineEvent(
+      input.taskId,
+      existing ? 'blocker.updated' : 'blocker.created',
+      {
+        blockerId: blocker.id,
+        title: blocker.title,
+        kind: blocker.kind,
+        detail: blocker.detail,
+        owner: blocker.owner,
+        sourceContextId: blocker.sourceContextId,
+        status: blocker.status,
+      },
+    );
+
+    return blocker;
+  }
+
+  async updateBlocker(input: UpdateBlockerInput): Promise<BlockerRecord> {
+    if (!this.blockerRepository) {
+      throw new Error('Blocker repository is not configured');
+    }
+
+    const blocker = await this.blockerRepository.update(input);
+
+    await this.repository.appendTimelineEvent(blocker.taskId, 'blocker.updated', {
+      blockerId: blocker.id,
+      title: blocker.title,
+      kind: blocker.kind,
+      detail: blocker.detail,
+      owner: blocker.owner,
+      sourceContextId: blocker.sourceContextId,
+      status: blocker.status,
+    });
+
+    return blocker;
+  }
+
+  async resolveBlocker(id: string): Promise<BlockerRecord> {
+    if (!this.blockerRepository) {
+      throw new Error('Blocker repository is not configured');
+    }
+
+    const blocker = await this.blockerRepository.resolve(id);
+
+    await this.repository.appendTimelineEvent(blocker.taskId, 'blocker.resolved', {
+      blockerId: blocker.id,
+      title: blocker.title,
+      kind: blocker.kind,
+      detail: blocker.detail,
+      owner: blocker.owner,
+      sourceContextId: blocker.sourceContextId,
+      status: blocker.status,
+      resolvedAt: blocker.resolvedAt,
+    });
+
+    return blocker;
   }
 
   async createProcessTemplate(input: CreateProcessTemplateInput) {

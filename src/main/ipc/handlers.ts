@@ -1,6 +1,7 @@
 import electron from 'electron';
 
 import type { PingResponse } from '../../shared/types/ipc.js';
+import type { CreateBlockerInput, UpdateBlockerInput } from '../../shared/types/blocker.js';
 import type { CreateDecisionInput, DecisionActionInput, DraftDecisionInput } from '../../shared/types/decision.js';
 import type {
   ApplyProcessTemplateInput,
@@ -72,6 +73,24 @@ export function registerIpcHandlers(): void {
     const updated = await getServices().taskService.transition(input);
     emitAppEvent('task.changed', updated.id);
     return updated;
+  });
+
+  ipcMain.handle('blocker:create', async (_event, input: CreateBlockerInput) => {
+    const created = await getServices().taskService.createBlocker(input);
+    emitAppEvent('task.changed', created.taskId);
+    return created;
+  });
+
+  ipcMain.handle('blocker:update', async (_event, input: UpdateBlockerInput) => {
+    const updated = await getServices().taskService.updateBlocker(input);
+    emitAppEvent('task.changed', updated.taskId);
+    return updated;
+  });
+
+  ipcMain.handle('blocker:resolve', async (_event, id: string) => {
+    const resolved = await getServices().taskService.resolveBlocker(id);
+    emitAppEvent('task.changed', resolved.taskId);
+    return resolved;
   });
 
   ipcMain.handle('sourceContext:create', async (_event, input: CreateSourceContextInput) => {

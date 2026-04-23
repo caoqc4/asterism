@@ -42,6 +42,9 @@ function getExposedApi() {
     getTaskDetail: (taskId: string) => Promise<unknown>;
     updateTask: (input: unknown) => Promise<unknown>;
     transitionTask: (input: unknown) => Promise<unknown>;
+    createBlocker: (input: unknown) => Promise<unknown>;
+    updateBlocker: (input: unknown) => Promise<unknown>;
+    resolveBlocker: (id: string) => Promise<unknown>;
     createSourceContext: (input: unknown) => Promise<unknown>;
     updateSourceContext: (input: unknown) => Promise<unknown>;
     archiveSourceContext: (id: string) => Promise<unknown>;
@@ -86,6 +89,16 @@ describe('preload bridge', () => {
     const createTaskInput = { title: 'Ship preload tests' };
     const updateTaskInput = { id: 'task_1', title: 'Updated title' };
     const transitionTaskInput = { id: 'task_1', nextState: 'planned' };
+    const createBlockerInput = {
+      taskId: 'task_1',
+      title: 'Legal approval pending',
+      kind: 'approval',
+      detail: 'Need sign-off before launch',
+    };
+    const updateBlockerInput = {
+      id: 'blocker_1',
+      owner: 'Legal',
+    };
     const createSourceContextInput = {
       taskId: 'task_1',
       title: 'PRD',
@@ -124,6 +137,9 @@ describe('preload bridge', () => {
     await api.getTaskDetail('task_1');
     await api.updateTask(updateTaskInput);
     await api.transitionTask(transitionTaskInput);
+    await api.createBlocker(createBlockerInput);
+    await api.updateBlocker(updateBlockerInput);
+    await api.resolveBlocker('blocker_1');
     await api.createSourceContext(createSourceContextInput);
     await api.updateSourceContext(updateSourceContextInput);
     await api.archiveSourceContext('source_context_1');
@@ -150,6 +166,9 @@ describe('preload bridge', () => {
       ['task:getDetail', 'task_1'],
       ['task:update', updateTaskInput],
       ['task:transition', transitionTaskInput],
+      ['blocker:create', createBlockerInput],
+      ['blocker:update', updateBlockerInput],
+      ['blocker:resolve', 'blocker_1'],
       ['sourceContext:create', createSourceContextInput],
       ['sourceContext:update', updateSourceContextInput],
       ['sourceContext:archive', 'source_context_1'],

@@ -121,6 +121,7 @@ export class TaskRepository {
       nextStep: task.nextStep,
       waitingReason: task.waitingReason,
       activeWaitingItem: null,
+      activeBlocker: null,
       riskLevel: task.riskLevel as TaskRecord['riskLevel'],
       riskNote: task.riskNote,
       createdAt: task.createdAt,

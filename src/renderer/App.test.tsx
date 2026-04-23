@@ -5,6 +5,7 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 
 import type { HomeBriefData, HomeSourceContextRecord } from '@shared/types/brief';
+import type { BlockerRecord } from '@shared/types/blocker';
 import type { DecisionRecord } from '@shared/types/decision';
 import type { ElectronApi } from '@shared/types/ipc';
 import type {
@@ -28,10 +29,27 @@ function buildTaskRecord(partial: Partial<TaskListItemRecord>): TaskListItemReco
     nextStep: partial.nextStep ?? null,
     waitingReason: partial.waitingReason ?? null,
     activeWaitingItem: partial.activeWaitingItem ?? null,
+    activeBlocker: partial.activeBlocker ?? null,
     riskLevel: partial.riskLevel ?? 'none',
     riskNote: partial.riskNote ?? null,
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+  };
+}
+
+function buildBlocker(partial: Partial<BlockerRecord>): BlockerRecord {
+  return {
+    id: partial.id ?? 'blocker_1',
+    taskId: partial.taskId ?? 'task_1',
+    title: partial.title ?? 'Legal approval pending',
+    kind: partial.kind ?? 'approval',
+    detail: partial.detail ?? 'Need formal sign-off before launch',
+    owner: partial.owner ?? 'Legal',
+    sourceContextId: partial.sourceContextId ?? null,
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    resolvedAt: partial.resolvedAt ?? null,
   };
 }
 
@@ -60,6 +78,11 @@ function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
           targetType: null,
           targetId: null,
         },
+      },
+      currentBlocker: {
+        blockerId: task.activeBlocker?.id ?? null,
+        title: task.activeBlocker?.title ?? '暂无当前阻塞项',
+        detail: task.activeBlocker?.detail ?? null,
       },
       keySource: {
         sourceContextId: null,
@@ -453,6 +476,38 @@ describe('App UI flow', () => {
     getTaskDetail: vi.fn(async (taskId: string) => taskDetails[taskId] ?? null),
     updateTask: vi.fn(),
     transitionTask: vi.fn(),
+    createBlocker: vi.fn().mockImplementation(async (input) =>
+      buildBlocker({
+        taskId: input.taskId,
+        title: input.title,
+        kind: input.kind,
+        detail: input.detail ?? null,
+        owner: input.owner ?? null,
+        sourceContextId: input.sourceContextId ?? null,
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ),
+    updateBlocker: vi.fn().mockImplementation(async (input) =>
+      buildBlocker({
+        id: input.id,
+        taskId: riskTask.id,
+        title: input.title ?? 'Updated blocker',
+        kind: input.kind ?? 'approval',
+        detail: input.detail ?? 'Updated blocker detail',
+        owner: input.owner ?? 'Legal',
+        sourceContextId: input.sourceContextId ?? null,
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ),
+    resolveBlocker: vi.fn().mockImplementation(async (id) =>
+      buildBlocker({
+        id,
+        taskId: riskTask.id,
+        status: 'resolved',
+        resolvedAt: '2026-01-02T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ),
     createSourceContext: vi.fn().mockImplementation(async (input) =>
       buildSourceContext({
         taskId: input.taskId,
@@ -654,6 +709,11 @@ describe('App UI flow', () => {
         detail: 'Prioritize blockers before drafting',
         selectionReason: '当前任务最近采用该方法：风险高且存在阻塞，适合优先参考该方法。',
       },
+      currentBlocker: {
+        blockerId: null,
+        title: '暂无当前阻塞项',
+        detail: null,
+      },
       nextSuggestedMove: '处理当前风险并确认是否需要降级：Deadline slipping',
     };
 
@@ -746,6 +806,11 @@ describe('App UI flow', () => {
         detail: 'Use the launch workflow',
         selectionReason: null,
       },
+      currentBlocker: {
+        blockerId: null,
+        title: '暂无当前阻塞项',
+        detail: null,
+      },
       nextSuggestedMove: '基于来源材料继续推进：Launch reference memo',
     };
 
@@ -819,6 +884,11 @@ describe('App UI flow', () => {
         title: '暂无方法模板',
         detail: null,
         selectionReason: null,
+      },
+      currentBlocker: {
+        blockerId: null,
+        title: '暂无当前阻塞项',
+        detail: null,
       },
       nextSuggestedMove: '已获批准：Approve launch，继续推进下一步。',
     };
@@ -2537,6 +2607,119 @@ describe('App UI flow', () => {
     );
 
     expect(sourceApi.archiveSourceContext).toHaveBeenCalled();
+  });
+
+  it('creates and resolves blocker items from task detail', async () => {
+    const user = userEvent.setup();
+
+    const blockerTask = buildTaskRecord({
+      id: 'task_blocker_context',
+      title: 'Blocker context task',
+      state: 'planned',
+    });
+
+    let currentDetail: TaskDetail = {
+      ...buildTaskDetail(blockerTask),
+      sourceContexts: [
+        buildSourceContext({
+          id: 'source_context_blocker',
+          taskId: blockerTask.id,
+          title: 'Legal brief',
+          kind: 'doc',
+          uri: 'https://example.com/legal-brief',
+          note: 'Needed for sign-off',
+        }),
+      ],
+    };
+
+    const blockerApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([blockerTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== blockerTask.id) {
+          return null;
+        }
+
+        return currentDetail;
+      }),
+      createBlocker: vi.fn().mockImplementation(async (input) => {
+        const created = buildBlocker({
+          id: 'blocker_created',
+          taskId: input.taskId,
+          title: input.title,
+          kind: input.kind,
+          detail: input.detail ?? null,
+          owner: input.owner ?? null,
+          sourceContextId: input.sourceContextId ?? null,
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        });
+        currentDetail = {
+          ...currentDetail,
+          activeBlocker: created,
+          resumeCard: {
+            ...currentDetail.resumeCard,
+            currentBlocker: {
+              blockerId: created.id,
+              title: created.title,
+              detail: created.detail,
+            },
+          },
+        };
+        return created;
+      }),
+      resolveBlocker: vi.fn().mockImplementation(async (id: string) => {
+        const resolved = buildBlocker({
+          id,
+          taskId: blockerTask.id,
+          status: 'resolved',
+          resolvedAt: '2026-01-03T00:00:00.000Z',
+          updatedAt: '2026-01-03T00:00:00.000Z',
+        });
+        currentDetail = {
+          ...currentDetail,
+          activeBlocker: null,
+          resumeCard: {
+            ...currentDetail.resumeCard,
+            currentBlocker: {
+              blockerId: null,
+              title: '暂无当前阻塞项',
+              detail: null,
+            },
+          },
+        };
+        return resolved;
+      }),
+    };
+
+    window.api = blockerApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /blocker context task/i }));
+    await screen.findByRole('heading', { name: 'Blocker context task' });
+
+    await user.type(screen.getByLabelText('阻塞项标题'), 'Legal approval pending');
+    await user.selectOptions(screen.getByLabelText('阻塞项类型'), 'approval');
+    await user.type(screen.getByLabelText('阻塞说明'), 'Need legal sign-off before launch');
+    await user.type(screen.getByLabelText('owner / 卡点对象'), 'Legal');
+    await user.selectOptions(screen.getByLabelText('关联来源材料'), 'source_context_blocker');
+    await user.click(screen.getByRole('button', { name: '新增阻塞项' }));
+
+    expect(blockerApi.createBlocker).toHaveBeenCalledWith({
+      taskId: 'task_blocker_context',
+      title: 'Legal approval pending',
+      kind: 'approval',
+      detail: 'Need legal sign-off before launch',
+      owner: 'Legal',
+      sourceContextId: 'source_context_blocker',
+    });
+    expect((await screen.findAllByText('Legal approval pending')).length).toBeGreaterThan(0);
+
+    await user.click(screen.getAllByRole('button', { name: '解除阻塞' })[0]!);
+
+    expect(blockerApi.resolveBlocker).toHaveBeenCalledWith('blocker_created');
+    expect(await screen.findByText('暂无当前阻塞项')).toBeTruthy();
   });
 
   it('creates and applies process templates from task detail', async () => {

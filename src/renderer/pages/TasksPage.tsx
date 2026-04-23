@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type { RecommendedActionIntent } from '@shared/types/brief';
+import type {
+  BlockerKind,
+  BlockerRecord,
+  CreateBlockerInput,
+  UpdateBlockerInput,
+} from '@shared/types/blocker';
 import type { CreateDecisionInput, DecisionDraftRecord, DecisionRecord } from '@shared/types/decision';
 import type {
   ApplyProcessTemplateInput,
@@ -47,6 +53,14 @@ const processTemplateKindOptions: ProcessTemplateKind[] = [
   'workflow',
   'sop',
   'checklist',
+];
+const blockerKindOptions: BlockerKind[] = [
+  'external_person',
+  'external_team',
+  'approval',
+  'document_or_material',
+  'system_or_tool',
+  'other',
 ];
 
 const transitionOptions: Record<TaskState, TaskState[]> = {
@@ -137,6 +151,23 @@ function formatProcessTemplateKind(kind: ProcessTemplateKind): string {
   }
 }
 
+function formatBlockerKind(kind: BlockerKind): string {
+  switch (kind) {
+    case 'external_person':
+      return '外部个人';
+    case 'external_team':
+      return '外部团队';
+    case 'approval':
+      return '审批';
+    case 'document_or_material':
+      return '资料';
+    case 'system_or_tool':
+      return '系统/工具';
+    default:
+      return '其他';
+  }
+}
+
 function formatValue(value: unknown): string {
   if (value === null || value === undefined || value === '') {
     return '未填写';
@@ -179,6 +210,10 @@ function formatTimelineBadge(type: string): string {
       return '来源';
     case 'source_context.archived':
       return '来源';
+    case 'blocker.created':
+    case 'blocker.updated':
+    case 'blocker.resolved':
+      return '阻塞';
     case 'process_template.applied':
       return '方法';
     case 'process_template.removed':
@@ -221,6 +256,9 @@ function getTimelineToneClass(type: string): string {
     case 'source_context.created':
     case 'source_context.updated':
     case 'source_context.archived':
+    case 'blocker.created':
+    case 'blocker.updated':
+    case 'blocker.resolved':
     case 'process_template.applied':
     case 'process_template.removed':
     case 'process_template.selected':
@@ -247,6 +285,9 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
     event.type === 'waiting_item.resolved' ||
     event.type === 'source_context.created' ||
     event.type === 'source_context.updated' ||
+    event.type === 'blocker.created' ||
+    event.type === 'blocker.updated' ||
+    event.type === 'blocker.resolved' ||
     event.type === 'artifact.created' ||
     event.type === 'task.risk_changed' ||
     event.type === 'task.next_step_changed' ||
@@ -302,6 +343,7 @@ type TasksPageProps = {
   tasks: TaskListItemRecord[];
   onApplyProcessTemplate: (input: ApplyProcessTemplateInput) => Promise<AppliedProcessTemplateRecord>;
   onArchiveProcessTemplate: (id: string) => Promise<ProcessTemplateRecord>;
+  onCreateBlocker: (input: CreateBlockerInput) => Promise<BlockerRecord>;
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
   onDraftDecision: (taskId: string, note?: string | null) => Promise<DecisionDraftRecord>;
   onCreateProcessTemplate: (input: CreateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
@@ -312,7 +354,9 @@ type TasksPageProps = {
   onRefresh: () => Promise<void>;
   onCreateTask: (input: CreateTaskInput) => Promise<void>;
   onRemoveProcessTemplate: (bindingId: string) => Promise<AppliedProcessTemplateRecord>;
+  onResolveBlocker: (id: string) => Promise<BlockerRecord>;
   onTriggerRun: (input: CreateRunInput) => Promise<void>;
+  onUpdateBlocker: (input: UpdateBlockerInput) => Promise<BlockerRecord>;
   onUpdateProcessTemplate: (input: UpdateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
   onUpdateSourceContext: (input: UpdateSourceContextInput) => Promise<SourceContextRecord>;
   onUpdateTask: (input: UpdateTaskInput) => Promise<TaskListItemRecord>;
@@ -331,6 +375,7 @@ export function TasksPage({
   tasks,
   onApplyProcessTemplate,
   onArchiveProcessTemplate,
+  onCreateBlocker,
   onCreateDecision,
   onDraftDecision,
   onCreateProcessTemplate,
@@ -341,7 +386,9 @@ export function TasksPage({
   onRefresh,
   onCreateTask,
   onRemoveProcessTemplate,
+  onResolveBlocker,
   onTriggerRun,
+  onUpdateBlocker,
   onUpdateProcessTemplate,
   onUpdateSourceContext,
   onUpdateTask,
@@ -363,6 +410,13 @@ export function TasksPage({
   const [quickRunType, setQuickRunType] = useState<CreateRunInput['type']>('draft');
   const [quickRunInstructions, setQuickRunInstructions] = useState('');
   const [transitionWaitingReason, setTransitionWaitingReason] = useState('');
+  const [blockerEditingId, setBlockerEditingId] = useState<string | null>(null);
+  const [blockerTitle, setBlockerTitle] = useState('');
+  const [blockerKind, setBlockerKind] = useState<BlockerKind>('other');
+  const [blockerDetail, setBlockerDetail] = useState('');
+  const [blockerOwner, setBlockerOwner] = useState('');
+  const [blockerSourceContextId, setBlockerSourceContextId] = useState('');
+  const [blockerError, setBlockerError] = useState<string | null>(null);
   const [sourceContextEditingId, setSourceContextEditingId] = useState<string | null>(null);
   const [sourceContextTitle, setSourceContextTitle] = useState('');
   const [sourceContextKind, setSourceContextKind] = useState<SourceContextKind>('link');
@@ -386,8 +440,14 @@ export function TasksPage({
   const quickDecisionCardRef = useRef<HTMLFormElement | null>(null);
   const quickRunCardRef = useRef<HTMLFormElement | null>(null);
   const transitionCardRef = useRef<HTMLDivElement | null>(null);
+  const blockerSectionRef = useRef<HTMLDivElement | null>(null);
   const sourceContextSectionRef = useRef<HTMLDivElement | null>(null);
   const processContextSectionRef = useRef<HTMLDivElement | null>(null);
+  const resumeCurrentBlocker = detail?.resumeCard.currentBlocker ?? {
+    blockerId: null,
+    title: '暂无当前阻塞项',
+    detail: null,
+  };
 
   function updateDraftRiskLevel(nextRiskLevel: TaskRiskLevel) {
     setDraftRiskLevel(nextRiskLevel);
@@ -490,6 +550,13 @@ export function TasksPage({
         setDraftRiskLevel(nextDetail?.riskLevel ?? 'none');
         setDraftRiskNote(nextDetail?.riskNote ?? '');
         setTransitionWaitingReason(nextDetail?.waitingReason ?? '');
+        setBlockerEditingId(null);
+        setBlockerTitle('');
+        setBlockerKind('other');
+        setBlockerDetail('');
+        setBlockerOwner('');
+        setBlockerSourceContextId('');
+        setBlockerError(null);
         setSourceContextEditingId(null);
         setSourceContextTitle('');
         setSourceContextKind('link');
@@ -628,6 +695,85 @@ export function TasksPage({
       instructions: quickRunInstructions.trim(),
     });
     await onRefresh();
+  }
+
+  function populateBlockerForm(item: BlockerRecord) {
+    setBlockerEditingId(item.id);
+    setBlockerTitle(item.title);
+    setBlockerKind(item.kind);
+    setBlockerDetail(item.detail ?? '');
+    setBlockerOwner(item.owner ?? '');
+    setBlockerSourceContextId(item.sourceContextId ?? '');
+    setBlockerError(null);
+  }
+
+  function resetBlockerForm() {
+    setBlockerEditingId(null);
+    setBlockerTitle('');
+    setBlockerKind('other');
+    setBlockerDetail('');
+    setBlockerOwner('');
+    setBlockerSourceContextId('');
+    setBlockerError(null);
+  }
+
+  function focusBlockerSection() {
+    if (typeof blockerSectionRef.current?.scrollIntoView === 'function') {
+      blockerSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  async function handleSaveBlocker(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!detail) {
+      return;
+    }
+
+    if (!blockerTitle.trim()) {
+      setBlockerError('请先填写阻塞项标题。');
+      return;
+    }
+
+    setBlockerError(null);
+
+    if (blockerEditingId) {
+      await onUpdateBlocker({
+        id: blockerEditingId,
+        title: blockerTitle,
+        kind: blockerKind,
+        detail: blockerDetail,
+        owner: blockerOwner,
+        sourceContextId: blockerSourceContextId || null,
+      });
+    } else {
+      await onCreateBlocker({
+        taskId: detail.id,
+        title: blockerTitle,
+        kind: blockerKind,
+        detail: blockerDetail,
+        owner: blockerOwner,
+        sourceContextId: blockerSourceContextId || null,
+      });
+    }
+
+    await onRefresh();
+    setDetail(await window.api.getTaskDetail(detail.id));
+    resetBlockerForm();
+  }
+
+  async function handleResolveCurrentBlocker(id: string) {
+    if (!detail) {
+      return;
+    }
+
+    await onResolveBlocker(id);
+    await onRefresh();
+    setDetail(await window.api.getTaskDetail(detail.id));
+
+    if (blockerEditingId === id) {
+      resetBlockerForm();
+    }
   }
 
   function populateSourceContextForm(item: SourceContextRecord) {
@@ -937,6 +1083,13 @@ export function TasksPage({
       setDraftNextStep(`跟进并确认是否解除等待：${formatValue(payload?.to)}`);
     }
 
+    if (event.type === 'blocker.created' || event.type === 'blocker.updated') {
+      setDraftNextStep(`先解除阻塞项，再继续推进：${formatValue(payload?.title)}`);
+      if (detail.activeBlocker) {
+        populateBlockerForm(detail.activeBlocker);
+      }
+    }
+
     if (event.type === 'task.risk_changed') {
       const nextRisk = (payload?.to as Record<string, unknown> | undefined) ?? {};
       const nextRiskLevel = nextRisk.level;
@@ -970,6 +1123,8 @@ export function TasksPage({
       event.type === 'task.decision_approved' ||
       event.type === 'task.decision_deferred' ||
       event.type === 'task.waiting_changed' ||
+      event.type === 'blocker.created' ||
+      event.type === 'blocker.updated' ||
       event.type === 'task.risk_changed' ||
       event.type === 'artifact.created'
         ? detailFormRef.current
@@ -990,6 +1145,11 @@ export function TasksPage({
 
     if (objectAction.targetType === 'run' && objectAction.targetId) {
       onOpenRun(objectAction.targetId);
+      return;
+    }
+
+    if (objectAction.targetType === 'source_context' && objectAction.targetId) {
+      focusSourceContext(objectAction.targetId);
     }
   }
 
@@ -1190,7 +1350,7 @@ export function TasksPage({
                       </div>
                       <div className="resume-cell">
                         <strong>Latest Change</strong>
-                        <p className="meta">{detail.resumeCard.latestChange.summary}</p>
+                          <p className="meta">{detail.resumeCard.latestChange.summary}</p>
                         {detail.resumeCard.latestChange.action.label ? (
                           <button
                             className="ghost-button timeline-action"
@@ -1199,6 +1359,13 @@ export function TasksPage({
                           >
                             {detail.resumeCard.latestChange.action.label}
                           </button>
+                        ) : null}
+                      </div>
+                      <div className="resume-cell">
+                        <strong>Current Blocker</strong>
+                        <p className="meta">{resumeCurrentBlocker.title}</p>
+                        {resumeCurrentBlocker.detail ? (
+                          <p className="meta">{resumeCurrentBlocker.detail}</p>
                         ) : null}
                       </div>
                       <div className="resume-cell resume-cell-source-lane">
@@ -1245,6 +1412,15 @@ export function TasksPage({
                           type="button"
                         >
                           打开 Active Methods
+                        </button>
+                      ) : null}
+                      {resumeCurrentBlocker.blockerId ? (
+                        <button
+                          className="ghost-button timeline-action"
+                          onClick={focusBlockerSection}
+                          type="button"
+                        >
+                          打开 Current Blocker
                         </button>
                       ) : null}
                       <button
@@ -1308,6 +1484,55 @@ export function TasksPage({
                             解除等待
                           </button>
                         ) : null}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {detail.activeBlocker ? (
+                  <div className="transition-group detail-card-group">
+                    <h3>Current Blocker</h3>
+                    <p className="meta">这里只显示当前主阻塞项，完整原因维护下沉到 Context Studio。</p>
+                    <div className="timeline-list">
+                      <div className="timeline-item timeline-item-risk">
+                        <div className="task-row">
+                          <strong>{detail.activeBlocker.title}</strong>
+                          <span className="signal-pill timeline-badge timeline-item-risk">
+                            {formatBlockerKind(detail.activeBlocker.kind)}
+                          </span>
+                        </div>
+                        {detail.activeBlocker.detail ? (
+                          <p className="meta">{detail.activeBlocker.detail}</p>
+                        ) : null}
+                        {detail.activeBlocker.owner ? (
+                          <p className="meta">owner: {detail.activeBlocker.owner}</p>
+                        ) : null}
+                        <p className="meta">active blocker · since {detail.activeBlocker.createdAt}</p>
+                        <div className="timeline-actions">
+                          <button
+                            className="ghost-button timeline-action"
+                            onClick={() => populateBlockerForm(detail.activeBlocker!)}
+                            type="button"
+                          >
+                            编辑阻塞项
+                          </button>
+                          {detail.activeBlocker.sourceContextId ? (
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => focusSourceContext(detail.activeBlocker?.sourceContextId ?? null)}
+                              type="button"
+                            >
+                              查看阻塞来源
+                            </button>
+                          ) : null}
+                          <button
+                            className="ghost-button timeline-action"
+                            onClick={() => void handleResolveCurrentBlocker(detail.activeBlocker!.id)}
+                            type="button"
+                          >
+                            解除阻塞
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1706,6 +1931,132 @@ export function TasksPage({
                 <p className="meta">完整的来源材料和方法模板管理下沉到这一层，不再抢第一屏恢复入口。</p>
               </div>
               <div className="detail-cluster-grid">
+                <div className="transition-group detail-card-group" ref={blockerSectionRef}>
+                  <h3>Blocker Context</h3>
+                  <p className="meta">这一层管理当前阻塞项；上方 Resume Card 和 Current Snapshot 只抽出当前主阻塞切片。</p>
+                  <div className="studio-section studio-section-risk-lane">
+                    <div className="studio-section-head">
+                      <strong className="context-lane-heading">Current Blocker</strong>
+                      <p className="meta">当前任务的主阻塞项。</p>
+                    </div>
+                    <div className="timeline-list">
+                      {detail.activeBlocker ? (
+                        <div className="timeline-item timeline-item-risk">
+                          <div className="task-row">
+                            <strong>{detail.activeBlocker.title}</strong>
+                            <span className="signal-pill timeline-badge timeline-item-risk">
+                              {formatBlockerKind(detail.activeBlocker.kind)}
+                            </span>
+                          </div>
+                          {detail.activeBlocker.detail ? (
+                            <p className="meta">{detail.activeBlocker.detail}</p>
+                          ) : null}
+                          {detail.activeBlocker.owner ? (
+                            <p className="meta">owner: {detail.activeBlocker.owner}</p>
+                          ) : null}
+                          <p className="meta">active blocker · created at {detail.activeBlocker.createdAt}</p>
+                          <div className="timeline-actions">
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => populateBlockerForm(detail.activeBlocker!)}
+                              type="button"
+                            >
+                              编辑阻塞项
+                            </button>
+                            {detail.activeBlocker.sourceContextId ? (
+                              <button
+                                className="ghost-button timeline-action"
+                                onClick={() => focusSourceContext(detail.activeBlocker?.sourceContextId ?? null)}
+                                type="button"
+                              >
+                                查看阻塞来源
+                              </button>
+                            ) : null}
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => void handleResolveCurrentBlocker(detail.activeBlocker!.id)}
+                              type="button"
+                            >
+                              解除阻塞
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="meta">当前任务还没有 active blocker。</p>
+                      )}
+                    </div>
+                  </div>
+                  <form className="stack studio-form" onSubmit={handleSaveBlocker}>
+                    <div className="studio-section-head">
+                      <strong>{blockerEditingId ? 'Edit Blocker' : 'Add Blocker'}</strong>
+                      <p className="meta">把“为什么推进不下去”单独对象化，而不是继续散在 waiting 或风险备注里。</p>
+                    </div>
+                    <label>
+                      阻塞项标题
+                      <input
+                        value={blockerTitle}
+                        onChange={(event) => {
+                          setBlockerTitle(event.target.value);
+                          if (blockerError) {
+                            setBlockerError(null);
+                          }
+                        }}
+                      />
+                    </label>
+                    <label>
+                      阻塞项类型
+                      <select
+                        value={blockerKind}
+                        onChange={(event) => setBlockerKind(event.target.value as BlockerKind)}
+                      >
+                        {blockerKindOptions.map((kind) => (
+                          <option key={kind} value={kind}>
+                            {formatBlockerKind(kind)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      阻塞说明
+                      <textarea
+                        rows={2}
+                        value={blockerDetail}
+                        onChange={(event) => setBlockerDetail(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      owner / 卡点对象
+                      <input
+                        value={blockerOwner}
+                        onChange={(event) => setBlockerOwner(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      关联来源材料
+                      <select
+                        value={blockerSourceContextId}
+                        onChange={(event) => setBlockerSourceContextId(event.target.value)}
+                      >
+                        <option value="">不关联来源</option>
+                        {detail.sourceContexts.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.title}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {blockerError ? <p className="meta">{blockerError}</p> : null}
+                    <div className="timeline-actions">
+                      <button type="submit">{blockerEditingId ? '保存阻塞项' : '新增阻塞项'}</button>
+                      {blockerEditingId ? (
+                        <button className="ghost-button" onClick={resetBlockerForm} type="button">
+                          取消编辑
+                        </button>
+                      ) : null}
+                    </div>
+                  </form>
+                </div>
+
                 <div className="transition-group detail-card-group">
                   <h3>Source Context</h3>
                   <p className="meta">这一层管理任务依赖的材料，不和方法模板混在一起；上方 Resume Card 的 Key Source 就是从这里抽出的关键切片。</p>

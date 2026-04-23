@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 
 import type { ArtifactRecord } from '@shared/types/artifact';
 import type {
+  CreateBlockerInput,
+  UpdateBlockerInput,
+} from '@shared/types/blocker';
+import type {
   HomeActivityRecord,
   HomeBriefData,
   HomeSourceContextRecord,
@@ -193,6 +197,33 @@ export function App() {
     );
     setBriefData(await window.api.getHomeBrief());
     return archived;
+  }
+
+  async function handleCreateBlocker(input: CreateBlockerInput) {
+    const created = await window.api.createBlocker(input);
+    setTasks((current) =>
+      current.map((task) => (task.id === created.taskId ? { ...task, updatedAt: created.updatedAt } : task)),
+    );
+    setBriefData(await window.api.getHomeBrief());
+    return created;
+  }
+
+  async function handleUpdateBlocker(input: UpdateBlockerInput) {
+    const updated = await window.api.updateBlocker(input);
+    setTasks((current) =>
+      current.map((task) => (task.id === updated.taskId ? { ...task, updatedAt: updated.updatedAt } : task)),
+    );
+    setBriefData(await window.api.getHomeBrief());
+    return updated;
+  }
+
+  async function handleResolveBlocker(id: string) {
+    const resolved = await window.api.resolveBlocker(id);
+    setTasks((current) =>
+      current.map((task) => (task.id === resolved.taskId ? { ...task, updatedAt: resolved.updatedAt } : task)),
+    );
+    setBriefData(await window.api.getHomeBrief());
+    return resolved;
   }
 
   async function handleCreateProcessTemplate(input: CreateProcessTemplateInput) {
@@ -418,6 +449,7 @@ export function App() {
             tasks={tasks}
             onApplyProcessTemplate={handleApplyProcessTemplate}
             onArchiveProcessTemplate={handleArchiveProcessTemplate}
+            onCreateBlocker={handleCreateBlocker}
             onCreateDecision={handleCreateDecision}
             onDraftDecision={handleDraftDecision}
             onCreateProcessTemplate={handleCreateProcessTemplate}
@@ -428,8 +460,10 @@ export function App() {
             onOpenRun={handleOpenRun}
             onRefresh={loadShellData}
             onRemoveProcessTemplate={handleRemoveProcessTemplate}
+            onResolveBlocker={handleResolveBlocker}
             onTransitionTask={handleTransitionTask}
             onTriggerRun={handleTriggerRun}
+            onUpdateBlocker={handleUpdateBlocker}
             onUpdateProcessTemplate={handleUpdateProcessTemplate}
             onUpdateSourceContext={handleUpdateSourceContext}
             onUpdateTask={handleUpdateTask}

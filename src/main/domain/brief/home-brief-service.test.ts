@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { ArtifactRecord } from '../../../shared/types/artifact.js';
+import type { BlockerRecord } from '../../../shared/types/blocker.js';
 import type { DecisionRecord } from '../../../shared/types/decision.js';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
 import type { RunRecord } from '../../../shared/types/run.js';
@@ -18,10 +19,27 @@ function buildTask(partial: Partial<TaskListItemRecord>): TaskListItemRecord {
     nextStep: partial.nextStep ?? null,
     waitingReason: partial.waitingReason ?? null,
     activeWaitingItem: partial.activeWaitingItem ?? null,
+    activeBlocker: partial.activeBlocker ?? null,
     riskLevel: partial.riskLevel ?? 'none',
     riskNote: partial.riskNote ?? null,
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+  };
+}
+
+function buildBlocker(partial: Partial<BlockerRecord>): BlockerRecord {
+  return {
+    id: partial.id ?? 'blocker_1',
+    taskId: partial.taskId ?? 'task_1',
+    title: partial.title ?? 'Legal approval pending',
+    kind: partial.kind ?? 'approval',
+    detail: partial.detail ?? 'Need sign-off',
+    owner: partial.owner ?? 'Legal',
+    sourceContextId: partial.sourceContextId ?? null,
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    resolvedAt: partial.resolvedAt ?? null,
   };
 }
 
@@ -200,6 +218,7 @@ describe('HomeBriefService', () => {
             : null,
         ),
       } as never,
+      null as never,
       {
         list: vi.fn().mockResolvedValue([
           buildDecision({ status: 'pending' }),
@@ -469,6 +488,7 @@ describe('HomeBriefService', () => {
       {
         getActiveForTask: vi.fn().mockResolvedValue(null),
       } as never,
+      null as never,
       {
         list: vi.fn().mockResolvedValue([]),
       } as never,
@@ -521,6 +541,7 @@ describe('HomeBriefService', () => {
       {
         getActiveForTask: vi.fn().mockResolvedValue(null),
       } as never,
+      null as never,
       {
         list: vi.fn().mockResolvedValue([]),
       } as never,
@@ -584,6 +605,7 @@ describe('HomeBriefService', () => {
       {
         getActiveForTask: vi.fn().mockResolvedValue(null),
       } as never,
+      null as never,
       {
         list: vi.fn().mockResolvedValue([]),
       } as never,
@@ -675,6 +697,7 @@ describe('HomeBriefService', () => {
       {
         getActiveForTask: vi.fn().mockResolvedValue(null),
       } as never,
+      null as never,
       {
         list: vi.fn().mockResolvedValue([]),
       } as never,
@@ -725,6 +748,81 @@ describe('HomeBriefService', () => {
     });
   });
 
+  it('surfaces active blockers in resume previews and recommended actions', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_blocked',
+            title: 'Blocked task',
+            state: 'planned',
+            nextStep: null,
+          }),
+        ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([
+          buildBlocker({
+            taskId: 'task_blocked',
+            title: 'Legal approval pending',
+            detail: 'Need formal sign-off',
+            sourceContextId: 'source_context_blocker',
+          }),
+        ]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([
+          buildSourceContext({
+            id: 'source_context_blocker',
+            taskId: 'task_blocked',
+            title: 'Legal brief',
+            isKey: true,
+          }),
+        ]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+      null,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.recommendedActions[0]).toMatchObject({
+      id: 'blocker:blocker_1',
+      label: '跟进当前阻塞项：Blocked task',
+      intent: {
+        type: 'focus_source_context',
+        sourceContextId: 'source_context_blocker',
+      },
+    });
+    expect(homeData.recommendedActions[1]).toMatchObject({
+      id: 'next-step:task_blocked',
+    });
+    expect(homeData.recentTaskResumes[0]).toMatchObject({
+      currentState: '状态：planned · 阻塞：Legal approval pending',
+      latestChange: {
+        summary: '最近关键来源更新：Legal brief',
+      },
+      nextSuggestedMove: '基于来源材料继续推进：Legal brief',
+      contextActionLabel: '查看阻塞来源',
+    });
+  });
+
   it('prioritizes the latest lifecycle change when deriving home resume preview suggestions', async () => {
     const service = new HomeBriefService(
       {
@@ -743,6 +841,7 @@ describe('HomeBriefService', () => {
       {
         getActiveForTask: vi.fn().mockResolvedValue(null),
       } as never,
+      null as never,
       {
         list: vi.fn().mockResolvedValue([
           buildDecision({

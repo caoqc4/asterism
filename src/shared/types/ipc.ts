@@ -5,6 +5,11 @@ export type PingResponse = {
 
 import type { HomeBriefData } from './brief.js';
 import type {
+  BlockerRecord,
+  CreateBlockerInput,
+  UpdateBlockerInput,
+} from './blocker.js';
+import type {
   CreateDecisionInput,
   DecisionActionInput,
   DecisionDraftRecord,
@@ -44,6 +49,9 @@ export type ElectronApi = {
   getTaskDetail: (taskId: string) => Promise<TaskDetail | null>;
   updateTask: (input: UpdateTaskInput) => Promise<TaskListItemRecord>;
   transitionTask: (input: TransitionTaskInput) => Promise<TaskListItemRecord>;
+  createBlocker: (input: CreateBlockerInput) => Promise<BlockerRecord>;
+  updateBlocker: (input: UpdateBlockerInput) => Promise<BlockerRecord>;
+  resolveBlocker: (id: string) => Promise<BlockerRecord>;
   createSourceContext: (input: CreateSourceContextInput) => Promise<SourceContextRecord>;
   updateSourceContext: (input: UpdateSourceContextInput) => Promise<SourceContextRecord>;
   archiveSourceContext: (id: string) => Promise<SourceContextRecord>;

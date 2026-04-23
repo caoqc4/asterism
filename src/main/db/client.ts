@@ -95,6 +95,20 @@ function bootstrapTables(connection: Database.Database): void {
       resolved_at TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS blockers (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      detail TEXT,
+      owner TEXT,
+      source_context_id TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      resolved_at TEXT
+    );
+
     CREATE TABLE IF NOT EXISTS artifacts (
       id TEXT PRIMARY KEY,
       task_id TEXT NOT NULL,
@@ -160,6 +174,14 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'waiting_items', 'status', "TEXT NOT NULL DEFAULT 'active'");
   ensureColumn(connection, 'waiting_items', 'updated_at', 'TEXT');
   ensureColumn(connection, 'waiting_items', 'resolved_at', 'TEXT');
+  ensureColumn(connection, 'blockers', 'title', "TEXT NOT NULL DEFAULT ''");
+  ensureColumn(connection, 'blockers', 'kind', "TEXT NOT NULL DEFAULT 'other'");
+  ensureColumn(connection, 'blockers', 'detail', 'TEXT');
+  ensureColumn(connection, 'blockers', 'owner', 'TEXT');
+  ensureColumn(connection, 'blockers', 'source_context_id', 'TEXT');
+  ensureColumn(connection, 'blockers', 'status', "TEXT NOT NULL DEFAULT 'active'");
+  ensureColumn(connection, 'blockers', 'updated_at', 'TEXT');
+  ensureColumn(connection, 'blockers', 'resolved_at', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'uri', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'content', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'note', 'TEXT');

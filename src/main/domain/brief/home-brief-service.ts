@@ -13,6 +13,7 @@ import type {
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
+import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
 import { TaskProcessBindingRepository } from '../../db/repositories/task-process-binding-repository.js';
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
 import type { TaskListItemRecord, TaskRecord } from '../../../shared/types/task.js';
@@ -87,6 +88,35 @@ function buildRecommendedActions(params: {
           task.activeWaitingItem?.reason ?? task.waitingReason ?? task.title
         }`,
       },
+    });
+  }
+
+  for (const task of params.activeTasks) {
+    if (!task.activeBlocker || blockedTaskIds.has(task.id)) {
+      continue;
+    }
+
+    actions.push({
+      id: `blocker:${task.activeBlocker.id}`,
+      label: `跟进当前阻塞项：${task.title}`,
+      reason:
+        task.activeBlocker.detail ??
+        task.activeBlocker.owner ??
+        `当前阻塞项：${task.activeBlocker.title}`,
+      taskId: task.id,
+      priority: 'medium',
+      intent: task.activeBlocker.sourceContextId
+        ? {
+            type: 'focus_source_context',
+            focusArea: 'detail',
+            sourceContextId: task.activeBlocker.sourceContextId,
+            prefillNextStep: `先解除阻塞项，再继续推进：${task.activeBlocker.title}`,
+          }
+        : {
+            type: 'focus_next_step',
+            focusArea: 'detail',
+            prefillNextStep: `先解除阻塞项，再继续推进：${task.activeBlocker.title}`,
+          },
     });
   }
 
@@ -191,6 +221,7 @@ export class HomeBriefService {
   constructor(
     private readonly taskRepository: TaskRepository,
     private readonly waitingItemRepository: WaitingItemRepository,
+    private readonly blockerRepository: BlockerRepository | null,
     private readonly decisionRepository: DecisionRepository,
     private readonly runRepository: RunRepository,
     private readonly artifactRepository: ArtifactRepository,
@@ -280,6 +311,10 @@ export class HomeBriefService {
         currentStateParts.push(`等待：${waitingReason}`);
       }
 
+      if (task.activeBlocker?.title) {
+        currentStateParts.push(`阻塞：${task.activeBlocker.title}`);
+      }
+
       if (task.riskLevel !== 'none') {
         currentStateParts.push(
           `风险：${task.riskLevel}${task.riskNote ? ` · ${task.riskNote}` : ''}`,
@@ -289,6 +324,13 @@ export class HomeBriefService {
       const latestChange = buildHomeResumeLatestChange({
         latestActivity,
         keySource,
+        activeBlocker: task.activeBlocker
+          ? {
+              id: task.activeBlocker.id,
+              title: task.activeBlocker.title,
+              sourceContextId: task.activeBlocker.sourceContextId,
+            }
+          : null,
       });
 
       const nextSuggestedMove = deriveNextSuggestedMove({
@@ -297,6 +339,7 @@ export class HomeBriefService {
         waitingReason,
         riskLevel: task.riskLevel,
         riskNote: task.riskNote,
+        blockerTitle: task.activeBlocker?.title ?? null,
         keySourceTitle: keySource?.title ?? null,
         recentChange: latestChange.recentChange,
       });
@@ -368,6 +411,25 @@ export class HomeBriefService {
             prefillNextStep: nextSuggestedMove,
           },
         };
+      } else if (task.activeBlocker?.sourceContextId) {
+        contextAction = {
+          label: '查看阻塞来源',
+          intent: {
+            type: 'focus_source_context',
+            focusArea: 'detail',
+            sourceContextId: task.activeBlocker.sourceContextId,
+            prefillNextStep: nextSuggestedMove,
+          },
+        };
+      } else if (task.activeBlocker) {
+        contextAction = {
+          label: '跟进阻塞项',
+          intent: {
+            type: 'focus_next_step',
+            focusArea: 'detail',
+            prefillNextStep: nextSuggestedMove,
+          },
+        };
       } else if (task.riskLevel === 'high') {
         contextAction = {
           label: '处理风险',
@@ -435,10 +497,16 @@ export class HomeBriefService {
   }
 
   private async attachActiveWaitingItems(tasks: TaskRecord[]): Promise<TaskListItemRecord[]> {
+    const activeBlockers = this.blockerRepository
+      ? await this.blockerRepository.listActiveForTasks(tasks.map((task) => task.id))
+      : [];
+    const blockerByTaskId = new Map(activeBlockers.map((item) => [item.taskId, item]));
+
     return Promise.all(
       tasks.map(async (task) => ({
         ...task,
         activeWaitingItem: await this.waitingItemRepository.getActiveForTask(task.id),
+        activeBlocker: blockerByTaskId.get(task.id) ?? null,
       })),
     );
   }
@@ -452,6 +520,7 @@ export class HomeBriefService {
       nextStep: task.nextStep,
       waitingReason: task.waitingReason,
       activeWaitingItem: task.activeWaitingItem,
+      activeBlocker: task.activeBlocker,
       riskLevel: task.riskLevel,
       riskNote: task.riskNote,
     };

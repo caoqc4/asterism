@@ -18,6 +18,9 @@ const { handleMock, emitAppEventMock, servicesMock } = vi.hoisted(() => ({
       getDetail: vi.fn(),
       update: vi.fn(),
       transition: vi.fn(),
+      createBlocker: vi.fn(),
+      updateBlocker: vi.fn(),
+      resolveBlocker: vi.fn(),
       createSourceContext: vi.fn(),
       updateSourceContext: vi.fn(),
       archiveSourceContext: vi.fn(),
@@ -215,6 +218,43 @@ describe('registerIpcHandlers', () => {
     });
     expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
     expect(result.id).toBe('source_context_1');
+  });
+
+  it('emits task.changed after blocker writes', async () => {
+    servicesMock.taskService.createBlocker.mockResolvedValue({
+      id: 'blocker_1',
+      taskId: 'task_1',
+      title: 'Legal approval pending',
+      kind: 'approval',
+      detail: 'Need legal sign-off',
+      owner: 'Legal',
+      sourceContextId: null,
+      status: 'active',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      resolvedAt: null,
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; title: string; kind: string; detail?: string }],
+      Awaited<ReturnType<typeof servicesMock.taskService.createBlocker>>
+    >('blocker:create');
+
+    const result = await handler({}, {
+      taskId: 'task_1',
+      title: 'Legal approval pending',
+      kind: 'approval',
+      detail: 'Need legal sign-off',
+    });
+
+    expect(servicesMock.taskService.createBlocker).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      title: 'Legal approval pending',
+      kind: 'approval',
+      detail: 'Need legal sign-off',
+    });
+    expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
+    expect(result.id).toBe('blocker_1');
   });
 
   it('emits task.changed after process template bindings change', async () => {

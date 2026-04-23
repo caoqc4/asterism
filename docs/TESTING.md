@@ -25,6 +25,7 @@ Current test files:
 - `src/main/db/repositories/waiting-item-repository.integration.test.ts`
 - `src/main/db/repositories/artifact-repository.integration.test.ts`
 - `src/main/db/repositories/source-context-repository.integration.test.ts`
+- `src/main/db/repositories/blocker-repository.integration.test.ts`
 - `src/main/db/repositories/process-template-repository.integration.test.ts`
 - `src/main/db/repositories/task-process-binding-repository.integration.test.ts`
 - `src/main/ipc/handlers.test.ts`
@@ -40,7 +41,7 @@ Covered today:
 - `AppConfigService`
   config defaults, persistence, migration behavior
 - `TaskService`
-  transitions, invalid transitions, signal updates, task-resume derivation, decision annotations, and run-settlement annotations
+  transitions, invalid transitions, signal updates, task-resume derivation, blocker lifecycle writes, decision annotations, and run-settlement annotations
 - `DecisionService`
   task existence checks, decision-to-task lifecycle linkage, and AI/fallback decision-draft composition
 - `RunService`
@@ -70,6 +71,8 @@ Covered today:
   artifact persistence, recent ordering, and timeline writes
 - `SourceContextRepository`
   source-context creation, updates, archiving, and active-task listing behavior
+- `BlockerRepository`
+  active blocker creation, updates, resolution, and per-task active lookup behavior
 - `ProcessTemplateRepository`
   reusable process-template creation, updates, archive behavior, and active listing
 - `TaskProcessBindingRepository`
@@ -121,6 +124,7 @@ Covered today:
 - `Tasks related activity -> Decisions / Runs`
 - `Tasks timeline -> Decisions / Runs`
 - `Tasks source context create / edit flow`
+- `Tasks blocker create / resolve flow`
 - `Tasks process context create / apply / remove flow`
 - `Tasks resume card visibility, key-source prioritization explanation, method-selection explanation, lifecycle-aware suggested-move derivation, and recovery actions`
 - `Tasks resume card latest-change object entry`

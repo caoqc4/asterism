@@ -1,4 +1,5 @@
 import type { ArtifactRecord } from './artifact.js';
+import type { BlockerRecord } from './blocker.js';
 import type {
   AppliedProcessTemplateRecord,
   ProcessTemplateRecord,
@@ -32,6 +33,7 @@ export type TaskRecord = {
 
 export type TaskListItemRecord = TaskRecord & {
   activeWaitingItem: WaitingItemRecord | null;
+  activeBlocker: BlockerRecord | null;
 };
 
 export type ResumeLatestChangeRecord = {
@@ -61,6 +63,11 @@ export type TaskResumeCardRecord = {
   summary: string;
   currentState: string;
   latestChange: ResumeLatestChangeRecord;
+  currentBlocker: {
+    blockerId: string | null;
+    title: string;
+    detail: string | null;
+  };
   keySource: ResumeKeySourceSliceRecord;
   currentMethod: ResumeCurrentMethodSliceRecord;
   nextSuggestedMove: string;
@@ -68,6 +75,7 @@ export type TaskResumeCardRecord = {
 
 export type TaskDetailBase = TaskRecord & {
   activeWaitingItem: WaitingItemRecord | null;
+  activeBlocker: BlockerRecord | null;
   artifacts: ArtifactRecord[];
   sourceContexts: SourceContextRecord[];
   processTemplates: AppliedProcessTemplateRecord[];
