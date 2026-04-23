@@ -127,6 +127,29 @@ export function HomePage({
     });
   }
 
+  function openBlockedSource(task: HomeBriefData['blockerTasks'][number]) {
+    if (!task.activeBlocker?.sourceContextId) {
+      return;
+    }
+
+    onOpenAction({
+      id: `home-blocker-source:${task.id}`,
+      label: `查看阻塞来源：${task.title}`,
+      reason:
+        task.activeBlocker.detail ??
+        task.activeBlocker.owner ??
+        task.activeBlocker.title ??
+        '该任务当前存在阻塞项。',
+      taskId: task.id,
+      priority: 'medium',
+      intent: {
+        type: 'focus_source_context',
+        focusArea: 'detail',
+        sourceContextId: task.activeBlocker.sourceContextId,
+      },
+    });
+  }
+
   function openTaskResume(preview: HomeBriefData['recentTaskResumes'][number]) {
     onOpenAction({
       id: `resume:${preview.taskId}`,
@@ -423,24 +446,36 @@ export function HomePage({
             <strong>Blocked Tasks</strong>
             {briefData?.blockerTasks.length ? (
               briefData.blockerTasks.map((task) => (
-                <button
-                  className="task-card task-card-warning task-card-button"
-                  key={task.id}
-                  onClick={() => openBlockedTask(task)}
-                  type="button"
-                >
-                  <div className="task-row">
-                    <strong>{task.title}</strong>
-                    <span className="status">{task.state}</span>
-                  </div>
-                  <p className="meta">
-                    {task.activeBlocker?.detail || task.activeBlocker?.owner || task.activeBlocker?.title || '未填写阻塞说明'}
-                  </p>
+                <div className="task-card task-card-warning" key={task.id}>
+                  <button
+                    className="task-card-button task-card-button-shell"
+                    onClick={() => openBlockedTask(task)}
+                    type="button"
+                  >
+                    <div className="task-row">
+                      <strong>{task.title}</strong>
+                      <span className="status">{task.state}</span>
+                    </div>
+                    <p className="meta">
+                      {task.activeBlocker?.detail || task.activeBlocker?.owner || task.activeBlocker?.title || '未填写阻塞说明'}
+                    </p>
+                    {task.activeBlocker?.sourceContextId ? (
+                      <p className="meta">linked blocker source</p>
+                    ) : null}
+                    {task.nextStep ? <p className="meta">解除后下一步：{task.nextStep}</p> : null}
+                  </button>
                   {task.activeBlocker?.sourceContextId ? (
-                    <p className="meta">linked blocker source</p>
+                    <div className="chip-row">
+                      <button
+                        className="ghost-button"
+                        onClick={() => openBlockedSource(task)}
+                        type="button"
+                      >
+                        查看阻塞来源
+                      </button>
+                    </div>
                   ) : null}
-                  {task.nextStep ? <p className="meta">解除后下一步：{task.nextStep}</p> : null}
-                </button>
+                </div>
               ))
             ) : (
               <p className="meta">当前没有阻塞中的任务。</p>

@@ -120,6 +120,7 @@ Covered today:
 - `Home brief` process-template-aware scheduling path
 - `Home key signals -> Tasks detail follow-up intent`
 - `Home blocked tasks -> Tasks blocker/source-context recovery`
+- `Home blocked tasks -> blocker source entry`
 - `Tasks quick decision submission`
 - `Tasks quick run submission`
 - `Tasks related activity -> Decisions / Runs`

@@ -3575,6 +3575,76 @@ describe('App UI flow', () => {
     );
   });
 
+  it('opens blocker sources from home key signals', async () => {
+    const user = userEvent.setup();
+
+    const blockedTask = buildTaskRecord({
+      id: 'task_blocked_source_home',
+      title: 'Blocked source task',
+      state: 'planned',
+      nextStep: null,
+      activeBlocker: buildBlocker({
+        id: 'blocker_source_home_1',
+        taskId: 'task_blocked_source_home',
+        title: 'Partner list missing',
+        detail: 'Need the current partner list before outreach',
+        sourceContextId: 'source_context_blocked_source_home',
+      }),
+    });
+
+    const sourceItem = buildSourceContext({
+      id: 'source_context_blocked_source_home',
+      taskId: blockedTask.id,
+      title: 'Partner master sheet',
+      note: 'Latest partner inventory',
+    });
+
+    const blockerHomeApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([blockedTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== blockedTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(blockedTask),
+          sourceContexts: [sourceItem],
+        };
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 1,
+        waitingTaskCount: 0,
+        blockerTaskCount: 1,
+        highRiskTaskCount: 0,
+        missingNextStepTaskCount: 0,
+        recentTasks: [blockedTask],
+        waitingTasks: [],
+        blockerTasks: [blockedTask],
+        highRiskTasks: [],
+        missingNextStepTasks: [],
+        recommendedActions: [],
+        recentArtifacts: [],
+        recentSourceContexts: [],
+        recentActivity: [],
+      }),
+    };
+
+    window.api = blockerHomeApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: '查看阻塞来源' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Blocked source task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('来源标题') as HTMLInputElement).value).toBe('Partner master sheet');
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe('');
+  });
+
   it('opens task resume previews from home with a prefilled next step', async () => {
     const user = userEvent.setup();
 
