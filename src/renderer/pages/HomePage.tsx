@@ -1101,6 +1101,11 @@ export function HomePage({
                       <p className="meta">
                         completion: {task.completionProgress?.satisfied ?? 0}/{task.completionProgress?.total ?? 0}
                       </p>
+                      {task.completionProgress?.satisfiedCriteriaHighlights?.length ? (
+                        <p className="meta">
+                          已满足：{task.completionProgress.satisfiedCriteriaHighlights.join('；')}
+                        </p>
+                      ) : null}
                       {task.closeoutEvidence ? (
                         <p className="meta">
                           当前最终收尾依据：
@@ -1138,6 +1143,11 @@ export function HomePage({
                       <p className="meta">
                         completion: {task.completionProgress?.satisfied ?? 0}/{task.completionProgress?.total ?? 0}
                       </p>
+                      {task.completionProgress?.satisfiedCriteriaHighlights?.length ? (
+                        <p className="meta">
+                          已满足：{task.completionProgress.satisfiedCriteriaHighlights.join('；')}
+                        </p>
+                      ) : null}
                       {task.closeoutEvidence ? (
                         <p className="meta">
                           当前收尾证据：

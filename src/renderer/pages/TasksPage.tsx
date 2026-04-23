@@ -2097,9 +2097,17 @@ export function TasksPage({
                         <strong>Completion Status</strong>
                         <p className="meta">{resumeCompletionStatus.summary}</p>
                         {resumeCompletionStatus.total > 0 ? (
-                          <p className="meta">
-                            还差 {resumeCompletionStatus.open} 条完成标准，当前已满足 {resumeCompletionStatus.satisfied} 条。
-                          </p>
+                          <>
+                            <p className="meta">
+                              还差 {resumeCompletionStatus.open} 条完成标准，当前已满足 {resumeCompletionStatus.satisfied} 条。
+                            </p>
+                            {resumeCompletionStatus.satisfiedCriteriaHighlights?.length ? (
+                              <p className="meta">
+                                已满足：
+                                {resumeCompletionStatus.satisfiedCriteriaHighlights.join('；')}
+                              </p>
+                            ) : null}
+                          </>
                         ) : (
                           <p className="meta">建议先补 1 到 3 条完成标准，帮助判断这条任务何时可以收尾。</p>
                         )}

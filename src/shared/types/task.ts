@@ -78,6 +78,7 @@ export type TaskResumeCardRecord = {
     satisfied: number;
     open: number;
     summary: string;
+    satisfiedCriteriaHighlights?: string[];
   };
   currentBlocker: {
     blockerId: string | null;

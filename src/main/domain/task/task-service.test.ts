@@ -411,6 +411,7 @@ describe('TaskService', () => {
       total: 2,
       satisfied: 1,
       open: 1,
+      satisfiedCriteriaHighlights: ['Draft delivered'],
     });
     expect(detail?.resumeCard.latestChange.summary).toBe(
       '最近一条决策已获批准：Approve final launch brief，这可能说明某些完成标准已具备。',

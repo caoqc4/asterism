@@ -529,9 +529,12 @@ export class HomeBriefService {
   ) {}
 
   private async buildCompletionProgressMap(taskIds: string[]): Promise<
-    Map<string, { total: number; satisfied: number; open: number }>
+    Map<string, { total: number; satisfied: number; open: number; satisfiedCriteriaHighlights: string[] }>
   > {
-    const progressByTaskId = new Map<string, { total: number; satisfied: number; open: number }>();
+    const progressByTaskId = new Map<
+      string,
+      { total: number; satisfied: number; open: number; satisfiedCriteriaHighlights: string[] }
+    >();
 
     if (!this.completionCriteriaRepository || taskIds.length === 0) {
       return progressByTaskId;
@@ -540,10 +543,18 @@ export class HomeBriefService {
     const criteria = await this.completionCriteriaRepository.listForTasks(taskIds);
 
     for (const item of criteria) {
-      const current = progressByTaskId.get(item.taskId) ?? { total: 0, satisfied: 0, open: 0 };
+      const current = progressByTaskId.get(item.taskId) ?? {
+        total: 0,
+        satisfied: 0,
+        open: 0,
+        satisfiedCriteriaHighlights: [],
+      };
       current.total += 1;
       if (item.status === 'satisfied') {
         current.satisfied += 1;
+        if (current.satisfiedCriteriaHighlights.length < 2) {
+          current.satisfiedCriteriaHighlights.push(item.text);
+        }
       } else {
         current.open += 1;
       }
@@ -555,7 +566,10 @@ export class HomeBriefService {
 
   private withCompletionProgress(
     task: TaskListItemRecord,
-    completionProgressByTaskId: Map<string, { total: number; satisfied: number; open: number }>,
+    completionProgressByTaskId: Map<
+      string,
+      { total: number; satisfied: number; open: number; satisfiedCriteriaHighlights: string[] }
+    >,
   ): HomeTaskSliceRecord {
     return {
       ...this.toHomeTaskSlice(task),
@@ -563,6 +577,7 @@ export class HomeBriefService {
         total: 0,
         satisfied: 0,
         open: 0,
+        satisfiedCriteriaHighlights: [],
       },
     };
   }

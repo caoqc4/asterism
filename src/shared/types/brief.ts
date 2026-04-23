@@ -119,6 +119,7 @@ export type HomeTaskSliceRecord = Pick<
     total: number;
     satisfied: number;
     open: number;
+    satisfiedCriteriaHighlights?: string[];
   };
   closeoutEvidence?: {
     sourceType: 'decision' | 'run';

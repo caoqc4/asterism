@@ -1258,7 +1258,12 @@ describe('App UI flow', () => {
         completionReadyTasks: [
           {
             ...readyTask,
-            completionProgress: { total: 2, satisfied: 2, open: 0 },
+            completionProgress: {
+              total: 2,
+              satisfied: 2,
+              open: 0,
+              satisfiedCriteriaHighlights: ['Stakeholder approved', 'Draft delivered'],
+            },
             closeoutEvidence: {
               sourceType: 'decision',
               sourceId: 'decision_2',
@@ -1270,7 +1275,12 @@ describe('App UI flow', () => {
         nearCompletionTasks: [
           {
             ...nearTask,
-            completionProgress: { total: 2, satisfied: 1, open: 1 },
+            completionProgress: {
+              total: 2,
+              satisfied: 1,
+              open: 1,
+              satisfiedCriteriaHighlights: ['Draft delivered'],
+            },
             closeoutEvidence: {
               sourceType: 'decision',
               sourceId: 'decision_2',
@@ -1304,6 +1314,9 @@ describe('App UI flow', () => {
     expect(within(closeoutSection as HTMLElement).getByText('待核对证据')).toBeTruthy();
     expect(within(closeoutSection as HTMLElement).getByText('完成标准已全部满足，建议做最终收尾判断。')).toBeTruthy();
     expect(
+      within(closeoutSection as HTMLElement).getByText('已满足：Stakeholder approved；Draft delivered'),
+    ).toBeTruthy();
+    expect(
       within(closeoutSection as HTMLElement).getByText('当前最终收尾依据：决策批准 · Approve escalation path'),
     ).toBeTruthy();
     expect(within(closeoutSection as HTMLElement).getByRole('button', { name: '查看最终收尾依据' })).toBeTruthy();
@@ -1315,6 +1328,7 @@ describe('App UI flow', () => {
     expect(
       within(closeoutSection as HTMLElement).getByText('当前收尾证据：决策批准 · Approve escalation path'),
     ).toBeTruthy();
+    expect(within(closeoutSection as HTMLElement).getByText('已满足：Draft delivered')).toBeTruthy();
     expect(within(closeoutSection as HTMLElement).getByRole('button', { name: '查看收尾证据' })).toBeTruthy();
 
     await user.click(within(closeoutSection as HTMLElement).getByRole('button', { name: '查看最终收尾依据' }));
