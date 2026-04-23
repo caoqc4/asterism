@@ -124,12 +124,14 @@ Covered today:
 - `Tasks process context create / apply / remove flow`
 - `Tasks resume card visibility, key-source prioritization explanation, method-selection explanation, lifecycle-aware suggested-move derivation, and recovery actions`
 - `Tasks resume card latest-change object entry`
+- `Tasks` first-screen recovery boundaries, key-slice snapshot behavior, and prioritized timeline previews
 - `Tasks quick decision draft flow`
 - `Decisions` page current-focus and queue navigation
 - `Decisions / Runs -> Tasks` follow-up return flows
 - `Decisions / Runs` related-task timeline context
 - `Decisions / Runs` related-task timeline object entry
 - `Decisions / Runs` related-task timeline follow-up actions
+- `Decisions / Runs` focus-surface information density and action grouping
 - shared timeline summaries across `Tasks / Decisions / Runs`
 - `Settings save flow`
 - `waiting item` visibility and direct resolution
