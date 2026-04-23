@@ -712,6 +712,8 @@ export function App() {
             onOpenActivity={handleOpenActivity}
             onOpenActivityObject={handleOpenActivityObject}
             onOpenArtifact={handleOpenArtifact}
+            onOpenDecision={handleOpenDecision}
+            onOpenRun={handleOpenRun}
             onOpenResumeLatestChange={handleOpenResumeLatestChange}
             onResolveBlockedTask={handleResolveBlockerFromHome}
             onOpenSourceContext={handleOpenSourceContext}

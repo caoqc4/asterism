@@ -120,6 +120,12 @@ export type HomeTaskSliceRecord = Pick<
     satisfied: number;
     open: number;
   };
+  closeoutEvidence?: {
+    sourceType: 'decision' | 'run';
+    sourceId: string;
+    title: string;
+    status: 'approved' | 'completed';
+  } | null;
 };
 
 export type BriefProcessTemplateCandidate = {

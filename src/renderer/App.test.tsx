@@ -1265,6 +1265,12 @@ describe('App UI flow', () => {
           {
             ...nearTask,
             completionProgress: { total: 2, satisfied: 1, open: 1 },
+            closeoutEvidence: {
+              sourceType: 'decision',
+              sourceId: 'decision_2',
+              title: 'Approve escalation path',
+              status: 'approved',
+            },
           },
         ],
       }),
@@ -1296,8 +1302,24 @@ describe('App UI flow', () => {
         '只差最后一条完成标准，先核对最后证据再决定是否收尾。',
       ),
     ).toBeTruthy();
+    expect(
+      within(closeoutSection as HTMLElement).getByText('当前收尾证据：决策批准 · Approve escalation path'),
+    ).toBeTruthy();
+    expect(within(closeoutSection as HTMLElement).getByRole('button', { name: '查看收尾证据' })).toBeTruthy();
 
-    await user.click(within(closeoutSection as HTMLElement).getByRole('button', { name: /Ready to finish task/i }));
+    await user.click(within(closeoutSection as HTMLElement).getByRole('button', { name: '查看收尾证据' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Approve escalation path' })).toBeTruthy();
+    });
+
+    await user.click(screen.getByRole('button', { name: /home/i }));
+    const closeoutSectionAfterReturn = (await screen.findByText('Closeout Tasks')).closest('section');
+    expect(closeoutSectionAfterReturn).toBeTruthy();
+
+    await user.click(
+      within(closeoutSectionAfterReturn as HTMLElement).getByRole('button', { name: /Ready to finish task/i }),
+    );
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Ready to finish task' })).toBeTruthy();

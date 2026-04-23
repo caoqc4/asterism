@@ -141,6 +141,8 @@ type HomePageProps = {
   onOpenActivity: (activity: HomeActivityRecord) => void;
   onOpenActivityObject: (activity: HomeActivityRecord) => void;
   onOpenArtifact: (artifact: ArtifactRecord) => void;
+  onOpenDecision: (decisionId: string) => void;
+  onOpenRun: (runId: string) => void;
   onResolveBlockedTask: (task: HomeBriefData['blockerTasks'][number]) => void;
   onOpenSourceContext: (sourceContext: HomeSourceContextRecord) => void;
   onOpenResumeLatestChange: (preview: HomeBriefData['recentTaskResumes'][number]) => void;
@@ -155,6 +157,8 @@ export function HomePage({
   onOpenActivity,
   onOpenActivityObject,
   onOpenArtifact,
+  onOpenDecision,
+  onOpenRun,
   onResolveBlockedTask,
   onOpenSourceContext,
   onOpenResumeLatestChange,
@@ -386,6 +390,19 @@ export function HomePage({
         prefillNextStep: `优先补齐最后一条完成标准，并判断“${task.title}”是否可以收尾。`,
       },
     });
+  }
+
+  function openCloseoutEvidence(task: NonNullable<HomeBriefData['nearCompletionTasks']>[number]) {
+    if (!task.closeoutEvidence) {
+      return;
+    }
+
+    if (task.closeoutEvidence.sourceType === 'decision') {
+      onOpenDecision(task.closeoutEvidence.sourceId);
+      return;
+    }
+
+    onOpenRun(task.closeoutEvidence.sourceId);
   }
 
   function openBlockedSource(task: HomeBriefData['blockerTasks'][number]) {
@@ -1078,21 +1095,41 @@ export function HomePage({
                   </button>
                 ))}
                 {briefData?.nearCompletionTasks?.map((task) => (
-                  <button
-                    className="task-card task-card-button task-card-muted"
-                    key={`near-completion-${task.id}`}
-                    onClick={() => openNearCompletionTask(task)}
-                    type="button"
-                  >
-                    <div className="task-row">
-                      <strong>{task.title}</strong>
-                      <span className="status">{getCloseoutTaskStatusLabel('near')}</span>
-                    </div>
-                    <p className="meta">{getCloseoutTaskSummary('near')}</p>
-                    <p className="meta">
-                      completion: {task.completionProgress?.satisfied ?? 0}/{task.completionProgress?.total ?? 0}
-                    </p>
-                  </button>
+                  <div className="task-card task-card-muted" key={`near-completion-${task.id}`}>
+                    <button
+                      className="task-card-button task-card-button-shell"
+                      onClick={() => openNearCompletionTask(task)}
+                      type="button"
+                    >
+                      <div className="task-row">
+                        <strong>{task.title}</strong>
+                        <span className="status">{getCloseoutTaskStatusLabel('near')}</span>
+                      </div>
+                      <p className="meta">{getCloseoutTaskSummary('near')}</p>
+                      <p className="meta">
+                        completion: {task.completionProgress?.satisfied ?? 0}/{task.completionProgress?.total ?? 0}
+                      </p>
+                      {task.closeoutEvidence ? (
+                        <p className="meta">
+                          当前收尾证据：
+                          {task.closeoutEvidence.sourceType === 'decision' ? '决策批准' : '执行完成'}
+                          {' · '}
+                          {task.closeoutEvidence.title}
+                        </p>
+                      ) : null}
+                    </button>
+                    {task.closeoutEvidence ? (
+                      <div className="task-chip-row">
+                        <button
+                          className="chip-button"
+                          onClick={() => openCloseoutEvidence(task)}
+                          type="button"
+                        >
+                          查看收尾证据
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 ))}
               </>
             ) : (

@@ -12,6 +12,8 @@ import type {
   RecommendedAction,
 } from '../../../shared/types/brief.js';
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
+import type { DecisionRecord } from '../../../shared/types/decision.js';
+import type { RunRecord } from '../../../shared/types/run.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
 import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
@@ -562,6 +564,57 @@ export class HomeBriefService {
         satisfied: 0,
         open: 0,
       },
+    };
+  }
+
+  private buildCloseoutEvidenceMap(params: {
+    tasks: TaskListItemRecord[];
+    decisions: DecisionRecord[];
+    runs: RunRecord[];
+  }): Map<string, NonNullable<HomeTaskSliceRecord['closeoutEvidence']>> {
+    const evidenceByTaskId = new Map<string, NonNullable<HomeTaskSliceRecord['closeoutEvidence']>>();
+    const activeTaskIds = new Set(params.tasks.map((task) => task.id));
+
+    const approvedDecisions = [...params.decisions]
+      .filter((decision) => decision.status === 'approved' && activeTaskIds.has(decision.taskId))
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+
+    for (const decision of approvedDecisions) {
+      if (!evidenceByTaskId.has(decision.taskId)) {
+        evidenceByTaskId.set(decision.taskId, {
+          sourceType: 'decision',
+          sourceId: decision.id,
+          title: decision.title,
+          status: 'approved',
+        });
+      }
+    }
+
+    const completedRuns = [...params.runs]
+      .filter((run) => run.status === 'completed' && activeTaskIds.has(run.taskId))
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+
+    for (const run of completedRuns) {
+      if (!evidenceByTaskId.has(run.taskId)) {
+        evidenceByTaskId.set(run.taskId, {
+          sourceType: 'run',
+          sourceId: run.id,
+          title: run.type,
+          status: 'completed',
+        });
+      }
+    }
+
+    return evidenceByTaskId;
+  }
+
+  private withCloseoutEvidence(
+    task: HomeTaskSliceRecord,
+    closeoutEvidenceByTaskId: Map<string, NonNullable<HomeTaskSliceRecord['closeoutEvidence']>>,
+  ): HomeTaskSliceRecord {
+    return {
+      ...task,
+      closeoutEvidence: closeoutEvidenceByTaskId.get(task.id) ?? null,
     };
   }
 
@@ -1287,6 +1340,11 @@ export class HomeBriefService {
     const completionProgressByTaskId = await this.buildCompletionProgressMap(
       activeTasks.map((task) => task.id),
     );
+    const closeoutEvidenceByTaskId = this.buildCloseoutEvidenceMap({
+      tasks: activeTasks,
+      decisions,
+      runs,
+    });
     const appliedTemplates = this.taskProcessBindingRepository
       ? await this.taskProcessBindingRepository.listActiveForTasks(activeTasks.map((task) => task.id))
       : [];
@@ -1296,13 +1354,23 @@ export class HomeBriefService {
         const progress = completionProgressByTaskId.get(task.id);
         return Boolean(progress && progress.total > 0 && progress.open === 0);
       })
-      .map((task) => this.withCompletionProgress(task, completionProgressByTaskId));
+      .map((task) =>
+        this.withCloseoutEvidence(
+          this.withCompletionProgress(task, completionProgressByTaskId),
+          closeoutEvidenceByTaskId,
+        ),
+      );
     const nearCompletionTasks = activeTasks
       .filter((task) => {
         const progress = completionProgressByTaskId.get(task.id);
         return Boolean(progress && progress.total > 1 && progress.satisfied > 0 && progress.open === 1);
       })
-      .map((task) => this.withCompletionProgress(task, completionProgressByTaskId));
+      .map((task) =>
+        this.withCloseoutEvidence(
+          this.withCompletionProgress(task, completionProgressByTaskId),
+          closeoutEvidenceByTaskId,
+        ),
+      );
     const laneByTaskId = deriveTaskPriorityLaneMap({
       tasks,
       missingNextStepTasks: missingNextStepTasks.map((task) => this.toHomeTaskSlice(task)),
