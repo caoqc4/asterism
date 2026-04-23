@@ -131,6 +131,8 @@ describe('DecisionService', () => {
     const taskService = {
       getDetail: vi.fn().mockResolvedValue({
         ...buildTaskDetail(),
+        riskLevel: 'high',
+        riskNote: 'Need fast escalation',
         processTemplates: [buildAppliedTemplate()],
       }),
       annotateDecisionApproved: vi.fn(),
@@ -174,6 +176,11 @@ describe('DecisionService', () => {
       ['process_template_1'],
       ['Approval skill'],
       'This task is waiting on stakeholder approval.',
+    );
+    expect(generateObjectMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('当前优先级语义：立即升级。组织输出时优先帮助用户升级处理高风险或长期阻塞事项。'),
+      }),
     );
     expect(result).toMatchObject({
       taskId: 'task_1',

@@ -5,6 +5,7 @@ import type { RuntimeAiConfig } from '../keychain/ai-config-service.js';
 import type { CreateRunInput } from '../../shared/types/run.js';
 import type { TaskDetail } from '../../shared/types/task.js';
 import { getLanguageModel } from './ai-client.js';
+import { deriveTaskDetailPriorityLane, getPriorityLanePromptGuidance } from '../../shared/working-context/priority-lanes.js';
 
 type ExecuteOptions = {
   selectedTemplates?: AppliedProcessTemplateRecord[];
@@ -15,6 +16,7 @@ function buildPrompt(
   input: CreateRunInput,
   options: ExecuteOptions = {},
 ): string {
+  const lane = deriveTaskDetailPriorityLane(task);
   const summary = task.summary ? `任务摘要：${task.summary}` : '任务摘要：暂无';
   const extra = input.instructions?.trim() ? `附加要求：${input.instructions.trim()}` : '附加要求：无';
   const nextStep = task.nextStep ? `建议下一步：${task.nextStep}` : '建议下一步：暂无';
@@ -43,6 +45,7 @@ function buildPrompt(
       summary,
       nextStep,
       waitingReason,
+      getPriorityLanePromptGuidance(lane),
       risk,
       processContext,
       extra,
@@ -59,6 +62,7 @@ function buildPrompt(
     summary,
     nextStep,
     waitingReason,
+    getPriorityLanePromptGuidance(lane),
     risk,
     processContext,
     extra,

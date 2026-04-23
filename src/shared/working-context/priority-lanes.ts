@@ -1,6 +1,8 @@
 import type { HomeActivityRecord, HomeSourceContextRecord, HomeTaskSliceRecord, PriorityLane } from '../types/brief.js';
 import type { DecisionRecord } from '../types/decision.js';
+import type { TaskDetail } from '../types/task.js';
 import type { TaskListItemRecord } from '../types/task.js';
+import { isStaleBlocker } from './blocker.js';
 
 const PRIORITY_LANE_LABELS: Record<PriorityLane, string> = {
   escalate_now: '立即升级',
@@ -95,4 +97,39 @@ export function deriveTaskPriorityLaneMap(params: {
   }
 
   return laneByTaskId;
+}
+
+export function deriveTaskDetailPriorityLane(task: TaskDetail): PriorityLane {
+  if ((task.activeBlocker && isStaleBlocker(task.activeBlocker.createdAt)) || task.riskLevel === 'high') {
+    return 'escalate_now';
+  }
+
+  if (task.activeBlocker) {
+    return 'unblock_or_decide';
+  }
+
+  if (task.state === 'waiting_external' || task.activeWaitingItem || task.waitingReason || !task.nextStep?.trim()) {
+    return 'clarify';
+  }
+
+  if (task.artifacts.length || task.sourceContexts.length || task.processTemplates.length) {
+    return 'continue_or_review';
+  }
+
+  return 'steady';
+}
+
+export function getPriorityLanePromptGuidance(lane: PriorityLane): string {
+  switch (lane) {
+    case 'escalate_now':
+      return '当前优先级语义：立即升级。组织输出时优先帮助用户升级处理高风险或长期阻塞事项。';
+    case 'unblock_or_decide':
+      return '当前优先级语义：先解阻塞/拍板。组织输出时优先帮助用户解除阻塞、补齐拍板输入。';
+    case 'continue_or_review':
+      return '当前优先级语义：继续推进/复核。组织输出时优先承接最近结果、来源或产物继续推进。';
+    case 'clarify':
+      return '当前优先级语义：先补清晰度。组织输出时优先补清下一步、等待条件或缺失上下文。';
+    default:
+      return '当前优先级语义：稳态推进。组织输出时优先围绕现有下一步平稳推进。';
+  }
 }

@@ -16,6 +16,7 @@ import {
   DecisionProcessTemplateSelector,
   type DecisionProcessTemplateSelectionResult,
 } from './process-template-selector.js';
+import { deriveTaskDetailPriorityLane, getPriorityLanePromptGuidance } from '../../../shared/working-context/priority-lanes.js';
 
 const decisionDraftSchema = z.object({
   title: z.string().min(1),
@@ -36,6 +37,7 @@ function buildDraftPrompt(
   selection: DecisionProcessTemplateSelectionResult,
 ): string {
   const selectedTemplates = selection.shouldUse ? selection.selectedTemplates : [];
+  const lane = deriveTaskDetailPriorityLane(task);
 
   return [
     '请草拟一条简洁、明确、适合知识工作者阅读的决策请求。',
@@ -48,6 +50,7 @@ function buildDraftPrompt(
     `当前状态：${task.state}`,
     `当前 next step：${task.nextStep ?? '暂无'}`,
     `等待原因：${task.waitingReason ?? '暂无'}`,
+    getPriorityLanePromptGuidance(lane),
     `风险：${
       task.riskLevel === 'none'
         ? '当前未标记明显风险'

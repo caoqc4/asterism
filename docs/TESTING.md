@@ -46,6 +46,8 @@ Covered today:
   task existence checks, decision-to-task lifecycle linkage, and AI/fallback decision-draft composition
 - `RunService`
   successful execution path, failure path, task restoration after settled runs, artifact creation on successful output, and process-template selector behavior
+- `TextExecutor`
+  lane-aware run prompt composition
 - `HomeBriefService`
   waiting, risk, missing-next-step, recommended actions, recent artifacts, recent lifecycle activity, artifact-aware brief semantics, and active-task process-template candidate aggregation
 - `SchedulerService`
@@ -146,6 +148,7 @@ Covered today:
 - `Tasks list` lane-aware ordering and lightweight lane labels
 - `Tasks list` lane-aware summary copy
 - `Tasks action setup` lane-aware quick decision/run defaults
+- `Decision draft / Run` backend prompt composition now absorbs task-level lane guidance
 - `Decisions` page current-focus and queue navigation
 - `Decisions / Runs -> Tasks` follow-up return flows
 - `Decisions / Runs` related-task timeline context
