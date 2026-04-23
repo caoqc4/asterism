@@ -3,7 +3,8 @@ import type { BriefSnapshotRecord } from './brief-snapshot.js';
 import type { ProcessTemplateKind } from './process-template.js';
 import type { SchedulerStatus } from './scheduler.js';
 import type { DecisionRecord } from './decision.js';
-import type { TaskListItemRecord, TaskRiskLevel } from './task.js';
+import type { TaskRecord, TaskRiskLevel } from './task.js';
+import type { WaitingItemRecord } from './waiting-item.js';
 
 export type RecommendedActionIntent = {
   type:
@@ -73,6 +74,13 @@ export type HomeTaskResumePreviewRecord = {
   contextActionIntent: RecommendedActionIntent;
 };
 
+export type HomeTaskSliceRecord = Pick<
+  TaskRecord,
+  'id' | 'title' | 'summary' | 'state' | 'nextStep' | 'waitingReason' | 'riskLevel' | 'riskNote'
+> & {
+  activeWaitingItem?: WaitingItemRecord | null;
+};
+
 export type BriefProcessTemplateCandidate = {
   id: string;
   title: string;
@@ -93,10 +101,10 @@ export type HomeBriefData = {
   waitingTaskCount: number;
   highRiskTaskCount: number;
   missingNextStepTaskCount: number;
-  recentTasks: TaskListItemRecord[];
-  waitingTasks: TaskListItemRecord[];
-  highRiskTasks: TaskListItemRecord[];
-  missingNextStepTasks: TaskListItemRecord[];
+  recentTasks: HomeTaskSliceRecord[];
+  waitingTasks: HomeTaskSliceRecord[];
+  highRiskTasks: HomeTaskSliceRecord[];
+  missingNextStepTasks: HomeTaskSliceRecord[];
   pendingDecisions: DecisionRecord[];
   recommendedActions: RecommendedAction[];
   recentArtifacts: ArtifactRecord[];

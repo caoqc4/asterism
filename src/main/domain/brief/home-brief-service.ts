@@ -6,6 +6,7 @@ import type {
   HomeActivityRecord,
   HomeBriefData,
   HomeSourceContextRecord,
+  HomeTaskSliceRecord,
   HomeTaskResumePreviewRecord,
   RecommendedAction,
 } from '../../../shared/types/brief.js';
@@ -248,7 +249,7 @@ export class HomeBriefService {
   }
 
   private async buildTaskResumePreviews(params: {
-    recentTasks: TaskListItemRecord[];
+    recentTasks: HomeTaskSliceRecord[];
     recentActivity: HomeActivityRecord[];
     recentSourceContexts: HomeSourceContextRecord[];
     appliedTemplates: Awaited<ReturnType<TaskProcessBindingRepository['listActiveForTasks']>>;
@@ -436,6 +437,20 @@ export class HomeBriefService {
     );
   }
 
+  private toHomeTaskSlice(task: TaskListItemRecord): HomeTaskSliceRecord {
+    return {
+      id: task.id,
+      title: task.title,
+      summary: task.summary,
+      state: task.state,
+      nextStep: task.nextStep,
+      waitingReason: task.waitingReason,
+      activeWaitingItem: task.activeWaitingItem,
+      riskLevel: task.riskLevel,
+      riskNote: task.riskNote,
+    };
+  }
+
   private buildRecentActivity(
     tasks: TaskListItemRecord[],
     decisions: Awaited<ReturnType<DecisionRepository['list']>>,
@@ -537,7 +552,7 @@ export class HomeBriefService {
       : [];
     const processTemplateCandidates = await this.buildProcessTemplateCandidates(activeTasks);
     const recentTaskResumes = await this.buildTaskResumePreviews({
-      recentTasks: tasks.slice(0, 5),
+      recentTasks: tasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       recentActivity,
       recentSourceContexts,
       appliedTemplates,
@@ -560,10 +575,12 @@ export class HomeBriefService {
       waitingTaskCount: waitingTasks.length,
       highRiskTaskCount: highRiskTasks.length,
       missingNextStepTaskCount: missingNextStepTasks.length,
-      recentTasks: tasks.slice(0, 5),
-      waitingTasks: waitingTasks.slice(0, 5),
-      highRiskTasks: highRiskTasks.slice(0, 5),
-      missingNextStepTasks: missingNextStepTasks.slice(0, 5),
+      recentTasks: tasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
+      waitingTasks: waitingTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
+      highRiskTasks: highRiskTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
+      missingNextStepTasks: missingNextStepTasks
+        .slice(0, 5)
+        .map((task) => this.toHomeTaskSlice(task)),
       pendingDecisions: pendingDecisions.slice(0, 5),
       recommendedActions,
       recentArtifacts,
