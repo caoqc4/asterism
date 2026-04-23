@@ -805,7 +805,12 @@ export function HomePage({
                 >
                   <div className="task-row">
                     <strong>{preview.taskTitle}</strong>
-                    <span className="status">{preview.currentState}</span>
+                    <div className="inline-statuses">
+                      {getPriorityLaneLabel(preview.lane) ? (
+                        <span className={`status lane-status lane-status-${preview.lane}`}>{getPriorityLaneLabel(preview.lane)}</span>
+                      ) : null}
+                      <span className="status">{preview.currentState}</span>
+                    </div>
                   </div>
                   <p className="meta">{preview.latestChange.summary}</p>
                   {preview.currentBlocker?.title ? (

@@ -136,7 +136,14 @@ export function App() {
     () =>
       deriveTaskPriorityLaneMap({
         tasks,
-        briefData,
+        missingNextStepTasks: briefData?.missingNextStepTasks,
+        waitingTasks: briefData?.waitingTasks,
+        recentArtifacts: briefData?.recentArtifacts,
+        recentSourceContexts: briefData?.recentSourceContexts,
+        recentActivity: briefData?.recentActivity,
+        blockerTasks: briefData?.blockerTasks,
+        highRiskTasks: briefData?.highRiskTasks,
+        escalationTasks: briefData?.escalationTasks,
         decisions,
       }),
     [briefData, decisions, tasks],

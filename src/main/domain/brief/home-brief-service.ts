@@ -33,6 +33,7 @@ import {
   safeJsonParse,
 } from '../working-context/assembler.js';
 import { isStaleBlocker } from '../../../shared/working-context/blocker.js';
+import { comparePriorityLanes, deriveTaskPriorityLaneMap } from '../../../shared/working-context/priority-lanes.js';
 
 type InternalRecommendedAction = RecommendedAction & {
   lane: PriorityLane;
@@ -437,6 +438,7 @@ export class HomeBriefService {
     recentActivity: HomeActivityRecord[];
     recentSourceContexts: HomeSourceContextRecord[];
     appliedTemplates: Awaited<ReturnType<TaskProcessBindingRepository['listActiveForTasks']>>;
+    laneByTaskId: Map<string, PriorityLane>;
   }): Promise<HomeTaskResumePreviewRecord[]> {
     const activityByTaskId = new Map<string, HomeActivityRecord>();
 
@@ -446,7 +448,7 @@ export class HomeBriefService {
       }
     }
 
-    return Promise.all(params.recentTasks.map(async (task) => {
+    const previews = await Promise.all(params.recentTasks.map(async (task) => {
       const latestActivity = activityByTaskId.get(task.id);
       const keySource =
         params.recentSourceContexts.find((item) => item.taskId === task.id && item.isKey) ??
@@ -621,6 +623,7 @@ export class HomeBriefService {
       return {
         taskId: task.id,
         taskTitle: task.title,
+        lane: params.laneByTaskId.get(task.id) ?? 'steady',
         currentState: currentStateParts.join(' · '),
         latestChange: {
           summary: latestChange.summary,
@@ -663,6 +666,16 @@ export class HomeBriefService {
         contextActionIntent: contextAction.intent,
       };
     }));
+
+    return previews.sort((left, right) => {
+      const laneDiff = comparePriorityLanes(left.lane, right.lane);
+
+      if (laneDiff !== 0) {
+        return laneDiff;
+      }
+
+      return left.taskTitle.localeCompare(right.taskTitle, 'zh-Hans-CN');
+    });
   }
 
   private async attachActiveWaitingItems(tasks: TaskRecord[]): Promise<TaskListItemRecord[]> {
@@ -884,11 +897,24 @@ export class HomeBriefService {
       ? await this.taskProcessBindingRepository.listActiveForTasks(activeTasks.map((task) => task.id))
       : [];
     const processTemplateCandidates = await this.buildProcessTemplateCandidates(activeTasks);
+    const laneByTaskId = deriveTaskPriorityLaneMap({
+      tasks,
+      missingNextStepTasks: missingNextStepTasks.map((task) => this.toHomeTaskSlice(task)),
+      waitingTasks: waitingTasks.map((task) => this.toHomeTaskSlice(task)),
+      recentArtifacts,
+      recentSourceContexts,
+      recentActivity,
+      blockerTasks: blockerTasks.map((task) => this.toHomeTaskSlice(task)),
+      highRiskTasks: highRiskTasks.map((task) => this.toHomeTaskSlice(task)),
+      escalationTasks: escalationTasks.map((task) => this.toHomeTaskSlice(task)),
+      decisions,
+    });
     const recentTaskResumes = await this.buildTaskResumePreviews({
       recentTasks: tasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       recentActivity,
       recentSourceContexts,
       appliedTemplates,
+      laneByTaskId,
     });
     const recommendedActions = buildRecommendedActions({
       activeTasks: activeTasks.slice(0, 10),

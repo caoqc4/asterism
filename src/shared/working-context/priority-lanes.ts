@@ -1,4 +1,4 @@
-import type { HomeBriefData, PriorityLane } from '../types/brief.js';
+import type { HomeActivityRecord, HomeSourceContextRecord, HomeTaskSliceRecord, PriorityLane } from '../types/brief.js';
 import type { DecisionRecord } from '../types/decision.js';
 import type { TaskListItemRecord } from '../types/task.js';
 
@@ -32,7 +32,14 @@ export function comparePriorityLanes(left: PriorityLane | undefined, right: Prio
 
 export function deriveTaskPriorityLaneMap(params: {
   tasks: TaskListItemRecord[];
-  briefData: HomeBriefData | null;
+  missingNextStepTasks?: HomeTaskSliceRecord[];
+  waitingTasks?: HomeTaskSliceRecord[];
+  recentArtifacts?: Array<{ taskId: string }>;
+  recentSourceContexts?: HomeSourceContextRecord[];
+  recentActivity?: HomeActivityRecord[];
+  blockerTasks?: HomeTaskSliceRecord[];
+  highRiskTasks?: HomeTaskSliceRecord[];
+  escalationTasks?: HomeTaskSliceRecord[];
   decisions: DecisionRecord[];
 }): Map<string, PriorityLane> {
   const laneByTaskId = new Map<string, PriorityLane>();
@@ -49,27 +56,27 @@ export function deriveTaskPriorityLaneMap(params: {
     }
   };
 
-  for (const task of params.briefData?.missingNextStepTasks ?? []) {
+  for (const task of params.missingNextStepTasks ?? []) {
     assignLane(task.id, 'clarify');
   }
 
-  for (const task of params.briefData?.waitingTasks ?? []) {
+  for (const task of params.waitingTasks ?? []) {
     assignLane(task.id, 'clarify');
   }
 
-  for (const artifact of params.briefData?.recentArtifacts ?? []) {
+  for (const artifact of params.recentArtifacts ?? []) {
     assignLane(artifact.taskId, 'continue_or_review');
   }
 
-  for (const source of params.briefData?.recentSourceContexts ?? []) {
+  for (const source of params.recentSourceContexts ?? []) {
     assignLane(source.taskId, 'continue_or_review');
   }
 
-  for (const activity of params.briefData?.recentActivity ?? []) {
+  for (const activity of params.recentActivity ?? []) {
     assignLane(activity.taskId, activity.lane ?? 'steady');
   }
 
-  for (const task of params.briefData?.blockerTasks ?? []) {
+  for (const task of params.blockerTasks ?? []) {
     assignLane(task.id, 'unblock_or_decide');
   }
 
@@ -79,11 +86,11 @@ export function deriveTaskPriorityLaneMap(params: {
     }
   }
 
-  for (const task of params.briefData?.highRiskTasks ?? []) {
+  for (const task of params.highRiskTasks ?? []) {
     assignLane(task.id, 'escalate_now');
   }
 
-  for (const task of params.briefData?.escalationTasks ?? []) {
+  for (const task of params.escalationTasks ?? []) {
     assignLane(task.id, 'escalate_now');
   }
 

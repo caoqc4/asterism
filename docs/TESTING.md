@@ -118,7 +118,7 @@ Covered today:
 - `Home recent activity` blocker created/resolved recovery actions
 - `Home recent activity` blocker-linked source-update re-evaluation actions
 - `Home resume preview -> Tasks` recovery flow
-- `Home resume preview` key-source/current-method explanations, latest-change object entry, and recent-change-aware follow-up actions
+- `Home resume preview` key-source/current-method explanations, latest-change object entry, recent-change-aware follow-up actions, and lightweight priority-lane labels
 - `Home brief` process-template-aware scheduling path
 - `Home key signals -> Tasks detail follow-up intent`
 - `Home blocked tasks -> Tasks blocker/source-context recovery`

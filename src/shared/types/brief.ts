@@ -74,6 +74,7 @@ export type HomeSourceContextRecord = {
 export type HomeTaskResumePreviewRecord = {
   taskId: string;
   taskTitle: string;
+  lane?: PriorityLane;
   currentState: string;
   latestChange: ResumeLatestChangeRecord;
   currentBlocker?: {

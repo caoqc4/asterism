@@ -329,25 +329,15 @@ describe('HomeBriefService', () => {
       },
     ]);
     expect(homeData.recentTaskResumes).toHaveLength(4);
+    expect(homeData.recentTaskResumes.map((item) => item.taskId)).toEqual([
+      'task_risk',
+      'task_missing',
+      'task_waiting',
+      'task_done',
+    ]);
     expect(homeData.recentTaskResumes[0]).toMatchObject({
-      taskId: 'task_waiting',
-      currentState: '状态：waiting_external · 等待：Waiting for reviewer confirmation',
-      latestChange: {
-        summary: '最近没有新的关键变化。',
-      },
-      currentBlocker: {
-        title: null,
-        priorityReason: null,
-      },
-      currentMethod: {
-        title: 'Risk review skill',
-        selectionReason: '当前方法：Prioritize risk and blockers',
-      },
-      nextSuggestedMove: 'Follow up on Friday',
-      contextActionLabel: '跟进等待项',
-    });
-    expect(homeData.recentTaskResumes[1]).toMatchObject({
       taskId: 'task_risk',
+      lane: 'escalate_now',
       currentState: '状态：running · 风险：high · Deadline slipping',
       latestChange: {
         summary: '最近关键来源更新：Escalation source memo',
@@ -367,14 +357,33 @@ describe('HomeBriefService', () => {
       nextSuggestedMove: 'Escalate today',
       contextActionLabel: '处理风险',
     });
-    expect(homeData.recentTaskResumes[2]).toMatchObject({
+    expect(homeData.recentTaskResumes[1]).toMatchObject({
       taskId: 'task_missing',
+      lane: 'clarify',
       currentBlocker: {
         title: null,
         priorityReason: null,
       },
       nextSuggestedMove: '先补一个明确的下一步。',
       contextActionLabel: '采用建议下一步',
+    });
+    expect(homeData.recentTaskResumes[2]).toMatchObject({
+      taskId: 'task_waiting',
+      lane: 'clarify',
+      currentState: '状态：waiting_external · 等待：Waiting for reviewer confirmation',
+      latestChange: {
+        summary: '最近没有新的关键变化。',
+      },
+      currentBlocker: {
+        title: null,
+        priorityReason: null,
+      },
+      currentMethod: {
+        title: 'Risk review skill',
+        selectionReason: '当前方法：Prioritize risk and blockers',
+      },
+      nextSuggestedMove: 'Follow up on Friday',
+      contextActionLabel: '跟进等待项',
     });
     expect(homeData.recentTaskResumes[3]).toMatchObject({
       taskId: 'task_done',
@@ -629,8 +638,8 @@ describe('HomeBriefService', () => {
       }),
     );
     expect(homeData.recentTaskResumes.map((item) => item.taskId)).toEqual([
-      'task_source_focus',
       'task_source_missing',
+      'task_source_focus',
     ]);
   });
 

@@ -338,6 +338,7 @@ describe('App UI flow', () => {
       {
         taskId: riskTask.id,
         taskTitle: riskTask.title,
+        lane: 'escalate_now',
         currentState: '状态：running · 风险：high · Deadline slipping',
         latestChange: {
           summary: '最近决策动态：Approve escalation path · approved',
@@ -367,6 +368,7 @@ describe('App UI flow', () => {
       {
         taskId: waitingTask.id,
         taskTitle: waitingTask.title,
+        lane: 'clarify',
         currentState: '状态：waiting_external · 等待：Waiting for legal review',
         latestChange: {
           summary: '最近没有新的关键变化。',
@@ -4492,6 +4494,17 @@ describe('App UI flow', () => {
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
       '已获批准，继续推进：Approve escalation path',
     );
+  });
+
+  it('shows priority lane labels on home resume previews', async () => {
+    window.api = mockApi;
+
+    render(<App />);
+
+    const resumePanel = (await screen.findByText('Resume Previews')).closest('.panel');
+    expect(resumePanel).not.toBeNull();
+    expect(within(resumePanel as HTMLElement).getByText('立即升级')).toBeTruthy();
+    expect(within(resumePanel as HTMLElement).getByText('先补清晰度')).toBeTruthy();
   });
 
   it('opens latest-change objects from home resume previews', async () => {
