@@ -647,6 +647,9 @@ export function HomePage({
                   </div>
                 </div>
                 <p className="meta">{action.reason}</p>
+                {action.responsibilitySummary ? (
+                  <p className="meta">{action.responsibilitySummary}</p>
+                ) : null}
                 {action.taskId ? <p className="meta">taskId: {action.taskId}</p> : null}
               </button>
             ))

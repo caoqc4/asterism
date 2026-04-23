@@ -41,8 +41,15 @@ function formatDecisionLine(title: string, status: string): string {
   return `- ${title} [${status}]`;
 }
 
-function formatRecommendedAction(label: string, reason: string, priority: string): string {
-  return `- [${priority}] ${label} | ${reason}`;
+function formatRecommendedAction(
+  label: string,
+  reason: string,
+  priority: string,
+  responsibilitySummary?: string | null,
+): string {
+  return `- [${priority}] ${label} | ${reason}${
+    responsibilitySummary ? ` | responsibility=${responsibilitySummary}` : ''
+  }`;
 }
 
 function formatRecentActivityLine(
@@ -189,7 +196,13 @@ export function buildFallbackBrief(
     ? formatLaneSection(
         homeData.recommendedActions,
         (action) => action.lane,
-        (action) => formatRecommendedAction(action.label, action.reason, action.priority),
+        (action) =>
+          formatRecommendedAction(
+            action.label,
+            action.reason,
+            action.priority,
+            action.responsibilitySummary,
+          ),
       ).join('\n')
     : '- 当前没有推荐动作';
   const activityLaneLines = homeData.recentActivity.length
@@ -328,7 +341,13 @@ function buildPrompt(
       ? formatLaneSection(
           homeData.recommendedActions,
           (action) => action.lane,
-          (action) => formatRecommendedAction(action.label, action.reason, action.priority),
+          (action) =>
+            formatRecommendedAction(
+              action.label,
+              action.reason,
+              action.priority,
+              action.responsibilitySummary,
+            ),
         )
       : ['- 无']),
     '',

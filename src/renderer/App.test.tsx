@@ -5594,6 +5594,7 @@ describe('App UI flow', () => {
             id: 'decision:lane',
             label: '跟进拍板任务',
             reason: '当前需要先完成拍板。',
+            responsibilitySummary: '当前由产品负责人负责确认',
             taskId: 'task_lane_action',
             priority: 'high',
             lane: 'unblock_or_decide',
@@ -5613,6 +5614,7 @@ describe('App UI flow', () => {
     expect(actionCard).toBeTruthy();
     expect(within(actionCard as HTMLElement).getByText('先解阻塞/拍板')).toBeTruthy();
     expect(within(actionCard as HTMLElement).getByText('high')).toBeTruthy();
+    expect(within(actionCard as HTMLElement).getByText('当前由产品负责人负责确认')).toBeTruthy();
   });
 
   it('shows lightweight priority lane labels on recent activity items', async () => {

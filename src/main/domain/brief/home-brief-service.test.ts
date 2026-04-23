@@ -540,7 +540,7 @@ describe('HomeBriefService', () => {
     expect(homeData.priorityLane).toBe('continue_or_review');
     expect(homeData.priorityHeadline).toBe('当前有 1 条任务依赖已具备恢复推进条件');
     expect(homeData.priorityLede).toBe(
-      '当前最值得先处理的是依赖刚解除或上游任务刚就绪的任务；首页会优先提示重新判断是否解除依赖，再回到普通执行结果、产物和来源复核。',
+      '当前最值得先处理的是依赖刚解除或上游任务刚就绪的任务；首页会优先提示重新判断是否解除依赖，再回到普通执行结果、产物和来源复核。 当前推进责任：当前主要由上游任务“Publish partner list”推进',
     );
   });
 
@@ -587,6 +587,7 @@ describe('HomeBriefService', () => {
         id: 'steady-state',
         label: '当前无需额外干预',
         reason: '暂时没有高风险、等待阻塞或缺少下一步的活跃任务。',
+        responsibilitySummary: null,
         taskId: null,
         priority: 'low',
         lane: 'steady',
@@ -646,6 +647,7 @@ describe('HomeBriefService', () => {
         id: 'steady-state',
         label: '当前无需额外干预',
         reason: '暂时没有高风险、等待阻塞或缺少下一步的活跃任务。',
+        responsibilitySummary: null,
         taskId: null,
         priority: 'low',
         lane: 'steady',
@@ -1358,6 +1360,8 @@ describe('HomeBriefService', () => {
             taskId: 'task_near',
             text: 'Final review recorded',
             status: 'open',
+            verificationResponsibility: 'external_person',
+            verificationResponsibilityLabel: '客户确认',
           }),
         ]),
       } as never,
@@ -1384,6 +1388,7 @@ describe('HomeBriefService', () => {
         expect.objectContaining({
           taskId: 'task_near',
           label: '补最后一个完成标准：Almost done',
+          responsibilitySummary: '当前由 客户确认 负责确认',
         }),
       ]),
     );

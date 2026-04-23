@@ -35,6 +35,7 @@ export type RecommendedAction = {
   id: string;
   label: string;
   reason: string;
+  responsibilitySummary?: string | null;
   taskId: string | null;
   priority: 'high' | 'medium' | 'low';
   lane?: PriorityLane;

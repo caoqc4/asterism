@@ -92,6 +92,7 @@ function buildRecommendedActions(params: {
       id: `risk:${task.id}`,
       label: `优先处理高风险任务：${task.title}`,
       reason: task.riskNote ?? '该任务当前处于高风险状态。',
+      responsibilitySummary: null,
       taskId: task.id,
       priority: 'high',
       lane: 'escalate_now',
@@ -112,6 +113,7 @@ function buildRecommendedActions(params: {
       id: `decision:${decision.id}`,
       label: `尽快拍板：${decision.title}`,
       reason: '该决策仍处于 pending，可能阻塞相关任务推进。',
+      responsibilitySummary: null,
       taskId: decision.taskId,
       priority: 'high',
       lane: 'unblock_or_decide',
@@ -149,6 +151,12 @@ function buildRecommendedActions(params: {
         : `任务“${task.title}”当前依赖上游任务“${
             task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'
           }”先完成。`,
+      responsibilitySummary: getResponsibilitySummary({
+        kind: 'upstream_task',
+        label: task.activeDependency.blockedByTaskTitle,
+        audience: 'home',
+        subject: 'dependency',
+      }),
       taskId: staleDependency || dependencyReevaluation ? task.id : task.activeDependency.blockedByTaskId,
       priority: staleDependency ? 'high' : 'medium',
       lane: staleDependency ? 'escalate_now' : dependencyReevaluation ? 'continue_or_review' : 'unblock_or_decide',
@@ -171,6 +179,7 @@ function buildRecommendedActions(params: {
       id: `waiting:${task.id}`,
       label: `跟进等待中的任务：${task.title}`,
       reason: task.activeWaitingItem?.reason ?? task.waitingReason ?? '该任务处于等待状态，需要恢复推进。',
+      responsibilitySummary: null,
       taskId: task.id,
       priority: 'medium',
       lane: 'clarify',
@@ -196,6 +205,12 @@ function buildRecommendedActions(params: {
       reason: getCurrentBlockerPriorityReason({
         blocker: task.activeBlocker,
         audience: 'home',
+      }),
+      responsibilitySummary: getResponsibilitySummary({
+        kind: task.activeBlocker.responsibility,
+        label: task.activeBlocker.responsibilityLabel ?? task.activeBlocker.owner,
+        audience: 'home',
+        subject: 'blocker',
       }),
       taskId: task.id,
       priority: isStaleBlocker(task.activeBlocker.createdAt) ? 'high' : 'medium',
@@ -225,6 +240,7 @@ function buildRecommendedActions(params: {
       id: `next-step:${task.id}`,
       label: `补充下一步：${task.title}`,
       reason: '该任务仍缺少明确下一步，后续推进成本会升高。',
+      responsibilitySummary: null,
       taskId: task.id,
       priority: 'medium',
       lane: 'clarify',
@@ -241,6 +257,7 @@ function buildRecommendedActions(params: {
       id: `completion-ready:${task.id}`,
       label: `收尾并完成任务：${task.title}`,
       reason: `这条任务的完成标准已全部满足，可在最终检查后转到 completed。`,
+      responsibilitySummary: null,
       taskId: task.id,
       priority: 'medium',
       lane: 'continue_or_review',
@@ -258,6 +275,7 @@ function buildRecommendedActions(params: {
       id: `near-completion:${task.id}`,
       label: `补最后一个完成标准：${task.title}`,
       reason: `这条任务只差最后 ${task.completionProgress?.open ?? 1} 条完成标准，可优先做收尾判断。`,
+      responsibilitySummary: task.completionProgress?.nextOpenResponsibilitySummary ?? null,
       taskId: task.id,
       priority: 'medium',
       lane: 'continue_or_review',
@@ -285,6 +303,12 @@ function buildRecommendedActions(params: {
         id: `source-context:blocker:${sourceContext.id}`,
         label: `基于来源更新重新判断阻塞：${task.title}`,
         reason: `阻塞来源材料“${sourceContext.title}”最近有更新，可重新判断是否解除当前阻塞。`,
+        responsibilitySummary: getResponsibilitySummary({
+          kind: activeBlocker.responsibility,
+          label: activeBlocker.responsibilityLabel ?? activeBlocker.owner,
+          audience: 'home',
+          subject: 'blocker',
+        }),
         taskId: task.id,
         priority: isStaleBlocker(activeBlocker.createdAt) ? 'high' : 'medium',
         lane: 'unblock_or_decide',
@@ -304,6 +328,7 @@ function buildRecommendedActions(params: {
         id: `source-context:next-step:${sourceContext.id}`,
         label: `先查看关键来源，再补下一步：${task.title}`,
         reason: `该任务还缺少明确下一步，先参考来源材料“${sourceContext.title}”。`,
+        responsibilitySummary: null,
         taskId: task.id,
         priority: 'medium',
         lane: 'clarify',
@@ -326,6 +351,7 @@ function buildRecommendedActions(params: {
       id: `source-context:${sourceContext.id}`,
       label: `基于最新来源继续推进：${task.title}`,
       reason: `来源材料“${sourceContext.title}”最近有更新，可据此继续推进。`,
+      responsibilitySummary: null,
       taskId: task.id,
       priority: 'low',
       lane: 'continue_or_review',
@@ -350,6 +376,7 @@ function buildRecommendedActions(params: {
       id: `artifact:${artifact.id}`,
       label: `基于最新产物继续推进：${task.title}`,
       reason: `${artifact.title} 已生成，可继续整理、扩展或发起下一轮执行。`,
+      responsibilitySummary: null,
       taskId: artifact.taskId,
       priority: 'low',
       lane: 'continue_or_review',
@@ -370,6 +397,7 @@ function buildRecommendedActions(params: {
       id: 'steady-state',
       label: '当前无需额外干预',
       reason: '暂时没有高风险、等待阻塞或缺少下一步的活跃任务。',
+      responsibilitySummary: null,
       taskId: null,
       priority: 'low',
       lane: 'steady',
@@ -511,6 +539,21 @@ function classifyPriorityLane(params: {
     headline: '本地优先控制台骨架已进入任务闭环阶段',
     lede: '当前没有更强的升级、解阻塞或复核信号，首页以稳态任务恢复和局势观察为主。',
   };
+}
+
+function getPriorityResponsibilityLede(
+  recommendedActions: RecommendedAction[],
+  lane: PriorityLane,
+): string | null {
+  const action = recommendedActions.find(
+    (item) => item.lane === lane && item.responsibilitySummary?.trim(),
+  );
+
+  if (!action?.responsibilitySummary) {
+    return null;
+  }
+
+  return `当前推进责任：${action.responsibilitySummary}`;
 }
 
 export class HomeBriefService {
@@ -1534,6 +1577,10 @@ export class HomeBriefService {
       waitingTaskCount: waitingTasks.length,
       missingNextStepTaskCount: missingNextStepTasks.length,
     });
+    const priorityResponsibilityLede = getPriorityResponsibilityLede(
+      recommendedActions,
+      prioritySummary.lane,
+    );
 
     return {
       activeTaskCount: activeTasks.length,
@@ -1569,7 +1616,9 @@ export class HomeBriefService {
       processTemplateCandidates,
       priorityLane: prioritySummary.lane,
       priorityHeadline: prioritySummary.headline,
-      priorityLede: prioritySummary.lede,
+      priorityLede: priorityResponsibilityLede
+        ? `${prioritySummary.lede} ${priorityResponsibilityLede}`
+        : prioritySummary.lede,
       schedulerStatus: scheduler?.getStatus() ?? {
         enabled: false,
         running: false,
