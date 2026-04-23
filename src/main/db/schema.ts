@@ -87,6 +87,16 @@ export const taskDependencies = sqliteTable('task_dependencies', {
   resolvedAt: text('resolved_at'),
 });
 
+export const completionCriteria = sqliteTable('completion_criteria', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull(),
+  text: text('text').notNull(),
+  status: text('status').notNull().default('open'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  satisfiedAt: text('satisfied_at'),
+});
+
 export const artifacts = sqliteTable('artifacts', {
   id: text('id').primaryKey(),
   taskId: text('task_id').notNull(),

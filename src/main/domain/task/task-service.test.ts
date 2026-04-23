@@ -5,6 +5,7 @@ import type {
   ProcessTemplateRecord,
 } from '../../../shared/types/process-template.js';
 import type { BlockerRecord } from '../../../shared/types/blocker.js';
+import type { CompletionCriteriaRecord } from '../../../shared/types/completion-criteria.js';
 import type { TaskDependencyRecord } from '../../../shared/types/task-dependency.js';
 import type { TaskDetail, TaskRecord } from '../../../shared/types/task.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
@@ -35,6 +36,12 @@ function buildDetail(state: TaskDetail['state']): TaskDetail {
           targetId: null,
         },
       },
+      completionStatus: {
+        total: 0,
+        satisfied: 0,
+        open: 0,
+        summary: '尚未定义完成标准',
+      },
       currentBlocker: {
         blockerId: null,
         title: '暂无当前阻塞项',
@@ -55,6 +62,7 @@ function buildDetail(state: TaskDetail['state']): TaskDetail {
       nextSuggestedMove: 'Next step',
     },
     artifacts: [],
+    completionCriteria: [],
     sourceContexts: [],
     processTemplates: [],
     availableProcessTemplates: [],
@@ -91,6 +99,20 @@ function buildTaskDependencyRecord(
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
     resolvedAt: partial.resolvedAt ?? null,
+  };
+}
+
+function buildCompletionCriteriaRecord(
+  partial: Partial<CompletionCriteriaRecord> = {},
+): CompletionCriteriaRecord {
+  return {
+    id: partial.id ?? 'criteria_1',
+    taskId: partial.taskId ?? 'task_1',
+    text: partial.text ?? 'Stakeholder approved final brief',
+    status: partial.status ?? 'open',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    satisfiedAt: partial.satisfiedAt ?? null,
   };
 }
 
@@ -1447,5 +1469,78 @@ describe('TaskService', () => {
       kind: 'skill',
     });
     expect(result.bindingStatus).toBe('removed');
+  });
+
+  it('creates and satisfies completion criteria while recording lifecycle events', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const completionCriteriaRepository = {
+      listForTask: vi.fn().mockResolvedValue([]),
+      create: vi.fn().mockResolvedValue(buildCompletionCriteriaRecord()),
+      update: vi.fn(),
+      satisfy: vi.fn().mockResolvedValue(
+        buildCompletionCriteriaRecord({
+          status: 'satisfied',
+          satisfiedAt: '2026-01-02T00:00:00.000Z',
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        }),
+      ),
+      reopen: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      completionCriteriaRepository as never,
+    );
+
+    const created = await service.createCompletionCriteria({
+      taskId: 'task_1',
+      text: 'Stakeholder approved final brief',
+    });
+    const satisfied = await service.satisfyCompletionCriteria(created.id);
+
+    expect(completionCriteriaRepository.create).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      text: 'Stakeholder approved final brief',
+    });
+    expect(repository.appendTimelineEvent).toHaveBeenNthCalledWith(
+      1,
+      'task_1',
+      'completion_criteria.created',
+      {
+        completionCriteriaId: 'criteria_1',
+        text: 'Stakeholder approved final brief',
+        status: 'open',
+      },
+    );
+    expect(repository.appendTimelineEvent).toHaveBeenNthCalledWith(
+      2,
+      'task_1',
+      'completion_criteria.satisfied',
+      {
+        completionCriteriaId: 'criteria_1',
+        text: 'Stakeholder approved final brief',
+        status: 'satisfied',
+        satisfiedAt: '2026-01-02T00:00:00.000Z',
+      },
+    );
+    expect(satisfied.status).toBe('satisfied');
   });
 });

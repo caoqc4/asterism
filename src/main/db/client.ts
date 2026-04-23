@@ -120,6 +120,16 @@ function bootstrapTables(connection: Database.Database): void {
       resolved_at TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS completion_criteria (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      text TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      satisfied_at TEXT
+    );
+
     CREATE TABLE IF NOT EXISTS artifacts (
       id TEXT PRIMARY KEY,
       task_id TEXT NOT NULL,
@@ -198,6 +208,10 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'task_dependencies', 'status', "TEXT NOT NULL DEFAULT 'active'");
   ensureColumn(connection, 'task_dependencies', 'updated_at', 'TEXT');
   ensureColumn(connection, 'task_dependencies', 'resolved_at', 'TEXT');
+  ensureColumn(connection, 'completion_criteria', 'text', "TEXT NOT NULL DEFAULT ''");
+  ensureColumn(connection, 'completion_criteria', 'status', "TEXT NOT NULL DEFAULT 'open'");
+  ensureColumn(connection, 'completion_criteria', 'updated_at', 'TEXT');
+  ensureColumn(connection, 'completion_criteria', 'satisfied_at', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'uri', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'content', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'note', 'TEXT');

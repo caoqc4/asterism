@@ -31,6 +31,12 @@ function buildTaskDetail(state: TaskDetail['state'] = 'planned'): TaskDetail {
           targetId: null,
         },
       },
+      completionStatus: {
+        total: 0,
+        satisfied: 0,
+        open: 0,
+        summary: '尚未定义完成标准',
+      },
       keySource: {
         sourceContextId: null,
         title: '暂无关键来源',
@@ -51,6 +57,7 @@ function buildTaskDetail(state: TaskDetail['state'] = 'planned'): TaskDetail {
       nextSuggestedMove: 'Draft the response',
     },
     artifacts: [],
+    completionCriteria: [],
     sourceContexts: [],
     processTemplates: [],
     availableProcessTemplates: [],

@@ -34,6 +34,12 @@ function buildTaskDetail(): TaskDetail {
           targetId: null,
         },
       },
+      completionStatus: {
+        total: 0,
+        satisfied: 0,
+        open: 0,
+        summary: '尚未定义完成标准',
+      },
       currentBlocker: {
         blockerId: null,
         title: '暂无当前阻塞项',
@@ -54,6 +60,7 @@ function buildTaskDetail(): TaskDetail {
       nextSuggestedMove: '处理当前风险并确认是否需要降级：Approval is overdue',
     },
     artifacts: [],
+    completionCriteria: [],
     sourceContexts: [],
     processTemplates: [
       {

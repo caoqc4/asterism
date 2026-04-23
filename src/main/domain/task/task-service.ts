@@ -9,6 +9,11 @@ import type {
   UpdateBlockerInput,
 } from '../../../shared/types/blocker.js';
 import type {
+  CompletionCriteriaRecord,
+  CreateCompletionCriteriaInput,
+  UpdateCompletionCriteriaInput,
+} from '../../../shared/types/completion-criteria.js';
+import type {
   CreateTaskDependencyInput,
   TaskDependencyRecord,
   UpdateTaskDependencyInput,
@@ -31,6 +36,7 @@ import type {
 } from '../../../shared/types/source-context.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
+import { CompletionCriteriaRepository } from '../../db/repositories/completion-criteria-repository.js';
 import { ProcessTemplateRepository } from '../../db/repositories/process-template-repository.js';
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
 import { TaskDependencyRepository } from '../../db/repositories/task-dependency-repository.js';
@@ -68,6 +74,7 @@ export class TaskService {
     private readonly taskProcessBindingRepository: TaskProcessBindingRepository | null = null,
     private readonly blockerRepository: BlockerRepository | null = null,
     private readonly taskDependencyRepository: TaskDependencyRepository | null = null,
+    private readonly completionCriteriaRepository: CompletionCriteriaRepository | null = null,
   ) {}
 
   private async syncWaitingItem(
@@ -298,6 +305,17 @@ export class TaskService {
     };
   }
 
+  private async attachCompletionCriteria(detail: TaskDetailBase): Promise<TaskDetailBase> {
+    const completionCriteria = this.completionCriteriaRepository
+      ? await this.completionCriteriaRepository.listForTask(detail.id)
+      : [];
+
+    return {
+      ...detail,
+      completionCriteria,
+    };
+  }
+
   private buildResumeCard(detail: TaskDetailBase): TaskResumeCardRecord {
     const keySource = detail.sourceContexts.find((item) => item.isKey) ?? detail.sourceContexts[0] ?? null;
     const currentMethod = detail.processTemplates[0] ?? null;
@@ -310,6 +328,18 @@ export class TaskService {
         ? `上游任务“${detail.dependencyReevaluation.upstreamTaskTitle}”已完成，可重新判断是否解除依赖。`
         : `上游任务“${detail.dependencyReevaluation.upstreamTaskTitle}”刚解除关键阻塞，可重新判断是否解除依赖。`
       : null;
+    const satisfiedCriteriaCount = detail.completionCriteria.filter(
+      (criteria) => criteria.status === 'satisfied',
+    ).length;
+    const completionStatus = {
+      total: detail.completionCriteria.length,
+      satisfied: satisfiedCriteriaCount,
+      open: detail.completionCriteria.length - satisfiedCriteriaCount,
+      summary:
+        detail.completionCriteria.length === 0
+          ? '尚未定义完成标准'
+          : `已满足 ${satisfiedCriteriaCount}/${detail.completionCriteria.length} 条完成标准`,
+    };
 
     const currentStateParts = [`状态：${detail.state}`];
 
@@ -368,6 +398,9 @@ export class TaskService {
         : dependencyTitle
           ? `当前依赖上游任务“${dependencyTitle}”。`
           : null,
+      detail.completionCriteria.length
+        ? `完成标准进度：${completionStatus.summary}。`
+        : null,
       latestChange.summary,
       keySource ? `当前最关键的来源材料是“${keySource.title}”。` : null,
       currentMethod ? `当前采用的方法模板是“${currentMethod.title}”。` : null,
@@ -381,6 +414,7 @@ export class TaskService {
         summary: latestChange.summary,
         action: latestChange.action,
       },
+      completionStatus,
       currentBlocker: detail.activeBlocker
         ? {
             blockerId: detail.activeBlocker.id,
@@ -515,8 +549,10 @@ export class TaskService {
 
     const enriched = await this.attachProcessTemplates(
       await this.attachSourceContexts(
-        await this.attachArtifacts(
-          await this.attachDetailDependencyReevaluation(await this.attachDetailWaitingItem(detail)),
+        await this.attachCompletionCriteria(
+          await this.attachArtifacts(
+            await this.attachDetailDependencyReevaluation(await this.attachDetailWaitingItem(detail)),
+          ),
         ),
       ),
     );
@@ -945,6 +981,85 @@ export class TaskService {
     });
 
     return blocker;
+  }
+
+  async createCompletionCriteria(
+    input: CreateCompletionCriteriaInput,
+  ): Promise<CompletionCriteriaRecord> {
+    await this.getExistingTaskOrThrow(input.taskId);
+
+    if (!this.completionCriteriaRepository) {
+      throw new Error('Completion criteria repository is not configured');
+    }
+
+    const created = await this.completionCriteriaRepository.create(input);
+
+    await this.repository.appendTimelineEvent(input.taskId, 'completion_criteria.created', {
+      completionCriteriaId: created.id,
+      text: created.text,
+      status: created.status,
+    });
+
+    return created;
+  }
+
+  async updateCompletionCriteria(
+    input: UpdateCompletionCriteriaInput,
+  ): Promise<CompletionCriteriaRecord> {
+    if (!this.completionCriteriaRepository) {
+      throw new Error('Completion criteria repository is not configured');
+    }
+
+    const updated = await this.completionCriteriaRepository.update(input);
+
+    await this.repository.appendTimelineEvent(updated.taskId, 'completion_criteria.updated', {
+      completionCriteriaId: updated.id,
+      text: updated.text,
+      status: updated.status,
+    });
+
+    return updated;
+  }
+
+  async satisfyCompletionCriteria(id: string): Promise<CompletionCriteriaRecord> {
+    if (!this.completionCriteriaRepository) {
+      throw new Error('Completion criteria repository is not configured');
+    }
+
+    const satisfied = await this.completionCriteriaRepository.satisfy(id);
+
+    await this.repository.appendTimelineEvent(
+      satisfied.taskId,
+      'completion_criteria.satisfied',
+      {
+        completionCriteriaId: satisfied.id,
+        text: satisfied.text,
+        status: satisfied.status,
+        satisfiedAt: satisfied.satisfiedAt,
+      },
+    );
+
+    return satisfied;
+  }
+
+  async reopenCompletionCriteria(id: string): Promise<CompletionCriteriaRecord> {
+    if (!this.completionCriteriaRepository) {
+      throw new Error('Completion criteria repository is not configured');
+    }
+
+    const reopened = await this.completionCriteriaRepository.reopen(id);
+
+    await this.repository.appendTimelineEvent(
+      reopened.taskId,
+      'completion_criteria.reopened',
+      {
+        completionCriteriaId: reopened.id,
+        text: reopened.text,
+        status: reopened.status,
+      },
+    );
+
+    return reopened;
   }
 
   async createTaskDependency(input: CreateTaskDependencyInput): Promise<TaskDependencyRecord> {

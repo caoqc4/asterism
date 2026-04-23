@@ -3,6 +3,10 @@ import electron from 'electron';
 import type { PingResponse } from '../../shared/types/ipc.js';
 import type { CreateBlockerInput, UpdateBlockerInput } from '../../shared/types/blocker.js';
 import type {
+  CreateCompletionCriteriaInput,
+  UpdateCompletionCriteriaInput,
+} from '../../shared/types/completion-criteria.js';
+import type {
   CreateTaskDependencyInput,
   UpdateTaskDependencyInput,
 } from '../../shared/types/task-dependency.js';
@@ -95,6 +99,30 @@ export function registerIpcHandlers(): void {
     const resolved = await getServices().taskService.resolveBlocker(id);
     emitAppEvent('task.changed', resolved.taskId);
     return resolved;
+  });
+
+  ipcMain.handle('completionCriteria:create', async (_event, input: CreateCompletionCriteriaInput) => {
+    const created = await getServices().taskService.createCompletionCriteria(input);
+    emitAppEvent('task.changed', created.taskId);
+    return created;
+  });
+
+  ipcMain.handle('completionCriteria:update', async (_event, input: UpdateCompletionCriteriaInput) => {
+    const updated = await getServices().taskService.updateCompletionCriteria(input);
+    emitAppEvent('task.changed', updated.taskId);
+    return updated;
+  });
+
+  ipcMain.handle('completionCriteria:satisfy', async (_event, id: string) => {
+    const satisfied = await getServices().taskService.satisfyCompletionCriteria(id);
+    emitAppEvent('task.changed', satisfied.taskId);
+    return satisfied;
+  });
+
+  ipcMain.handle('completionCriteria:reopen', async (_event, id: string) => {
+    const reopened = await getServices().taskService.reopenCompletionCriteria(id);
+    emitAppEvent('task.changed', reopened.taskId);
+    return reopened;
   });
 
   ipcMain.handle('taskDependency:create', async (_event, input: CreateTaskDependencyInput) => {

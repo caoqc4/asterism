@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event';
 
 import type { HomeBriefData, HomeSourceContextRecord } from '@shared/types/brief';
 import type { BlockerRecord } from '@shared/types/blocker';
+import type { CompletionCriteriaRecord } from '@shared/types/completion-criteria';
 import type { DecisionRecord } from '@shared/types/decision';
 import type { ElectronApi } from '@shared/types/ipc';
 import type {
@@ -82,6 +83,20 @@ function buildTaskDependency(partial: Partial<TaskDependencyRecord>): TaskDepend
   };
 }
 
+function buildCompletionCriteria(
+  partial: Partial<CompletionCriteriaRecord>,
+): CompletionCriteriaRecord {
+  return {
+    id: partial.id ?? 'criteria_1',
+    taskId: partial.taskId ?? 'task_1',
+    text: partial.text ?? 'Stakeholder approved final brief',
+    status: partial.status ?? 'open',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    satisfiedAt: partial.satisfiedAt ?? null,
+  };
+}
+
 function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
   const isEarlyTask = task.state === 'captured' || task.state === 'triaged';
   const latestChangeSummary = isEarlyTask
@@ -102,6 +117,12 @@ function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
           targetType: null,
           targetId: null,
         },
+      },
+      completionStatus: {
+        total: 0,
+        satisfied: 0,
+        open: 0,
+        summary: '尚未定义完成标准',
       },
       currentBlocker: {
         blockerId: task.activeBlocker?.id ?? null,
@@ -131,6 +152,7 @@ function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
       nextSuggestedMove,
     },
     artifacts: [],
+    completionCriteria: [],
     sourceContexts: [],
     processTemplates: [],
     availableProcessTemplates: [],
@@ -564,6 +586,38 @@ describe('App UI flow', () => {
         updatedAt: '2026-01-02T00:00:00.000Z',
       }),
     ),
+    createCompletionCriteria: vi.fn().mockImplementation(async (input) =>
+      buildCompletionCriteria({
+        taskId: input.taskId,
+        text: input.text,
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ),
+    updateCompletionCriteria: vi.fn().mockImplementation(async (input) =>
+      buildCompletionCriteria({
+        id: input.id,
+        taskId: riskTask.id,
+        text: input.text,
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ),
+    satisfyCompletionCriteria: vi.fn().mockImplementation(async (id) =>
+      buildCompletionCriteria({
+        id,
+        taskId: riskTask.id,
+        status: 'satisfied',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+        satisfiedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ),
+    reopenCompletionCriteria: vi.fn().mockImplementation(async (id) =>
+      buildCompletionCriteria({
+        id,
+        taskId: riskTask.id,
+        status: 'open',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ),
     createTaskDependency: vi.fn().mockImplementation(async (input) => ({
       id: 'task_dependency_created',
       taskId: input.taskId,
@@ -786,6 +840,12 @@ describe('App UI flow', () => {
           targetId: 'run_resume_latest',
         },
       },
+      completionStatus: {
+        total: 0,
+        satisfied: 0,
+        open: 0,
+        summary: '尚未定义完成标准',
+      },
       keySource: {
         sourceContextId: 'source_context_resume',
         title: 'Owner escalation memo',
@@ -889,6 +949,12 @@ describe('App UI flow', () => {
           targetId: 'source_context_resume_action',
         },
       },
+      completionStatus: {
+        total: 0,
+        satisfied: 0,
+        open: 0,
+        summary: '尚未定义完成标准',
+      },
       keySource: {
         sourceContextId: 'source_context_resume_action',
         title: 'Launch reference memo',
@@ -967,6 +1033,12 @@ describe('App UI flow', () => {
           targetType: 'decision',
           targetId: 'decision_resume_latest',
         },
+      },
+      completionStatus: {
+        total: 0,
+        satisfied: 0,
+        open: 0,
+        summary: '尚未定义完成标准',
       },
       keySource: {
         sourceContextId: null,

@@ -128,6 +128,7 @@ export class TaskRepository {
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
       artifacts: [],
+      completionCriteria: [],
       sourceContexts: [],
       processTemplates: [],
       availableProcessTemplates: [],

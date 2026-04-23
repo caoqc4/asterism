@@ -1,5 +1,6 @@
 import type { ArtifactRecord } from './artifact.js';
 import type { BlockerRecord } from './blocker.js';
+import type { CompletionCriteriaRecord } from './completion-criteria.js';
 import type {
   AppliedProcessTemplateRecord,
   ProcessTemplateRecord,
@@ -72,6 +73,12 @@ export type TaskResumeCardRecord = {
   summary: string;
   currentState: string;
   latestChange: ResumeLatestChangeRecord;
+  completionStatus: {
+    total: number;
+    satisfied: number;
+    open: number;
+    summary: string;
+  };
   currentBlocker: {
     blockerId: string | null;
     title: string;
@@ -97,6 +104,7 @@ export type TaskDetailBase = TaskRecord & {
   activeDependency?: TaskDependencyRecord | null;
   dependencyReevaluation?: TaskListItemRecord['dependencyReevaluation'];
   artifacts: ArtifactRecord[];
+  completionCriteria: CompletionCriteriaRecord[];
   sourceContexts: SourceContextRecord[];
   processTemplates: AppliedProcessTemplateRecord[];
   availableProcessTemplates: ProcessTemplateRecord[];

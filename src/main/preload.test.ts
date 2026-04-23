@@ -45,6 +45,10 @@ function getExposedApi() {
     createBlocker: (input: unknown) => Promise<unknown>;
     updateBlocker: (input: unknown) => Promise<unknown>;
     resolveBlocker: (id: string) => Promise<unknown>;
+    createCompletionCriteria: (input: unknown) => Promise<unknown>;
+    updateCompletionCriteria: (input: unknown) => Promise<unknown>;
+    satisfyCompletionCriteria: (id: string) => Promise<unknown>;
+    reopenCompletionCriteria: (id: string) => Promise<unknown>;
     createSourceContext: (input: unknown) => Promise<unknown>;
     updateSourceContext: (input: unknown) => Promise<unknown>;
     archiveSourceContext: (id: string) => Promise<unknown>;
@@ -99,6 +103,14 @@ describe('preload bridge', () => {
       id: 'blocker_1',
       owner: 'Legal',
     };
+    const createCompletionCriteriaInput = {
+      taskId: 'task_1',
+      text: 'Stakeholder approved final brief',
+    };
+    const updateCompletionCriteriaInput = {
+      id: 'criteria_1',
+      text: 'Final brief approved by stakeholder',
+    };
     const createSourceContextInput = {
       taskId: 'task_1',
       title: 'PRD',
@@ -140,6 +152,10 @@ describe('preload bridge', () => {
     await api.createBlocker(createBlockerInput);
     await api.updateBlocker(updateBlockerInput);
     await api.resolveBlocker('blocker_1');
+    await api.createCompletionCriteria(createCompletionCriteriaInput);
+    await api.updateCompletionCriteria(updateCompletionCriteriaInput);
+    await api.satisfyCompletionCriteria('criteria_1');
+    await api.reopenCompletionCriteria('criteria_1');
     await api.createSourceContext(createSourceContextInput);
     await api.updateSourceContext(updateSourceContextInput);
     await api.archiveSourceContext('source_context_1');
@@ -169,6 +185,10 @@ describe('preload bridge', () => {
       ['blocker:create', createBlockerInput],
       ['blocker:update', updateBlockerInput],
       ['blocker:resolve', 'blocker_1'],
+      ['completionCriteria:create', createCompletionCriteriaInput],
+      ['completionCriteria:update', updateCompletionCriteriaInput],
+      ['completionCriteria:satisfy', 'criteria_1'],
+      ['completionCriteria:reopen', 'criteria_1'],
       ['sourceContext:create', createSourceContextInput],
       ['sourceContext:update', updateSourceContextInput],
       ['sourceContext:archive', 'source_context_1'],

@@ -48,6 +48,12 @@ function buildTaskDetail(): TaskDetail {
           targetId: null,
         },
       },
+      completionStatus: {
+        total: 0,
+        satisfied: 0,
+        open: 0,
+        summary: '尚未定义完成标准',
+      },
       keySource: {
         sourceContextId: null,
         title: '暂无关键来源',
@@ -68,6 +74,7 @@ function buildTaskDetail(): TaskDetail {
       nextSuggestedMove: '先解除阻塞项，再继续推进：Waiting on legal sign-off',
     },
     artifacts: [],
+    completionCriteria: [],
     sourceContexts: [],
     processTemplates: [],
     availableProcessTemplates: [],

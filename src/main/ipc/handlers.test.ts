@@ -21,6 +21,10 @@ const { handleMock, emitAppEventMock, servicesMock } = vi.hoisted(() => ({
       createBlocker: vi.fn(),
       updateBlocker: vi.fn(),
       resolveBlocker: vi.fn(),
+      createCompletionCriteria: vi.fn(),
+      updateCompletionCriteria: vi.fn(),
+      satisfyCompletionCriteria: vi.fn(),
+      reopenCompletionCriteria: vi.fn(),
       createSourceContext: vi.fn(),
       updateSourceContext: vi.fn(),
       archiveSourceContext: vi.fn(),
@@ -218,6 +222,35 @@ describe('registerIpcHandlers', () => {
     });
     expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
     expect(result.id).toBe('source_context_1');
+  });
+
+  it('emits task.changed after completion criteria writes', async () => {
+    servicesMock.taskService.createCompletionCriteria.mockResolvedValue({
+      id: 'criteria_1',
+      taskId: 'task_1',
+      text: 'Stakeholder approved final brief',
+      status: 'open',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      satisfiedAt: null,
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; text: string }],
+      Awaited<ReturnType<typeof servicesMock.taskService.createCompletionCriteria>>
+    >('completionCriteria:create');
+
+    const result = await handler({}, {
+      taskId: 'task_1',
+      text: 'Stakeholder approved final brief',
+    });
+
+    expect(servicesMock.taskService.createCompletionCriteria).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      text: 'Stakeholder approved final brief',
+    });
+    expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
+    expect(result.id).toBe('criteria_1');
   });
 
   it('emits task.changed after blocker writes', async () => {

@@ -4,6 +4,7 @@ import { BriefSnapshotRepository } from '../db/repositories/brief-snapshot-repos
 import { DecisionRepository } from '../db/repositories/decision-repository.js';
 import { ArtifactRepository } from '../db/repositories/artifact-repository.js';
 import { BlockerRepository } from '../db/repositories/blocker-repository.js';
+import { CompletionCriteriaRepository } from '../db/repositories/completion-criteria-repository.js';
 import { RunRepository } from '../db/repositories/run-repository.js';
 import { ProcessTemplateRepository } from '../db/repositories/process-template-repository.js';
 import { SourceContextRepository } from '../db/repositories/source-context-repository.js';
@@ -27,6 +28,7 @@ const decisionRepository = new DecisionRepository();
 const runRepository = new RunRepository();
 const artifactRepository = new ArtifactRepository();
 const blockerRepository = new BlockerRepository();
+const completionCriteriaRepository = new CompletionCriteriaRepository();
 const taskDependencyRepository = new TaskDependencyRepository();
 const sourceContextRepository = new SourceContextRepository();
 const processTemplateRepository = new ProcessTemplateRepository();
@@ -66,6 +68,7 @@ const services = {
   briefSnapshotRepository,
   waitingItemRepository,
   blockerRepository,
+  completionCriteriaRepository,
   taskDependencyRepository,
   artifactRepository,
   sourceContextRepository,
@@ -83,6 +86,7 @@ const services = {
     taskProcessBindingRepository,
     blockerRepository,
     taskDependencyRepository,
+    completionCriteriaRepository,
   ),
   decisionService: null as unknown as DecisionService,
   runService: null as unknown as RunService,

@@ -26,8 +26,13 @@ Current test files:
 - `src/main/db/repositories/artifact-repository.integration.test.ts`
 - `src/main/db/repositories/source-context-repository.integration.test.ts`
 - `src/main/db/repositories/blocker-repository.integration.test.ts`
+- `src/main/db/repositories/task-dependency-repository.integration.test.ts`
+- `src/main/db/repositories/completion-criteria-repository.integration.test.ts`
 - `src/main/db/repositories/process-template-repository.integration.test.ts`
 - `src/main/db/repositories/task-process-binding-repository.integration.test.ts`
+- `src/main/executors/text-executor.test.ts`
+- `src/main/domain/run/process-template-selector.test.ts`
+- `src/main/domain/decision/process-template-selector.test.ts`
 - `src/main/ipc/handlers.test.ts`
 - `src/main/preload.test.ts`
 - `src/renderer/App.test.tsx`
@@ -41,7 +46,7 @@ Covered today:
 - `AppConfigService`
   config defaults, persistence, migration behavior
 - `TaskService`
-  transitions, invalid transitions, signal updates, task-resume derivation, blocker lifecycle writes, decision annotations, and run-settlement annotations
+  transitions, invalid transitions, signal updates, task-resume derivation, blocker/dependency/completion-criteria lifecycle writes, decision annotations, and run-settlement annotations
 - `DecisionService`
   task existence checks, decision-to-task lifecycle linkage, and AI/fallback decision-draft composition
 - `RunService`
@@ -77,6 +82,8 @@ Covered today:
   active blocker creation, updates, resolution, and per-task active lookup behavior
 - `TaskDependencyRepository`
   active task-dependency creation, updates, resolution, and per-task active lookup behavior
+- `CompletionCriteriaRepository`
+  completion-criteria creation, updates, satisfy/reopen flows, and per-task ordering behavior
 - `ProcessTemplateRepository`
   reusable process-template creation, updates, archive behavior, and active listing
 - `TaskProcessBindingRepository`
@@ -94,6 +101,8 @@ Covered today:
   decision action routing plus `decision.changed` and `task.changed`
 - `run:trigger`
   run trigger routing plus `run.changed`, `task.changed`, and `brief.changed`
+- `completionCriteria:create`
+  completion-criteria writes plus `task.changed`
 
 These tests protect the main-process edge where renderer calls become domain actions and event broadcasts.
 
@@ -141,6 +150,7 @@ Covered today:
 - `Tasks timeline -> Decisions / Runs`
 - `Tasks source context create / edit flow`
 - `Tasks blocker create / resolve flow`
+- `Tasks completion criteria create / satisfy / reopen flow`
 - `Tasks process context create / apply / remove flow`
 - `Tasks resume card visibility, key-source prioritization explanation, method-selection explanation, lifecycle-aware suggested-move derivation, and recovery actions`
 - `Tasks resume card` lightweight priority-lane cue

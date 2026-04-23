@@ -8,6 +8,11 @@ import type {
   UpdateBlockerInput,
 } from '@shared/types/blocker';
 import type {
+  CompletionCriteriaRecord,
+  CreateCompletionCriteriaInput,
+  UpdateCompletionCriteriaInput,
+} from '@shared/types/completion-criteria';
+import type {
   CreateTaskDependencyInput,
   TaskDependencyRecord,
   UpdateTaskDependencyInput,
@@ -290,6 +295,11 @@ function formatTimelineBadge(type: string): string {
     case 'task_dependency.updated':
     case 'task_dependency.resolved':
       return '依赖';
+    case 'completion_criteria.created':
+    case 'completion_criteria.updated':
+    case 'completion_criteria.satisfied':
+    case 'completion_criteria.reopened':
+      return '完成标准';
     case 'process_template.applied':
       return '方法';
     case 'process_template.removed':
@@ -571,6 +581,9 @@ type TasksPageProps = {
   onApplyProcessTemplate: (input: ApplyProcessTemplateInput) => Promise<AppliedProcessTemplateRecord>;
   onArchiveProcessTemplate: (id: string) => Promise<ProcessTemplateRecord>;
   onCreateBlocker: (input: CreateBlockerInput) => Promise<BlockerRecord>;
+  onCreateCompletionCriteria: (
+    input: CreateCompletionCriteriaInput,
+  ) => Promise<CompletionCriteriaRecord>;
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
   onCreateTaskDependency: (input: CreateTaskDependencyInput) => Promise<TaskDependencyRecord>;
   onDraftDecision: (taskId: string, note?: string | null) => Promise<DecisionDraftRecord>;
@@ -580,12 +593,17 @@ type TasksPageProps = {
   onOpenDecision: (decisionId: string) => void;
   onOpenRun: (runId: string) => void;
   onRefresh: () => Promise<void>;
+  onReopenCompletionCriteria: (id: string) => Promise<CompletionCriteriaRecord>;
   onCreateTask: (input: CreateTaskInput) => Promise<TaskListItemRecord>;
   onRemoveProcessTemplate: (bindingId: string) => Promise<AppliedProcessTemplateRecord>;
   onResolveBlocker: (id: string) => Promise<BlockerRecord>;
   onResolveTaskDependency: (id: string) => Promise<TaskDependencyRecord>;
+  onSatisfyCompletionCriteria: (id: string) => Promise<CompletionCriteriaRecord>;
   onTriggerRun: (input: CreateRunInput) => Promise<void>;
   onUpdateBlocker: (input: UpdateBlockerInput) => Promise<BlockerRecord>;
+  onUpdateCompletionCriteria: (
+    input: UpdateCompletionCriteriaInput,
+  ) => Promise<CompletionCriteriaRecord>;
   onUpdateTaskDependency: (input: UpdateTaskDependencyInput) => Promise<TaskDependencyRecord>;
   onUpdateProcessTemplate: (input: UpdateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
   onUpdateSourceContext: (input: UpdateSourceContextInput) => Promise<SourceContextRecord>;
@@ -607,6 +625,7 @@ export function TasksPage({
   onApplyProcessTemplate,
   onArchiveProcessTemplate,
   onCreateBlocker,
+  onCreateCompletionCriteria,
   onCreateDecision,
   onCreateTaskDependency,
   onDraftDecision,
@@ -616,12 +635,15 @@ export function TasksPage({
   onOpenDecision,
   onOpenRun,
   onRefresh,
+  onReopenCompletionCriteria,
   onCreateTask,
   onRemoveProcessTemplate,
   onResolveBlocker,
   onResolveTaskDependency,
+  onSatisfyCompletionCriteria,
   onTriggerRun,
   onUpdateBlocker,
+  onUpdateCompletionCriteria,
   onUpdateTaskDependency,
   onUpdateProcessTemplate,
   onUpdateSourceContext,
@@ -651,6 +673,9 @@ export function TasksPage({
   const [blockerOwner, setBlockerOwner] = useState('');
   const [blockerSourceContextId, setBlockerSourceContextId] = useState('');
   const [blockerError, setBlockerError] = useState<string | null>(null);
+  const [completionCriteriaEditingId, setCompletionCriteriaEditingId] = useState<string | null>(null);
+  const [completionCriteriaText, setCompletionCriteriaText] = useState('');
+  const [completionCriteriaError, setCompletionCriteriaError] = useState<string | null>(null);
   const [dependencyEditingId, setDependencyEditingId] = useState<string | null>(null);
   const [dependencyBlockedByTaskId, setDependencyBlockedByTaskId] = useState('');
   const [dependencyReason, setDependencyReason] = useState('');
@@ -679,6 +704,7 @@ export function TasksPage({
   const quickRunCardRef = useRef<HTMLFormElement | null>(null);
   const transitionCardRef = useRef<HTMLDivElement | null>(null);
   const blockerSectionRef = useRef<HTMLDivElement | null>(null);
+  const completionCriteriaSectionRef = useRef<HTMLDivElement | null>(null);
   const dependencySectionRef = useRef<HTMLDivElement | null>(null);
   const sourceContextSectionRef = useRef<HTMLDivElement | null>(null);
   const processContextSectionRef = useRef<HTMLDivElement | null>(null);
@@ -691,6 +717,12 @@ export function TasksPage({
     dependencyId: null,
     title: '暂无任务依赖',
     detail: null,
+  };
+  const resumeCompletionStatus = detail?.resumeCard.completionStatus ?? {
+    total: 0,
+    satisfied: 0,
+    open: 0,
+    summary: '尚未定义完成标准',
   };
   const resumeLane = detail ? taskPriorityLanes.get(detail.id) : undefined;
   const resumeLaneLabel = getPriorityLaneLabel(resumeLane);
@@ -1072,6 +1104,75 @@ export function TasksPage({
     if (typeof dependencySectionRef.current?.scrollIntoView === 'function') {
       dependencySectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  }
+
+  function populateCompletionCriteriaForm(item: CompletionCriteriaRecord) {
+    setCompletionCriteriaEditingId(item.id);
+    setCompletionCriteriaText(item.text);
+    setCompletionCriteriaError(null);
+  }
+
+  function resetCompletionCriteriaForm() {
+    setCompletionCriteriaEditingId(null);
+    setCompletionCriteriaText('');
+    setCompletionCriteriaError(null);
+  }
+
+  function focusCompletionCriteriaSection() {
+    if (typeof completionCriteriaSectionRef.current?.scrollIntoView === 'function') {
+      completionCriteriaSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  async function handleSaveCompletionCriteria(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!detail) {
+      return;
+    }
+
+    if (!completionCriteriaText.trim()) {
+      setCompletionCriteriaError('请先填写完成标准。');
+      return;
+    }
+
+    setCompletionCriteriaError(null);
+
+    if (completionCriteriaEditingId) {
+      await onUpdateCompletionCriteria({
+        id: completionCriteriaEditingId,
+        text: completionCriteriaText,
+      });
+    } else {
+      await onCreateCompletionCriteria({
+        taskId: detail.id,
+        text: completionCriteriaText,
+      });
+    }
+
+    await onRefresh();
+    setDetail(await window.api.getTaskDetail(detail.id));
+    resetCompletionCriteriaForm();
+  }
+
+  async function handleSatisfyCurrentCompletionCriteria(id: string) {
+    if (!detail) {
+      return;
+    }
+
+    await onSatisfyCompletionCriteria(id);
+    await onRefresh();
+    setDetail(await window.api.getTaskDetail(detail.id));
+  }
+
+  async function handleReopenCurrentCompletionCriteria(id: string) {
+    if (!detail) {
+      return;
+    }
+
+    await onReopenCompletionCriteria(id);
+    await onRefresh();
+    setDetail(await window.api.getTaskDetail(detail.id));
   }
 
   function reevaluateCurrentDependency() {
@@ -1811,6 +1912,17 @@ export function TasksPage({
                         <p className="meta">{detail.resumeCard.currentState}</p>
                       </div>
                       <div className="resume-cell">
+                        <strong>Completion Status</strong>
+                        <p className="meta">{resumeCompletionStatus.summary}</p>
+                        {resumeCompletionStatus.total > 0 ? (
+                          <p className="meta">
+                            还差 {resumeCompletionStatus.open} 条完成标准，当前已满足 {resumeCompletionStatus.satisfied} 条。
+                          </p>
+                        ) : (
+                          <p className="meta">建议先补 1 到 3 条完成标准，帮助判断这条任务何时可以收尾。</p>
+                        )}
+                      </div>
+                      <div className="resume-cell">
                         <strong>Latest Change</strong>
                           <p className="meta">{detail.resumeCard.latestChange.summary}</p>
                         {detail.resumeCard.latestChange.action.label ? (
@@ -1913,6 +2025,13 @@ export function TasksPage({
                           打开 Task Dependency
                         </button>
                       ) : null}
+                      <button
+                        className="ghost-button timeline-action"
+                        onClick={focusCompletionCriteriaSection}
+                        type="button"
+                      >
+                        打开 Completion Criteria
+                      </button>
                       {shouldEscalateCurrentDependency() ? (
                         <button
                           className="ghost-button timeline-action"
@@ -2222,6 +2341,124 @@ export function TasksPage({
                   </div>
                 </div>
 
+              </div>
+            </div>
+
+            <div className="transition-group detail-stage" ref={completionCriteriaSectionRef}>
+              <div className="detail-stage-head">
+                <div>
+                  <p className="eyebrow">Completion Criteria</p>
+                  <h3>完成判断与收尾标准</h3>
+                </div>
+                <p className="meta">这一层回答“做到什么程度才算真的完成”，不是过程清单，也不自动替你判定完成。</p>
+              </div>
+              <div className="detail-cluster-grid">
+                <div className="transition-group detail-card-group detail-card-wide">
+                  <h3>Current Completion Criteria</h3>
+                  <p className="meta">先看还差哪些完成标准，再决定这条任务是否真的可以收尾。</p>
+                  <div className="timeline-list">
+                    {detail.completionCriteria.length ? (
+                      detail.completionCriteria.map((criteria) => (
+                        <div className="timeline-item timeline-item-state" key={criteria.id}>
+                          <div className="task-row">
+                            <strong>{criteria.text}</strong>
+                            <span
+                              className={`signal-pill timeline-badge ${
+                                criteria.status === 'satisfied'
+                                  ? 'timeline-item-state'
+                                  : 'timeline-item-default'
+                              }`}
+                            >
+                              {criteria.status === 'satisfied' ? '已满足' : '未满足'}
+                            </span>
+                          </div>
+                          <p className="meta">
+                            created {criteria.createdAt.slice(0, 10)}
+                            {criteria.satisfiedAt ? ` · satisfied ${criteria.satisfiedAt.slice(0, 10)}` : ''}
+                          </p>
+                          <div className="timeline-actions">
+                            {criteria.status === 'open' ? (
+                              <button
+                                className="ghost-button timeline-action"
+                                onClick={() => void handleSatisfyCurrentCompletionCriteria(criteria.id)}
+                                type="button"
+                              >
+                                标记已满足
+                              </button>
+                            ) : (
+                              <button
+                                className="ghost-button timeline-action"
+                                onClick={() => void handleReopenCurrentCompletionCriteria(criteria.id)}
+                                type="button"
+                              >
+                                重新打开
+                              </button>
+                            )}
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => populateCompletionCriteriaForm(criteria)}
+                              type="button"
+                            >
+                              编辑标准
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="meta">当前任务还没有定义完成标准。首版建议先补 1 到 3 条，帮助判断什么时候真的可以完成。</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="transition-group detail-card-group">
+                  <h3>Completion Snapshot</h3>
+                  <p className="meta">恢复卡只保留一条切片，这里再补一层当前完成判断状态。</p>
+                  <div className="timeline-list">
+                    <div className="timeline-item timeline-item-default">
+                      <strong>{resumeCompletionStatus.summary}</strong>
+                      {resumeCompletionStatus.total > 0 ? (
+                        <p className="meta">
+                          未满足 {resumeCompletionStatus.open} 条，已满足 {resumeCompletionStatus.satisfied} 条。
+                        </p>
+                      ) : (
+                        <p className="meta">还没有退出条件对象，当前不适合直接凭感觉判断已完成。</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="transition-group detail-card-group">
+                  <form className="stack studio-form" onSubmit={handleSaveCompletionCriteria}>
+                    <div className="studio-section-head">
+                      <strong>{completionCriteriaEditingId ? 'Edit Completion Criteria' : 'Add Completion Criteria'}</strong>
+                      <p className="meta">填写一条退出条件，例如“稿件已发出并获确认”，而不是过程步骤。</p>
+                    </div>
+                    <label>
+                      完成标准
+                      <textarea
+                        rows={3}
+                        value={completionCriteriaText}
+                        onChange={(event) => {
+                          setCompletionCriteriaText(event.target.value);
+                          if (completionCriteriaError) {
+                            setCompletionCriteriaError(null);
+                          }
+                        }}
+                      />
+                    </label>
+                    {completionCriteriaError ? <p className="meta">{completionCriteriaError}</p> : null}
+                    <div className="timeline-actions">
+                      <button type="submit">
+                        {completionCriteriaEditingId ? '保存完成标准' : '新增完成标准'}
+                      </button>
+                      {completionCriteriaEditingId ? (
+                        <button className="ghost-button" onClick={resetCompletionCriteriaForm} type="button">
+                          取消编辑
+                        </button>
+                      ) : null}
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
 

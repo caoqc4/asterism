@@ -41,6 +41,10 @@ export type WorkingContextRecentChange =
       title?: string;
     }
   | {
+      kind: 'completion_criteria_changed';
+      title?: string;
+    }
+  | {
       kind: 'artifact_created';
       title?: string;
     }
@@ -244,6 +248,34 @@ export function interpretTaskTimelineEvent(
           kind: 'task_dependency_resolved',
           title:
             typeof payload?.blockedByTaskTitle === 'string' ? payload.blockedByTaskTitle : undefined,
+        },
+      };
+    case 'completion_criteria.created':
+    case 'completion_criteria.updated':
+      return {
+        summary: `最近更新了完成标准：${String(payload?.text ?? '未命名完成标准')}。`,
+        objectAction: { label: null, targetType: null, targetId: null },
+        recentChange: {
+          kind: 'completion_criteria_changed',
+          title: typeof payload?.text === 'string' ? payload.text : undefined,
+        },
+      };
+    case 'completion_criteria.satisfied':
+      return {
+        summary: `最近满足了一条完成标准：${String(payload?.text ?? '未命名完成标准')}。`,
+        objectAction: { label: null, targetType: null, targetId: null },
+        recentChange: {
+          kind: 'completion_criteria_changed',
+          title: typeof payload?.text === 'string' ? payload.text : undefined,
+        },
+      };
+    case 'completion_criteria.reopened':
+      return {
+        summary: `最近重新打开了一条完成标准：${String(payload?.text ?? '未命名完成标准')}。`,
+        objectAction: { label: null, targetType: null, targetId: null },
+        recentChange: {
+          kind: 'completion_criteria_changed',
+          title: typeof payload?.text === 'string' ? payload.text : undefined,
         },
       };
     case 'artifact.created':

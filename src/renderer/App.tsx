@@ -6,6 +6,11 @@ import type {
   UpdateBlockerInput,
 } from '@shared/types/blocker';
 import type {
+  CompletionCriteriaRecord,
+  CreateCompletionCriteriaInput,
+  UpdateCompletionCriteriaInput,
+} from '@shared/types/completion-criteria';
+import type {
   CreateTaskDependencyInput,
   UpdateTaskDependencyInput,
 } from '@shared/types/task-dependency';
@@ -331,6 +336,38 @@ export function App() {
     );
     setBriefData(await window.api.getHomeBrief());
     return resolved;
+  }
+
+  async function handleCreateCompletionCriteria(input: CreateCompletionCriteriaInput) {
+    const created = await window.api.createCompletionCriteria(input);
+    setTasks((current) =>
+      current.map((task) => (task.id === created.taskId ? { ...task, updatedAt: created.updatedAt } : task)),
+    );
+    return created;
+  }
+
+  async function handleUpdateCompletionCriteria(input: UpdateCompletionCriteriaInput) {
+    const updated = await window.api.updateCompletionCriteria(input);
+    setTasks((current) =>
+      current.map((task) => (task.id === updated.taskId ? { ...task, updatedAt: updated.updatedAt } : task)),
+    );
+    return updated;
+  }
+
+  async function handleSatisfyCompletionCriteria(id: string): Promise<CompletionCriteriaRecord> {
+    const satisfied = await window.api.satisfyCompletionCriteria(id);
+    setTasks((current) =>
+      current.map((task) => (task.id === satisfied.taskId ? { ...task, updatedAt: satisfied.updatedAt } : task)),
+    );
+    return satisfied;
+  }
+
+  async function handleReopenCompletionCriteria(id: string): Promise<CompletionCriteriaRecord> {
+    const reopened = await window.api.reopenCompletionCriteria(id);
+    setTasks((current) =>
+      current.map((task) => (task.id === reopened.taskId ? { ...task, updatedAt: reopened.updatedAt } : task)),
+    );
+    return reopened;
   }
 
   async function handleCreateTaskDependency(input: CreateTaskDependencyInput) {
@@ -690,6 +727,7 @@ export function App() {
             onApplyProcessTemplate={handleApplyProcessTemplate}
             onArchiveProcessTemplate={handleArchiveProcessTemplate}
             onCreateBlocker={handleCreateBlocker}
+            onCreateCompletionCriteria={handleCreateCompletionCriteria}
             onCreateDecision={handleCreateDecision}
             onCreateTaskDependency={handleCreateTaskDependency}
             onDraftDecision={handleDraftDecision}
@@ -700,12 +738,15 @@ export function App() {
             onOpenDecision={handleOpenDecision}
             onOpenRun={handleOpenRun}
             onRefresh={loadShellData}
+            onReopenCompletionCriteria={handleReopenCompletionCriteria}
             onRemoveProcessTemplate={handleRemoveProcessTemplate}
             onResolveBlocker={handleResolveBlocker}
             onResolveTaskDependency={handleResolveTaskDependency}
+            onSatisfyCompletionCriteria={handleSatisfyCompletionCriteria}
             onTransitionTask={handleTransitionTask}
             onTriggerRun={handleTriggerRun}
             onUpdateBlocker={handleUpdateBlocker}
+            onUpdateCompletionCriteria={handleUpdateCompletionCriteria}
             onUpdateTaskDependency={handleUpdateTaskDependency}
             onUpdateProcessTemplate={handleUpdateProcessTemplate}
             onUpdateSourceContext={handleUpdateSourceContext}
