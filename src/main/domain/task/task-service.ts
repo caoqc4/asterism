@@ -113,7 +113,80 @@ export class TaskService {
       activeWaitingItem,
       activeBlocker,
       activeDependency,
+      dependencyReevaluation: null,
     };
+  }
+
+  private async attachDependencyReevaluations(
+    tasks: TaskListItemRecord[],
+  ): Promise<TaskListItemRecord[]> {
+    const upstreamTaskIds = [...new Set(
+      tasks
+        .map((task) => task.activeDependency?.blockedByTaskId)
+        .filter((taskId): taskId is string => Boolean(taskId)),
+    )];
+
+    if (upstreamTaskIds.length === 0) {
+      return tasks;
+    }
+
+    const upstreamDetails = await Promise.all(
+      upstreamTaskIds.map(async (taskId) => this.repository.getDetail(taskId)),
+    );
+    const upstreamById = new Map(
+      upstreamDetails
+        .filter((detail): detail is NonNullable<typeof detail> => Boolean(detail))
+        .map((detail) => [detail.id, detail]),
+    );
+
+    return tasks.map((task) => {
+      const dependency = task.activeDependency;
+
+      if (!dependency?.blockedByTaskId) {
+        return task;
+      }
+
+      const upstreamTask = upstreamById.get(dependency.blockedByTaskId);
+
+      if (!upstreamTask) {
+        return task;
+      }
+
+      const latestResolvedBlocker = upstreamTask.timeline
+        .filter((event) => event.type === 'blocker.resolved')
+        .sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0];
+
+      const candidates: NonNullable<TaskListItemRecord['dependencyReevaluation']>[] = [];
+
+      if (upstreamTask.state === 'completed') {
+        candidates.push({
+          dependencyId: dependency.id,
+          upstreamTaskId: upstreamTask.id,
+          upstreamTaskTitle: upstreamTask.title,
+          status: 'upstream_ready',
+          updatedAt: upstreamTask.updatedAt,
+        });
+      }
+
+      if (latestResolvedBlocker) {
+        candidates.push({
+          dependencyId: dependency.id,
+          upstreamTaskId: upstreamTask.id,
+          upstreamTaskTitle: upstreamTask.title,
+          status: 'upstream_unblocked',
+          updatedAt: latestResolvedBlocker.createdAt,
+        });
+      }
+
+      const dependencyReevaluation = candidates
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+        .slice(0, 1)[0] ?? null;
+
+      return {
+        ...task,
+        dependencyReevaluation,
+      };
+    });
   }
 
   private async attachDetailWaitingItem(detail: TaskDetailBase): Promise<TaskDetailBase> {
@@ -338,8 +411,9 @@ export class TaskService {
 
   async list(): Promise<TaskListItemRecord[]> {
     const tasks = await this.repository.list();
+    const taskSlices = await Promise.all(tasks.map((task) => this.attachActiveWaitingItem(task)));
 
-    return Promise.all(tasks.map((task) => this.attachActiveWaitingItem(task)));
+    return this.attachDependencyReevaluations(taskSlices);
   }
 
   async create(input: CreateTaskInput): Promise<TaskListItemRecord> {

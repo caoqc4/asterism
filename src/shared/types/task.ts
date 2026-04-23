@@ -36,6 +36,13 @@ export type TaskListItemRecord = TaskRecord & {
   activeWaitingItem: WaitingItemRecord | null;
   activeBlocker: BlockerRecord | null;
   activeDependency?: TaskDependencyRecord | null;
+  dependencyReevaluation?: {
+    dependencyId: string;
+    upstreamTaskId: string;
+    upstreamTaskTitle: string;
+    status: 'upstream_ready' | 'upstream_unblocked';
+    updatedAt: string;
+  } | null;
 };
 
 export type ResumeLatestChangeRecord = {

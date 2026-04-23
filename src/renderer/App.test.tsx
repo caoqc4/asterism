@@ -32,6 +32,7 @@ function buildTaskRecord(partial: Partial<TaskListItemRecord>): TaskListItemReco
     activeWaitingItem: partial.activeWaitingItem ?? null,
     activeBlocker: partial.activeBlocker ?? null,
     activeDependency: partial.activeDependency ?? null,
+    dependencyReevaluation: partial.dependencyReevaluation ?? null,
     riskLevel: partial.riskLevel ?? 'none',
     riskNote: partial.riskNote ?? null,
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
@@ -1316,6 +1317,100 @@ describe('App UI flow', () => {
     expect(within(capturedButton).getByText('刚进入系统，先补一句任务摘要。')).toBeTruthy();
     expect(
       within(capturedButton).getByText('整理重点：先补一句任务摘要，再明确下一步。'),
+    ).toBeTruthy();
+  });
+
+  it('explains dependency re-evaluation in the task list when an upstream task is ready', async () => {
+    const user = userEvent.setup();
+
+    const upstreamTask = buildTaskRecord({
+      id: 'task_dependency_upstream',
+      title: 'Publish partner list',
+      state: 'completed',
+      nextStep: null,
+      updatedAt: '2026-01-08T00:00:00.000Z',
+    });
+    const dependencyTask = buildTaskRecord({
+      id: 'task_dependency_downstream',
+      title: 'Resume outreach draft',
+      state: 'planned',
+      summary: null,
+      nextStep: null,
+      updatedAt: '2026-01-09T00:00:00.000Z',
+      activeDependency: {
+        id: 'dependency_1',
+        taskId: 'task_dependency_downstream',
+        blockedByTaskId: 'task_dependency_upstream',
+        blockedByTaskTitle: 'Publish partner list',
+        reason: 'Need the final list before resuming outreach',
+        status: 'active',
+        createdAt: '2026-01-07T00:00:00.000Z',
+        updatedAt: '2026-01-07T00:00:00.000Z',
+        resolvedAt: null,
+      },
+      dependencyReevaluation: {
+        dependencyId: 'dependency_1',
+        upstreamTaskId: 'task_dependency_upstream',
+        upstreamTaskTitle: 'Publish partner list',
+        status: 'upstream_ready',
+        updatedAt: '2026-01-08T00:00:00.000Z',
+      },
+    });
+
+    window.api = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([upstreamTask, dependencyTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        const task =
+          [upstreamTask, dependencyTask].find((item) => item.id === taskId) ??
+          dependencyTask;
+        return buildTaskDetail(task);
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 2,
+        recentTasks: [dependencyTask, upstreamTask],
+        recentActivity: [
+          {
+            id: 'dependency:dependency_1:upstream_ready',
+            sourceType: 'dependency',
+            sourceId: 'dependency_1',
+            lane: 'continue_or_review',
+            relatedTaskId: 'task_dependency_upstream',
+            taskId: 'task_dependency_downstream',
+            taskTitle: 'Resume outreach draft',
+            title: 'Publish partner list',
+            status: 'upstream_ready',
+            updatedAt: '2026-01-08T00:00:00.000Z',
+          },
+        ],
+        recommendedActions: [],
+      }),
+    };
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+
+    expect(
+      await screen.findByText(
+        /当前队列先重新判断已具备条件的依赖任务；共 2 条任务，优先确认上游任务完成或解阻塞后是否可以恢复推进。/,
+      ),
+    ).toBeTruthy();
+
+    const dependencyButton = await screen.findByRole('button', {
+      name: /Resume outreach draft/i,
+    });
+    expect(
+      within(dependencyButton).getByText('上游任务已完成，建议重新判断是否解除依赖。'),
+    ).toBeTruthy();
+    expect(
+      within(dependencyButton).getByText(
+        '重判重点：确认上游任务已完成后，这条任务是否可以恢复推进。',
+      ),
+    ).toBeTruthy();
+    expect(
+      within(dependencyButton).getByText('依赖重判：上游任务“Publish partner list”已完成。'),
     ).toBeTruthy();
   });
 

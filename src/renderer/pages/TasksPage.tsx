@@ -95,8 +95,18 @@ function isEarlyTask(task: Pick<TaskListItemRecord, 'state'>): boolean {
 }
 
 function getTaskCardSummary(task: TaskListItemRecord): string {
+  if (task.dependencyReevaluation) {
+    return task.dependencyReevaluation.status === 'upstream_ready'
+      ? '上游任务已完成，建议重新判断是否解除依赖。'
+      : '上游任务刚解除关键阻塞，建议重新判断是否解除依赖。';
+  }
+
   if (task.summary?.trim()) {
     return task.summary;
+  }
+
+  if (task.activeDependency?.blockedByTaskTitle) {
+    return `当前依赖上游任务：${task.activeDependency.blockedByTaskTitle}。`;
   }
 
   if (isEarlyTask(task)) {
@@ -109,6 +119,16 @@ function getTaskCardSummary(task: TaskListItemRecord): string {
 }
 
 function getTaskCardNextMoveHint(task: TaskListItemRecord): string | null {
+  if (task.dependencyReevaluation) {
+    return task.dependencyReevaluation.status === 'upstream_ready'
+      ? '重判重点：确认上游任务已完成后，这条任务是否可以恢复推进。'
+      : '重判重点：先确认上游阻塞是否已足够解除，再决定是否恢复推进。';
+  }
+
+  if (task.activeDependency?.blockedByTaskTitle) {
+    return `解阻塞重点：先推动上游任务“${task.activeDependency.blockedByTaskTitle}”，再恢复这条任务。`;
+  }
+
   if (task.nextStep) {
     return `下一步：${task.nextStep}`;
   }
@@ -1496,6 +1516,8 @@ export function TasksPage({
   const taskQueueSummary =
     tasks.length === 0
       ? '当前没有任务，先创建一条开始流转。'
+      : tasks.some((task) => Boolean(task.dependencyReevaluation))
+        ? `当前队列先重新判断已具备条件的依赖任务；共 ${tasks.length} 条任务，优先确认上游任务完成或解阻塞后是否可以恢复推进。`
       : orderedLaneLabels[0] === '先补清晰度' && tasks.some((task) => isEarlyTask(task))
         ? `当前队列先处理新进入系统、还需整理清楚的任务；共 ${tasks.length} 条任务，先补摘要、下一步和是否需要拍板。`
       : orderedLaneLabels.length <= 1
@@ -1567,6 +1589,15 @@ export function TasksPage({
                     ) : null}
                     {getTaskCardNextMoveHint(task) ? (
                       <p className="meta">{getTaskCardNextMoveHint(task)}</p>
+                    ) : null}
+                    {task.dependencyReevaluation ? (
+                      <p className="meta">
+                        {task.dependencyReevaluation.status === 'upstream_ready'
+                          ? `依赖重判：上游任务“${task.dependencyReevaluation.upstreamTaskTitle}”已完成。`
+                          : `依赖重判：上游任务“${task.dependencyReevaluation.upstreamTaskTitle}”刚解除关键阻塞。`}
+                      </p>
+                    ) : task.activeDependency?.blockedByTaskTitle ? (
+                      <p className="meta">依赖：当前被上游任务“{task.activeDependency.blockedByTaskTitle}”卡住。</p>
                     ) : null}
                     {task.waitingReason ? <p className="meta">等待：{task.waitingReason}</p> : null}
                   </button>
