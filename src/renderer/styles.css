@@ -283,6 +283,18 @@ button {
   gap: 12px;
 }
 
+.primary-moves-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.primary-move-button {
+  min-height: 48px;
+  font-weight: 600;
+}
+
 .quick-action-card {
   align-content: start;
 }
@@ -518,6 +530,10 @@ textarea {
   }
 
   .quick-actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .primary-moves-grid {
     grid-template-columns: 1fr;
   }
 

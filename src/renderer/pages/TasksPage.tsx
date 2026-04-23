@@ -383,6 +383,9 @@ export function TasksPage({
   const [showAllTimeline, setShowAllTimeline] = useState(false);
   const detailFormRef = useRef<HTMLFormElement | null>(null);
   const quickActionsRef = useRef<HTMLDivElement | null>(null);
+  const quickDecisionCardRef = useRef<HTMLFormElement | null>(null);
+  const quickRunCardRef = useRef<HTMLFormElement | null>(null);
+  const transitionCardRef = useRef<HTMLDivElement | null>(null);
   const sourceContextSectionRef = useRef<HTMLDivElement | null>(null);
   const processContextSectionRef = useRef<HTMLDivElement | null>(null);
 
@@ -702,6 +705,19 @@ export function TasksPage({
     populateProcessTemplateForm(matchedTemplate);
     if (typeof processContextSectionRef.current?.scrollIntoView === 'function') {
       processContextSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function focusActionTarget(target: 'decision' | 'run' | 'transition') {
+    const node =
+      target === 'decision'
+        ? quickDecisionCardRef.current
+        : target === 'run'
+          ? quickRunCardRef.current
+          : transitionCardRef.current;
+
+    if (node) {
+      node.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
 
@@ -1386,14 +1402,47 @@ export function TasksPage({
                   <p className="eyebrow">Action Desk</p>
                   <h3>动作与状态流转</h3>
                 </div>
-                <p className="meta">中间这一层只放推进任务的动作，避免和历史信息混在一起。</p>
+                <p className="meta">先给当前最常用的三个入口，详细配置再放到下方，不把中层做成工具箱。</p>
               </div>
               <div className="detail-cluster-grid">
+                <div className="transition-group detail-card-group detail-card-wide">
+                  <h3>Primary Moves</h3>
+                  <p className="meta">这里只前置最常用的推进入口，具体填写和状态选择放在下方。</p>
+                  <div className="primary-moves-grid">
+                    <button
+                      className="ghost-button primary-move-button"
+                      onClick={() => focusActionTarget('decision')}
+                      type="button"
+                    >
+                      草拟或创建 Decision
+                    </button>
+                    <button
+                      className="ghost-button primary-move-button"
+                      onClick={() => focusActionTarget('run')}
+                      type="button"
+                    >
+                      配置并触发 Run
+                    </button>
+                    <button
+                      className="ghost-button primary-move-button"
+                      onClick={() => focusActionTarget('transition')}
+                      type="button"
+                    >
+                      调整任务状态
+                    </button>
+                  </div>
+                </div>
+
                 <div className="transition-group detail-card-group" ref={sourceContextSectionRef}>
-                  <h3>Quick Actions</h3>
+                  <h3>Action Setup</h3>
+                  <p className="meta">需要补充上下文时，再使用这里的详细表单。</p>
                   <div className="quick-actions-grid" ref={quickActionsRef}>
-                    <form className="stack task-card quick-action-card" onSubmit={handleQuickDecision}>
-                      <strong>创建 Decision</strong>
+                    <form
+                      className="stack task-card quick-action-card"
+                      onSubmit={handleQuickDecision}
+                      ref={quickDecisionCardRef}
+                    >
+                      <strong>Decision</strong>
                       <label>
                         决策标题
                         <input
@@ -1416,8 +1465,12 @@ export function TasksPage({
                       <button type="submit">提交 Decision</button>
                     </form>
 
-                    <form className="stack task-card quick-action-card" onSubmit={handleQuickRun}>
-                      <strong>触发 Run</strong>
+                    <form
+                      className="stack task-card quick-action-card"
+                      onSubmit={handleQuickRun}
+                      ref={quickRunCardRef}
+                    >
+                      <strong>Run</strong>
                       <label>
                         Run 类型
                         <select
@@ -1443,8 +1496,9 @@ export function TasksPage({
                   </div>
                 </div>
 
-                <div className="transition-group detail-card-group">
+                <div className="transition-group detail-card-group" ref={transitionCardRef}>
                   <h3>状态流转</h3>
+                  <p className="meta">只保留当前状态允许的后续流转，避免把所有状态都摊在面前。</p>
                   <div className="stack">
                     <label>
                       Waiting Transition Reason
