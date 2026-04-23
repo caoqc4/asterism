@@ -8,7 +8,7 @@ Taskplane currently uses a layered testing strategy:
 - SQLite-backed integration tests for repository behavior
 - renderer `jsdom` interaction tests for key control-plane flows
 - IPC handler tests for event-emitting main-process entrypoints
-- GitHub Actions CI for `test + lint + build`
+- local `test + lint + build` verification
 
 Current test files:
 
@@ -168,10 +168,11 @@ npm run lint
 npm run build
 ```
 
-GitHub Actions runs the same checks on:
+Current verification is local-only:
 
-- pushes to `main`
-- pull requests
+- `npm run test`
+- `npm run lint`
+- `npm run build`
 
 ## Suggested Next Test Targets
 

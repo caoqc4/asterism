@@ -100,7 +100,7 @@ Main-process rules:
 - SQLite integration tests currently cover `TaskRepository`, `RunRepository`, `DecisionRepository`, `BriefSnapshotRepository`, `WaitingItemRepository`, `ArtifactRepository`, `SourceContextRepository`, `ProcessTemplateRepository`, and `TaskProcessBindingRepository`.
 - IPC handler tests cover critical event-emitting channels such as settings save, decision action, and run trigger.
 - Renderer interaction tests cover the main control-plane flows from Home, Tasks, Decisions, Runs, Settings, timeline actions, waiting item flows, artifact flows, source-context flows, process-context flows, task-resume visibility and recovery actions, task-resume latest-change object entry, home resume-preview recovery flows, home resume-preview context actions, home intent-navigation flows, recent source-material recovery flows, recent-activity follow-up entry flows, recent-activity object entry flows, recent-activity follow-up actions, task related-activity navigation, task timeline object entry flows, decision/run return-to-task flows, related-task timeline slices on object pages, shared timeline wording across task/object views, object-entry flows from related task timeline slices, timeline-driven follow-up actions on object pages, and failed Run refresh paths.
-- GitHub Actions runs `npm run test`, `npm run lint`, and `npm run build` on every push to `main` and on pull requests.
+- local development currently relies on running `npm run test`, `npm run lint`, and `npm run build` before pushing changes.
 
 For the current coverage map and recommended next targets, see [TESTING.md](TESTING.md).
 

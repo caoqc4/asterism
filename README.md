@@ -22,7 +22,7 @@ This repository currently contains an Electron + React + TypeScript prototype wi
 - decision and run pages organized as object work surfaces with a current focus, action desk, queue, direct return paths into task follow-up work, lightweight related-task timeline context, shared timeline semantics, timeline-based follow-up actions, and direct object entry from related task timeline events when the recent context points to the current `Decision / Run`
 - local scheduler with config-driven enable/disable
 - local configuration via `config.json` plus system keychain for secrets
-- SQLite-backed repository integration tests plus GitHub Actions CI
+- SQLite-backed repository integration tests
 
 ## Current Stack
 
@@ -144,7 +144,7 @@ What exists today:
 - IPC handler coverage for critical event-emitting entrypoints
 - renderer interaction coverage for key control-plane flows
 - local macOS packaging pipeline
-- GitHub Actions CI for `test + lint + build`
+- local `test + lint + build` verification
 
 What is still in progress:
 
