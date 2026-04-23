@@ -777,6 +777,12 @@ describe('App UI flow', () => {
         '处理当前风险并确认是否需要降级：Deadline slipping',
       ),
     ).toBeTruthy();
+    expect(within(resumeSection as HTMLElement).getByText('立即升级')).toBeTruthy();
+    expect(
+      within(resumeSection as HTMLElement).getByText(
+        '这条任务当前在跨任务队列里按这类优先级语义排序。',
+      ),
+    ).toBeTruthy();
   });
 
   it('uses task resume card actions to focus context and prefill the next step', async () => {

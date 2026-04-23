@@ -453,6 +453,8 @@ export function TasksPage({
     title: '暂无当前阻塞项',
     detail: null,
   };
+  const resumeLane = detail ? taskPriorityLanes.get(detail.id) : undefined;
+  const resumeLaneLabel = getPriorityLaneLabel(resumeLane);
 
   function updateDraftRiskLevel(nextRiskLevel: TaskRiskLevel) {
     setDraftRiskLevel(nextRiskLevel);
@@ -1386,6 +1388,17 @@ export function TasksPage({
                     <strong>Resume Summary</strong>
                     <p className="meta">{detail.resumeCard.summary}</p>
                     <div className="resume-grid">
+                      <div className="resume-cell">
+                        <strong>Priority Lane</strong>
+                        {resumeLaneLabel ? (
+                          <>
+                            <span className={`status lane-status lane-status-${resumeLane}`}>{resumeLaneLabel}</span>
+                            <p className="meta">这条任务当前在跨任务队列里按这类优先级语义排序。</p>
+                          </>
+                        ) : (
+                          <p className="meta">当前没有更高优先级语义，保持稳态推进。</p>
+                        )}
+                      </div>
                       <div className="resume-cell">
                         <strong>Current State</strong>
                         <p className="meta">{detail.resumeCard.currentState}</p>
