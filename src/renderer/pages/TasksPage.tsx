@@ -536,6 +536,16 @@ function getActionSetupGuidance(detail: TaskDetail | null): string {
   return '需要补充上下文时，再使用这里的详细表单。';
 }
 
+function getDependencyReevaluationNextStep(detail: TaskDetail): string | null {
+  if (!detail.activeDependency?.blockedByTaskTitle || !detail.dependencyReevaluation) {
+    return null;
+  }
+
+  return detail.dependencyReevaluation.status === 'upstream_ready'
+    ? `基于上游任务完成重新判断是否解除依赖：${detail.activeDependency.blockedByTaskTitle}`
+    : `基于上游任务进展重新判断是否解除依赖：${detail.activeDependency.blockedByTaskTitle}`;
+}
+
 type TasksPageProps = {
   decisions: DecisionRecord[];
   focusedTaskRequest: {
@@ -1050,6 +1060,33 @@ export function TasksPage({
     if (typeof dependencySectionRef.current?.scrollIntoView === 'function') {
       dependencySectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  }
+
+  function reevaluateCurrentDependency() {
+    if (!detail) {
+      return;
+    }
+
+    const nextStep = getDependencyReevaluationNextStep(detail);
+
+    if (!nextStep) {
+      return;
+    }
+
+    setDraftNextStep(nextStep);
+    setDetailError(null);
+
+    if (typeof detailFormRef.current?.scrollIntoView === 'function') {
+      detailFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function openUpstreamDependencyTask() {
+    if (!detail?.activeDependency?.blockedByTaskId) {
+      return;
+    }
+
+    setSelectedTaskId(detail.activeDependency.blockedByTaskId);
   }
 
   async function handleSaveDependency(event: React.FormEvent<HTMLFormElement>) {
@@ -1970,6 +2007,24 @@ export function TasksPage({
                           <p className="meta">{detail.resumeCard.currentDependency.priorityReason}</p>
                         ) : null}
                         <div className="timeline-actions">
+                          {detail.dependencyReevaluation ? (
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={reevaluateCurrentDependency}
+                              type="button"
+                            >
+                              重新判断依赖
+                            </button>
+                          ) : null}
+                          {detail.activeDependency.blockedByTaskId ? (
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={openUpstreamDependencyTask}
+                              type="button"
+                            >
+                              打开上游任务
+                            </button>
+                          ) : null}
                           <button
                             className="ghost-button timeline-action"
                             onClick={() => populateDependencyForm(detail.activeDependency!)}
@@ -2531,6 +2586,24 @@ export function TasksPage({
                             <p className="meta">{detail.resumeCard.currentDependency.priorityReason}</p>
                           ) : null}
                           <div className="timeline-actions">
+                            {detail.dependencyReevaluation ? (
+                              <button
+                                className="ghost-button timeline-action"
+                                onClick={reevaluateCurrentDependency}
+                                type="button"
+                              >
+                                重新判断依赖
+                              </button>
+                            ) : null}
+                            {detail.activeDependency.blockedByTaskId ? (
+                              <button
+                                className="ghost-button timeline-action"
+                                onClick={openUpstreamDependencyTask}
+                                type="button"
+                              >
+                                打开上游任务
+                              </button>
+                            ) : null}
                             <button
                               className="ghost-button timeline-action"
                               onClick={() => populateDependencyForm(detail.activeDependency!)}

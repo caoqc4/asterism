@@ -1416,6 +1416,105 @@ describe('App UI flow', () => {
     ).toBeTruthy();
   });
 
+  it('adds dependency re-evaluation and upstream entry actions to current dependency on the task page', async () => {
+    const user = userEvent.setup();
+
+    const upstreamTask = buildTaskRecord({
+      id: 'task_dependency_focus_upstream',
+      title: 'Publish partner list',
+      state: 'completed',
+      nextStep: 'Share the final partner list',
+      updatedAt: '2026-01-08T00:00:00.000Z',
+    });
+    const dependencyTask = buildTaskRecord({
+      id: 'task_dependency_focus_downstream',
+      title: 'Resume outreach draft',
+      state: 'planned',
+      nextStep: null,
+      updatedAt: '2026-01-09T00:00:00.000Z',
+      activeDependency: buildTaskDependency({
+        id: 'dependency_focus_1',
+        taskId: 'task_dependency_focus_downstream',
+        blockedByTaskId: 'task_dependency_focus_upstream',
+        blockedByTaskTitle: 'Publish partner list',
+        reason: 'Need the final list before resuming outreach',
+      }),
+    });
+
+    const dependencyDetail: TaskDetail = {
+      ...buildTaskDetail(dependencyTask),
+      dependencyReevaluation: {
+        dependencyId: 'dependency_focus_1',
+        upstreamTaskId: 'task_dependency_focus_upstream',
+        upstreamTaskTitle: 'Publish partner list',
+        status: 'upstream_ready',
+        updatedAt: '2026-01-08T00:00:00.000Z',
+      },
+      resumeCard: {
+        ...buildTaskDetail(dependencyTask).resumeCard,
+        summary: '当前依赖已具备恢复推进条件：上游任务“Publish partner list”已完成。',
+        currentDependency: {
+          dependencyId: 'dependency_focus_1',
+          title: 'Publish partner list',
+          detail: '上游任务“Publish partner list”已完成，可重新判断是否解除依赖。',
+          priorityReason: '上游任务“Publish partner list”已完成，可重新判断是否解除依赖。',
+          ageLabel: 'depends since 2026-01-07',
+        },
+        latestChange: {
+          summary: '上游任务已完成：Publish partner list，可重新判断当前依赖。',
+          action: {
+            label: null,
+            targetType: null,
+            targetId: null,
+          },
+        },
+        nextSuggestedMove: '基于上游任务完成重新判断是否解除依赖：Publish partner list',
+      },
+    };
+
+    window.api = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([dependencyTask, upstreamTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId === dependencyTask.id) {
+          return dependencyDetail;
+        }
+
+        if (taskId === upstreamTask.id) {
+          return buildTaskDetail(upstreamTask);
+        }
+
+        return null;
+      }),
+    };
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /Resume outreach draft/i }));
+    await user.click(await screen.findByRole('button', { name: '打开 Task Dependency' }));
+
+    const dependencyHeading = await screen.findByRole('heading', { name: 'Current Dependency' });
+    const dependencySection = dependencyHeading.closest('.detail-card-group');
+    expect(dependencySection).toBeTruthy();
+
+    await user.click(
+      await within(dependencySection as HTMLElement).findByRole('button', { name: '重新判断依赖' }),
+    );
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '基于上游任务完成重新判断是否解除依赖：Publish partner list',
+    );
+
+    await user.click(
+      within(dependencySection as HTMLElement).getByRole('button', { name: '打开上游任务' }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Publish partner list' })).toBeTruthy();
+    });
+  });
+
   it('offers a direct action to resolve the current waiting item', async () => {
     const user = userEvent.setup();
 
