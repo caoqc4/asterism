@@ -181,7 +181,9 @@ export function RunsPage({
                 <span className="status">{detail.status}</span>
               </div>
               <p className="meta">关联任务：{detail.taskId}</p>
+              <p className="meta">创建时间：{detail.createdAt}</p>
               <p className="meta">结果来源：{detail.outputSource || '尚未产生'}</p>
+              <p className="meta">附加要求：{detail.instructions || '无'}</p>
               <p className="meta">这里负责确认这次执行本身是否成功、为什么失败，以及是否值得继续推进。</p>
             </div>
             <div className="task-card detail-card-group">
@@ -207,29 +209,20 @@ export function RunsPage({
                 </button>
               </div>
             </div>
-            <div className="task-card detail-card-group">
-              <strong>关联任务</strong>
-              <p className="meta">{detail.taskId}</p>
-            </div>
-            <div className="task-card detail-card-group">
-              <strong>附加要求</strong>
-              <p className="meta">{detail.instructions || '无'}</p>
-            </div>
-            <div className="task-card detail-card-group">
-              <strong>输出结果</strong>
-              <p>{detail.output || '尚无输出'}</p>
-            </div>
-            <div className="task-card detail-card-group">
-              <strong>结果来源</strong>
-              <p className="meta">{detail.outputSource || '尚未产生'}</p>
-            </div>
-            <div className="task-card detail-card-group">
-              <strong>失败原因</strong>
-              <p className="meta">{detail.failureReason || '无'}</p>
-            </div>
-            <div className="task-card detail-card-group">
-              <strong>时间</strong>
-              <p className="meta">{detail.createdAt}</p>
+            <div className="task-card detail-card-group detail-card-wide">
+              <p className="eyebrow">Run Result</p>
+              <strong>{detail.output ? '查看这次执行产出的结果' : '这次执行还没有可读结果'}</strong>
+              <p className="meta">这里只保留结果检查必需的信息，不把 run 页继续扩成第二套任务详情。</p>
+              <div className="timeline-list">
+                <div className="timeline-item timeline-item-state">
+                  <strong>输出结果</strong>
+                  <p>{detail.output || '尚无输出'}</p>
+                </div>
+                <div className="timeline-item">
+                  <strong>失败原因</strong>
+                  <p className="meta">{detail.failureReason || '无'}</p>
+                </div>
+              </div>
             </div>
             <div className="task-card detail-card-group detail-card-wide">
               <p className="eyebrow">Related Task Timeline</p>

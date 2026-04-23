@@ -1491,7 +1491,7 @@ describe('App UI flow', () => {
 
     expect(runDetailApi.getRunDetail).toHaveBeenCalledWith('run_1');
     expect(screen.getByText('Executor exploded')).toBeTruthy();
-    expect(screen.getByText('system')).toBeTruthy();
+    expect(screen.getByText('结果来源：system')).toBeTruthy();
   });
 
   it('shows related task timeline context on the runs page', async () => {
