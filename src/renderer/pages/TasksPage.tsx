@@ -28,6 +28,8 @@ import type {
 } from '@shared/types/task';
 import {
   getTaskTimelineFollowUpActionLabel,
+  getTaskTimelinePriority,
+  getTaskTimelinePriorityLabel,
   interpretTaskTimelineEvent,
 } from '@shared/working-context/timeline';
 
@@ -195,6 +197,10 @@ function formatTimelineBadge(type: string): string {
 }
 
 function getTimelineToneClass(type: string): string {
+  if (getTaskTimelinePriority(type) === 'p3') {
+    return 'timeline-item-muted';
+  }
+
   switch (type) {
     case 'task.decision_cancelled':
     case 'task.run_failed':
@@ -988,7 +994,20 @@ export function TasksPage({
   const visibleTimeline = detail
     ? showAllTimeline
       ? detail.timeline
-      : detail.timeline.slice(0, TIMELINE_PREVIEW_COUNT)
+      : [...detail.timeline]
+          .sort((left, right) => {
+            const priorityOrder = { p1: 0, p2: 1, p3: 2 } as const;
+            const priorityDiff =
+              priorityOrder[getTaskTimelinePriority(left.type)] -
+              priorityOrder[getTaskTimelinePriority(right.type)];
+
+            if (priorityDiff !== 0) {
+              return priorityDiff;
+            }
+
+            return right.createdAt.localeCompare(left.createdAt);
+          })
+          .slice(0, TIMELINE_PREVIEW_COUNT)
     : [];
 
   return (
@@ -1525,7 +1544,10 @@ export function TasksPage({
 
               <div className="transition-group detail-card-group">
                 <div className="task-row">
-                  <h3>Timeline</h3>
+                  <div>
+                    <h3>Timeline</h3>
+                    <p className="meta">预览优先展示关键事件与解释事件，较弱的留痕事件默认后退。</p>
+                  </div>
                   {detail.timeline.length > TIMELINE_PREVIEW_COUNT ? (
                     <button
                       className="ghost-button timeline-toggle"
@@ -1541,11 +1563,16 @@ export function TasksPage({
                     <div className={`timeline-item ${getTimelineToneClass(event.type)}`} key={event.id}>
                       <div className="task-row">
                         <strong>{formatTimelineSummary(event)}</strong>
-                        <span
-                          className={`signal-pill timeline-badge ${getTimelineToneClass(event.type)}`}
-                        >
-                          {formatTimelineBadge(event.type)}
-                        </span>
+                        <div className="timeline-badge-row">
+                          <span
+                            className={`signal-pill timeline-badge ${getTimelineToneClass(event.type)}`}
+                          >
+                            {formatTimelineBadge(event.type)}
+                          </span>
+                          <span className="signal-pill timeline-priority-pill">
+                            {getTaskTimelinePriorityLabel(event.type)}
+                          </span>
+                        </div>
                       </div>
                       <p className="meta">{event.createdAt}</p>
                       {getTimelineActionLabel(event.type) || getTimelineObjectLabel(event) ? (

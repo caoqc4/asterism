@@ -2101,17 +2101,21 @@ describe('App UI flow', () => {
     await screen.findByRole('heading', { name: 'Timeline preview task' });
 
     expect(screen.getByRole('button', { name: '展开全部 (6)' })).toBeTruthy();
-    expect(screen.queryByText('状态从 planned 变更为 running')).toBeNull();
+    expect(screen.queryByText('任务字段已更新')).toBeNull();
+    expect(screen.getByText('状态从 planned 变更为 running')).toBeTruthy();
+    expect(screen.getAllByText('解释').length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole('button', { name: '展开全部 (6)' }));
 
     expect(screen.getByText('状态从 planned 变更为 running')).toBeTruthy();
+    expect(screen.getByText('任务字段已更新')).toBeTruthy();
+    expect(screen.getAllByText('留痕').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: '收起旧事件' })).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '收起旧事件' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('状态从 planned 变更为 running')).toBeNull();
+      expect(screen.queryByText('任务字段已更新')).toBeNull();
     });
   });
 

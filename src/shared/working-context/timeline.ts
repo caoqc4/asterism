@@ -1,5 +1,7 @@
 import type { TimelineEventRecord } from '../types/task.js';
 
+export type TaskTimelinePriority = 'p1' | 'p2' | 'p3';
+
 export type WorkingContextRecentChange =
   | {
       kind: 'run_failed';
@@ -242,5 +244,41 @@ export function getTaskTimelineFollowUpActionLabel(type: string): string | null 
       return '基于产物继续推进';
     default:
       return null;
+  }
+}
+
+export function getTaskTimelinePriority(type: string): TaskTimelinePriority {
+  switch (type) {
+    case 'task.run_failed':
+    case 'task.run_completed':
+    case 'task.decision_approved':
+    case 'task.decision_deferred':
+    case 'task.decision_cancelled':
+    case 'waiting_item.resolved':
+    case 'artifact.created':
+      return 'p1';
+    case 'task.next_step_changed':
+    case 'task.waiting_changed':
+    case 'task.risk_changed':
+    case 'task.transitioned':
+    case 'waiting_item.created':
+    case 'waiting_item.updated':
+    case 'source_context.created':
+    case 'source_context.updated':
+    case 'process_template.selected':
+      return 'p2';
+    default:
+      return 'p3';
+  }
+}
+
+export function getTaskTimelinePriorityLabel(type: string): string {
+  switch (getTaskTimelinePriority(type)) {
+    case 'p1':
+      return '关键';
+    case 'p2':
+      return '解释';
+    default:
+      return '留痕';
   }
 }

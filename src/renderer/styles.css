@@ -415,6 +415,23 @@ button {
   color: #047857;
 }
 
+.timeline-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.timeline-priority-pill {
+  background: rgba(17, 24, 39, 0.06);
+  color: #6b7280;
+}
+
+.timeline-item-muted {
+  background: rgba(107, 114, 128, 0.06);
+  border-color: rgba(107, 114, 128, 0.08);
+}
+
 .timeline-toggle {
   padding: 8px 12px;
   font-size: 13px;
