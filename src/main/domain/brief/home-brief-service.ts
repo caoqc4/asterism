@@ -486,19 +486,22 @@ export class HomeBriefService {
               sourceContextId: task.activeBlocker.sourceContextId,
             }
           : null,
+        taskState: task.state,
       });
 
       const nextSuggestedMove = deriveNextSuggestedMove({
         explicitNextStep: task.nextStep,
         taskTitle: task.title,
+        taskState: task.state,
+        taskSummary: task.summary,
         waitingReason,
         riskLevel: task.riskLevel,
         riskNote: task.riskNote,
-      blockerTitle: task.activeBlocker?.title ?? null,
-      blockerCreatedAt: task.activeBlocker?.createdAt ?? null,
-      keySourceTitle: keySource?.title ?? null,
-      recentChange: latestChange.recentChange,
-    });
+        blockerTitle: task.activeBlocker?.title ?? null,
+        blockerCreatedAt: task.activeBlocker?.createdAt ?? null,
+        keySourceTitle: keySource?.title ?? null,
+        recentChange: latestChange.recentChange,
+      });
 
       let contextAction:
         | {

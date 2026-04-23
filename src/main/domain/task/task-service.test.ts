@@ -311,6 +311,32 @@ describe('TaskService', () => {
     expect(detail?.resumeCard.nextSuggestedMove).toBe('检查最近一次执行失败原因，并决定是否重试。');
   });
 
+  it('uses clarify-first recovery wording for newly captured tasks', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('captured'),
+        summary: null,
+        nextStep: null,
+      }),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
+
+    const detail = await service.getDetail('task_1');
+
+    expect(detail?.resumeCard.latestChange.summary).toBe('这条任务刚进入系统，先补清摘要与下一步。');
+    expect(detail?.resumeCard.nextSuggestedMove).toBe('先补一句任务摘要，再明确下一步。');
+  });
+
   it('creates and resolves blocker objects with task timeline events', async () => {
     const repository = {
       list: vi.fn(),

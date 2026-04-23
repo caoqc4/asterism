@@ -2,7 +2,7 @@ import type { HomeActivityRecord, HomeTaskResumePreviewRecord } from '../../../s
 import type { BlockerRecord } from '../../../shared/types/blocker.js';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
-import type { TaskDetailBase, TaskResumeCardRecord, TaskRiskLevel, TimelineEventRecord } from '../../../shared/types/task.js';
+import type { TaskDetailBase, TaskResumeCardRecord, TaskRiskLevel, TaskState, TimelineEventRecord } from '../../../shared/types/task.js';
 import { formatBlockerAgeLabel, getBlockerAgeReason, isStaleBlocker } from '../../../shared/working-context/blocker.js';
 
 type TimelineLite = Array<Pick<TimelineEventRecord, 'type' | 'payload'>>;
@@ -60,6 +60,10 @@ export function safeJsonParse(value: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+function isEarlyTaskState(state: TaskState | undefined | null): boolean {
+  return state === 'captured' || state === 'triaged';
 }
 
 export function isResumeLatestChangeMetaEvent(type: string): boolean {
@@ -255,6 +259,7 @@ export function getCurrentBlockerAgeLabel(
 
 export function buildTaskResumeLatestChange(
   timeline: TimelineLite,
+  taskState?: TaskState,
 ): TaskResumeCardRecord['latestChange'] & {
   recentChange: WorkingContextRecentChange | null;
 } {
@@ -262,7 +267,9 @@ export function buildTaskResumeLatestChange(
 
   if (!latestEvent) {
     return {
-      summary: '最近没有新的生命周期变化。',
+      summary: isEarlyTaskState(taskState)
+        ? '这条任务刚进入系统，先补清摘要与下一步。'
+        : '最近没有新的生命周期变化。',
       action: {
         label: null,
         targetType: null,
@@ -482,12 +489,13 @@ export function buildHomeResumeLatestChange(params: {
   latestActivity: HomeActivityRecord | undefined;
   keySource: Pick<SourceContextRecord, 'id' | 'title'> | null;
   activeBlocker?: Pick<BlockerRecord, 'id' | 'title' | 'sourceContextId'> | null;
+  taskState?: TaskState;
 }): {
   summary: string;
   action: HomeTaskResumePreviewRecord['latestChange']['action'];
   recentChange: WorkingContextRecentChange | null;
 } {
-  const { latestActivity, keySource, activeBlocker } = params;
+  const { latestActivity, keySource, activeBlocker, taskState } = params;
 
   if (latestActivity) {
     if (latestActivity.sourceType === 'decision') {
@@ -562,7 +570,9 @@ export function buildHomeResumeLatestChange(params: {
   }
 
   return {
-    summary: '最近没有新的关键变化。',
+    summary: isEarlyTaskState(taskState)
+      ? '这条任务刚进入系统，先补清摘要与下一步。'
+      : '最近没有新的关键变化。',
     action: {
       label: null,
       targetType: null,
@@ -575,6 +585,8 @@ export function buildHomeResumeLatestChange(params: {
 export function deriveNextSuggestedMove(params: {
   explicitNextStep?: string | null;
   taskTitle: string;
+  taskState?: TaskState;
+  taskSummary?: string | null;
   waitingReason?: string | null;
   riskLevel: TaskRiskLevel;
   riskNote?: string | null;
@@ -588,6 +600,12 @@ export function deriveNextSuggestedMove(params: {
 
   if (explicitNextStep) {
     return explicitNextStep;
+  }
+
+  if (isEarlyTaskState(params.taskState)) {
+    return params.taskSummary?.trim()
+      ? '先补清下一步，并判断这条任务是否需要正式拍板或继续执行。'
+      : '先补一句任务摘要，再明确下一步。';
   }
 
   const { recentChange } = params;

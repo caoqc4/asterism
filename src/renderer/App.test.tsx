@@ -66,13 +66,20 @@ function buildWaitingItem(partial: Partial<WaitingItemRecord>): WaitingItemRecor
 }
 
 function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
+  const isEarlyTask = task.state === 'captured' || task.state === 'triaged';
+  const latestChangeSummary = isEarlyTask
+    ? '这条任务刚进入系统，先补清摘要与下一步。'
+    : '最近没有新的生命周期变化。';
+  const nextSuggestedMove = task.nextStep
+    ?? (isEarlyTask ? '先补一句任务摘要，再明确下一步。' : '先补一个明确的下一步。');
+
   return {
     ...task,
     resumeCard: {
-      summary: `这条任务目前处于 ${task.state}。建议先做：${task.nextStep ?? '先补一个明确的下一步。'}`,
+      summary: `这条任务目前处于 ${task.state}。建议先做：${nextSuggestedMove}`,
       currentState: `状态：${task.state}`,
       latestChange: {
-        summary: '最近没有新的生命周期变化。',
+        summary: latestChangeSummary,
         action: {
           label: null,
           targetType: null,
@@ -97,7 +104,7 @@ function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
         detail: null,
         selectionReason: null,
       },
-      nextSuggestedMove: task.nextStep ?? '先补一个明确的下一步。',
+      nextSuggestedMove,
     },
     artifacts: [],
     sourceContexts: [],
@@ -4737,6 +4744,12 @@ describe('App UI flow', () => {
     const resumePanel = screen.getByText('Task Resume Card').closest('.transition-group');
     expect(resumePanel).toBeTruthy();
     expect(within(resumePanel as HTMLElement).getByText('先补清晰度')).toBeTruthy();
+    expect(
+      within(resumePanel as HTMLElement).getByText('这条任务刚进入系统，先补清摘要与下一步。'),
+    ).toBeTruthy();
+    expect(
+      within(resumePanel as HTMLElement).getByText('先补一句任务摘要，再明确下一步。'),
+    ).toBeTruthy();
   });
 
   it('reshapes the action desk toward task clarification for captured work', async () => {

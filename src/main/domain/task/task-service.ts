@@ -179,10 +179,12 @@ export class TaskService {
       );
     }
 
-    const latestChange = buildTaskResumeLatestChange(detail.timeline);
+    const latestChange = buildTaskResumeLatestChange(detail.timeline, detail.state);
     const nextSuggestedMove = deriveNextSuggestedMove({
       explicitNextStep: detail.nextStep,
       taskTitle: detail.title,
+      taskState: detail.state,
+      taskSummary: detail.summary,
       waitingReason,
       riskLevel: detail.riskLevel,
       riskNote: detail.riskNote,
