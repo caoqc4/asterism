@@ -6,6 +6,7 @@ import type { DecisionRecord } from '../../../shared/types/decision.js';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
 import type { RunRecord } from '../../../shared/types/run.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
+import type { TaskDependencyRecord } from '../../../shared/types/task-dependency.js';
 import type { TaskListItemRecord } from '../../../shared/types/task.js';
 import type { WaitingItemRecord } from '../../../shared/types/waiting-item.js';
 import { HomeBriefService } from './home-brief-service.js';
@@ -20,6 +21,8 @@ function buildTask(partial: Partial<TaskListItemRecord>): TaskListItemRecord {
     waitingReason: partial.waitingReason ?? null,
     activeWaitingItem: partial.activeWaitingItem ?? null,
     activeBlocker: partial.activeBlocker ?? null,
+    activeDependency: partial.activeDependency ?? null,
+    dependencyReevaluation: partial.dependencyReevaluation ?? null,
     riskLevel: partial.riskLevel ?? 'none',
     riskNote: partial.riskNote ?? null,
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
@@ -48,6 +51,20 @@ function buildWaitingItem(partial: Partial<WaitingItemRecord>): WaitingItemRecor
     id: partial.id ?? 'waiting_1',
     taskId: partial.taskId ?? 'task_1',
     reason: partial.reason ?? 'Waiting',
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    resolvedAt: partial.resolvedAt ?? null,
+  };
+}
+
+function buildTaskDependency(partial: Partial<TaskDependencyRecord>): TaskDependencyRecord {
+  return {
+    id: partial.id ?? 'task_dependency_1',
+    taskId: partial.taskId ?? 'task_1',
+    blockedByTaskId: partial.blockedByTaskId ?? 'task_2',
+    blockedByTaskTitle: partial.blockedByTaskTitle ?? 'Upstream task',
+    reason: partial.reason ?? 'Need the upstream task to complete first',
     status: partial.status ?? 'active',
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
@@ -426,6 +443,86 @@ describe('HomeBriefService', () => {
       prefillNextStep: '基于产物继续推进：draft output',
       prefillRunInstructions: '请基于这份已有产物继续扩展、改写或整理：Escalation draft',
     });
+  });
+
+  it('uses dependency-recovery summary wording when upstream work has just reopened a downstream task', async () => {
+    const upstreamTask = buildTask({
+      id: 'task_upstream_done',
+      title: 'Publish partner list',
+      state: 'completed',
+      updatedAt: '2026-01-08T00:00:00.000Z',
+    });
+    const downstreamTask = buildTask({
+      id: 'task_downstream_resume',
+      title: 'Resume outreach draft',
+      state: 'planned',
+      nextStep: null,
+      updatedAt: '2026-01-09T00:00:00.000Z',
+      activeDependency: buildTaskDependency({
+        id: 'task_dependency_resume_link',
+        taskId: 'task_downstream_resume',
+        blockedByTaskId: 'task_upstream_done',
+        blockedByTaskTitle: 'Publish partner list',
+        reason: 'Need the approved partner list before drafting outreach.',
+        createdAt: '2026-04-22T00:00:00.000Z',
+        updatedAt: '2026-04-22T00:00:00.000Z',
+      }),
+    });
+
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([downstreamTask, upstreamTask]),
+        getDetail: vi.fn().mockImplementation(async (taskId: string) => {
+          if (taskId === upstreamTask.id) {
+            return {
+              ...buildTimelineDetail([]),
+              id: upstreamTask.id,
+              title: upstreamTask.title,
+              state: upstreamTask.state,
+              updatedAt: upstreamTask.updatedAt,
+            };
+          }
+
+          return {
+            ...buildTimelineDetail([]),
+            id: downstreamTask.id,
+            title: downstreamTask.title,
+            state: downstreamTask.state,
+            updatedAt: downstreamTask.updatedAt,
+          };
+        }),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      null,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      null,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+      null,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([downstreamTask.activeDependency]),
+      } as never,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.priorityLane).toBe('continue_or_review');
+    expect(homeData.priorityHeadline).toBe('当前有 1 条任务依赖已具备恢复推进条件');
+    expect(homeData.priorityLede).toBe(
+      '当前最值得先处理的是依赖刚解除或上游任务刚就绪的任务；首页会优先提示重新判断是否解除依赖，再回到普通执行结果、产物和来源复核。',
+    );
   });
 
   it('returns a steady-state recommendation when there is no urgent work', async () => {

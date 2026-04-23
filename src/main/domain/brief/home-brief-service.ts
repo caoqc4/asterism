@@ -371,6 +371,7 @@ function classifyPriorityLane(params: {
   blockerTaskCount: number;
   dependencyTaskCount: number;
   blockerReevaluationCount: number;
+  dependencyRecoveryCount: number;
   continueOrReviewCount: number;
   waitingTaskCount: number;
   missingNextStepTaskCount: number;
@@ -403,10 +404,14 @@ function classifyPriorityLane(params: {
     };
   }
 
+  const unresolvedDependencyCount = Math.max(
+    0,
+    params.dependencyTaskCount - params.dependencyRecoveryCount,
+  );
   const unblockOrDecideCount =
     params.pendingDecisionCount +
     params.blockerTaskCount +
-    params.dependencyTaskCount +
+    unresolvedDependencyCount +
     params.blockerReevaluationCount;
 
   if (unblockOrDecideCount > 0) {
@@ -418,6 +423,14 @@ function classifyPriorityLane(params: {
   }
 
   if (params.continueOrReviewCount > 0) {
+    if (params.dependencyRecoveryCount > 0) {
+      return {
+        lane: 'continue_or_review',
+        headline: `当前有 ${params.dependencyRecoveryCount} 条任务依赖已具备恢复推进条件`,
+        lede: '当前最值得先处理的是依赖刚解除或上游任务刚就绪的任务；首页会优先提示重新判断是否解除依赖，再回到普通执行结果、产物和来源复核。',
+      };
+    }
+
     return {
       lane: 'continue_or_review',
       headline: `当前有 ${params.continueOrReviewCount} 条任务可继续推进或复核结果`,
@@ -819,7 +832,7 @@ export class HomeBriefService {
   }
 
   private buildDependencyReevaluations(params: {
-    activeTasks: TaskListItemRecord[];
+    tasks: TaskListItemRecord[];
     taskTimelines: Array<{
       taskId: string;
       taskTitle: string;
@@ -827,10 +840,10 @@ export class HomeBriefService {
       timeline: TimelineEventRecord[];
     }>;
   }): DependencyReevaluationRecord[] {
-    const taskById = new Map(params.activeTasks.map((task) => [task.id, task]));
+    const taskById = new Map(params.tasks.map((task) => [task.id, task]));
     const timelineByTaskId = new Map(params.taskTimelines.map((item) => [item.taskId, item.timeline]));
 
-    return params.activeTasks
+    return params.tasks
       .flatMap((task) => {
         const dependency = task.activeDependency;
 
@@ -1155,7 +1168,7 @@ export class HomeBriefService {
       })),
     );
     const dependencyReevaluations = this.buildDependencyReevaluations({
-      activeTasks,
+      tasks,
       taskTimelines,
     });
     const dependencyReevaluationByTaskId = new Map(
@@ -1225,6 +1238,7 @@ export class HomeBriefService {
           .map((activity) => activity.taskId),
       ]),
     ].length;
+    const dependencyRecoveryCount = [...new Set(dependencyReevaluations.map((item) => item.taskId))].length;
     const prioritySummary = classifyPriorityLane({
       escalationTaskCount: escalationTasks.length,
       staleBlockerTaskCount: escalationBlockerTasks.length,
@@ -1234,6 +1248,7 @@ export class HomeBriefService {
       blockerTaskCount: blockerTasks.length,
       dependencyTaskCount: dependencyTasks.length,
       blockerReevaluationCount,
+      dependencyRecoveryCount,
       continueOrReviewCount,
       waitingTaskCount: waitingTasks.length,
       missingNextStepTaskCount: missingNextStepTasks.length,
