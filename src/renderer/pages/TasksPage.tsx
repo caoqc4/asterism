@@ -26,6 +26,10 @@ import type {
   TimelineEventRecord,
   UpdateTaskInput,
 } from '@shared/types/task';
+import {
+  getTaskTimelineFollowUpActionLabel,
+  interpretTaskTimelineEvent,
+} from '@shared/working-context/timeline';
 
 const riskOptions: TaskRiskLevel[] = ['none', 'low', 'medium', 'high'];
 const sourceContextKindOptions: SourceContextKind[] = [
@@ -226,39 +230,32 @@ function getTimelineToneClass(type: string): string {
 }
 
 function formatTimelineSummary(event: TimelineEventRecord): string {
+  if (
+    event.type === 'task.decision_approved' ||
+    event.type === 'task.decision_deferred' ||
+    event.type === 'task.decision_cancelled' ||
+    event.type === 'task.run_failed' ||
+    event.type === 'task.run_completed' ||
+    event.type === 'waiting_item.created' ||
+    event.type === 'waiting_item.updated' ||
+    event.type === 'waiting_item.resolved' ||
+    event.type === 'source_context.created' ||
+    event.type === 'source_context.updated' ||
+    event.type === 'artifact.created' ||
+    event.type === 'task.risk_changed' ||
+    event.type === 'task.next_step_changed' ||
+    event.type === 'task.transitioned'
+  ) {
+    return interpretTaskTimelineEvent(event).summary;
+  }
+
   const payload = safeParsePayload(event.payload);
 
   switch (event.type) {
     case 'task.created':
       return `创建任务：${formatValue(payload?.title)}`;
-    case 'task.decision_approved':
-      return `决策已批准：${formatValue(payload?.decisionTitle)}，任务继续处于 ${formatValue(payload?.nextState)}`;
-    case 'task.decision_deferred':
-      return `决策已延后：${formatValue(payload?.decisionTitle)}，当前等待原因：${formatValue(payload?.waitingReason)}`;
-    case 'task.decision_cancelled':
-      return `相关决策已取消：${formatValue(payload?.decisionTitle)}`;
-    case 'task.run_failed':
-      return `执行失败：${formatValue(payload?.failureReason)}`;
-    case 'task.run_completed':
-      return `执行完成：${formatValue(payload?.runType)}，任务恢复到 ${formatValue(payload?.nextState)}`;
-    case 'task.transitioned':
-      return `状态从 ${formatValue(payload?.from)} 变更为 ${formatValue(payload?.to)}`;
-    case 'task.next_step_changed':
-      return `下一步从“${formatValue(payload?.from)}”调整为“${formatValue(payload?.to)}”`;
     case 'task.waiting_changed':
       return `等待原因从“${formatValue(payload?.from)}”调整为“${formatValue(payload?.to)}”`;
-    case 'waiting_item.created':
-      return `创建等待项：${formatValue(payload?.reason)}`;
-    case 'waiting_item.updated':
-      return `更新等待项：${formatValue(payload?.reason)}`;
-    case 'waiting_item.resolved':
-      return `解除等待项：${formatValue(payload?.reason)}，任务恢复到 ${formatValue(payload?.nextState)}`;
-    case 'artifact.created':
-      return `生成任务产物：${formatValue(payload?.title)}`;
-    case 'source_context.created':
-      return `新增来源材料：${formatValue(payload?.title)}`;
-    case 'source_context.updated':
-      return `更新来源材料：${formatValue(payload?.title)}`;
     case 'source_context.archived':
       return `归档来源材料：${formatValue(payload?.title)}`;
     case 'process_template.applied':
@@ -273,11 +270,6 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
       const sourceType = payload?.sourceType === 'decision_draft' ? '决策草拟' : '执行';
       return `本次${sourceType}未调用方法模板；原因：${formatValue(payload?.reason)}`;
     }
-    case 'task.risk_changed': {
-      const from = (payload?.from as Record<string, unknown> | undefined) ?? {};
-      const to = (payload?.to as Record<string, unknown> | undefined) ?? {};
-      return `风险从 ${formatValue(from.level)}（${formatValue(from.note)}）调整为 ${formatValue(to.level)}（${formatValue(to.note)}）`;
-    }
     case 'task.updated':
       return '任务字段已更新';
     default:
@@ -286,54 +278,11 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
 }
 
 function getTimelineActionLabel(type: string): string | null {
-  switch (type) {
-    case 'task.decision_cancelled':
-      return '生成新的 Decision';
-    case 'task.decision_approved':
-      return '继续推进任务';
-    case 'task.decision_deferred':
-      return '补跟进动作';
-    case 'task.run_failed':
-      return '准备重试 Run';
-    case 'task.waiting_changed':
-      return '补跟进动作';
-    case 'task.risk_changed':
-      return '处理风险';
-    case 'artifact.created':
-      return '基于产物继续推进';
-    default:
-      return null;
-  }
+  return getTaskTimelineFollowUpActionLabel(type);
 }
 
 function getTimelineObjectLabel(event: TimelineEventRecord): string | null {
-  const payload = safeParsePayload(event.payload);
-
-  if (
-    ['task.decision_approved', 'task.decision_deferred', 'task.decision_cancelled'].includes(
-      event.type,
-    ) &&
-    typeof payload?.decisionId === 'string'
-  ) {
-    return '查看 Decision';
-  }
-
-  if (
-    ['task.run_failed', 'task.run_completed'].includes(event.type) &&
-    typeof payload?.runId === 'string'
-  ) {
-    return '查看 Run';
-  }
-
-  if (
-    event.type === 'artifact.created' &&
-    payload?.sourceType === 'run' &&
-    typeof payload?.sourceId === 'string'
-  ) {
-    return '查看 Run';
-  }
-
-  return null;
+  return interpretTaskTimelineEvent(event).objectAction.label;
 }
 
 type TasksPageProps = {
@@ -1010,32 +959,15 @@ export function TasksPage({
   }
 
   function handleTimelineObjectOpen(event: TimelineEventRecord) {
-    const payload = safeParsePayload(event.payload);
+    const objectAction = interpretTaskTimelineEvent(event).objectAction;
 
-    if (
-      ['task.decision_approved', 'task.decision_deferred', 'task.decision_cancelled'].includes(
-        event.type,
-      ) &&
-      typeof payload?.decisionId === 'string'
-    ) {
-      onOpenDecision(payload.decisionId);
+    if (objectAction.targetType === 'decision' && objectAction.targetId) {
+      onOpenDecision(objectAction.targetId);
       return;
     }
 
-    if (
-      ['task.run_failed', 'task.run_completed'].includes(event.type) &&
-      typeof payload?.runId === 'string'
-    ) {
-      onOpenRun(payload.runId);
-      return;
-    }
-
-    if (
-      event.type === 'artifact.created' &&
-      payload?.sourceType === 'run' &&
-      typeof payload?.sourceId === 'string'
-    ) {
-      onOpenRun(payload.sourceId);
+    if (objectAction.targetType === 'run' && objectAction.targetId) {
+      onOpenRun(objectAction.targetId);
     }
   }
 
