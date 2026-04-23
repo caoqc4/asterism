@@ -1259,6 +1259,12 @@ describe('App UI flow', () => {
           {
             ...readyTask,
             completionProgress: { total: 2, satisfied: 2, open: 0 },
+            closeoutEvidence: {
+              sourceType: 'decision',
+              sourceId: 'decision_2',
+              title: 'Approve escalation path',
+              status: 'approved',
+            },
           },
         ],
         nearCompletionTasks: [
@@ -1298,6 +1304,10 @@ describe('App UI flow', () => {
     expect(within(closeoutSection as HTMLElement).getByText('待核对证据')).toBeTruthy();
     expect(within(closeoutSection as HTMLElement).getByText('完成标准已全部满足，建议做最终收尾判断。')).toBeTruthy();
     expect(
+      within(closeoutSection as HTMLElement).getByText('当前最终收尾依据：决策批准 · Approve escalation path'),
+    ).toBeTruthy();
+    expect(within(closeoutSection as HTMLElement).getByRole('button', { name: '查看最终收尾依据' })).toBeTruthy();
+    expect(
       within(closeoutSection as HTMLElement).getByText(
         '只差最后一条完成标准，先核对最后证据再决定是否收尾。',
       ),
@@ -1307,7 +1317,17 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(within(closeoutSection as HTMLElement).getByRole('button', { name: '查看收尾证据' })).toBeTruthy();
 
-    await user.click(within(closeoutSection as HTMLElement).getByRole('button', { name: '查看收尾证据' }));
+    await user.click(within(closeoutSection as HTMLElement).getByRole('button', { name: '查看最终收尾依据' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Approve escalation path' })).toBeTruthy();
+    });
+
+    await user.click(screen.getByRole('button', { name: /home/i }));
+    const closeoutSectionAfterReadyEvidence = (await screen.findByText('Closeout Tasks')).closest('section');
+    expect(closeoutSectionAfterReadyEvidence).toBeTruthy();
+
+    await user.click(within(closeoutSectionAfterReadyEvidence as HTMLElement).getByRole('button', { name: '查看收尾证据' }));
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Approve escalation path' })).toBeTruthy();

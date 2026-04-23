@@ -132,6 +132,15 @@ function getCloseoutTaskSummary(kind: 'ready' | 'near') {
     : '只差最后一条完成标准，先核对最后证据再决定是否收尾。';
 }
 
+type CloseoutTaskWithEvidence = {
+  closeoutEvidence?: {
+    sourceType: 'decision' | 'run';
+    sourceId: string;
+    title: string;
+    status: 'approved' | 'completed';
+  } | null;
+};
+
 type HomePageProps = {
   ping: PingResponse | null;
   status: 'idle' | 'loading' | 'ready' | 'error';
@@ -392,7 +401,7 @@ export function HomePage({
     });
   }
 
-  function openCloseoutEvidence(task: NonNullable<HomeBriefData['nearCompletionTasks']>[number]) {
+  function openCloseoutEvidence(task: CloseoutTaskWithEvidence) {
     if (!task.closeoutEvidence) {
       return;
     }
@@ -1078,21 +1087,41 @@ export function HomePage({
                   这里区分已经具备收尾条件的任务，和还需要先核对最后证据的接近完成任务。
                 </p>
                 {briefData?.completionReadyTasks?.map((task) => (
-                  <button
-                    className="task-card task-card-button"
-                    key={`completion-ready-${task.id}`}
-                    onClick={() => openCompletionReadyTask(task)}
-                    type="button"
-                  >
-                    <div className="task-row">
-                      <strong>{task.title}</strong>
-                      <span className="status">{getCloseoutTaskStatusLabel('ready')}</span>
-                    </div>
-                    <p className="meta">{getCloseoutTaskSummary('ready')}</p>
-                    <p className="meta">
-                      completion: {task.completionProgress?.satisfied ?? 0}/{task.completionProgress?.total ?? 0}
-                    </p>
-                  </button>
+                  <div className="task-card" key={`completion-ready-${task.id}`}>
+                    <button
+                      className="task-card-button task-card-button-shell"
+                      onClick={() => openCompletionReadyTask(task)}
+                      type="button"
+                    >
+                      <div className="task-row">
+                        <strong>{task.title}</strong>
+                        <span className="status">{getCloseoutTaskStatusLabel('ready')}</span>
+                      </div>
+                      <p className="meta">{getCloseoutTaskSummary('ready')}</p>
+                      <p className="meta">
+                        completion: {task.completionProgress?.satisfied ?? 0}/{task.completionProgress?.total ?? 0}
+                      </p>
+                      {task.closeoutEvidence ? (
+                        <p className="meta">
+                          当前最终收尾依据：
+                          {task.closeoutEvidence.sourceType === 'decision' ? '决策批准' : '执行完成'}
+                          {' · '}
+                          {task.closeoutEvidence.title}
+                        </p>
+                      ) : null}
+                    </button>
+                    {task.closeoutEvidence ? (
+                      <div className="task-chip-row">
+                        <button
+                          className="chip-button"
+                          onClick={() => openCloseoutEvidence(task)}
+                          type="button"
+                        >
+                          查看最终收尾依据
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 ))}
                 {briefData?.nearCompletionTasks?.map((task) => (
                   <div className="task-card task-card-muted" key={`near-completion-${task.id}`}>

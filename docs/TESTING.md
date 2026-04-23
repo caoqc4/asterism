@@ -158,6 +158,7 @@ Covered today:
 - `Home closeout tasks` for completion-ready and near-completion recovery flows
 - `Home closeout tasks` now also distinguish completion-ready vs evidence-check-needed wording
 - `Home closeout tasks` now also cover the direct `查看收尾证据` path for near-completion tasks
+- `Home closeout tasks` now also cover the direct `查看最终收尾依据` path for completion-ready tasks
 - `Priority lane` closeout-aware wording on home/task recovery surfaces
 - `Tasks process context create / apply / remove flow`
 - `Tasks resume card visibility, key-source prioritization explanation, method-selection explanation, lifecycle-aware suggested-move derivation, and recovery actions`
