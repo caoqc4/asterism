@@ -1,4 +1,6 @@
 import type { TimelineEventRecord } from '../types/task.js';
+import type { PriorityLane } from '../types/brief.js';
+import { getPriorityLaneLabel } from './priority-lanes.js';
 
 export type TaskTimelinePriority = 'p1' | 'p2' | 'p3';
 
@@ -264,25 +266,57 @@ export function interpretTaskTimelineEvent(
 export function getTaskTimelineFollowUpActionLabel(type: string): string | null {
   switch (type) {
     case 'task.decision_cancelled':
-      return '生成新的 Decision';
+      return '重新评估并拍板';
     case 'task.decision_approved':
-      return '继续推进任务';
+      return '继续推进';
     case 'task.decision_deferred':
-      return '补跟进动作';
+      return '补清拍板条件';
     case 'task.run_failed':
-      return '准备重试 Run';
+      return '复核失败并重试';
     case 'task.waiting_changed':
-      return '补跟进动作';
+      return '补清等待条件';
     case 'task.risk_changed':
-      return '处理风险';
+      return '优先处理风险';
     case 'blocker.created':
     case 'blocker.updated':
-      return '跟进阻塞项';
+      return '先解阻塞';
     case 'artifact.created':
       return '基于产物继续推进';
     default:
       return null;
   }
+}
+
+export function getTaskTimelineLane(type: string): PriorityLane {
+  switch (type) {
+    case 'task.risk_changed':
+      return 'escalate_now';
+    case 'task.decision_cancelled':
+    case 'task.decision_deferred':
+    case 'blocker.created':
+    case 'blocker.updated':
+      return 'unblock_or_decide';
+    case 'task.run_failed':
+    case 'task.run_completed':
+    case 'task.decision_approved':
+    case 'artifact.created':
+    case 'source_context.created':
+    case 'source_context.updated':
+    case 'blocker.resolved':
+      return 'continue_or_review';
+    case 'task.waiting_changed':
+    case 'waiting_item.created':
+    case 'waiting_item.updated':
+    case 'waiting_item.resolved':
+    case 'task.next_step_changed':
+      return 'clarify';
+    default:
+      return 'steady';
+  }
+}
+
+export function getTaskTimelineLaneLabel(type: string): string | null {
+  return getPriorityLaneLabel(getTaskTimelineLane(type));
 }
 
 export function getTaskTimelinePriority(type: string): TaskTimelinePriority {

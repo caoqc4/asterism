@@ -1974,7 +1974,7 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /runs/i }));
     await screen.findByRole('heading', { name: '执行记录' });
 
-    const actionButton = await screen.findByRole('button', { name: '准备重试 Run' });
+    const actionButton = await screen.findByRole('button', { name: '复核失败并重试' });
     await user.click(actionButton);
 
     await waitFor(() => {
@@ -2167,7 +2167,7 @@ describe('App UI flow', () => {
 
     await screen.findByRole('heading', { name: '待拍板事项' });
 
-    const actionButton = await screen.findByRole('button', { name: '继续推进任务' });
+    const actionButton = await screen.findByRole('button', { name: '继续推进' });
     await user.click(actionButton);
 
     await waitFor(() => {
@@ -2503,13 +2503,13 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /timeline action task/i }));
     await screen.findByRole('heading', { name: 'Timeline action task' });
 
-    await user.click(screen.getByRole('button', { name: '准备重试 Run' }));
+    await user.click(screen.getByRole('button', { name: '复核失败并重试' }));
 
     expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toContain(
       'Executor exploded',
     );
 
-    await user.click(screen.getByRole('button', { name: '生成新的 Decision' }));
+    await user.click(screen.getByRole('button', { name: '重新评估并拍板' }));
 
     expect((screen.getByLabelText('决策标题') as HTMLInputElement).value).toBe(
       'Timeline action task 重新拍板',
@@ -2635,7 +2635,7 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /timeline waiting task/i }));
     await screen.findByRole('heading', { name: 'Timeline waiting task' });
 
-    await user.click(screen.getByRole('button', { name: '补跟进动作' }));
+    await user.click(screen.getByRole('button', { name: '补清等待条件' }));
 
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
       '跟进并确认是否解除等待：Waiting for legal review',
@@ -2686,7 +2686,7 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /timeline risk task/i }));
     await screen.findByRole('heading', { name: 'Timeline risk task' });
 
-    await user.click(screen.getByRole('button', { name: '处理风险' }));
+    await user.click(screen.getByRole('button', { name: '优先处理风险' }));
 
     expect((screen.getByLabelText('Risk Level') as HTMLSelectElement).value).toBe('high');
     expect((screen.getByLabelText('Risk Note') as HTMLTextAreaElement).value).toBe(

@@ -5,6 +5,8 @@ import type { CreateRunInput, RunRecord } from '@shared/types/run';
 import type { TaskDetail, TaskListItemRecord, TimelineEventRecord } from '@shared/types/task';
 import {
   getTaskTimelineFollowUpActionLabel,
+  getTaskTimelineLane,
+  getTaskTimelineLaneLabel,
   interpretTaskTimelineEvent,
 } from '@shared/working-context/timeline';
 
@@ -234,7 +236,14 @@ export function RunsPage({
                       <div className="timeline-item" key={event.id}>
                         <div className="task-row">
                           <strong>{event.type}</strong>
-                          <span className="status">{event.createdAt}</span>
+                          <div className="task-row-compact">
+                            {getTaskTimelineLaneLabel(event.type) ? (
+                              <span className={`status lane-status lane-status-${getTaskTimelineLane(event.type)}`}>
+                                {getTaskTimelineLaneLabel(event.type)}
+                              </span>
+                            ) : null}
+                            <span className="status">{event.createdAt}</span>
+                          </div>
                         </div>
                         <p className="meta">{formatRelatedTimelineSummary(event)}</p>
                         {getRelatedTimelineActionLabel(event) || getRelatedTimelineObjectLabel(event) ? (

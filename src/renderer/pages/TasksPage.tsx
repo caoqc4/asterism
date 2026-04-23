@@ -34,6 +34,8 @@ import type {
 } from '@shared/types/task';
 import {
   getTaskTimelineFollowUpActionLabel,
+  getTaskTimelineLane,
+  getTaskTimelineLaneLabel,
   getTaskTimelinePriority,
   getTaskTimelinePriorityLabel,
   interpretTaskTimelineEvent,
@@ -2032,6 +2034,13 @@ export function TasksPage({
                           <span className="signal-pill timeline-priority-pill">
                             {getTaskTimelinePriorityLabel(event.type)}
                           </span>
+                          {getTaskTimelineLaneLabel(event.type) ? (
+                            <span
+                              className={`signal-pill lane-status lane-status-${getTaskTimelineLane(event.type)}`}
+                            >
+                              {getTaskTimelineLaneLabel(event.type)}
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                       <p className="meta">{event.createdAt}</p>
