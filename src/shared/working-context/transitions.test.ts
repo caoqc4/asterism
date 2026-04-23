@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  getCompletionTransitionGuidance,
   getRecommendedTaskTransition,
   getTaskTransitionGuidance,
   orderTaskTransitions,
@@ -33,5 +34,23 @@ describe('task transition guidance', () => {
         lane: 'escalate_now',
       }),
     ).toContain('不建议继续挂起等待');
+  });
+
+  it('includes verification responsibility in completion transition guidance when criteria remain open', () => {
+    expect(
+      getCompletionTransitionGuidance({
+        currentState: 'planned',
+        availableStates: ['running', 'waiting_external', 'completed', 'archived'],
+        completionTotal: 2,
+        completionOpen: 1,
+        openCriteriaTexts: ['Final review recorded'],
+        nextOpenResponsibilitySummary: '确认责任：客户确认',
+      }),
+    ).toEqual({
+      tone: 'open',
+      summary:
+        '当前还有 1 条完成标准未满足：Final review recorded。你仍可完成任务，但更建议先补齐这些收尾标准。 确认责任：客户确认。',
+      buttonLabel: '转到 completed（仍有 1 条未满足）',
+    });
   });
 });

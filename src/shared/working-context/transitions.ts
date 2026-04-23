@@ -10,6 +10,12 @@ type TransitionRecommendationInput = {
   hasWaitingContext?: boolean;
 };
 
+export type CompletionTransitionGuidance = {
+  tone: 'empty' | 'open' | 'ready';
+  summary: string;
+  buttonLabel: string;
+};
+
 const DEFAULT_PRIORITY: TaskState[] = ['planned', 'running', 'waiting_external', 'completed', 'archived'];
 
 function firstAvailable(availableStates: TaskState[], preferredStates: TaskState[]): TaskState | null {
@@ -86,4 +92,48 @@ export function getTaskTransitionGuidance(input: TransitionRecommendationInput):
     default:
       return `当前保持「稳态推进」，状态流转优先建议转到 ${recommendedState}。`;
   }
+}
+
+export function getCompletionTransitionGuidance(input: {
+  currentState: TaskState;
+  availableStates: TaskState[];
+  completionTotal: number;
+  completionOpen: number;
+  openCriteriaTexts: string[];
+  nextOpenResponsibilitySummary?: string | null;
+}): CompletionTransitionGuidance | null {
+  const { currentState, availableStates, completionTotal, completionOpen, openCriteriaTexts, nextOpenResponsibilitySummary } =
+    input;
+
+  if (currentState === 'completed' || currentState === 'archived' || !availableStates.includes('completed')) {
+    return null;
+  }
+
+  if (completionTotal === 0) {
+    return {
+      tone: 'empty',
+      summary: '当前还没有定义完成标准。你仍可完成任务，但更建议先补 1 到 3 条收尾标准，再判断是否真的可以结束。',
+      buttonLabel: '转到 completed（未定义完成标准）',
+    };
+  }
+
+  if (completionOpen > 0) {
+    const openSummary = openCriteriaTexts.slice(0, 2).join('；');
+    const overflow = openCriteriaTexts.length > 2 ? '；…' : '';
+    const responsibilitySuffix = nextOpenResponsibilitySummary
+      ? ` ${nextOpenResponsibilitySummary}。`
+      : '';
+
+    return {
+      tone: 'open',
+      summary: `当前还有 ${completionOpen} 条完成标准未满足：${openSummary}${overflow}。你仍可完成任务，但更建议先补齐这些收尾标准。${responsibilitySuffix}`.trim(),
+      buttonLabel: `转到 completed（仍有 ${completionOpen} 条未满足）`,
+    };
+  }
+
+  return {
+    tone: 'ready',
+    summary: '当前完成标准已全部满足。现在转到 completed 会更有依据。',
+    buttonLabel: '转到 completed（完成标准已满足）',
+  };
 }

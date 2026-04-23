@@ -126,10 +126,21 @@ function getCloseoutTaskStatusLabel(kind: 'ready' | 'near') {
   return kind === 'ready' ? '可收尾' : '待核对证据';
 }
 
-function getCloseoutTaskSummary(kind: 'ready' | 'near') {
+function getCloseoutTaskSummary(
+  kind: 'ready' | 'near',
+  nextOpenResponsibilitySummary?: string | null,
+) {
+  const responsibilityLabel = nextOpenResponsibilitySummary
+    ?.replace(/^确认责任：/, '')
+    .replace(/负责确认$/, '')
+    .replace(/确认$/, '')
+    .trim();
+
   return kind === 'ready'
     ? '完成标准已全部满足，建议做最终收尾判断。'
-    : '只差最后一条完成标准，先核对最后证据再决定是否收尾。';
+    : responsibilityLabel
+      ? `只差最后一条完成标准，先核对最后证据，再由${responsibilityLabel}确认是否收尾。`
+      : '只差最后一条完成标准，先核对最后证据再决定是否收尾。';
 }
 
 type CloseoutTaskWithEvidence = {
@@ -1158,7 +1169,12 @@ export function HomePage({
                         <strong>{task.title}</strong>
                         <span className="status">{getCloseoutTaskStatusLabel('near')}</span>
                       </div>
-                      <p className="meta">{getCloseoutTaskSummary('near')}</p>
+                      <p className="meta">
+                        {getCloseoutTaskSummary(
+                          'near',
+                          task.completionProgress?.nextOpenResponsibilitySummary,
+                        )}
+                      </p>
                       <p className="meta">
                         completion: {task.completionProgress?.satisfied ?? 0}/{task.completionProgress?.total ?? 0}
                       </p>

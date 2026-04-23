@@ -1332,7 +1332,7 @@ describe('App UI flow', () => {
     expect(within(closeoutSection as HTMLElement).getByRole('button', { name: '查看最终收尾依据' })).toBeTruthy();
     expect(
       within(closeoutSection as HTMLElement).getByText(
-        '只差最后一条完成标准，先核对最后证据再决定是否收尾。',
+        '只差最后一条完成标准，先核对最后证据，再由客户确认是否收尾。',
       ),
     ).toBeTruthy();
     expect(
@@ -6061,6 +6061,11 @@ describe('App UI flow', () => {
     expect(resumePanel).toBeTruthy();
     expect(within(resumePanel as HTMLElement).getByText('解除责任：法务团队确认')).toBeTruthy();
     expect(within(resumePanel as HTMLElement).getByText('确认责任：我自己确认')).toBeTruthy();
+    expect(
+      screen.getByText(
+        '当前还有 1 条完成标准未满足：Approve escalation path。你仍可完成任务，但更建议先补齐这些收尾标准。 确认责任：我自己确认。',
+      ),
+    ).toBeTruthy();
 
     const evidenceSection = screen
       .getByRole('heading', { name: 'Potential Completion Evidence' })
