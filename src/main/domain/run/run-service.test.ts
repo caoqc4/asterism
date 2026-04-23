@@ -14,6 +14,7 @@ function buildTaskDetail(state: TaskDetail['state'] = 'planned'): TaskDetail {
     state,
     nextStep: 'Draft the response',
     waitingReason: null,
+    activeWaitingItem: null,
     riskLevel: 'medium',
     riskNote: 'Need confirmation soon',
     createdAt: '2026-01-01T00:00:00.000Z',

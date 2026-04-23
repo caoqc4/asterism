@@ -14,12 +14,12 @@ import type {
 import type { RunRecord } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { SourceContextRecord } from '@shared/types/source-context';
-import type { TaskDetail, TaskRecord } from '@shared/types/task';
+import type { TaskDetail, TaskListItemRecord, TaskRecord } from '@shared/types/task';
 import type { ArtifactRecord } from '@shared/types/artifact';
 import type { WaitingItemRecord } from '@shared/types/waiting-item';
 import { App } from './App';
 
-function buildTaskRecord(partial: Partial<TaskRecord>): TaskRecord {
+function buildTaskRecord(partial: Partial<TaskListItemRecord>): TaskListItemRecord {
   return {
     id: partial.id ?? 'task_1',
     title: partial.title ?? 'Task',
@@ -47,7 +47,7 @@ function buildWaitingItem(partial: Partial<WaitingItemRecord>): WaitingItemRecor
   };
 }
 
-function buildTaskDetail(task: TaskRecord): TaskDetail {
+function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
   return {
     ...task,
     resumeCard: {
@@ -2697,7 +2697,7 @@ describe('App UI flow', () => {
   it('reflects cancelled decisions in task signals after a refresh event', async () => {
     const user = userEvent.setup();
 
-    let currentTasks: TaskRecord[] = [waitingTask, riskTask];
+    let currentTasks: TaskListItemRecord[] = [waitingTask, riskTask];
     let currentTaskDetails: Record<string, TaskDetail> = {
       [waitingTask.id]: buildTaskDetail(waitingTask),
       [riskTask.id]: buildTaskDetail(riskTask),
@@ -2794,7 +2794,7 @@ describe('App UI flow', () => {
   it('reflects failed runs in task signals after a refresh event', async () => {
     const user = userEvent.setup();
 
-    let currentTasks: TaskRecord[] = [waitingTask, riskTask];
+    let currentTasks: TaskListItemRecord[] = [waitingTask, riskTask];
     let currentTaskDetails: Record<string, TaskDetail> = {
       [waitingTask.id]: buildTaskDetail(waitingTask),
       [riskTask.id]: buildTaskDetail(riskTask),
@@ -2904,7 +2904,7 @@ describe('App UI flow', () => {
   it('refreshes home brief after a decision action changes the dashboard state', async () => {
     const user = userEvent.setup();
 
-    let currentTasks: TaskRecord[] = [waitingTask, riskTask];
+    let currentTasks: TaskListItemRecord[] = [waitingTask, riskTask];
     let currentDecisions: DecisionRecord[] = [...briefData.pendingDecisions];
     let currentBriefData: HomeBriefData = {
       ...briefData,
@@ -2992,7 +2992,7 @@ describe('App UI flow', () => {
   it('refreshes home brief after a failed run changes risk and recommendations', async () => {
     const user = userEvent.setup();
 
-    let currentTasks: TaskRecord[] = [waitingTask, riskTask];
+    let currentTasks: TaskListItemRecord[] = [waitingTask, riskTask];
     let currentRuns: RunRecord[] = [...runs];
     let currentBriefData: HomeBriefData = {
       ...briefData,
@@ -3203,7 +3203,7 @@ describe('App UI flow', () => {
   it('refreshes home signals after a task transitions into waiting', async () => {
     const user = userEvent.setup();
 
-    let currentTasks: TaskRecord[] = [waitingTask, riskTask];
+    let currentTasks: TaskListItemRecord[] = [waitingTask, riskTask];
     let currentTaskDetails: Record<string, TaskDetail> = {
       [waitingTask.id]: buildTaskDetail(waitingTask),
       [riskTask.id]: buildTaskDetail(riskTask),
@@ -3366,7 +3366,7 @@ describe('App UI flow', () => {
   it('clears waiting signals after a task leaves waiting_external', async () => {
     const user = userEvent.setup();
 
-    let currentTasks: TaskRecord[] = [waitingTask, riskTask];
+    let currentTasks: TaskListItemRecord[] = [waitingTask, riskTask];
     let currentTaskDetails: Record<string, TaskDetail> = {
       [waitingTask.id]: buildTaskDetail(waitingTask),
       [riskTask.id]: buildTaskDetail(riskTask),

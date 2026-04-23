@@ -5,11 +5,11 @@ import type { DecisionRecord } from '../../../shared/types/decision.js';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
 import type { RunRecord } from '../../../shared/types/run.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
-import type { TaskRecord } from '../../../shared/types/task.js';
+import type { TaskListItemRecord } from '../../../shared/types/task.js';
 import type { WaitingItemRecord } from '../../../shared/types/waiting-item.js';
 import { HomeBriefService } from './home-brief-service.js';
 
-function buildTask(partial: Partial<TaskRecord>): TaskRecord {
+function buildTask(partial: Partial<TaskListItemRecord>): TaskListItemRecord {
   return {
     id: partial.id ?? 'task_1',
     title: partial.title ?? 'Task',

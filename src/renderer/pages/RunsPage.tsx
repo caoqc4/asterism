@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 import type { RecommendedActionIntent } from '@shared/types/brief';
 import type { CreateRunInput, RunRecord } from '@shared/types/run';
-import type { TaskDetail, TaskRecord, TimelineEventRecord } from '@shared/types/task';
+import type { TaskDetail, TaskListItemRecord, TimelineEventRecord } from '@shared/types/task';
 import {
   getTaskTimelineFollowUpActionLabel,
   interpretTaskTimelineEvent,
@@ -58,7 +58,7 @@ function getRelatedTimeline(events: TimelineEventRecord[], runId: string): Timel
 type RunsPageProps = {
   focusedRunId: string | null;
   runs: RunRecord[];
-  tasks: TaskRecord[];
+  tasks: TaskListItemRecord[];
   onOpenTask: (taskId: string, intent: RecommendedActionIntent) => void;
   onRefresh: () => Promise<void>;
   onRunFocusConsumed: () => void;

@@ -24,11 +24,14 @@ export type TaskRecord = {
   state: TaskState;
   nextStep: string | null;
   waitingReason: string | null;
-  activeWaitingItem?: WaitingItemRecord | null;
   riskLevel: TaskRiskLevel;
   riskNote: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type TaskListItemRecord = TaskRecord & {
+  activeWaitingItem: WaitingItemRecord | null;
 };
 
 export type TaskResumeCardRecord = {
@@ -56,6 +59,7 @@ export type TaskResumeCardRecord = {
 };
 
 export type TaskDetailBase = TaskRecord & {
+  activeWaitingItem: WaitingItemRecord | null;
   artifacts: ArtifactRecord[];
   sourceContexts: SourceContextRecord[];
   processTemplates: AppliedProcessTemplateRecord[];

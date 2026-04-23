@@ -16,6 +16,7 @@ function buildDetail(state: TaskDetail['state']): TaskDetail {
     state,
     nextStep: 'Next step',
     waitingReason: null,
+    activeWaitingItem: null,
     riskLevel: 'none',
     riskNote: null,
     createdAt: '2026-01-01T00:00:00.000Z',

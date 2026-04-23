@@ -7,6 +7,7 @@ import type {
   CreateTaskInput,
   TaskDetail,
   TaskDetailBase,
+  TaskListItemRecord,
   TaskRecord,
   TaskResumeCardRecord,
   TaskState,
@@ -82,11 +83,20 @@ export class TaskService {
     }
   }
 
-  private async attachActiveWaitingItem<T extends TaskRecord | TaskDetail>(task: T): Promise<T> {
+  private async attachActiveWaitingItem(task: TaskRecord): Promise<TaskListItemRecord> {
     const activeWaitingItem = await this.waitingItemRepository.getActiveForTask(task.id);
 
     return {
       ...task,
+      activeWaitingItem,
+    };
+  }
+
+  private async attachDetailWaitingItem(detail: TaskDetailBase): Promise<TaskDetailBase> {
+    const activeWaitingItem = await this.waitingItemRepository.getActiveForTask(detail.id);
+
+    return {
+      ...detail,
       activeWaitingItem,
     };
   }
@@ -246,13 +256,13 @@ export class TaskService {
     };
   }
 
-  async list(): Promise<TaskRecord[]> {
+  async list(): Promise<TaskListItemRecord[]> {
     const tasks = await this.repository.list();
 
     return Promise.all(tasks.map((task) => this.attachActiveWaitingItem(task)));
   }
 
-  async create(input: CreateTaskInput): Promise<TaskRecord> {
+  async create(input: CreateTaskInput): Promise<TaskListItemRecord> {
     const created = await this.repository.create(input);
     return this.attachActiveWaitingItem(created);
   }
@@ -266,7 +276,7 @@ export class TaskService {
 
     const enriched = await this.attachProcessTemplates(
       await this.attachSourceContexts(
-        await this.attachArtifacts(await this.attachActiveWaitingItem(detail)),
+        await this.attachArtifacts(await this.attachDetailWaitingItem(detail)),
       ),
     );
 
@@ -276,7 +286,7 @@ export class TaskService {
     };
   }
 
-  async update(input: UpdateTaskInput): Promise<TaskRecord> {
+  async update(input: UpdateTaskInput): Promise<TaskListItemRecord> {
     const detail = await this.getExistingTaskOrThrow(input.id);
     const nextRiskLevel = input.riskLevel ?? detail.riskLevel;
     const providedRiskNote = input.riskNote?.trim() || null;
@@ -305,7 +315,7 @@ export class TaskService {
     return this.attachActiveWaitingItem(updated);
   }
 
-  async transition(input: TransitionTaskInput): Promise<TaskRecord> {
+  async transition(input: TransitionTaskInput): Promise<TaskListItemRecord> {
     const detail = await this.getExistingTaskOrThrow(input.id);
 
     const nextStates = allowedTransitions[detail.state];
@@ -334,7 +344,7 @@ export class TaskService {
     return this.attachActiveWaitingItem(updated);
   }
 
-  async transitionIfAllowed(id: string, nextState: TaskState): Promise<TaskRecord | null> {
+  async transitionIfAllowed(id: string, nextState: TaskState): Promise<TaskListItemRecord | null> {
     const detail = await this.getExistingTaskOrThrow(id);
 
     if (detail.state === nextState) {
@@ -345,7 +355,6 @@ export class TaskService {
         state: detail.state,
         nextStep: detail.nextStep,
         waitingReason: detail.waitingReason,
-        activeWaitingItem: detail.activeWaitingItem ?? null,
         riskLevel: detail.riskLevel,
         riskNote: detail.riskNote,
         createdAt: detail.createdAt,
@@ -374,7 +383,7 @@ export class TaskService {
     taskId: string,
     decisionTitle: string,
     decisionId?: string,
-  ): Promise<TaskRecord> {
+  ): Promise<TaskListItemRecord> {
     const detail = await this.getExistingTaskOrThrow(taskId);
 
     const updated = await this.repository.update({
@@ -400,7 +409,7 @@ export class TaskService {
     taskId: string,
     decisionTitle: string,
     decisionId?: string,
-  ): Promise<TaskRecord> {
+  ): Promise<TaskListItemRecord> {
     const detail = await this.getExistingTaskOrThrow(taskId);
     const nextState =
       detail.state === 'waiting_external'
@@ -451,7 +460,7 @@ export class TaskService {
     taskId: string,
     decisionTitle: string,
     decisionId?: string,
-  ): Promise<TaskRecord> {
+  ): Promise<TaskListItemRecord> {
     await this.getExistingTaskOrThrow(taskId);
 
     const waitingReason = `等待重新拍板：${decisionTitle}`;
@@ -483,7 +492,7 @@ export class TaskService {
     taskId: string,
     failureReason: string,
     runId?: string,
-  ): Promise<TaskRecord> {
+  ): Promise<TaskListItemRecord> {
     const detail = await this.restoreTaskAfterRun(await this.getExistingTaskOrThrow(taskId));
 
     const updated = await this.repository.update({
@@ -509,7 +518,7 @@ export class TaskService {
     runType: 'draft' | 'summarize',
     hasOutput: boolean,
     runId?: string,
-  ): Promise<TaskRecord> {
+  ): Promise<TaskListItemRecord> {
     const detail = await this.restoreTaskAfterRun(await this.getExistingTaskOrThrow(taskId));
     const nextStep = hasOutput
       ? `审阅最新 ${runType} 产物，并决定是否继续推进。`

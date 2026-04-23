@@ -20,8 +20,8 @@ import type {
 import type {
   CreateTaskInput,
   TaskDetail,
+  TaskListItemRecord,
   TaskRiskLevel,
-  TaskRecord,
   TaskState,
   TimelineEventRecord,
   UpdateTaskInput,
@@ -61,7 +61,7 @@ const transitionOptions: Record<TaskState, TaskState[]> = {
 
 const TIMELINE_PREVIEW_COUNT = 5;
 
-function getTaskCardTone(task: TaskRecord): string {
+function getTaskCardTone(task: TaskListItemRecord): string {
   if (task.riskLevel === 'high') {
     return 'task-card-danger';
   }
@@ -77,7 +77,7 @@ function getTaskCardTone(task: TaskRecord): string {
   return '';
 }
 
-function buildTaskBadges(task: TaskRecord): string[] {
+function buildTaskBadges(task: TaskListItemRecord): string[] {
   const badges: string[] = [];
 
   if (task.riskLevel !== 'none') {
@@ -299,7 +299,7 @@ type TasksPageProps = {
     intent: RecommendedActionIntent | null;
   } | null;
   runs: RunRecord[];
-  tasks: TaskRecord[];
+  tasks: TaskListItemRecord[];
   onApplyProcessTemplate: (input: ApplyProcessTemplateInput) => Promise<AppliedProcessTemplateRecord>;
   onArchiveProcessTemplate: (id: string) => Promise<ProcessTemplateRecord>;
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
@@ -315,12 +315,12 @@ type TasksPageProps = {
   onTriggerRun: (input: CreateRunInput) => Promise<void>;
   onUpdateProcessTemplate: (input: UpdateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
   onUpdateSourceContext: (input: UpdateSourceContextInput) => Promise<SourceContextRecord>;
-  onUpdateTask: (input: UpdateTaskInput) => Promise<TaskRecord>;
+  onUpdateTask: (input: UpdateTaskInput) => Promise<TaskListItemRecord>;
   onTransitionTask: (
     taskId: string,
     nextState: TaskState,
     waitingReason?: string,
-  ) => Promise<TaskRecord>;
+  ) => Promise<TaskListItemRecord>;
   onTaskFocusConsumed: () => void;
 };
 

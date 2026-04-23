@@ -22,7 +22,7 @@ import type {
   CreateSourceContextInput,
   UpdateSourceContextInput,
 } from '@shared/types/source-context';
-import type { TaskRecord, TaskState, UpdateTaskInput } from '@shared/types/task';
+import type { TaskListItemRecord, TaskState, UpdateTaskInput } from '@shared/types/task';
 
 import { getRouteFromHash, setRoute, type AppRoute } from './lib/router';
 import { DecisionsPage } from './pages/DecisionsPage';
@@ -51,7 +51,7 @@ export function App() {
   const [ping, setPing] = useState<PingResponse | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [aiStatus, setAiStatus] = useState<AiConfigStatus | null>(null);
-  const [tasks, setTasks] = useState<TaskRecord[]>([]);
+  const [tasks, setTasks] = useState<TaskListItemRecord[]>([]);
   const [decisions, setDecisions] = useState<DecisionRecord[]>([]);
   const [runs, setRuns] = useState<RunRecord[]>([]);
   const [briefData, setBriefData] = useState<HomeBriefData | null>(null);

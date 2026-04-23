@@ -14,7 +14,7 @@ import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
 import { TaskProcessBindingRepository } from '../../db/repositories/task-process-binding-repository.js';
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
-import type { TaskRecord } from '../../../shared/types/task.js';
+import type { TaskListItemRecord, TaskRecord } from '../../../shared/types/task.js';
 import type { BriefProcessTemplateCandidate } from '../../../shared/types/brief.js';
 import {
   buildHomeResumeLatestChange,
@@ -200,7 +200,7 @@ export class HomeBriefService {
   ) {}
 
   private async buildProcessTemplateCandidates(
-    activeTasks: TaskRecord[],
+    activeTasks: TaskListItemRecord[],
   ): Promise<BriefProcessTemplateCandidate[]> {
     if (!this.taskProcessBindingRepository || activeTasks.length === 0) {
       return [];
@@ -248,7 +248,7 @@ export class HomeBriefService {
   }
 
   private async buildTaskResumePreviews(params: {
-    recentTasks: TaskRecord[];
+    recentTasks: TaskListItemRecord[];
     recentActivity: HomeActivityRecord[];
     recentSourceContexts: HomeSourceContextRecord[];
     appliedTemplates: Awaited<ReturnType<TaskProcessBindingRepository['listActiveForTasks']>>;
@@ -427,7 +427,7 @@ export class HomeBriefService {
     }));
   }
 
-  private async attachActiveWaitingItems(tasks: TaskRecord[]): Promise<TaskRecord[]> {
+  private async attachActiveWaitingItems(tasks: TaskRecord[]): Promise<TaskListItemRecord[]> {
     return Promise.all(
       tasks.map(async (task) => ({
         ...task,
@@ -437,7 +437,7 @@ export class HomeBriefService {
   }
 
   private buildRecentActivity(
-    tasks: TaskRecord[],
+    tasks: TaskListItemRecord[],
     decisions: Awaited<ReturnType<DecisionRepository['list']>>,
     runs: Awaited<ReturnType<RunRepository['list']>>,
   ): HomeActivityRecord[] {
@@ -475,7 +475,7 @@ export class HomeBriefService {
   }
 
   private async buildRecentSourceContexts(
-    activeTasks: TaskRecord[],
+    activeTasks: TaskListItemRecord[],
   ): Promise<HomeSourceContextRecord[]> {
     if (!this.sourceContextRepository || activeTasks.length === 0) {
       return [];

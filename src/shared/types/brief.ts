@@ -3,7 +3,7 @@ import type { BriefSnapshotRecord } from './brief-snapshot.js';
 import type { ProcessTemplateKind } from './process-template.js';
 import type { SchedulerStatus } from './scheduler.js';
 import type { DecisionRecord } from './decision.js';
-import type { TaskRecord, TaskRiskLevel } from './task.js';
+import type { TaskListItemRecord, TaskRiskLevel } from './task.js';
 
 export type RecommendedActionIntent = {
   type:
@@ -93,10 +93,10 @@ export type HomeBriefData = {
   waitingTaskCount: number;
   highRiskTaskCount: number;
   missingNextStepTaskCount: number;
-  recentTasks: TaskRecord[];
-  waitingTasks: TaskRecord[];
-  highRiskTasks: TaskRecord[];
-  missingNextStepTasks: TaskRecord[];
+  recentTasks: TaskListItemRecord[];
+  waitingTasks: TaskListItemRecord[];
+  highRiskTasks: TaskListItemRecord[];
+  missingNextStepTasks: TaskListItemRecord[];
   pendingDecisions: DecisionRecord[];
   recommendedActions: RecommendedAction[];
   recentArtifacts: ArtifactRecord[];

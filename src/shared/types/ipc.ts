@@ -29,6 +29,7 @@ import type {
 import type {
   CreateTaskInput,
   TaskDetail,
+  TaskListItemRecord,
   TaskRecord,
   TransitionTaskInput,
   UpdateTaskInput,
@@ -38,11 +39,11 @@ export type ElectronApi = {
   ping: () => Promise<PingResponse>;
   getAiConfigStatus: () => Promise<AiConfigStatus>;
   setAiConfig: (input: AiConfigInput) => Promise<AiConfigStatus>;
-  listTasks: () => Promise<TaskRecord[]>;
-  createTask: (input: CreateTaskInput) => Promise<TaskRecord>;
+  listTasks: () => Promise<TaskListItemRecord[]>;
+  createTask: (input: CreateTaskInput) => Promise<TaskListItemRecord>;
   getTaskDetail: (taskId: string) => Promise<TaskDetail | null>;
-  updateTask: (input: UpdateTaskInput) => Promise<TaskRecord>;
-  transitionTask: (input: TransitionTaskInput) => Promise<TaskRecord>;
+  updateTask: (input: UpdateTaskInput) => Promise<TaskListItemRecord>;
+  transitionTask: (input: TransitionTaskInput) => Promise<TaskListItemRecord>;
   createSourceContext: (input: CreateSourceContextInput) => Promise<SourceContextRecord>;
   updateSourceContext: (input: UpdateSourceContextInput) => Promise<SourceContextRecord>;
   archiveSourceContext: (id: string) => Promise<SourceContextRecord>;

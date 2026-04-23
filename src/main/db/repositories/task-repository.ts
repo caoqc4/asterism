@@ -120,6 +120,7 @@ export class TaskRepository {
       state: task.state as TaskRecord['state'],
       nextStep: task.nextStep,
       waitingReason: task.waitingReason,
+      activeWaitingItem: null,
       riskLevel: task.riskLevel as TaskRecord['riskLevel'],
       riskNote: task.riskNote,
       createdAt: task.createdAt,

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 import type { RecommendedActionIntent } from '@shared/types/brief';
 import type { CreateDecisionInput, DecisionDraftRecord, DecisionRecord } from '@shared/types/decision';
-import type { TaskDetail, TaskRecord, TimelineEventRecord } from '@shared/types/task';
+import type { TaskDetail, TaskListItemRecord, TimelineEventRecord } from '@shared/types/task';
 import {
   getTaskTimelineFollowUpActionLabel,
   interpretTaskTimelineEvent,
@@ -73,7 +73,7 @@ function getRelatedTimeline(events: TimelineEventRecord[], decisionTitle: string
 type DecisionsPageProps = {
   decisions: DecisionRecord[];
   focusedDecisionId: string | null;
-  tasks: TaskRecord[];
+  tasks: TaskListItemRecord[];
   onOpenTask: (taskId: string, intent: RecommendedActionIntent) => void;
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
   onDraftDecision: (taskId: string, note?: string | null) => Promise<DecisionDraftRecord>;
