@@ -53,6 +53,7 @@ function buildRecommendedActions(params: {
   activeTasks: HomeBriefData['recentTasks'];
   highRiskTasks: HomeBriefData['highRiskTasks'];
   pendingDecisions: HomeBriefData['pendingDecisions'];
+  dependencyTasks: HomeTaskSliceRecord[];
   waitingTasks: HomeBriefData['waitingTasks'];
   missingNextStepTasks: HomeBriefData['missingNextStepTasks'];
   recentSourceContexts: HomeBriefData['recentSourceContexts'];
@@ -99,6 +100,30 @@ function buildRecommendedActions(params: {
       intent: {
         type: 'open_task',
         focusArea: 'quick-actions',
+      },
+    });
+  }
+
+  for (const task of params.dependencyTasks) {
+    if (!task.activeDependency || blockedTaskIds.has(task.id)) {
+      continue;
+    }
+
+    blockedTaskIds.add(task.id);
+    actions.push({
+      id: `task-dependency:${task.activeDependency.id}`,
+      label: `先推动上游任务：${task.activeDependency.blockedByTaskTitle ?? task.title}`,
+      reason: `任务“${task.title}”当前依赖上游任务“${
+        task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'
+      }”先完成。`,
+      taskId: task.activeDependency.blockedByTaskId,
+      priority: 'medium',
+      lane: 'unblock_or_decide',
+      order: order++,
+      intent: {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+        prefillNextStep: `先完成这条上游任务，以解除对“${task.title}”的依赖。`,
       },
     });
   }
@@ -311,6 +336,7 @@ function classifyPriorityLane(params: {
   highRiskTaskCount: number;
   pendingDecisionCount: number;
   blockerTaskCount: number;
+  dependencyTaskCount: number;
   blockerReevaluationCount: number;
   continueOrReviewCount: number;
   waitingTaskCount: number;
@@ -337,13 +363,16 @@ function classifyPriorityLane(params: {
   }
 
   const unblockOrDecideCount =
-    params.pendingDecisionCount + params.blockerTaskCount + params.blockerReevaluationCount;
+    params.pendingDecisionCount +
+    params.blockerTaskCount +
+    params.dependencyTaskCount +
+    params.blockerReevaluationCount;
 
   if (unblockOrDecideCount > 0) {
     return {
       lane: 'unblock_or_decide',
       headline: `当前有 ${unblockOrDecideCount} 条任务需要先解阻塞或拍板`,
-      lede: '当前最值得先处理的是解阻塞与拍板条件；首页会优先提示 pending decision、active blocker 和 blocker 来源更新后的重新判断。',
+      lede: '当前最值得先处理的是解阻塞与拍板条件；首页会优先提示 pending decision、active blocker、上游任务依赖，以及 blocker 来源更新后的重新判断。',
     };
   }
 
@@ -924,6 +953,13 @@ export class HomeBriefService {
     const blockerTasks = allBlockedTasks.filter(
       (task) => !task.activeBlocker || !isStaleBlocker(task.activeBlocker.createdAt),
     );
+    const dependencyTasks = activeTasks
+      .filter((task) => Boolean(task.activeDependency?.blockedByTaskId) && !task.activeBlocker)
+      .sort((left, right) =>
+        (left.activeDependency?.createdAt ?? left.updatedAt).localeCompare(
+          right.activeDependency?.createdAt ?? right.updatedAt,
+        ),
+      );
     const highRiskTasks = tasks.filter((task) => task.riskLevel === 'high');
     const missingNextStepTasks = activeTasks.filter((task) => !task.nextStep?.trim());
     const scheduler = this.getSchedulerStatus();
@@ -964,6 +1000,7 @@ export class HomeBriefService {
       activeTasks: activeTasks.slice(0, 10),
       highRiskTasks,
       pendingDecisions: pendingDecisions.slice(0, 5),
+      dependencyTasks,
       waitingTasks,
       missingNextStepTasks,
       recentSourceContexts,
@@ -995,6 +1032,7 @@ export class HomeBriefService {
       highRiskTaskCount: highRiskTasks.length,
       pendingDecisionCount: pendingDecisions.length,
       blockerTaskCount: blockerTasks.length,
+      dependencyTaskCount: dependencyTasks.length,
       blockerReevaluationCount,
       continueOrReviewCount,
       waitingTaskCount: waitingTasks.length,
@@ -1008,12 +1046,14 @@ export class HomeBriefService {
       recentRunCount: runs.length,
       waitingTaskCount: waitingTasks.length,
       blockerTaskCount: blockerTasks.length,
+      dependencyTaskCount: dependencyTasks.length,
       escalationTaskCount: escalationTasks.length,
       highRiskTaskCount: highRiskTasks.length,
       missingNextStepTaskCount: missingNextStepTasks.length,
       recentTasks: tasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       waitingTasks: waitingTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       blockerTasks: blockerTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
+      dependencyTasks: dependencyTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       escalationTasks: escalationTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       highRiskTasks: highRiskTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       missingNextStepTasks: missingNextStepTasks

@@ -171,6 +171,46 @@ export function HomePage({
     });
   }
 
+  function openDependencyTask(task: NonNullable<HomeBriefData['dependencyTasks']>[number]) {
+    onOpenAction({
+      id: `home-dependency:${task.id}`,
+      label: `推动上游任务依赖：${task.title}`,
+      reason:
+        task.activeDependency?.reason ??
+        `当前依赖上游任务“${task.activeDependency?.blockedByTaskTitle ?? '未命名上游任务'}”。`,
+      taskId: task.id,
+      priority: 'medium',
+      intent: {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+        prefillNextStep: `先推动上游任务完成：${
+          task.activeDependency?.blockedByTaskTitle ?? task.title
+        }`,
+      },
+    });
+  }
+
+  function openUpstreamTask(task: NonNullable<HomeBriefData['dependencyTasks']>[number]) {
+    if (!task.activeDependency?.blockedByTaskId) {
+      return;
+    }
+
+    onOpenAction({
+      id: `home-dependency-upstream:${task.id}`,
+      label: `打开上游任务：${task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'}`,
+      reason:
+        task.activeDependency.reason ??
+        `完成上游任务后，任务“${task.title}”才能继续推进。`,
+      taskId: task.activeDependency.blockedByTaskId,
+      priority: 'medium',
+      intent: {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+        prefillNextStep: `先完成这条上游任务，以解除对“${task.title}”的依赖。`,
+      },
+    });
+  }
+
   function openEscalationTask(task: HomeBriefData['escalationTasks'][number]) {
     onOpenAction({
       id: `home-escalation:${task.id}`,
@@ -696,6 +736,44 @@ export function HomePage({
               ))
             ) : (
               <p className="meta">当前没有阻塞中的任务。</p>
+            )}
+          </section>
+
+          <section className="timeline-list">
+            {renderLaneHeading('Blocked by Tasks', 'unblock_or_decide')}
+            {briefData?.dependencyTasks?.length ? (
+              briefData.dependencyTasks.map((task) => (
+                <div className="task-card task-card-warning" key={task.id}>
+                  <button
+                    className="task-card-button task-card-button-shell"
+                    onClick={() => openDependencyTask(task)}
+                    type="button"
+                  >
+                    <div className="task-row">
+                      <strong>{task.title}</strong>
+                      <span className="status">{task.state}</span>
+                    </div>
+                    <p className="meta">
+                      blocked by {task.activeDependency?.blockedByTaskTitle ?? '未命名上游任务'}
+                    </p>
+                    {task.activeDependency?.reason ? (
+                      <p className="meta">{task.activeDependency.reason}</p>
+                    ) : null}
+                    {task.nextStep ? <p className="meta">解除后下一步：{task.nextStep}</p> : null}
+                  </button>
+                  <div className="chip-row">
+                    <button
+                      className="ghost-button"
+                      onClick={() => openUpstreamTask(task)}
+                      type="button"
+                    >
+                      打开上游任务
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="meta">当前没有被其他任务阻塞的任务。</p>
             )}
           </section>
 

@@ -15,6 +15,7 @@ import type {
 import type { RunRecord } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { SourceContextRecord } from '@shared/types/source-context';
+import type { TaskDependencyRecord } from '@shared/types/task-dependency';
 import type { TaskDetail, TaskListItemRecord, TaskRecord } from '@shared/types/task';
 import type { ArtifactRecord } from '@shared/types/artifact';
 import type { WaitingItemRecord } from '@shared/types/waiting-item';
@@ -30,6 +31,7 @@ function buildTaskRecord(partial: Partial<TaskListItemRecord>): TaskListItemReco
     waitingReason: partial.waitingReason ?? null,
     activeWaitingItem: partial.activeWaitingItem ?? null,
     activeBlocker: partial.activeBlocker ?? null,
+    activeDependency: partial.activeDependency ?? null,
     riskLevel: partial.riskLevel ?? 'none',
     riskNote: partial.riskNote ?? null,
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
@@ -65,6 +67,20 @@ function buildWaitingItem(partial: Partial<WaitingItemRecord>): WaitingItemRecor
   };
 }
 
+function buildTaskDependency(partial: Partial<TaskDependencyRecord>): TaskDependencyRecord {
+  return {
+    id: partial.id ?? 'task_dependency_1',
+    taskId: partial.taskId ?? 'task_1',
+    blockedByTaskId: partial.blockedByTaskId ?? 'task_2',
+    blockedByTaskTitle: partial.blockedByTaskTitle ?? 'Upstream task',
+    reason: partial.reason ?? 'Need the upstream task to complete first',
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    resolvedAt: partial.resolvedAt ?? null,
+  };
+}
+
 function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
   const isEarlyTask = task.state === 'captured' || task.state === 'triaged';
   const latestChangeSummary = isEarlyTask
@@ -91,6 +107,11 @@ function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
         title: task.activeBlocker?.title ?? '暂无当前阻塞项',
         detail: task.activeBlocker?.detail ?? null,
         priorityReason: null,
+      },
+      currentDependency: {
+        dependencyId: task.activeDependency?.id ?? null,
+        title: task.activeDependency?.blockedByTaskTitle ?? '暂无当前依赖',
+        detail: task.activeDependency?.reason ?? null,
       },
       keySource: {
         sourceContextId: null,
@@ -3989,6 +4010,84 @@ describe('App UI flow', () => {
 
     expect((screen.getByLabelText('来源标题') as HTMLInputElement).value).toBe('Partner master sheet');
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe('');
+  });
+
+  it('opens upstream tasks from home dependency signals', async () => {
+    const user = userEvent.setup();
+
+    const upstreamTask = buildTaskRecord({
+      id: 'task_upstream_home',
+      title: 'Publish partner list',
+      state: 'planned',
+      nextStep: 'Finalize partner list',
+    });
+    const dependencyTask = buildTaskRecord({
+      id: 'task_dependency_home',
+      title: 'Draft outreach email',
+      state: 'planned',
+      nextStep: 'Prepare outreach draft',
+      activeDependency: buildTaskDependency({
+        id: 'task_dependency_home_link',
+        taskId: 'task_dependency_home',
+        blockedByTaskId: upstreamTask.id,
+        blockedByTaskTitle: upstreamTask.title,
+        reason: 'Need the approved partner list before drafting outreach.',
+      }),
+    });
+
+    const dependencyHomeApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([dependencyTask, upstreamTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId === dependencyTask.id) {
+          return buildTaskDetail(dependencyTask);
+        }
+
+        if (taskId === upstreamTask.id) {
+          return buildTaskDetail(upstreamTask);
+        }
+
+        return null;
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 2,
+        waitingTaskCount: 0,
+        blockerTaskCount: 0,
+        dependencyTaskCount: 1,
+        escalationTaskCount: 0,
+        highRiskTaskCount: 0,
+        missingNextStepTaskCount: 0,
+        recentTasks: [dependencyTask, upstreamTask],
+        waitingTasks: [],
+        blockerTasks: [],
+        dependencyTasks: [dependencyTask],
+        escalationTasks: [],
+        highRiskTasks: [],
+        missingNextStepTasks: [],
+        recommendedActions: [],
+        recentArtifacts: [],
+        recentSourceContexts: [],
+        recentActivity: [],
+      }),
+    };
+
+    window.api = dependencyHomeApi;
+
+    render(<App />);
+
+    const dependencySection = screen.getByText('Blocked by Tasks').closest('section');
+    expect(dependencySection).toBeTruthy();
+
+    await user.click(await within(dependencySection as HTMLElement).findByRole('button', { name: '打开上游任务' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Publish partner list' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '先完成这条上游任务，以解除对“Draft outreach email”的依赖。',
+    );
   });
 
   it('routes blocker created activity back into blocker recovery from home', async () => {
