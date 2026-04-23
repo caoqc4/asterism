@@ -768,14 +768,14 @@ describe('App UI flow', () => {
     expect(resumeSection).not.toBeNull();
 
     await user.click(
-      within(resumeSection as HTMLElement).getByRole('button', { name: '查看关键来源' }),
+      within(resumeSection as HTMLElement).getByRole('button', { name: '打开 Material Shelf' }),
     );
     expect((screen.getByLabelText('来源标题') as HTMLInputElement).value).toBe(
       'Launch reference memo',
     );
 
     await user.click(
-      within(resumeSection as HTMLElement).getByRole('button', { name: '打开当前方法模板' }),
+      within(resumeSection as HTMLElement).getByRole('button', { name: '打开 Active Methods' }),
     );
     expect((screen.getByLabelText('模板标题') as HTMLInputElement).value).toBe('Launch workflow');
 

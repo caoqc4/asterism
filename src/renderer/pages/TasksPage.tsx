@@ -1203,6 +1203,7 @@ export function TasksPage({
                       </div>
                       <div className="resume-cell">
                         <strong>Key Source</strong>
+                        <p className="meta">Material Shelf slice</p>
                         <p className="meta">{detail.resumeCard.keySource.title}</p>
                         {detail.resumeCard.keySource.detail ? (
                           <p className="meta">{detail.resumeCard.keySource.detail}</p>
@@ -1213,6 +1214,7 @@ export function TasksPage({
                       </div>
                       <div className="resume-cell">
                         <strong>Current Method</strong>
+                        <p className="meta">Active Methods slice</p>
                         <p className="meta">{detail.resumeCard.currentMethod.title}</p>
                         {detail.resumeCard.currentMethod.detail ? (
                           <p className="meta">{detail.resumeCard.currentMethod.detail}</p>
@@ -1233,7 +1235,7 @@ export function TasksPage({
                           onClick={() => focusSourceContext(detail.resumeCard.keySource.sourceContextId)}
                           type="button"
                         >
-                          查看关键来源
+                          打开 Material Shelf
                         </button>
                       ) : null}
                       {detail.resumeCard.currentMethod.templateId ? (
@@ -1242,7 +1244,7 @@ export function TasksPage({
                           onClick={() => focusProcessTemplate(detail.resumeCard.currentMethod.templateId)}
                           type="button"
                         >
-                          打开当前方法模板
+                          打开 Active Methods
                         </button>
                       ) : null}
                       <button
@@ -1706,7 +1708,7 @@ export function TasksPage({
               <div className="detail-cluster-grid">
                 <div className="transition-group detail-card-group">
                   <h3>Source Context</h3>
-                  <p className="meta">这一层管理任务依赖的材料，不和方法模板混在一起。</p>
+                  <p className="meta">这一层管理任务依赖的材料，不和方法模板混在一起；上方 Resume Card 的 Key Source 就是从这里抽出的关键切片。</p>
                   <div className="studio-section">
                     <div className="studio-section-head">
                       <strong>Material Shelf</strong>
@@ -1835,7 +1837,7 @@ export function TasksPage({
 
                 <div className="transition-group detail-card-group" ref={processContextSectionRef}>
                   <h3>Process Context</h3>
-                  <p className="meta">这一层管理任务当前采用的方法和可复用模板库。</p>
+                  <p className="meta">这一层管理任务当前采用的方法和可复用模板库；上方 Resume Card 的 Current Method 就是从这里抽出的当前切片。</p>
                   <div className="studio-section">
                     <div className="studio-section-head">
                       <strong>Active Methods</strong>
