@@ -708,12 +708,19 @@ export class HomeBriefService {
   ): HomeActivityRecord[] {
     const taskTitleById = new Map(tasks.map((task) => [task.id, task.title]));
 
+    const getDecisionLane = (status: string): PriorityLane =>
+      status === 'approved' ? 'continue_or_review' : 'unblock_or_decide';
+    const getRunLane = (status: string): PriorityLane => 'continue_or_review';
+    const getBlockerLane = (status: string): PriorityLane =>
+      status === 'resolved' ? 'continue_or_review' : 'unblock_or_decide';
+
     const decisionEvents: HomeActivityRecord[] = decisions
       .filter((decision) => decision.status !== 'pending')
       .map((decision) => ({
         id: `decision:${decision.id}`,
         sourceType: 'decision',
         sourceId: decision.id,
+        lane: getDecisionLane(decision.status),
         taskId: decision.taskId,
         taskTitle: taskTitleById.get(decision.taskId) ?? decision.taskId,
         title: decision.title,
@@ -727,6 +734,7 @@ export class HomeBriefService {
         id: `run:${run.id}`,
         sourceType: 'run',
         sourceId: run.id,
+        lane: getRunLane(run.status),
         taskId: run.taskId,
         taskTitle: taskTitleById.get(run.taskId) ?? run.taskId,
         title: run.type,
@@ -760,6 +768,7 @@ export class HomeBriefService {
                 id: `${event.type}:${task.activeBlocker.id}:${String(payload?.sourceContextId ?? event.id)}`,
                 sourceType: 'blocker' as const,
                 sourceId: task.activeBlocker.id,
+                lane: getBlockerLane('source_updated'),
                 relatedSourceContextId: String(payload?.sourceContextId ?? ''),
                 taskId: task.taskId,
                 taskTitle: task.taskTitle,
@@ -773,6 +782,7 @@ export class HomeBriefService {
               id: `${event.type}:${String(payload?.blockerId ?? event.id)}`,
               sourceType: 'blocker' as const,
               sourceId: String(payload?.blockerId ?? event.id),
+              lane: getBlockerLane(event.type === 'blocker.created' ? 'created' : 'resolved'),
               relatedSourceContextId:
                 typeof payload?.sourceContextId === 'string' ? payload.sourceContextId : null,
               taskId: task.taskId,

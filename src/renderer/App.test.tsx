@@ -195,6 +195,7 @@ function buildActivity(
     id: partial.id ?? 'activity_1',
     sourceType: partial.sourceType ?? 'run',
     sourceId: partial.sourceId ?? 'run_1',
+    lane: partial.lane,
     relatedSourceContextId: partial.relatedSourceContextId ?? null,
     taskId: partial.taskId ?? 'task_1',
     taskTitle: partial.taskTitle ?? 'Task',
@@ -4215,6 +4216,44 @@ describe('App UI flow', () => {
     expect(actionCard).toBeTruthy();
     expect(within(actionCard as HTMLElement).getByText('先解阻塞/拍板')).toBeTruthy();
     expect(within(actionCard as HTMLElement).getByText('high')).toBeTruthy();
+  });
+
+  it('shows lightweight priority lane labels on recent activity items', async () => {
+    const laneActivityTask = buildTaskRecord({
+      id: 'task_lane_activity',
+      title: 'Lane activity task',
+      state: 'planned',
+      nextStep: 'Review the run result',
+    });
+
+    window.api = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([laneActivityTask]),
+      getTaskDetail: vi.fn().mockResolvedValue(buildTaskDetail(laneActivityTask)),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 1,
+        recentTasks: [laneActivityTask],
+        recentActivity: [
+          buildActivity({
+            id: 'run:lane',
+            sourceType: 'run',
+            sourceId: 'run_lane',
+            taskId: 'task_lane_activity',
+            taskTitle: 'Lane activity task',
+            title: 'draft',
+            status: 'completed',
+            lane: 'continue_or_review',
+          }),
+        ],
+      }),
+    };
+
+    render(<App />);
+
+    const activityButton = await screen.findByRole('button', { name: /draft completed task: Lane activity task/i });
+    expect(within(activityButton).getByText('继续推进/复核')).toBeTruthy();
+    expect(within(activityButton).getByText('completed')).toBeTruthy();
   });
 
   it('opens task resume previews from home with a prefilled next step', async () => {

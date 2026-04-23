@@ -50,6 +50,7 @@ export type HomeActivityRecord = {
   id: string;
   sourceType: 'decision' | 'run' | 'blocker';
   sourceId: string;
+  lane?: PriorityLane;
   relatedSourceContextId?: string | null;
   taskId: string;
   taskTitle: string;

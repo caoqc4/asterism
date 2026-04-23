@@ -527,7 +527,12 @@ export function HomePage({
                     <strong>
                       {getActivityTitle(event)}
                     </strong>
-                    <span className="status">{getActivityStatusLabel(event)}</span>
+                    <div className="task-row task-row-compact">
+                      {getLaneLabel(event.lane) ? (
+                        <span className={`status lane-status lane-status-${event.lane}`}>{getLaneLabel(event.lane)}</span>
+                      ) : null}
+                      <span className="status">{getActivityStatusLabel(event)}</span>
+                    </div>
                   </div>
                   <p className="meta">task: {event.taskTitle}</p>
                   <p className="meta">{event.updatedAt}</p>
