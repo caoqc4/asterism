@@ -37,6 +37,7 @@ type HomePageProps = {
   onOpenActivity: (activity: HomeActivityRecord) => void;
   onOpenActivityObject: (activity: HomeActivityRecord) => void;
   onOpenArtifact: (artifact: ArtifactRecord) => void;
+  onResolveBlockedTask: (task: HomeBriefData['blockerTasks'][number]) => void;
   onOpenSourceContext: (sourceContext: HomeSourceContextRecord) => void;
   onOpenResumeLatestChange: (preview: HomeBriefData['recentTaskResumes'][number]) => void;
 };
@@ -50,6 +51,7 @@ export function HomePage({
   onOpenActivity,
   onOpenActivityObject,
   onOpenArtifact,
+  onResolveBlockedTask,
   onOpenSourceContext,
   onOpenResumeLatestChange,
 }: HomePageProps) {
@@ -473,8 +475,25 @@ export function HomePage({
                       >
                         查看阻塞来源
                       </button>
+                      <button
+                        className="ghost-button"
+                        onClick={() => onResolveBlockedTask(task)}
+                        type="button"
+                      >
+                        标记已解除
+                      </button>
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="chip-row">
+                      <button
+                        className="ghost-button"
+                        onClick={() => onResolveBlockedTask(task)}
+                        type="button"
+                      >
+                        标记已解除
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))
             ) : (

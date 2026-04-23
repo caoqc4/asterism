@@ -35,6 +35,65 @@ import { RunsPage } from './pages/RunsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { TasksPage } from './pages/TasksPage';
 
+const BLOCKER_TOKEN_STOP_WORDS = new Set([
+  'need',
+  'needs',
+  'with',
+  'from',
+  'before',
+  'after',
+  'task',
+  'item',
+  'owner',
+  'team',
+  'current',
+  'waiting',
+]);
+
+function getMeaningfulBlockerTokens(value: string): string[] {
+  return (value.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter((token) => {
+    const hasCjk = /[\p{Script=Han}]/u.test(token);
+    if (hasCjk) {
+      return token.length >= 2;
+    }
+
+    return token.length >= 4 && !BLOCKER_TOKEN_STOP_WORDS.has(token);
+  });
+}
+
+function waitingIsClearlyDrivenByBlocker(task: HomeBriefData['blockerTasks'][number]): boolean {
+  if (task.state !== 'waiting_external' || !task.activeBlocker) {
+    return false;
+  }
+
+  const waitingText = [task.activeWaitingItem?.reason, task.waitingReason].filter(Boolean).join(' ').trim();
+  if (!waitingText) {
+    return false;
+  }
+
+  const blockerTexts = [
+    task.activeBlocker.title,
+    task.activeBlocker.detail,
+    task.activeBlocker.owner,
+  ].filter(Boolean) as string[];
+
+  const waitingLower = waitingText.toLowerCase();
+  const blockerLower = blockerTexts.map((value) => value.toLowerCase());
+
+  if (blockerLower.some((value) => waitingLower.includes(value) || value.includes(waitingLower))) {
+    return true;
+  }
+
+  const waitingTokens = new Set(getMeaningfulBlockerTokens(waitingText));
+  if (!waitingTokens.size) {
+    return false;
+  }
+
+  return blockerTexts.some((value) =>
+    getMeaningfulBlockerTokens(value).some((token) => waitingTokens.has(token)),
+  );
+}
+
 const navItems: Array<{ id: AppRoute; label: string; description: string }> = [
   { id: 'home', label: 'Home', description: '局势概览与系统状态' },
   { id: 'tasks', label: 'Tasks', description: '任务列表、详情与状态流转' },
@@ -224,6 +283,23 @@ export function App() {
     );
     setBriefData(await window.api.getHomeBrief());
     return resolved;
+  }
+
+  async function handleResolveBlockerFromHome(task: HomeBriefData['blockerTasks'][number]) {
+    if (!task.activeBlocker) {
+      return;
+    }
+
+    await window.api.resolveBlocker(task.activeBlocker.id);
+
+    if (waitingIsClearlyDrivenByBlocker(task)) {
+      await window.api.transitionTask({
+        id: task.id,
+        nextState: 'planned',
+      });
+    }
+
+    await loadShellData();
   }
 
   async function handleCreateProcessTemplate(input: CreateProcessTemplateInput) {
@@ -436,6 +512,7 @@ export function App() {
             onOpenActivityObject={handleOpenActivityObject}
             onOpenArtifact={handleOpenArtifact}
             onOpenResumeLatestChange={handleOpenResumeLatestChange}
+            onResolveBlockedTask={handleResolveBlockerFromHome}
             onOpenSourceContext={handleOpenSourceContext}
             ping={ping}
             status={status}

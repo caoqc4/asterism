@@ -3645,6 +3645,97 @@ describe('App UI flow', () => {
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe('');
   });
 
+  it('resolves blocked tasks from home and resumes waiting when the blocker clearly caused it', async () => {
+    const user = userEvent.setup();
+
+    let currentTask = buildTaskRecord({
+      id: 'task_blocked_resolve_home',
+      title: 'Blocked resolve task',
+      state: 'waiting_external',
+      waitingReason: 'Waiting for legal approval',
+      activeWaitingItem: buildWaitingItem({
+        id: 'waiting_blocked_resolve_home',
+        taskId: 'task_blocked_resolve_home',
+        reason: 'Waiting for legal approval',
+      }),
+      activeBlocker: buildBlocker({
+        id: 'blocker_resolve_home_1',
+        taskId: 'task_blocked_resolve_home',
+        title: 'Legal approval pending',
+        detail: 'Need legal sign-off before launch',
+      }),
+    });
+
+    const blockerHomeApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockImplementation(async () => [currentTask]),
+      getTaskDetail: vi.fn().mockResolvedValue(buildTaskDetail(currentTask)),
+      getHomeBrief: vi.fn().mockImplementation(async () => ({
+        ...briefData,
+        activeTaskCount: 1,
+        waitingTaskCount: currentTask.state === 'waiting_external' ? 1 : 0,
+        blockerTaskCount: currentTask.activeBlocker ? 1 : 0,
+        highRiskTaskCount: 0,
+        missingNextStepTaskCount: currentTask.nextStep ? 0 : 1,
+        recentTasks: [currentTask],
+        waitingTasks: currentTask.state === 'waiting_external' ? [currentTask] : [],
+        blockerTasks: currentTask.activeBlocker ? [currentTask] : [],
+        highRiskTasks: [],
+        missingNextStepTasks: currentTask.nextStep ? [] : [currentTask],
+        recommendedActions: [],
+        recentArtifacts: [],
+        recentSourceContexts: [],
+        recentActivity: [],
+      })),
+      resolveBlocker: vi.fn().mockImplementation(async (id: string) => {
+        currentTask = {
+          ...currentTask,
+          activeBlocker: null,
+          updatedAt: '2026-01-03T00:00:00.000Z',
+        };
+
+        return buildBlocker({
+          id,
+          taskId: currentTask.id,
+          status: 'resolved',
+          resolvedAt: '2026-01-03T00:00:00.000Z',
+          updatedAt: '2026-01-03T00:00:00.000Z',
+        });
+      }),
+      transitionTask: vi.fn().mockImplementation(async ({ id, nextState }: { id: string; nextState: string }) => {
+        currentTask = {
+          ...currentTask,
+          id,
+          state: nextState as TaskListItemRecord['state'],
+          waitingReason: null,
+          activeWaitingItem: null,
+          updatedAt: '2026-01-03T00:00:00.000Z',
+        };
+
+        return currentTask;
+      }),
+    };
+
+    window.api = blockerHomeApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: '标记已解除' }));
+
+    await waitFor(() => {
+      expect(blockerHomeApi.resolveBlocker).toHaveBeenCalledWith('blocker_resolve_home_1');
+    });
+
+    expect(blockerHomeApi.transitionTask).toHaveBeenCalledWith({
+      id: 'task_blocked_resolve_home',
+      nextState: 'planned',
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('当前没有阻塞中的任务。')).toBeTruthy();
+    });
+  });
+
   it('opens task resume previews from home with a prefilled next step', async () => {
     const user = userEvent.setup();
 
