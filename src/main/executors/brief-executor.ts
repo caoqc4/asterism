@@ -12,18 +12,29 @@ function formatTaskLine(title: string, state: string): string {
   return `- ${title} [${state}]`;
 }
 
+function isClarifyState(state: string): boolean {
+  return state === 'captured' || state === 'triaged';
+}
+
 function formatTaskContext(
+  state: string,
   nextStep: string | null,
   waitingReason: string | null,
   blockerTitle: string | null,
   riskLabel: string,
 ): string {
-  return [
+  const parts = [
     `next=${nextStep ?? '无'}`,
     `waiting=${waitingReason ?? '无'}`,
     `blocker=${blockerTitle ?? '无'}`,
     `risk=${riskLabel}`,
-  ].join(' | ');
+  ];
+
+  if (isClarifyState(state)) {
+    parts.push('clarify=先整理任务，再决定是否拍板或执行');
+  }
+
+  return parts.join(' | ');
 }
 
 function formatDecisionLine(title: string, status: string): string {
@@ -96,6 +107,10 @@ function formatResumePreviewLine(preview: HomeBriefData['recentTaskResumes'][num
     `next=${preview.nextSuggestedMove}`,
   ];
 
+  if (preview.lane === 'clarify' && /状态：(captured|triaged)/.test(preview.currentState)) {
+    parts.push('clarify=整理任务');
+  }
+
   if (preview.keySource.title) {
     parts.push(`source=${preview.keySource.title}`);
   }
@@ -125,6 +140,7 @@ export function buildFallbackBrief(
         .map(
           (task) =>
             `${formatTaskLine(task.title, task.state)}\n  ${formatTaskContext(
+              task.state,
               task.nextStep,
               task.waitingReason,
               task.activeBlocker?.title ?? null,
@@ -273,7 +289,7 @@ function buildPrompt(
               task.riskLevel === 'none'
                 ? 'none'
                 : `${task.riskLevel}${task.riskNote ? `:${task.riskNote}` : ''}`
-            }`,
+            }${isClarifyState(task.state) ? ' | clarify=先整理任务，再决定是否拍板或执行' : ''}`,
         )
       : ['- 无']),
     '',

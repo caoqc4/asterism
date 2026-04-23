@@ -134,4 +134,53 @@ describe('buildFallbackBrief', () => {
     expect(brief).toContain('优先升级阻塞项');
     expect(brief).toContain('run:draft [completed] | task=Resume task');
   });
+
+  it('uses clarify-first wording for captured task resumes in briefs', () => {
+    const brief = buildFallbackBrief(
+      {
+        ...buildHomeBriefData(),
+        recentTaskResumes: [
+          {
+            taskId: 'task_captured_brief',
+            taskTitle: 'Captured brief task',
+            lane: 'clarify',
+            currentState: '状态：captured',
+            latestChange: {
+              summary: '最近刚捕获这条任务，先补清摘要与下一步。',
+              action: {
+                label: null,
+                targetType: null,
+                targetId: null,
+              },
+            },
+            currentBlocker: {
+              title: null,
+              priorityReason: null,
+            },
+            keySource: {
+              sourceContextId: null,
+              title: null,
+              priorityReason: null,
+            },
+            currentMethod: {
+              title: null,
+              selectionReason: null,
+            },
+            nextSuggestedMove: '先补一句任务摘要，再明确下一步。',
+            contextActionLabel: '补摘要与下一步',
+            contextActionIntent: {
+              type: 'focus_next_step',
+              focusArea: 'detail',
+              prefillNextStep: '先补一句任务摘要，再明确下一步。',
+            },
+          },
+        ],
+      },
+      'startup',
+    );
+
+    expect(brief).toContain('clarify=整理任务');
+    expect(brief).toContain('latest=最近刚捕获这条任务，先补清摘要与下一步。');
+    expect(brief).toContain('next=先补一句任务摘要，再明确下一步。');
+  });
 });
