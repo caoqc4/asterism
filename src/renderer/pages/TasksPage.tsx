@@ -49,7 +49,11 @@ import {
 import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
 import type { PriorityLane } from '@shared/types/brief';
 import { getPriorityLaneLabel } from '@shared/working-context/priority-lanes';
-import { formatDependencyAgeLabel, getDependencyAgeReason } from '@shared/working-context/dependency';
+import {
+  formatDependencyAgeLabel,
+  getDependencyAgeReason,
+  isStaleDependency,
+} from '@shared/working-context/dependency';
 import {
   getTaskTransitionGuidance,
   orderTaskTransitions,
@@ -544,6 +548,14 @@ function getDependencyReevaluationNextStep(detail: TaskDetail): string | null {
   return detail.dependencyReevaluation.status === 'upstream_ready'
     ? `基于上游任务完成重新判断是否解除依赖：${detail.activeDependency.blockedByTaskTitle}`
     : `基于上游任务进展重新判断是否解除依赖：${detail.activeDependency.blockedByTaskTitle}`;
+}
+
+function getDependencyEscalationNextStep(detail: TaskDetail): string | null {
+  if (!detail.activeDependency?.blockedByTaskTitle) {
+    return null;
+  }
+
+  return `优先推动上游任务“${detail.activeDependency.blockedByTaskTitle}”，并重新判断是否解除对“${detail.title}”的依赖。`;
 }
 
 type TasksPageProps = {
@@ -1068,6 +1080,33 @@ export function TasksPage({
     }
 
     const nextStep = getDependencyReevaluationNextStep(detail);
+
+    if (!nextStep) {
+      return;
+    }
+
+    setDraftNextStep(nextStep);
+    setDetailError(null);
+
+    if (typeof detailFormRef.current?.scrollIntoView === 'function') {
+      detailFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function shouldEscalateCurrentDependency(): boolean {
+    return Boolean(
+      detail?.activeDependency &&
+        !detail.dependencyReevaluation &&
+        isStaleDependency(detail.activeDependency.createdAt),
+    );
+  }
+
+  function escalateCurrentDependency() {
+    if (!detail) {
+      return;
+    }
+
+    const nextStep = getDependencyEscalationNextStep(detail);
 
     if (!nextStep) {
       return;
@@ -1874,6 +1913,15 @@ export function TasksPage({
                           打开 Task Dependency
                         </button>
                       ) : null}
+                      {shouldEscalateCurrentDependency() ? (
+                        <button
+                          className="ghost-button timeline-action"
+                          onClick={escalateCurrentDependency}
+                          type="button"
+                        >
+                          直接升级依赖链路
+                        </button>
+                      ) : null}
                       <button
                         className="ghost-button timeline-action"
                         onClick={adoptResumeNextStep}
@@ -2021,8 +2069,17 @@ export function TasksPage({
                               className="ghost-button timeline-action"
                               onClick={openUpstreamDependencyTask}
                               type="button"
+                              >
+                                打开上游任务
+                              </button>
+                            ) : null}
+                          {shouldEscalateCurrentDependency() ? (
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={escalateCurrentDependency}
+                              type="button"
                             >
-                              打开上游任务
+                              直接升级依赖链路
                             </button>
                           ) : null}
                           <button
@@ -2600,8 +2657,17 @@ export function TasksPage({
                                 className="ghost-button timeline-action"
                                 onClick={openUpstreamDependencyTask}
                                 type="button"
+                                >
+                                  打开上游任务
+                                </button>
+                              ) : null}
+                            {shouldEscalateCurrentDependency() ? (
+                              <button
+                                className="ghost-button timeline-action"
+                                onClick={escalateCurrentDependency}
+                                type="button"
                               >
-                                打开上游任务
+                                直接升级依赖链路
                               </button>
                             ) : null}
                             <button

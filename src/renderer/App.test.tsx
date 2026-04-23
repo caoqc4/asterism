@@ -1515,6 +1515,82 @@ describe('App UI flow', () => {
     });
   });
 
+  it('adds direct dependency escalation actions on the task page for stale dependencies', async () => {
+    const user = userEvent.setup();
+
+    const upstreamTask = buildTaskRecord({
+      id: 'task_dependency_stale_upstream',
+      title: 'Finalize legal brief',
+      state: 'planned',
+      nextStep: 'Confirm the final legal review notes',
+      updatedAt: '2026-01-08T00:00:00.000Z',
+    });
+    const dependencyTask = buildTaskRecord({
+      id: 'task_dependency_stale_downstream',
+      title: 'Launch outreach sequence',
+      state: 'planned',
+      nextStep: null,
+      updatedAt: '2026-01-09T00:00:00.000Z',
+      activeDependency: buildTaskDependency({
+        id: 'dependency_stale_1',
+        taskId: 'task_dependency_stale_downstream',
+        blockedByTaskId: 'task_dependency_stale_upstream',
+        blockedByTaskTitle: 'Finalize legal brief',
+        reason: 'Need the legal brief before sending outreach',
+        createdAt: '2025-09-01T00:00:00.000Z',
+        updatedAt: '2025-09-01T00:00:00.000Z',
+      }),
+    });
+
+    const dependencyDetail: TaskDetail = {
+      ...buildTaskDetail(dependencyTask),
+      resumeCard: {
+        ...buildTaskDetail(dependencyTask).resumeCard,
+        currentDependency: {
+          dependencyId: 'dependency_stale_1',
+          title: 'Finalize legal brief',
+          detail: 'Need the legal brief before sending outreach',
+          priorityReason: '这条依赖链已持续 112 天，建议优先推动上游任务或重新判断是否解除依赖。',
+          ageLabel: 'depends since 2025-09-01 · 已依赖 112 天',
+        },
+      },
+    };
+
+    window.api = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([dependencyTask, upstreamTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId === dependencyTask.id) {
+          return dependencyDetail;
+        }
+
+        if (taskId === upstreamTask.id) {
+          return buildTaskDetail(upstreamTask);
+        }
+
+        return null;
+      }),
+    };
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /Launch outreach sequence/i }));
+    await user.click(await screen.findByRole('button', { name: '打开 Task Dependency' }));
+
+    const dependencyHeading = await screen.findByRole('heading', { name: 'Current Dependency' });
+    const dependencySection = dependencyHeading.closest('.detail-card-group');
+    expect(dependencySection).toBeTruthy();
+
+    await user.click(
+      await within(dependencySection as HTMLElement).findByRole('button', { name: '直接升级依赖链路' }),
+    );
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '优先推动上游任务“Finalize legal brief”，并重新判断是否解除对“Launch outreach sequence”的依赖。',
+    );
+  });
+
   it('offers a direct action to resolve the current waiting item', async () => {
     const user = userEvent.setup();
 
