@@ -153,6 +153,7 @@ Covered today:
 - `Tasks completion criteria create / satisfy / reopen flow`
 - `Tasks completed-transition guidance from completion criteria`
 - `Tasks potential completion evidence from approved decisions, runs, and artifacts`
+- `Tasks completion evidence -> likely matching criteria focus`
 - closeout-ready recovery surfaces now also assert that approved decisions and completed runs read as explicit completion evidence instead of generic continue/review changes
 - `Home closeout tasks` for completion-ready and near-completion recovery flows
 - `Priority lane` closeout-aware wording on home/task recovery surfaces

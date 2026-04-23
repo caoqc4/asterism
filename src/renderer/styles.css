@@ -499,6 +499,10 @@ button {
   border-color: rgba(59, 130, 246, 0.12);
 }
 
+.timeline-item-completion-focus {
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.18);
+}
+
 .timeline-item-next-step {
   background: rgba(16, 185, 129, 0.08);
   border-color: rgba(16, 185, 129, 0.12);

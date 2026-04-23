@@ -107,6 +107,7 @@ type CompletionEvidenceCard = {
   title: string;
   detail: string;
   matchedCriteria: string[];
+  matchedCriteriaIds: string[];
   targetId: string | null;
 };
 
@@ -247,6 +248,36 @@ function findMatchedCompletionCriteria(
   });
 
   return matched.map((item) => item.text);
+}
+
+function findMatchedCompletionCriteriaIds(
+  criteria: CompletionCriteriaRecord[],
+  evidenceTexts: string[],
+): string[] {
+  const openCriteria = criteria.filter((item) => item.status === 'open');
+
+  if (openCriteria.length === 0) {
+    return [];
+  }
+
+  if (openCriteria.length === 1) {
+    return [openCriteria[0]!.id];
+  }
+
+  const haystack = evidenceTexts.map(normalizeCompletionText).join(' ');
+
+  return openCriteria
+    .filter((item) => {
+      const normalized = normalizeCompletionText(item.text);
+
+      if (normalized && haystack.includes(normalized)) {
+        return true;
+      }
+
+      const keywords = buildCompletionKeywords(item.text);
+      return keywords.some((keyword) => haystack.includes(keyword));
+    })
+    .map((item) => item.id);
 }
 
 function formatSourceContextKind(kind: SourceContextKind): string {
@@ -725,6 +756,7 @@ export function TasksPage({
   const [blockerSourceContextId, setBlockerSourceContextId] = useState('');
   const [blockerError, setBlockerError] = useState<string | null>(null);
   const [completionCriteriaEditingId, setCompletionCriteriaEditingId] = useState<string | null>(null);
+  const [completionCriteriaFocusIds, setCompletionCriteriaFocusIds] = useState<string[]>([]);
   const [completionCriteriaText, setCompletionCriteriaText] = useState('');
   const [completionCriteriaError, setCompletionCriteriaError] = useState<string | null>(null);
   const [dependencyEditingId, setDependencyEditingId] = useState<string | null>(null);
@@ -801,6 +833,10 @@ export function TasksPage({
               decision.title,
               decision.status,
             ]),
+            matchedCriteriaIds: findMatchedCompletionCriteriaIds(detail.completionCriteria, [
+              decision.title,
+              decision.status,
+            ]),
             targetId: decision.id,
           })),
         ...taskRuns
@@ -822,6 +858,13 @@ export function TasksPage({
               run.output ?? '',
               run.failureReason ?? '',
             ]),
+            matchedCriteriaIds: findMatchedCompletionCriteriaIds(detail.completionCriteria, [
+              run.type,
+              run.status,
+              run.instructions ?? '',
+              run.output ?? '',
+              run.failureReason ?? '',
+            ]),
             targetId: run.id,
           })),
         ...detail.artifacts
@@ -832,6 +875,10 @@ export function TasksPage({
             title: artifact.title,
             detail: '这份最近产物可能已经覆盖某条完成标准，值得先核对。',
             matchedCriteria: findMatchedCompletionCriteria(detail.completionCriteria, [
+              artifact.title,
+              artifact.content,
+            ]),
+            matchedCriteriaIds: findMatchedCompletionCriteriaIds(detail.completionCriteria, [
               artifact.title,
               artifact.content,
             ]),
@@ -997,6 +1044,7 @@ export function TasksPage({
         setDependencyBlockedByTaskId('');
         setDependencyReason('');
         setDependencyError(null);
+        setCompletionCriteriaFocusIds([]);
         setSourceContextEditingId(null);
         setSourceContextTitle('');
         setSourceContextKind('link');
@@ -1250,7 +1298,9 @@ export function TasksPage({
     setCompletionCriteriaError(null);
   }
 
-  function focusCompletionCriteriaSection() {
+  function focusCompletionCriteriaSection(matchedCriteriaIds: string[] = []) {
+    setCompletionCriteriaFocusIds(matchedCriteriaIds);
+
     if (typeof completionCriteriaSectionRef.current?.scrollIntoView === 'function') {
       completionCriteriaSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -2159,7 +2209,7 @@ export function TasksPage({
                       ) : null}
                       <button
                         className="ghost-button timeline-action"
-                        onClick={focusCompletionCriteriaSection}
+                        onClick={() => focusCompletionCriteriaSection()}
                         type="button"
                       >
                         打开 Completion Criteria
@@ -2491,18 +2541,32 @@ export function TasksPage({
                   <div className="timeline-list">
                     {detail.completionCriteria.length ? (
                       detail.completionCriteria.map((criteria) => (
-                        <div className="timeline-item timeline-item-state" key={criteria.id}>
+                        <div
+                          className={`timeline-item timeline-item-state ${
+                            completionCriteriaFocusIds.includes(criteria.id)
+                              ? 'timeline-item-completion-focus'
+                              : ''
+                          }`}
+                          key={criteria.id}
+                        >
                           <div className="task-row">
                             <strong>{criteria.text}</strong>
-                            <span
-                              className={`signal-pill timeline-badge ${
-                                criteria.status === 'satisfied'
-                                  ? 'timeline-item-state'
-                                  : 'timeline-item-default'
-                              }`}
-                            >
-                              {criteria.status === 'satisfied' ? '已满足' : '未满足'}
-                            </span>
+                            <div className="timeline-badge-row">
+                              {completionCriteriaFocusIds.includes(criteria.id) ? (
+                                <span className="signal-pill timeline-badge timeline-item-next-step">
+                                  证据可能对应
+                                </span>
+                              ) : null}
+                              <span
+                                className={`signal-pill timeline-badge ${
+                                  criteria.status === 'satisfied'
+                                    ? 'timeline-item-state'
+                                    : 'timeline-item-default'
+                                }`}
+                              >
+                                {criteria.status === 'satisfied' ? '已满足' : '未满足'}
+                              </span>
+                            </div>
                           </div>
                           <p className="meta">
                             created {criteria.createdAt.slice(0, 10)}
@@ -2588,10 +2652,10 @@ export function TasksPage({
                           <div className="timeline-actions">
                             <button
                               className="ghost-button timeline-action"
-                              onClick={focusCompletionCriteriaSection}
+                              onClick={() => focusCompletionCriteriaSection(evidence.matchedCriteriaIds)}
                               type="button"
                             >
-                              对照 Completion Criteria
+                              {evidence.matchedCriteriaIds.length ? '对照可能对应标准' : '对照未满足标准'}
                             </button>
                             {evidence.type === 'decision' && evidence.targetId ? (
                               <button
@@ -2774,7 +2838,7 @@ export function TasksPage({
                         <button
                           type="button"
                           className="ghost-button"
-                          onClick={focusCompletionCriteriaSection}
+                          onClick={() => focusCompletionCriteriaSection()}
                         >
                           打开 Completion Criteria
                         </button>

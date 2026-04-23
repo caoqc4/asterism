@@ -5869,6 +5869,19 @@ describe('App UI flow', () => {
     expect(
       within(evidenceSection as HTMLElement).getAllByText(/可能对应：Approve escalation path/).length,
     ).toBeGreaterThan(0);
+
+    await user.click(
+      within(evidenceSection as HTMLElement).getAllByRole('button', {
+        name: '对照可能对应标准',
+      })[0] as HTMLElement,
+    );
+
+    const criteriaSection = screen
+      .getByRole('heading', { name: 'Current Completion Criteria' })
+      .closest('.detail-card-group');
+
+    expect(criteriaSection).toBeTruthy();
+    expect(within(criteriaSection as HTMLElement).getByText('证据可能对应')).toBeTruthy();
   });
 
   it('opens newly created tasks in clarify mode and focuses the new task detail', async () => {
