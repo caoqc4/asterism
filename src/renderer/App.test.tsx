@@ -5876,11 +5876,25 @@ describe('App UI flow', () => {
       ],
     };
 
+    const completionRuns = [
+      ...runs,
+      buildRunRecord({
+        id: 'run_completion_1',
+        taskId: riskTask.id,
+        type: 'draft',
+        status: 'completed',
+        instructions: 'Approve escalation path',
+        output: 'Approve escalation path for the owner.',
+        updatedAt: '2026-01-04T02:00:00.000Z',
+      }),
+    ];
+
     const evidenceApi: ElectronApi = {
       ...mockApi,
       getTaskDetail: vi.fn(async (taskId: string) =>
         taskId === riskTask.id ? evidenceDetail : taskDetails[taskId] ?? null,
       ),
+      getRunDetail: vi.fn(async (runId: string) => completionRuns.find((run) => run.id === runId) ?? null),
       listDecisions: vi.fn().mockResolvedValue([
         ...decisions,
         {
@@ -5892,18 +5906,7 @@ describe('App UI flow', () => {
           updatedAt: '2026-01-04T01:00:00.000Z',
         },
       ]),
-      listRuns: vi.fn().mockResolvedValue([
-        ...runs,
-        buildRunRecord({
-          id: 'run_completion_1',
-          taskId: riskTask.id,
-          type: 'draft',
-          status: 'completed',
-          instructions: 'Approve escalation path',
-          output: 'Approve escalation path for the owner.',
-          updatedAt: '2026-01-04T02:00:00.000Z',
-        }),
-      ]),
+      listRuns: vi.fn().mockResolvedValue(completionRuns),
     };
 
     window.api = evidenceApi;
@@ -5937,6 +5940,32 @@ describe('App UI flow', () => {
 
     expect(criteriaSection).toBeTruthy();
     expect(within(criteriaSection as HTMLElement).getByText('证据可能对应')).toBeTruthy();
+
+    await user.click(within(evidenceSection as HTMLElement).getByRole('button', { name: '查看 Decision' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Approve escalation path' })).toBeTruthy();
+    });
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    const evidenceSectionAfterReturn = screen
+      .getByRole('heading', { name: 'Potential Completion Evidence' })
+      .closest('.detail-card-group');
+
+    expect(evidenceSectionAfterReturn).toBeTruthy();
+
+    await user.click(
+      within(evidenceSectionAfterReturn as HTMLElement).getAllByRole('button', { name: '查看 Run' })[0] as HTMLElement,
+    );
+
+    await waitFor(() => {
+      expect(evidenceApi.getRunDetail).toHaveBeenCalledWith('run_completion_1');
+    });
   });
 
   it('opens newly created tasks in clarify mode and focuses the new task detail', async () => {

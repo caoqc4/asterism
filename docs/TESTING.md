@@ -154,6 +154,7 @@ Covered today:
 - `Tasks completed-transition guidance from completion criteria`
 - `Tasks potential completion evidence from approved decisions, runs, and artifacts`
 - `Tasks completion evidence -> likely matching criteria focus`
+- `Tasks completion evidence -> open backing Decision / Run objects`
 - closeout-ready recovery surfaces now also assert that approved decisions and completed runs read as explicit completion evidence instead of generic continue/review changes
 - `Home closeout tasks` for completion-ready and near-completion recovery flows
 - `Home closeout tasks` now also distinguish completion-ready vs evidence-check-needed wording
