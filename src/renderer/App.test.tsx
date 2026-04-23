@@ -1535,9 +1535,72 @@ describe('App UI flow', () => {
     await screen.findByRole('heading', { name: '执行记录' });
 
     await screen.findByText('Related Task Timeline');
-    expect(screen.getByText('执行失败：Executor exploded')).toBeTruthy();
-    expect(screen.getByText('生成产物：draft output')).toBeTruthy();
-    expect(screen.getByText('下一步调整为“检查失败原因并决定是否重试”')).toBeTruthy();
+    expect(screen.getByText('最近一次执行失败：Executor exploded。')).toBeTruthy();
+    expect(screen.getByText('最近生成了产物：draft output。')).toBeTruthy();
+    expect(screen.getByText('下一步从“未填写”调整为“检查失败原因并决定是否重试”')).toBeTruthy();
+  });
+
+  it('opens related runs from the run page timeline context', async () => {
+    const user = userEvent.setup();
+
+    const runTimelineApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [
+        ...runs,
+        buildRunRecord({
+          id: 'run_2',
+          taskId: riskTask.id,
+          type: 'summarize',
+          status: 'completed',
+        }),
+      ]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        [
+          ...runs,
+          buildRunRecord({
+            id: 'run_2',
+            taskId: riskTask.id,
+            type: 'summarize',
+            status: 'completed',
+          }),
+        ].find((run) => run.id === runId) ?? null,
+      ),
+      getTaskDetail: vi.fn(async (taskId: string) => {
+        if (taskId !== riskTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(riskTask),
+          timeline: [
+            {
+              id: 'timeline_run_completed',
+              taskId: riskTask.id,
+              type: 'task.run_completed',
+              payload: JSON.stringify({
+                runId: 'run_2',
+                nextState: 'planned',
+              }),
+              createdAt: '2026-01-01T02:00:00.000Z',
+            },
+          ],
+        };
+      }),
+    };
+
+    window.api = runTimelineApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    await screen.findByRole('heading', { name: '执行记录' });
+
+    const objectButton = await screen.findByRole('button', { name: '查看 Run' });
+    await user.click(objectButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'summarize / completed' })).toBeTruthy();
+    });
   });
 
   it('opens task follow-up from run timeline actions on the runs page', async () => {
@@ -1578,7 +1641,7 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /runs/i }));
     await screen.findByRole('heading', { name: '执行记录' });
 
-    const actionButton = await screen.findByRole('button', { name: '处理失败结果' });
+    const actionButton = await screen.findByRole('button', { name: '准备重试 Run' });
     await user.click(actionButton);
 
     await waitFor(() => {
@@ -1672,9 +1735,65 @@ describe('App UI flow', () => {
 
     await screen.findByRole('heading', { name: '待拍板事项' });
     await screen.findByText('Related Task Timeline');
-    expect(screen.getByText('决策已批准：Approve escalation path')).toBeTruthy();
+    expect(screen.getByText('最近一条决策已获批准：Approve escalation path。')).toBeTruthy();
     expect(screen.getByText('等待原因调整为“等待重新拍板：Approve escalation path”')).toBeTruthy();
-    expect(screen.getByText('下一步调整为“已获批准，继续推进：Approve escalation path”')).toBeTruthy();
+    expect(screen.getByText('下一步从“未填写”调整为“已获批准，继续推进：Approve escalation path”')).toBeTruthy();
+  });
+
+  it('opens related decisions from the decision page timeline context', async () => {
+    const user = userEvent.setup();
+
+    const decisionTimelineApi: ElectronApi = {
+      ...mockApi,
+      listDecisions: vi.fn(async () => [
+        {
+          id: 'decision_1',
+          taskId: riskTask.id,
+          title: 'Escalate issue to legal',
+          status: 'pending' as const,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+        ...decisions,
+      ]),
+      getTaskDetail: vi.fn(async (taskId: string) => {
+        if (taskId !== riskTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(riskTask),
+          timeline: [
+            {
+              id: 'timeline_decision_approved',
+              taskId: riskTask.id,
+              type: 'task.decision_approved',
+              payload: JSON.stringify({
+                decisionId: 'decision_2',
+                decisionTitle: 'Approve escalation path',
+                nextState: 'planned',
+              }),
+              createdAt: '2026-01-01T02:00:00.000Z',
+            },
+          ],
+        };
+      }),
+    };
+
+    window.api = decisionTimelineApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /decisions/i }));
+    await user.click(screen.getByRole('button', { name: /Approve escalation path.*approved/i }));
+
+    await screen.findByRole('heading', { name: '待拍板事项' });
+    const objectButton = await screen.findByRole('button', { name: '查看 Decision' });
+    await user.click(objectButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Approve escalation path' })).toBeTruthy();
+    });
   });
 
   it('opens task follow-up from decision timeline actions on the decisions page', async () => {

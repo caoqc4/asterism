@@ -3,6 +3,10 @@ import { useEffect, useState } from 'react';
 import type { RecommendedActionIntent } from '@shared/types/brief';
 import type { CreateDecisionInput, DecisionDraftRecord, DecisionRecord } from '@shared/types/decision';
 import type { TaskDetail, TaskRecord, TimelineEventRecord } from '@shared/types/task';
+import {
+  getTaskTimelineFollowUpActionLabel,
+  interpretTaskTimelineEvent,
+} from '@shared/working-context/timeline';
 
 const RELATED_TIMELINE_PREVIEW_COUNT = 4;
 
@@ -18,48 +22,27 @@ function safeParsePayload(payload: string | null): Record<string, unknown> | nul
   }
 }
 
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined || value === '') {
-    return '未填写';
-  }
-
-  return String(value);
-}
-
 function formatRelatedTimelineSummary(event: TimelineEventRecord): string {
-  const payload = safeParsePayload(event.payload);
-
-  switch (event.type) {
-    case 'task.decision_approved':
-      return `决策已批准：${formatValue(payload?.decisionTitle)}`;
-    case 'task.decision_deferred':
-      return `决策已延后：${formatValue(payload?.decisionTitle)}，等待：${formatValue(payload?.waitingReason)}`;
-    case 'task.decision_cancelled':
-      return `决策已取消：${formatValue(payload?.decisionTitle)}`;
-    case 'task.waiting_changed':
-      return `等待原因调整为“${formatValue(payload?.to)}”`;
-    case 'task.risk_changed': {
-      const to = (payload?.to as Record<string, unknown> | undefined) ?? {};
-      return `风险更新为 ${formatValue(to.level)}（${formatValue(to.note)}）`;
-    }
-    case 'task.next_step_changed':
-      return `下一步调整为“${formatValue(payload?.to)}”`;
-    default:
-      return event.type;
+  if (
+    event.type === 'task.decision_approved' ||
+    event.type === 'task.decision_deferred' ||
+    event.type === 'task.decision_cancelled' ||
+    event.type === 'task.risk_changed' ||
+    event.type === 'task.next_step_changed'
+  ) {
+    return interpretTaskTimelineEvent(event).summary;
   }
+
+  const payload = safeParsePayload(event.payload);
+  return `等待原因调整为“${String(payload?.to ?? '未填写')}”`;
 }
 
 function getRelatedTimelineActionLabel(event: TimelineEventRecord): string | null {
-  switch (event.type) {
-    case 'task.decision_approved':
-      return '继续推进任务';
-    case 'task.decision_deferred':
-      return '跟进拍板进度';
-    case 'task.decision_cancelled':
-      return '重新评估决策';
-    default:
-      return null;
-  }
+  return getTaskTimelineFollowUpActionLabel(event.type);
+}
+
+function getRelatedTimelineObjectLabel(event: TimelineEventRecord): string | null {
+  return interpretTaskTimelineEvent(event).objectAction.label;
 }
 
 function getRelatedTimeline(events: TimelineEventRecord[], decisionTitle: string): TimelineEventRecord[] {
@@ -161,6 +144,14 @@ export function DecisionsPage({
     };
   }, [detail?.id, detail?.taskId]);
 
+  function handleRelatedTimelineObjectOpen(event: TimelineEventRecord) {
+    const objectAction = interpretTaskTimelineEvent(event).objectAction;
+
+    if (objectAction.targetType === 'decision' && objectAction.targetId) {
+      setSelectedDecisionId(objectAction.targetId);
+    }
+  }
+
   return (
     <section className="tasks-layout">
       <article className="panel">
@@ -246,31 +237,42 @@ export function DecisionsPage({
                           <span className="status">{event.createdAt}</span>
                         </div>
                         <p className="meta">{formatRelatedTimelineSummary(event)}</p>
-                        {getRelatedTimelineActionLabel(event) ? (
+                        {getRelatedTimelineActionLabel(event) || getRelatedTimelineObjectLabel(event) ? (
                           <div className="chip-row">
-                            <button
-                              className="ghost-button"
-                              onClick={() =>
-                                onOpenTask(detail.taskId, {
-                                  type:
-                                    event.type === 'task.decision_deferred'
-                                      ? 'focus_waiting_follow_up'
-                                      : event.type === 'task.decision_cancelled'
-                                        ? 'focus_risk_review'
-                                        : 'focus_next_step',
-                                  focusArea: 'detail',
-                                  prefillNextStep:
-                                    event.type === 'task.decision_approved'
-                                      ? `已获批准，继续推进：${detail.title}`
-                                      : event.type === 'task.decision_deferred'
-                                        ? `跟进该决策是否可以恢复拍板：${detail.title}`
-                                        : `重新评估该决策并确定替代推进路径：${detail.title}`,
-                                })
-                              }
-                              type="button"
-                            >
-                              {getRelatedTimelineActionLabel(event)}
-                            </button>
+                            {getRelatedTimelineActionLabel(event) ? (
+                              <button
+                                className="ghost-button"
+                                onClick={() =>
+                                  onOpenTask(detail.taskId, {
+                                    type:
+                                      event.type === 'task.decision_deferred'
+                                        ? 'focus_waiting_follow_up'
+                                        : event.type === 'task.decision_cancelled'
+                                          ? 'focus_risk_review'
+                                          : 'focus_next_step',
+                                    focusArea: 'detail',
+                                    prefillNextStep:
+                                      event.type === 'task.decision_approved'
+                                        ? `已获批准，继续推进：${detail.title}`
+                                        : event.type === 'task.decision_deferred'
+                                          ? `跟进该决策是否可以恢复拍板：${detail.title}`
+                                          : `重新评估该决策并确定替代推进路径：${detail.title}`,
+                                  })
+                                }
+                                type="button"
+                              >
+                                {getRelatedTimelineActionLabel(event)}
+                              </button>
+                            ) : null}
+                            {getRelatedTimelineObjectLabel(event) ? (
+                              <button
+                                className="ghost-button"
+                                onClick={() => handleRelatedTimelineObjectOpen(event)}
+                                type="button"
+                              >
+                                {getRelatedTimelineObjectLabel(event)}
+                              </button>
+                            ) : null}
                           </div>
                         ) : null}
                       </div>
