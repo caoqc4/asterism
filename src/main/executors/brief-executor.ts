@@ -36,6 +36,25 @@ function formatTemplateLine(template: BriefProcessTemplateCandidate): string {
   return `- ${template.title} [${template.kind}] | tasks=${template.taskTitles.join(' / ')}`;
 }
 
+function formatResumePreviewLine(preview: HomeBriefData['recentTaskResumes'][number]): string {
+  const parts = [
+    `- ${preview.taskTitle}`,
+    `state=${preview.currentState}`,
+    `latest=${preview.latestChange}`,
+    `next=${preview.nextSuggestedMove}`,
+  ];
+
+  if (preview.keySourceTitle) {
+    parts.push(`source=${preview.keySourceTitle}`);
+  }
+
+  if (preview.currentMethodTitle) {
+    parts.push(`method=${preview.currentMethodTitle}`);
+  }
+
+  return parts.join(' | ');
+}
+
 export function buildFallbackBrief(
   homeData: HomeBriefData,
   kind: string,
@@ -86,6 +105,9 @@ export function buildFallbackBrief(
   const templateLines = selectedTemplates.length
     ? selectedTemplates.map((template) => formatTemplateLine(template)).join('\n')
     : '- 本次未额外参考方法模板';
+  const resumePreviewLines = homeData.recentTaskResumes.length
+    ? homeData.recentTaskResumes.map((preview) => formatResumePreviewLine(preview)).join('\n')
+    : '- 当前没有可恢复的任务预览';
 
   return [
     `Taskplane Brief (${kind})`,
@@ -123,6 +145,9 @@ export function buildFallbackBrief(
           )
           .join('\n')
       : '- 当前没有推荐动作',
+    '',
+    '任务恢复预览：',
+    resumePreviewLines,
     '',
     '最近产物：',
     artifactLines,
@@ -212,6 +237,11 @@ function buildPrompt(
       ? homeData.recommendedActions.map((action) =>
           formatRecommendedAction(action.label, action.reason, action.priority),
         )
+      : ['- 无']),
+    '',
+    '任务恢复预览：',
+    ...(homeData.recentTaskResumes.length
+      ? homeData.recentTaskResumes.map((preview) => formatResumePreviewLine(preview))
       : ['- 无']),
     '',
     '最近产物：',
