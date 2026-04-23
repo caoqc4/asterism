@@ -150,6 +150,25 @@ export function HomePage({
     });
   }
 
+  function escalateTaskDirectly(task: HomeBriefData['escalationTasks'][number]) {
+    onOpenAction({
+      id: `home-escalation-direct:${task.id}`,
+      label: `直接升级处理：${task.title}`,
+      reason:
+        task.activeBlocker?.detail ??
+        task.activeBlocker?.owner ??
+        task.activeBlocker?.title ??
+        '该任务当前存在需要尽快升级处理的阻塞项。',
+      taskId: task.id,
+      priority: 'high',
+      intent: {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+        prefillNextStep: `优先升级当前阻塞项：${task.activeBlocker?.title ?? task.title}`,
+      },
+    });
+  }
+
   function openNextStepTask(task: HomeBriefData['missingNextStepTasks'][number]) {
     onOpenAction({
       id: `home-next-step:${task.id}`,
@@ -520,6 +539,13 @@ export function HomePage({
                     <div className="chip-row">
                       <button
                         className="ghost-button"
+                        onClick={() => escalateTaskDirectly(task)}
+                        type="button"
+                      >
+                        直接升级处理
+                      </button>
+                      <button
+                        className="ghost-button"
                         onClick={() => openBlockedSource(task)}
                         type="button"
                       >
@@ -577,13 +603,30 @@ export function HomePage({
                     <div className="chip-row">
                       <button
                         className="ghost-button"
+                        onClick={() => escalateTaskDirectly(task)}
+                        type="button"
+                      >
+                        直接升级处理
+                      </button>
+                      <button
+                        className="ghost-button"
                         onClick={() => openBlockedSource(task)}
                         type="button"
                       >
                         查看阻塞来源
                       </button>
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="chip-row">
+                      <button
+                        className="ghost-button"
+                        onClick={() => escalateTaskDirectly(task)}
+                        type="button"
+                      >
+                        直接升级处理
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))
             ) : (

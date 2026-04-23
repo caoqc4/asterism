@@ -3949,6 +3949,90 @@ describe('App UI flow', () => {
     );
   });
 
+  it('opens direct escalation actions from home with blocker-focused next-step guidance', async () => {
+    const user = userEvent.setup();
+
+    const escalationTask = buildTaskRecord({
+      id: 'task_escalation_direct_home',
+      title: 'Escalation direct task',
+      state: 'planned',
+      nextStep: null,
+      activeBlocker: buildBlocker({
+        id: 'blocker_escalation_direct_home_1',
+        taskId: 'task_escalation_direct_home',
+        title: 'Partner approval pending',
+        detail: 'Need partner leadership sign-off before publishing',
+        sourceContextId: 'source_context_escalation_direct_home',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      }),
+    });
+
+    const sourceItem = buildSourceContext({
+      id: 'source_context_escalation_direct_home',
+      taskId: escalationTask.id,
+      title: 'Partner escalation brief',
+      note: 'Most recent escalation framing',
+    });
+
+    const escalationHomeApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([escalationTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== escalationTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(escalationTask),
+          sourceContexts: [sourceItem],
+        };
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 1,
+        waitingTaskCount: 0,
+        blockerTaskCount: 1,
+        escalationTaskCount: 1,
+        highRiskTaskCount: 0,
+        missingNextStepTaskCount: 0,
+        recentTasks: [escalationTask],
+        waitingTasks: [],
+        blockerTasks: [escalationTask],
+        escalationTasks: [escalationTask],
+        highRiskTasks: [],
+        missingNextStepTasks: [],
+        recommendedActions: [],
+        recentArtifacts: [],
+        recentSourceContexts: [],
+        recentActivity: [],
+      }),
+    };
+
+    window.api = escalationHomeApi;
+
+    render(<App />);
+
+    const escalationHeading = screen
+      .getAllByText('Needs Escalation')
+      .find((element) => element.tagName === 'STRONG');
+    expect(escalationHeading).toBeTruthy();
+
+    const escalationSection = escalationHeading?.closest('section');
+    expect(escalationSection).toBeTruthy();
+
+    await user.click(
+      await within(escalationSection as HTMLElement).findByRole('button', { name: '直接升级处理' }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Escalation direct task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '优先升级当前阻塞项：Partner approval pending',
+    );
+  });
+
   it('opens task resume previews from home with a prefilled next step', async () => {
     const user = userEvent.setup();
 
