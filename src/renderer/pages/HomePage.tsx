@@ -18,6 +18,14 @@ function getActivityActionLabel(activity: HomeActivityRecord): string | null {
   }
 
   if (activity.sourceType === 'dependency') {
+    if (activity.status === 'created') {
+      return '先推动上游任务';
+    }
+
+    if (activity.status === 'resolved') {
+      return '恢复任务推进';
+    }
+
     return '重新判断依赖';
   }
 
@@ -58,6 +66,14 @@ function getActivityStatusLabel(activity: HomeActivityRecord): string {
   }
 
   if (activity.sourceType === 'dependency') {
+    if (activity.status === 'created') {
+      return 'created';
+    }
+
+    if (activity.status === 'resolved') {
+      return 'resolved';
+    }
+
     return activity.status === 'upstream_ready' ? 'upstream ready' : 'upstream unblocked';
   }
 
@@ -78,7 +94,9 @@ function getActivityTitle(activity: HomeActivityRecord): string {
   }
 
   if (activity.sourceType === 'dependency') {
-    return `${activity.title} dependency`;
+    return activity.status === 'created' || activity.status === 'resolved'
+      ? activity.title
+      : `${activity.title} dependency`;
   }
 
   return activity.sourceType === 'decision'

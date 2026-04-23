@@ -4539,6 +4539,158 @@ describe('App UI flow', () => {
     );
   });
 
+  it('routes dependency created activity into upstream-push guidance from home', async () => {
+    const user = userEvent.setup();
+
+    const upstreamTask = buildTaskRecord({
+      id: 'task_dependency_created_upstream',
+      title: 'Publish partner list',
+      state: 'planned',
+      nextStep: 'Finalize the partner list',
+    });
+    const dependentTask = buildTaskRecord({
+      id: 'task_dependency_created_downstream',
+      title: 'Draft outreach email',
+      state: 'planned',
+      nextStep: null,
+      activeDependency: buildTaskDependency({
+        id: 'task_dependency_created_link',
+        taskId: 'task_dependency_created_downstream',
+        blockedByTaskId: upstreamTask.id,
+        blockedByTaskTitle: upstreamTask.title,
+        reason: 'Need the approved partner list before drafting outreach.',
+      }),
+    });
+
+    const dependencyActivityApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([dependentTask, upstreamTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId === dependentTask.id) {
+          return buildTaskDetail(dependentTask);
+        }
+
+        if (taskId === upstreamTask.id) {
+          return buildTaskDetail(upstreamTask);
+        }
+
+        return null;
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 2,
+        recentTasks: [dependentTask, upstreamTask],
+        recentActivity: [
+          buildActivity({
+            id: 'dependency_activity_created',
+            sourceType: 'dependency',
+            sourceId: 'task_dependency_created_link',
+            relatedTaskId: upstreamTask.id,
+            taskId: dependentTask.id,
+            taskTitle: dependentTask.title,
+            title: upstreamTask.title,
+            status: 'created',
+            lane: 'unblock_or_decide',
+          }),
+        ],
+      }),
+    };
+
+    window.api = dependencyActivityApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: '先推动上游任务' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Draft outreach email' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '先推动上游任务，以解除当前依赖：Publish partner list',
+    );
+
+    window.location.hash = '#home';
+    cleanup();
+    window.api = dependencyActivityApi;
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: '打开上游任务' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Publish partner list' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '先完成这条上游任务，以解除对“Draft outreach email”的依赖。',
+    );
+  });
+
+  it('routes dependency resolved activity into continue guidance from home', async () => {
+    const user = userEvent.setup();
+
+    const upstreamTask = buildTaskRecord({
+      id: 'task_dependency_resolved_upstream',
+      title: 'Publish partner list',
+      state: 'completed',
+      nextStep: null,
+    });
+    const dependentTask = buildTaskRecord({
+      id: 'task_dependency_resolved_downstream',
+      title: 'Draft outreach email',
+      state: 'planned',
+      nextStep: null,
+    });
+
+    const dependencyActivityApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([dependentTask, upstreamTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId === dependentTask.id) {
+          return buildTaskDetail(dependentTask);
+        }
+
+        if (taskId === upstreamTask.id) {
+          return buildTaskDetail(upstreamTask);
+        }
+
+        return null;
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 2,
+        recentTasks: [dependentTask, upstreamTask],
+        recentActivity: [
+          buildActivity({
+            id: 'dependency_activity_resolved',
+            sourceType: 'dependency',
+            sourceId: 'task_dependency_resolved_link',
+            relatedTaskId: upstreamTask.id,
+            taskId: dependentTask.id,
+            taskTitle: dependentTask.title,
+            title: upstreamTask.title,
+            status: 'resolved',
+            lane: 'continue_or_review',
+          }),
+        ],
+      }),
+    };
+
+    window.api = dependencyActivityApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: '恢复任务推进' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Draft outreach email' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '依赖已解除，继续推进：Publish partner list',
+    );
+  });
+
   it('resolves blocked tasks from home and resumes waiting when the blocker clearly caused it', async () => {
     const user = userEvent.setup();
 

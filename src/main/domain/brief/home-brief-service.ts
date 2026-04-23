@@ -889,6 +889,13 @@ export class HomeBriefService {
     const getRunLane = (status: string): PriorityLane => 'continue_or_review';
     const getBlockerLane = (status: string): PriorityLane =>
       status === 'resolved' ? 'continue_or_review' : 'unblock_or_decide';
+    const getDependencyLane = (status: string): PriorityLane => {
+      if (status === 'resolved' || status === 'upstream_ready' || status === 'upstream_unblocked') {
+        return 'continue_or_review';
+      }
+
+      return 'unblock_or_decide';
+    };
 
     const decisionEvents: HomeActivityRecord[] = decisions
       .filter((decision) => decision.status !== 'pending')
@@ -976,7 +983,7 @@ export class HomeBriefService {
       id: `dependency:${item.dependencyId}:${item.status}`,
       sourceType: 'dependency',
       sourceId: item.dependencyId,
-      lane: 'continue_or_review',
+      lane: getDependencyLane(item.status),
       relatedTaskId: item.upstreamTaskId,
       taskId: item.taskId,
       taskTitle: taskTitleById.get(item.taskId) ?? item.taskId,
@@ -984,6 +991,37 @@ export class HomeBriefService {
       status: item.status,
       updatedAt: item.updatedAt,
     }));
+
+    const dependencyLifecycleEvents: HomeActivityRecord[] = taskTimelines
+      .flatMap((task) =>
+        task.timeline
+          .filter(
+            (event: TimelineEventRecord) =>
+              event.type === 'task_dependency.created' || event.type === 'task_dependency.resolved',
+          )
+          .map((event: TimelineEventRecord) => {
+            const payload = event.payload
+              ? (safeJsonParse(event.payload) as Record<string, unknown> | null)
+              : null;
+            const status = event.type === 'task_dependency.created' ? 'created' : 'resolved';
+
+            return {
+              id: `${event.type}:${String(payload?.dependencyId ?? event.id)}`,
+              sourceType: 'dependency' as const,
+              sourceId: String(payload?.dependencyId ?? event.id),
+              lane: getDependencyLane(status),
+              relatedTaskId:
+                typeof payload?.blockedByTaskId === 'string' ? payload.blockedByTaskId : null,
+              taskId: task.taskId,
+              taskTitle: task.taskTitle,
+              title: String(payload?.blockedByTaskTitle ?? '上游任务'),
+              status,
+              updatedAt: event.createdAt,
+            };
+          }),
+      )
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+      .slice(0, 5);
 
     const taskEvents: HomeActivityRecord[] = tasks
       .filter((task) => task.state === 'captured' || task.state === 'triaged')
@@ -999,7 +1037,14 @@ export class HomeBriefService {
         updatedAt: task.updatedAt,
       }));
 
-    return [...decisionEvents, ...runEvents, ...blockerEvents, ...dependencyEvents, ...taskEvents]
+    return [
+      ...decisionEvents,
+      ...runEvents,
+      ...blockerEvents,
+      ...dependencyLifecycleEvents,
+      ...dependencyEvents,
+      ...taskEvents,
+    ]
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
       .slice(0, 5);
   }

@@ -498,7 +498,11 @@ export function App() {
         type: 'focus_next_step',
         focusArea: 'detail',
         prefillNextStep:
-          activity.status === 'upstream_ready'
+          activity.status === 'created'
+            ? `先推动上游任务，以解除当前依赖：${activity.title}`
+            : activity.status === 'resolved'
+            ? `依赖已解除，继续推进：${activity.title}`
+            : activity.status === 'upstream_ready'
             ? `基于上游任务完成重新判断是否解除依赖：${activity.title}`
             : `基于上游任务进展重新判断是否解除依赖：${activity.title}`,
       });
