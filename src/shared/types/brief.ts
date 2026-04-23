@@ -110,10 +110,12 @@ export type HomeBriefData = {
   completedTaskCount: number;
   recentRunCount: number;
   waitingTaskCount: number;
+  blockerTaskCount: number;
   highRiskTaskCount: number;
   missingNextStepTaskCount: number;
   recentTasks: HomeTaskSliceRecord[];
   waitingTasks: HomeTaskSliceRecord[];
+  blockerTasks: HomeTaskSliceRecord[];
   highRiskTasks: HomeTaskSliceRecord[];
   missingNextStepTasks: HomeTaskSliceRecord[];
   pendingDecisions: DecisionRecord[];

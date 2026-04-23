@@ -248,10 +248,12 @@ describe('App UI flow', () => {
     completedTaskCount: 0,
     recentRunCount: 1,
     waitingTaskCount: 1,
+    blockerTaskCount: 0,
     highRiskTaskCount: 1,
     missingNextStepTaskCount: 0,
     recentTasks: [waitingTask, riskTask],
     waitingTasks: [waitingTask],
+    blockerTasks: [],
     highRiskTasks: [riskTask],
     missingNextStepTasks: [],
     pendingDecisions: [
@@ -3496,6 +3498,81 @@ describe('App UI flow', () => {
     });
 
     expect(screen.getAllByText('Waiting on stakeholder approval').length).toBeGreaterThan(0);
+  });
+
+  it('opens blocked tasks from home key signals with blocker-focused guidance', async () => {
+    const user = userEvent.setup();
+
+    const blockedTask = buildTaskRecord({
+      id: 'task_blocked_home',
+      title: 'Blocked home task',
+      state: 'planned',
+      nextStep: null,
+      activeBlocker: buildBlocker({
+        id: 'blocker_home_1',
+        taskId: 'task_blocked_home',
+        title: 'Legal approval pending',
+        detail: 'Need legal sign-off before launch',
+        sourceContextId: 'source_context_blocked_home',
+      }),
+    });
+
+    const sourceItem = buildSourceContext({
+      id: 'source_context_blocked_home',
+      taskId: blockedTask.id,
+      title: 'Legal brief',
+      note: 'Latest legal review notes',
+    });
+
+    const blockerHomeApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([blockedTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== blockedTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(blockedTask),
+          sourceContexts: [sourceItem],
+        };
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 1,
+        waitingTaskCount: 0,
+        blockerTaskCount: 1,
+        highRiskTaskCount: 0,
+        missingNextStepTaskCount: 0,
+        recentTasks: [blockedTask],
+        waitingTasks: [],
+        blockerTasks: [blockedTask],
+        highRiskTasks: [],
+        missingNextStepTasks: [],
+        recommendedActions: [],
+        recentArtifacts: [],
+        recentSourceContexts: [],
+        recentActivity: [],
+      }),
+    };
+
+    window.api = blockerHomeApi;
+
+    render(<App />);
+
+    const blockedButton = await screen.findByRole('button', {
+      name: /Blocked home task/i,
+    });
+    await user.click(blockedButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Blocked home task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('来源标题') as HTMLInputElement).value).toBe('Legal brief');
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '先解除阻塞项，再继续推进：Legal approval pending',
+    );
   });
 
   it('opens task resume previews from home with a prefilled next step', async () => {

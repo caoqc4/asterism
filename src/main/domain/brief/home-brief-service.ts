@@ -630,6 +630,7 @@ export class HomeBriefService {
         Boolean(task.activeWaitingItem?.reason) ||
         Boolean(task.waitingReason),
     );
+    const blockerTasks = tasks.filter((task) => Boolean(task.activeBlocker?.title));
     const highRiskTasks = tasks.filter((task) => task.riskLevel === 'high');
     const missingNextStepTasks = activeTasks.filter((task) => !task.nextStep?.trim());
     const scheduler = this.getSchedulerStatus();
@@ -661,10 +662,12 @@ export class HomeBriefService {
       completedTaskCount: completedTasks.length,
       recentRunCount: runs.length,
       waitingTaskCount: waitingTasks.length,
+      blockerTaskCount: blockerTasks.length,
       highRiskTaskCount: highRiskTasks.length,
       missingNextStepTaskCount: missingNextStepTasks.length,
       recentTasks: tasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       waitingTasks: waitingTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
+      blockerTasks: blockerTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       highRiskTasks: highRiskTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       missingNextStepTasks: missingNextStepTasks
         .slice(0, 5)

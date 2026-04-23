@@ -87,6 +87,32 @@ export function HomePage({
     });
   }
 
+  function openBlockedTask(task: HomeBriefData['blockerTasks'][number]) {
+    onOpenAction({
+      id: `home-blocker:${task.id}`,
+      label: `跟进当前阻塞项：${task.title}`,
+      reason:
+        task.activeBlocker?.detail ??
+        task.activeBlocker?.owner ??
+        task.activeBlocker?.title ??
+        '该任务当前存在阻塞项。',
+      taskId: task.id,
+      priority: 'medium',
+      intent: task.activeBlocker?.sourceContextId
+        ? {
+            type: 'focus_source_context',
+            focusArea: 'detail',
+            sourceContextId: task.activeBlocker.sourceContextId,
+            prefillNextStep: `先解除阻塞项，再继续推进：${task.activeBlocker.title}`,
+          }
+        : {
+            type: 'focus_next_step',
+            focusArea: 'detail',
+            prefillNextStep: `先解除阻塞项，再继续推进：${task.activeBlocker?.title ?? task.title}`,
+          },
+    });
+  }
+
   function openNextStepTask(task: HomeBriefData['missingNextStepTasks'][number]) {
     onOpenAction({
       id: `home-next-step:${task.id}`,
@@ -190,6 +216,10 @@ export function HomePage({
           <div className="metric-card metric-card-warning">
             <span className="metric-label">Waiting</span>
             <strong>{briefData?.waitingTaskCount ?? 0}</strong>
+          </div>
+          <div className="metric-card metric-card-warning">
+            <span className="metric-label">Blocked</span>
+            <strong>{briefData?.blockerTaskCount ?? 0}</strong>
           </div>
           <div className="metric-card metric-card-danger">
             <span className="metric-label">High Risk</span>
@@ -386,6 +416,34 @@ export function HomePage({
               ))
             ) : (
               <p className="meta">当前没有等待中任务。</p>
+            )}
+          </section>
+
+          <section className="timeline-list">
+            <strong>Blocked Tasks</strong>
+            {briefData?.blockerTasks.length ? (
+              briefData.blockerTasks.map((task) => (
+                <button
+                  className="task-card task-card-warning task-card-button"
+                  key={task.id}
+                  onClick={() => openBlockedTask(task)}
+                  type="button"
+                >
+                  <div className="task-row">
+                    <strong>{task.title}</strong>
+                    <span className="status">{task.state}</span>
+                  </div>
+                  <p className="meta">
+                    {task.activeBlocker?.detail || task.activeBlocker?.owner || task.activeBlocker?.title || '未填写阻塞说明'}
+                  </p>
+                  {task.activeBlocker?.sourceContextId ? (
+                    <p className="meta">linked blocker source</p>
+                  ) : null}
+                  {task.nextStep ? <p className="meta">解除后下一步：{task.nextStep}</p> : null}
+                </button>
+              ))
+            ) : (
+              <p className="meta">当前没有阻塞中的任务。</p>
             )}
           </section>
 

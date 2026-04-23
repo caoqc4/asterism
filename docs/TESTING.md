@@ -119,6 +119,7 @@ Covered today:
 - `Home resume preview` key-source/current-method explanations, latest-change object entry, and recent-change-aware follow-up actions
 - `Home brief` process-template-aware scheduling path
 - `Home key signals -> Tasks detail follow-up intent`
+- `Home blocked tasks -> Tasks blocker/source-context recovery`
 - `Tasks quick decision submission`
 - `Tasks quick run submission`
 - `Tasks related activity -> Decisions / Runs`
