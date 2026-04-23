@@ -118,6 +118,7 @@ type CompletionEvidenceCard = {
   type: 'decision' | 'run' | 'artifact';
   title: string;
   detail: string;
+  responsibilityGuidance: string | null;
   matchedCriteria: string[];
   matchedCriteriaIds: string[];
   targetId: string | null;
@@ -595,6 +596,46 @@ function getQuickDecisionGuidance(lane: PriorityLane | undefined): string {
   }
 }
 
+function getQuickDecisionResponsibilityGuidance(detail: TaskDetail | null): string | null {
+  if (!detail) {
+    return null;
+  }
+
+  const completionResponsibility = detail.resumeCard.completionStatus.nextOpenResponsibilitySummary?.trim();
+  if (completionResponsibility) {
+    return `如果这次拍板会影响收尾判断，也应顺手明确最后由谁确认完成标准。${completionResponsibility}`;
+  }
+
+  const blockerResponsibility = detail.resumeCard.currentBlocker.responsibilitySummary?.trim();
+  if (detail.activeBlocker && blockerResponsibility) {
+    return `如果这次拍板是为了解阻塞，也应顺手明确解除责任。${blockerResponsibility}`;
+  }
+
+  const dependencyResponsibility = detail.resumeCard.currentDependency?.responsibilitySummary?.trim();
+  if (detail.activeDependency && dependencyResponsibility) {
+    return `如果这次拍板会影响依赖链路，也应顺手明确由谁推动上游任务。${dependencyResponsibility}`;
+  }
+
+  return null;
+}
+
+function getCompletionEvidenceResponsibilityGuidance(
+  responsibilitySummary: string | null | undefined,
+): string | null {
+  const actor = responsibilitySummary
+    ?.trim()
+    .replace(/^确认责任：/, '')
+    .replace(/负责确认$/, '')
+    .replace(/确认$/, '')
+    .trim();
+
+  if (!actor) {
+    return null;
+  }
+
+  return `如果这条证据对应当前未满足标准，仍需由${actor}确认。`;
+}
+
 function getQuickRunGuidance(lane: PriorityLane | undefined): string {
   switch (lane) {
     case 'escalate_now':
@@ -846,6 +887,7 @@ export function TasksPage({
     completionProgress: detail?.resumeCard.completionStatus,
   });
   const quickDecisionGuidance = getQuickDecisionGuidance(resumeLane);
+  const quickDecisionResponsibilityGuidance = getQuickDecisionResponsibilityGuidance(detail);
   const quickRunGuidance = getQuickRunGuidance(resumeLane);
   const taskDecisions = detail
     ? decisions.filter((decision) => decision.taskId === detail.id)
@@ -862,6 +904,9 @@ export function TasksPage({
             type: 'decision' as const,
             title: decision.title,
             detail: '这条拍板结果可能说明某些完成标准已经具备。',
+            responsibilityGuidance: getCompletionEvidenceResponsibilityGuidance(
+              resumeCompletionStatus.nextOpenResponsibilitySummary,
+            ),
             matchedCriteria: findMatchedCompletionCriteria(detail.completionCriteria, [
               decision.title,
               decision.status,
@@ -884,6 +929,9 @@ export function TasksPage({
               run.status === 'completed'
                 ? '这次执行结果值得先对照当前未满足的完成标准。'
                 : '这次执行虽然失败，但也可能说明某条完成标准仍未达成。',
+            responsibilityGuidance: getCompletionEvidenceResponsibilityGuidance(
+              resumeCompletionStatus.nextOpenResponsibilitySummary,
+            ),
             matchedCriteria: findMatchedCompletionCriteria(detail.completionCriteria, [
               run.type,
               run.status,
@@ -907,6 +955,9 @@ export function TasksPage({
             type: 'artifact' as const,
             title: artifact.title,
             detail: '这份最近产物可能已经覆盖某条完成标准，值得先核对。',
+            responsibilityGuidance: getCompletionEvidenceResponsibilityGuidance(
+              resumeCompletionStatus.nextOpenResponsibilitySummary,
+            ),
             matchedCriteria: findMatchedCompletionCriteria(detail.completionCriteria, [
               artifact.title,
               artifact.content,
@@ -2737,6 +2788,9 @@ export function TasksPage({
                           ) : (
                             <p className="meta">值得先对照当前仍未满足的完成标准。</p>
                           )}
+                          {evidence.responsibilityGuidance ? (
+                            <p className="meta">{evidence.responsibilityGuidance}</p>
+                          ) : null}
                           <div className="timeline-actions">
                             <button
                               className="ghost-button timeline-action"
@@ -2886,6 +2940,9 @@ export function TasksPage({
                         />
                       </label>
                       <p className="meta">{quickDecisionGuidance}</p>
+                      {quickDecisionResponsibilityGuidance ? (
+                        <p className="meta">{quickDecisionResponsibilityGuidance}</p>
+                      ) : null}
                       {quickDecisionRationale ? <p className="meta">{quickDecisionRationale}</p> : null}
                       <button type="button" className="ghost-button" onClick={() => void handleDraftQuickDecision()}>
                         草拟 Decision

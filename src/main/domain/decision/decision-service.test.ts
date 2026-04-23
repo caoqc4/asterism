@@ -141,6 +141,21 @@ describe('DecisionService', () => {
         riskLevel: 'high',
         riskNote: 'Need fast escalation',
         processTemplates: [buildAppliedTemplate()],
+        resumeCard: {
+          ...buildTaskDetail().resumeCard,
+          currentBlocker: {
+            ...buildTaskDetail().resumeCard.currentBlocker,
+            responsibilitySummary: '解除责任：法务团队确认',
+          },
+          completionStatus: {
+            total: 1,
+            satisfied: 0,
+            open: 1,
+            summary: '还差 1 条完成标准',
+            nextOpenCriterion: 'Approve launch note',
+            nextOpenResponsibilitySummary: '确认责任：客户确认',
+          },
+        },
       }),
       annotateDecisionApproved: vi.fn(),
       annotateDecisionDeferred: vi.fn(),
@@ -187,6 +202,16 @@ describe('DecisionService', () => {
     expect(generateObjectMock).toHaveBeenCalledWith(
       expect.objectContaining({
         prompt: expect.stringContaining('当前优先级语义：立即升级。组织输出时优先帮助用户升级处理高风险或长期阻塞事项。'),
+      }),
+    );
+    expect(generateObjectMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('当前阻塞解除责任：法务团队确认'),
+      }),
+    );
+    expect(generateObjectMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('当前完成确认责任：客户确认'),
       }),
     );
     expect(result).toMatchObject({

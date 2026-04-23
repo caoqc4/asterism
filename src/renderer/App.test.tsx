@@ -2435,6 +2435,28 @@ describe('App UI flow', () => {
   it('adapts quick action defaults to the current priority lane', async () => {
     const user = userEvent.setup();
 
+    const responsibilityAwareRiskDetail: TaskDetail = {
+      ...buildTaskDetail(riskTask),
+      resumeCard: {
+        ...buildTaskDetail(riskTask).resumeCard,
+        completionStatus: {
+          total: 1,
+          satisfied: 0,
+          open: 1,
+          summary: '还差 1 条完成标准',
+          nextOpenCriterion: 'Approve escalation path',
+          nextOpenResponsibilitySummary: '确认责任：客户确认',
+        },
+      },
+    };
+
+    window.api = {
+      ...mockApi,
+      getTaskDetail: vi.fn(async (taskId: string) =>
+        taskId === riskTask.id ? responsibilityAwareRiskDetail : taskDetails[taskId] ?? null,
+      ),
+    };
+
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /tasks/i }));
@@ -2446,6 +2468,9 @@ describe('App UI flow', () => {
       '优先明确升级路径',
     );
     expect(screen.getByText('当前按「立即升级」语义，草拟更偏向明确升级路径、责任归属和拍板点。')).toBeTruthy();
+    expect(
+      screen.getByText('如果这次拍板会影响收尾判断，也应顺手明确最后由谁确认完成标准。确认责任：客户确认'),
+    ).toBeTruthy();
     expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toContain(
       '本轮执行优先围绕升级处理当前高风险/阻塞',
     );
@@ -6076,6 +6101,11 @@ describe('App UI flow', () => {
     expect(within(evidenceSection as HTMLElement).getByText('Approve escalation draft')).toBeTruthy();
     expect(
       within(evidenceSection as HTMLElement).getAllByText(/可能对应：Approve escalation path/).length,
+    ).toBeGreaterThan(0);
+    expect(
+      within(evidenceSection as HTMLElement).getAllByText(
+        '如果这条证据对应当前未满足标准，仍需由我自己确认。',
+      ).length,
     ).toBeGreaterThan(0);
 
     await user.click(

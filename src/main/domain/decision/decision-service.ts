@@ -31,6 +31,17 @@ function buildFallbackDraftTitle(taskTitle: string, note?: string | null): strin
   return `${taskTitle} 需要拍板`;
 }
 
+function stripResponsibilityPrefix(summary: string | null | undefined): string | null {
+  const trimmed = summary
+    ?.trim()
+    .replace(/^确认责任：/, '')
+    .replace(/^解除责任：/, '')
+    .replace(/^推进责任：/, '')
+    .trim();
+
+  return trimmed || null;
+}
+
 function buildDraftPrompt(
   task: TaskDetail,
   input: DraftDecisionInput,
@@ -51,6 +62,9 @@ function buildDraftPrompt(
     `当前 next step：${task.nextStep ?? '暂无'}`,
     `等待原因：${task.waitingReason ?? '暂无'}`,
     getPriorityLanePromptGuidance(lane),
+    `当前阻塞解除责任：${stripResponsibilityPrefix(task.resumeCard.currentBlocker.responsibilitySummary) ?? '暂无'}`,
+    `当前依赖推进责任：${stripResponsibilityPrefix(task.resumeCard.currentDependency?.responsibilitySummary) ?? '暂无'}`,
+    `当前完成确认责任：${stripResponsibilityPrefix(task.resumeCard.completionStatus.nextOpenResponsibilitySummary) ?? '暂无'}`,
     `风险：${
       task.riskLevel === 'none'
         ? '当前未标记明显风险'
