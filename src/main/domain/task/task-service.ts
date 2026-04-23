@@ -305,6 +305,11 @@ export class TaskService {
     const waitingReason = detail.activeWaitingItem?.reason ?? detail.waitingReason;
     const blockerTitle = detail.activeBlocker?.title ?? null;
     const dependencyTitle = detail.activeDependency?.blockedByTaskTitle ?? null;
+    const dependencyReevaluationReason = detail.dependencyReevaluation
+      ? detail.dependencyReevaluation.status === 'upstream_ready'
+        ? `上游任务“${detail.dependencyReevaluation.upstreamTaskTitle}”已完成，可重新判断是否解除依赖。`
+        : `上游任务“${detail.dependencyReevaluation.upstreamTaskTitle}”刚解除关键阻塞，可重新判断是否解除依赖。`
+      : null;
 
     const currentStateParts = [`状态：${detail.state}`];
 
@@ -349,7 +354,11 @@ export class TaskService {
 
     const summaryParts = [
       `这条任务目前处于 ${detail.state}${waitingReason ? `，正在等待“${waitingReason}”` : ''}${blockerTitle ? `，当前阻塞项是“${blockerTitle}”` : ''}${detail.riskLevel === 'high' && detail.riskNote ? `，且存在高风险“${detail.riskNote}”` : ''}。`,
-      dependencyTitle ? `当前依赖上游任务“${dependencyTitle}”。` : null,
+      dependencyReevaluationReason
+        ? `当前依赖已具备恢复推进条件：${dependencyReevaluationReason}`
+        : dependencyTitle
+          ? `当前依赖上游任务“${dependencyTitle}”。`
+          : null,
       latestChange.summary,
       keySource ? `当前最关键的来源材料是“${keySource.title}”。` : null,
       currentMethod ? `当前采用的方法模板是“${currentMethod.title}”。` : null,
@@ -389,8 +398,13 @@ export class TaskService {
         ? {
             dependencyId: detail.activeDependency.id,
             title: detail.activeDependency.blockedByTaskTitle ?? '上游任务',
-            detail: detail.activeDependency.reason ?? '当前等待上游任务完成后再继续推进。',
-            priorityReason: getCurrentDependencyPriorityReason(detail.activeDependency, 'task'),
+            detail:
+              dependencyReevaluationReason ??
+              detail.activeDependency.reason ??
+              '当前等待上游任务完成后再继续推进。',
+            priorityReason:
+              dependencyReevaluationReason ??
+              getCurrentDependencyPriorityReason(detail.activeDependency, 'task'),
             ageLabel: getCurrentDependencyAgeLabel(detail.activeDependency),
           }
         : {

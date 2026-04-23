@@ -398,6 +398,12 @@ describe('TaskService', () => {
     expect(detail?.resumeCard.latestChange.summary).toBe(
       '上游任务已完成：Publish partner list，可重新判断当前依赖。',
     );
+    expect(detail?.resumeCard.currentDependency).toMatchObject({
+      title: 'Publish partner list',
+      detail: '上游任务“Publish partner list”已完成，可重新判断是否解除依赖。',
+      priorityReason: '上游任务“Publish partner list”已完成，可重新判断是否解除依赖。',
+    });
+    expect(detail?.resumeCard.summary).toContain('当前依赖已具备恢复推进条件');
     expect(detail?.resumeCard.nextSuggestedMove).toBe(
       '确认上游任务就绪后的下一步推进：Publish partner list',
     );
