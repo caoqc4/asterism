@@ -156,6 +156,7 @@ Covered today:
 - `Tasks completion evidence -> likely matching criteria focus`
 - closeout-ready recovery surfaces now also assert that approved decisions and completed runs read as explicit completion evidence instead of generic continue/review changes
 - `Home closeout tasks` for completion-ready and near-completion recovery flows
+- `Home closeout tasks` now also distinguish completion-ready vs evidence-check-needed wording
 - `Priority lane` closeout-aware wording on home/task recovery surfaces
 - `Tasks process context create / apply / remove flow`
 - `Tasks resume card visibility, key-source prioritization explanation, method-selection explanation, lifecycle-aware suggested-move derivation, and recovery actions`

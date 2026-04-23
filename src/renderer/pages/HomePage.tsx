@@ -122,6 +122,16 @@ function renderLaneHeading(title: string, lane: PriorityLane) {
   );
 }
 
+function getCloseoutTaskStatusLabel(kind: 'ready' | 'near') {
+  return kind === 'ready' ? '可收尾' : '待核对证据';
+}
+
+function getCloseoutTaskSummary(kind: 'ready' | 'near') {
+  return kind === 'ready'
+    ? '完成标准已全部满足，建议做最终收尾判断。'
+    : '只差最后一条完成标准，先核对最后证据再决定是否收尾。';
+}
+
 type HomePageProps = {
   ping: PingResponse | null;
   status: 'idle' | 'loading' | 'ready' | 'error';
@@ -1047,6 +1057,9 @@ export function HomePage({
             {renderLaneHeading('Closeout Tasks', 'continue_or_review')}
             {briefData?.completionReadyTasks?.length || briefData?.nearCompletionTasks?.length ? (
               <>
+                <p className="meta">
+                  这里区分已经具备收尾条件的任务，和还需要先核对最后证据的接近完成任务。
+                </p>
                 {briefData?.completionReadyTasks?.map((task) => (
                   <button
                     className="task-card task-card-button"
@@ -1056,9 +1069,9 @@ export function HomePage({
                   >
                     <div className="task-row">
                       <strong>{task.title}</strong>
-                      <span className="status">ready</span>
+                      <span className="status">{getCloseoutTaskStatusLabel('ready')}</span>
                     </div>
-                    <p className="meta">完成标准已全部满足，可进行最终收尾判断。</p>
+                    <p className="meta">{getCloseoutTaskSummary('ready')}</p>
                     <p className="meta">
                       completion: {task.completionProgress?.satisfied ?? 0}/{task.completionProgress?.total ?? 0}
                     </p>
@@ -1073,9 +1086,9 @@ export function HomePage({
                   >
                     <div className="task-row">
                       <strong>{task.title}</strong>
-                      <span className="status">near</span>
+                      <span className="status">{getCloseoutTaskStatusLabel('near')}</span>
                     </div>
-                    <p className="meta">只差最后一条完成标准，值得优先做收尾判断。</p>
+                    <p className="meta">{getCloseoutTaskSummary('near')}</p>
                     <p className="meta">
                       completion: {task.completionProgress?.satisfied ?? 0}/{task.completionProgress?.total ?? 0}
                     </p>

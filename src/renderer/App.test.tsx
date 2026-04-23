@@ -1281,8 +1281,21 @@ describe('App UI flow', () => {
     const closeoutSection = screen.getByText('Closeout Tasks').closest('section');
     expect(closeoutSection).toBeTruthy();
     expect(within(closeoutSection as HTMLElement).getByText('继续推进/复核 · 收尾判断')).toBeTruthy();
+    expect(
+      within(closeoutSection as HTMLElement).getByText(
+        '这里区分已经具备收尾条件的任务，和还需要先核对最后证据的接近完成任务。',
+      ),
+    ).toBeTruthy();
     expect(readyTaskText).toBeTruthy();
     expect(within(closeoutSection as HTMLElement).getByText('Almost done task')).toBeTruthy();
+    expect(within(closeoutSection as HTMLElement).getByText('可收尾')).toBeTruthy();
+    expect(within(closeoutSection as HTMLElement).getByText('待核对证据')).toBeTruthy();
+    expect(within(closeoutSection as HTMLElement).getByText('完成标准已全部满足，建议做最终收尾判断。')).toBeTruthy();
+    expect(
+      within(closeoutSection as HTMLElement).getByText(
+        '只差最后一条完成标准，先核对最后证据再决定是否收尾。',
+      ),
+    ).toBeTruthy();
 
     await user.click(within(closeoutSection as HTMLElement).getByRole('button', { name: /Ready to finish task/i }));
 
