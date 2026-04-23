@@ -420,6 +420,24 @@ export function App() {
       return;
     }
 
+    if (activity.sourceType === 'blocker') {
+      if (activity.status === 'resolved') {
+        handleOpenTask(activity.taskId, {
+          type: 'focus_next_step',
+          focusArea: 'detail',
+          prefillNextStep: `阻塞项已解除，继续推进：${activity.title}`,
+        });
+        return;
+      }
+
+      handleOpenTask(activity.taskId, {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+        prefillNextStep: `先解除阻塞项：${activity.title}`,
+      });
+      return;
+    }
+
     if (activity.status === 'failed') {
       handleOpenTask(activity.taskId, {
         type: 'focus_next_step',

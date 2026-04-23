@@ -115,6 +115,7 @@ Covered today:
 - `Home recent activity -> Tasks detail follow-up intent`
 - `Home recent activity -> Decisions / Runs`
 - `Home recent activity` lightweight follow-up actions
+- `Home recent activity` blocker created/resolved recovery actions
 - `Home resume preview -> Tasks` recovery flow
 - `Home resume preview` key-source/current-method explanations, latest-change object entry, and recent-change-aware follow-up actions
 - `Home brief` process-template-aware scheduling path

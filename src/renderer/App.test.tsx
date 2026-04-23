@@ -188,6 +188,21 @@ function buildArtifact(partial: Partial<ArtifactRecord>): ArtifactRecord {
   };
 }
 
+function buildActivity(
+  partial: Partial<HomeBriefData['recentActivity'][number]>,
+): HomeBriefData['recentActivity'][number] {
+  return {
+    id: partial.id ?? 'activity_1',
+    sourceType: partial.sourceType ?? 'run',
+    sourceId: partial.sourceId ?? 'run_1',
+    taskId: partial.taskId ?? 'task_1',
+    taskTitle: partial.taskTitle ?? 'Task',
+    title: partial.title ?? 'draft',
+    status: partial.status ?? 'completed',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+  };
+}
+
 function buildRunRecord(partial: Partial<RunRecord>): RunRecord {
   return {
     id: partial.id ?? 'run_1',
@@ -3643,6 +3658,104 @@ describe('App UI flow', () => {
 
     expect((screen.getByLabelText('来源标题') as HTMLInputElement).value).toBe('Partner master sheet');
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe('');
+  });
+
+  it('routes blocker created activity back into blocker recovery from home', async () => {
+    const user = userEvent.setup();
+
+    const blockedTask = buildTaskRecord({
+      id: 'task_blocker_activity_created',
+      title: 'Blocker activity task',
+      state: 'planned',
+      nextStep: null,
+    });
+
+    const blockerActivityApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([blockedTask]),
+      getTaskDetail: vi.fn().mockResolvedValue({
+        ...buildTaskDetail(blockedTask),
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 1,
+        recentTasks: [blockedTask],
+        recentActivity: [
+          buildActivity({
+            id: 'blocker_activity_created',
+            sourceType: 'blocker',
+            sourceId: 'blocker_activity_created_id',
+            taskId: blockedTask.id,
+            taskTitle: blockedTask.title,
+            title: 'Legal approval pending',
+            status: 'created',
+          }),
+        ],
+      }),
+    };
+
+    window.api = blockerActivityApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: '跟进当前阻塞项' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Blocker activity task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '先解除阻塞项：Legal approval pending',
+    );
+  });
+
+  it('routes blocker resolved activity into resume guidance from home', async () => {
+    const user = userEvent.setup();
+
+    const resolvedTask = buildTaskRecord({
+      id: 'task_blocker_activity_resolved',
+      title: 'Resolved blocker activity task',
+      state: 'planned',
+      nextStep: null,
+    });
+
+    const blockerActivityApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([resolvedTask]),
+      getTaskDetail: vi.fn().mockResolvedValue({
+        ...buildTaskDetail(resolvedTask),
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 1,
+        recentTasks: [resolvedTask],
+        recentActivity: [
+          buildActivity({
+            id: 'blocker_activity_resolved',
+            sourceType: 'blocker',
+            sourceId: 'blocker_activity_resolved_id',
+            taskId: resolvedTask.id,
+            taskTitle: resolvedTask.title,
+            title: 'Legal approval pending',
+            status: 'resolved',
+          }),
+        ],
+      }),
+    };
+
+    window.api = blockerActivityApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: '恢复任务推进' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Resolved blocker activity task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '阻塞项已解除，继续推进：Legal approval pending',
+    );
   });
 
   it('resolves blocked tasks from home and resumes waiting when the blocker clearly caused it', async () => {

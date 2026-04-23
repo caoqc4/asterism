@@ -16,7 +16,11 @@ import { WaitingItemRepository } from '../../db/repositories/waiting-item-reposi
 import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
 import { TaskProcessBindingRepository } from '../../db/repositories/task-process-binding-repository.js';
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
-import type { TaskListItemRecord, TaskRecord } from '../../../shared/types/task.js';
+import type {
+  TaskListItemRecord,
+  TaskRecord,
+  TimelineEventRecord,
+} from '../../../shared/types/task.js';
 import type { BriefProcessTemplateCandidate } from '../../../shared/types/brief.js';
 import {
   buildHomeResumeLatestChange,
@@ -543,6 +547,11 @@ export class HomeBriefService {
     tasks: TaskListItemRecord[],
     decisions: Awaited<ReturnType<DecisionRepository['list']>>,
     runs: Awaited<ReturnType<RunRepository['list']>>,
+    taskTimelines: Array<{
+      taskId: string;
+      taskTitle: string;
+      timeline: TimelineEventRecord[];
+    }>,
   ): HomeActivityRecord[] {
     const taskTitleById = new Map(tasks.map((task) => [task.id, task.title]));
 
@@ -572,7 +581,35 @@ export class HomeBriefService {
         updatedAt: run.updatedAt,
       }));
 
-    return [...decisionEvents, ...runEvents]
+    const blockerEvents: HomeActivityRecord[] = taskTimelines
+      .flatMap((task) =>
+        task.timeline
+          .filter(
+            (event: TimelineEventRecord) =>
+              event.type === 'blocker.created' ||
+              event.type === 'blocker.resolved',
+          )
+          .map((event: TimelineEventRecord) => {
+            const payload = event.payload
+              ? (safeJsonParse(event.payload) as Record<string, unknown> | null)
+              : null;
+
+            return {
+              id: `${event.type}:${String(payload?.blockerId ?? event.id)}`,
+              sourceType: 'blocker' as const,
+              sourceId: String(payload?.blockerId ?? event.id),
+              taskId: task.taskId,
+              taskTitle: task.taskTitle,
+              title: String(payload?.title ?? '阻塞项'),
+              status: event.type === 'blocker.created' ? 'created' : 'resolved',
+              updatedAt: event.createdAt,
+            };
+          }),
+      )
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+      .slice(0, 5);
+
+    return [...decisionEvents, ...runEvents, ...blockerEvents]
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
       .slice(0, 5);
   }
@@ -634,7 +671,14 @@ export class HomeBriefService {
     const highRiskTasks = tasks.filter((task) => task.riskLevel === 'high');
     const missingNextStepTasks = activeTasks.filter((task) => !task.nextStep?.trim());
     const scheduler = this.getSchedulerStatus();
-    const recentActivity = this.buildRecentActivity(tasks, decisions, runs);
+    const taskTimelines = await Promise.all(
+      tasks.map(async (task) => ({
+        taskId: task.id,
+        taskTitle: task.title,
+        timeline: (await this.taskRepository.getDetail(task.id))?.timeline ?? [],
+      })),
+    );
+    const recentActivity = this.buildRecentActivity(tasks, decisions, runs, taskTimelines);
     const recentSourceContexts = await this.buildRecentSourceContexts(activeTasks);
     const appliedTemplates = this.taskProcessBindingRepository
       ? await this.taskProcessBindingRepository.listActiveForTasks(activeTasks.map((task) => task.id))

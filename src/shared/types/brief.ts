@@ -40,7 +40,7 @@ export type RecommendedAction = {
 
 export type HomeActivityRecord = {
   id: string;
-  sourceType: 'decision' | 'run';
+  sourceType: 'decision' | 'run' | 'blocker';
   sourceId: string;
   taskId: string;
   taskTitle: string;

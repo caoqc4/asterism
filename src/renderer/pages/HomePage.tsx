@@ -25,6 +25,14 @@ function getActivityActionLabel(activity: HomeActivityRecord): string | null {
     return '基于结果继续推进';
   }
 
+  if (activity.sourceType === 'blocker' && activity.status === 'created') {
+    return '跟进当前阻塞项';
+  }
+
+  if (activity.sourceType === 'blocker' && activity.status === 'resolved') {
+    return '恢复任务推进';
+  }
+
   return null;
 }
 
@@ -358,7 +366,13 @@ export function HomePage({
                   type="button"
                 >
                   <div className="task-row">
-                    <strong>{event.sourceType === 'decision' ? event.title : `${event.title} run`}</strong>
+                    <strong>
+                      {event.sourceType === 'decision'
+                        ? event.title
+                        : event.sourceType === 'run'
+                          ? `${event.title} run`
+                          : `${event.title} blocker`}
+                    </strong>
                     <span className="status">{event.status}</span>
                   </div>
                   <p className="meta">task: {event.taskTitle}</p>
@@ -374,13 +388,15 @@ export function HomePage({
                       {getActivityActionLabel(event)}
                     </button>
                   ) : null}
-                  <button
-                    className="ghost-button"
-                    onClick={() => onOpenActivityObject(event)}
-                    type="button"
-                  >
-                    {event.sourceType === 'decision' ? '查看 Decision' : '查看 Run'}
-                  </button>
+                  {event.sourceType !== 'blocker' ? (
+                    <button
+                      className="ghost-button"
+                      onClick={() => onOpenActivityObject(event)}
+                      type="button"
+                    >
+                      {event.sourceType === 'decision' ? '查看 Decision' : '查看 Run'}
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ))
