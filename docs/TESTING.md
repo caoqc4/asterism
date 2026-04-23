@@ -143,6 +143,7 @@ Covered today:
 - `Tasks` first-screen recovery boundaries, key-slice snapshot behavior, and prioritized timeline previews
 - `Tasks quick decision draft flow`
 - `Tasks list` lane-aware ordering and lightweight lane labels
+- `Tasks list` lane-aware summary copy
 - `Decisions` page current-focus and queue navigation
 - `Decisions / Runs -> Tasks` follow-up return flows
 - `Decisions / Runs` related-task timeline context
