@@ -210,6 +210,24 @@ button {
   margin-top: 16px;
 }
 
+.task-list-item {
+  display: grid;
+  gap: 8px;
+}
+
+.task-lane-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.task-lane-section::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(17, 24, 39, 0.08);
+}
+
 .task-card {
   padding: 14px;
   border-radius: 16px;

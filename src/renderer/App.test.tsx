@@ -1077,6 +1077,65 @@ describe('App UI flow', () => {
     expect(within(taskButtons[2]).getByText('稳态推进')).toBeTruthy();
   });
 
+  it('adds subtle lane section dividers to the task list when the lane changes', async () => {
+    const user = userEvent.setup();
+
+    const laneRiskTask = buildTaskRecord({
+      id: 'task_lane_section_risk',
+      title: 'Lane section risk task',
+      state: 'planned',
+      riskLevel: 'high',
+      riskNote: 'Critical launch blocker',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+    const laneWaitingTask = buildTaskRecord({
+      id: 'task_lane_section_waiting',
+      title: 'Lane section waiting task',
+      state: 'waiting_external',
+      waitingReason: 'Waiting for reviewer confirmation',
+      updatedAt: '2026-01-03T00:00:00.000Z',
+    });
+    const laneSteadyTask = buildTaskRecord({
+      id: 'task_lane_section_steady',
+      title: 'Lane section steady task',
+      state: 'planned',
+      nextStep: 'Continue outreach',
+      updatedAt: '2026-01-04T00:00:00.000Z',
+    });
+
+    window.api = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([laneSteadyTask, laneWaitingTask, laneRiskTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        const task =
+          [laneSteadyTask, laneWaitingTask, laneRiskTask].find((item) => item.id === taskId) ??
+          laneRiskTask;
+        return buildTaskDetail(task);
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 3,
+        recentTasks: [laneRiskTask, laneWaitingTask, laneSteadyTask],
+        highRiskTaskCount: 1,
+        waitingTaskCount: 1,
+        highRiskTasks: [laneRiskTask],
+        waitingTasks: [laneWaitingTask],
+        recommendedActions: [],
+      }),
+    };
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await screen.findByRole('button', { name: /Lane section risk task/i });
+
+    const laneSections = document.querySelectorAll('.task-lane-section');
+    expect(laneSections).toHaveLength(3);
+    expect(within(laneSections[0] as HTMLElement).getByText('立即升级')).toBeTruthy();
+    expect(within(laneSections[1] as HTMLElement).getByText('先补清晰度')).toBeTruthy();
+    expect(within(laneSections[2] as HTMLElement).getByText('稳态推进')).toBeTruthy();
+  });
+
   it('offers a direct action to resolve the current waiting item', async () => {
     const user = userEvent.setup();
 

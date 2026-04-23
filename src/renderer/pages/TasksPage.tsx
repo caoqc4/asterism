@@ -1214,40 +1214,53 @@ export function TasksPage({
           {tasks.length === 0 ? (
             <p className="meta">还没有任务，先创建一条开始流转。</p>
           ) : (
-            tasks.map((task) => (
-              <button
-                className={`task-card task-card-button ${getTaskCardTone(task)} ${
-                  task.id === selectedTaskId ? 'task-card-active' : ''
-                }`}
-                key={task.id}
-                onClick={() => setSelectedTaskId(task.id)}
-                type="button"
-              >
-                <div className="task-row">
-                  <strong>{task.title}</strong>
-                  <div className="task-row task-row-compact">
-                    {getPriorityLaneLabel(taskPriorityLanes.get(task.id)) ? (
-                      <span className={`status lane-status lane-status-${taskPriorityLanes.get(task.id)}`}>
-                        {getPriorityLaneLabel(taskPriorityLanes.get(task.id))}
-                      </span>
+            tasks.map((task, index) => {
+              const lane = taskPriorityLanes.get(task.id);
+              const laneLabel = getPriorityLaneLabel(lane);
+              const previousLane = index > 0 ? taskPriorityLanes.get(tasks[index - 1]!.id) : null;
+              const showLaneSection = laneLabel && lane !== previousLane;
+
+              return (
+                <div className="task-list-item" key={task.id}>
+                  {showLaneSection ? (
+                    <div className="task-lane-section">
+                      <span className={`status lane-status lane-status-${lane}`}>{laneLabel}</span>
+                    </div>
+                  ) : null}
+                  <button
+                    className={`task-card task-card-button ${getTaskCardTone(task)} ${
+                      task.id === selectedTaskId ? 'task-card-active' : ''
+                    }`}
+                    onClick={() => setSelectedTaskId(task.id)}
+                    type="button"
+                  >
+                    <div className="task-row">
+                      <strong>{task.title}</strong>
+                      <div className="task-row task-row-compact">
+                        {laneLabel ? (
+                          <span className={`status lane-status lane-status-${lane}`}>
+                            {laneLabel}
+                          </span>
+                        ) : null}
+                        <span className="status">{task.state}</span>
+                      </div>
+                    </div>
+                    <p className="meta">{task.summary || task.id}</p>
+                    {buildTaskBadges(task).length ? (
+                      <div className="signal-row">
+                        {buildTaskBadges(task).map((badge) => (
+                          <span className="signal-pill" key={badge}>
+                            {badge}
+                          </span>
+                        ))}
+                      </div>
                     ) : null}
-                    <span className="status">{task.state}</span>
-                  </div>
+                    {task.nextStep ? <p className="meta">下一步：{task.nextStep}</p> : null}
+                    {task.waitingReason ? <p className="meta">等待：{task.waitingReason}</p> : null}
+                  </button>
                 </div>
-                <p className="meta">{task.summary || task.id}</p>
-                {buildTaskBadges(task).length ? (
-                  <div className="signal-row">
-                    {buildTaskBadges(task).map((badge) => (
-                      <span className="signal-pill" key={badge}>
-                        {badge}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-                {task.nextStep ? <p className="meta">下一步：{task.nextStep}</p> : null}
-                {task.waitingReason ? <p className="meta">等待：{task.waitingReason}</p> : null}
-              </button>
-            ))
+              );
+            })
           )}
         </div>
       </article>
