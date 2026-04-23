@@ -328,6 +328,81 @@ describe('TaskService', () => {
     expect(detail?.resumeCard.nextSuggestedMove).toBe('检查最近一次执行失败原因，并决定是否重试。');
   });
 
+  it('uses dependency re-evaluation wording in the task resume card when an upstream task completes', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId === 'task_upstream') {
+          return {
+            ...buildDetail('completed'),
+            id: 'task_upstream',
+            title: 'Publish partner list',
+            state: 'completed',
+            updatedAt: '2026-01-03T00:00:00.000Z',
+          };
+        }
+
+        return {
+          ...buildDetail('planned'),
+          nextStep: null,
+          activeDependency: buildTaskDependencyRecord({
+            id: 'task_dependency_1',
+            taskId: 'task_1',
+            blockedByTaskId: 'task_upstream',
+            blockedByTaskTitle: 'Publish partner list',
+            createdAt: '2026-01-02T00:00:00.000Z',
+          }),
+          timeline: [],
+        };
+      }),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const dependencies = {
+      getActiveForTask: vi.fn().mockResolvedValue(
+        buildTaskDependencyRecord({
+          id: 'task_dependency_1',
+          taskId: 'task_1',
+          blockedByTaskId: 'task_upstream',
+          blockedByTaskTitle: 'Publish partner list',
+          createdAt: '2026-01-02T00:00:00.000Z',
+        }),
+      ),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      null,
+      dependencies as never,
+    );
+
+    const detail = await service.getDetail('task_1');
+
+    expect(detail?.dependencyReevaluation).toMatchObject({
+      dependencyId: 'task_dependency_1',
+      upstreamTaskId: 'task_upstream',
+      upstreamTaskTitle: 'Publish partner list',
+      status: 'upstream_ready',
+    });
+    expect(detail?.resumeCard.latestChange.summary).toBe(
+      '上游任务已完成：Publish partner list，可重新判断当前依赖。',
+    );
+    expect(detail?.resumeCard.nextSuggestedMove).toBe(
+      '确认上游任务就绪后的下一步推进：Publish partner list',
+    );
+  });
+
   it('uses clarify-first recovery wording for newly captured tasks', async () => {
     const repository = {
       list: vi.fn(),

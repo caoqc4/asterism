@@ -208,6 +208,58 @@ export class TaskService {
     };
   }
 
+  private async attachDetailDependencyReevaluation(detail: TaskDetailBase): Promise<TaskDetailBase> {
+    const dependency = detail.activeDependency;
+
+    if (!dependency?.blockedByTaskId) {
+      return {
+        ...detail,
+        dependencyReevaluation: null,
+      };
+    }
+
+    const upstreamTask = await this.repository.getDetail(dependency.blockedByTaskId);
+
+    if (!upstreamTask) {
+      return {
+        ...detail,
+        dependencyReevaluation: null,
+      };
+    }
+
+    const latestResolvedBlocker = upstreamTask.timeline
+      .filter((event) => event.type === 'blocker.resolved')
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0];
+
+    const candidates: NonNullable<TaskDetailBase['dependencyReevaluation']>[] = [];
+
+    if (upstreamTask.state === 'completed') {
+      candidates.push({
+        dependencyId: dependency.id,
+        upstreamTaskId: upstreamTask.id,
+        upstreamTaskTitle: upstreamTask.title,
+        status: 'upstream_ready',
+        updatedAt: upstreamTask.updatedAt,
+      });
+    }
+
+    if (latestResolvedBlocker) {
+      candidates.push({
+        dependencyId: dependency.id,
+        upstreamTaskId: upstreamTask.id,
+        upstreamTaskTitle: upstreamTask.title,
+        status: 'upstream_unblocked',
+        updatedAt: latestResolvedBlocker.createdAt,
+      });
+    }
+
+    return {
+      ...detail,
+      dependencyReevaluation:
+        candidates.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null,
+    };
+  }
+
   private async attachArtifacts(detail: TaskDetailBase): Promise<TaskDetailBase> {
     const artifacts = this.artifactRepository
       ? await this.artifactRepository.listRecentForTask(detail.id)
@@ -274,7 +326,11 @@ export class TaskService {
       );
     }
 
-    const latestChange = buildTaskResumeLatestChange(detail.timeline, detail.state);
+    const latestChange = buildTaskResumeLatestChange(
+      detail.timeline,
+      detail.state,
+      detail.dependencyReevaluation,
+    );
     const nextSuggestedMove = deriveNextSuggestedMove({
       explicitNextStep: detail.nextStep,
       taskTitle: detail.title,
@@ -436,7 +492,9 @@ export class TaskService {
 
     const enriched = await this.attachProcessTemplates(
       await this.attachSourceContexts(
-        await this.attachArtifacts(await this.attachDetailWaitingItem(detail)),
+        await this.attachArtifacts(
+          await this.attachDetailDependencyReevaluation(await this.attachDetailWaitingItem(detail)),
+        ),
       ),
     );
 

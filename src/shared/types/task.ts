@@ -95,6 +95,7 @@ export type TaskDetailBase = TaskRecord & {
   activeWaitingItem: WaitingItemRecord | null;
   activeBlocker: BlockerRecord | null;
   activeDependency?: TaskDependencyRecord | null;
+  dependencyReevaluation?: TaskListItemRecord['dependencyReevaluation'];
   artifacts: ArtifactRecord[];
   sourceContexts: SourceContextRecord[];
   processTemplates: AppliedProcessTemplateRecord[];

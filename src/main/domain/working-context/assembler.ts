@@ -290,9 +290,31 @@ export function getCurrentDependencyPriorityReason(
 export function buildTaskResumeLatestChange(
   timeline: TimelineLite,
   taskState?: TaskState,
+  dependencyReevaluation?: {
+    upstreamTaskTitle: string;
+    status: 'upstream_ready' | 'upstream_unblocked';
+  } | null,
 ): TaskResumeCardRecord['latestChange'] & {
   recentChange: WorkingContextRecentChange | null;
 } {
+  if (dependencyReevaluation) {
+    return {
+      summary:
+        dependencyReevaluation.status === 'upstream_ready'
+          ? `上游任务已完成：${dependencyReevaluation.upstreamTaskTitle}，可重新判断当前依赖。`
+          : `上游任务刚解除关键阻塞：${dependencyReevaluation.upstreamTaskTitle}，可重新判断当前依赖。`,
+      action: {
+        label: null,
+        targetType: null,
+        targetId: null,
+      },
+      recentChange: {
+        kind: 'task_dependency_resolved',
+        title: dependencyReevaluation.upstreamTaskTitle,
+      },
+    };
+  }
+
   const latestEvent = getLatestResumeRelevantTimelineEvent(timeline);
 
   if (!latestEvent) {
