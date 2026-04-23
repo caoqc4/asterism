@@ -12,6 +12,7 @@ import type {
   CreateCompletionCriteriaInput,
   UpdateCompletionCriteriaInput,
 } from '@shared/types/completion-criteria';
+import type { ResponsibilityKind } from '@shared/types/responsibility';
 import type {
   CreateTaskDependencyInput,
   TaskDependencyRecord,
@@ -86,6 +87,15 @@ const blockerKindOptions: BlockerKind[] = [
   'document_or_material',
   'system_or_tool',
   'other',
+];
+
+const responsibilityOptions: ResponsibilityKind[] = [
+  'self',
+  'external_person',
+  'external_team',
+  'upstream_task',
+  'shared',
+  'unknown',
 ];
 
 const transitionOptions: Record<TaskState, TaskState[]> = {
@@ -324,6 +334,23 @@ function formatBlockerKind(kind: BlockerKind): string {
       return '系统/工具';
     default:
       return '其他';
+  }
+}
+
+function formatResponsibilityKind(kind: ResponsibilityKind): string {
+  switch (kind) {
+    case 'self':
+      return '自己推进';
+    case 'external_person':
+      return '外部个人推进';
+    case 'external_team':
+      return '外部团队推进';
+    case 'upstream_task':
+      return '上游任务推进';
+    case 'shared':
+      return '共同推进';
+    default:
+      return '责任待明确';
   }
 }
 
@@ -753,11 +780,15 @@ export function TasksPage({
   const [blockerKind, setBlockerKind] = useState<BlockerKind>('other');
   const [blockerDetail, setBlockerDetail] = useState('');
   const [blockerOwner, setBlockerOwner] = useState('');
+  const [blockerResponsibility, setBlockerResponsibility] = useState<ResponsibilityKind>('unknown');
+  const [blockerResponsibilityLabel, setBlockerResponsibilityLabel] = useState('');
   const [blockerSourceContextId, setBlockerSourceContextId] = useState('');
   const [blockerError, setBlockerError] = useState<string | null>(null);
   const [completionCriteriaEditingId, setCompletionCriteriaEditingId] = useState<string | null>(null);
   const [completionCriteriaFocusIds, setCompletionCriteriaFocusIds] = useState<string[]>([]);
   const [completionCriteriaText, setCompletionCriteriaText] = useState('');
+  const [completionCriteriaResponsibility, setCompletionCriteriaResponsibility] = useState<ResponsibilityKind>('unknown');
+  const [completionCriteriaResponsibilityLabel, setCompletionCriteriaResponsibilityLabel] = useState('');
   const [completionCriteriaError, setCompletionCriteriaError] = useState<string | null>(null);
   const [dependencyEditingId, setDependencyEditingId] = useState<string | null>(null);
   const [dependencyBlockedByTaskId, setDependencyBlockedByTaskId] = useState('');
@@ -1193,6 +1224,8 @@ export function TasksPage({
     setBlockerKind(item.kind);
     setBlockerDetail(item.detail ?? '');
     setBlockerOwner(item.owner ?? '');
+    setBlockerResponsibility(item.responsibility ?? 'unknown');
+    setBlockerResponsibilityLabel(item.responsibilityLabel ?? '');
     setBlockerSourceContextId(item.sourceContextId ?? '');
     setBlockerError(null);
   }
@@ -1203,6 +1236,8 @@ export function TasksPage({
     setBlockerKind('other');
     setBlockerDetail('');
     setBlockerOwner('');
+    setBlockerResponsibility('unknown');
+    setBlockerResponsibilityLabel('');
     setBlockerSourceContextId('');
     setBlockerError(null);
   }
@@ -1234,6 +1269,8 @@ export function TasksPage({
         kind: blockerKind,
         detail: blockerDetail,
         owner: blockerOwner,
+        responsibility: blockerResponsibility,
+        responsibilityLabel: blockerResponsibilityLabel,
         sourceContextId: blockerSourceContextId || null,
       });
     } else {
@@ -1243,6 +1280,8 @@ export function TasksPage({
         kind: blockerKind,
         detail: blockerDetail,
         owner: blockerOwner,
+        responsibility: blockerResponsibility,
+        responsibilityLabel: blockerResponsibilityLabel,
         sourceContextId: blockerSourceContextId || null,
       });
     }
@@ -1289,12 +1328,16 @@ export function TasksPage({
   function populateCompletionCriteriaForm(item: CompletionCriteriaRecord) {
     setCompletionCriteriaEditingId(item.id);
     setCompletionCriteriaText(item.text);
+    setCompletionCriteriaResponsibility(item.verificationResponsibility ?? 'unknown');
+    setCompletionCriteriaResponsibilityLabel(item.verificationResponsibilityLabel ?? '');
     setCompletionCriteriaError(null);
   }
 
   function resetCompletionCriteriaForm() {
     setCompletionCriteriaEditingId(null);
     setCompletionCriteriaText('');
+    setCompletionCriteriaResponsibility('unknown');
+    setCompletionCriteriaResponsibilityLabel('');
     setCompletionCriteriaError(null);
   }
 
@@ -1324,11 +1367,15 @@ export function TasksPage({
       await onUpdateCompletionCriteria({
         id: completionCriteriaEditingId,
         text: completionCriteriaText,
+        verificationResponsibility: completionCriteriaResponsibility,
+        verificationResponsibilityLabel: completionCriteriaResponsibilityLabel,
       });
     } else {
       await onCreateCompletionCriteria({
         taskId: detail.id,
         text: completionCriteriaText,
+        verificationResponsibility: completionCriteriaResponsibility,
+        verificationResponsibilityLabel: completionCriteriaResponsibilityLabel,
       });
     }
 
@@ -2112,6 +2159,9 @@ export function TasksPage({
                                 最后还差：{resumeCompletionStatus.nextOpenCriterion}
                               </p>
                             ) : null}
+                            {resumeCompletionStatus.nextOpenResponsibilitySummary ? (
+                              <p className="meta">{resumeCompletionStatus.nextOpenResponsibilitySummary}</p>
+                            ) : null}
                           </>
                         ) : (
                           <p className="meta">建议先补 1 到 3 条完成标准，帮助判断这条任务何时可以收尾。</p>
@@ -2142,6 +2192,9 @@ export function TasksPage({
                         {resumeCurrentBlocker.priorityReason ? (
                           <p className="meta">{resumeCurrentBlocker.priorityReason}</p>
                         ) : null}
+                        {resumeCurrentBlocker.responsibilitySummary ? (
+                          <p className="meta">{resumeCurrentBlocker.responsibilitySummary}</p>
+                        ) : null}
                       </div>
                       <div className="resume-cell">
                         <strong>Current Dependency</strong>
@@ -2154,6 +2207,9 @@ export function TasksPage({
                         ) : null}
                         {resumeCurrentDependency.priorityReason ? (
                           <p className="meta">{resumeCurrentDependency.priorityReason}</p>
+                        ) : null}
+                        {resumeCurrentDependency.responsibilitySummary ? (
+                          <p className="meta">{resumeCurrentDependency.responsibilitySummary}</p>
                         ) : null}
                       </div>
                       <div className="resume-cell resume-cell-source-lane">
@@ -2320,6 +2376,16 @@ export function TasksPage({
                         {detail.activeBlocker.owner ? (
                           <p className="meta">owner: {detail.activeBlocker.owner}</p>
                         ) : null}
+                        {detail.activeBlocker.responsibility ||
+                        detail.activeBlocker.responsibilityLabel ? (
+                          <p className="meta">
+                            解除责任：
+                            {detail.activeBlocker.responsibilityLabel ??
+                              formatResponsibilityKind(
+                                detail.activeBlocker.responsibility ?? 'unknown',
+                              )}
+                          </p>
+                        ) : null}
                         <p className="meta">{formatBlockerAgeLabel(detail.activeBlocker.createdAt)}</p>
                         <div className="timeline-actions">
                           <button
@@ -2367,6 +2433,9 @@ export function TasksPage({
                         <p className="meta">{detail.resumeCard.currentDependency?.ageLabel ?? `depends since ${detail.activeDependency.createdAt.slice(0, 10)}`}</p>
                         {detail.resumeCard.currentDependency?.priorityReason ? (
                           <p className="meta">{detail.resumeCard.currentDependency.priorityReason}</p>
+                        ) : null}
+                        {detail.resumeCard.currentDependency?.responsibilitySummary ? (
+                          <p className="meta">{detail.resumeCard.currentDependency.responsibilitySummary}</p>
                         ) : null}
                         <div className="timeline-actions">
                           {detail.dependencyReevaluation ? (
@@ -2585,6 +2654,16 @@ export function TasksPage({
                             created {criteria.createdAt.slice(0, 10)}
                             {criteria.satisfiedAt ? ` · satisfied ${criteria.satisfiedAt.slice(0, 10)}` : ''}
                           </p>
+                          {criteria.verificationResponsibility ||
+                          criteria.verificationResponsibilityLabel ? (
+                            <p className="meta">
+                              确认责任：
+                              {criteria.verificationResponsibilityLabel ??
+                                formatResponsibilityKind(
+                                  criteria.verificationResponsibility ?? 'unknown',
+                                )}
+                            </p>
+                          ) : null}
                           <div className="timeline-actions">
                             {criteria.status === 'open' ? (
                               <button
@@ -2626,9 +2705,17 @@ export function TasksPage({
                     <div className="timeline-item timeline-item-default">
                       <strong>{resumeCompletionStatus.summary}</strong>
                       {resumeCompletionStatus.total > 0 ? (
-                        <p className="meta">
-                          未满足 {resumeCompletionStatus.open} 条，已满足 {resumeCompletionStatus.satisfied} 条。
-                        </p>
+                        <>
+                          <p className="meta">
+                            未满足 {resumeCompletionStatus.open} 条，已满足{' '}
+                            {resumeCompletionStatus.satisfied} 条。
+                          </p>
+                          {resumeCompletionStatus.nextOpenResponsibilitySummary ? (
+                            <p className="meta">
+                              {resumeCompletionStatus.nextOpenResponsibilitySummary}
+                            </p>
+                          ) : null}
+                        </>
                       ) : (
                         <p className="meta">还没有退出条件对象，当前不适合直接凭感觉判断已完成。</p>
                       )}
@@ -2714,6 +2801,33 @@ export function TasksPage({
                             setCompletionCriteriaError(null);
                           }
                         }}
+                      />
+                    </label>
+                    <label>
+                      确认责任
+                      <select
+                        value={completionCriteriaResponsibility}
+                        onChange={(event) =>
+                          setCompletionCriteriaResponsibility(
+                            event.target.value as ResponsibilityKind,
+                          )
+                        }
+                      >
+                        {responsibilityOptions.map((item) => (
+                          <option key={item} value={item}>
+                            {formatResponsibilityKind(item)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      确认责任说明
+                      <input
+                        value={completionCriteriaResponsibilityLabel}
+                        onChange={(event) =>
+                          setCompletionCriteriaResponsibilityLabel(event.target.value)
+                        }
+                        placeholder="例如：我自己确认 / 客户确认 / 法务确认"
                       />
                     </label>
                     {completionCriteriaError ? <p className="meta">{completionCriteriaError}</p> : null}
@@ -3041,6 +3155,16 @@ export function TasksPage({
                           {detail.activeBlocker.owner ? (
                             <p className="meta">owner: {detail.activeBlocker.owner}</p>
                           ) : null}
+                          {detail.activeBlocker.responsibility ||
+                          detail.activeBlocker.responsibilityLabel ? (
+                            <p className="meta">
+                              解除责任：
+                              {detail.activeBlocker.responsibilityLabel ??
+                                formatResponsibilityKind(
+                                  detail.activeBlocker.responsibility ?? 'unknown',
+                                )}
+                            </p>
+                          ) : null}
                           <p className="meta">{formatBlockerAgeLabel(detail.activeBlocker.createdAt)}</p>
                           <div className="timeline-actions">
                             <button
@@ -3116,6 +3240,29 @@ export function TasksPage({
                       <input
                         value={blockerOwner}
                         onChange={(event) => setBlockerOwner(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      解除责任
+                      <select
+                        value={blockerResponsibility}
+                        onChange={(event) =>
+                          setBlockerResponsibility(event.target.value as ResponsibilityKind)
+                        }
+                      >
+                        {responsibilityOptions.map((item) => (
+                          <option key={item} value={item}>
+                            {formatResponsibilityKind(item)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      解除责任说明
+                      <input
+                        value={blockerResponsibilityLabel}
+                        onChange={(event) => setBlockerResponsibilityLabel(event.target.value)}
+                        placeholder="例如：法务团队确认 / 我自己跟进 / 对方运营回复"
                       />
                     </label>
                     <label>

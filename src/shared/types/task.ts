@@ -80,6 +80,7 @@ export type TaskResumeCardRecord = {
     summary: string;
     satisfiedCriteriaHighlights?: string[];
     nextOpenCriterion?: string | null;
+    nextOpenResponsibilitySummary?: string | null;
   };
   currentBlocker: {
     blockerId: string | null;
@@ -87,6 +88,7 @@ export type TaskResumeCardRecord = {
     detail: string | null;
     priorityReason?: string | null;
     ageLabel?: string | null;
+    responsibilitySummary?: string | null;
   };
   currentDependency?: {
     dependencyId: string | null;
@@ -94,6 +96,7 @@ export type TaskResumeCardRecord = {
     detail: string | null;
     priorityReason?: string | null;
     ageLabel?: string | null;
+    responsibilitySummary?: string | null;
   };
   keySource: ResumeKeySourceSliceRecord;
   currentMethod: ResumeCurrentMethodSliceRecord;

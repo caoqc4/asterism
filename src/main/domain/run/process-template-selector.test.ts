@@ -25,6 +25,8 @@ function buildTaskDetail(): TaskDetail {
       kind: 'approval',
       detail: 'Legal has not approved the copy yet.',
       owner: 'Legal',
+      responsibility: null,
+      responsibilityLabel: null,
       sourceContextId: null,
       status: 'active',
       createdAt: '2026-01-01T00:00:00.000Z',
@@ -56,6 +58,7 @@ function buildTaskDetail(): TaskDetail {
         blockerId: 'blocker_1',
         title: 'Waiting on legal sign-off',
         detail: 'Legal has not approved the copy yet.',
+        responsibilitySummary: null,
       },
       keySource: {
         sourceContextId: null,

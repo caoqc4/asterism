@@ -53,6 +53,7 @@ import {
   getCurrentMethodSelectionReason,
   getKeySourcePriorityReason,
 } from '../working-context/assembler.js';
+import { getResponsibilitySummary } from '../../../shared/working-context/responsibility.js';
 
 const allowedTransitions: Record<TaskState, TaskState[]> = {
   captured: ['triaged', 'planned', 'archived'],
@@ -337,6 +338,8 @@ export class TaskService {
       .map((criteria) => criteria.text);
     const nextOpenCriterion =
       detail.completionCriteria.find((criteria) => criteria.status === 'open')?.text ?? null;
+    const nextOpenCriteriaRecord =
+      detail.completionCriteria.find((criteria) => criteria.status === 'open') ?? null;
     const completionStatus = {
       total: detail.completionCriteria.length,
       satisfied: satisfiedCriteriaCount,
@@ -347,6 +350,14 @@ export class TaskService {
           : `已满足 ${satisfiedCriteriaCount}/${detail.completionCriteria.length} 条完成标准`,
       satisfiedCriteriaHighlights,
       nextOpenCriterion,
+      nextOpenResponsibilitySummary: nextOpenCriteriaRecord
+        ? getResponsibilitySummary({
+            kind: nextOpenCriteriaRecord.verificationResponsibility,
+            label: nextOpenCriteriaRecord.verificationResponsibilityLabel,
+            audience: 'task',
+            subject: 'completion',
+          })
+        : null,
     };
 
     const currentStateParts = [`状态：${detail.state}`];
@@ -439,6 +450,12 @@ export class TaskService {
               blocker: detail.activeBlocker,
               audience: 'task',
             }),
+            responsibilitySummary: getResponsibilitySummary({
+              kind: detail.activeBlocker.responsibility,
+              label: detail.activeBlocker.responsibilityLabel ?? detail.activeBlocker.owner,
+              audience: 'task',
+              subject: 'blocker',
+            }),
           }
         : {
             blockerId: null,
@@ -446,6 +463,7 @@ export class TaskService {
             detail: null,
             ageLabel: null,
             priorityReason: null,
+            responsibilitySummary: null,
           },
       currentDependency: detail.activeDependency
         ? {
@@ -459,6 +477,12 @@ export class TaskService {
               dependencyReevaluationReason ??
               getCurrentDependencyPriorityReason(detail.activeDependency, 'task'),
             ageLabel: getCurrentDependencyAgeLabel(detail.activeDependency),
+            responsibilitySummary: getResponsibilitySummary({
+              kind: 'upstream_task',
+              label: detail.activeDependency.blockedByTaskTitle,
+              audience: 'task',
+              subject: 'dependency',
+            }),
           }
         : {
             dependencyId: null,
@@ -466,6 +490,7 @@ export class TaskService {
             detail: null,
             priorityReason: null,
             ageLabel: null,
+            responsibilitySummary: null,
           },
       keySource: keySource
         ? {

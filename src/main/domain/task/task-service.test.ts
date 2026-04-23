@@ -78,6 +78,8 @@ function buildBlockerRecord(partial: Partial<BlockerRecord> = {}): BlockerRecord
     kind: partial.kind ?? 'approval',
     detail: partial.detail ?? 'Need sign-off',
     owner: partial.owner ?? 'Legal',
+    responsibility: partial.responsibility ?? null,
+    responsibilityLabel: partial.responsibilityLabel ?? null,
     sourceContextId: partial.sourceContextId ?? null,
     status: partial.status ?? 'active',
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
@@ -109,6 +111,8 @@ function buildCompletionCriteriaRecord(
     id: partial.id ?? 'criteria_1',
     taskId: partial.taskId ?? 'task_1',
     text: partial.text ?? 'Stakeholder approved final brief',
+    verificationResponsibility: partial.verificationResponsibility ?? null,
+    verificationResponsibilityLabel: partial.verificationResponsibilityLabel ?? null,
     status: partial.status ?? 'open',
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
@@ -270,6 +274,8 @@ describe('TaskService', () => {
         buildBlockerRecord({
           title: 'Legal approval pending',
           detail: 'Need formal sign-off before launch',
+          responsibility: 'external_team',
+          responsibilityLabel: '法务团队确认',
         }),
       ),
     };
@@ -298,6 +304,7 @@ describe('TaskService', () => {
       detail: 'Need formal sign-off before launch',
       priorityReason: expect.stringContaining('当前主阻塞项：Need formal sign-off before launch'),
       ageLabel: expect.stringContaining('blocked since 2026-01-01'),
+      responsibilitySummary: '解除责任：法务团队确认',
     });
     expect(detail?.resumeCard.keySource.title).toBe('Partner website shortlist');
     expect(detail?.resumeCard.keySource.priorityReason).toBe(
@@ -390,6 +397,8 @@ describe('TaskService', () => {
         buildCompletionCriteriaRecord({
           id: 'criteria_open',
           text: 'Final launch brief approved',
+          verificationResponsibility: 'self',
+          verificationResponsibilityLabel: '我自己确认',
         }),
       ]),
     };
@@ -413,6 +422,7 @@ describe('TaskService', () => {
       open: 1,
       satisfiedCriteriaHighlights: ['Draft delivered'],
       nextOpenCriterion: 'Final launch brief approved',
+      nextOpenResponsibilitySummary: '确认责任：我自己确认',
     });
     expect(detail?.resumeCard.latestChange.summary).toBe(
       '最近一条决策已获批准：Approve final launch brief，这可能说明某些完成标准已具备。',
@@ -496,6 +506,7 @@ describe('TaskService', () => {
       title: 'Publish partner list',
       detail: '上游任务“Publish partner list”已完成，可重新判断是否解除依赖。',
       priorityReason: '上游任务“Publish partner list”已完成，可重新判断是否解除依赖。',
+      responsibilitySummary: '当前主要由上游任务链路推进。',
     });
     expect(detail?.resumeCard.summary).toContain('当前依赖已具备恢复推进条件');
     expect(detail?.resumeCard.nextSuggestedMove).toBe(

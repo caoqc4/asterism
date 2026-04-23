@@ -41,6 +41,7 @@ import {
 import { isStaleBlocker } from '../../../shared/working-context/blocker.js';
 import { isStaleDependency } from '../../../shared/working-context/dependency.js';
 import { comparePriorityLaneContext, comparePriorityLanes, deriveTaskPriorityLaneMap } from '../../../shared/working-context/priority-lanes.js';
+import { getResponsibilitySummary } from '../../../shared/working-context/responsibility.js';
 
 type InternalRecommendedAction = RecommendedAction & {
   lane: PriorityLane;
@@ -537,6 +538,7 @@ export class HomeBriefService {
         open: number;
         satisfiedCriteriaHighlights: string[];
         nextOpenCriterion: string | null;
+        nextOpenResponsibilitySummary: string | null;
       }
     >
   > {
@@ -546,6 +548,7 @@ export class HomeBriefService {
       open: number;
       satisfiedCriteriaHighlights: string[];
       nextOpenCriterion: string | null;
+      nextOpenResponsibilitySummary: string | null;
     };
     const progressByTaskId = new Map<
       string,
@@ -565,6 +568,7 @@ export class HomeBriefService {
         open: 0,
         satisfiedCriteriaHighlights: [],
         nextOpenCriterion: null,
+        nextOpenResponsibilitySummary: null,
       };
       current.total += 1;
       if (item.status === 'satisfied') {
@@ -575,6 +579,12 @@ export class HomeBriefService {
       } else {
         current.open += 1;
         current.nextOpenCriterion ??= item.text;
+        current.nextOpenResponsibilitySummary ??= getResponsibilitySummary({
+          kind: item.verificationResponsibility,
+          label: item.verificationResponsibilityLabel,
+          audience: 'home',
+          subject: 'completion',
+        });
       }
       progressByTaskId.set(item.taskId, current);
     }
@@ -592,6 +602,7 @@ export class HomeBriefService {
         open: number;
         satisfiedCriteriaHighlights: string[];
         nextOpenCriterion: string | null;
+        nextOpenResponsibilitySummary: string | null;
       }
     >,
   ): HomeTaskSliceRecord {
@@ -603,6 +614,7 @@ export class HomeBriefService {
         open: 0,
         satisfiedCriteriaHighlights: [],
         nextOpenCriterion: null,
+        nextOpenResponsibilitySummary: null,
       },
     };
   }
@@ -925,6 +937,7 @@ export class HomeBriefService {
           total: 0,
           satisfied: 0,
           open: 0,
+          nextOpenResponsibilitySummary: null,
         },
         currentState: currentStateParts.join(' · '),
         latestChange: {
@@ -939,20 +952,34 @@ export class HomeBriefService {
                 blocker: task.activeBlocker,
                 audience: 'home',
               }),
+              responsibilitySummary: getResponsibilitySummary({
+                kind: task.activeBlocker.responsibility,
+                label: task.activeBlocker.responsibilityLabel ?? task.activeBlocker.owner,
+                audience: 'home',
+                subject: 'blocker',
+              }),
             }
           : {
               title: null,
               priorityReason: null,
+              responsibilitySummary: null,
             },
         currentDependency: task.activeDependency
           ? {
               title: task.activeDependency.blockedByTaskTitle ?? null,
               ageLabel: getCurrentDependencyAgeLabel(task.activeDependency),
               priorityReason: getCurrentDependencyPriorityReason(task.activeDependency, 'home'),
+              responsibilitySummary: getResponsibilitySummary({
+                kind: 'upstream_task',
+                label: task.activeDependency.blockedByTaskTitle,
+                audience: 'home',
+                subject: 'dependency',
+              }),
             }
           : {
               title: null,
               priorityReason: null,
+              responsibilitySummary: null,
             },
         keySource: {
           sourceContextId: keySource?.id ?? null,

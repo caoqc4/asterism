@@ -21,6 +21,9 @@ function toRecord(row: typeof completionCriteria.$inferSelect): CompletionCriter
     id: row.id,
     taskId: row.taskId,
     text: row.text,
+    verificationResponsibility:
+      row.verificationResponsibility as CompletionCriteriaRecord['verificationResponsibility'],
+    verificationResponsibilityLabel: row.verificationResponsibilityLabel,
     status: row.status as CompletionCriteriaRecord['status'],
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -79,6 +82,8 @@ export class CompletionCriteriaRepository {
       id,
       taskId: input.taskId,
       text: input.text.trim(),
+      verificationResponsibility: input.verificationResponsibility ?? null,
+      verificationResponsibilityLabel: input.verificationResponsibilityLabel?.trim() || null,
       status: 'open',
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -104,6 +109,14 @@ export class CompletionCriteriaRepository {
       .update(completionCriteria)
       .set({
         text: input.text.trim(),
+        verificationResponsibility:
+          input.verificationResponsibility === undefined
+            ? current.verificationResponsibility
+            : input.verificationResponsibility,
+        verificationResponsibilityLabel:
+          input.verificationResponsibilityLabel === undefined
+            ? current.verificationResponsibilityLabel
+            : input.verificationResponsibilityLabel?.trim() || null,
         updatedAt: nowIso(),
       })
       .where(eq(completionCriteria.id, input.id));

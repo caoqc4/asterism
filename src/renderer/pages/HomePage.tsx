@@ -1220,6 +1220,9 @@ export function HomePage({
                   {preview.currentBlocker?.priorityReason ? (
                     <p className="meta">{preview.currentBlocker.priorityReason}</p>
                   ) : null}
+                  {preview.currentBlocker?.responsibilitySummary ? (
+                    <p className="meta">{preview.currentBlocker.responsibilitySummary}</p>
+                  ) : null}
                   {preview.currentDependency?.title ? (
                     <p className="meta">当前依赖：{preview.currentDependency.title}</p>
                   ) : null}
@@ -1228,6 +1231,9 @@ export function HomePage({
                   ) : null}
                   {preview.currentDependency?.priorityReason ? (
                     <p className="meta">{preview.currentDependency.priorityReason}</p>
+                  ) : null}
+                  {preview.currentDependency?.responsibilitySummary ? (
+                    <p className="meta">{preview.currentDependency.responsibilitySummary}</p>
                   ) : null}
                   {preview.keySource.title ? (
                     <p className="meta">关键来源：{preview.keySource.title}</p>

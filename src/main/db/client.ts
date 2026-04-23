@@ -102,6 +102,8 @@ function bootstrapTables(connection: Database.Database): void {
       kind TEXT NOT NULL,
       detail TEXT,
       owner TEXT,
+      responsibility TEXT,
+      responsibility_label TEXT,
       source_context_id TEXT,
       status TEXT NOT NULL DEFAULT 'active',
       created_at TEXT NOT NULL,
@@ -124,6 +126,8 @@ function bootstrapTables(connection: Database.Database): void {
       id TEXT PRIMARY KEY,
       task_id TEXT NOT NULL,
       text TEXT NOT NULL,
+      verification_responsibility TEXT,
+      verification_responsibility_label TEXT,
       status TEXT NOT NULL DEFAULT 'open',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
@@ -199,6 +203,8 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'blockers', 'kind', "TEXT NOT NULL DEFAULT 'other'");
   ensureColumn(connection, 'blockers', 'detail', 'TEXT');
   ensureColumn(connection, 'blockers', 'owner', 'TEXT');
+  ensureColumn(connection, 'blockers', 'responsibility', 'TEXT');
+  ensureColumn(connection, 'blockers', 'responsibility_label', 'TEXT');
   ensureColumn(connection, 'blockers', 'source_context_id', 'TEXT');
   ensureColumn(connection, 'blockers', 'status', "TEXT NOT NULL DEFAULT 'active'");
   ensureColumn(connection, 'blockers', 'updated_at', 'TEXT');
@@ -209,6 +215,8 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'task_dependencies', 'updated_at', 'TEXT');
   ensureColumn(connection, 'task_dependencies', 'resolved_at', 'TEXT');
   ensureColumn(connection, 'completion_criteria', 'text', "TEXT NOT NULL DEFAULT ''");
+  ensureColumn(connection, 'completion_criteria', 'verification_responsibility', 'TEXT');
+  ensureColumn(connection, 'completion_criteria', 'verification_responsibility_label', 'TEXT');
   ensureColumn(connection, 'completion_criteria', 'status', "TEXT NOT NULL DEFAULT 'open'");
   ensureColumn(connection, 'completion_criteria', 'updated_at', 'TEXT');
   ensureColumn(connection, 'completion_criteria', 'satisfied_at', 'TEXT');

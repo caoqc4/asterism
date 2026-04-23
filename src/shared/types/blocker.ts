@@ -1,3 +1,5 @@
+import type { ResponsibilityKind } from './responsibility.js';
+
 export type BlockerKind =
   | 'external_person'
   | 'external_team'
@@ -15,6 +17,8 @@ export type BlockerRecord = {
   kind: BlockerKind;
   detail: string | null;
   owner: string | null;
+  responsibility: ResponsibilityKind | null;
+  responsibilityLabel: string | null;
   sourceContextId: string | null;
   status: BlockerStatus;
   createdAt: string;
@@ -28,6 +32,8 @@ export type CreateBlockerInput = {
   kind: BlockerKind;
   detail?: string | null;
   owner?: string | null;
+  responsibility?: ResponsibilityKind | null;
+  responsibilityLabel?: string | null;
   sourceContextId?: string | null;
 };
 
@@ -37,5 +43,7 @@ export type UpdateBlockerInput = {
   kind?: BlockerKind;
   detail?: string | null;
   owner?: string | null;
+  responsibility?: ResponsibilityKind | null;
+  responsibilityLabel?: string | null;
   sourceContextId?: string | null;
 };

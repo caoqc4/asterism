@@ -2,6 +2,7 @@ import type { ArtifactRecord } from './artifact.js';
 import type { BlockerRecord } from './blocker.js';
 import type { BriefSnapshotRecord } from './brief-snapshot.js';
 import type { ProcessTemplateKind } from './process-template.js';
+import type { ResponsibilityKind } from './responsibility.js';
 import type { SchedulerStatus } from './scheduler.js';
 import type { DecisionRecord } from './decision.js';
 import type { TaskDependencyRecord } from './task-dependency.js';
@@ -81,6 +82,7 @@ export type HomeTaskResumePreviewRecord = {
     total: number;
     satisfied: number;
     open: number;
+    nextOpenResponsibilitySummary?: string | null;
   };
   currentState: string;
   latestChange: ResumeLatestChangeRecord;
@@ -88,11 +90,13 @@ export type HomeTaskResumePreviewRecord = {
     title: string | null;
     priorityReason: string | null;
     ageLabel?: string | null;
+    responsibilitySummary?: string | null;
   };
   currentDependency?: {
     title: string | null;
     priorityReason: string | null;
     ageLabel?: string | null;
+    responsibilitySummary?: string | null;
   };
   keySource: {
     sourceContextId: string | null;
@@ -121,6 +125,7 @@ export type HomeTaskSliceRecord = Pick<
     open: number;
     satisfiedCriteriaHighlights?: string[];
     nextOpenCriterion?: string | null;
+    nextOpenResponsibilitySummary?: string | null;
   };
   closeoutEvidence?: {
     sourceType: 'decision' | 'run';
@@ -176,4 +181,10 @@ export type HomeBriefData = {
   priorityLane?: PriorityLane;
   priorityHeadline?: string;
   priorityLede?: string;
+};
+
+export type ResponsibilitySummarySlice = {
+  kind: ResponsibilityKind | null;
+  label: string | null;
+  summary: string | null;
 };

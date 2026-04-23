@@ -49,6 +49,8 @@ function buildBlocker(partial: Partial<BlockerRecord>): BlockerRecord {
     kind: partial.kind ?? 'approval',
     detail: partial.detail ?? 'Need formal sign-off before launch',
     owner: partial.owner ?? 'Legal',
+    responsibility: partial.responsibility ?? null,
+    responsibilityLabel: partial.responsibilityLabel ?? null,
     sourceContextId: partial.sourceContextId ?? null,
     status: partial.status ?? 'active',
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
@@ -90,6 +92,8 @@ function buildCompletionCriteria(
     id: partial.id ?? 'criteria_1',
     taskId: partial.taskId ?? 'task_1',
     text: partial.text ?? 'Stakeholder approved final brief',
+    verificationResponsibility: partial.verificationResponsibility ?? null,
+    verificationResponsibilityLabel: partial.verificationResponsibilityLabel ?? null,
     status: partial.status ?? 'open',
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
@@ -129,6 +133,7 @@ function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
         title: task.activeBlocker?.title ?? '暂无当前阻塞项',
         detail: task.activeBlocker?.detail ?? null,
         priorityReason: null,
+        responsibilitySummary: null,
       },
       currentDependency: {
         dependencyId: task.activeDependency?.id ?? null,
@@ -136,6 +141,7 @@ function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
         detail: task.activeDependency?.reason ?? null,
         priorityReason: null,
         ageLabel: null,
+        responsibilitySummary: null,
       },
       keySource: {
         sourceContextId: null,
@@ -3683,6 +3689,8 @@ describe('App UI flow', () => {
       kind: 'approval',
       detail: 'Need legal sign-off before launch',
       owner: 'Legal',
+      responsibility: 'unknown',
+      responsibilityLabel: '',
       sourceContextId: 'source_context_blocker',
     });
     expect((await screen.findAllByText('Legal approval pending')).length).toBeGreaterThan(0);
@@ -5938,11 +5946,21 @@ describe('App UI flow', () => {
         id: 'criteria_open_1',
         taskId: riskTask.id,
         text: 'Approve escalation path',
+        verificationResponsibility: 'self',
+        verificationResponsibilityLabel: '我自己确认',
       }),
     ];
 
     const evidenceDetail: TaskDetail = {
-      ...buildTaskDetail(riskTask),
+      ...buildTaskDetail({
+        ...riskTask,
+        activeBlocker: buildBlocker({
+          id: 'blocker_responsibility_1',
+          taskId: riskTask.id,
+          responsibility: 'external_team',
+          responsibilityLabel: '法务团队确认',
+        }),
+      }),
       completionCriteria,
       artifacts: [
         buildArtifact({
@@ -5952,6 +5970,37 @@ describe('App UI flow', () => {
           content: 'Approve escalation path for the owner.',
         }),
       ],
+      resumeCard: {
+        ...buildTaskDetail({
+          ...riskTask,
+          activeBlocker: buildBlocker({
+            id: 'blocker_responsibility_1',
+            taskId: riskTask.id,
+            responsibility: 'external_team',
+            responsibilityLabel: '法务团队确认',
+          }),
+        }).resumeCard,
+        completionStatus: {
+          total: 1,
+          satisfied: 0,
+          open: 1,
+          summary: '还差 1 条完成标准',
+          nextOpenCriterion: 'Approve escalation path',
+          nextOpenResponsibilitySummary: '确认责任：我自己确认',
+        },
+        currentBlocker: {
+          ...buildTaskDetail({
+            ...riskTask,
+            activeBlocker: buildBlocker({
+              id: 'blocker_responsibility_1',
+              taskId: riskTask.id,
+              responsibility: 'external_team',
+              responsibilityLabel: '法务团队确认',
+            }),
+          }).resumeCard.currentBlocker,
+          responsibilitySummary: '解除责任：法务团队确认',
+        },
+      },
     };
 
     const completionRuns = [
@@ -5995,6 +6044,11 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /high risk task/i }));
     await screen.findByRole('heading', { name: 'High risk task' });
 
+    const resumePanel = screen.getByText('Task Resume Card').closest('.transition-group');
+    expect(resumePanel).toBeTruthy();
+    expect(within(resumePanel as HTMLElement).getByText('解除责任：法务团队确认')).toBeTruthy();
+    expect(within(resumePanel as HTMLElement).getByText('确认责任：我自己确认')).toBeTruthy();
+
     const evidenceSection = screen
       .getByRole('heading', { name: 'Potential Completion Evidence' })
       .closest('.detail-card-group');
@@ -6018,6 +6072,7 @@ describe('App UI flow', () => {
 
     expect(criteriaSection).toBeTruthy();
     expect(within(criteriaSection as HTMLElement).getByText('证据可能对应')).toBeTruthy();
+    expect(within(criteriaSection as HTMLElement).getByText('确认责任：我自己确认')).toBeTruthy();
 
     await user.click(within(evidenceSection as HTMLElement).getByRole('button', { name: '查看 Decision' }));
 

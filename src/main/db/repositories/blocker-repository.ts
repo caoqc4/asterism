@@ -28,6 +28,8 @@ function toRecord(row: typeof blockers.$inferSelect): BlockerRecord {
     kind: row.kind as BlockerRecord['kind'],
     detail: row.detail,
     owner: row.owner,
+    responsibility: row.responsibility as BlockerRecord['responsibility'],
+    responsibilityLabel: row.responsibilityLabel,
     sourceContextId: row.sourceContextId,
     status: row.status as BlockerRecord['status'],
     createdAt: row.createdAt,
@@ -76,6 +78,8 @@ export class BlockerRepository {
       kind: input.kind,
       detail: normalizeValue(input.detail),
       owner: normalizeValue(input.owner),
+      responsibility: normalizeValue(input.responsibility),
+      responsibilityLabel: normalizeValue(input.responsibilityLabel),
       sourceContextId: normalizeValue(input.sourceContextId),
       status: 'active',
       createdAt: timestamp,
@@ -102,6 +106,12 @@ export class BlockerRepository {
         kind: input.kind ?? current.kind,
         detail: input.detail === undefined ? current.detail : normalizeValue(input.detail),
         owner: input.owner === undefined ? current.owner : normalizeValue(input.owner),
+        responsibility:
+          input.responsibility === undefined ? current.responsibility : normalizeValue(input.responsibility),
+        responsibilityLabel:
+          input.responsibilityLabel === undefined
+            ? current.responsibilityLabel
+            : normalizeValue(input.responsibilityLabel),
         sourceContextId:
           input.sourceContextId === undefined
             ? current.sourceContextId
