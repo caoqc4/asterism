@@ -220,11 +220,11 @@ describe('TaskService', () => {
     });
     expect(detail?.resumeCard.keySource.title).toBe('Partner website shortlist');
     expect(detail?.resumeCard.keySource.priorityReason).toBe(
-      '当前被标记为关键来源：Latest approved outreach targets',
+      '当前在材料架中被标记为关键来源：Latest approved outreach targets',
     );
     expect(detail?.resumeCard.currentMethod.title).toBe('Outreach skill');
     expect(detail?.resumeCard.currentMethod.selectionReason).toBe(
-      '最近用于执行：来源材料已更新，适合先按 outreach 方法整理外链目标。',
+      '当前任务最近采用该方法：来源材料已更新，适合先按 outreach 方法整理外链目标。',
     );
     expect(detail?.resumeCard.nextSuggestedMove).toBe('基于来源材料继续推进：Partner website shortlist');
   });

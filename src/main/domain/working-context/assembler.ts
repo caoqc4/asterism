@@ -84,21 +84,37 @@ export function getCurrentMethodSelectionReason(params: {
   });
 
   if (!selectedEvent?.payload) {
-    return currentMethod.summary ?? null;
+    if (currentMethod.summary?.trim()) {
+      return audience === 'task'
+        ? `当前任务已挂载该方法：${currentMethod.summary.trim()}`
+        : `当前方法：${currentMethod.summary.trim()}`;
+    }
+
+    return audience === 'task' ? '当前任务已挂载该方法模板。' : '当前已挂载该方法模板。';
   }
 
   const payload = safeJsonParse(selectedEvent.payload);
   const reason = typeof payload?.reason === 'string' ? payload.reason.trim() : '';
 
   if (!reason) {
-    return currentMethod.summary ?? null;
+    if (currentMethod.summary?.trim()) {
+      return audience === 'task'
+        ? `当前任务已挂载该方法：${currentMethod.summary.trim()}`
+        : `当前方法：${currentMethod.summary.trim()}`;
+    }
+
+    return audience === 'task' ? '当前任务已挂载该方法模板。' : '当前已挂载该方法模板。';
   }
 
-  const sourceType = payload?.sourceType === 'decision_draft'
-    ? (audience === 'task' ? '决策草拟' : '最近用于决策草拟')
-    : (audience === 'task' ? '执行' : '最近用于执行');
+  if (payload?.sourceType === 'decision_draft') {
+    return audience === 'task'
+      ? `当前任务最近采用该方法来草拟决策：${reason}`
+      : `当前方法最近用于决策草拟：${reason}`;
+  }
 
-  return audience === 'task' ? `最近用于${sourceType}：${reason}` : `${sourceType}：${reason}`;
+  return audience === 'task'
+    ? `当前任务最近采用该方法：${reason}`
+    : `当前方法最近用于执行：${reason}`;
 }
 
 export function getKeySourcePriorityReason(params: {
@@ -125,40 +141,44 @@ export function getKeySourcePriorityReason(params: {
   if (keySource.isKey) {
     if (normalizedNote) {
       return audience === 'task'
-        ? `当前被标记为关键来源：${normalizedNote}`
-        : `关键来源：${normalizedNote}`;
+        ? `当前在材料架中被标记为关键来源：${normalizedNote}`
+        : `材料架中的关键来源：${normalizedNote}`;
     }
 
     if (sourceEvent?.type === 'source_context.created') {
       return audience === 'task'
-        ? '最近加入并标记为关键来源，建议优先参考。'
-        : '最近加入并标记为关键来源。';
+        ? '当前在材料架中被标记为关键来源，并且最近加入，建议优先参考。'
+        : '材料架中的关键来源最近加入。';
     }
 
     if (sourceEvent?.type === 'source_context.updated') {
       return audience === 'task'
-        ? '最近更新并保留为关键来源，建议优先参考。'
-        : '最近更新并保留为关键来源。';
+        ? '当前在材料架中被标记为关键来源，并且最近更新，建议优先参考。'
+        : '材料架中的关键来源最近更新。';
     }
 
     return audience === 'task'
-      ? '当前被标记为关键来源，建议优先参考。'
-      : '当前被标记为关键来源。';
+      ? '当前在材料架中被标记为关键来源，建议优先参考。'
+      : '材料架中的关键来源。';
   }
 
   if (sourceEvent?.type === 'source_context.updated') {
-    return audience === 'task' ? '最近更新了该来源，建议先查看。' : '最近更新了该来源。';
+    return audience === 'task'
+      ? '当前材料架里该来源最近更新，建议先查看。'
+      : '材料架最近更新了该来源。';
   }
 
   if (sourceEvent?.type === 'source_context.created') {
-    return audience === 'task' ? '最近加入了该来源，建议先查看。' : '最近加入了该来源。';
+    return audience === 'task'
+      ? '当前材料架里该来源最近加入，建议先查看。'
+      : '材料架最近加入了该来源。';
   }
 
   return normalizedNote
     ? (audience === 'task'
-      ? `当前是最相关的来源材料：${normalizedNote}`
-      : `来源说明：${normalizedNote}`)
-    : (audience === 'task' ? '当前是最相关的来源材料。' : '当前最相关的来源材料。');
+      ? `当前材料架里最相关的来源材料：${normalizedNote}`
+      : `材料说明：${normalizedNote}`)
+    : (audience === 'task' ? '当前材料架里最相关的来源材料。' : '当前最相关的来源材料。');
 }
 
 export function buildTaskResumeLatestChange(

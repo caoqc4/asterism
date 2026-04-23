@@ -299,9 +299,9 @@ describe('App UI flow', () => {
           targetId: 'decision_2',
         },
         keySourceTitle: 'Owner escalation memo',
-        keySourceReason: '关键来源：Contains the latest escalation framing.',
+        keySourceReason: '材料架中的关键来源：Contains the latest escalation framing.',
         currentMethodTitle: 'Risk review skill',
-        currentMethodReason: '最近用于执行：风险高且需要先复盘 blocker。',
+        currentMethodReason: '当前方法最近用于执行：风险高且需要先复盘 blocker。',
         nextSuggestedMove: '已获批准，继续推进：Approve escalation path',
         sourceContextId: 'source_context_home_1',
         contextActionLabel: '继续推进任务',
@@ -630,13 +630,13 @@ describe('App UI flow', () => {
         sourceContextId: 'source_context_resume',
         title: 'Owner escalation memo',
         detail: 'Contains the latest owner-facing language',
-        priorityReason: '当前被标记为关键来源：Contains the latest owner-facing language',
+        priorityReason: '当前在材料架中被标记为关键来源：Contains the latest owner-facing language',
       },
       currentMethod: {
         templateId: 'process_template_resume',
         title: 'Risk review skill',
         detail: 'Prioritize blockers before drafting',
-        selectionReason: '最近用于执行：风险高且存在阻塞，适合优先参考该方法。',
+        selectionReason: '当前任务最近采用该方法：风险高且存在阻塞，适合优先参考该方法。',
       },
       nextSuggestedMove: '处理当前风险并确认是否需要降级：Deadline slipping',
     };
@@ -663,13 +663,13 @@ describe('App UI flow', () => {
     expect(within(resumeSection as HTMLElement).getByText('Owner escalation memo')).toBeTruthy();
     expect(
       within(resumeSection as HTMLElement).getByText(
-        '当前被标记为关键来源：Contains the latest owner-facing language',
+        '当前在材料架中被标记为关键来源：Contains the latest owner-facing language',
       ),
     ).toBeTruthy();
     expect(within(resumeSection as HTMLElement).getByText('Risk review skill')).toBeTruthy();
     expect(
       within(resumeSection as HTMLElement).getByText(
-        '最近用于执行：风险高且存在阻塞，适合优先参考该方法。',
+        '当前任务最近采用该方法：风险高且存在阻塞，适合优先参考该方法。',
       ),
     ).toBeTruthy();
     expect(
@@ -720,7 +720,7 @@ describe('App UI flow', () => {
         sourceContextId: 'source_context_resume_action',
         title: 'Launch reference memo',
         detail: 'Most important source',
-        priorityReason: '当前被标记为关键来源：Most important source',
+        priorityReason: '当前在材料架中被标记为关键来源：Most important source',
       },
       currentMethod: {
         templateId: 'process_template_resume_action',
@@ -3322,8 +3322,8 @@ describe('App UI flow', () => {
 
     const resumePanel = (await screen.findByText('Resume Previews')).closest('.panel');
     expect(resumePanel).not.toBeNull();
-    expect(screen.getByText('关键来源：Contains the latest escalation framing.')).toBeTruthy();
-    expect(screen.getByText('最近用于执行：风险高且需要先复盘 blocker。')).toBeTruthy();
+    expect(screen.getByText('材料架中的关键来源：Contains the latest escalation framing.')).toBeTruthy();
+    expect(screen.getByText('当前方法最近用于执行：风险高且需要先复盘 blocker。')).toBeTruthy();
     const firstResumeCard = within(resumePanel as HTMLElement)
       .getByRole('button', { name: /恢复任务 High risk task/i })
       .closest('.task-card');
