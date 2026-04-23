@@ -1693,6 +1693,26 @@ describe('App UI flow', () => {
     expect(screen.getByText(/AI 草拟：Current task needs explicit approval before budget escalation\./)).toBeTruthy();
   });
 
+  it('adapts quick action defaults to the current priority lane', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    const riskTaskCard = await screen.findByRole('button', { name: /High risk task/i });
+    await user.click(riskTaskCard);
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    expect((screen.getByLabelText('拍板背景') as HTMLTextAreaElement).value).toContain(
+      '优先明确升级路径',
+    );
+    expect(screen.getByText('当前按「立即升级」语义，草拟更偏向明确升级路径、责任归属和拍板点。')).toBeTruthy();
+    expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toContain(
+      '本轮执行优先围绕升级处理当前高风险/阻塞',
+    );
+    expect(screen.getByText('当前按「立即升级」语义，本轮 run 默认更偏向输出可直接用于升级处理的结果。')).toBeTruthy();
+  });
+
   it('submits a quick run from task detail', async () => {
     const user = userEvent.setup();
 

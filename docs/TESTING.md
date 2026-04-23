@@ -139,11 +139,13 @@ Covered today:
 - `Tasks blocker create / resolve flow`
 - `Tasks process context create / apply / remove flow`
 - `Tasks resume card visibility, key-source prioritization explanation, method-selection explanation, lifecycle-aware suggested-move derivation, and recovery actions`
+- `Tasks resume card` lightweight priority-lane cue
 - `Tasks resume card latest-change object entry`
 - `Tasks` first-screen recovery boundaries, key-slice snapshot behavior, and prioritized timeline previews
 - `Tasks quick decision draft flow`
 - `Tasks list` lane-aware ordering and lightweight lane labels
 - `Tasks list` lane-aware summary copy
+- `Tasks action setup` lane-aware quick decision/run defaults
 - `Decisions` page current-focus and queue navigation
 - `Decisions / Runs -> Tasks` follow-up return flows
 - `Decisions / Runs` related-task timeline context

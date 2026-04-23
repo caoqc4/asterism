@@ -335,6 +335,81 @@ function getTimelineObjectLabel(event: TimelineEventRecord): string | null {
   return interpretTaskTimelineEvent(event).objectAction.label;
 }
 
+function buildQuickDecisionSeed(detail: TaskDetail, lane: PriorityLane | undefined): string {
+  switch (lane) {
+    case 'escalate_now':
+      return detail.activeBlocker?.title
+        ? `优先明确升级路径、责任归属和解除条件：${detail.activeBlocker.title}`
+        : '优先明确升级路径和当前高风险事项的拍板点。';
+    case 'unblock_or_decide':
+      return detail.activeBlocker?.title
+        ? `优先明确如何解除当前阻塞：${detail.activeBlocker.title}`
+        : '优先明确当前需要拍板或解阻塞的关键点。';
+    case 'continue_or_review':
+      return detail.nextStep?.trim() || '围绕最近结果继续推进，并明确本轮需要复核的重点。';
+    case 'clarify':
+      return detail.activeWaitingItem?.reason ?? detail.waitingReason ?? '先补清当前下一步、等待条件或缺失信息。';
+    default:
+      return detail.nextStep ?? '';
+  }
+}
+
+function buildQuickRunSeed(detail: TaskDetail, lane: PriorityLane | undefined): string {
+  const explicitNextStep = detail.nextStep?.trim();
+  const summary = detail.summary?.trim();
+
+  switch (lane) {
+    case 'escalate_now':
+      return explicitNextStep
+        ? `${explicitNextStep}\n\n本轮执行优先围绕升级处理当前高风险/阻塞，输出可直接用于推进的结果。`
+        : '本轮执行优先围绕升级处理当前高风险/阻塞，输出可直接用于推进的结果。';
+    case 'unblock_or_decide':
+      return detail.activeBlocker?.title
+        ? `请围绕当前阻塞“${detail.activeBlocker.title}”整理解阻塞所需输入、判断点和建议下一步。`
+        : '请围绕当前拍板/解阻塞需要，整理关键信息、判断点和建议下一步。';
+    case 'continue_or_review':
+      return explicitNextStep
+        ? `${explicitNextStep}\n\n请基于最近结果继续推进，并明确下一步可执行输出。`
+        : '请基于最近结果继续推进，并明确下一步可执行输出。';
+    case 'clarify':
+      return detail.activeWaitingItem?.reason ?? detail.waitingReason
+        ? `请先帮助澄清当前等待/缺口：${detail.activeWaitingItem?.reason ?? detail.waitingReason}`
+        : '请先帮助补清下一步、等待条件或缺失上下文。';
+    default:
+      return explicitNextStep ?? summary ?? '';
+  }
+}
+
+function getQuickDecisionGuidance(lane: PriorityLane | undefined): string {
+  switch (lane) {
+    case 'escalate_now':
+      return '当前按「立即升级」语义，草拟更偏向明确升级路径、责任归属和拍板点。';
+    case 'unblock_or_decide':
+      return '当前按「先解阻塞/拍板」语义，草拟更偏向明确当前阻塞或待拍板的关键判断。';
+    case 'continue_or_review':
+      return '当前按「继续推进/复核」语义，草拟更偏向承接最近结果并组织下一步判断。';
+    case 'clarify':
+      return '当前按「先补清晰度」语义，草拟更偏向补清下一步、等待条件或缺失信息。';
+    default:
+      return '当前保持稳态推进，草拟会优先围绕现有下一步组织。';
+  }
+}
+
+function getQuickRunGuidance(lane: PriorityLane | undefined): string {
+  switch (lane) {
+    case 'escalate_now':
+      return '当前按「立即升级」语义，本轮 run 默认更偏向输出可直接用于升级处理的结果。';
+    case 'unblock_or_decide':
+      return '当前按「先解阻塞/拍板」语义，本轮 run 默认更偏向整理解阻塞或拍板所需输入。';
+    case 'continue_or_review':
+      return '当前按「继续推进/复核」语义，本轮 run 默认更偏向承接最近结果继续推进。';
+    case 'clarify':
+      return '当前按「先补清晰度」语义，本轮 run 默认更偏向补清下一步、等待条件或缺失上下文。';
+    default:
+      return '当前保持稳态推进，本轮 run 默认会围绕现有下一步或摘要展开。';
+  }
+}
+
 type TasksPageProps = {
   decisions: DecisionRecord[];
   focusedTaskRequest: {
@@ -455,6 +530,8 @@ export function TasksPage({
   };
   const resumeLane = detail ? taskPriorityLanes.get(detail.id) : undefined;
   const resumeLaneLabel = getPriorityLaneLabel(resumeLane);
+  const quickDecisionGuidance = getQuickDecisionGuidance(resumeLane);
+  const quickRunGuidance = getQuickRunGuidance(resumeLane);
 
   function updateDraftRiskLevel(nextRiskLevel: TaskRiskLevel) {
     setDraftRiskLevel(nextRiskLevel);
@@ -585,9 +662,10 @@ export function TasksPage({
         setQuickDecisionTitle(
           nextDetail ? `${nextDetail.title} 需要拍板` : '',
         );
-        setQuickDecisionNote(nextDetail?.nextStep ?? '');
+        const nextLane = nextDetail ? taskPriorityLanes.get(nextDetail.id) : undefined;
+        setQuickDecisionNote(nextDetail ? buildQuickDecisionSeed(nextDetail, nextLane) : '');
         setQuickDecisionRationale(null);
-        setQuickRunInstructions(nextDetail?.nextStep ?? nextDetail?.summary ?? '');
+        setQuickRunInstructions(nextDetail ? buildQuickRunSeed(nextDetail, nextLane) : '');
       }
     }
 
@@ -596,7 +674,7 @@ export function TasksPage({
     return () => {
       mounted = false;
     };
-  }, [selectedTaskId, tasks]);
+  }, [selectedTaskId, taskPriorityLanes, tasks]);
 
   async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1784,6 +1862,7 @@ export function TasksPage({
                           onChange={(event) => setQuickDecisionNote(event.target.value)}
                         />
                       </label>
+                      <p className="meta">{quickDecisionGuidance}</p>
                       {quickDecisionRationale ? <p className="meta">{quickDecisionRationale}</p> : null}
                       <button type="button" className="ghost-button" onClick={() => void handleDraftQuickDecision()}>
                         草拟 Decision
@@ -1817,6 +1896,7 @@ export function TasksPage({
                           onChange={(event) => setQuickRunInstructions(event.target.value)}
                         />
                       </label>
+                      <p className="meta">{quickRunGuidance}</p>
                       <button type="submit">触发 Run</button>
                     </form>
                   </div>
