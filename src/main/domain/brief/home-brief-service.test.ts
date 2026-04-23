@@ -9,6 +9,7 @@ import type { SourceContextRecord } from '../../../shared/types/source-context.j
 import type { TaskDependencyRecord } from '../../../shared/types/task-dependency.js';
 import type { TaskListItemRecord } from '../../../shared/types/task.js';
 import type { WaitingItemRecord } from '../../../shared/types/waiting-item.js';
+import type { CompletionCriteriaRecord } from '../../../shared/types/completion-criteria.js';
 import { HomeBriefService } from './home-brief-service.js';
 
 function buildTask(partial: Partial<TaskListItemRecord>): TaskListItemRecord {
@@ -164,6 +165,20 @@ function buildTimelineDetail(
       payload: event.payload ? JSON.stringify(event.payload) : null,
       createdAt: `2026-01-01T00:00:0${index}.000Z`,
     })),
+  };
+}
+
+function buildCompletionCriteria(
+  partial: Partial<CompletionCriteriaRecord>,
+): CompletionCriteriaRecord {
+  return {
+    id: partial.id ?? 'criteria_1',
+    taskId: partial.taskId ?? 'task_1',
+    text: partial.text ?? 'Final approval captured',
+    status: partial.status ?? 'open',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    satisfiedAt: partial.satisfiedAt ?? null,
   };
 }
 
@@ -1204,5 +1219,95 @@ describe('HomeBriefService', () => {
       nextSuggestedMove: '已获批准，继续推进：Approve escalation path',
       contextActionLabel: '继续推进任务',
     });
+  });
+
+  it('surfaces completion-ready and near-completion tasks on home', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_ready',
+            title: 'Ready to finish',
+            state: 'planned',
+            nextStep: 'Close out the task',
+          }),
+          buildTask({
+            id: 'task_near',
+            title: 'Almost done',
+            state: 'planned',
+            nextStep: 'Finish the final review',
+          }),
+        ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      null as never,
+      { list: vi.fn().mockResolvedValue([]) } as never,
+      { list: vi.fn().mockResolvedValue([]) } as never,
+      { listRecent: vi.fn().mockResolvedValue([]) } as never,
+      { listActiveForTasks: vi.fn().mockResolvedValue([]) } as never,
+      { listRecent: vi.fn().mockResolvedValue([]) } as never,
+      () => null,
+      null,
+      null,
+      {
+        listForTasks: vi.fn().mockResolvedValue([
+          buildCompletionCriteria({
+            id: 'criteria_ready_1',
+            taskId: 'task_ready',
+            text: 'Final review recorded',
+            status: 'satisfied',
+            satisfiedAt: '2026-01-02T00:00:00.000Z',
+          }),
+          buildCompletionCriteria({
+            id: 'criteria_ready_2',
+            taskId: 'task_ready',
+            text: 'Approval confirmed',
+            status: 'satisfied',
+            satisfiedAt: '2026-01-02T00:10:00.000Z',
+          }),
+          buildCompletionCriteria({
+            id: 'criteria_near_1',
+            taskId: 'task_near',
+            text: 'Draft delivered',
+            status: 'satisfied',
+            satisfiedAt: '2026-01-02T00:00:00.000Z',
+          }),
+          buildCompletionCriteria({
+            id: 'criteria_near_2',
+            taskId: 'task_near',
+            text: 'Final review recorded',
+            status: 'open',
+          }),
+        ]),
+      } as never,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.completionReadyTaskCount).toBe(1);
+    expect(homeData.nearCompletionTaskCount).toBe(1);
+    expect(homeData.completionReadyTasks?.[0]).toMatchObject({
+      id: 'task_ready',
+      completionProgress: { total: 2, satisfied: 2, open: 0 },
+    });
+    expect(homeData.nearCompletionTasks?.[0]).toMatchObject({
+      id: 'task_near',
+      completionProgress: { total: 2, satisfied: 1, open: 1 },
+    });
+    expect(homeData.recommendedActions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          taskId: 'task_ready',
+          label: '收尾并完成任务：Ready to finish',
+        }),
+        expect.objectContaining({
+          taskId: 'task_near',
+          label: '补最后一个完成标准：Almost done',
+        }),
+      ]),
+    );
   });
 });

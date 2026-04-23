@@ -1163,6 +1163,68 @@ describe('App UI flow', () => {
     expect(within(nextStepSection as HTMLElement).getByText('先补清晰度')).toBeTruthy();
   });
 
+  it('surfaces closeout tasks on home key signals', async () => {
+    const user = userEvent.setup();
+
+    const readyTask = buildTaskRecord({
+      id: 'task_ready_home',
+      title: 'Ready to finish task',
+      state: 'planned',
+      nextStep: 'Do final sign-off',
+    });
+    const nearTask = buildTaskRecord({
+      id: 'task_near_home',
+      title: 'Almost done task',
+      state: 'planned',
+      nextStep: 'Finish last criterion',
+    });
+
+    window.api = {
+      ...mockApi,
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        completionReadyTaskCount: 1,
+        nearCompletionTaskCount: 1,
+        completionReadyTasks: [
+          {
+            ...readyTask,
+            completionProgress: { total: 2, satisfied: 2, open: 0 },
+          },
+        ],
+        nearCompletionTasks: [
+          {
+            ...nearTask,
+            completionProgress: { total: 2, satisfied: 1, open: 1 },
+          },
+        ],
+      }),
+      listTasks: vi.fn().mockResolvedValue([readyTask, nearTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        const task = taskId === readyTask.id ? readyTask : nearTask;
+        return buildTaskDetail(task);
+      }),
+    };
+
+    render(<App />);
+
+    const readyTaskText = await screen.findByText('Ready to finish task');
+    const closeoutSection = screen.getByText('Closeout Tasks').closest('section');
+    expect(closeoutSection).toBeTruthy();
+    expect(within(closeoutSection as HTMLElement).getByText('继续推进/复核')).toBeTruthy();
+    expect(readyTaskText).toBeTruthy();
+    expect(within(closeoutSection as HTMLElement).getByText('Almost done task')).toBeTruthy();
+
+    await user.click(within(closeoutSection as HTMLElement).getByRole('button', { name: /Ready to finish task/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Ready to finish task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '确认完成标准已满足，并判断是否将“Ready to finish task”转到 completed。',
+    );
+  });
+
   it('orders tasks by priority lane and shows lane labels in the task list', async () => {
     const user = userEvent.setup();
 

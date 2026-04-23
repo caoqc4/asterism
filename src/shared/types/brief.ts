@@ -110,6 +110,11 @@ export type HomeTaskSliceRecord = Pick<
   activeWaitingItem?: WaitingItemRecord | null;
   activeBlocker?: BlockerRecord | null;
   activeDependency?: TaskDependencyRecord | null;
+  completionProgress?: {
+    total: number;
+    satisfied: number;
+    open: number;
+  };
 };
 
 export type BriefProcessTemplateCandidate = {
@@ -135,6 +140,8 @@ export type HomeBriefData = {
   escalationTaskCount: number;
   highRiskTaskCount: number;
   missingNextStepTaskCount: number;
+  completionReadyTaskCount?: number;
+  nearCompletionTaskCount?: number;
   recentTasks: HomeTaskSliceRecord[];
   waitingTasks: HomeTaskSliceRecord[];
   blockerTasks: HomeTaskSliceRecord[];
@@ -142,6 +149,8 @@ export type HomeBriefData = {
   escalationTasks: HomeTaskSliceRecord[];
   highRiskTasks: HomeTaskSliceRecord[];
   missingNextStepTasks: HomeTaskSliceRecord[];
+  completionReadyTasks?: HomeTaskSliceRecord[];
+  nearCompletionTasks?: HomeTaskSliceRecord[];
   pendingDecisions: DecisionRecord[];
   recommendedActions: RecommendedAction[];
   recentArtifacts: ArtifactRecord[];

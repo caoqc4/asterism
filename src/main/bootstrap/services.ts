@@ -48,6 +48,7 @@ const homeBriefService = new HomeBriefService(
   () => schedulerService,
   taskProcessBindingRepository,
   taskDependencyRepository,
+  completionCriteriaRepository,
 );
 const textExecutor = new TextExecutor();
 const briefExecutor = new BriefExecutor();

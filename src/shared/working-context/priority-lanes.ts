@@ -37,6 +37,8 @@ export function deriveTaskPriorityLaneMap(params: {
   tasks: TaskListItemRecord[];
   missingNextStepTasks?: HomeTaskSliceRecord[];
   waitingTasks?: HomeTaskSliceRecord[];
+  completionReadyTasks?: HomeTaskSliceRecord[];
+  nearCompletionTasks?: HomeTaskSliceRecord[];
   recentArtifacts?: Array<{ taskId: string }>;
   recentSourceContexts?: HomeSourceContextRecord[];
   recentActivity?: HomeActivityRecord[];
@@ -69,6 +71,14 @@ export function deriveTaskPriorityLaneMap(params: {
 
   for (const artifact of params.recentArtifacts ?? []) {
     assignLane(artifact.taskId, 'continue_or_review');
+  }
+
+  for (const task of params.completionReadyTasks ?? []) {
+    assignLane(task.id, 'continue_or_review');
+  }
+
+  for (const task of params.nearCompletionTasks ?? []) {
+    assignLane(task.id, 'continue_or_review');
   }
 
   for (const source of params.recentSourceContexts ?? []) {

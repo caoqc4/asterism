@@ -341,6 +341,36 @@ export function HomePage({
     });
   }
 
+  function openCompletionReadyTask(task: NonNullable<HomeBriefData['completionReadyTasks']>[number]) {
+    onOpenAction({
+      id: `home-completion-ready:${task.id}`,
+      label: `收尾并完成任务：${task.title}`,
+      reason: `这条任务的完成标准已全部满足，可在最终检查后转到 completed。`,
+      taskId: task.id,
+      priority: 'medium',
+      intent: {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+        prefillNextStep: `确认完成标准已满足，并判断是否将“${task.title}”转到 completed。`,
+      },
+    });
+  }
+
+  function openNearCompletionTask(task: NonNullable<HomeBriefData['nearCompletionTasks']>[number]) {
+    onOpenAction({
+      id: `home-near-completion:${task.id}`,
+      label: `补最后一个完成标准：${task.title}`,
+      reason: `这条任务只差最后 ${task.completionProgress?.open ?? 1} 条完成标准。`,
+      taskId: task.id,
+      priority: 'medium',
+      intent: {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+        prefillNextStep: `优先补齐最后一条完成标准，并判断“${task.title}”是否可以收尾。`,
+      },
+    });
+  }
+
   function openBlockedSource(task: HomeBriefData['blockerTasks'][number]) {
     if (!task.activeBlocker?.sourceContextId) {
       return;
@@ -530,6 +560,10 @@ export function HomePage({
           <div className="metric-card metric-card-muted">
             <span className="metric-label">Missing Next Step</span>
             <strong>{briefData?.missingNextStepTaskCount ?? 0}</strong>
+          </div>
+          <div className="metric-card">
+            <span className="metric-label">Closeout</span>
+            <strong>{(briefData?.completionReadyTaskCount ?? 0) + (briefData?.nearCompletionTaskCount ?? 0)}</strong>
           </div>
         </div>
       </article>
@@ -990,6 +1024,50 @@ export function HomePage({
               ))
             ) : (
               <p className="meta">当前所有活跃任务都已经有下一步。</p>
+            )}
+          </section>
+
+          <section className="timeline-list">
+            {renderLaneHeading('Closeout Tasks', 'continue_or_review')}
+            {briefData?.completionReadyTasks?.length || briefData?.nearCompletionTasks?.length ? (
+              <>
+                {briefData?.completionReadyTasks?.map((task) => (
+                  <button
+                    className="task-card task-card-button"
+                    key={`completion-ready-${task.id}`}
+                    onClick={() => openCompletionReadyTask(task)}
+                    type="button"
+                  >
+                    <div className="task-row">
+                      <strong>{task.title}</strong>
+                      <span className="status">ready</span>
+                    </div>
+                    <p className="meta">完成标准已全部满足，可进行最终收尾判断。</p>
+                    <p className="meta">
+                      completion: {task.completionProgress?.satisfied ?? 0}/{task.completionProgress?.total ?? 0}
+                    </p>
+                  </button>
+                ))}
+                {briefData?.nearCompletionTasks?.map((task) => (
+                  <button
+                    className="task-card task-card-button task-card-muted"
+                    key={`near-completion-${task.id}`}
+                    onClick={() => openNearCompletionTask(task)}
+                    type="button"
+                  >
+                    <div className="task-row">
+                      <strong>{task.title}</strong>
+                      <span className="status">near</span>
+                    </div>
+                    <p className="meta">只差最后一条完成标准，值得优先做收尾判断。</p>
+                    <p className="meta">
+                      completion: {task.completionProgress?.satisfied ?? 0}/{task.completionProgress?.total ?? 0}
+                    </p>
+                  </button>
+                ))}
+              </>
+            ) : (
+              <p className="meta">当前没有接近完成或已满足完成标准的任务。</p>
             )}
           </section>
         </div>

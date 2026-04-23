@@ -40,6 +40,21 @@ export class CompletionCriteriaRepository {
     return rows.map(toRecord);
   }
 
+  async listForTasks(taskIds: string[]): Promise<CompletionCriteriaRecord[]> {
+    if (taskIds.length === 0) {
+      return [];
+    }
+
+    const db = initDatabase();
+    const rows = await db
+      .select()
+      .from(completionCriteria)
+      .where(inArray(completionCriteria.taskId, taskIds))
+      .orderBy(asc(completionCriteria.taskId), asc(completionCriteria.status), asc(completionCriteria.createdAt));
+
+    return rows.map(toRecord);
+  }
+
   async listOpenForTasks(taskIds: string[]): Promise<CompletionCriteriaRecord[]> {
     if (taskIds.length === 0) {
       return [];

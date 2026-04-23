@@ -15,6 +15,7 @@ import { DecisionRepository } from '../../db/repositories/decision-repository.js
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
 import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
+import { CompletionCriteriaRepository } from '../../db/repositories/completion-criteria-repository.js';
 import { TaskDependencyRepository } from '../../db/repositories/task-dependency-repository.js';
 import { TaskProcessBindingRepository } from '../../db/repositories/task-process-binding-repository.js';
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
@@ -69,6 +70,8 @@ function buildRecommendedActions(params: {
   dependencyReevaluationByTaskId: Map<string, DependencyReevaluationRecord>;
   waitingTasks: HomeBriefData['waitingTasks'];
   missingNextStepTasks: HomeBriefData['missingNextStepTasks'];
+  completionReadyTasks: HomeTaskSliceRecord[];
+  nearCompletionTasks: HomeTaskSliceRecord[];
   recentSourceContexts: HomeBriefData['recentSourceContexts'];
   recentArtifacts: HomeBriefData['recentArtifacts'];
 }): RecommendedAction[] {
@@ -230,6 +233,40 @@ function buildRecommendedActions(params: {
     });
   }
 
+  for (const task of params.completionReadyTasks) {
+    actions.push({
+      id: `completion-ready:${task.id}`,
+      label: `收尾并完成任务：${task.title}`,
+      reason: `这条任务的完成标准已全部满足，可在最终检查后转到 completed。`,
+      taskId: task.id,
+      priority: 'medium',
+      lane: 'continue_or_review',
+      order: order++,
+      intent: {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+        prefillNextStep: `确认完成标准已满足，并判断是否将“${task.title}”转到 completed。`,
+      },
+    });
+  }
+
+  for (const task of params.nearCompletionTasks) {
+    actions.push({
+      id: `near-completion:${task.id}`,
+      label: `补最后一个完成标准：${task.title}`,
+      reason: `这条任务只差最后 ${task.completionProgress?.open ?? 1} 条完成标准，可优先做收尾判断。`,
+      taskId: task.id,
+      priority: 'medium',
+      lane: 'continue_or_review',
+      order: order++,
+      intent: {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+        prefillNextStep: `优先补齐最后一条完成标准，并判断“${task.title}”是否可以收尾。`,
+      },
+    });
+  }
+
   for (const sourceContext of params.recentSourceContexts) {
     const task = taskById.get(sourceContext.taskId);
 
@@ -372,6 +409,8 @@ function classifyPriorityLane(params: {
   dependencyTaskCount: number;
   blockerReevaluationCount: number;
   dependencyRecoveryCount: number;
+  completionReadyTaskCount: number;
+  nearCompletionTaskCount: number;
   continueOrReviewCount: number;
   waitingTaskCount: number;
   missingNextStepTaskCount: number;
@@ -423,6 +462,22 @@ function classifyPriorityLane(params: {
   }
 
   if (params.continueOrReviewCount > 0) {
+    if (params.completionReadyTaskCount > 0) {
+      return {
+        lane: 'continue_or_review',
+        headline: `当前有 ${params.completionReadyTaskCount} 条任务已满足完成标准，值得收尾`,
+        lede: '当前最值得先处理的是已具备完成条件的任务；首页会优先提示收尾判断，再回到普通执行结果、产物和来源复核。',
+      };
+    }
+
+    if (params.nearCompletionTaskCount > 0) {
+      return {
+        lane: 'continue_or_review',
+        headline: `当前有 ${params.nearCompletionTaskCount} 条任务只差最后一条完成标准`,
+        lede: '当前最值得先处理的是接近完成的任务；首页会优先提示补最后一个完成标准，再回到普通执行结果、产物和来源复核。',
+      };
+    }
+
     if (params.dependencyRecoveryCount > 0) {
       return {
         lane: 'continue_or_review',
@@ -468,7 +523,47 @@ export class HomeBriefService {
     private readonly getSchedulerStatus: () => SchedulerService | null,
     private readonly taskProcessBindingRepository: TaskProcessBindingRepository | null = null,
     private readonly taskDependencyRepository: TaskDependencyRepository | null = null,
+    private readonly completionCriteriaRepository: CompletionCriteriaRepository | null = null,
   ) {}
+
+  private async buildCompletionProgressMap(taskIds: string[]): Promise<
+    Map<string, { total: number; satisfied: number; open: number }>
+  > {
+    const progressByTaskId = new Map<string, { total: number; satisfied: number; open: number }>();
+
+    if (!this.completionCriteriaRepository || taskIds.length === 0) {
+      return progressByTaskId;
+    }
+
+    const criteria = await this.completionCriteriaRepository.listForTasks(taskIds);
+
+    for (const item of criteria) {
+      const current = progressByTaskId.get(item.taskId) ?? { total: 0, satisfied: 0, open: 0 };
+      current.total += 1;
+      if (item.status === 'satisfied') {
+        current.satisfied += 1;
+      } else {
+        current.open += 1;
+      }
+      progressByTaskId.set(item.taskId, current);
+    }
+
+    return progressByTaskId;
+  }
+
+  private withCompletionProgress(
+    task: TaskListItemRecord,
+    completionProgressByTaskId: Map<string, { total: number; satisfied: number; open: number }>,
+  ): HomeTaskSliceRecord {
+    return {
+      ...this.toHomeTaskSlice(task),
+      completionProgress: completionProgressByTaskId.get(task.id) ?? {
+        total: 0,
+        satisfied: 0,
+        open: 0,
+      },
+    };
+  }
 
   private async buildProcessTemplateCandidates(
     activeTasks: TaskListItemRecord[],
@@ -1182,10 +1277,25 @@ export class HomeBriefService {
       dependencyReevaluations,
     );
     const recentSourceContexts = await this.buildRecentSourceContexts(activeTasks);
+    const completionProgressByTaskId = await this.buildCompletionProgressMap(
+      activeTasks.map((task) => task.id),
+    );
     const appliedTemplates = this.taskProcessBindingRepository
       ? await this.taskProcessBindingRepository.listActiveForTasks(activeTasks.map((task) => task.id))
       : [];
     const processTemplateCandidates = await this.buildProcessTemplateCandidates(activeTasks);
+    const completionReadyTasks = activeTasks
+      .filter((task) => {
+        const progress = completionProgressByTaskId.get(task.id);
+        return Boolean(progress && progress.total > 0 && progress.open === 0);
+      })
+      .map((task) => this.withCompletionProgress(task, completionProgressByTaskId));
+    const nearCompletionTasks = activeTasks
+      .filter((task) => {
+        const progress = completionProgressByTaskId.get(task.id);
+        return Boolean(progress && progress.total > 1 && progress.satisfied > 0 && progress.open === 1);
+      })
+      .map((task) => this.withCompletionProgress(task, completionProgressByTaskId));
     const laneByTaskId = deriveTaskPriorityLaneMap({
       tasks,
       missingNextStepTasks: missingNextStepTasks.map((task) => this.toHomeTaskSlice(task)),
@@ -1196,6 +1306,8 @@ export class HomeBriefService {
       blockerTasks: blockerTasks.map((task) => this.toHomeTaskSlice(task)),
       highRiskTasks: highRiskTasks.map((task) => this.toHomeTaskSlice(task)),
       escalationTasks: escalationTasks.map((task) => this.toHomeTaskSlice(task)),
+      completionReadyTasks,
+      nearCompletionTasks,
       decisions,
     });
     const recentTaskResumes = await this.buildTaskResumePreviews({
@@ -1213,6 +1325,8 @@ export class HomeBriefService {
       dependencyReevaluationByTaskId,
       waitingTasks,
       missingNextStepTasks,
+      completionReadyTasks,
+      nearCompletionTasks,
       recentSourceContexts,
       recentArtifacts,
     });
@@ -1227,6 +1341,8 @@ export class HomeBriefService {
         ...recentArtifacts.map((artifact) => artifact.taskId),
         ...recentSourceContexts.map((sourceContext) => sourceContext.taskId),
         ...dependencyReevaluations.map((item) => item.taskId),
+        ...completionReadyTasks.map((task) => task.id),
+        ...nearCompletionTasks.map((task) => task.id),
         ...recentActivity
           .filter(
             (activity) =>
@@ -1249,6 +1365,8 @@ export class HomeBriefService {
       dependencyTaskCount: dependencyTasks.length,
       blockerReevaluationCount,
       dependencyRecoveryCount,
+      completionReadyTaskCount: completionReadyTasks.length,
+      nearCompletionTaskCount: nearCompletionTasks.length,
       continueOrReviewCount,
       waitingTaskCount: waitingTasks.length,
       missingNextStepTaskCount: missingNextStepTasks.length,
@@ -1265,6 +1383,8 @@ export class HomeBriefService {
       escalationTaskCount: escalationTasks.length,
       highRiskTaskCount: highRiskTasks.length,
       missingNextStepTaskCount: missingNextStepTasks.length,
+      completionReadyTaskCount: completionReadyTasks.length,
+      nearCompletionTaskCount: nearCompletionTasks.length,
       recentTasks: tasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       waitingTasks: waitingTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       blockerTasks: blockerTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
@@ -1274,6 +1394,8 @@ export class HomeBriefService {
       missingNextStepTasks: missingNextStepTasks
         .slice(0, 5)
         .map((task) => this.toHomeTaskSlice(task)),
+      completionReadyTasks: completionReadyTasks.slice(0, 5),
+      nearCompletionTasks: nearCompletionTasks.slice(0, 5),
       pendingDecisions: pendingDecisions.slice(0, 5),
       recommendedActions,
       recentArtifacts,

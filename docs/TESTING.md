@@ -153,6 +153,7 @@ Covered today:
 - `Tasks completion criteria create / satisfy / reopen flow`
 - `Tasks completed-transition guidance from completion criteria`
 - `Tasks potential completion evidence from approved decisions, runs, and artifacts`
+- `Home closeout tasks` for completion-ready and near-completion recovery flows
 - `Tasks process context create / apply / remove flow`
 - `Tasks resume card visibility, key-source prioritization explanation, method-selection explanation, lifecycle-aware suggested-move derivation, and recovery actions`
 - `Tasks resume card` lightweight priority-lane cue

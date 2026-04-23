@@ -153,6 +153,8 @@ export function App() {
         blockerTasks: briefData?.blockerTasks,
         highRiskTasks: briefData?.highRiskTasks,
         escalationTasks: briefData?.escalationTasks,
+        completionReadyTasks: briefData?.completionReadyTasks,
+        nearCompletionTasks: briefData?.nearCompletionTasks,
         decisions,
       }),
     [briefData, decisions, tasks],
