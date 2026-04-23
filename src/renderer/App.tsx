@@ -37,7 +37,7 @@ import type {
 } from '@shared/types/source-context';
 import type { TaskListItemRecord, TaskState, UpdateTaskInput } from '@shared/types/task';
 import {
-  comparePriorityLanes,
+  comparePriorityLaneContext,
   deriveTaskPriorityLaneMap,
 } from '@shared/working-context/priority-lanes';
 
@@ -159,10 +159,36 @@ export function App() {
       }),
     [briefData, decisions, tasks],
   );
+  const closeoutCompletionProgressByTaskId = useMemo(() => {
+    const progressByTaskId = new Map<string, { total: number; satisfied: number; open: number }>();
+
+    for (const task of briefData?.completionReadyTasks ?? []) {
+      if (task.completionProgress) {
+        progressByTaskId.set(task.id, task.completionProgress);
+      }
+    }
+
+    for (const task of briefData?.nearCompletionTasks ?? []) {
+      if (task.completionProgress) {
+        progressByTaskId.set(task.id, task.completionProgress);
+      }
+    }
+
+    return progressByTaskId;
+  }, [briefData?.completionReadyTasks, briefData?.nearCompletionTasks]);
   const orderedTasks = useMemo(
     () =>
       [...tasks].sort((left, right) => {
-        const laneDiff = comparePriorityLanes(taskPriorityLanes.get(left.id), taskPriorityLanes.get(right.id));
+        const laneDiff = comparePriorityLaneContext(
+          {
+            lane: taskPriorityLanes.get(left.id),
+            completionProgress: closeoutCompletionProgressByTaskId.get(left.id) ?? null,
+          },
+          {
+            lane: taskPriorityLanes.get(right.id),
+            completionProgress: closeoutCompletionProgressByTaskId.get(right.id) ?? null,
+          },
+        );
 
         if (laneDiff !== 0) {
           return laneDiff;
@@ -170,7 +196,7 @@ export function App() {
 
         return right.updatedAt.localeCompare(left.updatedAt);
       }),
-    [taskPriorityLanes, tasks],
+    [closeoutCompletionProgressByTaskId, taskPriorityLanes, tasks],
   );
 
   useEffect(() => {

@@ -1409,6 +1409,67 @@ describe('App UI flow', () => {
     expect(within(taskButtons[2]).getByText('稳态推进')).toBeTruthy();
   });
 
+  it('prioritizes completion-ready tasks ahead of near-completion tasks within continue/review lane', async () => {
+    const user = userEvent.setup();
+
+    const readyTask = buildTaskRecord({
+      id: 'task_lane_closeout_ready',
+      title: 'Completion ready task',
+      state: 'planned',
+      nextStep: 'Finalize and close',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+    const nearTask = buildTaskRecord({
+      id: 'task_lane_closeout_near',
+      title: 'Near completion task',
+      state: 'planned',
+      nextStep: 'Verify final evidence',
+      updatedAt: '2026-01-03T00:00:00.000Z',
+    });
+
+    window.api = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([nearTask, readyTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        const task = taskId === readyTask.id ? readyTask : nearTask;
+        return buildTaskDetail(task);
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 2,
+        recentTasks: [readyTask, nearTask],
+        completionReadyTaskCount: 1,
+        nearCompletionTaskCount: 1,
+        completionReadyTasks: [
+          {
+            ...readyTask,
+            completionProgress: { total: 2, satisfied: 2, open: 0 },
+          },
+        ],
+        nearCompletionTasks: [
+          {
+            ...nearTask,
+            completionProgress: { total: 2, satisfied: 1, open: 1 },
+          },
+        ],
+        recommendedActions: [],
+      }),
+    };
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+
+    const taskButtons = await screen.findAllByRole('button', {
+      name: /Completion ready task|Near completion task/i,
+    });
+
+    expect(taskButtons[0]?.textContent).toContain('Completion ready task');
+    expect(taskButtons[1]?.textContent).toContain('Near completion task');
+    expect(within(taskButtons[0] as HTMLElement).getByText('继续推进/复核')).toBeTruthy();
+    expect(within(taskButtons[1] as HTMLElement).getByText('继续推进/复核')).toBeTruthy();
+  });
+
   it('adds subtle lane section dividers to the task list when the lane changes', async () => {
     const user = userEvent.setup();
 

@@ -40,7 +40,7 @@ import {
 } from '../working-context/assembler.js';
 import { isStaleBlocker } from '../../../shared/working-context/blocker.js';
 import { isStaleDependency } from '../../../shared/working-context/dependency.js';
-import { comparePriorityLanes, deriveTaskPriorityLaneMap } from '../../../shared/working-context/priority-lanes.js';
+import { comparePriorityLaneContext, comparePriorityLanes, deriveTaskPriorityLaneMap } from '../../../shared/working-context/priority-lanes.js';
 
 type InternalRecommendedAction = RecommendedAction & {
   lane: PriorityLane;
@@ -940,7 +940,28 @@ export class HomeBriefService {
     }));
 
     return previews.sort((left, right) => {
-      const laneDiff = comparePriorityLanes(left.lane, right.lane);
+      const laneDiff = comparePriorityLaneContext(
+        {
+          lane: left.lane,
+          completionProgress: left.completionStatus
+            ? {
+                total: left.completionStatus.total,
+                satisfied: left.completionStatus.satisfied,
+                open: left.completionStatus.open,
+              }
+            : null,
+        },
+        {
+          lane: right.lane,
+          completionProgress: right.completionStatus
+            ? {
+                total: right.completionStatus.total,
+                satisfied: right.completionStatus.satisfied,
+                open: right.completionStatus.open,
+              }
+            : null,
+        },
+      );
 
       if (laneDiff !== 0) {
         return laneDiff;

@@ -21,6 +21,15 @@ const PRIORITY_LANE_ORDER: Record<PriorityLane, number> = {
   steady: 4,
 };
 
+type CompletionProgressLike =
+  | {
+      total: number;
+      satisfied: number;
+      open: number;
+    }
+  | undefined
+  | null;
+
 export function getPriorityLaneLabel(lane: PriorityLane | undefined): string | null {
   if (!lane) {
     return null;
@@ -71,6 +80,44 @@ export function getPriorityLaneContextLabel(params: {
 
 export function comparePriorityLanes(left: PriorityLane | undefined, right: PriorityLane | undefined): number {
   return PRIORITY_LANE_ORDER[left ?? 'steady'] - PRIORITY_LANE_ORDER[right ?? 'steady'];
+}
+
+function getCloseoutSubpriority(progress: CompletionProgressLike): number {
+  if (!progress || progress.total <= 0) {
+    return 2;
+  }
+
+  if (progress.open === 0) {
+    return 0;
+  }
+
+  if (progress.satisfied > 0 && progress.open === 1) {
+    return 1;
+  }
+
+  return 2;
+}
+
+export function comparePriorityLaneContext(
+  left: { lane: PriorityLane | undefined; completionProgress?: CompletionProgressLike },
+  right: { lane: PriorityLane | undefined; completionProgress?: CompletionProgressLike },
+): number {
+  const laneDiff = comparePriorityLanes(left.lane, right.lane);
+
+  if (laneDiff !== 0) {
+    return laneDiff;
+  }
+
+  if (left.lane === 'continue_or_review' && right.lane === 'continue_or_review') {
+    const closeoutDiff =
+      getCloseoutSubpriority(left.completionProgress) - getCloseoutSubpriority(right.completionProgress);
+
+    if (closeoutDiff !== 0) {
+      return closeoutDiff;
+    }
+  }
+
+  return 0;
 }
 
 export function deriveTaskPriorityLaneMap(params: {
