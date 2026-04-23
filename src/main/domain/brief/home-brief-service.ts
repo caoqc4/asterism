@@ -679,15 +679,18 @@ export class HomeBriefService {
         Boolean(task.activeWaitingItem?.reason) ||
         Boolean(task.waitingReason),
     );
-    const blockerTasks = tasks
+    const allBlockedTasks = tasks
       .filter((task) => Boolean(task.activeBlocker?.title))
       .sort((left, right) =>
         (left.activeBlocker?.createdAt ?? left.updatedAt).localeCompare(
           right.activeBlocker?.createdAt ?? right.updatedAt,
         ),
       );
-    const escalationTasks = blockerTasks.filter((task) =>
+    const escalationTasks = allBlockedTasks.filter((task) =>
       task.activeBlocker ? isStaleBlocker(task.activeBlocker.createdAt) : false,
+    );
+    const blockerTasks = allBlockedTasks.filter(
+      (task) => !task.activeBlocker || !isStaleBlocker(task.activeBlocker.createdAt),
     );
     const highRiskTasks = tasks.filter((task) => task.riskLevel === 'high');
     const missingNextStepTasks = activeTasks.filter((task) => !task.nextStep?.trim());

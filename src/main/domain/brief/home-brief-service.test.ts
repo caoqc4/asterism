@@ -817,7 +817,8 @@ describe('HomeBriefService', () => {
 
     expect(homeData.escalationTaskCount).toBe(1);
     expect(homeData.escalationTasks[0]?.title).toBe('Older blocked task');
-    expect(homeData.blockerTasks[0]?.title).toBe('Older blocked task');
+    expect(homeData.blockerTaskCount).toBe(1);
+    expect(homeData.blockerTasks[0]?.title).toBe('Newer blocked task');
     expect(homeData.recommendedActions[0]?.label).toBe('优先升级阻塞项：Older blocked task');
 
     vi.useRealTimers();
