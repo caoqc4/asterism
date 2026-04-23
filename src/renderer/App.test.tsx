@@ -1136,6 +1136,62 @@ describe('App UI flow', () => {
     expect(within(laneSections[2] as HTMLElement).getByText('稳态推进')).toBeTruthy();
   });
 
+  it('shows a lane-aware summary above the task list', async () => {
+    const user = userEvent.setup();
+
+    const laneRiskTask = buildTaskRecord({
+      id: 'task_lane_summary_risk',
+      title: 'Lane summary risk task',
+      state: 'planned',
+      riskLevel: 'high',
+      riskNote: 'Critical launch blocker',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+    const laneWaitingTask = buildTaskRecord({
+      id: 'task_lane_summary_waiting',
+      title: 'Lane summary waiting task',
+      state: 'waiting_external',
+      waitingReason: 'Waiting for reviewer confirmation',
+      updatedAt: '2026-01-03T00:00:00.000Z',
+    });
+    const laneSteadyTask = buildTaskRecord({
+      id: 'task_lane_summary_steady',
+      title: 'Lane summary steady task',
+      state: 'planned',
+      nextStep: 'Continue outreach',
+      updatedAt: '2026-01-04T00:00:00.000Z',
+    });
+
+    window.api = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([laneSteadyTask, laneWaitingTask, laneRiskTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        const task =
+          [laneSteadyTask, laneWaitingTask, laneRiskTask].find((item) => item.id === taskId) ??
+          laneRiskTask;
+        return buildTaskDetail(task);
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 3,
+        recentTasks: [laneRiskTask, laneWaitingTask, laneSteadyTask],
+        highRiskTaskCount: 1,
+        waitingTaskCount: 1,
+        highRiskTasks: [laneRiskTask],
+        waitingTasks: [laneWaitingTask],
+        recommendedActions: [],
+      }),
+    };
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+
+    expect(
+      await screen.findByText(/当前队列会先处理「立即升级」，再到「先补清晰度」；共 3 条任务，分布在 3 个优先级层次。/),
+    ).toBeTruthy();
+  });
+
   it('offers a direct action to resolve the current waiting item', async () => {
     const user = userEvent.setup();
 

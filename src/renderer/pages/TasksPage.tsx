@@ -1193,6 +1193,22 @@ export function TasksPage({
   const snapshotArtifact = detail?.artifacts[0] ?? null;
   const snapshotSourceContext = detail?.sourceContexts[0] ?? null;
   const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
+  const orderedLaneLabels = tasks.reduce<string[]>((labels, task) => {
+    const laneLabel = getPriorityLaneLabel(taskPriorityLanes.get(task.id));
+
+    if (!laneLabel || labels.includes(laneLabel)) {
+      return labels;
+    }
+
+    labels.push(laneLabel);
+    return labels;
+  }, []);
+  const taskQueueSummary =
+    tasks.length === 0
+      ? '当前没有任务，先创建一条开始流转。'
+      : orderedLaneLabels.length <= 1
+        ? `当前队列按「${orderedLaneLabels[0] ?? '稳态推进'}」语义排序，共 ${tasks.length} 条任务。`
+        : `当前队列会先处理「${orderedLaneLabels[0]}」，再到「${orderedLaneLabels[1]}」；共 ${tasks.length} 条任务，分布在 ${orderedLaneLabels.length} 个优先级层次。`;
 
   return (
     <section className="tasks-layout">
@@ -1201,6 +1217,7 @@ export function TasksPage({
           <div>
             <p className="eyebrow">Tasks</p>
             <h2>任务列表</h2>
+            <p className="lede">{taskQueueSummary}</p>
           </div>
         </div>
         <form className="stack" onSubmit={handleCreate}>
