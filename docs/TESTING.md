@@ -128,7 +128,9 @@ Covered today:
 - `Decisions` page current-focus and queue navigation
 - `Decisions / Runs -> Tasks` follow-up return flows
 - `Decisions / Runs` related-task timeline context
+- `Decisions / Runs` related-task timeline object entry
 - `Decisions / Runs` related-task timeline follow-up actions
+- shared timeline summaries across `Tasks / Decisions / Runs`
 - `Settings save flow`
 - `waiting item` visibility and direct resolution
 - `source context` visibility plus create/edit interactions in task detail, explicit key-source marking, and source-focused recovery from Home
