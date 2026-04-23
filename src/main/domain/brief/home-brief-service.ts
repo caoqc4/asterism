@@ -364,6 +364,8 @@ function buildRecommendedActions(params: {
 
 function classifyPriorityLane(params: {
   escalationTaskCount: number;
+  staleBlockerTaskCount: number;
+  staleDependencyTaskCount: number;
   highRiskTaskCount: number;
   pendingDecisionCount: number;
   blockerTaskCount: number;
@@ -377,6 +379,14 @@ function classifyPriorityLane(params: {
   headline: string;
   lede: string;
 } {
+  if (params.staleDependencyTaskCount > 0 && params.staleBlockerTaskCount === 0) {
+    return {
+      lane: 'escalate_now',
+      headline: `当前有 ${params.staleDependencyTaskCount} 条任务因依赖链路过久需要升级处理`,
+      lede: '当前最值得先处理的是依赖过久的任务；首页会优先把老化依赖链提成升级信号，并引导你先推动上游任务或重新判断是否解除依赖。',
+    };
+  }
+
   if (params.escalationTaskCount > 0) {
     return {
       lane: 'escalate_now',
@@ -1217,6 +1227,8 @@ export class HomeBriefService {
     ].length;
     const prioritySummary = classifyPriorityLane({
       escalationTaskCount: escalationTasks.length,
+      staleBlockerTaskCount: escalationBlockerTasks.length,
+      staleDependencyTaskCount: escalationDependencyTasks.length,
       highRiskTaskCount: highRiskTasks.length,
       pendingDecisionCount: pendingDecisions.length,
       blockerTaskCount: blockerTasks.length,

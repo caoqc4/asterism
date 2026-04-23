@@ -4232,6 +4232,9 @@ describe('App UI flow', () => {
         blockerTaskCount: 0,
         dependencyTaskCount: 0,
         escalationTaskCount: 1,
+        priorityHeadline: '当前有 1 条任务因依赖链路过久需要升级处理',
+        priorityLede:
+          '当前最值得先处理的是依赖过久的任务；首页会优先把老化依赖链提成升级信号，并引导你先推动上游任务或重新判断是否解除依赖。',
         highRiskTaskCount: 0,
         waitingTaskCount: 0,
         missingNextStepTaskCount: 0,
@@ -4262,7 +4265,14 @@ describe('App UI flow', () => {
       await within(escalationSection as HTMLElement).findByText('depends since 2026-01-01 · 已依赖 112 天'),
     ).toBeTruthy();
     expect(
-      await within(escalationSection as HTMLElement).findByText('已依赖 112 天，值得优先处理。'),
+      await within(escalationSection as HTMLElement).findByText('这条依赖链已持续 112 天，值得优先升级处理。'),
+    ).toBeTruthy();
+
+    expect(
+      await screen.findByRole('heading', { name: '当前有 1 条任务因依赖链路过久需要升级处理' }),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('当前最值得先处理的是依赖过久的任务；首页会优先把老化依赖链提成升级信号，并引导你先推动上游任务或重新判断是否解除依赖。'),
     ).toBeTruthy();
 
     await user.click(await within(escalationSection as HTMLElement).findByRole('button', { name: '直接升级处理' }));

@@ -40,8 +40,8 @@ export function getDependencyAgeReason(createdAt: string, audience: 'task' | 'ho
 
   if (days >= 7) {
     return audience === 'task'
-      ? `已依赖 ${days} 天，建议优先推动上游任务或重新判断是否解除依赖。`
-      : `已依赖 ${days} 天，值得优先处理。`;
+      ? `这条依赖链已持续 ${days} 天，建议优先推动上游任务或重新判断是否解除依赖。`
+      : `这条依赖链已持续 ${days} 天，值得优先升级处理。`;
   }
 
   if (days >= 1) {
