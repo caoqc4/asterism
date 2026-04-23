@@ -607,6 +607,89 @@ describe('App UI flow', () => {
     ).toBeTruthy();
   });
 
+  it('uses task resume card actions to focus context and prefill the next step', async () => {
+    const user = userEvent.setup();
+
+    const resumeTask = buildTaskRecord({
+      id: 'task_resume_actions',
+      title: 'Resume action task',
+      state: 'planned',
+      nextStep: 'Old next step',
+    });
+
+    const resumeDetail = buildTaskDetail(resumeTask);
+    resumeDetail.sourceContexts = [
+      buildSourceContext({
+        id: 'source_context_resume_action',
+        taskId: resumeTask.id,
+        title: 'Launch reference memo',
+        isKey: true,
+        note: 'Most important source',
+      }),
+    ];
+    resumeDetail.processTemplates = [
+      buildAppliedProcessTemplate({
+        id: 'process_template_resume_action',
+        taskId: resumeTask.id,
+        title: 'Launch workflow',
+        summary: 'Use the launch workflow',
+      }),
+    ];
+    resumeDetail.resumeCard = {
+      summary: 'Resume summary',
+      currentState: '状态：planned',
+      latestChange: '最近更新了来源材料：Launch reference memo。',
+      keySource: {
+        sourceContextId: 'source_context_resume_action',
+        title: 'Launch reference memo',
+        detail: 'Most important source',
+      },
+      currentMethod: {
+        templateId: 'process_template_resume_action',
+        title: 'Launch workflow',
+        detail: 'Use the launch workflow',
+      },
+      nextSuggestedMove: '基于来源材料继续推进：Launch reference memo',
+    };
+
+    const resumeApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([resumeTask]),
+      getTaskDetail: vi.fn(async (taskId: string) => (taskId === resumeTask.id ? resumeDetail : null)),
+    };
+
+    window.api = resumeApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /resume action task/i }));
+    await screen.findByRole('heading', { name: 'Resume action task' });
+
+    const resumeSection = screen.getByRole('heading', { name: 'Task Resume Card' }).closest('.detail-card-group');
+
+    expect(resumeSection).not.toBeNull();
+
+    await user.click(
+      within(resumeSection as HTMLElement).getByRole('button', { name: '查看关键来源' }),
+    );
+    expect((screen.getByLabelText('来源标题') as HTMLInputElement).value).toBe(
+      'Launch reference memo',
+    );
+
+    await user.click(
+      within(resumeSection as HTMLElement).getByRole('button', { name: '打开当前方法模板' }),
+    );
+    expect((screen.getByLabelText('模板标题') as HTMLInputElement).value).toBe('Launch workflow');
+
+    await user.click(
+      within(resumeSection as HTMLElement).getByRole('button', { name: '采用建议下一步' }),
+    );
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '基于来源材料继续推进：Launch reference memo',
+    );
+  });
+
   it('opens waiting tasks from home key signals with follow-up guidance', async () => {
     const user = userEvent.setup();
 

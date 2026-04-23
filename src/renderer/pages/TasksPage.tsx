@@ -429,6 +429,7 @@ export function TasksPage({
   const detailFormRef = useRef<HTMLFormElement | null>(null);
   const quickActionsRef = useRef<HTMLDivElement | null>(null);
   const sourceContextSectionRef = useRef<HTMLDivElement | null>(null);
+  const processContextSectionRef = useRef<HTMLDivElement | null>(null);
 
   function updateDraftRiskLevel(nextRiskLevel: TaskRiskLevel) {
     setDraftRiskLevel(nextRiskLevel);
@@ -693,6 +694,23 @@ export function TasksPage({
     setSourceContextError(null);
   }
 
+  function focusSourceContext(sourceContextId: string | null) {
+    if (!detail || !sourceContextId) {
+      return;
+    }
+
+    const matchedSourceContext = detail.sourceContexts.find((item) => item.id === sourceContextId);
+
+    if (!matchedSourceContext) {
+      return;
+    }
+
+    populateSourceContextForm(matchedSourceContext);
+    if (typeof sourceContextSectionRef.current?.scrollIntoView === 'function') {
+      sourceContextSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
   function populateProcessTemplateForm(item: ProcessTemplateRecord) {
     setProcessTemplateEditingId(item.id);
     setProcessTemplateTitle(item.title);
@@ -711,6 +729,37 @@ export function TasksPage({
     setProcessTemplateTags('');
     setProcessTemplateContent('');
     setProcessTemplateError(null);
+  }
+
+  function focusProcessTemplate(templateId: string | null) {
+    if (!detail || !templateId) {
+      return;
+    }
+
+    const matchedTemplate =
+      detail.processTemplates.find((item) => item.id === templateId) ??
+      detail.availableProcessTemplates.find((item) => item.id === templateId);
+
+    if (!matchedTemplate) {
+      return;
+    }
+
+    populateProcessTemplateForm(matchedTemplate);
+    if (typeof processContextSectionRef.current?.scrollIntoView === 'function') {
+      processContextSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function adoptResumeNextStep() {
+    if (!detail) {
+      return;
+    }
+
+    setDraftNextStep(detail.resumeCard.nextSuggestedMove);
+    setDetailError(null);
+    if (typeof detailFormRef.current?.scrollIntoView === 'function') {
+      detailFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   async function handleSaveSourceContext(event: React.FormEvent<HTMLFormElement>) {
@@ -1174,6 +1223,33 @@ export function TasksPage({
                         <p className="meta">{detail.resumeCard.nextSuggestedMove}</p>
                       </div>
                     </div>
+                    <div className="timeline-actions">
+                      {detail.resumeCard.keySource.sourceContextId ? (
+                        <button
+                          className="ghost-button timeline-action"
+                          onClick={() => focusSourceContext(detail.resumeCard.keySource.sourceContextId)}
+                          type="button"
+                        >
+                          查看关键来源
+                        </button>
+                      ) : null}
+                      {detail.resumeCard.currentMethod.templateId ? (
+                        <button
+                          className="ghost-button timeline-action"
+                          onClick={() => focusProcessTemplate(detail.resumeCard.currentMethod.templateId)}
+                          type="button"
+                        >
+                          打开当前方法模板
+                        </button>
+                      ) : null}
+                      <button
+                        className="ghost-button timeline-action"
+                        onClick={adoptResumeNextStep}
+                        type="button"
+                      >
+                        采用建议下一步
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -1411,7 +1487,10 @@ export function TasksPage({
                   </form>
                 </div>
 
-                <div className="transition-group detail-card-group">
+                <div
+                  className="transition-group detail-card-group"
+                  ref={processContextSectionRef}
+                >
                   <h3>Process Context</h3>
                   <div className="timeline-list">
                     {detail.processTemplates.length ? (

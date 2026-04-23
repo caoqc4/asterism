@@ -9,7 +9,7 @@ This repository currently contains an Electron + React + TypeScript prototype wi
 - run triggering for `draft` and `summarize`, with task linkage, failure signals, task restoration after runs settle, and dynamic process-template selection before execution
 - local brief snapshot generation with recommended actions, recent artifact context, recent lifecycle activity, and intent-aware navigation plus lightweight follow-up actions for task follow-up and object-review flows
 - source-context-aware home brief aggregation, including explicit key-source prioritization, key source-material surfacing, source-focused task recovery flows, and lightweight source-driven recommended actions
-- task resume cards that compress current state, latest change, key source, current method, and next suggested move into a working-context recovery view
+- task resume cards that compress current state, latest change, key source, current method, and next suggested move into a working-context recovery view, plus lightweight actions to open the key source, inspect the current method, or adopt the suggested next step
 - task-scoped timeline events with readable summaries, subtle event tones, lightweight action shortcuts, and direct `Decision / Run` object entry from key task events
 - waiting item lifecycle tracking with direct resolution and task/detail/home visibility
 - text artifacts generated from successful runs, surfaced in task detail, timeline actions, home brief, and recommended-action semantics
@@ -128,7 +128,7 @@ What exists today:
 - structured task signals: `nextStep`, `waitingReason`, `riskLevel`, `riskNote`
 - home brief organized around recommended actions, recent artifacts, key source materials, recent lifecycle activity, recent brief snapshots, and key signals, with direct intent-aware entry into task follow-up work across artifacts, prioritized key sources, lifecycle activity, and task signals, plus direct `Decision / Run` object entry, source-driven recovery suggestions, and lightweight follow-up actions from recent activity
 - task detail organized into a current snapshot, action desk, and activity feed
-- task detail acting as a task work surface, with a derived task resume card, quick actions, active waiting items, recent artifacts, key source materials, editable source context materials with explicit key-source marking, process context templates, related decisions/runs, and a task-lifecycle timeline with lightweight suggested actions plus direct entry into related `Decision / Run` objects from key lifecycle events
+- task detail acting as a task work surface, with a derived task resume card and lightweight resume actions, quick actions, active waiting items, recent artifacts, key source materials, editable source context materials with explicit key-source marking, process context templates, related decisions/runs, and a task-lifecycle timeline with lightweight suggested actions plus direct entry into related `Decision / Run` objects from key lifecycle events
 - decision and run pages acting as object work surfaces, with queue navigation, focused detail/action areas, direct return-to-task follow-up entrypoints, lightweight related-task timeline explanations, and timeline-based follow-up actions
 - task-side objects now established: active `waiting items`, text `artifacts`, editable `source context` materials, and reusable `process context` templates
 - decision and run actions now write back clearer task semantics, including follow-up next steps, waiting reasons, and lifecycle timeline events
