@@ -4659,4 +4659,36 @@ describe('App UI flow', () => {
     expect(screen.getByText('转入 waiting_external 前，请先填写等待原因。')).toBeTruthy();
     expect(mockApi.transitionTask).not.toHaveBeenCalled();
   });
+
+  it('reorders task transitions around the current priority lane and explains the recommendation', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /high risk task/i }));
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    const transitionSection = screen
+      .getByRole('heading', { name: '状态流转' })
+      .closest('.transition-group');
+
+    expect(transitionSection).toBeTruthy();
+    expect(
+      within(transitionSection as HTMLElement).getByText(
+        '当前按「立即升级」语义，状态流转优先建议转到 planned，先把任务拉回可处理状态并明确升级动作，不建议继续挂起等待。',
+      ),
+    ).toBeTruthy();
+
+    const transitionButtons = within(transitionSection as HTMLElement)
+      .getAllByRole('button')
+      .map((button) => button.textContent);
+
+    expect(transitionButtons.slice(0, 4)).toEqual([
+      '转到 planned',
+      '转到 waiting_external',
+      '转到 completed',
+      '转到 archived',
+    ]);
+  });
 });

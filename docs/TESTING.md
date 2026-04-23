@@ -173,6 +173,7 @@ Covered today:
 - Timeline object entry shortcuts for decision, run, and run-backed artifact events
 - task detail artifact visibility and Home recent-artifact visibility
 - task detail current-snapshot/action-desk/activity-feed presentation paths
+- lane-aware task transition guidance and recommended transition ordering in task detail
 
 These tests focus on high-value control-plane interactions rather than broad page rendering snapshots.
 

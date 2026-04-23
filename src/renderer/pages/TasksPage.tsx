@@ -44,6 +44,10 @@ import {
 import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
 import type { PriorityLane } from '@shared/types/brief';
 import { getPriorityLaneLabel } from '@shared/working-context/priority-lanes';
+import {
+  getTaskTransitionGuidance,
+  orderTaskTransitions,
+} from '@shared/working-context/transitions';
 
 const riskOptions: TaskRiskLevel[] = ['none', 'low', 'medium', 'high'];
 const sourceContextKindOptions: SourceContextKind[] = [
@@ -535,6 +539,30 @@ export function TasksPage({
   const resumeLaneLabel = getPriorityLaneLabel(resumeLane);
   const quickDecisionGuidance = getQuickDecisionGuidance(resumeLane);
   const quickRunGuidance = getQuickRunGuidance(resumeLane);
+  const taskDecisions = detail
+    ? decisions.filter((decision) => decision.taskId === detail.id)
+    : [];
+  const taskRuns = detail ? runs.filter((run) => run.taskId === detail.id) : [];
+  const transitionStates = detail
+    ? orderTaskTransitions({
+        currentState: detail.state,
+        availableStates: transitionOptions[detail.state],
+        lane: resumeLane,
+        hasActiveBlocker: Boolean(detail.activeBlocker),
+        hasPendingDecision: taskDecisions.some((decision) => decision.status === 'pending'),
+        hasWaitingContext: Boolean(detail.activeWaitingItem || detail.waitingReason),
+      })
+    : [];
+  const transitionGuidance = detail
+    ? getTaskTransitionGuidance({
+        currentState: detail.state,
+        availableStates: transitionOptions[detail.state],
+        lane: resumeLane,
+        hasActiveBlocker: Boolean(detail.activeBlocker),
+        hasPendingDecision: taskDecisions.some((decision) => decision.status === 'pending'),
+        hasWaitingContext: Boolean(detail.activeWaitingItem || detail.waitingReason),
+      })
+    : null;
 
   function updateDraftRiskLevel(nextRiskLevel: TaskRiskLevel) {
     setDraftRiskLevel(nextRiskLevel);
@@ -1242,15 +1270,13 @@ export function TasksPage({
   }
 
   const relatedDecisions = detail
-    ? decisions
-        .filter((decision) => decision.taskId === detail.id)
+    ? taskDecisions
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
         .slice(0, 5)
     : [];
 
   const relatedRuns = detail
-    ? runs
-        .filter((run) => run.taskId === detail.id)
+    ? taskRuns
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
         .slice(0, 5)
     : [];
@@ -1895,6 +1921,7 @@ export function TasksPage({
                 <div className="transition-group detail-card-group" ref={transitionCardRef}>
                   <h3>状态流转</h3>
                   <p className="meta">只保留当前状态允许的后续流转，避免把所有状态都摊在面前。</p>
+                  {transitionGuidance ? <p className="meta">{transitionGuidance}</p> : null}
                   <div className="stack">
                     <label>
                       Waiting Transition Reason
@@ -1912,10 +1939,10 @@ export function TasksPage({
                     {transitionError ? <p className="meta">{transitionError}</p> : null}
                   </div>
                   <div className="chip-row">
-                    {transitionOptions[detail.state].length === 0 ? (
+                    {transitionStates.length === 0 ? (
                       <p className="meta">当前状态没有可用的下一步。</p>
                     ) : (
-                      transitionOptions[detail.state].map((nextState) => (
+                      transitionStates.map((nextState) => (
                         <button
                           className="ghost-button"
                           key={nextState}
