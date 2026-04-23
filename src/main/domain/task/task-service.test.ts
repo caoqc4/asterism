@@ -5,6 +5,7 @@ import type {
   ProcessTemplateRecord,
 } from '../../../shared/types/process-template.js';
 import type { BlockerRecord } from '../../../shared/types/blocker.js';
+import type { TaskDependencyRecord } from '../../../shared/types/task-dependency.js';
 import type { TaskDetail, TaskRecord } from '../../../shared/types/task.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import { TaskService } from './task-service.js';
@@ -70,6 +71,22 @@ function buildBlockerRecord(partial: Partial<BlockerRecord> = {}): BlockerRecord
     detail: partial.detail ?? 'Need sign-off',
     owner: partial.owner ?? 'Legal',
     sourceContextId: partial.sourceContextId ?? null,
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    resolvedAt: partial.resolvedAt ?? null,
+  };
+}
+
+function buildTaskDependencyRecord(
+  partial: Partial<TaskDependencyRecord> = {},
+): TaskDependencyRecord {
+  return {
+    id: partial.id ?? 'task_dependency_1',
+    taskId: partial.taskId ?? 'task_1',
+    blockedByTaskId: partial.blockedByTaskId ?? 'task_2',
+    blockedByTaskTitle: partial.blockedByTaskTitle ?? 'Publish partner list',
+    reason: partial.reason ?? 'Need the upstream partner list before continuing',
     status: partial.status ?? 'active',
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
@@ -408,6 +425,84 @@ describe('TaskService', () => {
       'blocker.resolved',
       expect.objectContaining({
         blockerId: 'blocker_1',
+        status: 'resolved',
+      }),
+    );
+    expect(resolved.status).toBe('resolved');
+  });
+
+  it('creates and resolves task dependency objects with task timeline events', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const dependencies = {
+      getActiveForTask: vi.fn().mockResolvedValueOnce(null),
+      create: vi.fn().mockResolvedValue(
+        buildTaskDependencyRecord({
+          blockedByTaskId: 'task_upstream',
+          blockedByTaskTitle: 'Publish partner list',
+          reason: 'Need the final partner list before outreach starts',
+        }),
+      ),
+      update: vi.fn(),
+      resolve: vi.fn().mockResolvedValue(
+        buildTaskDependencyRecord({
+          status: 'resolved',
+          resolvedAt: '2026-01-02T00:00:00.000Z',
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        }),
+      ),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      null,
+      dependencies as never,
+    );
+
+    const created = await service.createTaskDependency({
+      taskId: 'task_1',
+      blockedByTaskId: 'task_upstream',
+      reason: 'Need the final partner list before outreach starts',
+    });
+    const resolved = await service.resolveTaskDependency(created.id);
+
+    expect(dependencies.create).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      blockedByTaskId: 'task_upstream',
+      reason: 'Need the final partner list before outreach starts',
+    });
+    expect(repository.appendTimelineEvent).toHaveBeenNthCalledWith(
+      1,
+      'task_1',
+      'task_dependency.created',
+      expect.objectContaining({
+        dependencyId: 'task_dependency_1',
+        blockedByTaskId: 'task_upstream',
+        blockedByTaskTitle: 'Publish partner list',
+      }),
+    );
+    expect(dependencies.resolve).toHaveBeenCalledWith('task_dependency_1');
+    expect(repository.appendTimelineEvent).toHaveBeenNthCalledWith(
+      2,
+      'task_1',
+      'task_dependency.resolved',
+      expect.objectContaining({
+        dependencyId: 'task_dependency_1',
         status: 'resolved',
       }),
     );

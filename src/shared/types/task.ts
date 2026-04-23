@@ -5,6 +5,7 @@ import type {
   ProcessTemplateRecord,
 } from './process-template.js';
 import type { SourceContextRecord } from './source-context.js';
+import type { TaskDependencyRecord } from './task-dependency.js';
 import type { WaitingItemRecord } from './waiting-item.js';
 
 export type TaskState =
@@ -34,6 +35,7 @@ export type TaskRecord = {
 export type TaskListItemRecord = TaskRecord & {
   activeWaitingItem: WaitingItemRecord | null;
   activeBlocker: BlockerRecord | null;
+  activeDependency?: TaskDependencyRecord | null;
 };
 
 export type ResumeLatestChangeRecord = {
@@ -70,6 +72,11 @@ export type TaskResumeCardRecord = {
     priorityReason?: string | null;
     ageLabel?: string | null;
   };
+  currentDependency?: {
+    dependencyId: string | null;
+    title: string;
+    detail: string | null;
+  };
   keySource: ResumeKeySourceSliceRecord;
   currentMethod: ResumeCurrentMethodSliceRecord;
   nextSuggestedMove: string;
@@ -78,6 +85,7 @@ export type TaskResumeCardRecord = {
 export type TaskDetailBase = TaskRecord & {
   activeWaitingItem: WaitingItemRecord | null;
   activeBlocker: BlockerRecord | null;
+  activeDependency?: TaskDependencyRecord | null;
   artifacts: ArtifactRecord[];
   sourceContexts: SourceContextRecord[];
   processTemplates: AppliedProcessTemplateRecord[];

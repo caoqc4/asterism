@@ -9,6 +9,11 @@ import type {
   UpdateBlockerInput,
 } from '../../../shared/types/blocker.js';
 import type {
+  CreateTaskDependencyInput,
+  TaskDependencyRecord,
+  UpdateTaskDependencyInput,
+} from '../../../shared/types/task-dependency.js';
+import type {
   CreateTaskInput,
   TaskDetail,
   TaskDetailBase,
@@ -28,6 +33,7 @@ import { ArtifactRepository } from '../../db/repositories/artifact-repository.js
 import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
 import { ProcessTemplateRepository } from '../../db/repositories/process-template-repository.js';
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
+import { TaskDependencyRepository } from '../../db/repositories/task-dependency-repository.js';
 import { TaskProcessBindingRepository } from '../../db/repositories/task-process-binding-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
@@ -59,6 +65,7 @@ export class TaskService {
     private readonly processTemplateRepository: ProcessTemplateRepository | null = null,
     private readonly taskProcessBindingRepository: TaskProcessBindingRepository | null = null,
     private readonly blockerRepository: BlockerRepository | null = null,
+    private readonly taskDependencyRepository: TaskDependencyRepository | null = null,
   ) {}
 
   private async syncWaitingItem(
@@ -97,11 +104,15 @@ export class TaskService {
     const activeBlocker = this.blockerRepository
       ? await this.blockerRepository.getActiveForTask(task.id)
       : null;
+    const activeDependency = this.taskDependencyRepository
+      ? await this.taskDependencyRepository.getActiveForTask(task.id)
+      : null;
 
     return {
       ...task,
       activeWaitingItem,
       activeBlocker,
+      activeDependency,
     };
   }
 
@@ -110,11 +121,15 @@ export class TaskService {
     const activeBlocker = this.blockerRepository
       ? await this.blockerRepository.getActiveForTask(detail.id)
       : null;
+    const activeDependency = this.taskDependencyRepository
+      ? await this.taskDependencyRepository.getActiveForTask(detail.id)
+      : null;
 
     return {
       ...detail,
       activeWaitingItem,
       activeBlocker,
+      activeDependency,
     };
   }
 
@@ -162,6 +177,7 @@ export class TaskService {
     const latestArtifact = detail.artifacts[0] ?? null;
     const waitingReason = detail.activeWaitingItem?.reason ?? detail.waitingReason;
     const blockerTitle = detail.activeBlocker?.title ?? null;
+    const dependencyTitle = detail.activeDependency?.blockedByTaskTitle ?? null;
 
     const currentStateParts = [`状态：${detail.state}`];
 
@@ -171,6 +187,10 @@ export class TaskService {
 
     if (blockerTitle) {
       currentStateParts.push(`阻塞：${blockerTitle}`);
+    }
+
+    if (dependencyTitle) {
+      currentStateParts.push(`依赖：${dependencyTitle}`);
     }
 
     if (detail.riskLevel !== 'none') {
@@ -190,6 +210,7 @@ export class TaskService {
       riskNote: detail.riskNote,
       blockerTitle,
       blockerCreatedAt: detail.activeBlocker?.createdAt ?? null,
+      dependencyTitle,
       keySourceTitle: keySource?.title ?? null,
       latestArtifactTitle: latestArtifact?.title ?? null,
       recentChange: latestChange.recentChange,
@@ -197,6 +218,7 @@ export class TaskService {
 
     const summaryParts = [
       `这条任务目前处于 ${detail.state}${waitingReason ? `，正在等待“${waitingReason}”` : ''}${blockerTitle ? `，当前阻塞项是“${blockerTitle}”` : ''}${detail.riskLevel === 'high' && detail.riskNote ? `，且存在高风险“${detail.riskNote}”` : ''}。`,
+      dependencyTitle ? `当前依赖上游任务“${dependencyTitle}”。` : null,
       latestChange.summary,
       keySource ? `当前最关键的来源材料是“${keySource.title}”。` : null,
       currentMethod ? `当前采用的方法模板是“${currentMethod.title}”。` : null,
@@ -231,6 +253,17 @@ export class TaskService {
             detail: null,
             ageLabel: null,
             priorityReason: null,
+          },
+      currentDependency: detail.activeDependency
+        ? {
+            dependencyId: detail.activeDependency.id,
+            title: detail.activeDependency.blockedByTaskTitle ?? '上游任务',
+            detail: detail.activeDependency.reason ?? '当前等待上游任务完成后再继续推进。',
+          }
+        : {
+            dependencyId: null,
+            title: '暂无任务依赖',
+            detail: null,
           },
       keySource: keySource
         ? {
@@ -751,6 +784,79 @@ export class TaskService {
     });
 
     return blocker;
+  }
+
+  async createTaskDependency(input: CreateTaskDependencyInput): Promise<TaskDependencyRecord> {
+    await this.getExistingTaskOrThrow(input.taskId);
+    await this.getExistingTaskOrThrow(input.blockedByTaskId);
+
+    if (!this.taskDependencyRepository) {
+      throw new Error('Task dependency repository is not configured');
+    }
+
+    const existing = await this.taskDependencyRepository.getActiveForTask(input.taskId);
+    const dependency = existing
+      ? await this.taskDependencyRepository.update({
+          id: existing.id,
+          blockedByTaskId: input.blockedByTaskId,
+          reason: input.reason,
+        })
+      : await this.taskDependencyRepository.create(input);
+
+    await this.repository.appendTimelineEvent(
+      input.taskId,
+      existing ? 'task_dependency.updated' : 'task_dependency.created',
+      {
+        dependencyId: dependency.id,
+        blockedByTaskId: dependency.blockedByTaskId,
+        blockedByTaskTitle: dependency.blockedByTaskTitle,
+        reason: dependency.reason,
+        status: dependency.status,
+      },
+    );
+
+    return dependency;
+  }
+
+  async updateTaskDependency(input: UpdateTaskDependencyInput): Promise<TaskDependencyRecord> {
+    if (!this.taskDependencyRepository) {
+      throw new Error('Task dependency repository is not configured');
+    }
+
+    if (input.blockedByTaskId) {
+      await this.getExistingTaskOrThrow(input.blockedByTaskId);
+    }
+
+    const dependency = await this.taskDependencyRepository.update(input);
+
+    await this.repository.appendTimelineEvent(dependency.taskId, 'task_dependency.updated', {
+      dependencyId: dependency.id,
+      blockedByTaskId: dependency.blockedByTaskId,
+      blockedByTaskTitle: dependency.blockedByTaskTitle,
+      reason: dependency.reason,
+      status: dependency.status,
+    });
+
+    return dependency;
+  }
+
+  async resolveTaskDependency(id: string): Promise<TaskDependencyRecord> {
+    if (!this.taskDependencyRepository) {
+      throw new Error('Task dependency repository is not configured');
+    }
+
+    const dependency = await this.taskDependencyRepository.resolve(id);
+
+    await this.repository.appendTimelineEvent(dependency.taskId, 'task_dependency.resolved', {
+      dependencyId: dependency.id,
+      blockedByTaskId: dependency.blockedByTaskId,
+      blockedByTaskTitle: dependency.blockedByTaskTitle,
+      reason: dependency.reason,
+      status: dependency.status,
+      resolvedAt: dependency.resolvedAt,
+    });
+
+    return dependency;
   }
 
   async createProcessTemplate(input: CreateProcessTemplateInput) {

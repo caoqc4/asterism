@@ -36,6 +36,14 @@ type WorkingContextRecentChange =
       title?: string;
     }
   | {
+      kind: 'task_dependency_changed';
+      title?: string;
+    }
+  | {
+      kind: 'task_dependency_resolved';
+      title?: string;
+    }
+  | {
       kind: 'artifact_created';
       title?: string;
     }
@@ -416,6 +424,35 @@ export function buildTaskResumeLatestChange(
           title: typeof payload?.title === 'string' ? payload.title : undefined,
         },
       };
+    case 'task_dependency.created':
+    case 'task_dependency.updated':
+      return {
+        summary: `最近更新了任务依赖：${String(payload?.blockedByTaskTitle ?? '未命名上游任务')}。`,
+        action: {
+          label: null,
+          targetType: null,
+          targetId: null,
+        },
+        recentChange: {
+          kind: 'task_dependency_changed',
+          title:
+            typeof payload?.blockedByTaskTitle === 'string' ? payload.blockedByTaskTitle : undefined,
+        },
+      };
+    case 'task_dependency.resolved':
+      return {
+        summary: `最近解除任务依赖：${String(payload?.blockedByTaskTitle ?? '未命名上游任务')}。`,
+        action: {
+          label: null,
+          targetType: null,
+          targetId: null,
+        },
+        recentChange: {
+          kind: 'task_dependency_resolved',
+          title:
+            typeof payload?.blockedByTaskTitle === 'string' ? payload.blockedByTaskTitle : undefined,
+        },
+      };
     case 'artifact.created':
       return {
         summary: `最近生成了产物：${String(payload?.title ?? '未命名产物')}。`,
@@ -506,13 +543,14 @@ export function buildHomeResumeLatestChange(params: {
   latestActivity: HomeActivityRecord | undefined;
   keySource: Pick<SourceContextRecord, 'id' | 'title'> | null;
   activeBlocker?: Pick<BlockerRecord, 'id' | 'title' | 'sourceContextId'> | null;
+  activeDependency?: { blockedByTaskTitle: string | null } | null;
   taskState?: TaskState;
 }): {
   summary: string;
   action: HomeTaskResumePreviewRecord['latestChange']['action'];
   recentChange: WorkingContextRecentChange | null;
 } {
-  const { latestActivity, keySource, activeBlocker, taskState } = params;
+  const { latestActivity, keySource, activeBlocker, activeDependency, taskState } = params;
 
   if (latestActivity) {
     if (latestActivity.sourceType === 'task') {
@@ -588,6 +626,21 @@ export function buildHomeResumeLatestChange(params: {
     };
   }
 
+  if (activeDependency?.blockedByTaskTitle) {
+    return {
+      summary: `当前依赖上游任务：${activeDependency.blockedByTaskTitle}`,
+      action: {
+        label: null,
+        targetType: null,
+        targetId: null,
+      },
+      recentChange: {
+        kind: 'task_dependency_changed',
+        title: activeDependency.blockedByTaskTitle,
+      },
+    };
+  }
+
   if (keySource) {
     return {
       summary: `最近关键来源更新：${keySource.title}`,
@@ -626,6 +679,7 @@ export function deriveNextSuggestedMove(params: {
   riskNote?: string | null;
   blockerTitle?: string | null;
   blockerCreatedAt?: string | null;
+  dependencyTitle?: string | null;
   keySourceTitle?: string | null;
   latestArtifactTitle?: string | null;
   recentChange?: WorkingContextRecentChange | null;
@@ -668,6 +722,10 @@ export function deriveNextSuggestedMove(params: {
           : `先解除阻塞项：${recentChange.title ?? params.blockerTitle ?? params.taskTitle}`;
       case 'blocker_resolved':
         return `确认解除阻塞后的下一步推进：${recentChange.title ?? params.taskTitle}`;
+      case 'task_dependency_changed':
+        return `先推动上游任务完成：${recentChange.title ?? params.dependencyTitle ?? params.taskTitle}`;
+      case 'task_dependency_resolved':
+        return `确认上游任务就绪后的下一步推进：${recentChange.title ?? params.dependencyTitle ?? params.taskTitle}`;
       case 'artifact_created':
         return `基于产物继续推进：${recentChange.title ?? '最新产物'}`;
       case 'waiting_item_changed':
@@ -691,6 +749,10 @@ export function deriveNextSuggestedMove(params: {
     return params.blockerCreatedAt && isStaleBlocker(params.blockerCreatedAt)
       ? `优先升级当前阻塞项：${params.blockerTitle}`
       : `先解除阻塞项：${params.blockerTitle}`;
+  }
+
+  if (params.dependencyTitle) {
+    return `先推动上游任务完成：${params.dependencyTitle}`;
   }
 
   if (params.riskLevel === 'high') {

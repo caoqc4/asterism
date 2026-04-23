@@ -109,6 +109,17 @@ function bootstrapTables(connection: Database.Database): void {
       resolved_at TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS task_dependencies (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      blocked_by_task_id TEXT NOT NULL,
+      reason TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      resolved_at TEXT
+    );
+
     CREATE TABLE IF NOT EXISTS artifacts (
       id TEXT PRIMARY KEY,
       task_id TEXT NOT NULL,
@@ -182,6 +193,11 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'blockers', 'status', "TEXT NOT NULL DEFAULT 'active'");
   ensureColumn(connection, 'blockers', 'updated_at', 'TEXT');
   ensureColumn(connection, 'blockers', 'resolved_at', 'TEXT');
+  ensureColumn(connection, 'task_dependencies', 'blocked_by_task_id', "TEXT NOT NULL DEFAULT ''");
+  ensureColumn(connection, 'task_dependencies', 'reason', 'TEXT');
+  ensureColumn(connection, 'task_dependencies', 'status', "TEXT NOT NULL DEFAULT 'active'");
+  ensureColumn(connection, 'task_dependencies', 'updated_at', 'TEXT');
+  ensureColumn(connection, 'task_dependencies', 'resolved_at', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'uri', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'content', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'note', 'TEXT');

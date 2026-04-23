@@ -82,6 +82,12 @@ export function deriveTaskPriorityLaneMap(params: {
     assignLane(task.id, 'unblock_or_decide');
   }
 
+  for (const task of params.tasks) {
+    if (task.activeDependency) {
+      assignLane(task.id, 'unblock_or_decide');
+    }
+  }
+
   for (const decision of params.decisions) {
     if (decision.status === 'pending') {
       assignLane(decision.taskId, 'unblock_or_decide');
@@ -105,6 +111,10 @@ export function deriveTaskDetailPriorityLane(task: TaskDetail): PriorityLane {
   }
 
   if (task.activeBlocker) {
+    return 'unblock_or_decide';
+  }
+
+  if (task.activeDependency) {
     return 'unblock_or_decide';
   }
 

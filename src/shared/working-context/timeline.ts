@@ -33,6 +33,14 @@ export type WorkingContextRecentChange =
       title?: string;
     }
   | {
+      kind: 'task_dependency_changed';
+      title?: string;
+    }
+  | {
+      kind: 'task_dependency_resolved';
+      title?: string;
+    }
+  | {
       kind: 'artifact_created';
       title?: string;
     }
@@ -217,6 +225,27 @@ export function interpretTaskTimelineEvent(
           title: typeof payload?.title === 'string' ? payload.title : undefined,
         },
       };
+    case 'task_dependency.created':
+    case 'task_dependency.updated':
+      return {
+        summary: `最近更新了任务依赖：${String(payload?.blockedByTaskTitle ?? '未命名上游任务')}。`,
+        objectAction: { label: null, targetType: null, targetId: null },
+        recentChange: {
+          kind: 'task_dependency_changed',
+          title:
+            typeof payload?.blockedByTaskTitle === 'string' ? payload.blockedByTaskTitle : undefined,
+        },
+      };
+    case 'task_dependency.resolved':
+      return {
+        summary: `最近解除任务依赖：${String(payload?.blockedByTaskTitle ?? '未命名上游任务')}。`,
+        objectAction: { label: null, targetType: null, targetId: null },
+        recentChange: {
+          kind: 'task_dependency_resolved',
+          title:
+            typeof payload?.blockedByTaskTitle === 'string' ? payload.blockedByTaskTitle : undefined,
+        },
+      };
     case 'artifact.created':
       return {
         summary: `最近生成了产物：${String(payload?.title ?? '未命名产物')}。`,
@@ -279,7 +308,11 @@ export function getTaskTimelineFollowUpActionLabel(type: string): string | null 
       return '优先处理风险';
     case 'blocker.created':
     case 'blocker.updated':
+    case 'task_dependency.created':
+    case 'task_dependency.updated':
       return '先解阻塞';
+    case 'task_dependency.resolved':
+      return '确认解除依赖';
     case 'artifact.created':
       return '基于产物继续推进';
     default:
@@ -295,6 +328,8 @@ export function getTaskTimelineLane(type: string): PriorityLane {
     case 'task.decision_deferred':
     case 'blocker.created':
     case 'blocker.updated':
+    case 'task_dependency.created':
+    case 'task_dependency.updated':
       return 'unblock_or_decide';
     case 'task.run_failed':
     case 'task.run_completed':
@@ -303,6 +338,7 @@ export function getTaskTimelineLane(type: string): PriorityLane {
     case 'source_context.created':
     case 'source_context.updated':
     case 'blocker.resolved':
+    case 'task_dependency.resolved':
       return 'continue_or_review';
     case 'task.waiting_changed':
     case 'waiting_item.created':
@@ -340,6 +376,9 @@ export function getTaskTimelinePriority(type: string): TaskTimelinePriority {
     case 'blocker.created':
     case 'blocker.updated':
     case 'blocker.resolved':
+    case 'task_dependency.created':
+    case 'task_dependency.updated':
+    case 'task_dependency.resolved':
     case 'process_template.selected':
       return 'p2';
     default:

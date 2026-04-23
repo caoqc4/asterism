@@ -7,6 +7,11 @@ import type {
   CreateBlockerInput,
   UpdateBlockerInput,
 } from '@shared/types/blocker';
+import type {
+  CreateTaskDependencyInput,
+  TaskDependencyRecord,
+  UpdateTaskDependencyInput,
+} from '@shared/types/task-dependency';
 import type { CreateDecisionInput, DecisionDraftRecord, DecisionRecord } from '@shared/types/decision';
 import type {
   ApplyProcessTemplateInput,
@@ -256,6 +261,10 @@ function formatTimelineBadge(type: string): string {
     case 'blocker.updated':
     case 'blocker.resolved':
       return '阻塞';
+    case 'task_dependency.created':
+    case 'task_dependency.updated':
+    case 'task_dependency.resolved':
+      return '依赖';
     case 'process_template.applied':
       return '方法';
     case 'process_template.removed':
@@ -301,6 +310,9 @@ function getTimelineToneClass(type: string): string {
     case 'blocker.created':
     case 'blocker.updated':
     case 'blocker.resolved':
+    case 'task_dependency.created':
+    case 'task_dependency.updated':
+    case 'task_dependency.resolved':
     case 'process_template.applied':
     case 'process_template.removed':
     case 'process_template.selected':
@@ -330,6 +342,9 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
     event.type === 'blocker.created' ||
     event.type === 'blocker.updated' ||
     event.type === 'blocker.resolved' ||
+    event.type === 'task_dependency.created' ||
+    event.type === 'task_dependency.updated' ||
+    event.type === 'task_dependency.resolved' ||
     event.type === 'artifact.created' ||
     event.type === 'task.risk_changed' ||
     event.type === 'task.next_step_changed' ||
@@ -514,6 +529,7 @@ type TasksPageProps = {
   onArchiveProcessTemplate: (id: string) => Promise<ProcessTemplateRecord>;
   onCreateBlocker: (input: CreateBlockerInput) => Promise<BlockerRecord>;
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
+  onCreateTaskDependency: (input: CreateTaskDependencyInput) => Promise<TaskDependencyRecord>;
   onDraftDecision: (taskId: string, note?: string | null) => Promise<DecisionDraftRecord>;
   onCreateProcessTemplate: (input: CreateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
   onCreateSourceContext: (input: CreateSourceContextInput) => Promise<SourceContextRecord>;
@@ -524,8 +540,10 @@ type TasksPageProps = {
   onCreateTask: (input: CreateTaskInput) => Promise<TaskListItemRecord>;
   onRemoveProcessTemplate: (bindingId: string) => Promise<AppliedProcessTemplateRecord>;
   onResolveBlocker: (id: string) => Promise<BlockerRecord>;
+  onResolveTaskDependency: (id: string) => Promise<TaskDependencyRecord>;
   onTriggerRun: (input: CreateRunInput) => Promise<void>;
   onUpdateBlocker: (input: UpdateBlockerInput) => Promise<BlockerRecord>;
+  onUpdateTaskDependency: (input: UpdateTaskDependencyInput) => Promise<TaskDependencyRecord>;
   onUpdateProcessTemplate: (input: UpdateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
   onUpdateSourceContext: (input: UpdateSourceContextInput) => Promise<SourceContextRecord>;
   onUpdateTask: (input: UpdateTaskInput) => Promise<TaskListItemRecord>;
@@ -547,6 +565,7 @@ export function TasksPage({
   onArchiveProcessTemplate,
   onCreateBlocker,
   onCreateDecision,
+  onCreateTaskDependency,
   onDraftDecision,
   onCreateProcessTemplate,
   onCreateSourceContext,
@@ -557,8 +576,10 @@ export function TasksPage({
   onCreateTask,
   onRemoveProcessTemplate,
   onResolveBlocker,
+  onResolveTaskDependency,
   onTriggerRun,
   onUpdateBlocker,
+  onUpdateTaskDependency,
   onUpdateProcessTemplate,
   onUpdateSourceContext,
   onUpdateTask,
@@ -587,6 +608,10 @@ export function TasksPage({
   const [blockerOwner, setBlockerOwner] = useState('');
   const [blockerSourceContextId, setBlockerSourceContextId] = useState('');
   const [blockerError, setBlockerError] = useState<string | null>(null);
+  const [dependencyEditingId, setDependencyEditingId] = useState<string | null>(null);
+  const [dependencyBlockedByTaskId, setDependencyBlockedByTaskId] = useState('');
+  const [dependencyReason, setDependencyReason] = useState('');
+  const [dependencyError, setDependencyError] = useState<string | null>(null);
   const [sourceContextEditingId, setSourceContextEditingId] = useState<string | null>(null);
   const [sourceContextTitle, setSourceContextTitle] = useState('');
   const [sourceContextKind, setSourceContextKind] = useState<SourceContextKind>('link');
@@ -611,11 +636,17 @@ export function TasksPage({
   const quickRunCardRef = useRef<HTMLFormElement | null>(null);
   const transitionCardRef = useRef<HTMLDivElement | null>(null);
   const blockerSectionRef = useRef<HTMLDivElement | null>(null);
+  const dependencySectionRef = useRef<HTMLDivElement | null>(null);
   const sourceContextSectionRef = useRef<HTMLDivElement | null>(null);
   const processContextSectionRef = useRef<HTMLDivElement | null>(null);
   const resumeCurrentBlocker = detail?.resumeCard.currentBlocker ?? {
     blockerId: null,
     title: '暂无当前阻塞项',
+    detail: null,
+  };
+  const resumeCurrentDependency = detail?.resumeCard.currentDependency ?? {
+    dependencyId: null,
+    title: '暂无任务依赖',
     detail: null,
   };
   const resumeLane = detail ? taskPriorityLanes.get(detail.id) : undefined;
@@ -755,6 +786,10 @@ export function TasksPage({
         setBlockerOwner('');
         setBlockerSourceContextId('');
         setBlockerError(null);
+        setDependencyEditingId(null);
+        setDependencyBlockedByTaskId('');
+        setDependencyReason('');
+        setDependencyError(null);
         setSourceContextEditingId(null);
         setSourceContextTitle('');
         setSourceContextKind('link');
@@ -973,6 +1008,78 @@ export function TasksPage({
 
     if (blockerEditingId === id) {
       resetBlockerForm();
+    }
+  }
+
+  function populateDependencyForm(item: TaskDependencyRecord) {
+    setDependencyEditingId(item.id);
+    setDependencyBlockedByTaskId(item.blockedByTaskId);
+    setDependencyReason(item.reason ?? '');
+    setDependencyError(null);
+  }
+
+  function resetDependencyForm() {
+    setDependencyEditingId(null);
+    setDependencyBlockedByTaskId('');
+    setDependencyReason('');
+    setDependencyError(null);
+  }
+
+  function focusDependencySection() {
+    if (typeof dependencySectionRef.current?.scrollIntoView === 'function') {
+      dependencySectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  async function handleSaveDependency(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!detail) {
+      return;
+    }
+
+    if (!dependencyBlockedByTaskId) {
+      setDependencyError('请先选择上游任务。');
+      return;
+    }
+
+    if (dependencyBlockedByTaskId === detail.id) {
+      setDependencyError('任务不能依赖自己。');
+      return;
+    }
+
+    setDependencyError(null);
+
+    if (dependencyEditingId) {
+      await onUpdateTaskDependency({
+        id: dependencyEditingId,
+        blockedByTaskId: dependencyBlockedByTaskId,
+        reason: dependencyReason,
+      });
+    } else {
+      await onCreateTaskDependency({
+        taskId: detail.id,
+        blockedByTaskId: dependencyBlockedByTaskId,
+        reason: dependencyReason,
+      });
+    }
+
+    await onRefresh();
+    setDetail(await window.api.getTaskDetail(detail.id));
+    resetDependencyForm();
+  }
+
+  async function handleResolveCurrentDependency(id: string) {
+    if (!detail) {
+      return;
+    }
+
+    await onResolveTaskDependency(id);
+    await onRefresh();
+    setDetail(await window.api.getTaskDetail(detail.id));
+
+    if (dependencyEditingId === id) {
+      resetDependencyForm();
     }
   }
 
@@ -1615,6 +1722,13 @@ export function TasksPage({
                           <p className="meta">{resumeCurrentBlocker.priorityReason}</p>
                         ) : null}
                       </div>
+                      <div className="resume-cell">
+                        <strong>Current Dependency</strong>
+                        <p className="meta">{resumeCurrentDependency.title}</p>
+                        {resumeCurrentDependency.detail ? (
+                          <p className="meta">{resumeCurrentDependency.detail}</p>
+                        ) : null}
+                      </div>
                       <div className="resume-cell resume-cell-source-lane">
                         <strong>Key Source</strong>
                         <p className="meta context-lane-meta">Material Shelf slice</p>
@@ -1668,6 +1782,15 @@ export function TasksPage({
                           type="button"
                         >
                           打开 Current Blocker
+                        </button>
+                      ) : null}
+                      {resumeCurrentDependency.dependencyId ? (
+                        <button
+                          className="ghost-button timeline-action"
+                          onClick={focusDependencySection}
+                          type="button"
+                        >
+                          打开 Task Dependency
                         </button>
                       ) : null}
                       <button
@@ -1778,6 +1901,41 @@ export function TasksPage({
                             type="button"
                           >
                             解除阻塞
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {detail.activeDependency ? (
+                  <div className="transition-group detail-card-group">
+                    <h3>Current Dependency</h3>
+                    <p className="meta">这里只显示当前上游任务依赖，完整维护下沉到 Context Studio。</p>
+                    <div className="timeline-list">
+                      <div className="timeline-item timeline-item-default">
+                        <div className="task-row">
+                          <strong>{detail.activeDependency.blockedByTaskTitle ?? '未命名上游任务'}</strong>
+                          <span className="signal-pill timeline-badge timeline-item-default">task</span>
+                        </div>
+                        {detail.activeDependency.reason ? (
+                          <p className="meta">{detail.activeDependency.reason}</p>
+                        ) : null}
+                        <p className="meta">started at {detail.activeDependency.createdAt}</p>
+                        <div className="timeline-actions">
+                          <button
+                            className="ghost-button timeline-action"
+                            onClick={() => populateDependencyForm(detail.activeDependency!)}
+                            type="button"
+                          >
+                            编辑依赖
+                          </button>
+                          <button
+                            className="ghost-button timeline-action"
+                            onClick={() => void handleResolveCurrentDependency(detail.activeDependency!.id)}
+                            type="button"
+                          >
+                            解除依赖
                           </button>
                         </div>
                       </div>
@@ -2296,6 +2454,93 @@ export function TasksPage({
                       <button type="submit">{blockerEditingId ? '保存阻塞项' : '新增阻塞项'}</button>
                       {blockerEditingId ? (
                         <button className="ghost-button" onClick={resetBlockerForm} type="button">
+                          取消编辑
+                        </button>
+                      ) : null}
+                    </div>
+                  </form>
+                </div>
+
+                <div className="transition-group detail-card-group" ref={dependencySectionRef}>
+                  <h3>Task Dependency</h3>
+                  <p className="meta">这一层管理“被哪条任务卡住”的关系；上方 Resume Card 和 Current Snapshot 只抽当前依赖切片。</p>
+                  <div className="studio-section studio-section-default-lane">
+                    <div className="studio-section-head">
+                      <strong className="context-lane-heading">Current Dependency</strong>
+                      <p className="meta">当前任务依赖的上游任务。</p>
+                    </div>
+                    <div className="timeline-list">
+                      {detail.activeDependency ? (
+                        <div className="timeline-item timeline-item-default">
+                          <div className="task-row">
+                            <strong>{detail.activeDependency.blockedByTaskTitle ?? '未命名上游任务'}</strong>
+                            <span className="signal-pill timeline-badge timeline-item-default">task</span>
+                          </div>
+                          {detail.activeDependency.reason ? (
+                            <p className="meta">{detail.activeDependency.reason}</p>
+                          ) : null}
+                          <p className="meta">started at {detail.activeDependency.createdAt}</p>
+                          <div className="timeline-actions">
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => populateDependencyForm(detail.activeDependency!)}
+                              type="button"
+                            >
+                              编辑依赖
+                            </button>
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => void handleResolveCurrentDependency(detail.activeDependency!.id)}
+                              type="button"
+                            >
+                              解除依赖
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="meta">当前任务还没有 active dependency。</p>
+                      )}
+                    </div>
+                  </div>
+                  <form className="stack studio-form" onSubmit={handleSaveDependency}>
+                    <div className="studio-section-head">
+                      <strong>{dependencyEditingId ? 'Edit Dependency' : 'Add Dependency'}</strong>
+                      <p className="meta">把“被另一条任务卡住”的关系单独对象化，而不是继续散在阻塞或等待说明里。</p>
+                    </div>
+                    <label>
+                      上游任务
+                      <select
+                        value={dependencyBlockedByTaskId}
+                        onChange={(event) => {
+                          setDependencyBlockedByTaskId(event.target.value);
+                          if (dependencyError) {
+                            setDependencyError(null);
+                          }
+                        }}
+                      >
+                        <option value="">请选择上游任务</option>
+                        {tasks
+                          .filter((item) => !detail || item.id !== detail.id)
+                          .map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.title}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                    <label>
+                      依赖说明
+                      <textarea
+                        rows={2}
+                        value={dependencyReason}
+                        onChange={(event) => setDependencyReason(event.target.value)}
+                      />
+                    </label>
+                    {dependencyError ? <p className="meta">{dependencyError}</p> : null}
+                    <div className="timeline-actions">
+                      <button type="submit">{dependencyEditingId ? '保存依赖' : '新增依赖'}</button>
+                      {dependencyEditingId ? (
+                        <button className="ghost-button" onClick={resetDependencyForm} type="button">
                           取消编辑
                         </button>
                       ) : null}

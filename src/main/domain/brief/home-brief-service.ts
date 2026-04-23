@@ -15,6 +15,7 @@ import { DecisionRepository } from '../../db/repositories/decision-repository.js
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
 import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
+import { TaskDependencyRepository } from '../../db/repositories/task-dependency-repository.js';
 import { TaskProcessBindingRepository } from '../../db/repositories/task-process-binding-repository.js';
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
 import type {
@@ -383,6 +384,7 @@ export class HomeBriefService {
     private readonly briefSnapshotRepository: BriefSnapshotRepository,
     private readonly getSchedulerStatus: () => SchedulerService | null,
     private readonly taskProcessBindingRepository: TaskProcessBindingRepository | null = null,
+    private readonly taskDependencyRepository: TaskDependencyRepository | null = null,
   ) {}
 
   private async buildProcessTemplateCandidates(
@@ -470,6 +472,10 @@ export class HomeBriefService {
         currentStateParts.push(`阻塞：${task.activeBlocker.title}`);
       }
 
+      if (task.activeDependency?.blockedByTaskTitle) {
+        currentStateParts.push(`依赖：${task.activeDependency.blockedByTaskTitle}`);
+      }
+
       if (task.riskLevel !== 'none') {
         currentStateParts.push(
           `风险：${task.riskLevel}${task.riskNote ? ` · ${task.riskNote}` : ''}`,
@@ -486,6 +492,11 @@ export class HomeBriefService {
               sourceContextId: task.activeBlocker.sourceContextId,
             }
           : null,
+        activeDependency: task.activeDependency
+          ? {
+              blockedByTaskTitle: task.activeDependency.blockedByTaskTitle,
+            }
+          : null,
         taskState: task.state,
       });
 
@@ -499,6 +510,7 @@ export class HomeBriefService {
         riskNote: task.riskNote,
         blockerTitle: task.activeBlocker?.title ?? null,
         blockerCreatedAt: task.activeBlocker?.createdAt ?? null,
+        dependencyTitle: task.activeDependency?.blockedByTaskTitle ?? null,
         keySourceTitle: keySource?.title ?? null,
         recentChange: latestChange.recentChange,
       });
@@ -585,6 +597,15 @@ export class HomeBriefService {
       } else if (task.activeBlocker) {
         contextAction = {
           label: isStaleBlocker(task.activeBlocker.createdAt) ? '升级处理阻塞项' : '跟进阻塞项',
+          intent: {
+            type: 'focus_next_step',
+            focusArea: 'detail',
+            prefillNextStep: nextSuggestedMove,
+          },
+        };
+      } else if (task.activeDependency?.blockedByTaskTitle) {
+        contextAction = {
+          label: '推动上游任务',
           intent: {
             type: 'focus_next_step',
             focusArea: 'detail',
@@ -686,12 +707,17 @@ export class HomeBriefService {
       ? await this.blockerRepository.listActiveForTasks(tasks.map((task) => task.id))
       : [];
     const blockerByTaskId = new Map(activeBlockers.map((item) => [item.taskId, item]));
+    const activeDependencies = this.taskDependencyRepository
+      ? await this.taskDependencyRepository.listActiveForTasks(tasks.map((task) => task.id))
+      : [];
+    const dependencyByTaskId = new Map(activeDependencies.map((item) => [item.taskId, item]));
 
     return Promise.all(
       tasks.map(async (task) => ({
         ...task,
         activeWaitingItem: await this.waitingItemRepository.getActiveForTask(task.id),
         activeBlocker: blockerByTaskId.get(task.id) ?? null,
+        activeDependency: dependencyByTaskId.get(task.id) ?? null,
       })),
     );
   }
@@ -706,6 +732,7 @@ export class HomeBriefService {
       waitingReason: task.waitingReason,
       activeWaitingItem: task.activeWaitingItem,
       activeBlocker: task.activeBlocker,
+      activeDependency: task.activeDependency,
       riskLevel: task.riskLevel,
       riskNote: task.riskNote,
     };

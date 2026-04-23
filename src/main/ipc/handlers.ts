@@ -2,6 +2,10 @@ import electron from 'electron';
 
 import type { PingResponse } from '../../shared/types/ipc.js';
 import type { CreateBlockerInput, UpdateBlockerInput } from '../../shared/types/blocker.js';
+import type {
+  CreateTaskDependencyInput,
+  UpdateTaskDependencyInput,
+} from '../../shared/types/task-dependency.js';
 import type { CreateDecisionInput, DecisionActionInput, DraftDecisionInput } from '../../shared/types/decision.js';
 import type {
   ApplyProcessTemplateInput,
@@ -90,6 +94,27 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('blocker:resolve', async (_event, id: string) => {
     const resolved = await getServices().taskService.resolveBlocker(id);
     emitAppEvent('task.changed', resolved.taskId);
+    return resolved;
+  });
+
+  ipcMain.handle('taskDependency:create', async (_event, input: CreateTaskDependencyInput) => {
+    const created = await getServices().taskService.createTaskDependency(input);
+    emitAppEvent('task.changed', created.taskId);
+    emitAppEvent('task.changed', created.blockedByTaskId);
+    return created;
+  });
+
+  ipcMain.handle('taskDependency:update', async (_event, input: UpdateTaskDependencyInput) => {
+    const updated = await getServices().taskService.updateTaskDependency(input);
+    emitAppEvent('task.changed', updated.taskId);
+    emitAppEvent('task.changed', updated.blockedByTaskId);
+    return updated;
+  });
+
+  ipcMain.handle('taskDependency:resolve', async (_event, id: string) => {
+    const resolved = await getServices().taskService.resolveTaskDependency(id);
+    emitAppEvent('task.changed', resolved.taskId);
+    emitAppEvent('task.changed', resolved.blockedByTaskId);
     return resolved;
   });
 

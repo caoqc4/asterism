@@ -7,6 +7,7 @@ import { BlockerRepository } from '../db/repositories/blocker-repository.js';
 import { RunRepository } from '../db/repositories/run-repository.js';
 import { ProcessTemplateRepository } from '../db/repositories/process-template-repository.js';
 import { SourceContextRepository } from '../db/repositories/source-context-repository.js';
+import { TaskDependencyRepository } from '../db/repositories/task-dependency-repository.js';
 import { TaskRepository } from '../db/repositories/task-repository.js';
 import { TaskProcessBindingRepository } from '../db/repositories/task-process-binding-repository.js';
 import { WaitingItemRepository } from '../db/repositories/waiting-item-repository.js';
@@ -26,6 +27,7 @@ const decisionRepository = new DecisionRepository();
 const runRepository = new RunRepository();
 const artifactRepository = new ArtifactRepository();
 const blockerRepository = new BlockerRepository();
+const taskDependencyRepository = new TaskDependencyRepository();
 const sourceContextRepository = new SourceContextRepository();
 const processTemplateRepository = new ProcessTemplateRepository();
 const taskProcessBindingRepository = new TaskProcessBindingRepository();
@@ -43,6 +45,7 @@ const homeBriefService = new HomeBriefService(
   briefSnapshotRepository,
   () => schedulerService,
   taskProcessBindingRepository,
+  taskDependencyRepository,
 );
 const textExecutor = new TextExecutor();
 const briefExecutor = new BriefExecutor();
@@ -63,6 +66,7 @@ const services = {
   briefSnapshotRepository,
   waitingItemRepository,
   blockerRepository,
+  taskDependencyRepository,
   artifactRepository,
   sourceContextRepository,
   processTemplateRepository,
@@ -78,6 +82,7 @@ const services = {
     processTemplateRepository,
     taskProcessBindingRepository,
     blockerRepository,
+    taskDependencyRepository,
   ),
   decisionService: null as unknown as DecisionService,
   runService: null as unknown as RunService,

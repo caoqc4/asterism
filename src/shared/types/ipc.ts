@@ -10,6 +10,11 @@ import type {
   UpdateBlockerInput,
 } from './blocker.js';
 import type {
+  CreateTaskDependencyInput,
+  TaskDependencyRecord,
+  UpdateTaskDependencyInput,
+} from './task-dependency.js';
+import type {
   CreateDecisionInput,
   DecisionActionInput,
   DecisionDraftRecord,
@@ -52,6 +57,9 @@ export type ElectronApi = {
   createBlocker: (input: CreateBlockerInput) => Promise<BlockerRecord>;
   updateBlocker: (input: UpdateBlockerInput) => Promise<BlockerRecord>;
   resolveBlocker: (id: string) => Promise<BlockerRecord>;
+  createTaskDependency: (input: CreateTaskDependencyInput) => Promise<TaskDependencyRecord>;
+  updateTaskDependency: (input: UpdateTaskDependencyInput) => Promise<TaskDependencyRecord>;
+  resolveTaskDependency: (id: string) => Promise<TaskDependencyRecord>;
   createSourceContext: (input: CreateSourceContextInput) => Promise<SourceContextRecord>;
   updateSourceContext: (input: UpdateSourceContextInput) => Promise<SourceContextRecord>;
   archiveSourceContext: (id: string) => Promise<SourceContextRecord>;

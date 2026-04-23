@@ -4,6 +4,7 @@ import type { BriefSnapshotRecord } from './brief-snapshot.js';
 import type { ProcessTemplateKind } from './process-template.js';
 import type { SchedulerStatus } from './scheduler.js';
 import type { DecisionRecord } from './decision.js';
+import type { TaskDependencyRecord } from './task-dependency.js';
 import type {
   ResumeCurrentMethodSliceRecord,
   ResumeKeySourceSliceRecord,
@@ -102,6 +103,7 @@ export type HomeTaskSliceRecord = Pick<
 > & {
   activeWaitingItem?: WaitingItemRecord | null;
   activeBlocker?: BlockerRecord | null;
+  activeDependency?: TaskDependencyRecord | null;
 };
 
 export type BriefProcessTemplateCandidate = {

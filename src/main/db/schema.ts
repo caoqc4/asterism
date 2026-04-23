@@ -76,6 +76,17 @@ export const blockers = sqliteTable('blockers', {
   resolvedAt: text('resolved_at'),
 });
 
+export const taskDependencies = sqliteTable('task_dependencies', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull(),
+  blockedByTaskId: text('blocked_by_task_id').notNull(),
+  reason: text('reason'),
+  status: text('status').notNull().default('active'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  resolvedAt: text('resolved_at'),
+});
+
 export const artifacts = sqliteTable('artifacts', {
   id: text('id').primaryKey(),
   taskId: text('task_id').notNull(),

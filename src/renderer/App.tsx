@@ -6,6 +6,10 @@ import type {
   UpdateBlockerInput,
 } from '@shared/types/blocker';
 import type {
+  CreateTaskDependencyInput,
+  UpdateTaskDependencyInput,
+} from '@shared/types/task-dependency';
+import type {
   HomeActivityRecord,
   HomeBriefData,
   HomeSourceContextRecord,
@@ -329,6 +333,45 @@ export function App() {
     return resolved;
   }
 
+  async function handleCreateTaskDependency(input: CreateTaskDependencyInput) {
+    const created = await window.api.createTaskDependency(input);
+    setTasks((current) =>
+      current.map((task) =>
+        task.id === created.taskId || task.id === created.blockedByTaskId
+          ? { ...task, updatedAt: created.updatedAt }
+          : task,
+      ),
+    );
+    setBriefData(await window.api.getHomeBrief());
+    return created;
+  }
+
+  async function handleUpdateTaskDependency(input: UpdateTaskDependencyInput) {
+    const updated = await window.api.updateTaskDependency(input);
+    setTasks((current) =>
+      current.map((task) =>
+        task.id === updated.taskId || task.id === updated.blockedByTaskId
+          ? { ...task, updatedAt: updated.updatedAt }
+          : task,
+      ),
+    );
+    setBriefData(await window.api.getHomeBrief());
+    return updated;
+  }
+
+  async function handleResolveTaskDependency(id: string) {
+    const resolved = await window.api.resolveTaskDependency(id);
+    setTasks((current) =>
+      current.map((task) =>
+        task.id === resolved.taskId || task.id === resolved.blockedByTaskId
+          ? { ...task, updatedAt: resolved.updatedAt }
+          : task,
+      ),
+    );
+    setBriefData(await window.api.getHomeBrief());
+    return resolved;
+  }
+
   async function handleResolveBlockerFromHome(task: HomeBriefData['blockerTasks'][number]) {
     if (!task.activeBlocker) {
       return;
@@ -623,6 +666,7 @@ export function App() {
             onArchiveProcessTemplate={handleArchiveProcessTemplate}
             onCreateBlocker={handleCreateBlocker}
             onCreateDecision={handleCreateDecision}
+            onCreateTaskDependency={handleCreateTaskDependency}
             onDraftDecision={handleDraftDecision}
             onCreateProcessTemplate={handleCreateProcessTemplate}
             onCreateTask={handleCreateTask}
@@ -633,9 +677,11 @@ export function App() {
             onRefresh={loadShellData}
             onRemoveProcessTemplate={handleRemoveProcessTemplate}
             onResolveBlocker={handleResolveBlocker}
+            onResolveTaskDependency={handleResolveTaskDependency}
             onTransitionTask={handleTransitionTask}
             onTriggerRun={handleTriggerRun}
             onUpdateBlocker={handleUpdateBlocker}
+            onUpdateTaskDependency={handleUpdateTaskDependency}
             onUpdateProcessTemplate={handleUpdateProcessTemplate}
             onUpdateSourceContext={handleUpdateSourceContext}
             onUpdateTask={handleUpdateTask}

@@ -75,6 +75,8 @@ Covered today:
   source-context creation, updates, archiving, and active-task listing behavior
 - `BlockerRepository`
   active blocker creation, updates, resolution, and per-task active lookup behavior
+- `TaskDependencyRepository`
+  active task-dependency creation, updates, resolution, and per-task active lookup behavior
 - `ProcessTemplateRepository`
   reusable process-template creation, updates, archive behavior, and active listing
 - `TaskProcessBindingRepository`
