@@ -34,7 +34,31 @@ function getActivityActionLabel(activity: HomeActivityRecord): string | null {
     return '恢复任务推进';
   }
 
+  if (activity.sourceType === 'blocker' && activity.status === 'source_updated') {
+    return '重新判断阻塞';
+  }
+
   return null;
+}
+
+function getActivityStatusLabel(activity: HomeActivityRecord): string {
+  if (activity.sourceType === 'blocker' && activity.status === 'source_updated') {
+    return 'source updated';
+  }
+
+  return activity.status;
+}
+
+function getActivityTitle(activity: HomeActivityRecord): string {
+  if (activity.sourceType === 'blocker' && activity.status === 'source_updated') {
+    return `${activity.title} blocker`;
+  }
+
+  return activity.sourceType === 'decision'
+    ? activity.title
+    : activity.sourceType === 'run'
+      ? `${activity.title} run`
+      : `${activity.title} blocker`;
 }
 
 type HomePageProps = {
@@ -470,13 +494,9 @@ export function HomePage({
                 >
                   <div className="task-row">
                     <strong>
-                      {event.sourceType === 'decision'
-                        ? event.title
-                        : event.sourceType === 'run'
-                          ? `${event.title} run`
-                          : `${event.title} blocker`}
+                      {getActivityTitle(event)}
                     </strong>
-                    <span className="status">{event.status}</span>
+                    <span className="status">{getActivityStatusLabel(event)}</span>
                   </div>
                   <p className="meta">task: {event.taskTitle}</p>
                   <p className="meta">{event.updatedAt}</p>
@@ -498,6 +518,14 @@ export function HomePage({
                       type="button"
                     >
                       {event.sourceType === 'decision' ? '查看 Decision' : '查看 Run'}
+                    </button>
+                  ) : event.relatedSourceContextId ? (
+                    <button
+                      className="ghost-button"
+                      onClick={() => onOpenActivityObject(event)}
+                      type="button"
+                    >
+                      查看来源
                     </button>
                   ) : null}
                 </div>

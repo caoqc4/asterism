@@ -42,6 +42,7 @@ export type HomeActivityRecord = {
   id: string;
   sourceType: 'decision' | 'run' | 'blocker';
   sourceId: string;
+  relatedSourceContextId?: string | null;
   taskId: string;
   taskTitle: string;
   title: string;

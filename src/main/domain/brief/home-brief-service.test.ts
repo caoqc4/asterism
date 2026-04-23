@@ -850,6 +850,75 @@ describe('HomeBriefService', () => {
     vi.useRealTimers();
   });
 
+  it('surfaces blocker-linked source updates as recent blocker activity', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_blocker_source_activity',
+            title: 'Blocker source activity task',
+            state: 'waiting_external',
+            nextStep: null,
+          }),
+        ]),
+        getDetail: vi.fn().mockResolvedValue(
+          buildTimelineDetail([
+            {
+              type: 'source_context.updated',
+              payload: {
+                sourceContextId: 'source_context_blocker_activity',
+                title: 'Updated source memo',
+              },
+            },
+          ]),
+        ),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([
+          buildBlocker({
+            id: 'blocker_activity_source',
+            taskId: 'task_blocker_source_activity',
+            title: 'Need revised outreach list',
+            sourceContextId: 'source_context_blocker_activity',
+          }),
+        ]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+      null,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.recentActivity).toContainEqual(
+      expect.objectContaining({
+        sourceType: 'blocker',
+        sourceId: 'blocker_activity_source',
+        relatedSourceContextId: 'source_context_blocker_activity',
+        taskId: 'task_blocker_source_activity',
+        title: 'Need revised outreach list',
+        status: 'source_updated',
+      }),
+    );
+  });
+
   it('orders blocked tasks and blocker-driven actions by blocker age', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-10T00:00:00.000Z'));

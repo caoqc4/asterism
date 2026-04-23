@@ -582,6 +582,7 @@ export class HomeBriefService {
     taskTimelines: Array<{
       taskId: string;
       taskTitle: string;
+      activeBlocker: TaskListItemRecord['activeBlocker'];
       timeline: TimelineEventRecord[];
     }>,
   ): HomeActivityRecord[] {
@@ -619,17 +620,41 @@ export class HomeBriefService {
           .filter(
             (event: TimelineEventRecord) =>
               event.type === 'blocker.created' ||
-              event.type === 'blocker.resolved',
+              event.type === 'blocker.resolved' ||
+              (event.type === 'source_context.updated' &&
+                task.activeBlocker?.sourceContextId &&
+                (() => {
+                  const payload = event.payload
+                    ? (safeJsonParse(event.payload) as Record<string, unknown> | null)
+                    : null;
+                  return payload?.sourceContextId === task.activeBlocker?.sourceContextId;
+                })()),
           )
           .map((event: TimelineEventRecord) => {
             const payload = event.payload
               ? (safeJsonParse(event.payload) as Record<string, unknown> | null)
               : null;
 
+            if (event.type === 'source_context.updated' && task.activeBlocker) {
+              return {
+                id: `${event.type}:${task.activeBlocker.id}:${String(payload?.sourceContextId ?? event.id)}`,
+                sourceType: 'blocker' as const,
+                sourceId: task.activeBlocker.id,
+                relatedSourceContextId: String(payload?.sourceContextId ?? ''),
+                taskId: task.taskId,
+                taskTitle: task.taskTitle,
+                title: task.activeBlocker.title,
+                status: 'source_updated',
+                updatedAt: event.createdAt,
+              };
+            }
+
             return {
               id: `${event.type}:${String(payload?.blockerId ?? event.id)}`,
               sourceType: 'blocker' as const,
               sourceId: String(payload?.blockerId ?? event.id),
+              relatedSourceContextId:
+                typeof payload?.sourceContextId === 'string' ? payload.sourceContextId : null,
               taskId: task.taskId,
               taskTitle: task.taskTitle,
               title: String(payload?.title ?? '阻塞项'),
@@ -719,6 +744,7 @@ export class HomeBriefService {
       tasks.map(async (task) => ({
         taskId: task.id,
         taskTitle: task.title,
+        activeBlocker: task.activeBlocker,
         timeline: (await this.taskRepository.getDetail(task.id))?.timeline ?? [],
       })),
     );

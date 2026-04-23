@@ -421,6 +421,16 @@ export function App() {
     }
 
     if (activity.sourceType === 'blocker') {
+      if (activity.status === 'source_updated') {
+        handleOpenTask(activity.taskId, {
+          type: activity.relatedSourceContextId ? 'focus_source_context' : 'focus_next_step',
+          focusArea: 'detail',
+          sourceContextId: activity.relatedSourceContextId ?? undefined,
+          prefillNextStep: `基于来源更新重新判断是否解除阻塞：${activity.title}`,
+        });
+        return;
+      }
+
       if (activity.status === 'resolved') {
         handleOpenTask(activity.taskId, {
           type: 'focus_next_step',
@@ -457,6 +467,16 @@ export function App() {
   function handleOpenActivityObject(activity: HomeActivityRecord) {
     if (activity.sourceType === 'decision') {
       handleOpenDecision(activity.sourceId);
+      return;
+    }
+
+    if (activity.sourceType === 'blocker' && activity.relatedSourceContextId) {
+      handleOpenTask(activity.taskId, {
+        type: 'focus_source_context',
+        focusArea: 'detail',
+        sourceContextId: activity.relatedSourceContextId,
+        prefillNextStep: `基于来源更新重新判断是否解除阻塞：${activity.title}`,
+      });
       return;
     }
 

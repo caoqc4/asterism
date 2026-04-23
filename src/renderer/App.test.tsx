@@ -195,6 +195,7 @@ function buildActivity(
     id: partial.id ?? 'activity_1',
     sourceType: partial.sourceType ?? 'run',
     sourceId: partial.sourceId ?? 'run_1',
+    relatedSourceContextId: partial.relatedSourceContextId ?? null,
     taskId: partial.taskId ?? 'task_1',
     taskTitle: partial.taskTitle ?? 'Task',
     title: partial.title ?? 'draft',
@@ -3768,6 +3769,63 @@ describe('App UI flow', () => {
 
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
       '阻塞项已解除，继续推进：Legal approval pending',
+    );
+  });
+
+  it('routes blocker source-updated activity into blocker re-evaluation from home', async () => {
+    const user = userEvent.setup();
+
+    const blockerSourceTask = buildTaskRecord({
+      id: 'task_blocker_activity_source_updated',
+      title: 'Blocker source updated task',
+      state: 'waiting_external',
+      nextStep: null,
+    });
+
+    const blockerActivityApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([blockerSourceTask]),
+      getTaskDetail: vi.fn().mockResolvedValue({
+        ...buildTaskDetail(blockerSourceTask),
+        sourceContexts: [
+          buildSourceContext({
+            id: 'source_context_blocker_activity_home',
+            title: 'Partner master sheet',
+          }),
+        ],
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 1,
+        recentTasks: [blockerSourceTask],
+        recentActivity: [
+          buildActivity({
+            id: 'blocker_activity_source_updated',
+            sourceType: 'blocker',
+            sourceId: 'blocker_activity_source_updated_id',
+            relatedSourceContextId: 'source_context_blocker_activity_home',
+            taskId: blockerSourceTask.id,
+            taskTitle: blockerSourceTask.title,
+            title: 'Need revised outreach list',
+            status: 'source_updated',
+          }),
+        ],
+      }),
+    };
+
+    window.api = blockerActivityApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: '重新判断阻塞' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Blocker source updated task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('来源标题') as HTMLInputElement).value).toBe('Partner master sheet');
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '基于来源更新重新判断是否解除阻塞：Need revised outreach list',
     );
   });
 
