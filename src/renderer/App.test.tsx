@@ -1737,10 +1737,12 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /artifact task/i }));
     await screen.findByRole('heading', { name: 'Artifact task' });
 
-    expect(screen.getByRole('heading', { name: 'Recent Artifact' })).toBeTruthy();
-    expect(screen.getByText('draft output')).toBeTruthy();
-    expect(screen.getByText('source: run · run_artifact_1')).toBeTruthy();
-    expect(screen.getByText('Drafted message to the customer.')).toBeTruthy();
+    const artifactSection = screen.getByRole('heading', { name: 'Recent Artifact' }).closest('.detail-card-group');
+
+    expect(artifactSection).toBeTruthy();
+    expect(within(artifactSection as HTMLElement).getByText('draft output')).toBeTruthy();
+    expect(within(artifactSection as HTMLElement).getByText('source: run · run_artifact_1')).toBeTruthy();
+    expect(within(artifactSection as HTMLElement).getByText('Drafted message to the customer.')).toBeTruthy();
   });
 
   it('shows recent artifacts on the home brief', async () => {
@@ -5661,6 +5663,80 @@ describe('App UI flow', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Current Completion Criteria' })).toBeTruthy();
+  });
+
+  it('surfaces recent decision, run, and artifact results as completion evidence', async () => {
+    const user = userEvent.setup();
+
+    const completionCriteria = [
+      buildCompletionCriteria({
+        id: 'criteria_open_1',
+        taskId: riskTask.id,
+        text: 'Approve escalation path',
+      }),
+    ];
+
+    const evidenceDetail: TaskDetail = {
+      ...buildTaskDetail(riskTask),
+      completionCriteria,
+      artifacts: [
+        buildArtifact({
+          taskId: riskTask.id,
+          sourceId: 'run_completion_1',
+          title: 'Approve escalation draft',
+          content: 'Approve escalation path for the owner.',
+        }),
+      ],
+    };
+
+    const evidenceApi: ElectronApi = {
+      ...mockApi,
+      getTaskDetail: vi.fn(async (taskId: string) =>
+        taskId === riskTask.id ? evidenceDetail : taskDetails[taskId] ?? null,
+      ),
+      listDecisions: vi.fn().mockResolvedValue([
+        ...decisions,
+        {
+          id: 'decision_completion_1',
+          taskId: riskTask.id,
+          title: 'Approve escalation path',
+          status: 'approved',
+          createdAt: '2026-01-04T00:00:00.000Z',
+          updatedAt: '2026-01-04T01:00:00.000Z',
+        },
+      ]),
+      listRuns: vi.fn().mockResolvedValue([
+        ...runs,
+        buildRunRecord({
+          id: 'run_completion_1',
+          taskId: riskTask.id,
+          type: 'draft',
+          status: 'completed',
+          instructions: 'Approve escalation path',
+          output: 'Approve escalation path for the owner.',
+          updatedAt: '2026-01-04T02:00:00.000Z',
+        }),
+      ]),
+    };
+
+    window.api = evidenceApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /high risk task/i }));
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    const evidenceSection = screen
+      .getByRole('heading', { name: 'Potential Completion Evidence' })
+      .closest('.detail-card-group');
+
+    expect(evidenceSection).toBeTruthy();
+    expect(within(evidenceSection as HTMLElement).getByText('Approve escalation path')).toBeTruthy();
+    expect(within(evidenceSection as HTMLElement).getByText('Approve escalation draft')).toBeTruthy();
+    expect(
+      within(evidenceSection as HTMLElement).getAllByText(/可能对应：Approve escalation path/).length,
+    ).toBeGreaterThan(0);
   });
 
   it('opens newly created tasks in clarify mode and focuses the new task detail', async () => {

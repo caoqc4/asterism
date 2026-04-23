@@ -99,6 +99,16 @@ const transitionOptions: Record<TaskState, TaskState[]> = {
 };
 
 const TIMELINE_PREVIEW_COUNT = 5;
+const COMPLETION_EVIDENCE_LIMIT = 3;
+
+type CompletionEvidenceCard = {
+  id: string;
+  type: 'decision' | 'run' | 'artifact';
+  title: string;
+  detail: string;
+  matchedCriteria: string[];
+  targetId: string | null;
+};
 
 function isEarlyTask(task: Pick<TaskListItemRecord, 'state'>): boolean {
   return task.state === 'captured' || task.state === 'triaged';
@@ -196,6 +206,47 @@ function safeParsePayload(payload: string | null): Record<string, unknown> | nul
   } catch {
     return null;
   }
+}
+
+function normalizeCompletionText(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function buildCompletionKeywords(value: string): string[] {
+  return normalizeCompletionText(value)
+    .split(/[^a-z0-9\u4e00-\u9fff]+/i)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2);
+}
+
+function findMatchedCompletionCriteria(
+  criteria: CompletionCriteriaRecord[],
+  evidenceTexts: string[],
+): string[] {
+  const openCriteria = criteria.filter((item) => item.status === 'open');
+
+  if (openCriteria.length === 0) {
+    return [];
+  }
+
+  if (openCriteria.length === 1) {
+    return [openCriteria[0]!.text];
+  }
+
+  const haystack = evidenceTexts.map(normalizeCompletionText).join(' ');
+
+  const matched = openCriteria.filter((item) => {
+    const normalized = normalizeCompletionText(item.text);
+
+    if (normalized && haystack.includes(normalized)) {
+      return true;
+    }
+
+    const keywords = buildCompletionKeywords(item.text);
+    return keywords.some((keyword) => haystack.includes(keyword));
+  });
+
+  return matched.map((item) => item.text);
 }
 
 function formatSourceContextKind(kind: SourceContextKind): string {
@@ -732,6 +783,59 @@ export function TasksPage({
     ? decisions.filter((decision) => decision.taskId === detail.id)
     : [];
   const taskRuns = detail ? runs.filter((run) => run.taskId === detail.id) : [];
+  const completionEvidenceCards: CompletionEvidenceCard[] = detail
+    ? [
+        ...taskDecisions
+          .filter((decision) => decision.status === 'approved')
+          .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+          .slice(0, 1)
+          .map((decision) => ({
+            id: `decision:${decision.id}`,
+            type: 'decision' as const,
+            title: decision.title,
+            detail: '这条拍板结果可能说明某些完成标准已经具备。',
+            matchedCriteria: findMatchedCompletionCriteria(detail.completionCriteria, [
+              decision.title,
+              decision.status,
+            ]),
+            targetId: decision.id,
+          })),
+        ...taskRuns
+          .filter((run) => run.status === 'completed' || run.status === 'failed')
+          .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+          .slice(0, 1)
+          .map((run) => ({
+            id: `run:${run.id}`,
+            type: 'run' as const,
+            title: `${run.type} · ${run.status}`,
+            detail:
+              run.status === 'completed'
+                ? '这次执行结果值得先对照当前未满足的完成标准。'
+                : '这次执行虽然失败，但也可能说明某条完成标准仍未达成。',
+            matchedCriteria: findMatchedCompletionCriteria(detail.completionCriteria, [
+              run.type,
+              run.status,
+              run.instructions ?? '',
+              run.output ?? '',
+              run.failureReason ?? '',
+            ]),
+            targetId: run.id,
+          })),
+        ...detail.artifacts
+          .slice(0, 1)
+          .map((artifact) => ({
+            id: `artifact:${artifact.id}`,
+            type: 'artifact' as const,
+            title: artifact.title,
+            detail: '这份最近产物可能已经覆盖某条完成标准，值得先核对。',
+            matchedCriteria: findMatchedCompletionCriteria(detail.completionCriteria, [
+              artifact.title,
+              artifact.content,
+            ]),
+            targetId: artifact.sourceType === 'run' ? artifact.sourceId : null,
+          })),
+      ].slice(0, COMPLETION_EVIDENCE_LIMIT)
+    : [];
   const transitionStates = detail
     ? orderTaskTransitions({
         currentState: detail.state,
@@ -2449,6 +2553,67 @@ export function TasksPage({
                         <p className="meta">还没有退出条件对象，当前不适合直接凭感觉判断已完成。</p>
                       )}
                     </div>
+                  </div>
+                </div>
+
+                <div className="transition-group detail-card-group">
+                  <h3>Potential Completion Evidence</h3>
+                  <p className="meta">系统只提示最近哪些结果值得先对照完成标准，不会自动替你标记已满足。</p>
+                  <div className="timeline-list">
+                    {completionEvidenceCards.length ? (
+                      completionEvidenceCards.map((evidence) => (
+                        <div className="timeline-item timeline-item-default" key={evidence.id}>
+                          <div className="task-row">
+                            <strong>{evidence.title}</strong>
+                            <span className="signal-pill timeline-badge timeline-item-default">
+                              {evidence.type === 'decision'
+                                ? '拍板结果'
+                                : evidence.type === 'run'
+                                  ? '执行结果'
+                                  : '最近产物'}
+                            </span>
+                          </div>
+                          <p className="meta">{evidence.detail}</p>
+                          {evidence.matchedCriteria.length ? (
+                            <p className="meta">
+                              可能对应：{evidence.matchedCriteria.slice(0, 2).join('；')}
+                              {evidence.matchedCriteria.length > 2 ? '；…' : ''}
+                            </p>
+                          ) : (
+                            <p className="meta">值得先对照当前仍未满足的完成标准。</p>
+                          )}
+                          <div className="timeline-actions">
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={focusCompletionCriteriaSection}
+                              type="button"
+                            >
+                              对照 Completion Criteria
+                            </button>
+                            {evidence.type === 'decision' && evidence.targetId ? (
+                              <button
+                                className="ghost-button timeline-action"
+                                onClick={() => onOpenDecision(evidence.targetId as string)}
+                                type="button"
+                              >
+                                查看 Decision
+                              </button>
+                            ) : null}
+                            {(evidence.type === 'run' || evidence.type === 'artifact') && evidence.targetId ? (
+                              <button
+                                className="ghost-button timeline-action"
+                                onClick={() => onOpenRun(evidence.targetId as string)}
+                                type="button"
+                              >
+                                查看 Run
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="meta">最近还没有足够明确的完成证据。后续的拍板结果、执行结果或产物会先出现在这里。</p>
+                    )}
                   </div>
                 </div>
 
