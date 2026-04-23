@@ -506,7 +506,7 @@ describe('TaskService', () => {
       title: 'Publish partner list',
       detail: '上游任务“Publish partner list”已完成，可重新判断是否解除依赖。',
       priorityReason: '上游任务“Publish partner list”已完成，可重新判断是否解除依赖。',
-      responsibilitySummary: '当前主要由上游任务链路推进。',
+      responsibilitySummary: '推进责任：上游任务“Publish partner list”',
     });
     expect(detail?.resumeCard.summary).toContain('当前依赖已具备恢复推进条件');
     expect(detail?.resumeCard.nextSuggestedMove).toBe(

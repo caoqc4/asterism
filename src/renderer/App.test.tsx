@@ -1288,6 +1288,7 @@ describe('App UI flow', () => {
               open: 1,
               satisfiedCriteriaHighlights: ['Draft delivered'],
               nextOpenCriterion: 'Final review recorded',
+              nextOpenResponsibilitySummary: '确认责任：客户确认',
             },
             closeoutEvidence: {
               sourceType: 'decision',
@@ -1338,6 +1339,7 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(within(closeoutSection as HTMLElement).getByText('已满足：Draft delivered')).toBeTruthy();
     expect(within(closeoutSection as HTMLElement).getByText('最后还差：Final review recorded')).toBeTruthy();
+    expect(within(closeoutSection as HTMLElement).getByText('确认责任：客户确认')).toBeTruthy();
     expect(within(closeoutSection as HTMLElement).getByRole('button', { name: '查看收尾证据' })).toBeTruthy();
 
     await user.click(within(closeoutSection as HTMLElement).getByRole('button', { name: '查看最终收尾依据' }));
@@ -4699,7 +4701,9 @@ describe('App UI flow', () => {
     const dependencySection = screen.getByText('Blocked by Tasks').closest('section');
     expect(dependencySection).toBeTruthy();
 
-    await user.click(await within(dependencySection as HTMLElement).findByRole('button', { name: '打开上游任务' }));
+    await user.click(
+      await within(dependencySection as HTMLElement).findByRole('button', { name: '打开上游任务' }),
+    );
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Publish partner list' })).toBeTruthy();

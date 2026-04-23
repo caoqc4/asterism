@@ -930,6 +930,11 @@ export function HomePage({
                     {task.activeDependency?.createdAt && getDependencyAgeReason(task.activeDependency.createdAt, 'home') ? (
                       <p className="meta">{getDependencyAgeReason(task.activeDependency.createdAt, 'home')}</p>
                     ) : null}
+                    <p className="meta">
+                      当前主要由上游任务“
+                      {task.activeDependency?.blockedByTaskTitle ?? '未命名上游任务'}
+                      ”推进
+                    </p>
                     {task.nextStep ? <p className="meta">解除后下一步：{task.nextStep}</p> : null}
                   </button>
                   <div className="chip-row">
@@ -1109,6 +1114,11 @@ export function HomePage({
                       {task.completionProgress?.nextOpenCriterion ? (
                         <p className="meta">最后还差：{task.completionProgress.nextOpenCriterion}</p>
                       ) : null}
+                      {task.completionProgress?.nextOpenResponsibilitySummary ? (
+                        <p className="meta">
+                          {task.completionProgress.nextOpenResponsibilitySummary}
+                        </p>
+                      ) : null}
                       {task.closeoutEvidence ? (
                         <p className="meta">
                           当前最终收尾依据：
@@ -1153,6 +1163,11 @@ export function HomePage({
                       ) : null}
                       {task.completionProgress?.nextOpenCriterion ? (
                         <p className="meta">最后还差：{task.completionProgress.nextOpenCriterion}</p>
+                      ) : null}
+                      {task.completionProgress?.nextOpenResponsibilitySummary ? (
+                        <p className="meta">
+                          {task.completionProgress.nextOpenResponsibilitySummary}
+                        </p>
                       ) : null}
                       {task.closeoutEvidence ? (
                         <p className="meta">

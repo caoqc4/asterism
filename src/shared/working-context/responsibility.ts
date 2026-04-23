@@ -27,9 +27,15 @@ export function getResponsibilitySummary(params: {
   const trimmedLabel = label?.trim() || null;
 
   if (subject === 'dependency') {
+    if (trimmedLabel) {
+      return audience === 'task'
+        ? `推进责任：上游任务“${trimmedLabel}”`
+        : `当前主要由上游任务“${trimmedLabel}”推进`;
+    }
+
     return audience === 'task'
-      ? `当前主要由上游任务链路推进。`
-      : '当前主要由上游任务链路推进。';
+      ? `推进责任：上游任务链路`
+      : '当前主要由上游任务链路推进';
   }
 
   if (!kind && !trimmedLabel) {
