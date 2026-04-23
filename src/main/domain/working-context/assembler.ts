@@ -3,6 +3,7 @@ import type { BlockerRecord } from '../../../shared/types/blocker.js';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import type { TaskDetailBase, TaskResumeCardRecord, TaskRiskLevel, TimelineEventRecord } from '../../../shared/types/task.js';
+import { formatBlockerAgeLabel, getBlockerAgeReason } from '../../../shared/working-context/blocker.js';
 
 type TimelineLite = Array<Pick<TimelineEventRecord, 'type' | 'payload'>>;
 
@@ -191,43 +192,65 @@ export function getKeySourcePriorityReason(params: {
 }
 
 export function getCurrentBlockerPriorityReason(params: {
-  blocker: Pick<BlockerRecord, 'kind' | 'detail' | 'owner' | 'sourceContextId'>;
+  blocker: Pick<BlockerRecord, 'kind' | 'detail' | 'owner' | 'sourceContextId' | 'createdAt'>;
   audience: 'task' | 'home';
 }): string {
   const { blocker, audience } = params;
+  const ageReason = getBlockerAgeReason(blocker.createdAt, audience);
 
   if (blocker.detail?.trim()) {
-    return audience === 'task'
+    const base = audience === 'task'
       ? `当前主阻塞项：${blocker.detail.trim()}`
       : `当前阻塞原因：${blocker.detail.trim()}`;
+    return ageReason ? `${base} ${ageReason}` : base;
   }
 
   if (blocker.owner?.trim()) {
-    return audience === 'task'
+    const base = audience === 'task'
       ? `当前主阻塞项卡在 ${blocker.owner.trim()}。`
       : `当前阻塞对象：${blocker.owner.trim()}`;
+    return ageReason ? `${base} ${ageReason}` : base;
   }
 
+  let base: string;
   switch (blocker.kind) {
     case 'approval':
-      return audience === 'task' ? '当前主阻塞项是审批环节。' : '当前阻塞来自审批环节。';
+      base = audience === 'task' ? '当前主阻塞项是审批环节。' : '当前阻塞来自审批环节。';
+      break;
     case 'document_or_material':
-      return audience === 'task'
+      base = audience === 'task'
         ? blocker.sourceContextId
           ? '当前主阻塞项与材料缺口有关，可先查看关联来源。'
           : '当前主阻塞项与资料或材料缺口有关。'
         : blocker.sourceContextId
           ? '当前阻塞与来源材料有关。'
           : '当前阻塞与资料或材料有关。';
+      break;
     case 'external_person':
-      return audience === 'task' ? '当前主阻塞项卡在外部人员反馈。' : '当前阻塞来自外部人员反馈。';
+      base = audience === 'task' ? '当前主阻塞项卡在外部人员反馈。' : '当前阻塞来自外部人员反馈。';
+      break;
     case 'external_team':
-      return audience === 'task' ? '当前主阻塞项卡在外部团队协作。' : '当前阻塞来自外部团队协作。';
+      base = audience === 'task' ? '当前主阻塞项卡在外部团队协作。' : '当前阻塞来自外部团队协作。';
+      break;
     case 'system_or_tool':
-      return audience === 'task' ? '当前主阻塞项来自系统或工具限制。' : '当前阻塞来自系统或工具限制。';
+      base = audience === 'task' ? '当前主阻塞项来自系统或工具限制。' : '当前阻塞来自系统或工具限制。';
+      break;
     default:
-      return audience === 'task' ? '当前主阻塞项仍待解除。' : '当前仍存在主阻塞项。';
+      base = audience === 'task' ? '当前主阻塞项仍待解除。' : '当前仍存在主阻塞项。';
+      break;
   }
+
+  return ageReason ? `${base} ${ageReason}` : base;
+}
+
+export function getCurrentBlockerAgeLabel(
+  blocker: Pick<BlockerRecord, 'createdAt'> | null,
+): string | null {
+  if (!blocker) {
+    return null;
+  }
+
+  return formatBlockerAgeLabel(blocker.createdAt);
 }
 
 export function buildTaskResumeLatestChange(

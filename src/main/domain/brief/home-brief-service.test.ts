@@ -686,6 +686,9 @@ describe('HomeBriefService', () => {
   });
 
   it('surfaces active blockers in resume previews and recommended actions', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-10T00:00:00.000Z'));
+
     const service = new HomeBriefService(
       {
         list: vi.fn().mockResolvedValue([
@@ -708,6 +711,7 @@ describe('HomeBriefService', () => {
             title: 'Legal approval pending',
             detail: 'Need formal sign-off',
             sourceContextId: 'source_context_blocker',
+            createdAt: '2026-01-01T00:00:00.000Z',
           }),
         ]),
       } as never,
@@ -742,6 +746,7 @@ describe('HomeBriefService', () => {
     expect(homeData.recommendedActions[0]).toMatchObject({
       id: 'blocker:blocker_1',
       label: '跟进当前阻塞项：Blocked task',
+      reason: '当前阻塞原因：Need formal sign-off 已阻塞 9 天。',
       intent: {
         type: 'focus_source_context',
         sourceContextId: 'source_context_blocker',
@@ -757,11 +762,62 @@ describe('HomeBriefService', () => {
       },
       currentBlocker: {
         title: 'Legal approval pending',
-        priorityReason: '当前阻塞原因：Need formal sign-off',
+        priorityReason: '当前阻塞原因：Need formal sign-off 已阻塞 9 天。',
+        ageLabel: 'blocked since 2026-01-01 · 已阻塞 9 天',
       },
       nextSuggestedMove: '先解除阻塞项：Legal approval pending',
       contextActionLabel: '查看阻塞来源',
     });
+
+    vi.useRealTimers();
+  });
+
+  it('orders blocked tasks and blocker-driven actions by blocker age', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-10T00:00:00.000Z'));
+
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({ id: 'task_newer_blocked', title: 'Newer blocked task', state: 'planned' }),
+          buildTask({ id: 'task_older_blocked', title: 'Older blocked task', state: 'planned' }),
+        ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([
+          buildBlocker({
+            id: 'blocker_newer',
+            taskId: 'task_newer_blocked',
+            title: 'Newer blocker',
+            createdAt: '2026-01-09T00:00:00.000Z',
+          }),
+          buildBlocker({
+            id: 'blocker_older',
+            taskId: 'task_older_blocked',
+            title: 'Older blocker',
+            createdAt: '2026-01-01T00:00:00.000Z',
+          }),
+        ]),
+      } as never,
+      { list: vi.fn().mockResolvedValue([]) } as never,
+      { list: vi.fn().mockResolvedValue([]) } as never,
+      { listRecent: vi.fn().mockResolvedValue([]) } as never,
+      { listActiveForTasks: vi.fn().mockResolvedValue([]) } as never,
+      { listRecent: vi.fn().mockResolvedValue([]) } as never,
+      () => null,
+      null,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.blockerTasks[0]?.title).toBe('Older blocked task');
+    expect(homeData.recommendedActions[0]?.label).toBe('跟进当前阻塞项：Older blocked task');
+
+    vi.useRealTimers();
   });
 
   it('prioritizes the latest lifecycle change when deriving home resume preview suggestions', async () => {

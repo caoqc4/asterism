@@ -38,6 +38,7 @@ import {
   getTaskTimelinePriorityLabel,
   interpretTaskTimelineEvent,
 } from '@shared/working-context/timeline';
+import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
 
 const riskOptions: TaskRiskLevel[] = ['none', 'low', 'medium', 'high'];
 const sourceContextKindOptions: SourceContextKind[] = [
@@ -1367,6 +1368,9 @@ export function TasksPage({
                         {resumeCurrentBlocker.detail ? (
                           <p className="meta">{resumeCurrentBlocker.detail}</p>
                         ) : null}
+                        {resumeCurrentBlocker.ageLabel ? (
+                          <p className="meta">{resumeCurrentBlocker.ageLabel}</p>
+                        ) : null}
                         {resumeCurrentBlocker.priorityReason ? (
                           <p className="meta">{resumeCurrentBlocker.priorityReason}</p>
                         ) : null}
@@ -1510,7 +1514,7 @@ export function TasksPage({
                         {detail.activeBlocker.owner ? (
                           <p className="meta">owner: {detail.activeBlocker.owner}</p>
                         ) : null}
-                        <p className="meta">active blocker · since {detail.activeBlocker.createdAt}</p>
+                        <p className="meta">{formatBlockerAgeLabel(detail.activeBlocker.createdAt)}</p>
                         <div className="timeline-actions">
                           <button
                             className="ghost-button timeline-action"
@@ -1957,7 +1961,7 @@ export function TasksPage({
                           {detail.activeBlocker.owner ? (
                             <p className="meta">owner: {detail.activeBlocker.owner}</p>
                           ) : null}
-                          <p className="meta">active blocker · created at {detail.activeBlocker.createdAt}</p>
+                          <p className="meta">{formatBlockerAgeLabel(detail.activeBlocker.createdAt)}</p>
                           <div className="timeline-actions">
                             <button
                               className="ghost-button timeline-action"

@@ -69,6 +69,7 @@ export type HomeTaskResumePreviewRecord = {
   currentBlocker?: {
     title: string | null;
     priorityReason: string | null;
+    ageLabel?: string | null;
   };
   keySource: {
     sourceContextId: string | null;

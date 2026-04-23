@@ -34,6 +34,7 @@ import { WaitingItemRepository } from '../../db/repositories/waiting-item-reposi
 import {
   buildTaskResumeLatestChange,
   deriveNextSuggestedMove,
+  getCurrentBlockerAgeLabel,
   getCurrentBlockerPriorityReason,
   getCurrentMethodSelectionReason,
   getKeySourcePriorityReason,
@@ -215,6 +216,7 @@ export class TaskService {
               (detail.activeBlocker.owner
                 ? `当前卡在 ${detail.activeBlocker.owner}`
                 : detail.activeBlocker.kind),
+            ageLabel: getCurrentBlockerAgeLabel(detail.activeBlocker),
             priorityReason: getCurrentBlockerPriorityReason({
               blocker: detail.activeBlocker,
               audience: 'task',
@@ -224,6 +226,7 @@ export class TaskService {
             blockerId: null,
             title: '暂无当前阻塞项',
             detail: null,
+            ageLabel: null,
             priorityReason: null,
           },
       keySource: keySource

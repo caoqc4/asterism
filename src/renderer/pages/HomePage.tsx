@@ -7,6 +7,7 @@ import type {
 import type { ArtifactRecord } from '@shared/types/artifact';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { PingResponse } from '@shared/types/ipc';
+import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
 
 function getActivityActionLabel(activity: HomeActivityRecord): string | null {
   if (activity.sourceType === 'decision' && activity.status === 'approved') {
@@ -477,6 +478,9 @@ export function HomePage({
                     <p className="meta">
                       {task.activeBlocker?.detail || task.activeBlocker?.owner || task.activeBlocker?.title || '未填写阻塞说明'}
                     </p>
+                    {task.activeBlocker ? (
+                      <p className="meta">{formatBlockerAgeLabel(task.activeBlocker.createdAt)}</p>
+                    ) : null}
                     {task.activeBlocker?.sourceContextId ? (
                       <p className="meta">linked blocker source</p>
                     ) : null}
@@ -583,6 +587,9 @@ export function HomePage({
                   <p className="meta">{preview.latestChange.summary}</p>
                   {preview.currentBlocker?.title ? (
                     <p className="meta">当前阻塞：{preview.currentBlocker.title}</p>
+                  ) : null}
+                  {preview.currentBlocker?.ageLabel ? (
+                    <p className="meta">{preview.currentBlocker.ageLabel}</p>
                   ) : null}
                   {preview.currentBlocker?.priorityReason ? (
                     <p className="meta">{preview.currentBlocker.priorityReason}</p>

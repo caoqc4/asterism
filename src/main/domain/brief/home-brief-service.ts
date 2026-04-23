@@ -25,6 +25,7 @@ import type { BriefProcessTemplateCandidate } from '../../../shared/types/brief.
 import {
   buildHomeResumeLatestChange,
   deriveNextSuggestedMove,
+  getCurrentBlockerAgeLabel,
   getCurrentBlockerPriorityReason,
   getCurrentMethodSelectionReason,
   getKeySourcePriorityReason,
@@ -44,6 +45,8 @@ function buildRecommendedActions(params: {
   const taskById = new Map(params.activeTasks.map((task) => [task.id, task]));
   const blockedTaskIds = new Set<string>();
   const missingNextStepTaskIds = new Set(params.missingNextStepTasks.map((task) => task.id));
+  const compareBlockedTasks = (left: HomeTaskSliceRecord, right: HomeTaskSliceRecord) =>
+    (left.activeBlocker?.createdAt ?? '').localeCompare(right.activeBlocker?.createdAt ?? '');
 
   for (const task of params.highRiskTasks) {
     blockedTaskIds.add(task.id);
@@ -96,7 +99,7 @@ function buildRecommendedActions(params: {
     });
   }
 
-  for (const task of params.activeTasks) {
+  for (const task of [...params.activeTasks].sort(compareBlockedTasks)) {
     if (!task.activeBlocker || blockedTaskIds.has(task.id)) {
       continue;
     }
@@ -104,10 +107,10 @@ function buildRecommendedActions(params: {
     actions.push({
       id: `blocker:${task.activeBlocker.id}`,
       label: `跟进当前阻塞项：${task.title}`,
-      reason:
-        task.activeBlocker.detail ??
-        task.activeBlocker.owner ??
-        `当前阻塞项：${task.activeBlocker.title}`,
+      reason: getCurrentBlockerPriorityReason({
+        blocker: task.activeBlocker,
+        audience: 'home',
+      }),
       taskId: task.id,
       priority: 'medium',
       intent: task.activeBlocker.sourceContextId
@@ -478,6 +481,7 @@ export class HomeBriefService {
         currentBlocker: task.activeBlocker
           ? {
               title: task.activeBlocker.title,
+              ageLabel: getCurrentBlockerAgeLabel(task.activeBlocker),
               priorityReason: getCurrentBlockerPriorityReason({
                 blocker: task.activeBlocker,
                 audience: 'home',
@@ -667,7 +671,13 @@ export class HomeBriefService {
         Boolean(task.activeWaitingItem?.reason) ||
         Boolean(task.waitingReason),
     );
-    const blockerTasks = tasks.filter((task) => Boolean(task.activeBlocker?.title));
+    const blockerTasks = tasks
+      .filter((task) => Boolean(task.activeBlocker?.title))
+      .sort((left, right) =>
+        (left.activeBlocker?.createdAt ?? left.updatedAt).localeCompare(
+          right.activeBlocker?.createdAt ?? right.updatedAt,
+        ),
+      );
     const highRiskTasks = tasks.filter((task) => task.riskLevel === 'high');
     const missingNextStepTasks = activeTasks.filter((task) => !task.nextStep?.trim());
     const scheduler = this.getSchedulerStatus();

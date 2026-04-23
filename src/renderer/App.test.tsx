@@ -3588,6 +3588,7 @@ describe('App UI flow', () => {
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
       '先解除阻塞项，再继续推进：Legal approval pending',
     );
+    expect(screen.getAllByText(/blocked since 2026-01-01/).length).toBeGreaterThan(0);
   });
 
   it('opens blocker sources from home key signals', async () => {

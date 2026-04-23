@@ -253,11 +253,12 @@ describe('TaskService', () => {
       targetType: 'source_context',
       targetId: 'source_context_key',
     });
-    expect(detail?.resumeCard.currentBlocker).toEqual({
+    expect(detail?.resumeCard.currentBlocker).toMatchObject({
       blockerId: 'blocker_1',
       title: 'Legal approval pending',
       detail: 'Need formal sign-off before launch',
-      priorityReason: '当前主阻塞项：Need formal sign-off before launch',
+      priorityReason: expect.stringContaining('当前主阻塞项：Need formal sign-off before launch'),
+      ageLabel: expect.stringContaining('blocked since 2026-01-01'),
     });
     expect(detail?.resumeCard.keySource.title).toBe('Partner website shortlist');
     expect(detail?.resumeCard.keySource.priorityReason).toBe(
