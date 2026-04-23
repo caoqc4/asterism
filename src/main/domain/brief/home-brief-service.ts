@@ -439,45 +439,104 @@ export class HomeBriefService {
               ? `先查看关键来源：${keySource.title}`
               : '先补一个明确的下一步。');
 
-      const contextAction =
-        waitingReason
-          ? {
-              label: '跟进等待项',
-              intent: {
-                type: 'focus_waiting_follow_up',
-                focusArea: 'detail',
-                prefillNextStep: nextSuggestedMove,
-              } as const,
-            }
-          : task.riskLevel === 'high'
-            ? {
-                label: '处理风险',
-                intent: {
-                  type: 'focus_risk_review',
-                  focusArea: 'detail',
-                  prefillNextStep: nextSuggestedMove,
-                  prefillRiskLevel: 'high',
-                  prefillRiskNote: task.riskNote,
-                } as const,
-              }
-            : keySource
-              ? {
-                  label: '查看关键来源',
-                  intent: {
-                    type: 'focus_source_context',
-                    focusArea: 'detail',
-                    sourceContextId: keySource.id,
-                    prefillNextStep: nextSuggestedMove,
-                  } as const,
-                }
-              : {
-                  label: '采用建议下一步',
-                  intent: {
-                    type: 'focus_next_step',
-                    focusArea: 'detail',
-                    prefillNextStep: nextSuggestedMove,
-                  } as const,
-                };
+      let contextAction:
+        | {
+            label: string;
+            intent: {
+              type: 'focus_next_step' | 'focus_waiting_follow_up' | 'focus_risk_review' | 'focus_source_context';
+              focusArea: 'detail';
+              prefillNextStep: string;
+              prefillRiskLevel?: 'high';
+              prefillRiskNote?: string | null;
+              sourceContextId?: string;
+            };
+          };
+
+      if (latestActivity?.sourceType === 'decision' && latestActivity.status === 'approved') {
+        contextAction = {
+          label: '继续推进任务',
+          intent: {
+            type: 'focus_next_step',
+            focusArea: 'detail',
+            prefillNextStep: `已获批准，继续推进：${latestActivity.title}`,
+          },
+        };
+      } else if (latestActivity?.sourceType === 'decision' && latestActivity.status === 'deferred') {
+        contextAction = {
+          label: '跟进拍板进度',
+          intent: {
+            type: 'focus_waiting_follow_up',
+            focusArea: 'detail',
+            prefillNextStep: '跟进该决策是否可以恢复拍板，或准备替代推进路径。',
+          },
+        };
+      } else if (latestActivity?.sourceType === 'decision' && latestActivity.status === 'cancelled') {
+        contextAction = {
+          label: '重新评估决策',
+          intent: {
+            type: 'focus_next_step',
+            focusArea: 'detail',
+            prefillNextStep: `重新评估该决策并确定替代推进路径：${latestActivity.title}`,
+          },
+        };
+      } else if (latestActivity?.sourceType === 'run' && latestActivity.status === 'failed') {
+        contextAction = {
+          label: '处理失败结果',
+          intent: {
+            type: 'focus_next_step',
+            focusArea: 'detail',
+            prefillNextStep: `检查最近一次 ${latestActivity.title} run 的失败原因，并决定是否重试。`,
+          },
+        };
+      } else if (latestActivity?.sourceType === 'run' && latestActivity.status === 'completed') {
+        contextAction = {
+          label: '基于结果继续推进',
+          intent: {
+            type: 'focus_next_step',
+            focusArea: 'detail',
+            prefillNextStep: `审阅最近一次 ${latestActivity.title} run 的结果，并决定是否继续推进。`,
+          },
+        };
+      } else if (waitingReason) {
+        contextAction = {
+          label: '跟进等待项',
+          intent: {
+            type: 'focus_waiting_follow_up',
+            focusArea: 'detail',
+            prefillNextStep: nextSuggestedMove,
+          },
+        };
+      } else if (task.riskLevel === 'high') {
+        contextAction = {
+          label: '处理风险',
+          intent: {
+            type: 'focus_risk_review',
+            focusArea: 'detail',
+            prefillNextStep: nextSuggestedMove,
+            prefillRiskLevel: 'high',
+            prefillRiskNote: task.riskNote,
+          },
+        };
+      } else if (keySource) {
+        contextAction = {
+          label: '查看关键来源',
+          intent: {
+            type: 'focus_source_context',
+            focusArea: 'detail',
+            sourceContextId: keySource.id,
+            prefillNextStep: nextSuggestedMove,
+          },
+        };
+      } else {
+        contextAction = {
+          label: '采用建议下一步',
+          intent: {
+            type: 'focus_next_step',
+            focusArea: 'detail',
+            prefillNextStep: nextSuggestedMove,
+          },
+        };
+      }
 
       return {
         taskId: task.id,

@@ -304,13 +304,11 @@ describe('App UI flow', () => {
         currentMethodReason: '最近用于执行：风险高且需要先复盘 blocker。',
         nextSuggestedMove: '已获批准，继续推进：Approve escalation path',
         sourceContextId: 'source_context_home_1',
-        contextActionLabel: '处理风险',
+        contextActionLabel: '继续推进任务',
         contextActionIntent: {
-          type: 'focus_risk_review',
+          type: 'focus_next_step',
           focusArea: 'detail',
           prefillNextStep: '已获批准，继续推进：Approve escalation path',
-          prefillRiskLevel: 'high',
-          prefillRiskNote: 'Deadline slipping',
         },
       },
       {
@@ -3195,10 +3193,17 @@ describe('App UI flow', () => {
 
     render(<App />);
 
-    await screen.findByText('Resume Previews');
+    const resumePanel = (await screen.findByText('Resume Previews')).closest('.panel');
+    expect(resumePanel).not.toBeNull();
     expect(screen.getByText('关键来源：Contains the latest escalation framing.')).toBeTruthy();
     expect(screen.getByText('最近用于执行：风险高且需要先复盘 blocker。')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '处理风险' }));
+    const firstResumeCard = within(resumePanel as HTMLElement)
+      .getByRole('button', { name: /恢复任务 High risk task/i })
+      .closest('.task-card');
+    expect(firstResumeCard).not.toBeNull();
+    await user.click(
+      within(firstResumeCard as HTMLElement).getByRole('button', { name: '继续推进任务' }),
+    );
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
@@ -3206,9 +3211,6 @@ describe('App UI flow', () => {
 
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
       '已获批准，继续推进：Approve escalation path',
-    );
-    expect((screen.getByLabelText('Risk Note') as HTMLTextAreaElement).value).toBe(
-      'Deadline slipping',
     );
   });
 
