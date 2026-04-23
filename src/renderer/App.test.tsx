@@ -923,13 +923,21 @@ describe('App UI flow', () => {
     const closeoutDetail = buildTaskDetail(closeoutTask);
     closeoutDetail.resumeCard = {
       ...closeoutDetail.resumeCard,
+      latestChange: {
+        summary: '最近一条决策已获批准：Approve final launch brief，这可能说明某些完成标准已具备。',
+        action: {
+          label: '查看 Decision',
+          targetType: 'decision',
+          targetId: 'decision_closeout',
+        },
+      },
       completionStatus: {
         total: 2,
         satisfied: 1,
         open: 1,
         summary: '已满足 1/2 条完成标准',
       },
-      nextSuggestedMove: '优先补齐最后一条完成标准，并判断“Closeout resume task”是否可以收尾。',
+      nextSuggestedMove: '先对照 Completion Criteria，判断这次批准是否已满足完成标准。',
     };
 
     window.api = {
@@ -960,6 +968,16 @@ describe('App UI flow', () => {
 
     expect(resumeSection).not.toBeNull();
     expect(within(resumeSection as HTMLElement).getByText('继续推进/复核 · 收尾判断')).toBeTruthy();
+    expect(
+      within(resumeSection as HTMLElement).getByText(
+        '最近一条决策已获批准：Approve final launch brief，这可能说明某些完成标准已具备。',
+      ),
+    ).toBeTruthy();
+    expect(
+      within(resumeSection as HTMLElement).getByText(
+        '先对照 Completion Criteria，判断这次批准是否已满足完成标准。',
+      ),
+    ).toBeTruthy();
   });
 
   it('uses task resume card actions to focus context and prefill the next step', async () => {

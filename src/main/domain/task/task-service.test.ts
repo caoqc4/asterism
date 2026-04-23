@@ -350,6 +350,76 @@ describe('TaskService', () => {
     expect(detail?.resumeCard.nextSuggestedMove).toBe('检查最近一次执行失败原因，并决定是否重试。');
   });
 
+  it('treats approved decisions and completed runs as closeout evidence on near-completion tasks', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('planned'),
+        nextStep: null,
+        timeline: [
+          {
+            id: 'timeline_decision_approved',
+            taskId: 'task_1',
+            type: 'task.decision_approved',
+            payload: JSON.stringify({
+              decisionId: 'decision_1',
+              decisionTitle: 'Approve final launch brief',
+            }),
+            createdAt: '2026-01-03T00:00:00.000Z',
+          },
+        ],
+      }),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const completionCriteria = {
+      listForTask: vi.fn().mockResolvedValue([
+        buildCompletionCriteriaRecord({
+          id: 'criteria_satisfied',
+          status: 'satisfied',
+          text: 'Draft delivered',
+          satisfiedAt: '2026-01-02T00:00:00.000Z',
+        }),
+        buildCompletionCriteriaRecord({
+          id: 'criteria_open',
+          text: 'Final launch brief approved',
+        }),
+      ]),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      completionCriteria as never,
+    );
+
+    const detail = await service.getDetail('task_1');
+
+    expect(detail?.resumeCard.completionStatus).toMatchObject({
+      total: 2,
+      satisfied: 1,
+      open: 1,
+    });
+    expect(detail?.resumeCard.latestChange.summary).toBe(
+      '最近一条决策已获批准：Approve final launch brief，这可能说明某些完成标准已具备。',
+    );
+    expect(detail?.resumeCard.nextSuggestedMove).toBe(
+      '先对照 Completion Criteria，判断这次批准是否已满足完成标准。',
+    );
+  });
+
   it('uses dependency re-evaluation wording in the task resume card when an upstream task completes', async () => {
     const repository = {
       list: vi.fn(),

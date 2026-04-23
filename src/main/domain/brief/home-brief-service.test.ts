@@ -1221,6 +1221,80 @@ describe('HomeBriefService', () => {
     });
   });
 
+  it('treats closeout decision activity as completion evidence in home resume previews', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_closeout_preview',
+            title: 'Closeout preview task',
+            state: 'planned',
+            nextStep: null,
+          }),
+        ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      null as never,
+      {
+        list: vi.fn().mockResolvedValue([
+          buildDecision({
+            id: 'decision_closeout',
+            taskId: 'task_closeout_preview',
+            title: 'Approve final launch brief',
+            status: 'approved',
+            updatedAt: '2026-01-02T00:00:00.000Z',
+          }),
+        ]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+      null,
+      null,
+      {
+        listForTasks: vi.fn().mockResolvedValue([
+          buildCompletionCriteria({
+            id: 'criteria_done',
+            taskId: 'task_closeout_preview',
+            text: 'Draft delivered',
+            status: 'satisfied',
+            satisfiedAt: '2026-01-01T00:00:00.000Z',
+          }),
+          buildCompletionCriteria({
+            id: 'criteria_open',
+            taskId: 'task_closeout_preview',
+            text: 'Final launch brief approved',
+            status: 'open',
+          }),
+        ]),
+      } as never,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.recentTaskResumes).toHaveLength(1);
+    expect(homeData.recentTaskResumes[0]).toMatchObject({
+      taskId: 'task_closeout_preview',
+      latestChange: {
+        summary: '最近决策动态：Approve final launch brief · approved，这可能说明某些完成标准已具备',
+      },
+      nextSuggestedMove: '先对照 Completion Criteria，判断这次批准是否已满足完成标准。',
+    });
+  });
+
   it('surfaces completion-ready and near-completion tasks on home', async () => {
     const service = new HomeBriefService(
       {

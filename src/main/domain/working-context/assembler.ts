@@ -11,6 +11,11 @@ import {
 } from '../../../shared/working-context/dependency.js';
 
 type TimelineLite = Array<Pick<TimelineEventRecord, 'type' | 'payload'>>;
+type CompletionStatusLite = {
+  total: number;
+  satisfied: number;
+  open: number;
+};
 
 type WorkingContextRecentChange =
   | {
@@ -77,6 +82,31 @@ export function safeJsonParse(value: string): Record<string, unknown> | null {
 
 function isEarlyTaskState(state: TaskState | undefined | null): boolean {
   return state === 'captured' || state === 'triaged';
+}
+
+function isCloseoutCompletionProgress(
+  progress: CompletionStatusLite | null | undefined,
+): boolean {
+  if (!progress || progress.total <= 0) {
+    return false;
+  }
+
+  return progress.open === 0 || (progress.satisfied > 0 && progress.open === 1);
+}
+
+function isCloseoutEvidenceChange(
+  progress: CompletionStatusLite | null | undefined,
+  recentChange: WorkingContextRecentChange | null | undefined,
+): boolean {
+  if (!isCloseoutCompletionProgress(progress) || !recentChange) {
+    return false;
+  }
+
+  return (
+    recentChange.kind === 'run_completed'
+    || recentChange.kind === 'decision_approved'
+    || recentChange.kind === 'artifact_created'
+  );
 }
 
 export function isResumeLatestChangeMetaEvent(type: string): boolean {
@@ -302,6 +332,7 @@ export function buildTaskResumeLatestChange(
     blockedByTaskTitle: string | null;
     createdAt: string;
   } | null,
+  completionStatus?: CompletionStatusLite | null,
 ): TaskResumeCardRecord['latestChange'] & {
   recentChange: WorkingContextRecentChange | null;
 } {
@@ -378,7 +409,9 @@ export function buildTaskResumeLatestChange(
       };
     case 'task.run_completed':
       return {
-        summary: `最近一次执行已完成，任务恢复到 ${String(payload?.nextState ?? 'planned')}。`,
+        summary: isCloseoutCompletionProgress(completionStatus)
+          ? `最近一次执行已完成，任务恢复到 ${String(payload?.nextState ?? 'planned')}，这可能说明某些完成标准已具备。`
+          : `最近一次执行已完成，任务恢复到 ${String(payload?.nextState ?? 'planned')}。`,
         action: {
           label: payload?.runId ? '查看 Run' : null,
           targetType: payload?.runId ? 'run' : null,
@@ -391,7 +424,9 @@ export function buildTaskResumeLatestChange(
       };
     case 'task.decision_approved':
       return {
-        summary: `最近一条决策已获批准：${String(payload?.decisionTitle ?? '未命名决策')}。`,
+        summary: isCloseoutCompletionProgress(completionStatus)
+          ? `最近一条决策已获批准：${String(payload?.decisionTitle ?? '未命名决策')}，这可能说明某些完成标准已具备。`
+          : `最近一条决策已获批准：${String(payload?.decisionTitle ?? '未命名决策')}。`,
         action: {
           label: payload?.decisionId ? '查看 Decision' : null,
           targetType: payload?.decisionId ? 'decision' : null,
@@ -528,7 +563,9 @@ export function buildTaskResumeLatestChange(
       };
     case 'artifact.created':
       return {
-        summary: `最近生成了产物：${String(payload?.title ?? '未命名产物')}。`,
+        summary: isCloseoutCompletionProgress(completionStatus)
+          ? `最近生成了产物：${String(payload?.title ?? '未命名产物')}，值得先对照完成标准。`
+          : `最近生成了产物：${String(payload?.title ?? '未命名产物')}。`,
         action: {
           label:
             payload?.sourceType === 'run' && typeof payload?.sourceId === 'string' ? '查看 Run' : null,
@@ -618,12 +655,13 @@ export function buildHomeResumeLatestChange(params: {
   activeBlocker?: Pick<BlockerRecord, 'id' | 'title' | 'sourceContextId'> | null;
   activeDependency?: { blockedByTaskTitle: string | null } | null;
   taskState?: TaskState;
+  completionStatus?: CompletionStatusLite | null;
 }): {
   summary: string;
   action: HomeTaskResumePreviewRecord['latestChange']['action'];
   recentChange: WorkingContextRecentChange | null;
 } {
-  const { latestActivity, keySource, activeBlocker, activeDependency, taskState } = params;
+  const { latestActivity, keySource, activeBlocker, activeDependency, taskState, completionStatus } = params;
 
   if (latestActivity) {
     if (latestActivity.sourceType === 'task') {
@@ -645,7 +683,10 @@ export function buildHomeResumeLatestChange(params: {
 
     if (latestActivity.sourceType === 'decision') {
       return {
-        summary: `最近决策动态：${latestActivity.title} · ${latestActivity.status}`,
+        summary:
+          latestActivity.status === 'approved' && isCloseoutCompletionProgress(completionStatus)
+            ? `最近决策动态：${latestActivity.title} · ${latestActivity.status}，这可能说明某些完成标准已具备`
+            : `最近决策动态：${latestActivity.title} · ${latestActivity.status}`,
         action: {
           label: '查看 Decision',
           targetType: 'decision',
@@ -684,7 +725,10 @@ export function buildHomeResumeLatestChange(params: {
     }
 
     return {
-      summary: `最近执行动态：${latestActivity.title} · ${latestActivity.status}`,
+      summary:
+        latestActivity.status === 'completed' && isCloseoutCompletionProgress(completionStatus)
+          ? `最近执行动态：${latestActivity.title} · ${latestActivity.status}，这可能说明某些完成标准已具备`
+          : `最近执行动态：${latestActivity.title} · ${latestActivity.status}`,
       action: {
         label: '查看 Run',
         targetType: 'run',
@@ -774,6 +818,7 @@ export function deriveNextSuggestedMove(params: {
   dependencyCreatedAt?: string | null;
   keySourceTitle?: string | null;
   latestArtifactTitle?: string | null;
+  completionStatus?: CompletionStatusLite | null;
   recentChange?: WorkingContextRecentChange | null;
 }): string {
   const explicitNextStep = params.explicitNextStep?.trim();
@@ -789,6 +834,19 @@ export function deriveNextSuggestedMove(params: {
   }
 
   const { recentChange } = params;
+
+  if (isCloseoutEvidenceChange(params.completionStatus, recentChange)) {
+    switch (recentChange?.kind) {
+      case 'run_completed':
+        return '先对照 Completion Criteria，判断最近执行结果是否已满足完成标准。';
+      case 'decision_approved':
+        return '先对照 Completion Criteria，判断这次批准是否已满足完成标准。';
+      case 'artifact_created':
+        return '先对照 Completion Criteria，判断这份最新产物是否已满足完成标准。';
+      default:
+        break;
+    }
+  }
 
   if (recentChange) {
     switch (recentChange.kind) {

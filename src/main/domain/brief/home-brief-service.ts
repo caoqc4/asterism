@@ -676,6 +676,7 @@ export class HomeBriefService {
             }
           : null,
         taskState: task.state,
+        completionStatus: task.completionProgress ?? null,
       });
 
       const nextSuggestedMove = deriveNextSuggestedMove({
@@ -690,6 +691,7 @@ export class HomeBriefService {
         blockerCreatedAt: task.activeBlocker?.createdAt ?? null,
         dependencyTitle: task.activeDependency?.blockedByTaskTitle ?? null,
         keySourceTitle: keySource?.title ?? null,
+        completionStatus: task.completionProgress ?? null,
         recentChange: latestChange.recentChange,
       });
 
@@ -1316,7 +1318,7 @@ export class HomeBriefService {
       decisions,
     });
     const recentTaskResumes = await this.buildTaskResumePreviews({
-      recentTasks: tasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
+      recentTasks: tasks.slice(0, 5).map((task) => this.withCompletionProgress(task, completionProgressByTaskId)),
       recentActivity,
       recentSourceContexts,
       appliedTemplates,

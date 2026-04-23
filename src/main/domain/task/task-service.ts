@@ -371,6 +371,7 @@ export class TaskService {
             createdAt: detail.activeDependency.createdAt,
           }
         : null,
+      completionStatus,
     );
     const nextSuggestedMove = deriveNextSuggestedMove({
       explicitNextStep: detail.nextStep,
@@ -386,6 +387,7 @@ export class TaskService {
       dependencyCreatedAt: detail.activeDependency?.createdAt ?? null,
       keySourceTitle: keySource?.title ?? null,
       latestArtifactTitle: latestArtifact?.title ?? null,
+      completionStatus,
       recentChange: latestChange.recentChange,
     });
 
