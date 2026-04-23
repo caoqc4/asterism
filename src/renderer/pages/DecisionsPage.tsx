@@ -184,8 +184,9 @@ export function DecisionsPage({
               </div>
               <div className="task-card detail-card-group">
                 <p className="eyebrow">Focus Moves</p>
-                <strong>先处理这条拍板</strong>
-                <p className="meta">只保留当前最值钱的局部动作；更完整的推进和上下文恢复仍然回到任务页处理。</p>
+                <strong>先判断这条拍板如何回流到任务</strong>
+                <p className="meta">这里先区分“回到任务继续推进”和“正式拍板动作”，避免 Decision 页重新长成第二套任务工作面。</p>
+                <p className="meta">回流任务</p>
                 <div className="chip-row">
                   <button
                     className="ghost-button"
@@ -210,6 +211,9 @@ export function DecisionsPage({
                   >
                     回到任务推进
                   </button>
+                </div>
+                <p className="meta">正式拍板</p>
+                <div className="chip-row">
                   <button
                     className="ghost-button"
                     onClick={() => void onAct(detail.id, 'approve')}
