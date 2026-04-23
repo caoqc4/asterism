@@ -129,6 +129,7 @@ Covered today:
 - `Home priority-lane headline/lede copy and lane-aware recommended-action ordering`
 - `Home recommended actions` lightweight priority-lane labels
 - `Home recent activity` lightweight priority-lane labels
+- `Home key signal` lightweight priority-lane labels
 - `Brief fallback output` lane-grouped wording
 - `Tasks quick decision submission`
 - `Tasks quick run submission`

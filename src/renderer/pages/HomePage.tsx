@@ -79,6 +79,15 @@ function getLaneLabel(lane: PriorityLane | undefined): string | null {
   }
 }
 
+function renderLaneHeading(title: string, lane: PriorityLane) {
+  return (
+    <div className="task-row section-heading-row">
+      <strong>{title}</strong>
+      <span className={`status lane-status lane-status-${lane}`}>{getLaneLabel(lane)}</span>
+    </div>
+  );
+}
+
 type HomePageProps = {
   ping: PingResponse | null;
   status: 'idle' | 'loading' | 'ready' | 'error';
@@ -600,7 +609,7 @@ export function HomePage({
         <h2>Key Signals</h2>
         <div className="home-signal-grid">
           <section className="timeline-list">
-            <strong>Waiting Tasks</strong>
+            {renderLaneHeading('Waiting Tasks', 'clarify')}
             {briefData?.waitingTasks.length ? (
               briefData.waitingTasks.map((task) => (
                 <button
@@ -628,7 +637,7 @@ export function HomePage({
           </section>
 
           <section className="timeline-list">
-            <strong>Blocked Tasks</strong>
+            {renderLaneHeading('Blocked Tasks', 'unblock_or_decide')}
             {briefData?.blockerTasks.length ? (
               briefData.blockerTasks.map((task) => (
                 <div className="task-card task-card-warning" key={task.id}>
@@ -695,7 +704,7 @@ export function HomePage({
           </section>
 
           <section className="timeline-list">
-            <strong>Needs Escalation</strong>
+            {renderLaneHeading('Needs Escalation', 'escalate_now')}
             {briefData?.escalationTasks.length ? (
               briefData.escalationTasks.map((task) => (
                 <div className="task-card task-card-danger" key={task.id}>
@@ -752,7 +761,7 @@ export function HomePage({
           </section>
 
           <section className="timeline-list">
-            <strong>High Risk Tasks</strong>
+            {renderLaneHeading('High Risk Tasks', 'escalate_now')}
             {briefData?.highRiskTasks.length ? (
               briefData.highRiskTasks.map((task) => (
                 <button
@@ -775,7 +784,7 @@ export function HomePage({
           </section>
 
           <section className="timeline-list">
-            <strong>Needs Next Step</strong>
+            {renderLaneHeading('Needs Next Step', 'clarify')}
             {briefData?.missingNextStepTasks.length ? (
               briefData.missingNextStepTasks.map((task) => (
                 <button

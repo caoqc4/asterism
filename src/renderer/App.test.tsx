@@ -996,6 +996,28 @@ describe('App UI flow', () => {
     );
   });
 
+  it('shows lightweight priority lane labels on home key signal groups', async () => {
+    render(<App />);
+
+    const waitingSection = screen.getByText('Waiting Tasks').closest('section');
+    const blockedSection = screen.getByText('Blocked Tasks').closest('section');
+    const escalationSection = screen
+      .getAllByText('Needs Escalation')
+      .map((node) => node.closest('section'))
+      .find((section) => section?.className.includes('timeline-list'));
+    const nextStepSection = screen.getByText('Needs Next Step').closest('section');
+
+    expect(waitingSection).toBeTruthy();
+    expect(blockedSection).toBeTruthy();
+    expect(escalationSection).toBeTruthy();
+    expect(nextStepSection).toBeTruthy();
+
+    expect(within(waitingSection as HTMLElement).getByText('先补清晰度')).toBeTruthy();
+    expect(within(blockedSection as HTMLElement).getByText('先解阻塞/拍板')).toBeTruthy();
+    expect(within(escalationSection as HTMLElement).getByText('立即升级')).toBeTruthy();
+    expect(within(nextStepSection as HTMLElement).getByText('先补清晰度')).toBeTruthy();
+  });
+
   it('offers a direct action to resolve the current waiting item', async () => {
     const user = userEvent.setup();
 
