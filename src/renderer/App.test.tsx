@@ -264,11 +264,13 @@ describe('App UI flow', () => {
     recentRunCount: 1,
     waitingTaskCount: 1,
     blockerTaskCount: 0,
+    escalationTaskCount: 0,
     highRiskTaskCount: 1,
     missingNextStepTaskCount: 0,
     recentTasks: [waitingTask, riskTask],
     waitingTasks: [waitingTask],
     blockerTasks: [],
+    escalationTasks: [],
     highRiskTasks: [riskTask],
     missingNextStepTasks: [],
     pendingDecisions: [
@@ -3557,11 +3559,13 @@ describe('App UI flow', () => {
         activeTaskCount: 1,
         waitingTaskCount: 0,
         blockerTaskCount: 1,
+        escalationTaskCount: 1,
         highRiskTaskCount: 0,
         missingNextStepTaskCount: 0,
         recentTasks: [blockedTask],
         waitingTasks: [],
         blockerTasks: [blockedTask],
+        escalationTasks: [blockedTask],
         highRiskTasks: [],
         missingNextStepTasks: [],
         recommendedActions: [],
@@ -3575,7 +3579,10 @@ describe('App UI flow', () => {
 
     render(<App />);
 
-    const blockedButton = await screen.findByRole('button', {
+    const blockedSection = screen.getByText('Blocked Tasks').closest('section');
+    expect(blockedSection).toBeTruthy();
+
+    const blockedButton = await within(blockedSection as HTMLElement).findByRole('button', {
       name: /Blocked home task/i,
     });
     await user.click(blockedButton);
@@ -3633,11 +3640,13 @@ describe('App UI flow', () => {
         activeTaskCount: 1,
         waitingTaskCount: 0,
         blockerTaskCount: 1,
+        escalationTaskCount: 1,
         highRiskTaskCount: 0,
         missingNextStepTaskCount: 0,
         recentTasks: [blockedTask],
         waitingTasks: [],
         blockerTasks: [blockedTask],
+        escalationTasks: [blockedTask],
         highRiskTasks: [],
         missingNextStepTasks: [],
         recommendedActions: [],
@@ -3651,7 +3660,10 @@ describe('App UI flow', () => {
 
     render(<App />);
 
-    await user.click(await screen.findByRole('button', { name: '查看阻塞来源' }));
+    const blockedSection = screen.getByText('Blocked Tasks').closest('section');
+    expect(blockedSection).toBeTruthy();
+
+    await user.click(await within(blockedSection as HTMLElement).findByRole('button', { name: '查看阻塞来源' }));
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Blocked source task' })).toBeTruthy();
@@ -3789,11 +3801,13 @@ describe('App UI flow', () => {
         activeTaskCount: 1,
         waitingTaskCount: currentTask.state === 'waiting_external' ? 1 : 0,
         blockerTaskCount: currentTask.activeBlocker ? 1 : 0,
+        escalationTaskCount: currentTask.activeBlocker ? 1 : 0,
         highRiskTaskCount: 0,
         missingNextStepTaskCount: currentTask.nextStep ? 0 : 1,
         recentTasks: [currentTask],
         waitingTasks: currentTask.state === 'waiting_external' ? [currentTask] : [],
         blockerTasks: currentTask.activeBlocker ? [currentTask] : [],
+        escalationTasks: currentTask.activeBlocker ? [currentTask] : [],
         highRiskTasks: [],
         missingNextStepTasks: currentTask.nextStep ? [] : [currentTask],
         recommendedActions: [],
@@ -3848,6 +3862,91 @@ describe('App UI flow', () => {
     await waitFor(() => {
       expect(screen.getByText('当前没有阻塞中的任务。')).toBeTruthy();
     });
+  });
+
+  it('opens escalation tasks from home with escalation-focused guidance', async () => {
+    const user = userEvent.setup();
+
+    const escalationTask = buildTaskRecord({
+      id: 'task_escalation_home',
+      title: 'Escalation home task',
+      state: 'planned',
+      nextStep: null,
+      activeBlocker: buildBlocker({
+        id: 'blocker_escalation_home_1',
+        taskId: 'task_escalation_home',
+        title: 'Legal approval pending',
+        detail: 'Need legal sign-off before launch',
+        sourceContextId: 'source_context_escalation_home',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      }),
+    });
+
+    const sourceItem = buildSourceContext({
+      id: 'source_context_escalation_home',
+      taskId: escalationTask.id,
+      title: 'Legal escalation brief',
+      note: 'Latest escalation framing',
+    });
+
+    const escalationHomeApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([escalationTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== escalationTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(escalationTask),
+          sourceContexts: [sourceItem],
+        };
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 1,
+        waitingTaskCount: 0,
+        blockerTaskCount: 1,
+        escalationTaskCount: 1,
+        highRiskTaskCount: 0,
+        missingNextStepTaskCount: 0,
+        recentTasks: [escalationTask],
+        waitingTasks: [],
+        blockerTasks: [escalationTask],
+        escalationTasks: [escalationTask],
+        highRiskTasks: [],
+        missingNextStepTasks: [],
+        recommendedActions: [],
+        recentArtifacts: [],
+        recentSourceContexts: [],
+        recentActivity: [],
+      }),
+    };
+
+    window.api = escalationHomeApi;
+
+    render(<App />);
+
+    const escalationHeading = screen
+      .getAllByText('Needs Escalation')
+      .find((element) => element.tagName === 'STRONG');
+    expect(escalationHeading).toBeTruthy();
+
+    const escalationSection = escalationHeading?.closest('section');
+    expect(escalationSection).toBeTruthy();
+
+    await user.click(
+      await within(escalationSection as HTMLElement).findByRole('button', { name: /Escalation home task/i }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Escalation home task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('来源标题') as HTMLInputElement).value).toBe('Legal escalation brief');
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '优先升级当前阻塞项：Legal approval pending',
+    );
   });
 
   it('opens task resume previews from home with a prefilled next step', async () => {

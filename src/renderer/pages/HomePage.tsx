@@ -124,6 +124,32 @@ export function HomePage({
     });
   }
 
+  function openEscalationTask(task: HomeBriefData['escalationTasks'][number]) {
+    onOpenAction({
+      id: `home-escalation:${task.id}`,
+      label: `优先升级阻塞项：${task.title}`,
+      reason:
+        task.activeBlocker?.detail ??
+        task.activeBlocker?.owner ??
+        task.activeBlocker?.title ??
+        '该任务当前存在已卡住过久的阻塞项。',
+      taskId: task.id,
+      priority: 'high',
+      intent: task.activeBlocker?.sourceContextId
+        ? {
+            type: 'focus_source_context',
+            focusArea: 'detail',
+            sourceContextId: task.activeBlocker.sourceContextId,
+            prefillNextStep: `优先升级当前阻塞项：${task.activeBlocker.title}`,
+          }
+        : {
+            type: 'focus_next_step',
+            focusArea: 'detail',
+            prefillNextStep: `优先升级当前阻塞项：${task.activeBlocker?.title ?? task.title}`,
+          },
+    });
+  }
+
   function openNextStepTask(task: HomeBriefData['missingNextStepTasks'][number]) {
     onOpenAction({
       id: `home-next-step:${task.id}`,
@@ -254,6 +280,10 @@ export function HomePage({
           <div className="metric-card metric-card-warning">
             <span className="metric-label">Blocked</span>
             <strong>{briefData?.blockerTaskCount ?? 0}</strong>
+          </div>
+          <div className="metric-card metric-card-danger">
+            <span className="metric-label">Needs Escalation</span>
+            <strong>{briefData?.escalationTaskCount ?? 0}</strong>
           </div>
           <div className="metric-card metric-card-danger">
             <span className="metric-label">High Risk</span>
@@ -518,6 +548,46 @@ export function HomePage({
               ))
             ) : (
               <p className="meta">当前没有阻塞中的任务。</p>
+            )}
+          </section>
+
+          <section className="timeline-list">
+            <strong>Needs Escalation</strong>
+            {briefData?.escalationTasks.length ? (
+              briefData.escalationTasks.map((task) => (
+                <div className="task-card task-card-danger" key={task.id}>
+                  <button
+                    className="task-card-button task-card-button-shell"
+                    onClick={() => openEscalationTask(task)}
+                    type="button"
+                  >
+                    <div className="task-row">
+                      <strong>{task.title}</strong>
+                      <span className="status">{task.state}</span>
+                    </div>
+                    <p className="meta">
+                      {task.activeBlocker?.detail || task.activeBlocker?.owner || task.activeBlocker?.title || '未填写阻塞说明'}
+                    </p>
+                    {task.activeBlocker ? (
+                      <p className="meta">{formatBlockerAgeLabel(task.activeBlocker.createdAt)}</p>
+                    ) : null}
+                    {task.nextStep ? <p className="meta">升级后下一步：{task.nextStep}</p> : null}
+                  </button>
+                  {task.activeBlocker?.sourceContextId ? (
+                    <div className="chip-row">
+                      <button
+                        className="ghost-button"
+                        onClick={() => openBlockedSource(task)}
+                        type="button"
+                      >
+                        查看阻塞来源
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ))
+            ) : (
+              <p className="meta">当前没有需要升级处理的阻塞项。</p>
             )}
           </section>
 

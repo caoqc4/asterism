@@ -686,6 +686,9 @@ export class HomeBriefService {
           right.activeBlocker?.createdAt ?? right.updatedAt,
         ),
       );
+    const escalationTasks = blockerTasks.filter((task) =>
+      task.activeBlocker ? isStaleBlocker(task.activeBlocker.createdAt) : false,
+    );
     const highRiskTasks = tasks.filter((task) => task.riskLevel === 'high');
     const missingNextStepTasks = activeTasks.filter((task) => !task.nextStep?.trim());
     const scheduler = this.getSchedulerStatus();
@@ -725,11 +728,13 @@ export class HomeBriefService {
       recentRunCount: runs.length,
       waitingTaskCount: waitingTasks.length,
       blockerTaskCount: blockerTasks.length,
+      escalationTaskCount: escalationTasks.length,
       highRiskTaskCount: highRiskTasks.length,
       missingNextStepTaskCount: missingNextStepTasks.length,
       recentTasks: tasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       waitingTasks: waitingTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       blockerTasks: blockerTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
+      escalationTasks: escalationTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       highRiskTasks: highRiskTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       missingNextStepTasks: missingNextStepTasks
         .slice(0, 5)

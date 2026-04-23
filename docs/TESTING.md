@@ -124,6 +124,7 @@ Covered today:
 - `Home blocked tasks -> blocker source entry`
 - `Home blocked tasks -> resolve blocker and resume waiting when clearly linked`
 - `Home blocked tasks -> stale-first blocker ordering and blocker-age cues`
+- `Home needs-escalation signal -> task recovery with escalation guidance`
 - `Tasks quick decision submission`
 - `Tasks quick run submission`
 - `Tasks related activity -> Decisions / Runs`
