@@ -2666,9 +2666,13 @@ describe('App UI flow', () => {
       templateId: 'process_template_created',
     });
 
-    await screen.findByText('Cold outreach skill');
+    expect((await screen.findAllByText('Cold outreach skill')).length).toBeGreaterThan(0);
 
-    const existingTemplateCard = screen.getByText('Launch checklist').closest('.timeline-item');
+    const processSection = screen.getByRole('heading', { name: 'Process Context' }).closest('.transition-group');
+    expect(processSection).not.toBeNull();
+    const existingTemplateCard = within(processSection as HTMLElement)
+      .getAllByText('Launch checklist')[0]
+      ?.closest('.timeline-item');
     expect(existingTemplateCard).not.toBeNull();
     await user.click(
       within(existingTemplateCard as HTMLElement).getByRole('button', { name: '编辑模板' }),

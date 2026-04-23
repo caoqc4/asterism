@@ -1135,9 +1135,9 @@ export function TasksPage({
                 <div className="detail-stage-head">
                   <div>
                     <p className="eyebrow">Current Snapshot</p>
-                    <h3>当前状态与对象</h3>
+                    <h3>恢复与当前推进</h3>
                   </div>
-                  <p className="meta">先看这条任务现在的信号、等待对象和已有产物。</p>
+                  <p className="meta">第一屏只保留能帮助你恢复状态、看清当前对象并继续推进的切片。</p>
                 </div>
               <div className="detail-cluster-grid">
                 <div className="transition-group detail-card-group detail-card-wide">
@@ -1275,7 +1275,7 @@ export function TasksPage({
                   <h3>Recent Artifacts</h3>
                   <div className="timeline-list">
                     {detail.artifacts.length ? (
-                      detail.artifacts.map((artifact) => (
+                      detail.artifacts.slice(0, 2).map((artifact) => (
                         <div className="timeline-item timeline-item-next-step" key={artifact.id}>
                           <div className="task-row">
                             <strong>{artifact.title}</strong>
@@ -1295,7 +1295,7 @@ export function TasksPage({
                   </div>
                 </div>
 
-                <div className="transition-group detail-card-group" ref={sourceContextSectionRef}>
+                <div className="transition-group detail-card-group">
                   <h3>Key Source Materials</h3>
                   <div className="timeline-list">
                     {detail.sourceContexts.length ? (
@@ -1325,142 +1325,11 @@ export function TasksPage({
                 </div>
 
                 <div className="transition-group detail-card-group">
-                  <h3>Source Context</h3>
-                  <div className="timeline-list">
-                    {detail.sourceContexts.length ? (
-                      detail.sourceContexts.map((item) => (
-                        <div className="timeline-item" key={item.id}>
-                          <div className="task-row">
-                            <strong>{item.title}</strong>
-                            <span className="signal-pill timeline-badge timeline-item-default">
-                              {formatSourceContextKind(item.kind)}
-                              {item.isKey ? ' · key' : ''}
-                            </span>
-                          </div>
-                          {item.uri ? (
-                            <p className="meta">
-                              <a href={item.uri} rel="noreferrer" target="_blank">
-                                {item.uri}
-                              </a>
-                            </p>
-                          ) : null}
-                          {item.note ? <p className="meta">{item.note}</p> : null}
-                          {item.content ? (
-                            <p className="meta brief-preview">{item.content}</p>
-                          ) : null}
-                          <div className="timeline-actions">
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => populateSourceContextForm(item)}
-                              type="button"
-                            >
-                              编辑来源
-                            </button>
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => void handleArchiveCurrentSourceContext(item.id)}
-                              type="button"
-                            >
-                              归档来源
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="meta">当前任务还没有挂载来源材料。</p>
-                    )}
-                  </div>
-                  <form className="stack" onSubmit={handleSaveSourceContext}>
-                    <label>
-                      来源标题
-                      <input
-                        value={sourceContextTitle}
-                        onChange={(event) => {
-                          setSourceContextTitle(event.target.value);
-                          if (sourceContextError) {
-                            setSourceContextError(null);
-                          }
-                        }}
-                      />
-                    </label>
-                    <label>
-                      来源类型
-                      <select
-                        value={sourceContextKind}
-                        onChange={(event) =>
-                          setSourceContextKind(event.target.value as SourceContextKind)
-                        }
-                      >
-                        {sourceContextKindOptions.map((kind) => (
-                          <option key={kind} value={kind}>
-                            {formatSourceContextKind(kind)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="checkbox-row">
-                      <input
-                        checked={sourceContextIsKey}
-                        onChange={(event) => setSourceContextIsKey(event.target.checked)}
-                        type="checkbox"
-                      />
-                      标记为关键来源
-                    </label>
-                    <label>
-                      链接 / URI
-                      <input
-                        value={sourceContextUri}
-                        onChange={(event) => {
-                          setSourceContextUri(event.target.value);
-                          if (sourceContextError) {
-                            setSourceContextError(null);
-                          }
-                        }}
-                      />
-                    </label>
-                    <label>
-                      说明
-                      <textarea
-                        rows={2}
-                        value={sourceContextNote}
-                        onChange={(event) => setSourceContextNote(event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      补充内容
-                      <textarea
-                        rows={3}
-                        value={sourceContextContent}
-                        onChange={(event) => setSourceContextContent(event.target.value)}
-                      />
-                    </label>
-                    {sourceContextError ? <p className="meta">{sourceContextError}</p> : null}
-                    <div className="timeline-actions">
-                      <button type="submit">
-                        {sourceContextEditingId ? '保存来源' : '新增来源'}
-                      </button>
-                      {sourceContextEditingId ? (
-                        <button
-                          className="ghost-button"
-                          onClick={resetSourceContextForm}
-                          type="button"
-                        >
-                          取消编辑
-                        </button>
-                      ) : null}
-                    </div>
-                  </form>
-                </div>
-
-                <div
-                  className="transition-group detail-card-group"
-                  ref={processContextSectionRef}
-                >
-                  <h3>Process Context</h3>
+                  <h3>Current Method</h3>
                   <div className="timeline-list">
                     {detail.processTemplates.length ? (
-                      detail.processTemplates.map((item) => (
-                        <div className="timeline-item timeline-item-state" key={item.bindingId}>
+                      detail.processTemplates.slice(0, 1).map((item) => (
+                        <div className="timeline-item timeline-item-state" key={`current-method:${item.bindingId}`}>
                           <div className="task-row">
                             <strong>{item.title}</strong>
                             <span className="signal-pill timeline-badge timeline-item-state">
@@ -1468,137 +1337,27 @@ export function TasksPage({
                             </span>
                           </div>
                           {item.summary ? <p className="meta">{item.summary}</p> : null}
-                          {item.tags.length ? (
-                            <p className="meta">tags: {item.tags.join(', ')}</p>
+                          {item.tags.length ? <p className="meta">tags: {item.tags.join(', ')}</p> : null}
+                          {detail.resumeCard.currentMethod.selectionReason ? (
+                            <p className="meta">{detail.resumeCard.currentMethod.selectionReason}</p>
                           ) : null}
-                          <p className="meta">active template · bound at {item.boundAt}</p>
-                          <p className="meta brief-preview">{item.content}</p>
                           <div className="timeline-actions">
                             <button
                               className="ghost-button timeline-action"
-                              onClick={() => populateProcessTemplateForm(item)}
+                              onClick={() => focusProcessTemplate(item.id)}
                               type="button"
                             >
-                              编辑模板
-                            </button>
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => void handleRemoveCurrentProcessTemplate(item.bindingId)}
-                              type="button"
-                            >
-                              移除模板
-                            </button>
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => void handleArchiveCurrentProcessTemplate(item.id)}
-                              type="button"
-                            >
-                              归档模板
+                              打开当前方法模板
                             </button>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="meta">当前任务还没有挂载方法模板。</p>
+                      <p className="meta">当前任务还没有启用中的方法模板。</p>
                     )}
                   </div>
-                  <div className="timeline-list">
-                    <div className="timeline-item">
-                      <strong>Template Library</strong>
-                      {detail.availableProcessTemplates.length ? (
-                        <div className="stack">
-                          {detail.availableProcessTemplates.map((item) => (
-                            <div className="task-row" key={item.id}>
-                              <div>
-                                <strong>{item.title}</strong>
-                                <p className="meta">
-                                  {formatProcessTemplateKind(item.kind)}
-                                  {item.summary ? ` · ${item.summary}` : ''}
-                                </p>
-                              </div>
-                              <button
-                                className="ghost-button timeline-action"
-                                onClick={() => void handleApplyAvailableProcessTemplate(item.id)}
-                                type="button"
-                              >
-                                挂载模板
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="meta">当前没有可挂载的其它模板。</p>
-                      )}
-                    </div>
-                  </div>
-                  <form className="stack" onSubmit={handleSaveProcessTemplate}>
-                    <label>
-                      模板标题
-                      <input
-                        value={processTemplateTitle}
-                        onChange={(event) => {
-                          setProcessTemplateTitle(event.target.value);
-                          if (processTemplateError) {
-                            setProcessTemplateError(null);
-                          }
-                        }}
-                      />
-                    </label>
-                    <label>
-                      模板类型
-                      <select
-                        value={processTemplateKind}
-                        onChange={(event) =>
-                          setProcessTemplateKind(event.target.value as ProcessTemplateKind)
-                        }
-                      >
-                        {processTemplateKindOptions.map((kind) => (
-                          <option key={kind} value={kind}>
-                            {formatProcessTemplateKind(kind)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      简述
-                      <input
-                        value={processTemplateSummary}
-                        onChange={(event) => setProcessTemplateSummary(event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      标签
-                      <input
-                        placeholder="writing, outreach, review"
-                        value={processTemplateTags}
-                        onChange={(event) => setProcessTemplateTags(event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      模板内容
-                      <textarea
-                        rows={5}
-                        value={processTemplateContent}
-                        onChange={(event) => setProcessTemplateContent(event.target.value)}
-                      />
-                    </label>
-                    {processTemplateError ? <p className="meta">{processTemplateError}</p> : null}
-                    <div className="timeline-actions">
-                      <button type="submit">
-                        {processTemplateEditingId ? '保存模板' : '创建模板并挂载'}
-                      </button>
-                      {processTemplateEditingId ? (
-                        <button
-                          className="ghost-button"
-                          onClick={resetProcessTemplateForm}
-                          type="button"
-                        >
-                          取消编辑
-                        </button>
-                      ) : null}
-                    </div>
-                  </form>
                 </div>
+
               </div>
             </div>
 
@@ -1611,7 +1370,7 @@ export function TasksPage({
                 <p className="meta">中间这一层只放推进任务的动作，避免和历史信息混在一起。</p>
               </div>
               <div className="detail-cluster-grid">
-                <div className="transition-group detail-card-group">
+                <div className="transition-group detail-card-group" ref={sourceContextSectionRef}>
                   <h3>Quick Actions</h3>
                   <div className="quick-actions-grid" ref={quickActionsRef}>
                     <form className="stack task-card quick-action-card" onSubmit={handleQuickDecision}>
@@ -1813,6 +1572,272 @@ export function TasksPage({
                       ) : null}
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="transition-group detail-stage">
+              <div className="detail-stage-head">
+                <div>
+                  <p className="eyebrow">Context Studio</p>
+                  <h3>来源与方法管理</h3>
+                </div>
+                <p className="meta">完整的来源材料和方法模板管理下沉到这一层，不再抢第一屏恢复入口。</p>
+              </div>
+              <div className="detail-cluster-grid">
+                <div className="transition-group detail-card-group">
+                  <h3>Source Context</h3>
+                  <div className="timeline-list">
+                    {detail.sourceContexts.length ? (
+                      detail.sourceContexts.map((item) => (
+                        <div className="timeline-item" key={item.id}>
+                          <div className="task-row">
+                            <strong>{item.title}</strong>
+                            <span className="signal-pill timeline-badge timeline-item-default">
+                              {formatSourceContextKind(item.kind)}
+                              {item.isKey ? ' · key' : ''}
+                            </span>
+                          </div>
+                          {item.uri ? (
+                            <p className="meta">
+                              <a href={item.uri} rel="noreferrer" target="_blank">
+                                {item.uri}
+                              </a>
+                            </p>
+                          ) : null}
+                          {item.note ? <p className="meta">{item.note}</p> : null}
+                          {item.content ? <p className="meta brief-preview">{item.content}</p> : null}
+                          <div className="timeline-actions">
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => populateSourceContextForm(item)}
+                              type="button"
+                            >
+                              编辑来源
+                            </button>
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => void handleArchiveCurrentSourceContext(item.id)}
+                              type="button"
+                            >
+                              归档来源
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="meta">当前任务还没有挂载来源材料。</p>
+                    )}
+                  </div>
+                  <form className="stack" onSubmit={handleSaveSourceContext}>
+                    <label>
+                      来源标题
+                      <input
+                        value={sourceContextTitle}
+                        onChange={(event) => {
+                          setSourceContextTitle(event.target.value);
+                          if (sourceContextError) {
+                            setSourceContextError(null);
+                          }
+                        }}
+                      />
+                    </label>
+                    <label>
+                      来源类型
+                      <select
+                        value={sourceContextKind}
+                        onChange={(event) => setSourceContextKind(event.target.value as SourceContextKind)}
+                      >
+                        {sourceContextKindOptions.map((kind) => (
+                          <option key={kind} value={kind}>
+                            {formatSourceContextKind(kind)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="checkbox-row">
+                      <input
+                        checked={sourceContextIsKey}
+                        onChange={(event) => setSourceContextIsKey(event.target.checked)}
+                        type="checkbox"
+                      />
+                      标记为关键来源
+                    </label>
+                    <label>
+                      链接 / URI
+                      <input
+                        value={sourceContextUri}
+                        onChange={(event) => {
+                          setSourceContextUri(event.target.value);
+                          if (sourceContextError) {
+                            setSourceContextError(null);
+                          }
+                        }}
+                      />
+                    </label>
+                    <label>
+                      说明
+                      <textarea
+                        rows={2}
+                        value={sourceContextNote}
+                        onChange={(event) => setSourceContextNote(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      补充内容
+                      <textarea
+                        rows={3}
+                        value={sourceContextContent}
+                        onChange={(event) => setSourceContextContent(event.target.value)}
+                      />
+                    </label>
+                    {sourceContextError ? <p className="meta">{sourceContextError}</p> : null}
+                    <div className="timeline-actions">
+                      <button type="submit">{sourceContextEditingId ? '保存来源' : '新增来源'}</button>
+                      {sourceContextEditingId ? (
+                        <button className="ghost-button" onClick={resetSourceContextForm} type="button">
+                          取消编辑
+                        </button>
+                      ) : null}
+                    </div>
+                  </form>
+                </div>
+
+                <div className="transition-group detail-card-group" ref={processContextSectionRef}>
+                  <h3>Process Context</h3>
+                  <div className="timeline-list">
+                    {detail.processTemplates.length ? (
+                      detail.processTemplates.map((item) => (
+                        <div className="timeline-item timeline-item-state" key={item.bindingId}>
+                          <div className="task-row">
+                            <strong>{item.title}</strong>
+                            <span className="signal-pill timeline-badge timeline-item-state">
+                              {formatProcessTemplateKind(item.kind)}
+                            </span>
+                          </div>
+                          {item.summary ? <p className="meta">{item.summary}</p> : null}
+                          {item.tags.length ? <p className="meta">tags: {item.tags.join(', ')}</p> : null}
+                          <p className="meta">active template · bound at {item.boundAt}</p>
+                          <p className="meta brief-preview">{item.content}</p>
+                          <div className="timeline-actions">
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => populateProcessTemplateForm(item)}
+                              type="button"
+                            >
+                              编辑模板
+                            </button>
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => void handleRemoveCurrentProcessTemplate(item.bindingId)}
+                              type="button"
+                            >
+                              移除模板
+                            </button>
+                            <button
+                              className="ghost-button timeline-action"
+                              onClick={() => void handleArchiveCurrentProcessTemplate(item.id)}
+                              type="button"
+                            >
+                              归档模板
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="meta">当前任务还没有挂载方法模板。</p>
+                    )}
+                  </div>
+                  <div className="timeline-list">
+                    <div className="timeline-item">
+                      <strong>Template Library</strong>
+                      {detail.availableProcessTemplates.length ? (
+                        <div className="stack">
+                          {detail.availableProcessTemplates.map((item) => (
+                            <div className="task-row" key={item.id}>
+                              <div>
+                                <strong>{item.title}</strong>
+                                <p className="meta">
+                                  {formatProcessTemplateKind(item.kind)}
+                                  {item.summary ? ` · ${item.summary}` : ''}
+                                </p>
+                              </div>
+                              <button
+                                className="ghost-button timeline-action"
+                                onClick={() => void handleApplyAvailableProcessTemplate(item.id)}
+                                type="button"
+                              >
+                                挂载模板
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="meta">当前没有可挂载的其它模板。</p>
+                      )}
+                    </div>
+                  </div>
+                  <form className="stack" onSubmit={handleSaveProcessTemplate}>
+                    <label>
+                      模板标题
+                      <input
+                        value={processTemplateTitle}
+                        onChange={(event) => {
+                          setProcessTemplateTitle(event.target.value);
+                          if (processTemplateError) {
+                            setProcessTemplateError(null);
+                          }
+                        }}
+                      />
+                    </label>
+                    <label>
+                      模板类型
+                      <select
+                        value={processTemplateKind}
+                        onChange={(event) => setProcessTemplateKind(event.target.value as ProcessTemplateKind)}
+                      >
+                        {processTemplateKindOptions.map((kind) => (
+                          <option key={kind} value={kind}>
+                            {formatProcessTemplateKind(kind)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      简述
+                      <input
+                        value={processTemplateSummary}
+                        onChange={(event) => setProcessTemplateSummary(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      标签
+                      <input
+                        placeholder="writing, outreach, review"
+                        value={processTemplateTags}
+                        onChange={(event) => setProcessTemplateTags(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      模板内容
+                      <textarea
+                        rows={5}
+                        value={processTemplateContent}
+                        onChange={(event) => setProcessTemplateContent(event.target.value)}
+                      />
+                    </label>
+                    {processTemplateError ? <p className="meta">{processTemplateError}</p> : null}
+                    <div className="timeline-actions">
+                      <button type="submit">
+                        {processTemplateEditingId ? '保存模板' : '创建模板并挂载'}
+                      </button>
+                      {processTemplateEditingId ? (
+                        <button className="ghost-button" onClick={resetProcessTemplateForm} type="button">
+                          取消编辑
+                        </button>
+                      ) : null}
+                    </div>
+                  </form>
                 </div>
               </div>
             </div>
