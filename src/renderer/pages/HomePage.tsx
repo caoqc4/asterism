@@ -232,15 +232,68 @@ export function HomePage({
     });
   }
 
+  function getHomeHeadline(data: HomeBriefData | null) {
+    if (!data) {
+      return '本地优先控制台骨架已进入任务闭环阶段';
+    }
+
+    if (data.escalationTaskCount > 0) {
+      return `当前有 ${data.escalationTaskCount} 个阻塞项需要升级处理`;
+    }
+
+    if (data.blockerTaskCount > 0) {
+      return `当前有 ${data.blockerTaskCount} 个任务被阻塞`;
+    }
+
+    if (data.highRiskTaskCount > 0) {
+      return `当前有 ${data.highRiskTaskCount} 个高风险任务需要优先处理`;
+    }
+
+    if (data.waitingTaskCount > 0) {
+      return `当前有 ${data.waitingTaskCount} 个等待中任务需要恢复推进`;
+    }
+
+    if (data.missingNextStepTaskCount > 0) {
+      return `当前有 ${data.missingNextStepTaskCount} 个任务缺少下一步`;
+    }
+
+    return '本地优先控制台骨架已进入任务闭环阶段';
+  }
+
+  function getHomeLede(data: HomeBriefData | null) {
+    if (!data) {
+      return '当前已经接通 Main 持有的 SQLite 与本地凭据存储。下一步可以继续把 Decisions、Runs 和 Brief 聚合查询接上。';
+    }
+
+    if (data.escalationTaskCount > 0) {
+      return '首页会优先把 stale blocker 提升成升级信号，并把你直接带回相关任务继续处理当前阻塞。';
+    }
+
+    if (data.blockerTaskCount > 0) {
+      return '当前优先清理阻塞项；首页会把你带回相关任务，并在有来源材料时直接聚焦阻塞来源。';
+    }
+
+    if (data.highRiskTaskCount > 0) {
+      return '当前优先控制高风险任务；首页会直接把风险处理语义和下一步动作带回任务工作面。';
+    }
+
+    if (data.waitingTaskCount > 0) {
+      return '当前优先恢复等待中的任务；首页会把等待原因和跟进动作一起带回任务工作面。';
+    }
+
+    if (data.missingNextStepTaskCount > 0) {
+      return '当前优先补齐缺少下一步的任务，避免后续恢复和协作成本继续升高。';
+    }
+
+    return '当前已经接通 Main 持有的 SQLite 与本地凭据存储。下一步可以继续把 Decisions、Runs 和 Brief 聚合查询接上。';
+  }
+
   return (
     <section className="page-grid">
       <article className="panel hero page-hero">
         <p className="eyebrow">Home / Brief</p>
-        <h1>本地优先控制台骨架已进入任务闭环阶段</h1>
-        <p className="lede">
-          当前已经接通 Main 持有的 SQLite 与本地凭据存储。下一步可以继续把 Decisions、Runs 和
-          Brief 聚合查询接上。
-        </p>
+        <h1>{getHomeHeadline(briefData)}</h1>
+        <p className="lede">{getHomeLede(briefData)}</p>
       </article>
 
       <article className="panel">

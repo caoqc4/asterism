@@ -4034,6 +4034,56 @@ describe('App UI flow', () => {
     );
   });
 
+  it('prioritizes escalation status in the home headline when stale blockers exist', async () => {
+    const escalationTask = buildTaskRecord({
+      id: 'task_escalation_headline_home',
+      title: 'Escalation headline task',
+      state: 'planned',
+      nextStep: null,
+      activeBlocker: buildBlocker({
+        id: 'blocker_escalation_headline_home_1',
+        taskId: 'task_escalation_headline_home',
+        title: 'Approval still pending',
+        detail: 'Need leadership approval before shipping',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      }),
+    });
+
+    const escalationHomeApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([escalationTask]),
+      getTaskDetail: vi.fn().mockResolvedValue(buildTaskDetail(escalationTask)),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 1,
+        waitingTaskCount: 0,
+        blockerTaskCount: 0,
+        escalationTaskCount: 1,
+        highRiskTaskCount: 0,
+        missingNextStepTaskCount: 0,
+        recentTasks: [escalationTask],
+        waitingTasks: [],
+        blockerTasks: [],
+        escalationTasks: [escalationTask],
+        highRiskTasks: [],
+        missingNextStepTasks: [],
+        recommendedActions: [],
+        recentArtifacts: [],
+        recentSourceContexts: [],
+        recentActivity: [],
+      }),
+    };
+
+    window.api = escalationHomeApi;
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: '当前有 1 个阻塞项需要升级处理' })).toBeTruthy();
+    expect(
+      screen.getByText('首页会优先把 stale blocker 提升成升级信号，并把你直接带回相关任务继续处理当前阻塞。'),
+    ).toBeTruthy();
+  });
+
   it('opens task resume previews from home with a prefilled next step', async () => {
     const user = userEvent.setup();
 
