@@ -180,11 +180,9 @@ export class TaskService {
     return {
       summary: summaryParts.join(' '),
       currentState: currentStateParts.join(' · '),
-      latestChange: latestChange.summary,
-      latestChangeAction: {
-        label: latestChange.label,
-        targetType: latestChange.targetType,
-        targetId: latestChange.targetId,
+      latestChange: {
+        summary: latestChange.summary,
+        action: latestChange.action,
       },
       keySource: keySource
         ? {

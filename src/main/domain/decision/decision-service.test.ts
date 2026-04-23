@@ -29,11 +29,13 @@ function buildTaskDetail(): TaskDetail {
     resumeCard: {
       summary: 'Resume summary',
       currentState: '状态：planned',
-      latestChange: '最近没有新的生命周期变化。',
-      latestChangeAction: {
-        label: null,
-        targetType: null,
-        targetId: null,
+      latestChange: {
+        summary: '最近没有新的生命周期变化。',
+        action: {
+          label: null,
+          targetType: null,
+          targetId: null,
+        },
       },
       keySource: {
         sourceContextId: null,

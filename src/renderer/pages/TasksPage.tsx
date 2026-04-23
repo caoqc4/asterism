@@ -734,21 +734,21 @@ export function TasksPage({
   }
 
   function openResumeLatestChange() {
-    if (!detail?.resumeCard.latestChangeAction.targetType || !detail.resumeCard.latestChangeAction.targetId) {
+    if (!detail?.resumeCard.latestChange.action.targetType || !detail.resumeCard.latestChange.action.targetId) {
       return;
     }
 
-    if (detail.resumeCard.latestChangeAction.targetType === 'source_context') {
-      focusSourceContext(detail.resumeCard.latestChangeAction.targetId);
+    if (detail.resumeCard.latestChange.action.targetType === 'source_context') {
+      focusSourceContext(detail.resumeCard.latestChange.action.targetId);
       return;
     }
 
-    if (detail.resumeCard.latestChangeAction.targetType === 'decision') {
-      onOpenDecision(detail.resumeCard.latestChangeAction.targetId);
+    if (detail.resumeCard.latestChange.action.targetType === 'decision') {
+      onOpenDecision(detail.resumeCard.latestChange.action.targetId);
       return;
     }
 
-    onOpenRun(detail.resumeCard.latestChangeAction.targetId);
+    onOpenRun(detail.resumeCard.latestChange.action.targetId);
   }
 
   async function handleSaveSourceContext(event: React.FormEvent<HTMLFormElement>) {
@@ -1190,14 +1190,14 @@ export function TasksPage({
                       </div>
                       <div className="resume-cell">
                         <strong>Latest Change</strong>
-                        <p className="meta">{detail.resumeCard.latestChange}</p>
-                        {detail.resumeCard.latestChangeAction.label ? (
+                        <p className="meta">{detail.resumeCard.latestChange.summary}</p>
+                        {detail.resumeCard.latestChange.action.label ? (
                           <button
                             className="ghost-button timeline-action"
                             onClick={openResumeLatestChange}
                             type="button"
                           >
-                            {detail.resumeCard.latestChangeAction.label}
+                            {detail.resumeCard.latestChange.action.label}
                           </button>
                         ) : null}
                       </div>

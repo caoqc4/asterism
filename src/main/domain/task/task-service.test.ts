@@ -24,11 +24,13 @@ function buildDetail(state: TaskDetail['state']): TaskDetail {
     resumeCard: {
       summary: 'Resume summary',
       currentState: `状态：${state}`,
-      latestChange: '最近没有新的生命周期变化。',
-      latestChangeAction: {
-        label: null,
-        targetType: null,
-        targetId: null,
+      latestChange: {
+        summary: '最近没有新的生命周期变化。',
+        action: {
+          label: null,
+          targetType: null,
+          targetId: null,
+        },
       },
       keySource: {
         sourceContextId: null,
@@ -213,8 +215,8 @@ describe('TaskService', () => {
     const detail = await service.getDetail('task_1');
 
     expect(detail?.resumeCard.summary).toContain('Partner website shortlist');
-    expect(detail?.resumeCard.latestChange).toBe('最近更新了来源材料：Partner website shortlist。');
-    expect(detail?.resumeCard.latestChangeAction).toEqual({
+    expect(detail?.resumeCard.latestChange.summary).toBe('最近更新了来源材料：Partner website shortlist。');
+    expect(detail?.resumeCard.latestChange.action).toEqual({
       label: '查看来源',
       targetType: 'source_context',
       targetId: 'source_context_key',
@@ -263,7 +265,7 @@ describe('TaskService', () => {
 
     const detail = await service.getDetail('task_1');
 
-    expect(detail?.resumeCard.latestChange).toBe('最近一次执行失败：Model overloaded。');
+    expect(detail?.resumeCard.latestChange.summary).toBe('最近一次执行失败：Model overloaded。');
     expect(detail?.resumeCard.nextSuggestedMove).toBe('检查最近一次执行失败原因，并决定是否重试。');
   });
 

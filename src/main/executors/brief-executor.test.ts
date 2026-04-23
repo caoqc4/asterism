@@ -25,18 +25,24 @@ function buildHomeBriefData(): HomeBriefData {
         taskId: 'task_resume_brief',
         taskTitle: 'Resume task',
         currentState: '状态：planned',
-        latestChange: '最近决策动态：Approve launch · approved',
-        latestChangeAction: {
-          label: '查看 Decision',
-          targetType: 'decision',
-          targetId: 'decision_resume_brief',
+        latestChange: {
+          summary: '最近决策动态：Approve launch · approved',
+          action: {
+            label: '查看 Decision',
+            targetType: 'decision',
+            targetId: 'decision_resume_brief',
+          },
         },
-        keySourceTitle: 'Launch memo',
-        keySourceReason: '关键来源：包含最新发布时间窗口。',
-        currentMethodTitle: 'Launch workflow',
-        currentMethodReason: '最近用于执行：发布时间敏感，需要先按发布流程检查。',
+        keySource: {
+          sourceContextId: 'source_context_resume_brief',
+          title: 'Launch memo',
+          priorityReason: '关键来源：包含最新发布时间窗口。',
+        },
+        currentMethod: {
+          title: 'Launch workflow',
+          selectionReason: '最近用于执行：发布时间敏感，需要先按发布流程检查。',
+        },
         nextSuggestedMove: '已获批准，继续推进：Approve launch',
-        sourceContextId: 'source_context_resume_brief',
         contextActionLabel: '继续推进任务',
         contextActionIntent: {
           type: 'focus_next_step',

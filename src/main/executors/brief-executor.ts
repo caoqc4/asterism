@@ -40,16 +40,16 @@ function formatResumePreviewLine(preview: HomeBriefData['recentTaskResumes'][num
   const parts = [
     `- ${preview.taskTitle}`,
     `state=${preview.currentState}`,
-    `latest=${preview.latestChange}`,
+    `latest=${preview.latestChange.summary}`,
     `next=${preview.nextSuggestedMove}`,
   ];
 
-  if (preview.keySourceTitle) {
-    parts.push(`source=${preview.keySourceTitle}`);
+  if (preview.keySource.title) {
+    parts.push(`source=${preview.keySource.title}`);
   }
 
-  if (preview.currentMethodTitle) {
-    parts.push(`method=${preview.currentMethodTitle}`);
+  if (preview.currentMethod.title) {
+    parts.push(`method=${preview.currentMethod.title}`);
   }
 
   return parts.join(' | ');

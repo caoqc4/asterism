@@ -304,18 +304,24 @@ describe('HomeBriefService', () => {
         taskId: 'task_waiting',
         taskTitle: 'Waiting task',
         currentState: '状态：waiting_external · 等待：Waiting for reviewer confirmation',
-        latestChange: '最近没有新的关键变化。',
-        latestChangeAction: {
-          label: null,
-          targetType: null,
-          targetId: null,
+        latestChange: {
+          summary: '最近没有新的关键变化。',
+          action: {
+            label: null,
+            targetType: null,
+            targetId: null,
+          },
         },
-        keySourceTitle: null,
-        keySourceReason: null,
-        currentMethodTitle: 'Risk review skill',
-        currentMethodReason: '当前方法：Prioritize risk and blockers',
+        keySource: {
+          sourceContextId: null,
+          title: null,
+          priorityReason: null,
+        },
+        currentMethod: {
+          title: 'Risk review skill',
+          selectionReason: '当前方法：Prioritize risk and blockers',
+        },
         nextSuggestedMove: 'Follow up on Friday',
-        sourceContextId: null,
         contextActionLabel: '跟进等待项',
         contextActionIntent: {
           type: 'focus_waiting_follow_up',
@@ -327,18 +333,24 @@ describe('HomeBriefService', () => {
         taskId: 'task_risk',
         taskTitle: 'High risk task',
         currentState: '状态：running · 风险：high · Deadline slipping',
-        latestChange: '最近关键来源更新：Escalation source memo',
-        latestChangeAction: {
-          label: '查看来源',
-          targetType: 'source_context',
-          targetId: 'source_context_risk',
+        latestChange: {
+          summary: '最近关键来源更新：Escalation source memo',
+          action: {
+            label: '查看来源',
+            targetType: 'source_context',
+            targetId: 'source_context_risk',
+          },
         },
-        keySourceTitle: 'Escalation source memo',
-        keySourceReason: '材料架最近更新了该来源。',
-        currentMethodTitle: 'Risk review skill',
-        currentMethodReason: '当前方法最近用于执行：高风险任务需要先按风险复盘方法组织输出。',
+        keySource: {
+          sourceContextId: 'source_context_risk',
+          title: 'Escalation source memo',
+          priorityReason: '材料架最近更新了该来源。',
+        },
+        currentMethod: {
+          title: 'Risk review skill',
+          selectionReason: '当前方法最近用于执行：高风险任务需要先按风险复盘方法组织输出。',
+        },
         nextSuggestedMove: 'Escalate today',
-        sourceContextId: 'source_context_risk',
         contextActionLabel: '处理风险',
         contextActionIntent: {
           type: 'focus_risk_review',
@@ -352,18 +364,24 @@ describe('HomeBriefService', () => {
         taskId: 'task_missing',
         taskTitle: 'Missing next step',
         currentState: '状态：planned',
-        latestChange: '最近没有新的关键变化。',
-        latestChangeAction: {
-          label: null,
-          targetType: null,
-          targetId: null,
+        latestChange: {
+          summary: '最近没有新的关键变化。',
+          action: {
+            label: null,
+            targetType: null,
+            targetId: null,
+          },
         },
-        keySourceTitle: null,
-        keySourceReason: null,
-        currentMethodTitle: null,
-        currentMethodReason: null,
+        keySource: {
+          sourceContextId: null,
+          title: null,
+          priorityReason: null,
+        },
+        currentMethod: {
+          title: null,
+          selectionReason: null,
+        },
         nextSuggestedMove: '先补一个明确的下一步。',
-        sourceContextId: null,
         contextActionLabel: '采用建议下一步',
         contextActionIntent: {
           type: 'focus_next_step',
@@ -375,18 +393,24 @@ describe('HomeBriefService', () => {
         taskId: 'task_done',
         taskTitle: 'Done task',
         currentState: '状态：completed',
-        latestChange: '最近没有新的关键变化。',
-        latestChangeAction: {
-          label: null,
-          targetType: null,
-          targetId: null,
+        latestChange: {
+          summary: '最近没有新的关键变化。',
+          action: {
+            label: null,
+            targetType: null,
+            targetId: null,
+          },
         },
-        keySourceTitle: null,
-        keySourceReason: null,
-        currentMethodTitle: null,
-        currentMethodReason: null,
+        keySource: {
+          sourceContextId: null,
+          title: null,
+          priorityReason: null,
+        },
+        currentMethod: {
+          title: null,
+          selectionReason: null,
+        },
         nextSuggestedMove: '先补一个明确的下一步。',
-        sourceContextId: null,
         contextActionLabel: '采用建议下一步',
         contextActionIntent: {
           type: 'focus_next_step',
@@ -751,7 +775,9 @@ describe('HomeBriefService', () => {
     expect(homeData.recentTaskResumes).toHaveLength(1);
     expect(homeData.recentTaskResumes[0]).toMatchObject({
       taskId: 'task_resume_change',
-      latestChange: '最近决策动态：Approve escalation path · approved',
+      latestChange: {
+        summary: '最近决策动态：Approve escalation path · approved',
+      },
       nextSuggestedMove: '已获批准，继续推进：Approve escalation path',
       contextActionLabel: '继续推进任务',
     });

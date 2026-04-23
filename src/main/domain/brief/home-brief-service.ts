@@ -404,24 +404,30 @@ export class HomeBriefService {
         taskId: task.id,
         taskTitle: task.title,
         currentState: currentStateParts.join(' · '),
-        latestChange: latestChange.summary,
-        latestChangeAction: latestChange.action,
-        keySourceTitle: keySource?.title ?? null,
-        keySourceReason: keySource
-          ? getKeySourcePriorityReason({
-              timeline,
-              keySource,
-              audience: 'home',
-            })
-          : null,
-        currentMethodTitle: currentMethod?.title ?? null,
-        currentMethodReason: getCurrentMethodSelectionReason({
-          timeline,
-          currentMethod,
-          audience: 'home',
-        }),
+        latestChange: {
+          summary: latestChange.summary,
+          action: latestChange.action,
+        },
+        keySource: {
+          sourceContextId: keySource?.id ?? null,
+          title: keySource?.title ?? null,
+          priorityReason: keySource
+            ? getKeySourcePriorityReason({
+                timeline,
+                keySource,
+                audience: 'home',
+              })
+            : null,
+        },
+        currentMethod: {
+          title: currentMethod?.title ?? null,
+          selectionReason: getCurrentMethodSelectionReason({
+            timeline,
+            currentMethod,
+            audience: 'home',
+          }),
+        },
         nextSuggestedMove,
-        sourceContextId: keySource?.id ?? null,
         contextActionLabel: contextAction.label,
         contextActionIntent: contextAction.intent,
       };

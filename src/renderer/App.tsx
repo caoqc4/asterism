@@ -339,21 +339,21 @@ export function App() {
   }
 
   function handleOpenResumeLatestChange(preview: HomeBriefData['recentTaskResumes'][number]) {
-    if (preview.latestChangeAction.targetType === 'decision' && preview.latestChangeAction.targetId) {
-      handleOpenDecision(preview.latestChangeAction.targetId);
+    if (preview.latestChange.action.targetType === 'decision' && preview.latestChange.action.targetId) {
+      handleOpenDecision(preview.latestChange.action.targetId);
       return;
     }
 
-    if (preview.latestChangeAction.targetType === 'run' && preview.latestChangeAction.targetId) {
-      handleOpenRun(preview.latestChangeAction.targetId);
+    if (preview.latestChange.action.targetType === 'run' && preview.latestChange.action.targetId) {
+      handleOpenRun(preview.latestChange.action.targetId);
       return;
     }
 
-    if (preview.latestChangeAction.targetType === 'source_context' && preview.latestChangeAction.targetId) {
+    if (preview.latestChange.action.targetType === 'source_context' && preview.latestChange.action.targetId) {
       handleOpenTask(preview.taskId, {
         type: 'focus_source_context',
         focusArea: 'detail',
-        sourceContextId: preview.latestChangeAction.targetId,
+        sourceContextId: preview.latestChange.action.targetId,
         prefillNextStep: preview.nextSuggestedMove,
       });
     }

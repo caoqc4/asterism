@@ -53,11 +53,13 @@ function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
     resumeCard: {
       summary: `这条任务目前处于 ${task.state}。建议先做：${task.nextStep ?? '先补一个明确的下一步。'}`,
       currentState: `状态：${task.state}`,
-      latestChange: '最近没有新的生命周期变化。',
-      latestChangeAction: {
-        label: null,
-        targetType: null,
-        targetId: null,
+      latestChange: {
+        summary: '最近没有新的生命周期变化。',
+        action: {
+          label: null,
+          targetType: null,
+          targetId: null,
+        },
       },
       keySource: {
         sourceContextId: null,
@@ -292,18 +294,24 @@ describe('App UI flow', () => {
         taskId: riskTask.id,
         taskTitle: riskTask.title,
         currentState: '状态：running · 风险：high · Deadline slipping',
-        latestChange: '最近决策动态：Approve escalation path · approved',
-        latestChangeAction: {
-          label: '查看 Decision',
-          targetType: 'decision',
-          targetId: 'decision_2',
+        latestChange: {
+          summary: '最近决策动态：Approve escalation path · approved',
+          action: {
+            label: '查看 Decision',
+            targetType: 'decision',
+            targetId: 'decision_2',
+          },
         },
-        keySourceTitle: 'Owner escalation memo',
-        keySourceReason: '材料架中的关键来源：Contains the latest escalation framing.',
-        currentMethodTitle: 'Risk review skill',
-        currentMethodReason: '当前方法最近用于执行：风险高且需要先复盘 blocker。',
+        keySource: {
+          sourceContextId: 'source_context_home_1',
+          title: 'Owner escalation memo',
+          priorityReason: '材料架中的关键来源：Contains the latest escalation framing.',
+        },
+        currentMethod: {
+          title: 'Risk review skill',
+          selectionReason: '当前方法最近用于执行：风险高且需要先复盘 blocker。',
+        },
         nextSuggestedMove: '已获批准，继续推进：Approve escalation path',
-        sourceContextId: 'source_context_home_1',
         contextActionLabel: '继续推进任务',
         contextActionIntent: {
           type: 'focus_next_step',
@@ -315,18 +323,24 @@ describe('App UI flow', () => {
         taskId: waitingTask.id,
         taskTitle: waitingTask.title,
         currentState: '状态：waiting_external · 等待：Waiting for legal review',
-        latestChange: '最近没有新的关键变化。',
-        latestChangeAction: {
-          label: null,
-          targetType: null,
-          targetId: null,
+        latestChange: {
+          summary: '最近没有新的关键变化。',
+          action: {
+            label: null,
+            targetType: null,
+            targetId: null,
+          },
         },
-        keySourceTitle: null,
-        keySourceReason: null,
-        currentMethodTitle: null,
-        currentMethodReason: null,
+        keySource: {
+          sourceContextId: null,
+          title: null,
+          priorityReason: null,
+        },
+        currentMethod: {
+          title: null,
+          selectionReason: null,
+        },
         nextSuggestedMove: '跟进并确认是否解除等待：Waiting for legal review',
-        sourceContextId: null,
         contextActionLabel: '跟进等待项',
         contextActionIntent: {
           type: 'focus_waiting_follow_up',
@@ -620,11 +634,13 @@ describe('App UI flow', () => {
       summary:
         '这条任务目前处于 running，且存在高风险“Deadline slipping”。 最近一次执行失败：Model overloaded。 当前最关键的来源材料是“Owner escalation memo”。 当前采用的方法模板是“Risk review skill”。 建议先做：处理当前风险并确认是否需要降级：Deadline slipping',
       currentState: '状态：running · 风险：high · Deadline slipping',
-      latestChange: '最近一次执行失败：Model overloaded。',
-      latestChangeAction: {
-        label: '查看 Run',
-        targetType: 'run',
-        targetId: 'run_resume_latest',
+      latestChange: {
+        summary: '最近一次执行失败：Model overloaded。',
+        action: {
+          label: '查看 Run',
+          targetType: 'run',
+          targetId: 'run_resume_latest',
+        },
       },
       keySource: {
         sourceContextId: 'source_context_resume',
@@ -710,11 +726,13 @@ describe('App UI flow', () => {
     resumeDetail.resumeCard = {
       summary: 'Resume summary',
       currentState: '状态：planned',
-      latestChange: '最近更新了来源材料：Launch reference memo。',
-      latestChangeAction: {
-        label: '查看来源',
-        targetType: 'source_context',
-        targetId: 'source_context_resume_action',
+      latestChange: {
+        summary: '最近更新了来源材料：Launch reference memo。',
+        action: {
+          label: '查看来源',
+          targetType: 'source_context',
+          targetId: 'source_context_resume_action',
+        },
       },
       keySource: {
         sourceContextId: 'source_context_resume_action',
@@ -782,11 +800,13 @@ describe('App UI flow', () => {
     resumeDetail.resumeCard = {
       summary: 'Resume summary',
       currentState: '状态：planned',
-      latestChange: '最近一条决策已获批准：Approve launch。',
-      latestChangeAction: {
-        label: '查看 Decision',
-        targetType: 'decision',
-        targetId: 'decision_resume_latest',
+      latestChange: {
+        summary: '最近一条决策已获批准：Approve launch。',
+        action: {
+          label: '查看 Decision',
+          targetType: 'decision',
+          targetId: 'decision_resume_latest',
+        },
       },
       keySource: {
         sourceContextId: null,

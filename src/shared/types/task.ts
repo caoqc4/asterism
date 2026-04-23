@@ -34,27 +34,35 @@ export type TaskListItemRecord = TaskRecord & {
   activeWaitingItem: WaitingItemRecord | null;
 };
 
-export type TaskResumeCardRecord = {
+export type ResumeLatestChangeRecord = {
   summary: string;
-  currentState: string;
-  latestChange: string;
-  latestChangeAction: {
+  action: {
     label: string | null;
     targetType: 'decision' | 'run' | 'source_context' | null;
     targetId: string | null;
   };
-  keySource: {
-    sourceContextId: string | null;
-    title: string;
-    detail: string | null;
-    priorityReason: string | null;
-  };
-  currentMethod: {
-    templateId: string | null;
-    title: string;
-    detail: string | null;
-    selectionReason: string | null;
-  };
+};
+
+export type ResumeKeySourceSliceRecord = {
+  sourceContextId: string | null;
+  title: string;
+  detail: string | null;
+  priorityReason: string | null;
+};
+
+export type ResumeCurrentMethodSliceRecord = {
+  templateId: string | null;
+  title: string;
+  detail: string | null;
+  selectionReason: string | null;
+};
+
+export type TaskResumeCardRecord = {
+  summary: string;
+  currentState: string;
+  latestChange: ResumeLatestChangeRecord;
+  keySource: ResumeKeySourceSliceRecord;
+  currentMethod: ResumeCurrentMethodSliceRecord;
   nextSuggestedMove: string;
 };
 

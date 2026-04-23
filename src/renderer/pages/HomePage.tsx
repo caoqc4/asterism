@@ -105,7 +105,7 @@ export function HomePage({
     onOpenAction({
       id: `resume:${preview.taskId}`,
       label: `恢复任务：${preview.taskTitle}`,
-      reason: preview.latestChange,
+      reason: preview.latestChange.summary,
       taskId: preview.taskId,
       priority: 'medium',
       intent: {
@@ -120,7 +120,7 @@ export function HomePage({
     onOpenAction({
       id: `resume-context:${preview.taskId}`,
       label: `${preview.contextActionLabel}：${preview.taskTitle}`,
-      reason: preview.latestChange,
+      reason: preview.latestChange.summary,
       taskId: preview.taskId,
       priority: 'medium',
       intent: preview.contextActionIntent,
@@ -452,29 +452,29 @@ export function HomePage({
                     <strong>{preview.taskTitle}</strong>
                     <span className="status">{preview.currentState}</span>
                   </div>
-                  <p className="meta">{preview.latestChange}</p>
-                  {preview.keySourceTitle ? (
-                    <p className="meta">关键来源：{preview.keySourceTitle}</p>
+                  <p className="meta">{preview.latestChange.summary}</p>
+                  {preview.keySource.title ? (
+                    <p className="meta">关键来源：{preview.keySource.title}</p>
                   ) : null}
-                  {preview.keySourceReason ? (
-                    <p className="meta">{preview.keySourceReason}</p>
+                  {preview.keySource.priorityReason ? (
+                    <p className="meta">{preview.keySource.priorityReason}</p>
                   ) : null}
-                  {preview.currentMethodTitle ? (
-                    <p className="meta">当前方法：{preview.currentMethodTitle}</p>
+                  {preview.currentMethod.title ? (
+                    <p className="meta">当前方法：{preview.currentMethod.title}</p>
                   ) : null}
-                  {preview.currentMethodReason ? (
-                    <p className="meta">{preview.currentMethodReason}</p>
+                  {preview.currentMethod.selectionReason ? (
+                    <p className="meta">{preview.currentMethod.selectionReason}</p>
                   ) : null}
                   <p className="meta">建议先做：{preview.nextSuggestedMove}</p>
                 </button>
                 <div className="chip-row">
-                  {preview.latestChangeAction.label ? (
+                  {preview.latestChange.action.label ? (
                     <button
                       className="ghost-button"
                       onClick={() => onOpenResumeLatestChange(preview)}
                       type="button"
                     >
-                      {preview.latestChangeAction.label}
+                      {preview.latestChange.action.label}
                     </button>
                   ) : null}
                   <button

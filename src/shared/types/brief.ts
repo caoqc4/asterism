@@ -3,7 +3,13 @@ import type { BriefSnapshotRecord } from './brief-snapshot.js';
 import type { ProcessTemplateKind } from './process-template.js';
 import type { SchedulerStatus } from './scheduler.js';
 import type { DecisionRecord } from './decision.js';
-import type { TaskRecord, TaskRiskLevel } from './task.js';
+import type {
+  ResumeCurrentMethodSliceRecord,
+  ResumeKeySourceSliceRecord,
+  ResumeLatestChangeRecord,
+  TaskRecord,
+  TaskRiskLevel,
+} from './task.js';
 import type { WaitingItemRecord } from './waiting-item.js';
 
 export type RecommendedActionIntent = {
@@ -58,18 +64,17 @@ export type HomeTaskResumePreviewRecord = {
   taskId: string;
   taskTitle: string;
   currentState: string;
-  latestChange: string;
-  latestChangeAction: {
-    label: string | null;
-    targetType: 'decision' | 'run' | 'source_context' | null;
-    targetId: string | null;
+  latestChange: ResumeLatestChangeRecord;
+  keySource: {
+    sourceContextId: string | null;
+    title: string | null;
+    priorityReason: string | null;
   };
-  keySourceTitle: string | null;
-  keySourceReason: string | null;
-  currentMethodTitle: string | null;
-  currentMethodReason: string | null;
+  currentMethod: {
+    title: string | null;
+    selectionReason: string | null;
+  };
   nextSuggestedMove: string;
-  sourceContextId: string | null;
   contextActionLabel: string;
   contextActionIntent: RecommendedActionIntent;
 };

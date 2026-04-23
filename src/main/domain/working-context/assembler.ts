@@ -183,8 +183,7 @@ export function getKeySourcePriorityReason(params: {
 
 export function buildTaskResumeLatestChange(
   timeline: TimelineLite,
-): TaskResumeCardRecord['latestChangeAction'] & {
-  summary: string;
+): TaskResumeCardRecord['latestChange'] & {
   recentChange: WorkingContextRecentChange | null;
 } {
   const latestEvent = getLatestResumeRelevantTimelineEvent(timeline);
@@ -192,9 +191,11 @@ export function buildTaskResumeLatestChange(
   if (!latestEvent) {
     return {
       summary: '最近没有新的生命周期变化。',
-      label: null,
-      targetType: null,
-      targetId: null,
+      action: {
+        label: null,
+        targetType: null,
+        targetId: null,
+      },
       recentChange: null,
     };
   }
@@ -205,9 +206,11 @@ export function buildTaskResumeLatestChange(
     case 'task.run_failed':
       return {
         summary: `最近一次执行失败：${String(payload?.failureReason ?? '未记录失败原因')}。`,
-        label: payload?.runId ? '查看 Run' : null,
-        targetType: payload?.runId ? 'run' : null,
-        targetId: typeof payload?.runId === 'string' ? payload.runId : null,
+        action: {
+          label: payload?.runId ? '查看 Run' : null,
+          targetType: payload?.runId ? 'run' : null,
+          targetId: typeof payload?.runId === 'string' ? payload.runId : null,
+        },
         recentChange: {
           kind: 'run_failed',
           failureReason: typeof payload?.failureReason === 'string' ? payload.failureReason : undefined,
@@ -216,9 +219,11 @@ export function buildTaskResumeLatestChange(
     case 'task.run_completed':
       return {
         summary: `最近一次执行已完成，任务恢复到 ${String(payload?.nextState ?? 'planned')}。`,
-        label: payload?.runId ? '查看 Run' : null,
-        targetType: payload?.runId ? 'run' : null,
-        targetId: typeof payload?.runId === 'string' ? payload.runId : null,
+        action: {
+          label: payload?.runId ? '查看 Run' : null,
+          targetType: payload?.runId ? 'run' : null,
+          targetId: typeof payload?.runId === 'string' ? payload.runId : null,
+        },
         recentChange: {
           kind: 'run_completed',
           nextState: typeof payload?.nextState === 'string' ? payload.nextState : undefined,
@@ -227,9 +232,11 @@ export function buildTaskResumeLatestChange(
     case 'task.decision_approved':
       return {
         summary: `最近一条决策已获批准：${String(payload?.decisionTitle ?? '未命名决策')}。`,
-        label: payload?.decisionId ? '查看 Decision' : null,
-        targetType: payload?.decisionId ? 'decision' : null,
-        targetId: typeof payload?.decisionId === 'string' ? payload.decisionId : null,
+        action: {
+          label: payload?.decisionId ? '查看 Decision' : null,
+          targetType: payload?.decisionId ? 'decision' : null,
+          targetId: typeof payload?.decisionId === 'string' ? payload.decisionId : null,
+        },
         recentChange: {
           kind: 'decision_approved',
           title: typeof payload?.decisionTitle === 'string' ? payload.decisionTitle : undefined,
@@ -238,9 +245,11 @@ export function buildTaskResumeLatestChange(
     case 'task.decision_deferred':
       return {
         summary: `最近一条决策被延后，当前等待：${String(payload?.waitingReason ?? '未填写')}。`,
-        label: payload?.decisionId ? '查看 Decision' : null,
-        targetType: payload?.decisionId ? 'decision' : null,
-        targetId: typeof payload?.decisionId === 'string' ? payload.decisionId : null,
+        action: {
+          label: payload?.decisionId ? '查看 Decision' : null,
+          targetType: payload?.decisionId ? 'decision' : null,
+          targetId: typeof payload?.decisionId === 'string' ? payload.decisionId : null,
+        },
         recentChange: {
           kind: 'decision_deferred',
           title: typeof payload?.decisionTitle === 'string' ? payload.decisionTitle : undefined,
@@ -250,9 +259,11 @@ export function buildTaskResumeLatestChange(
     case 'task.decision_cancelled':
       return {
         summary: `最近一条决策已取消：${String(payload?.decisionTitle ?? '未命名决策')}。`,
-        label: payload?.decisionId ? '查看 Decision' : null,
-        targetType: payload?.decisionId ? 'decision' : null,
-        targetId: typeof payload?.decisionId === 'string' ? payload.decisionId : null,
+        action: {
+          label: payload?.decisionId ? '查看 Decision' : null,
+          targetType: payload?.decisionId ? 'decision' : null,
+          targetId: typeof payload?.decisionId === 'string' ? payload.decisionId : null,
+        },
         recentChange: {
           kind: 'decision_cancelled',
           title: typeof payload?.decisionTitle === 'string' ? payload.decisionTitle : undefined,
@@ -262,9 +273,11 @@ export function buildTaskResumeLatestChange(
     case 'waiting_item.updated':
       return {
         summary: `最近更新了等待项：${String(payload?.reason ?? '未填写')}。`,
-        label: null,
-        targetType: null,
-        targetId: null,
+        action: {
+          label: null,
+          targetType: null,
+          targetId: null,
+        },
         recentChange: {
           kind: 'waiting_item_changed',
           waitingReason: typeof payload?.reason === 'string' ? payload.reason : undefined,
@@ -273,9 +286,11 @@ export function buildTaskResumeLatestChange(
     case 'waiting_item.resolved':
       return {
         summary: `最近解除等待项，任务恢复到 ${String(payload?.nextState ?? 'planned')}。`,
-        label: null,
-        targetType: null,
-        targetId: null,
+        action: {
+          label: null,
+          targetType: null,
+          targetId: null,
+        },
         recentChange: {
           kind: 'waiting_item_resolved',
           nextState: typeof payload?.nextState === 'string' ? payload.nextState : undefined,
@@ -285,9 +300,11 @@ export function buildTaskResumeLatestChange(
     case 'source_context.updated':
       return {
         summary: `最近更新了来源材料：${String(payload?.title ?? '未命名来源')}。`,
-        label: payload?.sourceContextId ? '查看来源' : null,
-        targetType: payload?.sourceContextId ? 'source_context' : null,
-        targetId: typeof payload?.sourceContextId === 'string' ? payload.sourceContextId : null,
+        action: {
+          label: payload?.sourceContextId ? '查看来源' : null,
+          targetType: payload?.sourceContextId ? 'source_context' : null,
+          targetId: typeof payload?.sourceContextId === 'string' ? payload.sourceContextId : null,
+        },
         recentChange: {
           kind: 'source_context_changed',
           title: typeof payload?.title === 'string' ? payload.title : undefined,
@@ -296,9 +313,16 @@ export function buildTaskResumeLatestChange(
     case 'artifact.created':
       return {
         summary: `最近生成了产物：${String(payload?.title ?? '未命名产物')}。`,
-        label: payload?.sourceType === 'run' && typeof payload?.sourceId === 'string' ? '查看 Run' : null,
-        targetType: payload?.sourceType === 'run' && typeof payload?.sourceId === 'string' ? 'run' : null,
-        targetId: payload?.sourceType === 'run' && typeof payload?.sourceId === 'string' ? payload.sourceId : null,
+        action: {
+          label:
+            payload?.sourceType === 'run' && typeof payload?.sourceId === 'string' ? '查看 Run' : null,
+          targetType:
+            payload?.sourceType === 'run' && typeof payload?.sourceId === 'string' ? 'run' : null,
+          targetId:
+            payload?.sourceType === 'run' && typeof payload?.sourceId === 'string'
+              ? payload.sourceId
+              : null,
+        },
         recentChange: {
           kind: 'artifact_created',
           title: typeof payload?.title === 'string' ? payload.title : undefined,
@@ -307,9 +331,11 @@ export function buildTaskResumeLatestChange(
     case 'task.risk_changed':
       return {
         summary: '最近调整了任务风险等级。',
-        label: null,
-        targetType: null,
-        targetId: null,
+        action: {
+          label: null,
+          targetType: null,
+          targetId: null,
+        },
         recentChange: {
           kind: 'risk_changed',
         },
@@ -317,9 +343,11 @@ export function buildTaskResumeLatestChange(
     case 'task.next_step_changed':
       return {
         summary: '最近更新了下一步。',
-        label: null,
-        targetType: null,
-        targetId: null,
+        action: {
+          label: null,
+          targetType: null,
+          targetId: null,
+        },
         recentChange: {
           kind: 'unknown',
         },
@@ -327,9 +355,11 @@ export function buildTaskResumeLatestChange(
     case 'task.transitioned':
       return {
         summary: `最近状态从 ${String(payload?.from ?? '未知')} 变更为 ${String(payload?.to ?? '未知')}。`,
-        label: null,
-        targetType: null,
-        targetId: null,
+        action: {
+          label: null,
+          targetType: null,
+          targetId: null,
+        },
         recentChange: {
           kind: 'unknown',
         },
@@ -337,9 +367,11 @@ export function buildTaskResumeLatestChange(
     default:
       return {
         summary: '最近有新的任务活动。',
-        label: null,
-        targetType: null,
-        targetId: null,
+        action: {
+          label: null,
+          targetType: null,
+          targetId: null,
+        },
         recentChange: {
           kind: 'unknown',
         },
@@ -352,7 +384,7 @@ export function buildHomeResumeLatestChange(params: {
   keySource: Pick<SourceContextRecord, 'id' | 'title'> | null;
 }): {
   summary: string;
-  action: HomeTaskResumePreviewRecord['latestChangeAction'];
+  action: HomeTaskResumePreviewRecord['latestChange']['action'];
   recentChange: WorkingContextRecentChange | null;
 } {
   const { latestActivity, keySource } = params;
