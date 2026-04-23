@@ -49,6 +49,7 @@ import {
 import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
 import type { PriorityLane } from '@shared/types/brief';
 import { getPriorityLaneLabel } from '@shared/working-context/priority-lanes';
+import { formatDependencyAgeLabel, getDependencyAgeReason } from '@shared/working-context/dependency';
 import {
   getTaskTransitionGuidance,
   orderTaskTransitions,
@@ -1597,7 +1598,13 @@ export function TasksPage({
                           : `依赖重判：上游任务“${task.dependencyReevaluation.upstreamTaskTitle}”刚解除关键阻塞。`}
                       </p>
                     ) : task.activeDependency?.blockedByTaskTitle ? (
-                      <p className="meta">依赖：当前被上游任务“{task.activeDependency.blockedByTaskTitle}”卡住。</p>
+                      <>
+                        <p className="meta">依赖：当前被上游任务“{task.activeDependency.blockedByTaskTitle}”卡住。</p>
+                        <p className="meta">{formatDependencyAgeLabel(task.activeDependency.createdAt)}</p>
+                        {getDependencyAgeReason(task.activeDependency.createdAt, 'task') ? (
+                          <p className="meta">{getDependencyAgeReason(task.activeDependency.createdAt, 'task')}</p>
+                        ) : null}
+                      </>
                     ) : null}
                     {task.waitingReason ? <p className="meta">等待：{task.waitingReason}</p> : null}
                   </button>
@@ -1758,6 +1765,12 @@ export function TasksPage({
                         <p className="meta">{resumeCurrentDependency.title}</p>
                         {resumeCurrentDependency.detail ? (
                           <p className="meta">{resumeCurrentDependency.detail}</p>
+                        ) : null}
+                        {resumeCurrentDependency.ageLabel ? (
+                          <p className="meta">{resumeCurrentDependency.ageLabel}</p>
+                        ) : null}
+                        {resumeCurrentDependency.priorityReason ? (
+                          <p className="meta">{resumeCurrentDependency.priorityReason}</p>
                         ) : null}
                       </div>
                       <div className="resume-cell resume-cell-source-lane">
@@ -1952,7 +1965,10 @@ export function TasksPage({
                         {detail.activeDependency.reason ? (
                           <p className="meta">{detail.activeDependency.reason}</p>
                         ) : null}
-                        <p className="meta">started at {detail.activeDependency.createdAt}</p>
+                        <p className="meta">{detail.resumeCard.currentDependency?.ageLabel ?? `depends since ${detail.activeDependency.createdAt.slice(0, 10)}`}</p>
+                        {detail.resumeCard.currentDependency?.priorityReason ? (
+                          <p className="meta">{detail.resumeCard.currentDependency.priorityReason}</p>
+                        ) : null}
                         <div className="timeline-actions">
                           <button
                             className="ghost-button timeline-action"
@@ -2510,7 +2526,10 @@ export function TasksPage({
                           {detail.activeDependency.reason ? (
                             <p className="meta">{detail.activeDependency.reason}</p>
                           ) : null}
-                          <p className="meta">started at {detail.activeDependency.createdAt}</p>
+                          <p className="meta">{detail.resumeCard.currentDependency?.ageLabel ?? `depends since ${detail.activeDependency.createdAt.slice(0, 10)}`}</p>
+                          {detail.resumeCard.currentDependency?.priorityReason ? (
+                            <p className="meta">{detail.resumeCard.currentDependency.priorityReason}</p>
+                          ) : null}
                           <div className="timeline-actions">
                             <button
                               className="ghost-button timeline-action"

@@ -29,6 +29,8 @@ import {
   deriveNextSuggestedMove,
   getCurrentBlockerAgeLabel,
   getCurrentBlockerPriorityReason,
+  getCurrentDependencyAgeLabel,
+  getCurrentDependencyPriorityReason,
   getCurrentMethodSelectionReason,
   getKeySourcePriorityReason,
   safeJsonParse,
@@ -709,6 +711,16 @@ export class HomeBriefService {
                 blocker: task.activeBlocker,
                 audience: 'home',
               }),
+            }
+          : {
+              title: null,
+              priorityReason: null,
+            },
+        currentDependency: task.activeDependency
+          ? {
+              title: task.activeDependency.blockedByTaskTitle ?? null,
+              ageLabel: getCurrentDependencyAgeLabel(task.activeDependency),
+              priorityReason: getCurrentDependencyPriorityReason(task.activeDependency, 'home'),
             }
           : {
               title: null,

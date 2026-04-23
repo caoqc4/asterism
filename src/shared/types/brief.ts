@@ -84,6 +84,11 @@ export type HomeTaskResumePreviewRecord = {
     priorityReason: string | null;
     ageLabel?: string | null;
   };
+  currentDependency?: {
+    title: string | null;
+    priorityReason: string | null;
+    ageLabel?: string | null;
+  };
   keySource: {
     sourceContextId: string | null;
     title: string | null;

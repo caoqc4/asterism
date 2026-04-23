@@ -4,6 +4,7 @@ import type { AppliedProcessTemplateRecord } from '../../../shared/types/process
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import type { TaskDetailBase, TaskResumeCardRecord, TaskRiskLevel, TaskState, TimelineEventRecord } from '../../../shared/types/task.js';
 import { formatBlockerAgeLabel, getBlockerAgeReason, isStaleBlocker } from '../../../shared/working-context/blocker.js';
+import { formatDependencyAgeLabel, getDependencyAgeReason } from '../../../shared/working-context/dependency.js';
 
 type TimelineLite = Array<Pick<TimelineEventRecord, 'type' | 'payload'>>;
 
@@ -263,6 +264,27 @@ export function getCurrentBlockerAgeLabel(
   }
 
   return formatBlockerAgeLabel(blocker.createdAt);
+}
+
+export function getCurrentDependencyAgeLabel(
+  dependency: { createdAt: string } | null,
+): string | null {
+  if (!dependency) {
+    return null;
+  }
+
+  return formatDependencyAgeLabel(dependency.createdAt);
+}
+
+export function getCurrentDependencyPriorityReason(
+  dependency: { createdAt: string } | null,
+  audience: 'task' | 'home',
+): string | null {
+  if (!dependency) {
+    return null;
+  }
+
+  return getDependencyAgeReason(dependency.createdAt, audience);
 }
 
 export function buildTaskResumeLatestChange(

@@ -113,6 +113,8 @@ function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
         dependencyId: task.activeDependency?.id ?? null,
         title: task.activeDependency?.blockedByTaskTitle ?? '暂无当前依赖',
         detail: task.activeDependency?.reason ?? null,
+        priorityReason: null,
+        ageLabel: null,
       },
       keySource: {
         sourceContextId: null,

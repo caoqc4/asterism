@@ -9,6 +9,7 @@ import type { ArtifactRecord } from '@shared/types/artifact';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { PingResponse } from '@shared/types/ipc';
 import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
+import { formatDependencyAgeLabel, getDependencyAgeReason } from '@shared/working-context/dependency';
 import { getPriorityLaneLabel } from '@shared/working-context/priority-lanes';
 
 function getActivityActionLabel(activity: HomeActivityRecord): string | null {
@@ -779,6 +780,12 @@ export function HomePage({
                     {task.activeDependency?.reason ? (
                       <p className="meta">{task.activeDependency.reason}</p>
                     ) : null}
+                    {task.activeDependency?.createdAt ? (
+                      <p className="meta">{formatDependencyAgeLabel(task.activeDependency.createdAt)}</p>
+                    ) : null}
+                    {task.activeDependency?.createdAt && getDependencyAgeReason(task.activeDependency.createdAt, 'home') ? (
+                      <p className="meta">{getDependencyAgeReason(task.activeDependency.createdAt, 'home')}</p>
+                    ) : null}
                     {task.nextStep ? <p className="meta">解除后下一步：{task.nextStep}</p> : null}
                   </button>
                   <div className="chip-row">
@@ -931,6 +938,15 @@ export function HomePage({
                   ) : null}
                   {preview.currentBlocker?.priorityReason ? (
                     <p className="meta">{preview.currentBlocker.priorityReason}</p>
+                  ) : null}
+                  {preview.currentDependency?.title ? (
+                    <p className="meta">当前依赖：{preview.currentDependency.title}</p>
+                  ) : null}
+                  {preview.currentDependency?.ageLabel ? (
+                    <p className="meta">{preview.currentDependency.ageLabel}</p>
+                  ) : null}
+                  {preview.currentDependency?.priorityReason ? (
+                    <p className="meta">{preview.currentDependency.priorityReason}</p>
                   ) : null}
                   {preview.keySource.title ? (
                     <p className="meta">关键来源：{preview.keySource.title}</p>

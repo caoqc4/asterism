@@ -41,6 +41,8 @@ import {
   buildTaskResumeLatestChange,
   deriveNextSuggestedMove,
   getCurrentBlockerAgeLabel,
+  getCurrentDependencyAgeLabel,
+  getCurrentDependencyPriorityReason,
   getCurrentBlockerPriorityReason,
   getCurrentMethodSelectionReason,
   getKeySourcePriorityReason,
@@ -332,11 +334,15 @@ export class TaskService {
             dependencyId: detail.activeDependency.id,
             title: detail.activeDependency.blockedByTaskTitle ?? '上游任务',
             detail: detail.activeDependency.reason ?? '当前等待上游任务完成后再继续推进。',
+            priorityReason: getCurrentDependencyPriorityReason(detail.activeDependency, 'task'),
+            ageLabel: getCurrentDependencyAgeLabel(detail.activeDependency),
           }
         : {
             dependencyId: null,
             title: '暂无任务依赖',
             detail: null,
+            priorityReason: null,
+            ageLabel: null,
           },
       keySource: keySource
         ? {

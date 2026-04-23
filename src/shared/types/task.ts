@@ -83,6 +83,8 @@ export type TaskResumeCardRecord = {
     dependencyId: string | null;
     title: string;
     detail: string | null;
+    priorityReason?: string | null;
+    ageLabel?: string | null;
   };
   keySource: ResumeKeySourceSliceRecord;
   currentMethod: ResumeCurrentMethodSliceRecord;
