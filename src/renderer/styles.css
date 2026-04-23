@@ -339,16 +339,36 @@ button {
 
 .studio-section {
   margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 41, 55, 0.06);
+  background: rgba(255, 255, 255, 0.42);
 }
 
 .studio-section:first-of-type {
   margin-top: 0;
 }
 
+.studio-section-source-lane,
+.resume-cell-source-lane {
+  border-color: rgba(245, 158, 11, 0.16);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.studio-section-process-lane,
+.resume-cell-process-lane {
+  border-color: rgba(59, 130, 246, 0.16);
+  background: rgba(59, 130, 246, 0.08);
+}
+
 .studio-section-head {
   display: grid;
   gap: 4px;
   margin-bottom: 10px;
+}
+
+.context-lane-heading {
+  color: #111827;
 }
 
 .studio-form {
@@ -369,6 +389,10 @@ button {
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.58);
   border: 1px solid rgba(59, 130, 246, 0.08);
+}
+
+.context-lane-meta {
+  font-weight: 600;
 }
 
 .resume-cell-wide {
