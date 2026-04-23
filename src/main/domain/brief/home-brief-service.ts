@@ -36,6 +36,7 @@ import {
   safeJsonParse,
 } from '../working-context/assembler.js';
 import { isStaleBlocker } from '../../../shared/working-context/blocker.js';
+import { isStaleDependency } from '../../../shared/working-context/dependency.js';
 import { comparePriorityLanes, deriveTaskPriorityLaneMap } from '../../../shared/working-context/priority-lanes.js';
 
 type InternalRecommendedAction = RecommendedAction & {
@@ -123,26 +124,35 @@ function buildRecommendedActions(params: {
 
     blockedTaskIds.add(task.id);
     const dependencyReevaluation = params.dependencyReevaluationByTaskId.get(task.id);
+    const staleDependency = isStaleDependency(task.activeDependency.createdAt);
     actions.push({
       id: `task-dependency:${task.activeDependency.id}`,
-      label: dependencyReevaluation
+      label: staleDependency
+        ? `优先升级依赖链路：${task.title}`
+        : dependencyReevaluation
         ? `重新判断依赖：${task.title}`
         : `先推动上游任务：${task.activeDependency.blockedByTaskTitle ?? task.title}`,
-      reason: dependencyReevaluation
+      reason: staleDependency
+        ? `任务“${task.title}”已依赖上游任务“${
+            task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'
+          }”过久，建议优先推动上游任务并重新判断是否解除依赖。`
+        : dependencyReevaluation
         ? dependencyReevaluation.status === 'upstream_ready'
           ? `上游任务“${dependencyReevaluation.upstreamTaskTitle}”已完成，可重新判断任务“${task.title}”是否解除依赖并继续推进。`
           : `上游任务“${dependencyReevaluation.upstreamTaskTitle}”刚解除关键阻塞，可重新判断任务“${task.title}”是否恢复推进。`
         : `任务“${task.title}”当前依赖上游任务“${
             task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'
           }”先完成。`,
-      taskId: dependencyReevaluation ? task.id : task.activeDependency.blockedByTaskId,
-      priority: 'medium',
-      lane: dependencyReevaluation ? 'continue_or_review' : 'unblock_or_decide',
+      taskId: staleDependency || dependencyReevaluation ? task.id : task.activeDependency.blockedByTaskId,
+      priority: staleDependency ? 'high' : 'medium',
+      lane: staleDependency ? 'escalate_now' : dependencyReevaluation ? 'continue_or_review' : 'unblock_or_decide',
       order: order++,
       intent: {
         type: 'focus_next_step',
         focusArea: 'detail',
-        prefillNextStep: dependencyReevaluation
+        prefillNextStep: staleDependency
+          ? `优先推动上游任务“${task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'}”，并重新判断是否解除对“${task.title}”的依赖。`
+          : dependencyReevaluation
           ? `基于上游任务进展重新判断是否解除依赖：${dependencyReevaluation.upstreamTaskTitle}`
           : `先完成这条上游任务，以解除对“${task.title}”的依赖。`,
       },
@@ -370,8 +380,8 @@ function classifyPriorityLane(params: {
   if (params.escalationTaskCount > 0) {
     return {
       lane: 'escalate_now',
-      headline: `当前有 ${params.escalationTaskCount} 个阻塞项需要升级处理`,
-      lede: '当前最值得先处理的是 stale blocker；首页会优先把升级处理语义前置，再考虑普通阻塞、风险或等待恢复。',
+      headline: `当前有 ${params.escalationTaskCount} 条任务需要升级处理`,
+      lede: '当前最值得先处理的是长期阻塞或依赖过久的任务；首页会优先把升级处理语义前置，再考虑普通阻塞、风险或等待恢复。',
     };
   }
 
@@ -1054,19 +1064,30 @@ export class HomeBriefService {
           right.activeBlocker?.createdAt ?? right.updatedAt,
         ),
       );
-    const escalationTasks = allBlockedTasks.filter((task) =>
+    const escalationBlockerTasks = allBlockedTasks.filter((task) =>
       task.activeBlocker ? isStaleBlocker(task.activeBlocker.createdAt) : false,
     );
     const blockerTasks = allBlockedTasks.filter(
       (task) => !task.activeBlocker || !isStaleBlocker(task.activeBlocker.createdAt),
     );
-    const dependencyTasks = activeTasks
+    const allDependencyTasks = activeTasks
       .filter((task) => Boolean(task.activeDependency?.blockedByTaskId) && !task.activeBlocker)
       .sort((left, right) =>
         (left.activeDependency?.createdAt ?? left.updatedAt).localeCompare(
           right.activeDependency?.createdAt ?? right.updatedAt,
         ),
       );
+    const escalationDependencyTasks = allDependencyTasks.filter((task) =>
+      task.activeDependency ? isStaleDependency(task.activeDependency.createdAt) : false,
+    );
+    const dependencyTasks = allDependencyTasks.filter(
+      (task) => !task.activeDependency || !isStaleDependency(task.activeDependency.createdAt),
+    );
+    const escalationTasks = [...escalationBlockerTasks, ...escalationDependencyTasks].sort((left, right) => {
+      const leftCreatedAt = left.activeBlocker?.createdAt ?? left.activeDependency?.createdAt ?? left.updatedAt;
+      const rightCreatedAt = right.activeBlocker?.createdAt ?? right.activeDependency?.createdAt ?? right.updatedAt;
+      return leftCreatedAt.localeCompare(rightCreatedAt);
+    });
     const highRiskTasks = tasks.filter((task) => task.riskLevel === 'high');
     const missingNextStepTasks = activeTasks.filter((task) => !task.nextStep?.trim());
     const scheduler = this.getSchedulerStatus();

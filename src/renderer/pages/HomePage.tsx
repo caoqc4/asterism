@@ -225,6 +225,26 @@ export function HomePage({
   }
 
   function openEscalationTask(task: HomeBriefData['escalationTasks'][number]) {
+    if (task.activeDependency) {
+      onOpenAction({
+        id: `home-escalation-dependency:${task.id}`,
+        label: `优先升级依赖链路：${task.title}`,
+        reason:
+          task.activeDependency.reason ??
+          `任务已依赖上游任务“${task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'}”过久。`,
+        taskId: task.id,
+        priority: 'high',
+        intent: {
+          type: 'focus_next_step',
+          focusArea: 'detail',
+          prefillNextStep: `优先推动上游任务“${
+            task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'
+          }”，并重新判断是否解除对“${task.title}”的依赖。`,
+        },
+      });
+      return;
+    }
+
     onOpenAction({
       id: `home-escalation:${task.id}`,
       label: `优先升级阻塞项：${task.title}`,
@@ -251,6 +271,26 @@ export function HomePage({
   }
 
   function escalateTaskDirectly(task: HomeBriefData['escalationTasks'][number]) {
+    if (task.activeDependency) {
+      onOpenAction({
+        id: `home-escalation-direct-dependency:${task.id}`,
+        label: `直接升级依赖链路：${task.title}`,
+        reason:
+          task.activeDependency.reason ??
+          `任务已依赖上游任务“${task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'}”过久。`,
+        taskId: task.id,
+        priority: 'high',
+        intent: {
+          type: 'focus_next_step',
+          focusArea: 'detail',
+          prefillNextStep: `优先推动上游任务“${
+            task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'
+          }”，并重新判断是否解除对“${task.title}”的依赖。`,
+        },
+      });
+      return;
+    }
+
     onOpenAction({
       id: `home-escalation-direct:${task.id}`,
       label: `直接升级处理：${task.title}`,
@@ -342,7 +382,7 @@ export function HomePage({
     }
 
     if (data.escalationTaskCount > 0) {
-      return `当前有 ${data.escalationTaskCount} 个阻塞项需要升级处理`;
+      return `当前有 ${data.escalationTaskCount} 条任务需要升级处理`;
     }
 
     if (data.blockerTaskCount > 0) {
@@ -374,7 +414,7 @@ export function HomePage({
     }
 
     if (data.escalationTaskCount > 0) {
-      return '首页会优先把 stale blocker 提升成升级信号，并把你直接带回相关任务继续处理当前阻塞。';
+      return '首页会优先把需要升级处理的阻塞或依赖链路提成强信号，并把你直接带回相关任务继续推进。';
     }
 
     if (data.blockerTaskCount > 0) {
@@ -819,12 +859,24 @@ export function HomePage({
                       <span className="status">{task.state}</span>
                     </div>
                     <p className="meta">
-                      {task.activeBlocker?.detail || task.activeBlocker?.owner || task.activeBlocker?.title || '未填写阻塞说明'}
+                      {task.activeBlocker?.detail ||
+                        task.activeBlocker?.owner ||
+                        task.activeBlocker?.title ||
+                        (task.activeDependency
+                          ? `当前依赖上游任务：${task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'}`
+                          : '未填写升级说明')}
                     </p>
                     {task.activeBlocker ? (
                       <p className="meta">{formatBlockerAgeLabel(task.activeBlocker.createdAt)}</p>
+                    ) : task.activeDependency?.createdAt ? (
+                      <p className="meta">{formatDependencyAgeLabel(task.activeDependency.createdAt)}</p>
                     ) : null}
-                    {task.nextStep ? <p className="meta">升级后下一步：{task.nextStep}</p> : null}
+                    {task.activeDependency?.createdAt && getDependencyAgeReason(task.activeDependency.createdAt, 'home') ? (
+                      <p className="meta">{getDependencyAgeReason(task.activeDependency.createdAt, 'home')}</p>
+                    ) : null}
+                    {task.nextStep ? (
+                      <p className="meta">{task.activeDependency ? `重判后下一步：${task.nextStep}` : `升级后下一步：${task.nextStep}`}</p>
+                    ) : null}
                   </button>
                   {task.activeBlocker?.sourceContextId ? (
                     <div className="chip-row">
@@ -841,6 +893,23 @@ export function HomePage({
                         type="button"
                       >
                         查看阻塞来源
+                      </button>
+                    </div>
+                  ) : task.activeDependency ? (
+                    <div className="chip-row">
+                      <button
+                        className="ghost-button"
+                        onClick={() => escalateTaskDirectly(task)}
+                        type="button"
+                      >
+                        直接升级处理
+                      </button>
+                      <button
+                        className="ghost-button"
+                        onClick={() => openUpstreamTask(task)}
+                        type="button"
+                      >
+                        打开上游任务
                       </button>
                     </div>
                   ) : (

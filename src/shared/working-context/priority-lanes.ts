@@ -3,6 +3,7 @@ import type { DecisionRecord } from '../types/decision.js';
 import type { TaskDetail } from '../types/task.js';
 import type { TaskListItemRecord } from '../types/task.js';
 import { isStaleBlocker } from './blocker.js';
+import { isStaleDependency } from './dependency.js';
 
 const PRIORITY_LANE_LABELS: Record<PriorityLane, string> = {
   escalate_now: '立即升级',
@@ -84,7 +85,10 @@ export function deriveTaskPriorityLaneMap(params: {
 
   for (const task of params.tasks) {
     if (task.activeDependency) {
-      assignLane(task.id, 'unblock_or_decide');
+      assignLane(
+        task.id,
+        isStaleDependency(task.activeDependency.createdAt) ? 'escalate_now' : 'unblock_or_decide',
+      );
     }
   }
 
@@ -115,7 +119,7 @@ export function deriveTaskDetailPriorityLane(task: TaskDetail): PriorityLane {
   }
 
   if (task.activeDependency) {
-    return 'unblock_or_decide';
+    return isStaleDependency(task.activeDependency.createdAt) ? 'escalate_now' : 'unblock_or_decide';
   }
 
   if (task.state === 'waiting_external' || task.activeWaitingItem || task.waitingReason || !task.nextStep?.trim()) {

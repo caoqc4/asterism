@@ -4188,6 +4188,115 @@ describe('App UI flow', () => {
     );
   });
 
+  it('surfaces stale dependencies under escalation instead of blocked-by tasks on home', async () => {
+    const user = userEvent.setup();
+
+    const upstreamTask = buildTaskRecord({
+      id: 'task_dependency_escalation_upstream',
+      title: 'Finalize legal brief',
+      state: 'planned',
+      nextStep: 'Close legal feedback',
+    });
+    const staleDependencyTask = buildTaskRecord({
+      id: 'task_dependency_escalation_downstream',
+      title: 'Launch outreach sequence',
+      state: 'planned',
+      nextStep: 'Confirm whether the dependency can be removed',
+      activeDependency: buildTaskDependency({
+        id: 'task_dependency_escalation_link',
+        taskId: 'task_dependency_escalation_downstream',
+        blockedByTaskId: upstreamTask.id,
+        blockedByTaskTitle: upstreamTask.title,
+        reason: 'Need the legal brief to close before launch.',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      }),
+    });
+
+    const dependencyEscalationApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([staleDependencyTask, upstreamTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId === staleDependencyTask.id) {
+          return buildTaskDetail(staleDependencyTask);
+        }
+
+        if (taskId === upstreamTask.id) {
+          return buildTaskDetail(upstreamTask);
+        }
+
+        return null;
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 2,
+        blockerTaskCount: 0,
+        dependencyTaskCount: 0,
+        escalationTaskCount: 1,
+        highRiskTaskCount: 0,
+        waitingTaskCount: 0,
+        missingNextStepTaskCount: 0,
+        recentTasks: [staleDependencyTask, upstreamTask],
+        waitingTasks: [],
+        blockerTasks: [],
+        dependencyTasks: [],
+        escalationTasks: [staleDependencyTask],
+        highRiskTasks: [],
+        missingNextStepTasks: [],
+        recentActivity: [],
+        recommendedActions: [],
+      }),
+    };
+
+    window.api = dependencyEscalationApi;
+
+    render(<App />);
+
+    expect(screen.getByText('当前没有被其他任务阻塞的任务。')).toBeTruthy();
+
+    const escalationSection = (await screen.findAllByText('Needs Escalation'))
+      .find((element) => element.tagName === 'STRONG')
+      ?.closest('section');
+    expect(escalationSection).toBeTruthy();
+    expect(await within(escalationSection as HTMLElement).findByText('当前依赖上游任务：Finalize legal brief')).toBeTruthy();
+    expect(
+      await within(escalationSection as HTMLElement).findByText('depends since 2026-01-01 · 已依赖 112 天'),
+    ).toBeTruthy();
+    expect(
+      await within(escalationSection as HTMLElement).findByText('已依赖 112 天，值得优先处理。'),
+    ).toBeTruthy();
+
+    await user.click(await within(escalationSection as HTMLElement).findByRole('button', { name: '直接升级处理' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Launch outreach sequence' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '优先推动上游任务“Finalize legal brief”，并重新判断是否解除对“Launch outreach sequence”的依赖。',
+    );
+
+    window.location.hash = '#home';
+    cleanup();
+    window.api = dependencyEscalationApi;
+    render(<App />);
+
+    const rerenderedEscalationSection = screen
+      .getAllByText('Needs Escalation')
+      .find((element) => element.tagName === 'STRONG')
+      ?.closest('section');
+    expect(rerenderedEscalationSection).toBeTruthy();
+
+    await user.click(await within(rerenderedEscalationSection as HTMLElement).findByRole('button', { name: '打开上游任务' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Finalize legal brief' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '先完成这条上游任务，以解除对“Launch outreach sequence”的依赖。',
+    );
+  });
+
   it('routes blocker created activity back into blocker recovery from home', async () => {
     const user = userEvent.setup();
 
@@ -4737,9 +4846,9 @@ describe('App UI flow', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: '当前有 1 个阻塞项需要升级处理' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: '当前有 1 条任务需要升级处理' })).toBeTruthy();
     expect(
-      screen.getByText('首页会优先把 stale blocker 提升成升级信号，并把你直接带回相关任务继续处理当前阻塞。'),
+      screen.getByText('首页会优先把需要升级处理的阻塞或依赖链路提成强信号，并把你直接带回相关任务继续推进。'),
     ).toBeTruthy();
   });
 
