@@ -6,6 +6,7 @@ import type {
   HomeActivityRecord,
   HomeBriefData,
   HomeSourceContextRecord,
+  HomeTaskResumePreviewRecord,
   RecommendedAction,
 } from '../../../shared/types/brief.js';
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
@@ -239,6 +240,73 @@ export class HomeBriefService {
     return [...aggregated.values()].slice(0, 8);
   }
 
+  private buildTaskResumePreviews(params: {
+    recentTasks: TaskRecord[];
+    recentActivity: HomeActivityRecord[];
+    recentSourceContexts: HomeSourceContextRecord[];
+    appliedTemplates: Awaited<ReturnType<TaskProcessBindingRepository['listActiveForTasks']>>;
+  }): HomeTaskResumePreviewRecord[] {
+    const activityByTaskId = new Map<string, HomeActivityRecord>();
+
+    for (const item of params.recentActivity) {
+      if (!activityByTaskId.has(item.taskId)) {
+        activityByTaskId.set(item.taskId, item);
+      }
+    }
+
+    return params.recentTasks.map((task) => {
+      const latestActivity = activityByTaskId.get(task.id);
+      const keySource =
+        params.recentSourceContexts.find((item) => item.taskId === task.id && item.isKey) ??
+        params.recentSourceContexts.find((item) => item.taskId === task.id) ??
+        null;
+      const currentMethod =
+        params.appliedTemplates.find((item) => item.taskId === task.id) ?? null;
+
+      const currentStateParts = [`状态：${task.state}`];
+      const waitingReason = task.activeWaitingItem?.reason ?? task.waitingReason;
+
+      if (waitingReason) {
+        currentStateParts.push(`等待：${waitingReason}`);
+      }
+
+      if (task.riskLevel !== 'none') {
+        currentStateParts.push(
+          `风险：${task.riskLevel}${task.riskNote ? ` · ${task.riskNote}` : ''}`,
+        );
+      }
+
+      const latestChange = latestActivity
+        ? latestActivity.sourceType === 'decision'
+          ? `最近决策动态：${latestActivity.title} · ${latestActivity.status}`
+          : `最近执行动态：${latestActivity.title} · ${latestActivity.status}`
+        : keySource
+          ? `最近关键来源更新：${keySource.title}`
+          : '最近没有新的关键变化。';
+
+      const nextSuggestedMove =
+        task.nextStep?.trim() ||
+        (waitingReason
+          ? `先跟进等待项：${waitingReason}`
+          : task.riskLevel === 'high'
+            ? `先处理当前风险：${task.riskNote ?? task.title}`
+            : keySource
+              ? `先查看关键来源：${keySource.title}`
+              : '先补一个明确的下一步。');
+
+      return {
+        taskId: task.id,
+        taskTitle: task.title,
+        currentState: currentStateParts.join(' · '),
+        latestChange,
+        keySourceTitle: keySource?.title ?? null,
+        currentMethodTitle: currentMethod?.title ?? null,
+        nextSuggestedMove,
+        sourceContextId: keySource?.id ?? null,
+      };
+    });
+  }
+
   private async attachActiveWaitingItems(tasks: TaskRecord[]): Promise<TaskRecord[]> {
     return Promise.all(
       tasks.map(async (task) => ({
@@ -344,7 +412,16 @@ export class HomeBriefService {
     const scheduler = this.getSchedulerStatus();
     const recentActivity = this.buildRecentActivity(tasks, decisions, runs);
     const recentSourceContexts = await this.buildRecentSourceContexts(activeTasks);
+    const appliedTemplates = this.taskProcessBindingRepository
+      ? await this.taskProcessBindingRepository.listActiveForTasks(activeTasks.map((task) => task.id))
+      : [];
     const processTemplateCandidates = await this.buildProcessTemplateCandidates(activeTasks);
+    const recentTaskResumes = this.buildTaskResumePreviews({
+      recentTasks: tasks.slice(0, 5),
+      recentActivity,
+      recentSourceContexts,
+      appliedTemplates,
+    });
     const recommendedActions = buildRecommendedActions({
       activeTasks: activeTasks.slice(0, 10),
       highRiskTasks,
@@ -371,6 +448,7 @@ export class HomeBriefService {
       recommendedActions,
       recentArtifacts,
       recentSourceContexts,
+      recentTaskResumes,
       recentActivity,
       recentBriefSnapshots,
       processTemplateCandidates,

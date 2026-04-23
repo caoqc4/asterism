@@ -280,6 +280,28 @@ describe('App UI flow', () => {
         updatedAt: '2026-01-01T00:45:00.000Z',
       }),
     ],
+    recentTaskResumes: [
+      {
+        taskId: riskTask.id,
+        taskTitle: riskTask.title,
+        currentState: '状态：running · 风险：high · Deadline slipping',
+        latestChange: '最近决策动态：Approve escalation path · approved',
+        keySourceTitle: 'Owner escalation memo',
+        currentMethodTitle: 'Risk review skill',
+        nextSuggestedMove: '已获批准，继续推进：Approve escalation path',
+        sourceContextId: 'source_context_home_1',
+      },
+      {
+        taskId: waitingTask.id,
+        taskTitle: waitingTask.title,
+        currentState: '状态：waiting_external · 等待：Waiting for legal review',
+        latestChange: '最近没有新的关键变化。',
+        keySourceTitle: null,
+        currentMethodTitle: null,
+        nextSuggestedMove: '跟进并确认是否解除等待：Waiting for legal review',
+        sourceContextId: null,
+      },
+    ],
     recentActivity: [
       {
         id: 'decision:decision_2',
@@ -3015,6 +3037,25 @@ describe('App UI flow', () => {
     });
 
     expect(screen.getAllByText('Waiting on stakeholder approval').length).toBeGreaterThan(0);
+  });
+
+  it('opens task resume previews from home with a prefilled next step', async () => {
+    const user = userEvent.setup();
+
+    window.api = mockApi;
+
+    render(<App />);
+
+    await screen.findByText('Home / Brief');
+    await user.click(screen.getByRole('button', { name: /恢复任务 High risk task/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '已获批准，继续推进：Approve escalation path',
+    );
   });
 
   it('clears waiting signals after a task leaves waiting_external', async () => {

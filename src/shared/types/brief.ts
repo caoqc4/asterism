@@ -53,6 +53,17 @@ export type HomeSourceContextRecord = {
   updatedAt: string;
 };
 
+export type HomeTaskResumePreviewRecord = {
+  taskId: string;
+  taskTitle: string;
+  currentState: string;
+  latestChange: string;
+  keySourceTitle: string | null;
+  currentMethodTitle: string | null;
+  nextSuggestedMove: string;
+  sourceContextId: string | null;
+};
+
 export type BriefProcessTemplateCandidate = {
   id: string;
   title: string;
@@ -81,6 +92,7 @@ export type HomeBriefData = {
   recommendedActions: RecommendedAction[];
   recentArtifacts: ArtifactRecord[];
   recentSourceContexts: HomeSourceContextRecord[];
+  recentTaskResumes: HomeTaskResumePreviewRecord[];
   recentActivity: HomeActivityRecord[];
   recentBriefSnapshots: BriefSnapshotRecord[];
   schedulerStatus: SchedulerStatus;

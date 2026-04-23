@@ -43,6 +43,7 @@ function buildHomeData(): HomeBriefData {
     recommendedActions: [],
     recentArtifacts: [],
     recentSourceContexts: [],
+    recentTaskResumes: [],
     recentActivity: [],
     recentBriefSnapshots: [],
     processTemplateCandidates: [],

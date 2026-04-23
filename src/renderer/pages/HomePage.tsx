@@ -8,20 +8,6 @@ import type { ArtifactRecord } from '@shared/types/artifact';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { PingResponse } from '@shared/types/ipc';
 
-function renderTaskSignal(task: HomeBriefData['recentTasks'][number]) {
-  return [
-    task.nextStep ? `下一步：${task.nextStep}` : null,
-    task.activeWaitingItem?.reason ?? task.waitingReason
-      ? `等待：${task.activeWaitingItem?.reason ?? task.waitingReason}`
-      : null,
-    task.riskLevel !== 'none'
-      ? `风险：${task.riskLevel}${task.riskNote ? ` · ${task.riskNote}` : ''}`
-      : null,
-  ]
-    .filter(Boolean)
-    .join(' | ');
-}
-
 function getActivityActionLabel(activity: HomeActivityRecord): string | null {
   if (activity.sourceType === 'decision' && activity.status === 'approved') {
     return '继续推进任务';
@@ -109,6 +95,21 @@ export function HomePage({
       intent: {
         type: 'focus_next_step',
         focusArea: 'detail',
+      },
+    });
+  }
+
+  function openTaskResume(preview: HomeBriefData['recentTaskResumes'][number]) {
+    onOpenAction({
+      id: `resume:${preview.taskId}`,
+      label: `恢复任务：${preview.taskTitle}`,
+      reason: preview.latestChange,
+      taskId: preview.taskId,
+      priority: 'medium',
+      intent: {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+        prefillNextStep: preview.nextSuggestedMove,
       },
     });
   }
@@ -423,21 +424,64 @@ export function HomePage({
       </article>
 
       <article className="panel">
-        <h2>Recent Tasks</h2>
+        <h2>Resume Previews</h2>
         <div className="task-list">
-          {briefData?.recentTasks.length ? (
-            briefData.recentTasks.map((task) => (
-              <div className="task-card" key={task.id}>
-                <div className="task-row">
-                  <strong>{task.title}</strong>
-                  <span className="status">{task.state}</span>
+          {briefData?.recentTaskResumes.length ? (
+            briefData.recentTaskResumes.map((preview) => (
+              <div className="task-card" key={preview.taskId}>
+                <button
+                  aria-label={`恢复任务 ${preview.taskTitle}`}
+                  className="task-card-button task-card-button-shell"
+                  onClick={() => openTaskResume(preview)}
+                  type="button"
+                >
+                  <div className="task-row">
+                    <strong>{preview.taskTitle}</strong>
+                    <span className="status">{preview.currentState}</span>
+                  </div>
+                  <p className="meta">{preview.latestChange}</p>
+                  {preview.keySourceTitle ? (
+                    <p className="meta">关键来源：{preview.keySourceTitle}</p>
+                  ) : null}
+                  {preview.currentMethodTitle ? (
+                    <p className="meta">当前方法：{preview.currentMethodTitle}</p>
+                  ) : null}
+                  <p className="meta">建议先做：{preview.nextSuggestedMove}</p>
+                </button>
+                <div className="chip-row">
+                  <button
+                    className="ghost-button"
+                    onClick={() => openTaskResume(preview)}
+                    type="button"
+                  >
+                    恢复任务
+                  </button>
+                  {preview.sourceContextId ? (
+                    <button
+                      className="ghost-button"
+                      onClick={() =>
+                        onOpenSourceContext({
+                          id: preview.sourceContextId!,
+                          taskId: preview.taskId,
+                          taskTitle: preview.taskTitle,
+                          title: preview.keySourceTitle ?? '关键来源',
+                          kind: 'context',
+                          isKey: true,
+                          uri: null,
+                          note: preview.latestChange,
+                          updatedAt: '',
+                        })
+                      }
+                      type="button"
+                    >
+                      查看关键来源
+                    </button>
+                  ) : null}
                 </div>
-                <p className="meta">{task.summary || task.id}</p>
-                {renderTaskSignal(task) ? <p className="meta">{renderTaskSignal(task)}</p> : null}
               </div>
             ))
           ) : (
-            <p className="meta">还没有任务。</p>
+            <p className="meta">当前还没有可恢复的任务预览。</p>
           )}
         </div>
       </article>

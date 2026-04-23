@@ -260,6 +260,48 @@ describe('HomeBriefService', () => {
         updatedAt: '2026-01-01T01:30:00.000Z',
       },
     ]);
+    expect(homeData.recentTaskResumes).toEqual([
+      {
+        taskId: 'task_waiting',
+        taskTitle: 'Waiting task',
+        currentState: '状态：waiting_external · 等待：Waiting for reviewer confirmation',
+        latestChange: '最近没有新的关键变化。',
+        keySourceTitle: null,
+        currentMethodTitle: 'Risk review skill',
+        nextSuggestedMove: 'Follow up on Friday',
+        sourceContextId: null,
+      },
+      {
+        taskId: 'task_risk',
+        taskTitle: 'High risk task',
+        currentState: '状态：running · 风险：high · Deadline slipping',
+        latestChange: '最近关键来源更新：Escalation source memo',
+        keySourceTitle: 'Escalation source memo',
+        currentMethodTitle: 'Risk review skill',
+        nextSuggestedMove: 'Escalate today',
+        sourceContextId: 'source_context_risk',
+      },
+      {
+        taskId: 'task_missing',
+        taskTitle: 'Missing next step',
+        currentState: '状态：planned',
+        latestChange: '最近没有新的关键变化。',
+        keySourceTitle: null,
+        currentMethodTitle: null,
+        nextSuggestedMove: '先补一个明确的下一步。',
+        sourceContextId: null,
+      },
+      {
+        taskId: 'task_done',
+        taskTitle: 'Done task',
+        currentState: '状态：completed',
+        latestChange: '最近没有新的关键变化。',
+        keySourceTitle: null,
+        currentMethodTitle: null,
+        nextSuggestedMove: '先补一个明确的下一步。',
+        sourceContextId: null,
+      },
+    ]);
     expect(homeData.processTemplateCandidates).toEqual([
       {
         id: 'process_template_risk',
@@ -491,6 +533,10 @@ describe('HomeBriefService', () => {
         prefillNextStep: '先吸收来源材料，再补下一步：Research notes',
       },
     });
+    expect(homeData.recentTaskResumes.map((item) => item.taskId)).toEqual([
+      'task_source_focus',
+      'task_source_missing',
+    ]);
   });
 
   it('prioritizes key source contexts ahead of newer non-key sources', async () => {

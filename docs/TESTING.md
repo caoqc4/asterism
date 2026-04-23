@@ -112,6 +112,7 @@ Covered today:
 - `Home recent activity -> Tasks detail follow-up intent`
 - `Home recent activity -> Decisions / Runs`
 - `Home recent activity` lightweight follow-up actions
+- `Home resume preview -> Tasks` recovery flow
 - `Home brief` process-template-aware scheduling path
 - `Home key signals -> Tasks detail follow-up intent`
 - `Tasks quick decision submission`
