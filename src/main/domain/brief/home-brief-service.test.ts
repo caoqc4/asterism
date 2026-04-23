@@ -1384,4 +1384,80 @@ describe('HomeBriefService', () => {
       ]),
     );
   });
+
+  it('orders completion-ready resumes ahead of near-completion resumes within continue/review', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_near_resume',
+            title: 'Near completion resume',
+            state: 'planned',
+            nextStep: 'Verify final evidence',
+            updatedAt: '2026-01-03T00:00:00.000Z',
+          }),
+          buildTask({
+            id: 'task_ready_resume',
+            title: 'Completion ready resume',
+            state: 'planned',
+            nextStep: 'Finalize and complete',
+            updatedAt: '2026-01-02T00:00:00.000Z',
+          }),
+        ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      null as never,
+      { list: vi.fn().mockResolvedValue([]) } as never,
+      { list: vi.fn().mockResolvedValue([]) } as never,
+      { listRecent: vi.fn().mockResolvedValue([]) } as never,
+      { listActiveForTasks: vi.fn().mockResolvedValue([]) } as never,
+      { listRecent: vi.fn().mockResolvedValue([]) } as never,
+      () => null,
+      null,
+      null,
+      {
+        listForTasks: vi.fn().mockResolvedValue([
+          buildCompletionCriteria({
+            taskId: 'task_near_resume',
+            text: 'Draft delivered',
+            status: 'satisfied',
+            satisfiedAt: '2026-01-02T00:00:00.000Z',
+          }),
+          buildCompletionCriteria({
+            taskId: 'task_near_resume',
+            text: 'Final review recorded',
+            status: 'open',
+          }),
+          buildCompletionCriteria({
+            taskId: 'task_ready_resume',
+            text: 'Stakeholder approved',
+            status: 'satisfied',
+            satisfiedAt: '2026-01-02T00:00:00.000Z',
+          }),
+          buildCompletionCriteria({
+            taskId: 'task_ready_resume',
+            text: 'Draft delivered',
+            status: 'satisfied',
+            satisfiedAt: '2026-01-02T00:10:00.000Z',
+          }),
+        ]),
+      } as never,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.recentTaskResumes[0]).toMatchObject({
+      taskId: 'task_ready_resume',
+      lane: 'continue_or_review',
+      completionStatus: { total: 2, satisfied: 2, open: 0 },
+    });
+    expect(homeData.recentTaskResumes[1]).toMatchObject({
+      taskId: 'task_near_resume',
+      lane: 'continue_or_review',
+      completionStatus: { total: 2, satisfied: 1, open: 1 },
+    });
+  });
 });
