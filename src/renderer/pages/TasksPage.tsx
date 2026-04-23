@@ -39,6 +39,8 @@ import {
   interpretTaskTimelineEvent,
 } from '@shared/working-context/timeline';
 import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
+import type { PriorityLane } from '@shared/types/brief';
+import { getPriorityLaneLabel } from '@shared/working-context/priority-lanes';
 
 const riskOptions: TaskRiskLevel[] = ['none', 'low', 'medium', 'high'];
 const sourceContextKindOptions: SourceContextKind[] = [
@@ -341,6 +343,7 @@ type TasksPageProps = {
     intent: RecommendedActionIntent | null;
   } | null;
   runs: RunRecord[];
+  taskPriorityLanes: Map<string, PriorityLane>;
   tasks: TaskListItemRecord[];
   onApplyProcessTemplate: (input: ApplyProcessTemplateInput) => Promise<AppliedProcessTemplateRecord>;
   onArchiveProcessTemplate: (id: string) => Promise<ProcessTemplateRecord>;
@@ -373,6 +376,7 @@ export function TasksPage({
   decisions,
   focusedTaskRequest,
   runs,
+  taskPriorityLanes,
   tasks,
   onApplyProcessTemplate,
   onArchiveProcessTemplate,
@@ -1221,7 +1225,14 @@ export function TasksPage({
               >
                 <div className="task-row">
                   <strong>{task.title}</strong>
-                  <span className="status">{task.state}</span>
+                  <div className="task-row task-row-compact">
+                    {getPriorityLaneLabel(taskPriorityLanes.get(task.id)) ? (
+                      <span className={`status lane-status lane-status-${taskPriorityLanes.get(task.id)}`}>
+                        {getPriorityLaneLabel(taskPriorityLanes.get(task.id))}
+                      </span>
+                    ) : null}
+                    <span className="status">{task.state}</span>
+                  </div>
                 </div>
                 <p className="meta">{task.summary || task.id}</p>
                 {buildTaskBadges(task).length ? (

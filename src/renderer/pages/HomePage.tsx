@@ -9,6 +9,7 @@ import type { ArtifactRecord } from '@shared/types/artifact';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { PingResponse } from '@shared/types/ipc';
 import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
+import { getPriorityLaneLabel } from '@shared/working-context/priority-lanes';
 
 function getActivityActionLabel(activity: HomeActivityRecord): string | null {
   if (activity.sourceType === 'decision' && activity.status === 'approved') {
@@ -62,28 +63,11 @@ function getActivityTitle(activity: HomeActivityRecord): string {
       : `${activity.title} blocker`;
 }
 
-function getLaneLabel(lane: PriorityLane | undefined): string | null {
-  switch (lane) {
-    case 'escalate_now':
-      return '立即升级';
-    case 'unblock_or_decide':
-      return '先解阻塞/拍板';
-    case 'continue_or_review':
-      return '继续推进/复核';
-    case 'clarify':
-      return '先补清晰度';
-    case 'steady':
-      return '稳态推进';
-    default:
-      return null;
-  }
-}
-
 function renderLaneHeading(title: string, lane: PriorityLane) {
   return (
     <div className="task-row section-heading-row">
       <strong>{title}</strong>
-      <span className={`status lane-status lane-status-${lane}`}>{getLaneLabel(lane)}</span>
+      <span className={`status lane-status lane-status-${lane}`}>{getPriorityLaneLabel(lane)}</span>
     </div>
   );
 }
@@ -447,8 +431,8 @@ export function HomePage({
                 <div className="task-row">
                   <strong>{action.label}</strong>
                   <div className="task-row task-row-compact">
-                    {getLaneLabel(action.lane) ? (
-                      <span className={`status lane-status lane-status-${action.lane}`}>{getLaneLabel(action.lane)}</span>
+                    {getPriorityLaneLabel(action.lane) ? (
+                      <span className={`status lane-status lane-status-${action.lane}`}>{getPriorityLaneLabel(action.lane)}</span>
                     ) : null}
                     <span className="status">{action.priority}</span>
                   </div>
@@ -537,8 +521,8 @@ export function HomePage({
                       {getActivityTitle(event)}
                     </strong>
                     <div className="task-row task-row-compact">
-                      {getLaneLabel(event.lane) ? (
-                        <span className={`status lane-status lane-status-${event.lane}`}>{getLaneLabel(event.lane)}</span>
+                      {getPriorityLaneLabel(event.lane) ? (
+                        <span className={`status lane-status lane-status-${event.lane}`}>{getPriorityLaneLabel(event.lane)}</span>
                       ) : null}
                       <span className="status">{getActivityStatusLabel(event)}</span>
                     </div>

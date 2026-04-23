@@ -1018,6 +1018,65 @@ describe('App UI flow', () => {
     expect(within(nextStepSection as HTMLElement).getByText('先补清晰度')).toBeTruthy();
   });
 
+  it('orders tasks by priority lane and shows lane labels in the task list', async () => {
+    const user = userEvent.setup();
+
+    const laneRiskTask = buildTaskRecord({
+      id: 'task_lane_risk',
+      title: 'Lane risk task',
+      state: 'planned',
+      riskLevel: 'high',
+      riskNote: 'Critical launch blocker',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+    const laneWaitingTask = buildTaskRecord({
+      id: 'task_lane_waiting',
+      title: 'Lane waiting task',
+      state: 'waiting_external',
+      waitingReason: 'Waiting for reviewer confirmation',
+      updatedAt: '2026-01-03T00:00:00.000Z',
+    });
+    const laneSteadyTask = buildTaskRecord({
+      id: 'task_lane_steady',
+      title: 'Lane steady task',
+      state: 'planned',
+      nextStep: 'Continue outreach',
+      updatedAt: '2026-01-04T00:00:00.000Z',
+    });
+
+    window.api = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([laneSteadyTask, laneWaitingTask, laneRiskTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        const task = [laneSteadyTask, laneWaitingTask, laneRiskTask].find((item) => item.id === taskId) ?? laneRiskTask;
+        return buildTaskDetail(task);
+      }),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 3,
+        recentTasks: [laneRiskTask, laneWaitingTask, laneSteadyTask],
+        highRiskTaskCount: 1,
+        waitingTaskCount: 1,
+        highRiskTasks: [laneRiskTask],
+        waitingTasks: [laneWaitingTask],
+        recommendedActions: [],
+      }),
+    };
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+
+    const taskButtons = await screen.findAllByRole('button', { name: /Lane .* task/i });
+    expect(taskButtons[0]?.textContent).toContain('Lane risk task');
+    expect(taskButtons[1]?.textContent).toContain('Lane waiting task');
+    expect(taskButtons[2]?.textContent).toContain('Lane steady task');
+
+    expect(within(taskButtons[0]).getByText('立即升级')).toBeTruthy();
+    expect(within(taskButtons[1]).getByText('先补清晰度')).toBeTruthy();
+    expect(within(taskButtons[2]).getByText('稳态推进')).toBeTruthy();
+  });
+
   it('offers a direct action to resolve the current waiting item', async () => {
     const user = userEvent.setup();
 
@@ -1465,9 +1524,8 @@ describe('App UI flow', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /tasks/i }));
-    const riskTaskCard = (await screen.findByText('High risk task')).closest('button');
-    expect(riskTaskCard).toBeTruthy();
-    await user.click(riskTaskCard!);
+    const riskTaskCard = await screen.findByRole('button', { name: /High risk task/i });
+    await user.click(riskTaskCard);
     await screen.findByRole('heading', { name: 'High risk task' });
 
     const decisionTitleInput = screen.getByLabelText('决策标题');
@@ -1490,9 +1548,8 @@ describe('App UI flow', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /tasks/i }));
-    const riskTaskCard = (await screen.findByText('High risk task')).closest('button');
-    expect(riskTaskCard).toBeTruthy();
-    await user.click(riskTaskCard!);
+    const riskTaskCard = await screen.findByRole('button', { name: /High risk task/i });
+    await user.click(riskTaskCard);
     await screen.findByRole('heading', { name: 'High risk task' });
 
     const backgroundInput = screen.getByLabelText('拍板背景');
@@ -1519,9 +1576,8 @@ describe('App UI flow', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /tasks/i }));
-    const riskTaskCard = (await screen.findByText('High risk task')).closest('button');
-    expect(riskTaskCard).toBeTruthy();
-    await user.click(riskTaskCard!);
+    const riskTaskCard = await screen.findByRole('button', { name: /High risk task/i });
+    await user.click(riskTaskCard);
     await screen.findByRole('heading', { name: 'High risk task' });
 
     await user.selectOptions(screen.getByLabelText('Run 类型'), 'summarize');
@@ -2017,9 +2073,8 @@ describe('App UI flow', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /tasks/i }));
-    const riskTaskCard = (await screen.findByText('High risk task')).closest('button');
-    expect(riskTaskCard).toBeTruthy();
-    await user.click(riskTaskCard!);
+    const riskTaskCard = await screen.findByRole('button', { name: /High risk task/i });
+    await user.click(riskTaskCard);
     await screen.findByRole('heading', { name: 'High risk task' });
 
     await user.click(screen.getByRole('button', { name: /Approve escalation path.*pending/i }));
@@ -2046,9 +2101,8 @@ describe('App UI flow', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /tasks/i }));
-    const riskTaskCard = (await screen.findByText('High risk task')).closest('button');
-    expect(riskTaskCard).toBeTruthy();
-    await user.click(riskTaskCard!);
+    const riskTaskCard = await screen.findByRole('button', { name: /High risk task/i });
+    await user.click(riskTaskCard);
     await screen.findByRole('heading', { name: 'High risk task' });
 
     await user.click(screen.getByRole('button', { name: /draft.*failed.*来源：system/i }));

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { ArtifactRecord } from '@shared/types/artifact';
 import type {
@@ -27,6 +27,10 @@ import type {
   UpdateSourceContextInput,
 } from '@shared/types/source-context';
 import type { TaskListItemRecord, TaskState, UpdateTaskInput } from '@shared/types/task';
+import {
+  comparePriorityLanes,
+  deriveTaskPriorityLaneMap,
+} from '@shared/working-context/priority-lanes';
 
 import { getRouteFromHash, setRoute, type AppRoute } from './lib/router';
 import { DecisionsPage } from './pages/DecisionsPage';
@@ -127,6 +131,29 @@ export function App() {
     },
   });
   const [lastEvent, setLastEvent] = useState<AppEvent | null>(null);
+
+  const taskPriorityLanes = useMemo(
+    () =>
+      deriveTaskPriorityLaneMap({
+        tasks,
+        briefData,
+        decisions,
+      }),
+    [briefData, decisions, tasks],
+  );
+  const orderedTasks = useMemo(
+    () =>
+      [...tasks].sort((left, right) => {
+        const laneDiff = comparePriorityLanes(taskPriorityLanes.get(left.id), taskPriorityLanes.get(right.id));
+
+        if (laneDiff !== 0) {
+          return laneDiff;
+        }
+
+        return right.updatedAt.localeCompare(left.updatedAt);
+      }),
+    [taskPriorityLanes, tasks],
+  );
 
   useEffect(() => {
     function handleHashChange() {
@@ -561,7 +588,8 @@ export function App() {
             decisions={decisions}
             focusedTaskRequest={focusedTaskRequest}
             runs={runs}
-            tasks={tasks}
+            taskPriorityLanes={taskPriorityLanes}
+            tasks={orderedTasks}
             onApplyProcessTemplate={handleApplyProcessTemplate}
             onArchiveProcessTemplate={handleArchiveProcessTemplate}
             onCreateBlocker={handleCreateBlocker}
