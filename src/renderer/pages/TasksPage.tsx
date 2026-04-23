@@ -36,6 +36,7 @@ import {
   getTaskTimelineFollowUpActionLabel,
   getTaskTimelineLane,
   getTaskTimelineLaneLabel,
+  getTaskTimelinePreviewEvents,
   getTaskTimelinePriority,
   getTaskTimelinePriorityLabel,
   interpretTaskTimelineEvent,
@@ -1257,20 +1258,7 @@ export function TasksPage({
   const visibleTimeline = detail
     ? showAllTimeline
       ? detail.timeline
-      : [...detail.timeline]
-          .sort((left, right) => {
-            const priorityOrder = { p1: 0, p2: 1, p3: 2 } as const;
-            const priorityDiff =
-              priorityOrder[getTaskTimelinePriority(left.type)] -
-              priorityOrder[getTaskTimelinePriority(right.type)];
-
-            if (priorityDiff !== 0) {
-              return priorityDiff;
-            }
-
-            return right.createdAt.localeCompare(left.createdAt);
-          })
-          .slice(0, TIMELINE_PREVIEW_COUNT)
+      : getTaskTimelinePreviewEvents(detail.timeline, TIMELINE_PREVIEW_COUNT)
     : [];
   const snapshotArtifact = detail?.artifacts[0] ?? null;
   const snapshotSourceContext = detail?.sourceContexts[0] ?? null;

@@ -150,6 +150,7 @@ Covered today:
 - `Tasks action setup` lane-aware quick decision/run defaults
 - `Decision draft / Run` backend prompt composition now absorbs task-level lane guidance, and the run/brief/decision process-template selectors now assert the same lane guidance in their selection prompts
 - task timeline actions and related-task timeline actions now assert lane-aware follow-up wording in renderer flows
+- compact task timeline previews now assert lane-aware event selection in shared working-context tests
 - `Decisions` page current-focus and queue navigation
 - `Decisions / Runs -> Tasks` follow-up return flows
 - `Decisions / Runs` related-task timeline context

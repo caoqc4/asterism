@@ -1,6 +1,6 @@
 import type { TimelineEventRecord } from '../types/task.js';
 import type { PriorityLane } from '../types/brief.js';
-import { getPriorityLaneLabel } from './priority-lanes.js';
+import { comparePriorityLanes, getPriorityLaneLabel } from './priority-lanes.js';
 
 export type TaskTimelinePriority = 'p1' | 'p2' | 'p3';
 
@@ -356,4 +356,29 @@ export function getTaskTimelinePriorityLabel(type: string): string {
     default:
       return '留痕';
   }
+}
+
+export function getTaskTimelinePreviewEvents<T extends Pick<TimelineEventRecord, 'type' | 'createdAt'>>(
+  timeline: T[],
+  count: number,
+): T[] {
+  return [...timeline]
+    .sort((left, right) => {
+      const priorityOrder = { p1: 0, p2: 1, p3: 2 } as const;
+      const priorityDiff =
+        priorityOrder[getTaskTimelinePriority(left.type)] - priorityOrder[getTaskTimelinePriority(right.type)];
+
+      if (priorityDiff !== 0) {
+        return priorityDiff;
+      }
+
+      const laneDiff = comparePriorityLanes(getTaskTimelineLane(left.type), getTaskTimelineLane(right.type));
+
+      if (laneDiff !== 0) {
+        return laneDiff;
+      }
+
+      return right.createdAt.localeCompare(left.createdAt);
+    })
+    .slice(0, count);
 }
