@@ -2107,6 +2107,11 @@ export function TasksPage({
                                 {resumeCompletionStatus.satisfiedCriteriaHighlights.join('；')}
                               </p>
                             ) : null}
+                            {resumeCompletionStatus.nextOpenCriterion ? (
+                              <p className="meta">
+                                最后还差：{resumeCompletionStatus.nextOpenCriterion}
+                              </p>
+                            ) : null}
                           </>
                         ) : (
                           <p className="meta">建议先补 1 到 3 条完成标准，帮助判断这条任务何时可以收尾。</p>

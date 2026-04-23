@@ -335,6 +335,8 @@ export class TaskService {
       .filter((criteria) => criteria.status === 'satisfied')
       .slice(0, 2)
       .map((criteria) => criteria.text);
+    const nextOpenCriterion =
+      detail.completionCriteria.find((criteria) => criteria.status === 'open')?.text ?? null;
     const completionStatus = {
       total: detail.completionCriteria.length,
       satisfied: satisfiedCriteriaCount,
@@ -344,6 +346,7 @@ export class TaskService {
           ? '尚未定义完成标准'
           : `已满足 ${satisfiedCriteriaCount}/${detail.completionCriteria.length} 条完成标准`,
       satisfiedCriteriaHighlights,
+      nextOpenCriterion,
     };
 
     const currentStateParts = [`状态：${detail.state}`];

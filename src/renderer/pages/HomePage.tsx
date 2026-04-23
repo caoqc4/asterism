@@ -1106,6 +1106,9 @@ export function HomePage({
                           已满足：{task.completionProgress.satisfiedCriteriaHighlights.join('；')}
                         </p>
                       ) : null}
+                      {task.completionProgress?.nextOpenCriterion ? (
+                        <p className="meta">最后还差：{task.completionProgress.nextOpenCriterion}</p>
+                      ) : null}
                       {task.closeoutEvidence ? (
                         <p className="meta">
                           当前最终收尾依据：
@@ -1147,6 +1150,9 @@ export function HomePage({
                         <p className="meta">
                           已满足：{task.completionProgress.satisfiedCriteriaHighlights.join('；')}
                         </p>
+                      ) : null}
+                      {task.completionProgress?.nextOpenCriterion ? (
+                        <p className="meta">最后还差：{task.completionProgress.nextOpenCriterion}</p>
                       ) : null}
                       {task.closeoutEvidence ? (
                         <p className="meta">

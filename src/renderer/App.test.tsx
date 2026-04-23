@@ -1263,6 +1263,7 @@ describe('App UI flow', () => {
               satisfied: 2,
               open: 0,
               satisfiedCriteriaHighlights: ['Stakeholder approved', 'Draft delivered'],
+              nextOpenCriterion: null,
             },
             closeoutEvidence: {
               sourceType: 'decision',
@@ -1280,6 +1281,7 @@ describe('App UI flow', () => {
               satisfied: 1,
               open: 1,
               satisfiedCriteriaHighlights: ['Draft delivered'],
+              nextOpenCriterion: 'Final review recorded',
             },
             closeoutEvidence: {
               sourceType: 'decision',
@@ -1329,6 +1331,7 @@ describe('App UI flow', () => {
       within(closeoutSection as HTMLElement).getByText('当前收尾证据：决策批准 · Approve escalation path'),
     ).toBeTruthy();
     expect(within(closeoutSection as HTMLElement).getByText('已满足：Draft delivered')).toBeTruthy();
+    expect(within(closeoutSection as HTMLElement).getByText('最后还差：Final review recorded')).toBeTruthy();
     expect(within(closeoutSection as HTMLElement).getByRole('button', { name: '查看收尾证据' })).toBeTruthy();
 
     await user.click(within(closeoutSection as HTMLElement).getByRole('button', { name: '查看最终收尾依据' }));

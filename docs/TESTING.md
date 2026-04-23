@@ -161,6 +161,7 @@ Covered today:
 - `Home closeout tasks` now also cover the direct `查看收尾证据` path for near-completion tasks
 - `Home closeout tasks` now also cover the direct `查看最终收尾依据` path for completion-ready tasks
 - closeout tasks now also show already satisfied completion-criteria highlights alongside current closeout evidence
+- near-completion closeout tasks and task resume cards now also surface the last unfinished completion criterion
 - `Tasks list` now keeps completion-ready work ahead of near-completion work inside `继续推进/复核`
 - `Priority lane` closeout-aware wording on home/task recovery surfaces
 - `Tasks process context create / apply / remove flow`

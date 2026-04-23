@@ -529,11 +529,27 @@ export class HomeBriefService {
   ) {}
 
   private async buildCompletionProgressMap(taskIds: string[]): Promise<
-    Map<string, { total: number; satisfied: number; open: number; satisfiedCriteriaHighlights: string[] }>
+    Map<
+      string,
+      {
+        total: number;
+        satisfied: number;
+        open: number;
+        satisfiedCriteriaHighlights: string[];
+        nextOpenCriterion: string | null;
+      }
+    >
   > {
+    type CompletionProgressSlice = {
+      total: number;
+      satisfied: number;
+      open: number;
+      satisfiedCriteriaHighlights: string[];
+      nextOpenCriterion: string | null;
+    };
     const progressByTaskId = new Map<
       string,
-      { total: number; satisfied: number; open: number; satisfiedCriteriaHighlights: string[] }
+      CompletionProgressSlice
     >();
 
     if (!this.completionCriteriaRepository || taskIds.length === 0) {
@@ -543,11 +559,12 @@ export class HomeBriefService {
     const criteria = await this.completionCriteriaRepository.listForTasks(taskIds);
 
     for (const item of criteria) {
-      const current = progressByTaskId.get(item.taskId) ?? {
+      const current: CompletionProgressSlice = progressByTaskId.get(item.taskId) ?? {
         total: 0,
         satisfied: 0,
         open: 0,
         satisfiedCriteriaHighlights: [],
+        nextOpenCriterion: null,
       };
       current.total += 1;
       if (item.status === 'satisfied') {
@@ -557,6 +574,7 @@ export class HomeBriefService {
         }
       } else {
         current.open += 1;
+        current.nextOpenCriterion ??= item.text;
       }
       progressByTaskId.set(item.taskId, current);
     }
@@ -568,7 +586,13 @@ export class HomeBriefService {
     task: TaskListItemRecord,
     completionProgressByTaskId: Map<
       string,
-      { total: number; satisfied: number; open: number; satisfiedCriteriaHighlights: string[] }
+      {
+        total: number;
+        satisfied: number;
+        open: number;
+        satisfiedCriteriaHighlights: string[];
+        nextOpenCriterion: string | null;
+      }
     >,
   ): HomeTaskSliceRecord {
     return {
@@ -578,6 +602,7 @@ export class HomeBriefService {
         satisfied: 0,
         open: 0,
         satisfiedCriteriaHighlights: [],
+        nextOpenCriterion: null,
       },
     };
   }
