@@ -401,6 +401,10 @@ export function explainTaskTimelineEvent(
   const payload = event.payload ? safeJsonParse(event.payload) : null;
 
   switch (event.type) {
+    case 'task.created':
+      return `创建任务：${String(payload?.title ?? '未填写')}`;
+    case 'task.updated':
+      return '任务字段已更新';
     case 'task.run_failed':
       return `执行失败：${String(payload?.failureReason ?? '未记录失败原因')}。`;
     case 'task.run_completed':
@@ -416,6 +420,8 @@ export function explainTaskTimelineEvent(
     case 'source_context.created':
     case 'source_context.updated':
       return `来源材料更新：${String(payload?.title ?? '未命名来源')}。`;
+    case 'source_context.archived':
+      return `归档来源材料：${String(payload?.title ?? '未填写')}`;
     case 'blocker.created':
     case 'blocker.updated':
       return `阻塞项更新：${String(payload?.title ?? '未命名阻塞项')}。`;
@@ -435,6 +441,19 @@ export function explainTaskTimelineEvent(
       return `完成标准重新打开：${String(payload?.text ?? '未命名完成标准')}。`;
     case 'artifact.created':
       return `生成产物：${String(payload?.title ?? '未命名产物')}。`;
+    case 'process_template.applied':
+      return `挂载方法模板：${String(payload?.title ?? '未填写')} [${String(payload?.kind ?? '未填写')}]`;
+    case 'process_template.removed':
+      return `移除方法模板：${String(payload?.title ?? '未填写')} [${String(payload?.kind ?? '未填写')}]`;
+    case 'process_template.selected': {
+      const sourceType = payload?.sourceType === 'decision_draft' ? '决策草拟' : '执行';
+      const titles = Array.isArray(payload?.titles) ? payload.titles.join('、') : payload?.titles;
+      return `本次${sourceType}选择方法模板：${String(titles ?? '未填写')}；原因：${String(payload?.reason ?? '未填写')}`;
+    }
+    case 'process_template.skipped': {
+      const sourceType = payload?.sourceType === 'decision_draft' ? '决策草拟' : '执行';
+      return `本次${sourceType}未调用方法模板；原因：${String(payload?.reason ?? '未填写')}`;
+    }
     default:
       return interpretTaskTimelineEvent(event).summary;
   }

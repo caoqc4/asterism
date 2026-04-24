@@ -52,6 +52,36 @@ describe('getTaskTimelinePreviewEvents', () => {
         }),
       }),
     ).toBe('等待原因从“未填写”调整为“Waiting for legal review”');
+
+    expect(
+      explainTaskTimelineEvent({
+        type: 'source_context.archived',
+        payload: JSON.stringify({
+          title: 'Customer notes',
+        }),
+      }),
+    ).toBe('归档来源材料：Customer notes');
+
+    expect(
+      explainTaskTimelineEvent({
+        type: 'process_template.selected',
+        payload: JSON.stringify({
+          sourceType: 'decision_draft',
+          titles: ['Approval skill'],
+          reason: 'Need approval context',
+        }),
+      }),
+    ).toBe('本次决策草拟选择方法模板：Approval skill；原因：Need approval context');
+
+    expect(
+      explainTaskTimelineEvent({
+        type: 'process_template.skipped',
+        payload: JSON.stringify({
+          sourceType: 'run',
+          reason: 'No matching template',
+        }),
+      }),
+    ).toBe('本次执行未调用方法模板；原因：No matching template');
   });
 
   it('prioritizes lane-critical events ahead of weaker explanatory items in compact previews', () => {

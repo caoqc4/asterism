@@ -482,6 +482,7 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
     event.type === 'task.decision_approved' ||
     event.type === 'task.decision_deferred' ||
     event.type === 'task.decision_cancelled' ||
+    event.type === 'task.created' ||
     event.type === 'task.run_failed' ||
     event.type === 'task.run_completed' ||
     event.type === 'waiting_item.created' ||
@@ -489,6 +490,7 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
     event.type === 'waiting_item.resolved' ||
     event.type === 'source_context.created' ||
     event.type === 'source_context.updated' ||
+    event.type === 'source_context.archived' ||
     event.type === 'blocker.created' ||
     event.type === 'blocker.updated' ||
     event.type === 'blocker.resolved' ||
@@ -500,6 +502,11 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
     event.type === 'completion_criteria.satisfied' ||
     event.type === 'completion_criteria.reopened' ||
     event.type === 'artifact.created' ||
+    event.type === 'process_template.applied' ||
+    event.type === 'process_template.removed' ||
+    event.type === 'process_template.selected' ||
+    event.type === 'process_template.skipped' ||
+    event.type === 'task.updated' ||
     event.type === 'task.waiting_changed' ||
     event.type === 'task.risk_changed' ||
     event.type === 'task.next_step_changed' ||
@@ -508,30 +515,7 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
     return explainTaskTimelineEvent(event);
   }
 
-  const payload = safeParsePayload(event.payload);
-
-  switch (event.type) {
-    case 'task.created':
-      return `创建任务：${formatValue(payload?.title)}`;
-    case 'source_context.archived':
-      return `归档来源材料：${formatValue(payload?.title)}`;
-    case 'process_template.applied':
-      return `挂载方法模板：${formatValue(payload?.title)} [${formatValue(payload?.kind)}]`;
-    case 'process_template.removed':
-      return `移除方法模板：${formatValue(payload?.title)} [${formatValue(payload?.kind)}]`;
-    case 'process_template.selected': {
-      const sourceType = payload?.sourceType === 'decision_draft' ? '决策草拟' : '执行';
-      return `本次${sourceType}选择方法模板：${formatValue((payload?.titles as string[] | undefined)?.join('、'))}；原因：${formatValue(payload?.reason)}`;
-    }
-    case 'process_template.skipped': {
-      const sourceType = payload?.sourceType === 'decision_draft' ? '决策草拟' : '执行';
-      return `本次${sourceType}未调用方法模板；原因：${formatValue(payload?.reason)}`;
-    }
-    case 'task.updated':
-      return '任务字段已更新';
-    default:
-      return event.type;
-  }
+  return event.type;
 }
 
 function getTimelineActionLabel(type: string): string | null {

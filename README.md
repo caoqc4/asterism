@@ -193,7 +193,7 @@ What exists today:
 - task/object timelines now also reuse that same `Priority Lanes` language for lightweight event badges and follow-up wording, so single-task history explanation no longer drifts away from the cross-task urgency model used by home, briefs, and action defaults
 - compact task-timeline previews now also prefer stronger escalation/unblock lanes and higher-value explanatory groups when choosing which events stay visible by default, then group the visible events as `关键事件 / 解释事件 / 留痕事件`, so long histories keep run failures, dependency changes, source updates, and completion-standard evidence on the surface instead of letting weaker trace items crowd them out
 - task and home resume latest-change selection now prefer action-shaping timeline events over weak trace entries, so recovery cards stay focused on the one change most likely to alter the next move instead of becoming miniature audit logs
-- task timeline summaries now use explanatory wording distinct from resume latest-change wording, including shared wording for waiting-reason changes across task and object surfaces, so the resume layer reads as the current recovery cue while the timeline layer reads as historical explanation
+- task timeline summaries now use explanatory wording distinct from resume latest-change wording, including shared wording for waiting-reason, source-archive, and process-template changes across task and object surfaces, so the resume layer reads as the current recovery cue while the timeline layer reads as historical explanation
 - config + keychain setup
 - service tests and SQLite repository integration coverage
 - IPC handler coverage for critical event-emitting entrypoints
