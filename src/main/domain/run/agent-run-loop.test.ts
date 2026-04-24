@@ -271,6 +271,26 @@ describe('AgentRunLoop', () => {
     expect(result).toEqual({
       status: 'completed',
       output: 'Agent output',
+      observations: [
+        expect.objectContaining({
+          tool: 'task.inspect_context',
+          status: 'completed',
+          summary: 'Inspected context',
+          output: 'Context summary',
+        }),
+        expect.objectContaining({
+          tool: 'task.inspect_timeline',
+          status: 'completed',
+          summary: 'Inspected timeline',
+          output: 'Timeline summary',
+        }),
+        expect.objectContaining({
+          tool: 'artifact.create_note',
+          status: 'completed',
+          summary: 'Created note',
+          output: 'Agent output',
+        }),
+      ],
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -366,6 +386,11 @@ describe('AgentRunLoop', () => {
     expect(result).toEqual({
       status: 'completed',
       output: 'Final content',
+      observations: [
+        expect.objectContaining({ tool: 'task.inspect_context', status: 'completed' }),
+        expect.objectContaining({ tool: 'task.inspect_timeline', status: 'completed' }),
+        expect.objectContaining({ tool: 'artifact.create_note', status: 'completed' }),
+      ],
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -425,6 +450,15 @@ describe('AgentRunLoop', () => {
       status: 'needs_confirmation',
       message: 'Needs confirmation',
       checkpointId: 'run_checkpoint_1',
+      observations: [
+        expect.objectContaining({ tool: 'task.inspect_context', status: 'completed' }),
+        expect.objectContaining({ tool: 'task.inspect_timeline', status: 'completed' }),
+        expect.objectContaining({
+          tool: 'artifact.create_note',
+          status: 'needs_confirmation',
+          checkpointId: 'run_checkpoint_1',
+        }),
+      ],
     });
   });
 
@@ -450,6 +484,13 @@ describe('AgentRunLoop', () => {
     expect(result).toEqual({
       status: 'failed',
       message: 'Missing context',
+      observations: [
+        expect.objectContaining({
+          tool: 'task.inspect_context',
+          status: 'failed',
+          error: 'Missing context',
+        }),
+      ],
     });
     expect(agentToolRegistry.execute).toHaveBeenCalledTimes(1);
   });

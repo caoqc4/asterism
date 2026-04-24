@@ -11,16 +11,28 @@ export type AgentRunLoopResult =
   | {
       status: 'completed';
       output: string;
+      observations: AgentRunLoopObservation[];
     }
   | {
       status: 'failed';
       message: string;
+      observations: AgentRunLoopObservation[];
     }
   | {
       status: 'needs_confirmation';
       message: string;
       checkpointId: string;
+      observations: AgentRunLoopObservation[];
     };
+
+export type AgentRunLoopObservation = {
+  tool: AgentToolName;
+  status: NonNullable<AgentToolResult['status']>;
+  summary: string;
+  output: string | null;
+  error: string | null;
+  checkpointId: string | null;
+};
 
 export type AgentRunLoopStep =
   | {
@@ -73,10 +85,25 @@ function parseModelProposal(modelOutput: string): AgentStepProposal | null {
   }
 }
 
-function failedFromTool(result: AgentToolResult): AgentRunLoopResult {
+function observationFromTool(tool: AgentToolName, result: AgentToolResult): AgentRunLoopObservation {
+  return {
+    tool,
+    status: result.status ?? (result.success ? 'completed' : 'failed'),
+    summary: result.summary,
+    output: result.output ?? null,
+    error: result.error ?? null,
+    checkpointId: result.checkpointId ?? null,
+  };
+}
+
+function failedFromTool(
+  result: AgentToolResult,
+  observations: AgentRunLoopObservation[],
+): AgentRunLoopResult {
   return {
     status: 'failed',
     message: result.error ?? result.summary,
+    observations,
   };
 }
 
@@ -222,6 +249,7 @@ export class AgentRunLoop {
       return {
         status: 'completed',
         output: effectiveModelOutput,
+        observations: [],
       };
     }
 
@@ -242,6 +270,8 @@ export class AgentRunLoop {
       output: executionPlan.steps.map((step, index) => `${index + 1}. ${step.tool}`).join('\n') || '无可执行步骤。',
     });
 
+    const observations: AgentRunLoopObservation[] = [];
+
     for (const step of executionPlan.steps) {
       const result = await this.agentToolRegistry.execute(
         step.tool,
@@ -255,23 +285,26 @@ export class AgentRunLoop {
         },
         request.policy,
       );
+      observations.push(observationFromTool(step.tool, result));
 
       if (result.status === 'needs_confirmation' && result.checkpointId) {
         return {
           status: 'needs_confirmation',
           message: result.summary,
           checkpointId: result.checkpointId,
+          observations,
         };
       }
 
       if (!result.success) {
-        return failedFromTool(result);
+        return failedFromTool(result, observations);
       }
     }
 
     return {
       status: 'completed',
       output: effectiveModelOutput,
+      observations,
     };
   }
 }
