@@ -77,4 +77,15 @@ describe('AiConfigService', () => {
     expect(status.model).toBe('gpt-4.1');
     expect(status.configured).toBe(true);
   });
+
+  it('rejects runtime config resolution when no API key is stored', async () => {
+    getPasswordMock.mockResolvedValue(null);
+    const { AppConfigService } = await import('../config/app-config-service.js');
+    const { AiConfigService } = await import('./ai-config-service.js');
+    const service = new AiConfigService(new AppConfigService(() => tempRoot));
+
+    await expect(service.resolveRuntimeConfig()).rejects.toThrow(
+      'AI API Key is not configured in system Keychain.',
+    );
+  });
 });
