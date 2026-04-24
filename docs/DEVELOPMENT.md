@@ -133,3 +133,5 @@ This project uses native modules such as:
 If installation fails on a new machine, make sure standard native build tooling for your platform is available.
 
 The supported local Node versions are `20.19+` or `22.12+`, matching the CI workflow and current Vite/Vitest engine requirements.
+
+Dependency updates are managed through Dependabot PRs for npm packages and GitHub Actions. Prefer reviewing those PRs with `npm run verify` over applying broad `npm audit fix --force` upgrades directly.
