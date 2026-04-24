@@ -20,6 +20,7 @@ import type { TaskDependencyRecord } from '@shared/types/task-dependency';
 import type { TaskDetail, TaskListItemRecord, TaskRecord } from '@shared/types/task';
 import type { ArtifactRecord } from '@shared/types/artifact';
 import type { WaitingItemRecord } from '@shared/types/waiting-item';
+import { formatDependencyAgeLabel, getDependencyAgeReason } from '@shared/working-context/dependency';
 import { App } from './App';
 
 function buildTaskRecord(partial: Partial<TaskListItemRecord>): TaskListItemRecord {
@@ -4742,6 +4743,7 @@ describe('App UI flow', () => {
 
   it('surfaces stale dependencies under escalation instead of blocked-by tasks on home', async () => {
     const user = userEvent.setup();
+    const dependencyCreatedAt = '2026-01-01T00:00:00.000Z';
 
     const upstreamTask = buildTaskRecord({
       id: 'task_dependency_escalation_upstream',
@@ -4760,7 +4762,7 @@ describe('App UI flow', () => {
         blockedByTaskId: upstreamTask.id,
         blockedByTaskTitle: upstreamTask.title,
         reason: 'Need the legal brief to close before launch.',
-        createdAt: '2026-01-01T00:00:00.000Z',
+        createdAt: dependencyCreatedAt,
       }),
     });
 
@@ -4814,10 +4816,12 @@ describe('App UI flow', () => {
     expect(escalationSection).toBeTruthy();
     expect(await within(escalationSection as HTMLElement).findByText('当前依赖上游任务：Finalize legal brief')).toBeTruthy();
     expect(
-      await within(escalationSection as HTMLElement).findByText('depends since 2026-01-01 · 已依赖 112 天'),
+      await within(escalationSection as HTMLElement).findByText(formatDependencyAgeLabel(dependencyCreatedAt)),
     ).toBeTruthy();
     expect(
-      await within(escalationSection as HTMLElement).findByText('这条依赖链已持续 112 天，值得优先升级处理。'),
+      await within(escalationSection as HTMLElement).findByText(
+        getDependencyAgeReason(dependencyCreatedAt, 'home') ?? '',
+      ),
     ).toBeTruthy();
 
     expect(

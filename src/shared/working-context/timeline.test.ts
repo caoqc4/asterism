@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { getTaskTimelinePreviewEvents, getTaskTimelineResponsibilitySummary } from './timeline.js';
+import {
+  getTaskTimelinePreviewEvents,
+  getTaskTimelinePriority,
+  getTaskTimelineResponsibilitySummary,
+} from './timeline.js';
 
 describe('getTaskTimelinePreviewEvents', () => {
   it('prioritizes lane-critical events ahead of weaker explanatory items in compact previews', () => {
@@ -38,11 +42,27 @@ describe('getTaskTimelinePreviewEvents', () => {
     ];
 
     expect(getTaskTimelinePreviewEvents(timeline, 4).map((event) => event.id)).toEqual([
-      'event_4',
       'event_3',
+      'event_4',
       'event_1',
       'event_2',
     ]);
+  });
+
+  it('classifies lifecycle-changing object events ahead of explanatory updates', () => {
+    expect(getTaskTimelinePriority('blocker.created')).toBe('p1');
+    expect(getTaskTimelinePriority('blocker.resolved')).toBe('p1');
+    expect(getTaskTimelinePriority('task_dependency.created')).toBe('p1');
+    expect(getTaskTimelinePriority('task_dependency.resolved')).toBe('p1');
+    expect(getTaskTimelinePriority('artifact.created')).toBe('p1');
+
+    expect(getTaskTimelinePriority('blocker.updated')).toBe('p2');
+    expect(getTaskTimelinePriority('task_dependency.updated')).toBe('p2');
+    expect(getTaskTimelinePriority('completion_criteria.satisfied')).toBe('p2');
+    expect(getTaskTimelinePriority('completion_criteria.reopened')).toBe('p2');
+    expect(getTaskTimelinePriority('process_template.skipped')).toBe('p2');
+
+    expect(getTaskTimelinePriority('source_context.archived')).toBe('p3');
   });
 
   it('derives responsibility summaries for blocker and dependency events', () => {

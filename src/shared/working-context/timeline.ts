@@ -435,6 +435,10 @@ export function getTaskTimelinePriority(type: string): TaskTimelinePriority {
     case 'task.decision_deferred':
     case 'task.decision_cancelled':
     case 'waiting_item.resolved':
+    case 'blocker.created':
+    case 'blocker.resolved':
+    case 'task_dependency.created':
+    case 'task_dependency.resolved':
     case 'artifact.created':
       return 'p1';
     case 'task.next_step_changed':
@@ -445,13 +449,14 @@ export function getTaskTimelinePriority(type: string): TaskTimelinePriority {
     case 'waiting_item.updated':
     case 'source_context.created':
     case 'source_context.updated':
-    case 'blocker.created':
     case 'blocker.updated':
-    case 'blocker.resolved':
-    case 'task_dependency.created':
     case 'task_dependency.updated':
-    case 'task_dependency.resolved':
+    case 'completion_criteria.created':
+    case 'completion_criteria.updated':
+    case 'completion_criteria.satisfied':
+    case 'completion_criteria.reopened':
     case 'process_template.selected':
+    case 'process_template.skipped':
       return 'p2';
     default:
       return 'p3';
