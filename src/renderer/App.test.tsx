@@ -3701,6 +3701,33 @@ describe('App UI flow', () => {
     );
   });
 
+  it('surfaces context creation shortcuts from the first task detail slices', async () => {
+    const user = userEvent.setup();
+
+    const contextShortcutTask = buildTaskRecord({
+      id: 'task_context_shortcuts',
+      title: 'Context shortcut task',
+      state: 'planned',
+    });
+
+    const contextShortcutApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([contextShortcutTask]),
+      getTaskDetail: vi.fn().mockResolvedValue(buildTaskDetail(contextShortcutTask)),
+    };
+
+    window.api = contextShortcutApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /context shortcut task/i }));
+    await screen.findByRole('heading', { name: 'Context shortcut task' });
+
+    expect(screen.getByRole('button', { name: '新增来源材料' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '新增方法模板' })).toBeTruthy();
+  });
+
   it('creates and edits source context items from task detail', async () => {
     const user = userEvent.setup();
 

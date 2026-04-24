@@ -1508,18 +1508,23 @@ export function TasksPage({
     setSourceContextError(null);
   }
 
-  function focusSourceContext(sourceContextId: string | null) {
-    if (!detail || !sourceContextId) {
+  function focusSourceContext(sourceContextId: string | null = null) {
+    if (!detail) {
       return;
     }
 
-    const matchedSourceContext = detail.sourceContexts.find((item) => item.id === sourceContextId);
+    if (sourceContextId) {
+      const matchedSourceContext = detail.sourceContexts.find((item) => item.id === sourceContextId);
 
-    if (!matchedSourceContext) {
-      return;
+      if (!matchedSourceContext) {
+        return;
+      }
+
+      populateSourceContextForm(matchedSourceContext);
+    } else {
+      resetSourceContextForm();
     }
 
-    populateSourceContextForm(matchedSourceContext);
     if (typeof sourceContextSectionRef.current?.scrollIntoView === 'function') {
       sourceContextSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -1545,20 +1550,25 @@ export function TasksPage({
     setProcessTemplateError(null);
   }
 
-  function focusProcessTemplate(templateId: string | null) {
-    if (!detail || !templateId) {
+  function focusProcessTemplate(templateId: string | null = null) {
+    if (!detail) {
       return;
     }
 
-    const matchedTemplate =
-      detail.processTemplates.find((item) => item.id === templateId) ??
-      detail.availableProcessTemplates.find((item) => item.id === templateId);
+    if (templateId) {
+      const matchedTemplate =
+        detail.processTemplates.find((item) => item.id === templateId) ??
+        detail.availableProcessTemplates.find((item) => item.id === templateId);
 
-    if (!matchedTemplate) {
-      return;
+      if (!matchedTemplate) {
+        return;
+      }
+
+      populateProcessTemplateForm(matchedTemplate);
+    } else {
+      resetProcessTemplateForm();
     }
 
-    populateProcessTemplateForm(matchedTemplate);
     if (typeof processContextSectionRef.current?.scrollIntoView === 'function') {
       processContextSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -2502,24 +2512,20 @@ export function TasksPage({
                     )}
                   </div>
                   <div className="timeline-actions">
-                    {snapshotSourceContext ? (
-                      <button
-                        className="ghost-button timeline-action"
-                        onClick={() => focusSourceContext(snapshotSourceContext.id)}
-                        type="button"
-                      >
-                        管理来源材料
-                      </button>
-                    ) : null}
-                    {snapshotProcessTemplate ? (
-                      <button
-                        className="ghost-button timeline-action"
-                        onClick={() => focusProcessTemplate(snapshotProcessTemplate.id)}
-                        type="button"
-                      >
-                        管理当前方法
-                      </button>
-                    ) : null}
+                    <button
+                      className="ghost-button timeline-action"
+                      onClick={() => focusSourceContext(snapshotSourceContext?.id ?? null)}
+                      type="button"
+                    >
+                      {snapshotSourceContext ? '管理来源材料' : '新增来源材料'}
+                    </button>
+                    <button
+                      className="ghost-button timeline-action"
+                      onClick={() => focusProcessTemplate(snapshotProcessTemplate?.id ?? null)}
+                      type="button"
+                    >
+                      {snapshotProcessTemplate ? '管理当前方法' : '新增方法模板'}
+                    </button>
                   </div>
                 </div>
 
@@ -2793,7 +2799,7 @@ export function TasksPage({
                   </div>
                 </div>
 
-                <div className="transition-group detail-card-group" ref={sourceContextSectionRef}>
+                <div className="transition-group detail-card-group">
                   <h3>Action Setup</h3>
                   <p className="meta">{getActionSetupGuidance(detail)}</p>
                   <div className="quick-actions-grid" ref={quickActionsRef}>
@@ -3371,7 +3377,7 @@ export function TasksPage({
                   </form>
                 </div>
 
-                <div className="transition-group detail-card-group">
+                <div className="transition-group detail-card-group" ref={sourceContextSectionRef}>
                   <h3>Source Context</h3>
                   <p className="meta">这一层管理任务依赖的材料，不和方法模板混在一起；上方 Resume Card 的 Key Source 就是从这里抽出的关键切片。</p>
                   <div className="studio-section studio-section-source-lane">
