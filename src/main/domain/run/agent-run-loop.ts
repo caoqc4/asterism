@@ -168,6 +168,12 @@ function formatObservationSummary(observations: AgentRunLoopObservation[]): stri
     .join('\n');
 }
 
+function formatObservedToolList(observations: AgentRunLoopObservation[]): string {
+  return observations
+    .map((observation) => observation.tool)
+    .join('、') || '无';
+}
+
 export class AgentRunLoop {
   constructor(
     private readonly agentToolRegistry: AgentToolRegistry,
@@ -301,6 +307,24 @@ export class AgentRunLoop {
     });
   }
 
+  async recordObservationPlannerDecision(params: {
+    runId: string;
+    observations: AgentRunLoopObservation[];
+    nextTool: AgentToolName;
+  }): Promise<void> {
+    await this.runStepRepository.create({
+      runId: params.runId,
+      kind: 'decision',
+      status: 'completed',
+      title: '复核 agent 观察后继续执行',
+      input: JSON.stringify({
+        observations: params.observations,
+        nextTool: params.nextTool,
+      }),
+      output: `已完成只读观察：${formatObservedToolList(params.observations)}。继续执行：${params.nextTool}。`,
+    });
+  }
+
   async executeLocalNoteLoop(params: {
     request: AgentRunRequest;
     modelOutput: string;
@@ -338,8 +362,18 @@ export class AgentRunLoop {
     });
 
     const observations: AgentRunLoopObservation[] = [];
+    let recordedPlannerDecision = false;
 
     for (const step of executionPlan.steps) {
+      if (step.kind === 'create_note' && !recordedPlannerDecision) {
+        await this.recordObservationPlannerDecision({
+          runId: request.runId,
+          observations,
+          nextTool: step.tool,
+        });
+        recordedPlannerDecision = true;
+      }
+
       const result = await this.agentToolRegistry.execute(
         step.tool,
         step.input,

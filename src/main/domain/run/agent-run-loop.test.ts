@@ -344,6 +344,16 @@ describe('AgentRunLoop', () => {
         runId: 'run_1',
         kind: 'decision',
         status: 'completed',
+        title: '复核 agent 观察后继续执行',
+        input: expect.stringContaining('"nextTool":"artifact.create_note"'),
+        output: '已完成只读观察：task.inspect_context、task.inspect_timeline。继续执行：artifact.create_note。',
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        kind: 'decision',
+        status: 'completed',
         title: '汇总 agent 工具观察',
         input: expect.stringContaining('"tool":"task.inspect_context"'),
         output: expect.stringContaining('1. task.inspect_context [completed] Inspected context'),
@@ -393,6 +403,59 @@ describe('AgentRunLoop', () => {
         workingContext: undefined,
       },
       expect.objectContaining({ confirmationRequiredRisks: ['external_write', 'sensitive'] }),
+    );
+  });
+
+  it('records an observation-aware planner decision before the first write tool', async () => {
+    const agentToolRegistry = {
+      execute: vi
+        .fn()
+        .mockResolvedValueOnce({
+          success: true,
+          summary: 'Inspected context',
+          output: 'Context summary',
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          summary: 'Inspected timeline',
+          output: 'Timeline summary',
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          summary: 'Created note',
+          output: 'Agent output',
+        }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const loop = new AgentRunLoop(agentToolRegistry as never, runStepRepository as never);
+
+    await loop.executeLocalNoteLoop({
+      request: buildRequest(),
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    });
+
+    const plannerDecisionCallIndex = runStepRepository.create.mock.calls.findIndex(([input]) =>
+      input.title === '复核 agent 观察后继续执行'
+    );
+    const observationSummaryCallIndex = runStepRepository.create.mock.calls.findIndex(([input]) =>
+      input.title === '汇总 agent 工具观察'
+    );
+
+    expect(plannerDecisionCallIndex).toBeGreaterThan(-1);
+    expect(observationSummaryCallIndex).toBeGreaterThan(plannerDecisionCallIndex);
+    expect(agentToolRegistry.execute).toHaveBeenNthCalledWith(
+      3,
+      'artifact.create_note',
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+    );
+    expect(runStepRepository.create.mock.calls[plannerDecisionCallIndex]?.[0]).toEqual(
+      expect.objectContaining({
+        input: expect.stringContaining('"tool":"task.inspect_context"'),
+        output: expect.stringContaining('继续执行：artifact.create_note'),
+      }),
     );
   });
 
