@@ -7,15 +7,7 @@ import type {
 } from '../../../shared/types/blocker.js';
 import { initDatabase } from '../client.js';
 import { blockers } from '../schema.js';
-import { normalizeValue } from './normalization.js';
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-function generateId(prefix: string): string {
-  return `${prefix}_${crypto.randomUUID()}`;
-}
+import { generateId, normalizeValue, nowIso } from './repository-utils.js';
 
 function toRecord(row: typeof blockers.$inferSelect): BlockerRecord {
   return {

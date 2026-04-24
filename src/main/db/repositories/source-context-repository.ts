@@ -7,15 +7,7 @@ import type {
 } from '../../../shared/types/source-context.js';
 import { sourceContexts } from '../schema.js';
 import { initDatabase } from '../client.js';
-import { normalizeValue } from './normalization.js';
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-function generateId(prefix: string): string {
-  return `${prefix}_${crypto.randomUUID()}`;
-}
+import { generateId, normalizeValue, nowIso } from './repository-utils.js';
 
 function sortSourceContexts(rows: SourceContextRecord[]): SourceContextRecord[] {
   return [...rows].sort((left, right) => {

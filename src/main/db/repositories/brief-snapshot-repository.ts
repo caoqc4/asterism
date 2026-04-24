@@ -3,14 +3,7 @@ import { desc } from 'drizzle-orm';
 import type { BriefSnapshotRecord } from '../../../shared/types/brief-snapshot.js';
 import { initDatabase } from '../client.js';
 import { briefSnapshots } from '../schema.js';
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-function generateId(prefix: string): string {
-  return `${prefix}_${crypto.randomUUID()}`;
-}
+import { generateId, nowIso } from './repository-utils.js';
 
 export class BriefSnapshotRepository {
   async create(

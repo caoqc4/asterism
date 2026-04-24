@@ -6,15 +6,7 @@ import type {
 } from '../../../shared/types/process-template.js';
 import { processTemplates, taskProcessBindings } from '../schema.js';
 import { initDatabase } from '../client.js';
-import { normalizeValue } from './normalization.js';
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-function generateId(prefix: string): string {
-  return `${prefix}_${crypto.randomUUID()}`;
-}
+import { generateId, normalizeValue, nowIso } from './repository-utils.js';
 
 function parseTags(tags: string): string[] {
   return JSON.parse(tags) as string[];

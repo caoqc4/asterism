@@ -3,14 +3,7 @@ import { desc, eq } from 'drizzle-orm';
 import type { ArtifactKind, ArtifactRecord } from '../../../shared/types/artifact.js';
 import { artifacts, timelineEvents } from '../schema.js';
 import { initDatabase } from '../client.js';
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-function generateId(prefix: string): string {
-  return `${prefix}_${crypto.randomUUID()}`;
-}
+import { generateId, nowIso } from './repository-utils.js';
 
 function toRecord(row: typeof artifacts.$inferSelect): ArtifactRecord {
   return {

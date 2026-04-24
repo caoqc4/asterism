@@ -3,14 +3,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import type { WaitingItemRecord } from '../../../shared/types/waiting-item.js';
 import { initDatabase } from '../client.js';
 import { waitingItems } from '../schema.js';
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-function generateId(prefix: string): string {
-  return `${prefix}_${crypto.randomUUID()}`;
-}
+import { generateId, nowIso } from './repository-utils.js';
 
 function mapWaitingItem(row: typeof waitingItems.$inferSelect): WaitingItemRecord {
   return {

@@ -7,15 +7,7 @@ import type {
 } from '../../../shared/types/process-template.js';
 import { processTemplates } from '../schema.js';
 import { initDatabase } from '../client.js';
-import { normalizeValue } from './normalization.js';
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-function generateId(prefix: string): string {
-  return `${prefix}_${crypto.randomUUID()}`;
-}
+import { generateId, normalizeValue, nowIso } from './repository-utils.js';
 
 function normalizeTags(tags: string[] | undefined): string[] {
   return [...new Set((tags ?? []).map((tag) => tag.trim()).filter(Boolean))];

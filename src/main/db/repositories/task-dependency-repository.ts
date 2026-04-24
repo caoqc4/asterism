@@ -7,15 +7,7 @@ import type {
 } from '../../../shared/types/task-dependency.js';
 import { initDatabase } from '../client.js';
 import { taskDependencies, tasks } from '../schema.js';
-import { normalizeValue } from './normalization.js';
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-function generateId(prefix: string): string {
-  return `${prefix}_${crypto.randomUUID()}`;
-}
+import { generateId, normalizeValue, nowIso } from './repository-utils.js';
 
 function toRecord(
   row: typeof taskDependencies.$inferSelect & {

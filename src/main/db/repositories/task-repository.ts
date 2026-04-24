@@ -9,14 +9,7 @@ import type {
 } from '../../../shared/types/task.js';
 import { tasks, timelineEvents } from '../schema.js';
 import { initDatabase } from '../client.js';
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-function generateId(prefix: string): string {
-  return `${prefix}_${crypto.randomUUID()}`;
-}
+import { generateId, nowIso } from './repository-utils.js';
 
 function hasFieldChanged(currentValue: string | null, nextValue: string | null): boolean {
   return (currentValue ?? null) !== (nextValue ?? null);
