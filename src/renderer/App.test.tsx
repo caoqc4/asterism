@@ -2678,23 +2678,22 @@ describe('App UI flow', () => {
     expect(screen.getByText('结果来源：system')).toBeTruthy();
   });
 
-  it('refreshes the runs page after triggering a run from the runs form', async () => {
+  it('refreshes the runs page and selects newly triggered runs from the runs form', async () => {
     const user = userEvent.setup();
-    let currentRuns: RunRecord[] = [];
+    const existingRun = buildRunRecord({
+      id: 'run_existing',
+      taskId: 'task_runs_refresh',
+      type: 'draft',
+      status: 'completed',
+      output: 'Existing summary',
+      outputSource: 'ai',
+    });
+    let currentRuns: RunRecord[] = [existingRun];
+    let createdRunCount = 0;
     const runsRefreshTask = buildTaskRecord({
       id: 'task_runs_refresh',
       title: 'Runs refresh task',
       nextStep: 'Summarize launch notes',
-    });
-    const createdRefreshRun = buildRunRecord({
-      id: 'run_runs_refresh',
-      taskId: runsRefreshTask.id,
-      type: 'summarize',
-      status: 'completed',
-      instructions: 'Summarize the launch notes',
-      output: 'Fresh summary',
-      outputSource: 'ai',
-      updatedAt: '2026-01-02T00:00:00.000Z',
     });
 
     const runsRefreshApi: ElectronApi = {
@@ -2713,16 +2712,21 @@ describe('App UI flow', () => {
         recentRunCount: currentRuns.length,
       })),
       triggerRun: vi.fn(async (input) => {
-        currentRuns = [
-          buildRunRecord({
-            ...createdRefreshRun,
-            taskId: input.taskId,
-            type: input.type,
-            instructions: input.instructions ?? null,
-          }),
-        ];
+        createdRunCount += 1;
+        const createdRun = buildRunRecord({
+          id: `run_runs_refresh_${createdRunCount}`,
+          taskId: input.taskId,
+          type: input.type,
+          status: 'completed',
+          instructions: input.instructions ?? null,
+          output: `Fresh summary ${createdRunCount}`,
+          outputSource: 'ai',
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        });
 
-        return currentRuns[0]!;
+        currentRuns = [createdRun, ...currentRuns];
+
+        return createdRun;
       }),
     };
 
@@ -2732,6 +2736,7 @@ describe('App UI flow', () => {
 
     await user.click(await screen.findByRole('button', { name: /runs/i }));
     await screen.findByRole('heading', { name: '执行记录' });
+    await screen.findByText('Existing summary');
 
     await user.selectOptions(screen.getByLabelText('关联任务'), runsRefreshTask.id);
     await user.selectOptions(screen.getByLabelText('Run 类型'), 'summarize');
@@ -2750,8 +2755,28 @@ describe('App UI flow', () => {
     });
 
     expect(await screen.findByRole('heading', { name: 'summarize / completed' })).toBeTruthy();
-    expect(screen.getByText('Fresh summary')).toBeTruthy();
-    expect(runsRefreshApi.getRunDetail).toHaveBeenCalledWith('run_runs_refresh');
+    expect(screen.getByText('Fresh summary 1')).toBeTruthy();
+    expect(runsRefreshApi.getRunDetail).toHaveBeenCalledWith('run_runs_refresh_1');
+
+    const instructionsInput = screen.getByLabelText('附加要求');
+    await user.clear(instructionsInput);
+    await user.type(instructionsInput, 'Summarize the final launch notes');
+    await user.click(screen.getByRole('button', { name: '触发 Run' }));
+
+    await waitFor(() => {
+      expect(runsRefreshApi.triggerRun).toHaveBeenLastCalledWith({
+        taskId: runsRefreshTask.id,
+        type: 'summarize',
+        instructions: 'Summarize the final launch notes',
+      });
+    });
+    await waitFor(() => {
+      expect(runsRefreshApi.listRuns).toHaveBeenCalledTimes(3);
+    });
+
+    expect(await screen.findByText('Fresh summary 2')).toBeTruthy();
+    expect(screen.queryByText('Fresh summary 1')).toBeNull();
+    expect(runsRefreshApi.getRunDetail).toHaveBeenCalledWith('run_runs_refresh_2');
   });
 
   it('shows related task timeline context on the runs page', async () => {

@@ -811,7 +811,7 @@ type TasksPageProps = {
   onResolveBlocker: (id: string) => Promise<BlockerRecord>;
   onResolveTaskDependency: (id: string) => Promise<TaskDependencyRecord>;
   onSatisfyCompletionCriteria: (id: string) => Promise<CompletionCriteriaRecord>;
-  onTriggerRun: (input: CreateRunInput) => Promise<void>;
+  onTriggerRun: (input: CreateRunInput) => Promise<RunRecord>;
   onUpdateBlocker: (input: UpdateBlockerInput) => Promise<BlockerRecord>;
   onUpdateCompletionCriteria: (
     input: UpdateCompletionCriteriaInput,

@@ -196,7 +196,7 @@ Covered today:
 - `Decisions / Runs` related-task timeline object entry
 - `Decisions / Runs` related-task timeline follow-up actions
 - `Decisions / Runs` focus-surface information density and action grouping
-- `Runs` page trigger form refresh after a new run is created
+- `Runs` page trigger form refresh and newly-created run selection, including repeated triggers
 - shared timeline summaries across `Tasks / Decisions / Runs`
 - `Settings save flow`
 - `waiting item` visibility and direct resolution
@@ -227,7 +227,6 @@ These tests focus on high-value control-plane interactions rather than broad pag
 
 Still missing or intentionally light:
 
-- renderer coverage for repeated `Runs` page trigger edge cases
 - finer Home scheduler-state refresh assertions
 - end-to-end packaged-app tests
 - richer timeline filtering, grouping, and very long-history rendering behavior
@@ -252,9 +251,8 @@ Current verification is local-only:
 
 Recommended next additions:
 
-1. renderer test for repeated `Runs` page trigger behavior
-2. IPC coverage for one or two additional task-oriented handlers
-3. a small packaged-app or smoke-style end-to-end verification path
-4. renderer coverage for richer timeline filtering or long-history behavior
+1. IPC coverage for one or two additional task-oriented handlers
+2. a small packaged-app or smoke-style end-to-end verification path
+3. renderer coverage for richer timeline filtering or long-history behavior
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

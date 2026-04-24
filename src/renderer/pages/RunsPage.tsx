@@ -67,7 +67,7 @@ type RunsPageProps = {
   onOpenTask: (taskId: string, intent: RecommendedActionIntent) => void;
   onRefresh: () => Promise<void>;
   onRunFocusConsumed: () => void;
-  onTriggerRun: (input: CreateRunInput) => Promise<void>;
+  onTriggerRun: (input: CreateRunInput) => Promise<RunRecord>;
 };
 
 export function RunsPage({
@@ -310,7 +310,8 @@ export function RunsPage({
               if (!form.taskId) {
                 return;
               }
-              await onTriggerRun(form);
+              const created = await onTriggerRun(form);
+              setSelectedRunId(created.id);
               await onRefresh();
             }}
           >

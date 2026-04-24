@@ -506,6 +506,7 @@ export function App() {
     const created = await window.api.triggerRun(input);
     setRuns((current) => [created, ...current]);
     setBriefData(await window.api.getHomeBrief());
+    return created;
   }
 
   function handleOpenTask(taskId: string | null, intent: RecommendedActionIntent | null = null) {
