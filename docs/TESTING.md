@@ -8,7 +8,7 @@ Taskplane currently uses a layered testing strategy:
 - SQLite-backed integration tests for repository behavior
 - renderer `jsdom` interaction tests for key control-plane flows
 - IPC handler tests for event-emitting main-process entrypoints
-- local `test + lint + build` verification
+- local `verify` quality-gate coverage
 - build smoke verification for packaged renderer/main/preload entrypoints
 
 Current test files:
