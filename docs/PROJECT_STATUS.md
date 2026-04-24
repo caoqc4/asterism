@@ -55,3 +55,4 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 4. Defer GitHub Actions work until quota is restored.
 5. Start release readiness only after the manual alpha path feels coherent.
 
+See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist.

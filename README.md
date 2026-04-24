@@ -168,6 +168,7 @@ See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for details.
 For local development details, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 For the current testing map, see [docs/TESTING.md](docs/TESTING.md).
 For the current project status snapshot, see [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md).
+For manual alpha validation, see [docs/ALPHA_ACCEPTANCE.md](docs/ALPHA_ACCEPTANCE.md).
 
 ## Contributing and Security
 
