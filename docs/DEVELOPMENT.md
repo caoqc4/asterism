@@ -43,6 +43,14 @@ npm run test
 npm run build
 ```
 
+### Build smoke check
+
+```bash
+npm run smoke:build
+```
+
+Use this when package/build entrypoints change. It runs the production build and checks that the packaged renderer, Electron main/preload entrypoints, and electron-builder file mapping still line up.
+
 ## Runtime Boundaries
 
 Renderer rules:
@@ -93,6 +101,7 @@ Main-process rules:
 3. Expose capability through preload and IPC.
 4. Wire the renderer page to the new contract.
 5. Run `npm run lint`, `npm run test`, and `npm run build`.
+6. Run `npm run smoke:build` when package/build entrypoints change.
 
 ## Test Coverage Today
 
@@ -100,7 +109,7 @@ Main-process rules:
 - SQLite integration tests currently cover `TaskRepository`, `RunRepository`, `DecisionRepository`, `BriefSnapshotRepository`, `WaitingItemRepository`, `ArtifactRepository`, `SourceContextRepository`, `BlockerRepository`, `TaskDependencyRepository`, `CompletionCriteriaRepository`, `ProcessTemplateRepository`, and `TaskProcessBindingRepository`.
 - IPC handler tests cover critical event-emitting channels such as settings save, completion-criteria writes, decision action, and run trigger.
 - Renderer interaction tests cover the main control-plane flows from Home, Tasks, Decisions, Runs, Settings, timeline actions, waiting-item flows, blocker flows, dependency flows, completion-criteria flows, source-context flows, process-context flows, task-resume visibility and recovery actions, home resume-preview recovery flows, lane-aware list ordering, lane-aware summaries, and failed-run refresh paths.
-- Local development currently relies on running `npm run test`, `npm run lint`, and `npm run build` before pushing changes.
+- Local development currently relies on running `npm run test`, `npm run lint`, and `npm run build` before pushing changes, with `npm run smoke:build` added when package/build entrypoints change.
 
 For the current coverage map and recommended next targets, see [TESTING.md](TESTING.md).
 

@@ -18,6 +18,14 @@ Initial goals:
 npm run build
 ```
 
+### Run the build smoke check
+
+```bash
+npm run smoke:build
+```
+
+This verifies the packaged renderer, Electron main/preload entrypoints, and electron-builder file mapping before running heavier packaging commands.
+
 ### Produce an unpacked macOS app
 
 ```bash
