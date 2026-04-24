@@ -86,4 +86,17 @@ describe('getLanguageModel', () => {
     expect(modelMock).toHaveBeenCalledWith('claude-3-5-sonnet-latest');
     expect(result).toBe('anthropic-model');
   });
+
+  it('rejects native Replicate for AI SDK model creation', () => {
+    expect(() =>
+      getLanguageModel({
+        provider: 'replicate',
+        model: 'openai/gpt-oss-20b',
+        apiKey: 'replicate-key',
+        featureFlags: {
+          enableScheduler: false,
+        },
+      }),
+    ).toThrow('Replicate uses the native prediction API for text generation.');
+  });
 });

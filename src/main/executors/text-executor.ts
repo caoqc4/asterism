@@ -1,10 +1,8 @@
-import { generateText } from 'ai';
-
 import type { AppliedProcessTemplateRecord } from '../../shared/types/process-template.js';
 import type { RuntimeAiConfig } from '../keychain/ai-config-service.js';
 import type { CreateRunInput } from '../../shared/types/run.js';
 import type { TaskDetail } from '../../shared/types/task.js';
-import { getLanguageModel } from './ai-client.js';
+import { generateRuntimeText } from './text-generation.js';
 import { deriveTaskDetailPriorityLane, getPriorityLanePromptGuidance } from '../../shared/working-context/priority-lanes.js';
 
 type ExecuteOptions = {
@@ -76,11 +74,6 @@ export class TextExecutor {
     config: RuntimeAiConfig,
     options: ExecuteOptions = {},
   ): Promise<string> {
-    const { text } = await generateText({
-      model: getLanguageModel(config),
-      prompt: buildPrompt(task, input, options),
-    });
-
-    return text.trim();
+    return generateRuntimeText(config, buildPrompt(task, input, options));
   }
 }

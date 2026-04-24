@@ -63,8 +63,9 @@ Supported provider values:
 - `openai`: native OpenAI SDK path.
 - `openai-compatible`: OpenAI-compatible relay using `Authorization: Bearer <key>` and the configured base URL.
 - `fal-openrouter`: fal OpenRouter relay using `https://fal.run/openrouter/router/openai/v1` by default and `Authorization: Key <key>`.
+- `replicate`: native Replicate prediction API using `https://api.replicate.com/v1` by default and `Authorization: Bearer <key>`.
 
-Replicate's native API uses model-specific prediction inputs rather than a single chat-completions shape, so use `openai-compatible` only when the chosen Replicate-facing relay exposes an OpenAI-compatible `/v1` endpoint.
+Replicate native support currently covers prompt-to-text Run and Brief generation with text models that accept `prompt` and `system_prompt` inputs. Use a Replicate model slug such as `openai/gpt-oss-20b`. If the chosen Replicate-facing relay exposes an OpenAI-compatible `/v1` endpoint instead, use `openai-compatible`.
 
 The UI is not the only config entry point. Advanced users can edit non-sensitive values in `config.json` directly.
 
@@ -73,11 +74,20 @@ The UI is not the only config entry point. Advanced users can edit non-sensitive
 Create `.env` in the repository root for local runs:
 
 ```bash
-TASKPLANE_AI_PROVIDER=fal-openrouter
-TASKPLANE_AI_MODEL=google/gemini-2.5-flash
+TASKPLANE_AI_PROVIDER=replicate
+TASKPLANE_AI_MODEL=openai/gpt-oss-20b
 TASKPLANE_AI_BASE_URL=
 TASKPLANE_AI_API_KEY=your-test-key
 TASKPLANE_ENABLE_SCHEDULER=false
+```
+
+For fal OpenRouter:
+
+```bash
+TASKPLANE_AI_PROVIDER=fal-openrouter
+TASKPLANE_AI_MODEL=google/gemini-2.5-flash
+TASKPLANE_AI_BASE_URL=
+TASKPLANE_AI_API_KEY=your-fal-key
 ```
 
 For a generic OpenAI-compatible relay:

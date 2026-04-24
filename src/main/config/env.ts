@@ -40,6 +40,10 @@ export function loadTaskplaneEnv(): void {
 
   loaded = true;
 
+  if (!process.env.TASKPLANE_ENV_FILE && process.env.VITEST) {
+    return;
+  }
+
   const envPath = process.env.TASKPLANE_ENV_FILE ?? path.join(process.cwd(), '.env');
 
   if (!fs.existsSync(envPath)) {

@@ -6,3 +6,4 @@ release
 .DS_Store
 npm-debug.log*
 doc_privice
+.env

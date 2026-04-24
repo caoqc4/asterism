@@ -6,6 +6,10 @@ import type { RuntimeAiConfig } from '../keychain/ai-config-service.js';
 const FAL_OPENROUTER_BASE_URL = 'https://fal.run/openrouter/router/openai/v1';
 
 export function getLanguageModel(config: RuntimeAiConfig) {
+  if (config.provider === 'replicate') {
+    throw new Error('Replicate uses the native prediction API for text generation.');
+  }
+
   if (config.provider === 'anthropic') {
     const anthropic = createAnthropic({ apiKey: config.apiKey });
     return anthropic(config.model);

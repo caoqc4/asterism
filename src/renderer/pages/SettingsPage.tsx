@@ -57,6 +57,7 @@ export function SettingsPage({ aiStatus, configForm, onChange, onSubmit }: Setti
               <option value="openai">OpenAI</option>
               <option value="openai-compatible">OpenAI-compatible</option>
               <option value="fal-openrouter">fal OpenRouter</option>
+              <option value="replicate">Replicate</option>
             </select>
           </label>
           <label>
@@ -72,6 +73,8 @@ export function SettingsPage({ aiStatus, configForm, onChange, onSubmit }: Setti
               placeholder={
                 configForm.provider === 'fal-openrouter'
                   ? 'https://fal.run/openrouter/router/openai/v1'
+                  : configForm.provider === 'replicate'
+                    ? 'https://api.replicate.com/v1'
                   : 'https://api.example.com/v1'
               }
               value={configForm.baseUrl ?? ''}

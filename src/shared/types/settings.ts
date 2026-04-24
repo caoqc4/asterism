@@ -1,4 +1,4 @@
-export type AiProvider = 'anthropic' | 'openai' | 'openai-compatible' | 'fal-openrouter';
+export type AiProvider = 'anthropic' | 'openai' | 'openai-compatible' | 'fal-openrouter' | 'replicate';
 
 export type FeatureFlags = {
   enableScheduler: boolean;

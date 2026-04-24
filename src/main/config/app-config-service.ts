@@ -18,7 +18,13 @@ const DEFAULT_CONFIG: AppConfigFile = {
 };
 
 const require = createRequire(import.meta.url);
-const AI_PROVIDERS = new Set<AiProvider>(['anthropic', 'openai', 'openai-compatible', 'fal-openrouter']);
+const AI_PROVIDERS = new Set<AiProvider>([
+  'anthropic',
+  'openai',
+  'openai-compatible',
+  'fal-openrouter',
+  'replicate',
+]);
 
 function defaultUserDataPathResolver(): string {
   if (process.env.TASKPLANE_USER_DATA_DIR) {

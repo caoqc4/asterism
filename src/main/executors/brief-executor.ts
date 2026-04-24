@@ -1,12 +1,10 @@
-import { generateText } from 'ai';
-
 import type {
   BriefProcessTemplateCandidate,
   HomeBriefData,
   PriorityLane,
 } from '../../shared/types/brief.js';
 import type { RuntimeAiConfig } from '../keychain/ai-config-service.js';
-import { getLanguageModel } from './ai-client.js';
+import { generateRuntimeText } from './text-generation.js';
 
 function formatTaskLine(title: string, state: string): string {
   return `- ${title} [${state}]`;
@@ -402,11 +400,6 @@ export class BriefExecutor {
     } = {},
   ): Promise<string> {
     const selectedTemplates = options.selectedTemplates ?? [];
-    const { text } = await generateText({
-      model: getLanguageModel(config),
-      prompt: buildPrompt(homeData, kind, selectedTemplates),
-    });
-
-    return text.trim();
+    return generateRuntimeText(config, buildPrompt(homeData, kind, selectedTemplates));
   }
 }
