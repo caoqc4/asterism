@@ -205,6 +205,7 @@ Covered today:
 - `Runs` page trigger form refresh and newly-created run selection, including repeated triggers
 - shared timeline summaries across `Tasks / Decisions / Runs`
 - `Settings save flow`
+- `Settings save flow` now also asserts Home scheduler enabled/running state and scheduler timestamps refresh from Home brief data
 - `waiting item` visibility and direct resolution
 - `source context` visibility plus create/edit interactions in task detail, explicit key-source marking, and source-focused recovery from Home
 - `process context` visibility plus create/bind/remove interactions in task detail
@@ -233,7 +234,6 @@ These tests focus on high-value control-plane interactions rather than broad pag
 
 Still missing or intentionally light:
 
-- finer Home scheduler-state refresh assertions
 - end-to-end packaged-app tests
 - richer timeline grouping behavior and full end-to-end long-history rendering checks
 
@@ -258,7 +258,6 @@ Current verification is local-only:
 
 Recommended next additions:
 
-1. finer Home scheduler-state refresh assertions
-2. renderer coverage for richer timeline grouping behavior
+1. renderer coverage for richer timeline grouping behavior
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

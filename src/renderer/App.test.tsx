@@ -4583,8 +4583,12 @@ describe('App UI flow', () => {
           schedulerStatus: {
             enabled: input.featureFlags.enableScheduler,
             running: input.featureFlags.enableScheduler,
-            lastBriefAt: null,
-            lastRunSweepAt: null,
+            lastBriefAt: input.featureFlags.enableScheduler
+              ? '2026-01-02T00:05:00.000Z'
+              : null,
+            lastRunSweepAt: input.featureFlags.enableScheduler
+              ? '2026-01-02T00:04:00.000Z'
+              : null,
           },
         };
 
@@ -4597,6 +4601,10 @@ describe('App UI flow', () => {
     window.api = eventingApi;
 
     render(<App />);
+
+    await screen.findByText(/Scheduler： 未启用/);
+    expect(screen.getByText(/最近 brief：暂无/)).toBeTruthy();
+    expect(screen.getByText(/最近 run sweep：暂无/)).toBeTruthy();
 
     await user.click(await screen.findByRole('button', { name: /settings/i }));
     await screen.findByRole('heading', { name: 'AI Provider 与本地密钥存储' });
@@ -4631,6 +4639,13 @@ describe('App UI flow', () => {
     await waitFor(() => {
       expect(screen.getByText(/已配置 openai \/ gpt-5.4-mini/i)).toBeTruthy();
     });
+    await waitFor(() => {
+      expect(screen.getByText(/Scheduler： 已启用并运行中/)).toBeTruthy();
+    });
+
+    expect(screen.getByText(/最近 brief：2026-01-02T00:05:00.000Z/)).toBeTruthy();
+    expect(screen.getByText(/最近 run sweep：2026-01-02T00:04:00.000Z/)).toBeTruthy();
+    expect(eventingApi.getHomeBrief).toHaveBeenCalledTimes(2);
   });
 
   it('refreshes home signals after a task transitions into waiting', async () => {
