@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install native dependency tooling
         run: sudo apt-get update && sudo apt-get install -y python3 make g++ libsecret-1-dev
