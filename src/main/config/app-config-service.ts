@@ -16,6 +16,7 @@ const DEFAULT_CONFIG: AppConfigFile = {
 };
 
 const require = createRequire(import.meta.url);
+const AI_PROVIDERS = new Set<AiProvider>(['anthropic', 'openai']);
 
 function defaultUserDataPathResolver(): string {
   const electron = require('electron') as typeof import('electron');
@@ -42,7 +43,9 @@ function getLegacySettingsPath(userDataPathResolver: () => string = defaultUserD
 
 function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
   return {
-    aiProvider: (input.aiProvider ?? DEFAULT_CONFIG.aiProvider) as AiProvider,
+    aiProvider: AI_PROVIDERS.has(input.aiProvider as AiProvider)
+      ? (input.aiProvider as AiProvider)
+      : DEFAULT_CONFIG.aiProvider,
     aiModel: input.aiModel?.trim() || DEFAULT_CONFIG.aiModel,
     featureFlags: {
       ...DEFAULT_FEATURE_FLAGS,

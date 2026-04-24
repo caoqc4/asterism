@@ -47,6 +47,28 @@ describe('AppConfigService', () => {
     expect(config.featureFlags.enableScheduler).toBe(true);
   });
 
+  it('falls back to the default provider when config contains an unknown provider', async () => {
+    const { AppConfigService, getConfigPath } = await import('./app-config-service.js');
+    fs.writeFileSync(
+      getConfigPath(() => tempRoot),
+      JSON.stringify({
+        aiProvider: 'unknown-provider',
+        aiModel: 'custom-model',
+        featureFlags: {
+          enableScheduler: true,
+        },
+      }),
+      'utf8',
+    );
+
+    const service = new AppConfigService(() => tempRoot);
+    const config = service.read();
+
+    expect(config.aiProvider).toBe('anthropic');
+    expect(config.aiModel).toBe('custom-model');
+    expect(config.featureFlags.enableScheduler).toBe(true);
+  });
+
   it('migrates legacy settings.json into config.json', async () => {
     const { AppConfigService, getConfigPath } = await import('./app-config-service.js');
     const legacyPath = path.join(tempRoot, 'settings.json');
