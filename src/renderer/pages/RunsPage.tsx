@@ -12,21 +12,10 @@ import {
   getTaskTimelinePreviewEvents,
   getTaskTimelineResponsibilitySummary,
   groupTaskTimelineEventsByPriority,
+  safeJsonParse,
 } from '@shared/working-context/timeline';
 
 const RELATED_TIMELINE_PREVIEW_COUNT = 4;
-
-function safeParsePayload(payload: string | null): Record<string, unknown> | null {
-  if (!payload) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(payload) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
 
 function formatRelatedTimelineSummary(event: TimelineEventRecord): string {
   return formatTaskTimelineEventSummary(event);
@@ -51,7 +40,7 @@ function getRelatedTimeline(events: TimelineEventRecord[], runId: string): Timel
     }
 
     if (event.type === 'artifact.created') {
-      const payload = safeParsePayload(event.payload);
+      const payload = event.payload ? safeJsonParse(event.payload) : null;
       return payload?.sourceType === 'run' && payload?.sourceId === runId;
     }
 

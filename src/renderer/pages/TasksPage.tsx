@@ -56,6 +56,7 @@ import {
   getTaskTimelineResponsibilitySummary,
   groupTaskTimelineEventsByPriority,
   interpretTaskTimelineEvent,
+  safeJsonParse,
 } from '@shared/working-context/timeline';
 import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
 import type { PriorityLane } from '@shared/types/brief';
@@ -212,18 +213,6 @@ function buildTaskBadges(task: TaskListItemRecord): string[] {
   }
 
   return badges;
-}
-
-function safeParsePayload(payload: string | null): Record<string, unknown> | null {
-  if (!payload) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(payload) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
 }
 
 function normalizeCompletionText(value: string): string {
@@ -1786,7 +1775,7 @@ export function TasksPage({
       return;
     }
 
-    const payload = safeParsePayload(event.payload);
+    const payload = event.payload ? safeJsonParse(event.payload) : null;
 
     if (event.type === 'task.decision_cancelled') {
       setQuickDecisionTitle(`${detail.title} 重新拍板`);
