@@ -3345,6 +3345,13 @@ describe('App UI flow', () => {
     });
 
     const timelineEvents = [
+      ...Array.from({ length: 12 }, (_, index) => ({
+        id: `timeline_trace_${index}`,
+        taskId: timelineTask.id,
+        type: 'task.updated',
+        payload: JSON.stringify({ summary: `Trace update ${index}` }),
+        createdAt: `2026-01-02T00:${String(index).padStart(2, '0')}:00.000Z`,
+      })),
       {
         id: 'timeline_1',
         taskId: timelineTask.id,
@@ -3355,39 +3362,38 @@ describe('App UI flow', () => {
       {
         id: 'timeline_2',
         taskId: timelineTask.id,
-        type: 'task.updated',
-        payload: JSON.stringify({ summary: 'Updated summary' }),
+        type: 'task.run_failed',
+        payload: JSON.stringify({
+          failureReason: 'Model overloaded',
+        }),
         createdAt: '2026-01-01T05:00:00.000Z',
       },
       {
         id: 'timeline_3',
         taskId: timelineTask.id,
-        type: 'task.next_step_changed',
-        payload: JSON.stringify({ from: null, to: 'Prepare draft' }),
+        type: 'task_dependency.created',
+        payload: JSON.stringify({ blockedByTaskTitle: 'Upstream design' }),
         createdAt: '2026-01-01T04:00:00.000Z',
       },
       {
         id: 'timeline_4',
         taskId: timelineTask.id,
-        type: 'task.waiting_changed',
-        payload: JSON.stringify({ from: null, to: 'Waiting for review' }),
+        type: 'source_context.updated',
+        payload: JSON.stringify({ title: 'Customer notes' }),
         createdAt: '2026-01-01T03:00:00.000Z',
       },
       {
         id: 'timeline_5',
         taskId: timelineTask.id,
-        type: 'task.risk_changed',
-        payload: JSON.stringify({
-          from: { level: 'low', note: null },
-          to: { level: 'medium', note: 'Review may slip' },
-        }),
+        type: 'completion_criteria.satisfied',
+        payload: JSON.stringify({ text: 'Stakeholder approved final brief' }),
         createdAt: '2026-01-01T02:00:00.000Z',
       },
       {
         id: 'timeline_6',
         taskId: timelineTask.id,
-        type: 'task.transitioned',
-        payload: JSON.stringify({ from: 'planned', to: 'running' }),
+        type: 'task.next_step_changed',
+        payload: JSON.stringify({ from: null, to: 'Prepare draft' }),
         createdAt: '2026-01-01T01:00:00.000Z',
       },
     ];
@@ -3415,15 +3421,18 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /timeline preview task/i }));
     await screen.findByRole('heading', { name: 'Timeline preview task' });
 
-    expect(screen.getByRole('button', { name: '展开全部 (6)' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '展开全部 (18)' })).toBeTruthy();
     expect(screen.queryByText('任务字段已更新')).toBeNull();
-    expect(screen.getByText('状态从 planned 变更为 running')).toBeTruthy();
+    expect(screen.getByText('任务依赖更新：Upstream design。')).toBeTruthy();
+    expect(screen.getByText('执行失败：Model overloaded。')).toBeTruthy();
+    expect(screen.getByText('来源材料更新：Customer notes。')).toBeTruthy();
+    expect(screen.getByText('完成标准已满足：Stakeholder approved final brief。')).toBeTruthy();
     expect(screen.getAllByText('解释').length).toBeGreaterThan(0);
 
-    await user.click(screen.getByRole('button', { name: '展开全部 (6)' }));
+    await user.click(screen.getByRole('button', { name: '展开全部 (18)' }));
 
-    expect(screen.getByText('状态从 planned 变更为 running')).toBeTruthy();
-    expect(screen.getByText('任务字段已更新')).toBeTruthy();
+    expect(screen.getByText('执行失败：Model overloaded。')).toBeTruthy();
+    expect(screen.getAllByText('任务字段已更新').length).toBeGreaterThan(0);
     expect(screen.getAllByText('留痕').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: '收起旧事件' })).toBeTruthy();
 

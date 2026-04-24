@@ -494,6 +494,10 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
     event.type === 'task_dependency.created' ||
     event.type === 'task_dependency.updated' ||
     event.type === 'task_dependency.resolved' ||
+    event.type === 'completion_criteria.created' ||
+    event.type === 'completion_criteria.updated' ||
+    event.type === 'completion_criteria.satisfied' ||
+    event.type === 'completion_criteria.reopened' ||
     event.type === 'artifact.created' ||
     event.type === 'task.risk_changed' ||
     event.type === 'task.next_step_changed' ||
