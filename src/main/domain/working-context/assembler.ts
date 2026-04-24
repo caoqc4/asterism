@@ -14,6 +14,7 @@ import {
   getTaskTimelineObjectAction,
   getTaskTimelinePriority,
   interpretTaskTimelineEvent,
+  safeJsonParse,
 } from '../../../shared/working-context/timeline.js';
 
 type TimelineLite = Array<Pick<TimelineEventRecord, 'type' | 'payload'>>;
@@ -81,14 +82,6 @@ type WorkingContextRecentChange =
   | {
       kind: 'unknown';
     };
-
-export function safeJsonParse(value: string): Record<string, unknown> | null {
-  try {
-    return JSON.parse(value) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
 
 function isEarlyTaskState(state: TaskState | undefined | null): boolean {
   return state === 'captured' || state === 'triaged';

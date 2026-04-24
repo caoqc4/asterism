@@ -36,12 +36,12 @@ import {
   getCurrentDependencyPriorityReason,
   getCurrentMethodSelectionReason,
   getKeySourcePriorityReason,
-  safeJsonParse,
 } from '../working-context/assembler.js';
 import { isStaleBlocker } from '../../../shared/working-context/blocker.js';
 import { isStaleDependency } from '../../../shared/working-context/dependency.js';
 import { comparePriorityLaneContext, comparePriorityLanes, deriveTaskPriorityLaneMap } from '../../../shared/working-context/priority-lanes.js';
 import { getResponsibilitySummary } from '../../../shared/working-context/responsibility.js';
+import { safeJsonParse } from '../../../shared/working-context/timeline.js';
 
 type InternalRecommendedAction = RecommendedAction & {
   lane: PriorityLane;
