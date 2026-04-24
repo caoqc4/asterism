@@ -11,6 +11,8 @@ export type AgentToolRisk =
   | 'external_write'
   | 'sensitive';
 
+export type AgentToolName = 'artifact.create_note';
+
 export type AgentPolicy = {
   maxSteps: number;
   maxWallTimeMs: number;
@@ -74,6 +76,14 @@ export type AgentRunRequest = {
   mode: AgentRunMode;
   context: AgentWorkingContext;
   policy: AgentPolicy;
+};
+
+export type AgentToolResult = {
+  success: boolean;
+  summary: string;
+  output?: string | null;
+  artifactId?: string | null;
+  error?: string | null;
 };
 
 export type AgentArtifactDraft = {

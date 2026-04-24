@@ -66,6 +66,8 @@ Covered today:
   plan/model/final step writes, process-template selector fallback, and executor failure recording
 - `AgentWorkingContext`
   task-detail compression into typed agent run context, default policy, and plan-step request summaries
+- `AgentToolRegistry`
+  internal tool discovery, local note artifact creation, tool call/result step writes, and validation failure recording
 - `TextExecutor`
   lane-aware run prompt composition
 - `HomeBriefService`
@@ -92,7 +94,7 @@ Covered today:
 - `WaitingItemRepository`
   active waiting-item upserts and resolution behavior
 - `ArtifactRepository`
-  artifact persistence, recent ordering, and timeline writes
+  run-output and note artifact persistence, recent ordering, and timeline writes
 - `SourceContextRepository`
   source-context creation, updates, archiving, active-task listing behavior, and empty bulk lookup guards
 - `BlockerRepository`

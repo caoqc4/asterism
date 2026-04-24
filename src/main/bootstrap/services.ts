@@ -15,6 +15,7 @@ import { TaskProcessBindingRepository } from '../db/repositories/task-process-bi
 import { WaitingItemRepository } from '../db/repositories/waiting-item-repository.js';
 import { HomeBriefService } from '../domain/brief/home-brief-service.js';
 import { DecisionService } from '../domain/decision/decision-service.js';
+import { AgentToolRegistry } from '../domain/run/agent-tool-registry.js';
 import { RunService } from '../domain/run/run-service.js';
 import { TaskService } from '../domain/task/task-service.js';
 import { BriefExecutor } from '../executors/brief-executor.js';
@@ -55,6 +56,7 @@ const homeBriefService = new HomeBriefService(
 const textExecutor = new TextExecutor();
 const briefExecutor = new BriefExecutor();
 const aiConfigService = new AiConfigService(appConfigService);
+const agentToolRegistry = new AgentToolRegistry(artifactRepository, runStepRepository);
 const taskService = new TaskService(
   taskRepository,
   waitingItemRepository,
@@ -106,6 +108,7 @@ const services = {
   appConfigService,
   textExecutor,
   briefExecutor,
+  agentToolRegistry,
   taskService,
   decisionService,
   runService,

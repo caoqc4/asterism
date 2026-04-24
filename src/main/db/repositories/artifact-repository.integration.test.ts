@@ -43,4 +43,24 @@ describe('ArtifactRepository integration', () => {
     expect(recentArtifacts[0]?.content).toBe('Drafted follow-up response body.');
     expect(detail?.timeline.map((event) => event.type)).toContain('artifact.created');
   });
+
+  it('creates a note artifact from an agent tool run', async () => {
+    const task = await taskRepository.create({ title: 'Capture agent note' });
+
+    const artifact = await artifactRepository.createNoteFromRun({
+      taskId: task.id,
+      runId: 'run_1',
+      title: 'Agent note',
+      content: 'A local note created by an internal agent tool.',
+    });
+
+    const recentArtifacts = await artifactRepository.listRecentForTask(task.id);
+    const detail = await taskRepository.getDetail(task.id);
+
+    expect(artifact.kind).toBe('note');
+    expect(artifact.sourceType).toBe('run');
+    expect(recentArtifacts[0]?.title).toBe('Agent note');
+    expect(recentArtifacts[0]?.content).toBe('A local note created by an internal agent tool.');
+    expect(detail?.timeline.map((event) => event.type)).toContain('artifact.created');
+  });
 });
