@@ -83,6 +83,7 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
       typeof payload.tool === 'string' ? `工具：${payload.tool}` : null,
       typeof payload.risk === 'string' ? `风险：${payload.risk}` : null,
       typeof payload.reason === 'string' ? `原因：${payload.reason}` : null,
+      typeof payload.decisionTitle === 'string' ? `Decision：${payload.decisionTitle}` : null,
     ].filter((part): part is string => Boolean(part));
 
     if (summaryParts.length) {

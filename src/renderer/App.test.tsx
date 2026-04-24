@@ -2739,6 +2739,7 @@ describe('App UI flow', () => {
             tool: 'artifact.create_note',
             risk: 'write',
             reason: '需要确认后再写入本地 note artifact。',
+            decisionTitle: '确认本地写入：artifact.create_note',
           }),
         }),
       ],
@@ -2764,7 +2765,11 @@ describe('App UI flow', () => {
     expect(screen.getByText('tool_permission')).toBeTruthy();
     expect(screen.getByText('open')).toBeTruthy();
     expect(screen.getByText('run_step_tool_call')).toBeTruthy();
-    expect(screen.getByText('工具：artifact.create_note；风险：write；原因：需要确认后再写入本地 note artifact。')).toBeTruthy();
+    expect(
+      screen.getByText(
+        '工具：artifact.create_note；风险：write；原因：需要确认后再写入本地 note artifact。；Decision：确认本地写入：artifact.create_note',
+      ),
+    ).toBeTruthy();
     expect(runCheckpointApi.getRunDetail).toHaveBeenCalledWith('run_checkpointed');
   });
 

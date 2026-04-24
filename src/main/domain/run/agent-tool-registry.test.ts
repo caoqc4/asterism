@@ -53,15 +53,28 @@ function buildRunStepRepositoryMock() {
 
 function buildRunCheckpointRepositoryMock() {
   return {
-    create: vi.fn().mockResolvedValue({
+    create: vi.fn().mockImplementation(async (input: { payload?: string | null }) => ({
       id: 'run_checkpoint_1',
       runId: 'run_1',
       stepId: 'run_step_1',
       kind: 'tool_permission',
       status: 'open',
-      payload: null,
+      payload: input.payload ?? null,
       createdAt: '2026-01-01T00:00:00.000Z',
       resolvedAt: null,
+    })),
+  };
+}
+
+function buildDecisionRepositoryMock() {
+  return {
+    create: vi.fn().mockResolvedValue({
+      id: 'decision_1',
+      taskId: 'task_1',
+      title: '确认本地写入：artifact.create_note',
+      status: 'pending',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
     }),
   };
 }
@@ -149,10 +162,12 @@ describe('AgentToolRegistry', () => {
     };
     const runStepRepository = buildRunStepRepositoryMock();
     const runCheckpointRepository = buildRunCheckpointRepositoryMock();
+    const decisionRepository = buildDecisionRepositoryMock();
     const registry = new AgentToolRegistry(
       artifactRepository as never,
       runStepRepository as never,
       runCheckpointRepository as never,
+      decisionRepository as never,
     );
 
     const result = await registry.execute(
@@ -174,16 +189,24 @@ describe('AgentToolRegistry', () => {
       checkpointId: 'run_checkpoint_1',
     });
     expect(artifactRepository.createNoteFromRun).not.toHaveBeenCalled();
+    expect(decisionRepository.create).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      title: '确认本地写入：artifact.create_note',
+    });
     expect(runCheckpointRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         runId: 'run_1',
         stepId: 'run_step_1',
         kind: 'tool_permission',
+        payload: expect.stringContaining('"decisionId":"decision_1"'),
       }),
     );
     expect(runStepRepository.update).toHaveBeenCalledWith(
       'run_step_1',
-      expect.objectContaining({ status: 'skipped' }),
+      expect.objectContaining({
+        status: 'skipped',
+        output: '工具 artifact.create_note 需要确认后才能继续，已创建 Decision：确认本地写入：artifact.create_note。',
+      }),
     );
     expect(runStepRepository.create).toHaveBeenLastCalledWith(
       expect.objectContaining({ kind: 'checkpoint', status: 'pending' }),

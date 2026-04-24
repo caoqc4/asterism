@@ -62,6 +62,7 @@ const agentToolRegistry = new AgentToolRegistry(
   artifactRepository,
   runStepRepository,
   runCheckpointRepository,
+  decisionRepository,
 );
 const taskService = new TaskService(
   taskRepository,

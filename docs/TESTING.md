@@ -67,7 +67,7 @@ Covered today:
 - `AgentWorkingContext`
   task-detail compression into typed agent run context, default policy, and plan-step request summaries
 - `AgentToolRegistry`
-  internal tool discovery, local note artifact creation, tool call/result step writes, validation failure recording, and policy-driven confirmation checkpoints
+  internal tool discovery, local note artifact creation, tool call/result step writes, validation failure recording, policy-driven confirmation checkpoints, and Decision creation for confirmation checkpoints
 - `TextExecutor`
   lane-aware run prompt composition
 - `HomeBriefService`

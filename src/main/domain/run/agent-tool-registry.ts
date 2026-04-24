@@ -5,6 +5,7 @@ import type {
   AgentToolRisk,
 } from '../../../shared/types/agent-execution.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
+import type { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 
@@ -45,6 +46,18 @@ function parseArtifactCreateNoteInput(input: unknown): ArtifactCreateNoteInput {
   return { title, content };
 }
 
+function buildConfirmationDecisionTitle(name: AgentToolName, risk: AgentToolRisk): string {
+  const riskLabel: Record<AgentToolRisk, string> = {
+    safe_read: '安全读取',
+    local_write: '本地写入',
+    external_read: '外部读取',
+    external_write: '外部写入',
+    sensitive: '敏感操作',
+  };
+
+  return `确认${riskLabel[risk]}：${name}`;
+}
+
 export class AgentToolRegistry {
   private readonly definitions: AgentToolDefinition[] = [
     {
@@ -59,6 +72,7 @@ export class AgentToolRegistry {
     private readonly artifactRepository: ArtifactRepository,
     private readonly runStepRepository: RunStepRepository,
     private readonly runCheckpointRepository: RunCheckpointRepository = new RunCheckpointRepository(),
+    private readonly decisionRepository: Pick<DecisionRepository, 'create'> | null = null,
   ) {}
 
   list(): AgentToolDefinition[] {
@@ -87,6 +101,13 @@ export class AgentToolRegistry {
 
     try {
       if (policy?.confirmationRequiredRisks.includes(definition.risk)) {
+        const decisionTitle = buildConfirmationDecisionTitle(name, definition.risk);
+        const decision = this.decisionRepository
+          ? await this.decisionRepository.create({
+              taskId: context.taskId,
+              title: decisionTitle,
+            })
+          : null;
         const checkpoint = await this.runCheckpointRepository.create({
           runId: context.runId,
           stepId: callStep.id,
@@ -95,9 +116,13 @@ export class AgentToolRegistry {
             tool: name,
             risk: definition.risk,
             input,
+            decisionId: decision?.id ?? null,
+            decisionTitle,
           }),
         });
-        const summary = `工具 ${name} 需要确认后才能继续。`;
+        const summary = decision
+          ? `工具 ${name} 需要确认后才能继续，已创建 Decision：${decision.title}。`
+          : `工具 ${name} 需要确认后才能继续。`;
 
         await this.runStepRepository.update(callStep.id, {
           status: 'skipped',
