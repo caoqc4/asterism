@@ -4,6 +4,7 @@ import type { RecommendedActionIntent } from '@shared/types/brief';
 import type { CreateRunInput, RunRecord } from '@shared/types/run';
 import type { TaskDetail, TaskListItemRecord, TimelineEventRecord } from '@shared/types/task';
 import {
+  explainTaskTimelineEvent,
   getTaskTimelineFollowUpActionLabel,
   getTaskTimelineLane,
   getTaskTimelineLaneLabel,
@@ -11,7 +12,6 @@ import {
   getTaskTimelinePreviewEvents,
   getTaskTimelineResponsibilitySummary,
   groupTaskTimelineEventsByPriority,
-  interpretTaskTimelineEvent,
 } from '@shared/working-context/timeline';
 
 const RELATED_TIMELINE_PREVIEW_COUNT = 4;
@@ -29,7 +29,7 @@ function safeParsePayload(payload: string | null): Record<string, unknown> | nul
 }
 
 function formatRelatedTimelineSummary(event: TimelineEventRecord): string {
-  return interpretTaskTimelineEvent(event).summary;
+  return explainTaskTimelineEvent(event);
 }
 
 function getRelatedTimelineActionLabel(event: TimelineEventRecord): string | null {
