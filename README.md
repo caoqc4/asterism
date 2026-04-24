@@ -209,7 +209,7 @@ What exists today:
 - IPC handler coverage for critical event-emitting entrypoints
 - renderer interaction coverage for key control-plane flows
 - local macOS packaging pipeline
-- local `verify` quality-gate coverage plus a build smoke check for packaged entrypoints
+- local and GitHub Actions `verify` quality-gate coverage plus a build smoke check for packaged entrypoints
 
 What is still in progress:
 
