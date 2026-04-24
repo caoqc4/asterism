@@ -27,6 +27,11 @@ export type RunOrchestrationResult =
       selection: ProcessTemplateSelectionResult | null;
     }
   | {
+      status: 'paused';
+      message: string;
+      selection: ProcessTemplateSelectionResult;
+    }
+  | {
       status: 'needs_confirmation';
       message: string;
       checkpointId: string;
@@ -179,6 +184,14 @@ export class RunOrchestrator {
     if (loopResult.status === 'failed') {
       return {
         status: 'failed',
+        message: loopResult.message,
+        selection: result.selection,
+      };
+    }
+
+    if (loopResult.status === 'paused') {
+      return {
+        status: 'paused',
         message: loopResult.message,
         selection: result.selection,
       };

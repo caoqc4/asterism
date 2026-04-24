@@ -492,7 +492,7 @@ describe('AgentRunLoop', () => {
     });
 
     expect(result).toEqual({
-      status: 'failed',
+      status: 'paused',
       message: '观察到任务仍有阻塞项：Waiting on legal review。暂停执行 artifact.create_note，等待先解除阻塞。',
       observations: [
         expect.objectContaining({ tool: 'task.inspect_context', status: 'completed' }),

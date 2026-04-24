@@ -20,6 +20,11 @@ export type AgentRunLoopResult =
       observations: AgentRunLoopObservation[];
     }
   | {
+      status: 'paused';
+      message: string;
+      observations: AgentRunLoopObservation[];
+    }
+  | {
       status: 'needs_confirmation';
       message: string;
       checkpointId: string;
@@ -435,7 +440,7 @@ export class AgentRunLoop {
           });
 
           return {
-            status: 'failed',
+            status: 'paused',
             message: plannerDecision.reason,
             observations,
           };

@@ -117,6 +117,18 @@ export class RunService {
       );
     }
 
+    if (result.status === 'paused') {
+      const paused = await this.runRepository.updateResult(
+        created.id,
+        'failed',
+        result.message,
+        'system',
+        result.message,
+      );
+      await this.taskService.annotateRunFailed(input.taskId, result.message, paused.id);
+      return paused;
+    }
+
     const failed = await this.runRepository.updateResult(
       created.id,
       'failed',

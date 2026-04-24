@@ -298,4 +298,56 @@ describe('RunOrchestrator', () => {
       }),
     );
   });
+
+  it('returns paused when the agent loop stops before a local write', async () => {
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn().mockResolvedValue('Agent local note output'),
+    };
+    const selection = {
+      shouldUse: false,
+      selectedTemplates: [],
+      reason: 'No template needed.',
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue(selection),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const agentToolRegistry = {
+      execute: vi.fn(),
+    };
+    const agentRunLoop = {
+      executeLocalNoteLoop: vi.fn().mockResolvedValue({
+        status: 'paused',
+        message: '观察到任务仍有阻塞项。暂停执行 artifact.create_note。',
+        observations: [],
+      }),
+    };
+    const orchestrator = new RunOrchestrator(
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+      agentToolRegistry as never,
+      agentRunLoop as never,
+    );
+
+    const result = await orchestrator.executeAgentRun({
+      run: buildRun(),
+      task: buildTaskDetail(),
+      input: { ...buildInput(), type: 'agent' },
+    });
+
+    expect(result).toEqual({
+      status: 'paused',
+      message: '观察到任务仍有阻塞项。暂停执行 artifact.create_note。',
+      selection,
+    });
+  });
 });
