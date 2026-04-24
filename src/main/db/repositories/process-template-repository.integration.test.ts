@@ -1,22 +1,15 @@
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-
 import { closeDatabase, setDatabaseUserDataPathForTests } from '../client.js';
+import { makeTempDir } from './repository-test-utils.js';
 import { ProcessTemplateRepository } from './process-template-repository.js';
-
-function makeTempDir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-process-template-repo-'));
-}
 
 describe('ProcessTemplateRepository integration', () => {
   let tempRoot = '';
   let repository: ProcessTemplateRepository;
 
   beforeEach(() => {
-    tempRoot = makeTempDir();
+    tempRoot = makeTempDir('taskplane-process-template-repo-');
     setDatabaseUserDataPathForTests(tempRoot);
     repository = new ProcessTemplateRepository();
   });

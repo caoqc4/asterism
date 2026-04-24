@@ -1,24 +1,17 @@
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-
 import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-
-import { briefSnapshots } from '../schema.js';
 import { closeDatabase, initDatabase, setDatabaseUserDataPathForTests } from '../client.js';
+import { briefSnapshots } from '../schema.js';
+import { makeTempDir } from './repository-test-utils.js';
 import { BriefSnapshotRepository } from './brief-snapshot-repository.js';
-
-function makeTempDir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-brief-repo-'));
-}
 
 describe('BriefSnapshotRepository integration', () => {
   let tempRoot = '';
   let repository: BriefSnapshotRepository;
 
   beforeEach(() => {
-    tempRoot = makeTempDir();
+    tempRoot = makeTempDir('taskplane-brief-repo-');
     setDatabaseUserDataPathForTests(tempRoot);
     repository = new BriefSnapshotRepository();
   });

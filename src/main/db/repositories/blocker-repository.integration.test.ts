@@ -1,16 +1,9 @@
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-
 import { closeDatabase, setDatabaseUserDataPathForTests } from '../client.js';
+import { makeTempDir } from './repository-test-utils.js';
 import { BlockerRepository } from './blocker-repository.js';
 import { TaskRepository } from './task-repository.js';
-
-function makeTempDir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-blocker-repo-'));
-}
 
 describe('BlockerRepository integration', () => {
   let tempRoot = '';
@@ -18,7 +11,7 @@ describe('BlockerRepository integration', () => {
   let blockerRepository: BlockerRepository;
 
   beforeEach(() => {
-    tempRoot = makeTempDir();
+    tempRoot = makeTempDir('taskplane-blocker-repo-');
     setDatabaseUserDataPathForTests(tempRoot);
     taskRepository = new TaskRepository();
     blockerRepository = new BlockerRepository();

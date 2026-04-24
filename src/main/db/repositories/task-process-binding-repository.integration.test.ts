@@ -1,17 +1,10 @@
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-
 import { closeDatabase, setDatabaseUserDataPathForTests } from '../client.js';
+import { makeTempDir } from './repository-test-utils.js';
 import { ProcessTemplateRepository } from './process-template-repository.js';
 import { TaskProcessBindingRepository } from './task-process-binding-repository.js';
 import { TaskRepository } from './task-repository.js';
-
-function makeTempDir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-task-process-binding-repo-'));
-}
 
 describe('TaskProcessBindingRepository integration', () => {
   let tempRoot = '';
@@ -20,7 +13,7 @@ describe('TaskProcessBindingRepository integration', () => {
   let repository: TaskProcessBindingRepository;
 
   beforeEach(() => {
-    tempRoot = makeTempDir();
+    tempRoot = makeTempDir('taskplane-task-process-binding-repo-');
     setDatabaseUserDataPathForTests(tempRoot);
     taskRepository = new TaskRepository();
     processTemplateRepository = new ProcessTemplateRepository();

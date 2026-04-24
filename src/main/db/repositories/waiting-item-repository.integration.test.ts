@@ -1,16 +1,9 @@
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-
 import { closeDatabase, setDatabaseUserDataPathForTests } from '../client.js';
+import { makeTempDir } from './repository-test-utils.js';
 import { TaskRepository } from './task-repository.js';
 import { WaitingItemRepository } from './waiting-item-repository.js';
-
-function makeTempDir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-waiting-item-repo-'));
-}
 
 describe('WaitingItemRepository integration', () => {
   let tempRoot = '';
@@ -18,7 +11,7 @@ describe('WaitingItemRepository integration', () => {
   let waitingItemRepository: WaitingItemRepository;
 
   beforeEach(() => {
-    tempRoot = makeTempDir();
+    tempRoot = makeTempDir('taskplane-waiting-item-repo-');
     setDatabaseUserDataPathForTests(tempRoot);
     taskRepository = new TaskRepository();
     waitingItemRepository = new WaitingItemRepository();

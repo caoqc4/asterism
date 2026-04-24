@@ -1,16 +1,9 @@
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-
 import { closeDatabase, setDatabaseUserDataPathForTests } from '../client.js';
+import { makeTempDir } from './repository-test-utils.js';
 import { TaskDependencyRepository } from './task-dependency-repository.js';
 import { TaskRepository } from './task-repository.js';
-
-function makeTempDir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-task-dependency-repo-'));
-}
 
 describe('TaskDependencyRepository integration', () => {
   let tempRoot = '';
@@ -18,7 +11,7 @@ describe('TaskDependencyRepository integration', () => {
   let taskDependencyRepository: TaskDependencyRepository;
 
   beforeEach(() => {
-    tempRoot = makeTempDir();
+    tempRoot = makeTempDir('taskplane-task-dependency-repo-');
     setDatabaseUserDataPathForTests(tempRoot);
     taskRepository = new TaskRepository();
     taskDependencyRepository = new TaskDependencyRepository();
