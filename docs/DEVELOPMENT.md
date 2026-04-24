@@ -41,6 +41,12 @@ npm run rebuild:node
 
 The dev Electron process clears `ELECTRON_RUN_AS_NODE` before launch so shells that export it for tooling do not accidentally start the app in Node mode.
 
+For manual alpha checks that should not touch the default local app data, point both SQLite and config storage at a temporary directory:
+
+```bash
+TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha npm run dev
+```
+
 ### Type-check
 
 ```bash

@@ -12,7 +12,7 @@ let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 let userDataPathOverride: string | null = null;
 
 function getUserDataPath(): string {
-  return userDataPathOverride ?? app.getPath('userData');
+  return userDataPathOverride ?? process.env.TASKPLANE_USER_DATA_DIR ?? app.getPath('userData');
 }
 
 function ensureDatabaseFile(): string {

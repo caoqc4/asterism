@@ -19,6 +19,10 @@ const require = createRequire(import.meta.url);
 const AI_PROVIDERS = new Set<AiProvider>(['anthropic', 'openai']);
 
 function defaultUserDataPathResolver(): string {
+  if (process.env.TASKPLANE_USER_DATA_DIR) {
+    return process.env.TASKPLANE_USER_DATA_DIR;
+  }
+
   const electron = require('electron') as typeof import('electron');
   return electron.app.getPath('userData');
 }

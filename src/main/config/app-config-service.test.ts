@@ -28,6 +28,17 @@ describe('AppConfigService', () => {
     expect(fs.existsSync(getConfigPath(() => tempRoot))).toBe(true);
   });
 
+  it('uses TASKPLANE_USER_DATA_DIR for the default config path resolver', async () => {
+    const { getConfigPath } = await import('./app-config-service.js');
+    process.env.TASKPLANE_USER_DATA_DIR = tempRoot;
+
+    try {
+      expect(getConfigPath()).toBe(path.join(tempRoot, 'config.json'));
+    } finally {
+      delete process.env.TASKPLANE_USER_DATA_DIR;
+    }
+  });
+
   it('writes and merges non-sensitive config values', async () => {
     const { AppConfigService } = await import('./app-config-service.js');
     const service = new AppConfigService(() => tempRoot);
