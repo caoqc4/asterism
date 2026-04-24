@@ -8,20 +8,14 @@ const { exposeInMainWorldMock, invokeMock, onMock, removeListenerMock } = vi.hoi
 }));
 
 vi.mock('electron', () => ({
-  default: {
-    contextBridge: {
-      exposeInMainWorld: exposeInMainWorldMock,
-    },
-    ipcRenderer: {
-      invoke: invokeMock,
-      on: onMock,
-      removeListener: removeListenerMock,
-    },
+  contextBridge: {
+    exposeInMainWorld: exposeInMainWorldMock,
   },
-}));
-
-vi.mock('./ipc/event-bus.js', () => ({
-  APP_EVENT_CHANNEL: 'app:event',
+  ipcRenderer: {
+    invoke: invokeMock,
+    on: onMock,
+    removeListener: removeListenerMock,
+  },
 }));
 
 import './preload.js';

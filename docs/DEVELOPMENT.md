@@ -27,6 +27,20 @@ npm install
 npm run dev
 ```
 
+If native modules were last installed for a different Node/Electron ABI, rebuild them before starting Electron:
+
+```bash
+npm run rebuild:electron
+```
+
+Switch back to the local Node ABI before running the Node/Vitest verification suite after an Electron rebuild:
+
+```bash
+npm run rebuild:node
+```
+
+The dev Electron process clears `ELECTRON_RUN_AS_NODE` before launch so shells that export it for tooling do not accidentally start the app in Node mode.
+
 ### Type-check
 
 ```bash
@@ -132,6 +146,8 @@ This project uses native modules such as:
 - `keytar`
 
 If installation fails on a new machine, make sure standard native build tooling for your platform is available.
+
+Run `npm run rebuild:electron` after changing Electron, Node, or native dependency versions when validating the desktop app. Run `npm run rebuild:node` before `npm run verify` if those native modules were last rebuilt for Electron.
 
 The supported local Node versions are `20.19+` or `22.12+`, matching the CI workflow and current Vite/Vitest engine requirements.
 

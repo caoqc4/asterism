@@ -1,5 +1,3 @@
-import electron from 'electron';
-
 import type { PingResponse } from '../../shared/types/ipc.js';
 import type { CreateBlockerInput, UpdateBlockerInput } from '../../shared/types/blocker.js';
 import type {
@@ -26,10 +24,10 @@ import type {
 } from '../../shared/types/task.js';
 
 import { getServices } from '../bootstrap/services.js';
+import { ipcMain } from '../electron.js';
 import { emitAppEvent } from './event-bus.js';
 
 const PING_CHANNEL = 'app:ping';
-const { ipcMain } = electron;
 
 export function registerIpcHandlers(): void {
   ipcMain.handle(PING_CHANNEL, async (): Promise<PingResponse> => {

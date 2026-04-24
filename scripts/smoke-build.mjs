@@ -9,7 +9,8 @@ const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 const requiredFiles = [
   'dist/index.html',
   packageJson.main,
-  'dist-electron/main/preload.js',
+  'dist-electron/main/index.js',
+  'dist-electron/main/preload.cjs',
   'build-resources/icon.png',
 ];
 
@@ -31,8 +32,14 @@ if (missingBuilderGlobs.length > 0) {
   process.exit(1);
 }
 
-const mainOutput = fs.readFileSync(path.join(root, packageJson.main), 'utf8');
-const preloadOutput = fs.readFileSync(path.join(root, 'dist-electron/main/preload.js'), 'utf8');
+const bootstrapOutput = fs.readFileSync(path.join(root, packageJson.main), 'utf8');
+const mainOutput = fs.readFileSync(path.join(root, 'dist-electron/main/index.js'), 'utf8');
+const preloadOutput = fs.readFileSync(path.join(root, 'dist-electron/main/preload.cjs'), 'utf8');
+
+if (!bootstrapOutput.includes('__TASKPLANE_ELECTRON__') || !bootstrapOutput.includes("import('./index.js')")) {
+  console.error('Electron bootstrap output does not load the ESM main entrypoint.');
+  process.exit(1);
+}
 
 if (!mainOutput.includes('dist') || !mainOutput.includes('index.html')) {
   console.error('Electron main output does not reference the packaged renderer index.html.');
@@ -41,7 +48,7 @@ if (!mainOutput.includes('dist') || !mainOutput.includes('index.html')) {
 
 if (
   !preloadOutput.includes('contextBridge.exposeInMainWorld') ||
-  !preloadOutput.includes("'api'") ||
+  !preloadOutput.includes('"api"') ||
   !preloadOutput.includes('run:trigger') ||
   !preloadOutput.includes('task:transition')
 ) {

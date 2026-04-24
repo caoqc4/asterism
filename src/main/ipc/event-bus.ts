@@ -1,10 +1,6 @@
-import electron from 'electron';
-
 import type { AppEvent, AppEventType } from '../../shared/types/events.js';
-
-const { BrowserWindow } = electron;
-
-const APP_EVENT_CHANNEL = 'app:event';
+import { APP_EVENT_CHANNEL } from '../../shared/events/channel.js';
+import { BrowserWindow } from '../electron.js';
 
 export function emitAppEvent(type: AppEventType, entityId?: string): void {
   const payload: AppEvent = {

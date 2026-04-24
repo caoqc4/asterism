@@ -1,12 +1,10 @@
-import electron from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { initServices } from './bootstrap/services.js';
 import { registerIpcHandlers } from './ipc/handlers.js';
 import { closeDatabase } from './db/client.js';
-
-const { app, BrowserWindow } = electron;
+import { app, BrowserWindow } from './electron.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,7 +19,7 @@ function createMainWindow(): void {
     minHeight: 720,
     backgroundColor: '#f4f1e8',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
     },

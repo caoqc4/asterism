@@ -1,9 +1,8 @@
-import electron from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
+import type { IpcRendererEvent } from 'electron';
 
+import { APP_EVENT_CHANNEL } from '../shared/events/channel.js';
 import type { ElectronApi } from '../shared/types/ipc.js';
-import { APP_EVENT_CHANNEL } from './ipc/event-bus.js';
-
-const { contextBridge, ipcRenderer } = electron;
 
 const api: ElectronApi = {
   ping: () => ipcRenderer.invoke('app:ping'),
@@ -41,7 +40,7 @@ const api: ElectronApi = {
   getRunDetail: (runId) => ipcRenderer.invoke('run:getDetail', runId),
   triggerRun: (input) => ipcRenderer.invoke('run:trigger', input),
   subscribeToEvents: (listener) => {
-    const wrapped = (_event: Electron.IpcRendererEvent, payload: Parameters<typeof listener>[0]) => {
+    const wrapped = (_event: IpcRendererEvent, payload: Parameters<typeof listener>[0]) => {
       listener(payload);
     };
 

@@ -4,25 +4,26 @@ Use this file when running the manual alpha path. Keep entries short and actiona
 
 ## Run Metadata
 
-- Date:
-- Build / commit:
-- Tester:
-- Local verification run:
-- Smoke check run:
+- Date: 2026-04-24
+- Build / commit: local working tree before commit
+- Tester: Codex
+- Local verification run: targeted main/preload tests, `npm run lint`, `npm run build`, `npm run verify`
+- Smoke check run: `npm run dev` manual launch, `npm run smoke:build`
 
 ## Result Summary
 
-- Overall result: `not started / pass / pass with issues / fail`
-- Highest severity issue:
-- Follow-up owner:
+- Overall result: `pass with issues`
+- Highest severity issue: dev launch path was blocked until Electron startup, native-module ABI, dev URL, and preload format issues were fixed.
+- Follow-up owner: project maintainers
 
 ## Findings
 
 | Area | Step | Result | Finding | Severity | Follow-up |
 | --- | --- | --- | --- | --- | --- |
-| Verification Gate | `npm run verify` | Not run |  |  |  |
-| Verification Gate | `npm run smoke:build` when needed | Not run |  |  |  |
-| Core Task Loop | Create task and open detail | Not run |  |  |  |
+| Verification Gate | `npm run verify` | Pass | Initially failed while `better-sqlite3` was rebuilt for Electron ABI; passed after adding and running `npm run rebuild:node`. | Medium | Keep Node/Electron ABI switch documented. |
+| Verification Gate | `npm run smoke:build` when needed | Pass | Updated smoke check for `bootstrap.cjs` and `preload.cjs`; build smoke passes. | Low | Keep smoke check aligned with entrypoint changes. |
+| Dev Launch | Start `npm run dev` | Pass | App launches to Home after clearing `ELECTRON_RUN_AS_NODE`, rebuilding native modules for Electron, loading `localhost`, and using a CJS preload bundle. | High | Keep as regression guard in development docs. |
+| Core Task Loop | Create task and open detail | Partial | Tasks view opens and empty-state/create controls render. No local task was created in this pass. | Low | Run mutation path in next manual pass. |
 | Core Task Loop | Update summary / next step / state | Not run |  |  |  |
 | Context Objects | Add source/process/blocker/dependency | Not run |  |  |  |
 | Context Objects | Resolve blocker/dependency | Not run |  |  |  |
@@ -32,12 +33,11 @@ Use this file when running the manual alpha path. Keep entries short and actiona
 | Completion Loop | Inspect closeout evidence | Not run |  |  |  |
 | Home Recovery Loop | Open items from Home | Not run |  |  |  |
 | Home Recovery Loop | Inspect priority ordering | Not run |  |  |  |
-| Settings And Local Config | Save settings and inspect status | Not run |  |  |  |
-| Release Readiness | Build/smoke/package readiness | Not run |  |  |  |
+| Settings And Local Config | Save settings and inspect status | Partial | Settings view opens, config path renders, and empty keychain status is visible. No settings were saved in this pass. | Low | Run save path with deliberate test config. |
+| Release Readiness | Build/smoke/package readiness | Partial | `npm run build` passes, emits `preload.cjs`, and `npm run smoke:build` passes. Packaging install/run validation still pending. | Medium | Run packaged app validation before alpha acceptance. |
 
 ## Notes
 
 - Record copy/layout friction separately from functional bugs.
 - Do not expand the domain model during the run; capture new ideas as follow-up candidates.
 - Do not manually dispatch or watch GitHub Actions while Actions quota is unavailable.
-

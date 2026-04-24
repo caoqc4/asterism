@@ -54,11 +54,9 @@ const { handleMock, emitAppEventMock, servicesMock } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('electron', () => ({
-  default: {
-    ipcMain: {
-      handle: handleMock,
-    },
+vi.mock('../electron.js', () => ({
+  ipcMain: {
+    handle: handleMock,
   },
 }));
 
