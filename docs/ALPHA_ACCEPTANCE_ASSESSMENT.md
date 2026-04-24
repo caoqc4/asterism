@@ -6,7 +6,7 @@ This assessment maps the alpha checklist to the current automated coverage and t
 
 Current status: not alpha-accepted yet. A focused manual alpha pass is now underway and has covered the core local path through task creation, decision creation, no-key run failure, Home recovery, Settings config save, and unsigned macOS directory packaging.
 
-Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now narrower: validate dependency creation/resolution from the task UI, validate a successful AI-backed run with deliberate test credentials, smooth the long task-detail navigation around context-object creation, and defer signed/notarized release work until the unsigned package path stays stable.
+Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now narrower: validate a successful AI-backed run with deliberate test credentials, re-test closeout-ready Home wording with positive evidence, smooth the long task-detail navigation around context-object creation, and defer signed/notarized release work until the unsigned package path stays stable.
 
 ## Verification Gate
 
@@ -49,8 +49,9 @@ Automated coverage:
 Manual result / need:
 
 - source/process/blocker/completion objects were seeded to continue recovery validation after detail scrolling became cumbersome through automation
+- packaged app task UI created and resolved a downstream-to-upstream dependency in isolated SQLite under `/tmp/taskplane-alpha-dependency-ui-20260424`; queue priority and task cards reflected the dependency while active and returned after resolution
 - Home and task resume reflected blocker/source/method context correctly after the Home fixes
-- dependency-specific creation and recovery still need a focused manual pass
+- source/process creation still needs a smoother UI-only manual pass
 
 ## Decision And Run Loop
 
@@ -137,9 +138,9 @@ Manual need:
 
 Finish the remaining alpha checks in this order:
 
-1. Validate dependency creation/resolution from the task UI.
-2. Run a successful AI-backed draft/run only with deliberate test credentials.
-3. Re-test closeout-ready Home wording with an approved decision or completed run.
+1. Run a successful AI-backed draft/run only with deliberate test credentials.
+2. Re-test closeout-ready Home wording with an approved decision or completed run.
+3. Smooth or re-test source/process creation through the long task-detail UI.
 4. Keep signed/notarized packaging out of scope until those product-path checks pass.
 
 Do not expand the domain model until that pass is complete.
