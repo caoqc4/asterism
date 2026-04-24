@@ -8,8 +8,7 @@ Describe the purpose of this change.
 
 ## Validation
 
-- [ ] `npm run lint`
-- [ ] `npm run build`
+- [ ] `npm run verify`
 
 ## Notes
 

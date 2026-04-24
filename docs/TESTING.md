@@ -251,16 +251,12 @@ Still missing or intentionally light:
 Every meaningful change should pass:
 
 ```bash
-npm run test
-npm run lint
-npm run build
+npm run verify
 ```
 
 Current verification is local-only:
 
-- `npm run test`
-- `npm run lint`
-- `npm run build`
+- `npm run verify` for tests, type-checking, and production build
 - `npm run smoke:build` when package/build entrypoints change
 
 ## Suggested Next Test Targets

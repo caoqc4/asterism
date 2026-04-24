@@ -114,7 +114,17 @@ npm run lint
 npm run test
 ```
 
-### 6. Run the build smoke check
+### 6. Run the standard verification gate
+
+For the standard local quality gate, run:
+
+```bash
+npm run verify
+```
+
+This runs tests, type-checking, and the production build in sequence.
+
+### 7. Run the build smoke check
 
 ```bash
 npm run smoke:build
