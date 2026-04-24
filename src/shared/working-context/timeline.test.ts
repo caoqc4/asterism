@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   explainTaskTimelineEvent,
+  formatTaskTimelineEventSummary,
   getLatestResumeRelevantTimelineEvent,
   isResumeLatestChangeMetaEvent,
   getTaskTimelineFollowUpActionLabel,
@@ -82,6 +83,24 @@ describe('getTaskTimelinePreviewEvents', () => {
         }),
       }),
     ).toBe('本次执行未调用方法模板；原因：No matching template');
+  });
+
+  it('formats known timeline summaries while preserving unknown event types', () => {
+    expect(
+      formatTaskTimelineEventSummary({
+        type: 'task.run_failed',
+        payload: JSON.stringify({
+          failureReason: 'Model overloaded',
+        }),
+      }),
+    ).toBe('执行失败：Model overloaded。');
+
+    expect(
+      formatTaskTimelineEventSummary({
+        type: 'custom.audit_event',
+        payload: null,
+      }),
+    ).toBe('custom.audit_event');
   });
 
   it('prioritizes lane-critical events ahead of weaker explanatory items in compact previews', () => {

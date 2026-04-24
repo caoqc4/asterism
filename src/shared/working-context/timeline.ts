@@ -459,6 +459,46 @@ export function explainTaskTimelineEvent(
   }
 }
 
+export function formatTaskTimelineEventSummary(event: Pick<TimelineEventRecord, 'type' | 'payload'>): string {
+  switch (event.type) {
+    case 'task.created':
+    case 'task.updated':
+    case 'task.run_failed':
+    case 'task.run_completed':
+    case 'task.decision_approved':
+    case 'task.decision_deferred':
+    case 'task.decision_cancelled':
+    case 'task.waiting_changed':
+    case 'task.risk_changed':
+    case 'task.next_step_changed':
+    case 'task.transitioned':
+    case 'waiting_item.created':
+    case 'waiting_item.updated':
+    case 'waiting_item.resolved':
+    case 'source_context.created':
+    case 'source_context.updated':
+    case 'source_context.archived':
+    case 'blocker.created':
+    case 'blocker.updated':
+    case 'blocker.resolved':
+    case 'task_dependency.created':
+    case 'task_dependency.updated':
+    case 'task_dependency.resolved':
+    case 'completion_criteria.created':
+    case 'completion_criteria.updated':
+    case 'completion_criteria.satisfied':
+    case 'completion_criteria.reopened':
+    case 'artifact.created':
+    case 'process_template.applied':
+    case 'process_template.removed':
+    case 'process_template.selected':
+    case 'process_template.skipped':
+      return explainTaskTimelineEvent(event);
+    default:
+      return event.type;
+  }
+}
+
 function isStrongExplanatoryTimelineAction(type: string): boolean {
   return (
     type === 'task.waiting_changed' ||

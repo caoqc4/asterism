@@ -4,7 +4,7 @@ import type { RecommendedActionIntent } from '@shared/types/brief';
 import type { CreateDecisionInput, DecisionDraftRecord, DecisionRecord } from '@shared/types/decision';
 import type { TaskDetail, TaskListItemRecord, TimelineEventRecord } from '@shared/types/task';
 import {
-  explainTaskTimelineEvent,
+  formatTaskTimelineEventSummary,
   getTaskTimelineFollowUpActionLabel,
   getTaskTimelineLane,
   getTaskTimelineLaneLabel,
@@ -29,7 +29,7 @@ function safeParsePayload(payload: string | null): Record<string, unknown> | nul
 }
 
 function formatRelatedTimelineSummary(event: TimelineEventRecord): string {
-  return explainTaskTimelineEvent(event);
+  return formatTaskTimelineEventSummary(event);
 }
 
 function getRelatedTimelineActionLabel(event: TimelineEventRecord): string | null {

@@ -44,7 +44,7 @@ import type {
   UpdateTaskInput,
 } from '@shared/types/task';
 import {
-  explainTaskTimelineEvent,
+  formatTaskTimelineEventSummary,
   getTaskTimelineFollowUpActionLabel,
   getTaskTimelineLane,
   getTaskTimelineLaneLabel,
@@ -478,44 +478,7 @@ function getTimelineToneClass(type: string): string {
 }
 
 function formatTimelineSummary(event: TimelineEventRecord): string {
-  if (
-    event.type === 'task.decision_approved' ||
-    event.type === 'task.decision_deferred' ||
-    event.type === 'task.decision_cancelled' ||
-    event.type === 'task.created' ||
-    event.type === 'task.run_failed' ||
-    event.type === 'task.run_completed' ||
-    event.type === 'waiting_item.created' ||
-    event.type === 'waiting_item.updated' ||
-    event.type === 'waiting_item.resolved' ||
-    event.type === 'source_context.created' ||
-    event.type === 'source_context.updated' ||
-    event.type === 'source_context.archived' ||
-    event.type === 'blocker.created' ||
-    event.type === 'blocker.updated' ||
-    event.type === 'blocker.resolved' ||
-    event.type === 'task_dependency.created' ||
-    event.type === 'task_dependency.updated' ||
-    event.type === 'task_dependency.resolved' ||
-    event.type === 'completion_criteria.created' ||
-    event.type === 'completion_criteria.updated' ||
-    event.type === 'completion_criteria.satisfied' ||
-    event.type === 'completion_criteria.reopened' ||
-    event.type === 'artifact.created' ||
-    event.type === 'process_template.applied' ||
-    event.type === 'process_template.removed' ||
-    event.type === 'process_template.selected' ||
-    event.type === 'process_template.skipped' ||
-    event.type === 'task.updated' ||
-    event.type === 'task.waiting_changed' ||
-    event.type === 'task.risk_changed' ||
-    event.type === 'task.next_step_changed' ||
-    event.type === 'task.transitioned'
-  ) {
-    return explainTaskTimelineEvent(event);
-  }
-
-  return event.type;
+  return formatTaskTimelineEventSummary(event);
 }
 
 function getTimelineActionLabel(type: string): string | null {

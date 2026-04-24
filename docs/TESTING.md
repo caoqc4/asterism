@@ -198,6 +198,7 @@ Covered today:
 - task timeline summaries now assert explanatory wording that does not duplicate resume latest-change phrasing
 - task waiting-reason timeline changes now use shared explanatory wording across task and object surfaces
 - task source-archive and process-template timeline summaries now use shared explanatory wording instead of page-local formatting
+- task timeline display summaries now preserve unknown event types while routing known events through shared explanatory wording
 - `Decisions` page current-focus and queue navigation
 - `Decisions / Runs -> Tasks` follow-up return flows
 - `Decisions / Runs` related-task timeline context
