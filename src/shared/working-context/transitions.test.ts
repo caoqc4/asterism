@@ -53,4 +53,35 @@ describe('task transition guidance', () => {
       buttonLabel: '转到 completed（仍有 1 条未满足）',
     });
   });
+
+  it('prioritizes completed for continue/review tasks once completion criteria are satisfied', () => {
+    const availableStates = ['planned', 'waiting_external', 'completed', 'archived'] as const;
+
+    expect(
+      getRecommendedTaskTransition({
+        currentState: 'running',
+        availableStates: [...availableStates],
+        lane: 'continue_or_review',
+        isCompletionReady: true,
+      }),
+    ).toBe('completed');
+
+    expect(
+      orderTaskTransitions({
+        currentState: 'running',
+        availableStates: [...availableStates],
+        lane: 'continue_or_review',
+        isCompletionReady: true,
+      }),
+    ).toEqual(['completed', 'planned', 'waiting_external', 'archived']);
+
+    expect(
+      getTaskTransitionGuidance({
+        currentState: 'running',
+        availableStates: [...availableStates],
+        lane: 'continue_or_review',
+        isCompletionReady: true,
+      }),
+    ).toContain('优先建议转到 completed');
+  });
 });

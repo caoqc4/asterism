@@ -4,7 +4,7 @@ This assessment maps the alpha checklist to the current automated coverage and t
 
 ## Summary
 
-Current status: functionally alpha-accepted for the local unsigned build path, with signed/notarized release work still deferred. A focused manual alpha pass has covered the core local path through task creation, task state transition, decision creation, no-key run failure, successful AI-backed run, Home recovery, Settings config save, and unsigned macOS directory packaging.
+Current status: functionally alpha-accepted for the local unsigned build path, with signed/notarized release work still deferred. A focused manual alpha pass has covered the core local path through task creation, task state transition, decision creation, no-key run failure, successful AI-backed run, Home recovery, Settings config save, completion closeout, and unsigned macOS directory packaging.
 
 Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now release-focused: keep local verification as the source of truth while GitHub Actions quota is unavailable, and defer signed/notarized release work until the unsigned package path stays stable.
 
@@ -76,7 +76,7 @@ Manual result / need:
 
 ## Completion Loop
 
-Status: manually validated for criteria create/satisfy/reopen and closeout-ready Home wording with approved-decision evidence.
+Status: manually validated for criteria create/satisfy/reopen, closeout-ready Home wording, and pure UI transition to completed.
 
 Automated coverage:
 
@@ -90,6 +90,7 @@ Manual result / need:
 - failed run surfaced as potential evidence without making the task closeout-ready
 - packaged app Home showed closeout-ready wording from an isolated positive-evidence fixture with one satisfied criterion and one approved decision; `查看最终收尾依据` opened the approved Decision
 - the criteria create/satisfy/reopen path is functionally covered, with task-detail section jumps added to make criteria and action sections easier to revisit
+- the pure UI packaged pass for `Completion UI finish check` added and satisfied a completion criterion, surfaced closeout-ready Home wording, prioritized `转到 completed（完成标准已满足）` first in Action Desk, and SQLite confirmed `captured -> planned -> running -> completed` timeline events
 
 ## Home Recovery Loop
 

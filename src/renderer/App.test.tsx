@@ -6331,6 +6331,76 @@ describe('App UI flow', () => {
     expect(screen.getByRole('heading', { name: 'Current Completion Criteria' })).toBeTruthy();
   });
 
+  it('puts the completed transition first when completion criteria are satisfied', async () => {
+    const user = userEvent.setup();
+    const readyTask = buildTaskRecord({
+      id: 'task_ready_to_complete',
+      title: 'Ready to complete task',
+      state: 'running',
+      nextStep: 'Run final closeout',
+    });
+    const readyDetail: TaskDetail = {
+      ...buildTaskDetail(readyTask),
+      completionCriteria: [
+        buildCompletionCriteria({
+          id: 'criteria_ready_1',
+          taskId: readyTask.id,
+          text: 'Final closeout verified',
+          status: 'satisfied',
+          satisfiedAt: '2026-01-03T00:00:00.000Z',
+        }),
+      ],
+      resumeCard: {
+        ...buildTaskDetail(readyTask).resumeCard,
+        completionStatus: {
+          total: 1,
+          satisfied: 1,
+          open: 0,
+          summary: '已满足 1/1 条完成标准',
+        },
+      },
+    };
+
+    window.api = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([readyTask]),
+      getTaskDetail: vi.fn(async (taskId: string) => (taskId === readyTask.id ? readyDetail : null)),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        recentTasks: [readyTask],
+        completionReadyTaskCount: 1,
+        completionReadyTasks: [
+          {
+            ...readyTask,
+            completionProgress: { total: 1, satisfied: 1, open: 0 },
+          },
+        ],
+      }),
+    };
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /ready to complete task/i }));
+
+    const transitionSection = screen
+      .getByRole('heading', { name: '状态流转' })
+      .closest('.transition-group');
+    expect(transitionSection).toBeTruthy();
+    expect(
+      within(transitionSection as HTMLElement).getByText(
+        '当前按「继续推进/复核」语义，状态流转优先建议转到 completed，让任务回到便于继续执行或复核结果的状态。',
+      ),
+    ).toBeTruthy();
+
+    const transitionButtons = within(transitionSection as HTMLElement)
+      .getAllByRole('button')
+      .map((button) => button.textContent)
+      .filter((label): label is string => Boolean(label?.startsWith('转到 ')));
+
+    expect(transitionButtons[0]).toBe('转到 completed（完成标准已满足）');
+  });
+
   it('surfaces recent decision, run, and artifact results as completion evidence', async () => {
     const user = userEvent.setup();
 

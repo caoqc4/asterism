@@ -22,6 +22,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - Local verification fallback is documented for periods when GitHub Actions is unavailable because of monthly quota.
 - Local `.env` AI configuration now supports Replicate-backed draft runs; a deliberate local Replicate run completed with `output_source=ai`, timeline events, and a persisted artifact.
 - Task detail now has a compact section jump bar for Current, Completion, Action, Activity, and Context Studio; a packaged app pass confirmed it can jump from Context Studio back to Action Desk.
+- The front task-management closeout loop is covered through packaged UI: a task can add and satisfy a completion criterion, Home surfaces it as ready to close, Action Desk prioritizes `completed`, and SQLite records the final transition.
 
 ## Verification Baseline
 
@@ -52,8 +53,8 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 
 ## Recommended Next Focus
 
-1. Keep signed/notarized release work deferred until a dedicated release-readiness pass targets signing and notarization.
-2. Keep any further alpha friction as small acceptance fixes.
+1. Start designing the real agent execution layer: execution contracts, tool/runtime boundaries, provider adapters, artifacts, safety checkpoints, and resumable run semantics.
+2. Keep signed/notarized release work deferred until a dedicated release-readiness pass targets signing and notarization.
 3. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 4. Defer GitHub Actions work until quota is restored.
 5. Avoid adding new domain objects until the release-readiness pass is cleaner.

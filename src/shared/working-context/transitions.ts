@@ -8,6 +8,7 @@ type TransitionRecommendationInput = {
   hasActiveBlocker?: boolean;
   hasPendingDecision?: boolean;
   hasWaitingContext?: boolean;
+  isCompletionReady?: boolean;
 };
 
 export type CompletionTransitionGuidance = {
@@ -30,6 +31,7 @@ export function getRecommendedTaskTransition(input: TransitionRecommendationInpu
     hasActiveBlocker = false,
     hasPendingDecision = false,
     hasWaitingContext = false,
+    isCompletionReady = false,
   } = input;
 
   switch (lane) {
@@ -46,6 +48,10 @@ export function getRecommendedTaskTransition(input: TransitionRecommendationInpu
 
       return firstAvailable(availableStates, ['planned', 'running', 'waiting_external', 'completed', 'archived']);
     case 'continue_or_review':
+      if (isCompletionReady) {
+        return firstAvailable(availableStates, ['completed', 'running', 'planned', 'waiting_external', 'archived']);
+      }
+
       return firstAvailable(availableStates, ['running', 'planned', 'completed', 'waiting_external', 'archived']);
     case 'clarify':
       if (hasWaitingContext && currentState !== 'waiting_external') {

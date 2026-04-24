@@ -919,6 +919,7 @@ export function TasksPage({
         hasActiveBlocker: Boolean(detail.activeBlocker),
         hasPendingDecision: taskDecisions.some((decision) => decision.status === 'pending'),
         hasWaitingContext: Boolean(detail.activeWaitingItem || detail.waitingReason),
+        isCompletionReady: resumeCompletionStatus.total > 0 && resumeCompletionStatus.open === 0,
       })
     : [];
   const transitionGuidance = detail
@@ -929,6 +930,7 @@ export function TasksPage({
         hasActiveBlocker: Boolean(detail.activeBlocker),
         hasPendingDecision: taskDecisions.some((decision) => decision.status === 'pending'),
         hasWaitingContext: Boolean(detail.activeWaitingItem || detail.waitingReason),
+        isCompletionReady: resumeCompletionStatus.total > 0 && resumeCompletionStatus.open === 0,
       })
     : null;
   const openCompletionCriteria = detail?.completionCriteria.filter((criteria) => criteria.status === 'open') ?? [];
