@@ -114,4 +114,42 @@ describe('TextExecutor', () => {
     );
     expect(result).toBe('Generated output');
   });
+
+  it('asks agent runs for constrained JSON step proposals', async () => {
+    generateTextMock.mockResolvedValue({ text: '{"finalOutput":"Generated output","steps":[]}' });
+    const executor = new TextExecutor();
+
+    await executor.execute(
+      buildTaskDetail(),
+      {
+        taskId: 'task_1',
+        type: 'agent',
+        instructions: 'Create a local note',
+      },
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: true,
+        },
+      },
+    );
+
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('你必须只输出一个合法 JSON 对象'),
+      }),
+    );
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('"tool": "artifact.create_note"'),
+      }),
+    );
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('只能使用 task.inspect_context 和 artifact.create_note'),
+      }),
+    );
+  });
 });

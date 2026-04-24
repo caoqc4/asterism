@@ -71,7 +71,7 @@ Covered today:
 - `AgentToolRegistry`
   internal tool discovery, read-only context inspection, local note artifact creation, tool call/result step writes, validation failure recording, policy-driven confirmation checkpoints, and Decision creation for confirmation checkpoints
 - `TextExecutor`
-  lane-aware run prompt composition
+  lane-aware run prompt composition and constrained JSON proposal prompting for agent runs
 - `HomeBriefService`
   waiting, risk, missing-next-step, recommended actions, recent artifacts, recent lifecycle activity, artifact-aware brief semantics, and active-task process-template candidate aggregation
 - `SchedulerService`
