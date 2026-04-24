@@ -7,6 +7,10 @@ import {
   ProcessTemplateSelector,
   type ProcessTemplateSelectionResult,
 } from './process-template-selector.js';
+import {
+  buildAgentRunRequest,
+  formatAgentRunRequestForStep,
+} from './agent-working-context.js';
 
 export type RunOrchestrationResult =
   | {
@@ -34,17 +38,14 @@ export class RunOrchestrator {
     input: CreateRunInput;
   }): Promise<RunOrchestrationResult> {
     const { input, run, task } = params;
+    const request = buildAgentRunRequest({ run, task, input });
 
     await this.runStepRepository.create({
       runId: run.id,
       kind: 'plan',
       status: 'completed',
       title: '准备执行上下文',
-      input: [
-        `Run 类型：${input.type}`,
-        input.instructions?.trim() ? `附加要求：${input.instructions.trim()}` : '附加要求：无',
-        `任务状态：${task.state}`,
-      ].join('\n'),
+      input: formatAgentRunRequestForStep(request),
       output: '已读取任务上下文，并准备进入模型执行。',
     });
 

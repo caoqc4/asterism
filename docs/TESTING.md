@@ -64,6 +64,8 @@ Covered today:
   successful execution path, failure path, task restoration after settled runs, artifact creation on successful output, and orchestration result settlement
 - `RunOrchestrator`
   plan/model/final step writes, process-template selector fallback, and executor failure recording
+- `AgentWorkingContext`
+  task-detail compression into typed agent run context, default policy, and plan-step request summaries
 - `TextExecutor`
   lane-aware run prompt composition
 - `HomeBriefService`
