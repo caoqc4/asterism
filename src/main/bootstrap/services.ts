@@ -53,6 +53,17 @@ const homeBriefService = new HomeBriefService(
 const textExecutor = new TextExecutor();
 const briefExecutor = new BriefExecutor();
 const aiConfigService = new AiConfigService(appConfigService);
+const taskService = new TaskService(
+  taskRepository,
+  waitingItemRepository,
+  artifactRepository,
+  sourceContextRepository,
+  processTemplateRepository,
+  taskProcessBindingRepository,
+  blockerRepository,
+  taskDependencyRepository,
+  completionCriteriaRepository,
+);
 schedulerService = new SchedulerService(
   appConfigService,
   homeBriefService,
@@ -60,6 +71,18 @@ schedulerService = new SchedulerService(
   runRepository,
   aiConfigService,
   briefExecutor,
+);
+const decisionService = new DecisionService(
+  decisionRepository,
+  taskService,
+  aiConfigService,
+);
+const runService = new RunService(
+  runRepository,
+  taskService,
+  artifactRepository,
+  aiConfigService,
+  textExecutor,
 );
 
 const services = {
@@ -78,36 +101,13 @@ const services = {
   appConfigService,
   textExecutor,
   briefExecutor,
-  taskService: new TaskService(
-    taskRepository,
-    waitingItemRepository,
-    artifactRepository,
-    sourceContextRepository,
-    processTemplateRepository,
-    taskProcessBindingRepository,
-    blockerRepository,
-    taskDependencyRepository,
-    completionCriteriaRepository,
-  ),
-  decisionService: null as unknown as DecisionService,
-  runService: null as unknown as RunService,
+  taskService,
+  decisionService,
+  runService,
   homeBriefService,
   aiConfigService,
   schedulerService,
 };
-
-services.decisionService = new DecisionService(
-  decisionRepository,
-  services.taskService,
-  aiConfigService,
-);
-services.runService = new RunService(
-  runRepository,
-  services.taskService,
-  artifactRepository,
-  aiConfigService,
-  textExecutor,
-);
 
 export function initServices() {
   if (!initialized) {
