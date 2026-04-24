@@ -1322,7 +1322,25 @@ describe('App UI flow', () => {
       listTasks: vi.fn().mockResolvedValue([readyTask, nearTask]),
       getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
         const task = taskId === readyTask.id ? readyTask : nearTask;
-        return buildTaskDetail(task);
+        const detail = buildTaskDetail(task);
+        detail.resumeCard = {
+          ...detail.resumeCard,
+          completionStatus:
+            taskId === readyTask.id
+              ? {
+                  total: 2,
+                  satisfied: 2,
+                  open: 0,
+                  summary: '已满足全部完成标准',
+                }
+              : {
+                  total: 2,
+                  satisfied: 1,
+                  open: 1,
+                  summary: '还差 1 条完成标准',
+                },
+        };
+        return detail;
       }),
     };
 
@@ -1393,6 +1411,10 @@ describe('App UI flow', () => {
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
       '确认完成标准已满足，并判断是否将“Ready to finish task”转到 completed。',
     );
+    const readyActionDesk = screen.getByRole('heading', { name: '动作与状态流转' }).closest('.detail-stage');
+    expect(readyActionDesk).toBeTruthy();
+    expect(within(readyActionDesk as HTMLElement).getByRole('button', { name: '最终收尾判断' })).toBeTruthy();
+    expect(within(readyActionDesk as HTMLElement).getByRole('button', { name: '调整任务状态' })).toBeTruthy();
   });
 
   it('orders tasks by priority lane and shows lane labels in the task list', async () => {
