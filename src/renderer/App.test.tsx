@@ -2408,6 +2408,12 @@ describe('App UI flow', () => {
     expect(within(actionDesk as HTMLElement).getByRole('button', { name: '草拟或创建 Decision' })).toBeTruthy();
     expect(within(actionDesk as HTMLElement).getByRole('button', { name: '调整任务状态' })).toBeTruthy();
     expect(within(actionDesk as HTMLElement).queryByRole('button', { name: '配置并触发 Run' })).toBeNull();
+    expect(
+      within(actionDesk as HTMLElement)
+        .getByText('Decision')
+        .compareDocumentPosition(within(actionDesk as HTMLElement).getByText('Run')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
 
     const decisionTitleInput = screen.getByLabelText('决策标题');
     await user.clear(decisionTitleInput);
@@ -2494,6 +2500,53 @@ describe('App UI flow', () => {
       '本轮执行优先围绕升级处理当前高风险/阻塞',
     );
     expect(screen.getByText('当前按「立即升级」语义，本轮 run 默认更偏向输出可直接用于升级处理的结果。')).toBeTruthy();
+  });
+
+  it('places run setup before decision setup for steady tasks', async () => {
+    const user = userEvent.setup();
+    const steadyTask = buildTaskRecord({
+      id: 'task_action_setup_steady',
+      title: 'Steady action setup task',
+      state: 'planned',
+      nextStep: 'Continue the draft',
+    });
+
+    window.api = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([steadyTask]),
+      getTaskDetail: vi.fn().mockResolvedValue(buildTaskDetail(steadyTask)),
+      getHomeBrief: vi.fn().mockResolvedValue({
+        ...briefData,
+        activeTaskCount: 1,
+        pendingDecisionCount: 0,
+        waitingTaskCount: 0,
+        highRiskTaskCount: 0,
+        recentTasks: [steadyTask],
+        waitingTasks: [],
+        highRiskTasks: [],
+        pendingDecisions: [],
+        recommendedActions: [],
+        recentArtifacts: [],
+        recentSourceContexts: [],
+        recentTaskResumes: [],
+        recentActivity: [],
+      }),
+    };
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /Steady action setup task/i }));
+    await screen.findByRole('heading', { name: 'Steady action setup task' });
+
+    const actionDesk = screen.getByRole('heading', { name: '动作与状态流转' }).closest('.detail-stage');
+    expect(actionDesk).toBeTruthy();
+    expect(
+      within(actionDesk as HTMLElement)
+        .getByText('Run')
+        .compareDocumentPosition(within(actionDesk as HTMLElement).getByText('Decision')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('submits a quick run from task detail', async () => {

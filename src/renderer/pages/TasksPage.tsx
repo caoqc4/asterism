@@ -719,6 +719,20 @@ function getActionSetupGuidance(detail: TaskDetail | null): string {
   return '需要补充上下文时，再使用这里的详细表单。';
 }
 
+function getActionSetupOrder(detail: TaskDetail | null, lane: PriorityLane | undefined): Array<'decision' | 'run'> {
+  if (!detail) {
+    return ['decision', 'run'];
+  }
+
+  if (isEarlyTaskState(detail.state)) {
+    return ['decision', 'run'];
+  }
+
+  return lane === 'continue_or_review' || lane === 'steady' || !lane
+    ? ['run', 'decision']
+    : ['decision', 'run'];
+}
+
 function getDependencyReevaluationNextStep(detail: TaskDetail): string | null {
   if (!detail.activeDependency?.blockedByTaskTitle || !detail.dependencyReevaluation) {
     return null;
@@ -1963,6 +1977,7 @@ export function TasksPage({
       : getTaskTimelinePreviewEvents(detail.timeline, TIMELINE_PREVIEW_COUNT)
     : [];
   const primaryMoves = getPrimaryMoveConfig(detail, resumeLane);
+  const actionSetupOrder = getActionSetupOrder(detail, resumeLane);
   const snapshotArtifact = detail?.artifacts[0] ?? null;
   const snapshotSourceContext = detail?.sourceContexts[0] ?? null;
   const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
@@ -1986,6 +2001,76 @@ export function TasksPage({
       : orderedLaneLabels.length <= 1
         ? `当前队列按「${orderedLaneLabels[0] ?? '稳态推进'}」语义排序，共 ${tasks.length} 条任务。`
         : `当前队列会先处理「${orderedLaneLabels[0]}」，再到「${orderedLaneLabels[1]}」；共 ${tasks.length} 条任务，分布在 ${orderedLaneLabels.length} 个优先级层次。`;
+  const quickDecisionSetup = (
+    <form
+      className="stack task-card quick-action-card"
+      key="decision"
+      onSubmit={handleQuickDecision}
+      ref={quickDecisionCardRef}
+    >
+      <strong>Decision</strong>
+      <label>
+        决策标题
+        <input
+          value={quickDecisionTitle}
+          onChange={(event) => setQuickDecisionTitle(event.target.value)}
+        />
+      </label>
+      <label>
+        拍板背景
+        <textarea
+          rows={3}
+          value={quickDecisionNote}
+          onChange={(event) => setQuickDecisionNote(event.target.value)}
+        />
+      </label>
+      <p className="meta">{quickDecisionGuidance}</p>
+      {quickDecisionResponsibilityGuidance ? (
+        <p className="meta">{quickDecisionResponsibilityGuidance}</p>
+      ) : null}
+      {quickDecisionRationale ? <p className="meta">{quickDecisionRationale}</p> : null}
+      <button type="button" className="ghost-button" onClick={() => void handleDraftQuickDecision()}>
+        草拟 Decision
+      </button>
+      <button type="submit">提交 Decision</button>
+    </form>
+  );
+  const quickRunSetup = (
+    <form
+      className="stack task-card quick-action-card"
+      key="run"
+      onSubmit={handleQuickRun}
+      ref={quickRunCardRef}
+    >
+      <strong>Run</strong>
+      <label>
+        Run 类型
+        <select
+          value={quickRunType}
+          onChange={(event) =>
+            setQuickRunType(event.target.value as CreateRunInput['type'])
+          }
+        >
+          <option value="draft">draft</option>
+          <option value="summarize">summarize</option>
+        </select>
+      </label>
+      <label>
+        附加要求
+        <textarea
+          rows={3}
+          value={quickRunInstructions}
+          onChange={(event) => setQuickRunInstructions(event.target.value)}
+        />
+      </label>
+      <p className="meta">{quickRunGuidance}</p>
+      <button type="submit">触发 Run</button>
+    </form>
+  );
+  const actionSetupCards = {
+    decision: quickDecisionSetup,
+    run: quickRunSetup,
+  };
 
   return (
     <section className="tasks-layout">
@@ -2799,67 +2884,7 @@ export function TasksPage({
                   <h3>Action Setup</h3>
                   <p className="meta">{getActionSetupGuidance(detail)}</p>
                   <div className="quick-actions-grid" ref={quickActionsRef}>
-                    <form
-                      className="stack task-card quick-action-card"
-                      onSubmit={handleQuickDecision}
-                      ref={quickDecisionCardRef}
-                    >
-                      <strong>Decision</strong>
-                      <label>
-                        决策标题
-                        <input
-                          value={quickDecisionTitle}
-                          onChange={(event) => setQuickDecisionTitle(event.target.value)}
-                        />
-                      </label>
-                      <label>
-                        拍板背景
-                        <textarea
-                          rows={3}
-                          value={quickDecisionNote}
-                          onChange={(event) => setQuickDecisionNote(event.target.value)}
-                        />
-                      </label>
-                      <p className="meta">{quickDecisionGuidance}</p>
-                      {quickDecisionResponsibilityGuidance ? (
-                        <p className="meta">{quickDecisionResponsibilityGuidance}</p>
-                      ) : null}
-                      {quickDecisionRationale ? <p className="meta">{quickDecisionRationale}</p> : null}
-                      <button type="button" className="ghost-button" onClick={() => void handleDraftQuickDecision()}>
-                        草拟 Decision
-                      </button>
-                      <button type="submit">提交 Decision</button>
-                    </form>
-
-                    <form
-                      className="stack task-card quick-action-card"
-                      onSubmit={handleQuickRun}
-                      ref={quickRunCardRef}
-                    >
-                      <strong>Run</strong>
-                      <label>
-                        Run 类型
-                        <select
-                          value={quickRunType}
-                          onChange={(event) =>
-                            setQuickRunType(event.target.value as CreateRunInput['type'])
-                          }
-                        >
-                          <option value="draft">draft</option>
-                          <option value="summarize">summarize</option>
-                        </select>
-                      </label>
-                      <label>
-                        附加要求
-                        <textarea
-                          rows={3}
-                          value={quickRunInstructions}
-                          onChange={(event) => setQuickRunInstructions(event.target.value)}
-                        />
-                      </label>
-                      <p className="meta">{quickRunGuidance}</p>
-                      <button type="submit">触发 Run</button>
-                    </form>
+                    {actionSetupOrder.map((setup) => actionSetupCards[setup])}
                   </div>
                 </div>
 
