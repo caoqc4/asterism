@@ -9,6 +9,7 @@ Taskplane currently uses a layered testing strategy:
 - renderer `jsdom` interaction tests for key control-plane flows
 - IPC handler tests for event-emitting main-process entrypoints
 - local `test + lint + build` verification
+- build smoke verification for packaged renderer/main/preload entrypoints
 
 Current test files:
 
@@ -250,12 +251,12 @@ Current verification is local-only:
 - `npm run test`
 - `npm run lint`
 - `npm run build`
+- `npm run smoke:build` when package/build entrypoints change
 
 ## Suggested Next Test Targets
 
 Recommended next additions:
 
-1. a small packaged-app or smoke-style end-to-end verification path
-2. renderer coverage for richer timeline filtering or long-history behavior
+1. renderer coverage for richer timeline filtering or long-history behavior
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

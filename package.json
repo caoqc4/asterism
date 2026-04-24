@@ -17,6 +17,7 @@
     "build:main": "tsc -p tsconfig.electron.json",
     "lint": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.electron.json",
     "test": "vitest run",
+    "smoke:build": "npm run build && node scripts/smoke-build.mjs",
     "dist:mac:dir": "npm run build && node node_modules/electron-builder/cli.js --mac dir",
     "dist:mac": "npm run build && node node_modules/electron-builder/cli.js --mac"
   },
