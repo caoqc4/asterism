@@ -41,6 +41,10 @@ function getActivityActionLabel(activity: HomeActivityRecord): string | null {
     return '处理失败结果';
   }
 
+  if (activity.sourceType === 'run' && activity.status === 'paused') {
+    return '复核暂停原因';
+  }
+
   if (activity.sourceType === 'run' && activity.status === 'completed') {
     return '基于结果继续推进';
   }

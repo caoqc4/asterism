@@ -2337,6 +2337,43 @@ describe('App UI flow', () => {
     );
   });
 
+  it('opens paused run follow-up directly from home recent activity actions', async () => {
+    const user = userEvent.setup();
+    const pausedBriefData: HomeBriefData = {
+      ...briefData,
+      recentActivity: [
+        buildActivity({
+          id: 'run:run_paused',
+          sourceType: 'run',
+          sourceId: 'run_paused',
+          taskId: riskTask.id,
+          taskTitle: riskTask.title,
+          title: 'agent',
+          status: 'paused',
+        }),
+      ],
+    };
+    const pausedActivityApi: ElectronApi = {
+      ...mockApi,
+      getHomeBrief: vi.fn(async () => pausedBriefData),
+    };
+
+    window.api = pausedActivityApi;
+
+    render(<App />);
+
+    const actionButton = await screen.findByRole('button', { name: '复核暂停原因' });
+    await user.click(actionButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '复核最近一次 agent run 的暂停原因，处理阻塞后再继续。',
+    );
+  });
+
   it('opens deferred decision and completed run follow-up actions from home recent activity', async () => {
     const user = userEvent.setup();
 

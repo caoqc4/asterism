@@ -155,6 +155,7 @@ Covered today:
 - `Home recent activity -> Tasks detail follow-up intent`
 - `Home recent activity -> Decisions / Runs`
 - `Home recent activity` lightweight follow-up actions
+- `Home recent activity` paused run follow-up actions
 - `Home recent activity` blocker created/resolved recovery actions
 - `Home recent activity` blocker-linked source-update re-evaluation actions
 - `Home resume preview -> Tasks` recovery flow
