@@ -65,7 +65,7 @@ Covered today:
 - `RunOrchestrator`
   plan/model/final step writes, process-template selector fallback, executor failure recording, and agent-mode handoff into the local run loop
 - `AgentRunLoop`
-  typed local observe-then-write plan building, constrained JSON proposal parsing, fallback behavior, visible plan-source run-step writes, in-memory tool observations, and failed / confirmation-needed tool outcomes
+  typed local observe-then-write plan building, constrained JSON proposal parsing, fallback behavior, visible plan-source run-step writes, in-memory tool observations, persisted observation-summary run steps, and failed / confirmation-needed tool outcomes
 - `AgentWorkingContext`
   task-detail compression into typed agent run context, default policy, and plan-step request summaries
 - `AgentToolRegistry`

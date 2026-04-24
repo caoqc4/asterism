@@ -300,6 +300,20 @@ describe('AgentRunLoop', () => {
         output: '1. task.inspect_context\n2. task.inspect_timeline\n3. artifact.create_note',
       }),
     );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        kind: 'decision',
+        status: 'completed',
+        title: '汇总 agent 工具观察',
+        output: expect.stringContaining('1. task.inspect_context [completed] Inspected context'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        output: expect.stringContaining('3. artifact.create_note [completed] Created note'),
+      }),
+    );
     expect(agentToolRegistry.execute).toHaveBeenNthCalledWith(
       1,
       'task.inspect_context',
@@ -435,9 +449,10 @@ describe('AgentRunLoop', () => {
           checkpointId: 'run_checkpoint_1',
         }),
     };
+    const runStepRepository = buildRunStepRepositoryMock();
     const loop = new AgentRunLoop(
       agentToolRegistry as never,
-      buildRunStepRepositoryMock() as never,
+      runStepRepository as never,
     );
 
     const result = await loop.executeLocalNoteLoop({
@@ -460,6 +475,15 @@ describe('AgentRunLoop', () => {
         }),
       ],
     });
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        kind: 'decision',
+        status: 'pending',
+        title: '汇总 agent 工具观察',
+        output: expect.stringContaining('artifact.create_note [needs_confirmation] Needs confirmation；checkpoint=run_checkpoint_1'),
+      }),
+    );
   });
 
   it('returns failed when inspection fails', async () => {
@@ -470,9 +494,10 @@ describe('AgentRunLoop', () => {
         error: 'Missing context',
       }),
     };
+    const runStepRepository = buildRunStepRepositoryMock();
     const loop = new AgentRunLoop(
       agentToolRegistry as never,
-      buildRunStepRepositoryMock() as never,
+      runStepRepository as never,
     );
 
     const result = await loop.executeLocalNoteLoop({
@@ -493,5 +518,14 @@ describe('AgentRunLoop', () => {
       ],
     });
     expect(agentToolRegistry.execute).toHaveBeenCalledTimes(1);
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        kind: 'decision',
+        status: 'failed',
+        title: '汇总 agent 工具观察',
+        output: '1. task.inspect_context [failed] Inspection failed；error=Missing context',
+      }),
+    );
   });
 });

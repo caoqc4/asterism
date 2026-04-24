@@ -107,6 +107,24 @@ function failedFromTool(
   };
 }
 
+function formatObservationSummary(observations: AgentRunLoopObservation[]): string {
+  if (!observations.length) {
+    return '没有产生工具观察。';
+  }
+
+  return observations
+    .map((observation, index) => {
+      const suffix = observation.checkpointId
+        ? `；checkpoint=${observation.checkpointId}`
+        : observation.error
+          ? `；error=${observation.error}`
+          : '';
+
+      return `${index + 1}. ${observation.tool} [${observation.status}] ${observation.summary}${suffix}`;
+    })
+    .join('\n');
+}
+
 export class AgentRunLoop {
   constructor(
     private readonly agentToolRegistry: AgentToolRegistry,
@@ -234,6 +252,27 @@ export class AgentRunLoop {
     ];
   }
 
+  async recordObservationSummary(params: {
+    runId: string;
+    observations: AgentRunLoopObservation[];
+  }): Promise<void> {
+    if (!params.observations.length) {
+      return;
+    }
+
+    await this.runStepRepository.create({
+      runId: params.runId,
+      kind: 'decision',
+      status: params.observations.some((observation) => observation.status === 'failed')
+        ? 'failed'
+        : params.observations.some((observation) => observation.status === 'needs_confirmation')
+          ? 'pending'
+          : 'completed',
+      title: '汇总 agent 工具观察',
+      output: formatObservationSummary(params.observations),
+    });
+  }
+
   async executeLocalNoteLoop(params: {
     request: AgentRunRequest;
     modelOutput: string;
@@ -288,6 +327,11 @@ export class AgentRunLoop {
       observations.push(observationFromTool(step.tool, result));
 
       if (result.status === 'needs_confirmation' && result.checkpointId) {
+        await this.recordObservationSummary({
+          runId: request.runId,
+          observations,
+        });
+
         return {
           status: 'needs_confirmation',
           message: result.summary,
@@ -297,9 +341,19 @@ export class AgentRunLoop {
       }
 
       if (!result.success) {
+        await this.recordObservationSummary({
+          runId: request.runId,
+          observations,
+        });
+
         return failedFromTool(result, observations);
       }
     }
+
+    await this.recordObservationSummary({
+      runId: request.runId,
+      observations,
+    });
 
     return {
       status: 'completed',
