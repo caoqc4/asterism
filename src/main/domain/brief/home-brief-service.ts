@@ -1344,7 +1344,7 @@ export class HomeBriefService {
     const taskEvents: HomeActivityRecord[] = tasks
       .filter((task) => task.state === 'captured' || task.state === 'triaged')
       .map((task) => ({
-        id: `task:${task.id}:${task.updatedAt}`,
+        id: `task:${task.id}:${task.createdAt}`,
         sourceType: 'task' as const,
         sourceId: task.id,
         lane: 'clarify' as const,
@@ -1353,7 +1353,7 @@ export class HomeBriefService {
         taskTitle: task.title,
         title: task.title,
         status: task.state,
-        updatedAt: task.updatedAt,
+        updatedAt: task.createdAt,
       }));
 
     return [

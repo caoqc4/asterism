@@ -1207,6 +1207,60 @@ describe('HomeBriefService', () => {
     );
   });
 
+  it('does not resurface captured-task activity ahead of later run outcomes after task updates', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_captured_run_failed',
+            title: 'Captured task with failed run',
+            state: 'captured',
+            nextStep: 'Review failed run',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-03T00:00:00.000Z',
+          }),
+        ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      null as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([
+          buildRun({
+            id: 'run_failed_after_capture',
+            taskId: 'task_captured_run_failed',
+            status: 'failed',
+            type: 'draft',
+            updatedAt: '2026-01-02T00:00:00.000Z',
+          }),
+        ]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+      null,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.recentActivity.map((event) => event.id)).toEqual([
+      'run:run_failed_after_capture',
+      'task:task_captured_run_failed:2026-01-01T00:00:00.000Z',
+    ]);
+  });
+
   it('prioritizes the latest lifecycle change when deriving home resume preview suggestions', async () => {
     const service = new HomeBriefService(
       {
