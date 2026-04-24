@@ -655,7 +655,7 @@ function isEarlyTaskState(state: TaskState | undefined): boolean {
   return state === 'captured' || state === 'triaged';
 }
 
-function getPrimaryMoveConfig(detail: TaskDetail | null): Array<{
+function getPrimaryMoveConfig(detail: TaskDetail | null, lane: PriorityLane | undefined): Array<{
   id: 'detail' | 'decision' | 'run' | 'transition';
   label: string;
 }> {
@@ -667,15 +667,32 @@ function getPrimaryMoveConfig(detail: TaskDetail | null): Array<{
     return [
       { id: 'detail', label: '补摘要与下一步' },
       { id: 'decision', label: '判断是否需要拍板' },
-      { id: 'transition', label: '调整任务状态' },
     ];
   }
 
-  return [
-    { id: 'decision', label: '草拟或创建 Decision' },
-    { id: 'run', label: '配置并触发 Run' },
-    { id: 'transition', label: '调整任务状态' },
-  ];
+  switch (lane) {
+    case 'escalate_now':
+    case 'unblock_or_decide':
+      return [
+        { id: 'decision', label: '草拟或创建 Decision' },
+        { id: 'transition', label: '调整任务状态' },
+      ];
+    case 'continue_or_review':
+      return [
+        { id: 'run', label: '配置并触发 Run' },
+        { id: 'transition', label: '调整任务状态' },
+      ];
+    case 'clarify':
+      return [
+        { id: 'detail', label: '补摘要与下一步' },
+        { id: 'decision', label: '判断是否需要拍板' },
+      ];
+    default:
+      return [
+        { id: 'run', label: '配置并触发 Run' },
+        { id: 'decision', label: '草拟或创建 Decision' },
+      ];
+  }
 }
 
 function getActionDeskStageGuidance(detail: TaskDetail | null): string {
@@ -687,7 +704,7 @@ function getActionDeskStageGuidance(detail: TaskDetail | null): string {
     return '当前任务还在捕获/整理阶段，先补清摘要、下一步和是否需要拍板，再考虑执行动作。';
   }
 
-  return '先给当前最常用的三个入口，详细配置再放到下方，不把中层做成工具箱。';
+  return '先给当前最值得处理的一到两个入口，详细配置再放到下方，不把中层做成工具箱。';
 }
 
 function getActionSetupGuidance(detail: TaskDetail | null): string {
@@ -1945,7 +1962,7 @@ export function TasksPage({
       ? detail.timeline
       : getTaskTimelinePreviewEvents(detail.timeline, TIMELINE_PREVIEW_COUNT)
     : [];
-  const primaryMoves = getPrimaryMoveConfig(detail);
+  const primaryMoves = getPrimaryMoveConfig(detail, resumeLane);
   const snapshotArtifact = detail?.artifacts[0] ?? null;
   const snapshotSourceContext = detail?.sourceContexts[0] ?? null;
   const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
@@ -2763,7 +2780,7 @@ export function TasksPage({
               <div className="detail-cluster-grid">
                 <div className="transition-group detail-card-group detail-card-wide">
                   <h3>Primary Moves</h3>
-                  <p className="meta">这里只前置最常用的推进入口，具体填写和状态选择放在下方。</p>
+                  <p className="meta">这里只前置当前最值得先处理的一到两个入口，具体填写和状态选择放在下方。</p>
                   <div className="primary-moves-grid">
                     {primaryMoves.map((move) => (
                       <button

@@ -2403,6 +2403,12 @@ describe('App UI flow', () => {
     await user.click(riskTaskCard);
     await screen.findByRole('heading', { name: 'High risk task' });
 
+    const actionDesk = screen.getByRole('heading', { name: '动作与状态流转' }).closest('.detail-stage');
+    expect(actionDesk).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).getByRole('button', { name: '草拟或创建 Decision' })).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).getByRole('button', { name: '调整任务状态' })).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).queryByRole('button', { name: '配置并触发 Run' })).toBeNull();
+
     const decisionTitleInput = screen.getByLabelText('决策标题');
     await user.clear(decisionTitleInput);
     await user.type(decisionTitleInput, 'Escalate budget approval now');
@@ -6271,7 +6277,7 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(within(actionDesk as HTMLElement).getByRole('button', { name: '补摘要与下一步' })).toBeTruthy();
     expect(within(actionDesk as HTMLElement).getByRole('button', { name: '判断是否需要拍板' })).toBeTruthy();
-    expect(within(actionDesk as HTMLElement).getByRole('button', { name: '调整任务状态' })).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).queryByRole('button', { name: '调整任务状态' })).toBeNull();
     expect(within(actionDesk as HTMLElement).queryByRole('button', { name: '配置并触发 Run' })).toBeNull();
     expect(
       within(actionDesk as HTMLElement).getByText(
