@@ -103,6 +103,7 @@ Manual result / need:
 
 - Home exposed high-risk, pending-decision, failed-run, and closeout-progress signals coherently in the same session
 - fixed issues found during the pass: duplicate unblock task count, blocker activity mislabelled as `查看 Run`, and captured task activity being re-sorted by later updates
+- packaged app Home fixture under `/tmp/taskplane-alpha-home-open-items-20260424` re-tested the unique-task headline fix and opened key source, recent activity, blocked key signal, and resume preview entries back into the expected task/source/blocker recovery targets
 - approved-decision positive evidence now validates closeout-ready Home wording; real completed-run evidence remains pending until test credentials exist
 
 ## Settings And Local Config

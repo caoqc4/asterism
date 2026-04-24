@@ -46,14 +46,14 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 - The product surface is already broad; more feature work should be tied to a concrete user flow or alpha acceptance criterion.
 - README and testing documentation are comprehensive but long, so future docs should prefer concise status and decision notes over expanding the feature inventory.
 - Dependency upgrades that touch Electron or Vite should stay out of opportunistic cleanup work and go through a dedicated upgrade pass.
-- End-to-end packaged-app coverage is still missing; local smoke checks are the current substitute.
+- End-to-end packaged-app coverage is still manual; local smoke checks plus isolated packaged-app passes are the current substitute.
 
 ## Recommended Next Focus
 
-1. Run a manual alpha-path pass through the actual app: create a task, add source/process context, add a blocker or dependency, trigger a run or decision draft, inspect Home recovery, and save Settings.
-2. Convert any friction from that pass into small acceptance fixes instead of adding new domain objects.
+1. Run a successful AI-backed draft/run only when deliberate test credentials are available.
+2. Keep signed/notarized release work deferred until that product-path check passes.
 3. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 4. Defer GitHub Actions work until quota is restored.
-5. Start release readiness only after the manual alpha path feels coherent.
+5. Convert any remaining alpha friction into small acceptance fixes instead of adding new domain objects.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
