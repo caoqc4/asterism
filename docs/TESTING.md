@@ -176,6 +176,7 @@ Covered today:
 - stale task dependencies now also assert escalation-oriented home rendering instead of ordinary dependency-blocked rendering
 - home recent activity now also covers dependency `created / resolved` lifecycle routing and upstream-task entry behavior
 - `Tasks action setup` lane-aware quick decision/run defaults and Decision-vs-Run setup ordering
+- `Tasks action desk` dependency-blocked primary moves now keep dependency re-evaluation or upstream work ahead of generic decision/run setup
 - `Decision draft / Run` backend prompt composition now absorbs task-level lane guidance, and the run/brief/decision process-template selectors now assert the same lane guidance in their selection prompts
 - task timeline actions and related-task timeline actions now assert lane-aware follow-up wording in renderer flows
 - compact task timeline previews now assert lane-aware event selection in shared working-context tests

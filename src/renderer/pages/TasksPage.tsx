@@ -658,7 +658,7 @@ function isEarlyTaskState(state: TaskState | undefined): boolean {
 }
 
 function getPrimaryMoveConfig(detail: TaskDetail | null, lane: PriorityLane | undefined): Array<{
-  id: 'detail' | 'decision' | 'run' | 'transition';
+  id: 'detail' | 'decision' | 'run' | 'transition' | 'dependency';
   label: string;
 }> {
   if (!detail) {
@@ -669,6 +669,16 @@ function getPrimaryMoveConfig(detail: TaskDetail | null, lane: PriorityLane | un
     return [
       { id: 'detail', label: '补摘要与下一步' },
       { id: 'decision', label: '判断是否需要拍板' },
+    ];
+  }
+
+  if (detail.activeDependency) {
+    return [
+      {
+        id: 'dependency',
+        label: detail.dependencyReevaluation ? '重新判断依赖' : '推动上游任务',
+      },
+      { id: 'transition', label: '调整任务状态' },
     ];
   }
 
@@ -1660,10 +1670,12 @@ export function TasksPage({
     }
   }
 
-  function focusActionTarget(target: 'detail' | 'decision' | 'run' | 'transition') {
+  function focusActionTarget(target: 'detail' | 'decision' | 'run' | 'transition' | 'dependency') {
     const node =
       target === 'detail'
         ? detailFormRef.current
+        : target === 'dependency'
+          ? dependencySectionRef.current
         : target === 'decision'
         ? quickDecisionCardRef.current
         : target === 'run'

@@ -1851,6 +1851,13 @@ describe('App UI flow', () => {
 
     await user.click(screen.getByRole('button', { name: /tasks/i }));
     await user.click(await screen.findByRole('button', { name: /Resume outreach draft/i }));
+
+    const actionDesk = screen.getByRole('heading', { name: '动作与状态流转' }).closest('.detail-stage');
+    expect(actionDesk).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).getByRole('button', { name: '重新判断依赖' })).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).getByRole('button', { name: '调整任务状态' })).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).queryByRole('button', { name: '草拟或创建 Decision' })).toBeNull();
+
     await user.click(await screen.findByRole('button', { name: '打开 Task Dependency' }));
 
     const dependencyHeading = await screen.findByRole('heading', { name: 'Active Slices' });
