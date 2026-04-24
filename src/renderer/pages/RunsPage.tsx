@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 
 import type { RecommendedActionIntent } from '@shared/types/brief';
 import type { CreateRunInput, RunRecord } from '@shared/types/run';
@@ -10,6 +10,7 @@ import {
   getTaskTimelineObjectAction,
   getTaskTimelinePreviewEvents,
   getTaskTimelineResponsibilitySummary,
+  groupTaskTimelineEventsByPriority,
   interpretTaskTimelineEvent,
 } from '@shared/working-context/timeline';
 
@@ -159,6 +160,11 @@ export function RunsPage({
     }
   }
 
+  const relatedTimeline = detail
+    ? getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.id)
+    : [];
+  const relatedTimelineGroups = groupTaskTimelineEventsByPriority(relatedTimeline);
+
   return (
     <section className="tasks-layout">
       <article className="panel">
@@ -234,57 +240,65 @@ export function RunsPage({
               <strong>这次执行如何改变了任务</strong>
               <p className="meta">这里只截取最能解释当前 run 的最近任务变化，帮助你判断处理完这次执行后该如何回流到主任务。</p>
               <div className="timeline-list">
-                {getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.id).length ? (
-                  getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.id).map((event) => (
-                      <div className="timeline-item" key={event.id}>
-                        <div className="task-row">
-                          <strong>{event.type}</strong>
-                          <div className="task-row-compact">
-                            {getTaskTimelineLaneLabel(event.type) ? (
-                              <span className={`status lane-status lane-status-${getTaskTimelineLane(event.type)}`}>
-                                {getTaskTimelineLaneLabel(event.type)}
-                              </span>
-                            ) : null}
-                            <span className="status">{event.createdAt}</span>
-                          </div>
-                        </div>
-                        <p className="meta">{formatRelatedTimelineSummary(event)}</p>
-                        {getTaskTimelineResponsibilitySummary(event) ? (
-                          <p className="meta">{getTaskTimelineResponsibilitySummary(event)}</p>
-                        ) : null}
-                        {getRelatedTimelineActionLabel(event) || getRelatedTimelineObjectLabel(event) ? (
-                          <div className="chip-row">
-                            {getRelatedTimelineActionLabel(event) ? (
-                              <button
-                                className="ghost-button"
-                                onClick={() =>
-                                  onOpenTask(detail.taskId, {
-                                    type: 'focus_next_step',
-                                    focusArea: 'detail',
-                                    prefillNextStep:
-                                      event.type === 'task.run_failed'
-                                        ? `检查最近一次 ${detail.type} run 的失败原因，并决定是否重试。`
-                                        : `审阅最近一次 ${detail.type} run 的结果，并决定是否继续推进。`,
-                                  })
-                                }
-                                type="button"
-                              >
-                                {getRelatedTimelineActionLabel(event)}
-                              </button>
-                            ) : null}
-                            {getRelatedTimelineObjectLabel(event) ? (
-                              <button
-                                className="ghost-button"
-                                onClick={() => handleRelatedTimelineObjectOpen(event)}
-                                type="button"
-                              >
-                                {getRelatedTimelineObjectLabel(event)}
-                              </button>
-                            ) : null}
-                          </div>
-                        ) : null}
+                {relatedTimelineGroups.length ? (
+                  relatedTimelineGroups.map((group) => (
+                    <Fragment key={group.id}>
+                      <div className="timeline-group-heading">
+                        <span>{group.title}</span>
+                        <span>{group.events.length}</span>
                       </div>
-                    ))
+                      {group.events.map((event) => (
+                        <div className="timeline-item" key={event.id}>
+                          <div className="task-row">
+                            <strong>{event.type}</strong>
+                            <div className="task-row-compact">
+                              {getTaskTimelineLaneLabel(event.type) ? (
+                                <span className={`status lane-status lane-status-${getTaskTimelineLane(event.type)}`}>
+                                  {getTaskTimelineLaneLabel(event.type)}
+                                </span>
+                              ) : null}
+                              <span className="status">{event.createdAt}</span>
+                            </div>
+                          </div>
+                          <p className="meta">{formatRelatedTimelineSummary(event)}</p>
+                          {getTaskTimelineResponsibilitySummary(event) ? (
+                            <p className="meta">{getTaskTimelineResponsibilitySummary(event)}</p>
+                          ) : null}
+                          {getRelatedTimelineActionLabel(event) || getRelatedTimelineObjectLabel(event) ? (
+                            <div className="chip-row">
+                              {getRelatedTimelineActionLabel(event) ? (
+                                <button
+                                  className="ghost-button"
+                                  onClick={() =>
+                                    onOpenTask(detail.taskId, {
+                                      type: 'focus_next_step',
+                                      focusArea: 'detail',
+                                      prefillNextStep:
+                                        event.type === 'task.run_failed'
+                                          ? `检查最近一次 ${detail.type} run 的失败原因，并决定是否重试。`
+                                          : `审阅最近一次 ${detail.type} run 的结果，并决定是否继续推进。`,
+                                    })
+                                  }
+                                  type="button"
+                                >
+                                  {getRelatedTimelineActionLabel(event)}
+                                </button>
+                              ) : null}
+                              {getRelatedTimelineObjectLabel(event) ? (
+                                <button
+                                  className="ghost-button"
+                                  onClick={() => handleRelatedTimelineObjectOpen(event)}
+                                  type="button"
+                                >
+                                  {getRelatedTimelineObjectLabel(event)}
+                                </button>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
+                    </Fragment>
+                  ))
                 ) : (
                   <p className="meta">当前没有和这次 run 强相关的最近任务历史。</p>
                 )}

@@ -2840,6 +2840,8 @@ describe('App UI flow', () => {
     await screen.findByRole('heading', { name: '执行记录' });
 
     await screen.findByText('Related Task Timeline');
+    expect(screen.getByText('关键事件')).toBeTruthy();
+    expect(screen.getByText('解释事件')).toBeTruthy();
     expect(screen.getByText('最近一次执行失败：Executor exploded。')).toBeTruthy();
     expect(screen.getByText('最近生成了产物：draft output。')).toBeTruthy();
     expect(screen.getByText('下一步从“未填写”调整为“检查失败原因并决定是否重试”')).toBeTruthy();
@@ -3046,6 +3048,8 @@ describe('App UI flow', () => {
 
     await screen.findByRole('heading', { name: '待拍板事项' });
     await screen.findByText('Related Task Timeline');
+    expect(screen.getByText('关键事件')).toBeTruthy();
+    expect(screen.getByText('解释事件')).toBeTruthy();
     expect(screen.getByText('最近一条决策已获批准：Approve escalation path。')).toBeTruthy();
     expect(screen.getByText('等待原因调整为“等待重新拍板：Approve escalation path”')).toBeTruthy();
     expect(screen.getByText('下一步从“未填写”调整为“已获批准，继续推进：Approve escalation path”')).toBeTruthy();
