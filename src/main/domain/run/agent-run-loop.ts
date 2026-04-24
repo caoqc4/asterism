@@ -59,6 +59,49 @@ type AgentRunLoopPlan = {
   steps: AgentRunLoopStep[];
 };
 
+function buildInspectContextStep(): Extract<AgentRunLoopStep, { kind: 'inspect_context' }> {
+  return {
+    kind: 'inspect_context',
+    tool: 'task.inspect_context',
+    input: {},
+  };
+}
+
+function buildInspectTimelineStep(): Extract<AgentRunLoopStep, { kind: 'inspect_timeline' }> {
+  return {
+    kind: 'inspect_timeline',
+    tool: 'task.inspect_timeline',
+    input: {},
+  };
+}
+
+function ensurePreWriteObservationSteps(steps: AgentRunLoopStep[]): AgentRunLoopStep[] {
+  if (!steps.some((step) => step.kind === 'create_note')) {
+    return steps;
+  }
+
+  const readSteps = new Map<
+    Extract<AgentRunLoopStep['kind'], 'inspect_context' | 'inspect_timeline'>,
+    AgentRunLoopStep
+  >();
+  const writeSteps: AgentRunLoopStep[] = [];
+
+  for (const step of steps) {
+    if (step.kind === 'inspect_context' || step.kind === 'inspect_timeline') {
+      readSteps.set(step.kind, step);
+      continue;
+    }
+
+    writeSteps.push(step);
+  }
+
+  return [
+    readSteps.get('inspect_context') ?? buildInspectContextStep(),
+    readSteps.get('inspect_timeline') ?? buildInspectTimelineStep(),
+    ...writeSteps,
+  ];
+}
+
 function parseModelProposal(modelOutput: string): AgentStepProposal | null {
   try {
     const parsed = JSON.parse(modelOutput) as Partial<AgentStepProposal>;
@@ -150,20 +193,12 @@ export class AgentRunLoop {
 
     for (const step of proposal.steps) {
       if (step.tool === 'task.inspect_context') {
-        nextPlan.push({
-          kind: 'inspect_context',
-          tool: 'task.inspect_context',
-          input: {},
-        });
+        nextPlan.push(buildInspectContextStep());
         continue;
       }
 
       if (step.tool === 'task.inspect_timeline') {
-        nextPlan.push({
-          kind: 'inspect_timeline',
-          tool: 'task.inspect_timeline',
-          input: {},
-        });
+        nextPlan.push(buildInspectTimelineStep());
         continue;
       }
 
@@ -193,7 +228,7 @@ export class AgentRunLoop {
       return this.buildLocalNotePlan({ modelOutput, taskTitle });
     }
 
-    return nextPlan;
+    return ensurePreWriteObservationSteps(nextPlan);
   }
 
   buildExecutionPlan(params: {
@@ -231,16 +266,8 @@ export class AgentRunLoop {
     }
 
     return [
-      {
-        kind: 'inspect_context',
-        tool: 'task.inspect_context',
-        input: {},
-      },
-      {
-        kind: 'inspect_timeline',
-        tool: 'task.inspect_timeline',
-        input: {},
-      },
+      buildInspectContextStep(),
+      buildInspectTimelineStep(),
       {
         kind: 'create_note',
         tool: 'artifact.create_note',

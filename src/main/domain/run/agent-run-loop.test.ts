@@ -145,6 +145,45 @@ describe('AgentRunLoop', () => {
     ]);
   });
 
+  it('adds required read-only observations before a model-produced write step', () => {
+    const loop = new AgentRunLoop({ execute: vi.fn() } as never);
+
+    expect(loop.buildPlanFromProposal({
+      proposal: {
+        steps: [
+          {
+            tool: 'artifact.create_note',
+            input: {
+              title: 'Custom note',
+              content: 'Custom content',
+            },
+          },
+        ],
+      },
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    })).toEqual([
+      {
+        kind: 'inspect_context',
+        tool: 'task.inspect_context',
+        input: {},
+      },
+      {
+        kind: 'inspect_timeline',
+        tool: 'task.inspect_timeline',
+        input: {},
+      },
+      {
+        kind: 'create_note',
+        tool: 'artifact.create_note',
+        input: {
+          title: 'Custom note',
+          content: 'Custom content',
+        },
+      },
+    ]);
+  });
+
   it('extracts a model-produced JSON proposal', () => {
     const loop = new AgentRunLoop({ execute: vi.fn() } as never);
 
