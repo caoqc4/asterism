@@ -76,6 +76,10 @@ function formatAgentToolStatus(status: string): string {
   return labels[status] ?? status;
 }
 
+function formatActionError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 function formatAgentPlanStepSummary(step: RunStepRecord): string | null {
   if (step.kind !== 'plan' || !step.title.includes('agent 步骤计划')) {
     return null;
@@ -205,6 +209,7 @@ export function RunsPage({
   const [selectedRunId, setSelectedRunId] = useState<string | null>(runs[0]?.id ?? null);
   const [detail, setDetail] = useState<RunDetailRecord | null>(null);
   const [relatedTaskDetail, setRelatedTaskDetail] = useState<TaskDetail | null>(null);
+  const [runActionError, setRunActionError] = useState<string | null>(null);
   const [form, setForm] = useState<CreateRunInput>({
     taskId: tasks[0]?.id ?? '',
     type: 'draft',
@@ -216,6 +221,10 @@ export function RunsPage({
       setSelectedRunId(runs[0].id);
     }
   }, [runs, selectedRunId]);
+
+  useEffect(() => {
+    setRunActionError(null);
+  }, [selectedRunId]);
 
   useEffect(() => {
     if (!focusedRunId) {
@@ -283,10 +292,16 @@ export function RunsPage({
   }
 
   async function continuePausedRun(run: RunDetailRecord): Promise<void> {
-    const updated = await onContinuePausedRun(run.id);
+    setRunActionError(null);
 
-    setSelectedRunId(updated.id);
-    await onRefresh();
+    try {
+      const updated = await onContinuePausedRun(run.id);
+
+      setSelectedRunId(updated.id);
+      await onRefresh();
+    } catch (error) {
+      setRunActionError(`继续 paused run 失败：${formatActionError(error)}`);
+    }
   }
 
   const relatedTimeline = detail
@@ -361,6 +376,7 @@ export function RunsPage({
                   </button>
                 ) : null}
               </div>
+              {runActionError ? <p className="meta">{runActionError}</p> : null}
             </div>
             <div className="task-card detail-card-group detail-card-wide">
               <p className="eyebrow">Run Result</p>

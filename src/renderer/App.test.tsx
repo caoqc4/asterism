@@ -2973,6 +2973,44 @@ describe('App UI flow', () => {
     expect(await screen.findByRole('heading', { name: 'agent / completed' })).toBeTruthy();
   });
 
+  it('shows paused run continuation errors on the runs page', async () => {
+    const user = userEvent.setup();
+    const pausedRun = buildRunRecord({
+      id: 'run_paused_continue_error',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'paused',
+      output: '等待先解除阻塞。',
+      outputSource: 'system',
+    });
+    const runPausedErrorApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [pausedRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === pausedRun.id ? pausedRun : null,
+      ),
+      continuePausedRun: vi.fn(async () => {
+        throw new Error('Open resume checkpoint not found for run: run_paused_continue_error');
+      }),
+    };
+
+    window.api = runPausedErrorApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '继续 paused run' }));
+
+    expect(
+      await screen.findByText(
+        '继续 paused run 失败：Open resume checkpoint not found for run: run_paused_continue_error',
+      ),
+    ).toBeTruthy();
+    expect(runPausedErrorApi.triggerRun).not.toHaveBeenCalled();
+  });
+
   it('shows readable agent plan source summaries on the runs page', async () => {
     const user = userEvent.setup();
     const agentPlanRun = buildRunRecord({

@@ -657,6 +657,10 @@ function getDependencyEscalationNextStep(detail: TaskDetail): string | null {
   return `优先推动上游任务“${detail.activeDependency.blockedByTaskTitle}”，并重新判断是否解除对“${detail.title}”的依赖。`;
 }
 
+function formatActionError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 type TasksPageProps = {
   decisions: DecisionRecord[];
   focusedTaskRequest: {
@@ -791,6 +795,7 @@ export function TasksPage({
   const [processTemplateTags, setProcessTemplateTags] = useState('');
   const [processTemplateContent, setProcessTemplateContent] = useState('');
   const [processTemplateError, setProcessTemplateError] = useState<string | null>(null);
+  const [pausedRunError, setPausedRunError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [transitionError, setTransitionError] = useState<string | null>(null);
   const [showAllTimeline, setShowAllTimeline] = useState(false);
@@ -968,6 +973,10 @@ export function TasksPage({
       setSelectedTaskId(tasks[0].id);
     }
   }, [selectedTaskId, tasks]);
+
+  useEffect(() => {
+    setPausedRunError(null);
+  }, [selectedTaskId]);
 
   useEffect(() => {
     if (!focusedTaskRequest) {
@@ -1931,8 +1940,14 @@ export function TasksPage({
     : null;
 
   async function continuePausedRun(run: RunRecord): Promise<void> {
-    await onContinuePausedRun(run.id);
-    await onRefresh();
+    setPausedRunError(null);
+
+    try {
+      await onContinuePausedRun(run.id);
+      await onRefresh();
+    } catch (error) {
+      setPausedRunError(`继续 paused run 失败：${formatActionError(error)}`);
+    }
   }
 
   const visibleTimeline = detail
@@ -2883,6 +2898,7 @@ export function TasksPage({
                       >
                         查看恢复 checkpoint
                       </button>
+                      {pausedRunError ? <p className="meta">{pausedRunError}</p> : null}
                     </div>
                   ) : null}
                   <div className="quick-actions-grid" ref={quickActionsRef}>
