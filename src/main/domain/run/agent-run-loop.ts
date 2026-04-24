@@ -4,6 +4,7 @@ import type {
   AgentToolName,
   AgentToolResult,
 } from '../../../shared/types/agent-execution.js';
+import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import type { AgentToolRegistry } from './agent-tool-registry.js';
 
 export type AgentRunLoopResult =
@@ -35,6 +36,11 @@ export type AgentRunLoopStep =
         content: string;
       };
     };
+
+type AgentRunLoopPlan = {
+  source: 'model_proposal' | 'fallback';
+  steps: AgentRunLoopStep[];
+};
 
 function parseModelProposal(modelOutput: string): AgentStepProposal | null {
   try {
@@ -70,7 +76,10 @@ function failedFromTool(result: AgentToolResult): AgentRunLoopResult {
 }
 
 export class AgentRunLoop {
-  constructor(private readonly agentToolRegistry: AgentToolRegistry) {}
+  constructor(
+    private readonly agentToolRegistry: AgentToolRegistry,
+    private readonly runStepRepository: RunStepRepository = new RunStepRepository(),
+  ) {}
 
   extractStepProposal(modelOutput: string): AgentStepProposal | null {
     return parseModelProposal(modelOutput);
@@ -128,6 +137,30 @@ export class AgentRunLoop {
     return nextPlan;
   }
 
+  buildExecutionPlan(params: {
+    proposal: AgentStepProposal | null | undefined;
+    modelOutput: string;
+    taskTitle: string;
+  }): AgentRunLoopPlan {
+    const fallbackPlan = this.buildLocalNotePlan(params);
+
+    if (!params.proposal?.steps.length) {
+      return {
+        source: 'fallback',
+        steps: fallbackPlan,
+      };
+    }
+
+    const proposalPlan = this.buildPlanFromProposal(params);
+
+    return {
+      source: JSON.stringify(proposalPlan) === JSON.stringify(fallbackPlan)
+        ? 'fallback'
+        : 'model_proposal',
+      steps: proposalPlan,
+    };
+  }
+
   buildLocalNotePlan(params: {
     modelOutput: string;
     taskTitle: string;
@@ -173,11 +206,24 @@ export class AgentRunLoop {
       };
     }
 
-    for (const step of this.buildPlanFromProposal({
+    const executionPlan = this.buildExecutionPlan({
       proposal: parsedProposal,
       modelOutput: effectiveModelOutput,
       taskTitle,
-    })) {
+    });
+
+    await this.runStepRepository.create({
+      runId: request.runId,
+      kind: 'plan',
+      status: 'completed',
+      title: executionPlan.source === 'model_proposal'
+        ? '采用模型提出的 agent 步骤计划'
+        : '采用保守 fallback agent 步骤计划',
+      input: parsedProposal ? JSON.stringify(parsedProposal) : null,
+      output: executionPlan.steps.map((step, index) => `${index + 1}. ${step.tool}`).join('\n') || '无可执行步骤。',
+    });
+
+    for (const step of executionPlan.steps) {
       const result = await this.agentToolRegistry.execute(
         step.tool,
         step.input,

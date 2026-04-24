@@ -41,7 +41,7 @@ export class RunOrchestrator {
     private readonly runStepRepository: RunStepRepository = new RunStepRepository(),
     private readonly agentToolRegistry: AgentToolRegistry | null = null,
     private readonly agentRunLoop: AgentRunLoop | null = agentToolRegistry
-      ? new AgentRunLoop(agentToolRegistry)
+      ? new AgentRunLoop(agentToolRegistry, runStepRepository)
       : null,
   ) {}
 
