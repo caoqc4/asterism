@@ -144,4 +144,38 @@ describe('ProcessTemplateSelector', () => {
     );
     expect(result.reason).toBe('当前更偏解阻塞，适合参考审批模板。');
   });
+
+  it('skips model selection when the task has no active process templates', async () => {
+    const { ProcessTemplateSelector } = await import('./process-template-selector.js');
+    const selector = new ProcessTemplateSelector();
+    const task = buildTaskDetail();
+    task.processTemplates = task.processTemplates.map((item) => ({
+      ...item,
+      bindingStatus: 'removed',
+      removedAt: '2026-01-02T00:00:00.000Z',
+    }));
+
+    const result = await selector.select(
+      task,
+      {
+        taskId: 'task_1',
+        type: 'draft',
+      },
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: true,
+        },
+      },
+    );
+
+    expect(result).toEqual({
+      shouldUse: false,
+      selectedTemplates: [],
+      reason: '当前任务未挂载任何 process template。',
+    });
+    expect(generateObjectMock).not.toHaveBeenCalled();
+  });
 });

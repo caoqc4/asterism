@@ -128,4 +128,37 @@ describe('DecisionProcessTemplateSelector', () => {
     );
     expect(result.reason).toBe('当前更偏升级处理，适合参考 escalation 模板。');
   });
+
+  it('skips model selection when the task has no active process templates', async () => {
+    const { DecisionProcessTemplateSelector } = await import('./process-template-selector.js');
+    const selector = new DecisionProcessTemplateSelector();
+    const task = buildTaskDetail();
+    task.processTemplates = task.processTemplates.map((item) => ({
+      ...item,
+      bindingStatus: 'removed',
+      removedAt: '2026-01-02T00:00:00.000Z',
+    }));
+
+    const result = await selector.select(
+      task,
+      {
+        taskId: 'task_1',
+      },
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: true,
+        },
+      },
+    );
+
+    expect(result).toEqual({
+      shouldUse: false,
+      selectedTemplates: [],
+      reason: '当前任务未挂载任何 process template。',
+    });
+    expect(generateObjectMock).not.toHaveBeenCalled();
+  });
 });
