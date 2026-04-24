@@ -2818,6 +2818,57 @@ describe('App UI flow', () => {
     ).toBeTruthy();
   });
 
+  it('shows readable agent tool observation summaries on the runs page', async () => {
+    const user = userEvent.setup();
+    const agentObservationRun = buildRunRecord({
+      id: 'run_agent_observation',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'needs_confirmation',
+      output: 'Needs confirmation',
+      outputSource: 'system',
+    });
+    const agentObservationDetail: RunDetailRecord = {
+      ...agentObservationRun,
+      steps: [
+        buildRunStep({
+          id: 'run_step_agent_observations',
+          runId: agentObservationRun.id,
+          index: 5,
+          kind: 'decision',
+          status: 'pending',
+          title: '汇总 agent 工具观察',
+          output: [
+            '1. task.inspect_context [completed] Inspected context',
+            '2. task.inspect_timeline [completed] Inspected timeline',
+            '3. artifact.create_note [needs_confirmation] Needs confirmation；checkpoint=run_checkpoint_1',
+          ].join('\n'),
+        }),
+      ],
+      checkpoints: [],
+    };
+    const runAgentObservationApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [agentObservationRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === agentObservationRun.id ? agentObservationDetail : null,
+      ),
+    };
+
+    window.api = runAgentObservationApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+
+    expect(await screen.findByRole('heading', { name: 'agent / needs_confirmation' })).toBeTruthy();
+    expect(
+      screen.getByText(
+        '工具观察：读取任务上下文（已完成）：Inspected context；读取最近时间线（已完成）：Inspected timeline；写入本地 note（等待确认）：Needs confirmation；checkpoint=run_checkpoint_1',
+      ),
+    ).toBeTruthy();
+  });
+
   it('refreshes the runs page and selects newly triggered runs from the runs form', async () => {
     const user = userEvent.setup();
     const existingRun = buildRunRecord({

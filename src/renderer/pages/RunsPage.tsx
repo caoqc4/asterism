@@ -66,6 +66,16 @@ function formatAgentToolLabel(tool: string): string {
   return labels[tool] ?? tool;
 }
 
+function formatAgentToolStatus(status: string): string {
+  const labels: Record<string, string> = {
+    completed: '已完成',
+    failed: '失败',
+    needs_confirmation: '等待确认',
+  };
+
+  return labels[status] ?? status;
+}
+
 function formatAgentPlanStepSummary(step: RunStepRecord): string | null {
   if (step.kind !== 'plan' || !step.title.includes('agent 步骤计划')) {
     return null;
@@ -87,11 +97,44 @@ function formatAgentPlanStepSummary(step: RunStepRecord): string | null {
   return `${source}：${tools.join(' -> ')}`;
 }
 
+function formatAgentObservationSummary(step: RunStepRecord): string | null {
+  if (step.title !== '汇总 agent 工具观察' || !step.output) {
+    return null;
+  }
+
+  const summaries = step.output
+    .split('\n')
+    .map((line) => {
+      const match = line.match(/^\d+\.\s+(.+?)\s+\[(.+?)\]\s+(.+)$/);
+
+      if (!match) {
+        return line.trim();
+      }
+
+      const [, tool, status, summary] = match;
+
+      return `${formatAgentToolLabel(tool)}（${formatAgentToolStatus(status)}）：${summary}`;
+    })
+    .filter(Boolean);
+
+  if (!summaries.length) {
+    return null;
+  }
+
+  return `工具观察：${summaries.join('；')}`;
+}
+
 function formatRunStepSummary(step: RunStepRecord): string {
   const agentPlanSummary = formatAgentPlanStepSummary(step);
 
   if (agentPlanSummary) {
     return agentPlanSummary;
+  }
+
+  const agentObservationSummary = formatAgentObservationSummary(step);
+
+  if (agentObservationSummary) {
+    return agentObservationSummary;
   }
 
   if (step.error) {
