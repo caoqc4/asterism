@@ -345,6 +345,7 @@ describe('AgentRunLoop', () => {
         kind: 'decision',
         status: 'completed',
         title: '汇总 agent 工具观察',
+        input: expect.stringContaining('"tool":"task.inspect_context"'),
         output: expect.stringContaining('1. task.inspect_context [completed] Inspected context'),
       }),
     );
@@ -520,6 +521,7 @@ describe('AgentRunLoop', () => {
         kind: 'decision',
         status: 'pending',
         title: '汇总 agent 工具观察',
+        input: expect.stringContaining('"checkpointId":"run_checkpoint_1"'),
         output: expect.stringContaining('artifact.create_note [needs_confirmation] Needs confirmation；checkpoint=run_checkpoint_1'),
       }),
     );
@@ -563,6 +565,7 @@ describe('AgentRunLoop', () => {
         kind: 'decision',
         status: 'failed',
         title: '汇总 agent 工具观察',
+        input: expect.stringContaining('"error":"Missing context"'),
         output: '1. task.inspect_context [failed] Inspection failed；error=Missing context',
       }),
     );

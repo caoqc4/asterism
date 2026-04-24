@@ -296,6 +296,7 @@ export class AgentRunLoop {
           ? 'pending'
           : 'completed',
       title: '汇总 agent 工具观察',
+      input: JSON.stringify(params.observations),
       output: formatObservationSummary(params.observations),
     });
   }
