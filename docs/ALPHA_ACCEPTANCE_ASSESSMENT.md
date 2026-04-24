@@ -6,7 +6,7 @@ This assessment maps the alpha checklist to the current automated coverage and t
 
 Current status: not alpha-accepted yet. A focused manual alpha pass is now underway and has covered the core local path through task creation, decision creation, no-key run failure, Home recovery, Settings config save, and unsigned macOS directory packaging.
 
-Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now narrower: validate a successful AI-backed run with deliberate test credentials, smooth the long task-detail navigation around context and completion-criteria creation, and defer signed/notarized release work until the unsigned package path stays stable.
+Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now narrower: validate dependency creation/resolution from the task UI, validate a successful AI-backed run with deliberate test credentials, smooth the long task-detail navigation around context-object creation, and defer signed/notarized release work until the unsigned package path stays stable.
 
 ## Verification Gate
 
@@ -71,7 +71,7 @@ Manual result / need:
 
 ## Completion Loop
 
-Status: partially validated manually.
+Status: manually validated for criteria create/satisfy/reopen; closeout-ready wording still needs a positive evidence pass.
 
 Automated coverage:
 
@@ -81,8 +81,9 @@ Automated coverage:
 Manual result / need:
 
 - one satisfied and one open criterion surfaced on Home as closeout progress `1 / 2`
+- packaged app task UI created a criterion, marked it satisfied, reopened it, and persisted the final open criterion in isolated SQLite under `/tmp/taskplane-alpha-criteria-ui-20260424`
 - failed run surfaced as potential evidence without making the task closeout-ready
-- UI create/satisfy/reopen needs a smoother manual pass through the long task-detail area
+- long-detail navigation remains a usability debt, but the criteria create/satisfy/reopen path is now functionally covered
 
 ## Home Recovery Loop
 
@@ -136,10 +137,9 @@ Manual need:
 
 Finish the remaining alpha checks in this order:
 
-1. Exercise criteria create/satisfy/reopen from the task UI.
-2. Validate dependency creation/resolution from the task UI.
-3. Run a successful AI-backed draft/run only with deliberate test credentials.
-4. Re-test closeout-ready Home wording with an approved decision or completed run.
-5. Keep signed/notarized packaging out of scope until those product-path checks pass.
+1. Validate dependency creation/resolution from the task UI.
+2. Run a successful AI-backed draft/run only with deliberate test credentials.
+3. Re-test closeout-ready Home wording with an approved decision or completed run.
+4. Keep signed/notarized packaging out of scope until those product-path checks pass.
 
 Do not expand the domain model until that pass is complete.
