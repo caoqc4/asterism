@@ -9,3 +9,7 @@ export function generateId(prefix: string): string {
 export function normalizeValue(value: string | null | undefined): string | null {
   return value?.trim() ? value.trim() : null;
 }
+
+export function parseTags(tags: string): string[] {
+  return JSON.parse(tags) as string[];
+}

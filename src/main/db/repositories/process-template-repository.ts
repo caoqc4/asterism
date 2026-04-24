@@ -7,7 +7,7 @@ import type {
 } from '../../../shared/types/process-template.js';
 import { processTemplates } from '../schema.js';
 import { initDatabase } from '../client.js';
-import { generateId, normalizeValue, nowIso } from './repository-utils.js';
+import { generateId, normalizeValue, nowIso, parseTags } from './repository-utils.js';
 
 function normalizeTags(tags: string[] | undefined): string[] {
   return [...new Set((tags ?? []).map((tag) => tag.trim()).filter(Boolean))];
@@ -20,7 +20,7 @@ function toRecord(row: typeof processTemplates.$inferSelect): ProcessTemplateRec
     summary: row.summary,
     content: row.content,
     kind: row.kind as ProcessTemplateRecord['kind'],
-    tags: JSON.parse(row.tags) as string[],
+    tags: parseTags(row.tags),
     status: row.status as ProcessTemplateRecord['status'],
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

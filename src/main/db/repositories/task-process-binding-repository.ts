@@ -6,11 +6,7 @@ import type {
 } from '../../../shared/types/process-template.js';
 import { processTemplates, taskProcessBindings } from '../schema.js';
 import { initDatabase } from '../client.js';
-import { generateId, normalizeValue, nowIso } from './repository-utils.js';
-
-function parseTags(tags: string): string[] {
-  return JSON.parse(tags) as string[];
-}
+import { generateId, normalizeValue, nowIso, parseTags } from './repository-utils.js';
 
 function toAppliedRecord(
   binding: typeof taskProcessBindings.$inferSelect,
