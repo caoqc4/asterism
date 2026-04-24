@@ -1,5 +1,6 @@
 import type {
   AgentRunRequest,
+  AgentWorkingContext,
   AgentStepProposal,
   AgentToolName,
   AgentToolResult,
@@ -58,6 +59,20 @@ type AgentRunLoopPlan = {
   source: 'model_proposal' | 'fallback';
   steps: AgentRunLoopStep[];
 };
+
+type AgentObservationPlannerDecision =
+  | {
+      action: 'continue';
+      status: 'completed';
+      title: '复核 agent 观察后继续执行';
+      reason: string;
+    }
+  | {
+      action: 'stop';
+      status: 'skipped';
+      title: '复核 agent 观察后暂停写入';
+      reason: string;
+    };
 
 function buildInspectContextStep(): Extract<AgentRunLoopStep, { kind: 'inspect_context' }> {
   return {
@@ -172,6 +187,37 @@ function formatObservedToolList(observations: AgentRunLoopObservation[]): string
   return observations
     .map((observation) => observation.tool)
     .join('、') || '无';
+}
+
+function evaluateObservationPlannerDecision(params: {
+  context: AgentWorkingContext;
+  observations: AgentRunLoopObservation[];
+  nextTool: AgentToolName;
+}): AgentObservationPlannerDecision {
+  if (params.context.blockers.length) {
+    return {
+      action: 'stop',
+      status: 'skipped',
+      title: '复核 agent 观察后暂停写入',
+      reason: `观察到任务仍有阻塞项：${params.context.blockers.map((item) => item.title).join('；')}。暂停执行 ${params.nextTool}，等待先解除阻塞。`,
+    };
+  }
+
+  if (params.context.dependencies.length) {
+    return {
+      action: 'stop',
+      status: 'skipped',
+      title: '复核 agent 观察后暂停写入',
+      reason: `观察到任务仍有未解除依赖：${params.context.dependencies.map((item) => item.title).join('；')}。暂停执行 ${params.nextTool}，等待先处理依赖。`,
+    };
+  }
+
+  return {
+    action: 'continue',
+    status: 'completed',
+    title: '复核 agent 观察后继续执行',
+    reason: `已完成只读观察：${formatObservedToolList(params.observations)}。继续执行：${params.nextTool}。`,
+  };
 }
 
 export class AgentRunLoop {
@@ -311,17 +357,19 @@ export class AgentRunLoop {
     runId: string;
     observations: AgentRunLoopObservation[];
     nextTool: AgentToolName;
+    decision: AgentObservationPlannerDecision;
   }): Promise<void> {
     await this.runStepRepository.create({
       runId: params.runId,
       kind: 'decision',
-      status: 'completed',
-      title: '复核 agent 观察后继续执行',
+      status: params.decision.status,
+      title: params.decision.title,
       input: JSON.stringify({
         observations: params.observations,
         nextTool: params.nextTool,
+        action: params.decision.action,
       }),
-      output: `已完成只读观察：${formatObservedToolList(params.observations)}。继续执行：${params.nextTool}。`,
+      output: params.decision.reason,
     });
   }
 
@@ -366,12 +414,32 @@ export class AgentRunLoop {
 
     for (const step of executionPlan.steps) {
       if (step.kind === 'create_note' && !recordedPlannerDecision) {
+        const plannerDecision = evaluateObservationPlannerDecision({
+          context: request.context,
+          observations,
+          nextTool: step.tool,
+        });
+
         await this.recordObservationPlannerDecision({
           runId: request.runId,
           observations,
           nextTool: step.tool,
+          decision: plannerDecision,
         });
         recordedPlannerDecision = true;
+
+        if (plannerDecision.action === 'stop') {
+          await this.recordObservationSummary({
+            runId: request.runId,
+            observations,
+          });
+
+          return {
+            status: 'failed',
+            message: plannerDecision.reason,
+            observations,
+          };
+        }
       }
 
       const result = await this.agentToolRegistry.execute(

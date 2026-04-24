@@ -459,6 +459,65 @@ describe('AgentRunLoop', () => {
     );
   });
 
+  it('stops before local writes when observed context still has active blockers', async () => {
+    const agentToolRegistry = {
+      execute: vi
+        .fn()
+        .mockResolvedValueOnce({
+          success: true,
+          summary: 'Inspected context',
+          output: '阻塞项：Waiting on legal review',
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          summary: 'Inspected timeline',
+          output: 'Timeline summary',
+        }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const loop = new AgentRunLoop(agentToolRegistry as never, runStepRepository as never);
+    const blockedRequest = buildRequest();
+    blockedRequest.context.blockers = [
+      {
+        title: 'Waiting on legal review',
+        detail: null,
+        owner: 'Legal',
+      },
+    ];
+
+    const result = await loop.executeLocalNoteLoop({
+      request: blockedRequest,
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    });
+
+    expect(result).toEqual({
+      status: 'failed',
+      message: '观察到任务仍有阻塞项：Waiting on legal review。暂停执行 artifact.create_note，等待先解除阻塞。',
+      observations: [
+        expect.objectContaining({ tool: 'task.inspect_context', status: 'completed' }),
+        expect.objectContaining({ tool: 'task.inspect_timeline', status: 'completed' }),
+      ],
+    });
+    expect(agentToolRegistry.execute).toHaveBeenCalledTimes(2);
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        kind: 'decision',
+        status: 'skipped',
+        title: '复核 agent 观察后暂停写入',
+        input: expect.stringContaining('"action":"stop"'),
+        output: '观察到任务仍有阻塞项：Waiting on legal review。暂停执行 artifact.create_note，等待先解除阻塞。',
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '汇总 agent 工具观察',
+        output: expect.not.stringContaining('artifact.create_note'),
+      }),
+    );
+  });
+
   it('runs a valid model-produced proposal with final output', async () => {
     const agentToolRegistry = {
       execute: vi
