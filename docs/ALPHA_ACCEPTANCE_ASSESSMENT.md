@@ -6,7 +6,7 @@ This assessment maps the alpha checklist to the current automated coverage and t
 
 Current status: not alpha-accepted yet. A focused manual alpha pass is now underway and has covered the core local path through task creation, decision creation, no-key run failure, Home recovery, Settings config save, and unsigned macOS directory packaging.
 
-Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now narrower: validate a successful AI-backed run with deliberate test credentials, re-test closeout-ready Home wording with positive evidence, smooth the long task-detail navigation around context-object creation, and defer signed/notarized release work until the unsigned package path stays stable.
+Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now narrower: validate a successful AI-backed run with deliberate test credentials, smooth the long task-detail navigation around context-object creation, and defer signed/notarized release work until the unsigned package path stays stable.
 
 ## Verification Gate
 
@@ -72,7 +72,7 @@ Manual result / need:
 
 ## Completion Loop
 
-Status: manually validated for criteria create/satisfy/reopen; closeout-ready wording still needs a positive evidence pass.
+Status: manually validated for criteria create/satisfy/reopen and closeout-ready Home wording with approved-decision evidence.
 
 Automated coverage:
 
@@ -84,6 +84,7 @@ Manual result / need:
 - one satisfied and one open criterion surfaced on Home as closeout progress `1 / 2`
 - packaged app task UI created a criterion, marked it satisfied, reopened it, and persisted the final open criterion in isolated SQLite under `/tmp/taskplane-alpha-criteria-ui-20260424`
 - failed run surfaced as potential evidence without making the task closeout-ready
+- packaged app Home showed closeout-ready wording from an isolated positive-evidence fixture with one satisfied criterion and one approved decision; `查看最终收尾依据` opened the approved Decision
 - long-detail navigation remains a usability debt, but the criteria create/satisfy/reopen path is now functionally covered
 
 ## Home Recovery Loop
@@ -99,7 +100,7 @@ Manual result / need:
 
 - Home exposed high-risk, pending-decision, failed-run, and closeout-progress signals coherently in the same session
 - fixed issues found during the pass: duplicate unblock task count, blocker activity mislabelled as `查看 Run`, and captured task activity being re-sorted by later updates
-- still needs a completed-run or approved-decision pass to validate closeout-ready Home wording
+- approved-decision positive evidence now validates closeout-ready Home wording; real completed-run evidence remains pending until test credentials exist
 
 ## Settings And Local Config
 
@@ -139,8 +140,7 @@ Manual need:
 Finish the remaining alpha checks in this order:
 
 1. Run a successful AI-backed draft/run only with deliberate test credentials.
-2. Re-test closeout-ready Home wording with an approved decision or completed run.
-3. Smooth or re-test source/process creation through the long task-detail UI.
-4. Keep signed/notarized packaging out of scope until those product-path checks pass.
+2. Smooth or re-test source/process creation through the long task-detail UI.
+3. Keep signed/notarized packaging out of scope until those product-path checks pass.
 
 Do not expand the domain model until that pass is complete.
