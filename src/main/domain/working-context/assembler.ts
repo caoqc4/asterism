@@ -14,6 +14,7 @@ import {
   getTaskTimelineObjectAction,
   getTaskTimelinePriority,
   interpretTaskTimelineEvent,
+  parseTimelinePayload,
   safeJsonParse,
 } from '../../../shared/working-context/timeline.js';
 
@@ -384,7 +385,7 @@ export function buildTaskResumeLatestChange(
     };
   }
 
-  const payload = latestEvent.payload ? safeJsonParse(latestEvent.payload) : null;
+  const payload = parseTimelinePayload(latestEvent.payload);
 
   switch (latestEvent.type) {
     case 'task.run_failed':

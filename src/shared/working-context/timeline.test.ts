@@ -12,6 +12,7 @@ import {
   getTaskTimelinePriority,
   getTaskTimelineResponsibilitySummary,
   groupTaskTimelineEventsByPriority,
+  parseTimelinePayload,
   shouldExposeTaskTimelineFollowUpAction,
   shouldExposeTaskTimelineObjectAction,
 } from './timeline.js';
@@ -108,6 +109,14 @@ describe('getTaskTimelinePreviewEvents', () => {
     expect(getTaskTimelineEventLabel('task.run_failed')).toBe('执行失败');
     expect(getTaskTimelineEventLabel('completion_criteria.satisfied')).toBe('完成标准');
     expect(getTaskTimelineEventLabel('custom.audit_event')).toBe('custom.audit_event');
+  });
+
+  it('parses nullable timeline payloads safely', () => {
+    expect(parseTimelinePayload(null)).toBeNull();
+    expect(parseTimelinePayload('{bad json')).toBeNull();
+    expect(parseTimelinePayload(JSON.stringify({ title: 'Launch memo' }))).toEqual({
+      title: 'Launch memo',
+    });
   });
 
   it('prioritizes lane-critical events ahead of weaker explanatory items in compact previews', () => {

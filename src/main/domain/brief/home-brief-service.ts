@@ -41,7 +41,7 @@ import { isStaleBlocker } from '../../../shared/working-context/blocker.js';
 import { isStaleDependency } from '../../../shared/working-context/dependency.js';
 import { comparePriorityLaneContext, comparePriorityLanes, deriveTaskPriorityLaneMap } from '../../../shared/working-context/priority-lanes.js';
 import { getResponsibilitySummary } from '../../../shared/working-context/responsibility.js';
-import { safeJsonParse } from '../../../shared/working-context/timeline.js';
+import { parseTimelinePayload } from '../../../shared/working-context/timeline.js';
 
 type InternalRecommendedAction = RecommendedAction & {
   lane: PriorityLane;
@@ -1247,12 +1247,12 @@ export class HomeBriefService {
               (event.type === 'source_context.updated' &&
                 task.activeBlocker?.sourceContextId &&
                 (() => {
-                  const payload = event.payload ? safeJsonParse(event.payload) : null;
+                  const payload = parseTimelinePayload(event.payload);
                   return payload?.sourceContextId === task.activeBlocker?.sourceContextId;
                 })()),
           )
           .map((event: TimelineEventRecord) => {
-            const payload = event.payload ? safeJsonParse(event.payload) : null;
+            const payload = parseTimelinePayload(event.payload);
 
             if (event.type === 'source_context.updated' && task.activeBlocker) {
               return {
@@ -1326,7 +1326,7 @@ export class HomeBriefService {
               event.type === 'task_dependency.created' || event.type === 'task_dependency.resolved',
           )
           .map((event: TimelineEventRecord) => {
-            const payload = event.payload ? safeJsonParse(event.payload) : null;
+            const payload = parseTimelinePayload(event.payload);
             const status = event.type === 'task_dependency.created' ? 'created' : 'resolved';
 
             return {

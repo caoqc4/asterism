@@ -77,6 +77,10 @@ export function safeJsonParse(value: string): Record<string, unknown> | null {
   }
 }
 
+export function parseTimelinePayload(payload: string | null | undefined): Record<string, unknown> | null {
+  return payload ? safeJsonParse(payload) : null;
+}
+
 export function isResumeLatestChangeMetaEvent(type: string): boolean {
   return (
     type === 'process_template.applied' ||
@@ -114,7 +118,7 @@ export function interpretTaskTimelineEvent(
   };
   recentChange: WorkingContextRecentChange;
 } {
-  const payload = event.payload ? safeJsonParse(event.payload) : null;
+  const payload = parseTimelinePayload(event.payload);
 
   switch (event.type) {
     case 'task.run_failed':
@@ -398,7 +402,7 @@ export function getTaskTimelineResponsibilitySummary(
 export function explainTaskTimelineEvent(
   event: Pick<TimelineEventRecord, 'type' | 'payload'>,
 ): string {
-  const payload = event.payload ? safeJsonParse(event.payload) : null;
+  const payload = parseTimelinePayload(event.payload);
 
   switch (event.type) {
     case 'task.created':

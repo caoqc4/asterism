@@ -56,7 +56,7 @@ import {
   getTaskTimelineResponsibilitySummary,
   groupTaskTimelineEventsByPriority,
   interpretTaskTimelineEvent,
-  safeJsonParse,
+  parseTimelinePayload,
 } from '@shared/working-context/timeline';
 import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
 import type { PriorityLane } from '@shared/types/brief';
@@ -1775,7 +1775,7 @@ export function TasksPage({
       return;
     }
 
-    const payload = event.payload ? safeJsonParse(event.payload) : null;
+    const payload = parseTimelinePayload(event.payload);
 
     if (event.type === 'task.decision_cancelled') {
       setQuickDecisionTitle(`${detail.title} 重新拍板`);

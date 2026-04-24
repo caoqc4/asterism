@@ -12,7 +12,7 @@ import {
   getTaskTimelinePreviewEvents,
   getTaskTimelineResponsibilitySummary,
   groupTaskTimelineEventsByPriority,
-  safeJsonParse,
+  parseTimelinePayload,
 } from '@shared/working-context/timeline';
 
 const RELATED_TIMELINE_PREVIEW_COUNT = 4;
@@ -36,7 +36,7 @@ function getRelatedTimeline(events: TimelineEventRecord[], decisionTitle: string
       event.type === 'task.decision_deferred' ||
       event.type === 'task.decision_cancelled'
     ) {
-      const payload = event.payload ? safeJsonParse(event.payload) : null;
+      const payload = parseTimelinePayload(event.payload);
       return payload?.decisionTitle === decisionTitle;
     }
 
