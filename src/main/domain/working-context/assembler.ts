@@ -3,6 +3,7 @@ import type { BlockerRecord } from '../../../shared/types/blocker.js';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import type { TaskDetailBase, TaskResumeCardRecord, TaskRiskLevel, TaskState, TimelineEventRecord } from '../../../shared/types/task.js';
+import type { WorkingContextRecentChange } from '../../../shared/working-context/timeline.js';
 import { formatBlockerAgeLabel, getBlockerAgeReason, isStaleBlocker } from '../../../shared/working-context/blocker.js';
 import {
   formatDependencyAgeLabel,
@@ -23,65 +24,6 @@ type CompletionStatusLite = {
   satisfied: number;
   open: number;
 };
-
-type WorkingContextRecentChange =
-  | {
-      kind: 'run_failed';
-      title?: string;
-      failureReason?: string;
-    }
-  | {
-      kind: 'run_completed';
-      title?: string;
-      nextState?: string;
-    }
-  | {
-      kind: 'decision_approved' | 'decision_deferred' | 'decision_cancelled';
-      title?: string;
-      waitingReason?: string;
-    }
-  | {
-      kind: 'source_context_changed';
-      title?: string;
-    }
-  | {
-      kind: 'blocker_changed';
-      title?: string;
-    }
-  | {
-      kind: 'blocker_resolved';
-      title?: string;
-    }
-  | {
-      kind: 'task_dependency_changed';
-      title?: string;
-    }
-  | {
-      kind: 'task_dependency_resolved';
-      title?: string;
-    }
-  | {
-      kind: 'completion_criteria_changed';
-      title?: string;
-    }
-  | {
-      kind: 'artifact_created';
-      title?: string;
-    }
-  | {
-      kind: 'waiting_item_changed';
-      waitingReason?: string;
-    }
-  | {
-      kind: 'waiting_item_resolved';
-      nextState?: string;
-    }
-  | {
-      kind: 'risk_changed';
-    }
-  | {
-      kind: 'unknown';
-    };
 
 function isEarlyTaskState(state: TaskState | undefined | null): boolean {
   return state === 'captured' || state === 'triaged';
