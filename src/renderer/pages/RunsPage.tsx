@@ -1,7 +1,13 @@
 import { Fragment, useEffect, useState } from 'react';
 
 import type { RecommendedActionIntent } from '@shared/types/brief';
-import type { CreateRunInput, RunDetailRecord, RunRecord, RunStepRecord } from '@shared/types/run';
+import type {
+  CreateRunInput,
+  RunCheckpointRecord,
+  RunDetailRecord,
+  RunRecord,
+  RunStepRecord,
+} from '@shared/types/run';
 import type { TaskDetail, TaskListItemRecord, TimelineEventRecord } from '@shared/types/task';
 import {
   formatTaskTimelineEventSummary,
@@ -64,6 +70,33 @@ function formatRunStepSummary(step: RunStepRecord): string {
   }
 
   return '该步骤已记录，但没有额外内容。';
+}
+
+function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
+  if (!checkpoint.payload) {
+    return '该 checkpoint 没有额外内容。';
+  }
+
+  try {
+    const payload = JSON.parse(checkpoint.payload) as Record<string, unknown>;
+    const summaryParts = [
+      typeof payload.tool === 'string' ? `工具：${payload.tool}` : null,
+      typeof payload.risk === 'string' ? `风险：${payload.risk}` : null,
+      typeof payload.reason === 'string' ? `原因：${payload.reason}` : null,
+    ].filter((part): part is string => Boolean(part));
+
+    if (summaryParts.length) {
+      return summaryParts.join('；');
+    }
+  } catch {
+    return checkpoint.payload.length > 180
+      ? `${checkpoint.payload.slice(0, 180)}...`
+      : checkpoint.payload;
+  }
+
+  return checkpoint.payload.length > 180
+    ? `${checkpoint.payload.slice(0, 180)}...`
+    : checkpoint.payload;
 }
 
 type RunsPageProps = {
@@ -170,6 +203,7 @@ export function RunsPage({
     : [];
   const relatedTimelineGroups = groupTaskTimelineEventsByPriority(relatedTimeline);
   const detailSteps = detail?.steps ?? [];
+  const detailCheckpoints = detail?.checkpoints ?? [];
 
   return (
     <section className="tasks-layout">
@@ -261,6 +295,33 @@ export function RunsPage({
                   ))
                 ) : (
                   <p className="meta">旧 run 可能没有步骤数据；新 run 会自动写入 plan / model / final 步骤。</p>
+                )}
+              </div>
+            </div>
+            <div className="task-card detail-card-group detail-card-wide">
+              <p className="eyebrow">Checkpoints</p>
+              <strong>{detailCheckpoints.length ? '这次执行等待处理的断点' : '这次执行没有等待处理的断点'}</strong>
+              <p className="meta">Checkpoint 用来承接需要人工确认、外部等待或恢复续跑的执行中断；后续会继续映射到正式 Decision。</p>
+              <div className="timeline-list">
+                {detailCheckpoints.length ? (
+                  detailCheckpoints.map((checkpoint) => (
+                    <div className={`timeline-item timeline-item-${checkpoint.status}`} key={checkpoint.id}>
+                      <div className="task-row">
+                        <strong>{checkpoint.kind}</strong>
+                        <div className="task-row-compact">
+                          <span className="status">{checkpoint.status}</span>
+                          {checkpoint.stepId ? <span className="status">{checkpoint.stepId}</span> : null}
+                        </div>
+                      </div>
+                      <p className="meta">{formatRunCheckpointSummary(checkpoint)}</p>
+                      <p className="meta">
+                        创建时间：{checkpoint.createdAt}
+                        {checkpoint.resolvedAt ? `；解决时间：${checkpoint.resolvedAt}` : ''}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="meta">普通 draft / summarize run 通常不会产生 checkpoint；需要确认的 agent 工具调用会在这里出现。</p>
                 )}
               </div>
             </div>

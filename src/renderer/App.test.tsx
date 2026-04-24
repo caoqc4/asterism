@@ -13,7 +13,7 @@ import type {
   AppliedProcessTemplateRecord,
   ProcessTemplateRecord,
 } from '@shared/types/process-template';
-import type { RunRecord } from '@shared/types/run';
+import type { RunCheckpointRecord, RunDetailRecord, RunRecord, RunStepRecord } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { SourceContextRecord } from '@shared/types/source-context';
 import type { TaskDependencyRecord } from '@shared/types/task-dependency';
@@ -279,6 +279,35 @@ function buildRunRecord(partial: Partial<RunRecord>): RunRecord {
     failureReason: partial.failureReason ?? null,
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+  };
+}
+
+function buildRunStep(partial: Partial<RunStepRecord>): RunStepRecord {
+  return {
+    id: partial.id ?? 'run_step_1',
+    runId: partial.runId ?? 'run_1',
+    index: partial.index ?? 1,
+    kind: partial.kind ?? 'checkpoint',
+    status: partial.status ?? 'pending',
+    title: partial.title ?? 'Await confirmation',
+    input: partial.input ?? null,
+    output: partial.output ?? null,
+    error: partial.error ?? null,
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+  };
+}
+
+function buildRunCheckpoint(partial: Partial<RunCheckpointRecord>): RunCheckpointRecord {
+  return {
+    id: partial.id ?? 'run_checkpoint_1',
+    runId: partial.runId ?? 'run_1',
+    stepId: partial.stepId ?? null,
+    kind: partial.kind ?? 'tool_permission',
+    status: partial.status ?? 'open',
+    payload: partial.payload ?? null,
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    resolvedAt: partial.resolvedAt ?? null,
   };
 }
 
@@ -2678,6 +2707,65 @@ describe('App UI flow', () => {
     expect(runDetailApi.getRunDetail).toHaveBeenCalledWith('run_1');
     expect(screen.getByText('Executor exploded')).toBeTruthy();
     expect(screen.getByText('结果来源：system')).toBeTruthy();
+  });
+
+  it('shows run checkpoints on the runs page', async () => {
+    const user = userEvent.setup();
+    const checkpointRun = buildRunRecord({
+      id: 'run_checkpointed',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'needs_confirmation',
+      output: '需要确认 artifact.create_note 后才能继续。',
+      outputSource: 'system',
+    });
+    const checkpointDetail: RunDetailRecord = {
+      ...checkpointRun,
+      steps: [
+        buildRunStep({
+          id: 'run_step_tool_call',
+          runId: checkpointRun.id,
+          index: 2,
+          kind: 'checkpoint',
+          title: 'Await tool permission',
+        }),
+      ],
+      checkpoints: [
+        buildRunCheckpoint({
+          id: 'run_checkpoint_tool_permission',
+          runId: checkpointRun.id,
+          stepId: 'run_step_tool_call',
+          payload: JSON.stringify({
+            tool: 'artifact.create_note',
+            risk: 'write',
+            reason: '需要确认后再写入本地 note artifact。',
+          }),
+        }),
+      ],
+    };
+
+    const runCheckpointApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [checkpointRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === checkpointRun.id ? checkpointDetail : null,
+      ),
+    };
+
+    window.api = runCheckpointApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    await screen.findByRole('heading', { name: '执行记录' });
+
+    expect(await screen.findByRole('heading', { name: 'agent / needs_confirmation' })).toBeTruthy();
+    expect(screen.getByText('Checkpoints')).toBeTruthy();
+    expect(screen.getByText('tool_permission')).toBeTruthy();
+    expect(screen.getByText('open')).toBeTruthy();
+    expect(screen.getByText('run_step_tool_call')).toBeTruthy();
+    expect(screen.getByText('工具：artifact.create_note；风险：write；原因：需要确认后再写入本地 note artifact。')).toBeTruthy();
+    expect(runCheckpointApi.getRunDetail).toHaveBeenCalledWith('run_checkpointed');
   });
 
   it('refreshes the runs page and selects newly triggered runs from the runs form', async () => {
