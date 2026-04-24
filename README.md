@@ -46,7 +46,7 @@ This repository currently contains an Electron + React + TypeScript prototype wi
 - home resume previews that surface a lightweight working-context recovery slice for recent tasks, now carry short explanations for key-source and current-method hints, expose direct entry from the latest-change slot into the most relevant related `Decision / Run / Source` context, derive their suggested next move from the clearest recent lifecycle change before falling back to static waiting/risk/source recovery cues, and derive context-aware follow-up actions that can prioritize the most recent `Decision / Run` change before falling back to waiting, risk, source, or next-step recovery
 - brief text generation now also includes task resume previews so written briefs can carry the same recent-change-first recovery framing used by task resume cards and home resume previews
 - brief text now also uses explicit priority-lane wording to organize summary sections, so written updates can lead with escalation work, then unblock/decide work, before falling back to continue/review or clarify lanes
-- task-scoped timeline events with readable summaries, subtle event tones, gated lightweight action shortcuts, and direct `Decision / Run / Source` object entry from key or strongly explanatory task events, now aligned through shared timeline semantics across task and object work surfaces
+- task-scoped timeline events with readable summaries, subtle event tones, gated lightweight action shortcuts, and direct `Decision / Run / Source` object entry from key or strongly explanatory task events, now aligned through shared timeline semantics across task and object work surfaces; completion-criteria timeline events also use the same explanatory wording, so finish-standard changes read as product context instead of raw audit entries
 - waiting item lifecycle tracking with direct resolution and task/detail/home visibility
 - text artifacts generated from successful runs, surfaced in task detail, timeline actions, home brief, and recommended-action semantics
 - source context items for task-linked external materials, with task-detail create/edit/archive flows, explicit key-source marking, home-brief surfacing, source-focused task recovery entrypoints, and lifecycle timeline events
@@ -113,6 +113,14 @@ npm run lint
 ```bash
 npm run test
 ```
+
+### 6. Run the build smoke check
+
+```bash
+npm run smoke:build
+```
+
+This runs the production build and verifies the packaged renderer, Electron main/preload entrypoints, and electron-builder file mapping are still aligned.
 
 ## Release Commands
 
@@ -183,7 +191,7 @@ What exists today:
 - decision creation now supports AI-assisted draft composition, with a selector deciding whether attached process templates should shape the request before the user confirms creation
 - process-template selectors now also absorb `Priority Lanes` guidance, so the method-selection reasoning for runs, briefs, and decision drafts stays aligned with the same escalation/unblock/continue/clarify language already visible in the UI and prompt defaults
 - task/object timelines now also reuse that same `Priority Lanes` language for lightweight event badges and follow-up wording, so single-task history explanation no longer drifts away from the cross-task urgency model used by home, briefs, and action defaults
-- compact task-timeline previews now also prefer stronger escalation/unblock lanes when choosing which events stay visible by default, so long histories keep the most action-shaping events on the surface instead of letting weaker trace items crowd them out
+- compact task-timeline previews now also prefer stronger escalation/unblock lanes and higher-value explanatory groups when choosing which events stay visible by default, so long histories keep run failures, dependency changes, source updates, and completion-standard evidence on the surface instead of letting weaker trace items crowd them out
 - task and home resume latest-change selection now prefer action-shaping timeline events over weak trace entries, so recovery cards stay focused on the one change most likely to alter the next move instead of becoming miniature audit logs
 - task timeline summaries now use explanatory wording distinct from resume latest-change wording, so the resume layer reads as the current recovery cue while the timeline layer reads as historical explanation
 - config + keychain setup
@@ -191,7 +199,7 @@ What exists today:
 - IPC handler coverage for critical event-emitting entrypoints
 - renderer interaction coverage for key control-plane flows
 - local macOS packaging pipeline
-- local `test + lint + build` verification
+- local `test + lint + build` verification plus a build smoke check for packaged entrypoints
 
 What is still in progress:
 
