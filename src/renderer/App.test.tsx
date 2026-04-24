@@ -998,6 +998,12 @@ describe('App UI flow', () => {
         '先对照 Completion Criteria，判断这次批准是否已满足完成标准。',
       ),
     ).toBeTruthy();
+
+    const actionDesk = screen.getByRole('heading', { name: '动作与状态流转' }).closest('.detail-stage');
+    expect(actionDesk).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).getByRole('button', { name: '核对完成标准' })).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).getByRole('button', { name: '调整任务状态' })).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).queryByRole('button', { name: '配置并触发 Run' })).toBeNull();
   });
 
   it('uses task resume card actions to focus context and prefill the next step', async () => {

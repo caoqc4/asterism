@@ -164,6 +164,7 @@ Covered today:
 - closeout tasks now also show already satisfied completion-criteria highlights alongside current closeout evidence
 - near-completion closeout tasks and task resume cards now also surface the last unfinished completion criterion
 - `Tasks list` now keeps completion-ready work ahead of near-completion work inside `继续推进/复核`
+- `Tasks action desk` closeout primary moves now keep completion-standard review ahead of generic run setup
 - `Priority lane` closeout-aware wording on home/task recovery surfaces
 - `Tasks process context create / apply / remove flow`
 - `Tasks resume card visibility, key-source prioritization explanation, method-selection explanation, lifecycle-aware suggested-move derivation, and recovery actions`

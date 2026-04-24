@@ -658,7 +658,7 @@ function isEarlyTaskState(state: TaskState | undefined): boolean {
 }
 
 function getPrimaryMoveConfig(detail: TaskDetail | null, lane: PriorityLane | undefined): Array<{
-  id: 'detail' | 'decision' | 'run' | 'transition' | 'blocker' | 'dependency';
+  id: 'detail' | 'decision' | 'run' | 'transition' | 'blocker' | 'dependency' | 'completion';
   label: string;
 }> {
   if (!detail) {
@@ -684,6 +684,16 @@ function getPrimaryMoveConfig(detail: TaskDetail | null, lane: PriorityLane | un
       {
         id: 'dependency',
         label: detail.dependencyReevaluation ? '重新判断依赖' : '推动上游任务',
+      },
+      { id: 'transition', label: '调整任务状态' },
+    ];
+  }
+
+  if (detail.resumeCard.completionStatus.total > 0) {
+    return [
+      {
+        id: 'completion',
+        label: detail.resumeCard.completionStatus.open === 0 ? '最终收尾判断' : '核对完成标准',
       },
       { id: 'transition', label: '调整任务状态' },
     ];
@@ -1677,10 +1687,12 @@ export function TasksPage({
     }
   }
 
-  function focusActionTarget(target: 'detail' | 'decision' | 'run' | 'transition' | 'blocker' | 'dependency') {
+  function focusActionTarget(target: 'detail' | 'decision' | 'run' | 'transition' | 'blocker' | 'dependency' | 'completion') {
     const node =
       target === 'detail'
         ? detailFormRef.current
+        : target === 'completion'
+          ? completionCriteriaSectionRef.current
         : target === 'blocker'
           ? blockerSectionRef.current
         : target === 'dependency'
