@@ -26,7 +26,11 @@ export function SettingsPage({ aiStatus, configForm, onChange, onSubmit }: Setti
             : '尚未配置'}
         </p>
         <p className="meta">
-          {aiStatus?.apiKeyStored ? 'API Key 已存入系统 Keychain' : 'API Key 尚未存入系统 Keychain'}
+          {aiStatus?.apiKeySource === 'env'
+            ? 'API Key 来自环境变量'
+            : aiStatus?.apiKeyStored
+            ? 'API Key 已存入系统 Keychain'
+            : 'API Key 尚未存入系统 Keychain'}
         </p>
         <p className="meta">Base URL：{aiStatus?.baseUrl ?? '默认官方端点'}</p>
         <p className="meta">配置文件路径：{aiStatus?.configPath ?? '尚未初始化'}</p>

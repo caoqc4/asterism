@@ -4,6 +4,10 @@
 
 Taskplane uses a dual configuration model.
 
+For local development and alpha validation, Taskplane also reads environment variables from the
+process environment or a repo-root `.env` file. Environment variables override non-sensitive
+`config.json` values at runtime and can provide an API key without writing it to Keychain.
+
 ### Non-sensitive config
 
 Stored in:
@@ -63,6 +67,30 @@ Supported provider values:
 Replicate's native API uses model-specific prediction inputs rather than a single chat-completions shape, so use `openai-compatible` only when the chosen Replicate-facing relay exposes an OpenAI-compatible `/v1` endpoint.
 
 The UI is not the only config entry point. Advanced users can edit non-sensitive values in `config.json` directly.
+
+## Local `.env`
+
+Create `.env` in the repository root for local runs:
+
+```bash
+TASKPLANE_AI_PROVIDER=fal-openrouter
+TASKPLANE_AI_MODEL=google/gemini-2.5-flash
+TASKPLANE_AI_BASE_URL=
+TASKPLANE_AI_API_KEY=your-test-key
+TASKPLANE_ENABLE_SCHEDULER=false
+```
+
+For a generic OpenAI-compatible relay:
+
+```bash
+TASKPLANE_AI_PROVIDER=openai-compatible
+TASKPLANE_AI_MODEL=your-model-id
+TASKPLANE_AI_BASE_URL=https://your-relay.example.com/v1
+TASKPLANE_AI_API_KEY=your-test-key
+```
+
+Set `TASKPLANE_ENV_FILE=/absolute/path/to/.env` to load a different file. Existing shell
+environment variables win over values from `.env`.
 
 ## Scheduler Flag
 

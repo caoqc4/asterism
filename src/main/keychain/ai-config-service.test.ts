@@ -21,12 +21,14 @@ describe('AiConfigService', () => {
   beforeEach(() => {
     fs.rmSync(tempRoot, { recursive: true, force: true });
     fs.mkdirSync(tempRoot, { recursive: true });
+    delete process.env.TASKPLANE_AI_API_KEY;
     getPasswordMock.mockReset();
     setPasswordMock.mockReset();
   });
 
   afterEach(() => {
     fs.rmSync(tempRoot, { recursive: true, force: true });
+    delete process.env.TASKPLANE_AI_API_KEY;
   });
 
   it('returns the injected config path in status responses', async () => {
@@ -77,7 +79,31 @@ describe('AiConfigService', () => {
     expect(status.provider).toBe('openai');
     expect(status.model).toBe('gpt-4.1');
     expect(status.baseUrl).toBe('https://relay.example.com/v1');
+    expect(status.apiKeySource).toBe('keychain');
     expect(status.configured).toBe(true);
+  });
+
+  it('uses environment API keys without storing them in Keychain', async () => {
+    process.env.TASKPLANE_AI_API_KEY = 'env-secret';
+    getPasswordMock.mockResolvedValue(null);
+    const { AppConfigService } = await import('../config/app-config-service.js');
+    const { AiConfigService } = await import('./ai-config-service.js');
+    const appConfigService = new AppConfigService(() => tempRoot);
+    appConfigService.write({
+      aiProvider: 'fal-openrouter',
+      aiModel: 'google/gemini-2.5-flash',
+    });
+    const service = new AiConfigService(appConfigService);
+
+    const status = await service.getStatus();
+    const runtimeConfig = await service.resolveRuntimeConfig();
+
+    expect(status.configured).toBe(true);
+    expect(status.apiKeyStored).toBe(false);
+    expect(status.apiKeySource).toBe('env');
+    expect(runtimeConfig.apiKey).toBe('env-secret');
+    expect(runtimeConfig.provider).toBe('fal-openrouter');
+    expect(setPasswordMock).not.toHaveBeenCalled();
   });
 
   it('rejects runtime config resolution when no API key is stored', async () => {

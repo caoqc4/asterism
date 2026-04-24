@@ -312,6 +312,7 @@ describe('App UI flow', () => {
   const aiStatus: AiConfigStatus = {
     configured: false,
     apiKeyStored: false,
+    apiKeySource: null,
     provider: 'anthropic',
     model: 'claude-3-5-sonnet-latest',
     baseUrl: null,
@@ -4614,6 +4615,7 @@ describe('App UI flow', () => {
         currentAiStatus = {
           configured: true,
           apiKeyStored: true,
+          apiKeySource: 'keychain',
           provider: input.provider,
           model: input.model,
           baseUrl: input.baseUrl ?? null,

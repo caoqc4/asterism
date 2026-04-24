@@ -109,6 +109,7 @@ describe('registerIpcHandlers', () => {
     servicesMock.aiConfigService.setConfig.mockResolvedValue({
       configured: true,
       apiKeyStored: true,
+      apiKeySource: 'keychain',
       provider: 'openai',
       model: 'gpt-5.4-mini',
       baseUrl: 'https://relay.example.com/v1',

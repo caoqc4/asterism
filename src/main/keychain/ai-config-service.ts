@@ -2,6 +2,7 @@ import keytar from 'keytar';
 
 import type { AiConfigInput, AiConfigStatus, AiProvider, FeatureFlags } from '../../shared/types/settings.js';
 import { AppConfigService } from '../config/app-config-service.js';
+import { readEnvValue } from '../config/env.js';
 
 const SERVICE_NAME = 'taskplane';
 const LEGACY_SERVICE_NAME = 'supersecretary';
@@ -37,11 +38,14 @@ export class AiConfigService {
 
   async getStatus(): Promise<AiConfigStatus> {
     const config = this.appConfigService.read();
-    const apiKey = await this.getStoredApiKey();
+    const envApiKey = readEnvValue('TASKPLANE_AI_API_KEY');
+    const storedApiKey = await this.getStoredApiKey();
+    const apiKey = envApiKey ?? storedApiKey;
 
     return {
-      configured: Boolean(config && apiKey),
-      apiKeyStored: Boolean(apiKey),
+      configured: Boolean(apiKey),
+      apiKeyStored: Boolean(storedApiKey),
+      apiKeySource: envApiKey ? 'env' : storedApiKey ? 'keychain' : null,
       provider: config.aiProvider,
       model: config.aiModel,
       baseUrl: config.aiBaseUrl,
@@ -63,11 +67,14 @@ export class AiConfigService {
       await keytar.setPassword(SERVICE_NAME, ACCOUNT_NAME, input.apiKey.trim());
     }
 
-    const apiKey = await this.getStoredApiKey();
+    const envApiKey = readEnvValue('TASKPLANE_AI_API_KEY');
+    const storedApiKey = await this.getStoredApiKey();
+    const apiKey = envApiKey ?? storedApiKey;
 
     return {
       configured: Boolean(apiKey),
-      apiKeyStored: Boolean(apiKey),
+      apiKeyStored: Boolean(storedApiKey),
+      apiKeySource: envApiKey ? 'env' : storedApiKey ? 'keychain' : null,
       provider: config.aiProvider,
       model: config.aiModel,
       baseUrl: config.aiBaseUrl,
@@ -79,7 +86,7 @@ export class AiConfigService {
 
   async resolveRuntimeConfig(): Promise<RuntimeAiConfig> {
     const config = this.appConfigService.read();
-    const apiKey = await this.getStoredApiKey();
+    const apiKey = readEnvValue('TASKPLANE_AI_API_KEY') ?? (await this.getStoredApiKey());
 
     if (!apiKey) {
       throw new Error('AI API Key is not configured in system Keychain.');

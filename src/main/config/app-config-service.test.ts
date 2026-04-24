@@ -5,15 +5,27 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { makeTempDir } from '../test-utils.js';
 
 const tempRoot = makeTempDir('taskplane-config-test-');
+const envKeys = [
+  'TASKPLANE_AI_PROVIDER',
+  'TASKPLANE_AI_MODEL',
+  'TASKPLANE_AI_BASE_URL',
+  'TASKPLANE_ENABLE_SCHEDULER',
+];
 
 describe('AppConfigService', () => {
   beforeEach(() => {
     fs.rmSync(tempRoot, { recursive: true, force: true });
     fs.mkdirSync(tempRoot, { recursive: true });
+    for (const key of envKeys) {
+      delete process.env[key];
+    }
   });
 
   afterEach(() => {
     fs.rmSync(tempRoot, { recursive: true, force: true });
+    for (const key of envKeys) {
+      delete process.env[key];
+    }
   });
 
   it('creates the default config when no config file exists', async () => {
@@ -80,6 +92,31 @@ describe('AppConfigService', () => {
 
     expect(config.aiProvider).toBe('anthropic');
     expect(config.aiModel).toBe('custom-model');
+    expect(config.featureFlags.enableScheduler).toBe(true);
+  });
+
+  it('overrides non-sensitive config values from environment variables', async () => {
+    process.env.TASKPLANE_AI_PROVIDER = 'openai-compatible';
+    process.env.TASKPLANE_AI_MODEL = 'relay-model';
+    process.env.TASKPLANE_AI_BASE_URL = 'https://relay.example.com/v1';
+    process.env.TASKPLANE_ENABLE_SCHEDULER = 'true';
+    const { AppConfigService } = await import('./app-config-service.js');
+    const service = new AppConfigService(() => tempRoot);
+
+    service.write({
+      aiProvider: 'anthropic',
+      aiModel: 'claude-3-5-sonnet-latest',
+      aiBaseUrl: null,
+      featureFlags: {
+        enableScheduler: false,
+      },
+    });
+
+    const config = service.read();
+
+    expect(config.aiProvider).toBe('openai-compatible');
+    expect(config.aiModel).toBe('relay-model');
+    expect(config.aiBaseUrl).toBe('https://relay.example.com/v1');
     expect(config.featureFlags.enableScheduler).toBe(true);
   });
 

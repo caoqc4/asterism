@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import type { AiProvider, AppConfigFile, FeatureFlags } from '../../shared/types/settings.js';
+import { readEnvBoolean, readEnvValue } from './env.js';
 
 const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   enableScheduler: false,
@@ -65,6 +66,24 @@ function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
   };
 }
 
+function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
+  const aiProvider = readEnvValue('TASKPLANE_AI_PROVIDER');
+  const aiModel = readEnvValue('TASKPLANE_AI_MODEL');
+  const aiBaseUrl = readEnvValue('TASKPLANE_AI_BASE_URL');
+  const enableScheduler = readEnvBoolean('TASKPLANE_ENABLE_SCHEDULER');
+
+  return sanitizeConfig({
+    ...config,
+    aiProvider: (aiProvider as AiProvider | null) ?? config.aiProvider,
+    aiModel: aiModel ?? config.aiModel,
+    aiBaseUrl: aiBaseUrl ?? config.aiBaseUrl,
+    featureFlags: {
+      ...config.featureFlags,
+      enableScheduler: enableScheduler ?? config.featureFlags.enableScheduler,
+    },
+  });
+}
+
 export class AppConfigService {
   constructor(private readonly userDataPathResolver: () => string = defaultUserDataPathResolver) {}
 
@@ -78,7 +97,7 @@ export class AppConfigService {
     const current = this.readExistingConfig();
 
     if (current) {
-      return current;
+      return applyEnvironmentOverrides(current);
     }
 
     const legacyPath = getLegacySettingsPath(this.userDataPathResolver);
@@ -99,7 +118,7 @@ export class AppConfigService {
           updatedAt: legacy.updatedAt,
         });
         this.write(migrated);
-        return migrated;
+        return applyEnvironmentOverrides(migrated);
       } catch {
         // Ignore corrupt legacy config and recreate the supported config file below.
       }
@@ -107,7 +126,7 @@ export class AppConfigService {
 
     const initial = sanitizeConfig(DEFAULT_CONFIG);
     fs.writeFileSync(configPath, JSON.stringify(initial, null, 2), 'utf8');
-    return initial;
+    return applyEnvironmentOverrides(initial);
   }
 
   write(next: Partial<AppConfigFile>): AppConfigFile {
