@@ -53,6 +53,7 @@ import {
   getTaskTimelinePriority,
   getTaskTimelinePriorityLabel,
   getTaskTimelineResponsibilitySummary,
+  groupTaskTimelineEventsByPriority,
   interpretTaskTimelineEvent,
 } from '@shared/working-context/timeline';
 import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
@@ -540,26 +541,6 @@ function getTimelineActionLabel(type: string): string | null {
 
 function getTimelineObjectLabel(event: TimelineEventRecord): string | null {
   return getTaskTimelineObjectAction(event).label;
-}
-
-type TimelinePriorityGroup = {
-  id: ReturnType<typeof getTaskTimelinePriority>;
-  title: string;
-  events: TimelineEventRecord[];
-};
-
-function groupTimelineEvents(events: TimelineEventRecord[]): TimelinePriorityGroup[] {
-  const groups: TimelinePriorityGroup[] = [
-    { id: 'p1', title: '关键事件', events: [] },
-    { id: 'p2', title: '解释事件', events: [] },
-    { id: 'p3', title: '留痕事件', events: [] },
-  ];
-
-  for (const event of events) {
-    groups.find((group) => group.id === getTaskTimelinePriority(event.type))?.events.push(event);
-  }
-
-  return groups.filter((group) => group.events.length > 0);
 }
 
 function buildQuickDecisionSeed(detail: TaskDetail, lane: PriorityLane | undefined): string {
@@ -2035,7 +2016,7 @@ export function TasksPage({
       ? detail.timeline
       : getTaskTimelinePreviewEvents(detail.timeline, TIMELINE_PREVIEW_COUNT)
     : [];
-  const visibleTimelineGroups = groupTimelineEvents(visibleTimeline);
+  const visibleTimelineGroups = groupTaskTimelineEventsByPriority(visibleTimeline);
   const primaryMoves = getPrimaryMoveConfig(detail, resumeLane);
   const actionSetupOrder = getActionSetupOrder(detail, resumeLane);
   const snapshotArtifact = detail?.artifacts[0] ?? null;

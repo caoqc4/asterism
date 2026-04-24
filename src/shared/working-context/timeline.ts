@@ -4,6 +4,12 @@ import { comparePriorityLanes, getPriorityLaneLabel } from './priority-lanes.js'
 
 export type TaskTimelinePriority = 'p1' | 'p2' | 'p3';
 
+export type TaskTimelinePriorityGroup<T> = {
+  id: TaskTimelinePriority;
+  title: string;
+  events: T[];
+};
+
 export type WorkingContextRecentChange =
   | {
       kind: 'run_failed';
@@ -577,6 +583,33 @@ export function getTaskTimelinePriorityLabel(type: string): string {
     default:
       return '留痕';
   }
+}
+
+export function getTaskTimelinePriorityGroupTitle(priority: TaskTimelinePriority): string {
+  switch (priority) {
+    case 'p1':
+      return '关键事件';
+    case 'p2':
+      return '解释事件';
+    default:
+      return '留痕事件';
+  }
+}
+
+export function groupTaskTimelineEventsByPriority<T extends Pick<TimelineEventRecord, 'type'>>(
+  events: T[],
+): Array<TaskTimelinePriorityGroup<T>> {
+  const groups: Array<TaskTimelinePriorityGroup<T>> = [
+    { id: 'p1', title: getTaskTimelinePriorityGroupTitle('p1'), events: [] },
+    { id: 'p2', title: getTaskTimelinePriorityGroupTitle('p2'), events: [] },
+    { id: 'p3', title: getTaskTimelinePriorityGroupTitle('p3'), events: [] },
+  ];
+
+  for (const event of events) {
+    groups.find((group) => group.id === getTaskTimelinePriority(event.type))?.events.push(event);
+  }
+
+  return groups.filter((group) => group.events.length > 0);
 }
 
 export function getTaskTimelinePreviewEvents<T extends Pick<TimelineEventRecord, 'type' | 'createdAt'>>(

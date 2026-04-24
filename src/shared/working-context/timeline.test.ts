@@ -9,6 +9,7 @@ import {
   getTaskTimelinePreviewEvents,
   getTaskTimelinePriority,
   getTaskTimelineResponsibilitySummary,
+  groupTaskTimelineEventsByPriority,
   shouldExposeTaskTimelineFollowUpAction,
   shouldExposeTaskTimelineObjectAction,
 } from './timeline.js';
@@ -137,6 +138,20 @@ describe('getTaskTimelinePreviewEvents', () => {
     expect(getTaskTimelinePriority('process_template.skipped')).toBe('p2');
 
     expect(getTaskTimelinePriority('source_context.archived')).toBe('p3');
+  });
+
+  it('groups timeline events by shared priority labels', () => {
+    const groups = groupTaskTimelineEventsByPriority([
+      { id: 'run_failed', type: 'task.run_failed' },
+      { id: 'source_updated', type: 'source_context.updated' },
+      { id: 'task_updated', type: 'task.updated' },
+    ]);
+
+    expect(groups.map((group) => [group.title, group.events.map((event) => event.id)])).toEqual([
+      ['关键事件', ['run_failed']],
+      ['解释事件', ['source_updated']],
+      ['留痕事件', ['task_updated']],
+    ]);
   });
 
   it('keeps process-template management events out of latest-change selection', () => {
