@@ -217,6 +217,7 @@ Covered today:
 - `Runs` page current-focus detail inspection
 - Timeline readable summaries and compact expansion behavior
 - Timeline compact expansion now asserts long trace-heavy histories keep action-shaping groups visible before trace events
+- Timeline compact expansion now also asserts priority-group headings for key, explanatory, and trace events
 - Timeline action shortcuts for failed, waiting, risk, and artifact events, including shared gating for key and strongly explanatory events
 - Timeline object entry shortcuts for decision, run, source, and run-backed artifact events, including shared gating for key and strongly explanatory events
 - task detail artifact visibility and Home recent-artifact visibility
@@ -236,7 +237,7 @@ These tests focus on high-value control-plane interactions rather than broad pag
 Still missing or intentionally light:
 
 - end-to-end packaged-app tests
-- richer timeline grouping behavior beyond current priority/lane grouping
+- richer timeline grouping beyond priority-level sections, such as date or object-family grouping
 
 ## Current Quality Gates
 
@@ -259,6 +260,6 @@ Current verification is local-only:
 
 Recommended next additions:
 
-1. renderer coverage for richer timeline grouping behavior beyond current priority/lane grouping
+1. renderer coverage for date or object-family timeline grouping if that UI is added
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

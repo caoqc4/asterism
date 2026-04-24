@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 
 import type { RecommendedActionIntent } from '@shared/types/brief';
 import type {
@@ -540,6 +540,26 @@ function getTimelineActionLabel(type: string): string | null {
 
 function getTimelineObjectLabel(event: TimelineEventRecord): string | null {
   return getTaskTimelineObjectAction(event).label;
+}
+
+type TimelinePriorityGroup = {
+  id: ReturnType<typeof getTaskTimelinePriority>;
+  title: string;
+  events: TimelineEventRecord[];
+};
+
+function groupTimelineEvents(events: TimelineEventRecord[]): TimelinePriorityGroup[] {
+  const groups: TimelinePriorityGroup[] = [
+    { id: 'p1', title: '关键事件', events: [] },
+    { id: 'p2', title: '解释事件', events: [] },
+    { id: 'p3', title: '留痕事件', events: [] },
+  ];
+
+  for (const event of events) {
+    groups.find((group) => group.id === getTaskTimelinePriority(event.type))?.events.push(event);
+  }
+
+  return groups.filter((group) => group.events.length > 0);
 }
 
 function buildQuickDecisionSeed(detail: TaskDetail, lane: PriorityLane | undefined): string {
@@ -2015,6 +2035,7 @@ export function TasksPage({
       ? detail.timeline
       : getTaskTimelinePreviewEvents(detail.timeline, TIMELINE_PREVIEW_COUNT)
     : [];
+  const visibleTimelineGroups = groupTimelineEvents(visibleTimeline);
   const primaryMoves = getPrimaryMoveConfig(detail, resumeLane);
   const actionSetupOrder = getActionSetupOrder(detail, resumeLane);
   const snapshotArtifact = detail?.artifacts[0] ?? null;
@@ -3062,55 +3083,63 @@ export function TasksPage({
                   ) : null}
                 </div>
                 <div className="timeline-list">
-                  {visibleTimeline.map((event) => (
-                    <div className={`timeline-item ${getTimelineToneClass(event.type)}`} key={event.id}>
-                      <div className="task-row">
-                        <strong>{formatTimelineSummary(event)}</strong>
-                        <div className="timeline-badge-row">
-                          <span
-                            className={`signal-pill timeline-badge ${getTimelineToneClass(event.type)}`}
-                          >
-                            {formatTimelineBadge(event.type)}
-                          </span>
-                          <span className="signal-pill timeline-priority-pill">
-                            {getTaskTimelinePriorityLabel(event.type)}
-                          </span>
-                          {getTaskTimelineLaneLabel(event.type) ? (
-                            <span
-                              className={`signal-pill lane-status lane-status-${getTaskTimelineLane(event.type)}`}
-                            >
-                              {getTaskTimelineLaneLabel(event.type)}
-                            </span>
-                          ) : null}
-                        </div>
+                  {visibleTimelineGroups.map((group) => (
+                    <Fragment key={group.id}>
+                      <div className="timeline-group-heading">
+                        <span>{group.title}</span>
+                        <span>{group.events.length}</span>
                       </div>
-                      <p className="meta">{event.createdAt}</p>
-                      {getTaskTimelineResponsibilitySummary(event) ? (
-                        <p className="meta">{getTaskTimelineResponsibilitySummary(event)}</p>
-                      ) : null}
-                      {getTimelineActionLabel(event.type) || getTimelineObjectLabel(event) ? (
-                        <div className="timeline-actions">
-                          {getTimelineActionLabel(event.type) ? (
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => handleTimelineAction(event)}
-                              type="button"
-                            >
-                              {getTimelineActionLabel(event.type)}
-                            </button>
+                      {group.events.map((event) => (
+                        <div className={`timeline-item ${getTimelineToneClass(event.type)}`} key={event.id}>
+                          <div className="task-row">
+                            <strong>{formatTimelineSummary(event)}</strong>
+                            <div className="timeline-badge-row">
+                              <span
+                                className={`signal-pill timeline-badge ${getTimelineToneClass(event.type)}`}
+                              >
+                                {formatTimelineBadge(event.type)}
+                              </span>
+                              <span className="signal-pill timeline-priority-pill">
+                                {getTaskTimelinePriorityLabel(event.type)}
+                              </span>
+                              {getTaskTimelineLaneLabel(event.type) ? (
+                                <span
+                                  className={`signal-pill lane-status lane-status-${getTaskTimelineLane(event.type)}`}
+                                >
+                                  {getTaskTimelineLaneLabel(event.type)}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                          <p className="meta">{event.createdAt}</p>
+                          {getTaskTimelineResponsibilitySummary(event) ? (
+                            <p className="meta">{getTaskTimelineResponsibilitySummary(event)}</p>
                           ) : null}
-                          {getTimelineObjectLabel(event) ? (
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => handleTimelineObjectOpen(event)}
-                              type="button"
-                            >
-                              {getTimelineObjectLabel(event)}
-                            </button>
+                          {getTimelineActionLabel(event.type) || getTimelineObjectLabel(event) ? (
+                            <div className="timeline-actions">
+                              {getTimelineActionLabel(event.type) ? (
+                                <button
+                                  className="ghost-button timeline-action"
+                                  onClick={() => handleTimelineAction(event)}
+                                  type="button"
+                                >
+                                  {getTimelineActionLabel(event.type)}
+                                </button>
+                              ) : null}
+                              {getTimelineObjectLabel(event) ? (
+                                <button
+                                  className="ghost-button timeline-action"
+                                  onClick={() => handleTimelineObjectOpen(event)}
+                                  type="button"
+                                >
+                                  {getTimelineObjectLabel(event)}
+                                </button>
+                              ) : null}
+                            </div>
                           ) : null}
                         </div>
-                      ) : null}
-                    </div>
+                      ))}
+                    </Fragment>
                   ))}
                 </div>
               </div>

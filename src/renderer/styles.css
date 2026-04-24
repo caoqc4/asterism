@@ -480,6 +480,17 @@ button {
   border: 1px solid transparent;
 }
 
+.timeline-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
 .timeline-item-default {
   background: rgba(17, 24, 39, 0.04);
 }

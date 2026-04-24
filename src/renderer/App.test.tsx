@@ -3422,6 +3422,9 @@ describe('App UI flow', () => {
     await screen.findByRole('heading', { name: 'Timeline preview task' });
 
     expect(screen.getByRole('button', { name: '展开全部 (18)' })).toBeTruthy();
+    expect(screen.getByText('关键事件')).toBeTruthy();
+    expect(screen.getByText('解释事件')).toBeTruthy();
+    expect(screen.queryByText('留痕事件')).toBeNull();
     expect(screen.queryByText('任务字段已更新')).toBeNull();
     expect(screen.getByText('任务依赖更新：Upstream design。')).toBeTruthy();
     expect(screen.getByText('执行失败：Model overloaded。')).toBeTruthy();
@@ -3432,6 +3435,7 @@ describe('App UI flow', () => {
     await user.click(screen.getByRole('button', { name: '展开全部 (18)' }));
 
     expect(screen.getByText('执行失败：Model overloaded。')).toBeTruthy();
+    expect(screen.getByText('留痕事件')).toBeTruthy();
     expect(screen.getAllByText('任务字段已更新').length).toBeGreaterThan(0);
     expect(screen.getAllByText('留痕').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: '收起旧事件' })).toBeTruthy();
