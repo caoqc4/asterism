@@ -161,6 +161,7 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
     const payload = JSON.parse(checkpoint.payload) as Record<string, unknown>;
     const summaryParts = [
       typeof payload.tool === 'string' ? `工具：${payload.tool}` : null,
+      typeof payload.nextTool === 'string' ? `下一工具：${payload.nextTool}` : null,
       typeof payload.risk === 'string' ? `风险：${payload.risk}` : null,
       typeof payload.reason === 'string' ? `原因：${payload.reason}` : null,
       typeof payload.decisionTitle === 'string' ? `Decision：${payload.decisionTitle}` : null,

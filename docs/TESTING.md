@@ -90,7 +90,7 @@ Covered today:
 - `RunStepRepository`
   ordered execution-step creation, updates, and per-run retrieval
 - `RunCheckpointRepository`
-  open checkpoint creation, per-run retrieval, decision-id lookup, and checkpoint settlement
+  open checkpoint creation, per-run retrieval, resume checkpoint creation, decision-id lookup, and checkpoint settlement
 - `DecisionRepository`
   decision creation, optional source metadata persistence, action persistence, timeline writes
 - `BriefSnapshotRepository`
@@ -229,6 +229,7 @@ Covered today:
 - `Decisions / Runs` focus-surface information density and action grouping
 - `Decisions` page checkpoint Decision consequence guidance
 - `Runs` page checkpoint summaries for confirmation-needed agent runs
+- `Runs` page resume checkpoint summaries for paused agent runs
 - `Runs` page readable agent plan-source summaries
 - `Runs` page readable agent tool observation summaries
 - `Runs` page trigger form refresh and newly-created run selection, including repeated triggers

@@ -326,6 +326,7 @@ describe('RunOrchestrator', () => {
       executeLocalNoteLoop: vi.fn().mockResolvedValue({
         status: 'paused',
         message: '观察到任务仍有阻塞项。暂停执行 artifact.create_note。',
+        checkpointId: 'run_checkpoint_1',
         observations: [],
       }),
     };
@@ -347,6 +348,7 @@ describe('RunOrchestrator', () => {
     expect(result).toEqual({
       status: 'paused',
       message: '观察到任务仍有阻塞项。暂停执行 artifact.create_note。',
+      checkpointId: 'run_checkpoint_1',
       selection,
     });
   });

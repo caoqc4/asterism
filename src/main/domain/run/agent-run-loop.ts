@@ -5,6 +5,7 @@ import type {
   AgentToolName,
   AgentToolResult,
 } from '../../../shared/types/agent-execution.js';
+import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import type { AgentToolRegistry } from './agent-tool-registry.js';
 
@@ -22,6 +23,7 @@ export type AgentRunLoopResult =
   | {
       status: 'paused';
       message: string;
+      checkpointId: string;
       observations: AgentRunLoopObservation[];
     }
   | {
@@ -229,6 +231,7 @@ export class AgentRunLoop {
   constructor(
     private readonly agentToolRegistry: AgentToolRegistry,
     private readonly runStepRepository: RunStepRepository = new RunStepRepository(),
+    private readonly runCheckpointRepository: RunCheckpointRepository = new RunCheckpointRepository(),
   ) {}
 
   extractStepProposal(modelOutput: string): AgentStepProposal | null {
@@ -378,6 +381,38 @@ export class AgentRunLoop {
     });
   }
 
+  async recordResumeCheckpoint(params: {
+    request: AgentRunRequest;
+    observations: AgentRunLoopObservation[];
+    nextTool: AgentToolName;
+    reason: string;
+  }): Promise<string> {
+    const step = await this.runStepRepository.create({
+      runId: params.request.runId,
+      kind: 'checkpoint',
+      status: 'pending',
+      title: '等待恢复 agent run',
+      input: JSON.stringify({
+        reason: params.reason,
+        nextTool: params.nextTool,
+      }),
+      output: params.reason,
+    });
+    const checkpoint = await this.runCheckpointRepository.create({
+      runId: params.request.runId,
+      stepId: step.id,
+      kind: 'resume',
+      payload: JSON.stringify({
+        reason: params.reason,
+        nextTool: params.nextTool,
+        observations: params.observations,
+        taskId: params.request.taskId,
+      }),
+    });
+
+    return checkpoint.id;
+  }
+
   async executeLocalNoteLoop(params: {
     request: AgentRunRequest;
     modelOutput: string;
@@ -434,6 +469,12 @@ export class AgentRunLoop {
         recordedPlannerDecision = true;
 
         if (plannerDecision.action === 'stop') {
+          const checkpointId = await this.recordResumeCheckpoint({
+            request,
+            observations,
+            nextTool: step.tool,
+            reason: plannerDecision.reason,
+          });
           await this.recordObservationSummary({
             runId: request.runId,
             observations,
@@ -442,6 +483,7 @@ export class AgentRunLoop {
           return {
             status: 'paused',
             message: plannerDecision.reason,
+            checkpointId,
             observations,
           };
         }

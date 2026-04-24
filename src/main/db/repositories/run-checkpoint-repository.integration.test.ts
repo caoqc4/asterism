@@ -82,4 +82,35 @@ describe('RunCheckpointRepository integration', () => {
     expect(resolved.resolvedAt).not.toBeNull();
     expect(foundAfterResolve).toBeNull();
   });
+
+  it('creates a resume checkpoint for paused agent runs', async () => {
+    const task = await taskRepository.create({ title: 'Resume paused agent run' });
+    const run = await runRepository.create({ taskId: task.id, type: 'agent' });
+    const step = await runStepRepository.create({
+      runId: run.id,
+      kind: 'checkpoint',
+      status: 'pending',
+      title: '等待恢复 agent run',
+    });
+
+    const checkpoint = await checkpointRepository.create({
+      runId: run.id,
+      stepId: step.id,
+      kind: 'resume',
+      payload: JSON.stringify({
+        reason: '等待先解除阻塞。',
+        nextTool: 'artifact.create_note',
+      }),
+    });
+
+    const checkpoints = await checkpointRepository.listForRun(run.id);
+
+    expect(checkpoint.kind).toBe('resume');
+    expect(checkpoint.status).toBe('open');
+    expect(checkpoints[0]).toEqual(expect.objectContaining({
+      id: checkpoint.id,
+      stepId: step.id,
+      payload: expect.stringContaining('artifact.create_note'),
+    }));
+  });
 });

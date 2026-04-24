@@ -2862,6 +2862,62 @@ describe('App UI flow', () => {
     expect(runCheckpointApi.getRunDetail).toHaveBeenCalledWith('run_checkpointed');
   });
 
+  it('shows resume checkpoints on the runs page for paused agent runs', async () => {
+    const user = userEvent.setup();
+    const pausedRun = buildRunRecord({
+      id: 'run_paused_checkpoint',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'paused',
+      output: '等待先解除阻塞。',
+      outputSource: 'system',
+    });
+    const pausedRunDetail: RunDetailRecord = {
+      ...pausedRun,
+      steps: [
+        buildRunStep({
+          id: 'run_step_resume_checkpoint',
+          runId: pausedRun.id,
+          index: 4,
+          kind: 'checkpoint',
+          status: 'pending',
+          title: '等待恢复 agent run',
+          output: '等待先解除阻塞。',
+        }),
+      ],
+      checkpoints: [
+        buildRunCheckpoint({
+          id: 'run_checkpoint_resume',
+          runId: pausedRun.id,
+          stepId: 'run_step_resume_checkpoint',
+          kind: 'resume',
+          payload: JSON.stringify({
+            reason: '等待先解除阻塞。',
+            nextTool: 'artifact.create_note',
+          }),
+        }),
+      ],
+    };
+    const runPausedCheckpointApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [pausedRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === pausedRun.id ? pausedRunDetail : null,
+      ),
+    };
+
+    window.api = runPausedCheckpointApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+
+    expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
+    expect(screen.getByText('resume')).toBeTruthy();
+    expect(screen.getByText('open')).toBeTruthy();
+    expect(screen.getByText('下一工具：artifact.create_note；原因：等待先解除阻塞。')).toBeTruthy();
+  });
+
   it('shows readable agent plan source summaries on the runs page', async () => {
     const user = userEvent.setup();
     const agentPlanRun = buildRunRecord({

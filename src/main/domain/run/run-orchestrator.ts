@@ -29,6 +29,7 @@ export type RunOrchestrationResult =
   | {
       status: 'paused';
       message: string;
+      checkpointId: string;
       selection: ProcessTemplateSelectionResult;
     }
   | {
@@ -193,6 +194,7 @@ export class RunOrchestrator {
       return {
         status: 'paused',
         message: loopResult.message,
+        checkpointId: loopResult.checkpointId,
         selection: result.selection,
       };
     }

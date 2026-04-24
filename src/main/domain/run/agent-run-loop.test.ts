@@ -34,6 +34,31 @@ function buildRunStepRepositoryMock() {
   };
 }
 
+function buildRunCheckpointRepositoryMock() {
+  let checkpointCount = 0;
+
+  return {
+    create: vi.fn().mockImplementation(async (input: {
+      runId: string;
+      stepId?: string | null;
+      kind: string;
+      payload?: string | null;
+    }) => {
+      checkpointCount += 1;
+      return {
+        id: `run_checkpoint_${checkpointCount}`,
+        runId: input.runId,
+        stepId: input.stepId ?? null,
+        kind: input.kind,
+        status: 'open',
+        payload: input.payload ?? null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      };
+    }),
+  };
+}
+
 function buildRequest(): AgentRunRequest {
   return {
     runId: 'run_1',
@@ -299,7 +324,12 @@ describe('AgentRunLoop', () => {
         }),
     };
     const runStepRepository = buildRunStepRepositoryMock();
-    const loop = new AgentRunLoop(agentToolRegistry as never, runStepRepository as never);
+    const runCheckpointRepository = buildRunCheckpointRepositoryMock();
+    const loop = new AgentRunLoop(
+      agentToolRegistry as never,
+      runStepRepository as never,
+      runCheckpointRepository as never,
+    );
 
     const result = await loop.executeLocalNoteLoop({
       request: buildRequest(),
@@ -427,7 +457,12 @@ describe('AgentRunLoop', () => {
         }),
     };
     const runStepRepository = buildRunStepRepositoryMock();
-    const loop = new AgentRunLoop(agentToolRegistry as never, runStepRepository as never);
+    const runCheckpointRepository = buildRunCheckpointRepositoryMock();
+    const loop = new AgentRunLoop(
+      agentToolRegistry as never,
+      runStepRepository as never,
+      runCheckpointRepository as never,
+    );
 
     await loop.executeLocalNoteLoop({
       request: buildRequest(),
@@ -475,7 +510,12 @@ describe('AgentRunLoop', () => {
         }),
     };
     const runStepRepository = buildRunStepRepositoryMock();
-    const loop = new AgentRunLoop(agentToolRegistry as never, runStepRepository as never);
+    const runCheckpointRepository = buildRunCheckpointRepositoryMock();
+    const loop = new AgentRunLoop(
+      agentToolRegistry as never,
+      runStepRepository as never,
+      runCheckpointRepository as never,
+    );
     const blockedRequest = buildRequest();
     blockedRequest.context.blockers = [
       {
@@ -494,6 +534,7 @@ describe('AgentRunLoop', () => {
     expect(result).toEqual({
       status: 'paused',
       message: '观察到任务仍有阻塞项：Waiting on legal review。暂停执行 artifact.create_note，等待先解除阻塞。',
+      checkpointId: 'run_checkpoint_1',
       observations: [
         expect.objectContaining({ tool: 'task.inspect_context', status: 'completed' }),
         expect.objectContaining({ tool: 'task.inspect_timeline', status: 'completed' }),
@@ -508,6 +549,23 @@ describe('AgentRunLoop', () => {
         title: '复核 agent 观察后暂停写入',
         input: expect.stringContaining('"action":"stop"'),
         output: '观察到任务仍有阻塞项：Waiting on legal review。暂停执行 artifact.create_note，等待先解除阻塞。',
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        kind: 'checkpoint',
+        status: 'pending',
+        title: '等待恢复 agent run',
+        output: '观察到任务仍有阻塞项：Waiting on legal review。暂停执行 artifact.create_note，等待先解除阻塞。',
+      }),
+    );
+    expect(runCheckpointRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        stepId: expect.stringMatching(/^run_step_/),
+        kind: 'resume',
+        payload: expect.stringContaining('"nextTool":"artifact.create_note"'),
       }),
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(
