@@ -73,7 +73,7 @@ describe('RunRepository integration', () => {
     expect(detail?.timeline.map((event) => event.type)).toContain('run.failed');
   });
 
-  it('updates a paused run result and keeps it recoverable as incomplete', async () => {
+  it('updates a paused run result without marking it stale for scheduler recovery', async () => {
     const task = await taskRepository.create({
       title: 'Pause blocked agent run',
     });
@@ -105,7 +105,7 @@ describe('RunRepository integration', () => {
       .where(eq(runs.id, created.id));
 
     const staleRuns = await runRepository.listIncompleteOlderThan('2026-01-02T00:00:00.000Z');
-    expect(staleRuns.map((run) => run.id)).toContain(created.id);
+    expect(staleRuns.map((run) => run.id)).not.toContain(created.id);
   });
 
   it('returns only incomplete runs older than the provided timestamp', async () => {

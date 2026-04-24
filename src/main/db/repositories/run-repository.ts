@@ -103,9 +103,9 @@ export class RunRepository {
           ? 'run.failed'
           : status === 'paused'
             ? 'run.paused'
-          : status === 'needs_confirmation'
-            ? 'run.needs_confirmation'
-            : 'run.completed',
+            : status === 'needs_confirmation'
+              ? 'run.needs_confirmation'
+              : 'run.completed',
       payload: JSON.stringify({ runId, status }),
       createdAt: timestamp,
     });
@@ -121,7 +121,7 @@ export class RunRepository {
       .from(runs)
       .where(
         and(
-          inArray(runs.status, ['pending', 'running', 'needs_confirmation', 'paused']),
+          inArray(runs.status, ['pending', 'running', 'needs_confirmation']),
           lt(runs.updatedAt, olderThanIso),
         ),
       )
