@@ -15,7 +15,6 @@ import {
   getTaskTimelinePriority,
   interpretTaskTimelineEvent,
   parseTimelinePayload,
-  safeJsonParse,
 } from '../../../shared/working-context/timeline.js';
 
 type TimelineLite = Array<Pick<TimelineEventRecord, 'type' | 'payload'>>;
@@ -129,7 +128,7 @@ export function getCurrentMethodSelectionReason(params: {
       return false;
     }
 
-    const payload = safeJsonParse(event.payload);
+    const payload = parseTimelinePayload(event.payload);
     const templateIds = Array.isArray(payload?.templateIds) ? payload.templateIds : [];
     return templateIds.includes(currentMethod.id);
   });
@@ -144,7 +143,7 @@ export function getCurrentMethodSelectionReason(params: {
     return audience === 'task' ? '当前任务已挂载该方法模板。' : '当前已挂载该方法模板。';
   }
 
-  const payload = safeJsonParse(selectedEvent.payload);
+  const payload = parseTimelinePayload(selectedEvent.payload);
   const reason = typeof payload?.reason === 'string' ? payload.reason.trim() : '';
 
   if (!reason) {
@@ -183,7 +182,7 @@ export function getKeySourcePriorityReason(params: {
       return false;
     }
 
-    const payload = safeJsonParse(event.payload);
+    const payload = parseTimelinePayload(event.payload);
     return payload?.sourceContextId === keySource.id;
   });
 
