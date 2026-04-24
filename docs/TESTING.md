@@ -223,6 +223,7 @@ Covered today:
 - `Decisions / Runs` related-task timeline readable summaries as primary event text
 - `Decisions / Runs` related-task timeline summaries now assert the same explanatory wording as task detail timelines
 - `Decisions / Runs` focus-surface information density and action grouping
+- `Decisions` page checkpoint Decision consequence guidance
 - `Runs` page checkpoint summaries for confirmation-needed agent runs
 - `Runs` page trigger form refresh and newly-created run selection, including repeated triggers
 - shared timeline summaries across `Tasks / Decisions / Runs`

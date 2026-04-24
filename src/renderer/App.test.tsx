@@ -3108,6 +3108,35 @@ describe('App UI flow', () => {
     expect(screen.queryByRole('button', { name: '取消' })).toBeNull();
   });
 
+  it('explains checkpoint decision consequences on the decisions page', async () => {
+    const user = userEvent.setup();
+    const checkpointDecisionApi: ElectronApi = {
+      ...mockApi,
+      listDecisions: vi.fn(async () => [
+        {
+          id: 'decision_checkpoint',
+          taskId: riskTask.id,
+          title: '确认本地写入：artifact.create_note',
+          status: 'pending' as const,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]),
+    };
+
+    window.api = checkpointDecisionApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /decisions/i }));
+
+    expect(await screen.findByRole('heading', { name: '确认本地写入：artifact.create_note' })).toBeTruthy();
+    expect(
+      screen.getByText('来源：Agent checkpoint。批准后会恢复等待中的本地 note 产物写入；延后或取消会终止本次 run。'),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: '批准' })).toBeTruthy();
+  });
+
   it('shows related task timeline context on the decisions page', async () => {
     const user = userEvent.setup();
 

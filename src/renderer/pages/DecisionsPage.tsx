@@ -70,6 +70,22 @@ function getDecisionActionGuidance(status: DecisionRecord['status']): string {
   return '这条拍板已取消，正式动作已完成；下一步应回到任务重新评估推进路径。';
 }
 
+function getCheckpointDecisionGuidance(decision: DecisionRecord): string | null {
+  if (!decision.title.startsWith('确认') || !decision.title.includes('artifact.create_note')) {
+    return null;
+  }
+
+  if (decision.status === 'pending') {
+    return '来源：Agent checkpoint。批准后会恢复等待中的本地 note 产物写入；延后或取消会终止本次 run。';
+  }
+
+  if (decision.status === 'approved') {
+    return '来源：Agent checkpoint。该确认已批准，系统会尝试恢复等待中的本地工具调用。';
+  }
+
+  return '来源：Agent checkpoint。该确认未批准，本次 run 会作为不可续跑的执行记录收束。';
+}
+
 type DecisionsPageProps = {
   decisions: DecisionRecord[];
   focusedDecisionId: string | null;
@@ -156,6 +172,7 @@ export function DecisionsPage({
     ? getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.title)
     : [];
   const relatedTimelineGroups = groupTaskTimelineEventsByPriority(relatedTimeline);
+  const checkpointGuidance = detail ? getCheckpointDecisionGuidance(detail) : null;
 
   return (
     <section className="tasks-layout">
@@ -185,6 +202,7 @@ export function DecisionsPage({
                 </div>
                 <p className="meta">关联任务：{detail.taskId}</p>
                 <p className="meta">更新时间：{detail.updatedAt}</p>
+                {checkpointGuidance ? <p className="meta">{checkpointGuidance}</p> : null}
                 <p className="meta">这里负责确认这次拍板本身是否应该推进、延后或取消，不承载整条任务的全部上下文。</p>
               </div>
               <div className="task-card detail-card-group">
