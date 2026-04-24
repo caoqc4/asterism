@@ -202,6 +202,7 @@ Covered today:
 - `Decisions / Runs` related-task timeline object entry
 - `Decisions / Runs` related-task timeline follow-up actions
 - `Decisions / Runs` related-task timeline priority-group headings
+- `Decisions / Runs` related-task timeline readable summaries as primary event text
 - `Decisions / Runs` focus-surface information density and action grouping
 - `Runs` page trigger form refresh and newly-created run selection, including repeated triggers
 - shared timeline summaries across `Tasks / Decisions / Runs`

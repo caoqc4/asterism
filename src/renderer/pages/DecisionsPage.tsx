@@ -263,7 +263,7 @@ export function DecisionsPage({
                         {group.events.map((event) => (
                           <div className="timeline-item" key={event.id}>
                             <div className="task-row">
-                              <strong>{event.type}</strong>
+                              <strong>{formatRelatedTimelineSummary(event)}</strong>
                               <div className="task-row-compact">
                                 {getTaskTimelineLaneLabel(event.type) ? (
                                   <span className={`status lane-status lane-status-${getTaskTimelineLane(event.type)}`}>
@@ -273,7 +273,7 @@ export function DecisionsPage({
                                 <span className="status">{event.createdAt}</span>
                               </div>
                             </div>
-                            <p className="meta">{formatRelatedTimelineSummary(event)}</p>
+                            <p className="meta">{event.type}</p>
                             {getTaskTimelineResponsibilitySummary(event) ? (
                               <p className="meta">{getTaskTimelineResponsibilitySummary(event)}</p>
                             ) : null}
