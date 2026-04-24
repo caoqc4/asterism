@@ -80,7 +80,7 @@ src/
 
 ### 1. Install dependencies
 
-Use Node `20.19+` or `22.12+` with npm `10+`. If you use `nvm`, run `nvm use` from the repo root.
+Use Node `20.19+` or `22.12+` with npm `10+`. If you use `nvm`, run `nvm use` from the repo root. The repo enforces this range during npm installs.
 
 ```bash
 npm install
