@@ -28,6 +28,7 @@ export function SettingsPage({ aiStatus, configForm, onChange, onSubmit }: Setti
         <p className="meta">
           {aiStatus?.apiKeyStored ? 'API Key 已存入系统 Keychain' : 'API Key 尚未存入系统 Keychain'}
         </p>
+        <p className="meta">Base URL：{aiStatus?.baseUrl ?? '默认官方端点'}</p>
         <p className="meta">配置文件路径：{aiStatus?.configPath ?? '尚未初始化'}</p>
         <p className="meta">
           Scheduler 开关：{aiStatus?.featureFlags.enableScheduler ? '启用' : '未启用'}
@@ -50,6 +51,8 @@ export function SettingsPage({ aiStatus, configForm, onChange, onSubmit }: Setti
             >
               <option value="anthropic">Anthropic</option>
               <option value="openai">OpenAI</option>
+              <option value="openai-compatible">OpenAI-compatible</option>
+              <option value="fal-openrouter">fal OpenRouter</option>
             </select>
           </label>
           <label>
@@ -57,6 +60,18 @@ export function SettingsPage({ aiStatus, configForm, onChange, onSubmit }: Setti
             <input
               value={configForm.model}
               onChange={(event) => onChange({ ...configForm, model: event.target.value })}
+            />
+          </label>
+          <label>
+            Base URL
+            <input
+              placeholder={
+                configForm.provider === 'fal-openrouter'
+                  ? 'https://fal.run/openrouter/router/openai/v1'
+                  : 'https://api.example.com/v1'
+              }
+              value={configForm.baseUrl ?? ''}
+              onChange={(event) => onChange({ ...configForm, baseUrl: event.target.value })}
             />
           </label>
           <label>

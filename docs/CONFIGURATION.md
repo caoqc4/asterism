@@ -14,6 +14,7 @@ Examples:
 
 - AI provider
 - model id
+- optional OpenAI-compatible base URL
 - feature flags
 - scheduler enablement
 
@@ -23,6 +24,7 @@ Example shape:
 {
   "aiProvider": "anthropic",
   "aiModel": "claude-3-5-sonnet-latest",
+  "aiBaseUrl": null,
   "featureFlags": {
     "enableScheduler": false
   },
@@ -47,8 +49,18 @@ The app currently exposes a Settings page for:
 
 - provider selection
 - model selection
+- custom base URL for OpenAI-compatible providers
 - API key storage
 - scheduler enable/disable
+
+Supported provider values:
+
+- `anthropic`: native Anthropic SDK path.
+- `openai`: native OpenAI SDK path.
+- `openai-compatible`: OpenAI-compatible relay using `Authorization: Bearer <key>` and the configured base URL.
+- `fal-openrouter`: fal OpenRouter relay using `https://fal.run/openrouter/router/openai/v1` by default and `Authorization: Key <key>`.
+
+Replicate's native API uses model-specific prediction inputs rather than a single chat-completions shape, so use `openai-compatible` only when the chosen Replicate-facing relay exposes an OpenAI-compatible `/v1` endpoint.
 
 The UI is not the only config entry point. Advanced users can edit non-sensitive values in `config.json` directly.
 

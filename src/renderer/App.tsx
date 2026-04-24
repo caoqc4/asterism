@@ -134,6 +134,7 @@ export function App() {
   const [configForm, setConfigForm] = useState<AiConfigInput>({
     provider: 'anthropic',
     model: 'claude-3-5-sonnet-latest',
+    baseUrl: '',
     apiKey: '',
     featureFlags: {
       enableScheduler: false,
@@ -232,6 +233,7 @@ export function App() {
         ...current,
         provider: configStatus.provider ?? current.provider,
         model: configStatus.model ?? current.model,
+        baseUrl: configStatus.baseUrl ?? '',
         featureFlags: configStatus.featureFlags,
       }));
       setStatus('ready');
@@ -274,6 +276,7 @@ export function App() {
     setConfigForm((current) => ({
       ...current,
       apiKey: '',
+      baseUrl: nextStatus.baseUrl ?? '',
       featureFlags: nextStatus.featureFlags,
     }));
   }

@@ -10,6 +10,7 @@ const ACCOUNT_NAME = 'ai_api_key';
 export type RuntimeAiConfig = {
   provider: AiProvider;
   model: string;
+  baseUrl?: string | null;
   apiKey: string;
   featureFlags: FeatureFlags;
 };
@@ -43,6 +44,7 @@ export class AiConfigService {
       apiKeyStored: Boolean(apiKey),
       provider: config.aiProvider,
       model: config.aiModel,
+      baseUrl: config.aiBaseUrl,
       updatedAt: config.updatedAt,
       configPath: this.appConfigService.getConfigPath(),
       featureFlags: config.featureFlags,
@@ -53,6 +55,7 @@ export class AiConfigService {
     const config = this.appConfigService.write({
       aiProvider: input.provider,
       aiModel: input.model.trim(),
+      aiBaseUrl: input.baseUrl?.trim() || null,
       featureFlags: input.featureFlags,
     });
 
@@ -67,6 +70,7 @@ export class AiConfigService {
       apiKeyStored: Boolean(apiKey),
       provider: config.aiProvider,
       model: config.aiModel,
+      baseUrl: config.aiBaseUrl,
       updatedAt: config.updatedAt,
       configPath: this.appConfigService.getConfigPath(),
       featureFlags: config.featureFlags,
@@ -84,6 +88,7 @@ export class AiConfigService {
     return {
       provider: config.aiProvider,
       model: config.aiModel,
+      baseUrl: config.aiBaseUrl,
       apiKey,
       featureFlags: config.featureFlags,
     };

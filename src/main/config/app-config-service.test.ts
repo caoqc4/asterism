@@ -24,6 +24,7 @@ describe('AppConfigService', () => {
 
     expect(config.aiProvider).toBe('anthropic');
     expect(config.aiModel).toBe('claude-3-5-sonnet-latest');
+    expect(config.aiBaseUrl).toBeNull();
     expect(config.featureFlags.enableScheduler).toBe(false);
     expect(fs.existsSync(getConfigPath(() => tempRoot))).toBe(true);
   });
@@ -46,6 +47,7 @@ describe('AppConfigService', () => {
     service.write({
       aiProvider: 'openai',
       aiModel: 'gpt-4.1',
+      aiBaseUrl: ' https://relay.example.com/v1 ',
       featureFlags: {
         enableScheduler: true,
       },
@@ -55,6 +57,7 @@ describe('AppConfigService', () => {
 
     expect(config.aiProvider).toBe('openai');
     expect(config.aiModel).toBe('gpt-4.1');
+    expect(config.aiBaseUrl).toBe('https://relay.example.com/v1');
     expect(config.featureFlags.enableScheduler).toBe(true);
   });
 
@@ -111,6 +114,7 @@ describe('AppConfigService', () => {
         {
           provider: 'openai',
           model: 'gpt-4.1-mini',
+          baseUrl: 'https://legacy-relay.example.com/v1',
           updatedAt: '2026-01-01T00:00:00.000Z',
         },
         null,
@@ -128,6 +132,7 @@ describe('AppConfigService', () => {
 
     expect(migrated.aiProvider).toBe('openai');
     expect(migrated.aiModel).toBe('gpt-4.1-mini');
+    expect(migrated.aiBaseUrl).toBe('https://legacy-relay.example.com/v1');
     expect(saved.aiProvider).toBe('openai');
     expect(saved.aiModel).toBe('gpt-4.1-mini');
   });

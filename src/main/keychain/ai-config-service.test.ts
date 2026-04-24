@@ -66,6 +66,7 @@ describe('AiConfigService', () => {
     const status = await service.setConfig({
       provider: 'openai',
       model: ' gpt-4.1 ',
+      baseUrl: ' https://relay.example.com/v1 ',
       apiKey: '  new-secret  ',
       featureFlags: {
         enableScheduler: true,
@@ -75,6 +76,7 @@ describe('AiConfigService', () => {
     expect(setPasswordMock).toHaveBeenCalledWith('taskplane', 'ai_api_key', 'new-secret');
     expect(status.provider).toBe('openai');
     expect(status.model).toBe('gpt-4.1');
+    expect(status.baseUrl).toBe('https://relay.example.com/v1');
     expect(status.configured).toBe(true);
   });
 

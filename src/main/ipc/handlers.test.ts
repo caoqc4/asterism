@@ -99,6 +99,7 @@ describe('registerIpcHandlers', () => {
     const input = {
       provider: 'openai' as const,
       model: 'gpt-5.4-mini',
+      baseUrl: 'https://relay.example.com/v1',
       apiKey: 'sk-test',
       featureFlags: {
         enableScheduler: true,
@@ -110,6 +111,7 @@ describe('registerIpcHandlers', () => {
       apiKeyStored: true,
       provider: 'openai',
       model: 'gpt-5.4-mini',
+      baseUrl: 'https://relay.example.com/v1',
       updatedAt: '2026-01-02T00:00:00.000Z',
       configPath: '/tmp/config.json',
       featureFlags: {

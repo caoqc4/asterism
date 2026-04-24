@@ -81,6 +81,7 @@ describe('preload bridge', () => {
     const aiInput = {
       provider: 'openai',
       model: 'gpt-5.4-mini',
+      baseUrl: 'https://relay.example.com/v1',
       apiKey: 'sk-test',
       featureFlags: { enableScheduler: true },
     };

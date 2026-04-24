@@ -11,12 +11,13 @@ const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
 const DEFAULT_CONFIG: AppConfigFile = {
   aiProvider: 'anthropic',
   aiModel: 'claude-3-5-sonnet-latest',
+  aiBaseUrl: null,
   featureFlags: DEFAULT_FEATURE_FLAGS,
   updatedAt: new Date(0).toISOString(),
 };
 
 const require = createRequire(import.meta.url);
-const AI_PROVIDERS = new Set<AiProvider>(['anthropic', 'openai']);
+const AI_PROVIDERS = new Set<AiProvider>(['anthropic', 'openai', 'openai-compatible', 'fal-openrouter']);
 
 function defaultUserDataPathResolver(): string {
   if (process.env.TASKPLANE_USER_DATA_DIR) {
@@ -53,6 +54,7 @@ function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
       ? (input.aiProvider as AiProvider)
       : DEFAULT_CONFIG.aiProvider,
     aiModel: input.aiModel?.trim() || DEFAULT_CONFIG.aiModel,
+    aiBaseUrl: input.aiBaseUrl?.trim() || null,
     featureFlags: {
       enableScheduler:
         typeof nextFeatureFlags.enableScheduler === 'boolean'
@@ -87,11 +89,13 @@ export class AppConfigService {
         const legacy = JSON.parse(raw) as {
           provider?: AiProvider;
           model?: string;
+          baseUrl?: string;
           updatedAt?: string;
         };
         const migrated = sanitizeConfig({
           aiProvider: legacy.provider,
           aiModel: legacy.model,
+          aiBaseUrl: legacy.baseUrl,
           updatedAt: legacy.updatedAt,
         });
         this.write(migrated);
