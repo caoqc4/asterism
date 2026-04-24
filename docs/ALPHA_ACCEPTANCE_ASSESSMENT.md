@@ -6,7 +6,7 @@ This assessment maps the alpha checklist to the current automated coverage and t
 
 Current status: not alpha-accepted yet. A focused manual alpha pass is now underway and has covered the core local path through task creation, decision creation, no-key run failure, Home recovery, Settings config save, and unsigned macOS directory packaging.
 
-Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now narrower: launch the generated app package after explicit confirmation, validate a successful AI-backed run with deliberate test credentials, and smooth the long task-detail navigation around context and completion-criteria creation.
+Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now narrower: validate a successful AI-backed run with deliberate test credentials, smooth the long task-detail navigation around context and completion-criteria creation, and defer signed/notarized release work until the unsigned package path stays stable.
 
 ## Verification Gate
 
@@ -117,7 +117,7 @@ Manual result / need:
 
 ## Release Readiness
 
-Status: not ready for release; local unsigned directory packaging passes.
+Status: not ready for release; local unsigned directory packaging and runtime launch pass after packaging fixes.
 
 Automated/local coverage:
 
@@ -125,20 +125,21 @@ Automated/local coverage:
 - `npm run smoke:build` passes
 - `npm run dist:mac:dir` passes and produces `release/mac-arm64/Taskplane.app`
 - unpacked app structure, `Info.plist`, native module unpacking, and ad-hoc code signature were inspected locally
+- packaged runtime launch now works with isolated `TASKPLANE_USER_DATA_DIR`; Home renders from `app.asar/dist/index.html`, SQLite/config are created in the isolated directory, and task creation persists
 
 Manual need:
 
-- launch the generated app with isolated userData after explicit action-time confirmation
+- keep using the fixed `dist:mac:dir` script, which rebuilds native modules for Electron before packaging and restores Node ABI afterward
 - defer signed/notarized release work until product friction from the alpha path is addressed
 
 ## Recommended Next Step
 
 Finish the remaining alpha checks in this order:
 
-1. Launch `release/mac-arm64/Taskplane.app` with isolated userData after explicit confirmation.
-2. Exercise criteria create/satisfy/reopen from the task UI.
-3. Validate dependency creation/resolution from the task UI.
-4. Run a successful AI-backed draft/run only with deliberate test credentials.
-5. Re-test closeout-ready Home wording with an approved decision or completed run.
+1. Exercise criteria create/satisfy/reopen from the task UI.
+2. Validate dependency creation/resolution from the task UI.
+3. Run a successful AI-backed draft/run only with deliberate test credentials.
+4. Re-test closeout-ready Home wording with an approved decision or completed run.
+5. Keep signed/notarized packaging out of scope until those product-path checks pass.
 
 Do not expand the domain model until that pass is complete.

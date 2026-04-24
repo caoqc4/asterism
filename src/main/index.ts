@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { applyUserDataPathOverride, getPackagedRendererIndexPath } from './bootstrap/runtime-paths.js';
 import { initServices } from './bootstrap/services.js';
 import { registerIpcHandlers } from './ipc/handlers.js';
 import { closeDatabase } from './db/client.js';
@@ -10,6 +11,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let mainWindow: InstanceType<typeof BrowserWindow> | null = null;
+
+applyUserDataPathOverride(app);
 
 function createMainWindow(): void {
   mainWindow = new BrowserWindow({
@@ -31,7 +34,7 @@ function createMainWindow(): void {
     void mainWindow.loadURL(devServerUrl);
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    void mainWindow.loadFile(path.join(process.cwd(), 'dist', 'index.html'));
+    void mainWindow.loadFile(getPackagedRendererIndexPath(app.getAppPath()));
   }
 }
 
