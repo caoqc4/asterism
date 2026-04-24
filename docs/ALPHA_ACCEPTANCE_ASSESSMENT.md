@@ -4,7 +4,7 @@ This assessment maps the alpha checklist to the current automated coverage and t
 
 ## Summary
 
-Current status: not alpha-accepted yet. A focused manual alpha pass is now underway and has covered the core local path through task creation, decision creation, no-key run failure, Home recovery, Settings config save, and unsigned macOS directory packaging.
+Current status: not alpha-accepted yet. A focused manual alpha pass is now underway and has covered the core local path through task creation, task state transition, decision creation, no-key run failure, Home recovery, Settings config save, and unsigned macOS directory packaging.
 
 Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now narrower: validate a successful AI-backed run with deliberate test credentials and defer signed/notarized release work until the unsigned package path stays stable.
 
@@ -33,7 +33,7 @@ Automated coverage:
 Manual result / need:
 
 - real desktop task creation, detail open, summary save, and next-step save worked in isolated userData
-- state transition still needs a deliberate manual pass
+- packaged app task UI transitioned `State transition alpha check` from `captured` to `planned` in isolated SQLite under `/tmp/taskplane-alpha-state-transition-20260424`; SQLite confirmed the final state and `task.transitioned` timeline payload
 - first-screen recovery is coherent, but long-detail navigation remains awkward for lower sections
 
 ## Context Objects
