@@ -56,4 +56,25 @@ describe('AiConfigService', () => {
     expect(status.apiKeyStored).toBe(true);
     expect(setPasswordMock).toHaveBeenCalledWith('taskplane', 'ai_api_key', 'legacy-secret');
   });
+
+  it('trims and stores new API keys when settings are saved', async () => {
+    getPasswordMock.mockResolvedValue('new-secret');
+    const { AppConfigService } = await import('../config/app-config-service.js');
+    const { AiConfigService } = await import('./ai-config-service.js');
+    const service = new AiConfigService(new AppConfigService(() => tempRoot));
+
+    const status = await service.setConfig({
+      provider: 'openai',
+      model: ' gpt-4.1 ',
+      apiKey: '  new-secret  ',
+      featureFlags: {
+        enableScheduler: true,
+      },
+    });
+
+    expect(setPasswordMock).toHaveBeenCalledWith('taskplane', 'ai_api_key', 'new-secret');
+    expect(status.provider).toBe('openai');
+    expect(status.model).toBe('gpt-4.1');
+    expect(status.configured).toBe(true);
+  });
 });
