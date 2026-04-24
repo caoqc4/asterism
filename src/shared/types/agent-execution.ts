@@ -78,6 +78,14 @@ export type AgentRunRequest = {
   policy: AgentPolicy;
 };
 
+export type AgentStepProposal = {
+  finalOutput?: string | null;
+  steps: Array<{
+    tool: AgentToolName;
+    input?: Record<string, unknown>;
+  }>;
+};
+
 export type AgentToolResult = {
   success: boolean;
   summary: string;

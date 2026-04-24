@@ -68,6 +68,105 @@ describe('AgentRunLoop', () => {
     expect(loop.buildLocalNotePlan({ modelOutput: '   ', taskTitle: 'Task 1' })).toEqual([]);
   });
 
+  it('accepts a constrained model-produced step proposal', () => {
+    const loop = new AgentRunLoop({ execute: vi.fn() } as never);
+
+    expect(loop.buildPlanFromProposal({
+      proposal: {
+        steps: [
+          { tool: 'task.inspect_context' },
+          {
+            tool: 'artifact.create_note',
+            input: {
+              title: 'Custom note',
+              content: 'Custom content',
+            },
+          },
+        ],
+      },
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    })).toEqual([
+      {
+        kind: 'inspect_context',
+        tool: 'task.inspect_context',
+        input: {},
+      },
+      {
+        kind: 'create_note',
+        tool: 'artifact.create_note',
+        input: {
+          title: 'Custom note',
+          content: 'Custom content',
+        },
+      },
+    ]);
+  });
+
+  it('extracts a model-produced JSON proposal', () => {
+    const loop = new AgentRunLoop({ execute: vi.fn() } as never);
+
+    expect(loop.extractStepProposal(JSON.stringify({
+      finalOutput: 'Final content',
+      steps: [
+        { tool: 'task.inspect_context' },
+        {
+          tool: 'artifact.create_note',
+          input: {
+            title: 'Proposed note',
+            content: 'Final content',
+          },
+        },
+      ],
+    }))).toEqual({
+      finalOutput: 'Final content',
+      steps: [
+        { tool: 'task.inspect_context', input: undefined },
+        {
+          tool: 'artifact.create_note',
+          input: {
+            title: 'Proposed note',
+            content: 'Final content',
+          },
+        },
+      ],
+    });
+    expect(loop.extractStepProposal('plain model output')).toBeNull();
+  });
+
+  it('falls back to the fixed plan when a proposal is incomplete', () => {
+    const loop = new AgentRunLoop({ execute: vi.fn() } as never);
+
+    expect(loop.buildPlanFromProposal({
+      proposal: {
+        steps: [{ tool: 'task.inspect_context' }],
+      },
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    })).toEqual(loop.buildLocalNotePlan({
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    }));
+    expect(loop.buildPlanFromProposal({
+      proposal: {
+        steps: [
+          {
+            tool: 'artifact.create_note',
+            input: {
+              title: '',
+              content: 'Custom content',
+            },
+          },
+        ],
+      },
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    })).toEqual(loop.buildLocalNotePlan({
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    }));
+  });
+
   it('runs the fixed local observe-then-write loop', async () => {
     const agentToolRegistry = {
       execute: vi
@@ -121,6 +220,60 @@ describe('AgentRunLoop', () => {
         taskId: 'task_1',
         workingContext: undefined,
       },
+      expect.objectContaining({ confirmationRequiredRisks: ['external_write', 'sensitive'] }),
+    );
+  });
+
+  it('runs a valid model-produced proposal with final output', async () => {
+    const agentToolRegistry = {
+      execute: vi
+        .fn()
+        .mockResolvedValueOnce({
+          success: true,
+          summary: 'Inspected context',
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          summary: 'Created note',
+          output: 'Final content',
+          artifactId: 'artifact_1',
+        }),
+    };
+    const loop = new AgentRunLoop(agentToolRegistry as never);
+
+    const result = await loop.executeLocalNoteLoop({
+      request: buildRequest(),
+      modelOutput: JSON.stringify({
+        finalOutput: 'Final content',
+        steps: [
+          { tool: 'task.inspect_context' },
+          {
+            tool: 'artifact.create_note',
+            input: {
+              title: 'Proposed note',
+              content: 'Final content',
+            },
+          },
+        ],
+      }),
+      taskTitle: 'Task 1',
+    });
+
+    expect(result).toEqual({
+      status: 'completed',
+      output: 'Final content',
+    });
+    expect(agentToolRegistry.execute).toHaveBeenNthCalledWith(
+      2,
+      'artifact.create_note',
+      {
+        title: 'Proposed note',
+        content: 'Final content',
+      },
+      expect.objectContaining({
+        runId: 'run_1',
+        taskId: 'task_1',
+      }),
       expect.objectContaining({ confirmationRequiredRisks: ['external_write', 'sensitive'] }),
     );
   });

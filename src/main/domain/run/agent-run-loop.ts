@@ -1,5 +1,6 @@
 import type {
   AgentRunRequest,
+  AgentStepProposal,
   AgentToolName,
   AgentToolResult,
 } from '../../../shared/types/agent-execution.js';
@@ -35,6 +36,32 @@ export type AgentRunLoopStep =
       };
     };
 
+function parseModelProposal(modelOutput: string): AgentStepProposal | null {
+  try {
+    const parsed = JSON.parse(modelOutput) as Partial<AgentStepProposal>;
+
+    if (!Array.isArray(parsed.steps)) {
+      return null;
+    }
+
+    return {
+      finalOutput: typeof parsed.finalOutput === 'string' ? parsed.finalOutput : null,
+      steps: parsed.steps
+        .filter((step): step is AgentStepProposal['steps'][number] => (
+          Boolean(step)
+          && typeof step === 'object'
+          && (step as { tool?: unknown }).tool !== undefined
+        ))
+        .map((step) => ({
+          tool: step.tool,
+          input: step.input && typeof step.input === 'object' ? step.input : undefined,
+        })),
+    };
+  } catch {
+    return null;
+  }
+}
+
 function failedFromTool(result: AgentToolResult): AgentRunLoopResult {
   return {
     status: 'failed',
@@ -44,6 +71,62 @@ function failedFromTool(result: AgentToolResult): AgentRunLoopResult {
 
 export class AgentRunLoop {
   constructor(private readonly agentToolRegistry: AgentToolRegistry) {}
+
+  extractStepProposal(modelOutput: string): AgentStepProposal | null {
+    return parseModelProposal(modelOutput);
+  }
+
+  buildPlanFromProposal(params: {
+    proposal: AgentStepProposal | null | undefined;
+    modelOutput: string;
+    taskTitle: string;
+  }): AgentRunLoopStep[] {
+    const { modelOutput, proposal, taskTitle } = params;
+
+    if (!proposal?.steps.length) {
+      return this.buildLocalNotePlan({ modelOutput, taskTitle });
+    }
+
+    const nextPlan: AgentRunLoopStep[] = [];
+
+    for (const step of proposal.steps) {
+      if (step.tool === 'task.inspect_context') {
+        nextPlan.push({
+          kind: 'inspect_context',
+          tool: 'task.inspect_context',
+          input: {},
+        });
+        continue;
+      }
+
+      if (step.tool === 'artifact.create_note') {
+        const title = typeof step.input?.title === 'string' ? step.input.title.trim() : '';
+        const content = typeof step.input?.content === 'string' ? step.input.content : '';
+
+        if (!title || !content.trim()) {
+          return this.buildLocalNotePlan({ modelOutput, taskTitle });
+        }
+
+        nextPlan.push({
+          kind: 'create_note',
+          tool: 'artifact.create_note',
+          input: {
+            title,
+            content,
+          },
+        });
+        continue;
+      }
+
+      return this.buildLocalNotePlan({ modelOutput, taskTitle });
+    }
+
+    if (!nextPlan.some((step) => step.kind === 'create_note')) {
+      return this.buildLocalNotePlan({ modelOutput, taskTitle });
+    }
+
+    return nextPlan;
+  }
 
   buildLocalNotePlan(params: {
     modelOutput: string;
@@ -76,18 +159,25 @@ export class AgentRunLoop {
     request: AgentRunRequest;
     modelOutput: string;
     taskTitle: string;
+    proposal?: AgentStepProposal | null;
   }): Promise<AgentRunLoopResult> {
-    const { modelOutput, request, taskTitle } = params;
-    const trimmedOutput = modelOutput.trim();
+    const { modelOutput, proposal, request, taskTitle } = params;
+    const parsedProposal = proposal ?? this.extractStepProposal(modelOutput);
+    const effectiveModelOutput = parsedProposal?.finalOutput ?? modelOutput;
+    const trimmedOutput = effectiveModelOutput.trim();
 
     if (!trimmedOutput) {
       return {
         status: 'completed',
-        output: modelOutput,
+        output: effectiveModelOutput,
       };
     }
 
-    for (const step of this.buildLocalNotePlan({ modelOutput, taskTitle })) {
+    for (const step of this.buildPlanFromProposal({
+      proposal: parsedProposal,
+      modelOutput: effectiveModelOutput,
+      taskTitle,
+    })) {
       const result = await this.agentToolRegistry.execute(
         step.tool,
         step.input,
@@ -114,7 +204,7 @@ export class AgentRunLoop {
 
     return {
       status: 'completed',
-      output: modelOutput,
+      output: effectiveModelOutput,
     };
   }
 }
