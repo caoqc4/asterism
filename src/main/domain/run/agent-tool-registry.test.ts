@@ -51,6 +51,21 @@ function buildRunStepRepositoryMock() {
   };
 }
 
+function buildRunCheckpointRepositoryMock() {
+  return {
+    create: vi.fn().mockResolvedValue({
+      id: 'run_checkpoint_1',
+      runId: 'run_1',
+      stepId: 'run_step_1',
+      kind: 'tool_permission',
+      status: 'open',
+      payload: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      resolvedAt: null,
+    }),
+  };
+}
+
 describe('AgentToolRegistry', () => {
   it('creates a note artifact and writes tool call/result steps', async () => {
     const artifactRepository = {
@@ -125,6 +140,53 @@ describe('AgentToolRegistry', () => {
     );
     expect(runStepRepository.create).toHaveBeenLastCalledWith(
       expect.objectContaining({ kind: 'tool_result', status: 'failed' }),
+    );
+  });
+
+  it('creates a checkpoint instead of executing when policy requires confirmation', async () => {
+    const artifactRepository = {
+      createNoteFromRun: vi.fn(),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const runCheckpointRepository = buildRunCheckpointRepositoryMock();
+    const registry = new AgentToolRegistry(
+      artifactRepository as never,
+      runStepRepository as never,
+      runCheckpointRepository as never,
+    );
+
+    const result = await registry.execute(
+      'artifact.create_note',
+      { title: 'Agent note', content: 'Captured note' },
+      { runId: 'run_1', taskId: 'task_1' },
+      {
+        maxSteps: 8,
+        maxWallTimeMs: 120_000,
+        allowNetwork: false,
+        allowLocalFileWrite: false,
+        confirmationRequiredRisks: ['local_write'],
+      },
+    );
+
+    expect(result).toMatchObject({
+      success: false,
+      status: 'needs_confirmation',
+      checkpointId: 'run_checkpoint_1',
+    });
+    expect(artifactRepository.createNoteFromRun).not.toHaveBeenCalled();
+    expect(runCheckpointRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        stepId: 'run_step_1',
+        kind: 'tool_permission',
+      }),
+    );
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_1',
+      expect.objectContaining({ status: 'skipped' }),
+    );
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({ kind: 'checkpoint', status: 'pending' }),
     );
   });
 });

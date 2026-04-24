@@ -292,6 +292,9 @@ describe('RunOrchestrator', () => {
         runId: 'run_1',
         taskId: 'task_1',
       },
+      expect.objectContaining({
+        confirmationRequiredRisks: ['external_write', 'sensitive'],
+      }),
     );
   });
 });

@@ -24,6 +24,12 @@ export type RunOrchestrationResult =
       status: 'failed';
       message: string;
       selection: ProcessTemplateSelectionResult | null;
+    }
+  | {
+      status: 'needs_confirmation';
+      message: string;
+      checkpointId: string;
+      selection: ProcessTemplateSelectionResult;
     };
 
 export class RunOrchestrator {
@@ -161,7 +167,17 @@ export class RunOrchestrator {
         runId: params.run.id,
         taskId: params.task.id,
       },
+      request.policy,
     );
+
+    if (toolResult.status === 'needs_confirmation' && toolResult.checkpointId) {
+      return {
+        status: 'needs_confirmation',
+        message: toolResult.summary,
+        checkpointId: toolResult.checkpointId,
+        selection: result.selection,
+      };
+    }
 
     if (!toolResult.success) {
       return {

@@ -83,7 +83,9 @@ export type AgentToolResult = {
   summary: string;
   output?: string | null;
   artifactId?: string | null;
+  checkpointId?: string | null;
   error?: string | null;
+  status?: 'completed' | 'failed' | 'needs_confirmation';
 };
 
 export type AgentArtifactDraft = {

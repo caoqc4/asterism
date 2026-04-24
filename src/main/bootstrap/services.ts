@@ -5,6 +5,7 @@ import { DecisionRepository } from '../db/repositories/decision-repository.js';
 import { ArtifactRepository } from '../db/repositories/artifact-repository.js';
 import { BlockerRepository } from '../db/repositories/blocker-repository.js';
 import { CompletionCriteriaRepository } from '../db/repositories/completion-criteria-repository.js';
+import { RunCheckpointRepository } from '../db/repositories/run-checkpoint-repository.js';
 import { RunRepository } from '../db/repositories/run-repository.js';
 import { RunStepRepository } from '../db/repositories/run-step-repository.js';
 import { ProcessTemplateRepository } from '../db/repositories/process-template-repository.js';
@@ -29,6 +30,7 @@ const taskRepository = new TaskRepository();
 const decisionRepository = new DecisionRepository();
 const runRepository = new RunRepository();
 const runStepRepository = new RunStepRepository();
+const runCheckpointRepository = new RunCheckpointRepository();
 const artifactRepository = new ArtifactRepository();
 const blockerRepository = new BlockerRepository();
 const completionCriteriaRepository = new CompletionCriteriaRepository();
@@ -56,7 +58,11 @@ const homeBriefService = new HomeBriefService(
 const textExecutor = new TextExecutor();
 const briefExecutor = new BriefExecutor();
 const aiConfigService = new AiConfigService(appConfigService);
-const agentToolRegistry = new AgentToolRegistry(artifactRepository, runStepRepository);
+const agentToolRegistry = new AgentToolRegistry(
+  artifactRepository,
+  runStepRepository,
+  runCheckpointRepository,
+);
 const taskService = new TaskService(
   taskRepository,
   waitingItemRepository,
@@ -90,6 +96,7 @@ const runService = new RunService(
   undefined,
   runStepRepository,
   agentToolRegistry,
+  runCheckpointRepository,
 );
 
 const services = {
@@ -97,6 +104,7 @@ const services = {
   decisionRepository,
   runRepository,
   runStepRepository,
+  runCheckpointRepository,
   briefSnapshotRepository,
   waitingItemRepository,
   blockerRepository,

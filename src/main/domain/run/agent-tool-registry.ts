@@ -1,9 +1,11 @@
 import type {
+  AgentPolicy,
   AgentToolName,
   AgentToolResult,
   AgentToolRisk,
 } from '../../../shared/types/agent-execution.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
+import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 
 export type AgentToolDefinition = {
@@ -56,6 +58,7 @@ export class AgentToolRegistry {
   constructor(
     private readonly artifactRepository: ArtifactRepository,
     private readonly runStepRepository: RunStepRepository,
+    private readonly runCheckpointRepository: RunCheckpointRepository = new RunCheckpointRepository(),
   ) {}
 
   list(): AgentToolDefinition[] {
@@ -66,6 +69,7 @@ export class AgentToolRegistry {
     name: AgentToolName,
     input: unknown,
     context: ToolExecutionContext,
+    policy?: AgentPolicy,
   ): Promise<AgentToolResult> {
     const definition = this.definitions.find((item) => item.name === name);
 
@@ -82,6 +86,39 @@ export class AgentToolRegistry {
     });
 
     try {
+      if (policy?.confirmationRequiredRisks.includes(definition.risk)) {
+        const checkpoint = await this.runCheckpointRepository.create({
+          runId: context.runId,
+          stepId: callStep.id,
+          kind: 'tool_permission',
+          payload: JSON.stringify({
+            tool: name,
+            risk: definition.risk,
+            input,
+          }),
+        });
+        const summary = `工具 ${name} 需要确认后才能继续。`;
+
+        await this.runStepRepository.update(callStep.id, {
+          status: 'skipped',
+          output: summary,
+        });
+        await this.runStepRepository.create({
+          runId: context.runId,
+          kind: 'checkpoint',
+          status: 'pending',
+          title: `等待确认：${name}`,
+          output: summary,
+        });
+
+        return {
+          success: false,
+          status: 'needs_confirmation',
+          summary,
+          checkpointId: checkpoint.id,
+        };
+      }
+
       const result = await this.executeKnownTool(name, input, context);
       await this.runStepRepository.update(callStep.id, {
         status: 'completed',

@@ -98,7 +98,12 @@ export class RunRepository {
     await db.insert(timelineEvents).values({
       id: generateId('timeline'),
       taskId: current.taskId,
-      type: status === 'failed' ? 'run.failed' : 'run.completed',
+      type:
+        status === 'failed'
+          ? 'run.failed'
+          : status === 'needs_confirmation'
+            ? 'run.needs_confirmation'
+            : 'run.completed',
       payload: JSON.stringify({ runId, status }),
       createdAt: timestamp,
     });
@@ -114,7 +119,7 @@ export class RunRepository {
       .from(runs)
       .where(
         and(
-          inArray(runs.status, ['pending', 'running']),
+          inArray(runs.status, ['pending', 'running', 'needs_confirmation']),
           lt(runs.updatedAt, olderThanIso),
         ),
       )

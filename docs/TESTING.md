@@ -67,7 +67,7 @@ Covered today:
 - `AgentWorkingContext`
   task-detail compression into typed agent run context, default policy, and plan-step request summaries
 - `AgentToolRegistry`
-  internal tool discovery, local note artifact creation, tool call/result step writes, and validation failure recording
+  internal tool discovery, local note artifact creation, tool call/result step writes, validation failure recording, and policy-driven confirmation checkpoints
 - `TextExecutor`
   lane-aware run prompt composition
 - `HomeBriefService`
@@ -87,6 +87,8 @@ Covered today:
   run creation, result persistence, stale run queries
 - `RunStepRepository`
   ordered execution-step creation, updates, and per-run retrieval
+- `RunCheckpointRepository`
+  open checkpoint creation and per-run retrieval
 - `DecisionRepository`
   decision creation, action persistence, timeline writes
 - `BriefSnapshotRepository`

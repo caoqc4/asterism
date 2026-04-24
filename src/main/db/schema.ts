@@ -57,6 +57,17 @@ export const runSteps = sqliteTable('run_steps', {
   updatedAt: text('updated_at').notNull(),
 });
 
+export const runCheckpoints = sqliteTable('run_checkpoints', {
+  id: text('id').primaryKey(),
+  runId: text('run_id').notNull(),
+  stepId: text('step_id'),
+  kind: text('kind').notNull(),
+  status: text('status').notNull(),
+  payload: text('payload'),
+  createdAt: text('created_at').notNull(),
+  resolvedAt: text('resolved_at'),
+});
+
 export const briefSnapshots = sqliteTable('brief_snapshots', {
   id: text('id').primaryKey(),
   kind: text('kind').notNull(),

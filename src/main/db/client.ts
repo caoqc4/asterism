@@ -88,6 +88,17 @@ function bootstrapTables(connection: Database.Database): void {
       updated_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS run_checkpoints (
+      id TEXT PRIMARY KEY,
+      run_id TEXT NOT NULL,
+      step_id TEXT,
+      kind TEXT NOT NULL,
+      status TEXT NOT NULL,
+      payload TEXT,
+      created_at TEXT NOT NULL,
+      resolved_at TEXT
+    );
+
     CREATE TABLE IF NOT EXISTS brief_snapshots (
       id TEXT PRIMARY KEY,
       kind TEXT NOT NULL,

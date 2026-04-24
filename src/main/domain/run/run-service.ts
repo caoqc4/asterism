@@ -7,6 +7,7 @@ import type {
 } from '../../../shared/types/run.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { RunRepository } from '../../db/repositories/run-repository.js';
+import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { TaskService } from '../task/task-service.js';
 import { AgentToolRegistry } from './agent-tool-registry.js';
@@ -23,6 +24,7 @@ export class RunService {
     private readonly processTemplateSelector: ProcessTemplateSelector = new ProcessTemplateSelector(),
     private readonly runStepRepository: RunStepRepository = new RunStepRepository(),
     private readonly agentToolRegistry: AgentToolRegistry | null = null,
+    private readonly runCheckpointRepository: RunCheckpointRepository = new RunCheckpointRepository(),
     private readonly runOrchestrator: RunOrchestrator = new RunOrchestrator(
       aiConfigService,
       textExecutor,
@@ -46,6 +48,7 @@ export class RunService {
     return {
       ...run,
       steps: await this.runStepRepository.listForRun(runId),
+      checkpoints: await this.runCheckpointRepository.listForRun(runId),
     };
   }
 
@@ -103,6 +106,15 @@ export class RunService {
         completed.id,
       );
       return completed;
+    }
+
+    if (result.status === 'needs_confirmation') {
+      return this.runRepository.updateResult(
+        created.id,
+        'needs_confirmation',
+        result.message,
+        'system',
+      );
     }
 
     const failed = await this.runRepository.updateResult(
