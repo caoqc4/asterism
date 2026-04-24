@@ -34,7 +34,7 @@ Manual result / need:
 
 - real desktop task creation, detail open, summary save, and next-step save worked in isolated userData
 - packaged app task UI transitioned `State transition alpha check` from `captured` to `planned` in isolated SQLite under `/tmp/taskplane-alpha-state-transition-20260424`; SQLite confirmed the final state and `task.transitioned` timeline payload
-- first-screen recovery is coherent; a compact task-detail section jump bar now reduces lower-section navigation friction
+- first-screen recovery is coherent; a compact task-detail section jump bar now reduces lower-section navigation friction, and the packaged app confirmed jumping from Context Studio back to Action Desk
 
 ## Context Objects
 
@@ -54,7 +54,7 @@ Manual result / need:
 - packaged app task UI created `DB source` and `DB process` in a clean isolated run under `/tmp/taskplane-alpha-db-probe-20260424`; SQLite confirmed the key source row, active process template row, and active task-process binding row
 - packaged app task UI edited and archived source/process context under `/tmp/taskplane-alpha-source-process-edit-20260424`; SQLite confirmed `Edited source via UI`, source archived state, process archive checkpoint, and `Edited process via UI`
 - Home and task resume reflected blocker/source/method context correctly after the Home fixes
-- source/process create/edit/archive is functionally covered, with task-detail section jumps added to make the lower Context Studio sections easier to reach
+- source/process create/edit/archive is functionally covered, with task-detail section jumps added and packaged-app checked for lower-section recovery
 
 ## Decision And Run Loop
 
@@ -143,7 +143,7 @@ Manual need:
 
 Finish the remaining alpha work in this order:
 
-1. Keep signed/notarized packaging out of scope until the unsigned local path has stayed stable through another release pass.
-2. Re-check the new task-detail section jumps in the next packaged-app pass and keep any further alpha friction as small acceptance fixes.
+1. Keep signed/notarized packaging out of scope until the next release-readiness pass explicitly targets signing and notarization.
+2. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
 
 Do not expand the domain model until the release-readiness pass is cleaner.
