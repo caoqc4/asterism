@@ -925,7 +925,9 @@ describe('App UI flow', () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Active Slices' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Context Slices' })).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Task Signals' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Key Source Materials' })).toBeNull();
   });
 
   it('shows a closeout-aware lane label on task resume cards', async () => {

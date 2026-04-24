@@ -2428,8 +2428,8 @@ export function TasksPage({
                 </div>
 
                 <div className="transition-group detail-card-group">
-                  <h3>Key Source Materials</h3>
-                  <p className="meta">当前层只保留最关键的一条来源切片，完整材料管理下沉到 Context Studio。</p>
+                  <h3>Context Slices</h3>
+                  <p className="meta">这里只保留当前最关键的来源和方法入口，完整材料架与方法库下沉到 Context Studio。</p>
                   <div className="timeline-list">
                     {snapshotSourceContext ? (
                       <button
@@ -2457,24 +2457,7 @@ export function TasksPage({
                     ) : (
                       <p className="meta">当前还没有关键来源材料。</p>
                     )}
-                  </div>
-                  {snapshotSourceContext ? (
-                    <div className="timeline-actions">
-                      <button
-                        className="ghost-button timeline-action"
-                        onClick={() => focusSourceContext(snapshotSourceContext.id)}
-                        type="button"
-                      >
-                        前往 Context Studio 管理来源
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
 
-                <div className="transition-group detail-card-group">
-                  <h3>Current Method</h3>
-                  <p className="meta">当前层只保留一个主方法切片，完整模板管理下沉到 Context Studio。</p>
-                  <div className="timeline-list">
                     {snapshotProcessTemplate ? (
                       <div
                         className="timeline-item timeline-item-state"
@@ -2498,26 +2481,30 @@ export function TasksPage({
                         {detail.processTemplates.length > 1 ? (
                           <p className="meta">其余 {detail.processTemplates.length - 1} 个方法模板移到 Context Studio。</p>
                         ) : null}
-                        <div className="timeline-actions">
-                          <button
-                            className="ghost-button timeline-action"
-                            onClick={() => focusProcessTemplate(snapshotProcessTemplate.id)}
-                            type="button"
-                          >
-                            打开当前方法模板
-                          </button>
-                          <button
-                            className="ghost-button timeline-action"
-                            onClick={() => focusProcessTemplate(snapshotProcessTemplate.id)}
-                            type="button"
-                          >
-                            前往 Context Studio 管理方法
-                          </button>
-                        </div>
                       </div>
                     ) : (
                       <p className="meta">当前任务还没有启用中的方法模板。</p>
                     )}
+                  </div>
+                  <div className="timeline-actions">
+                    {snapshotSourceContext ? (
+                      <button
+                        className="ghost-button timeline-action"
+                        onClick={() => focusSourceContext(snapshotSourceContext.id)}
+                        type="button"
+                      >
+                        管理来源材料
+                      </button>
+                    ) : null}
+                    {snapshotProcessTemplate ? (
+                      <button
+                        className="ghost-button timeline-action"
+                        onClick={() => focusProcessTemplate(snapshotProcessTemplate.id)}
+                        type="button"
+                      >
+                        管理当前方法
+                      </button>
+                    ) : null}
                   </div>
                 </div>
 
