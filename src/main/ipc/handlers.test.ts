@@ -25,6 +25,9 @@ const { handleMock, emitAppEventMock, servicesMock } = vi.hoisted(() => ({
       updateCompletionCriteria: vi.fn(),
       satisfyCompletionCriteria: vi.fn(),
       reopenCompletionCriteria: vi.fn(),
+      createTaskDependency: vi.fn(),
+      updateTaskDependency: vi.fn(),
+      resolveTaskDependency: vi.fn(),
       createSourceContext: vi.fn(),
       updateSourceContext: vi.fn(),
       archiveSourceContext: vi.fn(),
@@ -251,6 +254,74 @@ describe('registerIpcHandlers', () => {
     });
     expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
     expect(result.id).toBe('criteria_1');
+  });
+
+  it('emits task.changed after task transitions', async () => {
+    servicesMock.taskService.transition.mockResolvedValue({
+      id: 'task_1',
+      title: 'Launch brief',
+      summary: 'Prepare the launch brief',
+      state: 'in_progress',
+      nextStep: 'Draft the brief',
+      waitingReason: null,
+      riskLevel: 'none',
+      riskNote: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; nextState: string; reason?: string }],
+      Awaited<ReturnType<typeof servicesMock.taskService.transition>>
+    >('task:transition');
+
+    const result = await handler({}, {
+      taskId: 'task_1',
+      nextState: 'in_progress',
+      reason: 'Ready to draft',
+    });
+
+    expect(servicesMock.taskService.transition).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      nextState: 'in_progress',
+      reason: 'Ready to draft',
+    });
+    expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
+    expect(result.state).toBe('in_progress');
+  });
+
+  it('emits task.changed for both sides after task dependency writes', async () => {
+    servicesMock.taskService.createTaskDependency.mockResolvedValue({
+      id: 'task_dependency_1',
+      taskId: 'task_1',
+      blockedByTaskId: 'task_2',
+      blockedByTaskTitle: 'Upstream design',
+      reason: 'Need upstream design to finish first',
+      status: 'active',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      resolvedAt: null,
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; blockedByTaskId: string; reason?: string }],
+      Awaited<ReturnType<typeof servicesMock.taskService.createTaskDependency>>
+    >('taskDependency:create');
+
+    const result = await handler({}, {
+      taskId: 'task_1',
+      blockedByTaskId: 'task_2',
+      reason: 'Need upstream design to finish first',
+    });
+
+    expect(servicesMock.taskService.createTaskDependency).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      blockedByTaskId: 'task_2',
+      reason: 'Need upstream design to finish first',
+    });
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(1, 'task.changed', 'task_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_2');
+    expect(result.id).toBe('task_dependency_1');
   });
 
   it('emits task.changed after blocker writes', async () => {

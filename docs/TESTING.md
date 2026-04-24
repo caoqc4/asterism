@@ -107,8 +107,12 @@ Covered today:
   decision action routing plus `decision.changed` and `task.changed`
 - `run:trigger`
   run trigger routing plus `run.changed`, `task.changed`, and `brief.changed`
+- `task:transition`
+  task transition routing plus `task.changed`
 - `completionCriteria:create`
   completion-criteria writes plus `task.changed`
+- `taskDependency:create`
+  task-dependency writes plus `task.changed` for both blocked and upstream tasks
 
 These tests protect the main-process edge where renderer calls become domain actions and event broadcasts.
 
@@ -251,8 +255,7 @@ Current verification is local-only:
 
 Recommended next additions:
 
-1. IPC coverage for one or two additional task-oriented handlers
-2. a small packaged-app or smoke-style end-to-end verification path
-3. renderer coverage for richer timeline filtering or long-history behavior
+1. a small packaged-app or smoke-style end-to-end verification path
+2. renderer coverage for richer timeline filtering or long-history behavior
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.
