@@ -36,7 +36,7 @@ npm run verify
 Latest local baseline:
 
 - 41 test files
-- 293 tests
+- 294 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -54,7 +54,7 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 
 ## Recommended Next Focus
 
-1. Continue agent execution layer Phase 1 by adding explicit resume behavior for paused planner-stop runs after the blocking context changes.
+1. Continue agent execution layer Phase 1 by turning paused run recovery from "retrigger agent run" into a resumable checkpoint-backed continuation when the runtime contract is ready.
 2. Keep signed/notarized release work deferred until a dedicated release-readiness pass targets signing and notarization.
 3. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 4. Defer GitHub Actions work until quota is restored.

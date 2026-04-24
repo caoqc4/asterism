@@ -1596,7 +1596,7 @@ export function TasksPage({
           ? quickRunCardRef.current
           : transitionCardRef.current;
 
-    if (node) {
+    if (typeof node?.scrollIntoView === 'function') {
       node.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
@@ -1830,6 +1830,13 @@ export function TasksPage({
       );
     }
 
+    if (event.type === 'task.run_paused') {
+      setQuickRunType('agent');
+      setQuickRunInstructions(
+        `已处理暂停原因后继续 agent run：${formatValue(payload?.pauseReason)}`,
+      );
+    }
+
     if (event.type === 'task.waiting_changed') {
       setDraftNextStep(`跟进并确认是否解除等待：${formatValue(payload?.to)}`);
     }
@@ -1915,6 +1922,19 @@ export function TasksPage({
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
         .slice(0, 5)
     : [];
+  const latestPausedRun = detail
+    ? [...taskRuns]
+        .filter((run) => run.status === 'paused')
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null
+    : null;
+
+  function preparePausedRunRecovery(run: RunRecord) {
+    setQuickRunType('agent');
+    setQuickRunInstructions(
+      `已处理暂停原因后重新触发 agent run。上次暂停原因：${run.output || run.failureReason || '未记录'}`,
+    );
+    focusActionTarget('run');
+  }
 
   const visibleTimeline = detail
     ? showAllTimeline
@@ -2844,6 +2864,21 @@ export function TasksPage({
                 <div className="transition-group detail-card-group">
                   <h3>Action Setup</h3>
                   <p className="meta">{getActionSetupGuidance(detail)}</p>
+                  {latestPausedRun ? (
+                    <div className="timeline-item timeline-item-waiting">
+                      <strong>Paused Run Recovery</strong>
+                      <p className="meta">
+                        最近一次 {latestPausedRun.type} run 暂停待复核：{latestPausedRun.output || '未记录暂停原因'}
+                      </p>
+                      <button
+                        className="ghost-button"
+                        onClick={() => preparePausedRunRecovery(latestPausedRun)}
+                        type="button"
+                      >
+                        准备重新触发 agent run
+                      </button>
+                    </div>
+                  ) : null}
                   <div className="quick-actions-grid" ref={quickActionsRef}>
                     {actionSetupOrder.map((setup) => actionSetupCards[setup])}
                   </div>

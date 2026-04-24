@@ -173,6 +173,7 @@ Covered today:
 - `Brief fallback output` lane-grouped wording
 - `Tasks quick decision submission`
 - `Tasks quick run submission`
+- `Tasks paused run recovery -> agent run retry setup`
 - `Tasks related activity -> Decisions / Runs`
 - `Tasks timeline -> Decisions / Runs`
 - `Tasks source context create / edit flow`

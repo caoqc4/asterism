@@ -2681,6 +2681,58 @@ describe('App UI flow', () => {
     });
   });
 
+  it('prepares an agent retry from a paused run on task detail', async () => {
+    const user = userEvent.setup();
+    const pausedRun = buildRunRecord({
+      id: 'run_paused',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'paused',
+      output: '观察到任务仍有阻塞项：Legal review。暂停执行 artifact.create_note，等待先解除阻塞。',
+      outputSource: 'system',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+    const createdAgentRun = buildRunRecord({
+      id: 'run_agent_retry',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'running',
+      instructions: '已处理暂停原因后重新触发 agent run。',
+    });
+    const pausedRunApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [pausedRun, ...runs]),
+      triggerRun: vi.fn(async () => createdAgentRun),
+    };
+
+    window.api = pausedRunApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /High risk task/i }));
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    expect(screen.getByText(/最近一次 agent run 暂停待复核/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '准备重新触发 agent run' }));
+
+    expect((screen.getByLabelText('Run 类型') as HTMLSelectElement).value).toBe('agent');
+    expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toBe(
+      '已处理暂停原因后重新触发 agent run。上次暂停原因：观察到任务仍有阻塞项：Legal review。暂停执行 artifact.create_note，等待先解除阻塞。',
+    );
+
+    await user.click(screen.getByRole('button', { name: '触发 Run' }));
+
+    await waitFor(() => {
+      expect(pausedRunApi.triggerRun).toHaveBeenCalledWith({
+        taskId: riskTask.id,
+        type: 'agent',
+        instructions:
+          '已处理暂停原因后重新触发 agent run。上次暂停原因：观察到任务仍有阻塞项：Legal review。暂停执行 artifact.create_note，等待先解除阻塞。',
+      });
+    });
+  });
+
   it('shows failed run detail on the runs page', async () => {
     const user = userEvent.setup();
 
