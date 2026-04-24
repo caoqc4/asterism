@@ -2589,6 +2589,16 @@ describe('App UI flow', () => {
           ...buildTaskDetail(riskTask),
           timeline: [
             {
+              id: 'timeline_next_step',
+              taskId: riskTask.id,
+              type: 'task.next_step_changed',
+              payload: JSON.stringify({
+                from: null,
+                to: '检查失败原因并决定是否重试',
+              }),
+              createdAt: '2026-01-01T03:00:00.000Z',
+            },
+            {
               id: 'timeline_run_failed',
               taskId: riskTask.id,
               type: 'task.run_failed',
@@ -2610,16 +2620,6 @@ describe('App UI flow', () => {
               }),
               createdAt: '2026-01-01T01:30:00.000Z',
             },
-            {
-              id: 'timeline_next_step',
-              taskId: riskTask.id,
-              type: 'task.next_step_changed',
-              payload: JSON.stringify({
-                from: null,
-                to: '检查失败原因并决定是否重试',
-              }),
-              createdAt: '2026-01-01T01:00:00.000Z',
-            },
           ],
         };
       }),
@@ -2636,6 +2636,12 @@ describe('App UI flow', () => {
     expect(screen.getByText('最近一次执行失败：Executor exploded。')).toBeTruthy();
     expect(screen.getByText('最近生成了产物：draft output。')).toBeTruthy();
     expect(screen.getByText('下一步从“未填写”调整为“检查失败原因并决定是否重试”')).toBeTruthy();
+    expect(
+      screen
+        .getByText('最近一次执行失败：Executor exploded。')
+        .compareDocumentPosition(screen.getByText('下一步从“未填写”调整为“检查失败原因并决定是否重试”')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('opens related runs from the run page timeline context', async () => {
@@ -2789,6 +2795,16 @@ describe('App UI flow', () => {
           ...buildTaskDetail(riskTask),
           timeline: [
             {
+              id: 'timeline_next_step',
+              taskId: riskTask.id,
+              type: 'task.next_step_changed',
+              payload: JSON.stringify({
+                from: null,
+                to: '已获批准，继续推进：Approve escalation path',
+              }),
+              createdAt: '2026-01-01T03:00:00.000Z',
+            },
+            {
               id: 'timeline_decision_approved',
               taskId: riskTask.id,
               type: 'task.decision_approved',
@@ -2809,16 +2825,6 @@ describe('App UI flow', () => {
               }),
               createdAt: '2026-01-01T01:30:00.000Z',
             },
-            {
-              id: 'timeline_next_step',
-              taskId: riskTask.id,
-              type: 'task.next_step_changed',
-              payload: JSON.stringify({
-                from: null,
-                to: '已获批准，继续推进：Approve escalation path',
-              }),
-              createdAt: '2026-01-01T01:00:00.000Z',
-            },
           ],
         };
       }),
@@ -2836,6 +2842,12 @@ describe('App UI flow', () => {
     expect(screen.getByText('最近一条决策已获批准：Approve escalation path。')).toBeTruthy();
     expect(screen.getByText('等待原因调整为“等待重新拍板：Approve escalation path”')).toBeTruthy();
     expect(screen.getByText('下一步从“未填写”调整为“已获批准，继续推进：Approve escalation path”')).toBeTruthy();
+    expect(
+      screen
+        .getByText('最近一条决策已获批准：Approve escalation path。')
+        .compareDocumentPosition(screen.getByText('下一步从“未填写”调整为“已获批准，继续推进：Approve escalation path”')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('opens related decisions from the decision page timeline context', async () => {

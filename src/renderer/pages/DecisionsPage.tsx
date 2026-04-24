@@ -7,6 +7,7 @@ import {
   getTaskTimelineFollowUpActionLabel,
   getTaskTimelineLane,
   getTaskTimelineLaneLabel,
+  getTaskTimelinePreviewEvents,
   getTaskTimelineResponsibilitySummary,
   interpretTaskTimelineEvent,
 } from '@shared/working-context/timeline';
@@ -49,28 +50,28 @@ function getRelatedTimelineObjectLabel(event: TimelineEventRecord): string | nul
 }
 
 function getRelatedTimeline(events: TimelineEventRecord[], decisionTitle: string): TimelineEventRecord[] {
-  return events
-    .filter((event) => {
-      if (
-        event.type === 'task.decision_approved' ||
-        event.type === 'task.decision_deferred' ||
-        event.type === 'task.decision_cancelled'
-      ) {
-        const payload = safeParsePayload(event.payload);
-        return payload?.decisionTitle === decisionTitle;
-      }
+  const relatedEvents = events.filter((event) => {
+    if (
+      event.type === 'task.decision_approved' ||
+      event.type === 'task.decision_deferred' ||
+      event.type === 'task.decision_cancelled'
+    ) {
+      const payload = safeParsePayload(event.payload);
+      return payload?.decisionTitle === decisionTitle;
+    }
 
-      if (
-        event.type === 'task.waiting_changed' ||
-        event.type === 'task.risk_changed' ||
-        event.type === 'task.next_step_changed'
-      ) {
-        return true;
-      }
+    if (
+      event.type === 'task.waiting_changed' ||
+      event.type === 'task.risk_changed' ||
+      event.type === 'task.next_step_changed'
+    ) {
+      return true;
+    }
 
-      return false;
-    })
-    .slice(0, RELATED_TIMELINE_PREVIEW_COUNT);
+    return false;
+  });
+
+  return getTaskTimelinePreviewEvents(relatedEvents, RELATED_TIMELINE_PREVIEW_COUNT);
 }
 
 type DecisionsPageProps = {

@@ -7,6 +7,7 @@ import {
   getTaskTimelineFollowUpActionLabel,
   getTaskTimelineLane,
   getTaskTimelineLaneLabel,
+  getTaskTimelinePreviewEvents,
   getTaskTimelineResponsibilitySummary,
   interpretTaskTimelineEvent,
 } from '@shared/working-context/timeline';
@@ -38,24 +39,24 @@ function getRelatedTimelineObjectLabel(event: TimelineEventRecord): string | nul
 }
 
 function getRelatedTimeline(events: TimelineEventRecord[], runId: string): TimelineEventRecord[] {
-  return events
-    .filter((event) => {
-      if (event.type === 'task.run_failed' || event.type === 'task.run_completed') {
-        return true;
-      }
+  const relatedEvents = events.filter((event) => {
+    if (event.type === 'task.run_failed' || event.type === 'task.run_completed') {
+      return true;
+    }
 
-      if (event.type === 'task.risk_changed' || event.type === 'task.next_step_changed') {
-        return true;
-      }
+    if (event.type === 'task.risk_changed' || event.type === 'task.next_step_changed') {
+      return true;
+    }
 
-      if (event.type === 'artifact.created') {
-        const payload = safeParsePayload(event.payload);
-        return payload?.sourceType === 'run' && payload?.sourceId === runId;
-      }
+    if (event.type === 'artifact.created') {
+      const payload = safeParsePayload(event.payload);
+      return payload?.sourceType === 'run' && payload?.sourceId === runId;
+    }
 
-      return false;
-    })
-    .slice(0, RELATED_TIMELINE_PREVIEW_COUNT);
+    return false;
+  });
+
+  return getTaskTimelinePreviewEvents(relatedEvents, RELATED_TIMELINE_PREVIEW_COUNT);
 }
 
 type RunsPageProps = {
