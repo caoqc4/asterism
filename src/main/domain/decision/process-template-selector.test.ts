@@ -161,4 +161,38 @@ describe('DecisionProcessTemplateSelector', () => {
     });
     expect(generateObjectMock).not.toHaveBeenCalled();
   });
+
+  it('does not enable template usage when selected ids do not match active templates', async () => {
+    generateObjectMock.mockResolvedValue({
+      object: {
+        shouldUse: true,
+        selectedTemplateIds: ['missing_template'],
+        reason: '模型返回了一个不存在的模板。',
+      },
+    });
+
+    const { DecisionProcessTemplateSelector } = await import('./process-template-selector.js');
+    const selector = new DecisionProcessTemplateSelector();
+
+    const result = await selector.select(
+      buildTaskDetail(),
+      {
+        taskId: 'task_1',
+      },
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: true,
+        },
+      },
+    );
+
+    expect(result).toEqual({
+      shouldUse: false,
+      selectedTemplates: [],
+      reason: '模型返回了一个不存在的模板。',
+    });
+  });
 });
