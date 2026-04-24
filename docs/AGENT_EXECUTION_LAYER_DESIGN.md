@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft for the next implementation phase after the front task-management loop.
+Living design for the execution layer after the front task-management loop.
 
 This document defines how Taskplane should evolve from the current text-only `Run`
 executor into a real local agent execution layer. It is intentionally scoped to
@@ -24,14 +24,31 @@ The current implementation has a healthy control-plane spine:
   selectors decide whether a Run, Brief, or Decision draft should reference a
   template.
 
-The current execution layer is still narrow:
+The first execution-layer spine is now in place:
 
 - `RunService.trigger` creates a run, optionally moves planned tasks to
-  `running`, resolves AI config, selects process templates, calls `TextExecutor`,
-  writes a completed/failed run, creates an artifact, and annotates the task.
-- `TextExecutor` produces a single text output for `draft` or `summarize`.
-- Provider support is model-text oriented through Vercel AI SDK or native
-  Replicate text prediction.
+  `running`, resolves AI config, selects process templates, routes execution
+  through `RunOrchestrator`, writes completed/failed/paused outcomes, creates
+  artifacts, and annotates the task.
+- `RunOrchestrator` writes plan/model/final steps for text runs and hands
+  `agent` runs into `AgentRunLoop`.
+- `AgentRunLoop` assembles a typed working context, asks for a constrained JSON
+  step proposal, enforces read-only observation before local writes, persists
+  readable observation summaries, and pauses when context says a local write
+  should wait.
+- `AgentToolRegistry` can inspect task context, inspect task timeline, and
+  create local note artifacts while writing tool call/result steps.
+- Confirmation-required tools create checkpoints and pending Decisions;
+  approved Decisions can resume the pending local tool.
+- Paused runs now create resume checkpoints, can continue the saved next local
+  tool from Runs or Tasks, and show readable continuation failures in the UI.
+- Provider support is still mostly model-text oriented through Vercel AI SDK or
+  native Replicate text prediction; reliable multi-turn tool use is not yet a
+  runtime guarantee.
+
+The remaining gap is no longer "does Taskplane have a trace spine?" It is
+"what is the boundary for a real executor session that can run beyond one local
+tool, survive interruption, and eventually support code/research/social work?"
 
 So the product control plane is ahead of the agent runtime. The next phase
 should keep that advantage instead of importing a heavy runtime that ignores the
@@ -337,71 +354,139 @@ No new top-level product object is required for the first agent layer. The
 runtime should strengthen Run and Artifact before inventing an "Agent Task"
 object.
 
-## Implementation Phases
+## Implemented Phases
 
 ### Phase 1: Agent Trace Spine
 
-- add `run_steps` repository and tests
-- extend Run model with `executor_kind`
-- route current `TextExecutor` through step writing
-- show step summaries in Runs page
+Implemented baseline:
 
-Success: existing draft/summarize runs still work, but every run has a readable
-step trail.
+- `run_steps` schema, repository, shared types, and tests
+- plan/model/final step writing for text runs
+- compact step summaries in Runs page
+- readable agent plan-source and tool-observation summaries
+
+Remaining cleanup:
+
+- add `failure_kind`, `started_at`, and `completed_at` only when the UI needs
+  those distinctions
+- keep raw structured step payloads small enough for local SQLite inspection
 
 ### Phase 2: Agent Orchestrator
 
-- add `RunOrchestrator`
-- define `AgentRunRequest`, `AgentPolicy`, and `AgentWorkingContext`
-- add a text-only planner/finalizer path
-- persist plan and final steps
+Implemented baseline:
 
-Success: an `agent` run can create a plan and final artifact even before tool
-calling is enabled.
+- `RunOrchestrator`
+- `AgentRunRequest`, `AgentPolicy`, and `AgentWorkingContext`
+- text run orchestration plus agent-mode handoff
+- planner/fallback plan writing for constrained agent proposals
+
+Remaining cleanup:
+
+- make provider capability visible before the user triggers an agent run
+- separate provider failure, planner failure, and tool failure in user-facing
+  recovery wording
 
 ### Phase 3: Internal Tool Registry
 
-- add typed tool registry for safe Taskplane domain tools
-- allow model/planner to request internal tools
-- write every tool call/result as run steps
-- route mutations through domain services
+Implemented baseline:
 
-Success: agent runs can update next step, create artifacts, and draft Decisions
-with traceable product semantics.
+- typed internal tool registry
+- read-only task context and timeline inspection tools
+- local note artifact creation tool
+- tool call/result step persistence
+- policy-driven confirmation checkpoints for confirmation-required tools
+
+Remaining cleanup:
+
+- add domain-shaped tools one at a time only when a Task flow needs them
+- keep local-write tools behind observation and checkpoint policy
 
 ### Phase 4: Checkpoints And Confirmation
 
-- add `run_checkpoints`
-- pause runs for confirmation-required actions
-- link checkpoints to Decisions when the decision changes task direction or
-  requires human judgment
+Implemented baseline:
 
-Success: the agent can stop at the right boundary instead of either failing or
-silently overreaching.
+- `run_checkpoints` schema, repository, and tests
+- confirmation checkpoints linked to Decisions
+- approved checkpoint Decision resumption
+- deferred/cancelled settlement as non-resumable
+- paused resume checkpoints for local-write gating
+- continuation from Runs and Tasks with visible failure feedback
 
-### Phase 5: Local Workspace Tools
+Remaining cleanup:
 
-- add read/search tools first
-- add patch/command tools behind explicit local policy
-- create artifacts from diffs, command summaries, and generated files
+- make checkpoint payload shape versioned before adding more tools
+- surface cancelled/non-resumable states more clearly in Home recommendations
 
-Success: Taskplane can start supporting coding-agent-like workflows while still
-keeping Task/Run/Decision as the product control plane.
+## Next Major Phase: Executor Session Boundary
 
-## First Concrete Next Task
+The next phase should define a durable executor/session boundary before adding
+workspace, browser, social, or coding tools. Without this boundary, new tools
+would couple directly to `AgentRunLoop` and make interruption, cancellation,
+provider capability, and restart recovery harder later.
 
-Implement Phase 1.
+Recommended contract:
 
-Recommended first code slice:
+```ts
+type AgentSessionRequest = {
+  runId: string;
+  taskId: string;
+  mode: 'draft' | 'summarize' | 'agent' | 'code' | 'research' | 'social';
+  objective: string;
+  context: AgentWorkingContext;
+  policy: AgentPolicy;
+  capabilities: AgentRuntimeCapabilities;
+};
 
-1. Add shared `RunStepRecord` types.
-2. Add `run_steps` schema and repository.
-3. Update `RunService` or a small `RunStepRecorder` to write:
-   - `plan` or `model` step before executor call
-   - `final` step on success
-   - `failed` step on error
-4. Add repository and service tests.
-5. Add a compact step summary section to Runs page.
+type AgentSessionEvent =
+  | { type: 'plan'; summary: string }
+  | { type: 'model'; output: string }
+  | { type: 'tool_call'; tool: string; input: unknown }
+  | { type: 'tool_result'; tool: string; result: AgentToolResult }
+  | { type: 'checkpoint'; checkpointId: string; reason: string }
+  | { type: 'final'; output: string };
 
-This gives the project the execution trace spine needed for the real agent layer
-without destabilizing provider support or front task-management behavior.
+type AgentSessionResult =
+  | { status: 'completed'; output: string }
+  | { status: 'failed'; failureKind: string; message: string }
+  | { status: 'paused'; checkpointId: string; message: string }
+  | { status: 'needs_confirmation'; checkpointId: string; message: string };
+```
+
+The executor owns step-by-step runtime progress. `RunService` should remain the
+settlement boundary that creates/updates the public `Run`, annotates `Task`,
+and persists artifacts.
+
+### Required Boundaries
+
+- `AgentExecutor`: starts or resumes one run session and emits typed session
+  events.
+- `AgentSessionStore`: persists enough session state to resume or explain why a
+  run cannot resume after restart.
+- `AgentRuntimeCapabilities`: records whether the selected provider supports
+  structured tool calling, text-only planning, streaming, file context, or
+  long-running sessions.
+- `AgentToolRegistry`: remains the only way executors mutate Taskplane domain
+  state.
+- `RunOrchestrator`: adapts session events into `run_steps`, checkpoints, and
+  final settlement.
+
+### First Concrete Next Task
+
+Implement the executor/session interface without adding new external tools.
+
+Recommended code slice:
+
+1. Add shared/internal types for `AgentSessionRequest`, `AgentSessionEvent`,
+   `AgentSessionResult`, and `AgentRuntimeCapabilities`.
+2. Extract the current `AgentRunLoop.run(...)` behavior behind an
+   `AgentExecutor` interface.
+3. Add a `LocalAgentExecutor` adapter that delegates to the existing loop, so
+   behavior stays unchanged.
+4. Teach `RunOrchestrator` to call the executor interface instead of the
+   concrete loop.
+5. Add unit tests proving current paused/completed/failed agent outcomes still
+   settle exactly as before.
+
+Success: no new user-facing capability is required, but the next coding,
+research, or social executor can plug in without changing `RunService` or the
+Task/Run/Decision product model.
