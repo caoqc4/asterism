@@ -1247,16 +1247,12 @@ export class HomeBriefService {
               (event.type === 'source_context.updated' &&
                 task.activeBlocker?.sourceContextId &&
                 (() => {
-                  const payload = event.payload
-                    ? (safeJsonParse(event.payload) as Record<string, unknown> | null)
-                    : null;
+                  const payload = event.payload ? safeJsonParse(event.payload) : null;
                   return payload?.sourceContextId === task.activeBlocker?.sourceContextId;
                 })()),
           )
           .map((event: TimelineEventRecord) => {
-            const payload = event.payload
-              ? (safeJsonParse(event.payload) as Record<string, unknown> | null)
-              : null;
+            const payload = event.payload ? safeJsonParse(event.payload) : null;
 
             if (event.type === 'source_context.updated' && task.activeBlocker) {
               return {
@@ -1330,9 +1326,7 @@ export class HomeBriefService {
               event.type === 'task_dependency.created' || event.type === 'task_dependency.resolved',
           )
           .map((event: TimelineEventRecord) => {
-            const payload = event.payload
-              ? (safeJsonParse(event.payload) as Record<string, unknown> | null)
-              : null;
+            const payload = event.payload ? safeJsonParse(event.payload) : null;
             const status = event.type === 'task_dependency.created' ? 'created' : 'resolved';
 
             return {
