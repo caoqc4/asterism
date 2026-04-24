@@ -329,6 +329,16 @@ describe('TaskService', () => {
         nextStep: null,
         timeline: [
           {
+            id: 'timeline_process_applied',
+            taskId: 'task_1',
+            type: 'process_template.applied',
+            payload: JSON.stringify({
+              templateId: 'process_template_1',
+              title: 'Outreach method',
+            }),
+            createdAt: '2026-01-02T02:00:00.000Z',
+          },
+          {
             id: 'timeline_run_failed',
             taskId: 'task_1',
             type: 'task.run_failed',

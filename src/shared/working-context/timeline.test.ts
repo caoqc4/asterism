@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  getLatestResumeRelevantTimelineEvent,
+  isResumeLatestChangeMetaEvent,
   getTaskTimelinePreviewEvents,
   getTaskTimelinePriority,
   getTaskTimelineResponsibilitySummary,
@@ -63,6 +65,22 @@ describe('getTaskTimelinePreviewEvents', () => {
     expect(getTaskTimelinePriority('process_template.skipped')).toBe('p2');
 
     expect(getTaskTimelinePriority('source_context.archived')).toBe('p3');
+  });
+
+  it('keeps process-template management events out of latest-change selection', () => {
+    expect(isResumeLatestChangeMetaEvent('process_template.applied')).toBe(true);
+    expect(isResumeLatestChangeMetaEvent('process_template.removed')).toBe(true);
+    expect(isResumeLatestChangeMetaEvent('process_template.selected')).toBe(true);
+    expect(isResumeLatestChangeMetaEvent('process_template.skipped')).toBe(true);
+    expect(isResumeLatestChangeMetaEvent('task.run_failed')).toBe(false);
+
+    expect(
+      getLatestResumeRelevantTimelineEvent([
+        { type: 'process_template.applied', payload: null },
+        { type: 'process_template.selected', payload: null },
+        { type: 'task.run_failed', payload: JSON.stringify({ failureReason: 'Model overloaded' }) },
+      ])?.type,
+    ).toBe('task.run_failed');
   });
 
   it('derives responsibility summaries for blocker and dependency events', () => {

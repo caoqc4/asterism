@@ -72,7 +72,12 @@ export function safeJsonParse(value: string): Record<string, unknown> | null {
 }
 
 export function isResumeLatestChangeMetaEvent(type: string): boolean {
-  return type === 'process_template.selected' || type === 'process_template.skipped';
+  return (
+    type === 'process_template.applied' ||
+    type === 'process_template.removed' ||
+    type === 'process_template.selected' ||
+    type === 'process_template.skipped'
+  );
 }
 
 export function getLatestResumeRelevantTimelineEvent(

@@ -9,6 +9,7 @@ import {
   getDependencyAgeReason,
   isStaleDependency,
 } from '../../../shared/working-context/dependency.js';
+import { getLatestResumeRelevantTimelineEvent } from '../../../shared/working-context/timeline.js';
 
 type TimelineLite = Array<Pick<TimelineEventRecord, 'type' | 'payload'>>;
 type CompletionStatusLite = {
@@ -107,16 +108,6 @@ function isCloseoutEvidenceChange(
     || recentChange.kind === 'decision_approved'
     || recentChange.kind === 'artifact_created'
   );
-}
-
-export function isResumeLatestChangeMetaEvent(type: string): boolean {
-  return type === 'process_template.selected' || type === 'process_template.skipped';
-}
-
-export function getLatestResumeRelevantTimelineEvent(
-  timeline: TimelineLite,
-): TimelineLite[number] | undefined {
-  return timeline.find((event) => !isResumeLatestChangeMetaEvent(event.type)) ?? timeline[0];
 }
 
 export function getCurrentMethodSelectionReason(params: {
