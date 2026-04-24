@@ -9,6 +9,7 @@ Describe the purpose of this change.
 ## Validation
 
 - [ ] `npm run verify`
+- [ ] `npm run smoke:build` if package/build entrypoints changed
 
 ## Notes
 
