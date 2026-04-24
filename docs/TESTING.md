@@ -85,17 +85,17 @@ Covered today:
 - `ArtifactRepository`
   artifact persistence, recent ordering, and timeline writes
 - `SourceContextRepository`
-  source-context creation, updates, archiving, and active-task listing behavior
+  source-context creation, updates, archiving, active-task listing behavior, and empty bulk lookup guards
 - `BlockerRepository`
-  active blocker creation, updates, resolution, and per-task active lookup behavior
+  active blocker creation, updates, resolution, per-task active lookup behavior, and empty bulk lookup guards
 - `TaskDependencyRepository`
-  active task-dependency creation, updates, resolution, and per-task active lookup behavior
+  active task-dependency creation, updates, resolution, per-task active lookup behavior, and empty bulk lookup guards
 - `CompletionCriteriaRepository`
-  completion-criteria creation, updates, satisfy/reopen flows, and per-task ordering behavior
+  completion-criteria creation, updates, satisfy/reopen flows, per-task ordering behavior, and empty bulk lookup guards
 - `ProcessTemplateRepository`
   reusable process-template creation, updates, archive behavior, and active listing
 - `TaskProcessBindingRepository`
-  task-level template apply/remove flows and active binding listing
+  task-level template apply/remove flows, active binding listing, and empty bulk lookup guards
 
 These tests verify real SQLite behavior rather than mocked repository calls.
 
