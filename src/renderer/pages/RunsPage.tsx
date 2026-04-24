@@ -280,6 +280,17 @@ export function RunsPage({
     }
   }
 
+  async function retryPausedRun(run: RunDetailRecord): Promise<void> {
+    const created = await onTriggerRun({
+      taskId: run.taskId,
+      type: 'agent',
+      instructions: `已处理暂停原因后重新触发 agent run。上次暂停原因：${run.output || run.failureReason || '未记录'}`,
+    });
+
+    setSelectedRunId(created.id);
+    await onRefresh();
+  }
+
   const relatedTimeline = detail
     ? getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.id)
     : [];
@@ -342,6 +353,15 @@ export function RunsPage({
                 >
                   回到任务推进
                 </button>
+                {detail.status === 'paused' ? (
+                  <button
+                    className="ghost-button"
+                    onClick={() => void retryPausedRun(detail)}
+                    type="button"
+                  >
+                    重新触发 agent run
+                  </button>
+                ) : null}
               </div>
             </div>
             <div className="task-card detail-card-group detail-card-wide">
