@@ -660,6 +660,26 @@ export function buildHomeResumeLatestChange(params: {
       };
     }
 
+    if (latestActivity.sourceType === 'blocker') {
+      return {
+        summary:
+          latestActivity.status === 'resolved'
+            ? `最近阻塞项已解除：${latestActivity.title}。`
+            : latestActivity.status === 'source_updated'
+              ? `阻塞项相关来源刚更新：${latestActivity.title}。`
+              : `最近新增阻塞项：${latestActivity.title}。`,
+        action: {
+          label: latestActivity.relatedSourceContextId ? '查看来源' : null,
+          targetType: latestActivity.relatedSourceContextId ? 'source_context' : null,
+          targetId: latestActivity.relatedSourceContextId ?? null,
+        },
+        recentChange: {
+          kind: 'blocker_changed',
+          title: latestActivity.title,
+        },
+      };
+    }
+
     return {
       summary:
         latestActivity.status === 'completed' && isCloseoutCompletionProgress(completionStatus)

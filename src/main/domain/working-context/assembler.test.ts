@@ -59,4 +59,34 @@ describe('buildHomeResumeLatestChange', () => {
       },
     });
   });
+
+  it('does not treat blocker activity as a run action on home resume previews', () => {
+    const latestChange = buildHomeResumeLatestChange({
+      latestActivity: {
+        id: 'blocker:blocker_1:resolved',
+        sourceType: 'blocker',
+        sourceId: 'blocker_1',
+        relatedSourceContextId: null,
+        taskId: 'task_1',
+        taskTitle: 'Prepare launch brief',
+        title: 'Need product sign-off',
+        status: 'resolved',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      keySource: null,
+    });
+
+    expect(latestChange).toMatchObject({
+      summary: '最近阻塞项已解除：Need product sign-off。',
+      action: {
+        label: null,
+        targetType: null,
+        targetId: null,
+      },
+      recentChange: {
+        kind: 'blocker_changed',
+        title: 'Need product sign-off',
+      },
+    });
+  });
 });

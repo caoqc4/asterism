@@ -435,10 +435,7 @@ function classifyPriorityLane(params: {
   staleBlockerTaskCount: number;
   staleDependencyTaskCount: number;
   highRiskTaskCount: number;
-  pendingDecisionCount: number;
-  blockerTaskCount: number;
-  dependencyTaskCount: number;
-  blockerReevaluationCount: number;
+  unblockOrDecideTaskCount: number;
   dependencyRecoveryCount: number;
   completionReadyTaskCount: number;
   nearCompletionTaskCount: number;
@@ -474,20 +471,10 @@ function classifyPriorityLane(params: {
     };
   }
 
-  const unresolvedDependencyCount = Math.max(
-    0,
-    params.dependencyTaskCount - params.dependencyRecoveryCount,
-  );
-  const unblockOrDecideCount =
-    params.pendingDecisionCount +
-    params.blockerTaskCount +
-    unresolvedDependencyCount +
-    params.blockerReevaluationCount;
-
-  if (unblockOrDecideCount > 0) {
+  if (params.unblockOrDecideTaskCount > 0) {
     return {
       lane: 'unblock_or_decide',
-      headline: `当前有 ${unblockOrDecideCount} 条任务需要先解阻塞或拍板`,
+      headline: `当前有 ${params.unblockOrDecideTaskCount} 条任务需要先解阻塞或拍板`,
       lede: '当前最值得先处理的是解阻塞与拍板条件；首页会优先提示 pending decision、active blocker、上游任务依赖，以及 blocker 来源更新后的重新判断。',
     };
   }
@@ -1560,11 +1547,23 @@ export class HomeBriefService {
       recentArtifacts,
     });
 
-    const blockerReevaluationCount = recentSourceContexts.filter((sourceContext) =>
-      activeTasks.some(
-        (task) => task.id === sourceContext.taskId && task.activeBlocker?.sourceContextId === sourceContext.id,
-      ),
-    ).length;
+    const blockerReevaluationTaskIds = recentSourceContexts
+      .filter((sourceContext) =>
+        activeTasks.some(
+          (task) => task.id === sourceContext.taskId && task.activeBlocker?.sourceContextId === sourceContext.id,
+        ),
+      )
+      .map((sourceContext) => sourceContext.taskId);
+    const dependencyRecoveryTaskIds = new Set(dependencyReevaluations.map((item) => item.taskId));
+    const unresolvedDependencyTaskIds = dependencyTasks
+      .filter((task) => !dependencyRecoveryTaskIds.has(task.id))
+      .map((task) => task.id);
+    const unblockOrDecideTaskCount = new Set([
+      ...pendingDecisions.map((decision) => decision.taskId),
+      ...blockerTasks.map((task) => task.id),
+      ...unresolvedDependencyTaskIds,
+      ...blockerReevaluationTaskIds,
+    ]).size;
     const continueOrReviewCount = [
       ...new Set([
         ...recentArtifacts.map((artifact) => artifact.taskId),
@@ -1583,16 +1582,13 @@ export class HomeBriefService {
           .map((activity) => activity.taskId),
       ]),
     ].length;
-    const dependencyRecoveryCount = [...new Set(dependencyReevaluations.map((item) => item.taskId))].length;
+    const dependencyRecoveryCount = dependencyRecoveryTaskIds.size;
     const prioritySummary = classifyPriorityLane({
       escalationTaskCount: escalationTasks.length,
       staleBlockerTaskCount: escalationBlockerTasks.length,
       staleDependencyTaskCount: escalationDependencyTasks.length,
       highRiskTaskCount: highRiskTasks.length,
-      pendingDecisionCount: pendingDecisions.length,
-      blockerTaskCount: blockerTasks.length,
-      dependencyTaskCount: dependencyTasks.length,
-      blockerReevaluationCount,
+      unblockOrDecideTaskCount,
       dependencyRecoveryCount,
       completionReadyTaskCount: completionReadyTasks.length,
       nearCompletionTaskCount: nearCompletionTasks.length,

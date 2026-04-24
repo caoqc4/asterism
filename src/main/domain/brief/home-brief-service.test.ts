@@ -631,7 +631,14 @@ describe('HomeBriefService', () => {
         ]),
       } as never,
       {
-        listActiveForTasks: vi.fn().mockResolvedValue([]),
+        listActiveForTasks: vi.fn().mockResolvedValue([
+          buildSourceContext({
+            id: 'source_context_blocker_activity',
+            taskId: 'task_blocker_source_activity',
+            title: 'Updated source memo',
+            isKey: true,
+          }),
+        ]),
       } as never,
       {
         listRecent: vi.fn().mockResolvedValue([]),
@@ -1000,8 +1007,16 @@ describe('HomeBriefService', () => {
           buildTask({
             id: 'task_blocker_source_activity',
             title: 'Blocker source activity task',
-            state: 'waiting_external',
-            nextStep: null,
+            state: 'planned',
+            nextStep: 'Review the updated source memo',
+            activeBlocker: buildBlocker({
+              id: 'blocker_activity_source',
+              taskId: 'task_blocker_source_activity',
+              title: 'Need revised outreach list',
+              sourceContextId: 'source_context_blocker_activity',
+              createdAt: '2026-04-23T00:00:00.000Z',
+              updatedAt: '2026-04-23T00:00:00.000Z',
+            }),
           }),
         ]),
         getDetail: vi.fn().mockResolvedValue(
@@ -1026,6 +1041,8 @@ describe('HomeBriefService', () => {
             taskId: 'task_blocker_source_activity',
             title: 'Need revised outreach list',
             sourceContextId: 'source_context_blocker_activity',
+            createdAt: '2026-04-23T00:00:00.000Z',
+            updatedAt: '2026-04-23T00:00:00.000Z',
           }),
         ]),
       } as never,
@@ -1039,7 +1056,14 @@ describe('HomeBriefService', () => {
         listRecent: vi.fn().mockResolvedValue([]),
       } as never,
       {
-        listActiveForTasks: vi.fn().mockResolvedValue([]),
+        listActiveForTasks: vi.fn().mockResolvedValue([
+          buildSourceContext({
+            id: 'source_context_blocker_activity',
+            taskId: 'task_blocker_source_activity',
+            title: 'Updated source memo',
+            isKey: true,
+          }),
+        ]),
       } as never,
       {
         listRecent: vi.fn().mockResolvedValue([]),
@@ -1061,6 +1085,20 @@ describe('HomeBriefService', () => {
         status: 'source_updated',
       }),
     );
+    expect(homeData.priorityLane).toBe('unblock_or_decide');
+    expect(homeData.priorityHeadline).toBe('当前有 1 条任务需要先解阻塞或拍板');
+    expect(homeData.recommendedActions.map((action) => action.id)).toEqual([
+      'blocker:blocker_activity_source',
+      'source-context:blocker:source_context_blocker_activity',
+    ]);
+    expect(homeData.recentTaskResumes[0]?.latestChange).toMatchObject({
+      summary: '阻塞项相关来源刚更新：Need revised outreach list。',
+      action: {
+        label: '查看来源',
+        targetType: 'source_context',
+        targetId: 'source_context_blocker_activity',
+      },
+    });
   });
 
   it('orders blocked tasks and blocker-driven actions by blocker age', async () => {
