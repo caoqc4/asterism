@@ -4,9 +4,9 @@ This assessment maps the alpha checklist to the current automated coverage and t
 
 ## Summary
 
-Current status: not alpha-accepted yet. A focused manual alpha pass is now underway and has covered the core local path through task creation, task state transition, decision creation, no-key run failure, Home recovery, Settings config save, and unsigned macOS directory packaging.
+Current status: functionally alpha-accepted for the local unsigned build path, with signed/notarized release work still deferred. A focused manual alpha pass has covered the core local path through task creation, task state transition, decision creation, no-key run failure, successful AI-backed run, Home recovery, Settings config save, and unsigned macOS directory packaging.
 
-Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now narrower: validate a successful AI-backed run with deliberate test credentials and defer signed/notarized release work until the unsigned package path stays stable.
+Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now release-focused: keep local verification as the source of truth while GitHub Actions quota is unavailable, and defer signed/notarized release work until the unsigned package path stays stable.
 
 ## Verification Gate
 
@@ -58,7 +58,7 @@ Manual result / need:
 
 ## Decision And Run Loop
 
-Status: no-key failure path validated manually; real-key success still pending.
+Status: validated manually for both no-key failure and successful AI-backed draft run.
 
 Automated coverage:
 
@@ -71,7 +71,7 @@ Manual result / need:
 
 - decision creation from the Decisions page worked and surfaced in Home recommended actions and Pending Decisions
 - draft run without Keychain API key failed clearly with `AI API Key is not configured in system Keychain`
-- real AI-backed draft/run behavior still needs deliberate test credentials
+- with deliberate local `.env` Replicate credentials, the dev app triggered a `draft` run for `Replicate alpha successful run check` under isolated `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-replicate-run-20260424`; SQLite confirmed `status=completed`, `output_source=ai`, output length `1540`, a `run.completed` timeline event, a `run_output` artifact, and a next-step update
 
 ## Completion Loop
 
@@ -104,7 +104,7 @@ Manual result / need:
 - Home exposed high-risk, pending-decision, failed-run, and closeout-progress signals coherently in the same session
 - fixed issues found during the pass: duplicate unblock task count, blocker activity mislabelled as `查看 Run`, and captured task activity being re-sorted by later updates
 - packaged app Home fixture under `/tmp/taskplane-alpha-home-open-items-20260424` re-tested the unique-task headline fix and opened key source, recent activity, blocked key signal, and resume preview entries back into the expected task/source/blocker recovery targets
-- approved-decision positive evidence now validates closeout-ready Home wording; real completed-run evidence remains pending until test credentials exist
+- approved-decision positive evidence validates closeout-ready Home wording, and the successful Replicate run now provides real completed-run evidence for the run/artifact timeline path
 
 ## Settings And Local Config
 
@@ -141,9 +141,9 @@ Manual need:
 
 ## Recommended Next Step
 
-Finish the remaining alpha checks in this order:
+Finish the remaining alpha work in this order:
 
-1. Run a successful AI-backed draft/run only with deliberate test credentials.
-2. Keep signed/notarized packaging out of scope until that product-path check passes.
+1. Keep signed/notarized packaging out of scope until the unsigned local path has stayed stable through another release pass.
+2. Convert remaining alpha friction, especially long-detail navigation, into small acceptance fixes instead of adding new domain objects.
 
-Do not expand the domain model until that pass is complete.
+Do not expand the domain model until the release-readiness pass is cleaner.

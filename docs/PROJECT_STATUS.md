@@ -20,6 +20,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - Bulk repository lookup guards are covered for empty task-id lists.
 - Timeline payload parsing, recent-change typing, and repository helper logic have been consolidated.
 - Local verification fallback is documented for periods when GitHub Actions is unavailable because of monthly quota.
+- Local `.env` AI configuration now supports Replicate-backed draft runs; a deliberate local Replicate run completed with `output_source=ai`, timeline events, and a persisted artifact.
 
 ## Verification Baseline
 
@@ -46,14 +47,14 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 - The product surface is already broad; more feature work should be tied to a concrete user flow or alpha acceptance criterion.
 - README and testing documentation are comprehensive but long, so future docs should prefer concise status and decision notes over expanding the feature inventory.
 - Dependency upgrades that touch Electron or Vite should stay out of opportunistic cleanup work and go through a dedicated upgrade pass.
-- End-to-end packaged-app coverage is still manual; local smoke checks plus isolated packaged-app passes are the current substitute.
+- Signed/notarized release coverage is still manual and deferred; local smoke checks plus isolated dev and packaged-app passes are the current substitute.
 
 ## Recommended Next Focus
 
-1. Run a successful AI-backed draft/run only when deliberate test credentials are available.
-2. Keep signed/notarized release work deferred until that product-path check passes.
+1. Keep signed/notarized release work deferred until the unsigned local path has stayed stable through another release pass.
+2. Turn remaining alpha friction, especially long-detail navigation, into small acceptance fixes.
 3. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 4. Defer GitHub Actions work until quota is restored.
-5. Convert any remaining alpha friction into small acceptance fixes instead of adding new domain objects.
+5. Avoid adding new domain objects until the release-readiness pass is cleaner.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
