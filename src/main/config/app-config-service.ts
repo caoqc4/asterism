@@ -62,8 +62,12 @@ function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
 export class AppConfigService {
   constructor(private readonly userDataPathResolver: () => string = defaultUserDataPathResolver) {}
 
+  getConfigPath(): string {
+    return getConfigPath(this.userDataPathResolver);
+  }
+
   read(): AppConfigFile {
-    const configPath = getConfigPath(this.userDataPathResolver);
+    const configPath = this.getConfigPath();
 
     const current = this.readExistingConfig();
 
@@ -110,12 +114,12 @@ export class AppConfigService {
       updatedAt: new Date().toISOString(),
     });
 
-    fs.writeFileSync(getConfigPath(this.userDataPathResolver), JSON.stringify(merged, null, 2), 'utf8');
+    fs.writeFileSync(this.getConfigPath(), JSON.stringify(merged, null, 2), 'utf8');
     return merged;
   }
 
   private readExistingConfig(): AppConfigFile | null {
-    const configPath = getConfigPath(this.userDataPathResolver);
+    const configPath = this.getConfigPath();
 
     try {
       if (!fs.existsSync(configPath)) {

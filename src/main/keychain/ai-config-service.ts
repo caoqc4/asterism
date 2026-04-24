@@ -1,7 +1,7 @@
 import keytar from 'keytar';
 
 import type { AiConfigInput, AiConfigStatus, AiProvider, FeatureFlags } from '../../shared/types/settings.js';
-import { AppConfigService, getConfigPath } from '../config/app-config-service.js';
+import { AppConfigService } from '../config/app-config-service.js';
 
 const SERVICE_NAME = 'taskplane';
 const LEGACY_SERVICE_NAME = 'supersecretary';
@@ -44,7 +44,7 @@ export class AiConfigService {
       provider: config.aiProvider,
       model: config.aiModel,
       updatedAt: config.updatedAt,
-      configPath: getConfigPath(),
+      configPath: this.appConfigService.getConfigPath(),
       featureFlags: config.featureFlags,
     };
   }
@@ -68,7 +68,7 @@ export class AiConfigService {
       provider: config.aiProvider,
       model: config.aiModel,
       updatedAt: config.updatedAt,
-      configPath: getConfigPath(),
+      configPath: this.appConfigService.getConfigPath(),
       featureFlags: config.featureFlags,
     };
   }
