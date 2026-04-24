@@ -14,6 +14,10 @@ What problem are you trying to solve?
 
 Describe the feature or workflow change.
 
+## Acceptance criteria
+
+-
+
 ## Why it matters
 
 Who benefits, and how?

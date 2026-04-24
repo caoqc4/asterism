@@ -34,3 +34,8 @@ What happened instead?
 ## Logs or screenshots
 
 Add anything useful here.
+
+## Validation tried
+
+- [ ] Reproduced on latest `main`
+- [ ] Ran `npm run verify`
