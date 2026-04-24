@@ -21,6 +21,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - Timeline payload parsing, recent-change typing, and repository helper logic have been consolidated.
 - Local verification fallback is documented for periods when GitHub Actions is unavailable because of monthly quota.
 - Local `.env` AI configuration now supports Replicate-backed draft runs; a deliberate local Replicate run completed with `output_source=ai`, timeline events, and a persisted artifact.
+- Task detail now has a compact section jump bar for Current, Completion, Action, Activity, and Context Studio, reducing long-scroll friction found during alpha validation.
 
 ## Verification Baseline
 
@@ -52,7 +53,7 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 ## Recommended Next Focus
 
 1. Keep signed/notarized release work deferred until the unsigned local path has stayed stable through another release pass.
-2. Turn remaining alpha friction, especially long-detail navigation, into small acceptance fixes.
+2. Re-check the new task-detail section jumps in the next packaged-app pass, and keep any further alpha friction as small acceptance fixes.
 3. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 4. Defer GitHub Actions work until quota is restored.
 5. Avoid adding new domain objects until the release-readiness pass is cleaner.

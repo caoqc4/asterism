@@ -34,7 +34,7 @@ Manual result / need:
 
 - real desktop task creation, detail open, summary save, and next-step save worked in isolated userData
 - packaged app task UI transitioned `State transition alpha check` from `captured` to `planned` in isolated SQLite under `/tmp/taskplane-alpha-state-transition-20260424`; SQLite confirmed the final state and `task.transitioned` timeline payload
-- first-screen recovery is coherent, but long-detail navigation remains awkward for lower sections
+- first-screen recovery is coherent; a compact task-detail section jump bar now reduces lower-section navigation friction
 
 ## Context Objects
 
@@ -54,7 +54,7 @@ Manual result / need:
 - packaged app task UI created `DB source` and `DB process` in a clean isolated run under `/tmp/taskplane-alpha-db-probe-20260424`; SQLite confirmed the key source row, active process template row, and active task-process binding row
 - packaged app task UI edited and archived source/process context under `/tmp/taskplane-alpha-source-process-edit-20260424`; SQLite confirmed `Edited source via UI`, source archived state, process archive checkpoint, and `Edited process via UI`
 - Home and task resume reflected blocker/source/method context correctly after the Home fixes
-- long-detail navigation remains a usability debt, but source/process create/edit/archive is now functionally covered
+- source/process create/edit/archive is functionally covered, with task-detail section jumps added to make the lower Context Studio sections easier to reach
 
 ## Decision And Run Loop
 
@@ -88,7 +88,7 @@ Manual result / need:
 - packaged app task UI created a criterion, marked it satisfied, reopened it, and persisted the final open criterion in isolated SQLite under `/tmp/taskplane-alpha-criteria-ui-20260424`
 - failed run surfaced as potential evidence without making the task closeout-ready
 - packaged app Home showed closeout-ready wording from an isolated positive-evidence fixture with one satisfied criterion and one approved decision; `查看最终收尾依据` opened the approved Decision
-- long-detail navigation remains a usability debt, but the criteria create/satisfy/reopen path is now functionally covered
+- the criteria create/satisfy/reopen path is functionally covered, with task-detail section jumps added to make criteria and action sections easier to revisit
 
 ## Home Recovery Loop
 
@@ -144,6 +144,6 @@ Manual need:
 Finish the remaining alpha work in this order:
 
 1. Keep signed/notarized packaging out of scope until the unsigned local path has stayed stable through another release pass.
-2. Convert remaining alpha friction, especially long-detail navigation, into small acceptance fixes instead of adding new domain objects.
+2. Re-check the new task-detail section jumps in the next packaged-app pass and keep any further alpha friction as small acceptance fixes.
 
 Do not expand the domain model until the release-readiness pass is cleaner.

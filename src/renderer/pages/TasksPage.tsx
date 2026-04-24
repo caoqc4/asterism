@@ -792,11 +792,15 @@ export function TasksPage({
   const [detailError, setDetailError] = useState<string | null>(null);
   const [transitionError, setTransitionError] = useState<string | null>(null);
   const [showAllTimeline, setShowAllTimeline] = useState(false);
+  const currentSnapshotSectionRef = useRef<HTMLDivElement | null>(null);
   const detailFormRef = useRef<HTMLFormElement | null>(null);
   const quickActionsRef = useRef<HTMLDivElement | null>(null);
   const quickDecisionCardRef = useRef<HTMLFormElement | null>(null);
   const quickRunCardRef = useRef<HTMLFormElement | null>(null);
   const transitionCardRef = useRef<HTMLDivElement | null>(null);
+  const actionDeskSectionRef = useRef<HTMLDivElement | null>(null);
+  const activityFeedSectionRef = useRef<HTMLDivElement | null>(null);
+  const contextStudioSectionRef = useRef<HTMLDivElement | null>(null);
   const blockerSectionRef = useRef<HTMLDivElement | null>(null);
   const completionCriteriaSectionRef = useRef<HTMLDivElement | null>(null);
   const dependencySectionRef = useRef<HTMLDivElement | null>(null);
@@ -1595,6 +1599,23 @@ export function TasksPage({
     }
   }
 
+  function focusTaskDetailSection(target: 'snapshot' | 'completion' | 'action' | 'activity' | 'studio') {
+    const node =
+      target === 'snapshot'
+        ? currentSnapshotSectionRef.current
+        : target === 'completion'
+          ? completionCriteriaSectionRef.current
+          : target === 'action'
+            ? actionDeskSectionRef.current
+            : target === 'activity'
+              ? activityFeedSectionRef.current
+              : contextStudioSectionRef.current;
+
+    if (typeof node?.scrollIntoView === 'function') {
+      node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
   function adoptResumeNextStep() {
     if (!detail) {
       return;
@@ -2094,7 +2115,25 @@ export function TasksPage({
         </div>
         {detail ? (
           <>
-            <div className="transition-group detail-stage">
+            <nav aria-label="Task detail sections" className="detail-jump-nav">
+              <button type="button" onClick={() => focusTaskDetailSection('snapshot')}>
+                当前
+              </button>
+              <button type="button" onClick={() => focusTaskDetailSection('completion')}>
+                完成
+              </button>
+              <button type="button" onClick={() => focusTaskDetailSection('action')}>
+                动作
+              </button>
+              <button type="button" onClick={() => focusTaskDetailSection('activity')}>
+                历史
+              </button>
+              <button type="button" onClick={() => focusTaskDetailSection('studio')}>
+                管理
+              </button>
+            </nav>
+
+            <div className="transition-group detail-stage" ref={currentSnapshotSectionRef}>
                 <div className="detail-stage-head">
                   <div>
                     <p className="eyebrow">Current Snapshot</p>
@@ -2773,7 +2812,7 @@ export function TasksPage({
               </div>
             </div>
 
-            <div className="transition-group detail-stage">
+            <div className="transition-group detail-stage" ref={actionDeskSectionRef}>
               <div className="detail-stage-head">
                 <div>
                   <p className="eyebrow">Action Desk</p>
@@ -2864,7 +2903,7 @@ export function TasksPage({
               </div>
             </div>
 
-            <div className="transition-group detail-stage">
+            <div className="transition-group detail-stage" ref={activityFeedSectionRef}>
               <div className="detail-stage-head">
                 <div>
                   <p className="eyebrow">Activity Feed</p>
@@ -3004,7 +3043,7 @@ export function TasksPage({
               </div>
             </div>
 
-            <div className="transition-group detail-stage">
+            <div className="transition-group detail-stage" ref={contextStudioSectionRef}>
               <div className="detail-stage-head">
                 <div>
                   <p className="eyebrow">Context Studio</p>

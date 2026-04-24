@@ -3730,6 +3730,42 @@ describe('App UI flow', () => {
     expect(screen.getByRole('button', { name: '新增方法模板' })).toBeTruthy();
   });
 
+  it('offers compact jumps across long task detail sections', async () => {
+    const user = userEvent.setup();
+    const scrollIntoView = vi.fn();
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+
+    try {
+      render(<App />);
+
+      await user.click(screen.getByRole('button', { name: /tasks/i }));
+      await user.click(await screen.findByRole('button', { name: /high risk task/i }));
+      await screen.findByRole('heading', { name: 'High risk task' });
+
+      const sectionNav = screen.getByRole('navigation', { name: 'Task detail sections' });
+
+      expect(within(sectionNav).getByRole('button', { name: '当前' })).toBeTruthy();
+      expect(within(sectionNav).getByRole('button', { name: '完成' })).toBeTruthy();
+      expect(within(sectionNav).getByRole('button', { name: '动作' })).toBeTruthy();
+      expect(within(sectionNav).getByRole('button', { name: '历史' })).toBeTruthy();
+      expect(within(sectionNav).getByRole('button', { name: '管理' })).toBeTruthy();
+
+      await user.click(within(sectionNav).getByRole('button', { name: '动作' }));
+
+      expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    } finally {
+      Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+        configurable: true,
+        value: originalScrollIntoView,
+      });
+    }
+  });
+
   it('creates and edits source context items from task detail', async () => {
     const user = userEvent.setup();
 
