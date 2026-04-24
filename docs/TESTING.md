@@ -17,6 +17,7 @@ Current test files:
 - `src/main/domain/decision/decision-service.test.ts`
 - `src/main/domain/run/run-service.test.ts`
 - `src/main/domain/brief/home-brief-service.test.ts`
+- `src/main/domain/working-context/assembler.test.ts`
 - `src/main/scheduler/scheduler-service.test.ts`
 - `src/main/db/repositories/task-repository.integration.test.ts`
 - `src/main/db/repositories/run-repository.integration.test.ts`
@@ -179,6 +180,7 @@ Covered today:
 - task timeline actions and related-task timeline actions now assert lane-aware follow-up wording in renderer flows
 - compact task timeline previews now assert lane-aware event selection in shared working-context tests
 - latest-change selection now asserts action-shaping timeline events stay ahead of newer weak trace events
+- home resume latest-change derivation now asserts meaningful task timeline events can fill gaps when global home activity does not include that task
 - `Decisions` page current-focus and queue navigation
 - `Decisions / Runs -> Tasks` follow-up return flows
 - `Decisions / Runs` related-task timeline context

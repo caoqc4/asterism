@@ -9,7 +9,12 @@ import {
   getDependencyAgeReason,
   isStaleDependency,
 } from '../../../shared/working-context/dependency.js';
-import { getLatestResumeRelevantTimelineEvent } from '../../../shared/working-context/timeline.js';
+import {
+  getLatestResumeRelevantTimelineEvent,
+  getTaskTimelineObjectAction,
+  getTaskTimelinePriority,
+  interpretTaskTimelineEvent,
+} from '../../../shared/working-context/timeline.js';
 
 type TimelineLite = Array<Pick<TimelineEventRecord, 'type' | 'payload'>>;
 type CompletionStatusLite = {
@@ -52,6 +57,10 @@ type WorkingContextRecentChange =
     }
   | {
       kind: 'task_dependency_resolved';
+      title?: string;
+    }
+  | {
+      kind: 'completion_criteria_changed';
       title?: string;
     }
   | {
@@ -642,6 +651,7 @@ export function buildTaskResumeLatestChange(
 
 export function buildHomeResumeLatestChange(params: {
   latestActivity: HomeActivityRecord | undefined;
+  timeline?: TimelineLite;
   keySource: Pick<SourceContextRecord, 'id' | 'title'> | null;
   activeBlocker?: Pick<BlockerRecord, 'id' | 'title' | 'sourceContextId'> | null;
   activeDependency?: { blockedByTaskTitle: string | null } | null;
@@ -734,6 +744,17 @@ export function buildHomeResumeLatestChange(params: {
               : 'unknown',
         title: latestActivity.title,
       },
+    };
+  }
+
+  const latestTimelineEvent = params.timeline ? getLatestResumeRelevantTimelineEvent(params.timeline) : undefined;
+
+  if (latestTimelineEvent && getTaskTimelinePriority(latestTimelineEvent.type) !== 'p3') {
+    const interpreted = interpretTaskTimelineEvent(latestTimelineEvent);
+    return {
+      summary: interpreted.summary,
+      action: getTaskTimelineObjectAction(latestTimelineEvent),
+      recentChange: interpreted.recentChange,
     };
   }
 

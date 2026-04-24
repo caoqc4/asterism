@@ -810,6 +810,7 @@ export class HomeBriefService {
 
       const latestChange = buildHomeResumeLatestChange({
         latestActivity,
+        timeline,
         keySource,
         activeBlocker: task.activeBlocker
           ? {

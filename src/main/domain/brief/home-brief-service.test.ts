@@ -376,7 +376,7 @@ describe('HomeBriefService', () => {
       lane: 'escalate_now',
       currentState: '状态：running · 风险：high · Deadline slipping',
       latestChange: {
-        summary: '最近关键来源更新：Escalation source memo',
+        summary: '最近更新了来源材料：Escalation source memo。',
       },
       currentBlocker: {
         title: null,
