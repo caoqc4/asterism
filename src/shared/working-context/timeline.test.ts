@@ -4,6 +4,7 @@ import {
   explainTaskTimelineEvent,
   formatTaskTimelineEventSummary,
   getLatestResumeRelevantTimelineEvent,
+  getTaskTimelineEventLabel,
   isResumeLatestChangeMetaEvent,
   getTaskTimelineFollowUpActionLabel,
   getTaskTimelineObjectAction,
@@ -101,6 +102,12 @@ describe('getTaskTimelinePreviewEvents', () => {
         payload: null,
       }),
     ).toBe('custom.audit_event');
+  });
+
+  it('formats event labels while preserving unknown event types', () => {
+    expect(getTaskTimelineEventLabel('task.run_failed')).toBe('执行失败');
+    expect(getTaskTimelineEventLabel('completion_criteria.satisfied')).toBe('完成标准');
+    expect(getTaskTimelineEventLabel('custom.audit_event')).toBe('custom.audit_event');
   });
 
   it('prioritizes lane-critical events ahead of weaker explanatory items in compact previews', () => {

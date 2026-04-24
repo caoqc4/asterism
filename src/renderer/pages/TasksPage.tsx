@@ -45,6 +45,7 @@ import type {
 } from '@shared/types/task';
 import {
   formatTaskTimelineEventSummary,
+  getTaskTimelineEventLabel,
   getTaskTimelineFollowUpActionLabel,
   getTaskTimelineLane,
   getTaskTimelineLaneLabel,
@@ -366,70 +367,6 @@ function formatValue(value: unknown): string {
   }
 
   return String(value);
-}
-
-function formatTimelineBadge(type: string): string {
-  switch (type) {
-    case 'task.created':
-      return '创建';
-    case 'task.decision_approved':
-      return '决策批准';
-    case 'task.decision_deferred':
-      return '决策延后';
-    case 'task.decision_cancelled':
-      return '决策取消';
-    case 'task.run_failed':
-      return '执行失败';
-    case 'task.run_completed':
-      return '执行完成';
-    case 'task.transitioned':
-      return '状态';
-    case 'task.next_step_changed':
-      return '下一步';
-    case 'task.waiting_changed':
-      return '等待';
-    case 'waiting_item.created':
-      return '等待项';
-    case 'waiting_item.updated':
-      return '等待项';
-    case 'waiting_item.resolved':
-      return '等待项';
-    case 'artifact.created':
-      return '产物';
-    case 'source_context.created':
-      return '来源';
-    case 'source_context.updated':
-      return '来源';
-    case 'source_context.archived':
-      return '来源';
-    case 'blocker.created':
-    case 'blocker.updated':
-    case 'blocker.resolved':
-      return '阻塞';
-    case 'task_dependency.created':
-    case 'task_dependency.updated':
-    case 'task_dependency.resolved':
-      return '依赖';
-    case 'completion_criteria.created':
-    case 'completion_criteria.updated':
-    case 'completion_criteria.satisfied':
-    case 'completion_criteria.reopened':
-      return '完成标准';
-    case 'process_template.applied':
-      return '方法';
-    case 'process_template.removed':
-      return '方法';
-    case 'process_template.selected':
-      return '方法';
-    case 'process_template.skipped':
-      return '方法';
-    case 'task.risk_changed':
-      return '风险';
-    case 'task.updated':
-      return '更新';
-    default:
-      return type;
-  }
 }
 
 function getTimelineToneClass(type: string): string {
@@ -3024,7 +2961,7 @@ export function TasksPage({
                               <span
                                 className={`signal-pill timeline-badge ${getTimelineToneClass(event.type)}`}
                               >
-                                {formatTimelineBadge(event.type)}
+                                {getTaskTimelineEventLabel(event.type)}
                               </span>
                               <span className="signal-pill timeline-priority-pill">
                                 {getTaskTimelinePriorityLabel(event.type)}
