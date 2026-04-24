@@ -77,4 +77,17 @@ describe('AppConfigService', () => {
     expect(saved.aiProvider).toBe('openai');
     expect(saved.aiModel).toBe('gpt-4.1-mini');
   });
+
+  it('falls back to default config when legacy settings are corrupt', async () => {
+    const { AppConfigService, getConfigPath } = await import('./app-config-service.js');
+    const legacyPath = path.join(tempRoot, 'settings.json');
+    fs.writeFileSync(legacyPath, '{bad json', 'utf8');
+
+    const service = new AppConfigService(() => tempRoot);
+    const config = service.read();
+
+    expect(config.aiProvider).toBe('anthropic');
+    expect(config.aiModel).toBe('claude-3-5-sonnet-latest');
+    expect(fs.existsSync(getConfigPath(() => tempRoot))).toBe(true);
+  });
 });

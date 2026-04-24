@@ -67,19 +67,23 @@ export class AppConfigService {
     const legacyPath = getLegacySettingsPath(this.userDataPathResolver);
 
     if (fs.existsSync(legacyPath)) {
-      const raw = fs.readFileSync(legacyPath, 'utf8');
-      const legacy = JSON.parse(raw) as {
-        provider?: AiProvider;
-        model?: string;
-        updatedAt?: string;
-      };
-      const migrated = sanitizeConfig({
-        aiProvider: legacy.provider,
-        aiModel: legacy.model,
-        updatedAt: legacy.updatedAt,
-      });
-      this.write(migrated);
-      return migrated;
+      try {
+        const raw = fs.readFileSync(legacyPath, 'utf8');
+        const legacy = JSON.parse(raw) as {
+          provider?: AiProvider;
+          model?: string;
+          updatedAt?: string;
+        };
+        const migrated = sanitizeConfig({
+          aiProvider: legacy.provider,
+          aiModel: legacy.model,
+          updatedAt: legacy.updatedAt,
+        });
+        this.write(migrated);
+        return migrated;
+      } catch {
+        // Ignore corrupt legacy config and recreate the supported config file below.
+      }
     }
 
     const initial = sanitizeConfig(DEFAULT_CONFIG);
