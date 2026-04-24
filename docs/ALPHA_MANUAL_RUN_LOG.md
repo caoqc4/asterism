@@ -8,7 +8,7 @@ Use this file when running the manual alpha path. Keep entries short and actiona
 - Build / commit: local working tree after `787a27e`
 - Tester: Codex
 - Local verification run: targeted main/preload tests, `npm run lint`, `npm run build`, `npm run verify`
-- Smoke check run: `npm run dev` manual launch, isolated `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-20260424 npm run dev`, `npm run smoke:build`
+- Smoke check run: `npm run dev` manual launch, isolated `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-20260424-fresh npm run dev`, `npm run smoke:build`
 
 ## Result Summary
 
@@ -22,7 +22,8 @@ Use this file when running the manual alpha path. Keep entries short and actiona
 | --- | --- | --- | --- | --- | --- |
 | Verification Gate | `npm run verify` | Pass | Initially failed while `better-sqlite3` was rebuilt for Electron ABI; passed after adding and running `npm run rebuild:node`. | Medium | Keep Node/Electron ABI switch documented. |
 | Verification Gate | `npm run smoke:build` when needed | Pass | Updated smoke check for `bootstrap.cjs` and `preload.cjs`; build smoke passes. | Low | Keep smoke check aligned with entrypoint changes. |
-| Dev Launch | Start `npm run dev` | Pass | App launches to Home after clearing `ELECTRON_RUN_AS_NODE`, rebuilding native modules for Electron, loading `localhost`, and using a CJS preload bundle. | High | Keep as regression guard in development docs. |
+| Dev Launch | Start `npm run dev` | Pass | App launches to Home after clearing `ELECTRON_RUN_AS_NODE`, rebuilding native modules for Electron, loading `localhost`, using a CJS preload bundle, and prebuilding fresh Electron outputs before watchers start. | High | Keep as regression guard in development docs. |
+| Dev Launch | Isolated userData env | Pass with issue | First isolated attempt used stale compiled output and wrote `Alpha manual task` to the default DB; after adding the prebuild step, Settings showed `/tmp/taskplane-alpha-20260424-fresh/config.json`. | Medium | Ask before deleting the accidental default-DB task. |
 | Core Task Loop | Create task and open detail | Pass | Created `Alpha manual task` in isolated userData; task event appeared and detail pane opened. | Low | Continue richer task-object coverage. |
 | Core Task Loop | Update summary / next step / state | Partial | Saved summary and next step; list card and Home recovery preview reflected the next-step update. State transition was not changed. | Low | Run state transition in next manual pass. |
 | Context Objects | Add source/process/blocker/dependency | Not run |  |  |  |

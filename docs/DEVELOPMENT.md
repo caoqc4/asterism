@@ -40,6 +40,7 @@ npm run rebuild:node
 ```
 
 The dev Electron process clears `ELECTRON_RUN_AS_NODE` before launch so shells that export it for tooling do not accidentally start the app in Node mode.
+It also builds the Electron main/preload outputs before starting the watchers so Electron never boots stale `dist-electron` files from a previous run.
 
 For manual alpha checks that should not touch the default local app data, point both SQLite and config storage at a temporary directory:
 
