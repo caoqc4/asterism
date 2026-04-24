@@ -12,11 +12,13 @@ Initial goals:
 
 ## Commands
 
-### Build the app
+### Run the standard verification gate
 
 ```bash
-npm run build
+npm run verify
 ```
+
+This runs tests, type-checking, and the production build before packaging-specific checks.
 
 ### Run the build smoke check
 
