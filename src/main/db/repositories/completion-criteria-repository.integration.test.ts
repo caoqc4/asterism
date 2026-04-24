@@ -48,4 +48,9 @@ describe('CompletionCriteriaRepository integration', () => {
     expect(reopened.satisfiedAt).toBeNull();
     expect(criteria).toHaveLength(1);
   });
+
+  it('returns empty lists for empty bulk task lookups', async () => {
+    await expect(completionCriteriaRepository.listForTasks([])).resolves.toEqual([]);
+    await expect(completionCriteriaRepository.listOpenForTasks([])).resolves.toEqual([]);
+  });
 });

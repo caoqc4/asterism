@@ -52,4 +52,8 @@ describe('BlockerRepository integration', () => {
     expect(resolved.resolvedAt).toBeTruthy();
     expect(activeAfterResolve).toBeNull();
   });
+
+  it('returns an empty list for empty bulk task lookups', async () => {
+    await expect(blockerRepository.listActiveForTasks([])).resolves.toEqual([]);
+  });
 });

@@ -87,4 +87,8 @@ describe('SourceContextRepository integration', () => {
     expect(listed[0]?.isKey).toBe(true);
     expect(listed[1]?.isKey).toBe(false);
   });
+
+  it('returns an empty list for empty bulk task lookups', async () => {
+    await expect(sourceContextRepository.listActiveForTasks([])).resolves.toEqual([]);
+  });
 });

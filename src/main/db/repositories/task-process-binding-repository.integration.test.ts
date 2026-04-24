@@ -50,4 +50,8 @@ describe('TaskProcessBindingRepository integration', () => {
     expect(removed.removedAt).toBeTruthy();
     expect(activeAfterRemove).toHaveLength(0);
   });
+
+  it('returns an empty list for empty bulk task lookups', async () => {
+    await expect(repository.listActiveForTasks([])).resolves.toEqual([]);
+  });
 });
