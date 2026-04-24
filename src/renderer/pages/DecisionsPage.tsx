@@ -54,6 +54,22 @@ function getRelatedTimeline(events: TimelineEventRecord[], decisionTitle: string
   return getTaskTimelinePreviewEvents(relatedEvents, RELATED_TIMELINE_PREVIEW_COUNT);
 }
 
+function getDecisionActionGuidance(status: DecisionRecord['status']): string {
+  if (status === 'pending') {
+    return '这条拍板仍待处理，可以批准、延后或取消；处理后会回写到关联任务。';
+  }
+
+  if (status === 'approved') {
+    return '这条拍板已批准，正式动作已完成；下一步应回到任务继续推进。';
+  }
+
+  if (status === 'deferred') {
+    return '这条拍板已延后，正式动作已完成；下一步应回到任务跟进恢复拍板或替代路径。';
+  }
+
+  return '这条拍板已取消，正式动作已完成；下一步应回到任务重新评估推进路径。';
+}
+
 type DecisionsPageProps = {
   decisions: DecisionRecord[];
   focusedDecisionId: string | null;
@@ -202,29 +218,32 @@ export function DecisionsPage({
                   </button>
                 </div>
                 <p className="meta">正式拍板</p>
-                <div className="chip-row">
-                  <button
-                    className="ghost-button"
-                    onClick={() => void onAct(detail.id, 'approve')}
-                    type="button"
-                  >
-                    批准
-                  </button>
-                  <button
-                    className="ghost-button"
-                    onClick={() => void onAct(detail.id, 'defer')}
-                    type="button"
-                  >
-                    延后
-                  </button>
-                  <button
-                    className="ghost-button"
-                    onClick={() => void onAct(detail.id, 'cancel')}
-                    type="button"
-                  >
-                    取消
-                  </button>
-                </div>
+                <p className="meta">{getDecisionActionGuidance(detail.status)}</p>
+                {detail.status === 'pending' ? (
+                  <div className="chip-row">
+                    <button
+                      className="ghost-button"
+                      onClick={() => void onAct(detail.id, 'approve')}
+                      type="button"
+                    >
+                      批准
+                    </button>
+                    <button
+                      className="ghost-button"
+                      onClick={() => void onAct(detail.id, 'defer')}
+                      type="button"
+                    >
+                      延后
+                    </button>
+                    <button
+                      className="ghost-button"
+                      onClick={() => void onAct(detail.id, 'cancel')}
+                      type="button"
+                    >
+                      取消
+                    </button>
+                  </div>
+                ) : null}
               </div>
               <div className="task-card detail-card-group detail-card-wide">
                 <p className="eyebrow">Related Task Timeline</p>

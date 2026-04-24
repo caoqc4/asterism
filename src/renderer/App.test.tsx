@@ -2992,6 +2992,29 @@ describe('App UI flow', () => {
     );
   });
 
+  it('only exposes formal decision actions while a decision is pending', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /decisions/i }));
+    await screen.findByRole('heading', { name: '待拍板事项' });
+
+    expect(screen.getByRole('button', { name: '批准' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '延后' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '取消' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: /Approve escalation path.*approved/i }));
+
+    expect(
+      screen.getByText('这条拍板已批准，正式动作已完成；下一步应回到任务继续推进。'),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: '回到任务推进' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '批准' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '延后' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '取消' })).toBeNull();
+  });
+
   it('shows related task timeline context on the decisions page', async () => {
     const user = userEvent.setup();
 

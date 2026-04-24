@@ -70,6 +70,7 @@ Automated coverage:
 Manual result / need:
 
 - decision creation from the Decisions page worked and surfaced in Home recommended actions and Pending Decisions
+- Decision page now keeps formal approve/defer/cancel actions limited to pending Decisions; resolved Decisions retain task recovery without exposing duplicate formal actions
 - draft run without Keychain API key failed clearly with `AI API Key is not configured in system Keychain`
 - with deliberate local `.env` Replicate credentials, the dev app triggered a `draft` run for `Replicate alpha successful run check` under isolated `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-replicate-run-20260424`; SQLite confirmed `status=completed`, `output_source=ai`, output length `1540`, a `run.completed` timeline event, a `run_output` artifact, and a next-step update
 
