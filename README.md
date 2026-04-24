@@ -80,6 +80,8 @@ src/
 
 ### 1. Install dependencies
 
+Use Node `20.19+` or `22.12+` with npm `10+`.
+
 ```bash
 npm install
 ```

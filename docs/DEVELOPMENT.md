@@ -15,6 +15,8 @@ The app is split into three layers:
 
 ### Install
 
+Use Node `20.19+` or `22.12+` with npm `10+`.
+
 ```bash
 npm install
 ```
@@ -129,3 +131,5 @@ This project uses native modules such as:
 - `keytar`
 
 If installation fails on a new machine, make sure standard native build tooling for your platform is available.
+
+The supported local Node versions are `20.19+` or `22.12+`, matching the CI workflow and current Vite/Vitest engine requirements.
