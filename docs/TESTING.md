@@ -192,6 +192,7 @@ Covered today:
 - `Decision draft / Run` backend prompt composition now absorbs task-level lane guidance, and the run/brief/decision process-template selectors now assert the same lane guidance in their selection prompts
 - task timeline actions and related-task timeline actions now assert lane-aware follow-up wording in renderer flows
 - compact task timeline previews now assert lane-aware event selection in shared working-context tests
+- compact task timeline previews now also assert long trace-heavy histories do not crowd out older action-shaping events
 - latest-change selection now asserts action-shaping timeline events stay ahead of newer weak trace events
 - home resume latest-change derivation now asserts meaningful task timeline events can fill gaps when global home activity does not include that task
 - task timeline summaries now assert explanatory wording that does not duplicate resume latest-change phrasing
@@ -234,7 +235,7 @@ Still missing or intentionally light:
 
 - finer Home scheduler-state refresh assertions
 - end-to-end packaged-app tests
-- richer timeline filtering, grouping, and very long-history rendering behavior
+- richer timeline grouping behavior and full end-to-end long-history rendering checks
 
 ## Current Quality Gates
 
@@ -257,6 +258,7 @@ Current verification is local-only:
 
 Recommended next additions:
 
-1. renderer coverage for richer timeline filtering or long-history behavior
+1. finer Home scheduler-state refresh assertions
+2. renderer coverage for richer timeline grouping behavior
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

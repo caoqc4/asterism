@@ -85,6 +85,44 @@ describe('getTaskTimelinePreviewEvents', () => {
     ]);
   });
 
+  it('keeps long trace-heavy histories from crowding out action-shaping preview events', () => {
+    const traceEvents = Array.from({ length: 25 }, (_, index) => ({
+      id: `trace_${index}`,
+      type: 'task.updated',
+      createdAt: `2026-01-02T00:${String(index).padStart(2, '0')}:00.000Z`,
+    }));
+    const timeline = [
+      ...traceEvents,
+      {
+        id: 'old_run_failed',
+        type: 'task.run_failed',
+        createdAt: '2026-01-01T04:00:00.000Z',
+      },
+      {
+        id: 'old_dependency_created',
+        type: 'task_dependency.created',
+        createdAt: '2026-01-01T03:00:00.000Z',
+      },
+      {
+        id: 'old_source_updated',
+        type: 'source_context.updated',
+        createdAt: '2026-01-01T02:00:00.000Z',
+      },
+      {
+        id: 'old_completion_satisfied',
+        type: 'completion_criteria.satisfied',
+        createdAt: '2026-01-01T01:00:00.000Z',
+      },
+    ];
+
+    expect(getTaskTimelinePreviewEvents(timeline, 4).map((event) => event.id)).toEqual([
+      'old_dependency_created',
+      'old_run_failed',
+      'old_source_updated',
+      'old_completion_satisfied',
+    ]);
+  });
+
   it('classifies lifecycle-changing object events ahead of explanatory updates', () => {
     expect(getTaskTimelinePriority('blocker.created')).toBe('p1');
     expect(getTaskTimelinePriority('blocker.resolved')).toBe('p1');
