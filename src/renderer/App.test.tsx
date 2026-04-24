@@ -827,9 +827,11 @@ describe('App UI flow', () => {
     expect(
       screen.getByText('waiting item · active · since 2026-01-01T00:00:00.000Z'),
     ).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Current Waiting Item' })).toBeTruthy();
-    expect(screen.getByText('Started at 2026-01-01T00:00:00.000Z')).toBeTruthy();
-    expect(screen.getByText("Linked to the task's current waiting state.")).toBeTruthy();
+    const activeSlicesSection = screen.getByRole('heading', { name: 'Active Slices' }).closest('.detail-card-group');
+    expect(activeSlicesSection).toBeTruthy();
+    expect(
+      within(activeSlicesSection as HTMLElement).getByText('waiting item · active · since 2026-01-01T00:00:00.000Z'),
+    ).toBeTruthy();
   });
 
   it('shows a task resume card at the top of the current snapshot', async () => {
@@ -922,6 +924,8 @@ describe('App UI flow', () => {
         .compareDocumentPosition(screen.getByText('Task Basics')) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Active Slices' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Task Signals' })).toBeNull();
   });
 
   it('shows a closeout-aware lane label on task resume cards', async () => {
@@ -1847,7 +1851,7 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /Resume outreach draft/i }));
     await user.click(await screen.findByRole('button', { name: '打开 Task Dependency' }));
 
-    const dependencyHeading = await screen.findByRole('heading', { name: 'Current Dependency' });
+    const dependencyHeading = await screen.findByRole('heading', { name: 'Active Slices' });
     const dependencySection = dependencyHeading.closest('.detail-card-group');
     expect(dependencySection).toBeTruthy();
 
@@ -1931,7 +1935,7 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /Launch outreach sequence/i }));
     await user.click(await screen.findByRole('button', { name: '打开 Task Dependency' }));
 
-    const dependencyHeading = await screen.findByRole('heading', { name: 'Current Dependency' });
+    const dependencyHeading = await screen.findByRole('heading', { name: 'Active Slices' });
     const dependencySection = dependencyHeading.closest('.detail-card-group');
     expect(dependencySection).toBeTruthy();
 

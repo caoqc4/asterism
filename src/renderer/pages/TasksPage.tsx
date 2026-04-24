@@ -2263,46 +2263,32 @@ export function TasksPage({
                 </div>
 
                 <div className="transition-group detail-card-group">
-                  <h3>Task Signals</h3>
-                  <p className="meta">这里只保留任务当前现态，不在这一层重复展开完整历史。</p>
+                  <h3>Active Slices</h3>
+                  <p className="meta">这里把当前信号、等待、阻塞和依赖压成摘要切片；完整维护下沉到 Context Studio。</p>
                   <div className="timeline-list">
                     <div className="timeline-item">
-                      <strong>Next Step</strong>
-                      <p className="meta">{detail.nextStep ?? '未填写'}</p>
-                    </div>
-                    <div className="timeline-item">
-                      <strong>Waiting Reason</strong>
-                      <p className="meta">{detail.activeWaitingItem?.reason ?? detail.waitingReason ?? '未填写'}</p>
-                      {detail.activeWaitingItem ? (
-                        <p className="meta">
-                          waiting item · {detail.activeWaitingItem.status} · since {detail.activeWaitingItem.createdAt}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="timeline-item">
-                      <strong>Risk</strong>
+                      <div className="task-row">
+                        <strong>Task Signals</strong>
+                        <span className="signal-pill timeline-badge timeline-item-default">{detail.riskLevel}</span>
+                      </div>
+                      <p className="meta">Next Step: {detail.nextStep ?? '未填写'}</p>
                       <p className="meta">
-                        {detail.riskLevel}
-                        {detail.riskNote ? ` · ${detail.riskNote}` : ''}
+                        Waiting: {detail.activeWaitingItem?.reason ?? detail.waitingReason ?? '未填写'}
                       </p>
+                      {detail.riskNote ? <p className="meta">Risk note: {detail.riskNote}</p> : null}
                     </div>
-                  </div>
-                </div>
 
-                {detail.activeWaitingItem ? (
-                  <div className="transition-group detail-card-group">
-                    <h3>Current Waiting Item</h3>
-                    <p className="meta">只显示当前正在生效的等待切片，更多历史放到 Timeline。</p>
-                    <div className="timeline-list">
+                    {detail.activeWaitingItem ? (
                       <div className="timeline-item timeline-item-waiting">
                         <div className="task-row">
-                          <strong>{detail.activeWaitingItem.reason}</strong>
+                          <strong>Waiting: {detail.activeWaitingItem.reason}</strong>
                           <span className="signal-pill timeline-badge timeline-item-waiting">
                             {detail.activeWaitingItem.status}
                           </span>
                         </div>
-                        <p className="meta">Started at {detail.activeWaitingItem.createdAt}</p>
-                        <p className="meta">Linked to the task&apos;s current waiting state.</p>
+                        <p className="meta">
+                          waiting item · {detail.activeWaitingItem.status} · since {detail.activeWaitingItem.createdAt}
+                        </p>
                         {detail.state === 'waiting_external' ? (
                           <button
                             className="ghost-button timeline-action"
@@ -2313,18 +2299,12 @@ export function TasksPage({
                           </button>
                         ) : null}
                       </div>
-                    </div>
-                  </div>
-                ) : null}
+                    ) : null}
 
-                {detail.activeBlocker ? (
-                  <div className="transition-group detail-card-group">
-                    <h3>Current Blocker</h3>
-                    <p className="meta">这里只显示当前主阻塞项，完整原因维护下沉到 Context Studio。</p>
-                    <div className="timeline-list">
+                    {detail.activeBlocker ? (
                       <div className="timeline-item timeline-item-risk">
                         <div className="task-row">
-                          <strong>{detail.activeBlocker.title}</strong>
+                          <strong>Blocker: {detail.activeBlocker.title}</strong>
                           <span className="signal-pill timeline-badge timeline-item-risk">
                             {formatBlockerKind(detail.activeBlocker.kind)}
                           </span>
@@ -2332,27 +2312,18 @@ export function TasksPage({
                         {detail.activeBlocker.detail ? (
                           <p className="meta">{detail.activeBlocker.detail}</p>
                         ) : null}
-                        {detail.activeBlocker.owner ? (
-                          <p className="meta">owner: {detail.activeBlocker.owner}</p>
-                        ) : null}
-                        {detail.activeBlocker.responsibility ||
-                        detail.activeBlocker.responsibilityLabel ? (
-                          <p className="meta">
-                            解除责任：
-                            {detail.activeBlocker.responsibilityLabel ??
-                              formatResponsibilityKind(
-                                detail.activeBlocker.responsibility ?? 'unknown',
-                              )}
-                          </p>
-                        ) : null}
-                        <p className="meta">{formatBlockerAgeLabel(detail.activeBlocker.createdAt)}</p>
+                        {detail.resumeCard.currentBlocker.priorityReason ? (
+                          <p className="meta">{detail.resumeCard.currentBlocker.priorityReason}</p>
+                        ) : (
+                          <p className="meta">{formatBlockerAgeLabel(detail.activeBlocker.createdAt)}</p>
+                        )}
                         <div className="timeline-actions">
                           <button
                             className="ghost-button timeline-action"
-                            onClick={() => populateBlockerForm(detail.activeBlocker!)}
+                            onClick={focusBlockerSection}
                             type="button"
                           >
-                            编辑阻塞项
+                            管理阻塞项
                           </button>
                           {detail.activeBlocker.sourceContextId ? (
                             <button
@@ -2372,31 +2343,31 @@ export function TasksPage({
                           </button>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                ) : null}
+                    ) : null}
 
-                {detail.activeDependency ? (
-                  <div className="transition-group detail-card-group">
-                    <h3>Current Dependency</h3>
-                    <p className="meta">这里只显示当前上游任务依赖，完整维护下沉到 Context Studio。</p>
-                    <div className="timeline-list">
+                    {detail.activeDependency ? (
                       <div className="timeline-item timeline-item-default">
                         <div className="task-row">
-                          <strong>{detail.activeDependency.blockedByTaskTitle ?? '未命名上游任务'}</strong>
+                          <strong>Dependency: {detail.activeDependency.blockedByTaskTitle ?? '未命名上游任务'}</strong>
                           <span className="signal-pill timeline-badge timeline-item-default">task</span>
                         </div>
                         {detail.activeDependency.reason ? (
                           <p className="meta">{detail.activeDependency.reason}</p>
                         ) : null}
-                        <p className="meta">{detail.resumeCard.currentDependency?.ageLabel ?? `depends since ${detail.activeDependency.createdAt.slice(0, 10)}`}</p>
+                        <p className="meta">
+                          {detail.resumeCard.currentDependency?.ageLabel ?? `depends since ${detail.activeDependency.createdAt.slice(0, 10)}`}
+                        </p>
                         {detail.resumeCard.currentDependency?.priorityReason ? (
                           <p className="meta">{detail.resumeCard.currentDependency.priorityReason}</p>
                         ) : null}
-                        {detail.resumeCard.currentDependency?.responsibilitySummary ? (
-                          <p className="meta">{detail.resumeCard.currentDependency.responsibilitySummary}</p>
-                        ) : null}
                         <div className="timeline-actions">
+                          <button
+                            className="ghost-button timeline-action"
+                            onClick={focusDependencySection}
+                            type="button"
+                          >
+                            管理依赖
+                          </button>
                           {detail.dependencyReevaluation ? (
                             <button
                               className="ghost-button timeline-action"
@@ -2411,10 +2382,10 @@ export function TasksPage({
                               className="ghost-button timeline-action"
                               onClick={openUpstreamDependencyTask}
                               type="button"
-                              >
-                                打开上游任务
-                              </button>
-                            ) : null}
+                            >
+                              打开上游任务
+                            </button>
+                          ) : null}
                           {shouldEscalateCurrentDependency() ? (
                             <button
                               className="ghost-button timeline-action"
@@ -2424,25 +2395,11 @@ export function TasksPage({
                               直接升级依赖链路
                             </button>
                           ) : null}
-                          <button
-                            className="ghost-button timeline-action"
-                            onClick={() => populateDependencyForm(detail.activeDependency!)}
-                            type="button"
-                          >
-                            编辑依赖
-                          </button>
-                          <button
-                            className="ghost-button timeline-action"
-                            onClick={() => void handleResolveCurrentDependency(detail.activeDependency!.id)}
-                            type="button"
-                          >
-                            解除依赖
-                          </button>
                         </div>
                       </div>
-                    </div>
+                    ) : null}
                   </div>
-                ) : null}
+                </div>
 
                 <div className="transition-group detail-card-group">
                   <h3>Recent Artifact</h3>
