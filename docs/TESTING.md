@@ -61,7 +61,9 @@ Covered today:
 - `DecisionService`
   task existence checks, decision-to-task lifecycle linkage, and AI/fallback decision-draft composition
 - `RunService`
-  successful execution path, failure path, task restoration after settled runs, artifact creation on successful output, process-template selector behavior, and run-step trace writes
+  successful execution path, failure path, task restoration after settled runs, artifact creation on successful output, and orchestration result settlement
+- `RunOrchestrator`
+  plan/model/final step writes, process-template selector fallback, and executor failure recording
 - `TextExecutor`
   lane-aware run prompt composition
 - `HomeBriefService`

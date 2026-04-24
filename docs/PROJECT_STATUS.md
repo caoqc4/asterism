@@ -23,7 +23,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - Local `.env` AI configuration now supports Replicate-backed draft runs; a deliberate local Replicate run completed with `output_source=ai`, timeline events, and a persisted artifact.
 - Task detail now has a compact section jump bar for Current, Completion, Action, Activity, and Context Studio; a packaged app pass confirmed it can jump from Context Studio back to Action Desk.
 - The front task-management closeout loop is covered through packaged UI: a task can add and satisfy a completion criterion, Home surfaces it as ready to close, Action Desk prioritizes `completed`, and SQLite records the final transition.
-- Agent execution layer Phase 1 has started: Runs now have a persisted step trace spine, current text runs write plan/model/final steps, and the Runs page shows execution-step summaries.
+- Agent execution layer Phase 1 has started: Runs now have a persisted step trace spine, current text runs write plan/model/final steps through a `RunOrchestrator`, and the Runs page shows execution-step summaries.
 
 ## Verification Baseline
 
@@ -35,8 +35,8 @@ npm run verify
 
 Latest local baseline:
 
-- 36 test files
-- 255 tests
+- 37 test files
+- 257 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
