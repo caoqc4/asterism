@@ -2069,86 +2069,6 @@ export function TasksPage({
         </div>
         {detail ? (
           <>
-            <form className="stack" onSubmit={handleSaveDetail} ref={detailFormRef}>
-              <label>
-                标题
-                <input
-                  value={draftTitle}
-                  onChange={(event) => {
-                    setDraftTitle(event.target.value);
-                    if (detailError) {
-                      setDetailError(null);
-                    }
-                  }}
-                />
-              </label>
-              <label>
-                Summary
-                <textarea
-                  rows={4}
-                  value={draftSummary}
-                  onChange={(event) => {
-                    setDraftSummary(event.target.value);
-                    if (detailError) {
-                      setDetailError(null);
-                    }
-                  }}
-                />
-              </label>
-              <label>
-                Next Step
-                <input
-                  value={draftNextStep}
-                  onChange={(event) => {
-                    setDraftNextStep(event.target.value);
-                    if (detailError) {
-                      setDetailError(null);
-                    }
-                  }}
-                />
-              </label>
-              <label>
-                Waiting Reason
-                <input
-                  value={draftWaitingReason}
-                  onChange={(event) => {
-                    setDraftWaitingReason(event.target.value);
-                    if (detailError) {
-                      setDetailError(null);
-                    }
-                  }}
-                />
-              </label>
-              <label>
-                Risk Level
-                <select
-                  value={draftRiskLevel}
-                  onChange={(event) => updateDraftRiskLevel(event.target.value as TaskRiskLevel)}
-                >
-                  {riskOptions.map((riskLevel) => (
-                    <option key={riskLevel} value={riskLevel}>
-                      {riskLevel}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Risk Note
-                <textarea
-                  rows={3}
-                  value={draftRiskNote}
-                  onChange={(event) => {
-                    setDraftRiskNote(event.target.value);
-                    if (detailError) {
-                      setDetailError(null);
-                    }
-                  }}
-                />
-              </label>
-              {detailError ? <p className="meta">{detailError}</p> : null}
-              <button type="submit">保存详情</button>
-            </form>
-
             <div className="transition-group detail-stage">
                 <div className="detail-stage-head">
                   <div>
@@ -3180,6 +3100,94 @@ export function TasksPage({
                 <p className="meta">完整的来源材料和方法模板管理下沉到这一层，不再抢第一屏恢复入口。</p>
               </div>
               <div className="detail-cluster-grid">
+                <form
+                  className="transition-group detail-card-group detail-card-wide stack"
+                  onSubmit={handleSaveDetail}
+                  ref={detailFormRef}
+                >
+                  <div className="studio-section-head">
+                    <strong>Task Basics</strong>
+                    <p className="meta">基础字段管理下沉到这一层，避免抢占第一屏的恢复入口。</p>
+                  </div>
+                  <label>
+                    标题
+                    <input
+                      value={draftTitle}
+                      onChange={(event) => {
+                        setDraftTitle(event.target.value);
+                        if (detailError) {
+                          setDetailError(null);
+                        }
+                      }}
+                    />
+                  </label>
+                  <label>
+                    Summary
+                    <textarea
+                      rows={4}
+                      value={draftSummary}
+                      onChange={(event) => {
+                        setDraftSummary(event.target.value);
+                        if (detailError) {
+                          setDetailError(null);
+                        }
+                      }}
+                    />
+                  </label>
+                  <label>
+                    Next Step
+                    <input
+                      value={draftNextStep}
+                      onChange={(event) => {
+                        setDraftNextStep(event.target.value);
+                        if (detailError) {
+                          setDetailError(null);
+                        }
+                      }}
+                    />
+                  </label>
+                  <label>
+                    Waiting Reason
+                    <input
+                      value={draftWaitingReason}
+                      onChange={(event) => {
+                        setDraftWaitingReason(event.target.value);
+                        if (detailError) {
+                          setDetailError(null);
+                        }
+                      }}
+                    />
+                  </label>
+                  <label>
+                    Risk Level
+                    <select
+                      value={draftRiskLevel}
+                      onChange={(event) => updateDraftRiskLevel(event.target.value as TaskRiskLevel)}
+                    >
+                      {riskOptions.map((riskLevel) => (
+                        <option key={riskLevel} value={riskLevel}>
+                          {riskLevel}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Risk Note
+                    <textarea
+                      rows={3}
+                      value={draftRiskNote}
+                      onChange={(event) => {
+                        setDraftRiskNote(event.target.value);
+                        if (detailError) {
+                          setDetailError(null);
+                        }
+                      }}
+                    />
+                  </label>
+                  {detailError ? <p className="meta">{detailError}</p> : null}
+                  <button type="submit">保存详情</button>
+                </form>
+
                 <div className="transition-group detail-card-group" ref={blockerSectionRef}>
                   <h3>Blocker Context</h3>
                   <p className="meta">这一层管理当前阻塞项；上方 Resume Card 和 Current Snapshot 只抽出当前主阻塞切片。</p>

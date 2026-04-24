@@ -916,6 +916,12 @@ describe('App UI flow', () => {
         '这条任务当前在跨任务队列里按这类优先级语义排序。',
       ),
     ).toBeTruthy();
+    expect(
+      screen
+        .getByRole('heading', { name: 'Task Resume Card' })
+        .compareDocumentPosition(screen.getByText('Task Basics')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('shows a closeout-aware lane label on task resume cards', async () => {
