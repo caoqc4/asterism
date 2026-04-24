@@ -1,5 +1,6 @@
 import type {
   AgentRunRequest,
+  AgentToolName,
   AgentToolResult,
 } from '../../../shared/types/agent-execution.js';
 import type { AgentToolRegistry } from './agent-tool-registry.js';
@@ -19,6 +20,21 @@ export type AgentRunLoopResult =
       checkpointId: string;
     };
 
+export type AgentRunLoopStep =
+  | {
+      kind: 'inspect_context';
+      tool: Extract<AgentToolName, 'task.inspect_context'>;
+      input: Record<string, never>;
+    }
+  | {
+      kind: 'create_note';
+      tool: Extract<AgentToolName, 'artifact.create_note'>;
+      input: {
+        title: string;
+        content: string;
+      };
+    };
+
 function failedFromTool(result: AgentToolResult): AgentRunLoopResult {
   return {
     status: 'failed',
@@ -28,6 +44,33 @@ function failedFromTool(result: AgentToolResult): AgentRunLoopResult {
 
 export class AgentRunLoop {
   constructor(private readonly agentToolRegistry: AgentToolRegistry) {}
+
+  buildLocalNotePlan(params: {
+    modelOutput: string;
+    taskTitle: string;
+  }): AgentRunLoopStep[] {
+    const { modelOutput, taskTitle } = params;
+
+    if (!modelOutput.trim()) {
+      return [];
+    }
+
+    return [
+      {
+        kind: 'inspect_context',
+        tool: 'task.inspect_context',
+        input: {},
+      },
+      {
+        kind: 'create_note',
+        tool: 'artifact.create_note',
+        input: {
+          title: `${taskTitle} agent note`,
+          content: modelOutput,
+        },
+      },
+    ];
+  }
 
   async executeLocalNoteLoop(params: {
     request: AgentRunRequest;
@@ -44,44 +87,29 @@ export class AgentRunLoop {
       };
     }
 
-    const inspectResult = await this.agentToolRegistry.execute(
-      'task.inspect_context',
-      {},
-      {
-        runId: request.runId,
-        taskId: request.taskId,
-        workingContext: request.context,
-      },
-      request.policy,
-    );
+    for (const step of this.buildLocalNotePlan({ modelOutput, taskTitle })) {
+      const result = await this.agentToolRegistry.execute(
+        step.tool,
+        step.input,
+        {
+          runId: request.runId,
+          taskId: request.taskId,
+          workingContext: step.kind === 'inspect_context' ? request.context : undefined,
+        },
+        request.policy,
+      );
 
-    if (!inspectResult.success) {
-      return failedFromTool(inspectResult);
-    }
+      if (result.status === 'needs_confirmation' && result.checkpointId) {
+        return {
+          status: 'needs_confirmation',
+          message: result.summary,
+          checkpointId: result.checkpointId,
+        };
+      }
 
-    const writeResult = await this.agentToolRegistry.execute(
-      'artifact.create_note',
-      {
-        title: `${taskTitle} agent note`,
-        content: modelOutput,
-      },
-      {
-        runId: request.runId,
-        taskId: request.taskId,
-      },
-      request.policy,
-    );
-
-    if (writeResult.status === 'needs_confirmation' && writeResult.checkpointId) {
-      return {
-        status: 'needs_confirmation',
-        message: writeResult.summary,
-        checkpointId: writeResult.checkpointId,
-      };
-    }
-
-    if (!writeResult.success) {
-      return failedFromTool(writeResult);
+      if (!result.success) {
+        return failedFromTool(result);
+      }
     }
 
     return {

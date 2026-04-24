@@ -44,6 +44,30 @@ function buildRequest(): AgentRunRequest {
 }
 
 describe('AgentRunLoop', () => {
+  it('builds the fixed local note plan as typed steps', () => {
+    const loop = new AgentRunLoop({ execute: vi.fn() } as never);
+
+    expect(loop.buildLocalNotePlan({
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    })).toEqual([
+      {
+        kind: 'inspect_context',
+        tool: 'task.inspect_context',
+        input: {},
+      },
+      {
+        kind: 'create_note',
+        tool: 'artifact.create_note',
+        input: {
+          title: 'Task 1 agent note',
+          content: 'Agent output',
+        },
+      },
+    ]);
+    expect(loop.buildLocalNotePlan({ modelOutput: '   ', taskTitle: 'Task 1' })).toEqual([]);
+  });
+
   it('runs the fixed local observe-then-write loop', async () => {
     const agentToolRegistry = {
       execute: vi
@@ -95,6 +119,7 @@ describe('AgentRunLoop', () => {
       {
         runId: 'run_1',
         taskId: 'task_1',
+        workingContext: undefined,
       },
       expect.objectContaining({ confirmationRequiredRisks: ['external_write', 'sensitive'] }),
     );
