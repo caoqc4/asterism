@@ -59,7 +59,7 @@ Covered today:
 - `TaskService`
   transitions, invalid transitions, signal updates, task-resume derivation, blocker/dependency/completion-criteria lifecycle writes, decision annotations, and run-settlement annotations
 - `DecisionService`
-  task existence checks, decision-to-task lifecycle linkage, and AI/fallback decision-draft composition
+  task existence checks, decision-to-task lifecycle linkage, AI/fallback decision-draft composition, and checkpoint Decision approval/defer settlement
 - `RunService`
   successful execution path, failure path, task restoration after settled runs, artifact creation on successful output, and orchestration result settlement
 - `RunOrchestrator`
@@ -88,7 +88,7 @@ Covered today:
 - `RunStepRepository`
   ordered execution-step creation, updates, and per-run retrieval
 - `RunCheckpointRepository`
-  open checkpoint creation and per-run retrieval
+  open checkpoint creation, per-run retrieval, decision-id lookup, and checkpoint settlement
 - `DecisionRepository`
   decision creation, action persistence, timeline writes
 - `BriefSnapshotRepository`

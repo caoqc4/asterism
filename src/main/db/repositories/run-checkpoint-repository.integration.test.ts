@@ -54,4 +54,32 @@ describe('RunCheckpointRepository integration', () => {
     expect(checkpoints).toHaveLength(1);
     expect(checkpoints[0]?.payload).toContain('artifact.create_note');
   });
+
+  it('finds and resolves an open checkpoint by decision id', async () => {
+    const task = await taskRepository.create({ title: 'Approve checkpoint' });
+    const run = await runRepository.create({ taskId: task.id, type: 'agent' });
+    const step = await runStepRepository.create({
+      runId: run.id,
+      kind: 'checkpoint',
+      title: '需要确认',
+    });
+    const checkpoint = await checkpointRepository.create({
+      runId: run.id,
+      stepId: step.id,
+      kind: 'tool_permission',
+      payload: JSON.stringify({
+        tool: 'artifact.create_note',
+        decisionId: 'decision_1',
+      }),
+    });
+
+    const found = await checkpointRepository.findOpenByDecisionId('decision_1');
+    const resolved = await checkpointRepository.updateStatus(checkpoint.id, 'resolved');
+    const foundAfterResolve = await checkpointRepository.findOpenByDecisionId('decision_1');
+
+    expect(found?.id).toBe(checkpoint.id);
+    expect(resolved.status).toBe('resolved');
+    expect(resolved.resolvedAt).not.toBeNull();
+    expect(foundAfterResolve).toBeNull();
+  });
 });

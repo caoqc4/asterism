@@ -9,9 +9,14 @@ import type { TaskDetail } from '../../../shared/types/task.js';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
+import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
+import { RunRepository } from '../../db/repositories/run-repository.js';
+import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { getLanguageModel } from '../../executors/ai-client.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
 import { TaskService } from '../task/task-service.js';
+import type { AgentToolRegistry } from '../run/agent-tool-registry.js';
+import { DEFAULT_AGENT_POLICY } from '../run/agent-working-context.js';
 import {
   DecisionProcessTemplateSelector,
   type DecisionProcessTemplateSelectionResult,
@@ -91,12 +96,28 @@ function buildDraftPrompt(
   ].join('\n');
 }
 
+function parseCheckpointPayload(payload: string | null): Record<string, unknown> | null {
+  if (!payload) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(payload) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 export class DecisionService {
   constructor(
     private readonly decisionRepository: DecisionRepository,
     private readonly taskService: TaskService,
     private readonly aiConfigService: AiConfigService,
     private readonly processTemplateSelector: DecisionProcessTemplateSelector = new DecisionProcessTemplateSelector(),
+    private readonly runCheckpointRepository: Pick<RunCheckpointRepository, 'findOpenByDecisionId' | 'updateStatus'> | null = null,
+    private readonly runStepRepository: Pick<RunStepRepository, 'create'> | null = null,
+    private readonly runRepository: Pick<RunRepository, 'getDetail' | 'updateResult'> | null = null,
+    private readonly agentToolRegistry: AgentToolRegistry | null = null,
   ) {}
 
   list(): Promise<DecisionRecord[]> {
@@ -207,6 +228,118 @@ export class DecisionService {
       await this.taskService.annotateDecisionCancelled(updated.taskId, updated.title, updated.id);
     }
 
+    await this.settleLinkedCheckpoint(updated, input.action);
+
     return updated;
+  }
+
+  private async settleLinkedCheckpoint(
+    decision: DecisionRecord,
+    action: DecisionActionInput['action'],
+  ): Promise<void> {
+    if (!this.runCheckpointRepository || !this.runStepRepository || !this.runRepository) {
+      return;
+    }
+
+    const checkpoint = await this.runCheckpointRepository.findOpenByDecisionId(decision.id);
+
+    if (!checkpoint) {
+      return;
+    }
+
+    const payload = parseCheckpointPayload(checkpoint.payload);
+    const tool = payload?.tool;
+    const toolInput = payload?.input;
+
+    if (action !== 'approve') {
+      await this.runCheckpointRepository.updateStatus(checkpoint.id, 'cancelled');
+      await this.runStepRepository.create({
+        runId: checkpoint.runId,
+        kind: 'checkpoint',
+        status: 'skipped',
+        title: `确认未通过：${decision.title}`,
+        output:
+          action === 'defer'
+            ? '关联 Decision 已延后，本次 checkpoint 不再继续执行。'
+            : '关联 Decision 已取消，本次 checkpoint 不再继续执行。',
+      });
+      await this.runRepository.updateResult(
+        checkpoint.runId,
+        'failed',
+        action === 'defer'
+          ? `关联 Decision 已延后：${decision.title}`
+          : `关联 Decision 已取消：${decision.title}`,
+        'system',
+        action === 'defer'
+          ? `关联 Decision 已延后：${decision.title}`
+          : `关联 Decision 已取消：${decision.title}`,
+      );
+      return;
+    }
+
+    if (tool !== 'artifact.create_note' || !this.agentToolRegistry) {
+      await this.runCheckpointRepository.updateStatus(checkpoint.id, 'resolved');
+      await this.runStepRepository.create({
+        runId: checkpoint.runId,
+        kind: 'checkpoint',
+        status: 'completed',
+        title: `确认已通过：${decision.title}`,
+        output: '关联 Decision 已批准，但当前工具暂不支持自动续跑。',
+      });
+      return;
+    }
+
+    const result = await this.agentToolRegistry.execute(
+      tool,
+      toolInput,
+      {
+        runId: checkpoint.runId,
+        taskId: decision.taskId,
+      },
+      {
+        ...DEFAULT_AGENT_POLICY,
+        confirmationRequiredRisks: [],
+      },
+    );
+
+    if (!result.success) {
+      await this.runStepRepository.create({
+        runId: checkpoint.runId,
+        kind: 'checkpoint',
+        status: 'failed',
+        title: `确认后续跑失败：${decision.title}`,
+        error: result.error ?? result.summary,
+      });
+      await this.runRepository.updateResult(
+        checkpoint.runId,
+        'failed',
+        result.error ?? result.summary,
+        'system',
+        result.error ?? result.summary,
+      );
+      return;
+    }
+
+    const run = await this.runRepository.getDetail(checkpoint.runId);
+    await this.runCheckpointRepository.updateStatus(checkpoint.id, 'resolved');
+    await this.runStepRepository.create({
+      runId: checkpoint.runId,
+      kind: 'checkpoint',
+      status: 'completed',
+      title: `确认已通过：${decision.title}`,
+      output: result.summary,
+    });
+    await this.runRepository.updateResult(
+      checkpoint.runId,
+      'completed',
+      result.output ?? result.summary,
+      'system',
+    );
+    await this.taskService.annotateRunCompleted(
+      decision.taskId,
+      run?.type ?? 'agent',
+      Boolean((result.output ?? result.summary).trim()),
+      checkpoint.runId,
+    );
   }
 }

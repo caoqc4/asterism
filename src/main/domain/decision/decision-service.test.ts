@@ -359,6 +359,90 @@ describe('DecisionService', () => {
     expect(result.status).toBe('approved');
   });
 
+  it('resumes an approved checkpoint decision through the pending tool', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord(),
+        status: 'approved',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+    };
+    const runCheckpointRepository = {
+      findOpenByDecisionId: vi.fn().mockResolvedValue({
+        id: 'run_checkpoint_1',
+        runId: 'run_1',
+        stepId: 'run_step_1',
+        kind: 'tool_permission',
+        status: 'open',
+        payload: JSON.stringify({
+          tool: 'artifact.create_note',
+          input: { title: 'Agent note', content: 'Captured note' },
+          decisionId: 'decision_1',
+        }),
+        createdAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      }),
+      updateStatus: vi.fn(),
+    };
+    const runStepRepository = {
+      create: vi.fn(),
+    };
+    const runRepository = {
+      getDetail: vi.fn().mockResolvedValue({
+        id: 'run_1',
+        taskId: 'task_1',
+        type: 'agent',
+      }),
+      updateResult: vi.fn(),
+    };
+    const agentToolRegistry = {
+      execute: vi.fn().mockResolvedValue({
+        success: true,
+        summary: '已创建本地 note 产物：Agent note',
+        output: 'Captured note',
+        artifactId: 'artifact_1',
+      }),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+      undefined,
+      runCheckpointRepository as never,
+      runStepRepository as never,
+      runRepository as never,
+      agentToolRegistry as never,
+    );
+
+    await service.act({
+      id: 'decision_1',
+      action: 'approve',
+    });
+
+    expect(agentToolRegistry.execute).toHaveBeenCalledWith(
+      'artifact.create_note',
+      { title: 'Agent note', content: 'Captured note' },
+      { runId: 'run_1', taskId: 'task_1' },
+      expect.objectContaining({ confirmationRequiredRisks: [] }),
+    );
+    expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith('run_checkpoint_1', 'resolved');
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_1',
+      'completed',
+      'Captured note',
+      'system',
+    );
+    expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'agent', true, 'run_1');
+  });
+
   it('moves the task to waiting_external when a decision is deferred', async () => {
     const decisionRepository = {
       list: vi.fn(),
@@ -391,6 +475,73 @@ describe('DecisionService', () => {
       'decision_1',
     );
     expect(result.status).toBe('deferred');
+  });
+
+  it('marks a checkpoint decision as non-resumable when deferred', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord(),
+        status: 'deferred',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      annotateDecisionApproved: vi.fn(),
+      annotateDecisionDeferred: vi.fn().mockResolvedValue(buildTaskRecord('waiting_external')),
+      annotateDecisionCancelled: vi.fn(),
+    };
+    const runCheckpointRepository = {
+      findOpenByDecisionId: vi.fn().mockResolvedValue({
+        id: 'run_checkpoint_1',
+        runId: 'run_1',
+        stepId: 'run_step_1',
+        kind: 'tool_permission',
+        status: 'open',
+        payload: JSON.stringify({ decisionId: 'decision_1' }),
+        createdAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      }),
+      updateStatus: vi.fn(),
+    };
+    const runStepRepository = {
+      create: vi.fn(),
+    };
+    const runRepository = {
+      getDetail: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+      undefined,
+      runCheckpointRepository as never,
+      runStepRepository as never,
+      runRepository as never,
+    );
+
+    await service.act({
+      id: 'decision_1',
+      action: 'defer',
+    });
+
+    expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith('run_checkpoint_1', 'cancelled');
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        kind: 'checkpoint',
+        status: 'skipped',
+      }),
+    );
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_1',
+      'failed',
+      '关联 Decision 已延后：Need approval',
+      'system',
+      '关联 Decision 已延后：Need approval',
+    );
   });
 
   it('writes a task signal when a decision is cancelled', async () => {

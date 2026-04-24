@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 
 import type {
   RunCheckpointKind,
@@ -41,6 +41,28 @@ export class RunCheckpointRepository {
     return rows.map(toRecord);
   }
 
+  async findOpenByDecisionId(decisionId: string): Promise<RunCheckpointRecord | null> {
+    const db = initDatabase();
+    const rows = await db
+      .select()
+      .from(runCheckpoints)
+      .where(eq(runCheckpoints.status, 'open'))
+      .orderBy(asc(runCheckpoints.createdAt));
+
+    return rows.map(toRecord).find((checkpoint) => {
+      if (!checkpoint.payload) {
+        return false;
+      }
+
+      try {
+        const payload = JSON.parse(checkpoint.payload) as Record<string, unknown>;
+        return payload.decisionId === decisionId;
+      } catch {
+        return false;
+      }
+    }) ?? null;
+  }
+
   async create(input: CreateRunCheckpointInput): Promise<RunCheckpointRecord> {
     const db = initDatabase();
     const id = generateId('run_checkpoint');
@@ -59,5 +81,30 @@ export class RunCheckpointRepository {
 
     const [created] = await db.select().from(runCheckpoints).where(eq(runCheckpoints.id, id)).limit(1);
     return toRecord(created);
+  }
+
+  async updateStatus(id: string, status: RunCheckpointStatus): Promise<RunCheckpointRecord> {
+    const db = initDatabase();
+    const timestamp = nowIso();
+
+    await db
+      .update(runCheckpoints)
+      .set({
+        status,
+        resolvedAt: status === 'open' ? null : timestamp,
+      })
+      .where(and(eq(runCheckpoints.id, id), eq(runCheckpoints.status, 'open')));
+
+    const [updated] = await db
+      .select()
+      .from(runCheckpoints)
+      .where(eq(runCheckpoints.id, id))
+      .limit(1);
+
+    if (!updated) {
+      throw new Error(`Run checkpoint not found: ${id}`);
+    }
+
+    return toRecord(updated);
   }
 }

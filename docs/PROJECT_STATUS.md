@@ -23,7 +23,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - Local `.env` AI configuration now supports Replicate-backed draft runs; a deliberate local Replicate run completed with `output_source=ai`, timeline events, and a persisted artifact.
 - Task detail now has a compact section jump bar for Current, Completion, Action, Activity, and Context Studio; a packaged app pass confirmed it can jump from Context Studio back to Action Desk.
 - The front task-management closeout loop is covered through packaged UI: a task can add and satisfy a completion criterion, Home surfaces it as ready to close, Action Desk prioritizes `completed`, and SQLite records the final transition.
-- Agent execution layer Phase 1 has started: Runs now have a persisted step trace spine, current text runs write plan/model/final steps through a `RunOrchestrator`, agent run requests now have a typed working-context/policy contract, the first internal tool registry can create local note artifacts with tool call/result steps, `agent` runs can use that local tool path, confirmation-required tools now create run checkpoints instead of executing, map those checkpoints into pending Decisions, and the Runs page shows execution-step and checkpoint summaries.
+- Agent execution layer Phase 1 has started: Runs now have a persisted step trace spine, current text runs write plan/model/final steps through a `RunOrchestrator`, agent run requests now have a typed working-context/policy contract, the first internal tool registry can create local note artifacts with tool call/result steps, `agent` runs can use that local tool path, confirmation-required tools now create run checkpoints instead of executing, map those checkpoints into pending Decisions, approved checkpoint Decisions can resume the pending local tool, deferred/cancelled confirmations settle the run as non-resumable, and the Runs page shows execution-step and checkpoint summaries.
 
 ## Verification Baseline
 
@@ -36,7 +36,7 @@ npm run verify
 Latest local baseline:
 
 - 40 test files
-- 266 tests
+- 269 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -54,7 +54,7 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 
 ## Recommended Next Focus
 
-1. Continue agent execution layer Phase 1 by adding a resume path for approved checkpoint Decisions and marking deferred/cancelled confirmations as non-resumable.
+1. Continue agent execution layer Phase 1 by making checkpoint/Decision linkage clearer in the Decisions page and then adding broader tool coverage beyond local note artifacts.
 2. Keep signed/notarized release work deferred until a dedicated release-readiness pass targets signing and notarization.
 3. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 4. Defer GitHub Actions work until quota is restored.

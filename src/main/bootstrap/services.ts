@@ -87,6 +87,11 @@ const decisionService = new DecisionService(
   decisionRepository,
   taskService,
   aiConfigService,
+  undefined,
+  runCheckpointRepository,
+  runStepRepository,
+  runRepository,
+  agentToolRegistry,
 );
 const runService = new RunService(
   runRepository,
