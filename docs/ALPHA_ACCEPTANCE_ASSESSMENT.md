@@ -6,7 +6,7 @@ This assessment maps the alpha checklist to the current automated coverage and t
 
 Current status: not alpha-accepted yet. A focused manual alpha pass is now underway and has covered the core local path through task creation, decision creation, no-key run failure, Home recovery, Settings config save, and unsigned macOS directory packaging.
 
-Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now narrower: validate a successful AI-backed run with deliberate test credentials, re-run full source/process create/edit/archive from the improved task-detail shortcuts, and defer signed/notarized release work until the unsigned package path stays stable.
+Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now narrower: validate a successful AI-backed run with deliberate test credentials, finish a checkpointed source/process edit/archive pass, and defer signed/notarized release work until the unsigned package path stays stable.
 
 ## Verification Gate
 
@@ -38,7 +38,7 @@ Manual result / need:
 
 ## Context Objects
 
-Status: partially validated manually, with UI navigation friction.
+Status: mostly validated manually, with UI navigation friction.
 
 Automated coverage:
 
@@ -51,8 +51,9 @@ Manual result / need:
 - source/process/blocker/completion objects were seeded to continue recovery validation after detail scrolling became cumbersome through automation
 - packaged app task UI created and resolved a downstream-to-upstream dependency in isolated SQLite under `/tmp/taskplane-alpha-dependency-ui-20260424`; queue priority and task cards reflected the dependency while active and returned after resolution
 - first-screen context shortcuts now expose empty-state `新增来源材料` and `新增方法模板`; packaged app validated that the source shortcut lands on Source Context rather than Action Setup
+- packaged app task UI created `DB source` and `DB process` in a clean isolated run under `/tmp/taskplane-alpha-db-probe-20260424`; SQLite confirmed the key source row, active process template row, and active task-process binding row
 - Home and task resume reflected blocker/source/method context correctly after the Home fixes
-- source/process creation still needs a full create/edit/archive UI-only manual pass from the improved shortcuts
+- source/process edit/archive buttons are visible, but a fully checkpointed edit/archive UI-only pass remains as long-detail usability debt
 
 ## Decision And Run Loop
 
@@ -141,7 +142,7 @@ Manual need:
 Finish the remaining alpha checks in this order:
 
 1. Run a successful AI-backed draft/run only with deliberate test credentials.
-2. Re-run full source/process create/edit/archive through the improved task-detail shortcuts.
+2. Finish a checkpointed source/process edit/archive pass through the improved task-detail shortcuts.
 3. Keep signed/notarized packaging out of scope until those product-path checks pass.
 
 Do not expand the domain model until that pass is complete.
