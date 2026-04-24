@@ -15,7 +15,7 @@ The app is split into three layers:
 
 ### Install
 
-Use Node `20.19+` or `22.12+` with npm `10+`.
+Use Node `20.19+` or `22.12+` with npm `10+`. If you use `nvm`, run `nvm use` from the repo root.
 
 ```bash
 npm install
