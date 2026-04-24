@@ -282,7 +282,23 @@ describe('RunOrchestrator', () => {
       status: 'completed',
       output: 'Agent local note output',
     });
-    expect(agentToolRegistry.execute).toHaveBeenCalledWith(
+    expect(agentToolRegistry.execute).toHaveBeenNthCalledWith(
+      1,
+      'task.inspect_context',
+      {},
+      {
+        runId: 'run_1',
+        taskId: 'task_1',
+        workingContext: expect.objectContaining({
+          task: expect.objectContaining({ title: 'Task 1' }),
+        }),
+      },
+      expect.objectContaining({
+        confirmationRequiredRisks: ['external_write', 'sensitive'],
+      }),
+    );
+    expect(agentToolRegistry.execute).toHaveBeenNthCalledWith(
+      2,
       'artifact.create_note',
       {
         title: 'Task 1 agent note',

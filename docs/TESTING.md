@@ -63,11 +63,11 @@ Covered today:
 - `RunService`
   successful execution path, failure path, task restoration after settled runs, artifact creation on successful output, and orchestration result settlement
 - `RunOrchestrator`
-  plan/model/final step writes, process-template selector fallback, executor failure recording, and agent-mode local tool execution
+  plan/model/final step writes, process-template selector fallback, executor failure recording, and agent-mode read-then-write local tool execution
 - `AgentWorkingContext`
   task-detail compression into typed agent run context, default policy, and plan-step request summaries
 - `AgentToolRegistry`
-  internal tool discovery, local note artifact creation, tool call/result step writes, validation failure recording, policy-driven confirmation checkpoints, and Decision creation for confirmation checkpoints
+  internal tool discovery, read-only context inspection, local note artifact creation, tool call/result step writes, validation failure recording, policy-driven confirmation checkpoints, and Decision creation for confirmation checkpoints
 - `TextExecutor`
   lane-aware run prompt composition
 - `HomeBriefService`

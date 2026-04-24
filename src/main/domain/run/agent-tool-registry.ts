@@ -3,6 +3,7 @@ import type {
   AgentToolName,
   AgentToolResult,
   AgentToolRisk,
+  AgentWorkingContext,
 } from '../../../shared/types/agent-execution.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import type { DecisionRepository } from '../../db/repositories/decision-repository.js';
@@ -19,6 +20,7 @@ export type AgentToolDefinition = {
 type ToolExecutionContext = {
   runId: string;
   taskId: string;
+  workingContext?: AgentWorkingContext;
 };
 
 type ArtifactCreateNoteInput = {
@@ -58,8 +60,32 @@ function buildConfirmationDecisionTitle(name: AgentToolName, risk: AgentToolRisk
   return `确认${riskLabel[risk]}：${name}`;
 }
 
+function formatWorkingContextSummary(context: AgentWorkingContext): string {
+  return [
+    `任务：${context.task.title}`,
+    `状态：${context.task.state}`,
+    `下一步：${context.task.nextStep ?? '暂无'}`,
+    `优先级语义：${context.priorityLane}`,
+    `恢复摘要：${context.resumeSummary}`,
+    `完成标准：${context.completion.satisfied}/${context.completion.total}`,
+    context.completion.nextOpenCriterion
+      ? `下一条未完成标准：${context.completion.nextOpenCriterion}`
+      : '下一条未完成标准：暂无',
+    `阻塞项：${context.blockers.map((item) => item.title).join('；') || '无'}`,
+    `依赖项：${context.dependencies.map((item) => item.title).join('；') || '无'}`,
+    `关键来源：${context.sources.filter((item) => item.isKey).map((item) => item.title).join('；') || '无'}`,
+    `方法模板：${context.processTemplates.map((item) => item.title).join('；') || '无'}`,
+  ].join('\n');
+}
+
 export class AgentToolRegistry {
   private readonly definitions: AgentToolDefinition[] = [
+    {
+      name: 'task.inspect_context',
+      description: 'Inspect the current Taskplane working context snapshot for this run.',
+      risk: 'safe_read',
+      requiresConfirmation: false,
+    },
     {
       name: 'artifact.create_note',
       description: 'Create a local note artifact attached to the current Taskplane run.',
@@ -197,6 +223,20 @@ export class AgentToolRegistry {
     context: ToolExecutionContext,
   ): Promise<AgentToolResult> {
     switch (name) {
+      case 'task.inspect_context': {
+        if (!context.workingContext) {
+          throw new Error('task.inspect_context requires a working context.');
+        }
+
+        const output = formatWorkingContextSummary(context.workingContext);
+
+        return {
+          success: true,
+          status: 'completed',
+          summary: '已读取当前任务上下文摘要。',
+          output,
+        };
+      }
       case 'artifact.create_note': {
         const parsed = parseArtifactCreateNoteInput(input);
         const artifact = await this.artifactRepository.createNoteFromRun({

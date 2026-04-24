@@ -1,7 +1,50 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import type { AgentWorkingContext } from '../../../shared/types/agent-execution.js';
 import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
 import { AgentToolRegistry } from './agent-tool-registry.js';
+
+function buildWorkingContext(): AgentWorkingContext {
+  return {
+    task: {
+      id: 'task_1',
+      title: 'Inspect agent context',
+      summary: 'Context summary',
+      state: 'running',
+      nextStep: 'Review the context',
+      riskLevel: 'medium',
+      riskNote: 'Needs attention',
+    },
+    priorityLane: 'continue_or_review',
+    resumeSummary: 'Ready to continue with context inspection.',
+    completion: {
+      total: 2,
+      satisfied: 1,
+      open: 1,
+      nextOpenCriterion: 'Confirm output quality',
+    },
+    blockers: [{ title: 'Legal review', detail: null, owner: 'Legal' }],
+    dependencies: [{ title: 'Upstream research', detail: 'Waiting for notes' }],
+    sources: [
+      {
+        title: 'Key brief',
+        kind: 'note',
+        isKey: true,
+        note: 'Most important source',
+        contentPreview: 'Brief content',
+      },
+    ],
+    processTemplates: [
+      {
+        id: 'process_template_1',
+        title: 'Review checklist',
+        kind: 'checklist',
+        summary: 'Review output quality',
+      },
+    ],
+    recentTimeline: [],
+  };
+}
 
 function buildRunStepRepositoryMock() {
   let stepCount = 0;
@@ -90,6 +133,52 @@ function buildDecisionRepositoryMock() {
 }
 
 describe('AgentToolRegistry', () => {
+  it('lists read-only context inspection before write tools', () => {
+    const registry = new AgentToolRegistry({} as never, buildRunStepRepositoryMock() as never);
+
+    expect(registry.list()).toEqual([
+      expect.objectContaining({
+        name: 'task.inspect_context',
+        risk: 'safe_read',
+        requiresConfirmation: false,
+      }),
+      expect.objectContaining({
+        name: 'artifact.create_note',
+        risk: 'local_write',
+      }),
+    ]);
+  });
+
+  it('inspects the current working context as a read-only tool', async () => {
+    const runStepRepository = buildRunStepRepositoryMock();
+    const registry = new AgentToolRegistry({} as never, runStepRepository as never);
+
+    const result = await registry.execute(
+      'task.inspect_context',
+      {},
+      {
+        runId: 'run_1',
+        taskId: 'task_1',
+        workingContext: buildWorkingContext(),
+      },
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      status: 'completed',
+      summary: '已读取当前任务上下文摘要。',
+    });
+    expect(result.output).toContain('任务：Inspect agent context');
+    expect(result.output).toContain('关键来源：Key brief');
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_1',
+      expect.objectContaining({ status: 'completed' }),
+    );
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({ kind: 'tool_result', status: 'completed' }),
+    );
+  });
+
   it('creates a note artifact and writes tool call/result steps', async () => {
     const artifactRepository = {
       createNoteFromRun: vi.fn().mockResolvedValue({

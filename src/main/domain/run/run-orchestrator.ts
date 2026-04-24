@@ -157,6 +157,25 @@ export class RunOrchestrator {
       return result;
     }
 
+    const inspectResult = await this.agentToolRegistry.execute(
+      'task.inspect_context',
+      {},
+      {
+        runId: params.run.id,
+        taskId: params.task.id,
+        workingContext: request.context,
+      },
+      request.policy,
+    );
+
+    if (!inspectResult.success) {
+      return {
+        status: 'failed',
+        message: inspectResult.error ?? inspectResult.summary,
+        selection: result.selection,
+      };
+    }
+
     const toolResult = await this.agentToolRegistry.execute(
       'artifact.create_note',
       {
