@@ -2758,6 +2758,15 @@ describe('App UI flow', () => {
       '已处理暂停原因后重新触发 agent run。上次暂停原因：观察到任务仍有阻塞项：Legal review。暂停执行 artifact.create_note，等待先解除阻塞。',
     );
 
+    await user.click(screen.getByRole('button', { name: '查看恢复 checkpoint' }));
+
+    await waitFor(() => {
+      expect(window.location.hash).toBe('#runs');
+    });
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /High risk task/i }));
+    await user.click(screen.getByRole('button', { name: '准备重新触发 agent run' }));
     await user.click(screen.getByRole('button', { name: '触发 Run' }));
 
     await waitFor(() => {

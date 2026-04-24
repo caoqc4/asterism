@@ -2877,6 +2877,13 @@ export function TasksPage({
                       >
                         准备重新触发 agent run
                       </button>
+                      <button
+                        className="ghost-button"
+                        onClick={() => onOpenRun(latestPausedRun.id)}
+                        type="button"
+                      >
+                        查看恢复 checkpoint
+                      </button>
                     </div>
                   ) : null}
                   <div className="quick-actions-grid" ref={quickActionsRef}>
