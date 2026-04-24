@@ -36,6 +36,7 @@ Latest local baseline:
 - TypeScript checks
 - production renderer build
 - Electron main-process build
+- build smoke check
 
 Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging configuration changes.
 
