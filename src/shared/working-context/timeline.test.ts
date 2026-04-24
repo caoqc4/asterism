@@ -87,6 +87,23 @@ describe('getTaskTimelinePreviewEvents', () => {
     ).toBe('task.run_failed');
   });
 
+  it('prefers action-shaping events over newer trace events for latest-change selection', () => {
+    expect(
+      getLatestResumeRelevantTimelineEvent([
+        { type: 'task.updated', payload: null },
+        { type: 'source_context.archived', payload: null },
+        { type: 'task.decision_approved', payload: JSON.stringify({ decisionTitle: 'Approve launch' }) },
+      ])?.type,
+    ).toBe('task.decision_approved');
+
+    expect(
+      getLatestResumeRelevantTimelineEvent([
+        { type: 'task.updated', payload: null },
+        { type: 'source_context.archived', payload: null },
+      ])?.type,
+    ).toBe('task.updated');
+  });
+
   it('derives responsibility summaries for blocker and dependency events', () => {
     expect(
       getTaskTimelineResponsibilitySummary({

@@ -83,7 +83,17 @@ export function isResumeLatestChangeMetaEvent(type: string): boolean {
 export function getLatestResumeRelevantTimelineEvent(
   timeline: Array<Pick<TimelineEventRecord, 'type' | 'payload'>>,
 ): Array<Pick<TimelineEventRecord, 'type' | 'payload'>>[number] | undefined {
-  return timeline.find((event) => !isResumeLatestChangeMetaEvent(event.type)) ?? timeline[0];
+  const nonMetaEvent = timeline.find((event) => !isResumeLatestChangeMetaEvent(event.type));
+
+  return (
+    timeline.find(
+      (event) =>
+        !isResumeLatestChangeMetaEvent(event.type) &&
+        getTaskTimelinePriority(event.type) !== 'p3',
+    ) ??
+    nonMetaEvent ??
+    timeline[0]
+  );
 }
 
 export function interpretTaskTimelineEvent(
