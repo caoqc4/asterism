@@ -186,6 +186,7 @@ type RunsPageProps = {
   runs: RunRecord[];
   tasks: TaskListItemRecord[];
   onOpenTask: (taskId: string, intent: RecommendedActionIntent) => void;
+  onContinuePausedRun: (runId: string) => Promise<RunRecord>;
   onRefresh: () => Promise<void>;
   onRunFocusConsumed: () => void;
   onTriggerRun: (input: CreateRunInput) => Promise<RunRecord>;
@@ -196,6 +197,7 @@ export function RunsPage({
   runs,
   tasks,
   onOpenTask,
+  onContinuePausedRun,
   onRefresh,
   onRunFocusConsumed,
   onTriggerRun,
@@ -280,14 +282,10 @@ export function RunsPage({
     }
   }
 
-  async function retryPausedRun(run: RunDetailRecord): Promise<void> {
-    const created = await onTriggerRun({
-      taskId: run.taskId,
-      type: 'agent',
-      instructions: `已处理暂停原因后重新触发 agent run。上次暂停原因：${run.output || run.failureReason || '未记录'}`,
-    });
+  async function continuePausedRun(run: RunDetailRecord): Promise<void> {
+    const updated = await onContinuePausedRun(run.id);
 
-    setSelectedRunId(created.id);
+    setSelectedRunId(updated.id);
     await onRefresh();
   }
 
@@ -356,10 +354,10 @@ export function RunsPage({
                 {detail.status === 'paused' ? (
                   <button
                     className="ghost-button"
-                    onClick={() => void retryPausedRun(detail)}
+                    onClick={() => void continuePausedRun(detail)}
                     type="button"
                   >
-                    重新触发 agent run
+                    继续 paused run
                   </button>
                 ) : null}
               </div>

@@ -89,5 +89,6 @@ export type ElectronApi = {
   listRuns: () => Promise<RunRecord[]>;
   getRunDetail: (runId: string) => Promise<RunDetailRecord | null>;
   triggerRun: (input: CreateRunInput) => Promise<RunRecord>;
+  continuePausedRun: (runId: string) => Promise<RunRecord>;
   subscribeToEvents: (listener: (event: AppEvent) => void) => () => void;
 };

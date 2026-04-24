@@ -50,6 +50,7 @@ const { handleMock, emitAppEventMock, servicesMock } = vi.hoisted(() => ({
       list: vi.fn(),
       getDetail: vi.fn(),
       trigger: vi.fn(),
+      continuePausedRun: vi.fn(),
     },
   },
 }));
@@ -435,5 +436,33 @@ describe('registerIpcHandlers', () => {
     expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
     expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'brief.changed');
     expect(result.failureReason).toBe('Missing API key');
+  });
+
+  it('emits run, task, and brief events after continuing a paused run', async () => {
+    servicesMock.runService.continuePausedRun.mockResolvedValue({
+      id: 'run_1',
+      taskId: 'task_1',
+      type: 'agent',
+      status: 'completed',
+      instructions: null,
+      output: 'Recovered note',
+      outputSource: 'system',
+      failureReason: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+
+    const handler = getRegisteredHandler<
+      [string],
+      Awaited<ReturnType<typeof servicesMock.runService.continuePausedRun>>
+    >('run:continuePaused');
+
+    const result = await handler({}, 'run_1');
+
+    expect(servicesMock.runService.continuePausedRun).toHaveBeenCalledWith('run_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(1, 'run.changed', 'run_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'brief.changed');
+    expect(result.status).toBe('completed');
   });
 });

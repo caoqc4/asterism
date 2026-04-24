@@ -124,6 +124,8 @@ Covered today:
   decision action routing plus `decision.changed` and `task.changed`
 - `run:trigger`
   run trigger routing plus `run.changed`, `task.changed`, and `brief.changed`
+- `run:continuePaused`
+  paused-run checkpoint continuation routing plus `run.changed`, `task.changed`, and `brief.changed`
 - `task:transition`
   task transition routing plus `task.changed`
 - `completionCriteria:create`
@@ -230,7 +232,7 @@ Covered today:
 - `Decisions` page checkpoint Decision consequence guidance
 - `Runs` page checkpoint summaries for confirmation-needed agent runs
 - `Runs` page resume checkpoint summaries for paused agent runs
-- `Runs` page paused agent retry action
+- `Runs` page paused agent checkpoint continuation action
 - `Runs` page readable agent plan-source summaries
 - `Runs` page readable agent tool observation summaries
 - `Runs` page trigger form refresh and newly-created run selection, including repeated triggers

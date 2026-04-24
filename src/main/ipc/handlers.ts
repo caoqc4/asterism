@@ -227,4 +227,12 @@ export function registerIpcHandlers(): void {
     emitAppEvent('brief.changed');
     return created;
   });
+
+  ipcMain.handle('run:continuePaused', async (_event, runId: string) => {
+    const updated = await getServices().runService.continuePausedRun(runId);
+    emitAppEvent('run.changed', updated.id);
+    emitAppEvent('task.changed', updated.taskId);
+    emitAppEvent('brief.changed');
+    return updated;
+  });
 }

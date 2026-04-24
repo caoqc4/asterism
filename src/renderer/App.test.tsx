@@ -780,6 +780,7 @@ describe('App UI flow', () => {
     listRuns: vi.fn().mockResolvedValue(runs),
     getRunDetail: vi.fn(async (runId: string) => runs.find((run) => run.id === runId) ?? null),
     triggerRun: vi.fn().mockResolvedValue(createdRun),
+    continuePausedRun: vi.fn(),
     subscribeToEvents: vi.fn().mockImplementation(() => () => {}),
   };
 
@@ -2927,7 +2928,7 @@ describe('App UI flow', () => {
     expect(screen.getByText('下一工具：artifact.create_note；原因：等待先解除阻塞。')).toBeTruthy();
   });
 
-  it('retries a paused agent run from the runs page', async () => {
+  it('continues a paused agent run from the runs page', async () => {
     const user = userEvent.setup();
     const pausedRun = buildRunRecord({
       id: 'run_paused_retry',
@@ -2937,12 +2938,13 @@ describe('App UI flow', () => {
       output: '等待先解除阻塞。',
       outputSource: 'system',
     });
-    const retriedRun = buildRunRecord({
-      id: 'run_paused_retry_created',
+    const continuedRun = buildRunRecord({
+      id: pausedRun.id,
       taskId: riskTask.id,
       type: 'agent',
-      status: 'running',
-      instructions: '已处理暂停原因后重新触发 agent run。',
+      status: 'completed',
+      output: 'Recovered note',
+      outputSource: 'system',
     });
     let currentRuns: RunRecord[] = [pausedRun];
     const runPausedRetryApi: ElectronApi = {
@@ -2951,15 +2953,9 @@ describe('App UI flow', () => {
       getRunDetail: vi.fn(async (runId: string) =>
         currentRuns.find((run) => run.id === runId) ?? null,
       ),
-      triggerRun: vi.fn(async (input) => {
-        currentRuns = [
-          {
-            ...retriedRun,
-            instructions: input.instructions ?? null,
-          },
-          ...currentRuns,
-        ];
-        return currentRuns[0]!;
+      continuePausedRun: vi.fn(async (runId) => {
+        currentRuns = currentRuns.map((run) => (run.id === runId ? continuedRun : run));
+        return continuedRun;
       }),
     };
 
@@ -2970,16 +2966,13 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /runs/i }));
     expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: '重新触发 agent run' }));
+    await user.click(screen.getByRole('button', { name: '继续 paused run' }));
 
     await waitFor(() => {
-      expect(runPausedRetryApi.triggerRun).toHaveBeenCalledWith({
-        taskId: riskTask.id,
-        type: 'agent',
-        instructions: '已处理暂停原因后重新触发 agent run。上次暂停原因：等待先解除阻塞。',
-      });
+      expect(runPausedRetryApi.continuePausedRun).toHaveBeenCalledWith(pausedRun.id);
     });
-    expect(await screen.findByRole('heading', { name: 'agent / running' })).toBeTruthy();
+    expect(runPausedRetryApi.triggerRun).not.toHaveBeenCalled();
+    expect(await screen.findByRole('heading', { name: 'agent / completed' })).toBeTruthy();
   });
 
   it('shows readable agent plan source summaries on the runs page', async () => {

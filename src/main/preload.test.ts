@@ -59,6 +59,7 @@ function getExposedApi() {
     listRuns: () => Promise<unknown>;
     getRunDetail: (runId: string) => Promise<unknown>;
     triggerRun: (input: unknown) => Promise<unknown>;
+    continuePausedRun: (runId: string) => Promise<unknown>;
     subscribeToEvents: (listener: (event: unknown) => void) => () => void;
   };
 }
@@ -167,6 +168,7 @@ describe('preload bridge', () => {
     await api.listRuns();
     await api.getRunDetail('run_1');
     await api.triggerRun(createRunInput);
+    await api.continuePausedRun('run_1');
 
     expect(invokeMock.mock.calls).toEqual([
       ['app:ping'],
@@ -200,6 +202,7 @@ describe('preload bridge', () => {
       ['run:list'],
       ['run:getDetail', 'run_1'],
       ['run:trigger', createRunInput],
+      ['run:continuePaused', 'run_1'],
     ]);
   });
 

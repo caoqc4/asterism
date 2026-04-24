@@ -512,6 +512,13 @@ export function App() {
     return created;
   }
 
+  async function handleContinuePausedRun(runId: string) {
+    const updated = await window.api.continuePausedRun(runId);
+    setRuns((current) => current.map((run) => (run.id === updated.id ? updated : run)));
+    setBriefData(await window.api.getHomeBrief());
+    return updated;
+  }
+
   function handleOpenTask(taskId: string | null, intent: RecommendedActionIntent | null = null) {
     if (!taskId) {
       return;
@@ -817,6 +824,7 @@ export function App() {
             onOpenTask={handleOpenTask}
             onRefresh={loadShellData}
             onRunFocusConsumed={() => setFocusedRunId(null)}
+            onContinuePausedRun={handleContinuePausedRun}
             onTriggerRun={handleTriggerRun}
           />
         ) : null}
