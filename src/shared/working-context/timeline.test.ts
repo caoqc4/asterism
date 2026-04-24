@@ -96,6 +96,14 @@ describe('getTaskTimelinePreviewEvents', () => {
         }),
       }),
     ).toBe('执行失败：Model overloaded。');
+    expect(
+      formatTaskTimelineEventSummary({
+        type: 'task.run_paused',
+        payload: JSON.stringify({
+          pauseReason: '等待先解除阻塞。',
+        }),
+      }),
+    ).toBe('执行暂停待复核：等待先解除阻塞。');
 
     expect(
       formatTaskTimelineEventSummary({
@@ -107,6 +115,7 @@ describe('getTaskTimelinePreviewEvents', () => {
 
   it('formats event labels while preserving unknown event types', () => {
     expect(getTaskTimelineEventLabel('task.run_failed')).toBe('执行失败');
+    expect(getTaskTimelineEventLabel('task.run_paused')).toBe('执行暂停');
     expect(getTaskTimelineEventLabel('completion_criteria.satisfied')).toBe('完成标准');
     expect(getTaskTimelineEventLabel('custom.audit_event')).toBe('custom.audit_event');
   });
@@ -286,6 +295,8 @@ describe('getTaskTimelinePreviewEvents', () => {
   it('only exposes timeline actions for key events and strong explanatory events', () => {
     expect(shouldExposeTaskTimelineFollowUpAction('task.run_failed')).toBe(true);
     expect(getTaskTimelineFollowUpActionLabel('task.run_failed')).toBe('复核失败并重试');
+    expect(shouldExposeTaskTimelineFollowUpAction('task.run_paused')).toBe(true);
+    expect(getTaskTimelineFollowUpActionLabel('task.run_paused')).toBe('复核暂停原因');
 
     expect(shouldExposeTaskTimelineFollowUpAction('blocker.updated')).toBe(true);
     expect(getTaskTimelineFollowUpActionLabel('blocker.updated')).toBe('先解阻塞');

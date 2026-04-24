@@ -332,6 +332,8 @@ export function RunsPage({
                       prefillNextStep:
                         detail.status === 'failed'
                           ? `检查最近一次 ${detail.type} run 的失败原因，并决定是否重试。`
+                          : detail.status === 'paused'
+                            ? `复核最近一次 ${detail.type} run 的暂停原因，处理阻塞后再继续。`
                           : `审阅最近一次 ${detail.type} run 的结果，并决定是否继续推进。`,
                     })
                   }

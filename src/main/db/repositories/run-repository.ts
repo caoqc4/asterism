@@ -101,6 +101,8 @@ export class RunRepository {
       type:
         status === 'failed'
           ? 'run.failed'
+          : status === 'paused'
+            ? 'run.paused'
           : status === 'needs_confirmation'
             ? 'run.needs_confirmation'
             : 'run.completed',
@@ -119,7 +121,7 @@ export class RunRepository {
       .from(runs)
       .where(
         and(
-          inArray(runs.status, ['pending', 'running', 'needs_confirmation']),
+          inArray(runs.status, ['pending', 'running', 'needs_confirmation', 'paused']),
           lt(runs.updatedAt, olderThanIso),
         ),
       )

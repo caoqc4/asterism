@@ -1,6 +1,6 @@
 export type RunType = 'draft' | 'summarize' | 'agent';
 
-export type RunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'needs_confirmation';
+export type RunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'needs_confirmation' | 'paused';
 export type RunOutputSource = 'ai' | 'fallback' | 'system';
 export type RunStepKind = 'plan' | 'model' | 'tool_call' | 'tool_result' | 'artifact' | 'decision' | 'checkpoint' | 'final';
 export type RunStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';

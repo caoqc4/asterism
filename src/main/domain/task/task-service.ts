@@ -826,6 +826,31 @@ export class TaskService {
     return this.attachActiveWaitingItem(updated);
   }
 
+  async annotateRunPaused(
+    taskId: string,
+    pauseReason: string,
+    runId?: string,
+  ): Promise<TaskListItemRecord> {
+    const detail = await this.restoreTaskAfterRun(await this.getExistingTaskOrThrow(taskId));
+
+    const updated = await this.repository.update({
+      id: taskId,
+      nextStep: '先处理 Run 暂停原因，再决定是否继续或重试。',
+      riskLevel: 'medium',
+      riskNote: pauseReason,
+    });
+
+    await this.syncWaitingItem(updated.id, detail.state, updated.waitingReason);
+
+    await this.repository.appendTimelineEvent(taskId, 'task.run_paused', {
+      runId,
+      pauseReason,
+      suggestedAction: '处理暂停原因后继续 Run',
+    });
+
+    return this.attachActiveWaitingItem(updated);
+  }
+
   async annotateRunCompleted(
     taskId: string,
     runType: RunType,

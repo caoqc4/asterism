@@ -17,6 +17,11 @@ export type WorkingContextRecentChange =
       failureReason?: string;
     }
   | {
+      kind: 'run_paused';
+      title?: string;
+      pauseReason?: string;
+    }
+  | {
       kind: 'run_completed';
       title?: string;
       nextState?: string;
@@ -81,6 +86,11 @@ export function parseTimelinePayload(payload: string | null | undefined): Record
   return payload ? safeJsonParse(payload) : null;
 }
 
+function appendChinesePeriod(value: unknown): string {
+  const text = String(value);
+  return /[。！？.!?]$/.test(text) ? text : `${text}。`;
+}
+
 export function isResumeLatestChangeMetaEvent(type: string): boolean {
   return (
     type === 'process_template.applied' ||
@@ -123,7 +133,7 @@ export function interpretTaskTimelineEvent(
   switch (event.type) {
     case 'task.run_failed':
       return {
-        summary: `最近一次执行失败：${String(payload?.failureReason ?? '未记录失败原因')}。`,
+        summary: `最近一次执行失败：${appendChinesePeriod(payload?.failureReason ?? '未记录失败原因')}`,
         responsibilitySummary: null,
         objectAction: {
           label: payload?.runId ? '查看 Run' : null,
@@ -133,6 +143,20 @@ export function interpretTaskTimelineEvent(
         recentChange: {
           kind: 'run_failed',
           failureReason: typeof payload?.failureReason === 'string' ? payload.failureReason : undefined,
+        },
+      };
+    case 'task.run_paused':
+      return {
+        summary: `最近一次执行暂停待复核：${appendChinesePeriod(payload?.pauseReason ?? '未记录暂停原因')}`,
+        responsibilitySummary: null,
+        objectAction: {
+          label: payload?.runId ? '查看 Run' : null,
+          targetType: payload?.runId ? 'run' : null,
+          targetId: typeof payload?.runId === 'string' ? payload.runId : null,
+        },
+        recentChange: {
+          kind: 'run_paused',
+          pauseReason: typeof payload?.pauseReason === 'string' ? payload.pauseReason : undefined,
         },
       };
     case 'task.run_completed':
@@ -410,7 +434,9 @@ export function explainTaskTimelineEvent(
     case 'task.updated':
       return '任务字段已更新';
     case 'task.run_failed':
-      return `执行失败：${String(payload?.failureReason ?? '未记录失败原因')}。`;
+      return `执行失败：${appendChinesePeriod(payload?.failureReason ?? '未记录失败原因')}`;
+    case 'task.run_paused':
+      return `执行暂停待复核：${appendChinesePeriod(payload?.pauseReason ?? '未记录暂停原因')}`;
     case 'task.run_completed':
       return `执行完成，任务恢复到 ${String(payload?.nextState ?? 'planned')}。`;
     case 'task.decision_approved':
@@ -468,6 +494,7 @@ export function formatTaskTimelineEventSummary(event: Pick<TimelineEventRecord, 
     case 'task.created':
     case 'task.updated':
     case 'task.run_failed':
+    case 'task.run_paused':
     case 'task.run_completed':
     case 'task.decision_approved':
     case 'task.decision_deferred':
@@ -515,6 +542,8 @@ export function getTaskTimelineEventLabel(type: string): string {
       return '决策取消';
     case 'task.run_failed':
       return '执行失败';
+    case 'task.run_paused':
+      return '执行暂停';
     case 'task.run_completed':
       return '执行完成';
     case 'task.transitioned':
@@ -595,6 +624,8 @@ export function getTaskTimelineFollowUpActionLabel(type: string): string | null 
       return '补清拍板条件';
     case 'task.run_failed':
       return '复核失败并重试';
+    case 'task.run_paused':
+      return '复核暂停原因';
     case 'task.waiting_changed':
       return '补清等待条件';
     case 'task.risk_changed':
@@ -647,6 +678,7 @@ export function getTaskTimelineLane(type: string): PriorityLane {
     case 'task_dependency.updated':
       return 'unblock_or_decide';
     case 'task.run_failed':
+    case 'task.run_paused':
     case 'task.run_completed':
     case 'task.decision_approved':
     case 'artifact.created':
@@ -673,6 +705,7 @@ export function getTaskTimelineLaneLabel(type: string): string | null {
 export function getTaskTimelinePriority(type: string): TaskTimelinePriority {
   switch (type) {
     case 'task.run_failed':
+    case 'task.run_paused':
     case 'task.run_completed':
     case 'task.decision_approved':
     case 'task.decision_deferred':

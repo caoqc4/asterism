@@ -57,11 +57,11 @@ Covered today:
 - `AiConfigService`
   config-path reporting and legacy keychain API-key migration behavior
 - `TaskService`
-  transitions, invalid transitions, signal updates, task-resume derivation, blocker/dependency/completion-criteria lifecycle writes, decision annotations, and run-settlement annotations
+  transitions, invalid transitions, signal updates, task-resume derivation, blocker/dependency/completion-criteria lifecycle writes, decision annotations, and completed/failed/paused run-settlement annotations
 - `DecisionService`
   task existence checks, decision-to-task lifecycle linkage, AI/fallback decision-draft composition, and checkpoint Decision approval/defer settlement
 - `RunService`
-  successful execution path, failure path, task restoration after settled runs, artifact creation on successful output, and orchestration result settlement
+  successful execution path, failure path, paused path, task restoration after settled runs, artifact creation on successful output, and orchestration result settlement
 - `RunOrchestrator`
   plan/model/final step writes, process-template selector fallback, executor failure recording, agent-mode handoff into the local run loop, and paused agent-loop propagation
 - `AgentRunLoop`
@@ -86,7 +86,7 @@ Covered today:
 - `TaskRepository`
   task creation, signal persistence, structured timeline writes, transitions
 - `RunRepository`
-  run creation, result persistence, stale run queries
+  run creation, result persistence including paused runs, stale run queries
 - `RunStepRepository`
   ordered execution-step creation, updates, and per-run retrieval
 - `RunCheckpointRepository`

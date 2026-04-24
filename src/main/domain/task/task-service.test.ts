@@ -1330,6 +1330,54 @@ describe('TaskService', () => {
     expect(result.riskLevel).toBe('high');
   });
 
+  it('annotates a paused run as review-needed without marking high risk', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('running')),
+      update: vi.fn().mockResolvedValue({
+        ...buildRecord('planned'),
+        riskLevel: 'medium',
+        riskNote: '等待先解除阻塞。',
+        nextStep: '先处理 Run 暂停原因，再决定是否继续或重试。',
+      }),
+      appendTimelineEvent: vi.fn(),
+      transition: vi
+        .fn()
+        .mockResolvedValueOnce({
+          ...buildRecord('planned'),
+          waitingReason: null,
+        }),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn().mockResolvedValue(null),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
+
+    const result = await service.annotateRunPaused('task_1', '等待先解除阻塞。', 'run_1');
+
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextStep: '先处理 Run 暂停原因，再决定是否继续或重试。',
+      riskLevel: 'medium',
+      riskNote: '等待先解除阻塞。',
+    });
+    expect(repository.transition).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextState: 'planned',
+      waitingReason: null,
+    });
+    expect(waitingItems.resolveActive).toHaveBeenCalledWith('task_1');
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'task.run_paused', {
+      runId: 'run_1',
+      pauseReason: '等待先解除阻塞。',
+      suggestedAction: '处理暂停原因后继续 Run',
+    });
+    expect(result.riskLevel).toBe('medium');
+  });
+
   it('annotates a completed run and restores the task to planned', async () => {
     const repository = {
       list: vi.fn(),

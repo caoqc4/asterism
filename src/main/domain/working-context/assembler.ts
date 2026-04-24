@@ -342,6 +342,19 @@ export function buildTaskResumeLatestChange(
           failureReason: typeof payload?.failureReason === 'string' ? payload.failureReason : undefined,
         },
       };
+    case 'task.run_paused':
+      return {
+        summary: `最近一次执行暂停待复核：${String(payload?.pauseReason ?? '未记录暂停原因')}。`,
+        action: {
+          label: payload?.runId ? '查看 Run' : null,
+          targetType: payload?.runId ? 'run' : null,
+          targetId: typeof payload?.runId === 'string' ? payload.runId : null,
+        },
+        recentChange: {
+          kind: 'run_paused',
+          pauseReason: typeof payload?.pauseReason === 'string' ? payload.pauseReason : undefined,
+        },
+      };
     case 'task.run_completed':
       return {
         summary: isCloseoutCompletionProgress(completionStatus)
@@ -819,6 +832,8 @@ export function deriveNextSuggestedMove(params: {
     switch (recentChange.kind) {
       case 'run_failed':
         return '检查最近一次执行失败原因，并决定是否重试。';
+      case 'run_paused':
+        return '复核最近一次执行暂停原因，并处理阻塞后再继续。';
       case 'run_completed':
         return recentChange.title
           ? `审阅最近一次 ${recentChange.title} run 的结果，并决定是否继续推进。`

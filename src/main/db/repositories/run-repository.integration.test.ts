@@ -73,6 +73,41 @@ describe('RunRepository integration', () => {
     expect(detail?.timeline.map((event) => event.type)).toContain('run.failed');
   });
 
+  it('updates a paused run result and keeps it recoverable as incomplete', async () => {
+    const task = await taskRepository.create({
+      title: 'Pause blocked agent run',
+    });
+    const created = await runRepository.create({
+      taskId: task.id,
+      type: 'agent',
+    });
+
+    const updated = await runRepository.updateResult(
+      created.id,
+      'paused',
+      '等待先解除阻塞。',
+      'system',
+    );
+
+    expect(updated.status).toBe('paused');
+    expect(updated.output).toBe('等待先解除阻塞。');
+    expect(updated.failureReason).toBeNull();
+
+    const detail = await taskRepository.getDetail(task.id);
+    expect(detail?.timeline.map((event) => event.type)).toContain('run.paused');
+
+    const db = initDatabase();
+    await db
+      .update(runs)
+      .set({
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      })
+      .where(eq(runs.id, created.id));
+
+    const staleRuns = await runRepository.listIncompleteOlderThan('2026-01-02T00:00:00.000Z');
+    expect(staleRuns.map((run) => run.id)).toContain(created.id);
+  });
+
   it('returns only incomplete runs older than the provided timestamp', async () => {
     const task = await taskRepository.create({
       title: 'Check stale run recovery',

@@ -397,6 +397,75 @@ describe('RunService', () => {
     expect(result.failureReason).toBe('Executor exploded');
   });
 
+  it('marks an agent run as paused when the orchestrator pauses for review', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn(),
+      create: vi.fn().mockResolvedValue(buildRunRecord('pending')),
+      updateResult: vi.fn().mockResolvedValue({
+        ...buildRunRecord('paused'),
+        output: '等待先解除阻塞。',
+        outputSource: 'system',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('planned')),
+      transitionIfAllowed: vi.fn().mockResolvedValue(buildTaskRecord('running')),
+      annotateRunCompleted: vi.fn(),
+      annotateRunFailed: vi.fn(),
+      annotateRunPaused: vi.fn().mockResolvedValue({
+        ...buildTaskRecord('planned'),
+        riskLevel: 'medium',
+        riskNote: '等待先解除阻塞。',
+      }),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
+    };
+    const artifactRepository = {
+      createFromRun: vi.fn(),
+    };
+    const runOrchestrator = {
+      executeAgentRun: vi.fn().mockResolvedValue({
+        status: 'paused',
+        message: '等待先解除阻塞。',
+        selection: null,
+      }),
+    };
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      artifactRepository as never,
+      {} as never,
+      {} as never,
+      undefined,
+      undefined,
+      null,
+      undefined,
+      runOrchestrator as never,
+    );
+
+    const result = await service.trigger({
+      taskId: 'task_1',
+      type: 'agent',
+    });
+
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_1',
+      'paused',
+      '等待先解除阻塞。',
+      'system',
+      null,
+    );
+    expect(taskService.annotateRunPaused).toHaveBeenCalledWith(
+      'task_1',
+      '等待先解除阻塞。',
+      'run_1',
+    );
+    expect(taskService.annotateRunFailed).not.toHaveBeenCalled();
+    expect(artifactRepository.createFromRun).not.toHaveBeenCalled();
+    expect(result.status).toBe('paused');
+  });
+
   it('rejects the run when the task does not exist', async () => {
     const runRepository = {
       list: vi.fn(),

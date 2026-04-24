@@ -641,6 +641,15 @@ export function App() {
       return;
     }
 
+    if (activity.status === 'paused') {
+      handleOpenTask(activity.taskId, {
+        type: 'focus_next_step',
+        focusArea: 'detail',
+        prefillNextStep: `复核最近一次 ${activity.title} run 的暂停原因，处理阻塞后再继续。`,
+      });
+      return;
+    }
+
     handleOpenTask(activity.taskId, {
       type: 'focus_next_step',
       focusArea: 'detail',
