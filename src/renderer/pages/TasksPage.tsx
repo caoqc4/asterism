@@ -44,6 +44,7 @@ import type {
   UpdateTaskInput,
 } from '@shared/types/task';
 import {
+  explainTaskTimelineEvent,
   getTaskTimelineFollowUpActionLabel,
   getTaskTimelineLane,
   getTaskTimelineLaneLabel,
@@ -498,7 +499,7 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
     event.type === 'task.next_step_changed' ||
     event.type === 'task.transitioned'
   ) {
-    return interpretTaskTimelineEvent(event).summary;
+    return explainTaskTimelineEvent(event);
   }
 
   const payload = safeParsePayload(event.payload);

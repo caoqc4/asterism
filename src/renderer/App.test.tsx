@@ -3420,6 +3420,9 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /timeline object task/i }));
     await screen.findByRole('heading', { name: 'Timeline object task' });
 
+    expect(screen.getByText('决策已获批准：Legal sign-off。')).toBeTruthy();
+    expect(screen.getByText('执行完成，任务恢复到 planned。')).toBeTruthy();
+
     const timelineObjectButtons = await screen.findAllByRole('button', { name: '查看 Decision' });
     await user.click(timelineObjectButtons[0]!);
 

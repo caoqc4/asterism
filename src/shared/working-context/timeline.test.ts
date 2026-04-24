@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  explainTaskTimelineEvent,
   getLatestResumeRelevantTimelineEvent,
   isResumeLatestChangeMetaEvent,
   getTaskTimelineFollowUpActionLabel,
@@ -13,6 +14,35 @@ import {
 } from './timeline.js';
 
 describe('getTaskTimelinePreviewEvents', () => {
+  it('uses explanatory timeline wording instead of resume-style latest-change wording', () => {
+    expect(
+      explainTaskTimelineEvent({
+        type: 'task.run_failed',
+        payload: JSON.stringify({
+          failureReason: 'Model overloaded',
+        }),
+      }),
+    ).toBe('执行失败：Model overloaded。');
+
+    expect(
+      explainTaskTimelineEvent({
+        type: 'task.decision_approved',
+        payload: JSON.stringify({
+          decisionTitle: 'Approve launch',
+        }),
+      }),
+    ).toBe('决策已获批准：Approve launch。');
+
+    expect(
+      explainTaskTimelineEvent({
+        type: 'source_context.updated',
+        payload: JSON.stringify({
+          title: 'Customer notes',
+        }),
+      }),
+    ).toBe('来源材料更新：Customer notes。');
+  });
+
   it('prioritizes lane-critical events ahead of weaker explanatory items in compact previews', () => {
     const timeline = [
       {

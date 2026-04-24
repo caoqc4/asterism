@@ -379,6 +379,49 @@ export function getTaskTimelineResponsibilitySummary(
   return interpretTaskTimelineEvent(event).responsibilitySummary;
 }
 
+export function explainTaskTimelineEvent(
+  event: Pick<TimelineEventRecord, 'type' | 'payload'>,
+): string {
+  const payload = event.payload ? safeJsonParse(event.payload) : null;
+
+  switch (event.type) {
+    case 'task.run_failed':
+      return `执行失败：${String(payload?.failureReason ?? '未记录失败原因')}。`;
+    case 'task.run_completed':
+      return `执行完成，任务恢复到 ${String(payload?.nextState ?? 'planned')}。`;
+    case 'task.decision_approved':
+      return `决策已获批准：${String(payload?.decisionTitle ?? '未命名决策')}。`;
+    case 'task.decision_deferred':
+      return `决策被延后，当前等待：${String(payload?.waitingReason ?? '未填写')}。`;
+    case 'task.decision_cancelled':
+      return `决策已取消：${String(payload?.decisionTitle ?? '未命名决策')}。`;
+    case 'source_context.created':
+    case 'source_context.updated':
+      return `来源材料更新：${String(payload?.title ?? '未命名来源')}。`;
+    case 'blocker.created':
+    case 'blocker.updated':
+      return `阻塞项更新：${String(payload?.title ?? '未命名阻塞项')}。`;
+    case 'blocker.resolved':
+      return `阻塞项解除：${String(payload?.title ?? '未命名阻塞项')}。`;
+    case 'task_dependency.created':
+    case 'task_dependency.updated':
+      return `任务依赖更新：${String(payload?.blockedByTaskTitle ?? '未命名上游任务')}。`;
+    case 'task_dependency.resolved':
+      return `任务依赖解除：${String(payload?.blockedByTaskTitle ?? '未命名上游任务')}。`;
+    case 'completion_criteria.created':
+    case 'completion_criteria.updated':
+      return `完成标准更新：${String(payload?.text ?? '未命名完成标准')}。`;
+    case 'completion_criteria.satisfied':
+      return `完成标准已满足：${String(payload?.text ?? '未命名完成标准')}。`;
+    case 'completion_criteria.reopened':
+      return `完成标准重新打开：${String(payload?.text ?? '未命名完成标准')}。`;
+    case 'artifact.created':
+      return `生成产物：${String(payload?.title ?? '未命名产物')}。`;
+    default:
+      return interpretTaskTimelineEvent(event).summary;
+  }
+}
+
 function isStrongExplanatoryTimelineAction(type: string): boolean {
   return (
     type === 'task.waiting_changed' ||
