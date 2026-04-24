@@ -42,4 +42,18 @@ describe('AiConfigService', () => {
     expect(status.provider).toBe('anthropic');
     expect(status.apiKeyStored).toBe(false);
   });
+
+  it('migrates legacy keychain passwords into the current service name', async () => {
+    getPasswordMock.mockImplementation(async (serviceName: string) =>
+      serviceName === 'supersecretary' ? 'legacy-secret' : null,
+    );
+    const { AppConfigService } = await import('../config/app-config-service.js');
+    const { AiConfigService } = await import('./ai-config-service.js');
+    const service = new AiConfigService(new AppConfigService(() => tempRoot));
+
+    const status = await service.getStatus();
+
+    expect(status.apiKeyStored).toBe(true);
+    expect(setPasswordMock).toHaveBeenCalledWith('taskplane', 'ai_api_key', 'legacy-secret');
+  });
 });
