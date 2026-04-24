@@ -183,6 +183,8 @@ What exists today:
 - process-template selectors now also absorb `Priority Lanes` guidance, so the method-selection reasoning for runs, briefs, and decision drafts stays aligned with the same escalation/unblock/continue/clarify language already visible in the UI and prompt defaults
 - task/object timelines now also reuse that same `Priority Lanes` language for lightweight event badges and follow-up wording, so single-task history explanation no longer drifts away from the cross-task urgency model used by home, briefs, and action defaults
 - compact task-timeline previews now also prefer stronger escalation/unblock lanes when choosing which events stay visible by default, so long histories keep the most action-shaping events on the surface instead of letting weaker trace items crowd them out
+- task and home resume latest-change selection now prefer action-shaping timeline events over weak trace entries, so recovery cards stay focused on the one change most likely to alter the next move instead of becoming miniature audit logs
+- task timeline summaries now use explanatory wording distinct from resume latest-change wording, so the resume layer reads as the current recovery cue while the timeline layer reads as historical explanation
 - config + keychain setup
 - service tests and SQLite repository integration coverage
 - IPC handler coverage for critical event-emitting entrypoints
