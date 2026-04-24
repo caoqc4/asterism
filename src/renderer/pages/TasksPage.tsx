@@ -679,6 +679,7 @@ type TasksPageProps = {
   onCreateProcessTemplate: (input: CreateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
   onCreateSourceContext: (input: CreateSourceContextInput) => Promise<SourceContextRecord>;
   onArchiveSourceContext: (id: string) => Promise<SourceContextRecord>;
+  onContinuePausedRun: (runId: string) => Promise<RunRecord>;
   onOpenDecision: (decisionId: string) => void;
   onOpenRun: (runId: string) => void;
   onRefresh: () => Promise<void>;
@@ -721,6 +722,7 @@ export function TasksPage({
   onCreateProcessTemplate,
   onCreateSourceContext,
   onArchiveSourceContext,
+  onContinuePausedRun,
   onOpenDecision,
   onOpenRun,
   onRefresh,
@@ -1928,12 +1930,9 @@ export function TasksPage({
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null
     : null;
 
-  function preparePausedRunRecovery(run: RunRecord) {
-    setQuickRunType('agent');
-    setQuickRunInstructions(
-      `已处理暂停原因后重新触发 agent run。上次暂停原因：${run.output || run.failureReason || '未记录'}`,
-    );
-    focusActionTarget('run');
+  async function continuePausedRun(run: RunRecord): Promise<void> {
+    await onContinuePausedRun(run.id);
+    await onRefresh();
   }
 
   const visibleTimeline = detail
@@ -2872,10 +2871,10 @@ export function TasksPage({
                       </p>
                       <button
                         className="ghost-button"
-                        onClick={() => preparePausedRunRecovery(latestPausedRun)}
+                        onClick={() => void continuePausedRun(latestPausedRun)}
                         type="button"
                       >
-                        准备重新触发 agent run
+                        继续 paused run
                       </button>
                       <button
                         className="ghost-button"

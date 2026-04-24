@@ -2719,7 +2719,7 @@ describe('App UI flow', () => {
     });
   });
 
-  it('prepares an agent retry from a paused run on task detail', async () => {
+  it('continues a paused agent run from task detail', async () => {
     const user = userEvent.setup();
     const pausedRun = buildRunRecord({
       id: 'run_paused',
@@ -2730,17 +2730,22 @@ describe('App UI flow', () => {
       outputSource: 'system',
       updatedAt: '2026-01-02T00:00:00.000Z',
     });
-    const createdAgentRun = buildRunRecord({
-      id: 'run_agent_retry',
+    const continuedRun = buildRunRecord({
+      id: pausedRun.id,
       taskId: riskTask.id,
       type: 'agent',
-      status: 'running',
-      instructions: '已处理暂停原因后重新触发 agent run。',
+      status: 'completed',
+      output: 'Recovered note',
+      outputSource: 'system',
     });
+    let currentRuns: RunRecord[] = [pausedRun, ...runs];
     const pausedRunApi: ElectronApi = {
       ...mockApi,
-      listRuns: vi.fn(async () => [pausedRun, ...runs]),
-      triggerRun: vi.fn(async () => createdAgentRun),
+      listRuns: vi.fn(async () => currentRuns),
+      continuePausedRun: vi.fn(async (runId) => {
+        currentRuns = currentRuns.map((run) => (run.id === runId ? continuedRun : run));
+        return continuedRun;
+      }),
     };
 
     window.api = pausedRunApi;
@@ -2752,13 +2757,6 @@ describe('App UI flow', () => {
     await screen.findByRole('heading', { name: 'High risk task' });
 
     expect(screen.getByText(/最近一次 agent run 暂停待复核/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '准备重新触发 agent run' }));
-
-    expect((screen.getByLabelText('Run 类型') as HTMLSelectElement).value).toBe('agent');
-    expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toBe(
-      '已处理暂停原因后重新触发 agent run。上次暂停原因：观察到任务仍有阻塞项：Legal review。暂停执行 artifact.create_note，等待先解除阻塞。',
-    );
-
     await user.click(screen.getByRole('button', { name: '查看恢复 checkpoint' }));
 
     await waitFor(() => {
@@ -2767,16 +2765,16 @@ describe('App UI flow', () => {
 
     await user.click(screen.getByRole('button', { name: /tasks/i }));
     await user.click(await screen.findByRole('button', { name: /High risk task/i }));
-    await user.click(screen.getByRole('button', { name: '准备重新触发 agent run' }));
-    await user.click(screen.getByRole('button', { name: '触发 Run' }));
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    await user.click(screen.getByRole('button', { name: '继续 paused run' }));
 
     await waitFor(() => {
-      expect(pausedRunApi.triggerRun).toHaveBeenCalledWith({
-        taskId: riskTask.id,
-        type: 'agent',
-        instructions:
-          '已处理暂停原因后重新触发 agent run。上次暂停原因：观察到任务仍有阻塞项：Legal review。暂停执行 artifact.create_note，等待先解除阻塞。',
-      });
+      expect(pausedRunApi.continuePausedRun).toHaveBeenCalledWith(pausedRun.id);
+    });
+    expect(pausedRunApi.triggerRun).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.queryByText(/最近一次 agent run 暂停待复核/)).toBeNull();
     });
   });
 
