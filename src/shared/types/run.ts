@@ -1,4 +1,4 @@
-export type RunType = 'draft' | 'summarize';
+export type RunType = 'draft' | 'summarize' | 'agent';
 
 export type RunStatus = 'pending' | 'running' | 'completed' | 'failed';
 export type RunOutputSource = 'ai' | 'fallback' | 'system';

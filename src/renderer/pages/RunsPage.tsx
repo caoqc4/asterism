@@ -385,6 +385,7 @@ export function RunsPage({
               >
                 <option value="draft">draft</option>
                 <option value="summarize">summarize</option>
+                <option value="agent">agent</option>
               </select>
             </label>
             <label>

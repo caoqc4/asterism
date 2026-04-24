@@ -9,6 +9,7 @@ import { ArtifactRepository } from '../../db/repositories/artifact-repository.js
 import { RunRepository } from '../../db/repositories/run-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { TaskService } from '../task/task-service.js';
+import { AgentToolRegistry } from './agent-tool-registry.js';
 import { ProcessTemplateSelector } from './process-template-selector.js';
 import { RunOrchestrator, type RunOrchestrationResult } from './run-orchestrator.js';
 
@@ -21,11 +22,13 @@ export class RunService {
     private readonly textExecutor: TextExecutor,
     private readonly processTemplateSelector: ProcessTemplateSelector = new ProcessTemplateSelector(),
     private readonly runStepRepository: RunStepRepository = new RunStepRepository(),
+    private readonly agentToolRegistry: AgentToolRegistry | null = null,
     private readonly runOrchestrator: RunOrchestrator = new RunOrchestrator(
       aiConfigService,
       textExecutor,
       processTemplateSelector,
       runStepRepository,
+      agentToolRegistry,
     ),
   ) {}
 
@@ -68,11 +71,18 @@ export class RunService {
     }
 
     const created = await this.runRepository.create(input);
-    const result = await this.runOrchestrator.executeTextRun({
-      run: created,
-      task: taskForExecution,
-      input,
-    });
+    const result =
+      input.type === 'agent'
+        ? await this.runOrchestrator.executeAgentRun({
+            run: created,
+            task: taskForExecution,
+            input,
+          })
+        : await this.runOrchestrator.executeTextRun({
+            run: created,
+            task: taskForExecution,
+            input,
+          });
 
     await this.annotateProcessTemplateSelection(input.taskId, created.id, taskForExecution, result);
 

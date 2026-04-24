@@ -33,9 +33,14 @@ function buildPrompt(
       ].join('\n')
     : '执行时参考以下方法模板：暂无';
 
-  if (input.type === 'draft') {
+  if (input.type === 'draft' || input.type === 'agent') {
+    const opening =
+      input.type === 'agent'
+        ? '请基于下面的任务信息，完成一轮受限本地 agent 推进：先判断最有价值的推进点，再产出可保存为本地 note 产物的结果。'
+        : '请基于下面的任务信息，产出一份可直接继续编辑的工作草稿。';
+
     return [
-      '请基于下面的任务信息，产出一份可直接继续编辑的工作草稿。',
+      opening,
       '输出要求：',
       '1. 直接给出草稿正文，不要额外解释模型如何思考。',
       '2. 如果上下文不足，请先基于现有信息给出合理的初稿。',

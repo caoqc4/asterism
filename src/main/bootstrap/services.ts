@@ -89,6 +89,7 @@ const runService = new RunService(
   textExecutor,
   undefined,
   runStepRepository,
+  agentToolRegistry,
 );
 
 const services = {

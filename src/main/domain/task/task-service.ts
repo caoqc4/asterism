@@ -34,6 +34,7 @@ import type {
   SourceContextRecord,
   UpdateSourceContextInput,
 } from '../../../shared/types/source-context.js';
+import type { RunType } from '../../../shared/types/run.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
 import { CompletionCriteriaRepository } from '../../db/repositories/completion-criteria-repository.js';
@@ -827,7 +828,7 @@ export class TaskService {
 
   async annotateRunCompleted(
     taskId: string,
-    runType: 'draft' | 'summarize',
+    runType: RunType,
     hasOutput: boolean,
     runId?: string,
   ): Promise<TaskListItemRecord> {

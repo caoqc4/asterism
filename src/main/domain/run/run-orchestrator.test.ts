@@ -236,4 +236,62 @@ describe('RunOrchestrator', () => {
       expect.objectContaining({ kind: 'final', status: 'failed', error: 'Executor exploded' }),
     );
   });
+
+  it('runs agent mode through the local artifact note tool after model output', async () => {
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn().mockResolvedValue('Agent local note output'),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No template needed.',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const agentToolRegistry = {
+      execute: vi.fn().mockResolvedValue({
+        success: true,
+        summary: 'Created note',
+        output: 'Agent local note output',
+        artifactId: 'artifact_1',
+      }),
+    };
+    const orchestrator = new RunOrchestrator(
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+      agentToolRegistry as never,
+    );
+
+    const result = await orchestrator.executeAgentRun({
+      run: buildRun(),
+      task: buildTaskDetail(),
+      input: { ...buildInput(), type: 'agent' },
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      output: 'Agent local note output',
+    });
+    expect(agentToolRegistry.execute).toHaveBeenCalledWith(
+      'artifact.create_note',
+      {
+        title: 'Task 1 agent note',
+        content: 'Agent local note output',
+      },
+      {
+        runId: 'run_1',
+        taskId: 'task_1',
+      },
+    );
+  });
 });

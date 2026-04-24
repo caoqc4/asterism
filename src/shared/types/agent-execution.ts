@@ -2,7 +2,7 @@ import type { PriorityLane } from './brief.js';
 import type { RunType } from './run.js';
 import type { TaskRiskLevel, TaskState } from './task.js';
 
-export type AgentRunMode = RunType | 'agent';
+export type AgentRunMode = RunType;
 
 export type AgentToolRisk =
   | 'safe_read'

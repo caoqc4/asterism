@@ -3,6 +3,7 @@ import type { TaskDetail } from '../../../shared/types/task.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
+import type { AgentToolRegistry } from './agent-tool-registry.js';
 import {
   ProcessTemplateSelector,
   type ProcessTemplateSelectionResult,
@@ -10,6 +11,7 @@ import {
 import {
   buildAgentRunRequest,
   formatAgentRunRequestForStep,
+  LOCAL_AGENT_TOOL_POLICY,
 } from './agent-working-context.js';
 
 export type RunOrchestrationResult =
@@ -30,6 +32,7 @@ export class RunOrchestrator {
     private readonly textExecutor: TextExecutor,
     private readonly processTemplateSelector: ProcessTemplateSelector = new ProcessTemplateSelector(),
     private readonly runStepRepository: RunStepRepository = new RunStepRepository(),
+    private readonly agentToolRegistry: AgentToolRegistry | null = null,
   ) {}
 
   async executeTextRun(params: {
@@ -117,6 +120,58 @@ export class RunOrchestrator {
         selection,
       };
     }
+  }
+
+  async executeAgentRun(params: {
+    run: RunRecord;
+    task: TaskDetail;
+    input: CreateRunInput;
+  }): Promise<RunOrchestrationResult> {
+    const input: CreateRunInput = {
+      ...params.input,
+      type: 'agent',
+    };
+    const result = await this.executeTextRun({
+      ...params,
+      input,
+    });
+
+    if (result.status !== 'completed' || !this.agentToolRegistry || !result.output.trim()) {
+      return result;
+    }
+
+    const request = buildAgentRunRequest({
+      run: params.run,
+      task: params.task,
+      input,
+      policy: LOCAL_AGENT_TOOL_POLICY,
+    });
+
+    if (request.policy.confirmationRequiredRisks.includes('local_write')) {
+      return result;
+    }
+
+    const toolResult = await this.agentToolRegistry.execute(
+      'artifact.create_note',
+      {
+        title: `${params.task.title} agent note`,
+        content: result.output,
+      },
+      {
+        runId: params.run.id,
+        taskId: params.task.id,
+      },
+    );
+
+    if (!toolResult.success) {
+      return {
+        status: 'failed',
+        message: toolResult.error ?? toolResult.summary,
+        selection: result.selection,
+      };
+    }
+
+    return result;
   }
 
   private async selectProcessTemplates(

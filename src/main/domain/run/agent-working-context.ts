@@ -19,6 +19,11 @@ export const DEFAULT_AGENT_POLICY: AgentPolicy = {
   confirmationRequiredRisks: ['local_write', 'external_write', 'sensitive'],
 };
 
+export const LOCAL_AGENT_TOOL_POLICY: AgentPolicy = {
+  ...DEFAULT_AGENT_POLICY,
+  confirmationRequiredRisks: ['external_write', 'sensitive'],
+};
+
 function preview(value: string | null | undefined, limit = SOURCE_PREVIEW_LIMIT): string | null {
   const trimmed = value?.trim();
 
@@ -106,15 +111,23 @@ export function buildAgentRunRequest(params: {
   return {
     runId: params.run.id,
     taskId: params.task.id,
-    goal:
-      params.input.type === 'draft'
-        ? '产出一份可继续编辑的工作草稿'
-        : '产出一份简洁明确的工作摘要',
+    goal: getRunGoal(params.input.type),
     instructions: params.input.instructions?.trim() || null,
     mode: params.input.type,
     context: buildAgentWorkingContext(params.task),
     policy: params.policy ?? DEFAULT_AGENT_POLICY,
   };
+}
+
+function getRunGoal(type: CreateRunInput['type']): string {
+  switch (type) {
+    case 'draft':
+      return '产出一份可继续编辑的工作草稿';
+    case 'agent':
+      return '围绕当前任务执行一轮受限本地 agent 推进';
+    default:
+      return '产出一份简洁明确的工作摘要';
+  }
 }
 
 export function formatAgentRunRequestForStep(request: AgentRunRequest): string {
