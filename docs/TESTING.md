@@ -17,6 +17,7 @@ Current test files:
 - `src/main/domain/decision/decision-service.test.ts`
 - `src/main/domain/run/run-service.test.ts`
 - `src/main/domain/brief/home-brief-service.test.ts`
+- `src/main/domain/brief/process-template-selector.test.ts`
 - `src/main/domain/working-context/assembler.test.ts`
 - `src/main/scheduler/scheduler-service.test.ts`
 - `src/main/db/repositories/task-repository.integration.test.ts`
@@ -31,12 +32,16 @@ Current test files:
 - `src/main/db/repositories/completion-criteria-repository.integration.test.ts`
 - `src/main/db/repositories/process-template-repository.integration.test.ts`
 - `src/main/db/repositories/task-process-binding-repository.integration.test.ts`
-- `src/main/executors/text-executor.test.ts`
 - `src/main/domain/run/process-template-selector.test.ts`
 - `src/main/domain/decision/process-template-selector.test.ts`
+- `src/main/executors/brief-executor.test.ts`
+- `src/main/executors/text-executor.test.ts`
 - `src/main/ipc/handlers.test.ts`
 - `src/main/preload.test.ts`
 - `src/renderer/App.test.tsx`
+- `src/shared/working-context/priority-lanes.test.ts`
+- `src/shared/working-context/timeline.test.ts`
+- `src/shared/working-context/transitions.test.ts`
 
 ## Coverage Map
 
