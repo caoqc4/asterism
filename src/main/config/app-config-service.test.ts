@@ -69,6 +69,27 @@ describe('AppConfigService', () => {
     expect(config.featureFlags.enableScheduler).toBe(true);
   });
 
+  it('falls back to default feature flags when stored flags have invalid values', async () => {
+    const { AppConfigService, getConfigPath } = await import('./app-config-service.js');
+    fs.writeFileSync(
+      getConfigPath(() => tempRoot),
+      JSON.stringify({
+        aiProvider: 'openai',
+        aiModel: 'gpt-4.1',
+        featureFlags: {
+          enableScheduler: 'yes',
+        },
+      }),
+      'utf8',
+    );
+
+    const service = new AppConfigService(() => tempRoot);
+    const config = service.read();
+
+    expect(config.aiProvider).toBe('openai');
+    expect(config.featureFlags.enableScheduler).toBe(false);
+  });
+
   it('migrates legacy settings.json into config.json', async () => {
     const { AppConfigService, getConfigPath } = await import('./app-config-service.js');
     const legacyPath = path.join(tempRoot, 'settings.json');

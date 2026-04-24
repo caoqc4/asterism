@@ -42,14 +42,18 @@ function getLegacySettingsPath(userDataPathResolver: () => string = defaultUserD
 }
 
 function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
+  const nextFeatureFlags: Partial<FeatureFlags> = input.featureFlags ?? {};
+
   return {
     aiProvider: AI_PROVIDERS.has(input.aiProvider as AiProvider)
       ? (input.aiProvider as AiProvider)
       : DEFAULT_CONFIG.aiProvider,
     aiModel: input.aiModel?.trim() || DEFAULT_CONFIG.aiModel,
     featureFlags: {
-      ...DEFAULT_FEATURE_FLAGS,
-      ...(input.featureFlags ?? {}),
+      enableScheduler:
+        typeof nextFeatureFlags.enableScheduler === 'boolean'
+          ? nextFeatureFlags.enableScheduler
+          : DEFAULT_FEATURE_FLAGS.enableScheduler,
     },
     updatedAt: input.updatedAt ?? new Date().toISOString(),
   };
