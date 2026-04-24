@@ -78,11 +78,27 @@ function formatWorkingContextSummary(context: AgentWorkingContext): string {
   ].join('\n');
 }
 
+function formatTimelineSummary(context: AgentWorkingContext): string {
+  if (!context.recentTimeline.length) {
+    return '最近没有可用的任务时间线事件。';
+  }
+
+  return context.recentTimeline
+    .map((event, index) => `${index + 1}. ${event.createdAt} · ${event.type} · ${event.summary}`)
+    .join('\n');
+}
+
 export class AgentToolRegistry {
   private readonly definitions: AgentToolDefinition[] = [
     {
       name: 'task.inspect_context',
       description: 'Inspect the current Taskplane working context snapshot for this run.',
+      risk: 'safe_read',
+      requiresConfirmation: false,
+    },
+    {
+      name: 'task.inspect_timeline',
+      description: 'Inspect recent Taskplane timeline events available in the working context.',
       risk: 'safe_read',
       requiresConfirmation: false,
     },
@@ -234,6 +250,20 @@ export class AgentToolRegistry {
           success: true,
           status: 'completed',
           summary: '已读取当前任务上下文摘要。',
+          output,
+        };
+      }
+      case 'task.inspect_timeline': {
+        if (!context.workingContext) {
+          throw new Error('task.inspect_timeline requires a working context.');
+        }
+
+        const output = formatTimelineSummary(context.workingContext);
+
+        return {
+          success: true,
+          status: 'completed',
+          summary: '已读取当前任务最近时间线。',
           output,
         };
       }

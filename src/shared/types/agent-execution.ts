@@ -11,7 +11,10 @@ export type AgentToolRisk =
   | 'external_write'
   | 'sensitive';
 
-export type AgentToolName = 'artifact.create_note' | 'task.inspect_context';
+export type AgentToolName =
+  | 'artifact.create_note'
+  | 'task.inspect_context'
+  | 'task.inspect_timeline';
 
 export type AgentPolicy = {
   maxSteps: number;

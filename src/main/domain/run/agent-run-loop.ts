@@ -29,6 +29,11 @@ export type AgentRunLoopStep =
       input: Record<string, never>;
     }
   | {
+      kind: 'inspect_timeline';
+      tool: Extract<AgentToolName, 'task.inspect_timeline'>;
+      input: Record<string, never>;
+    }
+  | {
       kind: 'create_note';
       tool: Extract<AgentToolName, 'artifact.create_note'>;
       input: {
@@ -108,6 +113,15 @@ export class AgentRunLoop {
         continue;
       }
 
+      if (step.tool === 'task.inspect_timeline') {
+        nextPlan.push({
+          kind: 'inspect_timeline',
+          tool: 'task.inspect_timeline',
+          input: {},
+        });
+        continue;
+      }
+
       if (step.tool === 'artifact.create_note') {
         const title = typeof step.input?.title === 'string' ? step.input.title.trim() : '';
         const content = typeof step.input?.content === 'string' ? step.input.content : '';
@@ -178,6 +192,11 @@ export class AgentRunLoop {
         input: {},
       },
       {
+        kind: 'inspect_timeline',
+        tool: 'task.inspect_timeline',
+        input: {},
+      },
+      {
         kind: 'create_note',
         tool: 'artifact.create_note',
         input: {
@@ -230,7 +249,9 @@ export class AgentRunLoop {
         {
           runId: request.runId,
           taskId: request.taskId,
-          workingContext: step.kind === 'inspect_context' ? request.context : undefined,
+          workingContext: step.kind === 'inspect_context' || step.kind === 'inspect_timeline'
+            ? request.context
+            : undefined,
         },
         request.policy,
       );

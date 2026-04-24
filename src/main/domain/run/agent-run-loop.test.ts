@@ -88,6 +88,11 @@ describe('AgentRunLoop', () => {
         input: {},
       },
       {
+        kind: 'inspect_timeline',
+        tool: 'task.inspect_timeline',
+        input: {},
+      },
+      {
         kind: 'create_note',
         tool: 'artifact.create_note',
         input: {
@@ -106,6 +111,7 @@ describe('AgentRunLoop', () => {
       proposal: {
         steps: [
           { tool: 'task.inspect_context' },
+          { tool: 'task.inspect_timeline' },
           {
             tool: 'artifact.create_note',
             input: {
@@ -121,6 +127,11 @@ describe('AgentRunLoop', () => {
       {
         kind: 'inspect_context',
         tool: 'task.inspect_context',
+        input: {},
+      },
+      {
+        kind: 'inspect_timeline',
+        tool: 'task.inspect_timeline',
         input: {},
       },
       {
@@ -141,6 +152,7 @@ describe('AgentRunLoop', () => {
       finalOutput: 'Final content',
       steps: [
         { tool: 'task.inspect_context' },
+        { tool: 'task.inspect_timeline' },
         {
           tool: 'artifact.create_note',
           input: {
@@ -153,6 +165,7 @@ describe('AgentRunLoop', () => {
       finalOutput: 'Final content',
       steps: [
         { tool: 'task.inspect_context', input: undefined },
+        { tool: 'task.inspect_timeline', input: undefined },
         {
           tool: 'artifact.create_note',
           input: {
@@ -210,6 +223,7 @@ describe('AgentRunLoop', () => {
       proposal: {
         steps: [
           { tool: 'task.inspect_context' },
+          { tool: 'task.inspect_timeline' },
           {
             tool: 'artifact.create_note',
             input: {
@@ -232,6 +246,11 @@ describe('AgentRunLoop', () => {
           success: true,
           summary: 'Inspected context',
           output: 'Context summary',
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          summary: 'Inspected timeline',
+          output: 'Timeline summary',
         })
         .mockResolvedValueOnce({
           success: true,
@@ -258,7 +277,7 @@ describe('AgentRunLoop', () => {
         runId: 'run_1',
         kind: 'plan',
         title: '采用保守 fallback agent 步骤计划',
-        output: '1. task.inspect_context\n2. artifact.create_note',
+        output: '1. task.inspect_context\n2. task.inspect_timeline\n3. artifact.create_note',
       }),
     );
     expect(agentToolRegistry.execute).toHaveBeenNthCalledWith(
@@ -276,6 +295,19 @@ describe('AgentRunLoop', () => {
     );
     expect(agentToolRegistry.execute).toHaveBeenNthCalledWith(
       2,
+      'task.inspect_timeline',
+      {},
+      expect.objectContaining({
+        runId: 'run_1',
+        taskId: 'task_1',
+        workingContext: expect.objectContaining({
+          task: expect.objectContaining({ title: 'Task 1' }),
+        }),
+      }),
+      expect.objectContaining({ confirmationRequiredRisks: ['external_write', 'sensitive'] }),
+    );
+    expect(agentToolRegistry.execute).toHaveBeenNthCalledWith(
+      3,
       'artifact.create_note',
       {
         title: 'Task 1 agent note',
@@ -300,6 +332,10 @@ describe('AgentRunLoop', () => {
         })
         .mockResolvedValueOnce({
           success: true,
+          summary: 'Inspected timeline',
+        })
+        .mockResolvedValueOnce({
+          success: true,
           summary: 'Created note',
           output: 'Final content',
           artifactId: 'artifact_1',
@@ -314,6 +350,7 @@ describe('AgentRunLoop', () => {
         finalOutput: 'Final content',
         steps: [
           { tool: 'task.inspect_context' },
+          { tool: 'task.inspect_timeline' },
           {
             tool: 'artifact.create_note',
             input: {
@@ -336,11 +373,11 @@ describe('AgentRunLoop', () => {
         kind: 'plan',
         title: '采用模型提出的 agent 步骤计划',
         input: expect.stringContaining('"finalOutput":"Final content"'),
-        output: '1. task.inspect_context\n2. artifact.create_note',
+        output: '1. task.inspect_context\n2. task.inspect_timeline\n3. artifact.create_note',
       }),
     );
     expect(agentToolRegistry.execute).toHaveBeenNthCalledWith(
-      2,
+      3,
       'artifact.create_note',
       {
         title: 'Proposed note',
@@ -361,6 +398,10 @@ describe('AgentRunLoop', () => {
         .mockResolvedValueOnce({
           success: true,
           summary: 'Inspected context',
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          summary: 'Inspected timeline',
         })
         .mockResolvedValueOnce({
           success: false,

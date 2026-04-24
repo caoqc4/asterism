@@ -148,7 +148,12 @@ describe('TextExecutor', () => {
     );
     expect(generateTextMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        prompt: expect.stringContaining('只能使用 task.inspect_context 和 artifact.create_note'),
+        prompt: expect.stringContaining('"tool": "task.inspect_timeline"'),
+      }),
+    );
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('只能使用 task.inspect_context、task.inspect_timeline 和 artifact.create_note'),
       }),
     );
   });

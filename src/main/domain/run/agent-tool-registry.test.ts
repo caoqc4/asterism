@@ -42,7 +42,13 @@ function buildWorkingContext(): AgentWorkingContext {
         summary: 'Review output quality',
       },
     ],
-    recentTimeline: [],
+    recentTimeline: [
+      {
+        type: 'task.next_step_changed',
+        summary: '下一步调整为 Review the context',
+        createdAt: '2026-01-01T01:00:00.000Z',
+      },
+    ],
   };
 }
 
@@ -143,6 +149,11 @@ describe('AgentToolRegistry', () => {
         requiresConfirmation: false,
       }),
       expect.objectContaining({
+        name: 'task.inspect_timeline',
+        risk: 'safe_read',
+        requiresConfirmation: false,
+      }),
+      expect.objectContaining({
         name: 'artifact.create_note',
         risk: 'local_write',
       }),
@@ -176,6 +187,33 @@ describe('AgentToolRegistry', () => {
     );
     expect(runStepRepository.create).toHaveBeenLastCalledWith(
       expect.objectContaining({ kind: 'tool_result', status: 'completed' }),
+    );
+  });
+
+  it('inspects recent timeline events as a read-only tool', async () => {
+    const runStepRepository = buildRunStepRepositoryMock();
+    const registry = new AgentToolRegistry({} as never, runStepRepository as never);
+
+    const result = await registry.execute(
+      'task.inspect_timeline',
+      {},
+      {
+        runId: 'run_1',
+        taskId: 'task_1',
+        workingContext: buildWorkingContext(),
+      },
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      status: 'completed',
+      summary: '已读取当前任务最近时间线。',
+    });
+    expect(result.output).toContain('task.next_step_changed');
+    expect(result.output).toContain('下一步调整为 Review the context');
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_1',
+      expect.objectContaining({ status: 'completed' }),
     );
   });
 
