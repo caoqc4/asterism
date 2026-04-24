@@ -2773,6 +2773,51 @@ describe('App UI flow', () => {
     expect(runCheckpointApi.getRunDetail).toHaveBeenCalledWith('run_checkpointed');
   });
 
+  it('shows readable agent plan source summaries on the runs page', async () => {
+    const user = userEvent.setup();
+    const agentPlanRun = buildRunRecord({
+      id: 'run_agent_plan',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'completed',
+      output: 'Agent result',
+      outputSource: 'ai',
+    });
+    const agentPlanDetail: RunDetailRecord = {
+      ...agentPlanRun,
+      steps: [
+        buildRunStep({
+          id: 'run_step_agent_plan',
+          runId: agentPlanRun.id,
+          index: 4,
+          kind: 'plan',
+          status: 'completed',
+          title: '采用模型提出的 agent 步骤计划',
+          output: '1. task.inspect_context\n2. task.inspect_timeline\n3. artifact.create_note',
+        }),
+      ],
+      checkpoints: [],
+    };
+    const runAgentPlanApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [agentPlanRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === agentPlanRun.id ? agentPlanDetail : null,
+      ),
+    };
+
+    window.api = runAgentPlanApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+
+    expect(await screen.findByRole('heading', { name: 'agent / completed' })).toBeTruthy();
+    expect(
+      screen.getByText('模型提出的步骤计划：读取任务上下文 -> 读取最近时间线 -> 写入本地 note'),
+    ).toBeTruthy();
+  });
+
   it('refreshes the runs page and selects newly triggered runs from the runs form', async () => {
     const user = userEvent.setup();
     const existingRun = buildRunRecord({

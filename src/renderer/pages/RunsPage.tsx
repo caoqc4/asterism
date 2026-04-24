@@ -56,7 +56,44 @@ function getRelatedTimeline(events: TimelineEventRecord[], runId: string): Timel
   return getTaskTimelinePreviewEvents(relatedEvents, RELATED_TIMELINE_PREVIEW_COUNT);
 }
 
+function formatAgentToolLabel(tool: string): string {
+  const labels: Record<string, string> = {
+    'task.inspect_context': '读取任务上下文',
+    'task.inspect_timeline': '读取最近时间线',
+    'artifact.create_note': '写入本地 note',
+  };
+
+  return labels[tool] ?? tool;
+}
+
+function formatAgentPlanStepSummary(step: RunStepRecord): string | null {
+  if (step.kind !== 'plan' || !step.title.includes('agent 步骤计划')) {
+    return null;
+  }
+
+  const source = step.title.includes('模型提出')
+    ? '模型提出的步骤计划'
+    : '保守 fallback 步骤计划';
+  const tools = (step.output ?? '')
+    .split('\n')
+    .map((line) => line.replace(/^\d+\.\s*/, '').trim())
+    .filter(Boolean)
+    .map(formatAgentToolLabel);
+
+  if (!tools.length) {
+    return `${source}：没有可执行步骤。`;
+  }
+
+  return `${source}：${tools.join(' -> ')}`;
+}
+
 function formatRunStepSummary(step: RunStepRecord): string {
+  const agentPlanSummary = formatAgentPlanStepSummary(step);
+
+  if (agentPlanSummary) {
+    return agentPlanSummary;
+  }
+
   if (step.error) {
     return step.error;
   }
