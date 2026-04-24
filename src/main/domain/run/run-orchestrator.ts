@@ -3,6 +3,7 @@ import type { TaskDetail } from '../../../shared/types/task.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
+import { AgentRunLoop } from './agent-run-loop.js';
 import type { AgentToolRegistry } from './agent-tool-registry.js';
 import {
   ProcessTemplateSelector,
@@ -39,6 +40,9 @@ export class RunOrchestrator {
     private readonly processTemplateSelector: ProcessTemplateSelector = new ProcessTemplateSelector(),
     private readonly runStepRepository: RunStepRepository = new RunStepRepository(),
     private readonly agentToolRegistry: AgentToolRegistry | null = null,
+    private readonly agentRunLoop: AgentRunLoop | null = agentToolRegistry
+      ? new AgentRunLoop(agentToolRegistry)
+      : null,
   ) {}
 
   async executeTextRun(params: {
@@ -142,7 +146,7 @@ export class RunOrchestrator {
       input,
     });
 
-    if (result.status !== 'completed' || !this.agentToolRegistry || !result.output.trim()) {
+    if (result.status !== 'completed' || !this.agentRunLoop || !result.output.trim()) {
       return result;
     }
 
@@ -157,51 +161,25 @@ export class RunOrchestrator {
       return result;
     }
 
-    const inspectResult = await this.agentToolRegistry.execute(
-      'task.inspect_context',
-      {},
-      {
-        runId: params.run.id,
-        taskId: params.task.id,
-        workingContext: request.context,
-      },
-      request.policy,
-    );
+    const loopResult = await this.agentRunLoop.executeLocalNoteLoop({
+      request,
+      modelOutput: result.output,
+      taskTitle: params.task.title,
+    });
 
-    if (!inspectResult.success) {
-      return {
-        status: 'failed',
-        message: inspectResult.error ?? inspectResult.summary,
-        selection: result.selection,
-      };
-    }
-
-    const toolResult = await this.agentToolRegistry.execute(
-      'artifact.create_note',
-      {
-        title: `${params.task.title} agent note`,
-        content: result.output,
-      },
-      {
-        runId: params.run.id,
-        taskId: params.task.id,
-      },
-      request.policy,
-    );
-
-    if (toolResult.status === 'needs_confirmation' && toolResult.checkpointId) {
+    if (loopResult.status === 'needs_confirmation') {
       return {
         status: 'needs_confirmation',
-        message: toolResult.summary,
-        checkpointId: toolResult.checkpointId,
+        message: loopResult.message,
+        checkpointId: loopResult.checkpointId,
         selection: result.selection,
       };
     }
 
-    if (!toolResult.success) {
+    if (loopResult.status === 'failed') {
       return {
         status: 'failed',
-        message: toolResult.error ?? toolResult.summary,
+        message: loopResult.message,
         selection: result.selection,
       };
     }

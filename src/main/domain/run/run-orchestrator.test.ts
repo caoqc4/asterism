@@ -257,11 +257,12 @@ describe('RunOrchestrator', () => {
     };
     const runStepRepository = buildRunStepRepositoryMock();
     const agentToolRegistry = {
-      execute: vi.fn().mockResolvedValue({
-        success: true,
-        summary: 'Created note',
+      execute: vi.fn(),
+    };
+    const agentRunLoop = {
+      executeLocalNoteLoop: vi.fn().mockResolvedValue({
+        status: 'completed',
         output: 'Agent local note output',
-        artifactId: 'artifact_1',
       }),
     };
     const orchestrator = new RunOrchestrator(
@@ -270,6 +271,7 @@ describe('RunOrchestrator', () => {
       processTemplateSelector as never,
       runStepRepository as never,
       agentToolRegistry as never,
+      agentRunLoop as never,
     );
 
     const result = await orchestrator.executeAgentRun({
@@ -282,34 +284,17 @@ describe('RunOrchestrator', () => {
       status: 'completed',
       output: 'Agent local note output',
     });
-    expect(agentToolRegistry.execute).toHaveBeenNthCalledWith(
-      1,
-      'task.inspect_context',
-      {},
-      {
-        runId: 'run_1',
-        taskId: 'task_1',
-        workingContext: expect.objectContaining({
-          task: expect.objectContaining({ title: 'Task 1' }),
+    expect(agentRunLoop.executeLocalNoteLoop).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modelOutput: 'Agent local note output',
+        taskTitle: 'Task 1',
+        request: expect.objectContaining({
+          runId: 'run_1',
+          taskId: 'task_1',
+          policy: expect.objectContaining({
+            confirmationRequiredRisks: ['external_write', 'sensitive'],
+          }),
         }),
-      },
-      expect.objectContaining({
-        confirmationRequiredRisks: ['external_write', 'sensitive'],
-      }),
-    );
-    expect(agentToolRegistry.execute).toHaveBeenNthCalledWith(
-      2,
-      'artifact.create_note',
-      {
-        title: 'Task 1 agent note',
-        content: 'Agent local note output',
-      },
-      {
-        runId: 'run_1',
-        taskId: 'task_1',
-      },
-      expect.objectContaining({
-        confirmationRequiredRisks: ['external_write', 'sensitive'],
       }),
     );
   });
