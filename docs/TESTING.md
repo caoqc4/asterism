@@ -175,6 +175,7 @@ Covered today:
 - `Tasks list` lane-aware summary copy
 - stale task dependencies now also assert escalation-oriented home rendering instead of ordinary dependency-blocked rendering
 - home recent activity now also covers dependency `created / resolved` lifecycle routing and upstream-task entry behavior
+- `Tasks action desk` active-blocker primary moves now keep blocker handling ahead of generic decision/run setup
 - `Tasks action setup` lane-aware quick decision/run defaults and Decision-vs-Run setup ordering
 - `Tasks action desk` dependency-blocked primary moves now keep dependency re-evaluation or upstream work ahead of generic decision/run setup
 - `Decision draft / Run` backend prompt composition now absorbs task-level lane guidance, and the run/brief/decision process-template selectors now assert the same lane guidance in their selection prompts

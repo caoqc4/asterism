@@ -658,7 +658,7 @@ function isEarlyTaskState(state: TaskState | undefined): boolean {
 }
 
 function getPrimaryMoveConfig(detail: TaskDetail | null, lane: PriorityLane | undefined): Array<{
-  id: 'detail' | 'decision' | 'run' | 'transition' | 'dependency';
+  id: 'detail' | 'decision' | 'run' | 'transition' | 'blocker' | 'dependency';
   label: string;
 }> {
   if (!detail) {
@@ -669,6 +669,13 @@ function getPrimaryMoveConfig(detail: TaskDetail | null, lane: PriorityLane | un
     return [
       { id: 'detail', label: '补摘要与下一步' },
       { id: 'decision', label: '判断是否需要拍板' },
+    ];
+  }
+
+  if (detail.activeBlocker) {
+    return [
+      { id: 'blocker', label: '处理当前阻塞' },
+      { id: 'transition', label: '调整任务状态' },
     ];
   }
 
@@ -1670,10 +1677,12 @@ export function TasksPage({
     }
   }
 
-  function focusActionTarget(target: 'detail' | 'decision' | 'run' | 'transition' | 'dependency') {
+  function focusActionTarget(target: 'detail' | 'decision' | 'run' | 'transition' | 'blocker' | 'dependency') {
     const node =
       target === 'detail'
         ? detailFormRef.current
+        : target === 'blocker'
+          ? blockerSectionRef.current
         : target === 'dependency'
           ? dependencySectionRef.current
         : target === 'decision'

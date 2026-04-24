@@ -4676,6 +4676,11 @@ describe('App UI flow', () => {
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
       '先解除阻塞项，再继续推进：Legal approval pending',
     );
+    const actionDesk = screen.getByRole('heading', { name: '动作与状态流转' }).closest('.detail-stage');
+    expect(actionDesk).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).getByRole('button', { name: '处理当前阻塞' })).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).getByRole('button', { name: '调整任务状态' })).toBeTruthy();
+    expect(within(actionDesk as HTMLElement).queryByRole('button', { name: '草拟或创建 Decision' })).toBeNull();
     expect(screen.getAllByText(/blocked since 2026-01-01/).length).toBeGreaterThan(0);
   });
 
