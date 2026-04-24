@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 
 import type { RecommendedActionIntent } from '@shared/types/brief';
-import type { CreateRunInput, RunRecord } from '@shared/types/run';
+import type { CreateRunInput, RunDetailRecord, RunRecord, RunStepRecord } from '@shared/types/run';
 import type { TaskDetail, TaskListItemRecord, TimelineEventRecord } from '@shared/types/task';
 import {
   formatTaskTimelineEventSummary,
@@ -50,6 +50,22 @@ function getRelatedTimeline(events: TimelineEventRecord[], runId: string): Timel
   return getTaskTimelinePreviewEvents(relatedEvents, RELATED_TIMELINE_PREVIEW_COUNT);
 }
 
+function formatRunStepSummary(step: RunStepRecord): string {
+  if (step.error) {
+    return step.error;
+  }
+
+  if (step.output) {
+    return step.output;
+  }
+
+  if (step.input) {
+    return step.input;
+  }
+
+  return '该步骤已记录，但没有额外内容。';
+}
+
 type RunsPageProps = {
   focusedRunId: string | null;
   runs: RunRecord[];
@@ -70,7 +86,7 @@ export function RunsPage({
   onTriggerRun,
 }: RunsPageProps) {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(runs[0]?.id ?? null);
-  const [detail, setDetail] = useState<RunRecord | null>(null);
+  const [detail, setDetail] = useState<RunDetailRecord | null>(null);
   const [relatedTaskDetail, setRelatedTaskDetail] = useState<TaskDetail | null>(null);
   const [form, setForm] = useState<CreateRunInput>({
     taskId: tasks[0]?.id ?? '',
@@ -153,6 +169,7 @@ export function RunsPage({
     ? getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.id)
     : [];
   const relatedTimelineGroups = groupTaskTimelineEventsByPriority(relatedTimeline);
+  const detailSteps = detail?.steps ?? [];
 
   return (
     <section className="tasks-layout">
@@ -222,6 +239,29 @@ export function RunsPage({
                   <strong>失败原因</strong>
                   <p className="meta">{detail.failureReason || '无'}</p>
                 </div>
+              </div>
+            </div>
+            <div className="task-card detail-card-group detail-card-wide">
+              <p className="eyebrow">Execution Steps</p>
+              <strong>{detailSteps.length ? '这次执行的步骤轨迹' : '这次执行还没有步骤轨迹'}</strong>
+              <p className="meta">这里先展示产品可读的执行摘要，后续 agent 工具调用会继续落在同一条步骤轨迹里。</p>
+              <div className="timeline-list">
+                {detailSteps.length ? (
+                  detailSteps.map((step) => (
+                    <div className={`timeline-item timeline-item-${step.status}`} key={step.id}>
+                      <div className="task-row">
+                        <strong>{step.index}. {step.title}</strong>
+                        <div className="task-row-compact">
+                          <span className="status">{step.kind}</span>
+                          <span className="status">{step.status}</span>
+                        </div>
+                      </div>
+                      <p className="meta">{formatRunStepSummary(step)}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="meta">旧 run 可能没有步骤数据；新 run 会自动写入 plan / model / final 步骤。</p>
+                )}
               </div>
             </div>
             <div className="task-card detail-card-group detail-card-wide">

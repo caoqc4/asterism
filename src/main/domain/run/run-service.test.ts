@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
-import type { RunRecord } from '../../../shared/types/run.js';
+import type { RunStepKind, RunStepStatus, RunRecord } from '../../../shared/types/run.js';
 import type { TaskDetail, TaskRecord } from '../../../shared/types/task.js';
 import { RunService } from './run-service.js';
 
@@ -133,6 +133,55 @@ function buildAppliedTemplate(
   };
 }
 
+function buildRunStepRepositoryMock() {
+  let stepCount = 0;
+
+  return {
+    listForRun: vi.fn().mockResolvedValue([]),
+    create: vi.fn().mockImplementation(async (input: {
+      runId: string;
+      kind: RunStepKind;
+      status?: RunStepStatus;
+      title: string;
+      input?: string | null;
+      output?: string | null;
+      error?: string | null;
+    }) => {
+      stepCount += 1;
+      return {
+        id: `run_step_${stepCount}`,
+        runId: input.runId,
+        index: stepCount,
+        kind: input.kind,
+        status: input.status ?? 'completed',
+        title: input.title,
+        input: input.input ?? null,
+        output: input.output ?? null,
+        error: input.error ?? null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      };
+    }),
+    update: vi.fn().mockImplementation(async (id: string, input: {
+      status: RunStepStatus;
+      output?: string | null;
+      error?: string | null;
+    }) => ({
+      id,
+      runId: 'run_1',
+      index: 2,
+      kind: 'model',
+      status: input.status,
+      title: 'draft 模型执行',
+      input: null,
+      output: input.output ?? null,
+      error: input.error ?? null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    })),
+  };
+}
+
 describe('RunService', () => {
   it('completes a run when the executor succeeds', async () => {
     const runRepository = {
@@ -176,6 +225,7 @@ describe('RunService', () => {
         reason: '当前 run 是外联草稿，适合调用 outreach skill。',
       }),
     };
+    const runStepRepository = buildRunStepRepositoryMock();
     const service = new RunService(
       runRepository as never,
       taskService as never,
@@ -183,6 +233,7 @@ describe('RunService', () => {
       aiConfigService as never,
       textExecutor as never,
       processTemplateSelector as never,
+      runStepRepository as never,
     );
 
     const result = await service.trigger({
@@ -247,6 +298,13 @@ describe('RunService', () => {
       true,
       'run_1',
     );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ runId: 'run_1', kind: 'plan' }),
+    );
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_2',
+      expect.objectContaining({ status: 'completed', output: 'Generated output' }),
+    );
     expect(result.status).toBe('completed');
   });
 
@@ -294,6 +352,7 @@ describe('RunService', () => {
         reason: '当前无明显匹配模板。',
       }),
     };
+    const runStepRepository = buildRunStepRepositoryMock();
     const service = new RunService(
       runRepository as never,
       taskService as never,
@@ -301,6 +360,7 @@ describe('RunService', () => {
       aiConfigService as never,
       textExecutor as never,
       processTemplateSelector as never,
+      runStepRepository as never,
     );
 
     const result = await service.trigger({
@@ -327,6 +387,10 @@ describe('RunService', () => {
       'task_1',
       'Executor exploded',
       'run_1',
+    );
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_2',
+      expect.objectContaining({ status: 'failed', error: 'Executor exploded' }),
     );
     expect(artifactRepository.createFromRun).not.toHaveBeenCalled();
     expect(result.status).toBe('failed');
@@ -357,12 +421,15 @@ describe('RunService', () => {
     const textExecutor = {
       execute: vi.fn(),
     };
+    const runStepRepository = buildRunStepRepositoryMock();
     const service = new RunService(
       runRepository as never,
       taskService as never,
       artifactRepository as never,
       aiConfigService as never,
       textExecutor as never,
+      undefined,
+      runStepRepository as never,
     );
 
     await expect(
@@ -415,6 +482,7 @@ describe('RunService', () => {
     const processTemplateSelector = {
       select: vi.fn().mockRejectedValue(new Error('selector unavailable')),
     };
+    const runStepRepository = buildRunStepRepositoryMock();
     const service = new RunService(
       runRepository as never,
       taskService as never,
@@ -422,6 +490,7 @@ describe('RunService', () => {
       aiConfigService as never,
       textExecutor as never,
       processTemplateSelector as never,
+      runStepRepository as never,
     );
 
     await service.trigger({

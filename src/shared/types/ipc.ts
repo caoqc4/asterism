@@ -34,7 +34,7 @@ import type {
   ProcessTemplateRecord,
   UpdateProcessTemplateInput,
 } from './process-template.js';
-import type { CreateRunInput, RunRecord } from './run.js';
+import type { CreateRunInput, RunDetailRecord, RunRecord } from './run.js';
 import type { AiConfigInput, AiConfigStatus } from './settings.js';
 import type {
   CreateSourceContextInput,
@@ -87,7 +87,7 @@ export type ElectronApi = {
   actOnDecision: (input: DecisionActionInput) => Promise<DecisionRecord>;
   getHomeBrief: () => Promise<HomeBriefData>;
   listRuns: () => Promise<RunRecord[]>;
-  getRunDetail: (runId: string) => Promise<RunRecord | null>;
+  getRunDetail: (runId: string) => Promise<RunDetailRecord | null>;
   triggerRun: (input: CreateRunInput) => Promise<RunRecord>;
   subscribeToEvents: (listener: (event: AppEvent) => void) => () => void;
 };

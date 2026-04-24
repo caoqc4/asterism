@@ -1,4 +1,4 @@
-import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const tasks = sqliteTable('tasks', {
   id: text('id').primaryKey(),
@@ -39,6 +39,20 @@ export const runs = sqliteTable('runs', {
   output: text('output'),
   outputSource: text('output_source'),
   failureReason: text('failure_reason'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+export const runSteps = sqliteTable('run_steps', {
+  id: text('id').primaryKey(),
+  runId: text('run_id').notNull(),
+  index: integer('step_index').notNull(),
+  kind: text('kind').notNull(),
+  status: text('status').notNull(),
+  title: text('title').notNull(),
+  input: text('input'),
+  output: text('output'),
+  error: text('error'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });

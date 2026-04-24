@@ -2,6 +2,8 @@ export type RunType = 'draft' | 'summarize';
 
 export type RunStatus = 'pending' | 'running' | 'completed' | 'failed';
 export type RunOutputSource = 'ai' | 'fallback' | 'system';
+export type RunStepKind = 'plan' | 'model' | 'tool_call' | 'tool_result' | 'artifact' | 'decision' | 'checkpoint' | 'final';
+export type RunStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
 
 export type RunRecord = {
   id: string;
@@ -14,6 +16,24 @@ export type RunRecord = {
   failureReason: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type RunStepRecord = {
+  id: string;
+  runId: string;
+  index: number;
+  kind: RunStepKind;
+  status: RunStepStatus;
+  title: string;
+  input: string | null;
+  output: string | null;
+  error: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RunDetailRecord = RunRecord & {
+  steps?: RunStepRecord[];
 };
 
 export type CreateRunInput = {

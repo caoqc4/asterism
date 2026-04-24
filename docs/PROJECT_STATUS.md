@@ -23,6 +23,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - Local `.env` AI configuration now supports Replicate-backed draft runs; a deliberate local Replicate run completed with `output_source=ai`, timeline events, and a persisted artifact.
 - Task detail now has a compact section jump bar for Current, Completion, Action, Activity, and Context Studio; a packaged app pass confirmed it can jump from Context Studio back to Action Desk.
 - The front task-management closeout loop is covered through packaged UI: a task can add and satisfy a completion criterion, Home surfaces it as ready to close, Action Desk prioritizes `completed`, and SQLite records the final transition.
+- Agent execution layer Phase 1 has started: Runs now have a persisted step trace spine, current text runs write plan/model/final steps, and the Runs page shows execution-step summaries.
 
 ## Verification Baseline
 
@@ -34,8 +35,8 @@ npm run verify
 
 Latest local baseline:
 
-- 31 test files
-- 234 tests
+- 36 test files
+- 255 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -53,7 +54,7 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 
 ## Recommended Next Focus
 
-1. Start designing the real agent execution layer: execution contracts, tool/runtime boundaries, provider adapters, artifacts, safety checkpoints, and resumable run semantics.
+1. Continue agent execution layer Phase 1 into a cleaner orchestrator boundary after the run-step trace spine settles.
 2. Keep signed/notarized release work deferred until a dedicated release-readiness pass targets signing and notarization.
 3. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 4. Defer GitHub Actions work until quota is restored.

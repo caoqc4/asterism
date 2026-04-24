@@ -6,6 +6,7 @@ import { ArtifactRepository } from '../db/repositories/artifact-repository.js';
 import { BlockerRepository } from '../db/repositories/blocker-repository.js';
 import { CompletionCriteriaRepository } from '../db/repositories/completion-criteria-repository.js';
 import { RunRepository } from '../db/repositories/run-repository.js';
+import { RunStepRepository } from '../db/repositories/run-step-repository.js';
 import { ProcessTemplateRepository } from '../db/repositories/process-template-repository.js';
 import { SourceContextRepository } from '../db/repositories/source-context-repository.js';
 import { TaskDependencyRepository } from '../db/repositories/task-dependency-repository.js';
@@ -26,6 +27,7 @@ const appConfigService = new AppConfigService();
 const taskRepository = new TaskRepository();
 const decisionRepository = new DecisionRepository();
 const runRepository = new RunRepository();
+const runStepRepository = new RunStepRepository();
 const artifactRepository = new ArtifactRepository();
 const blockerRepository = new BlockerRepository();
 const completionCriteriaRepository = new CompletionCriteriaRepository();
@@ -83,12 +85,15 @@ const runService = new RunService(
   artifactRepository,
   aiConfigService,
   textExecutor,
+  undefined,
+  runStepRepository,
 );
 
 const services = {
   taskRepository,
   decisionRepository,
   runRepository,
+  runStepRepository,
   briefSnapshotRepository,
   waitingItemRepository,
   blockerRepository,
