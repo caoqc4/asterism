@@ -57,6 +57,9 @@ function bootstrapTables(connection: Database.Database): void {
       task_id TEXT NOT NULL,
       title TEXT NOT NULL,
       status TEXT NOT NULL,
+      source_type TEXT,
+      source_id TEXT,
+      source_label TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -213,6 +216,9 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'runs', 'output', 'TEXT');
   ensureColumn(connection, 'runs', 'output_source', 'TEXT');
   ensureColumn(connection, 'runs', 'failure_reason', 'TEXT');
+  ensureColumn(connection, 'decision_requests', 'source_type', 'TEXT');
+  ensureColumn(connection, 'decision_requests', 'source_id', 'TEXT');
+  ensureColumn(connection, 'decision_requests', 'source_label', 'TEXT');
   ensureColumn(connection, 'tasks', 'next_step', 'TEXT');
   ensureColumn(connection, 'tasks', 'waiting_reason', 'TEXT');
   ensureColumn(connection, 'tasks', 'risk_level', "TEXT NOT NULL DEFAULT 'none'");

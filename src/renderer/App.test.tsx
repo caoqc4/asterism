@@ -3118,6 +3118,9 @@ describe('App UI flow', () => {
           taskId: riskTask.id,
           title: '确认本地写入：artifact.create_note',
           status: 'pending' as const,
+          sourceType: 'agent_checkpoint' as const,
+          sourceId: 'run_checkpoint_1',
+          sourceLabel: 'artifact.create_note',
           createdAt: '2026-01-01T00:00:00.000Z',
           updatedAt: '2026-01-01T00:00:00.000Z',
         },
@@ -3132,7 +3135,7 @@ describe('App UI flow', () => {
 
     expect(await screen.findByRole('heading', { name: '确认本地写入：artifact.create_note' })).toBeTruthy();
     expect(
-      screen.getByText('来源：Agent checkpoint。批准后会恢复等待中的本地 note 产物写入；延后或取消会终止本次 run。'),
+      screen.getByText('来源：Agent checkpoint（artifact.create_note）。批准后会恢复等待中的本地 note 产物写入；延后或取消会终止本次 run。'),
     ).toBeTruthy();
     expect(screen.getByRole('button', { name: '批准' })).toBeTruthy();
   });

@@ -71,19 +71,21 @@ function getDecisionActionGuidance(status: DecisionRecord['status']): string {
 }
 
 function getCheckpointDecisionGuidance(decision: DecisionRecord): string | null {
-  if (!decision.title.startsWith('确认') || !decision.title.includes('artifact.create_note')) {
+  if (decision.sourceType !== 'agent_checkpoint') {
     return null;
   }
 
+  const sourceLabel = decision.sourceLabel ?? '等待中的 agent 工具调用';
+
   if (decision.status === 'pending') {
-    return '来源：Agent checkpoint。批准后会恢复等待中的本地 note 产物写入；延后或取消会终止本次 run。';
+    return `来源：Agent checkpoint（${sourceLabel}）。批准后会恢复等待中的本地 note 产物写入；延后或取消会终止本次 run。`;
   }
 
   if (decision.status === 'approved') {
-    return '来源：Agent checkpoint。该确认已批准，系统会尝试恢复等待中的本地工具调用。';
+    return `来源：Agent checkpoint（${sourceLabel}）。该确认已批准，系统会尝试恢复等待中的本地工具调用。`;
   }
 
-  return '来源：Agent checkpoint。该确认未批准，本次 run 会作为不可续跑的执行记录收束。';
+  return `来源：Agent checkpoint（${sourceLabel}）。该确认未批准，本次 run 会作为不可续跑的执行记录收束。`;
 }
 
 type DecisionsPageProps = {

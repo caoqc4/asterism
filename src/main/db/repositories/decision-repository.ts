@@ -4,6 +4,7 @@ import type {
   CreateDecisionInput,
   DecisionActionInput,
   DecisionRecord,
+  DecisionSourceType,
   DecisionStatus,
 } from '../../../shared/types/decision.js';
 import { decisionRequests, timelineEvents } from '../schema.js';
@@ -16,6 +17,9 @@ function toRecord(row: typeof decisionRequests.$inferSelect): DecisionRecord {
     taskId: row.taskId,
     title: row.title,
     status: row.status as DecisionStatus,
+    sourceType: (row.sourceType as DecisionSourceType | null) ?? null,
+    sourceId: row.sourceId,
+    sourceLabel: row.sourceLabel,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -38,6 +42,9 @@ export class DecisionRepository {
       taskId: input.taskId,
       title: input.title.trim(),
       status: 'pending',
+      sourceType: input.sourceType ?? null,
+      sourceId: input.sourceId?.trim() || null,
+      sourceLabel: input.sourceLabel?.trim() || null,
       createdAt: timestamp,
       updatedAt: timestamp,
     });
@@ -46,7 +53,13 @@ export class DecisionRepository {
       id: generateId('timeline'),
       taskId: input.taskId,
       type: 'decision.created',
-      payload: JSON.stringify({ decisionId: id, title: input.title.trim() }),
+      payload: JSON.stringify({
+        decisionId: id,
+        title: input.title.trim(),
+        sourceType: input.sourceType ?? null,
+        sourceId: input.sourceId?.trim() || null,
+        sourceLabel: input.sourceLabel?.trim() || null,
+      }),
       createdAt: timestamp,
     });
 

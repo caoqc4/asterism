@@ -63,6 +63,16 @@ function buildRunCheckpointRepositoryMock() {
       createdAt: '2026-01-01T00:00:00.000Z',
       resolvedAt: null,
     })),
+    updatePayload: vi.fn().mockImplementation(async (_id: string, payload: string | null) => ({
+      id: 'run_checkpoint_1',
+      runId: 'run_1',
+      stepId: 'run_step_1',
+      kind: 'tool_permission',
+      status: 'open',
+      payload,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      resolvedAt: null,
+    })),
   };
 }
 
@@ -192,14 +202,20 @@ describe('AgentToolRegistry', () => {
     expect(decisionRepository.create).toHaveBeenCalledWith({
       taskId: 'task_1',
       title: '确认本地写入：artifact.create_note',
+      sourceType: 'agent_checkpoint',
+      sourceId: 'run_checkpoint_1',
+      sourceLabel: 'artifact.create_note',
     });
     expect(runCheckpointRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         runId: 'run_1',
         stepId: 'run_step_1',
         kind: 'tool_permission',
-        payload: expect.stringContaining('"decisionId":"decision_1"'),
       }),
+    );
+    expect(runCheckpointRepository.updatePayload).toHaveBeenCalledWith(
+      'run_checkpoint_1',
+      expect.stringContaining('"decisionId":"decision_1"'),
     );
     expect(runStepRepository.update).toHaveBeenCalledWith(
       'run_step_1',

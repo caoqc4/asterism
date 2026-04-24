@@ -26,6 +26,9 @@ export const decisionRequests = sqliteTable('decision_requests', {
   taskId: text('task_id').notNull(),
   title: text('title').notNull(),
   status: text('status').notNull(),
+  sourceType: text('source_type'),
+  sourceId: text('source_id'),
+  sourceLabel: text('source_label'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });

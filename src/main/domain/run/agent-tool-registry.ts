@@ -102,12 +102,6 @@ export class AgentToolRegistry {
     try {
       if (policy?.confirmationRequiredRisks.includes(definition.risk)) {
         const decisionTitle = buildConfirmationDecisionTitle(name, definition.risk);
-        const decision = this.decisionRepository
-          ? await this.decisionRepository.create({
-              taskId: context.taskId,
-              title: decisionTitle,
-            })
-          : null;
         const checkpoint = await this.runCheckpointRepository.create({
           runId: context.runId,
           stepId: callStep.id,
@@ -116,10 +110,29 @@ export class AgentToolRegistry {
             tool: name,
             risk: definition.risk,
             input,
-            decisionId: decision?.id ?? null,
+            decisionId: null,
             decisionTitle,
           }),
         });
+        const decision = this.decisionRepository
+          ? await this.decisionRepository.create({
+              taskId: context.taskId,
+              title: decisionTitle,
+              sourceType: 'agent_checkpoint',
+              sourceId: checkpoint.id,
+              sourceLabel: name,
+            })
+          : null;
+        const payload = JSON.stringify({
+          tool: name,
+          risk: definition.risk,
+          input,
+          decisionId: decision?.id ?? null,
+          decisionTitle,
+        });
+        const checkpointWithDecision = decision
+          ? await this.runCheckpointRepository.updatePayload(checkpoint.id, payload)
+          : checkpoint;
         const summary = decision
           ? `工具 ${name} 需要确认后才能继续，已创建 Decision：${decision.title}。`
           : `工具 ${name} 需要确认后才能继续。`;
@@ -140,7 +153,7 @@ export class AgentToolRegistry {
           success: false,
           status: 'needs_confirmation',
           summary,
-          checkpointId: checkpoint.id,
+          checkpointId: checkpointWithDecision.id,
         };
       }
 

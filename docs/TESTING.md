@@ -90,7 +90,7 @@ Covered today:
 - `RunCheckpointRepository`
   open checkpoint creation, per-run retrieval, decision-id lookup, and checkpoint settlement
 - `DecisionRepository`
-  decision creation, action persistence, timeline writes
+  decision creation, optional source metadata persistence, action persistence, timeline writes
 - `BriefSnapshotRepository`
   source persistence, fallback reasons, recent ordering, and limit behavior
 - `WaitingItemRepository`

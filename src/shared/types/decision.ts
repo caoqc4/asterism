@@ -1,10 +1,14 @@
 export type DecisionStatus = 'pending' | 'approved' | 'deferred' | 'cancelled';
+export type DecisionSourceType = 'manual' | 'agent_checkpoint';
 
 export type DecisionRecord = {
   id: string;
   taskId: string;
   title: string;
   status: DecisionStatus;
+  sourceType?: DecisionSourceType | null;
+  sourceId?: string | null;
+  sourceLabel?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -12,6 +16,9 @@ export type DecisionRecord = {
 export type CreateDecisionInput = {
   taskId: string;
   title: string;
+  sourceType?: DecisionSourceType | null;
+  sourceId?: string | null;
+  sourceLabel?: string | null;
 };
 
 export type DraftDecisionInput = {

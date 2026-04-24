@@ -42,6 +42,29 @@ describe('DecisionRepository integration', () => {
     expect(detail?.timeline.map((event) => event.type)).toContain('decision.created');
   });
 
+  it('persists optional source metadata for checkpoint-created decisions', async () => {
+    const task = await taskRepository.create({
+      title: 'Need checkpoint approval',
+    });
+
+    const created = await decisionRepository.create({
+      taskId: task.id,
+      title: '确认本地写入：artifact.create_note',
+      sourceType: 'agent_checkpoint',
+      sourceId: 'run_checkpoint_1',
+      sourceLabel: 'artifact.create_note',
+    });
+    const [listed] = await decisionRepository.list();
+    const detail = await taskRepository.getDetail(task.id);
+    const decisionCreatedEvent = detail?.timeline.find((event) => event.type === 'decision.created');
+
+    expect(created.sourceType).toBe('agent_checkpoint');
+    expect(created.sourceId).toBe('run_checkpoint_1');
+    expect(created.sourceLabel).toBe('artifact.create_note');
+    expect(listed?.sourceType).toBe('agent_checkpoint');
+    expect(decisionCreatedEvent?.payload).toContain('"sourceType":"agent_checkpoint"');
+  });
+
   it('maps approve/defer/cancel actions to the expected statuses', async () => {
     const task = await taskRepository.create({
       title: 'Resolve approval path',

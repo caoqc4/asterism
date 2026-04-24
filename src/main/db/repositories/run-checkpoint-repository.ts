@@ -107,4 +107,27 @@ export class RunCheckpointRepository {
 
     return toRecord(updated);
   }
+
+  async updatePayload(id: string, payload: string | null): Promise<RunCheckpointRecord> {
+    const db = initDatabase();
+
+    await db
+      .update(runCheckpoints)
+      .set({
+        payload: payload?.trim() || null,
+      })
+      .where(eq(runCheckpoints.id, id));
+
+    const [updated] = await db
+      .select()
+      .from(runCheckpoints)
+      .where(eq(runCheckpoints.id, id))
+      .limit(1);
+
+    if (!updated) {
+      throw new Error(`Run checkpoint not found: ${id}`);
+    }
+
+    return toRecord(updated);
+  }
 }
