@@ -196,6 +196,7 @@ Covered today:
 - latest-change selection now asserts action-shaping timeline events stay ahead of newer weak trace events
 - home resume latest-change derivation now asserts meaningful task timeline events can fill gaps when global home activity does not include that task
 - task timeline summaries now assert explanatory wording that does not duplicate resume latest-change phrasing
+- task waiting-reason timeline changes now use shared explanatory wording across task and object surfaces
 - `Decisions` page current-focus and queue navigation
 - `Decisions / Runs -> Tasks` follow-up return flows
 - `Decisions / Runs` related-task timeline context

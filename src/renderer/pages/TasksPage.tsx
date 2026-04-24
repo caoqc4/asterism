@@ -500,6 +500,7 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
     event.type === 'completion_criteria.satisfied' ||
     event.type === 'completion_criteria.reopened' ||
     event.type === 'artifact.created' ||
+    event.type === 'task.waiting_changed' ||
     event.type === 'task.risk_changed' ||
     event.type === 'task.next_step_changed' ||
     event.type === 'task.transitioned'
@@ -512,8 +513,6 @@ function formatTimelineSummary(event: TimelineEventRecord): string {
   switch (event.type) {
     case 'task.created':
       return `创建任务：${formatValue(payload?.title)}`;
-    case 'task.waiting_changed':
-      return `等待原因从“${formatValue(payload?.from)}”调整为“${formatValue(payload?.to)}”`;
     case 'source_context.archived':
       return `归档来源材料：${formatValue(payload?.title)}`;
     case 'process_template.applied':

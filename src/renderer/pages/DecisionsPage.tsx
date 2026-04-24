@@ -29,18 +29,7 @@ function safeParsePayload(payload: string | null): Record<string, unknown> | nul
 }
 
 function formatRelatedTimelineSummary(event: TimelineEventRecord): string {
-  if (
-    event.type === 'task.decision_approved' ||
-    event.type === 'task.decision_deferred' ||
-    event.type === 'task.decision_cancelled' ||
-    event.type === 'task.risk_changed' ||
-    event.type === 'task.next_step_changed'
-  ) {
-    return interpretTaskTimelineEvent(event).summary;
-  }
-
-  const payload = safeParsePayload(event.payload);
-  return `等待原因调整为“${String(payload?.to ?? '未填写')}”`;
+  return interpretTaskTimelineEvent(event).summary;
 }
 
 function getRelatedTimelineActionLabel(event: TimelineEventRecord): string | null {

@@ -3051,7 +3051,7 @@ describe('App UI flow', () => {
     expect(screen.getByText('关键事件')).toBeTruthy();
     expect(screen.getByText('解释事件')).toBeTruthy();
     expect(screen.getByText('最近一条决策已获批准：Approve escalation path。')).toBeTruthy();
-    expect(screen.getByText('等待原因调整为“等待重新拍板：Approve escalation path”')).toBeTruthy();
+    expect(screen.getByText('等待原因从“未填写”调整为“等待重新拍板：Approve escalation path”')).toBeTruthy();
     expect(screen.getByText('下一步从“未填写”调整为“已获批准，继续推进：Approve escalation path”')).toBeTruthy();
     expect(
       screen

@@ -42,6 +42,16 @@ describe('getTaskTimelinePreviewEvents', () => {
         }),
       }),
     ).toBe('来源材料更新：Customer notes。');
+
+    expect(
+      explainTaskTimelineEvent({
+        type: 'task.waiting_changed',
+        payload: JSON.stringify({
+          from: null,
+          to: 'Waiting for legal review',
+        }),
+      }),
+    ).toBe('等待原因从“未填写”调整为“Waiting for legal review”');
   });
 
   it('prioritizes lane-critical events ahead of weaker explanatory items in compact previews', () => {

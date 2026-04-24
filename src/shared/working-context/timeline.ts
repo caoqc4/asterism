@@ -218,6 +218,16 @@ export function interpretTaskTimelineEvent(
           nextState: typeof payload?.nextState === 'string' ? payload.nextState : undefined,
         },
       };
+    case 'task.waiting_changed':
+      return {
+        summary: `等待原因从“${String(payload?.from ?? '未填写')}”调整为“${String(payload?.to ?? '未填写')}”`,
+        responsibilitySummary: null,
+        objectAction: { label: null, targetType: null, targetId: null },
+        recentChange: {
+          kind: 'waiting_item_changed',
+          waitingReason: typeof payload?.to === 'string' ? payload.to : undefined,
+        },
+      };
     case 'source_context.created':
     case 'source_context.updated':
       return {
@@ -401,6 +411,8 @@ export function explainTaskTimelineEvent(
       return `决策被延后，当前等待：${String(payload?.waitingReason ?? '未填写')}。`;
     case 'task.decision_cancelled':
       return `决策已取消：${String(payload?.decisionTitle ?? '未命名决策')}。`;
+    case 'task.waiting_changed':
+      return interpretTaskTimelineEvent(event).summary;
     case 'source_context.created':
     case 'source_context.updated':
       return `来源材料更新：${String(payload?.title ?? '未命名来源')}。`;
