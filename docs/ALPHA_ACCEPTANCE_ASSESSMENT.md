@@ -4,9 +4,9 @@ This assessment maps the alpha checklist to the current automated coverage and t
 
 ## Summary
 
-Current status: not alpha-accepted yet, but ready for a focused manual alpha pass.
+Current status: not alpha-accepted yet. A focused manual alpha pass is now underway and has covered the core local path through task creation, decision creation, no-key run failure, Home recovery, Settings config save, and unsigned macOS directory packaging.
 
-Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is less about adding broad code coverage and more about using the built app end to end to catch product friction, information-density issues, and packaging/runtime gaps.
+Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now narrower: launch the generated app package after explicit confirmation, validate a successful AI-backed run with deliberate test credentials, and smooth the long task-detail navigation around context and completion-criteria creation.
 
 ## Verification Gate
 
@@ -22,7 +22,7 @@ Manual need:
 
 ## Core Task Loop
 
-Status: partially automated, still needs manual validation.
+Status: mostly covered for the first local pass.
 
 Automated coverage:
 
@@ -30,14 +30,15 @@ Automated coverage:
 - service tests cover task transition validity, signal updates, and task-resume derivation
 - renderer tests cover task creation, task detail recovery surfaces, transition guidance, timeline summaries, and follow-up flows
 
-Manual need:
+Manual result / need:
 
-- confirm the real desktop flow feels coherent from task creation into the recovery-first detail view
-- confirm copy, density, and first-screen layout are usable without test fixtures guiding the path
+- real desktop task creation, detail open, summary save, and next-step save worked in isolated userData
+- state transition still needs a deliberate manual pass
+- first-screen recovery is coherent, but long-detail navigation remains awkward for lower sections
 
 ## Context Objects
 
-Status: strongly automated, still needs manual validation.
+Status: partially validated manually, with UI navigation friction.
 
 Automated coverage:
 
@@ -45,14 +46,15 @@ Automated coverage:
 - renderer tests cover source context create/edit, key-source behavior, blocker create/resolve, dependency routing, and process template create/apply/remove flows
 - home and task tests cover blocker/dependency recovery semantics and escalation wording
 
-Manual need:
+Manual result / need:
 
-- confirm the context-management layer is understandable in a real session
-- confirm source/process/blocker/dependency terminology is clear enough without developer context
+- source/process/blocker/completion objects were seeded to continue recovery validation after detail scrolling became cumbersome through automation
+- Home and task resume reflected blocker/source/method context correctly after the Home fixes
+- dependency-specific creation and recovery still need a focused manual pass
 
 ## Decision And Run Loop
 
-Status: strongly automated, still needs manual validation.
+Status: no-key failure path validated manually; real-key success still pending.
 
 Automated coverage:
 
@@ -61,43 +63,45 @@ Automated coverage:
 - repository tests cover decision/run timeline writes
 - renderer tests cover quick decision, quick run, related object entry, and refresh behavior
 
-Manual need:
+Manual result / need:
 
-- confirm AI-backed draft/run behavior with real local settings and keychain state
-- confirm failure paths are legible when credentials are missing or provider calls fail
+- decision creation from the Decisions page worked and surfaced in Home recommended actions and Pending Decisions
+- draft run without Keychain API key failed clearly with `AI API Key is not configured in system Keychain`
+- real AI-backed draft/run behavior still needs deliberate test credentials
 
 ## Completion Loop
 
-Status: strongly automated, still needs manual validation.
+Status: partially validated manually.
 
 Automated coverage:
 
 - repository tests cover completion-criteria create/update/satisfy/reopen flows
 - service and renderer tests cover completion guidance, closeout evidence, satisfied criteria highlights, and likely matching criteria focus
 
-Manual need:
+Manual result / need:
 
-- confirm closeout wording is understandable in a real task with several criteria
-- confirm completion evidence does not feel too magical or too hidden
+- one satisfied and one open criterion surfaced on Home as closeout progress `1 / 2`
+- failed run surfaced as potential evidence without making the task closeout-ready
+- UI create/satisfy/reopen needs a smoother manual pass through the long task-detail area
 
 ## Home Recovery Loop
 
-Status: strongly automated, high-priority manual validation.
+Status: manually exercised and improved.
 
 Automated coverage:
 
 - renderer tests cover recommended actions, key signals, recent activity, resume previews, blocker/dependency routing, stale escalation, lane labels, and closeout cues
 - brief and shared working-context tests cover lane ordering and timeline priority semantics
 
-Manual need:
+Manual result / need:
 
-- confirm Home reads as a control surface rather than a long dashboard
-- confirm priority ordering feels right with realistic mixed task data
-- confirm resume previews and key signals do not compete for the same attention
+- Home exposed high-risk, pending-decision, failed-run, and closeout-progress signals coherently in the same session
+- fixed issues found during the pass: duplicate unblock task count, blocker activity mislabelled as `查看 Run`, and captured task activity being re-sorted by later updates
+- still needs a completed-run or approved-decision pass to validate closeout-ready Home wording
 
 ## Settings And Local Config
 
-Status: automated coverage is good, manual validation still needed.
+Status: non-sensitive config save validated manually; real keychain write still pending.
 
 Automated coverage:
 
@@ -105,37 +109,36 @@ Automated coverage:
 - keychain tests cover status config path, legacy key migration, save behavior, and missing API-key runtime errors
 - renderer tests cover Settings save flow and scheduler status refresh
 
-Manual need:
+Manual result / need:
 
-- confirm Settings save behavior against the real OS keychain
-- confirm config path display is useful and not too noisy for normal users
+- Settings wrote non-sensitive provider/model/scheduler config to isolated `config.json`
+- empty API key left Keychain status explicit and unchanged
+- real OS keychain write should be tested only with deliberate test credentials
 
 ## Release Readiness
 
-Status: not ready for release; ready for local alpha-path validation.
+Status: not ready for release; local unsigned directory packaging passes.
 
 Automated/local coverage:
 
 - `npm run build` passes through `npm run verify`
 - `npm run smoke:build` passes
+- `npm run dist:mac:dir` passes and produces `release/mac-arm64/Taskplane.app`
+- unpacked app structure, `Info.plist`, native module unpacking, and ad-hoc code signature were inspected locally
 
 Manual need:
 
-- run `npm run dist:mac:dir` only after the manual alpha path passes
-- inspect the unpacked app before any signed/notarized release planning
+- launch the generated app with isolated userData after explicit action-time confirmation
 - defer signed/notarized release work until product friction from the alpha path is addressed
 
 ## Recommended Next Step
 
-Run the manual alpha path in one uninterrupted session:
+Finish the remaining alpha checks in this order:
 
-1. Start the app locally.
-2. Create a realistic task.
-3. Add source context, a process template, a blocker or dependency, and at least one completion criterion.
-4. Trigger a decision draft or run.
-5. Inspect Home recovery and related object navigation.
-6. Save Settings and confirm scheduler/config status.
-7. Record every friction point as either a product copy issue, layout issue, missing state, or real bug.
+1. Launch `release/mac-arm64/Taskplane.app` with isolated userData after explicit confirmation.
+2. Exercise criteria create/satisfy/reopen from the task UI.
+3. Validate dependency creation/resolution from the task UI.
+4. Run a successful AI-backed draft/run only with deliberate test credentials.
+5. Re-test closeout-ready Home wording with an approved decision or completed run.
 
 Do not expand the domain model until that pass is complete.
-
