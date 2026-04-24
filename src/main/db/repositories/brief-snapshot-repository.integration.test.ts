@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { closeDatabase, initDatabase, setDatabaseUserDataPathForTests } from '../client.js';
 import { briefSnapshots } from '../schema.js';
-import { makeTempDir } from './repository-test-utils.js';
+import { makeTempDir } from '../../test-utils.js';
 import { BriefSnapshotRepository } from './brief-snapshot-repository.js';
 
 describe('BriefSnapshotRepository integration', () => {

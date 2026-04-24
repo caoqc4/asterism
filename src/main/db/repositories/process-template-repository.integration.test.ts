@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { closeDatabase, setDatabaseUserDataPathForTests } from '../client.js';
-import { makeTempDir } from './repository-test-utils.js';
+import { makeTempDir } from '../../test-utils.js';
 import { ProcessTemplateRepository } from './process-template-repository.js';
 
 describe('ProcessTemplateRepository integration', () => {

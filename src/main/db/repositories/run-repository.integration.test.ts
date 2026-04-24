@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { closeDatabase, initDatabase, setDatabaseUserDataPathForTests } from '../client.js';
-import { makeTempDir } from './repository-test-utils.js';
+import { makeTempDir } from '../../test-utils.js';
 import { runs } from '../schema.js';
 import { RunRepository } from './run-repository.js';
 import { TaskRepository } from './task-repository.js';

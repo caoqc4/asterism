@@ -1,10 +1,10 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { makeTempDir } from '../test-utils.js';
 
-const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-config-test-'));
+const tempRoot = makeTempDir('taskplane-config-test-');
 
 describe('AppConfigService', () => {
   beforeEach(() => {
