@@ -213,7 +213,7 @@ What exists today:
 - IPC handler coverage for critical event-emitting entrypoints
 - renderer interaction coverage for key control-plane flows
 - local macOS packaging pipeline
-- local and GitHub Actions `verify` quality-gate coverage plus a build smoke check for packaged entrypoints
+- local `verify` quality-gate coverage plus a build smoke check for packaged entrypoints; GitHub Actions coverage exists but may be unavailable during quota-limited periods
 - Dependabot coverage for npm dependencies and GitHub Actions updates
 
 What is still in progress:

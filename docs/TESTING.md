@@ -9,7 +9,7 @@ Taskplane currently uses a layered testing strategy:
 - renderer `jsdom` interaction tests for key control-plane flows
 - IPC handler tests for event-emitting main-process entrypoints
 - local `verify` quality-gate coverage
-- GitHub Actions `verify` coverage on pushes to `main` and pull requests
+- GitHub Actions `verify` coverage on pushes to `main` and pull requests when Actions capacity is available
 - build smoke verification for packaged renderer/main/preload entrypoints
 
 Current test files:
@@ -261,7 +261,7 @@ npm run verify
 Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
-- GitHub Actions runs `npm run verify` on pushes to `main` and pull requests
+- GitHub Actions runs `npm run verify` on pushes to `main` and pull requests when Actions capacity is available
 - `npm run smoke:build` when package/build entrypoints change
 
 When GitHub Actions is unavailable or disabled because of monthly quota, local verification is the temporary source of truth:
