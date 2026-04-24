@@ -15,6 +15,7 @@ Taskplane currently uses a layered testing strategy:
 Current test files:
 
 - `src/main/config/app-config-service.test.ts`
+- `src/main/keychain/ai-config-service.test.ts`
 - `src/main/domain/task/task-service.test.ts`
 - `src/main/domain/decision/decision-service.test.ts`
 - `src/main/domain/run/run-service.test.ts`
@@ -53,6 +54,8 @@ Covered today:
 
 - `AppConfigService`
   config defaults, persistence, migration behavior
+- `AiConfigService`
+  config-path reporting and legacy keychain API-key migration behavior
 - `TaskService`
   transitions, invalid transitions, signal updates, task-resume derivation, blocker/dependency/completion-criteria lifecycle writes, decision annotations, and run-settlement annotations
 - `DecisionService`
