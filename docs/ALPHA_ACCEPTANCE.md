@@ -2,6 +2,8 @@
 
 Use this checklist for manual local validation before treating the prototype as alpha-ready.
 
+For the current coverage and manual-validation assessment, see [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md).
+
 ## Verification Gate
 
 - Run `npm run verify`.
@@ -59,4 +61,3 @@ Use this checklist for manual local validation before treating the prototype as 
 - Run `npm run smoke:build` before packaging.
 - Produce `npm run dist:mac:dir` only after the manual alpha path is coherent.
 - Do not start signed/notarized release work until the local alpha path passes without major friction.
-
