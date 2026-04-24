@@ -264,6 +264,12 @@ Current verification:
 - GitHub Actions runs `npm run verify` on pushes to `main` and pull requests
 - `npm run smoke:build` when package/build entrypoints change
 
+When GitHub Actions is unavailable or disabled because of monthly quota, local verification is the temporary source of truth:
+
+- run `npm run verify` before pushing ordinary changes
+- run `npm run smoke:build` when package/build entrypoints change
+- avoid manually dispatching or watching remote workflow runs until Actions capacity is restored
+
 ## Suggested Next Test Targets
 
 Recommended next additions:

@@ -120,6 +120,7 @@ Main-process rules:
 - IPC handler tests cover critical event-emitting channels such as settings save, completion-criteria writes, decision action, and run trigger.
 - Renderer interaction tests cover the main control-plane flows from Home, Tasks, Decisions, Runs, Settings, timeline actions, waiting-item flows, blocker flows, dependency flows, completion-criteria flows, source-context flows, process-context flows, task-resume visibility and recovery actions, home resume-preview recovery flows, lane-aware list ordering, lane-aware summaries, and failed-run refresh paths.
 - Local development currently relies on running `npm run verify` before pushing changes, with `npm run smoke:build` added when package/build entrypoints change.
+- If GitHub Actions is unavailable or disabled because of monthly quota, treat local `npm run verify` as the required gate for ordinary code changes and add `npm run smoke:build` for package/build entrypoint changes. Do not manually dispatch or watch remote workflow runs during that period.
 
 For the current coverage map and recommended next targets, see [TESTING.md](TESTING.md).
 
