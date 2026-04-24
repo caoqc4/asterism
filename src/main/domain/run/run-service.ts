@@ -1,5 +1,6 @@
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
+import type { AgentToolName } from '../../../shared/types/agent-execution.js';
 import type {
   CreateRunInput,
   RunDetailRecord,
@@ -13,6 +14,13 @@ import { TaskService } from '../task/task-service.js';
 import { AgentToolRegistry } from './agent-tool-registry.js';
 import { ProcessTemplateSelector } from './process-template-selector.js';
 import { RunOrchestrator, type RunOrchestrationResult } from './run-orchestrator.js';
+
+type ResumeCheckpointPayload = {
+  reason?: unknown;
+  nextTool?: unknown;
+  nextInput?: unknown;
+  taskId?: unknown;
+};
 
 export class RunService {
   constructor(
@@ -138,6 +146,106 @@ export class RunService {
     );
     await this.taskService.annotateRunFailed(input.taskId, result.message, failed.id);
     return failed;
+  }
+
+  async continuePausedRun(runId: string): Promise<RunRecord> {
+    const run = await this.getDetail(runId);
+
+    if (!run) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+
+    if (run.status !== 'paused') {
+      throw new Error(`Run is not paused: ${runId}`);
+    }
+
+    if (!this.agentToolRegistry) {
+      throw new Error('Agent tool registry is required to continue paused runs.');
+    }
+
+    const checkpoint = run.checkpoints?.find((item) =>
+      item.status === 'open' && item.kind === 'resume'
+    );
+
+    if (!checkpoint?.payload) {
+      throw new Error(`Open resume checkpoint not found for run: ${runId}`);
+    }
+
+    const payload = this.parseResumeCheckpointPayload(checkpoint.payload);
+
+    if (payload.nextTool !== 'artifact.create_note') {
+      throw new Error(`Unsupported resume tool: ${String(payload.nextTool ?? 'unknown')}`);
+    }
+
+    const result = await this.agentToolRegistry.execute(
+      payload.nextTool,
+      payload.nextInput,
+      {
+        runId,
+        taskId: run.taskId,
+      },
+    );
+
+    if (!result.success) {
+      const failed = await this.runRepository.updateResult(
+        runId,
+        'failed',
+        result.error ?? result.summary,
+        'system',
+        result.error ?? result.summary,
+      );
+      await this.taskService.annotateRunFailed(run.taskId, result.error ?? result.summary, runId);
+      return failed;
+    }
+
+    await this.runCheckpointRepository.updateStatus(checkpoint.id, 'resolved');
+    await this.runStepRepository.create({
+      runId,
+      kind: 'final',
+      status: 'completed',
+      title: '完成 paused run 续跑',
+      output: '已从 resume checkpoint 继续执行并完成 Run。',
+    });
+
+    const completed = await this.runRepository.updateResult(
+      runId,
+      'completed',
+      result.output ?? result.summary,
+      'system',
+    );
+    await this.taskService.annotateRunCompleted(
+      run.taskId,
+      run.type,
+      Boolean((result.output ?? result.summary).trim()),
+      runId,
+    );
+
+    return completed;
+  }
+
+  private parseResumeCheckpointPayload(payload: string): ResumeCheckpointPayload & {
+    nextTool: Extract<AgentToolName, 'artifact.create_note'>;
+  } {
+    let parsed: ResumeCheckpointPayload;
+
+    try {
+      parsed = JSON.parse(payload) as ResumeCheckpointPayload;
+    } catch {
+      throw new Error('Resume checkpoint payload is not valid JSON.');
+    }
+
+    if (parsed.nextTool !== 'artifact.create_note') {
+      throw new Error(`Unsupported resume tool: ${String(parsed.nextTool ?? 'unknown')}`);
+    }
+
+    if (!parsed.nextInput || typeof parsed.nextInput !== 'object') {
+      throw new Error('Resume checkpoint payload is missing nextInput.');
+    }
+
+    return {
+      ...parsed,
+      nextTool: parsed.nextTool,
+    };
   }
 
   private async annotateProcessTemplateSelection(

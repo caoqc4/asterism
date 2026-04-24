@@ -568,6 +568,11 @@ describe('AgentRunLoop', () => {
         payload: expect.stringContaining('"nextTool":"artifact.create_note"'),
       }),
     );
+    expect(runCheckpointRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.stringContaining('"nextInput":{"title":"Task 1 agent note","content":"Agent output"}'),
+      }),
+    );
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: '汇总 agent 工具观察',

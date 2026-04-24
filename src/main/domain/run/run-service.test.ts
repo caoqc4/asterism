@@ -466,6 +466,125 @@ describe('RunService', () => {
     expect(result.status).toBe('paused');
   });
 
+  it('continues a paused agent run from its resume checkpoint', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildRunRecord('paused'),
+        type: 'agent',
+        output: '等待先解除阻塞。',
+        outputSource: 'system',
+      }),
+      create: vi.fn(),
+      updateResult: vi.fn().mockResolvedValue({
+        ...buildRunRecord('completed'),
+        type: 'agent',
+        output: 'Recovered note',
+        outputSource: 'system',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      transitionIfAllowed: vi.fn(),
+      annotateRunCompleted: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateRunFailed: vi.fn(),
+      annotateRunPaused: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
+    };
+    const artifactRepository = {
+      createFromRun: vi.fn(),
+    };
+    const runStepRepository = {
+      ...buildRunStepRepositoryMock(),
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
+    const runCheckpointRepository = {
+      listForRun: vi.fn().mockResolvedValue([
+        {
+          id: 'run_checkpoint_resume',
+          runId: 'run_1',
+          stepId: 'run_step_resume',
+          kind: 'resume',
+          status: 'open',
+          payload: JSON.stringify({
+            reason: '等待先解除阻塞。',
+            nextTool: 'artifact.create_note',
+            nextInput: {
+              title: 'Recovered note',
+              content: 'Recovered note',
+            },
+          }),
+          createdAt: '2026-01-01T00:00:00.000Z',
+          resolvedAt: null,
+        },
+      ]),
+      updateStatus: vi.fn().mockResolvedValue({
+        id: 'run_checkpoint_resume',
+        status: 'resolved',
+      }),
+    };
+    const agentToolRegistry = {
+      execute: vi.fn().mockResolvedValue({
+        success: true,
+        status: 'completed',
+        summary: '已创建本地 note 产物：Recovered note',
+        output: 'Recovered note',
+      }),
+    };
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      artifactRepository as never,
+      {} as never,
+      {} as never,
+      undefined,
+      runStepRepository as never,
+      agentToolRegistry as never,
+      runCheckpointRepository as never,
+    );
+
+    const result = await service.continuePausedRun('run_1');
+
+    expect(agentToolRegistry.execute).toHaveBeenCalledWith(
+      'artifact.create_note',
+      {
+        title: 'Recovered note',
+        content: 'Recovered note',
+      },
+      {
+        runId: 'run_1',
+        taskId: 'task_1',
+      },
+    );
+    expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith(
+      'run_checkpoint_resume',
+      'resolved',
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        kind: 'final',
+        status: 'completed',
+        title: '完成 paused run 续跑',
+      }),
+    );
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_1',
+      'completed',
+      'Recovered note',
+      'system',
+    );
+    expect(taskService.annotateRunCompleted).toHaveBeenCalledWith(
+      'task_1',
+      'agent',
+      true,
+      'run_1',
+    );
+    expect(artifactRepository.createFromRun).not.toHaveBeenCalled();
+    expect(result.status).toBe('completed');
+  });
+
   it('rejects the run when the task does not exist', async () => {
     const runRepository = {
       list: vi.fn(),

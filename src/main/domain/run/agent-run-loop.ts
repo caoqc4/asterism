@@ -385,6 +385,7 @@ export class AgentRunLoop {
     request: AgentRunRequest;
     observations: AgentRunLoopObservation[];
     nextTool: AgentToolName;
+    nextInput: unknown;
     reason: string;
   }): Promise<string> {
     const step = await this.runStepRepository.create({
@@ -395,6 +396,7 @@ export class AgentRunLoop {
       input: JSON.stringify({
         reason: params.reason,
         nextTool: params.nextTool,
+        nextInput: params.nextInput,
       }),
       output: params.reason,
     });
@@ -405,6 +407,7 @@ export class AgentRunLoop {
       payload: JSON.stringify({
         reason: params.reason,
         nextTool: params.nextTool,
+        nextInput: params.nextInput,
         observations: params.observations,
         taskId: params.request.taskId,
       }),
@@ -473,6 +476,7 @@ export class AgentRunLoop {
             request,
             observations,
             nextTool: step.tool,
+            nextInput: step.input,
             reason: plannerDecision.reason,
           });
           await this.recordObservationSummary({

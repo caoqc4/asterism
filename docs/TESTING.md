@@ -61,7 +61,7 @@ Covered today:
 - `DecisionService`
   task existence checks, decision-to-task lifecycle linkage, AI/fallback decision-draft composition, and checkpoint Decision approval/defer settlement
 - `RunService`
-  successful execution path, failure path, paused path, task restoration after settled runs, artifact creation on successful output, and orchestration result settlement
+  successful execution path, failure path, paused path, paused checkpoint continuation, task restoration after settled runs, artifact creation on successful output, and orchestration result settlement
 - `RunOrchestrator`
   plan/model/final step writes, process-template selector fallback, executor failure recording, agent-mode handoff into the local run loop, and paused agent-loop propagation
 - `AgentRunLoop`
