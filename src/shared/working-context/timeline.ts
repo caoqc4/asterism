@@ -369,7 +369,32 @@ export function getTaskTimelineResponsibilitySummary(
   return interpretTaskTimelineEvent(event).responsibilitySummary;
 }
 
+function isStrongExplanatoryTimelineAction(type: string): boolean {
+  return (
+    type === 'task.waiting_changed' ||
+    type === 'task.risk_changed' ||
+    type === 'blocker.updated' ||
+    type === 'task_dependency.updated'
+  );
+}
+
+function isStrongExplanatoryObjectEntry(type: string): boolean {
+  return type === 'source_context.created' || type === 'source_context.updated';
+}
+
+export function shouldExposeTaskTimelineFollowUpAction(type: string): boolean {
+  return getTaskTimelinePriority(type) === 'p1' || isStrongExplanatoryTimelineAction(type);
+}
+
+export function shouldExposeTaskTimelineObjectAction(type: string): boolean {
+  return getTaskTimelinePriority(type) === 'p1' || isStrongExplanatoryObjectEntry(type);
+}
+
 export function getTaskTimelineFollowUpActionLabel(type: string): string | null {
+  if (!shouldExposeTaskTimelineFollowUpAction(type)) {
+    return null;
+  }
+
   switch (type) {
     case 'task.decision_cancelled':
       return '重新评估并拍板';
@@ -395,6 +420,28 @@ export function getTaskTimelineFollowUpActionLabel(type: string): string | null 
     default:
       return null;
   }
+}
+
+export function getTaskTimelineObjectAction(
+  event: Pick<TimelineEventRecord, 'type' | 'payload'>,
+): ReturnType<typeof interpretTaskTimelineEvent>['objectAction'] {
+  const emptyAction = {
+    label: null,
+    targetType: null,
+    targetId: null,
+  } as const;
+
+  if (!shouldExposeTaskTimelineObjectAction(event.type)) {
+    return emptyAction;
+  }
+
+  const objectAction = interpretTaskTimelineEvent(event).objectAction;
+
+  if (!objectAction.label || !objectAction.targetType || !objectAction.targetId) {
+    return emptyAction;
+  }
+
+  return objectAction;
 }
 
 export function getTaskTimelineLane(type: string): PriorityLane {

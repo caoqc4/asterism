@@ -3,9 +3,13 @@ import { describe, expect, it } from 'vitest';
 import {
   getLatestResumeRelevantTimelineEvent,
   isResumeLatestChangeMetaEvent,
+  getTaskTimelineFollowUpActionLabel,
+  getTaskTimelineObjectAction,
   getTaskTimelinePreviewEvents,
   getTaskTimelinePriority,
   getTaskTimelineResponsibilitySummary,
+  shouldExposeTaskTimelineFollowUpAction,
+  shouldExposeTaskTimelineObjectAction,
 } from './timeline.js';
 
 describe('getTaskTimelinePreviewEvents', () => {
@@ -102,5 +106,65 @@ describe('getTaskTimelinePreviewEvents', () => {
         }),
       }),
     ).toBe('当前主要由上游任务“Publish partner list”推进');
+  });
+
+  it('only exposes timeline actions for key events and strong explanatory events', () => {
+    expect(shouldExposeTaskTimelineFollowUpAction('task.run_failed')).toBe(true);
+    expect(getTaskTimelineFollowUpActionLabel('task.run_failed')).toBe('复核失败并重试');
+
+    expect(shouldExposeTaskTimelineFollowUpAction('blocker.updated')).toBe(true);
+    expect(getTaskTimelineFollowUpActionLabel('blocker.updated')).toBe('先解阻塞');
+
+    expect(shouldExposeTaskTimelineFollowUpAction('process_template.selected')).toBe(false);
+    expect(getTaskTimelineFollowUpActionLabel('process_template.selected')).toBeNull();
+    expect(shouldExposeTaskTimelineFollowUpAction('task.updated')).toBe(false);
+    expect(getTaskTimelineFollowUpActionLabel('task.updated')).toBeNull();
+  });
+
+  it('only exposes object entries for key events and strong source-context events', () => {
+    expect(shouldExposeTaskTimelineObjectAction('task.decision_approved')).toBe(true);
+    expect(
+      getTaskTimelineObjectAction({
+        type: 'task.decision_approved',
+        payload: JSON.stringify({
+          decisionId: 'decision_1',
+          decisionTitle: 'Approve launch',
+        }),
+      }),
+    ).toEqual({
+      label: '查看 Decision',
+      targetType: 'decision',
+      targetId: 'decision_1',
+    });
+
+    expect(shouldExposeTaskTimelineObjectAction('source_context.updated')).toBe(true);
+    expect(
+      getTaskTimelineObjectAction({
+        type: 'source_context.updated',
+        payload: JSON.stringify({
+          sourceContextId: 'source_context_1',
+          title: 'Customer notes',
+        }),
+      }),
+    ).toEqual({
+      label: '查看来源',
+      targetType: 'source_context',
+      targetId: 'source_context_1',
+    });
+
+    expect(shouldExposeTaskTimelineObjectAction('process_template.selected')).toBe(false);
+    expect(
+      getTaskTimelineObjectAction({
+        type: 'process_template.selected',
+        payload: JSON.stringify({
+          templateId: 'process_template_1',
+          title: 'Launch checklist',
+        }),
+      }),
+    ).toEqual({
+      label: null,
+      targetType: null,
+      targetId: null,
+    });
   });
 });

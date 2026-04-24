@@ -47,6 +47,7 @@ import {
   getTaskTimelineFollowUpActionLabel,
   getTaskTimelineLane,
   getTaskTimelineLaneLabel,
+  getTaskTimelineObjectAction,
   getTaskTimelinePreviewEvents,
   getTaskTimelinePriority,
   getTaskTimelinePriorityLabel,
@@ -533,7 +534,7 @@ function getTimelineActionLabel(type: string): string | null {
 }
 
 function getTimelineObjectLabel(event: TimelineEventRecord): string | null {
-  return interpretTaskTimelineEvent(event).objectAction.label;
+  return getTaskTimelineObjectAction(event).label;
 }
 
 function buildQuickDecisionSeed(detail: TaskDetail, lane: PriorityLane | undefined): string {
@@ -1942,7 +1943,7 @@ export function TasksPage({
   }
 
   function handleTimelineObjectOpen(event: TimelineEventRecord) {
-    const objectAction = interpretTaskTimelineEvent(event).objectAction;
+    const objectAction = getTaskTimelineObjectAction(event);
 
     if (objectAction.targetType === 'decision' && objectAction.targetId) {
       onOpenDecision(objectAction.targetId);

@@ -7,6 +7,7 @@ import {
   getTaskTimelineFollowUpActionLabel,
   getTaskTimelineLane,
   getTaskTimelineLaneLabel,
+  getTaskTimelineObjectAction,
   getTaskTimelinePreviewEvents,
   getTaskTimelineResponsibilitySummary,
   interpretTaskTimelineEvent,
@@ -35,7 +36,7 @@ function getRelatedTimelineActionLabel(event: TimelineEventRecord): string | nul
 }
 
 function getRelatedTimelineObjectLabel(event: TimelineEventRecord): string | null {
-  return interpretTaskTimelineEvent(event).objectAction.label;
+  return getTaskTimelineObjectAction(event).label;
 }
 
 function getRelatedTimeline(events: TimelineEventRecord[], runId: string): TimelineEventRecord[] {
@@ -151,7 +152,7 @@ export function RunsPage({
   }, [detail?.id, detail?.taskId]);
 
   function handleRelatedTimelineObjectOpen(event: TimelineEventRecord) {
-    const objectAction = interpretTaskTimelineEvent(event).objectAction;
+    const objectAction = getTaskTimelineObjectAction(event);
 
     if (objectAction.targetType === 'run' && objectAction.targetId) {
       setSelectedRunId(objectAction.targetId);
