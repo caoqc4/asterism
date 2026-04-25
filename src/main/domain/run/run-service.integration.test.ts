@@ -307,4 +307,137 @@ describe('RunService integration', () => {
       ]),
     );
   });
+
+  it('runs an opted-in completion evidence review without closing the task', async () => {
+    const taskRepository = new TaskRepository();
+    const waitingItemRepository = new WaitingItemRepository();
+    const artifactRepository = new ArtifactRepository();
+    const sourceContextRepository = new SourceContextRepository();
+    const processTemplateRepository = new ProcessTemplateRepository();
+    const taskProcessBindingRepository = new TaskProcessBindingRepository();
+    const blockerRepository = new BlockerRepository();
+    const taskDependencyRepository = new TaskDependencyRepository();
+    const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const runRepository = new RunRepository();
+    const runStepRepository = new RunStepRepository();
+    const runCheckpointRepository = new RunCheckpointRepository();
+    const decisionRepository = new DecisionRepository();
+    const taskService = new TaskService(
+      taskRepository,
+      waitingItemRepository,
+      artifactRepository,
+      sourceContextRepository,
+      processTemplateRepository,
+      taskProcessBindingRepository,
+      blockerRepository,
+      taskDependencyRepository,
+      completionCriteriaRepository,
+    );
+    const agentToolRegistry = new AgentToolRegistry(
+      artifactRepository,
+      runStepRepository,
+      runCheckpointRepository,
+      decisionRepository,
+      () => workspaceRoot,
+      taskService,
+    );
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'openai-compatible',
+        model: 'local-alpha-model',
+        apiKey: 'test-key',
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn().mockResolvedValue(JSON.stringify({
+        finalOutput: 'Completion evidence reviewed by agent',
+        steps: [
+          {
+            tool: 'task.review_completion_evidence',
+          },
+          {
+            tool: 'artifact.create_note',
+            input: {
+              title: 'Completion evidence review',
+              content: 'Completion evidence reviewed by agent',
+            },
+          },
+        ],
+      })),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No process template needed for completion evidence review test.',
+      }),
+    };
+    const service = new RunService(
+      runRepository,
+      taskService,
+      artifactRepository,
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository,
+      agentToolRegistry,
+      runCheckpointRepository,
+    );
+    const task = await taskService.create({
+      title: 'Completion evidence review agent path',
+      summary: 'Validate read-only closeout review through RunService.',
+    });
+    await taskService.createCompletionCriteria({
+      taskId: task.id,
+      text: 'Owner approved the final result',
+    });
+
+    const run = await service.trigger({
+      taskId: task.id,
+      type: 'agent',
+      instructions: 'Review completion evidence without closing the task.',
+      allowTaskMutationTools: true,
+    });
+    const detail = await service.getDetail(run.id);
+    const taskDetail = await taskService.getDetail(task.id);
+    const steps = detail?.steps ?? [];
+    const agentSessions = detail?.agentSessions ?? [];
+    const artifacts = await artifactRepository.listRecentForTask(task.id, 10);
+
+    expect(run).toMatchObject({
+      status: 'completed',
+      output: 'Completion evidence reviewed by agent',
+      outputSource: 'ai',
+    });
+    expect(agentSessions[0]).toMatchObject({
+      status: 'completed',
+      capabilities: expect.objectContaining({
+        taskMutationTools: true,
+      }),
+    });
+    expect(taskDetail?.state).toBe('captured');
+    expect(taskDetail?.completionCriteria).toEqual([
+      expect.objectContaining({
+        text: 'Owner approved the final result',
+        status: 'open',
+      }),
+    ]);
+    expect(steps.some((step) =>
+      step.kind === 'tool_result' &&
+      step.output?.includes('完成证据审查：只读结果')
+    )).toBe(true);
+    expect(steps.some((step) =>
+      step.kind === 'decision' &&
+      step.output?.includes('task.review_completion_evidence [completed]')
+    )).toBe(true);
+    expect(artifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'note',
+          title: 'Completion evidence review',
+          content: 'Completion evidence reviewed by agent',
+        }),
+      ]),
+    );
+  });
 });
