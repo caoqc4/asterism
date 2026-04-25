@@ -78,11 +78,12 @@ Current accepted behavior remains:
   - RunOrchestrator does not call provider-native executor unless all selection
     gates pass
 - Integration coverage:
-  - at least one persisted provider-native agent session with
+  - completed: at least one persisted provider-native agent session with
     `structuredToolCalls=true`
-  - one provider-native fallback case that leaves `structuredToolCalls=false`
-  - one policy-denied provider-native task/workspace proposal that falls back or
-    checkpoints exactly like the text JSON path
+  - completed: one provider-native fallback case that leaves
+    `structuredToolCalls=false`
+  - completed: one policy-denied provider-native task/workspace proposal that
+    falls back or checkpoints exactly like the text JSON path
 - Local verification must pass without GitHub Actions:
 
 ```bash

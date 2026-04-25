@@ -440,4 +440,397 @@ describe('RunService integration', () => {
       ]),
     );
   });
+
+  it('persists a provider-native structured agent session when the gate passes', async () => {
+    const taskRepository = new TaskRepository();
+    const waitingItemRepository = new WaitingItemRepository();
+    const artifactRepository = new ArtifactRepository();
+    const sourceContextRepository = new SourceContextRepository();
+    const processTemplateRepository = new ProcessTemplateRepository();
+    const taskProcessBindingRepository = new TaskProcessBindingRepository();
+    const blockerRepository = new BlockerRepository();
+    const taskDependencyRepository = new TaskDependencyRepository();
+    const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const runRepository = new RunRepository();
+    const runStepRepository = new RunStepRepository();
+    const runCheckpointRepository = new RunCheckpointRepository();
+    const decisionRepository = new DecisionRepository();
+    const taskService = new TaskService(
+      taskRepository,
+      waitingItemRepository,
+      artifactRepository,
+      sourceContextRepository,
+      processTemplateRepository,
+      taskProcessBindingRepository,
+      blockerRepository,
+      taskDependencyRepository,
+      completionCriteriaRepository,
+    );
+    const agentToolRegistry = new AgentToolRegistry(
+      artifactRepository,
+      runStepRepository,
+      runCheckpointRepository,
+      decisionRepository,
+      () => workspaceRoot,
+      taskService,
+    );
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'openai-compatible',
+        model: 'local-alpha-model',
+        apiKey: 'test-key',
+        featureFlags: {
+          enableScheduler: false,
+          enableProviderNativeToolCalls: true,
+        },
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn(),
+      executeWithResult: vi.fn().mockResolvedValue({
+        text: 'Provider native final output',
+        providerPayload: {
+          source: 'provider_response_body',
+          provider: 'openai-compatible',
+          model: 'local-alpha-model',
+          rawSummary: 'choices=1; tool_calls=1',
+          payload: {
+            choices: [
+              {
+                finish_reason: 'tool_calls',
+                message: {
+                  content: 'Provider native final output',
+                  tool_calls: [
+                    {
+                      id: 'call_provider_native_1',
+                      type: 'function',
+                      function: {
+                        name: 'taskplane__artifact__create_note',
+                        arguments: JSON.stringify({
+                          title: 'Provider native note',
+                          content: 'Provider native final output',
+                        }),
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      }),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No process template needed for provider-native persistence test.',
+      }),
+    };
+    const service = new RunService(
+      runRepository,
+      taskService,
+      artifactRepository,
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository,
+      agentToolRegistry,
+      runCheckpointRepository,
+    );
+    const task = await taskService.create({
+      title: 'Provider native persisted session',
+      summary: 'Validate provider-native agent session persistence.',
+    });
+
+    const run = await service.trigger({
+      taskId: task.id,
+      type: 'agent',
+      instructions: 'Use provider-native tool calls if available.',
+    });
+    const detail = await service.getDetail(run.id);
+    const agentSessions = detail?.agentSessions ?? [];
+    const steps = detail?.steps ?? [];
+    const artifacts = await artifactRepository.listRecentForTask(task.id, 10);
+
+    expect(run).toMatchObject({
+      status: 'completed',
+      output: 'Provider native final output',
+      outputSource: 'ai',
+    });
+    expect(agentSessions).toHaveLength(1);
+    expect(agentSessions[0]).toMatchObject({
+      status: 'completed',
+      capabilities: expect.objectContaining({
+        structuredToolCalls: true,
+        textOnlyPlanning: false,
+      }),
+      metadata: expect.stringContaining('provider=openai-compatible'),
+    });
+    expect(agentSessions[0].metadata).toContain('providerCallIds=call_provider_native_1');
+    expect(steps.some((step) =>
+      step.kind === 'model' &&
+      step.title === 'Provider 原生工具调用影子观察' &&
+      step.output?.includes('providerCallCount=1')
+    )).toBe(true);
+    expect(steps.some((step) =>
+      step.kind === 'plan' &&
+      step.title === '采用模型提出的 agent 步骤计划' &&
+      step.input?.includes('artifact.create_note')
+    )).toBe(true);
+    expect(artifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'note',
+          title: 'Provider native note',
+          content: 'Provider native final output',
+        }),
+      ]),
+    );
+  });
+
+  it('falls back to a text-only agent session when the provider payload is missing', async () => {
+    const taskRepository = new TaskRepository();
+    const waitingItemRepository = new WaitingItemRepository();
+    const artifactRepository = new ArtifactRepository();
+    const sourceContextRepository = new SourceContextRepository();
+    const processTemplateRepository = new ProcessTemplateRepository();
+    const taskProcessBindingRepository = new TaskProcessBindingRepository();
+    const blockerRepository = new BlockerRepository();
+    const taskDependencyRepository = new TaskDependencyRepository();
+    const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const runRepository = new RunRepository();
+    const runStepRepository = new RunStepRepository();
+    const runCheckpointRepository = new RunCheckpointRepository();
+    const decisionRepository = new DecisionRepository();
+    const taskService = new TaskService(
+      taskRepository,
+      waitingItemRepository,
+      artifactRepository,
+      sourceContextRepository,
+      processTemplateRepository,
+      taskProcessBindingRepository,
+      blockerRepository,
+      taskDependencyRepository,
+      completionCriteriaRepository,
+    );
+    const agentToolRegistry = new AgentToolRegistry(
+      artifactRepository,
+      runStepRepository,
+      runCheckpointRepository,
+      decisionRepository,
+      () => workspaceRoot,
+      taskService,
+    );
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'openai-compatible',
+        model: 'local-alpha-model',
+        apiKey: 'test-key',
+        featureFlags: {
+          enableScheduler: false,
+          enableProviderNativeToolCalls: true,
+        },
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn(),
+      executeWithResult: vi.fn().mockResolvedValue({
+        text: 'Text-only fallback output',
+        providerPayload: null,
+      }),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No process template needed for provider-native fallback test.',
+      }),
+    };
+    const service = new RunService(
+      runRepository,
+      taskService,
+      artifactRepository,
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository,
+      agentToolRegistry,
+      runCheckpointRepository,
+    );
+    const task = await taskService.create({
+      title: 'Provider native missing payload fallback',
+      summary: 'Validate text-only fallback when no provider payload exists.',
+    });
+
+    const run = await service.trigger({
+      taskId: task.id,
+      type: 'agent',
+      instructions: 'Fall back when native payload is unavailable.',
+    });
+    const detail = await service.getDetail(run.id);
+    const agentSessions = detail?.agentSessions ?? [];
+    const steps = detail?.steps ?? [];
+
+    expect(run).toMatchObject({
+      status: 'completed',
+      output: 'Text-only fallback output',
+      outputSource: 'ai',
+    });
+    expect(agentSessions).toHaveLength(1);
+    expect(agentSessions[0]).toMatchObject({
+      status: 'completed',
+      capabilities: expect.objectContaining({
+        structuredToolCalls: false,
+        textOnlyPlanning: true,
+      }),
+      metadata: 'executor=local_agent\nloop=local_note',
+    });
+    expect(steps.some((step) => step.title === 'Provider 原生工具调用影子观察')).toBe(false);
+  });
+
+  it('falls back inside the provider-native session when policy denies a task tool', async () => {
+    const taskRepository = new TaskRepository();
+    const waitingItemRepository = new WaitingItemRepository();
+    const artifactRepository = new ArtifactRepository();
+    const sourceContextRepository = new SourceContextRepository();
+    const processTemplateRepository = new ProcessTemplateRepository();
+    const taskProcessBindingRepository = new TaskProcessBindingRepository();
+    const blockerRepository = new BlockerRepository();
+    const taskDependencyRepository = new TaskDependencyRepository();
+    const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const runRepository = new RunRepository();
+    const runStepRepository = new RunStepRepository();
+    const runCheckpointRepository = new RunCheckpointRepository();
+    const decisionRepository = new DecisionRepository();
+    const taskService = new TaskService(
+      taskRepository,
+      waitingItemRepository,
+      artifactRepository,
+      sourceContextRepository,
+      processTemplateRepository,
+      taskProcessBindingRepository,
+      blockerRepository,
+      taskDependencyRepository,
+      completionCriteriaRepository,
+    );
+    const agentToolRegistry = new AgentToolRegistry(
+      artifactRepository,
+      runStepRepository,
+      runCheckpointRepository,
+      decisionRepository,
+      () => workspaceRoot,
+      taskService,
+    );
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'openai-compatible',
+        model: 'local-alpha-model',
+        apiKey: 'test-key',
+        featureFlags: {
+          enableScheduler: false,
+          enableProviderNativeToolCalls: true,
+        },
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn(),
+      executeWithResult: vi.fn().mockResolvedValue({
+        text: 'Denied task mutation fallback output',
+        providerPayload: {
+          source: 'provider_response_body',
+          provider: 'openai-compatible',
+          model: 'local-alpha-model',
+          rawSummary: 'choices=1; tool_calls=1',
+          payload: {
+            choices: [
+              {
+                finish_reason: 'tool_calls',
+                message: {
+                  content: 'Denied task mutation fallback output',
+                  tool_calls: [
+                    {
+                      id: 'call_denied_task_tool_1',
+                      type: 'function',
+                      function: {
+                        name: 'taskplane__task__update_next_step',
+                        arguments: JSON.stringify({
+                          nextStep: 'This should not be persisted',
+                        }),
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      }),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No process template needed for provider-native policy fallback test.',
+      }),
+    };
+    const service = new RunService(
+      runRepository,
+      taskService,
+      artifactRepository,
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository,
+      agentToolRegistry,
+      runCheckpointRepository,
+    );
+    const task = await taskService.create({
+      title: 'Provider native denied task tool',
+      summary: 'Validate policy fallback for provider-native task tools.',
+    });
+
+    const run = await service.trigger({
+      taskId: task.id,
+      type: 'agent',
+      instructions: 'Do not opt into task mutation tools.',
+    });
+    const detail = await service.getDetail(run.id);
+    const taskDetail = await taskService.getDetail(task.id);
+    const agentSessions = detail?.agentSessions ?? [];
+    const steps = detail?.steps ?? [];
+    const artifacts = await artifactRepository.listRecentForTask(task.id, 10);
+
+    expect(run).toMatchObject({
+      status: 'completed',
+      output: 'Denied task mutation fallback output',
+      outputSource: 'ai',
+    });
+    expect(taskDetail?.nextStep).toBe('审阅最新 agent 产物，并决定是否继续推进。');
+    expect(taskDetail?.timeline.some((event) =>
+      event.type === 'task.next_step_changed' &&
+      event.payload.includes('This should not be persisted')
+    )).toBe(false);
+    expect(agentSessions[0]).toMatchObject({
+      status: 'completed',
+      capabilities: expect.objectContaining({
+        structuredToolCalls: true,
+        taskMutationTools: false,
+      }),
+    });
+    expect(steps.some((step) =>
+      step.kind === 'plan' &&
+      step.title === '采用保守 fallback agent 步骤计划' &&
+      step.input?.includes('task.update_next_step')
+    )).toBe(true);
+    expect(artifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'note',
+          title: 'Provider native denied task tool agent note',
+          content: 'Denied task mutation fallback output',
+        }),
+      ]),
+    );
+  });
 });
