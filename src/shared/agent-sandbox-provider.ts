@@ -44,6 +44,7 @@ export type AgentSandboxSessionRequest = {
 export type AgentSandboxSessionHandle = {
   id: string;
   providerKind: Exclude<AgentSandboxProviderKind, 'disabled'>;
+  stagingRoot: string;
   workspaceMode: AgentSandboxWorkspaceMode;
   createdAt: string;
 };

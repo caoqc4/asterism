@@ -345,7 +345,9 @@ Implementation sequence:
    contracts now exist in `src/shared/agent-sandbox-provider.ts`; the default
    provider remains disabled.
 2. Add a temp-workspace sandbox smoke path that uses no credentials and cannot
-   mutate the user's workspace.
+   mutate the user's workspace. `TempWorkspaceSandboxProvider` now prepares
+   and disposes an isolated staging root without command execution or source
+   workspace mutation.
 3. Add a staged patch artifact format for file changes, logs, and risk
    summaries.
 4. Route targeted checks through the existing command-policy shape, beginning

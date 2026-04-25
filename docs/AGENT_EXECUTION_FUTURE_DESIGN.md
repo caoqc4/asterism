@@ -300,6 +300,8 @@ If Taskplane adds MCP later:
    disabled-by-default contracts now exist in
    `src/shared/agent-sandbox-provider.ts`.
 4. Add sandbox smoke tests using a temporary workspace and no credentials.
+   `TempWorkspaceSandboxProvider` now covers isolated staging-root preparation
+   and cleanup without command execution or source workspace mutation.
 5. Add a coding-agent patch artifact path before any file promotion.
 6. Make checkpoint events the command boundary for checkpoint creation.
 7. Add event replay/compaction tests for longer sessions.
