@@ -2982,6 +2982,73 @@ describe('App UI flow', () => {
     ).toBeTruthy();
   });
 
+  it('shows workspace command checkpoint script and command preview on the runs page', async () => {
+    const user = userEvent.setup();
+    const checkpointRun = buildRunRecord({
+      id: 'run_command_checkpointed',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'needs_confirmation',
+      output: '需要确认 workspace.run_command 后才能继续。',
+      outputSource: 'system',
+    });
+    const checkpointDetail: RunDetailRecord = {
+      ...checkpointRun,
+      steps: [
+        buildRunStep({
+          id: 'run_step_command_tool_call',
+          runId: checkpointRun.id,
+          index: 2,
+          kind: 'checkpoint',
+          title: 'Await command permission',
+        }),
+      ],
+      checkpoints: [
+        buildRunCheckpoint({
+          id: 'run_checkpoint_command_permission',
+          runId: checkpointRun.id,
+          stepId: 'run_step_command_tool_call',
+          payload: JSON.stringify({
+            version: 1,
+            kind: 'tool_permission',
+            tool: 'workspace.run_command',
+            risk: 'local_command',
+            input: {
+              summary: 'Run tests',
+              script: 'test',
+              args: ['--watch=false'],
+              commandPreview: [
+                'Summary: Run tests',
+                'Command: npm run test -- --watch=false',
+                'Timeout: 120000ms',
+              ].join('\n'),
+            },
+            decisionTitle: '确认本地命令：workspace.run_command',
+          }),
+        }),
+      ],
+    };
+    const runCheckpointApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [checkpointRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === checkpointRun.id ? checkpointDetail : null,
+      ),
+    };
+
+    window.api = runCheckpointApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    await screen.findByRole('heading', { name: '执行记录' });
+
+    expect(await screen.findByRole('heading', { name: 'agent / needs_confirmation' })).toBeTruthy();
+    expect(
+      screen.getByText(/工具：workspace\.run_command；风险：local_command；脚本：npm run test；参数：--watch=false；预览：Summary: Run tests Command: npm run test -- --watch=false/),
+    ).toBeTruthy();
+  });
+
   it('shows resume checkpoints on the runs page for paused agent runs', async () => {
     const user = userEvent.setup();
     const pausedRun = buildRunRecord({
@@ -3662,6 +3729,37 @@ describe('App UI flow', () => {
     expect(await screen.findByRole('heading', { name: '确认本地写入：workspace.write_patch' })).toBeTruthy();
     expect(
       screen.getByText('来源：Agent checkpoint（workspace.write_patch）。批准后会恢复等待中的工作区 patch 应用；延后或取消会终止本次 run。'),
+    ).toBeTruthy();
+  });
+
+  it('explains workspace command checkpoint consequences on the decisions page', async () => {
+    const user = userEvent.setup();
+    const checkpointDecisionApi: ElectronApi = {
+      ...mockApi,
+      listDecisions: vi.fn(async () => [
+        {
+          id: 'decision_checkpoint_command',
+          taskId: riskTask.id,
+          title: '确认本地命令：workspace.run_command',
+          status: 'pending' as const,
+          sourceType: 'agent_checkpoint' as const,
+          sourceId: 'run_checkpoint_command',
+          sourceLabel: 'workspace.run_command',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]),
+    };
+
+    window.api = checkpointDecisionApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /decisions/i }));
+
+    expect(await screen.findByRole('heading', { name: '确认本地命令：workspace.run_command' })).toBeTruthy();
+    expect(
+      screen.getByText('来源：Agent checkpoint（workspace.run_command）。批准后会恢复等待中的工作区命令运行；延后或取消会终止本次 run。'),
     ).toBeTruthy();
   });
 

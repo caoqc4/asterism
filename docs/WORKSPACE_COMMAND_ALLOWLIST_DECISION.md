@@ -2,8 +2,11 @@
 
 ## Status
 
-Proposed. Do not implement or expose `workspace.run_command` until this
-decision is accepted and the patch approval UX remains stable.
+Accepted for the first registry-level implementation.
+
+`workspace.run_command` is implemented as a confirmed package-script runner, but
+it remains absent from model prompts and normal agent plans until a later UI /
+policy opt-in slice deliberately exposes it.
 
 ## Decision
 
@@ -16,7 +19,7 @@ Allowed command shape:
 {
   "summary": "Why this command is needed",
   "script": "test",
-  "args": ["--", "src/main/domain/run/agent-tool-registry.test.ts"],
+  "args": ["src/main/domain/run/agent-tool-registry.test.ts"],
   "timeoutMs": 120000
 }
 ```
@@ -94,10 +97,10 @@ that pending action, matching the current workspace patch checkpoint semantics.
 
 ## Testing Requirements
 
-Before implementation is accepted:
+Accepted implementation coverage:
 
-- unit tests reject disabled policy, missing workspace root, missing
-  `package.json`, non-allowlisted scripts, and timeout bounds
+- unit tests reject disabled policy, missing package scripts, and
+  non-allowlisted scripts
 - integration test runs a harmless allowlisted script in a temp workspace
 - checkpoint test proves no command executes before approval
 - Decision approval test proves the approved checkpoint resumes exactly once
@@ -106,6 +109,11 @@ Before implementation is accepted:
 - run-loop test proves model-proposed command steps fall back unless a later
   prompt/UI slice intentionally exposes them
 - full `npm run verify` passes locally
+
+Still worth adding in a later hardening pass:
+
+- explicit missing `package.json` coverage
+- timeout behavior coverage without slowing the suite
 
 ## Open Questions
 

@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -69,6 +70,13 @@ type WorkspaceSearchInput = {
   maxResults?: number;
 };
 
+type WorkspaceRunCommandInput = {
+  summary: string;
+  script: string;
+  args: string[];
+  timeoutMs: number;
+};
+
 type WorkspaceWritePatchInput = {
   summary: string;
   patch: string;
@@ -78,7 +86,20 @@ type WorkspaceWritePatchInput = {
 const WORKSPACE_READ_LIMIT = 20_000;
 const WORKSPACE_SEARCH_MAX_RESULTS = 25;
 const WORKSPACE_PATCH_MAX_BYTES = 40_000;
+const WORKSPACE_COMMAND_OUTPUT_LIMIT = 20_000;
+const WORKSPACE_COMMAND_DEFAULT_TIMEOUT_MS = 120_000;
+const WORKSPACE_COMMAND_MAX_TIMEOUT_MS = 300_000;
 const sourceContextKinds = new Set<SourceContextKind>(['link', 'doc', 'issue', 'pr', 'website_list', 'note']);
+const WORKSPACE_COMMAND_ALLOWED_SCRIPTS = new Set([
+  'test',
+  'lint',
+  'build',
+  'verify',
+  'smoke:build',
+  'smoke:package:mac',
+  'smoke:runtime:mac',
+  'smoke:release:mac',
+]);
 const WORKSPACE_SEARCH_SKIP_DIRS = new Set([
   '.git',
   'dist',
@@ -221,6 +242,40 @@ function parseWorkspaceSearchInput(input: unknown): WorkspaceSearchInput {
     : WORKSPACE_SEARCH_MAX_RESULTS;
 
   return { query, maxResults };
+}
+
+function parseWorkspaceRunCommandInput(input: unknown): WorkspaceRunCommandInput {
+  if (!input || typeof input !== 'object') {
+    throw new Error('workspace.run_command requires an object input.');
+  }
+
+  const candidate = input as Partial<WorkspaceRunCommandInput>;
+  const summary = candidate.summary?.trim();
+  const script = candidate.script?.trim();
+  const args = Array.isArray(candidate.args)
+    ? candidate.args.map((item) => (typeof item === 'string' ? item : ''))
+    : [];
+  const timeoutMs = typeof candidate.timeoutMs === 'number'
+    ? Math.max(1_000, Math.min(WORKSPACE_COMMAND_MAX_TIMEOUT_MS, Math.floor(candidate.timeoutMs)))
+    : WORKSPACE_COMMAND_DEFAULT_TIMEOUT_MS;
+
+  if (!summary) {
+    throw new Error('workspace.run_command requires a summary.');
+  }
+
+  if (!script) {
+    throw new Error('workspace.run_command requires a script.');
+  }
+
+  if (!WORKSPACE_COMMAND_ALLOWED_SCRIPTS.has(script)) {
+    throw new Error(`workspace.run_command script is not allowed: ${script}`);
+  }
+
+  if (args.some((item) => !item)) {
+    throw new Error('workspace.run_command args must be strings.');
+  }
+
+  return { summary, script, args, timeoutMs };
 }
 
 function parseWorkspaceWritePatchInput(input: unknown): WorkspaceWritePatchInput {
@@ -488,6 +543,7 @@ async function applyWorkspacePatch(params: {
 function buildConfirmationDecisionTitle(name: AgentToolName, risk: AgentToolRisk): string {
   const riskLabel: Record<AgentToolRisk, string> = {
     safe_read: '安全读取',
+    local_command: '本地命令',
     local_write: '本地写入',
     external_read: '外部读取',
     external_write: '外部写入',
@@ -555,6 +611,82 @@ async function walkWorkspace(root: string): Promise<string[]> {
   return files;
 }
 
+async function readPackageScripts(workspaceRoot: string): Promise<Record<string, string>> {
+  const packageJsonPath = resolveWorkspacePath(workspaceRoot, 'package.json');
+  const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8')) as {
+    scripts?: unknown;
+  };
+
+  if (!packageJson.scripts || typeof packageJson.scripts !== 'object' || Array.isArray(packageJson.scripts)) {
+    return {};
+  }
+
+  return packageJson.scripts as Record<string, string>;
+}
+
+async function runWorkspacePackageScript(params: {
+  input: WorkspaceRunCommandInput;
+  workspaceRoot: string;
+}): Promise<string> {
+  const root = path.resolve(params.workspaceRoot);
+  const scripts = await readPackageScripts(root);
+
+  if (typeof scripts[params.input.script] !== 'string') {
+    throw new Error(`workspace.run_command script not found in package.json: ${params.input.script}`);
+  }
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      'npm',
+      ['run', params.input.script, '--', ...params.input.args],
+      {
+        cwd: root,
+        env: {
+          PATH: process.env.PATH ?? '',
+          HOME: process.env.HOME ?? '',
+          CI: '1',
+        },
+        shell: false,
+      },
+    );
+    let output = '';
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill('SIGTERM');
+    }, params.input.timeoutMs);
+
+    function append(chunk: Buffer): void {
+      output += chunk.toString('utf8');
+      if (output.length > WORKSPACE_COMMAND_OUTPUT_LIMIT) {
+        output = `${output.slice(0, WORKSPACE_COMMAND_OUTPUT_LIMIT)}\n[truncated]`;
+      }
+    }
+
+    child.stdout.on('data', append);
+    child.stderr.on('data', append);
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+
+      if (timedOut) {
+        reject(new Error(`workspace.run_command timed out after ${params.input.timeoutMs}ms.`));
+        return;
+      }
+
+      if (code !== 0) {
+        reject(new Error(`workspace.run_command exited with code ${code}.\n${output.trim()}`.trim()));
+        return;
+      }
+
+      resolve(output.trim());
+    });
+  });
+}
+
 export class AgentToolRegistry {
   private readonly definitions: AgentToolDefinition[] = [
     {
@@ -610,6 +742,12 @@ export class AgentToolRegistry {
       description: 'Read a text file inside the configured local workspace root.',
       risk: 'safe_read',
       requiresConfirmation: false,
+    },
+    {
+      name: 'workspace.run_command',
+      description: 'Run a confirmed allowlisted package script inside the configured local workspace root.',
+      risk: 'local_command',
+      requiresConfirmation: true,
     },
     {
       name: 'workspace.write_patch',
@@ -723,6 +861,86 @@ export class AgentToolRegistry {
             status: 'pending',
             title: `等待确认：${name}`,
             input: diffPreview,
+            output: summary,
+          });
+
+          return {
+            success: false,
+            status: 'needs_confirmation',
+            summary,
+            checkpointId: checkpointWithDecision.id,
+          };
+        }
+
+        if (name === 'workspace.run_command') {
+          if (!policy.allowLocalCommandRun) {
+            throw new Error('workspace.run_command requires allowLocalCommandRun policy.');
+          }
+
+          const parsed = parseWorkspaceRunCommandInput(input);
+          const workspaceRoot = this.workspaceRootResolver();
+          const scripts = await readPackageScripts(workspaceRoot);
+          if (typeof scripts[parsed.script] !== 'string') {
+            throw new Error(`workspace.run_command script not found in package.json: ${parsed.script}`);
+          }
+          const commandPreview = [
+            `Summary: ${parsed.summary}`,
+            `Command: npm run ${parsed.script}${parsed.args.length ? ` -- ${parsed.args.join(' ')}` : ''}`,
+            `Timeout: ${parsed.timeoutMs}ms`,
+            `Cwd: ${path.resolve(workspaceRoot)}`,
+          ].join('\n');
+          const decisionTitle = buildConfirmationDecisionTitle(name, definition.risk);
+          const checkpoint = await this.runCheckpointRepository.create({
+            runId: context.runId,
+            stepId: callStep.id,
+            kind: 'tool_permission',
+            payload: JSON.stringify(createToolPermissionCheckpointPayload({
+              tool: name,
+              risk: definition.risk,
+              input: {
+                ...parsed,
+                commandPreview,
+              },
+              decisionId: null,
+              decisionTitle,
+            })),
+          });
+          const decision = this.decisionRepository
+            ? await this.decisionRepository.create({
+                taskId: context.taskId,
+                title: decisionTitle,
+                sourceType: 'agent_checkpoint',
+                sourceId: checkpoint.id,
+                sourceLabel: name,
+              })
+            : null;
+          const payload = JSON.stringify(createToolPermissionCheckpointPayload({
+            tool: name,
+            risk: definition.risk,
+            input: {
+              ...parsed,
+              commandPreview,
+            },
+            decisionId: decision?.id ?? null,
+            decisionTitle,
+          }));
+          const checkpointWithDecision = decision
+            ? await this.runCheckpointRepository.updatePayload(checkpoint.id, payload)
+            : checkpoint;
+          const summary = decision
+            ? `工具 ${name} 需要确认后才能继续，已创建 Decision：${decision.title}。`
+            : `工具 ${name} 需要确认后才能继续。`;
+
+          await this.runStepRepository.update(callStep.id, {
+            status: 'skipped',
+            output: summary,
+          });
+          await this.runStepRepository.create({
+            runId: context.runId,
+            kind: 'checkpoint',
+            status: 'pending',
+            title: `等待确认：${name}`,
+            input: commandPreview,
             output: summary,
           });
 
@@ -1018,6 +1236,25 @@ export class AgentToolRegistry {
             ? `工作区搜索找到 ${matches.length} 条结果。`
             : '工作区搜索没有找到结果。',
           output: matches.join('\n') || null,
+        };
+      }
+      case 'workspace.run_command': {
+        if (!policy?.allowLocalCommandRun) {
+          throw new Error('workspace.run_command requires allowLocalCommandRun policy.');
+        }
+
+        const parsed = parseWorkspaceRunCommandInput(input);
+        const workspaceRoot = this.workspaceRootResolver();
+        const output = await runWorkspacePackageScript({
+          input: parsed,
+          workspaceRoot,
+        });
+
+        return {
+          success: true,
+          status: 'completed',
+          summary: `已运行工作区命令：npm run ${parsed.script}`,
+          output: output || '命令执行完成，没有输出。',
         };
       }
       case 'workspace.write_patch': {

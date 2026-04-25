@@ -413,7 +413,7 @@ describe('AgentRunLoop', () => {
     }));
   });
 
-  it('does not accept model-produced workspace patch steps in the normal run plan', () => {
+  it('does not accept model-produced workspace mutation or command steps in the normal run plan', () => {
     const loop = new AgentRunLoop({ execute: vi.fn() } as never);
 
     const proposal = {
@@ -432,6 +432,13 @@ describe('AgentRunLoop', () => {
               '+beta',
               '*** End Patch',
             ].join('\n'),
+          },
+        },
+        {
+          tool: 'workspace.run_command' as const,
+          input: {
+            summary: 'Run tests',
+            script: 'test',
           },
         },
         {
@@ -455,6 +462,7 @@ describe('AgentRunLoop', () => {
       policy: {
         ...buildRequest().policy,
         allowLocalFileWrite: true,
+        allowLocalCommandRun: true,
         confirmationRequiredRisks: ['local_write'],
       },
       taskTitle: 'Task 1',
@@ -465,6 +473,7 @@ describe('AgentRunLoop', () => {
       policy: {
         ...buildRequest().policy,
         allowLocalFileWrite: true,
+        allowLocalCommandRun: true,
         confirmationRequiredRisks: ['local_write'],
       },
       taskTitle: 'Task 1',

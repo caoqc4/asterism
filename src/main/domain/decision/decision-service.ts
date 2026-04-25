@@ -267,7 +267,7 @@ export class DecisionService {
     }
 
     if (
-      (tool !== 'artifact.create_note' && tool !== 'workspace.write_patch') ||
+      (tool !== 'artifact.create_note' && tool !== 'workspace.write_patch' && tool !== 'workspace.run_command') ||
       !this.agentToolRegistry
     ) {
       await this.runCheckpointRepository.updateStatus(checkpoint.id, 'resolved');
@@ -291,6 +291,7 @@ export class DecisionService {
       {
         ...DEFAULT_AGENT_POLICY,
         allowLocalFileWrite: tool === 'workspace.write_patch',
+        allowLocalCommandRun: tool === 'workspace.run_command',
         confirmationRequiredRisks: [],
       },
     );

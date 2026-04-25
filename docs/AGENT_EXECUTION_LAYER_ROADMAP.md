@@ -145,7 +145,10 @@ Acceptance:
 
 ### Slice 4: Command Allowlist Decision
 
-Goal: design before implementing `workspace.run_command`.
+Status: first registry-level implementation completed.
+
+Goal: design and implement the smallest confirmed local `workspace.run_command`
+runner.
 
 Decision doc: [WORKSPACE_COMMAND_ALLOWLIST_DECISION.md](WORKSPACE_COMMAND_ALLOWLIST_DECISION.md).
 
@@ -162,10 +165,15 @@ The decision must specify:
 Acceptance:
 
 - a decision doc exists and is accepted
-- no command execution is exposed until the allowlist is implemented and tested
+- command execution uses only allowlisted `package.json` scripts
+- command execution requires explicit local command policy and checkpoint
+  approval
+- normal model-produced command steps still fall back until a later UI/policy
+  opt-in slice exposes them
 
 ## Near-Term Recommendation
 
-Do not implement `workspace.run_command` yet. Review and accept the command
-allowlist decision first, then implement the smallest confirmed local validation
-script runner.
+Keep `workspace.run_command` registry-only. The next execution-layer slice should
+decide whether command execution gets a per-run UI opt-in, a config-file
+allowlist extension, or remains reserved for acceptance commands and internal
+resumes.

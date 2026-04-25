@@ -6,6 +6,7 @@ export type AgentRunMode = RunType;
 
 export type AgentToolRisk =
   | 'safe_read'
+  | 'local_command'
   | 'local_write'
   | 'external_read'
   | 'external_write'
@@ -20,6 +21,7 @@ export type AgentToolName =
   | 'task.inspect_timeline'
   | 'task.update_next_step'
   | 'workspace.read_file'
+  | 'workspace.run_command'
   | 'workspace.search'
   | 'workspace.write_patch';
 
@@ -28,6 +30,7 @@ export type AgentPolicy = {
   maxWallTimeMs: number;
   allowNetwork: boolean;
   allowLocalWorkspaceRead: boolean;
+  allowLocalCommandRun?: boolean;
   allowLocalFileWrite: boolean;
   confirmationRequiredRisks: AgentToolRisk[];
 };

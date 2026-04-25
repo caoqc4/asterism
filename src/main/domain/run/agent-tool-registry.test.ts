@@ -192,6 +192,11 @@ describe('AgentToolRegistry', () => {
         requiresConfirmation: false,
       }),
       expect.objectContaining({
+        name: 'workspace.run_command',
+        risk: 'local_command',
+        requiresConfirmation: true,
+      }),
+      expect.objectContaining({
         name: 'workspace.write_patch',
         risk: 'local_write',
         requiresConfirmation: true,
@@ -938,6 +943,230 @@ describe('AgentToolRegistry', () => {
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }
+  });
+
+  it('requires local command policy before checkpointing workspace commands', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-workspace-command-policy-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'package.json'), JSON.stringify({
+        scripts: {
+          test: 'node -e "console.log(1)"',
+        },
+      }));
+      const runStepRepository = buildRunStepRepositoryMock();
+      const runCheckpointRepository = buildRunCheckpointRepositoryMock();
+      const decisionRepository = buildDecisionRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        runCheckpointRepository as never,
+        decisionRepository as never,
+        () => tempRoot,
+      );
+
+      const result = await registry.execute(
+        'workspace.run_command',
+        {
+          summary: 'Run tests',
+          script: 'test',
+        },
+        { runId: 'run_1', taskId: 'task_1' },
+        {
+          maxSteps: 8,
+          maxWallTimeMs: 120_000,
+          allowNetwork: false,
+          allowLocalWorkspaceRead: false,
+          allowLocalFileWrite: false,
+          allowLocalCommandRun: false,
+          confirmationRequiredRisks: ['local_command'],
+        },
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('workspace.run_command requires allowLocalCommandRun policy.');
+      expect(runCheckpointRepository.create).not.toHaveBeenCalled();
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('creates a confirmation checkpoint before running workspace commands', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-workspace-command-confirm-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'package.json'), JSON.stringify({
+        scripts: {
+          test: 'node -e "console.log(\\"should-not-run\\")"',
+        },
+      }));
+      const runStepRepository = buildRunStepRepositoryMock();
+      const runCheckpointRepository = buildRunCheckpointRepositoryMock();
+      const decisionRepository = buildDecisionRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        runCheckpointRepository as never,
+        decisionRepository as never,
+        () => tempRoot,
+      );
+
+      const result = await registry.execute(
+        'workspace.run_command',
+        {
+          summary: 'Run tests',
+          script: 'test',
+          args: ['--watch=false'],
+        },
+        { runId: 'run_1', taskId: 'task_1' },
+        {
+          maxSteps: 8,
+          maxWallTimeMs: 120_000,
+          allowNetwork: false,
+          allowLocalWorkspaceRead: false,
+          allowLocalFileWrite: false,
+          allowLocalCommandRun: true,
+          confirmationRequiredRisks: ['local_command'],
+        },
+      );
+
+      expect(result).toMatchObject({
+        success: false,
+        status: 'needs_confirmation',
+        checkpointId: 'run_checkpoint_1',
+      });
+      expect(runCheckpointRepository.updatePayload).toHaveBeenCalledWith(
+        'run_checkpoint_1',
+        expect.stringContaining('"commandPreview"'),
+      );
+      expect(runStepRepository.create).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          kind: 'checkpoint',
+          status: 'pending',
+          input: expect.stringContaining('Command: npm run test -- --watch=false'),
+        }),
+      );
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects missing workspace package scripts before creating command checkpoints', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-workspace-command-missing-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'package.json'), JSON.stringify({
+        scripts: {
+          lint: 'node -e "console.log(1)"',
+        },
+      }));
+      const runStepRepository = buildRunStepRepositoryMock();
+      const runCheckpointRepository = buildRunCheckpointRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        runCheckpointRepository as never,
+        null,
+        () => tempRoot,
+      );
+
+      const result = await registry.execute(
+        'workspace.run_command',
+        {
+          summary: 'Run tests',
+          script: 'test',
+        },
+        { runId: 'run_1', taskId: 'task_1' },
+        {
+          maxSteps: 8,
+          maxWallTimeMs: 120_000,
+          allowNetwork: false,
+          allowLocalWorkspaceRead: false,
+          allowLocalFileWrite: false,
+          allowLocalCommandRun: true,
+          confirmationRequiredRisks: ['local_command'],
+        },
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('workspace.run_command script not found in package.json: test');
+      expect(runCheckpointRepository.create).not.toHaveBeenCalled();
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('runs an approved allowlisted workspace command inside the configured root', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-workspace-command-run-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'package.json'), JSON.stringify({
+        scripts: {
+          test: 'node -e "console.log(\\"command-ok\\")"',
+        },
+      }));
+      const runStepRepository = buildRunStepRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        undefined,
+        null,
+        () => tempRoot,
+      );
+
+      const result = await registry.execute(
+        'workspace.run_command',
+        {
+          summary: 'Run tests',
+          script: 'test',
+        },
+        { runId: 'run_1', taskId: 'task_1' },
+        {
+          maxSteps: 8,
+          maxWallTimeMs: 120_000,
+          allowNetwork: false,
+          allowLocalWorkspaceRead: false,
+          allowLocalFileWrite: false,
+          allowLocalCommandRun: true,
+          confirmationRequiredRisks: [],
+        },
+      );
+
+      expect(result).toMatchObject({
+        success: true,
+        status: 'completed',
+        summary: '已运行工作区命令：npm run test',
+      });
+      expect(result.output).toContain('command-ok');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects workspace commands outside the allowlist', async () => {
+    const runStepRepository = buildRunStepRepositoryMock();
+    const registry = new AgentToolRegistry({} as never, runStepRepository as never);
+
+    const result = await registry.execute(
+      'workspace.run_command',
+      {
+        summary: 'Install dependencies',
+        script: 'install',
+      },
+      { runId: 'run_1', taskId: 'task_1' },
+      {
+        maxSteps: 8,
+        maxWallTimeMs: 120_000,
+        allowNetwork: false,
+        allowLocalWorkspaceRead: false,
+        allowLocalFileWrite: false,
+        allowLocalCommandRun: true,
+        confirmationRequiredRisks: [],
+      },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('workspace.run_command script is not allowed: install');
   });
 
   it('creates a confirmation checkpoint with a diff preview before applying workspace patches', async () => {

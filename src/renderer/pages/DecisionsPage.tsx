@@ -78,6 +78,8 @@ function getCheckpointDecisionGuidance(decision: DecisionRecord): string | null 
   const sourceLabel = decision.sourceLabel ?? '等待中的 agent 工具调用';
   const actionLabel = sourceLabel === 'workspace.write_patch'
     ? '工作区 patch 应用'
+    : sourceLabel === 'workspace.run_command'
+      ? '工作区命令运行'
     : sourceLabel === 'artifact.create_note'
       ? '本地 note 产物写入'
       : '本地工具调用';

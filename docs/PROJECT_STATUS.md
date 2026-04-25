@@ -30,7 +30,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - A focused `npm run accept:workspace-patch` command now exercises the local patch approval path without exposing write access in the product UI.
 - Agent run forms now preview provider/session capability before execution, including text-only planning, read-only workspace context opt-in, structured tool-call unavailability, and patch/command unavailability.
 - The first domain-shaped task tools are in the registry but not prompt-exposed: `task.update_next_step` routes through `TaskService.update`, `task.create_completion_criterion` routes through `TaskService.createCompletionCriteria`, `source_context.create` routes through `TaskService.createSourceContext`, and `decision.draft` routes through `DecisionService.draft` without creating a formal Decision. These tools write run-step observations, and normal agent plans still fall back if a model proposes them.
-- The command-execution path remains deferred behind [WORKSPACE_COMMAND_ALLOWLIST_DECISION.md](WORKSPACE_COMMAND_ALLOWLIST_DECISION.md), which proposes a confirmed package-script allowlist before any `workspace.run_command` implementation.
+- The first command-execution slice is in place but not model-exposed: `workspace.run_command` requires explicit local command policy, accepts only allowlisted `package.json` scripts, creates a confirmation checkpoint with command preview, and resumes once after the linked Decision is approved.
 
 ## Verification Baseline
 
@@ -43,7 +43,7 @@ npm run verify
 Latest local baseline:
 
 - 48 test files
-- 344 tests
+- 352 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -66,7 +66,7 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 2. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
-5. Review [WORKSPACE_COMMAND_ALLOWLIST_DECISION.md](WORKSPACE_COMMAND_ALLOWLIST_DECISION.md) before any `workspace.run_command` implementation.
+5. Keep `workspace.run_command` registry-only until a dedicated UI/policy opt-in slice decides how users enable command execution per run.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.
