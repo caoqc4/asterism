@@ -165,6 +165,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Sandbox backend probes are now distinct from backend profiles: unavailable
   probes preserve a reason and never become a provider profile, while available
   probes can feed readiness evaluation.
+- A pure local-container backend probe adapter now maps an external container
+  availability signal into the shared probe/profile/readiness flow without
+  calling Docker or running user code.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -208,8 +211,8 @@ Latest local baseline:
 - `npm run accept:provider-native-live:preflight` reports the current local
   provider-native setup is ready; live provider validation remains opt-in
   because it spends configured provider credit
-- `npm run verify` passed locally on 2026-04-25 after sandbox backend probe
-  contracts landed: 69 test files / 525 tests
+- `npm run verify` passed locally on 2026-04-25 after the local-container
+  backend probe adapter landed: 70 test files / 527 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
