@@ -42,6 +42,8 @@ Completed:
   through `checkpoint.created` events
 - resume checkpoint payloads include `runId` and a policy snapshot, and paused
   run continuation passes the snapshot back into tool execution
+- paused run continuation rejects stale or incompatible resume payload versions,
+  kinds, run ids, task ids, and policy snapshots before executing a tool
 - tool prompt/provider exposure is centralized in `agent-tool-exposure`, with
   text prompts and provider-native schemas consuming the same matrix
 - sandbox decision accepted: broad code-agent mode remains deferred until a
@@ -53,8 +55,6 @@ Still incomplete:
 
 - checkpoint creation still happens inside tool/loop code paths rather than a
   single checkpoint event boundary
-- checkpoint payloads are not yet fully validated for stale or incompatible
-  resume contracts
 
 ## Task Sequence
 

@@ -18,6 +18,8 @@ import { ProcessTemplateSelector } from './process-template-selector.js';
 import { RunOrchestrator, type RunOrchestrationResult } from './run-orchestrator.js';
 
 type ResumeCheckpointPayload = {
+  version?: unknown;
+  kind?: unknown;
   reason?: unknown;
   runId?: unknown;
   nextTool?: unknown;
@@ -196,7 +198,10 @@ export class RunService {
       throw new Error(`Open resume checkpoint not found for run: ${runId}`);
     }
 
-    const payload = this.parseResumeCheckpointPayload(checkpoint.payload);
+    const payload = this.parseResumeCheckpointPayload(checkpoint.payload, {
+      runId,
+      taskId: run.taskId,
+    });
 
     if (payload.nextTool !== 'artifact.create_note') {
       throw new Error(`Unsupported resume tool: ${String(payload.nextTool ?? 'unknown')}`);
@@ -249,7 +254,10 @@ export class RunService {
     return completed;
   }
 
-  private parseResumeCheckpointPayload(payload: string): ResumeCheckpointPayload & {
+  private parseResumeCheckpointPayload(payload: string, expected: {
+    runId: string;
+    taskId: string;
+  }): ResumeCheckpointPayload & {
     nextTool: Extract<AgentToolName, 'artifact.create_note'>;
   } {
     let parsed: ResumeCheckpointPayload;
@@ -261,6 +269,26 @@ export class RunService {
     }
 
     parsed = parsedPayload as ResumeCheckpointPayload;
+
+    if (parsed.version !== undefined && parsed.version !== 1) {
+      throw new Error(`Unsupported resume checkpoint payload version: ${String(parsed.version)}.`);
+    }
+
+    if (parsed.kind !== undefined && parsed.kind !== 'resume') {
+      throw new Error(`Resume checkpoint payload kind is not resume: ${String(parsed.kind)}.`);
+    }
+
+    if (parsed.runId !== undefined && parsed.runId !== expected.runId) {
+      throw new Error(`Resume checkpoint payload runId does not match run: ${expected.runId}.`);
+    }
+
+    if (parsed.taskId !== undefined && parsed.taskId !== expected.taskId) {
+      throw new Error(`Resume checkpoint payload taskId does not match task: ${expected.taskId}.`);
+    }
+
+    if (parsed.policySnapshot !== undefined && !isAgentPolicy(parsed.policySnapshot)) {
+      throw new Error('Resume checkpoint payload policySnapshot is invalid.');
+    }
 
     if (parsed.nextTool !== 'artifact.create_note') {
       throw new Error(`Unsupported resume tool: ${String(parsed.nextTool ?? 'unknown')}`);

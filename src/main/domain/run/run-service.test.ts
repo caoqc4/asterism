@@ -182,6 +182,72 @@ function buildRunStepRepositoryMock() {
   };
 }
 
+function buildPausedRunServiceWithPayload(payload: unknown) {
+  const runRepository = {
+    list: vi.fn(),
+    getDetail: vi.fn().mockResolvedValue({
+      ...buildRunRecord('paused'),
+      type: 'agent',
+      output: '等待先解除阻塞。',
+      outputSource: 'system',
+    }),
+    create: vi.fn(),
+    updateResult: vi.fn(),
+  };
+  const taskService = {
+    getDetail: vi.fn(),
+    transitionIfAllowed: vi.fn(),
+    annotateRunCompleted: vi.fn(),
+    annotateRunFailed: vi.fn(),
+    annotateRunPaused: vi.fn(),
+    annotateProcessTemplateSelected: vi.fn(),
+    annotateProcessTemplateSkipped: vi.fn(),
+  };
+  const artifactRepository = {
+    createFromRun: vi.fn(),
+  };
+  const runStepRepository = buildRunStepRepositoryMock();
+  const runCheckpointRepository = {
+    listForRun: vi.fn().mockResolvedValue([
+      {
+        id: 'run_checkpoint_resume',
+        runId: 'run_1',
+        stepId: 'run_step_resume',
+        kind: 'resume',
+        status: 'open',
+        payload: typeof payload === 'string' ? payload : JSON.stringify(payload),
+        createdAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      },
+    ]),
+    updateStatus: vi.fn(),
+  };
+  const agentToolRegistry = {
+    execute: vi.fn(),
+  };
+  const agentSessionRepository = {
+    listForRun: vi.fn().mockResolvedValue([]),
+  };
+  const service = new RunService(
+    runRepository as never,
+    taskService as never,
+    artifactRepository as never,
+    {} as never,
+    {} as never,
+    undefined,
+    runStepRepository as never,
+    agentToolRegistry as never,
+    runCheckpointRepository as never,
+    agentSessionRepository as never,
+  );
+
+  return {
+    agentToolRegistry,
+    runCheckpointRepository,
+    service,
+  };
+}
+
 describe('RunService', () => {
   it('returns run detail with execution steps, checkpoints, and agent sessions', async () => {
     const runRepository = {
@@ -642,6 +708,76 @@ describe('RunService', () => {
     );
     expect(artifactRepository.createFromRun).not.toHaveBeenCalled();
     expect(result.status).toBe('completed');
+  });
+
+  it.each([
+    {
+      payload: {
+        version: 2,
+        kind: 'resume',
+        runId: 'run_1',
+        taskId: 'task_1',
+        nextTool: 'artifact.create_note',
+        nextInput: {},
+      },
+      message: 'Unsupported resume checkpoint payload version: 2.',
+    },
+    {
+      payload: {
+        version: 1,
+        kind: 'tool_permission',
+        runId: 'run_1',
+        taskId: 'task_1',
+        nextTool: 'artifact.create_note',
+        nextInput: {},
+      },
+      message: 'Resume checkpoint payload kind is not resume: tool_permission.',
+    },
+    {
+      payload: {
+        version: 1,
+        kind: 'resume',
+        runId: 'run_other',
+        taskId: 'task_1',
+        nextTool: 'artifact.create_note',
+        nextInput: {},
+      },
+      message: 'Resume checkpoint payload runId does not match run: run_1.',
+    },
+    {
+      payload: {
+        version: 1,
+        kind: 'resume',
+        runId: 'run_1',
+        taskId: 'task_other',
+        nextTool: 'artifact.create_note',
+        nextInput: {},
+      },
+      message: 'Resume checkpoint payload taskId does not match task: task_1.',
+    },
+    {
+      payload: {
+        version: 1,
+        kind: 'resume',
+        runId: 'run_1',
+        taskId: 'task_1',
+        nextTool: 'artifact.create_note',
+        nextInput: {},
+        policySnapshot: { allowLocalWorkspaceRead: false },
+      },
+      message: 'Resume checkpoint payload policySnapshot is invalid.',
+    },
+  ])('rejects stale or incompatible resume payloads: $message', async ({ message, payload }) => {
+    const {
+      agentToolRegistry,
+      runCheckpointRepository,
+      service,
+    } = buildPausedRunServiceWithPayload(payload);
+
+    await expect(service.continuePausedRun('run_1')).rejects.toThrow(message);
+
+    expect(agentToolRegistry.execute).not.toHaveBeenCalled();
+    expect(runCheckpointRepository.updateStatus).not.toHaveBeenCalled();
   });
 
   it('rejects the run when the task does not exist', async () => {
