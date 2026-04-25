@@ -392,6 +392,9 @@ candidate must be a container or remote VM style backend, must not inherit the
 host environment, must not pass through credentials, must support one selected
 workspace mount, staged writes, structured targeted commands, output limits,
 and patch artifacts. Host-process candidates fail readiness by design.
+Backend probes are represented separately from profiles: an unavailable probe
+records why no backend can be used, and only an available probe can become a
+backend profile for readiness evaluation.
 
 Acceptance:
 

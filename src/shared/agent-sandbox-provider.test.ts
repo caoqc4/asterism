@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildAgentSandboxCheckPlan,
+  buildAgentSandboxBackendProfileFromProbe,
   buildAgentSandboxPatchArtifact,
   buildAgentSandboxPatchPromotionCheckpoint,
   buildAgentSandboxProviderCapabilitiesFromBackendProfile,
@@ -11,6 +12,7 @@ import {
   DISABLED_AGENT_SANDBOX_PROVIDER_CAPABILITIES,
   evaluateAgentSandboxBackendReadiness,
   evaluateAgentSandboxCodingLaneEligibility,
+  summarizeAgentSandboxBackendProbe,
   summarizeAgentSandboxBackendProfile,
   summarizeAgentSandboxSessionManifest,
   summarizeAgentSandboxCheckResults,
@@ -71,6 +73,60 @@ describe('agent sandbox provider contracts', () => {
       ready: true,
       summary: 'Sandbox backend ready: local-container-candidate.',
     });
+  });
+
+  it('builds backend profiles only from available backend probes', () => {
+    expect(buildAgentSandboxBackendProfileFromProbe({
+      backendId: 'docker-local',
+      environmentPolicy: 'empty',
+      isolation: 'container',
+      kind: 'local_container',
+      networkMode: 'disabled',
+      status: 'available',
+      supportsOutputLimits: true,
+      supportsPatchArtifacts: true,
+      supportsStagedWrites: true,
+      supportsStructuredCommands: true,
+      supportsTargetedCommands: true,
+      supportsWorkspaceMount: true,
+    })).toMatchObject({
+      credentialPassthrough: false,
+      environmentPolicy: 'empty',
+      id: 'docker-local',
+      isolation: 'container',
+      kind: 'local_container',
+    });
+
+    expect(buildAgentSandboxBackendProfileFromProbe({
+      backendId: 'docker-local',
+      kind: 'local_container',
+      reason: 'Docker is not available.',
+      status: 'unavailable',
+    })).toBeNull();
+  });
+
+  it('summarizes backend probes before they become profiles', () => {
+    expect(summarizeAgentSandboxBackendProbe({
+      backendId: 'docker-local',
+      kind: 'local_container',
+      reason: 'Docker is not available.',
+      status: 'unavailable',
+    })).toBe('backend=docker-local / kind=local_container / available=no / reason=Docker is not available.');
+
+    expect(summarizeAgentSandboxBackendProbe({
+      backendId: 'docker-local',
+      environmentPolicy: 'empty',
+      isolation: 'container',
+      kind: 'local_container',
+      networkMode: 'disabled',
+      status: 'available',
+      supportsOutputLimits: true,
+      supportsPatchArtifacts: true,
+      supportsStagedWrites: true,
+      supportsStructuredCommands: true,
+      supportsTargetedCommands: true,
+      supportsWorkspaceMount: true,
+    })).toBe('backend=docker-local / kind=local_container / available=yes / isolation=container / env=empty');
   });
 
   it('rejects host-process or incomplete sandbox backend profiles', () => {

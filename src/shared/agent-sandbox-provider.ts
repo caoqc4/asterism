@@ -36,6 +36,28 @@ export type AgentSandboxBackendReadiness = {
   blockedReasons: string[];
 };
 
+export type AgentSandboxBackendProbe =
+  | {
+      status: 'unavailable';
+      backendId: string;
+      kind: Exclude<AgentSandboxProviderKind, 'disabled'>;
+      reason: string;
+    }
+  | {
+      status: 'available';
+      backendId: string;
+      kind: Exclude<AgentSandboxProviderKind, 'disabled'>;
+      isolation: Exclude<AgentSandboxBackendIsolation, 'host_process'>;
+      environmentPolicy: Exclude<AgentSandboxBackendEnvironmentPolicy, 'inherit_host'>;
+      networkMode: AgentSandboxNetworkMode;
+      supportsWorkspaceMount: boolean;
+      supportsStagedWrites: boolean;
+      supportsStructuredCommands: boolean;
+      supportsTargetedCommands: boolean;
+      supportsOutputLimits: boolean;
+      supportsPatchArtifacts: boolean;
+    };
+
 export type AgentSandboxProviderCapabilities = {
   kind: AgentSandboxProviderKind;
   enabled: boolean;
@@ -167,6 +189,37 @@ export const DISABLED_AGENT_SANDBOX_PROVIDER_CAPABILITIES: AgentSandboxProviderC
   networkMode: 'disabled',
   credentialPassthrough: false,
 };
+
+export function buildAgentSandboxBackendProfileFromProbe(
+  probe: AgentSandboxBackendProbe,
+): AgentSandboxBackendProfile | null {
+  if (probe.status === 'unavailable') {
+    return null;
+  }
+
+  return {
+    credentialPassthrough: false,
+    environmentPolicy: probe.environmentPolicy,
+    id: probe.backendId,
+    isolation: probe.isolation,
+    kind: probe.kind,
+    networkMode: probe.networkMode,
+    supportsOutputLimits: probe.supportsOutputLimits,
+    supportsPatchArtifacts: probe.supportsPatchArtifacts,
+    supportsStagedWrites: probe.supportsStagedWrites,
+    supportsStructuredCommands: probe.supportsStructuredCommands,
+    supportsTargetedCommands: probe.supportsTargetedCommands,
+    supportsWorkspaceMount: probe.supportsWorkspaceMount,
+  };
+}
+
+export function summarizeAgentSandboxBackendProbe(
+  probe: AgentSandboxBackendProbe,
+): string {
+  return probe.status === 'unavailable'
+    ? `backend=${probe.backendId} / kind=${probe.kind} / available=no / reason=${probe.reason}`
+    : `backend=${probe.backendId} / kind=${probe.kind} / available=yes / isolation=${probe.isolation} / env=${probe.environmentPolicy}`;
+}
 
 export function evaluateAgentSandboxBackendReadiness(
   profile: AgentSandboxBackendProfile,
