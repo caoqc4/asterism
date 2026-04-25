@@ -11,6 +11,7 @@ import {
   DISABLED_AGENT_SANDBOX_PROVIDER_CAPABILITIES,
   evaluateAgentSandboxBackendReadiness,
   evaluateAgentSandboxCodingLaneEligibility,
+  summarizeAgentSandboxBackendProfile,
   summarizeAgentSandboxSessionManifest,
   summarizeAgentSandboxCheckResults,
   toAgentToolArtifactDescriptor,
@@ -139,6 +140,40 @@ describe('agent sandbox provider contracts', () => {
       supportsTargetedCommands: true,
       supportsWorkspaceMount: true,
     })).toThrow('Sandbox backend not ready: sandbox backend must produce patch artifacts.');
+  });
+
+  it('summarizes backend profiles with readiness state', () => {
+    expect(summarizeAgentSandboxBackendProfile({
+      credentialPassthrough: false,
+      environmentPolicy: 'empty',
+      id: 'local-container-candidate',
+      isolation: 'container',
+      kind: 'local_container',
+      networkMode: 'disabled',
+      supportsOutputLimits: true,
+      supportsPatchArtifacts: true,
+      supportsStagedWrites: true,
+      supportsStructuredCommands: true,
+      supportsTargetedCommands: true,
+      supportsWorkspaceMount: true,
+    })).toBe(
+      'backend=local-container-candidate / kind=local_container / isolation=container / env=empty / network=disabled / ready=yes',
+    );
+
+    expect(summarizeAgentSandboxBackendProfile({
+      credentialPassthrough: false,
+      environmentPolicy: 'inherit_host',
+      id: 'host-process-candidate',
+      isolation: 'host_process',
+      kind: 'local_container',
+      networkMode: 'disabled',
+      supportsOutputLimits: false,
+      supportsPatchArtifacts: false,
+      supportsStagedWrites: false,
+      supportsStructuredCommands: false,
+      supportsTargetedCommands: false,
+      supportsWorkspaceMount: false,
+    })).toContain('ready=no');
   });
 
   it('explains why the sandbox coding lane is unavailable by default', () => {

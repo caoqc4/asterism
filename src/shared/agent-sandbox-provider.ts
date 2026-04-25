@@ -235,6 +235,21 @@ export function buildAgentSandboxProviderCapabilitiesFromBackendProfile(
   };
 }
 
+export function summarizeAgentSandboxBackendProfile(
+  profile: AgentSandboxBackendProfile,
+): string {
+  const readiness = evaluateAgentSandboxBackendReadiness(profile);
+
+  return [
+    `backend=${profile.id}`,
+    `kind=${profile.kind}`,
+    `isolation=${profile.isolation}`,
+    `env=${profile.environmentPolicy}`,
+    `network=${profile.networkMode}`,
+    `ready=${readiness.ready ? 'yes' : 'no'}`,
+  ].join(' / ');
+}
+
 export function buildDefaultAgentSandboxCommandPolicy(
   overrides: Partial<Pick<AgentSandboxCommandPolicy, 'timeoutMs' | 'outputLimitBytes'>> = {},
 ): AgentSandboxCommandPolicy {
