@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   buildAgentSandboxBackendProfileFromProbe,
@@ -6,7 +6,10 @@ import {
   evaluateAgentSandboxBackendReadiness,
   summarizeAgentSandboxBackendProbe,
 } from '../../../shared/agent-sandbox-provider.js';
-import { buildLocalContainerSandboxBackendProbe } from './local-container-sandbox-backend.js';
+import {
+  buildLocalContainerSandboxBackendProbe,
+  probeLocalContainerSandboxBackend,
+} from './local-container-sandbox-backend.js';
 
 describe('local container sandbox backend probe', () => {
   it('reports unavailable local container runtime without creating a backend profile', () => {
@@ -49,6 +52,41 @@ describe('local container sandbox backend probe', () => {
       kind: 'local_container',
       supportsPatchArtifacts: true,
       supportsTargetedCommands: true,
+    });
+  });
+
+  it('probes the local container runtime through an injected read-only runner', async () => {
+    const runner = vi.fn().mockResolvedValue({
+      stderr: '',
+      stdout: '27.5.1\n',
+    });
+
+    const probe = await probeLocalContainerSandboxBackend({
+      runner,
+      timeoutMs: 500,
+    });
+
+    expect(runner).toHaveBeenCalledWith({
+      args: ['version', '--format', '{{.Server.Version}}'],
+      command: 'docker',
+      timeoutMs: 500,
+    });
+    expect(probe).toMatchObject({
+      backendId: 'local-container',
+      status: 'available',
+    });
+  });
+
+  it('reports unavailable when the local container runtime probe fails', async () => {
+    const probe = await probeLocalContainerSandboxBackend({
+      runner: vi.fn().mockRejectedValue(new Error('docker: command not found')),
+    });
+
+    expect(probe).toEqual({
+      backendId: 'local-container',
+      kind: 'local_container',
+      reason: 'docker: command not found',
+      status: 'unavailable',
     });
   });
 });
