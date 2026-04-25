@@ -266,10 +266,13 @@ Completed non-live slices:
 5. Non-live source/preview bridge into `previewFromSource()`.
 6. Add integration coverage for blocked, failed, empty-diff, and source-ready
    producer results.
+7. Bounded producer session metadata formatting for future `agent_sessions`
+   persistence and Run detail diagnostics, without persisting raw provider
+   prompts, environment variables, or unbounded logs.
 
 Next slice:
 
-7. Connect a real sandbox backend only after a backend decision/review confirms
+8. Connect a real sandbox backend only after a backend decision/review confirms
    the implementation still satisfies the sandbox decision and source boundary.
 
 ## Acceptance

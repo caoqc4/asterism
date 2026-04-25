@@ -216,4 +216,39 @@ describe('agent capability formatting', () => {
       'executor=local_agent / loop=local_note / sandboxCoding=blocked / sandboxProvider=not_ready / sandboxPromotion=decision_required / sandboxBlockedReasons=sandbox provider does not expose the required staged-write, targeted-check, patch-artifact capability set',
     );
   });
+
+  it('formats sandboxed coding producer session metadata for run detail', () => {
+    expect(formatAgentSessionMetadataSummary({
+      id: 'agent_session_1',
+      runId: 'run_1',
+      mode: 'agent',
+      status: 'paused',
+      capabilities: {
+        structuredToolCalls: false,
+        textOnlyPlanning: false,
+        streaming: false,
+        fileContext: true,
+        taskMutationTools: false,
+        longRunningSessions: true,
+      },
+      metadata: [
+        'executor=sandboxed_coding_producer',
+        'loop=sandboxed_coding',
+        'producerStatus=blocked',
+        'sessionId=sandboxed_producer:source_1',
+        'sourceId=source_1',
+        'provider=openai-compatible',
+        'commands=test,lint',
+        'network=disabled',
+        'promotion=decision_required',
+        'backend=local-container',
+        'blockedReasons=docker is unavailable',
+        'summary=Backend probe blocked',
+      ].join('\n'),
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    })).toBe(
+      'Sandboxed coding producer / status=blocked / provider=openai-compatible / session=sandboxed_producer:source_1 / source=source_1 / backend=local-container / commands=test,lint / network=disabled / promotion=decision_required / blockedReasons=docker is unavailable / summary=Backend probe blocked',
+    );
+  });
 });

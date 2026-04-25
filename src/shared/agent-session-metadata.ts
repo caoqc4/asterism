@@ -1,6 +1,20 @@
 import type { AgentSandboxCodingLaneEligibility } from './agent-sandbox-provider.js';
 import type { ProviderToolCallPlan } from './types/agent-execution.js';
 
+export type SandboxedCodingProducerSessionMetadataInput = {
+  backendId?: string | null;
+  blockedReasons?: string[];
+  commandScripts: string[];
+  network: 'disabled' | 'allowlisted';
+  promotion: 'decision_required';
+  providerKind: string;
+  sessionId: string;
+  sourceId: string;
+  status: 'prepared' | 'running' | 'source_ready' | 'blocked' | 'failed' | 'paused';
+  summary?: string | null;
+  workspaceRoot: string;
+};
+
 export function formatLocalAgentSessionMetadata(
   sandboxEligibility?: AgentSandboxCodingLaneEligibility | null,
   sandboxPatchReviewAdapter?: {
@@ -52,4 +66,39 @@ export function formatProviderNativeAgentSessionMetadata(plan: ProviderToolCallP
     `providerCallIds=${plan.providerCallIds.join(',') || 'none'}`,
     `stopReason=${plan.stopReason ?? 'unknown'}`,
   ].join('\n');
+}
+
+export function formatSandboxedCodingProducerSessionMetadata(
+  input: SandboxedCodingProducerSessionMetadataInput,
+): string {
+  const parts = [
+    'executor=sandboxed_coding_producer',
+    'loop=sandboxed_coding',
+    `producerStatus=${sanitizeMetadataValue(input.status)}`,
+    `sessionId=${sanitizeMetadataValue(input.sessionId)}`,
+    `sourceId=${sanitizeMetadataValue(input.sourceId)}`,
+    `provider=${sanitizeMetadataValue(input.providerKind)}`,
+    `workspace=${sanitizeMetadataValue(input.workspaceRoot)}`,
+    `commands=${sanitizeMetadataValue(input.commandScripts.join(',') || 'none')}`,
+    `network=${sanitizeMetadataValue(input.network)}`,
+    `promotion=${sanitizeMetadataValue(input.promotion)}`,
+  ];
+
+  if (input.backendId?.trim()) {
+    parts.push(`backend=${sanitizeMetadataValue(input.backendId)}`);
+  }
+
+  if (input.blockedReasons?.length) {
+    parts.push(`blockedReasons=${sanitizeMetadataValue(input.blockedReasons.join('; '))}`);
+  }
+
+  if (input.summary?.trim()) {
+    parts.push(`summary=${sanitizeMetadataValue(input.summary)}`);
+  }
+
+  return parts.join('\n');
+}
+
+function sanitizeMetadataValue(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
 }

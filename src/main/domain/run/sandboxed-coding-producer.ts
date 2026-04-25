@@ -1,4 +1,5 @@
 import type { AgentSandboxCheckScript } from '../../../shared/agent-sandbox-provider.js';
+import { formatSandboxedCodingProducerSessionMetadata } from '../../../shared/agent-session-metadata.js';
 import type { FeatureFlags } from '../../../shared/types/settings.js';
 import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
 import type { LocalContainerSandboxPatchDraft } from './local-container-sandbox-backend.js';
@@ -88,6 +89,7 @@ export type PreviewSandboxedCodingInjectedProducerRunResult =
   | {
       events: SandboxedCodingProducerEvent[];
       plan: SandboxPatchReviewRunPlan;
+      sessionMetadata: string;
       sessionSummary: string;
       source: SandboxPatchDraftSource;
       status: 'preview_ready';
@@ -97,6 +99,7 @@ export type PreviewSandboxedCodingInjectedProducerRunResult =
       events: SandboxedCodingProducerEvent[];
       plan?: SandboxPatchReviewRunPlan | null;
       reason: string;
+      sessionMetadata?: string | null;
       sessionSummary: string;
       status: 'blocked' | 'failed' | 'paused';
       steps: SandboxedCodingProducerRunStepDraft[];
@@ -423,6 +426,13 @@ export async function previewSandboxedCodingInjectedProducerRun(params: {
       events,
       plan: null,
       reason: runnerResult.reason,
+      sessionMetadata: buildSandboxedCodingProducerPreviewSessionMetadata({
+        blockedReasons: [runnerResult.reason],
+        request,
+        sessionId,
+        status: runnerResult.status,
+        summary: runnerResult.sessionSummary,
+      }),
       sessionSummary: runnerResult.sessionSummary,
       status: runnerResult.status,
       steps: events.map(mapSandboxedCodingProducerEventToRunStep),
@@ -449,6 +459,13 @@ export async function previewSandboxedCodingInjectedProducerRun(params: {
       events,
       plan: null,
       reason,
+      sessionMetadata: buildSandboxedCodingProducerPreviewSessionMetadata({
+        blockedReasons: stagedPatch.blockedReasons,
+        request,
+        sessionId,
+        status: 'failed',
+        summary: runnerResult.sessionSummary,
+      }),
       sessionSummary: runnerResult.sessionSummary,
       status: 'failed',
       steps: events.map(mapSandboxedCodingProducerEventToRunStep),
@@ -477,6 +494,13 @@ export async function previewSandboxedCodingInjectedProducerRun(params: {
       events,
       plan,
       reason: plan.reason,
+      sessionMetadata: buildSandboxedCodingProducerPreviewSessionMetadata({
+        blockedReasons: [plan.reason],
+        request,
+        sessionId,
+        status: 'blocked',
+        summary: runnerResult.sessionSummary,
+      }),
       sessionSummary: runnerResult.sessionSummary,
       status: 'blocked',
       steps: events.map(mapSandboxedCodingProducerEventToRunStep),
@@ -503,6 +527,13 @@ export async function previewSandboxedCodingInjectedProducerRun(params: {
       events,
       plan,
       reason,
+      sessionMetadata: buildSandboxedCodingProducerPreviewSessionMetadata({
+        blockedReasons: sourceResult.blockedReasons,
+        request,
+        sessionId,
+        status: 'failed',
+        summary: runnerResult.sessionSummary,
+      }),
       sessionSummary: runnerResult.sessionSummary,
       status: 'failed',
       steps: events.map(mapSandboxedCodingProducerEventToRunStep),
@@ -521,11 +552,38 @@ export async function previewSandboxedCodingInjectedProducerRun(params: {
   return {
     events,
     plan,
+    sessionMetadata: buildSandboxedCodingProducerPreviewSessionMetadata({
+      request,
+      sessionId,
+      status: 'source_ready',
+      summary: runnerResult.sessionSummary,
+    }),
     sessionSummary: runnerResult.sessionSummary,
     source: sourceResult.source,
     status: 'preview_ready',
     steps: events.map(mapSandboxedCodingProducerEventToRunStep),
   };
+}
+
+function buildSandboxedCodingProducerPreviewSessionMetadata(params: {
+  blockedReasons?: string[];
+  request: NormalizedSandboxedCodingProducerRequest;
+  sessionId: string;
+  status: 'running' | 'source_ready' | 'blocked' | 'failed' | 'paused';
+  summary?: string | null;
+}): string {
+  return formatSandboxedCodingProducerSessionMetadata({
+    blockedReasons: params.blockedReasons,
+    commandScripts: params.request.commandPolicy.allowedScripts,
+    network: params.request.executionPolicy.network,
+    promotion: params.request.executionPolicy.promotion,
+    providerKind: params.request.modelPolicy.providerKind,
+    sessionId: params.sessionId,
+    sourceId: params.request.sourceId,
+    status: params.status,
+    summary: params.summary,
+    workspaceRoot: params.request.workspaceRoot,
+  });
 }
 
 export function mapSandboxedCodingProducerEventToRunStep(

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   formatLocalAgentSessionMetadata,
   formatProviderNativeAgentSessionMetadata,
+  formatSandboxedCodingProducerSessionMetadata,
 } from './agent-session-metadata.js';
 
 describe('agent session metadata formatting', () => {
@@ -87,5 +88,35 @@ describe('agent session metadata formatting', () => {
     ].join('\n'));
     expect(metadata).not.toContain('privatePromptFragment');
     expect(metadata).not.toContain('do not persist me');
+  });
+
+  it('formats sandboxed coding producer metadata as bounded key-value lines', () => {
+    expect(formatSandboxedCodingProducerSessionMetadata({
+      backendId: 'local-container',
+      blockedReasons: ['docker is unavailable', 'workspace missing\nshould not split'],
+      commandScripts: ['test', 'lint'],
+      network: 'disabled',
+      promotion: 'decision_required',
+      providerKind: 'openai-compatible',
+      sessionId: 'sandboxed_producer:source_1',
+      sourceId: 'source_1',
+      status: 'blocked',
+      summary: 'Backend probe blocked\nwithout leaking raw logs',
+      workspaceRoot: '/tmp/taskplane-workspace',
+    })).toBe([
+      'executor=sandboxed_coding_producer',
+      'loop=sandboxed_coding',
+      'producerStatus=blocked',
+      'sessionId=sandboxed_producer:source_1',
+      'sourceId=source_1',
+      'provider=openai-compatible',
+      'workspace=/tmp/taskplane-workspace',
+      'commands=test,lint',
+      'network=disabled',
+      'promotion=decision_required',
+      'backend=local-container',
+      'blockedReasons=docker is unavailable; workspace missing should not split',
+      'summary=Backend probe blocked without leaking raw logs',
+    ].join('\n'));
   });
 });

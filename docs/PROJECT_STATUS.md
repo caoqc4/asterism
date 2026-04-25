@@ -341,6 +341,10 @@ The project is past initial architecture assembly. Current work should favor pro
   validation, backend probe/profile readiness, the sandbox coding feature flag,
   and the shared coding-lane eligibility gate before any real backend can be
   connected.
+- Sandboxed coding producer preview results now carry bounded session metadata
+  for future `agent_sessions` persistence and Run detail diagnostics, including
+  producer status, source id, provider, checks, network, promotion, backend,
+  and blocked reasons without raw provider prompts or environment data.
 - Local Docker backend probe on 2026-04-26 is not ready: Docker CLI reached the
   configured socket path but the daemon/socket was unavailable at
   `/Users/caoq/.docker/run/docker.sock`. Real local-container backend live
@@ -390,7 +394,7 @@ npm run verify
 Latest local baseline:
 
 - 83 test files
-- 607 tests
+- 609 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -444,6 +448,11 @@ Latest local baseline:
 - `npm test -- src/renderer/App.test.tsx -t "saves settings"` and
   `npm run verify` passed locally on 2026-04-26 after rendering scaffold
   diagnostics in Settings: 83 test files / 607 tests
+- `npm test -- src/shared/agent-session-metadata.test.ts
+  src/renderer/lib/agentCapabilities.test.ts
+  src/main/domain/run/sandboxed-coding-producer.test.ts`,
+  `npm run accept:sandbox-coding`, and `npm run verify` passed locally on
+  2026-04-26 after adding producer session metadata: 83 test files / 609 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

@@ -98,6 +98,15 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
   const sandboxPatchReviewPlan = entries.get('sandboxPatchReviewPlan');
   const sandboxPatchReviewPlanSummary = entries.get('sandboxPatchReviewPlanSummary');
   const sandboxPatchReviewPlanReason = entries.get('sandboxPatchReviewPlanReason');
+  const producerStatus = entries.get('producerStatus');
+  const sessionId = entries.get('sessionId');
+  const sourceId = entries.get('sourceId');
+  const commands = entries.get('commands');
+  const network = entries.get('network');
+  const promotion = entries.get('promotion');
+  const backend = entries.get('backend');
+  const blockedReasons = entries.get('blockedReasons');
+  const summary = entries.get('summary');
 
   if (executor === 'provider_native_agent') {
     return [
@@ -107,6 +116,22 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
       rawSummary ? `raw=${rawSummary}` : null,
       providerCallIds ? `calls=${providerCallIds}` : null,
       stopReason ? `stop=${stopReason}` : null,
+    ].filter(Boolean).join(' / ');
+  }
+
+  if (executor === 'sandboxed_coding_producer') {
+    return [
+      'Sandboxed coding producer',
+      producerStatus ? `status=${producerStatus}` : null,
+      provider && model ? `${provider} / ${model}` : provider ? `provider=${provider}` : null,
+      sessionId ? `session=${sessionId}` : null,
+      sourceId ? `source=${sourceId}` : null,
+      backend ? `backend=${backend}` : null,
+      commands ? `commands=${commands}` : null,
+      network ? `network=${network}` : null,
+      promotion ? `promotion=${promotion}` : null,
+      blockedReasons ? `blockedReasons=${blockedReasons}` : null,
+      summary ? `summary=${summary}` : null,
     ].filter(Boolean).join(' / ');
   }
 

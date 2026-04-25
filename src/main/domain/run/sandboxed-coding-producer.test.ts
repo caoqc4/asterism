@@ -412,6 +412,11 @@ describe('validateSandboxedCodingProducerRequest', () => {
           'tool_result',
           'artifact',
         ]);
+        expect(result.sessionMetadata).toContain('executor=sandboxed_coding_producer');
+        expect(result.sessionMetadata).toContain('producerStatus=source_ready');
+        expect(result.sessionMetadata).toContain('sourceId=sandbox_source_1');
+        expect(result.sessionMetadata).toContain('commands=lint,test');
+        expect(result.sessionMetadata).toContain('network=disabled');
         expect(await fs.readFile(path.join(workspaceRoot, 'src', 'notes.md'), 'utf8')).toBe('old\n');
       }
     } finally {
@@ -438,8 +443,10 @@ describe('validateSandboxedCodingProducerRequest', () => {
     expect(result).toMatchObject({
       status: 'blocked',
       reason: 'No sandbox backend is ready.',
+      sessionMetadata: expect.stringContaining('producerStatus=blocked'),
       sessionSummary: 'blocked before work',
     });
+    expect(result.sessionMetadata).toContain('blockedReasons=No sandbox backend is ready.');
     expect(result.steps.at(-1)).toMatchObject({
       kind: 'final',
       title: 'Sandbox producer blocked',
