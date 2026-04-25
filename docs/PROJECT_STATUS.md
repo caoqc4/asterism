@@ -279,8 +279,8 @@ npm run verify
 
 Latest local baseline:
 
-- 77 test files
-- 561 tests
+- 78 test files
+- 563 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -295,7 +295,7 @@ Latest local baseline:
   because it spends configured provider credit
 - `npm run verify` passed locally on 2026-04-26 after adding the sandbox
   patch-review request builder, audit persistence coverage, and non-executing
-  run-plan layer: 77 test files / 561 tests
+  run-plan/planning-service layer: 78 test files / 563 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
