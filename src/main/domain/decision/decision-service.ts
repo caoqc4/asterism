@@ -267,7 +267,12 @@ export class DecisionService {
     }
 
     if (
-      (tool !== 'artifact.create_note' && tool !== 'workspace.write_patch' && tool !== 'workspace.run_command') ||
+      (
+        tool !== 'artifact.create_note' &&
+        tool !== 'task.create_completion_criterion' &&
+        tool !== 'workspace.write_patch' &&
+        tool !== 'workspace.run_command'
+      ) ||
       !this.agentToolRegistry
     ) {
       await this.runCheckpointRepository.updateStatus(checkpoint.id, 'resolved');
@@ -290,6 +295,7 @@ export class DecisionService {
       },
       {
         ...DEFAULT_AGENT_POLICY,
+        allowTaskMutationTools: tool === 'task.create_completion_criterion',
         allowLocalFileWrite: tool === 'workspace.write_patch',
         allowLocalCommandRun: tool === 'workspace.run_command',
         confirmationRequiredRisks: [],

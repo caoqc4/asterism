@@ -51,7 +51,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - `npm run accept:provider-native-live:run` now validates a real provider safe-read tool-call payload through an isolated RunService database; the gated session persists `structuredToolCalls=true` and executes the read-only observation step without touching user data.
 - Shared agent-session metadata helpers now define both current local executor metadata and provider-native metadata without persisting raw provider payloads.
 - Runs detail now surfaces concise agent session metadata, including provider raw summaries, alongside capability summaries so provider-native sessions can be inspected without exposing raw provider payloads.
-- The first domain-shaped task tools are in the registry and can be prompt-exposed only through the explicit per-run `allowTaskMutationTools` opt-in: `task.update_next_step` routes through `TaskService.update`, `task.create_completion_criterion` routes through `TaskService.createCompletionCriteria`, `task.review_completion_evidence` reviews completion status and recent evidence without mutating criteria or task state, `source_context.create` routes through `TaskService.createSourceContext`, and `decision.draft` routes through `DecisionService.draft` without creating a formal Decision. These tools write run-step observations, and normal agent plans still fall back if a model proposes them without the opt-in.
+- The first domain-shaped task tools are in the registry and can be prompt-exposed only through the explicit per-run `allowTaskMutationTools` opt-in: `task.update_next_step` routes through `TaskService.update`, `task.create_completion_criterion` routes through `TaskService.createCompletionCriteria`, `task.review_completion_evidence` reviews completion status and recent evidence without mutating criteria or task state, `source_context.create` routes through `TaskService.createSourceContext`, and `decision.draft` routes through `DecisionService.draft` without creating a formal Decision. High-risk task completion-criterion creation now pauses into a checkpoint/Decision before mutating the task, and approval resumes the pending criterion creation. These tools write run-step observations, and normal agent plans still fall back if a model proposes them without the opt-in.
 - A focused `npm run accept:domain-agent-tools` command now exercises those registry-only domain tools through real SQLite repositories without exposing them to normal model plans.
 - The first command-execution slice is in place but not model-exposed: `workspace.run_command` requires explicit local command policy, accepts only allowlisted `package.json` scripts, creates a confirmation checkpoint with command preview, and resumes once after the linked Decision is approved.
 - The first tool-exposure decision is implemented for domain-shaped task tools; workspace write and command prompt exposure remains deferred.
@@ -68,7 +68,7 @@ npm run verify
 Latest local baseline:
 
 - 61 test files
-- 459 tests
+- 461 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build

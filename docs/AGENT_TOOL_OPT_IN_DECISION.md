@@ -122,17 +122,15 @@ Accepted implementation coverage:
 - no automatic task closeout
 - no background autonomous scheduling
 
-## Open Questions
-
-- Should an agent-created completion criterion require a follow-up Decision when
-  the task is high risk?
-
 ## Resolved Questions
 
 - The first UI exposes the first domain/evidence tool set together behind the
   explicit per-run opt-in: `task.update_next_step`,
   `task.create_completion_criterion`, `task.review_completion_evidence`,
   `source_context.create`, and `decision.draft`.
+- Agent-created completion criteria require a follow-up Decision when the
+  current task is high risk. The tool creates a checkpoint instead of mutating
+  the task immediately, and approval resumes the pending criterion creation.
 
 ## Follow-Up Decisions
 

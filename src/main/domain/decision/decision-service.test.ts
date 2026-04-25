@@ -443,6 +443,99 @@ describe('DecisionService', () => {
     expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'agent', true, 'run_1');
   });
 
+  it('resumes an approved high-risk completion criterion checkpoint', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord({
+          title: '确认本地写入：task.create_completion_criterion',
+        }),
+        status: 'approved',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+    };
+    const runCheckpointRepository = {
+      findOpenByDecisionId: vi.fn().mockResolvedValue({
+        id: 'run_checkpoint_1',
+        runId: 'run_1',
+        stepId: 'run_step_1',
+        kind: 'tool_permission',
+        status: 'open',
+        payload: JSON.stringify({
+          version: 1,
+          kind: 'tool_permission',
+          tool: 'task.create_completion_criterion',
+          risk: 'local_write',
+          input: { text: 'Owner must approve the launch claim' },
+          decisionId: 'decision_1',
+          decisionTitle: '确认本地写入：task.create_completion_criterion',
+        }),
+        createdAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      }),
+      updateStatus: vi.fn(),
+    };
+    const runStepRepository = {
+      create: vi.fn(),
+    };
+    const runRepository = {
+      getDetail: vi.fn().mockResolvedValue({
+        id: 'run_1',
+        taskId: 'task_1',
+        type: 'agent',
+      }),
+      updateResult: vi.fn(),
+    };
+    const agentToolRegistry = {
+      execute: vi.fn().mockResolvedValue({
+        success: true,
+        status: 'completed',
+        summary: '已创建完成标准：Owner must approve the launch claim',
+        output: 'Owner must approve the launch claim',
+      }),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+      undefined,
+      runCheckpointRepository as never,
+      runStepRepository as never,
+      runRepository as never,
+      agentToolRegistry as never,
+    );
+
+    await service.act({
+      id: 'decision_1',
+      action: 'approve',
+    });
+
+    expect(agentToolRegistry.execute).toHaveBeenCalledWith(
+      'task.create_completion_criterion',
+      { text: 'Owner must approve the launch claim' },
+      { runId: 'run_1', taskId: 'task_1' },
+      expect.objectContaining({
+        allowTaskMutationTools: true,
+        confirmationRequiredRisks: [],
+      }),
+    );
+    expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith('run_checkpoint_1', 'resolved');
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_1',
+      'completed',
+      'Owner must approve the launch claim',
+      'system',
+    );
+    expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'agent', true, 'run_1');
+  });
+
   it('resumes an approved workspace patch checkpoint with local file-write policy', async () => {
     const decisionRepository = {
       list: vi.fn(),

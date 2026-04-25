@@ -623,6 +623,87 @@ describe('AgentToolRegistry', () => {
     );
   });
 
+  it('creates a confirmation checkpoint before adding completion criteria on high-risk tasks', async () => {
+    const taskService = {
+      update: vi.fn(),
+      createCompletionCriteria: vi.fn(),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const runCheckpointRepository = buildRunCheckpointRepositoryMock();
+    const decisionRepository = buildDecisionRepositoryMock();
+    const registry = new AgentToolRegistry(
+      {} as never,
+      runStepRepository as never,
+      runCheckpointRepository as never,
+      decisionRepository as never,
+      undefined,
+      taskService as never,
+    );
+    const workingContext = buildWorkingContext();
+
+    const result = await registry.execute(
+      'task.create_completion_criterion',
+      { text: ' Owner must approve the launch claim ' },
+      {
+        runId: 'run_1',
+        taskId: 'task_1',
+        workingContext: {
+          ...workingContext,
+          task: {
+            ...workingContext.task,
+            riskLevel: 'high',
+          },
+        },
+      },
+      {
+        maxSteps: 8,
+        maxWallTimeMs: 120_000,
+        allowNetwork: false,
+        allowLocalWorkspaceRead: false,
+        allowLocalFileWrite: false,
+        confirmationRequiredRisks: [],
+      },
+    );
+
+    expect(result).toMatchObject({
+      success: false,
+      status: 'needs_confirmation',
+      checkpointId: 'run_checkpoint_1',
+    });
+    expect(taskService.createCompletionCriteria).not.toHaveBeenCalled();
+    expect(decisionRepository.create).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      title: '确认本地写入：task.create_completion_criterion',
+      sourceType: 'agent_checkpoint',
+      sourceId: 'run_checkpoint_1',
+      sourceLabel: 'task.create_completion_criterion',
+    });
+    const payload = JSON.parse(runCheckpointRepository.updatePayload.mock.calls[0][1]);
+    expect(payload).toMatchObject({
+      version: 1,
+      kind: 'tool_permission',
+      tool: 'task.create_completion_criterion',
+      risk: 'local_write',
+      input: { text: 'Owner must approve the launch claim' },
+      decisionId: 'decision_1',
+      decisionTitle: '确认本地写入：task.create_completion_criterion',
+    });
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_1',
+      expect.objectContaining({
+        status: 'skipped',
+        output: expect.stringContaining('需要确认后才能继续'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        kind: 'checkpoint',
+        status: 'pending',
+        title: '等待确认：task.create_completion_criterion',
+      }),
+    );
+  });
+
   it('records completion criterion validation failures as tool result failures', async () => {
     const taskService = {
       update: vi.fn(),

@@ -121,7 +121,7 @@ Covered today:
 - `Run checkpoint payload`
   versioned v1 payload helpers for tool-permission and resume checkpoints, with legacy JSON parsing compatibility
 - `DecisionService`
-  checkpoint Decision approval can resume both local note creation and confirmation-gated workspace patch application
+  checkpoint Decision approval can resume local note creation, high-risk completion-criterion creation, and confirmation-gated workspace patch application
 - `TextExecutor`
   lane-aware run prompt composition, constrained JSON proposal prompting for agent runs, opt-in workspace tool prompt guidance, opt-in domain task/evidence tool prompt guidance, and result-shaped text generation with optional minimal provider payload extraction
 - `Agent capability UI helpers`

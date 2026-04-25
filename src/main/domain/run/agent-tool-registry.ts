@@ -858,9 +858,18 @@ export class AgentToolRegistry {
     });
 
     try {
-      if (policy?.confirmationRequiredRisks.includes(definition.risk)) {
+      const highRiskCompletionCriterionInput =
+        name === 'task.create_completion_criterion' &&
+        context.workingContext?.task.riskLevel === 'high'
+          ? parseTaskCreateCompletionCriterionInput(input)
+          : null;
+      const requiresConfirmation =
+        Boolean(highRiskCompletionCriterionInput) ||
+        Boolean(policy?.confirmationRequiredRisks.includes(definition.risk));
+
+      if (requiresConfirmation) {
         if (name === 'workspace.write_patch') {
-          if (!policy.allowLocalFileWrite) {
+          if (!policy?.allowLocalFileWrite) {
             throw new Error('workspace.write_patch requires allowLocalFileWrite policy.');
           }
 
@@ -934,7 +943,7 @@ export class AgentToolRegistry {
         }
 
         if (name === 'workspace.run_command') {
-          if (!policy.allowLocalCommandRun) {
+          if (!policy?.allowLocalCommandRun) {
             throw new Error('workspace.run_command requires allowLocalCommandRun policy.');
           }
 
@@ -1021,7 +1030,7 @@ export class AgentToolRegistry {
           payload: JSON.stringify(createToolPermissionCheckpointPayload({
             tool: name,
             risk: definition.risk,
-            input,
+            input: highRiskCompletionCriterionInput ?? input,
             decisionId: null,
             decisionTitle,
           })),
@@ -1038,7 +1047,7 @@ export class AgentToolRegistry {
         const payload = JSON.stringify(createToolPermissionCheckpointPayload({
           tool: name,
           risk: definition.risk,
-          input,
+          input: highRiskCompletionCriterionInput ?? input,
           decisionId: decision?.id ?? null,
           decisionTitle,
         }));
