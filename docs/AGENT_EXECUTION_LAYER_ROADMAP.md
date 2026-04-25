@@ -127,6 +127,9 @@ Completed:
 - An offline Anthropic Messages-style fixture adapter can translate `tool_use`
   content blocks into normalized Taskplane proposals, but it is not connected
   to provider execution or run sessions.
+- A shared offline provider-native dispatcher selects the Anthropic or
+  OpenAI-compatible fixture adapter by provider and fails closed for Replicate;
+  it is not connected to provider execution or run sessions.
 
 Acceptance:
 
@@ -142,6 +145,8 @@ Acceptance:
   producing normalized proposals
 - Anthropic fixture translation validates `tool_use.input` objects before
   producing normalized proposals
+- provider-native dispatch keeps Replicate on the unsupported structured
+  tool-call path
 
 Deferred:
 
