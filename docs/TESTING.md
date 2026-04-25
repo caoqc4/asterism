@@ -94,7 +94,7 @@ Covered today:
 - `AgentToolRegistry`
   internal tool discovery, read-only context/timeline inspection, service-routed task next-step updates, completion-criterion creation, source-context creation, and draft-only Decision proposals, policy-gated read-only workspace search/file reads, dynamic workspace-root resolution, local note artifact creation, confirmation-gated workspace patch application, tool call/result step writes, validation failure recording, policy-driven confirmation checkpoints, and Decision creation for confirmation checkpoints
 - `AgentToolRegistry integration`
-  service-routed task next-step updates, completion-criterion creation, and source-context creation through real SQLite repositories, including task timeline evidence and run-step observations
+  service-routed task next-step updates, completion-criterion creation, source-context creation, and draft-only Decision proposals through real SQLite repositories, including task timeline evidence and run-step observations
 - `Run checkpoint payload`
   versioned v1 payload helpers for tool-permission and resume checkpoints, with legacy JSON parsing compatibility
 - `DecisionService`

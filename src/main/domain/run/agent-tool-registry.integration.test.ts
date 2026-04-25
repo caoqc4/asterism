@@ -3,13 +3,19 @@ import fs from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
+import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
 import { CompletionCriteriaRepository } from '../../db/repositories/completion-criteria-repository.js';
+import { DecisionRepository } from '../../db/repositories/decision-repository.js';
+import { ProcessTemplateRepository } from '../../db/repositories/process-template-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
+import { TaskDependencyRepository } from '../../db/repositories/task-dependency-repository.js';
+import { TaskProcessBindingRepository } from '../../db/repositories/task-process-binding-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
 import { closeDatabase, setDatabaseUserDataPathForTests } from '../../db/client.js';
 import { makeTempDir } from '../../test-utils.js';
+import { DecisionService } from '../decision/decision-service.js';
 import { TaskService } from '../task/task-service.js';
 import { AgentToolRegistry } from './agent-tool-registry.js';
 
@@ -190,6 +196,74 @@ describe('AgentToolRegistry integration', () => {
       step.kind === 'tool_result' &&
       step.status === 'completed' &&
       step.output === 'Owner prefers a shorter final draft'
+    )).toBe(true);
+  });
+
+  it('drafts a decision through DecisionService without creating a formal Decision', async () => {
+    const taskRepository = new TaskRepository();
+    const waitingItemRepository = new WaitingItemRepository();
+    const artifactRepository = new ArtifactRepository();
+    const sourceContextRepository = new SourceContextRepository();
+    const processTemplateRepository = new ProcessTemplateRepository();
+    const taskProcessBindingRepository = new TaskProcessBindingRepository();
+    const blockerRepository = new BlockerRepository();
+    const taskDependencyRepository = new TaskDependencyRepository();
+    const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const decisionRepository = new DecisionRepository();
+    const runStepRepository = new RunStepRepository();
+    const taskService = new TaskService(
+      taskRepository,
+      waitingItemRepository,
+      artifactRepository,
+      sourceContextRepository,
+      processTemplateRepository,
+      taskProcessBindingRepository,
+      blockerRepository,
+      taskDependencyRepository,
+      completionCriteriaRepository,
+    );
+    const decisionService = new DecisionService(
+      decisionRepository,
+      taskService,
+      {
+        resolveRuntimeConfig: async () => {
+          throw new Error('AI unavailable in acceptance test');
+        },
+      } as never,
+    );
+    const registry = new AgentToolRegistry(
+      artifactRepository,
+      runStepRepository,
+      undefined,
+      null,
+      undefined,
+      taskService,
+    );
+    registry.setDecisionDraftService(decisionService);
+    const task = await taskService.create({
+      title: 'Agent decision draft integration',
+      summary: 'Need a lightweight checkpoint before continuing.',
+    });
+
+    const result = await registry.execute(
+      'decision.draft',
+      { note: 'Choose whether to continue the current path' },
+      { runId: 'run_integration_4', taskId: task.id },
+    );
+    const decisions = await decisionRepository.list();
+    const steps = await runStepRepository.listForRun('run_integration_4');
+
+    expect(result).toMatchObject({
+      success: true,
+      status: 'completed',
+    });
+    expect(result.summary).toContain('已草拟 Decision');
+    expect(result.output).toContain('Source: fallback');
+    expect(decisions).toEqual([]);
+    expect(steps.some((step) =>
+      step.kind === 'tool_result' &&
+      step.status === 'completed' &&
+      step.output?.includes('Source: fallback')
     )).toBe(true);
   });
 });

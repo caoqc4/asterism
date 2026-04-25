@@ -30,6 +30,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - A focused `npm run accept:workspace-patch` command now exercises the local patch approval path without exposing write access in the product UI.
 - Agent run forms now preview provider/session capability before execution, including text-only planning, read-only workspace context opt-in, structured tool-call unavailability, patch/command unavailability, and provider-specific wording for Replicate versus the local text-only executor path.
 - The first domain-shaped task tools are in the registry but not prompt-exposed: `task.update_next_step` routes through `TaskService.update`, `task.create_completion_criterion` routes through `TaskService.createCompletionCriteria`, `source_context.create` routes through `TaskService.createSourceContext`, and `decision.draft` routes through `DecisionService.draft` without creating a formal Decision. These tools write run-step observations, and normal agent plans still fall back if a model proposes them.
+- A focused `npm run accept:domain-agent-tools` command now exercises those registry-only domain tools through real SQLite repositories without exposing them to normal model plans.
 - The first command-execution slice is in place but not model-exposed: `workspace.run_command` requires explicit local command policy, accepts only allowlisted `package.json` scripts, creates a confirmation checkpoint with command preview, and resumes once after the linked Decision is approved.
 
 ## Verification Baseline
@@ -43,7 +44,7 @@ npm run verify
 Latest local baseline:
 
 - 48 test files
-- 356 tests
+- 357 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build

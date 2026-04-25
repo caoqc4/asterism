@@ -136,6 +136,10 @@ Completed registry-level tools:
   not create a formal Decision and is not exposed in prompts or normal agent
   plans)
 
+Repeatable local acceptance:
+
+- `npm run accept:domain-agent-tools`
+
 Rules:
 
 - one tool per slice
