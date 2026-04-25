@@ -350,6 +350,10 @@ The project is past initial architecture assembly. Current work should favor pro
   existing `agent_sessions` and `run_steps` repositories, while leaving patch
   artifact creation and promotion checkpoints to the separate patch-review
   persister.
+- A non-live injected producer preview service now composes preview generation
+  and preview persistence into one orchestration boundary, with real repository
+  integration coverage and no Docker, model, artifact, checkpoint, or UI
+  execution path.
 - Local Docker backend probe on 2026-04-26 is not ready: Docker CLI reached the
   configured socket path but the daemon/socket was unavailable at
   `/Users/caoq/.docker/run/docker.sock`. Real local-container backend live
@@ -398,8 +402,8 @@ npm run verify
 
 Latest local baseline:
 
-- 84 test files
-- 611 tests
+- 86 test files
+- 614 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -463,6 +467,11 @@ Latest local baseline:
   `npm run accept:sandbox-coding`, and `npm run verify` passed locally on
   2026-04-26 after adding non-live producer preview persistence: 84 test files
   / 611 tests
+- `npm test -- src/main/domain/run/sandboxed-coding-injected-producer-preview-service.test.ts
+  src/main/domain/run/sandboxed-coding-injected-producer-preview-service.integration.test.ts`,
+  `npm run accept:sandbox-coding`, and `npm run verify` passed locally on
+  2026-04-26 after adding the injected producer preview service: 86 test files
+  / 614 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

@@ -272,10 +272,13 @@ Completed non-live slices:
 8. Non-live producer preview persister that records bounded agent session
    metadata and compact RunStep drafts through existing repositories without
    creating patch artifacts or promotion checkpoints.
+9. Injected producer preview service that composes preview generation and
+   preview persistence through existing repositories, giving the future real
+   backend path a single non-live orchestration boundary.
 
 Next slice:
 
-9. Connect a real sandbox backend only after a backend decision/review confirms
+10. Connect a real sandbox backend only after a backend decision/review confirms
    the implementation still satisfies the sandbox decision and source boundary.
 
 ## Acceptance
