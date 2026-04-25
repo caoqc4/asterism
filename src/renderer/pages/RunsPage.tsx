@@ -174,16 +174,27 @@ function truncateSummary(value: string, limit = 180): string {
   return value.length > limit ? `${value.slice(0, limit)}...` : value;
 }
 
-function extractCommandPreviewLine(commandPreview: string | null, label: string): string | null {
-  if (!commandPreview) {
+function extractPreviewLine(preview: string | null, label: string): string | null {
+  if (!preview) {
     return null;
   }
 
-  const line = commandPreview
+  const line = preview
     .split('\n')
     .find((candidate) => candidate.startsWith(`${label}:`));
 
   return line?.slice(label.length + 1).trim() || null;
+}
+
+function formatDiffPreview(preview: string | null): string | null {
+  if (!preview) {
+    return null;
+  }
+
+  const patchStart = preview.indexOf('*** Begin Patch');
+  const content = patchStart >= 0 ? preview.slice(patchStart) : preview;
+
+  return truncateSummary(content.replace(/\s+/g, ' '));
 }
 
 function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
@@ -200,9 +211,16 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
     const expectedFiles = Array.isArray(input?.expectedFiles)
       ? input.expectedFiles.filter((item): item is string => typeof item === 'string')
       : [];
-    const diffPreview = typeof input?.diffPreview === 'string'
-      ? truncateSummary(input.diffPreview.replace(/\s+/g, ' '))
+    const rawDiffPreview = typeof input?.diffPreview === 'string'
+      ? input.diffPreview
       : null;
+    const diffPreview = formatDiffPreview(rawDiffPreview);
+    const patchSummary = rawDiffPreview
+      ? (typeof input?.summary === 'string'
+          ? input.summary.trim()
+          : extractPreviewLine(rawDiffPreview, 'Summary'))
+      : null;
+    const previewFiles = extractPreviewLine(rawDiffPreview, 'Files');
     const rawCommandPreview = typeof input?.commandPreview === 'string'
       ? input.commandPreview
       : null;
@@ -215,14 +233,15 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
       : [];
     const timeout = typeof input?.timeoutMs === 'number'
       ? `${input.timeoutMs}ms`
-      : extractCommandPreviewLine(rawCommandPreview, 'Timeout');
-    const cwd = extractCommandPreviewLine(rawCommandPreview, 'Cwd');
+      : extractPreviewLine(rawCommandPreview, 'Timeout');
+    const cwd = extractPreviewLine(rawCommandPreview, 'Cwd');
     const summaryParts = [
       typeof payload.tool === 'string' ? `工具：${payload.tool}` : null,
       typeof payload.nextTool === 'string' ? `下一工具：${payload.nextTool}` : null,
       typeof payload.risk === 'string' ? `风险：${payload.risk}` : null,
       typeof payload.reason === 'string' ? `原因：${payload.reason}` : null,
-      expectedFiles.length ? `文件：${expectedFiles.join(', ')}` : null,
+      patchSummary ? `摘要：${patchSummary}` : null,
+      expectedFiles.length ? `文件：${expectedFiles.join(', ')}` : previewFiles ? `文件：${previewFiles}` : null,
       script ? `脚本：npm run ${script}` : null,
       commandArgs.length ? `参数：${commandArgs.join(' ')}` : null,
       timeout ? `超时：${timeout}` : null,

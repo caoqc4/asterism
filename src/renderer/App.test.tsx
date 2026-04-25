@@ -2980,7 +2980,7 @@ describe('App UI flow', () => {
 
     expect(await screen.findByRole('heading', { name: 'agent / needs_confirmation' })).toBeTruthy();
     expect(
-      screen.getByText(/工具：workspace\.write_patch；风险：local_write；文件：notes\.md；预览：Summary: Update notes Files: notes\.md/),
+      screen.getByText(/工具：workspace\.write_patch；风险：local_write；摘要：Update notes；文件：notes\.md；预览：\*\*\* Begin Patch \*\*\* Update File: notes\.md/),
     ).toBeTruthy();
   });
 
