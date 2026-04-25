@@ -735,6 +735,96 @@ describe('DecisionService', () => {
     );
   });
 
+  it('approves patch-promotion checkpoints without applying staged files automatically', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord(),
+        status: 'approved',
+        title: '确认提升 sandbox patch',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+    };
+    const runCheckpointRepository = {
+      findOpenByDecisionId: vi.fn().mockResolvedValue({
+        id: 'run_checkpoint_patch_1',
+        runId: 'run_1',
+        stepId: 'run_step_1',
+        kind: 'patch_promotion',
+        status: 'open',
+        payload: JSON.stringify({
+          version: 1,
+          kind: 'patch_promotion',
+          artifactId: 'artifact_1',
+          artifactSummary: 'Reviewable sandbox patch',
+          sessionId: 'sandbox_session_1',
+          descriptorId: 'workspace.staged_patch',
+          decisionId: 'decision_1',
+          decisionTitle: '确认提升 sandbox patch',
+          policySnapshot: {
+            descriptorId: 'workspace.staged_patch',
+            sessionKind: 'sandbox',
+            credentialPolicy: 'none',
+            networkPolicy: 'disabled',
+            timeoutMs: 120_000,
+            outputLimitBytes: 64_000,
+          },
+        }),
+        createdAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      }),
+      updateStatus: vi.fn(),
+    };
+    const runStepRepository = {
+      create: vi.fn(),
+    };
+    const runRepository = {
+      getDetail: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const agentToolRegistry = {
+      execute: vi.fn(),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+      undefined,
+      runCheckpointRepository as never,
+      runStepRepository as never,
+      runRepository as never,
+      agentToolRegistry as never,
+    );
+
+    await service.act({
+      id: 'decision_1',
+      action: 'approve',
+    });
+
+    expect(agentToolRegistry.execute).not.toHaveBeenCalled();
+    expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith(
+      'run_checkpoint_patch_1',
+      'resolved',
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        kind: 'checkpoint',
+        status: 'completed',
+        title: '确认已通过：确认提升 sandbox patch',
+        output: '关联 Decision 已批准，但当前工具暂不支持自动续跑。',
+      }),
+    );
+    expect(runRepository.updateResult).not.toHaveBeenCalled();
+  });
+
   it('moves the task to waiting_external when a decision is deferred', async () => {
     const decisionRepository = {
       list: vi.fn(),
