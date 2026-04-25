@@ -424,6 +424,28 @@ export function evaluateAgentSandboxCodingLaneEligibility(params: {
   };
 }
 
+export function evaluateAgentSandboxCodingLaneEligibilityFromBackendStatus(params: {
+  backendStatus?: AgentSandboxBackendStatus | null;
+  featureFlags: FeatureFlags;
+  workspaceRoot?: string | null;
+  commandPolicy: AgentSandboxCommandPolicy;
+  executionPolicy: AgentToolExecutionPolicy;
+}): AgentSandboxCodingLaneEligibility {
+  const profile = params.backendStatus?.profile;
+  const readiness = profile ? evaluateAgentSandboxBackendReadiness(profile) : null;
+  const providerCapabilities = profile && readiness?.ready
+    ? buildAgentSandboxProviderCapabilitiesFromBackendProfile(profile)
+    : DISABLED_AGENT_SANDBOX_PROVIDER_CAPABILITIES;
+
+  return evaluateAgentSandboxCodingLaneEligibility({
+    commandPolicy: params.commandPolicy,
+    executionPolicy: params.executionPolicy,
+    featureFlags: params.featureFlags,
+    providerCapabilities,
+    workspaceRoot: params.workspaceRoot,
+  });
+}
+
 export function buildAgentSandboxSessionManifest(params: {
   handle: AgentSandboxSessionHandle;
   request: AgentSandboxSessionRequest;

@@ -13,6 +13,7 @@ import {
   DISABLED_AGENT_SANDBOX_PROVIDER_CAPABILITIES,
   evaluateAgentSandboxBackendReadiness,
   evaluateAgentSandboxCodingLaneEligibility,
+  evaluateAgentSandboxCodingLaneEligibilityFromBackendStatus,
   summarizeAgentSandboxBackendProbe,
   summarizeAgentSandboxBackendProfile,
   summarizeAgentSandboxSessionManifest,
@@ -302,6 +303,52 @@ describe('agent sandbox provider contracts', () => {
       eligible: true,
       summary: 'Sandbox coding lane eligible for a gated staged-patch session.',
     });
+  });
+
+  it('derives sandbox coding lane eligibility from backend status without treating probe readiness as rollout approval', () => {
+    const backendStatus = buildAgentSandboxBackendStatus({
+      backendId: 'local-container',
+      environmentPolicy: 'empty',
+      isolation: 'container',
+      kind: 'local_container',
+      networkMode: 'disabled',
+      status: 'available',
+      supportsOutputLimits: true,
+      supportsPatchArtifacts: true,
+      supportsStagedWrites: true,
+      supportsStructuredCommands: true,
+      supportsTargetedCommands: true,
+      supportsWorkspaceMount: true,
+    });
+
+    const blocked = evaluateAgentSandboxCodingLaneEligibilityFromBackendStatus({
+      backendStatus,
+      commandPolicy: buildDefaultAgentSandboxCommandPolicy(),
+      executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: false,
+      },
+      workspaceRoot: '/tmp/taskplane-workspace',
+    });
+
+    expect(blocked.eligible).toBe(false);
+    expect(blocked.blockedReasons).toEqual([
+      'sandbox coding-agent feature flag is disabled',
+    ]);
+
+    const eligible = evaluateAgentSandboxCodingLaneEligibilityFromBackendStatus({
+      backendStatus,
+      commandPolicy: buildDefaultAgentSandboxCommandPolicy(),
+      executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      workspaceRoot: '/tmp/taskplane-workspace',
+    });
+
+    expect(eligible.eligible).toBe(true);
   });
 
   it('rejects unsafe sandbox coding policies even when the rollout flag is enabled', () => {

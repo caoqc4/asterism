@@ -5533,8 +5533,11 @@ describe('App UI flow', () => {
       screen.getByText(/已选择 anthropic \/ claude-3-5-sonnet-latest，但 AI config 未就绪/),
     ).toBeTruthy();
     expect(screen.getByText(/Sandbox Backend：未检测/)).toBeTruthy();
+    expect(screen.getByText(/Sandbox Coding Lane：等待 Sandbox Backend 检测/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '检测 Sandbox Backend' }));
     await screen.findByText(/Sandbox Backend：可用：Sandbox backend ready: local-container\./);
+    expect(screen.getByText(/Sandbox Coding Lane：Sandbox coding lane unavailable/)).toBeTruthy();
+    expect(screen.getByText(/sandbox coding-agent feature flag is disabled/)).toBeTruthy();
     expect(eventingApi.probeSandboxBackend).toHaveBeenCalledTimes(1);
 
     await user.selectOptions(screen.getByLabelText('Provider'), 'openai');

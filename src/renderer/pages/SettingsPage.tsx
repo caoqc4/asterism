@@ -1,4 +1,9 @@
 import type { AiConfigInput, AiConfigStatus } from '@shared/types/settings';
+import { buildDefaultAgentToolExecutionPolicy } from '@shared/agent-tool-scaffold';
+import {
+  buildDefaultAgentSandboxCommandPolicy,
+  evaluateAgentSandboxCodingLaneEligibilityFromBackendStatus,
+} from '@shared/agent-sandbox-provider';
 
 type SettingsPageProps = {
   aiStatus: AiConfigStatus | null;
@@ -37,6 +42,22 @@ function formatSandboxBackendState(aiStatus: AiConfigStatus | null): string {
   }
 
   return `不可用：${status.summary}`;
+}
+
+function formatSandboxCodingLaneReadiness(aiStatus: AiConfigStatus | null): string {
+  if (!aiStatus?.sandboxBackendStatus?.probe) {
+    return '等待 Sandbox Backend 检测';
+  }
+
+  const eligibility = evaluateAgentSandboxCodingLaneEligibilityFromBackendStatus({
+    backendStatus: aiStatus.sandboxBackendStatus,
+    commandPolicy: buildDefaultAgentSandboxCommandPolicy(),
+    executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+    featureFlags: aiStatus.featureFlags,
+    workspaceRoot: aiStatus.workspaceRoot,
+  });
+
+  return eligibility.summary;
 }
 
 export function SettingsPage({
@@ -89,6 +110,7 @@ export function SettingsPage({
             {sandboxBackendProbePending ? '检测中' : '检测 Sandbox Backend'}
           </button>
         </div>
+        <p className="meta">Sandbox Coding Lane：{formatSandboxCodingLaneReadiness(aiStatus)}</p>
       </article>
 
       <article className="panel">
