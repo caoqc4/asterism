@@ -1,0 +1,88 @@
+import type { ArtifactRecord } from '../../../shared/types/artifact.js';
+import type { RunStepRecord } from '../../../shared/types/run.js';
+import type { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
+import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import type {
+  AgentPatchPromotionCheckpointResult,
+  AgentCheckpointRecorder,
+} from './agent-checkpoint-recorder.js';
+import type { LocalContainerSandboxPatchReviewPreparation } from './local-container-sandbox-backend.js';
+
+export type PersistSandboxPatchReviewResult = {
+  artifact: ArtifactRecord;
+  checkpoint: AgentPatchPromotionCheckpointResult;
+  steps: {
+    session: RunStepRecord;
+    checks: RunStepRecord;
+    artifact: RunStepRecord;
+  };
+};
+
+export class SandboxPatchReviewPersister {
+  constructor(
+    private readonly artifactRepository: Pick<ArtifactRepository, 'createPatchFromRun'>,
+    private readonly runStepRepository: Pick<RunStepRepository, 'create'>,
+    private readonly checkpointRecorder: Pick<AgentCheckpointRecorder, 'createPatchPromotionCheckpoint'>,
+  ) {}
+
+  async persist(params: {
+    preparation: LocalContainerSandboxPatchReviewPreparation;
+    runId: string;
+    taskId: string;
+    decisionTitle?: string | null;
+  }): Promise<PersistSandboxPatchReviewResult> {
+    const { preparation } = params;
+    const sessionStep = await this.runStepRepository.create({
+      runId: params.runId,
+      kind: 'plan',
+      status: 'completed',
+      title: '准备 sandbox patch review',
+      input: preparation.sessionSummary,
+      output: `sandbox=${preparation.handle.id}`,
+    });
+    const checkStep = await this.runStepRepository.create({
+      runId: params.runId,
+      kind: 'tool_result',
+      status: preparation.checkRun.results.some((result) => result.status === 'failed')
+        ? 'failed'
+        : 'completed',
+      title: 'sandbox targeted checks',
+      input: preparation.checkRun.results.map((result) => result.script).join(', '),
+      output: preparation.checkRun.summary,
+    });
+    const artifact = await this.artifactRepository.createPatchFromRun({
+      taskId: params.taskId,
+      runId: params.runId,
+      title: preparation.artifact.summary,
+      content: JSON.stringify(preparation.artifact, null, 2),
+    });
+    const artifactStep = await this.runStepRepository.create({
+      runId: params.runId,
+      kind: 'artifact',
+      status: 'completed',
+      title: '记录 sandbox patch artifact',
+      input: preparation.artifact.files.join(', '),
+      output: artifact.id,
+    });
+    const checkpoint = await this.checkpointRecorder.createPatchPromotionCheckpoint({
+      runId: params.runId,
+      taskId: params.taskId,
+      artifactId: artifact.id,
+      artifactSummary: preparation.artifact.summary,
+      sessionId: preparation.handle.id,
+      policySnapshot: preparation.checkpoint.policySnapshot,
+      decisionTitle: params.decisionTitle?.trim() || '确认提升 sandbox patch',
+      preview: preparation.artifact.diff,
+    });
+
+    return {
+      artifact,
+      checkpoint,
+      steps: {
+        artifact: artifactStep,
+        checks: checkStep,
+        session: sessionStep,
+      },
+    };
+  }
+}

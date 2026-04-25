@@ -63,4 +63,24 @@ describe('ArtifactRepository integration', () => {
     expect(recentArtifacts[0]?.content).toBe('A local note created by an internal agent tool.');
     expect(detail?.timeline.map((event) => event.type)).toContain('artifact.created');
   });
+
+  it('creates a patch artifact from a sandbox run', async () => {
+    const task = await taskRepository.create({ title: 'Review sandbox patch' });
+
+    const artifact = await artifactRepository.createPatchFromRun({
+      taskId: task.id,
+      runId: 'run_1',
+      title: 'Sandbox patch',
+      content: '--- a/notes.md\n+++ b/notes.md',
+    });
+
+    const recentArtifacts = await artifactRepository.listRecentForTask(task.id);
+    const detail = await taskRepository.getDetail(task.id);
+
+    expect(artifact.kind).toBe('patch');
+    expect(artifact.sourceType).toBe('run');
+    expect(recentArtifacts[0]?.title).toBe('Sandbox patch');
+    expect(recentArtifacts[0]?.content).toBe('--- a/notes.md\n+++ b/notes.md');
+    expect(detail?.timeline.map((event) => event.type)).toContain('artifact.created');
+  });
 });

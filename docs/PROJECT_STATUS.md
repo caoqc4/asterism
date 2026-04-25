@@ -208,6 +208,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - Patch-review preparation now disposes the prepared sandbox session if checks
   or artifact construction fail, so failed internal preparation does not leave
   a staging directory behind.
+- Sandbox patch-review persistence now has an internal boundary that records
+  session/check/artifact RunSteps, persists a `patch` artifact, and delegates
+  Decision-linked `patch_promotion` checkpoint creation to
+  `AgentCheckpointRecorder` without exposing the path to UI or models.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

@@ -124,4 +124,45 @@ export class ArtifactRepository {
     const [created] = await db.select().from(artifacts).where(eq(artifacts.id, id)).limit(1);
     return toRecord(created);
   }
+
+  async createPatchFromRun(params: {
+    taskId: string;
+    runId: string;
+    title: string;
+    content: string;
+  }): Promise<ArtifactRecord> {
+    const db = initDatabase();
+    const id = generateId('artifact');
+    const timestamp = nowIso();
+    const title = params.title.trim();
+
+    await db.insert(artifacts).values({
+      id,
+      taskId: params.taskId,
+      sourceType: 'run',
+      sourceId: params.runId,
+      kind: 'patch',
+      title,
+      content: params.content,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    });
+
+    await db.insert(timelineEvents).values({
+      id: generateId('timeline'),
+      taskId: params.taskId,
+      type: 'artifact.created',
+      payload: JSON.stringify({
+        artifactId: id,
+        sourceType: 'run',
+        sourceId: params.runId,
+        kind: 'patch',
+        title,
+      }),
+      createdAt: timestamp,
+    });
+
+    const [created] = await db.select().from(artifacts).where(eq(artifacts.id, id)).limit(1);
+    return toRecord(created);
+  }
 }

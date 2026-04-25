@@ -1,4 +1,4 @@
-export type ArtifactKind = 'run_output' | 'note';
+export type ArtifactKind = 'run_output' | 'note' | 'patch';
 
 export type ArtifactSourceType = 'run';
 
