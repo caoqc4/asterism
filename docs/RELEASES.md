@@ -61,8 +61,8 @@ The package smoke check validates the app bundle, key `Info.plist` metadata,
 native module unpacking, ASAR integrity metadata, required ASAR entries, absence
 of compiled test files, executable bit, and the local code signature. The
 runtime smoke check launches the packaged executable with isolated user data and
-confirms it creates `config.json` and `taskplane.db` while clearing
-`ELECTRON_RUN_AS_NODE`.
+confirms it creates `config.json`, initializes the core `taskplane.db` SQLite
+schema, and clears `ELECTRON_RUN_AS_NODE`.
 
 ### Check signed/notarized release readiness
 
@@ -118,7 +118,8 @@ As of the current alpha path:
 - `npm run smoke:build` passes locally
 - `npm run dist:mac:dir` passes locally
 - `npm run smoke:package:mac` passes locally for the unpacked app
-- `npm run smoke:runtime:mac` passes locally for isolated packaged startup
+- `npm run smoke:runtime:mac` passes locally for isolated packaged startup and
+  core SQLite schema initialization
 - `npm run smoke:release:mac` passes locally for the combined unsigned macOS path
 - `npm run release:mac:preflight` reports local signing/notarization readiness without performing signing or Apple network calls
 - notarization submission is skipped because the dedicated signed/notarized release pass has not been executed

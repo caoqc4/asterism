@@ -116,7 +116,7 @@ Latest local baseline:
 - production renderer build
 - Electron main-process build
 - build smoke check
-- macOS package and runtime smoke checks for the unpacked app, including ASAR contents and isolated startup
+- macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
 - `npm run smoke:release:mac` passed locally on 2026-04-25 for the combined
   unsigned macOS package path
 - `npm run accept:agent-local` passed locally after the restart-safe checkpoint

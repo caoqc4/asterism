@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import Database from 'better-sqlite3';
 
 const root = process.cwd();
 const executablePath = path.join(root, 'release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane');
@@ -72,6 +73,39 @@ child.stderr.on('data', (chunk) => {
 const startedAt = Date.now();
 const configPath = path.join(userDataPath, 'config.json');
 const dbPath = path.join(userDataPath, 'taskplane.db');
+const requiredTables = [
+  'tasks',
+  'timeline_events',
+  'decision_requests',
+  'runs',
+  'run_steps',
+  'run_checkpoints',
+  'agent_sessions',
+  'artifacts',
+  'source_contexts',
+  'completion_criteria',
+];
+
+function assertDatabaseSchema() {
+  const database = new Database(dbPath, {
+    fileMustExist: true,
+    readonly: true,
+  });
+
+  try {
+    const rows = database
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+      .all();
+    const tableNames = new Set(rows.map((row) => row.name));
+    const missingTables = requiredTables.filter((table) => !tableNames.has(table));
+
+    if (missingTables.length > 0) {
+      throw new Error(`Packaged runtime database is missing tables: ${missingTables.join(', ')}`);
+    }
+  } finally {
+    database.close();
+  }
+}
 
 while (Date.now() - startedAt < timeoutMs) {
   if (child.exitCode !== null || child.signalCode !== null) {
@@ -89,6 +123,16 @@ while (Date.now() - startedAt < timeoutMs) {
 
     if (!config.aiProvider || !config.aiModel || !config.featureFlags) {
       fail('Packaged app wrote an invalid config.json.', child, output);
+    }
+
+    try {
+      assertDatabaseSchema();
+    } catch (error) {
+      fail(
+        error instanceof Error ? error.message : 'Packaged app wrote an invalid taskplane.db.',
+        child,
+        output,
+      );
     }
 
     await waitForExit(child);

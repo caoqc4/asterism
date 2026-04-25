@@ -407,7 +407,7 @@ Current verification:
 - GitHub Actions runs `npm run verify` on pushes to `main` and pull requests when Actions capacity is available
 - `npm run smoke:build` when package/build entrypoints change
 - `npm run smoke:package:mac` after producing `release/mac-arm64/Taskplane.app`, including ASAR content checks
-- `npm run smoke:runtime:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged startup
+- `npm run smoke:runtime:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged startup and SQLite schema initialization
 - `npm run smoke:release:mac` for the combined unsigned macOS build/package/runtime path
 
 When GitHub Actions is unavailable or disabled because of monthly quota, local verification is the temporary source of truth:
