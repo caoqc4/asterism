@@ -173,7 +173,7 @@ describe('TextExecutor', () => {
     );
   });
 
-  it('allows task update tools in agent prompts only when explicitly enabled', async () => {
+  it('allows task update/evidence tools in agent prompts only when explicitly enabled', async () => {
     generateTextMock.mockResolvedValue({ text: '{"finalOutput":"Generated output","steps":[]}' });
     const executor = new TextExecutor();
 
@@ -217,7 +217,7 @@ describe('TextExecutor', () => {
     );
     expect(generateTextMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        prompt: expect.stringContaining('每次计划最多使用一个任务内更新工具'),
+        prompt: expect.stringContaining('每次计划最多使用一个任务内更新/证据工具'),
       }),
     );
   });

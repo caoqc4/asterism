@@ -693,7 +693,7 @@ export function RunsPage({
                     }
                     type="checkbox"
                   />
-                  允许任务内更新工具
+                  允许任务内更新/证据工具
                 </label>
                 <p className="meta">
                   {formatPreRunAgentCapabilitySummary(

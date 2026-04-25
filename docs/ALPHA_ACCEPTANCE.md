@@ -42,7 +42,7 @@ Use this to validate the first user-facing task-update tool exposure. It should
 not modify workspace files or run commands.
 
 - Create a task with a clear next-step update request.
-- Trigger an `agent` run with `允许任务内更新工具` enabled.
+- Trigger an `agent` run with `允许任务内更新/证据工具` enabled.
 - Confirm the capability preview and Runs detail show task update/evidence tools enabled.
 - Confirm the task timeline records the service-routed task update.
 - Confirm the run steps include the accepted domain tool call/result.

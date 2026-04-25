@@ -108,7 +108,7 @@ Accepted implementation coverage:
   `allowTaskMutationTools=true`
 - prompt tests prove domain tools are mentioned only with the opt-in
 - renderer tests prove the run form separates read-only workspace context from
-  task update tools and workspace write/command tools
+  task update/evidence tools and workspace write/command tools
 - existing integration and service tests prove the allowed tools still route
   through domain services where needed, keep completion review read-only, and
   write run-step observations

@@ -73,12 +73,12 @@ function buildPrompt(
           ];
       const taskMutationGuidance = input.allowTaskMutationTools
         ? [
-            '- 可以使用任务内更新工具来更新下一步、添加完成标准、审查完成证据、补充来源上下文或草拟 Decision。',
-            '- 每次计划最多使用一个任务内更新工具；decision.draft 只能草拟，不会创建正式 Decision。',
+            '- 可以使用任务内更新/证据工具来更新下一步、添加完成标准、审查完成证据、补充来源上下文或草拟 Decision。',
+            '- 每次计划最多使用一个任务内更新/证据工具；decision.draft 只能草拟，不会创建正式 Decision。',
             '- task.review_completion_evidence 只能审查证据，不能满足完成标准，也不能把任务转为 completed。',
           ]
         : [
-            '- 当前没有开启任务内更新工具，不允许使用 task.update_next_step、task.create_completion_criterion、task.review_completion_evidence、source_context.create 或 decision.draft。',
+            '- 当前没有开启任务内更新/证据工具，不允许使用 task.update_next_step、task.create_completion_criterion、task.review_completion_evidence、source_context.create 或 decision.draft。',
           ];
 
       return [

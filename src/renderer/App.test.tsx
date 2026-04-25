@@ -2698,7 +2698,7 @@ describe('App UI flow', () => {
       ),
     ).toBeTruthy();
     await user.click(screen.getByRole('checkbox', { name: '允许只读工作区上下文' }));
-    await user.click(screen.getByRole('checkbox', { name: '允许任务内更新工具' }));
+    await user.click(screen.getByRole('checkbox', { name: '允许任务内更新/证据工具' }));
     expect(
       screen.getByText(
         'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context enabled for this run / task update/evidence tools enabled for this run / structured tool calls unavailable / patch/commands unavailable',
@@ -3431,7 +3431,7 @@ describe('App UI flow', () => {
     ).toBeTruthy();
 
     await user.click(screen.getByRole('checkbox', { name: '允许只读工作区上下文' }));
-    await user.click(screen.getByRole('checkbox', { name: '允许任务内更新工具' }));
+    await user.click(screen.getByRole('checkbox', { name: '允许任务内更新/证据工具' }));
 
     expect(
       screen.getByText(
