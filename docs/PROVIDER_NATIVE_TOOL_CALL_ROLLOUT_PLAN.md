@@ -74,6 +74,8 @@ Acceptance:
 - tests prove execution still uses text-only planning
 - failed shadow normalization does not fail the run
 - session metadata remains truthful: `structuredToolCalls=false`
+- observing provider-native tool calls in a shadow step does not change the
+  local agent session executor or capability metadata
 
 Implementation boundary:
 
