@@ -70,6 +70,11 @@ The project is past initial architecture assembly. Current work should favor pro
   plus secondary frameworks as pattern sources. Taskplane should keep its own
   Task/Run/Decision/Artifact/Timeline control plane and avoid adopting a full
   external agent runtime before Slice 0 is complete.
+- [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
+  splits the next execution-layer work into concrete tasks: start with the
+  `AgentRunLoop` event emitter, then move event-driven RunStep projection,
+  checkpoint normalization, restart-safe resume, tool exposure gates, and the
+  sandbox decision in order.
 
 ## Verification Baseline
 
@@ -107,6 +112,7 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
 5. Use [AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md](AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md)
    and [AGENT_EXECUTION_LAYER_V2_DECISION.md](AGENT_EXECUTION_LAYER_V2_DECISION.md)
+   plus [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
    for the next implementation pass: typed runtime events, restart-safe resume,
    and explicit tool exposure gates before any new execution power is exposed.
 
