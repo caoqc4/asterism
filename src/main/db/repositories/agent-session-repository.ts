@@ -71,4 +71,29 @@ export class AgentSessionRepository {
 
     return toRecord(created);
   }
+
+  async updateStatus(id: string, status: AgentSessionStatus): Promise<AgentSessionRecord> {
+    const db = initDatabase();
+    const timestamp = nowIso();
+
+    await db
+      .update(agentSessions)
+      .set({
+        status,
+        updatedAt: timestamp,
+      })
+      .where(eq(agentSessions.id, id));
+
+    const [updated] = await db
+      .select()
+      .from(agentSessions)
+      .where(eq(agentSessions.id, id))
+      .limit(1);
+
+    if (!updated) {
+      throw new Error(`Agent session not found: ${id}`);
+    }
+
+    return toRecord(updated);
+  }
 }

@@ -96,7 +96,7 @@ Covered today:
 - `RunCheckpointRepository`
   open checkpoint creation, per-run retrieval, resume checkpoint creation, decision-id lookup, and checkpoint settlement
 - `AgentSessionRepository`
-  agent session metadata persistence for run-scoped executor capabilities
+  agent session metadata persistence for run-scoped executor capabilities and terminal status updates
 - `DecisionRepository`
   decision creation, optional source metadata persistence, action persistence, timeline writes
 - `BriefSnapshotRepository`

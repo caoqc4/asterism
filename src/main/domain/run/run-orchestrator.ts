@@ -181,7 +181,7 @@ export class RunOrchestrator {
       return result;
     }
 
-    await this.agentSessionRepository.create({
+    const agentSession = await this.agentSessionRepository.create({
       runId: params.run.id,
       mode: 'agent',
       capabilities: getLocalAgentRuntimeCapabilities({
@@ -193,11 +193,20 @@ export class RunOrchestrator {
       ].join('\n'),
     });
 
-    const sessionResult = await this.agentExecutor.executeLocalNoteSession({
-      request,
-      modelOutput: result.output,
-      taskTitle: params.task.title,
-    });
+    let sessionResult: Awaited<ReturnType<AgentExecutor['executeLocalNoteSession']>>;
+
+    try {
+      sessionResult = await this.agentExecutor.executeLocalNoteSession({
+        request,
+        modelOutput: result.output,
+        taskTitle: params.task.title,
+      });
+    } catch (error) {
+      await this.agentSessionRepository.updateStatus(agentSession.id, 'failed');
+      throw error;
+    }
+
+    await this.agentSessionRepository.updateStatus(agentSession.id, sessionResult.status);
 
     if (sessionResult.status === 'needs_confirmation') {
       return {

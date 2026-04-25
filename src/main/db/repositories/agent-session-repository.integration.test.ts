@@ -49,8 +49,13 @@ describe('AgentSessionRepository integration', () => {
     expect(created.capabilities.textOnlyPlanning).toBe(true);
     expect(created.metadata).toBe('local executor');
 
+    const updated = await agentSessionRepository.updateStatus(created.id, 'completed');
+
+    expect(updated.status).toBe('completed');
+
     const sessions = await agentSessionRepository.listForRun(run.id);
     expect(sessions).toHaveLength(1);
     expect(sessions[0]?.id).toBe(created.id);
+    expect(sessions[0]?.status).toBe('completed');
   });
 });

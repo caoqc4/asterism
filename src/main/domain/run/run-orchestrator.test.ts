@@ -267,6 +267,7 @@ describe('RunOrchestrator', () => {
     };
     const agentSessionRepository = {
       create: vi.fn().mockResolvedValue({ id: 'agent_session_1' }),
+      updateStatus: vi.fn().mockResolvedValue({ id: 'agent_session_1', status: 'completed' }),
     };
     const orchestrator = new RunOrchestrator(
       aiConfigService as never,
@@ -300,6 +301,10 @@ describe('RunOrchestrator', () => {
       },
       metadata: 'executor=local_agent\nloop=local_note',
     });
+    expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
+      'agent_session_1',
+      'completed',
+    );
     expect(agentExecutor.executeLocalNoteSession).toHaveBeenCalledWith(
       expect.objectContaining({
         modelOutput: 'Agent local note output',
@@ -343,6 +348,7 @@ describe('RunOrchestrator', () => {
     };
     const agentSessionRepository = {
       create: vi.fn().mockResolvedValue({ id: 'agent_session_1' }),
+      updateStatus: vi.fn().mockResolvedValue({ id: 'agent_session_1', status: 'completed' }),
     };
     const orchestrator = new RunOrchestrator(
       aiConfigService as never,
@@ -366,6 +372,10 @@ describe('RunOrchestrator', () => {
           fileContext: true,
         }),
       }),
+    );
+    expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
+      'agent_session_1',
+      'completed',
     );
     expect(agentExecutor.executeLocalNoteSession).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -410,6 +420,7 @@ describe('RunOrchestrator', () => {
     };
     const agentSessionRepository = {
       create: vi.fn().mockResolvedValue({ id: 'agent_session_1' }),
+      updateStatus: vi.fn().mockResolvedValue({ id: 'agent_session_1', status: 'paused' }),
     };
     const orchestrator = new RunOrchestrator(
       aiConfigService as never,
@@ -433,5 +444,9 @@ describe('RunOrchestrator', () => {
       checkpointId: 'run_checkpoint_1',
       selection,
     });
+    expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
+      'agent_session_1',
+      'paused',
+    );
   });
 });
