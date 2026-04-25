@@ -396,15 +396,19 @@ Implemented baseline:
 
 - typed internal tool registry
 - read-only task context and timeline inspection tools
+- registry-level domain tools for next step, completion criterion, source
+  context, and draft-only Decision proposals
 - local note artifact creation tool
 - policy-gated read-only workspace search/read tools
+- confirmation-gated workspace patch and allowlisted package-script command
+  tools, still absent from model prompts and normal agent plans
 - tool call/result step persistence
 - policy-driven confirmation checkpoints for confirmation-required tools
 
 Remaining cleanup:
 
-- add domain-shaped tools one at a time only when a Task flow needs them
-- keep local-write tools behind observation and checkpoint policy
+- decide the first UI/policy opt-in for registry-only domain or workspace tools
+- keep local-write and command tools behind observation and checkpoint policy
 
 ### Phase 4: Checkpoints And Confirmation
 
@@ -564,9 +568,9 @@ Completed slice:
    release-readiness signoff.
 2. Add versioned v1 checkpoint payload helpers for tool-permission and resume
    checkpoints, while keeping legacy JSON payloads readable.
-3. Before adding `workspace.write_patch` or `workspace.run_command`, design the
-   confirmation, diff preview, sandbox, and rollback story as a separate
-   decision doc. See [WORKSPACE_WRITE_TOOLS_DECISION.md](WORKSPACE_WRITE_TOOLS_DECISION.md).
+3. Before adding workspace mutation tools, design the confirmation, diff
+   preview, sandbox, and rollback story as a separate decision doc. See
+   [WORKSPACE_WRITE_TOOLS_DECISION.md](WORKSPACE_WRITE_TOOLS_DECISION.md).
 
 Completed slice:
 
@@ -577,13 +581,22 @@ Completed slice:
 3. Keep the patch tool absent from model prompts and disabled without explicit
    local file-write policy.
 
-Next code slice:
+Completed slice:
 
 1. Exercise `workspace.write_patch` through a local approval flow before making
    it visible in any user-facing prompt or UI opt-in.
-2. Keep `workspace.run_command` separate unless the patch slice proves the
-   checkpoint/resume UX is coherent.
-3. Design the eventual command allowlist as a separate decision update.
+2. Accept and implement the command allowlist as a separate registry-level
+   package-script runner.
+3. Keep `workspace.write_patch`, `workspace.run_command`, and domain-shaped
+   task tools absent from normal model plans until a dedicated UI/policy opt-in
+   slice chooses how users enable them.
+
+Next code/design slice:
+
+1. Choose the first user-facing opt-in surface, if any, for registry-only
+   domain tools or workspace tools.
+2. Keep broad browser/computer/social/coding execution deferred until the
+   executor/session boundary can survive interruption and restart.
 
 For the shorter implementation sequence after the alpha task-management pass,
 see [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md).

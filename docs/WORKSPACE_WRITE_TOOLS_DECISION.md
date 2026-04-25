@@ -2,8 +2,8 @@
 
 ## Status
 
-Accepted for the first `workspace.write_patch` slice. Keep
-`workspace.run_command` deferred until the patch/checkpoint UX is proven.
+Accepted for the first `workspace.write_patch` slice and the first
+`workspace.run_command` registry-level command slice.
 
 Prerequisite update: the packaged read-only workspace path was manually repeated
 on 2026-04-25.
@@ -12,6 +12,12 @@ Implementation update: `workspace.write_patch` now exists as a confirmation-gate
 local-write tool. It is disabled without explicit `allowLocalFileWrite` policy,
 is still absent from model prompts, stores a diff preview in the checkpoint, and
 applies only after the linked Decision is approved.
+
+Command update: `workspace.run_command` now exists as a confirmation-gated,
+allowlisted package-script runner. It is disabled without explicit
+`allowLocalCommandRun` policy, is still absent from model prompts, stores a
+command preview in the checkpoint, and runs only after the linked Decision is
+approved. See [WORKSPACE_COMMAND_ALLOWLIST_DECISION.md](WORKSPACE_COMMAND_ALLOWLIST_DECISION.md).
 
 ## Decision
 
@@ -22,7 +28,7 @@ patch proposal and local command execution as separate capabilities:
 - `workspace.write_patch`: applies a bounded textual patch inside the configured
   workspace root. First slice implemented.
 - `workspace.run_command`: runs a bounded command inside the configured
-  workspace root. Still deferred.
+  workspace root. First registry-level package-script slice implemented.
 
 Both tools must be disabled by default, unavailable to model prompts unless the
 run opts in, and blocked by a confirmation checkpoint before execution.
@@ -101,15 +107,17 @@ Automatic revert can come later after the product has a clearer undo model.
 ```ts
 {
   "summary": "Why this command is needed",
-  "command": "npm",
-  "args": ["test", "--", "src/main/domain/run/run-service.integration.test.ts"],
+  "script": "test",
+  "args": ["src/main/domain/run/run-service.integration.test.ts"],
   "timeoutMs": 120000
 }
 ```
 
 Rules:
 
-- Use command plus args, not a shell string.
+- Resolve `script` through the configured workspace root `package.json`.
+- Execute as `npm run <script> -- <args...>`.
+- Use argv arrays, not a shell string.
 - Run with `cwd` set to the configured workspace root.
 - Start with an allowlist: test, lint, build, and smoke commands from the local
   package scripts are acceptable candidates.
