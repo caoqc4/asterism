@@ -29,6 +29,7 @@ Current test files:
 - `src/main/domain/run/agent-tool-registry.test.ts`
 - `src/main/domain/run/agent-working-context.test.ts`
 - `src/main/domain/run/agent-executor.test.ts`
+- `src/main/domain/run/agent-checkpoint-recorder.test.ts`
 - `src/main/domain/brief/home-brief-service.test.ts`
 - `src/main/domain/brief/process-template-selector.test.ts`
 - `src/main/domain/working-context/assembler.test.ts`
@@ -59,6 +60,7 @@ Current test files:
 - `src/renderer/App.test.tsx`
 - `src/renderer/lib/agentCapabilities.test.ts`
 - `src/shared/agent-runtime-events.test.ts`
+- `src/shared/agent-tool-exposure.test.ts`
 - `src/shared/working-context/priority-lanes.test.ts`
 - `src/shared/working-context/timeline.test.ts`
 - `src/shared/working-context/transitions.test.ts`
@@ -120,6 +122,14 @@ Covered today:
   task-detail compression into typed agent run context, default policy, and plan-step request summaries
 - `AgentToolRegistry`
   internal tool discovery, read-only context/timeline inspection, read-only completion evidence review, service-routed task next-step updates, completion-criterion creation, source-context creation, and draft-only Decision proposals, policy-gated read-only workspace search/file reads, dynamic workspace-root resolution, local note artifact creation, confirmation-gated workspace patch application, tool call/result step writes, validation failure recording, policy-driven confirmation checkpoints, and Decision creation for confirmation checkpoints
+- `AgentCheckpointRecorder`
+  centralized tool-permission checkpoint creation, Decision linkage,
+  checkpoint RunStep projection, recorder-owned `checkpoint.created` events,
+  and restart-safe resume checkpoint payload creation
+- `Agent tool exposure matrix`
+  shared text-prompt and provider-native exposure rules, per-run opt-ins for
+  workspace read and task/evidence tools, and permanent non-exposure of
+  workspace patch/command tools even when runtime policy can execute them
 - `AgentToolRegistry integration`
   service-routed task next-step updates, completion-criterion creation, read-only completion evidence review without satisfying criteria or completing tasks, source-context creation, and draft-only Decision proposals through real SQLite repositories, including task timeline evidence and run-step observations
 - `RunService integration`
