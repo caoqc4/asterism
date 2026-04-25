@@ -5469,6 +5469,9 @@ describe('App UI flow', () => {
 
     await user.click(await screen.findByRole('button', { name: /settings/i }));
     await screen.findByRole('heading', { name: 'AI Provider 与本地密钥存储' });
+    expect(
+      screen.getByText(/已选择 anthropic \/ claude-3-5-sonnet-latest，但 AI config 未就绪/),
+    ).toBeTruthy();
 
     await user.selectOptions(screen.getByLabelText('Provider'), 'openai');
     const modelInput = screen.getByLabelText('Model');

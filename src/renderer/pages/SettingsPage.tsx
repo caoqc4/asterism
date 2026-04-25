@@ -7,6 +7,22 @@ type SettingsPageProps = {
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
 };
 
+function formatAiConfigState(aiStatus: AiConfigStatus | null): string {
+  if (!aiStatus) {
+    return 'AI config 尚未初始化';
+  }
+
+  if (aiStatus.configured) {
+    return `已配置 ${aiStatus.provider} / ${aiStatus.model}，更新时间 ${aiStatus.updatedAt}`;
+  }
+
+  if (aiStatus.provider && aiStatus.model) {
+    return `已选择 ${aiStatus.provider} / ${aiStatus.model}，但 AI config 未就绪`;
+  }
+
+  return '尚未配置';
+}
+
 export function SettingsPage({ aiStatus, configForm, onChange, onSubmit }: SettingsPageProps) {
   return (
     <section className="page-grid">
@@ -20,11 +36,7 @@ export function SettingsPage({ aiStatus, configForm, onChange, onSubmit }: Setti
 
       <article className="panel">
         <h2>当前状态</h2>
-        <p className="meta">
-          {aiStatus?.configured
-            ? `已配置 ${aiStatus.provider} / ${aiStatus.model}，更新时间 ${aiStatus.updatedAt}`
-            : '尚未配置'}
-        </p>
+        <p className="meta">{formatAiConfigState(aiStatus)}</p>
         <p className="meta">
           {aiStatus?.apiKeySource === 'env'
             ? 'API Key 来自环境变量'
