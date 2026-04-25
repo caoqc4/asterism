@@ -158,6 +158,13 @@ Current boundary:
 - RunOrchestrator selects this path only when the run is `agent`, the reserved
   flag is enabled, a supported provider payload exists, and normalization
   succeeds
+- provider-native tool names now have Taskplane-owned provider-safe aliases
+  such as `taskplane__workspace__search`, and the normalizer maps those aliases
+  back into internal `AgentToolName` values before `AgentRunLoop`
+- a pure schema builder can derive the first provider-side tool schema list from
+  `AgentToolRegistry` definitions and the current run policy; it exposes only
+  safe-read tools, includes workspace read tools only when
+  `allowLocalWorkspaceRead=true`, and never exposes write or command tools
 - normal runs, failed normalization, unsupported providers, and missing payloads
   remain text-only plus optional shadow diagnostics
 - current text generation does not yet send provider-side tool schemas, so this

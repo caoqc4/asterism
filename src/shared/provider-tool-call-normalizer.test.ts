@@ -44,6 +44,43 @@ describe('normalizeProviderToolCallPlan', () => {
     });
   });
 
+  it('normalizes provider-safe tool aliases back into Taskplane tool names', () => {
+    expect(normalizeProviderToolCallPlan({
+      provider: 'openai',
+      model: 'gpt-4.1',
+      payload: {
+        source: 'provider_tool_call',
+        proposal: {
+          steps: [
+            {
+              tool: 'taskplane__workspace__search',
+              input: { query: 'AgentToolRegistry' },
+            },
+          ],
+        },
+      },
+    })).toEqual({
+      status: 'normalized',
+      plan: {
+        source: 'provider_tool_call',
+        provider: 'openai',
+        model: 'gpt-4.1',
+        rawSummary: 'proposal, source',
+        providerCallIds: [],
+        stopReason: null,
+        proposal: {
+          finalOutput: null,
+          steps: [
+            {
+              tool: 'workspace.search',
+              input: { query: 'AgentToolRegistry' },
+            },
+          ],
+        },
+      },
+    });
+  });
+
   it('fails closed for malformed provider payloads without producing steps', () => {
     expect(normalizeProviderToolCallPlan({
       provider: 'openai-compatible',

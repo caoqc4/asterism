@@ -2,7 +2,7 @@ import type {
   AgentStepProposal,
   ProviderToolCallNormalizationResult,
 } from './types/agent-execution.js';
-import { isAgentToolName } from './agent-tools.js';
+import { resolveProviderNativeToolName } from './provider-native-tool-names.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -36,12 +36,18 @@ function parseProposal(value: unknown): AgentStepProposal | null {
   const steps = [];
 
   for (const step of value.steps) {
-    if (!isRecord(step) || !isAgentToolName(step.tool)) {
+    if (!isRecord(step)) {
+      return null;
+    }
+
+    const tool = resolveProviderNativeToolName(step.tool);
+
+    if (!tool) {
       return null;
     }
 
     steps.push({
-      tool: step.tool,
+      tool,
       input: isRecord(step.input) ? step.input : undefined,
     });
   }
