@@ -15,6 +15,7 @@ export const DEFAULT_AGENT_POLICY: AgentPolicy = {
   maxSteps: 8,
   maxWallTimeMs: 120_000,
   allowNetwork: false,
+  allowLocalWorkspaceRead: false,
   allowLocalFileWrite: false,
   confirmationRequiredRisks: ['local_write', 'external_write', 'sensitive'],
 };

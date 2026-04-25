@@ -1,7 +1,11 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { describe, expect, it, vi } from 'vitest';
 
-import type { AgentWorkingContext } from '../../../shared/types/agent-execution.js';
+import type { AgentPolicy, AgentWorkingContext } from '../../../shared/types/agent-execution.js';
 import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
+import { makeTempDir } from '../../test-utils.js';
 import { AgentToolRegistry } from './agent-tool-registry.js';
 
 function buildWorkingContext(): AgentWorkingContext {
@@ -156,6 +160,16 @@ describe('AgentToolRegistry', () => {
       expect.objectContaining({
         name: 'artifact.create_note',
         risk: 'local_write',
+      }),
+      expect.objectContaining({
+        name: 'workspace.search',
+        risk: 'safe_read',
+        requiresConfirmation: false,
+      }),
+      expect.objectContaining({
+        name: 'workspace.read_file',
+        risk: 'safe_read',
+        requiresConfirmation: false,
       }),
     ]);
   });
@@ -315,6 +329,7 @@ describe('AgentToolRegistry', () => {
         maxSteps: 8,
         maxWallTimeMs: 120_000,
         allowNetwork: false,
+        allowLocalWorkspaceRead: false,
         allowLocalFileWrite: false,
         confirmationRequiredRisks: ['local_write'],
       },
@@ -354,5 +369,102 @@ describe('AgentToolRegistry', () => {
     expect(runStepRepository.create).toHaveBeenLastCalledWith(
       expect.objectContaining({ kind: 'checkpoint', status: 'pending' }),
     );
+  });
+
+  it('searches and reads workspace files only when workspace read policy is enabled', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-workspace-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'alpha\nneedle line\n');
+      fs.mkdirSync(path.join(tempRoot, 'src'));
+      fs.writeFileSync(path.join(tempRoot, 'src', 'app.ts'), 'const value = "needle";\n');
+
+      const runStepRepository = buildRunStepRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        undefined,
+        null,
+        tempRoot,
+      );
+      const policy: AgentPolicy = {
+        maxSteps: 8,
+        maxWallTimeMs: 120_000,
+        allowNetwork: false,
+        allowLocalWorkspaceRead: true,
+        allowLocalFileWrite: false,
+        confirmationRequiredRisks: ['local_write', 'external_write', 'sensitive'],
+      };
+
+      const searchResult = await registry.execute(
+        'workspace.search',
+        { query: 'needle', maxResults: 2 },
+        { runId: 'run_1', taskId: 'task_1' },
+        policy,
+      );
+      const readResult = await registry.execute(
+        'workspace.read_file',
+        { path: 'notes.md' },
+        { runId: 'run_1', taskId: 'task_1' },
+        policy,
+      );
+
+      expect(searchResult).toMatchObject({
+        success: true,
+        status: 'completed',
+        summary: '工作区搜索找到 2 条结果。',
+      });
+      expect(searchResult.output).toContain('notes.md: needle line');
+      expect(searchResult.output).toContain('src/app.ts: const value = "needle";');
+      expect(readResult).toMatchObject({
+        success: true,
+        status: 'completed',
+        output: 'alpha\nneedle line\n',
+      });
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks workspace reads by default and prevents path escape', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-workspace-blocked-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'safe content');
+      const runStepRepository = buildRunStepRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        undefined,
+        null,
+        tempRoot,
+      );
+
+      const blocked = await registry.execute(
+        'workspace.read_file',
+        { path: 'notes.md' },
+        { runId: 'run_1', taskId: 'task_1' },
+      );
+      const escaped = await registry.execute(
+        'workspace.read_file',
+        { path: '../outside.md' },
+        { runId: 'run_1', taskId: 'task_1' },
+        {
+          maxSteps: 8,
+          maxWallTimeMs: 120_000,
+          allowNetwork: false,
+          allowLocalWorkspaceRead: true,
+          allowLocalFileWrite: false,
+          confirmationRequiredRisks: ['local_write', 'external_write', 'sensitive'],
+        },
+      );
+
+      expect(blocked.success).toBe(false);
+      expect(blocked.error).toBe('workspace.read_file requires allowLocalWorkspaceRead policy.');
+      expect(escaped.success).toBe(false);
+      expect(escaped.error).toBe('Workspace path must stay inside the configured workspace root.');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
   });
 });

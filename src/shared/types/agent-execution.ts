@@ -14,12 +14,15 @@ export type AgentToolRisk =
 export type AgentToolName =
   | 'artifact.create_note'
   | 'task.inspect_context'
-  | 'task.inspect_timeline';
+  | 'task.inspect_timeline'
+  | 'workspace.read_file'
+  | 'workspace.search';
 
 export type AgentPolicy = {
   maxSteps: number;
   maxWallTimeMs: number;
   allowNetwork: boolean;
+  allowLocalWorkspaceRead: boolean;
   allowLocalFileWrite: boolean;
   confirmationRequiredRisks: AgentToolRisk[];
 };

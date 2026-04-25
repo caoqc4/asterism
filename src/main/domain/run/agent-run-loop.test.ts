@@ -93,6 +93,7 @@ function buildRequest(): AgentRunRequest {
       maxSteps: 8,
       maxWallTimeMs: 120_000,
       allowNetwork: false,
+      allowLocalWorkspaceRead: false,
       allowLocalFileWrite: false,
       confirmationRequiredRisks: ['external_write', 'sensitive'],
     },

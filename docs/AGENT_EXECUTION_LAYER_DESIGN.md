@@ -502,7 +502,7 @@ Completed slice:
 2. Surface the capability summary in run detail or Runs page copy.
 3. Add renderer coverage for the capability hint.
 
-Next code slice:
+Completed slice:
 
 1. Add safe read-only workspace tools behind the executor boundary:
    `workspace.search` and `workspace.read_file`.
@@ -510,5 +510,14 @@ Next code slice:
 3. Persist every call/result as ordinary run steps.
 4. Add tests proving these tools cannot write files and cannot run commands.
 
+Next code slice:
+
+1. Decide how workspace tools enter agent plans: conservative local-only
+   heuristic first, then model-proposed tool calls later.
+2. Add plan parsing support for `workspace.search` and `workspace.read_file`
+   only when `allowLocalWorkspaceRead` is true.
+3. Keep patch and command tools out of the available planner set.
+
 Success: Taskplane can inspect local project context for coding-like tasks
-without yet granting patch or command execution.
+without yet granting patch or command execution, and the planner cannot request
+workspace reads unless the session policy explicitly allows them.

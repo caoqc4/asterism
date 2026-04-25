@@ -23,7 +23,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - Local `.env` AI configuration now supports Replicate-backed draft runs; a deliberate local Replicate run completed with `output_source=ai`, timeline events, and a persisted artifact.
 - Task detail now has a compact section jump bar for Current, Completion, Action, Activity, and Context Studio; a packaged app pass confirmed it can jump from Context Studio back to Action Desk.
 - The front task-management closeout loop is covered through packaged UI: a task can add and satisfy a completion criterion, Home surfaces it as ready to close, Action Desk prioritizes `completed`, and SQLite records the final transition.
-- Agent execution layer Phase 1 has started: Runs now have a persisted step trace spine, current text runs write plan/model/final steps through a `RunOrchestrator`, agent run requests now have a typed working-context/policy contract, the internal tool registry can inspect task context, inspect recent task timeline, and create local note artifacts with tool call/result steps, `agent` prompts now ask for a constrained JSON step proposal, agent runs pass model output into an `AgentRunLoop` skeleton with a typed local observe-then-write step plan, fallback parser, visible plan-source run step, persisted readable and structured tool-observation summaries, an observation-aware planner gate before local writes, persisted paused/review-needed run outcomes with resume checkpoints, and enforced read-only observation steps before local writes, confirmation-required tools now create run checkpoints instead of executing, map those checkpoints into pending Decisions with explicit source metadata, approved checkpoint Decisions can resume the pending local tool, deferred/cancelled confirmations settle the run as non-resumable, paused resume checkpoints can be continued from the Runs and Tasks pages with visible failure feedback, the current local agent loop now sits behind an `AgentExecutor` adapter boundary with run-scoped session capability metadata surfaced in run detail, and the Runs / Decisions pages show checkpoint-aware summaries with readable agent-plan wording.
+- Agent execution layer Phase 1 has started: Runs now have a persisted step trace spine, current text runs write plan/model/final steps through a `RunOrchestrator`, agent run requests now have a typed working-context/policy contract, the internal tool registry can inspect task context, inspect recent task timeline, create local note artifacts with tool call/result steps, and use explicitly policy-gated read-only workspace search/file-read tools, `agent` prompts now ask for a constrained JSON step proposal, agent runs pass model output into an `AgentRunLoop` skeleton with a typed local observe-then-write step plan, fallback parser, visible plan-source run step, persisted readable and structured tool-observation summaries, an observation-aware planner gate before local writes, persisted paused/review-needed run outcomes with resume checkpoints, and enforced read-only observation steps before local writes, confirmation-required tools now create run checkpoints instead of executing, map those checkpoints into pending Decisions with explicit source metadata, approved checkpoint Decisions can resume the pending local tool, deferred/cancelled confirmations settle the run as non-resumable, paused resume checkpoints can be continued from the Runs and Tasks pages with visible failure feedback, the current local agent loop now sits behind an `AgentExecutor` adapter boundary with run-scoped session capability metadata surfaced in run detail, and the Runs / Decisions pages show checkpoint-aware summaries with readable agent-plan wording.
 
 ## Verification Baseline
 
@@ -36,7 +36,7 @@ npm run verify
 Latest local baseline:
 
 - 43 test files
-- 305 tests
+- 307 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -54,7 +54,7 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 
 ## Recommended Next Focus
 
-1. Start the next execution-layer slice by adding safe read-only workspace tools behind the session/executor boundary.
+1. Decide how read-only workspace tools should enter agent plans before adding patch or command execution.
 2. Keep signed/notarized release work deferred until a dedicated release-readiness pass targets signing and notarization.
 3. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 4. Defer GitHub Actions work until quota is restored.

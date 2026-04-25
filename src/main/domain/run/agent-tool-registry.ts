@@ -1,3 +1,6 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
 import type {
   AgentPolicy,
   AgentToolName,
@@ -28,6 +31,34 @@ type ArtifactCreateNoteInput = {
   content: string;
 };
 
+type WorkspaceReadFileInput = {
+  path: string;
+};
+
+type WorkspaceSearchInput = {
+  query: string;
+  maxResults?: number;
+};
+
+const WORKSPACE_READ_LIMIT = 20_000;
+const WORKSPACE_SEARCH_MAX_RESULTS = 25;
+const WORKSPACE_SEARCH_SKIP_DIRS = new Set([
+  '.git',
+  'dist',
+  'dist-electron',
+  'node_modules',
+  'release',
+]);
+const WORKSPACE_SEARCH_SKIP_EXTENSIONS = new Set([
+  '.db',
+  '.ico',
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.sqlite',
+  '.webp',
+]);
+
 function parseArtifactCreateNoteInput(input: unknown): ArtifactCreateNoteInput {
   if (!input || typeof input !== 'object') {
     throw new Error('artifact.create_note requires an object input.');
@@ -46,6 +77,52 @@ function parseArtifactCreateNoteInput(input: unknown): ArtifactCreateNoteInput {
   }
 
   return { title, content };
+}
+
+function parseWorkspaceReadFileInput(input: unknown): WorkspaceReadFileInput {
+  if (!input || typeof input !== 'object') {
+    throw new Error('workspace.read_file requires an object input.');
+  }
+
+  const candidate = input as Partial<WorkspaceReadFileInput>;
+  const filePath = candidate.path?.trim();
+
+  if (!filePath) {
+    throw new Error('workspace.read_file requires a path.');
+  }
+
+  return { path: filePath };
+}
+
+function parseWorkspaceSearchInput(input: unknown): WorkspaceSearchInput {
+  if (!input || typeof input !== 'object') {
+    throw new Error('workspace.search requires an object input.');
+  }
+
+  const candidate = input as Partial<WorkspaceSearchInput>;
+  const query = candidate.query?.trim();
+
+  if (!query) {
+    throw new Error('workspace.search requires a query.');
+  }
+
+  const maxResults = typeof candidate.maxResults === 'number'
+    ? Math.max(1, Math.min(WORKSPACE_SEARCH_MAX_RESULTS, Math.floor(candidate.maxResults)))
+    : WORKSPACE_SEARCH_MAX_RESULTS;
+
+  return { query, maxResults };
+}
+
+function resolveWorkspacePath(workspaceRoot: string, requestedPath: string): string {
+  const root = path.resolve(workspaceRoot);
+  const resolved = path.resolve(root, requestedPath);
+  const relative = path.relative(root, resolved);
+
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error('Workspace path must stay inside the configured workspace root.');
+  }
+
+  return resolved;
 }
 
 function buildConfirmationDecisionTitle(name: AgentToolName, risk: AgentToolRisk): string {
@@ -88,6 +165,36 @@ function formatTimelineSummary(context: AgentWorkingContext): string {
     .join('\n');
 }
 
+async function walkWorkspace(root: string): Promise<string[]> {
+  const files: string[] = [];
+
+  async function visit(directory: string): Promise<void> {
+    const entries = await fs.readdir(directory, { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (entry.name.startsWith('.') && entry.name !== '.env.example') {
+        continue;
+      }
+
+      const absolutePath = path.join(directory, entry.name);
+
+      if (entry.isDirectory()) {
+        if (!WORKSPACE_SEARCH_SKIP_DIRS.has(entry.name)) {
+          await visit(absolutePath);
+        }
+        continue;
+      }
+
+      if (entry.isFile() && !WORKSPACE_SEARCH_SKIP_EXTENSIONS.has(path.extname(entry.name))) {
+        files.push(absolutePath);
+      }
+    }
+  }
+
+  await visit(root);
+  return files;
+}
+
 export class AgentToolRegistry {
   private readonly definitions: AgentToolDefinition[] = [
     {
@@ -108,6 +215,18 @@ export class AgentToolRegistry {
       risk: 'local_write',
       requiresConfirmation: false,
     },
+    {
+      name: 'workspace.search',
+      description: 'Search text files inside the configured local workspace root.',
+      risk: 'safe_read',
+      requiresConfirmation: false,
+    },
+    {
+      name: 'workspace.read_file',
+      description: 'Read a text file inside the configured local workspace root.',
+      risk: 'safe_read',
+      requiresConfirmation: false,
+    },
   ];
 
   constructor(
@@ -115,6 +234,7 @@ export class AgentToolRegistry {
     private readonly runStepRepository: RunStepRepository,
     private readonly runCheckpointRepository: RunCheckpointRepository = new RunCheckpointRepository(),
     private readonly decisionRepository: Pick<DecisionRepository, 'create'> | null = null,
+    private readonly workspaceRoot: string = process.cwd(),
   ) {}
 
   list(): AgentToolDefinition[] {
@@ -199,7 +319,7 @@ export class AgentToolRegistry {
         };
       }
 
-      const result = await this.executeKnownTool(name, input, context);
+      const result = await this.executeKnownTool(name, input, context, policy);
       await this.runStepRepository.update(callStep.id, {
         status: 'completed',
         output: result.summary,
@@ -237,6 +357,7 @@ export class AgentToolRegistry {
     name: AgentToolName,
     input: unknown,
     context: ToolExecutionContext,
+    policy?: AgentPolicy,
   ): Promise<AgentToolResult> {
     switch (name) {
       case 'task.inspect_context': {
@@ -281,6 +402,64 @@ export class AgentToolRegistry {
           summary: `已创建本地 note 产物：${artifact.title}`,
           output: artifact.content,
           artifactId: artifact.id,
+        };
+      }
+      case 'workspace.read_file': {
+        if (!policy?.allowLocalWorkspaceRead) {
+          throw new Error('workspace.read_file requires allowLocalWorkspaceRead policy.');
+        }
+
+        const parsed = parseWorkspaceReadFileInput(input);
+        const filePath = resolveWorkspacePath(this.workspaceRoot, parsed.path);
+        const stat = await fs.stat(filePath);
+
+        if (!stat.isFile()) {
+          throw new Error('workspace.read_file can only read files.');
+        }
+
+        const content = await fs.readFile(filePath, 'utf8');
+        const truncated = content.length > WORKSPACE_READ_LIMIT;
+        const output = truncated ? `${content.slice(0, WORKSPACE_READ_LIMIT)}\n[truncated]` : content;
+
+        return {
+          success: true,
+          status: 'completed',
+          summary: `已读取工作区文件：${path.relative(this.workspaceRoot, filePath)}`,
+          output,
+        };
+      }
+      case 'workspace.search': {
+        if (!policy?.allowLocalWorkspaceRead) {
+          throw new Error('workspace.search requires allowLocalWorkspaceRead policy.');
+        }
+
+        const parsed = parseWorkspaceSearchInput(input);
+        const root = path.resolve(this.workspaceRoot);
+        const files = await walkWorkspace(root);
+        const matches: string[] = [];
+
+        for (const filePath of files) {
+          if (matches.length >= parsed.maxResults!) {
+            break;
+          }
+
+          const content = await fs.readFile(filePath, 'utf8');
+          const line = content
+            .split('\n')
+            .find((candidate) => candidate.includes(parsed.query));
+
+          if (line) {
+            matches.push(`${path.relative(root, filePath)}: ${line.trim()}`);
+          }
+        }
+
+        return {
+          success: true,
+          status: 'completed',
+          summary: matches.length
+            ? `工作区搜索找到 ${matches.length} 条结果。`
+            : '工作区搜索没有找到结果。',
+          output: matches.join('\n') || null,
         };
       }
       default:
