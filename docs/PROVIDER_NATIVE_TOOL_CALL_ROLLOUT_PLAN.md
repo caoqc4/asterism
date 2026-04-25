@@ -81,6 +81,11 @@ Implementation boundary:
   shadow outcomes without returning executable `AgentStepProposal` objects
 - future RunOrchestrator wiring must keep this diagnostic-only until parser
   parity coverage is complete
+- current `generateRuntimeText` returns trimmed model text only, not the
+  provider response envelope that may contain native tool-call records
+- RunOrchestrator must not infer native tool calls from text output; a later
+  executor result shape needs to carry a concise, redacted provider payload for
+  shadow observation
 
 ### Slice 2: Parser Parity Harness
 
