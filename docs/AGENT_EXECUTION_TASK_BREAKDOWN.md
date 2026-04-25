@@ -9,6 +9,7 @@ Read first:
 
 - [AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md](AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md)
 - [AGENT_EXECUTION_LAYER_V2_DECISION.md](AGENT_EXECUTION_LAYER_V2_DECISION.md)
+- [AGENT_EXECUTION_SANDBOX_DECISION.md](AGENT_EXECUTION_SANDBOX_DECISION.md)
 - [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md)
 
 ## First-Principles Rule
@@ -43,6 +44,8 @@ Completed:
   run continuation passes the snapshot back into tool execution
 - tool prompt/provider exposure is centralized in `agent-tool-exposure`, with
   text prompts and provider-native schemas consuming the same matrix
+- sandbox decision accepted: broad code-agent mode remains deferred until a
+  dedicated sandbox provider boundary exists
 - provider-native safe-read path remains gated and locally tested
 - workspace write/command tools remain registry-only and Decision-gated
 
@@ -52,7 +55,6 @@ Still incomplete:
   single checkpoint event boundary
 - checkpoint payloads are not yet fully validated for stale or incompatible
   resume contracts
-- no dedicated sandbox decision for broad code execution
 
 ## Task Sequence
 

@@ -84,6 +84,9 @@ Reference architecture assessment:
 Task breakdown:
 [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md).
 
+Sandbox decision:
+[AGENT_EXECUTION_SANDBOX_DECISION.md](AGENT_EXECUTION_SANDBOX_DECISION.md).
+
 Goal: make the local agent runtime more durable before making it more
 powerful. The next implementation pass should introduce a typed runtime event
 spine, restart-safe resume contract, and explicit tool exposure matrix while
