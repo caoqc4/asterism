@@ -39,8 +39,8 @@ The project is past initial architecture assembly. Current work should favor pro
 - Provider-native structured tool-call wiring must follow the staged rollout plan: offline fixtures, shadow normalization, parser parity, then an explicit provider-native session path only after local tests prove policy parity.
 - The first shadow-normalization helper can summarize skipped/observed/failed provider-native tool-call adapter outcomes without exposing executable `AgentStepProposal` objects, and RunOrchestrator can now write a diagnostic-only shadow step when the reserved flag is enabled and a minimal provider payload exists.
 - Text generation now has a result-shaped helper that preserves the existing text-only API while optionally carrying a minimal provider response-body payload for non-executing shadow observation.
-- `LocalAgentExecutor` now has an internal provider-native session entry that can pass a normalized provider proposal through the same `AgentRunLoop`, but RunOrchestrator still does not select that path for production runs.
-- A provider-native session gate now captures the future RunOrchestrator selection requirements without executing anything: agent run type, reserved flag, supported provider, provider payload, and successful normalization are all required.
+- `LocalAgentExecutor` now has a provider-native session entry that can pass a normalized provider proposal through the same `AgentRunLoop`, and RunOrchestrator selects it only when the provider-native session gate passes.
+- A provider-native session gate captures the RunOrchestrator selection requirements: agent run type, reserved flag, supported provider, provider payload, and successful normalization are all required.
 - Shared agent-session metadata helpers now define both current local executor metadata and the future provider-native metadata shape without persisting raw provider payloads.
 - Runs detail now surfaces concise agent session metadata alongside capability summaries so future provider-native sessions can be inspected without exposing raw provider payloads.
 - The first domain-shaped task tools are in the registry and can be prompt-exposed only through the explicit per-run `allowTaskMutationTools` opt-in: `task.update_next_step` routes through `TaskService.update`, `task.create_completion_criterion` routes through `TaskService.createCompletionCriteria`, `task.review_completion_evidence` reviews completion status and recent evidence without mutating criteria or task state, `source_context.create` routes through `TaskService.createSourceContext`, and `decision.draft` routes through `DecisionService.draft` without creating a formal Decision. These tools write run-step observations, and normal agent plans still fall back if a model proposes them without the opt-in.
@@ -60,7 +60,7 @@ npm run verify
 Latest local baseline:
 
 - 58 test files
-- 431 tests
+- 432 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build

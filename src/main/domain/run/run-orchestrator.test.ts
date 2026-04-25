@@ -813,7 +813,7 @@ describe('RunOrchestrator', () => {
     );
   });
 
-  it('keeps agent session structured tool calls disabled when shadow observation is recorded', async () => {
+  it('keeps agent session structured tool calls disabled when provider-native normalization fails', async () => {
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'openai-compatible',
@@ -840,7 +840,7 @@ describe('RunOrchestrator', () => {
                   tool_calls: [
                     {
                       id: 'call_1',
-                      type: 'function',
+                      type: 'custom',
                       function: {
                         name: 'task.inspect_context',
                         arguments: '{}',
@@ -893,7 +893,7 @@ describe('RunOrchestrator', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Provider 原生工具调用影子观察',
-        status: 'completed',
+        status: 'skipped',
       }),
     );
     expect(agentSessionRepository.create).toHaveBeenCalledWith(
@@ -911,6 +911,141 @@ describe('RunOrchestrator', () => {
       }),
     );
     expect(agentExecutor.executeProviderNativeSession).not.toHaveBeenCalled();
+  });
+
+  it('executes a provider-native agent session when all gates pass', async () => {
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'openai-compatible',
+        model: 'relay-model',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: false,
+          enableProviderNativeToolCalls: true,
+        },
+      }),
+    };
+    const textExecutor = {
+      executeWithResult: vi.fn().mockResolvedValue({
+        text: 'Fallback text output',
+        providerPayload: {
+          source: 'provider_response_body',
+          provider: 'openai-compatible',
+          model: 'relay-model',
+          rawSummary: 'choices=1; tool_calls=1',
+          payload: {
+            choices: [
+              {
+                message: {
+                  tool_calls: [
+                    {
+                      id: 'call_1',
+                      type: 'function',
+                      function: {
+                        name: 'artifact.create_note',
+                        arguments: JSON.stringify({
+                          title: 'Provider native note',
+                          content: 'Provider native output',
+                        }),
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      }),
+      execute: vi.fn(),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No template needed.',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const agentExecutor = {
+      executeLocalNoteSession: vi.fn(),
+      executeProviderNativeSession: vi.fn().mockResolvedValue({
+        status: 'completed',
+        output: 'Provider native output',
+      }),
+    };
+    const agentSessionRepository = {
+      create: vi.fn().mockResolvedValue({ id: 'agent_session_native' }),
+      updateStatus: vi.fn().mockResolvedValue({ id: 'agent_session_native', status: 'completed' }),
+    };
+    const orchestrator = new RunOrchestrator(
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+      { execute: vi.fn() } as never,
+      agentExecutor as never,
+      agentSessionRepository as never,
+    );
+
+    const result = await orchestrator.executeAgentRun({
+      run: buildRun(),
+      task: buildTaskDetail(),
+      input: { ...buildInput(), type: 'agent' },
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      output: 'Provider native output',
+    });
+    expect(agentSessionRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        capabilities: {
+          structuredToolCalls: true,
+          textOnlyPlanning: false,
+          streaming: false,
+          fileContext: false,
+          taskMutationTools: false,
+          longRunningSessions: false,
+        },
+        metadata: [
+          'executor=provider_native_agent',
+          'loop=provider_tool_call',
+          'provider=openai-compatible',
+          'model=relay-model',
+          'adapter=provider_native_tool_call_adapter',
+          'rawSummary=tool_calls=1',
+          'providerCallIds=call_1',
+          'stopReason=unknown',
+        ].join('\n'),
+      }),
+    );
+    expect(agentExecutor.executeProviderNativeSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modelOutput: 'Fallback text output',
+        providerPlan: expect.objectContaining({
+          provider: 'openai-compatible',
+          model: 'relay-model',
+          providerCallIds: ['call_1'],
+          proposal: expect.objectContaining({
+            steps: [
+              {
+                tool: 'artifact.create_note',
+                input: {
+                  title: 'Provider native note',
+                  content: 'Provider native output',
+                },
+              },
+            ],
+          }),
+        }),
+        taskTitle: 'Task 1',
+      }),
+    );
+    expect(agentExecutor.executeLocalNoteSession).not.toHaveBeenCalled();
+    expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
+      'agent_session_native',
+      'completed',
+    );
   });
 
   it('returns paused when the agent loop stops before a local write', async () => {

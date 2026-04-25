@@ -1,16 +1,24 @@
 import type { CreateRunInput, RunRecord, RunStepRecord } from '../../../shared/types/run.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
-import type { AgentRuntimeCapabilities } from '../../../shared/types/agent-execution.js';
+import type {
+  AgentRuntimeCapabilities,
+  ProviderToolCallNormalizationResult,
+} from '../../../shared/types/agent-execution.js';
 import { AgentSessionRepository } from '../../db/repositories/agent-session-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { TextExecutor } from '../../executors/text-executor.js';
 import type { RuntimeTextResult } from '../../executors/text-generation.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
 import { observeProviderNativeToolCalls } from '../../../shared/provider-tool-call-shadow.js';
-import { formatLocalAgentSessionMetadata } from '../../../shared/agent-session-metadata.js';
+import { normalizeProviderNativeToolCalls } from '../../../shared/provider-native-tool-call-adapter.js';
+import {
+  formatLocalAgentSessionMetadata,
+  formatProviderNativeAgentSessionMetadata,
+} from '../../../shared/agent-session-metadata.js';
 import { AgentRunLoop } from './agent-run-loop.js';
 import { LocalAgentExecutor, type AgentExecutor } from './agent-executor.js';
 import type { AgentToolRegistry } from './agent-tool-registry.js';
+import { evaluateProviderNativeSessionGate } from './provider-native-session-gate.js';
 import {
   ProcessTemplateSelector,
   type ProcessTemplateSelectionResult,
@@ -26,6 +34,8 @@ export type RunOrchestrationResult =
       status: 'completed';
       output: string;
       selection: ProcessTemplateSelectionResult;
+      runtimeConfig?: Awaited<ReturnType<AiConfigService['resolveRuntimeConfig']>>;
+      textResult?: RuntimeTextResult;
     }
   | {
       status: 'failed';
@@ -128,6 +138,8 @@ export class RunOrchestrator {
         status: 'completed',
         output,
         selection,
+        runtimeConfig,
+        textResult,
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown executor error';
@@ -193,6 +205,20 @@ export class RunOrchestrator {
       return result;
     }
 
+    const providerNativeResult = await this.tryExecuteProviderNativeAgentSession({
+      input,
+      request,
+      result,
+      runtimeConfig: result.runtimeConfig,
+      run: params.run,
+      selection: result.selection,
+      taskTitle: params.task.title,
+    });
+
+    if (providerNativeResult) {
+      return providerNativeResult;
+    }
+
     const agentSession = await this.agentSessionRepository.create({
       runId: params.run.id,
       mode: 'agent',
@@ -246,6 +272,115 @@ export class RunOrchestrator {
 
     return {
       ...result,
+      output: sessionResult.output,
+    };
+  }
+
+  private async tryExecuteProviderNativeAgentSession(params: {
+    input: CreateRunInput;
+    request: ReturnType<typeof buildAgentRunRequest>;
+    result: Extract<RunOrchestrationResult, { status: 'completed' }>;
+    runtimeConfig?: Awaited<ReturnType<AiConfigService['resolveRuntimeConfig']>>;
+    run: RunRecord;
+    selection: ProcessTemplateSelectionResult;
+    taskTitle: string;
+  }): Promise<RunOrchestrationResult | null> {
+    if (!this.agentExecutor || !this.agentSessionRepository || !params.runtimeConfig) {
+      return null;
+    }
+
+    const textResult = params.result.textResult;
+    const providerPayload = textResult?.providerPayload;
+    const normalization: ProviderToolCallNormalizationResult | null = providerPayload
+      ? normalizeProviderNativeToolCalls({
+          provider: params.runtimeConfig.provider,
+          model: params.runtimeConfig.model,
+          payload: providerPayload.payload,
+        })
+      : null;
+
+    const gate = evaluateProviderNativeSessionGate({
+      input: params.input,
+      provider: params.runtimeConfig.provider,
+      featureFlags: {
+        ...params.runtimeConfig.featureFlags,
+        enableScheduler: params.runtimeConfig.featureFlags?.enableScheduler ?? false,
+        enableProviderNativeToolCalls:
+          params.runtimeConfig.featureFlags?.enableProviderNativeToolCalls ?? false,
+      },
+      textResult: textResult ?? {
+        text: params.result.output,
+        providerPayload: null,
+      },
+      normalization,
+    });
+
+    if (!gate.allowed || normalization?.status !== 'normalized') {
+      return null;
+    }
+
+    const executor = this.agentExecutor as AgentExecutor & {
+      executeProviderNativeSession?: AgentExecutor['executeProviderNativeSession'];
+    };
+
+    if (typeof executor.executeProviderNativeSession !== 'function') {
+      return null;
+    }
+
+    const agentSession = await this.agentSessionRepository.create({
+      runId: params.run.id,
+      mode: 'agent',
+      capabilities: getProviderNativeAgentRuntimeCapabilities({
+        allowLocalWorkspaceRead: Boolean(params.input.allowLocalWorkspaceRead),
+        allowTaskMutationTools: Boolean(params.input.allowTaskMutationTools),
+      }),
+      metadata: formatProviderNativeAgentSessionMetadata(normalization.plan),
+    });
+
+    let sessionResult: Awaited<ReturnType<AgentExecutor['executeProviderNativeSession']>>;
+
+    try {
+      sessionResult = await executor.executeProviderNativeSession({
+        request: params.request,
+        modelOutput: params.result.output,
+        providerPlan: normalization.plan,
+        taskTitle: params.taskTitle,
+      });
+    } catch (error) {
+      await this.agentSessionRepository.updateStatus(agentSession.id, 'failed');
+      throw error;
+    }
+
+    await this.agentSessionRepository.updateStatus(agentSession.id, sessionResult.status);
+
+    if (sessionResult.status === 'needs_confirmation') {
+      return {
+        status: 'needs_confirmation',
+        message: sessionResult.message,
+        checkpointId: sessionResult.checkpointId,
+        selection: params.selection,
+      };
+    }
+
+    if (sessionResult.status === 'failed') {
+      return {
+        status: 'failed',
+        message: sessionResult.message,
+        selection: params.selection,
+      };
+    }
+
+    if (sessionResult.status === 'paused') {
+      return {
+        status: 'paused',
+        message: sessionResult.message,
+        checkpointId: sessionResult.checkpointId,
+        selection: params.selection,
+      };
+    }
+
+    return {
+      ...params.result,
       output: sessionResult.output,
     };
   }
@@ -340,6 +475,20 @@ function getLocalAgentRuntimeCapabilities(params: {
   return {
     structuredToolCalls: false,
     textOnlyPlanning: true,
+    streaming: false,
+    fileContext: params.allowLocalWorkspaceRead,
+    taskMutationTools: params.allowTaskMutationTools,
+    longRunningSessions: false,
+  };
+}
+
+function getProviderNativeAgentRuntimeCapabilities(params: {
+  allowLocalWorkspaceRead: boolean;
+  allowTaskMutationTools: boolean;
+}): AgentRuntimeCapabilities {
+  return {
+    structuredToolCalls: true,
+    textOnlyPlanning: false,
     streaming: false,
     fileContext: params.allowLocalWorkspaceRead,
     taskMutationTools: params.allowTaskMutationTools,

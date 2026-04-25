@@ -127,7 +127,8 @@ Implementation boundary:
 
 ### Slice 3: Explicit Provider-Native Session
 
-Status: internal executor entry prepared; not wired into production runs.
+Status: first explicit RunOrchestrator wiring completed behind the provider-native
+session gate.
 
 Only after shadow and parity coverage pass, allow a dedicated internal executor
 path to use native normalized proposals for one run session.
@@ -153,8 +154,11 @@ Current boundary:
   adapter, raw summary, provider call ids, and stop reason
 - `evaluateProviderNativeSessionGate` defines the explicit runtime-selection
   gates for future RunOrchestrator wiring without executing anything
-- RunOrchestrator still does not select this path, so normal runs remain
-  text-only plus optional shadow diagnostics
+- RunOrchestrator selects this path only when the run is `agent`, the reserved
+  flag is enabled, a supported provider payload exists, and normalization
+  succeeds
+- normal runs, failed normalization, unsupported providers, and missing payloads
+  remain text-only plus optional shadow diagnostics
 
 Acceptance:
 

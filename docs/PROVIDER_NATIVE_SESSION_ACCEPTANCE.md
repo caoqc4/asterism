@@ -8,21 +8,23 @@ structured tool calls into production agent runs.
 Current accepted behavior remains:
 
 - normal agent runs use text-only planning
-- provider-native payloads may be shadow-observed only
-- persisted local agent sessions keep `structuredToolCalls=false`
-- provider-native executor entrypoints stay internal until explicitly selected
+- provider-native payloads may be shadow-observed
+- provider-native execution is selected only when all runtime-selection gates
+  pass
+- persisted local agent sessions keep `structuredToolCalls=false`; only the
+  explicit provider-native session path may persist `structuredToolCalls=true`
 
 ## Must Pass Before Wiring
 
 ### Runtime Selection
 
-- `RunOrchestrator` must select provider-native execution only when:
+- `RunOrchestrator` selects provider-native execution only when:
   - `featureFlags.enableProviderNativeToolCalls=true`
   - the text-generation result includes a provider payload
   - adapter normalization returns `status=normalized`
   - the run type is `agent`
-- `evaluateProviderNativeSessionGate` must stay aligned with these selection
-  rules before RunOrchestrator can call `executeProviderNativeSession`.
+- `evaluateProviderNativeSessionGate` stays aligned with these selection rules
+  before RunOrchestrator calls `executeProviderNativeSession`.
 - Adapter failure must keep the text-only path successful when model text is
   otherwise usable.
 - Replicate native text prediction must remain unsupported for provider-native
