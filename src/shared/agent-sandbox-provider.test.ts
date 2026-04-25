@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildAgentSandboxCheckPlan,
   buildAgentSandboxPatchArtifact,
   buildDefaultAgentSandboxCommandPolicy,
   canUseAgentSandboxProviderForCoding,
   DISABLED_AGENT_SANDBOX_PROVIDER_CAPABILITIES,
+  summarizeAgentSandboxCheckResults,
   toAgentToolArtifactDescriptor,
   type AgentSandboxProviderCapabilities,
   type AgentSandboxSessionRequest,
@@ -57,6 +59,22 @@ describe('agent sandbox provider contracts', () => {
       allowArbitraryShell: false,
       allowInteractive: false,
     });
+  });
+
+  it('builds targeted check plans only from allowlisted scripts', () => {
+    expect(buildAgentSandboxCheckPlan({
+      policy: buildDefaultAgentSandboxCommandPolicy({ timeoutMs: 30_000 }),
+      requestedScripts: ['test', 'build', 'lint', 'test'],
+    })).toEqual({
+      outputLimitBytes: 64_000,
+      scripts: ['test', 'lint'],
+      timeoutMs: 30_000,
+    });
+
+    expect(() => buildAgentSandboxCheckPlan({
+      policy: buildDefaultAgentSandboxCommandPolicy(),
+      requestedScripts: ['build', 'verify'],
+    })).toThrow('Sandbox check plan requires at least one allowlisted script.');
   });
 
   it('models a staged patch session request without host workspace promotion', () => {
@@ -120,5 +138,14 @@ describe('agent sandbox provider contracts', () => {
       files: [],
       summary: 'No files',
     })).toThrow('Sandbox patch artifact requires at least one changed file.');
+  });
+
+  it('summarizes sandbox check results without command output expansion', () => {
+    expect(summarizeAgentSandboxCheckResults([
+      { outputPreview: 'ok', script: 'lint', status: 'passed' },
+      { outputPreview: 'failure details', script: 'test', status: 'failed' },
+    ])).toBe('lint: passed; test: failed');
+
+    expect(summarizeAgentSandboxCheckResults([])).toBe('No sandbox checks were run.');
   });
 });

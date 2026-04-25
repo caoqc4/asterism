@@ -34,6 +34,20 @@ export type AgentSandboxCommandPolicy = {
   allowArbitraryShell: false;
 };
 
+export type AgentSandboxCheckScript = AgentSandboxCommandPolicy['allowedScripts'][number];
+
+export type AgentSandboxCheckPlan = {
+  scripts: AgentSandboxCheckScript[];
+  timeoutMs: number;
+  outputLimitBytes: number;
+};
+
+export type AgentSandboxCheckResult = {
+  script: AgentSandboxCheckScript;
+  status: 'passed' | 'failed' | 'skipped';
+  outputPreview: string;
+};
+
 export type AgentSandboxSessionRequest = {
   runId: string;
   taskId: string;
@@ -58,7 +72,7 @@ export type AgentSandboxPatchArtifact = {
   files: string[];
   diff: string;
   commandLogs: Array<{
-    script: 'test' | 'lint';
+    script: AgentSandboxCheckScript;
     status: 'passed' | 'failed' | 'skipped';
     outputPreview: string;
   }>;
@@ -113,6 +127,25 @@ export function buildDefaultAgentSandboxCommandPolicy(
   };
 }
 
+export function buildAgentSandboxCheckPlan(params: {
+  requestedScripts: string[];
+  policy: AgentSandboxCommandPolicy;
+}): AgentSandboxCheckPlan {
+  const allowed = new Set<string>(params.policy.allowedScripts);
+  const scripts = Array.from(new Set(params.requestedScripts))
+    .filter((script): script is AgentSandboxCheckScript => allowed.has(script));
+
+  if (!scripts.length) {
+    throw new Error('Sandbox check plan requires at least one allowlisted script.');
+  }
+
+  return {
+    outputLimitBytes: params.policy.outputLimitBytes,
+    scripts,
+    timeoutMs: params.policy.timeoutMs,
+  };
+}
+
 export function canUseAgentSandboxProviderForCoding(
   capabilities: AgentSandboxProviderCapabilities,
 ): boolean {
@@ -160,4 +193,16 @@ export function toAgentToolArtifactDescriptor(
     ].join(' | '),
     title: artifact.summary,
   };
+}
+
+export function summarizeAgentSandboxCheckResults(
+  results: AgentSandboxCheckResult[],
+): string {
+  if (!results.length) {
+    return 'No sandbox checks were run.';
+  }
+
+  return results
+    .map((result) => `${result.script}: ${result.status}`)
+    .join('; ');
 }

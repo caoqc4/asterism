@@ -353,7 +353,9 @@ Implementation sequence:
    command logs, risk summary, diff preview, and generic artifact descriptors
    without promoting changes.
 4. Route targeted checks through the existing command-policy shape, beginning
-   with `test` / `lint` style scripts only.
+   with `test` / `lint` style scripts only. Shared check-plan helpers now
+   filter requested scripts to the allowlist and summarize check results
+   without executing commands.
 5. Add Decision review and promotion semantics before any staged patch can
    touch the user's workspace.
 6. Only after the above is accepted, expose a narrow coding-agent run option in
