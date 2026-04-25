@@ -441,6 +441,9 @@ Latest local baseline:
 - `npm test -- src/shared/agent-tool-scaffold.test.ts` and `npm run verify`
   passed locally on 2026-04-26 after adding scaffold family summaries: 83 test
   files / 607 tests
+- `npm test -- src/renderer/App.test.tsx -t "saves settings"` and
+  `npm run verify` passed locally on 2026-04-26 after rendering scaffold
+  diagnostics in Settings: 83 test files / 607 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
@@ -467,10 +470,11 @@ dedicated signed/notarized release pass.
 2. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
-5. Treat the execution-layer Slice 0 pass as locally accepted for the alpha
-   path; the next execution design task is shared tool scaffold contracts, then
-   `SandboxProvider` plus a narrow coding-agent patch lane, still behind the
-   accepted sandbox and exposure boundaries.
+5. Treat the execution-layer Slice 0 and hidden tool-scaffold baseline as
+   locally accepted for the alpha path; the next execution design task is the
+   sandboxed coding lane beyond its current non-live producer/source/preview
+   and backend-readiness slices, still behind the accepted sandbox and exposure
+   boundaries.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.

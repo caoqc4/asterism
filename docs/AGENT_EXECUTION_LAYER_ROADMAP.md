@@ -294,7 +294,7 @@ Acceptance:
 
 ### Slice 5: Tool Scaffold Contracts
 
-Status: next design target before new tool families are exposed.
+Status: completed as a hidden scaffold and diagnostic baseline.
 
 Goal: reserve the common interfaces for MCP, browser/Playwright, skills,
 workspace coding tools, computer-use, and creator connectors before any one
@@ -306,13 +306,20 @@ Implementation sequence:
 
 1. Define shared tool descriptors with family, risk tier, schema, artifact
    behavior, credential requirements, and sandbox/connector requirements.
+   Status: implemented in `src/shared/agent-tool-scaffold.ts`.
 2. Define exposure policy separately from runtime execution policy.
+   Status: implemented with shared exposure delegation and execution-policy
+   validation.
 3. Define tool-session metadata for sandbox, browser, MCP, and connector
    sessions.
+   Status: reserved in shared metadata contracts.
 4. Define common artifact and checkpoint metadata for patches, screenshots,
    traces, command logs, generated drafts, and connector previews.
+   Status: reserved in shared metadata contracts.
 5. Keep all new descriptors hidden until a lane-specific decision exposes
    them.
+   Status: covered by scaffold tests and Settings diagnostics; reserved lanes
+   remain hidden.
 
 Acceptance:
 
@@ -325,7 +332,7 @@ Acceptance:
 
 ### Slice 6: Sandboxed Coding Agent Lane
 
-Status: next design and implementation target.
+Status: active behind non-live and backend-readiness gates.
 
 Goal: support the original AI programming scenario without turning Taskplane
 into an unbounded host shell. This is the Taskplane-owned path for

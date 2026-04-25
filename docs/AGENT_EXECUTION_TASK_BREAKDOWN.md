@@ -74,16 +74,17 @@ Pi reference boundary:
   and full replay/idempotency
 - required next: Taskplane-owned coding-agent lane with sandboxed workspace
   context, staged edits, targeted checks, patch artifacts, and Decision review
-- required scaffold: MCP, browser/Playwright, skills, computer-use, creator
-  connectors, and future tool families need common descriptor/exposure/policy
-  interfaces before lane-specific exposure
+- scaffold baseline: MCP, browser/Playwright, skills, computer-use, creator
+  connectors, and future tool families now have common descriptor, exposure,
+  execution-policy, session, artifact, checkpoint, credential, and diagnostic
+  summary contracts before lane-specific exposure
 
 Still incomplete:
 
 - no known Slice 0 blocker remains
-- the next execution-layer phase should start with tool scaffold contracts,
-  then sandbox provider design and coding-agent patch artifacts, not direct
-  host shell/file access
+- the next execution-layer phase should continue the sandboxed coding lane from
+  the existing non-live producer/source/preview/backend-readiness work, not
+  direct host shell/file access
 
 ## Task Sequence
 
