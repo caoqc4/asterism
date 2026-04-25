@@ -23,7 +23,18 @@ function buildAiStatus(provider: AiConfigStatus['provider']): AiConfigStatus {
 describe('agent capability formatting', () => {
   it('keeps the pre-run preview honest before a provider is configured', () => {
     expect(formatPreRunAgentCapabilitySummary(null, false)).toBe(
-      'Agent 能力预览：provider not configured / text-only planning unavailable until provider configured / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until provider configured / patch/commands unavailable',
+      'Agent 能力预览：provider not configured / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / patch/commands unavailable',
+    );
+  });
+
+  it('keeps the pre-run preview unavailable when provider defaults exist without an API key', () => {
+    expect(formatPreRunAgentCapabilitySummary({
+      ...buildAiStatus('anthropic'),
+      configured: false,
+      apiKeyStored: false,
+      apiKeySource: null,
+    }, false)).toBe(
+      'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / patch/commands unavailable',
     );
   });
 

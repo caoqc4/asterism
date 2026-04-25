@@ -14,7 +14,7 @@ function formatPreRunStructuredToolSummary(aiStatus: AiConfigStatus | null): str
   const capabilities = getProviderExecutionCapabilities(aiStatus);
 
   if (capabilities.structuredToolCallState === 'unconfigured') {
-    return 'structured tool calls unavailable until provider configured';
+    return 'structured tool calls unavailable until AI config is ready';
   }
 
   if (capabilities.structuredToolCallState === 'unavailable_on_replicate_text_path') {
@@ -52,7 +52,7 @@ export function formatPreRunAgentCapabilitySummary(
   const providerSummary = formatProviderSummary(aiStatus);
   const providerCapabilities = getProviderExecutionCapabilities(aiStatus);
   const planningSummary = providerCapabilities.textPlanningPath === 'unconfigured'
-    ? 'text-only planning unavailable until provider configured'
+    ? 'text-only planning unavailable until AI config is ready'
     : providerCapabilities.textPlanningPath === 'replicate_native_text'
       ? 'text-only planning via Replicate'
       : 'text-only planning in the local executor';

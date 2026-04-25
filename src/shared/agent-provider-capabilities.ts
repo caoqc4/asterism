@@ -21,7 +21,7 @@ export type ProviderExecutionCapabilities = {
 export function getProviderExecutionCapabilities(
   aiStatus: AiConfigStatus | null,
 ): ProviderExecutionCapabilities {
-  if (!aiStatus?.provider || !aiStatus.model) {
+  if (!aiStatus?.configured || !aiStatus.provider || !aiStatus.model) {
     return {
       provider: aiStatus?.provider ?? null,
       model: aiStatus?.model ?? null,

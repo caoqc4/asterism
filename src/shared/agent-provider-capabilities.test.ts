@@ -31,6 +31,21 @@ describe('getProviderExecutionCapabilities', () => {
     });
   });
 
+  it('keeps default provider/model values unavailable when no API key is configured', () => {
+    expect(getProviderExecutionCapabilities({
+      ...buildAiStatus('anthropic'),
+      configured: false,
+      apiKeyStored: false,
+      apiKeySource: null,
+    })).toEqual({
+      provider: 'anthropic',
+      model: 'claude-3-5-sonnet-latest',
+      textPlanningPath: 'unconfigured',
+      structuredToolCallState: 'unconfigured',
+      taskplaneStructuredToolCallsEnabled: false,
+    });
+  });
+
   it.each([
     'anthropic',
     'openai',
