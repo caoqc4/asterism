@@ -20,6 +20,7 @@ import {
   buildLocalContainerSandboxBackendProbe,
   createLocalContainerSandboxCommandRunner,
   LocalContainerSandboxProvider,
+  prepareLocalContainerSandboxPatchReview,
   probeLocalContainerSandboxBackend,
   runLocalContainerSandboxCommandPlan,
   runLocalContainerSandboxCommandPlans,
@@ -455,5 +456,80 @@ describe('local container sandbox backend probe', () => {
     }
 
     expect(fs.existsSync(handle.stagingRoot)).toBe(false);
+  });
+
+  it('prepares a reviewable sandbox patch with checks and a promotion checkpoint without applying files', async () => {
+    const workspaceRoot = makeTempDir('taskplane-local-container-review-workspace-');
+    const sourceFile = path.join(workspaceRoot, 'notes.md');
+    fs.writeFileSync(sourceFile, 'original\n', 'utf8');
+    const provider = new LocalContainerSandboxProvider();
+    const commandPolicy = buildDefaultAgentSandboxCommandPolicy({ timeoutMs: 30_000 });
+    const request: AgentSandboxSessionRequest = {
+      commandPolicy,
+      descriptorId: 'workspace.staged_patch',
+      executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+      providerKind: 'local_container',
+      runId: 'run_1',
+      taskId: 'task_1',
+      workspace: {
+        mode: 'staged_write',
+        mountPath: '/workspace',
+        workspaceRoot,
+      },
+    };
+    const runner = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      stderr: '',
+      stdout: 'test ok',
+    });
+    let handlePath: string | null = null;
+
+    try {
+      const preparation = await prepareLocalContainerSandboxPatchReview({
+        checkPlan: buildAgentSandboxCheckPlan({
+          policy: commandPolicy,
+          requestedScripts: ['test'],
+        }),
+        patchDraft: {
+          diff: '--- a/notes.md\n+++ b/notes.md\n@@\n-original\n+updated',
+          files: ['notes.md'],
+          summary: 'Update notes from sandbox',
+        },
+        provider,
+        request,
+        runner,
+      });
+      handlePath = preparation.handle.stagingRoot;
+
+      expect(preparation.checkRun.summary).toBe('test: passed');
+      expect(preparation.artifact).toMatchObject({
+        commandLogs: [
+          {
+            outputPreview: 'test ok',
+            script: 'test',
+            status: 'passed',
+          },
+        ],
+        files: ['notes.md'],
+        kind: 'patch',
+        summary: 'Update notes from sandbox',
+      });
+      expect(preparation.checkpoint).toMatchObject({
+        kind: 'patch_promotion',
+        policySnapshot: request.executionPolicy,
+        preview: expect.stringContaining('+++ b/notes.md'),
+        resumeTarget: `${preparation.handle.id}:promote`,
+      });
+      expect(preparation.sessionSummary).toContain('patchArtifacts=supported');
+      expect(fs.readFileSync(sourceFile, 'utf8')).toBe('original\n');
+      expect(runner).toHaveBeenCalledTimes(1);
+
+      await provider.disposeSession(preparation.handle);
+    } finally {
+      fs.rmSync(workspaceRoot, { force: true, recursive: true });
+      if (handlePath) {
+        fs.rmSync(handlePath, { force: true, recursive: true });
+      }
+    }
   });
 });

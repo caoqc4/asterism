@@ -5,6 +5,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 
 import type {
+  AgentSandboxPatchArtifact,
   AgentSandboxBackendProbe,
   AgentSandboxCheckPlan,
   AgentSandboxCheckResult,
@@ -15,7 +16,10 @@ import type {
   AgentSandboxSessionManifest,
   AgentSandboxSessionRequest,
 } from '../../../shared/agent-sandbox-provider.js';
+import type { AgentToolCheckpointDescriptor } from '../../../shared/agent-tool-scaffold.js';
 import {
+  buildAgentSandboxPatchArtifactFromCheckResults,
+  buildAgentSandboxPatchPromotionCheckpoint,
   buildAgentSandboxSessionManifest,
   summarizeAgentSandboxSessionManifest,
 } from '../../../shared/agent-sandbox-provider.js';
@@ -93,6 +97,21 @@ export type LocalContainerSandboxExecFileRunner = (params: {
   stderr: string;
   stdout: string;
 }>;
+
+export type LocalContainerSandboxPatchDraft = {
+  diff: string;
+  files: string[];
+  riskSummary?: string | null;
+  summary: string;
+};
+
+export type LocalContainerSandboxPatchReviewPreparation = {
+  artifact: AgentSandboxPatchArtifact;
+  checkRun: LocalContainerSandboxCheckRun;
+  checkpoint: AgentToolCheckpointDescriptor;
+  handle: AgentSandboxSessionHandle;
+  sessionSummary: string;
+};
 
 const DEFAULT_LOCAL_CONTAINER_SANDBOX_IMAGE = 'node:22-bookworm-slim';
 const LOCAL_CONTAINER_STAGING_MOUNT_PATH = '/taskplane-staging';
@@ -173,6 +192,41 @@ export class LocalContainerSandboxProvider implements AgentSandboxProvider {
       params.runner,
     );
   }
+}
+
+export async function prepareLocalContainerSandboxPatchReview(params: {
+  checkPlan: AgentSandboxCheckPlan;
+  patchDraft: LocalContainerSandboxPatchDraft;
+  provider: LocalContainerSandboxProvider;
+  request: AgentSandboxSessionRequest;
+  runner: LocalContainerSandboxCommandRunner;
+}): Promise<LocalContainerSandboxPatchReviewPreparation> {
+  const handle = await params.provider.prepareSession(params.request);
+  const checkRun = await params.provider.runChecks({
+    checkPlan: params.checkPlan,
+    handle,
+    request: params.request,
+    runner: params.runner,
+  });
+  const artifact = buildAgentSandboxPatchArtifactFromCheckResults({
+    checkResults: checkRun.results,
+    diff: params.patchDraft.diff,
+    files: params.patchDraft.files,
+    riskSummary: params.patchDraft.riskSummary,
+    summary: params.patchDraft.summary,
+  });
+
+  return {
+    artifact,
+    checkRun,
+    checkpoint: buildAgentSandboxPatchPromotionCheckpoint({
+      artifact,
+      policySnapshot: params.request.executionPolicy,
+      resumeTarget: `${handle.id}:promote`,
+    }),
+    handle,
+    sessionSummary: await params.provider.summarizeSession(handle),
+  };
 }
 
 export function buildLocalContainerSandboxBackendProbe(

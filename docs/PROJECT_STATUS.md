@@ -201,6 +201,10 @@ The project is past initial architecture assembly. Current work should favor pro
   adapter shape: it prepares/disposes sandbox sessions, writes supported
   manifest metadata, and can run targeted checks only through an injected
   runner. It is not connected to RunOrchestrator or prompt/UI exposure.
+- A local-container patch-review preparation skeleton now composes session
+  preparation, targeted checks, sandbox patch artifact creation, and a
+  `patch_promotion` checkpoint descriptor without applying files or wiring the
+  path into product execution.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
