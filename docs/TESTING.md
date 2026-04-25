@@ -84,7 +84,7 @@ Covered today:
 - `RunService`
   successful execution path, failure path, paused path, paused checkpoint continuation, task restoration after settled runs, artifact creation on successful output, orchestration result settlement, an isolated read-only workspace agent path through persisted run detail, and an isolated task-mutation tool opt-in path through persisted task detail
 - `RunOrchestrator`
-  plan/model/final step writes, process-template selector fallback, executor failure recording, agent-mode handoff into the local run loop, truthful structured-tool capability metadata for tool-capable providers, and paused agent-loop propagation
+  plan/model/final step writes, process-template selector fallback, executor failure recording, diagnostic-only provider-native shadow step writes, agent-mode handoff into the local run loop, truthful structured-tool capability metadata for tool-capable providers, and paused agent-loop propagation
 - `LocalAgentExecutor`
   adapter behavior that preserves current local agent-loop outcomes behind the executor/session boundary
 - `AgentRunLoop`
@@ -109,7 +109,7 @@ Covered today:
 - `DecisionService`
   checkpoint Decision approval can resume both local note creation and confirmation-gated workspace patch application
 - `TextExecutor`
-  lane-aware run prompt composition, constrained JSON proposal prompting for agent runs, opt-in workspace tool prompt guidance, and opt-in domain task/evidence tool prompt guidance
+  lane-aware run prompt composition, constrained JSON proposal prompting for agent runs, opt-in workspace tool prompt guidance, opt-in domain task/evidence tool prompt guidance, and result-shaped text generation with optional minimal provider payload extraction
 - `Agent capability UI helpers`
   pre-run agent capability preview wording, including text-only local executor behavior, read-only workspace opt-in state, task update/evidence tool opt-in state, structured tool-call deferral wording, and Replicate-specific text-only planning wording
 - `Agent provider capability descriptors`
@@ -134,7 +134,8 @@ Covered today:
   loop
 - `Provider tool-call shadow observation`
   non-executing shadow normalization result summaries that skip when the
-  reserved flag is disabled and never expose executable steps
+  reserved flag is disabled, report malformed provider payload failures, and
+  never expose executable steps
 - `Agent tool helpers`
   shared runtime tool-name guard used by provider normalization so future
   adapters validate against the same Taskplane tool list
