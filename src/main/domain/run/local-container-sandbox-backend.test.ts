@@ -1,3 +1,7 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -6,6 +10,7 @@ import {
   buildAgentSandboxProviderCapabilitiesFromBackendProfile,
   buildDefaultAgentSandboxCommandPolicy,
   evaluateAgentSandboxBackendReadiness,
+  evaluateAgentSandboxCodingLaneEligibility,
   summarizeAgentSandboxBackendProbe,
   type AgentSandboxSessionRequest,
 } from '../../../shared/agent-sandbox-provider.js';
@@ -14,10 +19,15 @@ import {
   buildLocalContainerSandboxCommandPlans,
   buildLocalContainerSandboxBackendProbe,
   createLocalContainerSandboxCommandRunner,
+  LocalContainerSandboxProvider,
   probeLocalContainerSandboxBackend,
   runLocalContainerSandboxCommandPlan,
   runLocalContainerSandboxCommandPlans,
 } from './local-container-sandbox-backend.js';
+
+function makeTempDir(prefix: string): string {
+  return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+}
 
 describe('local container sandbox backend probe', () => {
   it('reports unavailable local container runtime without creating a backend profile', () => {
@@ -366,5 +376,84 @@ describe('local container sandbox backend probe', () => {
       maxBuffer: 4096,
       timeoutMs: 30_000,
     });
+  });
+
+  it('prepares a local-container sandbox session and runs checks only through an injected runner', async () => {
+    const workspaceRoot = makeTempDir('taskplane-local-container-workspace-');
+    const provider = new LocalContainerSandboxProvider();
+    const commandPolicy = buildDefaultAgentSandboxCommandPolicy({ timeoutMs: 30_000 });
+    const request: AgentSandboxSessionRequest = {
+      commandPolicy,
+      descriptorId: 'workspace.staged_patch',
+      executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+      providerKind: 'local_container',
+      runId: 'run_1',
+      taskId: 'task_1',
+      workspace: {
+        mode: 'staged_write',
+        mountPath: '/workspace',
+        workspaceRoot,
+      },
+    };
+
+    const handle = await provider.prepareSession(request);
+
+    try {
+      expect(evaluateAgentSandboxCodingLaneEligibility({
+        commandPolicy: request.commandPolicy,
+        executionPolicy: request.executionPolicy,
+        featureFlags: {
+          enableScheduler: false,
+          enableSandboxCodingAgent: true,
+        },
+        providerCapabilities: provider.capabilities,
+        workspaceRoot,
+      })).toMatchObject({
+        eligible: true,
+      });
+      expect(JSON.parse(fs.readFileSync(path.join(handle.stagingRoot, 'session.json'), 'utf8'))).toMatchObject({
+        providerCapabilities: {
+          supportsPatchArtifacts: true,
+          supportsTargetedCommands: true,
+        },
+        providerKind: 'local_container',
+        workspace: {
+          mode: 'staged_write',
+          workspaceRoot: path.resolve(workspaceRoot),
+        },
+      });
+      await expect(provider.summarizeSession(handle)).resolves.toContain('patchArtifacts=supported');
+
+      const runner = vi.fn().mockResolvedValue({
+        exitCode: 0,
+        stderr: '',
+        stdout: 'lint ok',
+      });
+
+      await expect(provider.runChecks({
+        checkPlan: buildAgentSandboxCheckPlan({
+          policy: commandPolicy,
+          requestedScripts: ['lint'],
+        }),
+        handle,
+        request,
+        runner,
+      })).resolves.toMatchObject({
+        results: [
+          {
+            outputPreview: 'lint ok',
+            script: 'lint',
+            status: 'passed',
+          },
+        ],
+        summary: 'lint: passed',
+      });
+      expect(runner).toHaveBeenCalledTimes(1);
+    } finally {
+      await provider.disposeSession(handle);
+      fs.rmSync(workspaceRoot, { force: true, recursive: true });
+    }
+
+    expect(fs.existsSync(handle.stagingRoot)).toBe(false);
   });
 });

@@ -1,13 +1,23 @@
 import { execFile } from 'node:child_process';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { promisify } from 'node:util';
 
 import type {
   AgentSandboxBackendProbe,
   AgentSandboxCheckPlan,
   AgentSandboxCheckResult,
+  AgentSandboxProvider,
+  AgentSandboxProviderCapabilities,
   AgentSandboxCheckScript,
   AgentSandboxSessionHandle,
+  AgentSandboxSessionManifest,
   AgentSandboxSessionRequest,
+} from '../../../shared/agent-sandbox-provider.js';
+import {
+  buildAgentSandboxSessionManifest,
+  summarizeAgentSandboxSessionManifest,
 } from '../../../shared/agent-sandbox-provider.js';
 
 const execFileAsync = promisify(execFile);
@@ -86,6 +96,84 @@ export type LocalContainerSandboxExecFileRunner = (params: {
 
 const DEFAULT_LOCAL_CONTAINER_SANDBOX_IMAGE = 'node:22-bookworm-slim';
 const LOCAL_CONTAINER_STAGING_MOUNT_PATH = '/taskplane-staging';
+
+export class LocalContainerSandboxProvider implements AgentSandboxProvider {
+  readonly capabilities: AgentSandboxProviderCapabilities = {
+    credentialPassthrough: false,
+    enabled: true,
+    kind: 'local_container',
+    networkMode: 'disabled',
+    supportsPatchArtifacts: true,
+    supportsReadOnlyWorkspace: true,
+    supportsStagedWrites: true,
+    supportsTargetedCommands: true,
+  };
+
+  async prepareSession(request: AgentSandboxSessionRequest): Promise<AgentSandboxSessionHandle> {
+    if (request.providerKind !== 'local_container') {
+      throw new Error(`Unsupported sandbox provider: ${request.providerKind}`);
+    }
+
+    if (request.descriptorId !== 'workspace.staged_patch') {
+      throw new Error(`Unsupported sandbox descriptor: ${request.descriptorId}`);
+    }
+
+    const workspaceRoot = path.resolve(request.workspace.workspaceRoot);
+    const stagingRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'taskplane-local-container-sandbox-'));
+    const createdAt = new Date().toISOString();
+    const handle: AgentSandboxSessionHandle = {
+      createdAt,
+      id: path.basename(stagingRoot),
+      providerKind: 'local_container',
+      stagingRoot,
+      workspaceMode: request.workspace.mode,
+    };
+    const manifest = buildAgentSandboxSessionManifest({
+      handle,
+      providerCapabilities: this.capabilities,
+      request: {
+        ...request,
+        workspace: {
+          ...request.workspace,
+          workspaceRoot,
+        },
+      },
+    });
+
+    await fs.writeFile(
+      path.join(stagingRoot, 'session.json'),
+      JSON.stringify(manifest, null, 2),
+      'utf8',
+    );
+
+    return handle;
+  }
+
+  async disposeSession(handle: AgentSandboxSessionHandle): Promise<void> {
+    await fs.rm(handle.stagingRoot, { force: true, recursive: true });
+  }
+
+  async summarizeSession(handle: AgentSandboxSessionHandle): Promise<string> {
+    const raw = await fs.readFile(path.join(handle.stagingRoot, 'session.json'), 'utf8');
+    return summarizeAgentSandboxSessionManifest(JSON.parse(raw) as AgentSandboxSessionManifest);
+  }
+
+  async runChecks(params: {
+    checkPlan: AgentSandboxCheckPlan;
+    handle: AgentSandboxSessionHandle;
+    request: AgentSandboxSessionRequest;
+    runner: LocalContainerSandboxCommandRunner;
+  }): Promise<LocalContainerSandboxCheckRun> {
+    return runLocalContainerSandboxCommandPlans(
+      buildLocalContainerSandboxCommandPlans({
+        checkPlan: params.checkPlan,
+        handle: params.handle,
+        request: params.request,
+      }),
+      params.runner,
+    );
+  }
+}
 
 export function buildLocalContainerSandboxBackendProbe(
   input: LocalContainerSandboxProbeInput,
