@@ -532,4 +532,59 @@ describe('local container sandbox backend probe', () => {
       }
     }
   });
+
+  it('disposes the prepared sandbox session when patch review preparation fails', async () => {
+    const workspaceRoot = makeTempDir('taskplane-local-container-review-fail-workspace-');
+    const provider = new LocalContainerSandboxProvider();
+    const commandPolicy = buildDefaultAgentSandboxCommandPolicy({ timeoutMs: 30_000 });
+    const request: AgentSandboxSessionRequest = {
+      commandPolicy,
+      descriptorId: 'workspace.staged_patch',
+      executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+      providerKind: 'local_container',
+      runId: 'run_1',
+      taskId: 'task_1',
+      workspace: {
+        mode: 'staged_write',
+        mountPath: '/workspace',
+        workspaceRoot,
+      },
+    };
+    let preparedHandlePath: string | null = null;
+    const originalPrepareSession = provider.prepareSession.bind(provider);
+    vi.spyOn(provider, 'prepareSession').mockImplementation(async (nextRequest) => {
+      const handle = await originalPrepareSession(nextRequest);
+      preparedHandlePath = handle.stagingRoot;
+      return handle;
+    });
+
+    try {
+      await expect(prepareLocalContainerSandboxPatchReview({
+        checkPlan: buildAgentSandboxCheckPlan({
+          policy: commandPolicy,
+          requestedScripts: ['test'],
+        }),
+        patchDraft: {
+          diff: '',
+          files: ['notes.md'],
+          summary: 'Invalid patch draft',
+        },
+        provider,
+        request,
+        runner: vi.fn().mockResolvedValue({
+          exitCode: 0,
+          stderr: '',
+          stdout: 'test ok',
+        }),
+      })).rejects.toThrow('Sandbox patch artifact requires a diff preview.');
+
+      expect(preparedHandlePath).not.toBeNull();
+      expect(fs.existsSync(preparedHandlePath!)).toBe(false);
+    } finally {
+      fs.rmSync(workspaceRoot, { force: true, recursive: true });
+      if (preparedHandlePath) {
+        fs.rmSync(preparedHandlePath, { force: true, recursive: true });
+      }
+    }
+  });
 });

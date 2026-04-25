@@ -202,31 +202,37 @@ export async function prepareLocalContainerSandboxPatchReview(params: {
   runner: LocalContainerSandboxCommandRunner;
 }): Promise<LocalContainerSandboxPatchReviewPreparation> {
   const handle = await params.provider.prepareSession(params.request);
-  const checkRun = await params.provider.runChecks({
-    checkPlan: params.checkPlan,
-    handle,
-    request: params.request,
-    runner: params.runner,
-  });
-  const artifact = buildAgentSandboxPatchArtifactFromCheckResults({
-    checkResults: checkRun.results,
-    diff: params.patchDraft.diff,
-    files: params.patchDraft.files,
-    riskSummary: params.patchDraft.riskSummary,
-    summary: params.patchDraft.summary,
-  });
 
-  return {
-    artifact,
-    checkRun,
-    checkpoint: buildAgentSandboxPatchPromotionCheckpoint({
+  try {
+    const checkRun = await params.provider.runChecks({
+      checkPlan: params.checkPlan,
+      handle,
+      request: params.request,
+      runner: params.runner,
+    });
+    const artifact = buildAgentSandboxPatchArtifactFromCheckResults({
+      checkResults: checkRun.results,
+      diff: params.patchDraft.diff,
+      files: params.patchDraft.files,
+      riskSummary: params.patchDraft.riskSummary,
+      summary: params.patchDraft.summary,
+    });
+
+    return {
       artifact,
-      policySnapshot: params.request.executionPolicy,
-      resumeTarget: `${handle.id}:promote`,
-    }),
-    handle,
-    sessionSummary: await params.provider.summarizeSession(handle),
-  };
+      checkRun,
+      checkpoint: buildAgentSandboxPatchPromotionCheckpoint({
+        artifact,
+        policySnapshot: params.request.executionPolicy,
+        resumeTarget: `${handle.id}:promote`,
+      }),
+      handle,
+      sessionSummary: await params.provider.summarizeSession(handle),
+    };
+  } catch (error) {
+    await params.provider.disposeSession(handle);
+    throw error;
+  }
 }
 
 export function buildLocalContainerSandboxBackendProbe(
