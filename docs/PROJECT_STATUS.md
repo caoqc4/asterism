@@ -239,6 +239,9 @@ The project is past initial architecture assembly. Current work should favor pro
   constructs the staged session request, targeted check plan, idempotency key,
   and audit fields for later manifests without executing commands or exposing
   a UI/model entrypoint.
+- Sandbox session summaries now include compact audit identity and idempotency
+  when a request carries audit metadata, without expanding raw policy or patch
+  data into RunStep-facing text.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

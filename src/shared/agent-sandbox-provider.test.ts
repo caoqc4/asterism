@@ -529,6 +529,54 @@ describe('agent sandbox provider contracts', () => {
     );
   });
 
+  it('includes compact audit identity in sandbox session manifest summaries when present', () => {
+    const manifest = buildAgentSandboxSessionManifest({
+      handle: {
+        id: 'sandbox_session_1',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        stagingRoot: '/tmp/taskplane-sandbox-session',
+        providerKind: 'local_container',
+        workspaceMode: 'staged_write',
+      },
+      providerCapabilities: {
+        credentialPassthrough: false,
+        enabled: true,
+        kind: 'local_container',
+        networkMode: 'disabled',
+        supportsPatchArtifacts: true,
+        supportsReadOnlyWorkspace: true,
+        supportsStagedWrites: true,
+        supportsTargetedCommands: true,
+      },
+      request: {
+        audit: {
+          acceptedScripts: ['test'],
+          idempotencyKey: 'sandbox-patch-review:run_1:task_1:test',
+          initiatedBy: 'internal_sandbox_patch_review',
+          reason: 'Review sandbox patch before promotion.',
+          rejectedScripts: [],
+          requestedScripts: ['test'],
+          workspaceRoot: '/tmp/taskplane-sandbox-workspace',
+        },
+        commandPolicy: buildDefaultAgentSandboxCommandPolicy(),
+        descriptorId: 'workspace.staged_patch',
+        executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+        providerKind: 'local_container',
+        runId: 'run_1',
+        taskId: 'task_1',
+        workspace: {
+          mode: 'staged_write',
+          mountPath: '/workspace',
+          workspaceRoot: '/tmp/taskplane-sandbox-workspace',
+        },
+      },
+    });
+
+    expect(summarizeAgentSandboxSessionManifest(manifest)).toBe(
+      'sandbox=sandbox_session_1 / provider=local_container / workspace=staged_write / network=disabled / credentials=none / commands=test,lint / patchArtifacts=supported / audit=internal_sandbox_patch_review / idempotency=sandbox-patch-review:run_1:task_1:test',
+    );
+  });
+
   it('builds a normalized staged patch artifact for later Decision review', () => {
     const artifact = buildAgentSandboxPatchArtifact({
       commandLogs: [

@@ -490,7 +490,7 @@ export function buildAgentSandboxSessionManifest(params: {
 export function summarizeAgentSandboxSessionManifest(
   manifest: AgentSandboxSessionManifest,
 ): string {
-  return [
+  const parts = [
     `sandbox=${manifest.id}`,
     `provider=${manifest.providerKind}`,
     `workspace=${manifest.workspace.mode}`,
@@ -498,7 +498,14 @@ export function summarizeAgentSandboxSessionManifest(
     `credentials=${manifest.providerCapabilities.credentialPassthrough ? 'passthrough' : 'none'}`,
     `commands=${manifest.commandPolicy.allowedScripts.join(',') || 'none'}`,
     `patchArtifacts=${manifest.providerCapabilities.supportsPatchArtifacts ? 'supported' : 'unsupported'}`,
-  ].join(' / ');
+  ];
+
+  if (manifest.audit) {
+    parts.push(`audit=${manifest.audit.initiatedBy}`);
+    parts.push(`idempotency=${manifest.audit.idempotencyKey}`);
+  }
+
+  return parts.join(' / ');
 }
 
 export function buildAgentSandboxPatchArtifact(
