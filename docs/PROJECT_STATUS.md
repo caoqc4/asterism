@@ -246,6 +246,10 @@ The project is past initial architecture assembly. Current work should favor pro
   combines feature-gate availability, request/audit construction, normalized
   patch-draft metadata, and Decision title selection without returning an
   adapter, runner, UI action, or executable command path.
+- A `SandboxPatchReviewPlanningService` now provides the internal-only query
+  boundary for that planner, giving future orchestration code a stable preview
+  entrypoint without constructing adapters, runners, UI actions, or model
+  tools.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
