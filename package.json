@@ -73,7 +73,7 @@
     "asar": true,
     "mac": {
       "category": "public.app-category.productivity",
-      "icon": "build-resources/icon.png",
+      "icon": "icon.png",
       "target": [
         "dmg",
         "zip"
