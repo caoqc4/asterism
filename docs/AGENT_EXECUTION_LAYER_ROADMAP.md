@@ -32,11 +32,13 @@ Implemented and locally verified:
 - patch guardrails for local file-write policy, workspace root containment,
   expected files, diff preview, no pre-approval mutation, and normal-run
   fallback when a model proposes patch steps
+- confirmation-gated `workspace.run_command` at registry level, limited to
+  allowlisted `package.json` scripts and resumed only after Decision approval
 
 Still intentionally deferred:
 
 - exposing workspace writes in prompts or task UI
-- `workspace.run_command`
+- exposing workspace command execution in prompts or task UI
 - browser/computer-control tools
 - social/media/email posting tools
 - autonomous multi-run scheduling
