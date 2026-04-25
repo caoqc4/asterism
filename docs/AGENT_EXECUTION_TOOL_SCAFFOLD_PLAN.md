@@ -5,6 +5,12 @@
 Planning baseline for the shared tool scaffold above Taskplane's agent
 execution layer.
 
+Initial shared TypeScript contracts now exist in
+`src/shared/agent-tool-scaffold.ts`. They reserve descriptor, family, session,
+artifact, checkpoint, credential, lifecycle, and default-exposure concepts for
+current and future tool lanes without exposing new tools to prompts, provider
+schemas, or runtime execution.
+
 Read with:
 
 - [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md)
@@ -172,6 +178,8 @@ forms.
 1. **Scaffold contracts**
    Define shared descriptors, exposure policy, execution policy, session
    metadata, artifact kinds, and checkpoint metadata behind feature flags.
+   Initial descriptor/family/session/artifact/checkpoint/credential contracts
+   are in place with reserved future lanes hidden by default.
 
 2. **Sandboxed coding lane**
    Implement `SandboxProvider`, staged patch artifacts, targeted checks, and

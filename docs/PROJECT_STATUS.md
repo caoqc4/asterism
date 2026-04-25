@@ -90,6 +90,11 @@ The project is past initial architecture assembly. Current work should favor pro
   computer-use, workspace coding tools, and creator connectors: reserve common
   descriptors, exposure policy, execution policy, tool sessions, artifacts,
   and checkpoints before enabling each lane.
+- `src/shared/agent-tool-scaffold.ts` now starts Slice 5 in code by defining
+  shared tool scaffold descriptors, families, session kinds, artifact kinds,
+  checkpoint kinds, credential policies, and hidden reserved descriptors for
+  future workspace coding, browser/Playwright, MCP, skills, computer-use, and
+  creator connector lanes.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -119,8 +124,8 @@ npm run verify
 
 Latest local baseline:
 
-- 66 test files
-- 484 tests
+- 67 test files
+- 488 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -133,8 +138,8 @@ Latest local baseline:
 - `npm run accept:provider-native-live:preflight` reports the current local
   provider-native setup is ready; live provider validation remains opt-in
   because it spends configured provider credit
-- `npm run verify` passed locally on 2026-04-25 after the Home recovery and
-  execution-layer status cleanup
+- `npm run verify` passed locally on 2026-04-25 after the Slice 5 shared tool
+  scaffold contracts landed
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
