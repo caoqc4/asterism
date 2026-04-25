@@ -290,6 +290,11 @@ The project is past initial architecture assembly. Current work should favor pro
   narrow ACI-style tools, staged writes, changed-file/diff collection, evidence
   summaries, source validation, and Decision-linked patch promotion. The next
   code work is non-live producer scaffolding, not UI exposure.
+- `SandboxedCodingProducerRequest` now starts that non-live scaffolding with a
+  pure validator for source/run/task/workspace identity, intent, sandbox-only
+  tool exposure, allowlisted `test` / `lint` checks, bounded command policy,
+  no credential passthrough, and Decision-required promotion. It does not start
+  a model loop, runner, sandbox backend, or UI entrypoint.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -319,8 +324,8 @@ npm run verify
 
 Latest local baseline:
 
-- 79 test files
-- 574 tests
+- 80 test files
+- 579 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -345,6 +350,8 @@ Latest local baseline:
 - `npm run verify` passed locally on 2026-04-26 after carrying patch draft
   source identity into sandbox audit/idempotency metadata: 79 test files / 574
   tests
+- `npm run verify` passed locally on 2026-04-26 after adding
+  `SandboxedCodingProducerRequest` validation: 80 test files / 579 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
