@@ -173,6 +173,10 @@ The project is past initial architecture assembly. Current work should favor pro
   mount workspaces or execute user scripts.
 - Settings status now exposes sandbox backend status as `未检测` by default;
   no Docker probe is triggered by opening Settings or reading AI config status.
+- Settings now has an explicit manual `检测 Sandbox Backend` action wired
+  through IPC. It runs the read-only local-container backend probe only when
+  clicked, updates the visible backend readiness summary, and still does not
+  enable the sandbox coding lane or run workspace commands.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

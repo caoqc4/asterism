@@ -5441,6 +5441,42 @@ describe('App UI flow', () => {
       ...mockApi,
       getAiConfigStatus: vi.fn(async () => currentAiStatus),
       getHomeBrief: vi.fn(async () => currentBriefData),
+      probeSandboxBackend: vi.fn(async () => ({
+        probe: {
+          backendId: 'local-container',
+          environmentPolicy: 'empty',
+          isolation: 'container',
+          kind: 'local_container',
+          networkMode: 'disabled',
+          status: 'available',
+          supportsOutputLimits: true,
+          supportsPatchArtifacts: true,
+          supportsStagedWrites: true,
+          supportsStructuredCommands: true,
+          supportsTargetedCommands: true,
+          supportsWorkspaceMount: true,
+        },
+        profile: {
+          credentialPassthrough: false,
+          environmentPolicy: 'empty',
+          id: 'local-container',
+          isolation: 'container',
+          kind: 'local_container',
+          networkMode: 'disabled',
+          supportsOutputLimits: true,
+          supportsPatchArtifacts: true,
+          supportsStagedWrites: true,
+          supportsStructuredCommands: true,
+          supportsTargetedCommands: true,
+          supportsWorkspaceMount: true,
+        },
+        readiness: {
+          blockedReasons: [],
+          ready: true,
+          summary: 'Sandbox backend ready: local-container.',
+        },
+        summary: 'Sandbox backend ready: local-container.',
+      } satisfies Awaited<ReturnType<NonNullable<ElectronApi['probeSandboxBackend']>>>)),
       subscribeToEvents: vi.fn().mockImplementation((callback) => {
         subscriber = callback;
         return () => {
@@ -5497,6 +5533,9 @@ describe('App UI flow', () => {
       screen.getByText(/已选择 anthropic \/ claude-3-5-sonnet-latest，但 AI config 未就绪/),
     ).toBeTruthy();
     expect(screen.getByText(/Sandbox Backend：未检测/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '检测 Sandbox Backend' }));
+    await screen.findByText(/Sandbox Backend：可用：Sandbox backend ready: local-container\./);
+    expect(eventingApi.probeSandboxBackend).toHaveBeenCalledTimes(1);
 
     await user.selectOptions(screen.getByLabelText('Provider'), 'openai');
     const modelInput = screen.getByLabelText('Model');

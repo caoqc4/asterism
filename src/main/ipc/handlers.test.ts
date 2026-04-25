@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { handleMock, emitAppEventMock, servicesMock } = vi.hoisted(() => ({
+const { handleMock, emitAppEventMock, probeLocalContainerSandboxBackendMock, servicesMock } = vi.hoisted(() => ({
   handleMock: vi.fn(),
   emitAppEventMock: vi.fn(),
+  probeLocalContainerSandboxBackendMock: vi.fn(),
   servicesMock: {
     aiConfigService: {
       getStatus: vi.fn(),
@@ -69,6 +70,10 @@ vi.mock('./event-bus.js', () => ({
   emitAppEvent: emitAppEventMock,
 }));
 
+vi.mock('../domain/run/local-container-sandbox-backend.js', () => ({
+  probeLocalContainerSandboxBackend: probeLocalContainerSandboxBackendMock,
+}));
+
 import { registerIpcHandlers } from './handlers.js';
 
 function getRegisteredHandler<TArgs extends unknown[], TResult>(channel: string) {
@@ -85,6 +90,7 @@ describe('registerIpcHandlers', () => {
   beforeEach(() => {
     handleMock.mockClear();
     emitAppEventMock.mockClear();
+    probeLocalContainerSandboxBackendMock.mockReset();
     Object.values(servicesMock).forEach((service) => {
       Object.values(service).forEach((member) => {
         if (typeof member === 'function' && 'mockClear' in member) {
@@ -94,6 +100,34 @@ describe('registerIpcHandlers', () => {
     });
 
     registerIpcHandlers();
+  });
+
+  it('runs the sandbox backend probe only through the explicit settings channel', async () => {
+    probeLocalContainerSandboxBackendMock.mockResolvedValue({
+      backendId: 'local-container',
+      environmentPolicy: 'empty',
+      isolation: 'container',
+      kind: 'local_container',
+      networkMode: 'disabled',
+      status: 'available',
+      supportsOutputLimits: true,
+      supportsPatchArtifacts: true,
+      supportsStagedWrites: true,
+      supportsStructuredCommands: true,
+      supportsTargetedCommands: true,
+      supportsWorkspaceMount: true,
+    });
+
+    const handler = getRegisteredHandler<[], Awaited<ReturnType<typeof probeLocalContainerSandboxBackendMock>>>(
+      'settings:probeSandboxBackend',
+    );
+
+    const result = await handler({});
+
+    expect(probeLocalContainerSandboxBackendMock).toHaveBeenCalledTimes(1);
+    expect(result.probe?.status).toBe('available');
+    expect(result.readiness?.ready).toBe(true);
+    expect(result.summary).toBe('Sandbox backend ready: local-container.');
   });
 
   it('starts the scheduler and emits settings.changed when scheduler is enabled', async () => {

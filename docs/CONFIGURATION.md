@@ -60,6 +60,7 @@ The app currently exposes a Settings page for:
 - read-only workspace root for opted-in agent runs
 - API key storage
 - scheduler enable/disable
+- manual sandbox backend readiness detection
 
 Supported provider values:
 
@@ -94,6 +95,12 @@ background. It is independent from provider-native tool-call validation.
 Keep `TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=false` unless you are deliberately
 working on the disabled-by-default sandbox coding-agent lane; the flag is a
 rollout gate and does not by itself expose broad code execution.
+
+The Settings page can manually detect the local sandbox backend. This is an
+explicit button-triggered, read-only Docker availability probe; Taskplane does
+not run it during startup or AI config status reads. A ready backend status is
+only a prerequisite signal for later sandboxed coding-agent work and does not
+enable code-agent execution by itself.
 
 For fal OpenRouter:
 

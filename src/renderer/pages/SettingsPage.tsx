@@ -4,7 +4,9 @@ type SettingsPageProps = {
   aiStatus: AiConfigStatus | null;
   configForm: AiConfigInput;
   onChange: (next: AiConfigInput) => void;
+  onProbeSandboxBackend: () => Promise<void>;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
+  sandboxBackendProbePending: boolean;
 };
 
 function formatAiConfigState(aiStatus: AiConfigStatus | null): string {
@@ -37,7 +39,14 @@ function formatSandboxBackendState(aiStatus: AiConfigStatus | null): string {
   return `不可用：${status.summary}`;
 }
 
-export function SettingsPage({ aiStatus, configForm, onChange, onSubmit }: SettingsPageProps) {
+export function SettingsPage({
+  aiStatus,
+  configForm,
+  onChange,
+  onProbeSandboxBackend,
+  onSubmit,
+  sandboxBackendProbePending,
+}: SettingsPageProps) {
   return (
     <section className="page-grid">
       <article className="panel page-hero">
@@ -67,7 +76,19 @@ export function SettingsPage({ aiStatus, configForm, onChange, onSubmit }: Setti
         <p className="meta">
           Sandbox Coding Agent：{aiStatus?.featureFlags.enableSandboxCodingAgent ? '启用' : '未启用'}
         </p>
-        <p className="meta">Sandbox Backend：{formatSandboxBackendState(aiStatus)}</p>
+        <div className="settings-status-row">
+          <p className="meta">Sandbox Backend：{formatSandboxBackendState(aiStatus)}</p>
+          <button
+            className="ghost-button"
+            disabled={sandboxBackendProbePending}
+            onClick={() => {
+              void onProbeSandboxBackend();
+            }}
+            type="button"
+          >
+            {sandboxBackendProbePending ? '检测中' : '检测 Sandbox Backend'}
+          </button>
+        </div>
       </article>
 
       <article className="panel">

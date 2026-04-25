@@ -23,7 +23,9 @@ import type {
   UpdateTaskInput,
 } from '../../shared/types/task.js';
 
+import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import { getServices } from '../bootstrap/services.js';
+import { probeLocalContainerSandboxBackend } from '../domain/run/local-container-sandbox-backend.js';
 import { ipcMain } from '../electron.js';
 import { emitAppEvent } from './event-bus.js';
 
@@ -53,6 +55,11 @@ export function registerIpcHandlers(): void {
     emitAppEvent('settings.changed');
 
     return nextStatus;
+  });
+
+  ipcMain.handle('settings:probeSandboxBackend', async () => {
+    const probe = await probeLocalContainerSandboxBackend();
+    return buildAgentSandboxBackendStatus(probe);
   });
 
   ipcMain.handle('task:list', async () => {

@@ -36,6 +36,7 @@ import type {
 } from './process-template.js';
 import type { CreateRunInput, RunDetailRecord, RunRecord } from './run.js';
 import type { AiConfigInput, AiConfigStatus } from './settings.js';
+import type { AgentSandboxBackendStatus } from '../agent-sandbox-provider.js';
 import type {
   CreateSourceContextInput,
   SourceContextRecord,
@@ -54,6 +55,7 @@ export type ElectronApi = {
   ping: () => Promise<PingResponse>;
   getAiConfigStatus: () => Promise<AiConfigStatus>;
   setAiConfig: (input: AiConfigInput) => Promise<AiConfigStatus>;
+  probeSandboxBackend?: () => Promise<AgentSandboxBackendStatus>;
   listTasks: () => Promise<TaskListItemRecord[]>;
   createTask: (input: CreateTaskInput) => Promise<TaskListItemRecord>;
   getTaskDetail: (taskId: string) => Promise<TaskDetail | null>;

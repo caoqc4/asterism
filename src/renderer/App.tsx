@@ -131,6 +131,7 @@ export function App() {
   const [decisions, setDecisions] = useState<DecisionRecord[]>([]);
   const [runs, setRuns] = useState<RunRecord[]>([]);
   const [briefData, setBriefData] = useState<HomeBriefData | null>(null);
+  const [sandboxBackendProbePending, setSandboxBackendProbePending] = useState(false);
   const [configForm, setConfigForm] = useState<AiConfigInput>({
     provider: 'anthropic',
     model: 'claude-3-5-sonnet-latest',
@@ -282,6 +283,23 @@ export function App() {
       workspaceRoot: nextStatus.workspaceRoot ?? '',
       featureFlags: nextStatus.featureFlags,
     }));
+  }
+
+  async function handleProbeSandboxBackend() {
+    if (!window.api.probeSandboxBackend) {
+      return;
+    }
+
+    setSandboxBackendProbePending(true);
+
+    try {
+      const sandboxBackendStatus = await window.api.probeSandboxBackend();
+      setAiStatus((current) =>
+        current ? { ...current, sandboxBackendStatus } : current,
+      );
+    } finally {
+      setSandboxBackendProbePending(false);
+    }
   }
 
   async function handleCreateTask(input: { title: string; summary?: string }) {
@@ -848,6 +866,8 @@ export function App() {
             aiStatus={aiStatus}
             configForm={configForm}
             onChange={setConfigForm}
+            onProbeSandboxBackend={handleProbeSandboxBackend}
+            sandboxBackendProbePending={sandboxBackendProbePending}
             onSubmit={handleSaveConfig}
           />
         ) : null}

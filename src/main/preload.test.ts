@@ -31,6 +31,7 @@ function getExposedApi() {
     ping: () => Promise<unknown>;
     getAiConfigStatus: () => Promise<unknown>;
     setAiConfig: (input: unknown) => Promise<unknown>;
+    probeSandboxBackend: () => Promise<unknown>;
     listTasks: () => Promise<unknown>;
     createTask: (input: unknown) => Promise<unknown>;
     getTaskDetail: (taskId: string) => Promise<unknown>;
@@ -140,6 +141,7 @@ describe('preload bridge', () => {
     await api.ping();
     await api.getAiConfigStatus();
     await api.setAiConfig(aiInput);
+    await api.probeSandboxBackend();
     await api.listTasks();
     await api.createTask(createTaskInput);
     await api.getTaskDetail('task_1');
@@ -174,6 +176,7 @@ describe('preload bridge', () => {
       ['app:ping'],
       ['settings:getAiConfigStatus'],
       ['settings:setAiConfig', aiInput],
+      ['settings:probeSandboxBackend'],
       ['task:list'],
       ['task:create', createTaskInput],
       ['task:getDetail', 'task_1'],

@@ -8,6 +8,7 @@ const api: ElectronApi = {
   ping: () => ipcRenderer.invoke('app:ping'),
   getAiConfigStatus: () => ipcRenderer.invoke('settings:getAiConfigStatus'),
   setAiConfig: (input) => ipcRenderer.invoke('settings:setAiConfig', input),
+  probeSandboxBackend: () => ipcRenderer.invoke('settings:probeSandboxBackend'),
   listTasks: () => ipcRenderer.invoke('task:list'),
   createTask: (input) => ipcRenderer.invoke('task:create', input),
   getTaskDetail: (taskId) => ipcRenderer.invoke('task:getDetail', taskId),
