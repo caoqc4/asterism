@@ -101,6 +101,9 @@ Covered today:
   `npm run accept:provider-native-tools` exercises provider-native extraction,
   provider adapters, safe-read schema exposure, selection gates, run-loop policy
   parity, and RunService persistence without calling external providers
+- `Agent local acceptance`
+  `npm run accept:agent-local` combines the non-live workspace patch, domain
+  tool, and provider-native acceptance scripts into one local gate
 - `Provider-native live validation`
   `npm run accept:provider-native-live:preflight` checks local readiness without
   spending provider credit, and `npm run accept:provider-native-live` performs a

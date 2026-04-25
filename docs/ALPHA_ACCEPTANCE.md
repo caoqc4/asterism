@@ -8,6 +8,8 @@ For recording a concrete manual pass, use [ALPHA_MANUAL_RUN_LOG.md](ALPHA_MANUAL
 ## Verification Gate
 
 - Run `npm run verify`.
+- Run `npm run accept:agent-local` for the non-live agent execution-layer
+  acceptance slice. This does not call external providers.
 - Run `npm run smoke:build` if package, build, Electron entrypoint, or packaging configuration changed.
 - Do not manually dispatch or watch GitHub Actions while Actions quota is unavailable.
 
@@ -80,7 +82,7 @@ yet exposed in agent prompts or the task UI.
 - Run the repeatable local approval exercise:
 
 ```bash
-npm run accept:workspace-patch
+npm run accept:agent-local
 ```
 
 - Run the renderer checkpoint review coverage:

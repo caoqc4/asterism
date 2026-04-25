@@ -28,6 +28,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Run checkpoint payloads now have versioned v1 helper shapes for tool-permission and resume checkpoints, while old JSON payloads remain readable.
 - The first local-write execution slice is in place but not model-exposed: `workspace.write_patch` requires explicit local file-write policy, creates a confirmation checkpoint with a diff preview, applies only after the linked Decision is approved, and has tests for normal-run fallback plus workspace-boundary / expected-file rejection.
 - A focused `npm run accept:workspace-patch` command now exercises the local patch approval path without exposing write access in the product UI.
+- `npm run accept:agent-local` now combines the non-live agent acceptance checks
+  for workspace patch approval, domain task tools, and provider-native tool-call
+  boundaries without calling external providers.
 - Agent run forms now preview provider/session capability before execution, including text-only planning, read-only workspace context opt-in, task update/evidence tool opt-in, structured tool-call deferral in the local executor, patch/command unavailability, and provider-specific wording for Replicate versus the local text-only executor path.
 - Provider-native structured tool calls remain deliberately deferred behind a decision gate: provider responses must be normalized into the existing `AgentStepProposal` / `AgentToolRegistry` path before any run can persist `structuredToolCalls=true`.
 - A shared provider capability descriptor gives renderer and adapter work a single descriptive source for unconfigured, local text-executor, fal/OpenRouter, OpenAI-compatible, and Replicate native text paths while keeping structured execution behind the explicit provider-native rollout gate.
