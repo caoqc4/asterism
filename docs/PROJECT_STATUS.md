@@ -62,7 +62,7 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 2. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
-5. Manually exercise the confirmation-gated `workspace.write_patch` approval path before exposing write access in prompts or UI.
+5. Follow [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md): first manually exercise the confirmation-gated `workspace.write_patch` approval path, then decide between domain-shaped task tools and a separate command allowlist design.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.

@@ -585,6 +585,9 @@ Next code slice:
    checkpoint/resume UX is coherent.
 3. Design the eventual command allowlist as a separate decision update.
 
+For the shorter implementation sequence after the alpha task-management pass,
+see [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md).
+
 Success: Taskplane can inspect local project context for coding-like tasks only
 when the user has explicitly enabled read-only workspace access for that run,
 and the run detail can explain that capability afterward.
