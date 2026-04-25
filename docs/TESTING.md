@@ -315,6 +315,7 @@ Current verification:
 - `npm run smoke:build` when package/build entrypoints change
 - `npm run smoke:package:mac` after producing `release/mac-arm64/Taskplane.app`, including ASAR content checks
 - `npm run smoke:runtime:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged startup
+- `npm run smoke:release:mac` for the combined unsigned macOS build/package/runtime path
 
 When GitHub Actions is unavailable or disabled because of monthly quota, local verification is the temporary source of truth:
 
@@ -322,6 +323,7 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 - run `npm run smoke:build` when package/build entrypoints change
 - run `npm run smoke:package:mac` after `npm run dist:mac:dir`
 - run `npm run smoke:runtime:mac` after `npm run dist:mac:dir`
+- or run `npm run smoke:release:mac` to cover the unsigned macOS package path in one command
 - avoid manually dispatching or watching remote workflow runs until Actions capacity is restored
 
 ## Suggested Next Test Targets

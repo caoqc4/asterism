@@ -51,6 +51,12 @@ npm run smoke:package:mac
 npm run smoke:runtime:mac
 ```
 
+Or run the full unsigned local release smoke path in one command:
+
+```bash
+npm run smoke:release:mac
+```
+
 The package smoke check validates the app bundle, key `Info.plist` metadata,
 native module unpacking, ASAR integrity metadata, required ASAR entries, absence
 of compiled test files, executable bit, and the local code signature. The
@@ -88,6 +94,7 @@ As of the current alpha path:
 - `npm run dist:mac:dir` passes locally
 - `npm run smoke:package:mac` passes locally for the unpacked app
 - `npm run smoke:runtime:mac` passes locally for isolated packaged startup
+- `npm run smoke:release:mac` passes locally for the combined unsigned macOS path
 - notarization is skipped because release credentials/options are not configured
 
 ## Why macOS first

@@ -87,4 +87,5 @@ release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane
 - Produce `npm run dist:mac:dir` only after the manual alpha path is coherent.
 - Run `npm run smoke:package:mac` after producing the unpacked macOS app.
 - Run `npm run smoke:runtime:mac` to confirm packaged startup creates isolated config and SQLite data.
+- Or run `npm run smoke:release:mac` to combine the unpacked macOS build and both smoke checks.
 - Do not start signed/notarized release work until the local alpha path passes without major friction.
