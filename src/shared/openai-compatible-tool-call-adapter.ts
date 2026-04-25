@@ -92,7 +92,23 @@ export function normalizeOpenAiCompatibleToolCalls(params: {
 
   for (const toolCall of message.tool_calls) {
     if (!isRecord(toolCall) || !isRecord(toolCall.function)) {
-      continue;
+      return {
+        status: 'failed',
+        provider,
+        model,
+        error: 'OpenAI-compatible tool call must include a function object.',
+        rawSummary: 'tool_calls',
+      };
+    }
+
+    if (toolCall.type !== undefined && toolCall.type !== 'function') {
+      return {
+        status: 'failed',
+        provider,
+        model,
+        error: 'OpenAI-compatible tool call type must be function.',
+        rawSummary: 'tool_calls',
+      };
     }
 
     const tool = toolCall.function.name;

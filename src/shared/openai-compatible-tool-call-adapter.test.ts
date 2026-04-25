@@ -80,6 +80,76 @@ describe('normalizeOpenAiCompatibleToolCalls', () => {
     });
   });
 
+  it('fails closed when any tool call lacks a function object', () => {
+    expect(normalizeOpenAiCompatibleToolCalls({
+      provider: 'openai',
+      model: 'gpt-4.1',
+      payload: {
+        choices: [
+          {
+            message: {
+              tool_calls: [
+                {
+                  id: 'call_bad',
+                  type: 'custom',
+                  custom: {
+                    name: 'unknown.execute',
+                    input: 'npm test',
+                  },
+                },
+                {
+                  id: 'call_good',
+                  type: 'function',
+                  function: {
+                    name: 'task.inspect_context',
+                    arguments: '{}',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    })).toEqual({
+      status: 'failed',
+      provider: 'openai',
+      model: 'gpt-4.1',
+      error: 'OpenAI-compatible tool call must include a function object.',
+      rawSummary: 'tool_calls',
+    });
+  });
+
+  it('fails closed when a tool call type is not function', () => {
+    expect(normalizeOpenAiCompatibleToolCalls({
+      provider: 'openai-compatible',
+      model: 'relay/model',
+      payload: {
+        choices: [
+          {
+            message: {
+              tool_calls: [
+                {
+                  id: 'call_wrong_type',
+                  type: 'custom',
+                  function: {
+                    name: 'task.inspect_context',
+                    arguments: '{}',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    })).toEqual({
+      status: 'failed',
+      provider: 'openai-compatible',
+      model: 'relay/model',
+      error: 'OpenAI-compatible tool call type must be function.',
+      rawSummary: 'tool_calls',
+    });
+  });
+
   it('fails closed when tool_calls are absent', () => {
     expect(normalizeOpenAiCompatibleToolCalls({
       provider: 'fal-openrouter',

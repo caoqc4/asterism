@@ -123,6 +123,7 @@ Covered today:
 - `OpenAI-compatible tool-call adapter`
   offline chat-completion-style `tool_calls` fixture normalization, including
   JSON argument validation and fail-closed handling when tool calls are absent
+  or include non-function call shapes
 - `Anthropic tool-use adapter`
   offline Messages-style `tool_use` content block normalization, including
   object input validation and fail-closed handling when no supported tool is
