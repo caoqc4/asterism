@@ -67,6 +67,7 @@ Automated coverage:
 - repository tests cover decision/run timeline writes
 - renderer tests cover quick decision, quick run, related object entry, and refresh behavior
 - agent execution tests cover read-only workspace tools, an isolated RunService read-only workspace agent path through persisted run detail, policy-gated workspace plan steps, per-run workspace opt-in, session capability metadata, Runs-page workspace / patch-command capability visibility, prompt guidance that only exposes workspace tools when opted in, normal-run fallback when a model proposes `workspace.write_patch` or registry-only domain mutation tools, provider-native fallback when a relay returns workspace write/command proposals, confirmation-gated `workspace.write_patch`, workspace-boundary / expected-file rejection, service-routed task next-step / completion-criterion / source-context tools through real SQLite repositories, high-risk completion-criterion checkpointing before task mutation, RunService-level completion evidence review without satisfying criteria or completing tasks, draft-only Decision proposals, Runs-page patch and command checkpoint summaries, Decision checkpoint consequence wording, and Decision approval resumption through real SQLite repositories
+- execution-layer v2 tests now cover typed agent runtime events, event-to-RunStep projection, local/provider-native session result projection, centralized tool-permission and resume checkpoint recording, Decision-linked checkpoint metadata, restart-safe resume payload fields, stale/incompatible resume payload rejection before tool execution, and the shared prompt/provider tool exposure matrix
 
 Manual result / need:
 
@@ -78,7 +79,9 @@ Manual result / need:
 - packaged app manual pass under `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-workspace-agent-manual-20260425` and `TASKPLANE_WORKSPACE_ROOT=/tmp/taskplane-alpha-workspace-root-manual-20260425` triggered an `agent` run with read-only workspace context enabled; SQLite confirmed the run completed with `output_source=ai`, agent session `fileContext=true`, workspace search/read observations for `docs/marker.txt`, note/run-output artifacts, and no open checkpoints
 - `workspace.write_patch` now requires explicit local file-write policy, creates a confirmation checkpoint with expected files and diff preview, applies only after the linked Decision is approved, rejects path escapes or files outside `expectedFiles`, and falls back instead of accepting model-proposed patch steps in normal runs; `workspace.run_command` now follows the accepted `test` / `lint` allowlist decision as a registry-only confirmed package-script runner with Decision approval resume, while still staying out of model prompts and normal agent plans
 - on 2026-04-25, `npm run accept:agent-local` passed locally, covering workspace patch approval, domain task tools, and provider-native tool-call boundaries without external provider calls; renderer coverage also confirms Runs and Decisions expose checkpoint review wording for patch and command tools without adding prompt exposure
+- on 2026-04-25, `npm run accept:agent-local` passed again after the execution-layer v2 slices, covering workspace patch approval, domain task tools, provider-native tool-call boundaries, checkpoint recorder refactoring, and restart-safe resume payload validation without external provider calls
 - domain tools can update a task next step, create a completion criterion, review completion evidence without satisfying criteria or completing the task, create source context, and draft a Decision through services; they are prompt-exposed and accepted from model plans only when a run explicitly opts into `allowTaskMutationTools`, and high-risk criterion creation now requires Decision approval before the task is mutated
+- execution-layer design docs now define the accepted v2 boundary, sandbox boundary, tool exposure matrix, and future post-Slice-0 design; broad code-agent mode, arbitrary shell, browser/computer control, external posting, and always-on autonomy remain deferred
 
 ## Completion Loop
 
@@ -155,6 +158,6 @@ Finish the remaining alpha work in this order:
 
 1. Keep signed/notarized packaging out of scope until the next release-readiness pass explicitly targets signing and notarization.
 2. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
-3. Keep the next execution-layer phase focused on opt-in policy and checkpoint UX rather than broad new domain expansion.
+3. Treat the current execution-layer v2 slice as locally accepted for the alpha path; next execution work should be either acceptance/documentation cleanup or the explicitly deferred checkpoint-event command-boundary refinement, not new model-visible power.
 
 Do not expand the domain model until the release-readiness pass is cleaner.
