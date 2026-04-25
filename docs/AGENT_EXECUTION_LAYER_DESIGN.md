@@ -383,10 +383,10 @@ Implemented baseline:
 - `AgentRunRequest`, `AgentPolicy`, and `AgentWorkingContext`
 - text run orchestration plus agent-mode handoff
 - planner/fallback plan writing for constrained agent proposals
+- provider/session capability previews before run execution
 
 Remaining cleanup:
 
-- make provider capability visible before the user triggers an agent run
 - separate provider failure, planner failure, and tool failure in user-facing
   recovery wording
 
@@ -420,10 +420,12 @@ Implemented baseline:
 - deferred/cancelled settlement as non-resumable
 - paused resume checkpoints for local-write gating
 - continuation from Runs and Tasks with visible failure feedback
+- versioned v1 tool-permission and resume checkpoint payload helpers
+- restart-safe integration coverage for approved, deferred, and cancelled
+  checkpoint Decisions after database/service restart
 
 Remaining cleanup:
 
-- make checkpoint payload shape versioned before adding more tools
 - surface cancelled/non-resumable states more clearly in Home recommendations
 
 ## Current Major Phase: Executor Session Boundary
@@ -600,11 +602,21 @@ Completed slice:
    task tools absent from normal model plans until a dedicated UI/policy opt-in
    slice chooses how users enable them.
 
+Completed slice:
+
+1. Re-check checkpoint Decisions through a restart-style integration path.
+2. Confirm approved checkpoint Decisions can resume a persisted workspace patch
+   after the database/service boundary is rebuilt.
+3. Confirm deferred and cancelled checkpoint Decisions settle the run as
+   non-resumable without mutating workspace files.
+
 Next code/design slice:
 
-1. Choose the first user-facing opt-in surface, if any, for registry-only
-   domain tools or workspace tools.
-2. Keep broad browser/computer/social/coding execution deferred until the
+1. Improve how cancelled/non-resumable checkpoint runs appear in recovery
+   surfaces if manual review shows Home wording is still ambiguous.
+2. Choose the first user-facing opt-in surface, if any, for registry-only
+   domain tools or workspace tools only after that recovery wording is clear.
+3. Keep broad browser/computer/social/coding execution deferred until the
    executor/session boundary can survive interruption and restart.
 
 For the shorter implementation sequence after the alpha task-management pass,
