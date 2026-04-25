@@ -133,6 +133,8 @@ Completed:
 - `featureFlags.enableProviderNativeToolCalls` now exists as a default-off
   rollout flag, but current runs ignore it for execution and still persist
   `structuredToolCalls=false`.
+- A shared shadow observer can summarize provider-native normalization outcomes
+  without returning executable proposals or wiring them into real runs.
 
 Acceptance:
 
@@ -152,6 +154,8 @@ Acceptance:
   tool-call path
 - enabling the reserved feature flag alone does not change session capability
   metadata
+- shadow observation exposes `skipped`, `observed`, or `failed` summaries only;
+  it does not feed `AgentRunLoop`
 
 Deferred:
 
