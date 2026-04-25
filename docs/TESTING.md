@@ -56,6 +56,7 @@ Current test files:
 - `src/main/ipc/handlers.test.ts`
 - `src/main/preload.test.ts`
 - `src/renderer/App.test.tsx`
+- `src/renderer/lib/agentCapabilities.test.ts`
 - `src/shared/working-context/priority-lanes.test.ts`
 - `src/shared/working-context/timeline.test.ts`
 - `src/shared/working-context/transitions.test.ts`
@@ -97,6 +98,8 @@ Covered today:
   checkpoint Decision approval can resume both local note creation and confirmation-gated workspace patch application
 - `TextExecutor`
   lane-aware run prompt composition, constrained JSON proposal prompting for agent runs, and opt-in workspace tool prompt guidance
+- `Agent capability UI helpers`
+  pre-run agent capability preview wording, including text-only local executor behavior, read-only workspace opt-in state, and Replicate-specific text-only planning wording
 - `AI clients`
   Vercel SDK client routing plus native Replicate text prediction request/response handling
 - `HomeBriefService`

@@ -1,0 +1,38 @@
+import { describe, expect, it } from 'vitest';
+
+import type { AiConfigStatus } from '@shared/types/settings';
+import { formatPreRunAgentCapabilitySummary } from './agentCapabilities';
+
+function buildAiStatus(provider: AiConfigStatus['provider']): AiConfigStatus {
+  return {
+    configured: true,
+    apiKeyStored: true,
+    apiKeySource: 'env',
+    provider,
+    model: provider === 'replicate' ? 'openai/gpt-oss-20b' : 'claude-3-5-sonnet-latest',
+    baseUrl: null,
+    workspaceRoot: '/tmp/taskplane-workspace',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    configPath: '/tmp/config.json',
+    featureFlags: {
+      enableScheduler: false,
+    },
+  };
+}
+
+describe('agent capability formatting', () => {
+  it('previews local executor capabilities before an agent run', () => {
+    expect(formatPreRunAgentCapabilitySummary(buildAiStatus('anthropic'), false)).toBe(
+      'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context disabled for this run / structured tool calls unavailable / patch/commands unavailable',
+    );
+    expect(formatPreRunAgentCapabilitySummary(buildAiStatus('anthropic'), true)).toContain(
+      'read-only workspace context enabled for this run',
+    );
+  });
+
+  it('names Replicate as text-only planning before an agent run', () => {
+    expect(formatPreRunAgentCapabilitySummary(buildAiStatus('replicate'), true)).toBe(
+      'Agent 能力预览：replicate / openai/gpt-oss-20b / text-only planning via Replicate / read-only workspace context enabled for this run / structured tool calls unavailable / patch/commands unavailable',
+    );
+  });
+});
