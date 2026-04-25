@@ -10,6 +10,10 @@ function formatProviderSummary(aiStatus: AiConfigStatus | null): string {
 }
 
 function formatPreRunStructuredToolSummary(aiStatus: AiConfigStatus | null): string {
+  if (!aiStatus?.provider || !aiStatus.model) {
+    return 'structured tool calls unavailable until provider configured';
+  }
+
   if (aiStatus?.provider === 'replicate') {
     return 'structured tool calls unavailable on native Replicate text path';
   }
@@ -43,9 +47,11 @@ export function formatPreRunAgentCapabilitySummary(
   allowTaskMutationTools = false,
 ): string {
   const providerSummary = formatProviderSummary(aiStatus);
-  const planningSummary = aiStatus?.provider === 'replicate'
-    ? 'text-only planning via Replicate'
-    : 'text-only planning in the local executor';
+  const planningSummary = !aiStatus?.provider || !aiStatus.model
+    ? 'text-only planning unavailable until provider configured'
+    : aiStatus.provider === 'replicate'
+      ? 'text-only planning via Replicate'
+      : 'text-only planning in the local executor';
   const workspaceSummary = allowLocalWorkspaceRead
     ? 'read-only workspace context enabled for this run'
     : 'read-only workspace context disabled for this run';
