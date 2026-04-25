@@ -359,6 +359,64 @@ describe('AgentRunLoop', () => {
     }));
   });
 
+  it('does not accept model-produced workspace patch steps in the normal run plan', () => {
+    const loop = new AgentRunLoop({ execute: vi.fn() } as never);
+
+    const proposal = {
+      steps: [
+        { tool: 'task.inspect_context' as const },
+        {
+          tool: 'workspace.write_patch' as const,
+          input: {
+            summary: 'Update notes',
+            expectedFiles: ['notes.md'],
+            patch: [
+              '*** Begin Patch',
+              '*** Update File: notes.md',
+              '@@',
+              '-alpha',
+              '+beta',
+              '*** End Patch',
+            ].join('\n'),
+          },
+        },
+        {
+          tool: 'artifact.create_note' as const,
+          input: {
+            title: 'Workspace patch note',
+            content: 'Patch proposed',
+          },
+        },
+      ],
+    };
+
+    const fallbackPlan = loop.buildLocalNotePlan({
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    });
+
+    expect(loop.buildPlanFromProposal({
+      proposal,
+      modelOutput: 'Agent output',
+      policy: {
+        ...buildRequest().policy,
+        allowLocalFileWrite: true,
+        confirmationRequiredRisks: ['local_write'],
+      },
+      taskTitle: 'Task 1',
+    })).toEqual(fallbackPlan);
+    expect(loop.buildExecutionPlan({
+      proposal,
+      modelOutput: 'Agent output',
+      policy: {
+        ...buildRequest().policy,
+        allowLocalFileWrite: true,
+        confirmationRequiredRisks: ['local_write'],
+      },
+      taskTitle: 'Task 1',
+    }).source).toBe('fallback');
+  });
+
   it('labels execution plans by source', () => {
     const loop = new AgentRunLoop({ execute: vi.fn() } as never);
 

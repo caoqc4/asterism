@@ -128,7 +128,7 @@ function parseWorkspaceWritePatchInput(input: unknown): WorkspaceWritePatchInput
 
   const candidate = input as Partial<WorkspaceWritePatchInput>;
   const summary = candidate.summary?.trim();
-  const patch = candidate.patch?.trim();
+  const patch = typeof candidate.patch === 'string' ? candidate.patch : '';
   const expectedFiles = Array.isArray(candidate.expectedFiles)
     ? candidate.expectedFiles.map((item) => (typeof item === 'string' ? item.trim() : '')).filter(Boolean)
     : [];
@@ -137,7 +137,7 @@ function parseWorkspaceWritePatchInput(input: unknown): WorkspaceWritePatchInput
     throw new Error('workspace.write_patch requires a summary.');
   }
 
-  if (!patch) {
+  if (!patch.trim()) {
     throw new Error('workspace.write_patch requires a patch.');
   }
 

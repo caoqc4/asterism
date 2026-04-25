@@ -690,6 +690,61 @@ describe('AgentToolRegistry', () => {
     }
   });
 
+  it('preserves patch boundary whitespace when applying an approved workspace patch', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-workspace-patch-whitespace-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'alpha\n\n');
+      const runStepRepository = buildRunStepRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        undefined,
+        null,
+        () => tempRoot,
+      );
+      const patch = [
+        '*** Begin Patch',
+        '*** Update File: notes.md',
+        '@@',
+        '-alpha',
+        '-',
+        '+beta',
+        '+',
+        '+done',
+        '*** End Patch',
+        '',
+      ].join('\n');
+
+      const result = await registry.execute(
+        'workspace.write_patch',
+        {
+          summary: 'Update notes',
+          expectedFiles: ['notes.md'],
+          patch,
+        },
+        { runId: 'run_1', taskId: 'task_1' },
+        {
+          maxSteps: 8,
+          maxWallTimeMs: 120_000,
+          allowNetwork: false,
+          allowLocalWorkspaceRead: false,
+          allowLocalFileWrite: true,
+          confirmationRequiredRisks: [],
+        },
+      );
+
+      expect(result).toMatchObject({
+        success: true,
+        status: 'completed',
+        output: patch,
+      });
+      expect(fs.readFileSync(path.join(tempRoot, 'notes.md'), 'utf8')).toBe('beta\n\ndone\n');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it('does not partially apply a workspace patch when a later hunk fails', async () => {
     const tempRoot = makeTempDir('taskplane-agent-workspace-patch-atomic-');
 
