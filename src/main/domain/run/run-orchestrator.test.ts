@@ -547,6 +547,7 @@ describe('RunOrchestrator', () => {
         status: 'completed',
         output: 'Agent local note output',
       }),
+      executeProviderNativeSession: vi.fn(),
     };
     const agentSessionRepository = {
       create: vi.fn().mockResolvedValue({ id: 'agent_session_1' }),
@@ -629,6 +630,7 @@ describe('RunOrchestrator', () => {
         status: 'completed',
         output: 'Agent local note output',
       }),
+      executeProviderNativeSession: vi.fn(),
     };
     const agentSessionRepository = {
       create: vi.fn().mockResolvedValue({ id: 'agent_session_1' }),
@@ -696,6 +698,7 @@ describe('RunOrchestrator', () => {
         status: 'completed',
         output: 'Agent local note output',
       }),
+      executeProviderNativeSession: vi.fn(),
     };
     const agentSessionRepository = {
       create: vi.fn().mockResolvedValue({ id: 'agent_session_1' }),
@@ -759,6 +762,7 @@ describe('RunOrchestrator', () => {
         status: 'completed',
         output: 'Agent local note output',
       }),
+      executeProviderNativeSession: vi.fn(),
     };
     const agentSessionRepository = {
       create: vi.fn().mockResolvedValue({ id: 'agent_session_1' }),
@@ -864,6 +868,7 @@ describe('RunOrchestrator', () => {
         status: 'completed',
         output: 'Agent local note output',
       }),
+      executeProviderNativeSession: vi.fn(),
     };
     const agentSessionRepository = {
       create: vi.fn().mockResolvedValue({ id: 'agent_session_1' }),
@@ -905,6 +910,7 @@ describe('RunOrchestrator', () => {
         modelOutput: 'Agent local note output',
       }),
     );
+    expect(agentExecutor.executeProviderNativeSession).not.toHaveBeenCalled();
   });
 
   it('returns paused when the agent loop stops before a local write', async () => {
