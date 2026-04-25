@@ -70,6 +70,7 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
   const provider = entries.get('provider');
   const model = entries.get('model');
   const adapter = entries.get('adapter');
+  const rawSummary = entries.get('rawSummary');
   const providerCallIds = entries.get('providerCallIds');
   const stopReason = entries.get('stopReason');
 
@@ -78,6 +79,7 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
       'Provider-native session',
       provider && model ? `${provider} / ${model}` : null,
       adapter ? `adapter=${adapter}` : null,
+      rawSummary ? `raw=${rawSummary}` : null,
       providerCallIds ? `calls=${providerCallIds}` : null,
       stopReason ? `stop=${stopReason}` : null,
     ].filter(Boolean).join(' / ');

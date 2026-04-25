@@ -115,7 +115,7 @@ describe('agent capability formatting', () => {
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z',
     })).toBe(
-      'Provider-native session / openai-compatible / relay-model / adapter=provider_native_tool_call_adapter / calls=call_1 / stop=tool_calls',
+      'Provider-native session / openai-compatible / relay-model / adapter=provider_native_tool_call_adapter / raw=tool_calls=1 / calls=call_1 / stop=tool_calls',
     );
   });
 });
