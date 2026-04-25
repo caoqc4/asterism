@@ -302,31 +302,29 @@ Non-goals until explicitly accepted:
 
 ## Recommended Next Implementation Task
 
-Start with the **sandboxed coding session producer design**.
+Start with the first non-live slices from
+[AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md](AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md).
 
 T1 through T7 now have Slice 0 implementation or design coverage, the shared
-tool scaffold exists, and the sandbox patch draft source boundary is implemented.
-The next product-relevant execution task is to design the first real internal
-producer that can create a validated `SandboxPatchDraftSource` without exposing
-Pi-style broad powers to the normal model loop.
+tool scaffold exists, the sandbox patch draft source boundary is implemented,
+and the first producer design is drafted. The next product-relevant execution
+task is to implement the safe, non-live producer scaffolding before connecting
+any real sandbox backend.
 
-The producer design should answer:
+The next implementation slices are:
 
-- which prepared execution loop is allowed to propose edits
-- where staged writes live and how they stay outside the host workspace
-- how changed files and diffs are collected without applying them
-- how evidence is summarized without leaking secrets
-- how requested checks are selected from the `test` / `lint` allowlist
-- how source id, run id, task id, workspace root, and idempotency survive resume
-- how a failed, paused, or partial producer run becomes visible in RunSteps
-- how the resulting source feeds `previewFromSource()` and still stops at a
-  Decision-linked `patch_promotion` checkpoint
+- producer request/result types and pure validation helpers
+- fake/injected producer runner for tests only
+- staged file collector that converts staging contents into a patch draft
+- producer event types and compact RunStep projection
+- non-live `previewProducerResult()` path into `previewFromSource()`
+- integration coverage for blocked, failed, empty-diff, and source-ready
+  producer results
 
-Only after that producer design is accepted should implementation start on a
-real sandbox provider backend. Do not expose Pi-style Read/Write/Edit/Bash
-powers, browser/computer control, external posting, or social/media publishing
-as model-visible tools until their own sandbox or connector Decisions are
-accepted.
+Only after those pass should implementation start on a real sandbox provider
+backend. Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer
+control, external posting, or social/media publishing as model-visible tools
+until their own sandbox or connector Decisions are accepted.
 
 ## Verification Policy
 

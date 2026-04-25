@@ -338,6 +338,7 @@ Design docs:
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
 - [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md)
 - [AGENT_EXECUTION_PATCH_DRAFT_SOURCE_DECISION.md](AGENT_EXECUTION_PATCH_DRAFT_SOURCE_DECISION.md)
+- [AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md](AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md)
 
 Implementation sequence:
 
@@ -389,16 +390,14 @@ Current guardrail state:
 
 Next implementation target:
 
-Design the first real internal producer for `SandboxPatchDraftSource`: a
-sandboxed coding session output path. It should specify the prepared execution
-loop, staged-write area, changed-file collection, diff extraction, evidence
-summary, requested-check selection, and restart/idempotency semantics before
-any model-visible coding UI is exposed. After that design is accepted, build or
-select a real sandbox provider backend that can safely support targeted
-`test` / `lint` checks and patch artifacts inside the sandbox boundary. Do not
-expose a UI run option until that provider passes the shared eligibility gate
-and still routes every promotion through a Decision-linked `patch_promotion`
-checkpoint.
+Implement the first non-live slices from
+[AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md](AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md):
+producer request/result types, pure validation, staged file collection, and
+fake/injected-runner tests. After those slices pass, build or select a real
+sandbox provider backend that can safely support targeted `test` / `lint`
+checks and patch artifacts inside the sandbox boundary. Do not expose a UI run
+option until that provider passes the shared eligibility gate and still routes
+every promotion through a Decision-linked `patch_promotion` checkpoint.
 
 Backend candidate readiness is now represented in code by
 `AgentSandboxBackendProfile` and `evaluateAgentSandboxBackendReadiness`. A

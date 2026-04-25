@@ -285,6 +285,11 @@ The project is past initial architecture assembly. Current work should favor pro
   implemented and move the next task to designing the first real internal
   producer: sandboxed coding session output that can create a validated source
   without exposing broad coding powers to the normal model loop.
+- [AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md](AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md)
+  now drafts that first producer design: prepared sandboxed coding session,
+  narrow ACI-style tools, staged writes, changed-file/diff collection, evidence
+  summaries, source validation, and Decision-linked patch promotion. The next
+  code work is non-live producer scaffolding, not UI exposure.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
