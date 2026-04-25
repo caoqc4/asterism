@@ -18,7 +18,7 @@
     "dev:electron": "wait-on tcp:5173 file:dist-electron/main/index.js && node scripts/sync-main-assets.mjs && cross-env ELECTRON_RUN_AS_NODE= VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
     "build": "npm run build:renderer && npm run build:main",
     "build:renderer": "vite build",
-    "build:main": "tsc -p tsconfig.electron.json && node scripts/sync-main-assets.mjs",
+    "build:main": "node -e \"fs.rmSync('dist-electron', { recursive: true, force: true })\" && tsc -p tsconfig.electron.json && node scripts/sync-main-assets.mjs",
     "rebuild:node": "npm rebuild better-sqlite3 keytar",
     "rebuild:electron": "electron-rebuild --force --module-dir . --which-module better-sqlite3 --build-from-source",
     "lint": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.electron.json",

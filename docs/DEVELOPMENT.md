@@ -81,8 +81,9 @@ npm run smoke:package:mac
 ```
 
 Run this after `npm run dist:mac:dir`. It checks the unpacked app bundle,
-`Info.plist`, native module unpacking, ASAR integrity metadata, executable bit,
-and local code signature.
+`Info.plist`, native module unpacking, ASAR integrity metadata, required ASAR
+entries, absence of compiled test files, executable bit, and local code
+signature.
 
 ### Standard verification
 

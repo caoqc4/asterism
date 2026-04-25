@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import * as asar from '@electron/asar';
 
 const root = process.cwd();
 const appPath = path.join(root, 'release/mac-arm64/Taskplane.app');
@@ -71,6 +72,29 @@ for (const [key, expected] of Object.entries(expectedInfo)) {
 
 if (!info.ElectronAsarIntegrity?.['Resources/app.asar']?.hash) {
   fail('Info.plist is missing Electron ASAR integrity metadata.');
+}
+
+const asarFiles = asar.listPackage(path.join(resourcesPath, 'app.asar'));
+const requiredAsarFiles = [
+  '/dist/index.html',
+  '/dist-electron/main/index.js',
+  '/dist-electron/main/bootstrap/runtime-paths.js',
+  '/dist-electron/main/preload.cjs',
+  '/package.json',
+];
+const missingAsarFiles = requiredAsarFiles.filter((filePath) => !asarFiles.includes(filePath));
+
+if (missingAsarFiles.length > 0) {
+  fail(`app.asar is missing required files: ${missingAsarFiles.join(', ')}`);
+}
+
+const packagedTestFiles = asarFiles.filter((filePath) =>
+  filePath.startsWith('/dist-electron/') &&
+  (filePath.endsWith('.test.js') || filePath.endsWith('.integration.test.js'))
+);
+
+if (packagedTestFiles.length > 0) {
+  fail(`app.asar must not include compiled test files: ${packagedTestFiles.slice(0, 5).join(', ')}`);
 }
 
 execFileSync('codesign', ['--verify', '--deep', '--strict', '--verbose=2', appPath], {

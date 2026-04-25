@@ -51,7 +51,8 @@ npm run smoke:package:mac
 ```
 
 This checks the app bundle, key `Info.plist` metadata, native module unpacking,
-ASAR integrity metadata, executable bit, and the local code signature.
+ASAR integrity metadata, required ASAR entries, absence of compiled test files,
+executable bit, and the local code signature.
 
 ### Produce macOS release artifacts
 

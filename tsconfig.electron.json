@@ -15,5 +15,10 @@
   "include": [
     "src/main",
     "src/shared"
+  ],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.integration.test.ts"
   ]
 }
