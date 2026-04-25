@@ -3,6 +3,7 @@ import type {
   AgentSessionResult,
   ProviderToolCallPlan,
 } from '../../../shared/types/agent-execution.js';
+import type { AgentRunLoopResult } from './agent-run-loop.js';
 import type { AgentRunLoop } from './agent-run-loop.js';
 
 export type AgentLocalNoteSessionInput = {
@@ -25,35 +26,7 @@ export class LocalAgentExecutor implements AgentExecutor {
 
   async executeLocalNoteSession(input: AgentLocalNoteSessionInput): Promise<AgentSessionResult> {
     const result = await this.agentRunLoop.executeLocalNoteLoop(input);
-
-    if (result.status === 'failed') {
-      return {
-        status: 'failed',
-        failureKind: 'tool',
-        message: result.message,
-      };
-    }
-
-    if (result.status === 'paused') {
-      return {
-        status: 'paused',
-        checkpointId: result.checkpointId,
-        message: result.message,
-      };
-    }
-
-    if (result.status === 'needs_confirmation') {
-      return {
-        status: 'needs_confirmation',
-        checkpointId: result.checkpointId,
-        message: result.message,
-      };
-    }
-
-    return {
-      status: 'completed',
-      output: result.output,
-    };
+    return toAgentSessionResult(result);
   }
 
   async executeProviderNativeSession(input: AgentProviderNativeSessionInput): Promise<AgentSessionResult> {
@@ -64,33 +37,37 @@ export class LocalAgentExecutor implements AgentExecutor {
       taskTitle: input.taskTitle,
     });
 
-    if (result.status === 'failed') {
-      return {
-        status: 'failed',
-        failureKind: 'tool',
-        message: result.message,
-      };
-    }
+    return toAgentSessionResult(result);
+  }
+}
 
-    if (result.status === 'paused') {
-      return {
-        status: 'paused',
-        checkpointId: result.checkpointId,
-        message: result.message,
-      };
-    }
-
-    if (result.status === 'needs_confirmation') {
-      return {
-        status: 'needs_confirmation',
-        checkpointId: result.checkpointId,
-        message: result.message,
-      };
-    }
-
+function toAgentSessionResult(result: AgentRunLoopResult): AgentSessionResult {
+  if (result.status === 'failed') {
     return {
-      status: 'completed',
-      output: result.output,
+      status: 'failed',
+      failureKind: 'tool',
+      message: result.message,
     };
   }
+
+  if (result.status === 'paused') {
+    return {
+      status: 'paused',
+      checkpointId: result.checkpointId,
+      message: result.message,
+    };
+  }
+
+  if (result.status === 'needs_confirmation') {
+    return {
+      status: 'needs_confirmation',
+      checkpointId: result.checkpointId,
+      message: result.message,
+    };
+  }
+
+  return {
+    status: 'completed',
+    output: result.output,
+  };
 }
