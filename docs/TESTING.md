@@ -115,6 +115,9 @@ Covered today:
   shared normalized provider tool-call plan validation, including fail-closed
   handling for malformed or raw provider payloads before any provider adapter
   can execute steps
+- `OpenAI-compatible tool-call adapter`
+  offline chat-completion-style `tool_calls` fixture normalization, including
+  JSON argument validation and fail-closed handling when tool calls are absent
 - `Agent tool helpers`
   shared runtime tool-name guard used by provider normalization so future
   adapters validate against the same Taskplane tool list
