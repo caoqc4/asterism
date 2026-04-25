@@ -157,6 +157,14 @@ export type BuildAgentSandboxPatchArtifactInput = {
   riskSummary?: string | null;
 };
 
+export type BuildAgentSandboxPatchArtifactFromChecksInput = Omit<
+  BuildAgentSandboxPatchArtifactInput,
+  'commandLogs' | 'riskSummary'
+> & {
+  checkResults: AgentSandboxCheckResult[];
+  riskSummary?: string | null;
+};
+
 export type AgentSandboxPatchPromotionRequest = {
   artifact: AgentSandboxPatchArtifact;
   policySnapshot: AgentToolExecutionPolicy;
@@ -501,6 +509,23 @@ export function buildAgentSandboxPatchArtifact(
     riskSummary: input.riskSummary?.trim() || 'Pending human review before workspace promotion.',
     summary: input.summary.trim() || 'Sandbox generated patch artifact.',
   };
+}
+
+export function buildAgentSandboxPatchArtifactFromCheckResults(
+  input: BuildAgentSandboxPatchArtifactFromChecksInput,
+): AgentSandboxPatchArtifact {
+  const checkSummary = summarizeAgentSandboxCheckResults(input.checkResults);
+  const riskSummary = input.riskSummary?.trim()
+    ? `${input.riskSummary.trim()} Checks: ${checkSummary}.`
+    : `Checks: ${checkSummary}. Pending human review before workspace promotion.`;
+
+  return buildAgentSandboxPatchArtifact({
+    commandLogs: input.checkResults.map((result) => ({ ...result })),
+    diff: input.diff,
+    files: input.files,
+    riskSummary,
+    summary: input.summary,
+  });
 }
 
 export function toAgentToolArtifactDescriptor(

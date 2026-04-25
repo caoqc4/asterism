@@ -191,6 +191,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Multiple local-container check plans can now be run sequentially through the
   same injected runner boundary, preserving both passing and failing
   `test` / `lint` outcomes for later RunStep and patch-artifact attachment.
+- Sandbox patch artifacts can now be built directly from sandbox check results,
+  carrying command logs and a compact check summary into the later
+  Decision-review artifact without applying files.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

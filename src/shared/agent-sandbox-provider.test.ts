@@ -5,6 +5,7 @@ import {
   buildAgentSandboxBackendStatus,
   buildAgentSandboxBackendProfileFromProbe,
   buildAgentSandboxPatchArtifact,
+  buildAgentSandboxPatchArtifactFromCheckResults,
   buildAgentSandboxPatchPromotionCheckpoint,
   buildAgentSandboxProviderCapabilitiesFromBackendProfile,
   buildAgentSandboxSessionManifest,
@@ -551,6 +552,29 @@ describe('agent sandbox provider contracts', () => {
       summary: '2 file(s): src/a.ts, src/b.ts | Touches two source files.',
       title: 'Proposed sandbox patch',
     });
+  });
+
+  it('builds a staged patch artifact directly from sandbox check results', () => {
+    const artifact = buildAgentSandboxPatchArtifactFromCheckResults({
+      checkResults: [
+        { outputPreview: 'lint ok', script: 'lint', status: 'passed' },
+        { outputPreview: 'test failed', script: 'test', status: 'failed' },
+      ],
+      diff: '--- a/src/a.ts\n+++ b/src/a.ts\n@@\n-old\n+new',
+      files: ['src/a.ts'],
+      summary: 'Sandbox generated code change',
+    });
+
+    expect(artifact.commandLogs).toEqual([
+      { outputPreview: 'lint ok', script: 'lint', status: 'passed' },
+      { outputPreview: 'test failed', script: 'test', status: 'failed' },
+    ]);
+    expect(artifact.riskSummary).toBe(
+      'Checks: lint: passed; test: failed. Pending human review before workspace promotion.',
+    );
+    expect(toAgentToolArtifactDescriptor(artifact).summary).toBe(
+      '1 file(s): src/a.ts | Checks: lint: passed; test: failed. Pending human review before workspace promotion.',
+    );
   });
 
   it('rejects empty staged patch artifacts', () => {
