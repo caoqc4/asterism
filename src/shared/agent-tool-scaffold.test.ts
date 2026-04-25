@@ -10,6 +10,7 @@ import {
   isAgentToolScaffoldId,
   requiresAgentToolCheckpoint,
   shouldExposeAgentToolScaffold,
+  validateAgentToolExecutionPolicy,
 } from './agent-tool-scaffold.js';
 import { AGENT_TOOL_NAMES } from './agent-tools.js';
 import type { AgentPolicy } from './types/agent-execution.js';
@@ -164,6 +165,67 @@ describe('agent tool scaffold descriptors', () => {
       sessionKind: 'mcp_client',
       networkPolicy: 'allowlisted',
       credentialPolicy: 'explicit_config',
+    });
+  });
+
+  it('validates default execution policies against descriptor boundaries', () => {
+    expect(validateAgentToolExecutionPolicy(buildDefaultAgentToolExecutionPolicy({
+      descriptorId: 'workspace.staged_patch',
+    }))).toMatchObject({
+      policy: expect.objectContaining({
+        credentialPolicy: 'none',
+        descriptorId: 'workspace.staged_patch',
+        networkPolicy: 'disabled',
+        sessionKind: 'sandbox',
+      }),
+      valid: true,
+    });
+
+    expect(validateAgentToolExecutionPolicy(buildDefaultAgentToolExecutionPolicy({
+      descriptorId: 'browser.readonly_evidence',
+    }))).toMatchObject({
+      policy: expect.objectContaining({
+        credentialPolicy: 'explicit_config',
+        descriptorId: 'browser.readonly_evidence',
+        networkPolicy: 'allowlisted',
+        sessionKind: 'browser',
+      }),
+      valid: true,
+    });
+  });
+
+  it('blocks execution policies that drift away from descriptor boundaries', () => {
+    expect(validateAgentToolExecutionPolicy({
+      ...buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+      credentialPolicy: 'explicit_config',
+      networkPolicy: 'allowlisted',
+      sessionKind: 'browser',
+    })).toMatchObject({
+      blockedReasons: expect.arrayContaining([
+        'Agent tool execution policy session kind must match the scaffold descriptor.',
+        'Local-only agent tool execution policies must keep network disabled.',
+        'Agent tool execution policy credential policy must match the scaffold descriptor.',
+      ]),
+      valid: false,
+    });
+  });
+
+  it('blocks malformed execution policy envelopes before runtime use', () => {
+    expect(validateAgentToolExecutionPolicy({
+      credentialPolicy: 'none',
+      descriptorId: 'browser.click_and_post',
+      networkPolicy: 'unrestricted',
+      outputLimitBytes: 2_000_000,
+      sessionKind: 'browser',
+      timeoutMs: 900_000,
+    })).toMatchObject({
+      blockedReasons: expect.arrayContaining([
+        'Agent tool execution policy must target a known scaffold descriptor.',
+        'Agent tool execution policy must not use unrestricted network access.',
+        'Agent tool execution policy timeout exceeds the maximum allowed duration.',
+        'Agent tool execution policy output limit exceeds the maximum allowed size.',
+      ]),
+      valid: false,
     });
   });
 

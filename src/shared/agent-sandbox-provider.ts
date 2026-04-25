@@ -3,6 +3,7 @@ import type {
   AgentToolCheckpointDescriptor,
   AgentToolExecutionPolicy,
 } from './agent-tool-scaffold.js';
+import { validateAgentToolExecutionPolicy } from './agent-tool-scaffold.js';
 import type { FeatureFlags } from './types/settings.js';
 
 export type AgentSandboxProviderKind = 'local_container' | 'remote' | 'disabled';
@@ -419,6 +420,11 @@ export function evaluateAgentSandboxCodingLaneEligibility(params: {
 
   if (!params.workspaceRoot?.trim()) {
     blockedReasons.push('workspace root is required before preparing a sandbox coding session');
+  }
+
+  const executionPolicyValidation = validateAgentToolExecutionPolicy(params.executionPolicy);
+  if (!executionPolicyValidation.valid) {
+    blockedReasons.push(...executionPolicyValidation.blockedReasons);
   }
 
   if (params.executionPolicy.descriptorId !== 'workspace.staged_patch') {

@@ -101,6 +101,11 @@ The project is past initial architecture assembly. Current work should favor pro
   creator connector lanes. It also defines conservative execution-policy,
   tool-session, artifact, and checkpoint metadata contracts without enabling
   new runtimes or exposing new tools.
+- Tool scaffold execution policies now have a shared fail-closed validator for
+  descriptor identity, session kind, network policy, credential policy,
+  timeout, output limit, and optional session ids. The sandbox coding lane
+  readiness path reuses that validator before applying its stricter
+  staged-patch-specific checks.
 - `src/shared/agent-sandbox-provider.ts` now starts Slice 6 by defining the
   disabled-by-default `SandboxProvider` contract, sandbox capability metadata,
   staged workspace mount shape, targeted `test` / `lint` command policy,
@@ -375,7 +380,7 @@ npm run verify
 Latest local baseline:
 
 - 83 test files
-- 603 tests
+- 606 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -420,6 +425,9 @@ Latest local baseline:
 - `npm run verify` passed locally on 2026-04-26 after covering unavailable
   producer backend readiness in the Settings IPC probe: 83 test files / 603
   tests
+- `npm run accept:sandbox-coding` and `npm run verify` passed locally on
+  2026-04-26 after adding shared execution policy validation: 83 test files /
+  606 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

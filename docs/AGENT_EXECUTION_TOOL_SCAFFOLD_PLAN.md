@@ -16,6 +16,11 @@ records, tool artifact descriptors, and checkpoint descriptors. These remain
 metadata contracts only; no sandbox, browser, MCP, skill, computer-use, or
 creator connector runtime is enabled by them.
 
+It also validates execution-policy envelopes against the selected descriptor's
+session, network, credential, timeout, and output boundaries. This keeps future
+lane-specific code from treating a hand-built policy as trusted runtime
+permission.
+
 Read with:
 
 - [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md)
@@ -188,6 +193,10 @@ forms.
    Execution-policy defaults and checkpoint-required helpers are also in place
    so future lanes can share one conservative metadata shape before runtime
    integration.
+   Execution-policy validation now fails closed when a policy targets an
+   unknown descriptor, drifts away from the descriptor's session or credential
+   boundary, asks local-only tools for network access, or exceeds bounded
+   timeout/output limits.
 
 2. **Sandboxed coding lane**
    Implement `SandboxProvider`, staged patch artifacts, targeted checks, and

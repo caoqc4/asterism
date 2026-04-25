@@ -64,6 +64,19 @@ export type AgentToolExecutionPolicy = {
   idempotencyKey?: string | null;
 };
 
+export type AgentToolExecutionPolicyValidation =
+  | {
+      blockedReasons: [];
+      policy: AgentToolExecutionPolicy;
+      summary: string;
+      valid: true;
+    }
+  | {
+      blockedReasons: string[];
+      summary: string;
+      valid: false;
+    };
+
 export type AgentToolSessionRecord = {
   id: string;
   kind: AgentToolSessionKind;
@@ -344,6 +357,8 @@ export const AGENT_TOOL_SCAFFOLD_IDS = AGENT_TOOL_SCAFFOLD_DESCRIPTORS
   .map((descriptor) => descriptor.id);
 
 const AGENT_TOOL_SCAFFOLD_ID_SET = new Set<string>(AGENT_TOOL_SCAFFOLD_IDS);
+const MAX_AGENT_TOOL_TIMEOUT_MS = 10 * 60_000;
+const MAX_AGENT_TOOL_OUTPUT_LIMIT_BYTES = 1_000_000;
 
 export function isAgentToolScaffoldId(value: unknown): value is string {
   return typeof value === 'string' && AGENT_TOOL_SCAFFOLD_ID_SET.has(value);
@@ -392,6 +407,107 @@ export function buildDefaultAgentToolExecutionPolicy(params: {
   };
 }
 
+export function validateAgentToolExecutionPolicy(policy: unknown): AgentToolExecutionPolicyValidation {
+  if (!policy || typeof policy !== 'object') {
+    return invalidAgentToolExecutionPolicy(['Agent tool execution policy must be an object.']);
+  }
+
+  const candidate = policy as Partial<AgentToolExecutionPolicy>;
+  const blockedReasons: string[] = [];
+  let normalizedTimeoutMs: number | null = null;
+  let normalizedOutputLimitBytes: number | null = null;
+
+  if (!isAgentToolScaffoldId(candidate.descriptorId)) {
+    blockedReasons.push('Agent tool execution policy must target a known scaffold descriptor.');
+  }
+
+  const descriptor = isAgentToolScaffoldId(candidate.descriptorId)
+    ? getAgentToolScaffoldDescriptor(candidate.descriptorId)
+    : null;
+
+  if (descriptor && candidate.sessionKind !== descriptor.sessionKind) {
+    blockedReasons.push('Agent tool execution policy session kind must match the scaffold descriptor.');
+  }
+
+  if (!isAgentToolNetworkPolicy(candidate.networkPolicy)) {
+    blockedReasons.push('Agent tool execution policy requires a supported network policy.');
+  } else if (candidate.networkPolicy === 'unrestricted') {
+    blockedReasons.push('Agent tool execution policy must not use unrestricted network access.');
+  } else if (descriptor && isLocalOnlyAgentToolDescriptor(descriptor) && candidate.networkPolicy !== 'disabled') {
+    blockedReasons.push('Local-only agent tool execution policies must keep network disabled.');
+  }
+
+  if (!isAgentToolCredentialPolicy(candidate.credentialPolicy)) {
+    blockedReasons.push('Agent tool execution policy requires a supported credential policy.');
+  } else if (descriptor && candidate.credentialPolicy !== descriptor.credentialPolicy) {
+    blockedReasons.push('Agent tool execution policy credential policy must match the scaffold descriptor.');
+  }
+
+  const timeoutMs = candidate.timeoutMs;
+  if (!Number.isInteger(timeoutMs) || typeof timeoutMs !== 'number' || timeoutMs <= 0) {
+    blockedReasons.push('Agent tool execution policy requires a positive integer timeout.');
+  } else if (timeoutMs > MAX_AGENT_TOOL_TIMEOUT_MS) {
+    blockedReasons.push('Agent tool execution policy timeout exceeds the maximum allowed duration.');
+  } else {
+    normalizedTimeoutMs = timeoutMs;
+  }
+
+  const outputLimitBytes = candidate.outputLimitBytes;
+  if (!Number.isInteger(outputLimitBytes) || typeof outputLimitBytes !== 'number' || outputLimitBytes <= 0) {
+    blockedReasons.push('Agent tool execution policy requires a positive integer output limit.');
+  } else if (outputLimitBytes > MAX_AGENT_TOOL_OUTPUT_LIMIT_BYTES) {
+    blockedReasons.push('Agent tool execution policy output limit exceeds the maximum allowed size.');
+  } else {
+    normalizedOutputLimitBytes = outputLimitBytes;
+  }
+
+  if (candidate.workspaceRoot !== undefined
+    && candidate.workspaceRoot !== null
+    && (typeof candidate.workspaceRoot !== 'string' || !candidate.workspaceRoot.trim())) {
+    blockedReasons.push('Agent tool execution policy workspace root must be a non-empty string when provided.');
+  }
+
+  if (candidate.sandboxId !== undefined
+    && candidate.sandboxId !== null
+    && (typeof candidate.sandboxId !== 'string' || !candidate.sandboxId.trim())) {
+    blockedReasons.push('Agent tool execution policy sandbox id must be a non-empty string when provided.');
+  }
+
+  if (candidate.connectorId !== undefined
+    && candidate.connectorId !== null
+    && (typeof candidate.connectorId !== 'string' || !candidate.connectorId.trim())) {
+    blockedReasons.push('Agent tool execution policy connector id must be a non-empty string when provided.');
+  }
+
+  if (candidate.idempotencyKey !== undefined
+    && candidate.idempotencyKey !== null
+    && (typeof candidate.idempotencyKey !== 'string' || !candidate.idempotencyKey.trim())) {
+    blockedReasons.push('Agent tool execution policy idempotency key must be a non-empty string when provided.');
+  }
+
+  if (blockedReasons.length > 0 || !descriptor || normalizedTimeoutMs === null || normalizedOutputLimitBytes === null) {
+    return invalidAgentToolExecutionPolicy(blockedReasons);
+  }
+
+  return {
+    blockedReasons: [],
+    policy: {
+      connectorId: candidate.connectorId,
+      credentialPolicy: candidate.credentialPolicy as AgentToolScaffoldCredentialPolicy,
+      descriptorId: descriptor.id,
+      idempotencyKey: candidate.idempotencyKey,
+      networkPolicy: candidate.networkPolicy as AgentToolNetworkPolicy,
+      outputLimitBytes: normalizedOutputLimitBytes,
+      sandboxId: candidate.sandboxId,
+      sessionKind: descriptor.sessionKind,
+      timeoutMs: normalizedTimeoutMs,
+      workspaceRoot: candidate.workspaceRoot,
+    },
+    summary: `Agent tool execution policy valid for ${descriptor.id}.`,
+    valid: true,
+  };
+}
+
 export function requiresAgentToolCheckpoint(descriptorId: string): boolean {
   return getAgentToolScaffoldDescriptor(descriptorId).checkpointKind !== 'none';
 }
@@ -412,4 +528,33 @@ export function shouldExposeAgentToolScaffold(params: {
     channel: params.channel,
     policy: params.policy,
   });
+}
+
+function isAgentToolNetworkPolicy(value: unknown): value is AgentToolNetworkPolicy {
+  return value === 'disabled' || value === 'allowlisted' || value === 'unrestricted';
+}
+
+function isAgentToolCredentialPolicy(value: unknown): value is AgentToolScaffoldCredentialPolicy {
+  return value === 'none' || value === 'explicit_config' || value === 'connector_decision';
+}
+
+function isLocalOnlyAgentToolDescriptor(descriptor: AgentToolScaffoldDescriptor): boolean {
+  return descriptor.risk !== 'external_read'
+    && descriptor.risk !== 'external_write'
+    && descriptor.sessionKind !== 'browser'
+    && descriptor.sessionKind !== 'mcp_client'
+    && descriptor.sessionKind !== 'connector'
+    && descriptor.sessionKind !== 'computer';
+}
+
+function invalidAgentToolExecutionPolicy(blockedReasons: string[]): AgentToolExecutionPolicyValidation {
+  const reasons = blockedReasons.length
+    ? blockedReasons
+    : ['Agent tool execution policy is invalid.'];
+
+  return {
+    blockedReasons: reasons,
+    summary: `Agent tool execution policy blocked: ${reasons.join(' ')}`,
+    valid: false,
+  };
 }
