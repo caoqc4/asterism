@@ -385,7 +385,7 @@ describe('AgentToolRegistry', () => {
         runStepRepository as never,
         undefined,
         null,
-        tempRoot,
+        () => tempRoot,
       );
       const policy: AgentPolicy = {
         maxSteps: 8,
@@ -437,7 +437,7 @@ describe('AgentToolRegistry', () => {
         runStepRepository as never,
         undefined,
         null,
-        tempRoot,
+        () => tempRoot,
       );
 
       const blocked = await registry.execute(
@@ -465,6 +465,60 @@ describe('AgentToolRegistry', () => {
       expect(escaped.error).toBe('Workspace path must stay inside the configured workspace root.');
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('resolves the workspace root again for each workspace tool call', async () => {
+    const firstRoot = makeTempDir('taskplane-agent-workspace-first-');
+    const secondRoot = makeTempDir('taskplane-agent-workspace-second-');
+    let currentRoot = firstRoot;
+
+    try {
+      fs.writeFileSync(path.join(firstRoot, 'notes.md'), 'first workspace note');
+      fs.writeFileSync(path.join(secondRoot, 'notes.md'), 'second workspace note');
+
+      const runStepRepository = buildRunStepRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        undefined,
+        null,
+        () => currentRoot,
+      );
+      const policy: AgentPolicy = {
+        maxSteps: 8,
+        maxWallTimeMs: 120_000,
+        allowNetwork: false,
+        allowLocalWorkspaceRead: true,
+        allowLocalFileWrite: false,
+        confirmationRequiredRisks: ['local_write', 'external_write', 'sensitive'],
+      };
+
+      const firstRead = await registry.execute(
+        'workspace.read_file',
+        { path: 'notes.md' },
+        { runId: 'run_1', taskId: 'task_1' },
+        policy,
+      );
+      currentRoot = secondRoot;
+      const secondRead = await registry.execute(
+        'workspace.read_file',
+        { path: 'notes.md' },
+        { runId: 'run_1', taskId: 'task_1' },
+        policy,
+      );
+
+      expect(firstRead).toMatchObject({
+        success: true,
+        output: 'first workspace note',
+      });
+      expect(secondRead).toMatchObject({
+        success: true,
+        output: 'second workspace note',
+      });
+    } finally {
+      fs.rmSync(firstRoot, { recursive: true, force: true });
+      fs.rmSync(secondRoot, { recursive: true, force: true });
     }
   });
 });

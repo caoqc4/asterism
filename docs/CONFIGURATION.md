@@ -115,6 +115,9 @@ When this value is empty, Taskplane falls back to the app process working direct
 tools still remain disabled unless the user explicitly enables read-only workspace context for
 that run.
 
+Settings changes are read when workspace tools execute, so changing the workspace root does not
+require an app restart.
+
 Current workspace tools are read-only:
 
 - `workspace.search`

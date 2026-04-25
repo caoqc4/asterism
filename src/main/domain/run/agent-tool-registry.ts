@@ -234,7 +234,7 @@ export class AgentToolRegistry {
     private readonly runStepRepository: RunStepRepository,
     private readonly runCheckpointRepository: RunCheckpointRepository = new RunCheckpointRepository(),
     private readonly decisionRepository: Pick<DecisionRepository, 'create'> | null = null,
-    private readonly workspaceRoot: string = process.cwd(),
+    private readonly workspaceRootResolver: () => string = () => process.cwd(),
   ) {}
 
   list(): AgentToolDefinition[] {
@@ -410,7 +410,8 @@ export class AgentToolRegistry {
         }
 
         const parsed = parseWorkspaceReadFileInput(input);
-        const filePath = resolveWorkspacePath(this.workspaceRoot, parsed.path);
+        const workspaceRoot = this.workspaceRootResolver();
+        const filePath = resolveWorkspacePath(workspaceRoot, parsed.path);
         const stat = await fs.stat(filePath);
 
         if (!stat.isFile()) {
@@ -424,7 +425,7 @@ export class AgentToolRegistry {
         return {
           success: true,
           status: 'completed',
-          summary: `已读取工作区文件：${path.relative(this.workspaceRoot, filePath)}`,
+          summary: `已读取工作区文件：${path.relative(workspaceRoot, filePath)}`,
           output,
         };
       }
@@ -434,7 +435,7 @@ export class AgentToolRegistry {
         }
 
         const parsed = parseWorkspaceSearchInput(input);
-        const root = path.resolve(this.workspaceRoot);
+        const root = path.resolve(this.workspaceRootResolver());
         const files = await walkWorkspace(root);
         const matches: string[] = [];
 
