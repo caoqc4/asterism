@@ -72,7 +72,7 @@ The next runtime should have five clear layers:
 
 ### Slice 1: Approval UX Readiness
 
-Status: first Runs checkpoint summary clarity pass completed.
+Status: first Runs and Decisions checkpoint clarity pass completed.
 
 Goal: make the existing `workspace.write_patch` checkpoint understandable before
 any user-facing write opt-in exists.
