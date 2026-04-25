@@ -85,6 +85,10 @@ The project is past initial architecture assembly. Current work should favor pro
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
   tool visibility rules.
+- Restart-safe checkpoint Decision handling is now covered at integration level:
+  approved workspace-patch checkpoints resume after a database/service restart,
+  while deferred or cancelled checkpoint Decisions settle the run as
+  non-resumable without mutating workspace files.
 - `npm run release:mac:preflight` now provides a read-only local check for
   macOS signed/notarized release prerequisites: Developer ID signing source,
   `notarytool`, Apple notarization env vars, and package metadata. It does not
@@ -109,6 +113,8 @@ Latest local baseline:
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents and isolated startup
 - `npm run smoke:release:mac` passed locally on 2026-04-25 for the combined
   unsigned macOS package path
+- `npm run accept:agent-local` passed locally after the restart-safe checkpoint
+  Decision integration coverage
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

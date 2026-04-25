@@ -26,20 +26,7 @@ describe('DecisionService integration', () => {
   let tempRoot = '';
   let workspaceRoot = '';
 
-  beforeEach(() => {
-    tempRoot = makeTempDir('taskplane-decision-service-');
-    workspaceRoot = makeTempDir('taskplane-decision-workspace-');
-    setDatabaseUserDataPathForTests(tempRoot);
-  });
-
-  afterEach(() => {
-    closeDatabase();
-    setDatabaseUserDataPathForTests(null);
-    fs.rmSync(tempRoot, { recursive: true, force: true });
-    fs.rmSync(workspaceRoot, { recursive: true, force: true });
-  });
-
-  it('approves a workspace patch checkpoint and applies it inside the workspace root', async () => {
+  function createLocalServices() {
     const taskRepository = new TaskRepository();
     const waitingItemRepository = new WaitingItemRepository();
     const artifactRepository = new ArtifactRepository();
@@ -81,6 +68,25 @@ describe('DecisionService integration', () => {
       runRepository,
       agentToolRegistry,
     );
+
+    return {
+      agentToolRegistry,
+      decisionRepository,
+      decisionService,
+      runCheckpointRepository,
+      runRepository,
+      runStepRepository,
+      taskService,
+    };
+  }
+
+  async function createWorkspacePatchCheckpoint() {
+    const {
+      agentToolRegistry,
+      decisionRepository,
+      runRepository,
+      taskService,
+    } = createLocalServices();
     const workspaceFile = path.join(workspaceRoot, 'notes.md');
     fs.writeFileSync(workspaceFile, 'alpha\n');
     const task = await taskService.create({
@@ -129,14 +135,44 @@ describe('DecisionService integration', () => {
     }));
     expect(fs.readFileSync(workspaceFile, 'utf8')).toBe('alpha\n');
 
+    return {
+      decisionId: decision!.id,
+      runId: run.id,
+      workspaceFile,
+    };
+  }
+
+  beforeEach(() => {
+    tempRoot = makeTempDir('taskplane-decision-service-');
+    workspaceRoot = makeTempDir('taskplane-decision-workspace-');
+    setDatabaseUserDataPathForTests(tempRoot);
+  });
+
+  afterEach(() => {
+    closeDatabase();
+    setDatabaseUserDataPathForTests(null);
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+    fs.rmSync(workspaceRoot, { recursive: true, force: true });
+  });
+
+  it('approves a workspace patch checkpoint after service restart and applies it inside the workspace root', async () => {
+    const { decisionId, runId, workspaceFile } = await createWorkspacePatchCheckpoint();
+    closeDatabase();
+    const {
+      decisionService,
+      runCheckpointRepository,
+      runRepository,
+      runStepRepository,
+    } = createLocalServices();
+
     await decisionService.act({
-      id: decision!.id,
+      id: decisionId,
       action: 'approve',
     });
 
-    const [checkpoint] = await runCheckpointRepository.listForRun(run.id);
-    const runDetail = await runRepository.getDetail(run.id);
-    const steps = await runStepRepository.listForRun(run.id);
+    const [checkpoint] = await runCheckpointRepository.listForRun(runId);
+    const runDetail = await runRepository.getDetail(runId);
+    const steps = await runStepRepository.listForRun(runId);
 
     expect(fs.readFileSync(workspaceFile, 'utf8')).toBe('beta\n');
     expect(checkpoint?.status).toBe('resolved');
@@ -148,6 +184,55 @@ describe('DecisionService integration', () => {
       step.kind === 'checkpoint' &&
       step.status === 'completed' &&
       step.output?.includes('已应用工作区 patch：notes.md')
+    )).toBe(true);
+  });
+
+  it.each([
+    {
+      action: 'defer' as const,
+      expectedOutput: '关联 Decision 已延后：确认本地写入：workspace.write_patch',
+      expectedStepOutput: '关联 Decision 已延后，本次 checkpoint 不再继续执行。',
+    },
+    {
+      action: 'cancel' as const,
+      expectedOutput: '关联 Decision 已取消：确认本地写入：workspace.write_patch',
+      expectedStepOutput: '关联 Decision 已取消，本次 checkpoint 不再继续执行。',
+    },
+  ])('settles a $action checkpoint decision as non-resumable after service restart', async ({
+    action,
+    expectedOutput,
+    expectedStepOutput,
+  }) => {
+    const { decisionId, runId, workspaceFile } = await createWorkspacePatchCheckpoint();
+    closeDatabase();
+    const {
+      decisionService,
+      runCheckpointRepository,
+      runRepository,
+      runStepRepository,
+    } = createLocalServices();
+
+    await decisionService.act({
+      id: decisionId,
+      action,
+    });
+
+    const [checkpoint] = await runCheckpointRepository.listForRun(runId);
+    const runDetail = await runRepository.getDetail(runId);
+    const steps = await runStepRepository.listForRun(runId);
+
+    expect(fs.readFileSync(workspaceFile, 'utf8')).toBe('alpha\n');
+    expect(checkpoint?.status).toBe('cancelled');
+    expect(runDetail).toEqual(expect.objectContaining({
+      status: 'failed',
+      output: expectedOutput,
+      failureReason: expectedOutput,
+      outputSource: 'system',
+    }));
+    expect(steps.some((step) =>
+      step.kind === 'checkpoint' &&
+      step.status === 'skipped' &&
+      step.output === expectedStepOutput
     )).toBe(true);
   });
 });

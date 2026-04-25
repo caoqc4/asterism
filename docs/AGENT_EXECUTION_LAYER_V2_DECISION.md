@@ -155,7 +155,9 @@ Acceptance:
 2. Move run-step writes behind an event-to-run-step mapper.
 3. Normalize existing pause/checkpoint handling through the same event mapper.
 4. Add restart-safe resume tests around approved/deferred/cancelled checkpoint
-   Decisions.
+   Decisions. Status: covered by `DecisionService` integration tests that create
+   a real checkpoint, close the database connection, and settle the Decision
+   through fresh service/repository instances.
 5. Only after those pass, revisit whether a narrow user-requested workspace
    write or command UI opt-in should be designed.
 
