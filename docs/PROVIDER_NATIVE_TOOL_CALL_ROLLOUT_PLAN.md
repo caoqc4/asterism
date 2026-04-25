@@ -46,6 +46,8 @@ Acceptance:
 
 - fixture adapters normalize only tested shapes
 - malformed inputs fail closed
+- mixed known and unknown provider tool-call steps fail closed instead of
+  partially executing known steps
 - raw provider payloads do not become executable steps without translation
 - the feature flag alone does not change session metadata
 

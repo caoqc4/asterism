@@ -68,6 +68,34 @@ describe('normalizeProviderToolCallPlan', () => {
     });
   });
 
+  it('fails closed when an otherwise valid provider payload includes an unknown tool', () => {
+    expect(normalizeProviderToolCallPlan({
+      provider: 'openai',
+      model: 'gpt-4.1',
+      payload: {
+        source: 'provider_tool_call',
+        proposal: {
+          steps: [
+            {
+              tool: 'task.inspect_context',
+              input: {},
+            },
+            {
+              tool: 'unknown.execute',
+              input: { command: 'npm test' },
+            },
+          ],
+        },
+      },
+    })).toEqual({
+      status: 'failed',
+      provider: 'openai',
+      model: 'gpt-4.1',
+      error: 'Provider tool-call payload did not contain executable Taskplane steps.',
+      rawSummary: 'proposal, source',
+    });
+  });
+
   it('fails closed for raw provider payloads until a dedicated adapter translates them', () => {
     expect(normalizeProviderToolCallPlan({
       provider: 'anthropic',

@@ -118,8 +118,8 @@ Covered today:
   while keeping Taskplane structured tool calls disabled until an adapter exists
 - `Provider tool-call normalizer`
   shared normalized provider tool-call plan validation, including fail-closed
-  handling for malformed or raw provider payloads before any provider adapter
-  can execute steps
+  handling for malformed, mixed known/unknown, or raw provider payloads before
+  any provider adapter can execute steps
 - `OpenAI-compatible tool-call adapter`
   offline chat-completion-style `tool_calls` fixture normalization, including
   JSON argument validation and fail-closed handling when tool calls are absent

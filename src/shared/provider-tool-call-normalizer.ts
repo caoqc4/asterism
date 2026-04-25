@@ -33,16 +33,18 @@ function parseProposal(value: unknown): AgentStepProposal | null {
     return null;
   }
 
-  const steps = value.steps.flatMap((step) => {
+  const steps = [];
+
+  for (const step of value.steps) {
     if (!isRecord(step) || !isAgentToolName(step.tool)) {
-      return [];
+      return null;
     }
 
-    return [{
+    steps.push({
       tool: step.tool,
       input: isRecord(step.input) ? step.input : undefined,
-    }];
-  });
+    });
+  }
 
   if (!steps.length) {
     return null;
