@@ -53,7 +53,7 @@ Acceptance:
 
 ### Slice 1: Shadow Normalization
 
-Status: shared helper completed; not wired into real runs.
+Status: diagnostic-only RunOrchestrator wiring completed.
 
 When the flag is true, the provider response may be copied into the dispatcher
 only for a non-executing shadow pass. The shadow result may be written as a
@@ -85,9 +85,13 @@ Implementation boundary:
   minimal provider response-body payload for OpenAI-compatible `tool_calls` or
   Anthropic `content`, while the legacy `generateRuntimeText` helper still
   returns text only
-- RunOrchestrator must not infer native tool calls from text output; future
-  wiring should pass `providerPayload.payload` into the shadow observer only as
-  diagnostic metadata
+- RunOrchestrator does not infer native tool calls from text output; when the
+  reserved flag is enabled and a provider payload exists, it passes
+  `providerPayload.payload` into the shadow observer and writes only a
+  diagnostic run step
+- observed or failed shadow normalization never feeds `AgentRunLoop`, changes
+  final output, or changes persisted `structuredToolCalls=false` session
+  capability metadata
 
 ### Slice 2: Parser Parity Harness
 

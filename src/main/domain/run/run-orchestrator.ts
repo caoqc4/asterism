@@ -4,7 +4,9 @@ import type { AgentRuntimeCapabilities } from '../../../shared/types/agent-execu
 import { AgentSessionRepository } from '../../db/repositories/agent-session-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { TextExecutor } from '../../executors/text-executor.js';
+import type { RuntimeTextResult } from '../../executors/text-generation.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
+import { observeProviderNativeToolCalls } from '../../../shared/provider-tool-call-shadow.js';
 import { AgentRunLoop } from './agent-run-loop.js';
 import { LocalAgentExecutor, type AgentExecutor } from './agent-executor.js';
 import type { AgentToolRegistry } from './agent-tool-registry.js';
@@ -95,13 +97,21 @@ export class RunOrchestrator {
         ].join('\n'),
       });
 
-      const output = await this.textExecutor.execute(task, input, runtimeConfig, {
+      const textResult = await this.executeRuntimeText(task, input, runtimeConfig, {
         selectedTemplates: selection.shouldUse ? selection.selectedTemplates : [],
       });
+      const output = textResult.text;
 
       await this.runStepRepository.update(modelStep.id, {
         status: 'completed',
         output: output || '模型执行完成，但没有产生正文输出。',
+      });
+      await this.recordProviderNativeShadowStep({
+        model: runtimeConfig.model,
+        provider: runtimeConfig.provider,
+        runId: run.id,
+        textResult,
+        enabled: Boolean(runtimeConfig.featureFlags?.enableProviderNativeToolCalls),
       });
       await this.runStepRepository.create({
         runId: run.id,
@@ -259,6 +269,69 @@ export class RunOrchestrator {
             : 'process template selector 不可用。',
       };
     }
+  }
+
+  private async executeRuntimeText(
+    task: TaskDetail,
+    input: CreateRunInput,
+    runtimeConfig: Awaited<ReturnType<AiConfigService['resolveRuntimeConfig']>>,
+    options: Parameters<TextExecutor['execute']>[3],
+  ): Promise<RuntimeTextResult> {
+    const executor = this.textExecutor as TextExecutor & {
+      executeWithResult?: TextExecutor['executeWithResult'];
+    };
+
+    if (typeof executor.executeWithResult === 'function') {
+      return executor.executeWithResult(task, input, runtimeConfig, options);
+    }
+
+    return {
+      text: await this.textExecutor.execute(task, input, runtimeConfig, options),
+      providerPayload: null,
+    };
+  }
+
+  private async recordProviderNativeShadowStep(params: {
+    enabled: boolean;
+    model: string;
+    provider: Awaited<ReturnType<AiConfigService['resolveRuntimeConfig']>>['provider'];
+    runId: string;
+    textResult: RuntimeTextResult;
+  }): Promise<void> {
+    const providerPayload = params.textResult.providerPayload;
+
+    if (!params.enabled || !providerPayload) {
+      return;
+    }
+
+    const shadow = observeProviderNativeToolCalls({
+      enabled: true,
+      provider: params.provider,
+      model: params.model,
+      payload: providerPayload.payload,
+    });
+
+    await this.runStepRepository.create({
+      runId: params.runId,
+      kind: 'model',
+      status: shadow.status === 'observed' ? 'completed' : 'skipped',
+      title: 'Provider-native tool-call shadow observation',
+      input: [
+        `provider=${params.provider}`,
+        `model=${params.model}`,
+        `payload=${providerPayload.rawSummary}`,
+      ].join('\n'),
+      output: shadow.status === 'observed'
+        ? [
+            'Shadow normalization observed provider-native tool calls.',
+            `providerCallCount=${shadow.providerCallCount}`,
+            `stopReason=${shadow.stopReason ?? 'unknown'}`,
+            `rawSummary=${shadow.rawSummary}`,
+          ].join('\n')
+        : shadow.status === 'failed'
+          ? `Shadow normalization failed without changing run execution: ${shadow.error}`
+          : `Shadow normalization skipped without changing run execution: ${shadow.reason}`,
+    });
   }
 }
 

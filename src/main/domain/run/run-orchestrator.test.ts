@@ -241,6 +241,162 @@ describe('RunOrchestrator', () => {
     );
   });
 
+  it('records provider-native shadow observation when the reserved flag has a provider payload', async () => {
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'openai-compatible',
+        model: 'relay-model',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: false,
+          enableProviderNativeToolCalls: true,
+        },
+      }),
+    };
+    const textExecutor = {
+      executeWithResult: vi.fn().mockResolvedValue({
+        text: 'Generated output',
+        providerPayload: {
+          source: 'provider_response_body',
+          provider: 'openai-compatible',
+          model: 'relay-model',
+          rawSummary: 'choices=1; tool_calls=1',
+          payload: {
+            choices: [
+              {
+                message: {
+                  tool_calls: [
+                    {
+                      id: 'call_1',
+                      type: 'function',
+                      function: {
+                        name: 'task.inspect_context',
+                        arguments: '{}',
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      }),
+      execute: vi.fn(),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No template needed.',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const orchestrator = new RunOrchestrator(
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+    );
+
+    const result = await orchestrator.executeTextRun({
+      run: buildRun(),
+      task: buildTaskDetail(),
+      input: buildInput(),
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      output: 'Generated output',
+    });
+    expect(textExecutor.execute).not.toHaveBeenCalled();
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'model',
+        status: 'completed',
+        title: 'Provider-native tool-call shadow observation',
+        input: [
+          'provider=openai-compatible',
+          'model=relay-model',
+          'payload=choices=1; tool_calls=1',
+        ].join('\n'),
+        output: expect.stringContaining('providerCallCount=1'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({ kind: 'final', status: 'completed' }),
+    );
+  });
+
+  it('keeps text execution completed when shadow normalization fails', async () => {
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: false,
+          enableProviderNativeToolCalls: true,
+        },
+      }),
+    };
+    const textExecutor = {
+      executeWithResult: vi.fn().mockResolvedValue({
+        text: 'Generated output',
+        providerPayload: {
+          source: 'provider_response_body',
+          provider: 'anthropic',
+          model: 'claude-3-5-sonnet-latest',
+          rawSummary: 'content=1; tool_use=0',
+          payload: {
+            stop_reason: 'tool_use',
+            content: [
+              {
+                type: 'server_tool_use',
+              },
+            ],
+          },
+        },
+      }),
+      execute: vi.fn(),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No template needed.',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const orchestrator = new RunOrchestrator(
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+    );
+
+    const result = await orchestrator.executeTextRun({
+      run: buildRun(),
+      task: buildTaskDetail(),
+      input: buildInput(),
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      output: 'Generated output',
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'model',
+        status: 'skipped',
+        title: 'Provider-native tool-call shadow observation',
+        output: expect.stringContaining('Shadow normalization failed without changing run execution'),
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({ kind: 'final', status: 'completed' }),
+    );
+  });
+
   it('runs agent mode through the local artifact note tool after model output', async () => {
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({

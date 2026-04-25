@@ -2,7 +2,7 @@ import type { AppliedProcessTemplateRecord } from '../../shared/types/process-te
 import type { RuntimeAiConfig } from '../keychain/ai-config-service.js';
 import type { CreateRunInput } from '../../shared/types/run.js';
 import type { TaskDetail } from '../../shared/types/task.js';
-import { generateRuntimeText } from './text-generation.js';
+import { generateRuntimeText, generateRuntimeTextResult, type RuntimeTextResult } from './text-generation.js';
 import { deriveTaskDetailPriorityLane, getPriorityLanePromptGuidance } from '../../shared/working-context/priority-lanes.js';
 
 type ExecuteOptions = {
@@ -147,6 +147,15 @@ function buildPrompt(
 }
 
 export class TextExecutor {
+  async executeWithResult(
+    task: TaskDetail,
+    input: CreateRunInput,
+    config: RuntimeAiConfig,
+    options: ExecuteOptions = {},
+  ): Promise<RuntimeTextResult> {
+    return generateRuntimeTextResult(config, buildPrompt(task, input, options));
+  }
+
   async execute(
     task: TaskDetail,
     input: CreateRunInput,
