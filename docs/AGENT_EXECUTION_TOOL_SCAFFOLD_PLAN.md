@@ -11,6 +11,11 @@ artifact, checkpoint, credential, lifecycle, and default-exposure concepts for
 current and future tool lanes without exposing new tools to prompts, provider
 schemas, or runtime execution.
 
+The same shared module now also reserves default execution policy, tool session
+records, tool artifact descriptors, and checkpoint descriptors. These remain
+metadata contracts only; no sandbox, browser, MCP, skill, computer-use, or
+creator connector runtime is enabled by them.
+
 Read with:
 
 - [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md)
@@ -180,6 +185,9 @@ forms.
    metadata, artifact kinds, and checkpoint metadata behind feature flags.
    Initial descriptor/family/session/artifact/checkpoint/credential contracts
    are in place with reserved future lanes hidden by default.
+   Execution-policy defaults and checkpoint-required helpers are also in place
+   so future lanes can share one conservative metadata shape before runtime
+   integration.
 
 2. **Sandboxed coding lane**
    Implement `SandboxProvider`, staged patch artifacts, targeted checks, and

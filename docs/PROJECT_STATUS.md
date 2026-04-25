@@ -94,7 +94,9 @@ The project is past initial architecture assembly. Current work should favor pro
   shared tool scaffold descriptors, families, session kinds, artifact kinds,
   checkpoint kinds, credential policies, and hidden reserved descriptors for
   future workspace coding, browser/Playwright, MCP, skills, computer-use, and
-  creator connector lanes.
+  creator connector lanes. It also defines conservative execution-policy,
+  tool-session, artifact, and checkpoint metadata contracts without enabling
+  new runtimes or exposing new tools.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

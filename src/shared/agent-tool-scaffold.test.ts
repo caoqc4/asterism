@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   AGENT_TOOL_SCAFFOLD_DESCRIPTORS,
+  buildDefaultAgentToolExecutionPolicy,
   getAgentToolScaffoldDescriptor,
   getAgentToolScaffoldDescriptorsByFamily,
   getReservedAgentToolScaffoldDescriptors,
+  requiresAgentToolCheckpoint,
   shouldExposeAgentToolScaffold,
 } from './agent-tool-scaffold.js';
 import { AGENT_TOOL_NAMES } from './agent-tools.js';
@@ -123,5 +125,43 @@ describe('agent tool scaffold descriptors', () => {
       channel: 'provider_native',
       policy: buildPolicy({ allowLocalWorkspaceRead: true, allowTaskMutationTools: true }),
     })).toBe(false);
+  });
+
+  it('builds conservative default execution policy from descriptor boundaries', () => {
+    expect(buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' })).toMatchObject({
+      descriptorId: 'workspace.staged_patch',
+      sessionKind: 'sandbox',
+      networkPolicy: 'disabled',
+      credentialPolicy: 'none',
+      timeoutMs: 120_000,
+      outputLimitBytes: 64_000,
+    });
+
+    expect(buildDefaultAgentToolExecutionPolicy({
+      descriptorId: 'browser.readonly_evidence',
+      outputLimitBytes: 128_000,
+      timeoutMs: 30_000,
+    })).toMatchObject({
+      descriptorId: 'browser.readonly_evidence',
+      sessionKind: 'browser',
+      networkPolicy: 'allowlisted',
+      credentialPolicy: 'explicit_config',
+      timeoutMs: 30_000,
+      outputLimitBytes: 128_000,
+    });
+
+    expect(buildDefaultAgentToolExecutionPolicy({ descriptorId: 'mcp.safe_read' })).toMatchObject({
+      descriptorId: 'mcp.safe_read',
+      sessionKind: 'mcp_client',
+      networkPolicy: 'allowlisted',
+      credentialPolicy: 'explicit_config',
+    });
+  });
+
+  it('uses descriptor checkpoint metadata to identify actions that require review', () => {
+    expect(requiresAgentToolCheckpoint('task.inspect_context')).toBe(false);
+    expect(requiresAgentToolCheckpoint('workspace.staged_patch')).toBe(true);
+    expect(requiresAgentToolCheckpoint('creator.publish_preview')).toBe(true);
+    expect(requiresAgentToolCheckpoint('computer.inspect_only')).toBe(true);
   });
 });

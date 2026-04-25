@@ -49,6 +49,48 @@ export type AgentToolCheckpointKind =
   | 'external_action'
   | 'credential_use';
 
+export type AgentToolNetworkPolicy = 'disabled' | 'allowlisted' | 'unrestricted';
+
+export type AgentToolExecutionPolicy = {
+  descriptorId: string;
+  sessionKind: AgentToolSessionKind;
+  workspaceRoot?: string | null;
+  sandboxId?: string | null;
+  connectorId?: string | null;
+  networkPolicy: AgentToolNetworkPolicy;
+  credentialPolicy: AgentToolScaffoldCredentialPolicy;
+  timeoutMs: number;
+  outputLimitBytes: number;
+  idempotencyKey?: string | null;
+};
+
+export type AgentToolSessionRecord = {
+  id: string;
+  kind: AgentToolSessionKind;
+  descriptorId: string;
+  status: 'reserved' | 'running' | 'completed' | 'failed' | 'disposed';
+  capabilitySummary: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AgentToolArtifactDescriptor = {
+  kind: AgentToolArtifactKind;
+  title: string;
+  summary: string;
+  preview?: string | null;
+  path?: string | null;
+};
+
+export type AgentToolCheckpointDescriptor = {
+  kind: AgentToolCheckpointKind;
+  reason: string;
+  consequence: string;
+  preview?: string | null;
+  resumeTarget?: string | null;
+  policySnapshot: AgentToolExecutionPolicy;
+};
+
 export type AgentToolScaffoldDescriptor = {
   id: string;
   family: AgentToolScaffoldFamily;
@@ -316,6 +358,33 @@ export function getAgentToolScaffoldDescriptorsByFamily(
 
 export function getReservedAgentToolScaffoldDescriptors(): AgentToolScaffoldDescriptor[] {
   return AGENT_TOOL_SCAFFOLD_DESCRIPTORS.filter((descriptor) => descriptor.lifecycle === 'reserved');
+}
+
+export function buildDefaultAgentToolExecutionPolicy(params: {
+  descriptorId: string;
+  timeoutMs?: number;
+  outputLimitBytes?: number;
+}): AgentToolExecutionPolicy {
+  const descriptor = getAgentToolScaffoldDescriptor(params.descriptorId);
+  const needsExternalBoundary = descriptor.risk === 'external_read'
+    || descriptor.risk === 'external_write'
+    || descriptor.sessionKind === 'browser'
+    || descriptor.sessionKind === 'mcp_client'
+    || descriptor.sessionKind === 'connector'
+    || descriptor.sessionKind === 'computer';
+
+  return {
+    descriptorId: descriptor.id,
+    sessionKind: descriptor.sessionKind,
+    networkPolicy: needsExternalBoundary ? 'allowlisted' : 'disabled',
+    credentialPolicy: descriptor.credentialPolicy,
+    timeoutMs: params.timeoutMs ?? 120_000,
+    outputLimitBytes: params.outputLimitBytes ?? 64_000,
+  };
+}
+
+export function requiresAgentToolCheckpoint(descriptorId: string): boolean {
+  return getAgentToolScaffoldDescriptor(descriptorId).checkpointKind !== 'none';
 }
 
 export function shouldExposeAgentToolScaffold(params: {
