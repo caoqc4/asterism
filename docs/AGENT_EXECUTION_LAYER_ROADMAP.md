@@ -90,6 +90,9 @@ Sandbox decision:
 Future execution design:
 [AGENT_EXECUTION_FUTURE_DESIGN.md](AGENT_EXECUTION_FUTURE_DESIGN.md).
 
+Tool scaffold plan:
+[AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md).
+
 Goal: make the local agent runtime more durable before making it more
 powerful. The next implementation pass should introduce a typed runtime event
 spine, restart-safe resume contract, and explicit tool exposure matrix while
@@ -289,7 +292,38 @@ Acceptance:
 - normal model-produced command steps still fall back until a later UI/policy
   opt-in slice exposes them
 
-### Slice 5: Sandboxed Coding Agent Lane
+### Slice 5: Tool Scaffold Contracts
+
+Status: next design target before new tool families are exposed.
+
+Goal: reserve the common interfaces for MCP, browser/Playwright, skills,
+workspace coding tools, computer-use, and creator connectors before any one
+lane hard-codes its own path.
+
+Plan doc: [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md).
+
+Implementation sequence:
+
+1. Define shared tool descriptors with family, risk tier, schema, artifact
+   behavior, credential requirements, and sandbox/connector requirements.
+2. Define exposure policy separately from runtime execution policy.
+3. Define tool-session metadata for sandbox, browser, MCP, and connector
+   sessions.
+4. Define common artifact and checkpoint metadata for patches, screenshots,
+   traces, command logs, generated drafts, and connector previews.
+5. Keep all new descriptors hidden until a lane-specific decision exposes
+   them.
+
+Acceptance:
+
+- MCP/browser/skills/coding/creator/computer-use can be represented without
+  being exposed
+- discovery does not imply trust
+- prompt/provider exposure does not imply runtime permission
+- credential access is explicit and absent by default
+- mutating actions still route through artifacts and Decisions
+
+### Slice 6: Sandboxed Coding Agent Lane
 
 Status: next design and implementation target.
 
@@ -302,6 +336,7 @@ Design docs:
 - [AGENT_EXECUTION_SANDBOX_DECISION.md](AGENT_EXECUTION_SANDBOX_DECISION.md)
 - [AGENT_EXECUTION_FUTURE_DESIGN.md](AGENT_EXECUTION_FUTURE_DESIGN.md)
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
+- [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md)
 
 Implementation sequence:
 
@@ -341,9 +376,9 @@ Out of scope for this slice:
 
 Keep `workspace.run_command` and `workspace.write_patch` registry-only in the
 current host workspace. The next execution-layer work should design and
-implement Slice 5: a disabled-by-default sandboxed coding-agent lane that
-returns patch artifacts and Decisions before any promotion. For workspace tools
-inside the current host workspace, still use
+implement Slice 5 tool scaffold contracts, then Slice 6: a disabled-by-default
+sandboxed coding-agent lane that returns patch artifacts and Decisions before
+any promotion. For workspace tools inside the current host workspace, still use
 [WORKSPACE_TOOL_UI_OPT_IN_DECISION.md](WORKSPACE_TOOL_UI_OPT_IN_DECISION.md)
 before any prompt-level exposure.
 

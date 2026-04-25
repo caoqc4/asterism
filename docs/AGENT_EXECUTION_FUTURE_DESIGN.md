@@ -10,6 +10,7 @@ Read first:
 - [AGENT_EXECUTION_LAYER_V2_DECISION.md](AGENT_EXECUTION_LAYER_V2_DECISION.md)
 - [AGENT_EXECUTION_SANDBOX_DECISION.md](AGENT_EXECUTION_SANDBOX_DECISION.md)
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
+- [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md)
 
 ## Design Goal
 
@@ -74,6 +75,26 @@ RunOrchestrator prepares task context, policy, provider, and exposed tools
 
 No framework owns Taskplane state. Framework ideas may inform the loop, but
 SQLite repositories and Taskplane services remain the source of truth.
+
+## Tool Scaffold Layer
+
+MCP, browser/Playwright, skills, workspace coding tools, computer-use, and
+creator connectors should be treated as shared execution scaffolding, not as
+separate product shortcuts. Each family should enter through the same
+descriptor, exposure, policy, session, artifact, and checkpoint concepts
+defined in [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md).
+
+The agent execution layer should therefore reserve interfaces for:
+
+- sandbox sessions for coding work
+- browser sessions and Playwright-style evidence capture
+- MCP clients and external tool/resource discovery
+- skill/process prompt shaping
+- creator artifact and publishing-preview connectors
+- future computer-use sessions
+
+Reserving these interfaces does not mean exposing the tools. Each family still
+needs lane-specific acceptance before model-visible use.
 
 ## Core Components
 
@@ -273,17 +294,23 @@ If Taskplane adds MCP later:
 ## Suggested Build Order
 
 1. Keep Slice 0 accepted and docs aligned.
-2. Define `SandboxProvider` types behind a disabled feature flag.
-3. Add sandbox smoke tests using a temporary workspace and no credentials.
-4. Add a coding-agent patch artifact path before any file promotion.
-5. Make checkpoint events the command boundary for checkpoint creation.
-6. Add event replay/compaction tests for longer sessions.
-7. Add creator artifact/review lane after coding patch review proves the
+2. Define shared tool scaffold contracts for descriptors, exposure policy,
+   execution policy, sessions, artifacts, and checkpoints.
+3. Define `SandboxProvider` types behind a disabled feature flag.
+4. Add sandbox smoke tests using a temporary workspace and no credentials.
+5. Add a coding-agent patch artifact path before any file promotion.
+6. Make checkpoint events the command boundary for checkpoint creation.
+7. Add event replay/compaction tests for longer sessions.
+8. Add browser/Playwright read-only evidence capture after scaffold contracts
+   exist.
+9. Add skills/process prompt shaping after it is clear skills cannot grant
+   tool authority by themselves.
+10. Add MCP safe-read adapters after discovery, exposure, and runtime policy
+   are split.
+11. Add creator artifact/review lane after coding patch review proves the
    artifact/Decision flow.
-8. Add side-quest session records only after parent/child visibility is
+12. Add side-quest session records only after parent/child visibility is
    designed.
-9. Reassess MCP connector support after local sandbox and checkpoint semantics
-   are stable.
 
 ## Non-Goals Until Accepted
 

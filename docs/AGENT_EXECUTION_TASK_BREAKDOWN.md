@@ -12,6 +12,7 @@ Read first:
 - [AGENT_EXECUTION_SANDBOX_DECISION.md](AGENT_EXECUTION_SANDBOX_DECISION.md)
 - [AGENT_EXECUTION_FUTURE_DESIGN.md](AGENT_EXECUTION_FUTURE_DESIGN.md)
 - [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md)
+- [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md)
 
 ## First-Principles Rule
 
@@ -73,12 +74,16 @@ Pi reference boundary:
   and full replay/idempotency
 - required next: Taskplane-owned coding-agent lane with sandboxed workspace
   context, staged edits, targeted checks, patch artifacts, and Decision review
+- required scaffold: MCP, browser/Playwright, skills, computer-use, creator
+  connectors, and future tool families need common descriptor/exposure/policy
+  interfaces before lane-specific exposure
 
 Still incomplete:
 
 - no known Slice 0 blocker remains
-- the next execution-layer phase should start with sandbox provider design and
-  coding-agent patch artifacts, not direct host shell/file access
+- the next execution-layer phase should start with tool scaffold contracts,
+  then sandbox provider design and coding-agent patch artifacts, not direct
+  host shell/file access
 
 ## Task Sequence
 
@@ -297,11 +302,22 @@ Non-goals until explicitly accepted:
 
 ## Recommended Next Implementation Task
 
-Start with **SandboxProvider and coding-agent patch lane design**.
+Start with **tool scaffold contracts**, then **SandboxProvider and coding-agent
+patch lane design**.
 
 T1 through T7 now have Slice 0 implementation or design coverage, and the
 acceptance assessment has been refreshed. The next product-relevant execution
-task is to design the narrow path for AI programming work:
+task is to reserve the shared tool scaffold needed by AI programming,
+creator/self-media, and future domains:
+
+- `ToolDescriptor` for MCP, browser/Playwright, skills, coding, computer-use,
+  and connector tools
+- separate exposure and runtime execution policies
+- tool-session metadata for sandbox, browser, MCP, and connector sessions
+- artifact/checkpoint metadata for patches, screenshots, traces, generated
+  drafts, and connector previews
+
+After that, design the narrow path for AI programming work:
 
 - a disabled-by-default `SandboxProvider` interface
 - read-only workspace preparation followed by staged edit capability

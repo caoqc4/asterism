@@ -515,6 +515,9 @@ This intentionally keeps framework ideas behind Taskplane domain objects.
 
 ### Study Next
 
+- Shared tool scaffold contracts for MCP, browser/Playwright, skills,
+  computer-use, coding tools, and creator connectors before lane-specific
+  exposure.
 - Pi coding-agent patch/edit/test ergonomics behind a Taskplane
   `SandboxProvider`, patch artifacts, and Decision review.
 - Pi session branching for future side quests and sub-runs.

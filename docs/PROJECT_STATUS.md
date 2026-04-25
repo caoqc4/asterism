@@ -85,6 +85,11 @@ The project is past initial architecture assembly. Current work should favor pro
   captures the post-Slice-0 design for a `SandboxProvider`, coding-agent patch
   artifacts, creator artifact/review lanes, side quests, replay/idempotency,
   human feedback routing, and future MCP constraints.
+- [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md)
+  defines the shared scaffold for MCP, browser/Playwright, skills,
+  computer-use, workspace coding tools, and creator connectors: reserve common
+  descriptors, exposure policy, execution policy, tool sessions, artifacts,
+  and checkpoints before enabling each lane.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -157,9 +162,9 @@ dedicated signed/notarized release pass.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
 5. Treat the execution-layer Slice 0 pass as locally accepted for the alpha
-   path; the next execution design task is `SandboxProvider` plus a narrow
-   coding-agent patch lane, still behind the accepted sandbox and exposure
-   boundaries.
+   path; the next execution design task is shared tool scaffold contracts, then
+   `SandboxProvider` plus a narrow coding-agent patch lane, still behind the
+   accepted sandbox and exposure boundaries.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.
