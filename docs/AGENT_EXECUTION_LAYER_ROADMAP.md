@@ -118,6 +118,9 @@ Completed:
 - Agent sessions keep `textOnlyPlanning`, `structuredToolCalls`, `fileContext`,
   `taskMutationTools`, `streaming`, and `longRunningSessions` as explicit
   metadata.
+- Shared provider capability descriptors and provider tool-call normalization
+  types now define the future adapter entry shape while failing closed for raw
+  or malformed provider payloads.
 
 Acceptance:
 
@@ -127,6 +130,8 @@ Acceptance:
 - provider limitations do not silently enable tool plans
 - pre-run copy distinguishes provider text paths from persisted session
   capabilities
+- raw provider tool-call payloads do not become executable steps without a
+  dedicated adapter translation
 
 Deferred:
 
