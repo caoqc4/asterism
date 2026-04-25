@@ -692,6 +692,9 @@ describe('RunService integration', () => {
         'sandboxPromotion=decision_required',
         'sandboxPatchReviewAdapter=disabled',
         'sandboxPatchReviewAdapterReason=Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
+        'sandboxPatchReviewPlan=blocked',
+        'sandboxPatchReviewPlanSummary=Sandbox patch review run plan blocked: Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
+        'sandboxPatchReviewPlanReason=Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
       ].join('\n'),
     });
     expect(steps.some((step) => step.title === 'Provider 原生工具调用影子观察')).toBe(false);

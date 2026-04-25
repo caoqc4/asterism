@@ -88,6 +88,9 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
   const sandboxBlockedReasons = entries.get('sandboxBlockedReasons');
   const sandboxPatchReviewAdapter = entries.get('sandboxPatchReviewAdapter');
   const sandboxPatchReviewAdapterReason = entries.get('sandboxPatchReviewAdapterReason');
+  const sandboxPatchReviewPlan = entries.get('sandboxPatchReviewPlan');
+  const sandboxPatchReviewPlanSummary = entries.get('sandboxPatchReviewPlanSummary');
+  const sandboxPatchReviewPlanReason = entries.get('sandboxPatchReviewPlanReason');
 
   if (executor === 'provider_native_agent') {
     return [
@@ -110,6 +113,9 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
       sandboxBlockedReasons ? `sandboxBlockedReasons=${sandboxBlockedReasons}` : null,
       sandboxPatchReviewAdapter ? `sandboxPatchReviewAdapter=${sandboxPatchReviewAdapter}` : null,
       sandboxPatchReviewAdapterReason ? `sandboxPatchReviewAdapterReason=${sandboxPatchReviewAdapterReason}` : null,
+      sandboxPatchReviewPlan ? `sandboxPatchReviewPlan=${sandboxPatchReviewPlan}` : null,
+      sandboxPatchReviewPlanSummary ? `sandboxPatchReviewPlanSummary=${sandboxPatchReviewPlanSummary}` : null,
+      sandboxPatchReviewPlanReason ? `sandboxPatchReviewPlanReason=${sandboxPatchReviewPlanReason}` : null,
     ].filter(Boolean).join(' / ');
   }
 

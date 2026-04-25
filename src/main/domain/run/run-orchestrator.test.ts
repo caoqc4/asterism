@@ -700,6 +700,9 @@ describe('RunOrchestrator', () => {
         'sandboxBlockedReasons=sandbox provider does not expose the required staged-write, targeted-check, patch-artifact capability set',
         'sandboxPatchReviewAdapter=available',
         'sandboxPatchReviewAdapterReason=Sandbox patch review adapter is available for explicit runner calls only; no container runner is created by the factory.',
+        'sandboxPatchReviewPlan=blocked',
+        'sandboxPatchReviewPlanSummary=Sandbox patch review run plan blocked: Sandbox patch review run plan requires a patch summary.',
+        'sandboxPatchReviewPlanReason=Sandbox patch review run plan requires a patch summary.',
       ].join('\n'),
     });
     expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
@@ -1034,6 +1037,9 @@ describe('RunOrchestrator', () => {
           'sandboxPromotion=decision_required',
           'sandboxPatchReviewAdapter=disabled',
           'sandboxPatchReviewAdapterReason=Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
+          'sandboxPatchReviewPlan=blocked',
+          'sandboxPatchReviewPlanSummary=Sandbox patch review run plan blocked: Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
+          'sandboxPatchReviewPlanReason=Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
         ].join('\n'),
       }),
     );

@@ -37,6 +37,10 @@ describe('agent session metadata formatting', () => {
     expect(formatLocalAgentSessionMetadata(null, {
       reason: 'Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
       status: 'disabled',
+    }, {
+      reason: 'Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
+      status: 'blocked',
+      summary: 'Sandbox patch review run plan blocked: Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
     })).toBe([
       'executor=local_agent',
       'loop=local_note',
@@ -45,6 +49,9 @@ describe('agent session metadata formatting', () => {
       'sandboxPromotion=decision_required',
       'sandboxPatchReviewAdapter=disabled',
       'sandboxPatchReviewAdapterReason=Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
+      'sandboxPatchReviewPlan=blocked',
+      'sandboxPatchReviewPlanSummary=Sandbox patch review run plan blocked: Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
+      'sandboxPatchReviewPlanReason=Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
     ].join('\n'));
   });
 

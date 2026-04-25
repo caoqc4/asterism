@@ -37,7 +37,8 @@ import {
 } from './agent-runtime-event-step-mapper.js';
 import { AgentSessionEventRecorder } from './agent-session-event-recorder.js';
 import { evaluateTempWorkspaceSandboxCodingLane } from './temp-workspace-sandbox-provider.js';
-import { resolveSandboxPatchReviewRunAdapter } from './sandbox-patch-review-service-factory.js';
+import { SandboxPatchReviewPlanningService } from './sandbox-patch-review-planning-service.js';
+import { evaluateSandboxPatchReviewAdapterAvailability } from './sandbox-patch-review-service-factory.js';
 
 export type RunOrchestrationResult =
   | {
@@ -78,6 +79,8 @@ export class RunOrchestrator {
     private readonly agentSessionRepository: AgentSessionRepository | null = agentToolRegistry
       ? new AgentSessionRepository()
       : null,
+    private readonly sandboxPatchReviewPlanningService: SandboxPatchReviewPlanningService =
+      new SandboxPatchReviewPlanningService(),
   ) {}
 
   async executeTextRun(params: {
@@ -261,11 +264,20 @@ export class RunOrchestrator {
             })
           : null,
         result.runtimeConfig
-          ? resolveSandboxPatchReviewRunAdapter({
-              featureFlags: result.runtimeConfig.featureFlags ?? {
-                enableScheduler: false,
-                enableSandboxCodingAgent: false,
+          ? evaluateSandboxPatchReviewAdapterAvailability(getRuntimeFeatureFlags(result.runtimeConfig))
+          : null,
+        result.runtimeConfig
+          ? this.sandboxPatchReviewPlanningService.preview({
+              featureFlags: getRuntimeFeatureFlags(result.runtimeConfig),
+              patchDraft: {
+                diff: '',
+                files: [],
+                summary: '',
               },
+              requestedScripts: ['test', 'lint'],
+              runId: params.run.id,
+              taskId: params.task.id,
+              workspaceRoot: result.runtimeConfig.workspaceRoot,
             })
           : null,
       ),
@@ -634,5 +646,14 @@ function getProviderNativeAgentRuntimeCapabilities(params: {
     fileContext: params.allowLocalWorkspaceRead,
     taskMutationTools: params.allowTaskMutationTools,
     longRunningSessions: false,
+  };
+}
+
+function getRuntimeFeatureFlags(
+  runtimeConfig: Awaited<ReturnType<AiConfigService['resolveRuntimeConfig']>>,
+) {
+  return runtimeConfig.featureFlags ?? {
+    enableScheduler: false,
+    enableSandboxCodingAgent: false,
   };
 }

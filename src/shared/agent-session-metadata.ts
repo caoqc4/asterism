@@ -7,6 +7,11 @@ export function formatLocalAgentSessionMetadata(
     reason: string;
     status: 'available' | 'disabled';
   } | null,
+  sandboxPatchReviewPlan?: {
+    reason?: string | null;
+    status: 'blocked' | 'ready';
+    summary: string;
+  } | null,
 ): string {
   const parts = [
     'executor=local_agent',
@@ -23,6 +28,14 @@ export function formatLocalAgentSessionMetadata(
   if (sandboxPatchReviewAdapter) {
     parts.push(`sandboxPatchReviewAdapter=${sandboxPatchReviewAdapter.status}`);
     parts.push(`sandboxPatchReviewAdapterReason=${sandboxPatchReviewAdapter.reason}`);
+  }
+
+  if (sandboxPatchReviewPlan) {
+    parts.push(`sandboxPatchReviewPlan=${sandboxPatchReviewPlan.status}`);
+    parts.push(`sandboxPatchReviewPlanSummary=${sandboxPatchReviewPlan.summary}`);
+    if (sandboxPatchReviewPlan.reason?.trim()) {
+      parts.push(`sandboxPatchReviewPlanReason=${sandboxPatchReviewPlan.reason.trim()}`);
+    }
   }
 
   return parts.join('\n');
