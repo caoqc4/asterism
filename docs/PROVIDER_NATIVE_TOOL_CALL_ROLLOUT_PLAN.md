@@ -151,6 +151,8 @@ Current boundary:
 - shared agent-session metadata helpers define the current local executor
   metadata and the future provider-native metadata shape with provider, model,
   adapter, raw summary, provider call ids, and stop reason
+- `evaluateProviderNativeSessionGate` defines the explicit runtime-selection
+  gates for future RunOrchestrator wiring without executing anything
 - RunOrchestrator still does not select this path, so normal runs remain
   text-only plus optional shadow diagnostics
 

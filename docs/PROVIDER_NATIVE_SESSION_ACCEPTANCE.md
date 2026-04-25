@@ -21,6 +21,8 @@ Current accepted behavior remains:
   - the text-generation result includes a provider payload
   - adapter normalization returns `status=normalized`
   - the run type is `agent`
+- `evaluateProviderNativeSessionGate` must stay aligned with these selection
+  rules before RunOrchestrator can call `executeProviderNativeSession`.
 - Adapter failure must keep the text-only path successful when model text is
   otherwise usable.
 - Replicate native text prediction must remain unsupported for provider-native
