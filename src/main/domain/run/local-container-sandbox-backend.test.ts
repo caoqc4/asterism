@@ -13,6 +13,7 @@ import { buildDefaultAgentToolExecutionPolicy } from '../../../shared/agent-tool
 import {
   buildLocalContainerSandboxCommandPlans,
   buildLocalContainerSandboxBackendProbe,
+  createLocalContainerSandboxCommandRunner,
   probeLocalContainerSandboxBackend,
   runLocalContainerSandboxCommandPlan,
   runLocalContainerSandboxCommandPlans,
@@ -311,5 +312,59 @@ describe('local container sandbox backend probe', () => {
     });
     expect(runner).toHaveBeenNthCalledWith(1, plans[0]);
     expect(runner).toHaveBeenNthCalledWith(2, plans[1]);
+  });
+
+  it('creates an explicit docker command runner without wiring it into automatic execution', async () => {
+    const commandPolicy = buildDefaultAgentSandboxCommandPolicy({
+      outputLimitBytes: 4096,
+      timeoutMs: 30_000,
+    });
+    const request: AgentSandboxSessionRequest = {
+      commandPolicy,
+      descriptorId: 'workspace.staged_patch',
+      executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+      providerKind: 'local_container',
+      runId: 'run_1',
+      taskId: 'task_1',
+      workspace: {
+        mode: 'staged_write',
+        mountPath: '/workspace',
+        workspaceRoot: '/tmp/taskplane-workspace',
+      },
+    };
+    const [plan] = buildLocalContainerSandboxCommandPlans({
+      checkPlan: buildAgentSandboxCheckPlan({
+        policy: commandPolicy,
+        requestedScripts: ['lint'],
+      }),
+      handle: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        id: 'sandbox_1',
+        providerKind: 'local_container',
+        stagingRoot: '/tmp/taskplane-sandbox-1',
+        workspaceMode: 'staged_write',
+      },
+      request,
+    });
+    const execFileRunner = vi.fn().mockResolvedValue({
+      exitCode: 0,
+      stderr: '',
+      stdout: 'lint ok',
+    });
+
+    const runner = createLocalContainerSandboxCommandRunner(execFileRunner);
+
+    await expect(runner(plan!)).resolves.toEqual({
+      exitCode: 0,
+      stderr: '',
+      stdout: 'lint ok',
+    });
+    expect(execFileRunner).toHaveBeenCalledWith({
+      args: plan?.args,
+      command: 'docker',
+      env: {},
+      maxBuffer: 4096,
+      timeoutMs: 30_000,
+    });
   });
 });

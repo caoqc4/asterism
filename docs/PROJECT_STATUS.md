@@ -194,6 +194,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Sandbox patch artifacts can now be built directly from sandbox check results,
   carrying command logs and a compact check summary into the later
   Decision-review artifact without applying files.
+- A local-container Docker runner factory now exists behind an explicit
+  dependency-injection boundary. It preserves empty env, timeout, and output
+  limits, but remains unwired from startup, Settings, and model-visible runs.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

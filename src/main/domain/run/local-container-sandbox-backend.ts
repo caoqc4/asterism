@@ -72,6 +72,18 @@ export type LocalContainerSandboxCheckRun = {
   summary: string;
 };
 
+export type LocalContainerSandboxExecFileRunner = (params: {
+  args: string[];
+  command: string;
+  env: Record<string, never>;
+  maxBuffer: number;
+  timeoutMs: number;
+}) => Promise<{
+  exitCode: number;
+  stderr: string;
+  stdout: string;
+}>;
+
 const DEFAULT_LOCAL_CONTAINER_SANDBOX_IMAGE = 'node:22-bookworm-slim';
 const LOCAL_CONTAINER_STAGING_MOUNT_PATH = '/taskplane-staging';
 
@@ -230,6 +242,19 @@ export async function runLocalContainerSandboxCommandPlan(
   }
 }
 
+export function createLocalContainerSandboxCommandRunner(
+  execFileRunner: LocalContainerSandboxExecFileRunner = defaultLocalContainerSandboxExecFileRunner,
+): LocalContainerSandboxCommandRunner {
+  return (plan) =>
+    execFileRunner({
+      args: plan.args,
+      command: plan.command,
+      env: plan.environment,
+      maxBuffer: plan.outputLimitBytes,
+      timeoutMs: plan.timeoutMs,
+    });
+}
+
 export async function runLocalContainerSandboxCommandPlans(
   plans: LocalContainerSandboxCommandPlan[],
   runner: LocalContainerSandboxCommandRunner,
@@ -275,4 +300,43 @@ async function defaultLocalContainerRuntimeProbeRunner(params: {
     stderr: result.stderr,
     stdout: result.stdout,
   };
+}
+
+async function defaultLocalContainerSandboxExecFileRunner(params: {
+  args: string[];
+  command: string;
+  env: Record<string, never>;
+  maxBuffer: number;
+  timeoutMs: number;
+}): Promise<{
+  exitCode: number;
+  stderr: string;
+  stdout: string;
+}> {
+  try {
+    const result = await execFileAsync(params.command, params.args, {
+      env: params.env,
+      maxBuffer: params.maxBuffer,
+      timeout: params.timeoutMs,
+      windowsHide: true,
+    });
+
+    return {
+      exitCode: 0,
+      stderr: result.stderr,
+      stdout: result.stdout,
+    };
+  } catch (error) {
+    const processError = error as {
+      code?: number | string;
+      stderr?: string;
+      stdout?: string;
+    };
+
+    return {
+      exitCode: typeof processError.code === 'number' ? processError.code : 1,
+      stderr: processError.stderr ?? (error instanceof Error ? error.message : 'Sandbox command failed.'),
+      stdout: processError.stdout ?? '',
+    };
+  }
 }
