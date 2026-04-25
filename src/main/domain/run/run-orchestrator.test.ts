@@ -362,6 +362,12 @@ describe('RunOrchestrator', () => {
           requiresConfirmation: false,
         },
         {
+          name: 'task.inspect_timeline',
+          description: 'Inspect timeline.',
+          risk: 'safe_read',
+          requiresConfirmation: false,
+        },
+        {
           name: 'workspace.search',
           description: 'Search workspace.',
           risk: 'safe_read',
@@ -402,6 +408,10 @@ describe('RunOrchestrator', () => {
           expect.objectContaining({
             name: 'taskplane__task__inspect_context',
             taskplaneToolName: 'task.inspect_context',
+          }),
+          expect.objectContaining({
+            name: 'taskplane__task__inspect_timeline',
+            taskplaneToolName: 'task.inspect_timeline',
           }),
           expect.objectContaining({
             name: 'taskplane__workspace__search',

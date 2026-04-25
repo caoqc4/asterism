@@ -12,6 +12,12 @@ const definitions: AgentToolDefinition[] = [
     requiresConfirmation: false,
   },
   {
+    name: 'task.inspect_timeline',
+    description: 'Inspect timeline.',
+    risk: 'safe_read',
+    requiresConfirmation: false,
+  },
+  {
     name: 'task.review_completion_evidence',
     description: 'Review completion evidence.',
     risk: 'safe_read',
@@ -84,6 +90,17 @@ describe('buildProviderNativeToolSchemas', () => {
           additionalProperties: false,
         },
       },
+      {
+        name: 'taskplane__task__inspect_timeline',
+        taskplaneToolName: 'task.inspect_timeline',
+        description: 'Inspect timeline.',
+        risk: 'safe_read',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+          additionalProperties: false,
+        },
+      },
     ]);
   });
 
@@ -95,11 +112,13 @@ describe('buildProviderNativeToolSchemas', () => {
 
     expect(schemas.map((schema) => schema.taskplaneToolName)).toEqual([
       'task.inspect_context',
+      'task.inspect_timeline',
       'workspace.search',
       'workspace.read_file',
     ]);
     expect(schemas.map((schema) => schema.name)).toEqual([
       'taskplane__task__inspect_context',
+      'taskplane__task__inspect_timeline',
       'taskplane__workspace__search',
       'taskplane__workspace__read_file',
     ]);
@@ -118,6 +137,7 @@ describe('buildProviderNativeToolSchemas', () => {
 
     expect(schemas.map((schema) => schema.taskplaneToolName)).toEqual([
       'task.inspect_context',
+      'task.inspect_timeline',
       'task.review_completion_evidence',
       'decision.draft',
     ]);
@@ -143,6 +163,7 @@ describe('buildProviderNativeToolSchemas', () => {
 
     expect(schemas.map((schema) => schema.taskplaneToolName)).toEqual([
       'task.inspect_context',
+      'task.inspect_timeline',
       'task.review_completion_evidence',
       'decision.draft',
       'workspace.search',
