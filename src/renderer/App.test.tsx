@@ -3023,6 +3023,7 @@ describe('App UI flow', () => {
                 'Summary: Run tests',
                 'Command: npm run test -- --watch=false',
                 'Timeout: 120000ms',
+                'Cwd: /tmp/taskplane-workspace',
               ].join('\n'),
             },
             decisionTitle: '确认本地命令：workspace.run_command',
@@ -3047,7 +3048,7 @@ describe('App UI flow', () => {
 
     expect(await screen.findByRole('heading', { name: 'agent / needs_confirmation' })).toBeTruthy();
     expect(
-      screen.getByText(/工具：workspace\.run_command；风险：local_command；脚本：npm run test；参数：--watch=false；预览：Summary: Run tests Command: npm run test -- --watch=false/),
+      screen.getByText(/工具：workspace\.run_command；风险：local_command；脚本：npm run test；参数：--watch=false；超时：120000ms；工作目录：\/tmp\/taskplane-workspace；预览：Summary: Run tests Command: npm run test -- --watch=false/),
     ).toBeTruthy();
   });
 

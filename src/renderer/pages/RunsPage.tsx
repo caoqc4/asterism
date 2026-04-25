@@ -174,6 +174,18 @@ function truncateSummary(value: string, limit = 180): string {
   return value.length > limit ? `${value.slice(0, limit)}...` : value;
 }
 
+function extractCommandPreviewLine(commandPreview: string | null, label: string): string | null {
+  if (!commandPreview) {
+    return null;
+  }
+
+  const line = commandPreview
+    .split('\n')
+    .find((candidate) => candidate.startsWith(`${label}:`));
+
+  return line?.slice(label.length + 1).trim() || null;
+}
+
 function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
   if (!checkpoint.payload) {
     return '该 checkpoint 没有额外内容。';
@@ -191,13 +203,20 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
     const diffPreview = typeof input?.diffPreview === 'string'
       ? truncateSummary(input.diffPreview.replace(/\s+/g, ' '))
       : null;
-    const commandPreview = typeof input?.commandPreview === 'string'
-      ? truncateSummary(input.commandPreview.replace(/\s+/g, ' '))
+    const rawCommandPreview = typeof input?.commandPreview === 'string'
+      ? input.commandPreview
+      : null;
+    const commandPreview = rawCommandPreview
+      ? truncateSummary(rawCommandPreview.replace(/\s+/g, ' '))
       : null;
     const script = typeof input?.script === 'string' ? input.script : null;
     const commandArgs = Array.isArray(input?.args)
       ? input.args.filter((item): item is string => typeof item === 'string')
       : [];
+    const timeout = typeof input?.timeoutMs === 'number'
+      ? `${input.timeoutMs}ms`
+      : extractCommandPreviewLine(rawCommandPreview, 'Timeout');
+    const cwd = extractCommandPreviewLine(rawCommandPreview, 'Cwd');
     const summaryParts = [
       typeof payload.tool === 'string' ? `工具：${payload.tool}` : null,
       typeof payload.nextTool === 'string' ? `下一工具：${payload.nextTool}` : null,
@@ -206,6 +225,8 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
       expectedFiles.length ? `文件：${expectedFiles.join(', ')}` : null,
       script ? `脚本：npm run ${script}` : null,
       commandArgs.length ? `参数：${commandArgs.join(' ')}` : null,
+      timeout ? `超时：${timeout}` : null,
+      cwd ? `工作目录：${cwd}` : null,
       diffPreview ? `预览：${diffPreview}` : null,
       commandPreview ? `预览：${commandPreview}` : null,
       typeof payload.decisionTitle === 'string' ? `Decision：${payload.decisionTitle}` : null,
