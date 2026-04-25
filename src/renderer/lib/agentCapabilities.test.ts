@@ -149,11 +149,13 @@ describe('agent capability formatting', () => {
         'sandboxCoding=disabled',
         'sandboxProvider=disabled',
         'sandboxPromotion=decision_required',
+        'sandboxPatchReviewAdapter=disabled',
+        'sandboxPatchReviewAdapterReason=Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
       ].join('\n'),
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z',
     })).toBe(
-      'executor=local_agent / loop=local_note / sandboxCoding=disabled / sandboxProvider=disabled / sandboxPromotion=decision_required',
+      'executor=local_agent / loop=local_note / sandboxCoding=disabled / sandboxProvider=disabled / sandboxPromotion=decision_required / sandboxPatchReviewAdapter=disabled / sandboxPatchReviewAdapterReason=Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
     );
   });
 

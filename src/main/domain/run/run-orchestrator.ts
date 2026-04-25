@@ -37,6 +37,7 @@ import {
 } from './agent-runtime-event-step-mapper.js';
 import { AgentSessionEventRecorder } from './agent-session-event-recorder.js';
 import { evaluateTempWorkspaceSandboxCodingLane } from './temp-workspace-sandbox-provider.js';
+import { resolveSandboxPatchReviewRunAdapter } from './sandbox-patch-review-service-factory.js';
 
 export type RunOrchestrationResult =
   | {
@@ -257,6 +258,14 @@ export class RunOrchestrator {
           ? evaluateTempWorkspaceSandboxCodingLane({
               featureFlags: result.runtimeConfig.featureFlags,
               workspaceRoot: result.runtimeConfig.workspaceRoot,
+            })
+          : null,
+        result.runtimeConfig
+          ? resolveSandboxPatchReviewRunAdapter({
+              featureFlags: result.runtimeConfig.featureFlags ?? {
+                enableScheduler: false,
+                enableSandboxCodingAgent: false,
+              },
             })
           : null,
       ),

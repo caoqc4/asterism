@@ -33,6 +33,21 @@ describe('agent session metadata formatting', () => {
     ].join('\n'));
   });
 
+  it('formats local agent metadata with sandbox patch-review adapter resolution', () => {
+    expect(formatLocalAgentSessionMetadata(null, {
+      reason: 'Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
+      status: 'disabled',
+    })).toBe([
+      'executor=local_agent',
+      'loop=local_note',
+      'sandboxCoding=disabled',
+      'sandboxProvider=disabled',
+      'sandboxPromotion=decision_required',
+      'sandboxPatchReviewAdapter=disabled',
+      'sandboxPatchReviewAdapterReason=Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
+    ].join('\n'));
+  });
+
   it('formats provider-native session metadata without raw payloads', () => {
     const metadata = formatProviderNativeAgentSessionMetadata({
       source: 'provider_tool_call',

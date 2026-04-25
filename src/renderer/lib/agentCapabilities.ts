@@ -86,6 +86,8 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
   const sandboxProvider = entries.get('sandboxProvider');
   const sandboxPromotion = entries.get('sandboxPromotion');
   const sandboxBlockedReasons = entries.get('sandboxBlockedReasons');
+  const sandboxPatchReviewAdapter = entries.get('sandboxPatchReviewAdapter');
+  const sandboxPatchReviewAdapterReason = entries.get('sandboxPatchReviewAdapterReason');
 
   if (executor === 'provider_native_agent') {
     return [
@@ -106,6 +108,8 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
       sandboxProvider ? `sandboxProvider=${sandboxProvider}` : null,
       sandboxPromotion ? `sandboxPromotion=${sandboxPromotion}` : null,
       sandboxBlockedReasons ? `sandboxBlockedReasons=${sandboxBlockedReasons}` : null,
+      sandboxPatchReviewAdapter ? `sandboxPatchReviewAdapter=${sandboxPatchReviewAdapter}` : null,
+      sandboxPatchReviewAdapterReason ? `sandboxPatchReviewAdapterReason=${sandboxPatchReviewAdapterReason}` : null,
     ].filter(Boolean).join(' / ');
   }
 

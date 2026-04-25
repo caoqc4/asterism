@@ -684,7 +684,15 @@ describe('RunService integration', () => {
         structuredToolCalls: false,
         textOnlyPlanning: true,
       }),
-      metadata: 'executor=local_agent\nloop=local_note\nsandboxCoding=disabled\nsandboxProvider=disabled\nsandboxPromotion=decision_required',
+      metadata: [
+        'executor=local_agent',
+        'loop=local_note',
+        'sandboxCoding=disabled',
+        'sandboxProvider=disabled',
+        'sandboxPromotion=decision_required',
+        'sandboxPatchReviewAdapter=disabled',
+        'sandboxPatchReviewAdapterReason=Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
+      ].join('\n'),
     });
     expect(steps.some((step) => step.title === 'Provider 原生工具调用影子观察')).toBe(false);
   });

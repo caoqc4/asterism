@@ -691,7 +691,16 @@ describe('RunOrchestrator', () => {
         taskMutationTools: false,
         longRunningSessions: false,
       },
-      metadata: 'executor=local_agent\nloop=local_note\nsandboxCoding=blocked\nsandboxProvider=not_ready\nsandboxPromotion=decision_required\nsandboxBlockedReasons=sandbox provider does not expose the required staged-write, targeted-check, patch-artifact capability set',
+      metadata: [
+        'executor=local_agent',
+        'loop=local_note',
+        'sandboxCoding=blocked',
+        'sandboxProvider=not_ready',
+        'sandboxPromotion=decision_required',
+        'sandboxBlockedReasons=sandbox provider does not expose the required staged-write, targeted-check, patch-artifact capability set',
+        'sandboxPatchReviewAdapter=available',
+        'sandboxPatchReviewAdapterReason=Sandbox patch review adapter is available for explicit runner calls only; no container runner is created by the factory.',
+      ].join('\n'),
     });
     expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
       'agent_session_1',
@@ -1017,7 +1026,15 @@ describe('RunOrchestrator', () => {
           structuredToolCalls: false,
           textOnlyPlanning: true,
         }),
-        metadata: 'executor=local_agent\nloop=local_note\nsandboxCoding=disabled\nsandboxProvider=disabled\nsandboxPromotion=decision_required',
+        metadata: [
+          'executor=local_agent',
+          'loop=local_note',
+          'sandboxCoding=disabled',
+          'sandboxProvider=disabled',
+          'sandboxPromotion=decision_required',
+          'sandboxPatchReviewAdapter=disabled',
+          'sandboxPatchReviewAdapterReason=Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
+        ].join('\n'),
       }),
     );
     expect(agentExecutor.executeLocalNoteSession).toHaveBeenCalledWith(
