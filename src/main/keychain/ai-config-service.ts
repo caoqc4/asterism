@@ -2,12 +2,17 @@ import keytar from 'keytar';
 
 import type { AiConfigInput, AiConfigStatus, AiProvider, FeatureFlags } from '../../shared/types/settings.js';
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
+import { summarizeAgentToolScaffoldFamilies } from '../../shared/agent-tool-scaffold.js';
 import { AppConfigService } from '../config/app-config-service.js';
 import { readEnvValue } from '../config/env.js';
 
 const SERVICE_NAME = 'taskplane';
 const LEGACY_SERVICE_NAME = 'supersecretary';
 const ACCOUNT_NAME = 'ai_api_key';
+const DEFAULT_TOOL_SCAFFOLD_POLICY = {
+  allowLocalWorkspaceRead: false,
+  allowTaskMutationTools: false,
+};
 
 export type RuntimeAiConfig = {
   provider: AiProvider;
@@ -56,6 +61,9 @@ export class AiConfigService {
       configPath: this.appConfigService.getConfigPath(),
       featureFlags: config.featureFlags,
       sandboxBackendStatus: buildAgentSandboxBackendStatus(null),
+      toolScaffoldSummaries: summarizeAgentToolScaffoldFamilies({
+        policy: DEFAULT_TOOL_SCAFFOLD_POLICY,
+      }),
     };
   }
 
@@ -88,6 +96,9 @@ export class AiConfigService {
       configPath: this.appConfigService.getConfigPath(),
       featureFlags: config.featureFlags,
       sandboxBackendStatus: buildAgentSandboxBackendStatus(null),
+      toolScaffoldSummaries: summarizeAgentToolScaffoldFamilies({
+        policy: DEFAULT_TOOL_SCAFFOLD_POLICY,
+      }),
     };
   }
 

@@ -43,6 +43,12 @@ describe('AiConfigService', () => {
     expect(status.configPath).toBe(path.join(tempRoot, 'config.json'));
     expect(status.provider).toBe('anthropic');
     expect(status.apiKeyStored).toBe(false);
+    expect(status.toolScaffoldSummaries?.find((summary) => summary.family === 'workspace_coding')).toMatchObject({
+      implementedCount: 4,
+      providerNativeExposedIds: [],
+      reservedCount: 1,
+      textPromptExposedIds: [],
+    });
   });
 
   it('migrates legacy keychain passwords into the current service name', async () => {
@@ -83,6 +89,15 @@ describe('AiConfigService', () => {
     expect(status.workspaceRoot).toBe('/tmp/taskplane-workspace');
     expect(status.apiKeySource).toBe('keychain');
     expect(status.configured).toBe(true);
+    expect(status.toolScaffoldSummaries?.map((summary) => summary.family)).toEqual([
+      'task_domain',
+      'workspace_coding',
+      'browser_playwright',
+      'mcp',
+      'skill',
+      'computer_use',
+      'creator_connector',
+    ]);
   });
 
   it('uses environment API keys without storing them in Keychain', async () => {

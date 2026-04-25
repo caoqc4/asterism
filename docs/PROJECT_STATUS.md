@@ -110,6 +110,9 @@ The project is past initial architecture assembly. Current work should favor pro
   descriptors, current text/provider-native exposure, checkpoint requirements,
   and credential gates for each future tool family without enabling those
   lanes.
+- AI config status now carries the default no-opt-in tool scaffold family
+  summaries, giving Settings and preflight surfaces a shared diagnostic fact
+  source without exposing any reserved lane or model-visible tool.
 - `src/shared/agent-sandbox-provider.ts` now starts Slice 6 by defining the
   disabled-by-default `SandboxProvider` contract, sandbox capability metadata,
   staged workspace mount shape, targeted `test` / `lint` command policy,
