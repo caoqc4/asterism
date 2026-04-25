@@ -101,6 +101,10 @@ Covered today:
   `npm run accept:provider-native-tools` exercises provider-native extraction,
   provider adapters, safe-read schema exposure, selection gates, run-loop policy
   parity, and RunService persistence without calling external providers
+- `Provider-native live validation`
+  `npm run accept:provider-native-live:preflight` checks local readiness without
+  spending provider credit, and `npm run accept:provider-native-live` performs a
+  guarded one-call safe-read tool probe when explicitly configured
 - `AgentWorkingContext`
   task-detail compression into typed agent run context, default policy, and plan-step request summaries
 - `AgentToolRegistry`
@@ -121,11 +125,13 @@ Covered today:
   pre-run agent capability preview wording, including text-only local executor behavior, read-only workspace opt-in state, task update/evidence tool opt-in state, structured tool-call deferral wording, and Replicate-specific text-only planning wording
 - `Runs agent session summaries`
   run-detail capability summaries plus concise session metadata summaries for
-  local and future provider-native executor sessions
+  local and provider-native executor sessions, including provider raw summaries
+  without exposing raw payload bodies
 - `Agent provider capability descriptors`
   shared provider execution descriptors for unconfigured, local text-executor,
   OpenAI-compatible-style, fal/OpenRouter, and Replicate native text paths,
-  while keeping Taskplane structured tool calls disabled until an adapter exists
+  while keeping provider-native structured tool calls behind the explicit rollout
+  flag and session gate
 - `Agent session metadata`
   shared local executor metadata formatting and future provider-native session
   metadata formatting without persisting raw provider payloads
