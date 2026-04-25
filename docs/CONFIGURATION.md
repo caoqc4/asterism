@@ -19,6 +19,7 @@ Examples:
 - AI provider
 - model id
 - optional OpenAI-compatible base URL
+- optional read-only workspace root for opted-in agent runs
 - feature flags
 - scheduler enablement
 
@@ -29,6 +30,7 @@ Example shape:
   "aiProvider": "anthropic",
   "aiModel": "claude-3-5-sonnet-latest",
   "aiBaseUrl": null,
+  "workspaceRoot": null,
   "featureFlags": {
     "enableScheduler": false
   },
@@ -78,6 +80,7 @@ TASKPLANE_AI_PROVIDER=replicate
 TASKPLANE_AI_MODEL=openai/gpt-oss-20b
 TASKPLANE_AI_BASE_URL=
 TASKPLANE_AI_API_KEY=your-test-key
+TASKPLANE_WORKSPACE_ROOT=/absolute/path/to/your/workspace
 TASKPLANE_ENABLE_SCHEDULER=false
 ```
 
@@ -101,6 +104,22 @@ TASKPLANE_AI_API_KEY=your-test-key
 
 Set `TASKPLANE_ENV_FILE=/absolute/path/to/.env` to load a different file. Existing shell
 environment variables win over values from `.env`.
+
+## Read-Only Workspace Root
+
+`TASKPLANE_WORKSPACE_ROOT` or `config.json.workspaceRoot` defines the root used by opted-in
+read-only workspace agent runs.
+
+When this value is empty, Taskplane falls back to the app process working directory. Workspace
+tools still remain disabled unless the user explicitly enables read-only workspace context for
+that run.
+
+Current workspace tools are read-only:
+
+- `workspace.search`
+- `workspace.read_file`
+
+Patch creation and command execution are not enabled.
 
 ## Scheduler Flag
 

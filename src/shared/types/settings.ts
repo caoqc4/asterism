@@ -8,6 +8,7 @@ export type AppConfigFile = {
   aiProvider: AiProvider;
   aiModel: string;
   aiBaseUrl: string | null;
+  workspaceRoot: string | null;
   featureFlags: FeatureFlags;
   updatedAt: string;
 };

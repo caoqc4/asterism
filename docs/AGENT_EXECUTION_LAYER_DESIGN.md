@@ -538,8 +538,8 @@ Next code slice:
    through Runs detail.
 2. Add workspace-read prompt guidance so the model only sees workspace tools
    when the run opts in.
-3. Decide whether the next implementation step should be a stricter workspace
-   root selector.
+3. Add a configurable workspace root through env/config so read-only tools do
+   not rely on an implicit process working directory.
 4. Keep patch and command execution unavailable.
 
 Success: Taskplane can inspect local project context for coding-like tasks only

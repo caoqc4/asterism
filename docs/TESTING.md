@@ -55,7 +55,7 @@ Current test files:
 Covered today:
 
 - `AppConfigService`
-  config defaults, persistence, migration behavior
+  config defaults, persistence, workspace-root config, migration behavior
 - `AiConfigService`
   config-path reporting and legacy keychain API-key migration behavior
 - `TaskService`

@@ -13,6 +13,7 @@ const DEFAULT_CONFIG: AppConfigFile = {
   aiProvider: 'anthropic',
   aiModel: 'claude-3-5-sonnet-latest',
   aiBaseUrl: null,
+  workspaceRoot: null,
   featureFlags: DEFAULT_FEATURE_FLAGS,
   updatedAt: new Date(0).toISOString(),
 };
@@ -62,6 +63,7 @@ function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
       : DEFAULT_CONFIG.aiProvider,
     aiModel: input.aiModel?.trim() || DEFAULT_CONFIG.aiModel,
     aiBaseUrl: input.aiBaseUrl?.trim() || null,
+    workspaceRoot: input.workspaceRoot?.trim() || null,
     featureFlags: {
       enableScheduler:
         typeof nextFeatureFlags.enableScheduler === 'boolean'
@@ -76,6 +78,7 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
   const aiProvider = readEnvValue('TASKPLANE_AI_PROVIDER');
   const aiModel = readEnvValue('TASKPLANE_AI_MODEL');
   const aiBaseUrl = readEnvValue('TASKPLANE_AI_BASE_URL');
+  const workspaceRoot = readEnvValue('TASKPLANE_WORKSPACE_ROOT');
   const enableScheduler = readEnvBoolean('TASKPLANE_ENABLE_SCHEDULER');
 
   return sanitizeConfig({
@@ -83,6 +86,7 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
     aiProvider: (aiProvider as AiProvider | null) ?? config.aiProvider,
     aiModel: aiModel ?? config.aiModel,
     aiBaseUrl: aiBaseUrl ?? config.aiBaseUrl,
+    workspaceRoot: workspaceRoot ?? config.workspaceRoot,
     featureFlags: {
       ...config.featureFlags,
       enableScheduler: enableScheduler ?? config.featureFlags.enableScheduler,

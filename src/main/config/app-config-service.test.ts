@@ -9,6 +9,7 @@ const envKeys = [
   'TASKPLANE_AI_PROVIDER',
   'TASKPLANE_AI_MODEL',
   'TASKPLANE_AI_BASE_URL',
+  'TASKPLANE_WORKSPACE_ROOT',
   'TASKPLANE_ENABLE_SCHEDULER',
 ];
 
@@ -37,6 +38,7 @@ describe('AppConfigService', () => {
     expect(config.aiProvider).toBe('anthropic');
     expect(config.aiModel).toBe('claude-3-5-sonnet-latest');
     expect(config.aiBaseUrl).toBeNull();
+    expect(config.workspaceRoot).toBeNull();
     expect(config.featureFlags.enableScheduler).toBe(false);
     expect(fs.existsSync(getConfigPath(() => tempRoot))).toBe(true);
   });
@@ -60,6 +62,7 @@ describe('AppConfigService', () => {
       aiProvider: 'openai',
       aiModel: 'gpt-4.1',
       aiBaseUrl: ' https://relay.example.com/v1 ',
+      workspaceRoot: ' /Users/example/project ',
       featureFlags: {
         enableScheduler: true,
       },
@@ -70,6 +73,7 @@ describe('AppConfigService', () => {
     expect(config.aiProvider).toBe('openai');
     expect(config.aiModel).toBe('gpt-4.1');
     expect(config.aiBaseUrl).toBe('https://relay.example.com/v1');
+    expect(config.workspaceRoot).toBe('/Users/example/project');
     expect(config.featureFlags.enableScheduler).toBe(true);
   });
 
@@ -99,6 +103,7 @@ describe('AppConfigService', () => {
     process.env.TASKPLANE_AI_PROVIDER = 'openai-compatible';
     process.env.TASKPLANE_AI_MODEL = 'relay-model';
     process.env.TASKPLANE_AI_BASE_URL = 'https://relay.example.com/v1';
+    process.env.TASKPLANE_WORKSPACE_ROOT = '/tmp/taskplane-workspace';
     process.env.TASKPLANE_ENABLE_SCHEDULER = 'true';
     const { AppConfigService } = await import('./app-config-service.js');
     const service = new AppConfigService(() => tempRoot);
@@ -117,6 +122,7 @@ describe('AppConfigService', () => {
     expect(config.aiProvider).toBe('openai-compatible');
     expect(config.aiModel).toBe('relay-model');
     expect(config.aiBaseUrl).toBe('https://relay.example.com/v1');
+    expect(config.workspaceRoot).toBe('/tmp/taskplane-workspace');
     expect(config.featureFlags.enableScheduler).toBe(true);
   });
 

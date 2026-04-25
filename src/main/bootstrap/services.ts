@@ -63,6 +63,7 @@ const agentToolRegistry = new AgentToolRegistry(
   runStepRepository,
   runCheckpointRepository,
   decisionRepository,
+  appConfigService.read().workspaceRoot ?? process.cwd(),
 );
 const taskService = new TaskService(
   taskRepository,
