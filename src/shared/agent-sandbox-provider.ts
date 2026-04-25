@@ -11,6 +11,31 @@ export type AgentSandboxNetworkMode = 'disabled' | 'allowlisted';
 
 export type AgentSandboxWorkspaceMode = 'read_only' | 'staged_write';
 
+export type AgentSandboxBackendIsolation = 'container' | 'remote_vm' | 'host_process';
+
+export type AgentSandboxBackendEnvironmentPolicy = 'empty' | 'allowlisted' | 'inherit_host';
+
+export type AgentSandboxBackendProfile = {
+  id: string;
+  kind: Exclude<AgentSandboxProviderKind, 'disabled'>;
+  isolation: AgentSandboxBackendIsolation;
+  environmentPolicy: AgentSandboxBackendEnvironmentPolicy;
+  networkMode: AgentSandboxNetworkMode;
+  credentialPassthrough: false;
+  supportsWorkspaceMount: boolean;
+  supportsStagedWrites: boolean;
+  supportsStructuredCommands: boolean;
+  supportsTargetedCommands: boolean;
+  supportsOutputLimits: boolean;
+  supportsPatchArtifacts: boolean;
+};
+
+export type AgentSandboxBackendReadiness = {
+  ready: boolean;
+  summary: string;
+  blockedReasons: string[];
+};
+
 export type AgentSandboxProviderCapabilities = {
   kind: AgentSandboxProviderKind;
   enabled: boolean;
@@ -142,6 +167,52 @@ export const DISABLED_AGENT_SANDBOX_PROVIDER_CAPABILITIES: AgentSandboxProviderC
   networkMode: 'disabled',
   credentialPassthrough: false,
 };
+
+export function evaluateAgentSandboxBackendReadiness(
+  profile: AgentSandboxBackendProfile,
+): AgentSandboxBackendReadiness {
+  const blockedReasons: string[] = [];
+
+  if (profile.isolation === 'host_process') {
+    blockedReasons.push('sandbox backend must not run as a host process');
+  }
+
+  if (profile.environmentPolicy === 'inherit_host') {
+    blockedReasons.push('sandbox backend must not inherit the host environment');
+  }
+
+  if (profile.credentialPassthrough !== false) {
+    blockedReasons.push('sandbox backend must not pass through credentials');
+  }
+
+  if (!profile.supportsWorkspaceMount) {
+    blockedReasons.push('sandbox backend must mount exactly one selected workspace');
+  }
+
+  if (!profile.supportsStagedWrites) {
+    blockedReasons.push('sandbox backend must support staged writes');
+  }
+
+  if (!profile.supportsStructuredCommands || !profile.supportsTargetedCommands) {
+    blockedReasons.push('sandbox backend must support structured targeted commands');
+  }
+
+  if (!profile.supportsOutputLimits) {
+    blockedReasons.push('sandbox backend must enforce command output limits');
+  }
+
+  if (!profile.supportsPatchArtifacts) {
+    blockedReasons.push('sandbox backend must produce patch artifacts');
+  }
+
+  return {
+    blockedReasons,
+    ready: blockedReasons.length === 0,
+    summary: blockedReasons.length
+      ? `Sandbox backend not ready: ${blockedReasons.join('; ')}.`
+      : `Sandbox backend ready: ${profile.id}.`,
+  };
+}
 
 export function buildDefaultAgentSandboxCommandPolicy(
   overrides: Partial<Pick<AgentSandboxCommandPolicy, 'timeoutMs' | 'outputLimitBytes'>> = {},

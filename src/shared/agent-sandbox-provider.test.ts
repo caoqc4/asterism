@@ -8,6 +8,7 @@ import {
   buildDefaultAgentSandboxCommandPolicy,
   canUseAgentSandboxProviderForCoding,
   DISABLED_AGENT_SANDBOX_PROVIDER_CAPABILITIES,
+  evaluateAgentSandboxBackendReadiness,
   evaluateAgentSandboxCodingLaneEligibility,
   summarizeAgentSandboxSessionManifest,
   summarizeAgentSandboxCheckResults,
@@ -47,6 +48,55 @@ describe('agent sandbox provider contracts', () => {
     expect(canUseAgentSandboxProviderForCoding(ready)).toBe(true);
     expect(canUseAgentSandboxProviderForCoding({ ...ready, supportsPatchArtifacts: false })).toBe(false);
     expect(canUseAgentSandboxProviderForCoding({ ...ready, enabled: false })).toBe(false);
+  });
+
+  it('evaluates candidate sandbox backends before provider exposure', () => {
+    expect(evaluateAgentSandboxBackendReadiness({
+      credentialPassthrough: false,
+      environmentPolicy: 'empty',
+      id: 'local-container-candidate',
+      isolation: 'container',
+      kind: 'local_container',
+      networkMode: 'disabled',
+      supportsOutputLimits: true,
+      supportsPatchArtifacts: true,
+      supportsStagedWrites: true,
+      supportsStructuredCommands: true,
+      supportsTargetedCommands: true,
+      supportsWorkspaceMount: true,
+    })).toEqual({
+      blockedReasons: [],
+      ready: true,
+      summary: 'Sandbox backend ready: local-container-candidate.',
+    });
+  });
+
+  it('rejects host-process or incomplete sandbox backend profiles', () => {
+    const result = evaluateAgentSandboxBackendReadiness({
+      credentialPassthrough: false,
+      environmentPolicy: 'inherit_host',
+      id: 'host-process-candidate',
+      isolation: 'host_process',
+      kind: 'local_container',
+      networkMode: 'disabled',
+      supportsOutputLimits: false,
+      supportsPatchArtifacts: false,
+      supportsStagedWrites: false,
+      supportsStructuredCommands: false,
+      supportsTargetedCommands: false,
+      supportsWorkspaceMount: false,
+    });
+
+    expect(result.ready).toBe(false);
+    expect(result.blockedReasons).toEqual([
+      'sandbox backend must not run as a host process',
+      'sandbox backend must not inherit the host environment',
+      'sandbox backend must mount exactly one selected workspace',
+      'sandbox backend must support staged writes',
+      'sandbox backend must support structured targeted commands',
+      'sandbox backend must enforce command output limits',
+      'sandbox backend must produce patch artifacts',
+    ]);
   });
 
   it('explains why the sandbox coding lane is unavailable by default', () => {

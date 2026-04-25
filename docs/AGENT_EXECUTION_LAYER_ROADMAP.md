@@ -386,6 +386,13 @@ boundary. Do not expose a UI run option until that provider passes the shared
 eligibility gate and still routes every promotion through a Decision-linked
 `patch_promotion` checkpoint.
 
+Backend candidate readiness is now represented in code by
+`AgentSandboxBackendProfile` and `evaluateAgentSandboxBackendReadiness`. A
+candidate must be a container or remote VM style backend, must not inherit the
+host environment, must not pass through credentials, must support one selected
+workspace mount, staged writes, structured targeted commands, output limits,
+and patch artifacts. Host-process candidates fail readiness by design.
+
 Acceptance:
 
 - no host-process arbitrary shell
