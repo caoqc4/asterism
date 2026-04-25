@@ -59,6 +59,18 @@ release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane
 - Confirm the final run output is readable agent output, not raw proposal JSON.
 - Confirm no local patch or command execution is available.
 
+### Workspace Patch Approval Path
+
+Use this as a code-level execution-layer validation only. The patch tool is not
+yet exposed in agent prompts or the task UI.
+
+- Create an isolated workspace file and a `workspace.write_patch` checkpoint through the internal tool registry or service integration path.
+- Confirm the checkpoint payload includes expected files and a diff preview.
+- Confirm Runs detail surfaces the file list and preview before approval.
+- Approve the linked Decision.
+- Confirm the patch applies only after approval and the checkpoint resolves.
+- Confirm `workspace.run_command` remains unavailable.
+
 ## Completion Loop
 
 - Add at least one completion criterion.
