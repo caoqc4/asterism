@@ -118,6 +118,10 @@ export type AgentSandboxSessionRequest = {
 export type AgentSandboxSessionAudit = {
   idempotencyKey: string;
   initiatedBy: 'internal_sandbox_patch_review';
+  patchDraftSource?: {
+    sourceId: string;
+    sourceKind: string;
+  } | null;
   reason: string;
   requestedScripts: string[];
   acceptedScripts: AgentSandboxCheckScript[];
@@ -502,6 +506,11 @@ export function summarizeAgentSandboxSessionManifest(
 
   if (manifest.audit) {
     parts.push(`audit=${manifest.audit.initiatedBy}`);
+    if (manifest.audit.patchDraftSource) {
+      parts.push(
+        `source=${manifest.audit.patchDraftSource.sourceKind}:${manifest.audit.patchDraftSource.sourceId}`,
+      );
+    }
     parts.push(`idempotency=${manifest.audit.idempotencyKey}`);
   }
 

@@ -24,6 +24,10 @@ export function buildSandboxPatchReviewRunPlan(params: {
   decisionTitle?: string | null;
   featureFlags: FeatureFlags;
   patchDraft: LocalContainerSandboxPatchDraft;
+  patchDraftSource?: {
+    sourceId: string;
+    sourceKind: string;
+  } | null;
   requestedScripts: string[];
   runId: string;
   taskId: string;
@@ -55,6 +59,7 @@ export function buildSandboxPatchReviewRunPlan(params: {
 
   try {
     const requestBundle = buildSandboxPatchReviewRunRequest({
+      patchDraftSource: params.patchDraftSource,
       reason: `Review sandbox patch before workspace promotion: ${patchDraft.summary}`,
       requestedScripts: params.requestedScripts,
       runId: params.runId,

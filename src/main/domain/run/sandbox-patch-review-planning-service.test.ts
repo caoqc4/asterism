@@ -112,8 +112,12 @@ describe('SandboxPatchReviewPlanningService', () => {
     if (plan.status === 'ready') {
       expect(plan.decisionTitle).toBe('确认提升 sandbox source patch');
       expect(plan.requestBundle.audit.idempotencyKey).toBe(
-        'sandbox-patch-review:run_1:task_1:lint',
+        'sandbox-patch-review:sandbox_session:sandbox_session_1:run_1:task_1:lint',
       );
+      expect(plan.requestBundle.audit.patchDraftSource).toEqual({
+        sourceId: 'sandbox_session_1',
+        sourceKind: 'sandbox_session',
+      });
       expect(plan.summary).toContain('source=sandbox_session:sandbox_session_1');
     }
   });

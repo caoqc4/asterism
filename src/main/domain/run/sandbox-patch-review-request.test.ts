@@ -18,6 +18,7 @@ describe('buildSandboxPatchReviewRunRequest', () => {
       acceptedScripts: ['test', 'lint'],
       idempotencyKey: 'sandbox-patch-review:run_1:task_1:test,lint',
       initiatedBy: 'internal_sandbox_patch_review',
+      patchDraftSource: null,
       reason: 'Review the generated coding patch.',
       rejectedScripts: ['build'],
       requestedScripts: ['test', 'build', 'lint'],
@@ -44,7 +45,32 @@ describe('buildSandboxPatchReviewRunRequest', () => {
       },
     });
     expect(bundle.summary).toBe(
-      'descriptor=workspace.staged_patch / provider=local_container / workspace=staged_write / checks=test,lint / network=disabled / credentials=none / idempotency=sandbox-patch-review:run_1:task_1:test,lint / rejected=build',
+      'descriptor=workspace.staged_patch / provider=local_container / workspace=staged_write / checks=test,lint / network=disabled / credentials=none / source=none / idempotency=sandbox-patch-review:run_1:task_1:test,lint / rejected=build',
+    );
+  });
+
+  it('includes patch draft source identity in audit and idempotency when supplied', () => {
+    const bundle = buildSandboxPatchReviewRunRequest({
+      patchDraftSource: {
+        sourceId: 'sandbox_session_1',
+        sourceKind: 'sandbox_session',
+      },
+      requestedScripts: ['test'],
+      runId: 'run_1',
+      taskId: 'task_1',
+      workspaceRoot: '/tmp/taskplane-workspace',
+    });
+
+    expect(bundle.audit.patchDraftSource).toEqual({
+      sourceId: 'sandbox_session_1',
+      sourceKind: 'sandbox_session',
+    });
+    expect(bundle.audit.idempotencyKey).toBe(
+      'sandbox-patch-review:sandbox_session:sandbox_session_1:run_1:task_1:test',
+    );
+    expect(bundle.summary).toContain('source=sandbox_session:sandbox_session_1');
+    expect(bundle.request.executionPolicy.idempotencyKey).toBe(
+      'sandbox-patch-review:sandbox_session:sandbox_session_1:run_1:task_1:test',
     );
   });
 

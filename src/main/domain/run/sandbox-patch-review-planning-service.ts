@@ -69,6 +69,10 @@ export class SandboxPatchReviewPlanningService {
       decisionTitle: params.decisionTitle,
       featureFlags: params.featureFlags,
       patchDraft: validation.source.patchDraft,
+      patchDraftSource: {
+        sourceId: validation.source.sourceId,
+        sourceKind: validation.source.sourceKind,
+      },
       requestedScripts: validation.source.requestedScripts,
       runId: validation.source.runId,
       taskId: validation.source.taskId,

@@ -273,6 +273,10 @@ The project is past initial architecture assembly. Current work should favor pro
   validated source boundary to the existing non-executing run planner, with an
   optional selected-workspace match check and no adapter, runner, model tool, or
   UI-visible coding entrypoint.
+- Sandbox patch-review request audit now carries optional patch draft source
+  identity into idempotency keys and session manifest summaries, so future
+  resumable review runs can trace a ready plan back to the validated source
+  that produced it.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -303,7 +307,7 @@ npm run verify
 Latest local baseline:
 
 - 79 test files
-- 572 tests
+- 574 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -324,6 +328,9 @@ Latest local baseline:
   `SandboxPatchDraftSource` validator boundary: 79 test files / 569 tests
 - `npm run verify` passed locally on 2026-04-26 after connecting
   `previewFromSource()` to validated patch draft sources: 79 test files / 572
+  tests
+- `npm run verify` passed locally on 2026-04-26 after carrying patch draft
+  source identity into sandbox audit/idempotency metadata: 79 test files / 574
   tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because

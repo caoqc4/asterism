@@ -26,6 +26,10 @@ export function buildSandboxPatchReviewRunRequest(params: {
   requestedScripts: string[];
   commandPolicy?: AgentSandboxCommandPolicy;
   mountPath?: string;
+  patchDraftSource?: {
+    sourceId: string;
+    sourceKind: string;
+  } | null;
   providerKind?: Exclude<AgentSandboxProviderKind, 'disabled'>;
   reason?: string | null;
 }): SandboxPatchReviewRunRequestBundle {
@@ -55,8 +59,10 @@ export function buildSandboxPatchReviewRunRequest(params: {
     policy: commandPolicy,
     requestedScripts,
   });
+  const patchDraftSource = normalizePatchDraftSourceAudit(params.patchDraftSource);
   const idempotencyKey = [
     'sandbox-patch-review',
+    ...(patchDraftSource ? [patchDraftSource.sourceKind, patchDraftSource.sourceId] : []),
     runId,
     taskId,
     checkPlan.scripts.join(','),
@@ -65,6 +71,7 @@ export function buildSandboxPatchReviewRunRequest(params: {
     acceptedScripts,
     idempotencyKey,
     initiatedBy: 'internal_sandbox_patch_review',
+    patchDraftSource,
     reason: params.reason?.trim() || 'Prepare sandbox patch review before workspace promotion.',
     rejectedScripts,
     requestedScripts,
@@ -116,6 +123,9 @@ export function formatSandboxPatchReviewRunRequestSummary(
     `checks=${bundle.checkPlan.scripts.join(',')}`,
     `network=${bundle.request.executionPolicy.networkPolicy}`,
     `credentials=${bundle.request.executionPolicy.credentialPolicy}`,
+    bundle.audit.patchDraftSource
+      ? `source=${bundle.audit.patchDraftSource.sourceKind}:${bundle.audit.patchDraftSource.sourceId}`
+      : 'source=none',
     `idempotency=${bundle.audit.idempotencyKey}`,
     bundle.audit.rejectedScripts.length
       ? `rejected=${bundle.audit.rejectedScripts.join(',')}`
@@ -125,4 +135,21 @@ export function formatSandboxPatchReviewRunRequestSummary(
 
 function uniqueTrimmed(values: string[]): string[] {
   return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+}
+
+function normalizePatchDraftSourceAudit(source: {
+  sourceId: string;
+  sourceKind: string;
+} | null | undefined): AgentSandboxSessionAudit['patchDraftSource'] {
+  const sourceId = source?.sourceId.trim();
+  const sourceKind = source?.sourceKind.trim();
+
+  if (!sourceId || !sourceKind) {
+    return null;
+  }
+
+  return {
+    sourceId,
+    sourceKind,
+  };
 }
