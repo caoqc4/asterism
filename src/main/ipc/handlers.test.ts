@@ -146,6 +146,43 @@ describe('registerIpcHandlers', () => {
     expect(result.summary).toBe('Sandbox backend ready: local-container.');
   });
 
+  it('returns producer backend blocked readiness when the sandbox backend probe is unavailable', async () => {
+    servicesMock.aiConfigService.getStatus.mockResolvedValue({
+      configured: true,
+      apiKeyStored: true,
+      apiKeySource: 'keychain',
+      provider: 'openai-compatible',
+      model: 'relay-model',
+      baseUrl: 'https://relay.example.com/v1',
+      workspaceRoot: '/tmp/taskplane-workspace',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      configPath: '/tmp/config.json',
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+    });
+    probeLocalContainerSandboxBackendMock.mockResolvedValue({
+      backendId: 'local-container',
+      kind: 'local_container',
+      reason: 'docker: command not found',
+      status: 'unavailable',
+    });
+
+    const handler = getRegisteredHandler<[], Awaited<ReturnType<typeof probeLocalContainerSandboxBackendMock>>>(
+      'settings:probeSandboxBackend',
+    );
+
+    const result = await handler({});
+
+    expect(result.probe?.status).toBe('unavailable');
+    expect(result.producerBackendReadiness).toMatchObject({
+      blockedReasons: ['docker: command not found'],
+      ready: false,
+      summary: 'Sandboxed coding producer backend blocked: docker: command not found',
+    });
+  });
+
   it('starts the scheduler and emits settings.changed when scheduler is enabled', async () => {
     const input = {
       provider: 'openai' as const,
