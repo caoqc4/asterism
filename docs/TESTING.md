@@ -248,6 +248,7 @@ Covered today:
 - shared timeline summaries across `Tasks / Decisions / Runs`
 - `Settings save flow`
 - `Settings save flow` now also asserts Home scheduler enabled/running state and scheduler timestamps refresh from Home brief data
+- `Settings save flow` now also covers read-only workspace root persistence
 - `waiting item` visibility and direct resolution
 - `source context` visibility plus create/edit interactions in task detail, explicit key-source marking, and source-focused recovery from Home
 - `process context` visibility plus create/bind/remove interactions in task detail

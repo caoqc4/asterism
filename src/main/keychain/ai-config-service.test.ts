@@ -69,6 +69,7 @@ describe('AiConfigService', () => {
       provider: 'openai',
       model: ' gpt-4.1 ',
       baseUrl: ' https://relay.example.com/v1 ',
+      workspaceRoot: ' /tmp/taskplane-workspace ',
       apiKey: '  new-secret  ',
       featureFlags: {
         enableScheduler: true,
@@ -79,6 +80,7 @@ describe('AiConfigService', () => {
     expect(status.provider).toBe('openai');
     expect(status.model).toBe('gpt-4.1');
     expect(status.baseUrl).toBe('https://relay.example.com/v1');
+    expect(status.workspaceRoot).toBe('/tmp/taskplane-workspace');
     expect(status.apiKeySource).toBe('keychain');
     expect(status.configured).toBe(true);
   });

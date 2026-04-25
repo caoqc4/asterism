@@ -33,6 +33,7 @@ export function SettingsPage({ aiStatus, configForm, onChange, onSubmit }: Setti
             : 'API Key 尚未存入系统 Keychain'}
         </p>
         <p className="meta">Base URL：{aiStatus?.baseUrl ?? '默认官方端点'}</p>
+        <p className="meta">Workspace Root：{aiStatus?.workspaceRoot ?? '默认当前进程目录'}</p>
         <p className="meta">配置文件路径：{aiStatus?.configPath ?? '尚未初始化'}</p>
         <p className="meta">
           Scheduler 开关：{aiStatus?.featureFlags.enableScheduler ? '启用' : '未启用'}
@@ -87,6 +88,14 @@ export function SettingsPage({ aiStatus, configForm, onChange, onSubmit }: Setti
               type="password"
               value={configForm.apiKey}
               onChange={(event) => onChange({ ...configForm, apiKey: event.target.value })}
+            />
+          </label>
+          <label>
+            Workspace Root
+            <input
+              placeholder="/absolute/path/to/workspace"
+              value={configForm.workspaceRoot ?? ''}
+              onChange={(event) => onChange({ ...configForm, workspaceRoot: event.target.value })}
             />
           </label>
           <label className="checkbox-row">

@@ -135,6 +135,7 @@ export function App() {
     provider: 'anthropic',
     model: 'claude-3-5-sonnet-latest',
     baseUrl: '',
+    workspaceRoot: '',
     apiKey: '',
     featureFlags: {
       enableScheduler: false,
@@ -234,6 +235,7 @@ export function App() {
         provider: configStatus.provider ?? current.provider,
         model: configStatus.model ?? current.model,
         baseUrl: configStatus.baseUrl ?? '',
+        workspaceRoot: configStatus.workspaceRoot ?? '',
         featureFlags: configStatus.featureFlags,
       }));
       setStatus('ready');
@@ -277,6 +279,7 @@ export function App() {
       ...current,
       apiKey: '',
       baseUrl: nextStatus.baseUrl ?? '',
+      workspaceRoot: nextStatus.workspaceRoot ?? '',
       featureFlags: nextStatus.featureFlags,
     }));
   }

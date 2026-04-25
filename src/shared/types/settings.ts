@@ -17,6 +17,7 @@ export type AiConfigInput = {
   provider: AiProvider;
   model: string;
   baseUrl?: string;
+  workspaceRoot?: string;
   apiKey: string;
   featureFlags: FeatureFlags;
 };
@@ -28,6 +29,7 @@ export type AiConfigStatus = {
   provider: AiProvider | null;
   model: string | null;
   baseUrl: string | null;
+  workspaceRoot: string | null;
   updatedAt: string | null;
   configPath: string | null;
   featureFlags: FeatureFlags;

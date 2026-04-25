@@ -56,6 +56,7 @@ The app currently exposes a Settings page for:
 - provider selection
 - model selection
 - custom base URL for OpenAI-compatible providers
+- read-only workspace root for opted-in agent runs
 - API key storage
 - scheduler enable/disable
 

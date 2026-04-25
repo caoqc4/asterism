@@ -114,6 +114,7 @@ describe('registerIpcHandlers', () => {
       provider: 'openai',
       model: 'gpt-5.4-mini',
       baseUrl: 'https://relay.example.com/v1',
+      workspaceRoot: '/tmp/taskplane-workspace',
       updatedAt: '2026-01-02T00:00:00.000Z',
       configPath: '/tmp/config.json',
       featureFlags: {

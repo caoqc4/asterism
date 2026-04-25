@@ -345,6 +345,7 @@ describe('App UI flow', () => {
     provider: 'anthropic',
     model: 'claude-3-5-sonnet-latest',
     baseUrl: null,
+    workspaceRoot: null,
     updatedAt: '2026-01-01T00:00:00.000Z',
     configPath: '/tmp/config.json',
     featureFlags: {
@@ -5188,6 +5189,7 @@ describe('App UI flow', () => {
           provider: input.provider,
           model: input.model,
           baseUrl: input.baseUrl ?? null,
+          workspaceRoot: input.workspaceRoot ?? null,
           updatedAt: '2026-01-02T00:00:00.000Z',
           configPath: '/tmp/config.json',
           featureFlags: {
@@ -5232,6 +5234,7 @@ describe('App UI flow', () => {
     await user.type(modelInput, 'gpt-5.4-mini');
     await user.type(screen.getByLabelText('Base URL'), 'https://relay.example.com/v1');
     await user.type(screen.getByLabelText('API Key'), 'sk-test-key');
+    await user.type(screen.getByLabelText('Workspace Root'), '/tmp/taskplane-workspace');
     await user.click(screen.getByLabelText('启用本地 scheduler'));
     await user.click(screen.getByRole('button', { name: '保存到 Main / Keychain' }));
 
@@ -5240,6 +5243,7 @@ describe('App UI flow', () => {
         provider: 'openai',
         model: 'gpt-5.4-mini',
         baseUrl: 'https://relay.example.com/v1',
+        workspaceRoot: '/tmp/taskplane-workspace',
         apiKey: 'sk-test-key',
         featureFlags: {
           enableScheduler: true,
@@ -5252,6 +5256,7 @@ describe('App UI flow', () => {
     });
 
     expect(screen.getByText(/Scheduler 开关：启用/)).toBeTruthy();
+    expect(screen.getByText(/Workspace Root：\/tmp\/taskplane-workspace/)).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: /home/i }));
 

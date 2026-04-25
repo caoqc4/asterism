@@ -49,6 +49,7 @@ export class AiConfigService {
       provider: config.aiProvider,
       model: config.aiModel,
       baseUrl: config.aiBaseUrl,
+      workspaceRoot: config.workspaceRoot,
       updatedAt: config.updatedAt,
       configPath: this.appConfigService.getConfigPath(),
       featureFlags: config.featureFlags,
@@ -60,6 +61,7 @@ export class AiConfigService {
       aiProvider: input.provider,
       aiModel: input.model.trim(),
       aiBaseUrl: input.baseUrl?.trim() || null,
+      workspaceRoot: input.workspaceRoot?.trim() || null,
       featureFlags: input.featureFlags,
     });
 
@@ -78,6 +80,7 @@ export class AiConfigService {
       provider: config.aiProvider,
       model: config.aiModel,
       baseUrl: config.aiBaseUrl,
+      workspaceRoot: config.workspaceRoot,
       updatedAt: config.updatedAt,
       configPath: this.appConfigService.getConfigPath(),
       featureFlags: config.featureFlags,
