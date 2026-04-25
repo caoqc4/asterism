@@ -1,5 +1,5 @@
 import type { PriorityLane } from './brief.js';
-import type { RunType } from './run.js';
+import type { RunCheckpointKind, RunType } from './run.js';
 import type { TaskRiskLevel, TaskState } from './task.js';
 
 export type AgentRunMode = RunType;
@@ -219,6 +219,8 @@ export type AgentToolResult = {
   output?: string | null;
   artifactId?: string | null;
   checkpointId?: string | null;
+  checkpointKind?: RunCheckpointKind | null;
+  decisionId?: string | null;
   error?: string | null;
   status?: 'completed' | 'failed' | 'needs_confirmation';
 };

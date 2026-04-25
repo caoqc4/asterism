@@ -1607,6 +1607,8 @@ describe('AgentRunLoop', () => {
           status: 'needs_confirmation',
           summary: 'Needs confirmation',
           checkpointId: 'run_checkpoint_1',
+          checkpointKind: 'tool_permission',
+          decisionId: 'decision_1',
         }),
     };
     const runStepRepository = buildRunStepRepositoryMock();
@@ -1662,7 +1664,8 @@ describe('AgentRunLoop', () => {
     expect(events.at(-2)).toEqual(expect.objectContaining({
       type: 'checkpoint.created',
       checkpointId: 'run_checkpoint_1',
-      checkpointKind: 'confirmation',
+      checkpointKind: 'tool_permission',
+      decisionId: 'decision_1',
       tool: 'artifact.create_note',
     }));
     expect(events.at(-1)).toEqual(expect.objectContaining({

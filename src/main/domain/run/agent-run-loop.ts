@@ -858,8 +858,9 @@ export class AgentRunLoop {
           type: 'checkpoint.created',
           runId: request.runId,
           checkpointId: result.checkpointId,
-          checkpointKind: 'confirmation',
+          checkpointKind: result.checkpointKind ?? 'confirmation',
           reason: result.summary,
+          decisionId: result.decisionId ?? null,
           tool: step.tool,
         });
         await this.recordObservationSummary({

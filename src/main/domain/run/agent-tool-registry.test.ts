@@ -669,6 +669,8 @@ describe('AgentToolRegistry', () => {
       success: false,
       status: 'needs_confirmation',
       checkpointId: 'run_checkpoint_1',
+      checkpointKind: 'tool_permission',
+      decisionId: 'decision_1',
     });
     expect(taskService.createCompletionCriteria).not.toHaveBeenCalled();
     expect(decisionRepository.create).toHaveBeenCalledWith({
@@ -845,6 +847,8 @@ describe('AgentToolRegistry', () => {
       success: false,
       status: 'needs_confirmation',
       checkpointId: 'run_checkpoint_1',
+      checkpointKind: 'tool_permission',
+      decisionId: 'decision_1',
     });
     expect(artifactRepository.createNoteFromRun).not.toHaveBeenCalled();
     expect(decisionRepository.create).toHaveBeenCalledWith({
@@ -1167,6 +1171,8 @@ describe('AgentToolRegistry', () => {
         success: false,
         status: 'needs_confirmation',
         checkpointId: 'run_checkpoint_1',
+        checkpointKind: 'tool_permission',
+        decisionId: 'decision_1',
       });
       expect(runCheckpointRepository.updatePayload).toHaveBeenCalledWith(
         'run_checkpoint_1',

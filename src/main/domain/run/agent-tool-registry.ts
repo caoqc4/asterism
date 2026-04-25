@@ -933,6 +933,8 @@ export class AgentToolRegistry {
             status: 'needs_confirmation',
             summary,
             checkpointId: checkpointWithDecision.id,
+            checkpointKind: 'tool_permission',
+            decisionId: decision?.id ?? null,
           };
         }
 
@@ -1013,6 +1015,8 @@ export class AgentToolRegistry {
             status: 'needs_confirmation',
             summary,
             checkpointId: checkpointWithDecision.id,
+            checkpointKind: 'tool_permission',
+            decisionId: decision?.id ?? null,
           };
         }
 
@@ -1069,6 +1073,8 @@ export class AgentToolRegistry {
           status: 'needs_confirmation',
           summary,
           checkpointId: checkpointWithDecision.id,
+          checkpointKind: 'tool_permission',
+          decisionId: decision?.id ?? null,
         };
       }
 
