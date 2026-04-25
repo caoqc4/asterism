@@ -20,6 +20,7 @@ import type { TaskDependencyRecord } from '@shared/types/task-dependency';
 import type { TaskDetail, TaskListItemRecord, TaskRecord } from '@shared/types/task';
 import type { ArtifactRecord } from '@shared/types/artifact';
 import type { WaitingItemRecord } from '@shared/types/waiting-item';
+import { summarizeAgentToolScaffoldFamilies } from '@shared/agent-tool-scaffold';
 import { formatDependencyAgeLabel, getDependencyAgeReason } from '@shared/working-context/dependency';
 import { App } from './App';
 
@@ -351,6 +352,12 @@ describe('App UI flow', () => {
     featureFlags: {
       enableScheduler: false,
     },
+    toolScaffoldSummaries: summarizeAgentToolScaffoldFamilies({
+      policy: {
+        allowLocalWorkspaceRead: false,
+        allowTaskMutationTools: false,
+      },
+    }),
   };
 
   const briefData: HomeBriefData = {
@@ -5504,6 +5511,12 @@ describe('App UI flow', () => {
           featureFlags: {
             enableScheduler: input.featureFlags.enableScheduler,
           },
+          toolScaffoldSummaries: summarizeAgentToolScaffoldFamilies({
+            policy: {
+              allowLocalWorkspaceRead: false,
+              allowTaskMutationTools: false,
+            },
+          }),
         };
 
         currentBriefData = {
@@ -5541,6 +5554,13 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(screen.getByText(/Sandbox Backend：未检测/)).toBeTruthy();
     expect(screen.getByText(/Sandbox Coding Lane：等待 Sandbox Backend 检测/)).toBeTruthy();
+    expect(screen.getByText('Workspace Coding')).toBeTruthy();
+    expect(screen.getByText('4 implemented / 1 reserved / 0 text / 0 native / 3 approval / 0 credential')).toBeTruthy();
+    const toolScaffoldDiagnostics = screen.getByLabelText('Tool scaffold diagnostics');
+    expect(within(toolScaffoldDiagnostics).getByText('Browser / Playwright')).toBeTruthy();
+    expect(within(toolScaffoldDiagnostics).getAllByText(
+      '0 implemented / 1 reserved / 0 text / 0 native / 0 approval / 1 credential',
+    ).length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: '检测 Sandbox Backend' }));
     await screen.findByText(/Sandbox Backend：可用：Sandbox backend ready: local-container\./);
     expect(screen.getByText(/Sandbox Coding Lane：Sandbox coding lane unavailable/)).toBeTruthy();

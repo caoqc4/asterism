@@ -113,6 +113,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - AI config status now carries the default no-opt-in tool scaffold family
   summaries, giving Settings and preflight surfaces a shared diagnostic fact
   source without exposing any reserved lane or model-visible tool.
+- Settings now renders the tool scaffold family diagnostic summary from AI
+  config status, so the reserved MCP/browser/skills/creator/computer-use lanes
+  are visible as readiness facts without becoming available actions.
 - `src/shared/agent-sandbox-provider.ts` now starts Slice 6 by defining the
   disabled-by-default `SandboxProvider` contract, sandbox capability metadata,
   staged workspace mount shape, targeted `test` / `lint` command policy,

@@ -1,4 +1,5 @@
 import type { AiConfigInput, AiConfigStatus } from '@shared/types/settings';
+import type { AgentToolScaffoldFamilySummary } from '@shared/agent-tool-scaffold';
 import { buildDefaultAgentToolExecutionPolicy } from '@shared/agent-tool-scaffold';
 import {
   buildDefaultAgentSandboxCommandPolicy,
@@ -73,6 +74,31 @@ function formatSandboxProducerBackendReadiness(aiStatus: AiConfigStatus | null):
   return readiness.summary;
 }
 
+function formatToolScaffoldFamilyLabel(family: AgentToolScaffoldFamilySummary['family']): string {
+  const labels: Record<AgentToolScaffoldFamilySummary['family'], string> = {
+    browser_playwright: 'Browser / Playwright',
+    computer_use: 'Computer Use',
+    creator_connector: 'Creator Connectors',
+    mcp: 'MCP',
+    skill: 'Skills',
+    task_domain: 'Task Domain',
+    workspace_coding: 'Workspace Coding',
+  };
+
+  return labels[family];
+}
+
+function formatToolScaffoldFamilySummary(summary: AgentToolScaffoldFamilySummary): string {
+  return [
+    `${summary.implementedCount} implemented`,
+    `${summary.reservedCount} reserved`,
+    `${summary.textPromptExposedIds.length} text`,
+    `${summary.providerNativeExposedIds.length} native`,
+    `${summary.checkpointRequiredIds.length} approval`,
+    `${summary.credentialGatedIds.length} credential`,
+  ].join(' / ');
+}
+
 export function SettingsPage({
   aiStatus,
   configForm,
@@ -125,6 +151,17 @@ export function SettingsPage({
         </div>
         <p className="meta">Sandbox Coding Lane：{formatSandboxCodingLaneReadiness(aiStatus)}</p>
         <p className="meta">Producer Backend：{formatSandboxProducerBackendReadiness(aiStatus)}</p>
+        <div className="tool-scaffold-summary" aria-label="Tool scaffold diagnostics">
+          {(aiStatus?.toolScaffoldSummaries?.length ? aiStatus.toolScaffoldSummaries : []).map((summary) => (
+            <div className="tool-scaffold-row" key={summary.family}>
+              <strong>{formatToolScaffoldFamilyLabel(summary.family)}</strong>
+              <span>{formatToolScaffoldFamilySummary(summary)}</span>
+            </div>
+          ))}
+          {aiStatus?.toolScaffoldSummaries?.length ? null : (
+            <p className="meta">Tool Scaffold：等待 AI config status</p>
+          )}
+        </div>
       </article>
 
       <article className="panel">
