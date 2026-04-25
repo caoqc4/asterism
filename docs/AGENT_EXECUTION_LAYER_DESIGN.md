@@ -36,7 +36,8 @@ The first execution-layer spine is now in place:
   step proposal, enforces read-only observation before local writes, persists
   readable observation summaries, and pauses when context says a local write
   should wait.
-- `AgentToolRegistry` can inspect task context, inspect task timeline, and
+- `AgentToolRegistry` can inspect task context, inspect task timeline, search
+  and read files inside an explicitly configured read-only workspace root, and
   create local note artifacts while writing tool call/result steps.
 - Confirmation-required tools create checkpoints and pending Decisions;
   approved Decisions can resume the pending local tool.
@@ -45,6 +46,9 @@ The first execution-layer spine is now in place:
 - Provider support is still mostly model-text oriented through Vercel AI SDK or
   native Replicate text prediction; reliable multi-turn tool use is not yet a
   runtime guarantee.
+- Agent sessions now persist run-scoped runtime capabilities and terminal
+  status, and completed local sessions return final agent output rather than
+  raw proposal JSON.
 
 The remaining gap is no longer "does Taskplane have a trace spine?" It is
 "what is the boundary for a real executor session that can run beyond one local
@@ -393,6 +397,7 @@ Implemented baseline:
 - typed internal tool registry
 - read-only task context and timeline inspection tools
 - local note artifact creation tool
+- policy-gated read-only workspace search/read tools
 - tool call/result step persistence
 - policy-driven confirmation checkpoints for confirmation-required tools
 
@@ -417,7 +422,7 @@ Remaining cleanup:
 - make checkpoint payload shape versioned before adding more tools
 - surface cancelled/non-resumable states more clearly in Home recommendations
 
-## Next Major Phase: Executor Session Boundary
+## Current Major Phase: Executor Session Boundary
 
 The next phase should define a durable executor/session boundary before adding
 workspace, browser, social, or coding tools. Without this boundary, new tools
@@ -532,7 +537,7 @@ Completed slice:
    default run stores `fileContext=false`.
 3. Keep patch and command execution unavailable.
 
-Next code slice:
+Completed slice:
 
 1. Evaluate the alpha flow for a read-only workspace agent run from task setup
    through Runs detail.
@@ -541,6 +546,27 @@ Next code slice:
 3. Add a configurable workspace root through env/config so read-only tools do
    not rely on an implicit process working directory.
 4. Keep patch and command execution unavailable.
+
+Completed slice:
+
+1. Persist terminal agent session status after completed, paused, failed, or
+   confirmation-needed executor outcomes.
+2. Show read-only workspace and patch/command capability status in Runs detail.
+3. Add an isolated RunService acceptance path that configures a workspace root,
+   opts into workspace reads, executes workspace search/read observations, and
+   verifies persisted run detail.
+4. Return completed session final output from `RunOrchestrator` instead of raw
+   structured proposal JSON.
+
+Next code slice:
+
+1. Repeat the read-only workspace agent path in a packaged app before
+   release-readiness signoff.
+2. Before adding `workspace.write_patch` or `workspace.run_command`, design the
+   confirmation, diff preview, sandbox, and rollback story as a separate
+   decision doc.
+3. Keep new execution tools out of scope until the packaged read-only path is
+   boring.
 
 Success: Taskplane can inspect local project context for coding-like tasks only
 when the user has explicitly enabled read-only workspace access for that run,
