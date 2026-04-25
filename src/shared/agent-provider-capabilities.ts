@@ -7,7 +7,8 @@ export type ProviderTextPlanningPath =
 
 export type ProviderStructuredToolCallState =
   | 'unconfigured'
-  | 'deferred_until_adapter'
+  | 'disabled_until_flag_enabled'
+  | 'safe_read_tools_available'
   | 'unavailable_on_replicate_text_path';
 
 export type ProviderExecutionCapabilities = {
@@ -16,7 +17,7 @@ export type ProviderExecutionCapabilities = {
   textPlanningPath: ProviderTextPlanningPath;
   structuredToolCallState: ProviderStructuredToolCallState;
   providerNativeToolCallFlagEnabled: boolean;
-  taskplaneStructuredToolCallsEnabled: false;
+  taskplaneStructuredToolCallsEnabled: boolean;
 };
 
 export function getProviderExecutionCapabilities(
@@ -52,10 +53,14 @@ export function getProviderExecutionCapabilities(
     provider: aiStatus.provider,
     model: aiStatus.model,
     textPlanningPath: 'local_text_executor',
-    structuredToolCallState: 'deferred_until_adapter',
     providerNativeToolCallFlagEnabled: Boolean(
       aiStatus.featureFlags.enableProviderNativeToolCalls,
     ),
-    taskplaneStructuredToolCallsEnabled: false,
+    structuredToolCallState: aiStatus.featureFlags.enableProviderNativeToolCalls
+      ? 'safe_read_tools_available'
+      : 'disabled_until_flag_enabled',
+    taskplaneStructuredToolCallsEnabled: Boolean(
+      aiStatus.featureFlags.enableProviderNativeToolCalls,
+    ),
   };
 }

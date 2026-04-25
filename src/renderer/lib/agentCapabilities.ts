@@ -21,7 +21,11 @@ function formatPreRunStructuredToolSummary(aiStatus: AiConfigStatus | null): str
     return 'structured tool calls unavailable on native Replicate text path';
   }
 
-  return 'structured tool calls deferred in Taskplane local executor';
+  if (capabilities.structuredToolCallState === 'safe_read_tools_available') {
+    return 'structured tool calls enabled for provider safe-read tools';
+  }
+
+  return 'structured tool calls disabled until provider-native flag is enabled';
 }
 
 export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord): string {

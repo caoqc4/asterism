@@ -48,7 +48,7 @@ describe('getProviderExecutionCapabilities', () => {
     });
   });
 
-  it('reports the reserved native tool-call flag without enabling Taskplane structured calls', () => {
+  it('reports limited provider-native structured calls when the flag is enabled', () => {
     expect(getProviderExecutionCapabilities({
       ...buildAiStatus('openai'),
       featureFlags: {
@@ -58,9 +58,9 @@ describe('getProviderExecutionCapabilities', () => {
     })).toMatchObject({
       provider: 'openai',
       textPlanningPath: 'local_text_executor',
-      structuredToolCallState: 'deferred_until_adapter',
+      structuredToolCallState: 'safe_read_tools_available',
       providerNativeToolCallFlagEnabled: true,
-      taskplaneStructuredToolCallsEnabled: false,
+      taskplaneStructuredToolCallsEnabled: true,
     });
   });
 
@@ -69,11 +69,11 @@ describe('getProviderExecutionCapabilities', () => {
     'openai',
     'openai-compatible',
     'fal-openrouter',
-  ] as const)('keeps %s structured tool calls deferred until a Taskplane adapter exists', (provider) => {
+  ] as const)('keeps %s structured tool calls disabled until the flag is enabled', (provider) => {
     expect(getProviderExecutionCapabilities(buildAiStatus(provider))).toMatchObject({
       provider,
       textPlanningPath: 'local_text_executor',
-      structuredToolCallState: 'deferred_until_adapter',
+      structuredToolCallState: 'disabled_until_flag_enabled',
       providerNativeToolCallFlagEnabled: false,
       taskplaneStructuredToolCallsEnabled: false,
     });

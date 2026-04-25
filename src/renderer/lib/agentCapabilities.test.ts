@@ -43,7 +43,7 @@ describe('agent capability formatting', () => {
 
   it('previews local executor capabilities before an agent run', () => {
     expect(formatPreRunAgentCapabilitySummary(buildAiStatus('anthropic'), false)).toBe(
-      'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls deferred in Taskplane local executor / patch/commands unavailable',
+      'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls disabled until provider-native flag is enabled / patch/commands unavailable',
     );
     expect(formatPreRunAgentCapabilitySummary(buildAiStatus('anthropic'), true)).toContain(
       'read-only workspace context enabled for this run',
@@ -74,8 +74,18 @@ describe('agent capability formatting', () => {
     expect(summary).toContain('text-only planning in the local executor');
     expect(summary).toContain('read-only workspace context disabled for this run');
     expect(summary).toContain('task update/evidence tools disabled for this run');
-    expect(summary).toContain('structured tool calls deferred in Taskplane local executor');
+    expect(summary).toContain('structured tool calls disabled until provider-native flag is enabled');
     expect(summary).toContain('patch/commands unavailable');
+  });
+
+  it('previews limited provider-native safe-read tool calls when the flag is enabled', () => {
+    expect(formatPreRunAgentCapabilitySummary({
+      ...buildAiStatus('openai-compatible'),
+      featureFlags: {
+        enableScheduler: false,
+        enableProviderNativeToolCalls: true,
+      },
+    }, true)).toContain('structured tool calls enabled for provider safe-read tools');
   });
 
   it('formats provider-native agent session metadata for run detail', () => {
