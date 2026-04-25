@@ -9,14 +9,10 @@ import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-re
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { makeTempDir } from '../../test-utils.js';
-import {
-  buildAgentSandboxCheckPlan,
-  buildDefaultAgentSandboxCommandPolicy,
-  type AgentSandboxSessionRequest,
-} from '../../../shared/agent-sandbox-provider.js';
-import { buildDefaultAgentToolExecutionPolicy } from '../../../shared/agent-tool-scaffold.js';
+import { buildDefaultAgentSandboxCommandPolicy } from '../../../shared/agent-sandbox-provider.js';
 import { AgentCheckpointRecorder } from './agent-checkpoint-recorder.js';
 import { LocalContainerSandboxProvider } from './local-container-sandbox-backend.js';
+import { buildSandboxPatchReviewRunRequest } from './sandbox-patch-review-request.js';
 import { SandboxPatchReviewPersister } from './sandbox-patch-review-persister.js';
 import { SandboxPatchReviewRunAdapter } from './sandbox-patch-review-run-adapter.js';
 
@@ -59,26 +55,18 @@ describe('SandboxPatchReviewRunAdapter integration', () => {
     const task = await taskRepository.create({ title: 'Run sandbox patch review adapter' });
     const workspaceRoot = makeTempDir('taskplane-sandbox-patch-review-workspace-');
     const commandPolicy = buildDefaultAgentSandboxCommandPolicy({ timeoutMs: 30_000 });
-    const request: AgentSandboxSessionRequest = {
+    const reviewRequest = buildSandboxPatchReviewRunRequest({
       commandPolicy,
-      descriptorId: 'workspace.staged_patch',
-      executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
-      providerKind: 'local_container',
+      reason: 'Integration review of sandbox patch persistence.',
+      requestedScripts: ['lint'],
       runId: 'run_1',
       taskId: task.id,
-      workspace: {
-        mode: 'staged_write',
-        mountPath: '/workspace',
-        workspaceRoot,
-      },
-    };
+      workspaceRoot,
+    });
 
     try {
       const result = await adapter.run({
-        checkPlan: buildAgentSandboxCheckPlan({
-          policy: commandPolicy,
-          requestedScripts: ['lint'],
-        }),
+        checkPlan: reviewRequest.checkPlan,
         decisionTitle: '确认提升 sandbox patch',
         featureFlags: {
           enableScheduler: false,
@@ -89,7 +77,7 @@ describe('SandboxPatchReviewRunAdapter integration', () => {
           files: ['notes.md'],
           summary: 'Adapter reviewable sandbox patch',
         },
-        request,
+        request: reviewRequest.request,
         runner: vi.fn().mockResolvedValue({
           exitCode: 0,
           stderr: '',
@@ -109,6 +97,8 @@ describe('SandboxPatchReviewRunAdapter integration', () => {
         'artifact',
         'checkpoint',
       ]);
+      expect(steps[0]?.input).toContain('audit=internal_sandbox_patch_review');
+      expect(steps[0]?.input).toContain('idempotency=sandbox-patch-review:run_1:');
       expect(artifacts[0]).toMatchObject({
         kind: 'patch',
         title: 'Adapter reviewable sandbox patch',
