@@ -71,6 +71,28 @@ The next runtime should have five clear layers:
 
 ## Next Implementation Slices
 
+### Slice 0: Agent Runtime v2 Boundary
+
+Status: accepted as the next design boundary.
+
+Decision doc:
+[AGENT_EXECUTION_LAYER_V2_DECISION.md](AGENT_EXECUTION_LAYER_V2_DECISION.md).
+
+Goal: make the local agent runtime more durable before making it more
+powerful. The next implementation pass should introduce a typed runtime event
+spine, restart-safe resume contract, and explicit tool exposure matrix while
+keeping workspace write/command, browser/computer control, external posting,
+and autonomous scheduling deferred.
+
+Acceptance:
+
+- current text-only and provider-native paths still settle the same way
+- run steps can be written from typed runtime events
+- checkpoint events map to persisted checkpoints and pending Decisions
+- provider-native workspace write/command proposals still fall back without side
+  effects
+- `npm run accept:agent-local` and `npm run verify` pass
+
 ### Slice 1: Approval UX Readiness
 
 Status: completed for the existing Runs and Decisions checkpoint review

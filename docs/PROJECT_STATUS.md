@@ -58,6 +58,11 @@ The project is past initial architecture assembly. Current work should favor pro
 - The first command-execution slice is in place but not model-exposed: `workspace.run_command` requires explicit local command policy, accepts only allowlisted `test` / `lint` package scripts, creates a confirmation checkpoint with command preview, and resumes once after the linked Decision is approved.
 - The first tool-exposure decision is implemented for domain-shaped task tools; workspace write and command prompt exposure remains deferred.
 - The workspace-tool checkpoint review tier is complete on the existing Runs and Decisions surfaces; patch and command tools remain registry-only.
+- [AGENT_EXECUTION_LAYER_V2_DECISION.md](AGENT_EXECUTION_LAYER_V2_DECISION.md)
+  is accepted as the next execution-layer boundary: first formalize typed
+  runtime events, restart-safe resume, and the registry/exposure/policy matrix;
+  keep workspace write/command, browser/computer control, external posting, and
+  autonomous scheduling deferred.
 
 ## Verification Baseline
 
@@ -93,7 +98,7 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 2. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
-5. Keep workspace write/command prompt exposure deferred, and use [STRUCTURED_TOOL_CALLS_DECISION.md](STRUCTURED_TOOL_CALLS_DECISION.md) before expanding provider-native structured tool calls beyond the current gated safe-read slice.
+5. Use [AGENT_EXECUTION_LAYER_V2_DECISION.md](AGENT_EXECUTION_LAYER_V2_DECISION.md) for the next implementation pass: typed runtime events, restart-safe resume, and explicit tool exposure gates before any new execution power is exposed.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.
