@@ -137,7 +137,8 @@ Manual result / need:
 
 ## Release Readiness
 
-Status: not ready for release; local unsigned directory packaging and runtime launch pass after packaging fixes.
+Status: locally ready for the unsigned macOS directory build path; signed and
+notarized release remains deferred.
 
 Automated/local coverage:
 
@@ -161,6 +162,7 @@ Finish the remaining alpha work in this order:
 
 1. Keep signed/notarized packaging out of scope until the next release-readiness pass explicitly targets signing and notarization.
 2. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
-3. Treat the current execution-layer v2 slice as locally accepted for the alpha path; next execution work should be either acceptance/documentation cleanup or the explicitly deferred checkpoint-event command-boundary refinement, not new model-visible power.
+3. Treat the current execution-layer v2 slice as locally accepted for the alpha path; next execution work should be acceptance/documentation cleanup, release-readiness hardening, or explicitly deferred design work, not new model-visible power.
 
-Do not expand the domain model until the release-readiness pass is cleaner.
+Do not expand the domain model until signed/notarized release work is explicitly
+in scope.
