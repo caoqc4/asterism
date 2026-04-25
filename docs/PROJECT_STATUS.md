@@ -259,6 +259,11 @@ The project is past initial architecture assembly. Current work should favor pro
   that local-note restriction explicit: regular local agent sessions can only
   record a blocked sandbox patch-review diagnostic, even when the sandbox flag
   is enabled, because they do not carry an internal patch draft.
+- [AGENT_EXECUTION_PATCH_DRAFT_SOURCE_DECISION.md](AGENT_EXECUTION_PATCH_DRAFT_SOURCE_DECISION.md)
+  now defines the first-principles and reference-architecture boundary for
+  future internal patch draft sources: ordinary local-note runs,
+  provider-native payloads, host-process patch/command tools, and untrusted MCP
+  output cannot directly create a ready sandbox patch-review plan.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

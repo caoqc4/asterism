@@ -337,6 +337,7 @@ Design docs:
 - [AGENT_EXECUTION_FUTURE_DESIGN.md](AGENT_EXECUTION_FUTURE_DESIGN.md)
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
 - [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md)
+- [AGENT_EXECUTION_PATCH_DRAFT_SOURCE_DECISION.md](AGENT_EXECUTION_PATCH_DRAFT_SOURCE_DECISION.md)
 
 Implementation sequence:
 
@@ -380,11 +381,12 @@ Current guardrail state:
 
 Next implementation target:
 
-Build or select a real sandbox provider backend that can safely support
-targeted `test` / `lint` checks and patch artifacts inside the sandbox
-boundary. Do not expose a UI run option until that provider passes the shared
-eligibility gate and still routes every promotion through a Decision-linked
-`patch_promotion` checkpoint.
+Define and validate the internal patch draft source boundary before any real
+sandbox patch-review plan can become ready. Then build or select a real sandbox
+provider backend that can safely support targeted `test` / `lint` checks and
+patch artifacts inside the sandbox boundary. Do not expose a UI run option
+until that provider passes the shared eligibility gate and still routes every
+promotion through a Decision-linked `patch_promotion` checkpoint.
 
 Backend candidate readiness is now represented in code by
 `AgentSandboxBackendProfile` and `evaluateAgentSandboxBackendReadiness`. A
