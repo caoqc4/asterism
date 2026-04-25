@@ -15,7 +15,7 @@ type RuntimeTextOptions = {
 };
 
 type RuntimeTextProviderPayload = {
-  source: 'provider_response_body';
+  source: 'provider_response_body' | 'ai_sdk_tool_calls';
   provider: RuntimeAiConfig['provider'];
   model: string;
   payload: unknown;
@@ -118,10 +118,64 @@ function extractAnthropicPayload(body: unknown): Pick<RuntimeTextProviderPayload
   };
 }
 
+function extractSdkToolCallPayload(
+  toolCalls: unknown,
+  finishReason: unknown,
+): Pick<RuntimeTextProviderPayload, 'payload' | 'rawSummary'> | null {
+  if (!Array.isArray(toolCalls) || !toolCalls.length) {
+    return null;
+  }
+
+  const steps = [];
+  const providerCallIds: string[] = [];
+
+  for (const toolCall of toolCalls) {
+    if (!isRecord(toolCall) || typeof toolCall.toolName !== 'string') {
+      return null;
+    }
+
+    if (typeof toolCall.toolCallId === 'string' && toolCall.toolCallId.trim()) {
+      providerCallIds.push(toolCall.toolCallId);
+    }
+
+    steps.push({
+      tool: toolCall.toolName,
+      input: isRecord(toolCall.input) ? toolCall.input : undefined,
+    });
+  }
+
+  return {
+    payload: {
+      source: 'provider_tool_call',
+      rawSummary: `sdk_tool_calls=${steps.length}`,
+      providerCallIds,
+      stopReason: typeof finishReason === 'string' ? finishReason : null,
+      proposal: {
+        finalOutput: null,
+        steps,
+      },
+    },
+    rawSummary: `sdk_tool_calls=${steps.length}`,
+  };
+}
+
 function extractProviderPayload(
   config: RuntimeAiConfig,
   body: unknown,
+  toolCalls: unknown,
+  finishReason: unknown,
 ): RuntimeTextProviderPayload | null {
+  const sdkToolCalls = extractSdkToolCallPayload(toolCalls, finishReason);
+
+  if (sdkToolCalls) {
+    return {
+      source: 'ai_sdk_tool_calls',
+      provider: config.provider,
+      model: config.model,
+      ...sdkToolCalls,
+    };
+  }
+
   const extracted = config.provider === 'anthropic'
     ? extractAnthropicPayload(body)
     : extractOpenAiCompatiblePayload(body);
@@ -162,7 +216,12 @@ export async function generateRuntimeTextResult(
 
   return {
     text: result.text.trim(),
-    providerPayload: extractProviderPayload(config, result.response?.body),
+    providerPayload: extractProviderPayload(
+      config,
+      result.response?.body,
+      result.toolCalls,
+      result.finishReason,
+    ),
   };
 }
 

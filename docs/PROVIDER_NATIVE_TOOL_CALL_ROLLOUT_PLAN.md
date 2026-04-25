@@ -170,6 +170,9 @@ Current boundary:
   without local `execute` handlers; local execution still only happens after
   response-body extraction, adapter normalization, the provider-native session
   gate, and `AgentRunLoop` policy checks
+- provider-native extraction accepts either minimal raw provider response-body
+  shapes or AI SDK standard `toolCalls`, then normalizes both through the same
+  provider-tool-call plan boundary
 - provider-native agent sessions can proceed when the provider response contains
   normalized tool calls but no assistant text; in that case the final run output
   is taken from the completed tool observation instead of the empty model text

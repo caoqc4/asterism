@@ -185,6 +185,105 @@ describe('generateRuntimeTextResult', () => {
     });
   });
 
+  it('extracts AI SDK standard tool calls when raw response body is unavailable', async () => {
+    getLanguageModelMock.mockReturnValue('language-model');
+    generateTextMock.mockResolvedValue({
+      text: '',
+      finishReason: 'tool-calls',
+      toolCalls: [
+        {
+          type: 'tool-call',
+          toolCallId: 'call_sdk_1',
+          toolName: 'taskplane__task__inspect_context',
+          input: {},
+        },
+      ],
+      response: {},
+    });
+
+    await expect(generateRuntimeTextResult(buildConfig({
+      provider: 'openai-compatible',
+      model: 'relay-model',
+    }), 'Prompt')).resolves.toEqual({
+      text: '',
+      providerPayload: {
+        source: 'ai_sdk_tool_calls',
+        provider: 'openai-compatible',
+        model: 'relay-model',
+        rawSummary: 'sdk_tool_calls=1',
+        payload: {
+          source: 'provider_tool_call',
+          rawSummary: 'sdk_tool_calls=1',
+          providerCallIds: ['call_sdk_1'],
+          stopReason: 'tool-calls',
+          proposal: {
+            finalOutput: null,
+            steps: [
+              {
+                tool: 'taskplane__task__inspect_context',
+                input: {},
+              },
+            ],
+          },
+        },
+      },
+    });
+  });
+
+  it('prefers AI SDK standard tool calls over raw provider response bodies', async () => {
+    getLanguageModelMock.mockReturnValue('language-model');
+    generateTextMock.mockResolvedValue({
+      text: '',
+      finishReason: 'tool-calls',
+      toolCalls: [
+        {
+          type: 'tool-call',
+          toolCallId: 'call_sdk_1',
+          toolName: 'taskplane__workspace__search',
+          input: { query: 'Taskplane' },
+        },
+      ],
+      response: {
+        body: {
+          choices: [
+            {
+              message: {
+                tool_calls: [
+                  {
+                    id: 'call_raw_1',
+                    type: 'function',
+                    function: {
+                      name: 'task.inspect_context',
+                      arguments: '{}',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const result = await generateRuntimeTextResult(buildConfig({
+      provider: 'openai-compatible',
+      model: 'relay-model',
+    }), 'Prompt');
+
+    expect(result.providerPayload?.rawSummary).toBe('sdk_tool_calls=1');
+    expect(result.providerPayload?.payload).toMatchObject({
+      providerCallIds: ['call_sdk_1'],
+      proposal: {
+        steps: [
+          {
+            tool: 'taskplane__workspace__search',
+            input: { query: 'Taskplane' },
+          },
+        ],
+      },
+    });
+  });
+
   it('keeps Replicate on text-only runtime output', async () => {
     generateReplicateTextMock.mockResolvedValue('Replicate output');
 

@@ -3,6 +3,47 @@ import { describe, expect, it } from 'vitest';
 import { normalizeProviderNativeToolCalls } from './provider-native-tool-call-adapter.js';
 
 describe('normalizeProviderNativeToolCalls', () => {
+  it('normalizes AI SDK standard provider-tool-call payloads directly', () => {
+    expect(normalizeProviderNativeToolCalls({
+      provider: 'openai-compatible',
+      model: 'relay-model',
+      payload: {
+        source: 'provider_tool_call',
+        rawSummary: 'sdk_tool_calls=1',
+        providerCallIds: ['call_sdk_1'],
+        stopReason: 'tool-calls',
+        proposal: {
+          finalOutput: null,
+          steps: [
+            {
+              tool: 'taskplane__task__inspect_context',
+              input: {},
+            },
+          ],
+        },
+      },
+    })).toEqual({
+      status: 'normalized',
+      plan: {
+        source: 'provider_tool_call',
+        provider: 'openai-compatible',
+        model: 'relay-model',
+        rawSummary: 'sdk_tool_calls=1',
+        providerCallIds: ['call_sdk_1'],
+        stopReason: 'tool-calls',
+        proposal: {
+          finalOutput: null,
+          steps: [
+            {
+              tool: 'task.inspect_context',
+              input: {},
+            },
+          ],
+        },
+      },
+    });
+  });
+
   it('routes Anthropic payloads through the Anthropic tool-use adapter', () => {
     expect(normalizeProviderNativeToolCalls({
       provider: 'anthropic',

@@ -38,7 +38,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - `featureFlags.enableProviderNativeToolCalls` is now reserved in config/env for a future rollout, but current agent sessions still ignore it for execution and persist `structuredToolCalls=false`.
 - Provider-native structured tool-call wiring must follow the staged rollout plan: offline fixtures, shadow normalization, parser parity, then an explicit provider-native session path only after local tests prove policy parity.
 - The first shadow-normalization helper can summarize skipped/observed/failed provider-native tool-call adapter outcomes without exposing executable `AgentStepProposal` objects, and RunOrchestrator can now write a diagnostic-only shadow step when the reserved flag is enabled and a minimal provider payload exists.
-- Text generation now has a result-shaped helper that preserves the existing text-only API while optionally carrying a minimal provider response-body payload for non-executing shadow observation.
+- Text generation now has a result-shaped helper that preserves the existing text-only API while optionally carrying a minimal provider response-body or AI SDK standard `toolCalls` payload for provider-native observation and execution gates.
 - `LocalAgentExecutor` now has a provider-native session entry that can pass a normalized provider proposal through the same `AgentRunLoop`, and RunOrchestrator selects it only when the provider-native session gate passes.
 - A provider-native session gate captures the RunOrchestrator selection requirements: agent run type, reserved flag, supported provider, provider payload, and successful normalization are all required.
 - Provider-native safe-read tool schema exposure has started behind the reserved flag: Taskplane-owned provider-safe tool aliases can normalize back into internal tool names, the schema builder exposes only policy-allowed safe-read tools while excluding local write and command tools, and AI SDK receives those schemas without local execute handlers.
@@ -63,7 +63,7 @@ npm run verify
 Latest local baseline:
 
 - 60 test files
-- 452 tests
+- 455 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
