@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildAgentSandboxPatchArtifact,
   buildDefaultAgentSandboxCommandPolicy,
   canUseAgentSandboxProviderForCoding,
   DISABLED_AGENT_SANDBOX_PROVIDER_CAPABILITIES,
+  toAgentToolArtifactDescriptor,
   type AgentSandboxProviderCapabilities,
   type AgentSandboxSessionRequest,
 } from './agent-sandbox-provider.js';
@@ -79,5 +81,44 @@ describe('agent sandbox provider contracts', () => {
     });
     expect(request.workspace.mode).toBe('staged_write');
     expect(request.commandPolicy.allowedScripts).toEqual(['test', 'lint']);
+  });
+
+  it('builds a normalized staged patch artifact for later Decision review', () => {
+    const artifact = buildAgentSandboxPatchArtifact({
+      commandLogs: [
+        {
+          outputPreview: 'lint passed',
+          script: 'lint',
+          status: 'passed',
+        },
+      ],
+      diff: '--- a/src/a.ts\n+++ b/src/a.ts\n@@\n-old\n+new',
+      files: ['src/a.ts', 'src/a.ts', ' src/b.ts '],
+      riskSummary: 'Touches two source files.',
+      summary: 'Proposed sandbox patch',
+    });
+
+    expect(artifact.files).toEqual(['src/a.ts', 'src/b.ts']);
+    expect(artifact.commandLogs).toHaveLength(1);
+    expect(toAgentToolArtifactDescriptor(artifact)).toMatchObject({
+      kind: 'patch',
+      preview: expect.stringContaining('+++ b/src/a.ts'),
+      summary: '2 file(s): src/a.ts, src/b.ts | Touches two source files.',
+      title: 'Proposed sandbox patch',
+    });
+  });
+
+  it('rejects empty staged patch artifacts', () => {
+    expect(() => buildAgentSandboxPatchArtifact({
+      diff: '',
+      files: ['src/a.ts'],
+      summary: 'Empty diff',
+    })).toThrow('Sandbox patch artifact requires a diff preview.');
+
+    expect(() => buildAgentSandboxPatchArtifact({
+      diff: '--- a/src/a.ts',
+      files: [],
+      summary: 'No files',
+    })).toThrow('Sandbox patch artifact requires at least one changed file.');
   });
 });

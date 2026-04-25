@@ -1,4 +1,7 @@
-import type { AgentToolExecutionPolicy } from './agent-tool-scaffold.js';
+import type {
+  AgentToolArtifactDescriptor,
+  AgentToolExecutionPolicy,
+} from './agent-tool-scaffold.js';
 
 export type AgentSandboxProviderKind = 'local_container' | 'remote' | 'disabled';
 
@@ -62,6 +65,14 @@ export type AgentSandboxPatchArtifact = {
   riskSummary: string;
 };
 
+export type BuildAgentSandboxPatchArtifactInput = {
+  summary: string;
+  files: string[];
+  diff: string;
+  commandLogs?: AgentSandboxPatchArtifact['commandLogs'];
+  riskSummary?: string | null;
+};
+
 export type AgentSandboxSessionResult =
   | {
       status: 'completed';
@@ -112,4 +123,41 @@ export function canUseAgentSandboxProviderForCoding(
     && capabilities.supportsTargetedCommands
     && capabilities.supportsPatchArtifacts
     && capabilities.credentialPassthrough === false;
+}
+
+export function buildAgentSandboxPatchArtifact(
+  input: BuildAgentSandboxPatchArtifactInput,
+): AgentSandboxPatchArtifact {
+  const uniqueFiles = Array.from(new Set(input.files.map((file) => file.trim()).filter(Boolean))).sort();
+
+  if (!uniqueFiles.length) {
+    throw new Error('Sandbox patch artifact requires at least one changed file.');
+  }
+
+  if (!input.diff.trim()) {
+    throw new Error('Sandbox patch artifact requires a diff preview.');
+  }
+
+  return {
+    commandLogs: input.commandLogs ?? [],
+    diff: input.diff,
+    files: uniqueFiles,
+    kind: 'patch',
+    riskSummary: input.riskSummary?.trim() || 'Pending human review before workspace promotion.',
+    summary: input.summary.trim() || 'Sandbox generated patch artifact.',
+  };
+}
+
+export function toAgentToolArtifactDescriptor(
+  artifact: AgentSandboxPatchArtifact,
+): AgentToolArtifactDescriptor {
+  return {
+    kind: 'patch',
+    preview: artifact.diff.slice(0, 4_000),
+    summary: [
+      `${artifact.files.length} file(s): ${artifact.files.join(', ')}`,
+      artifact.riskSummary,
+    ].join(' | '),
+    title: artifact.summary,
+  };
 }

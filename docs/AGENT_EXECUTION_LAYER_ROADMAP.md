@@ -349,7 +349,9 @@ Implementation sequence:
    and disposes an isolated staging root without command execution or source
    workspace mutation.
 3. Add a staged patch artifact format for file changes, logs, and risk
-   summaries.
+   summaries. Shared patch artifact helpers now normalize changed files,
+   command logs, risk summary, diff preview, and generic artifact descriptors
+   without promoting changes.
 4. Route targeted checks through the existing command-policy shape, beginning
    with `test` / `lint` style scripts only.
 5. Add Decision review and promotion semantics before any staged patch can
