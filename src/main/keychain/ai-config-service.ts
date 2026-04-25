@@ -1,6 +1,7 @@
 import keytar from 'keytar';
 
 import type { AiConfigInput, AiConfigStatus, AiProvider, FeatureFlags } from '../../shared/types/settings.js';
+import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import { AppConfigService } from '../config/app-config-service.js';
 import { readEnvValue } from '../config/env.js';
 
@@ -54,6 +55,7 @@ export class AiConfigService {
       updatedAt: config.updatedAt,
       configPath: this.appConfigService.getConfigPath(),
       featureFlags: config.featureFlags,
+      sandboxBackendStatus: buildAgentSandboxBackendStatus(null),
     };
   }
 
@@ -85,6 +87,7 @@ export class AiConfigService {
       updatedAt: config.updatedAt,
       configPath: this.appConfigService.getConfigPath(),
       featureFlags: config.featureFlags,
+      sandboxBackendStatus: buildAgentSandboxBackendStatus(null),
     };
   }
 

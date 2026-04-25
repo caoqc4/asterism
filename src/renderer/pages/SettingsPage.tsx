@@ -23,6 +23,20 @@ function formatAiConfigState(aiStatus: AiConfigStatus | null): string {
   return '尚未配置';
 }
 
+function formatSandboxBackendState(aiStatus: AiConfigStatus | null): string {
+  const status = aiStatus?.sandboxBackendStatus;
+
+  if (!status?.probe) {
+    return '未检测';
+  }
+
+  if (status.readiness?.ready) {
+    return `可用：${status.summary}`;
+  }
+
+  return `不可用：${status.summary}`;
+}
+
 export function SettingsPage({ aiStatus, configForm, onChange, onSubmit }: SettingsPageProps) {
   return (
     <section className="page-grid">
@@ -53,6 +67,7 @@ export function SettingsPage({ aiStatus, configForm, onChange, onSubmit }: Setti
         <p className="meta">
           Sandbox Coding Agent：{aiStatus?.featureFlags.enableSandboxCodingAgent ? '启用' : '未启用'}
         </p>
+        <p className="meta">Sandbox Backend：{formatSandboxBackendState(aiStatus)}</p>
       </article>
 
       <article className="panel">

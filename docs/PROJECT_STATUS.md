@@ -171,6 +171,8 @@ The project is past initial architecture assembly. Current work should favor pro
 - The local-container backend now has a read-only Docker version probe function
   with injectable runner coverage; it is not wired to app startup and does not
   mount workspaces or execute user scripts.
+- Settings status now exposes sandbox backend status as `未检测` by default;
+  no Docker probe is triggered by opening Settings or reading AI config status.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -214,8 +216,8 @@ Latest local baseline:
 - `npm run accept:provider-native-live:preflight` reports the current local
   provider-native setup is ready; live provider validation remains opt-in
   because it spends configured provider credit
-- `npm run verify` passed locally on 2026-04-25 after the read-only
-  local-container Docker probe landed: 70 test files / 529 tests
+- `npm run verify` passed locally on 2026-04-25 after read-only sandbox
+  backend status surfaced in Settings: 70 test files / 530 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

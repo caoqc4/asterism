@@ -1,3 +1,5 @@
+import type { AgentSandboxBackendStatus } from '../agent-sandbox-provider.js';
+
 export type AiProvider = 'anthropic' | 'openai' | 'openai-compatible' | 'fal-openrouter' | 'replicate';
 
 export type FeatureFlags = {
@@ -35,4 +37,5 @@ export type AiConfigStatus = {
   updatedAt: string | null;
   configPath: string | null;
   featureFlags: FeatureFlags;
+  sandboxBackendStatus?: AgentSandboxBackendStatus | null;
 };

@@ -5496,6 +5496,7 @@ describe('App UI flow', () => {
     expect(
       screen.getByText(/已选择 anthropic \/ claude-3-5-sonnet-latest，但 AI config 未就绪/),
     ).toBeTruthy();
+    expect(screen.getByText(/Sandbox Backend：未检测/)).toBeTruthy();
 
     await user.selectOptions(screen.getByLabelText('Provider'), 'openai');
     const modelInput = screen.getByLabelText('Model');

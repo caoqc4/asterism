@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildAgentSandboxCheckPlan,
+  buildAgentSandboxBackendStatus,
   buildAgentSandboxBackendProfileFromProbe,
   buildAgentSandboxPatchArtifact,
   buildAgentSandboxPatchPromotionCheckpoint,
@@ -127,6 +128,26 @@ describe('agent sandbox provider contracts', () => {
       supportsTargetedCommands: true,
       supportsWorkspaceMount: true,
     })).toBe('backend=docker-local / kind=local_container / available=yes / isolation=container / env=empty');
+  });
+
+  it('builds backend status without forcing a runtime probe', () => {
+    expect(buildAgentSandboxBackendStatus(null)).toEqual({
+      probe: null,
+      profile: null,
+      readiness: null,
+      summary: 'Sandbox backend not probed.',
+    });
+
+    expect(buildAgentSandboxBackendStatus({
+      backendId: 'docker-local',
+      kind: 'local_container',
+      reason: 'Docker is not available.',
+      status: 'unavailable',
+    })).toMatchObject({
+      profile: null,
+      readiness: null,
+      summary: 'backend=docker-local / kind=local_container / available=no / reason=Docker is not available.',
+    });
   });
 
   it('rejects host-process or incomplete sandbox backend profiles', () => {

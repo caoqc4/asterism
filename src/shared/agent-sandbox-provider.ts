@@ -36,6 +36,13 @@ export type AgentSandboxBackendReadiness = {
   blockedReasons: string[];
 };
 
+export type AgentSandboxBackendStatus = {
+  probe: AgentSandboxBackendProbe | null;
+  profile: AgentSandboxBackendProfile | null;
+  readiness: AgentSandboxBackendReadiness | null;
+  summary: string;
+};
+
 export type AgentSandboxBackendProbe =
   | {
       status: 'unavailable';
@@ -219,6 +226,22 @@ export function summarizeAgentSandboxBackendProbe(
   return probe.status === 'unavailable'
     ? `backend=${probe.backendId} / kind=${probe.kind} / available=no / reason=${probe.reason}`
     : `backend=${probe.backendId} / kind=${probe.kind} / available=yes / isolation=${probe.isolation} / env=${probe.environmentPolicy}`;
+}
+
+export function buildAgentSandboxBackendStatus(
+  probe: AgentSandboxBackendProbe | null,
+): AgentSandboxBackendStatus {
+  const profile = probe ? buildAgentSandboxBackendProfileFromProbe(probe) : null;
+  const readiness = profile ? evaluateAgentSandboxBackendReadiness(profile) : null;
+
+  return {
+    probe,
+    profile,
+    readiness,
+    summary: probe
+      ? readiness?.summary ?? summarizeAgentSandboxBackendProbe(probe)
+      : 'Sandbox backend not probed.',
+  };
 }
 
 export function evaluateAgentSandboxBackendReadiness(
