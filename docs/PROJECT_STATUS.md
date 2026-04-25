@@ -264,6 +264,11 @@ The project is past initial architecture assembly. Current work should favor pro
   future internal patch draft sources: ordinary local-note runs,
   provider-native payloads, host-process patch/command tools, and untrusted MCP
   output cannot directly create a ready sandbox patch-review plan.
+- `SandboxPatchDraftSource` now has a source-local validator for the future
+  execution lane: it accepts only typed sandbox/imported/side-quest/normalized
+  connector sources, normalizes changed files and checks, and blocks local-note,
+  provider-native, host-process, path-traversal, credential-passthrough, and
+  non-Decision-promotion payloads before they can feed review planning.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -293,8 +298,8 @@ npm run verify
 
 Latest local baseline:
 
-- 78 test files
-- 564 tests
+- 79 test files
+- 569 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -311,6 +316,8 @@ Latest local baseline:
   patch-review request builder, audit persistence coverage, and non-executing
   run-plan/planning-service layer plus the explicit blocked local-note
   diagnostic guard: 78 test files / 564 tests
+- `npm run verify` passed locally on 2026-04-26 after adding the
+  `SandboxPatchDraftSource` validator boundary: 79 test files / 569 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
