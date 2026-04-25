@@ -165,11 +165,16 @@ Current boundary:
   `AgentToolRegistry` definitions and the current run policy; it exposes only
   safe-read tools, includes workspace read tools only when
   `allowLocalWorkspaceRead=true`, and never exposes write or command tools
+- when the reserved flag is enabled for an agent run, text generation passes
+  those safe-read schemas to AI SDK `generateText` as provider-side tools
+  without local `execute` handlers; local execution still only happens after
+  response-body extraction, adapter normalization, the provider-native session
+  gate, and `AgentRunLoop` policy checks
 - normal runs, failed normalization, unsupported providers, and missing payloads
   remain text-only plus optional shadow diagnostics
-- current text generation does not yet send provider-side tool schemas, so this
-  path only activates when the provider response body already contains a tested
-  tool-call shape
+- provider-side tool exposure remains limited to the schema builder's safe-read
+  allowlist; workspace mutation, command, and task-write exposure remain
+  deferred
 
 Acceptance:
 

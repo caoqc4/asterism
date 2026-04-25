@@ -4,14 +4,20 @@ const {
   generateReplicateTextMock,
   generateTextMock,
   getLanguageModelMock,
+  jsonSchemaMock,
+  toolMock,
 } = vi.hoisted(() => ({
   generateReplicateTextMock: vi.fn(),
   generateTextMock: vi.fn(),
   getLanguageModelMock: vi.fn(),
+  jsonSchemaMock: vi.fn((schema) => ({ kind: 'json-schema', schema })),
+  toolMock: vi.fn((definition) => ({ kind: 'tool', ...definition })),
 }));
 
 vi.mock('ai', () => ({
   generateText: generateTextMock,
+  jsonSchema: jsonSchemaMock,
+  tool: toolMock,
 }));
 
 vi.mock('./ai-client.js', () => ({
@@ -29,6 +35,8 @@ beforeEach(() => {
   generateReplicateTextMock.mockReset();
   generateTextMock.mockReset();
   getLanguageModelMock.mockReset();
+  jsonSchemaMock.mockClear();
+  toolMock.mockClear();
 });
 
 function buildConfig(overrides: Partial<RuntimeAiConfig> = {}): RuntimeAiConfig {
@@ -188,5 +196,49 @@ describe('generateRuntimeTextResult', () => {
       providerPayload: null,
     });
     expect(generateTextMock).not.toHaveBeenCalled();
+  });
+
+  it('passes provider-native tool schemas to AI SDK without local execute handlers', async () => {
+    getLanguageModelMock.mockReturnValue('language-model');
+    generateTextMock.mockResolvedValue({
+      text: 'Generated output',
+      response: {},
+    });
+    const inputSchema = {
+      type: 'object',
+      properties: {},
+      additionalProperties: false,
+    };
+
+    await generateRuntimeTextResult(buildConfig(), 'Prompt', {
+      providerNativeToolSchemas: [
+        {
+          name: 'taskplane__task__inspect_context',
+          description: 'Inspect context.',
+          inputSchema,
+        },
+      ],
+    });
+
+    expect(jsonSchemaMock).toHaveBeenCalledWith(inputSchema);
+    expect(toolMock).toHaveBeenCalledWith({
+      description: 'Inspect context.',
+      inputSchema: {
+        kind: 'json-schema',
+        schema: inputSchema,
+      },
+    });
+    expect(toolMock.mock.calls[0][0]).not.toHaveProperty('execute');
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tools: {
+          taskplane__task__inspect_context: expect.objectContaining({
+            kind: 'tool',
+            description: 'Inspect context.',
+          }),
+        },
+        toolChoice: 'auto',
+      }),
+    );
   });
 });

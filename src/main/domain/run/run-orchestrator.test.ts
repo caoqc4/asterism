@@ -327,6 +327,95 @@ describe('RunOrchestrator', () => {
     );
   });
 
+  it('passes provider-native tool schemas into agent text execution when enabled', async () => {
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'openai-compatible',
+        model: 'relay-model',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: false,
+          enableProviderNativeToolCalls: true,
+        },
+      }),
+    };
+    const textExecutor = {
+      executeWithResult: vi.fn().mockResolvedValue({
+        text: 'Generated output',
+        providerPayload: null,
+      }),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No template needed.',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const agentToolRegistry = {
+      list: vi.fn().mockReturnValue([
+        {
+          name: 'task.inspect_context',
+          description: 'Inspect context.',
+          risk: 'safe_read',
+          requiresConfirmation: false,
+        },
+        {
+          name: 'workspace.search',
+          description: 'Search workspace.',
+          risk: 'safe_read',
+          requiresConfirmation: false,
+        },
+        {
+          name: 'workspace.run_command',
+          description: 'Run command.',
+          risk: 'local_command',
+          requiresConfirmation: true,
+        },
+      ]),
+    };
+    const orchestrator = new RunOrchestrator(
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+      agentToolRegistry as never,
+    );
+
+    await orchestrator.executeTextRun({
+      run: { ...buildRun(), type: 'agent' },
+      task: buildTaskDetail(),
+      input: {
+        ...buildInput(),
+        type: 'agent',
+        allowLocalWorkspaceRead: true,
+      },
+    });
+
+    expect(textExecutor.executeWithResult).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ type: 'agent' }),
+      expect.anything(),
+      expect.objectContaining({
+        providerNativeToolSchemas: [
+          expect.objectContaining({
+            name: 'taskplane__task__inspect_context',
+            taskplaneToolName: 'task.inspect_context',
+          }),
+          expect.objectContaining({
+            name: 'taskplane__workspace__search',
+            taskplaneToolName: 'workspace.search',
+          }),
+        ],
+      }),
+    );
+    expect(textExecutor.executeWithResult.mock.calls[0][3].providerNativeToolSchemas)
+      .not.toEqual(expect.arrayContaining([
+        expect.objectContaining({ taskplaneToolName: 'workspace.run_command' }),
+      ]));
+  });
+
   it('does not record provider-native shadow observation when the reserved flag is disabled', async () => {
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({

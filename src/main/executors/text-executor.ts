@@ -4,9 +4,11 @@ import type { CreateRunInput } from '../../shared/types/run.js';
 import type { TaskDetail } from '../../shared/types/task.js';
 import { generateRuntimeText, generateRuntimeTextResult, type RuntimeTextResult } from './text-generation.js';
 import { deriveTaskDetailPriorityLane, getPriorityLanePromptGuidance } from '../../shared/working-context/priority-lanes.js';
+import type { ProviderNativeToolSchema } from '../domain/run/provider-native-tool-schema.js';
 
 type ExecuteOptions = {
   selectedTemplates?: AppliedProcessTemplateRecord[];
+  providerNativeToolSchemas?: ProviderNativeToolSchema[];
 };
 
 function buildPrompt(
@@ -153,7 +155,9 @@ export class TextExecutor {
     config: RuntimeAiConfig,
     options: ExecuteOptions = {},
   ): Promise<RuntimeTextResult> {
-    return generateRuntimeTextResult(config, buildPrompt(task, input, options));
+    return generateRuntimeTextResult(config, buildPrompt(task, input, options), {
+      providerNativeToolSchemas: options.providerNativeToolSchemas,
+    });
   }
 
   async execute(

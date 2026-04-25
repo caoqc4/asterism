@@ -19,6 +19,7 @@ import { AgentRunLoop } from './agent-run-loop.js';
 import { LocalAgentExecutor, type AgentExecutor } from './agent-executor.js';
 import type { AgentToolRegistry } from './agent-tool-registry.js';
 import { evaluateProviderNativeSessionGate } from './provider-native-session-gate.js';
+import { buildProviderNativeToolSchemas } from './provider-native-tool-schema.js';
 import {
   ProcessTemplateSelector,
   type ProcessTemplateSelectionResult,
@@ -108,8 +109,15 @@ export class RunOrchestrator {
         ].join('\n'),
       });
 
+      const providerNativeToolSchemas = this.buildProviderNativeToolSchemas({
+        input,
+        runtimeConfig,
+      });
       const textResult = await this.executeRuntimeText(task, input, runtimeConfig, {
         selectedTemplates: selection.shouldUse ? selection.selectedTemplates : [],
+        ...(providerNativeToolSchemas.length
+          ? { providerNativeToolSchemas }
+          : {}),
       });
       const output = textResult.text;
 
@@ -422,6 +430,29 @@ export class RunOrchestrator {
       text: await this.textExecutor.execute(task, input, runtimeConfig, options),
       providerPayload: null,
     };
+  }
+
+  private buildProviderNativeToolSchemas(params: {
+    input: CreateRunInput;
+    runtimeConfig: Awaited<ReturnType<AiConfigService['resolveRuntimeConfig']>>;
+  }) {
+    if (
+      params.input.type !== 'agent' ||
+      !params.runtimeConfig.featureFlags?.enableProviderNativeToolCalls ||
+      !this.agentToolRegistry ||
+      typeof this.agentToolRegistry.list !== 'function'
+    ) {
+      return [];
+    }
+
+    return buildProviderNativeToolSchemas({
+      definitions: this.agentToolRegistry.list(),
+      policy: {
+        ...LOCAL_AGENT_TOOL_POLICY,
+        allowLocalWorkspaceRead: Boolean(params.input.allowLocalWorkspaceRead),
+        allowTaskMutationTools: Boolean(params.input.allowTaskMutationTools),
+      },
+    });
   }
 
   private async recordProviderNativeShadowStep(params: {

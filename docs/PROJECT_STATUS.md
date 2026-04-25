@@ -41,7 +41,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - Text generation now has a result-shaped helper that preserves the existing text-only API while optionally carrying a minimal provider response-body payload for non-executing shadow observation.
 - `LocalAgentExecutor` now has a provider-native session entry that can pass a normalized provider proposal through the same `AgentRunLoop`, and RunOrchestrator selects it only when the provider-native session gate passes.
 - A provider-native session gate captures the RunOrchestrator selection requirements: agent run type, reserved flag, supported provider, provider payload, and successful normalization are all required.
-- Provider-native tool schema preparation has started without changing runtime exposure: Taskplane-owned provider-safe tool aliases can normalize back into internal tool names, and the first schema builder exposes only policy-allowed safe-read tools while excluding local write and command tools.
+- Provider-native safe-read tool schema exposure has started behind the reserved flag: Taskplane-owned provider-safe tool aliases can normalize back into internal tool names, the schema builder exposes only policy-allowed safe-read tools while excluding local write and command tools, and AI SDK receives those schemas without local execute handlers.
 - RunService integration coverage now persists the provider-native session boundary: a gated provider-native session with `structuredToolCalls=true`, a missing-payload fallback session with `structuredToolCalls=false`, and a policy-denied provider-native task-tool proposal that falls back without mutating the task.
 - Shared agent-session metadata helpers now define both current local executor metadata and the future provider-native metadata shape without persisting raw provider payloads.
 - Runs detail now surfaces concise agent session metadata alongside capability summaries so future provider-native sessions can be inspected without exposing raw provider payloads.
@@ -62,7 +62,7 @@ npm run verify
 Latest local baseline:
 
 - 60 test files
-- 447 tests
+- 449 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build

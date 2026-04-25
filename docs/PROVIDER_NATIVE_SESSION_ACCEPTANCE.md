@@ -29,9 +29,10 @@ Current accepted behavior remains:
   otherwise usable.
 - Replicate native text prediction must remain unsupported for provider-native
   structured tool execution.
-- Current text generation does not yet send provider-side tool schemas, so this
-  path activates only when a provider response body already contains a tested
-  tool-call shape.
+- Current text generation may send provider-side tool schemas only for
+  policy-allowed safe-read tools, without local AI SDK execute handlers.
+  Provider-native execution still requires the returned provider response body
+  to normalize successfully before `executeProviderNativeSession` can run.
 
 ### Session Truthfulness
 

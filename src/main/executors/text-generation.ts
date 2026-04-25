@@ -1,8 +1,18 @@
-import { generateText } from 'ai';
+import { generateText, jsonSchema, tool, type ToolSet } from 'ai';
 
 import type { RuntimeAiConfig } from '../keychain/ai-config-service.js';
 import { getLanguageModel } from './ai-client.js';
 import { generateReplicateText } from './replicate-client.js';
+
+type RuntimeProviderNativeToolSchema = {
+  name: string;
+  description: string;
+  inputSchema: unknown;
+};
+
+type RuntimeTextOptions = {
+  providerNativeToolSchemas?: RuntimeProviderNativeToolSchema[];
+};
 
 type RuntimeTextProviderPayload = {
   source: 'provider_response_body';
@@ -19,6 +29,22 @@ export type RuntimeTextResult = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function buildProviderNativeTools(schemas: RuntimeProviderNativeToolSchema[] | undefined): ToolSet | undefined {
+  if (!schemas?.length) {
+    return undefined;
+  }
+
+  return Object.fromEntries(
+    schemas.map((schema) => [
+      schema.name,
+      tool({
+        description: schema.description,
+        inputSchema: jsonSchema(schema.inputSchema as never),
+      }),
+    ]),
+  ) as ToolSet;
 }
 
 function extractOpenAiCompatiblePayload(body: unknown): Pick<RuntimeTextProviderPayload, 'payload' | 'rawSummary'> | null {
@@ -115,6 +141,7 @@ function extractProviderPayload(
 export async function generateRuntimeTextResult(
   config: RuntimeAiConfig,
   prompt: string,
+  options: RuntimeTextOptions = {},
 ): Promise<RuntimeTextResult> {
   if (config.provider === 'replicate') {
     return {
@@ -129,6 +156,8 @@ export async function generateRuntimeTextResult(
     },
     model: getLanguageModel(config),
     prompt,
+    tools: buildProviderNativeTools(options.providerNativeToolSchemas),
+    toolChoice: options.providerNativeToolSchemas?.length ? 'auto' : undefined,
   });
 
   return {
