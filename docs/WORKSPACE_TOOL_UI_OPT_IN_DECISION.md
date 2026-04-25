@@ -57,7 +57,8 @@ Status: in progress. Runs detail now separates `workspace.write_patch` summary,
 expected files, and patch-body preview, and separately surfaces
 `workspace.run_command` script, args, timeout, cwd, and command preview.
 Decisions now make checkpoint consequences explicit for patch writes, command
-runs, and defer/cancel settlement.
+runs, and defer/cancel settlement. Runs command checkpoint summaries also state
+that command execution is limited to allowlisted `package.json` scripts.
 
 - no prompt exposure
 - no normal run-form opt-in
@@ -109,6 +110,8 @@ Deferred.
 - a user can see that defer/cancel makes the current run non-resumable for that
   action
 - command allowlist behavior is documented in the UI or linked copy
+  - current status: Runs command checkpoint summaries state that only
+    allowlisted `package.json` scripts are permitted
 - no normal prompt includes workspace mutation tools
 
 ## Open Questions
