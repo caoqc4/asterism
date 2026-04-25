@@ -42,12 +42,12 @@ Use this before release-readiness signoff, after `npm run dist:mac:dir` has prod
 `release/mac-arm64/Taskplane.app`.
 
 - Create an isolated workspace directory with a small text file containing a unique marker.
-- Launch the packaged app with isolated user data and workspace root, for example:
+- Launch the packaged app executable with isolated user data and workspace root, for example:
 
 ```bash
 TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-workspace-agent \
 TASKPLANE_WORKSPACE_ROOT=/tmp/taskplane-alpha-workspace-root \
-open release/mac-arm64/Taskplane.app
+release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane
 ```
 
 - Configure deliberate local AI credentials through `.env`, Settings, or Keychain.
