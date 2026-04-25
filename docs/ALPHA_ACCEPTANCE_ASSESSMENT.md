@@ -14,6 +14,8 @@ Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
 - `npm run smoke:build` has passed locally for build/entrypoint smoke coverage.
+- on 2026-04-25, `npm run smoke:build` passed again after the execution-layer
+  checkpoint-event boundary refactor.
 - GitHub Actions should remain unused while monthly quota is unavailable.
 
 Manual need:
