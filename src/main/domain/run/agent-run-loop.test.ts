@@ -446,6 +446,32 @@ describe('AgentRunLoop', () => {
       modelOutput: 'Agent output',
       taskTitle: 'Task 1',
     }));
+
+    expect(loop.buildPlanFromProposal({
+      proposal: {
+        steps: [
+          { tool: 'task.inspect_context' },
+          {
+            tool: 'task.create_completion_criterion',
+            input: {
+              text: 'Owner has reviewed the final draft',
+            },
+          },
+          {
+            tool: 'artifact.create_note',
+            input: {
+              title: 'Completion note',
+              content: 'Criterion proposed',
+            },
+          },
+        ],
+      },
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    })).toEqual(loop.buildLocalNotePlan({
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    }));
   });
 
   it('labels execution plans by source', () => {

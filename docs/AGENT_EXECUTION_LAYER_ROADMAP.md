@@ -122,7 +122,8 @@ Candidate tools:
 
 - `task.update_next_step` (implemented as a registry-level service-routed tool;
   not exposed in prompts or normal agent plans)
-- `task.create_completion_criterion`
+- `task.create_completion_criterion` (implemented as a registry-level
+  service-routed tool; not exposed in prompts or normal agent plans)
 - `source_context.create`
 - `decision.draft`
 

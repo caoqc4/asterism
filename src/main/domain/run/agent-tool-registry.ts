@@ -37,6 +37,10 @@ type TaskUpdateNextStepInput = {
   nextStep: string;
 };
 
+type TaskCreateCompletionCriterionInput = {
+  text: string;
+};
+
 type WorkspaceReadFileInput = {
   path: string;
 };
@@ -105,6 +109,21 @@ function parseTaskUpdateNextStepInput(input: unknown): TaskUpdateNextStepInput {
   }
 
   return { nextStep };
+}
+
+function parseTaskCreateCompletionCriterionInput(input: unknown): TaskCreateCompletionCriterionInput {
+  if (!input || typeof input !== 'object') {
+    throw new Error('task.create_completion_criterion requires an object input.');
+  }
+
+  const candidate = input as Partial<TaskCreateCompletionCriterionInput>;
+  const text = candidate.text?.trim();
+
+  if (!text) {
+    throw new Error('task.create_completion_criterion requires text.');
+  }
+
+  return { text };
 }
 
 function parseWorkspaceReadFileInput(input: unknown): WorkspaceReadFileInput {
@@ -494,6 +513,12 @@ export class AgentToolRegistry {
       requiresConfirmation: false,
     },
     {
+      name: 'task.create_completion_criterion',
+      description: 'Create an open completion criterion for the current Taskplane task through TaskService.',
+      risk: 'local_write',
+      requiresConfirmation: false,
+    },
+    {
       name: 'artifact.create_note',
       description: 'Create a local note artifact attached to the current Taskplane run.',
       risk: 'local_write',
@@ -525,7 +550,7 @@ export class AgentToolRegistry {
     private readonly runCheckpointRepository: RunCheckpointRepository = new RunCheckpointRepository(),
     private readonly decisionRepository: Pick<DecisionRepository, 'create'> | null = null,
     private readonly workspaceRootResolver: () => string = () => process.cwd(),
-    private readonly taskService: Pick<TaskService, 'update'> | null = null,
+    private readonly taskService: Pick<TaskService, 'createCompletionCriteria' | 'update'> | null = null,
   ) {}
 
   list(): AgentToolDefinition[] {
@@ -769,6 +794,24 @@ export class AgentToolRegistry {
           status: 'completed',
           summary: `已更新任务下一步：${updated.nextStep ?? '未填写'}`,
           output: updated.nextStep,
+        };
+      }
+      case 'task.create_completion_criterion': {
+        if (!this.taskService) {
+          throw new Error('task.create_completion_criterion requires TaskService.');
+        }
+
+        const parsed = parseTaskCreateCompletionCriterionInput(input);
+        const created = await this.taskService.createCompletionCriteria({
+          taskId: context.taskId,
+          text: parsed.text,
+        });
+
+        return {
+          success: true,
+          status: 'completed',
+          summary: `已创建完成标准：${created.text}`,
+          output: created.text,
         };
       }
       case 'artifact.create_note': {

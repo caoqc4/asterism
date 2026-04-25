@@ -163,6 +163,11 @@ describe('AgentToolRegistry', () => {
         requiresConfirmation: false,
       }),
       expect.objectContaining({
+        name: 'task.create_completion_criterion',
+        risk: 'local_write',
+        requiresConfirmation: false,
+      }),
+      expect.objectContaining({
         name: 'artifact.create_note',
         risk: 'local_write',
       }),
@@ -330,6 +335,89 @@ describe('AgentToolRegistry', () => {
       expect.objectContaining({
         status: 'failed',
         error: 'task.update_next_step requires nextStep.',
+      }),
+    );
+  });
+
+  it('creates a completion criterion through TaskService', async () => {
+    const taskService = {
+      update: vi.fn(),
+      createCompletionCriteria: vi.fn().mockResolvedValue({
+        id: 'criteria_1',
+        taskId: 'task_1',
+        text: 'Owner has reviewed the final draft',
+        verificationResponsibility: null,
+        verificationResponsibilityLabel: null,
+        status: 'open',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        satisfiedAt: null,
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const registry = new AgentToolRegistry(
+      {} as never,
+      runStepRepository as never,
+      undefined,
+      null,
+      undefined,
+      taskService as never,
+    );
+
+    const result = await registry.execute(
+      'task.create_completion_criterion',
+      { text: ' Owner has reviewed the final draft ' },
+      { runId: 'run_1', taskId: 'task_1' },
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      status: 'completed',
+      summary: '已创建完成标准：Owner has reviewed the final draft',
+      output: 'Owner has reviewed the final draft',
+    });
+    expect(taskService.createCompletionCriteria).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      text: 'Owner has reviewed the final draft',
+    });
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        kind: 'tool_result',
+        status: 'completed',
+        output: 'Owner has reviewed the final draft',
+      }),
+    );
+  });
+
+  it('records completion criterion validation failures as tool result failures', async () => {
+    const taskService = {
+      update: vi.fn(),
+      createCompletionCriteria: vi.fn(),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const registry = new AgentToolRegistry(
+      {} as never,
+      runStepRepository as never,
+      undefined,
+      null,
+      undefined,
+      taskService as never,
+    );
+
+    const result = await registry.execute(
+      'task.create_completion_criterion',
+      { text: '   ' },
+      { runId: 'run_1', taskId: 'task_1' },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('task.create_completion_criterion requires text.');
+    expect(taskService.createCompletionCriteria).not.toHaveBeenCalled();
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_1',
+      expect.objectContaining({
+        status: 'failed',
+        error: 'task.create_completion_criterion requires text.',
       }),
     );
   });

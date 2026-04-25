@@ -13,6 +13,7 @@ export type AgentToolRisk =
 
 export type AgentToolName =
   | 'artifact.create_note'
+  | 'task.create_completion_criterion'
   | 'task.inspect_context'
   | 'task.inspect_timeline'
   | 'task.update_next_step'
