@@ -264,8 +264,8 @@ npm run verify
 
 Latest local baseline:
 
-- 69 test files
-- 505 tests
+- 75 test files
+- 553 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -273,13 +273,14 @@ Latest local baseline:
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
 - `npm run smoke:release:mac` passed locally on 2026-04-25 for the combined
   unsigned macOS package path
-- `npm run accept:agent-local` passed locally after the restart-safe checkpoint
-  Decision integration coverage
+- `npm run accept:agent-local` passed locally after adding the sandbox-coding
+  acceptance gate
 - `npm run accept:provider-native-live:preflight` reports the current local
   provider-native setup is ready; live provider validation remains opt-in
   because it spends configured provider credit
-- `npm run verify` passed locally on 2026-04-25 after read-only sandbox
-  backend status surfaced in Settings: 70 test files / 530 tests
+- `npm run verify` passed locally on 2026-04-25 after adding the sandbox
+  patch-review adapter readiness and focused sandbox-coding acceptance gate:
+  75 test files / 553 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
