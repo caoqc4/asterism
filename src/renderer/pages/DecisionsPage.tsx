@@ -90,7 +90,7 @@ function getCheckpointDecisionGuidance(decision: DecisionRecord): string | null 
     }
 
     if (sourceLabel === 'workspace.run_command') {
-      return `来源：Agent checkpoint（${sourceLabel}）。批准后会恢复等待中的${actionLabel}；请先在 Runs 查看脚本、参数、超时和工作目录；延后或取消会终止本次 run，不会继续运行该命令。`;
+      return `来源：Agent checkpoint（${sourceLabel}）。批准后会恢复等待中的${actionLabel}，且仅限 allowlist 内的 package.json 脚本；请先在 Runs 查看脚本、参数、超时和工作目录；延后或取消会终止本次 run，不会继续运行该命令。`;
     }
 
     return `来源：Agent checkpoint（${sourceLabel}）。批准后会恢复等待中的${actionLabel}；延后或取消会终止本次 run。`;

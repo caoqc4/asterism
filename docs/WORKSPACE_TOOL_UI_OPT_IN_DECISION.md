@@ -58,7 +58,8 @@ expected files, and patch-body preview, and separately surfaces
 `workspace.run_command` script, args, timeout, cwd, and command preview.
 Decisions now make checkpoint consequences explicit for patch writes, command
 runs, and defer/cancel settlement. Runs command checkpoint summaries also state
-that command execution is limited to allowlisted `package.json` scripts.
+that command execution is limited to allowlisted `package.json` scripts, and
+the Decisions approval guidance repeats that allowlist constraint.
 
 - no prompt exposure
 - no normal run-form opt-in
@@ -111,7 +112,8 @@ Deferred.
   action
 - command allowlist behavior is documented in the UI or linked copy
   - current status: Runs command checkpoint summaries state that only
-    allowlisted `package.json` scripts are permitted
+    allowlisted `package.json` scripts are permitted, and Decisions command
+    checkpoint guidance repeats the same constraint before approval
 - no normal prompt includes workspace mutation tools
 
 ## Open Questions
