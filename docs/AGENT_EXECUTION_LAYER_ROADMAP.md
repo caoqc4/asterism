@@ -126,7 +126,9 @@ Candidate tools:
   service-routed tool; not exposed in prompts or normal agent plans)
 - `source_context.create` (implemented as a registry-level service-routed tool;
   not exposed in prompts or normal agent plans)
-- `decision.draft`
+- `decision.draft` (implemented as a registry-level draft-only tool; it does
+  not create a formal Decision and is not exposed in prompts or normal agent
+  plans)
 
 Rules:
 

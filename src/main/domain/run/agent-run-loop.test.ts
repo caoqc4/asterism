@@ -302,6 +302,32 @@ describe('AgentRunLoop', () => {
       modelOutput: 'Agent output',
       taskTitle: 'Task 1',
     }));
+
+    expect(loop.buildPlanFromProposal({
+      proposal: {
+        steps: [
+          { tool: 'task.inspect_context' },
+          {
+            tool: 'decision.draft',
+            input: {
+              note: 'Need stakeholder sign-off',
+            },
+          },
+          {
+            tool: 'artifact.create_note',
+            input: {
+              title: 'Decision draft note',
+              content: 'Decision draft proposed',
+            },
+          },
+        ],
+      },
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    })).toEqual(loop.buildLocalNotePlan({
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    }));
   });
 
   it('accepts workspace read steps only when policy allows local workspace reads', () => {

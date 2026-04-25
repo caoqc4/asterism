@@ -95,6 +95,7 @@ const decisionService = new DecisionService(
   runRepository,
   agentToolRegistry,
 );
+agentToolRegistry.setDecisionDraftService(decisionService);
 const runService = new RunService(
   runRepository,
   taskService,

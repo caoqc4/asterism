@@ -8,6 +8,7 @@ import type {
   AgentToolRisk,
   AgentWorkingContext,
 } from '../../../shared/types/agent-execution.js';
+import type { DecisionDraftRecord, DraftDecisionInput } from '../../../shared/types/decision.js';
 import type { SourceContextKind } from '../../../shared/types/source-context.js';
 import { createToolPermissionCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
@@ -29,9 +30,17 @@ type ToolExecutionContext = {
   workingContext?: AgentWorkingContext;
 };
 
+type DecisionDraftService = {
+  draft(input: DraftDecisionInput): Promise<DecisionDraftRecord>;
+};
+
 type ArtifactCreateNoteInput = {
   title: string;
   content: string;
+};
+
+type DecisionDraftToolInput = {
+  note?: string | null;
 };
 
 type TaskUpdateNextStepInput = {
@@ -105,6 +114,22 @@ function parseArtifactCreateNoteInput(input: unknown): ArtifactCreateNoteInput {
   }
 
   return { title, content };
+}
+
+function parseDecisionDraftToolInput(input: unknown): DecisionDraftToolInput {
+  if (input === undefined || input === null) {
+    return {};
+  }
+
+  if (typeof input !== 'object') {
+    throw new Error('decision.draft requires an object input.');
+  }
+
+  const candidate = input as Partial<DecisionDraftToolInput>;
+
+  return {
+    note: candidate.note?.trim() || null,
+  };
 }
 
 function parseTaskUpdateNextStepInput(input: unknown): TaskUpdateNextStepInput {
@@ -563,6 +588,12 @@ export class AgentToolRegistry {
       requiresConfirmation: false,
     },
     {
+      name: 'decision.draft',
+      description: 'Draft a Decision proposal for the current Taskplane task without creating a formal Decision.',
+      risk: 'safe_read',
+      requiresConfirmation: false,
+    },
+    {
       name: 'source_context.create',
       description: 'Create a source context item for the current Taskplane task through TaskService.',
       risk: 'local_write',
@@ -596,6 +627,12 @@ export class AgentToolRegistry {
     private readonly workspaceRootResolver: () => string = () => process.cwd(),
     private readonly taskService: Pick<TaskService, 'createCompletionCriteria' | 'createSourceContext' | 'update'> | null = null,
   ) {}
+
+  private decisionDraftService: DecisionDraftService | null = null;
+
+  setDecisionDraftService(decisionDraftService: DecisionDraftService): void {
+    this.decisionDraftService = decisionDraftService;
+  }
 
   list(): AgentToolDefinition[] {
     return this.definitions;
@@ -872,6 +909,33 @@ export class AgentToolRegistry {
           summary: `已创建本地 note 产物：${artifact.title}`,
           output: artifact.content,
           artifactId: artifact.id,
+        };
+      }
+      case 'decision.draft': {
+        if (!this.decisionDraftService) {
+          throw new Error('decision.draft requires DecisionService.');
+        }
+
+        const parsed = parseDecisionDraftToolInput(input);
+        const draft = await this.decisionDraftService.draft({
+          taskId: context.taskId,
+          note: parsed.note,
+        });
+        const output = [
+          `Title: ${draft.title}`,
+          `Rationale: ${draft.rationale}`,
+          `Source: ${draft.source}`,
+          draft.selectedTemplateTitles.length
+            ? `Templates: ${draft.selectedTemplateTitles.join(', ')}`
+            : `Templates: none`,
+          `Selection: ${draft.selectionReason}`,
+        ].join('\n');
+
+        return {
+          success: true,
+          status: 'completed',
+          summary: `已草拟 Decision：${draft.title}`,
+          output,
         };
       }
       case 'source_context.create': {

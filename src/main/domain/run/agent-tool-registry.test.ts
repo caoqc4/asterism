@@ -172,6 +172,11 @@ describe('AgentToolRegistry', () => {
         risk: 'local_write',
       }),
       expect.objectContaining({
+        name: 'decision.draft',
+        risk: 'safe_read',
+        requiresConfirmation: false,
+      }),
+      expect.objectContaining({
         name: 'source_context.create',
         risk: 'local_write',
         requiresConfirmation: false,
@@ -340,6 +345,75 @@ describe('AgentToolRegistry', () => {
       expect.objectContaining({
         status: 'failed',
         error: 'task.update_next_step requires nextStep.',
+      }),
+    );
+  });
+
+  it('drafts a decision through DecisionService without creating a formal Decision', async () => {
+    const decisionDraftService = {
+      draft: vi.fn().mockResolvedValue({
+        taskId: 'task_1',
+        title: 'Approve launch wording',
+        rationale: 'Need a formal sign-off before publishing.',
+        source: 'fallback',
+        selectedTemplateIds: [],
+        selectedTemplateTitles: [],
+        selectionReason: 'No template selected.',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const registry = new AgentToolRegistry(
+      {} as never,
+      runStepRepository as never,
+    );
+    registry.setDecisionDraftService(decisionDraftService);
+
+    const result = await registry.execute(
+      'decision.draft',
+      { note: ' Need launch wording approval ' },
+      { runId: 'run_1', taskId: 'task_1' },
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      status: 'completed',
+      summary: '已草拟 Decision：Approve launch wording',
+    });
+    expect(result.output).toContain('Title: Approve launch wording');
+    expect(result.output).toContain('Source: fallback');
+    expect(decisionDraftService.draft).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      note: 'Need launch wording approval',
+    });
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        kind: 'tool_result',
+        status: 'completed',
+        output: expect.stringContaining('Rationale: Need a formal sign-off before publishing.'),
+      }),
+    );
+  });
+
+  it('records decision draft service failures as tool result failures', async () => {
+    const runStepRepository = buildRunStepRepositoryMock();
+    const registry = new AgentToolRegistry(
+      {} as never,
+      runStepRepository as never,
+    );
+
+    const result = await registry.execute(
+      'decision.draft',
+      { note: 'Need approval' },
+      { runId: 'run_1', taskId: 'task_1' },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('decision.draft requires DecisionService.');
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_1',
+      expect.objectContaining({
+        status: 'failed',
+        error: 'decision.draft requires DecisionService.',
       }),
     );
   });
