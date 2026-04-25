@@ -125,7 +125,7 @@ Covered today:
 - `RunCheckpointRepository`
   open checkpoint creation, per-run retrieval, resume checkpoint creation, decision-id lookup, and checkpoint settlement
 - `AgentSessionRepository`
-  agent session metadata persistence for run-scoped executor capabilities and terminal status updates
+  agent session metadata persistence for run-scoped executor capabilities, including task update tool capability, and terminal status updates
 - `DecisionRepository`
   decision creation, optional source metadata persistence, action persistence, timeline writes
 - `BriefSnapshotRepository`
@@ -271,7 +271,7 @@ Covered today:
 - `Runs` page resume checkpoint summaries for paused agent runs
 - `Runs` page paused agent checkpoint continuation action
 - `Runs` page paused agent checkpoint continuation error feedback
-- `Runs` page agent session capability summary
+- `Runs` page agent session capability summary, including task update tool state
 - provider-specific agent capability preview wording for Anthropic, OpenAI,
   OpenAI-compatible, fal/OpenRouter, and Replicate
 - `Runs` page readable agent plan-source summaries

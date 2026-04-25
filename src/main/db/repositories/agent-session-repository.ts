@@ -19,7 +19,16 @@ type CreateAgentSessionInput = {
 };
 
 function parseCapabilities(raw: string): AgentRuntimeCapabilities {
-  return JSON.parse(raw) as AgentRuntimeCapabilities;
+  const parsed = JSON.parse(raw) as Partial<AgentRuntimeCapabilities>;
+
+  return {
+    structuredToolCalls: Boolean(parsed.structuredToolCalls),
+    textOnlyPlanning: Boolean(parsed.textOnlyPlanning),
+    streaming: Boolean(parsed.streaming),
+    fileContext: Boolean(parsed.fileContext),
+    taskMutationTools: Boolean(parsed.taskMutationTools),
+    longRunningSessions: Boolean(parsed.longRunningSessions),
+  };
 }
 
 function toRecord(row: typeof agentSessions.$inferSelect): AgentSessionRecord {

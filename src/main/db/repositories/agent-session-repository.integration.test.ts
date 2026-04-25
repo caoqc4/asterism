@@ -39,6 +39,7 @@ describe('AgentSessionRepository integration', () => {
         textOnlyPlanning: true,
         streaming: false,
         fileContext: false,
+        taskMutationTools: true,
         longRunningSessions: false,
       },
       metadata: 'local executor',
@@ -47,6 +48,7 @@ describe('AgentSessionRepository integration', () => {
     expect(created.runId).toBe(run.id);
     expect(created.status).toBe('running');
     expect(created.capabilities.textOnlyPlanning).toBe(true);
+    expect(created.capabilities.taskMutationTools).toBe(true);
     expect(created.metadata).toBe('local executor');
 
     const updated = await agentSessionRepository.updateStatus(created.id, 'completed');

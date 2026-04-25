@@ -98,6 +98,7 @@ export type AgentRuntimeCapabilities = {
   textOnlyPlanning: boolean;
   streaming: boolean;
   fileContext: boolean;
+  taskMutationTools: boolean;
   longRunningSessions: boolean;
 };
 

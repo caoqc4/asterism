@@ -151,6 +151,7 @@ describe('RunService integration', () => {
       status: 'completed',
       capabilities: expect.objectContaining({
         fileContext: true,
+        taskMutationTools: false,
         structuredToolCalls: false,
       }),
     });
@@ -268,6 +269,7 @@ describe('RunService integration', () => {
     const detail = await service.getDetail(run.id);
     const taskDetail = await taskService.getDetail(task.id);
     const steps = detail?.steps ?? [];
+    const agentSessions = detail?.agentSessions ?? [];
     const artifacts = await artifactRepository.listRecentForTask(task.id, 10);
 
     expect(run).toMatchObject({
@@ -276,6 +278,13 @@ describe('RunService integration', () => {
       outputSource: 'ai',
     });
     expect(taskDetail?.nextStep).toBe('审阅最新 agent 产物，并决定是否继续推进。');
+    expect(agentSessions[0]).toMatchObject({
+      status: 'completed',
+      capabilities: expect.objectContaining({
+        fileContext: false,
+        taskMutationTools: true,
+      }),
+    });
     expect(taskDetail?.timeline.some((event) =>
       event.type === 'task.next_step_changed' &&
       event.payload.includes('Review the updated owner plan')

@@ -187,6 +187,7 @@ export class RunOrchestrator {
       mode: 'agent',
       capabilities: getLocalAgentRuntimeCapabilities({
         allowLocalWorkspaceRead: Boolean(input.allowLocalWorkspaceRead),
+        allowTaskMutationTools: Boolean(input.allowTaskMutationTools),
       }),
       metadata: [
         'executor=local_agent',
@@ -263,12 +264,14 @@ export class RunOrchestrator {
 
 function getLocalAgentRuntimeCapabilities(params: {
   allowLocalWorkspaceRead: boolean;
+  allowTaskMutationTools: boolean;
 }): AgentRuntimeCapabilities {
   return {
     structuredToolCalls: false,
     textOnlyPlanning: true,
     streaming: false,
     fileContext: params.allowLocalWorkspaceRead,
+    taskMutationTools: params.allowTaskMutationTools,
     longRunningSessions: false,
   };
 }

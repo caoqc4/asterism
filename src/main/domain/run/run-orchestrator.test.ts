@@ -297,6 +297,7 @@ describe('RunOrchestrator', () => {
         textOnlyPlanning: true,
         streaming: false,
         fileContext: false,
+        taskMutationTools: false,
         longRunningSessions: false,
       },
       metadata: 'executor=local_agent\nloop=local_note',
@@ -382,6 +383,69 @@ describe('RunOrchestrator', () => {
         request: expect.objectContaining({
           policy: expect.objectContaining({
             allowLocalWorkspaceRead: true,
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('stores task-mutation capability when an agent run opts into task update tools', async () => {
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn().mockResolvedValue('Agent local note output'),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No template needed.',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const agentExecutor = {
+      executeLocalNoteSession: vi.fn().mockResolvedValue({
+        status: 'completed',
+        output: 'Agent local note output',
+      }),
+    };
+    const agentSessionRepository = {
+      create: vi.fn().mockResolvedValue({ id: 'agent_session_1' }),
+      updateStatus: vi.fn().mockResolvedValue({ id: 'agent_session_1', status: 'completed' }),
+    };
+    const orchestrator = new RunOrchestrator(
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+      { execute: vi.fn() } as never,
+      agentExecutor as never,
+      agentSessionRepository as never,
+    );
+
+    await orchestrator.executeAgentRun({
+      run: buildRun(),
+      task: buildTaskDetail(),
+      input: { ...buildInput(), type: 'agent', allowTaskMutationTools: true },
+    });
+
+    expect(agentSessionRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        capabilities: expect.objectContaining({
+          taskMutationTools: true,
+        }),
+      }),
+    );
+    expect(agentExecutor.executeLocalNoteSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        request: expect.objectContaining({
+          policy: expect.objectContaining({
+            allowTaskMutationTools: true,
           }),
         }),
       }),

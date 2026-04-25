@@ -16,6 +16,9 @@ export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord)
     capabilities.fileContext
       ? 'read-only workspace context enabled'
       : 'read-only workspace context unavailable',
+    capabilities.taskMutationTools
+      ? 'task update tools enabled'
+      : 'task update tools unavailable',
     capabilities.structuredToolCalls
       ? 'structured tool calls'
       : 'structured tool calls unavailable',
