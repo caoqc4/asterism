@@ -245,7 +245,7 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
       patchSummary ? `摘要：${patchSummary}` : null,
       expectedFiles.length ? `文件：${expectedFiles.join(', ')}` : previewFiles ? `文件：${previewFiles}` : null,
       script ? `脚本：npm run ${script}` : null,
-      script ? '限制：仅允许 package.json allowlist 脚本' : null,
+      script ? '限制：仅允许 package.json 中的 test / lint 脚本' : null,
       commandArgs.length ? `参数：${commandArgs.join(' ')}` : null,
       timeout ? `超时：${timeout}` : null,
       cwd ? `工作目录：${cwd}` : null,

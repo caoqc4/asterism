@@ -33,7 +33,8 @@ Implemented and locally verified:
   expected files, diff preview, no pre-approval mutation, and normal-run
   fallback when a model proposes patch steps
 - confirmation-gated `workspace.run_command` at registry level, limited to
-  allowlisted `package.json` scripts and resumed only after Decision approval
+  `test` / `lint` scripts in `package.json` and resumed only after Decision
+  approval
 
 Still intentionally deferred:
 
@@ -96,8 +97,8 @@ Acceptance:
 - UI never implies command execution is available
 - Runs detail separates patch summary, expected files, and patch-body preview
 - Runs detail separates command script, args, timeout, cwd, and preview
-- Decisions detail repeats write/command consequences and the command allowlist
-  constraint before approval
+- Decisions detail repeats write/command consequences and the current `test` /
+  `lint` command allowlist constraint before approval
 
 ### Slice 2: Provider Capability Truthfulness
 
@@ -240,7 +241,7 @@ The decision must specify:
 Acceptance:
 
 - a decision doc exists and is accepted
-- command execution uses only allowlisted `package.json` scripts
+- command execution uses only `test` / `lint` scripts in `package.json`
 - command execution requires explicit local command policy and checkpoint
   approval
 - normal model-produced command steps still fall back until a later UI/policy

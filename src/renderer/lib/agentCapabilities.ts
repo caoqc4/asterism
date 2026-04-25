@@ -41,7 +41,7 @@ export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord)
     capabilities.structuredToolCalls
       ? 'structured tool calls'
       : 'structured tool calls unavailable',
-    'patch/commands unavailable',
+    'workspace patch/commands unavailable',
     capabilities.longRunningSessions ? 'long-running session' : 'single local session',
   ];
 
@@ -120,6 +120,6 @@ export function formatPreRunAgentCapabilitySummary(
     workspaceSummary,
     taskToolsSummary,
     formatPreRunStructuredToolSummary(aiStatus),
-    'patch/commands unavailable',
+    'workspace patch/commands unavailable',
   ].join(' / ');
 }

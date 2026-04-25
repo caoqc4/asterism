@@ -2694,14 +2694,14 @@ describe('App UI flow', () => {
     await user.selectOptions(screen.getByLabelText('Run 类型'), 'agent');
     expect(
       screen.getByText(
-        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / patch/commands unavailable',
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / workspace patch/commands unavailable',
       ),
     ).toBeTruthy();
     await user.click(screen.getByRole('checkbox', { name: '允许只读工作区上下文' }));
     await user.click(screen.getByRole('checkbox', { name: '允许任务内更新/证据工具' }));
     expect(
       screen.getByText(
-        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context enabled for this run / task update/evidence tools enabled for this run / structured tool calls unavailable until AI config is ready / patch/commands unavailable',
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context enabled for this run / task update/evidence tools enabled for this run / structured tool calls unavailable until AI config is ready / workspace patch/commands unavailable',
       ),
     ).toBeTruthy();
 
@@ -3048,7 +3048,7 @@ describe('App UI flow', () => {
 
     expect(await screen.findByRole('heading', { name: 'agent / needs_confirmation' })).toBeTruthy();
     expect(
-      screen.getByText(/工具：workspace\.run_command；风险：local_command；脚本：npm run test；限制：仅允许 package\.json allowlist 脚本；参数：--watch=false；超时：120000ms；工作目录：\/tmp\/taskplane-workspace；预览：Summary: Run tests Command: npm run test -- --watch=false/),
+      screen.getByText(/工具：workspace\.run_command；风险：local_command；脚本：npm run test；限制：仅允许 package\.json 中的 test \/ lint 脚本；参数：--watch=false；超时：120000ms；工作目录：\/tmp\/taskplane-workspace；预览：Summary: Run tests Command: npm run test -- --watch=false/),
     ).toBeTruthy();
   });
 
@@ -3257,7 +3257,7 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        'Agent session：text-only planning / read-only workspace context enabled / task update/evidence tools enabled / structured tool calls unavailable / patch/commands unavailable / single local session',
+        'Agent session：text-only planning / read-only workspace context enabled / task update/evidence tools enabled / structured tool calls unavailable / workspace patch/commands unavailable / single local session',
       ),
     ).toBeTruthy();
     expect(screen.getByText('Session metadata：executor=local_agent / loop=local_note')).toBeTruthy();
@@ -3427,7 +3427,7 @@ describe('App UI flow', () => {
 
     expect(
       screen.getByText(
-        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / patch/commands unavailable',
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / workspace patch/commands unavailable',
       ),
     ).toBeTruthy();
 
@@ -3436,7 +3436,7 @@ describe('App UI flow', () => {
 
     expect(
       screen.getByText(
-        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context enabled for this run / task update/evidence tools enabled for this run / structured tool calls unavailable until AI config is ready / patch/commands unavailable',
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context enabled for this run / task update/evidence tools enabled for this run / structured tool calls unavailable until AI config is ready / workspace patch/commands unavailable',
       ),
     ).toBeTruthy();
   });
@@ -3765,7 +3765,7 @@ describe('App UI flow', () => {
 
     expect(await screen.findByRole('heading', { name: '确认本地命令：workspace.run_command' })).toBeTruthy();
     expect(
-      screen.getByText('来源：Agent checkpoint（workspace.run_command）。批准后会恢复等待中的工作区命令运行，且仅限 allowlist 内的 package.json 脚本；请先在 Runs 查看脚本、参数、超时和工作目录；延后或取消会终止本次 run，不会继续运行该命令。'),
+      screen.getByText('来源：Agent checkpoint（workspace.run_command）。批准后会恢复等待中的工作区命令运行，且仅限 package.json 中的 test / lint 脚本；请先在 Runs 查看脚本、参数、超时和工作目录；延后或取消会终止本次 run，不会继续运行该命令。'),
     ).toBeTruthy();
   });
 

@@ -26,7 +26,7 @@ function buildAiStatus(provider: AiConfigStatus['provider']): AiConfigStatus {
 describe('agent capability formatting', () => {
   it('keeps the pre-run preview honest before a provider is configured', () => {
     expect(formatPreRunAgentCapabilitySummary(null, false)).toBe(
-      'Agent 能力预览：provider not configured / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / patch/commands unavailable',
+      'Agent 能力预览：provider not configured / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / workspace patch/commands unavailable',
     );
   });
 
@@ -37,13 +37,13 @@ describe('agent capability formatting', () => {
       apiKeyStored: false,
       apiKeySource: null,
     }, false)).toBe(
-      'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / patch/commands unavailable',
+      'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / workspace patch/commands unavailable',
     );
   });
 
   it('previews local executor capabilities before an agent run', () => {
     expect(formatPreRunAgentCapabilitySummary(buildAiStatus('anthropic'), false)).toBe(
-      'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls disabled until provider-native flag is enabled / patch/commands unavailable',
+      'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls disabled until provider-native flag is enabled / workspace patch/commands unavailable',
     );
     expect(formatPreRunAgentCapabilitySummary(buildAiStatus('anthropic'), true)).toContain(
       'read-only workspace context enabled for this run',
@@ -52,7 +52,7 @@ describe('agent capability formatting', () => {
 
   it('names Replicate as text-only planning before an agent run', () => {
     expect(formatPreRunAgentCapabilitySummary(buildAiStatus('replicate'), true)).toBe(
-      'Agent 能力预览：replicate / openai/gpt-oss-20b / text-only planning via Replicate / read-only workspace context enabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable on native Replicate text path / patch/commands unavailable',
+      'Agent 能力预览：replicate / openai/gpt-oss-20b / text-only planning via Replicate / read-only workspace context enabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable on native Replicate text path / workspace patch/commands unavailable',
     );
   });
 
@@ -75,7 +75,7 @@ describe('agent capability formatting', () => {
     expect(summary).toContain('read-only workspace context disabled for this run');
     expect(summary).toContain('task update/evidence tools disabled for this run');
     expect(summary).toContain('structured tool calls disabled until provider-native flag is enabled');
-    expect(summary).toContain('patch/commands unavailable');
+    expect(summary).toContain('workspace patch/commands unavailable');
   });
 
   it('previews limited provider-native safe-read tool calls when the flag is enabled', () => {
