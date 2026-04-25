@@ -289,14 +289,61 @@ Acceptance:
 - normal model-produced command steps still fall back until a later UI/policy
   opt-in slice exposes them
 
+### Slice 5: Sandboxed Coding Agent Lane
+
+Status: next design and implementation target.
+
+Goal: support the original AI programming scenario without turning Taskplane
+into an unbounded host shell. This is the Taskplane-owned path for
+Pi-coding-agent-like work.
+
+Design docs:
+
+- [AGENT_EXECUTION_SANDBOX_DECISION.md](AGENT_EXECUTION_SANDBOX_DECISION.md)
+- [AGENT_EXECUTION_FUTURE_DESIGN.md](AGENT_EXECUTION_FUTURE_DESIGN.md)
+- [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
+
+Implementation sequence:
+
+1. Define disabled-by-default `SandboxProvider` interfaces and capability
+   metadata, without exposing any new model-visible tools.
+2. Add a temp-workspace sandbox smoke path that uses no credentials and cannot
+   mutate the user's workspace.
+3. Add a staged patch artifact format for file changes, logs, and risk
+   summaries.
+4. Route targeted checks through the existing command-policy shape, beginning
+   with `test` / `lint` style scripts only.
+5. Add Decision review and promotion semantics before any staged patch can
+   touch the user's workspace.
+6. Only after the above is accepted, expose a narrow coding-agent run option in
+   the UI and prompt/provider exposure matrix.
+
+Acceptance:
+
+- no host-process arbitrary shell
+- no inherited provider keys, relay keys, keychain secrets, or user session
+  tokens in the sandbox
+- no file promotion without a Decision
+- every edit/check produces RunSteps and artifacts
+- failed or paused work can be recovered from Task/Run/Decision surfaces
+- provider-native unsafe write/command proposals still fail closed unless the
+  sandbox lane explicitly exposes them
+
+Out of scope for this slice:
+
+- browser/computer control
+- GitHub mutation
+- external posting/email/calendar/social publishing
+- autonomous scheduled coding work
+- Pi runtime embedding or Pi extension compatibility
+
 ## Near-Term Recommendation
 
-Keep `workspace.run_command` and `workspace.write_patch` registry-only. The
-domain-shaped task tools are now exposed behind an explicit per-run opt-in, so
-the next execution-layer work should deepen provider capability handling through
-[STRUCTURED_TOOL_CALLS_DECISION.md](STRUCTURED_TOOL_CALLS_DECISION.md) or
-continue workspace checkpoint review without prompt-level workspace mutation
-exposure. For workspace tools, use
+Keep `workspace.run_command` and `workspace.write_patch` registry-only in the
+current host workspace. The next execution-layer work should design and
+implement Slice 5: a disabled-by-default sandboxed coding-agent lane that
+returns patch artifacts and Decisions before any promotion. For workspace tools
+inside the current host workspace, still use
 [WORKSPACE_TOOL_UI_OPT_IN_DECISION.md](WORKSPACE_TOOL_UI_OPT_IN_DECISION.md)
 before any prompt-level exposure.
 
