@@ -90,7 +90,8 @@ Covered today:
   adapter behavior that preserves current local agent-loop outcomes behind the executor/session boundary, plus an internal provider-native session entry that delegates normalized proposals through the same run loop
 - `Agent runtime events`
   typed v2 runtime event names, checkpoint event metadata, and terminal event
-  classification before the event-to-run-step mapper is implemented
+  classification plus the first event-to-run-step mapper for plan/model/tool,
+  checkpoint, and terminal session events
 - `Provider native session gate`
   explicit pre-wiring runtime selection gates for run type, feature flag,
   provider support, provider payload presence, and normalization success
