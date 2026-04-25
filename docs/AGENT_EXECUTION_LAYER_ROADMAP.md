@@ -119,25 +119,28 @@ Completed:
   `taskMutationTools`, `streaming`, and `longRunningSessions` as explicit
   metadata.
 - Shared provider capability descriptors and provider tool-call normalization
-  types now define the future adapter entry shape while failing closed for raw
-  or malformed provider payloads.
+  types define the adapter entry shape while failing closed for raw or malformed
+  provider payloads.
 - An offline OpenAI-compatible chat-completion-style fixture adapter can
-  translate `tool_calls` into normalized Taskplane proposals, but it is not
-  connected to provider execution or run sessions. It fails closed for malformed
-  tool-call envelopes, non-`function` calls, missing `function` objects, and
-  non-object JSON arguments.
+  translate `tool_calls` into normalized Taskplane proposals and now feeds the
+  gated provider-native session path after payload extraction. It fails closed
+  for malformed tool-call envelopes, non-`function` calls, missing `function`
+  objects, and non-object JSON arguments.
 - An offline Anthropic Messages-style fixture adapter can translate `tool_use`
-  content blocks into normalized Taskplane proposals, but it is not connected
-  to provider execution or run sessions. It fails closed for malformed content
-  blocks, unsupported block types, missing ids/names, and non-object inputs.
+  content blocks into normalized Taskplane proposals and is available through
+  the same gated provider-native dispatcher. It fails closed for malformed
+  content blocks, unsupported block types, missing ids/names, and non-object
+  inputs.
 - A shared offline provider-native dispatcher selects the Anthropic or
   OpenAI-compatible fixture adapter by provider and fails closed for Replicate;
-  it is not connected to provider execution or run sessions.
+  execution still requires the reserved flag, provider payload extraction,
+  successful normalization, and the session gate.
 - `featureFlags.enableProviderNativeToolCalls` now exists as a default-off
-  rollout flag, but current runs ignore it for execution and still persist
-  `structuredToolCalls=false`.
+  rollout flag for the gated provider-native session path; fallback sessions
+  still persist `structuredToolCalls=false`.
 - A shared shadow observer can summarize provider-native normalization outcomes
-  without returning executable proposals or wiring them into real runs.
+  without returning executable proposals; explicit provider-native sessions use
+  a separate session-gated path after normalization succeeds.
 
 Acceptance:
 

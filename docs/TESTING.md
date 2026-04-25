@@ -133,7 +133,7 @@ Covered today:
   while keeping provider-native structured tool calls behind the explicit rollout
   flag and session gate
 - `Agent session metadata`
-  shared local executor metadata formatting and future provider-native session
+  shared local executor metadata formatting and provider-native session
   metadata formatting without persisting raw provider payloads
 - `Provider tool-call normalizer`
   shared normalized provider tool-call plan validation, including fail-closed

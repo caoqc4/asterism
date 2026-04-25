@@ -82,8 +82,8 @@ Implementation boundary:
 
 - `observeProviderNativeToolCalls` summarizes `skipped`, `observed`, or `failed`
   shadow outcomes without returning executable `AgentStepProposal` objects
-- future RunOrchestrator wiring must keep this diagnostic-only until parser
-  parity coverage is complete
+- this shadow observer remains diagnostic-only; explicit provider-native
+  execution uses the later session-gated path instead of the shadow result
 - `generateRuntimeTextResult` can now return trimmed text plus an optional
   minimal provider response-body payload for OpenAI-compatible `tool_calls` or
   Anthropic `content`, while the legacy `generateRuntimeText` helper still
@@ -98,7 +98,8 @@ Implementation boundary:
 
 ### Slice 2: Parser Parity Harness
 
-Status: first policy-parity tests completed; not wired into real runs.
+Status: policy-parity tests completed; explicit real-run wiring now exists
+through the later provider-native session gate.
 
 Before any execution wiring, compare native normalized proposals with current
 text JSON proposals through the same plan-building code.
@@ -123,8 +124,8 @@ Implementation boundary:
 
 - provider-native normalized proposals can be passed into `AgentRunLoop`
   plan-building tests
-- production runs still do not feed provider-native proposals into
-  `AgentRunLoop`
+- production runs feed provider-native proposals into `AgentRunLoop` only
+  through the explicit provider-native session gate from Slice 3
 
 ### Slice 3: Explicit Provider-Native Session
 
@@ -152,10 +153,10 @@ Current boundary:
 - `LocalAgentExecutor.executeProviderNativeSession` can delegate a normalized
   `ProviderToolCallPlan.proposal` through the existing `AgentRunLoop`
 - shared agent-session metadata helpers define the current local executor
-  metadata and the future provider-native metadata shape with provider, model,
+  metadata and provider-native metadata shape with provider, model,
   adapter, raw summary, provider call ids, and stop reason
 - `evaluateProviderNativeSessionGate` defines the explicit runtime-selection
-  gates for future RunOrchestrator wiring without executing anything
+  gates used by RunOrchestrator before executing provider-native sessions
 - RunOrchestrator selects this path only when the run is `agent`, the reserved
   flag is enabled, a supported provider payload exists, and normalization
   succeeds
