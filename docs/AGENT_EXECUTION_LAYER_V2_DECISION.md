@@ -47,10 +47,12 @@ That means the smallest valuable v2 increment is runtime reliability:
 - If a tool is not exposed, provider-native payloads must still fail closed or
   fall back without side effects.
 
-OpenClaw/Pi-style execution loops are useful as references for planner, step
-loop, tool registry, observation stream, and checkpoint concepts. Taskplane
-should keep those ideas, but preserve its own control-plane model instead of
-copying an execution-first agent shell.
+Pi and OpenClaw should be treated as separate but related references: Pi is the
+inner-loop reference for a small stateful agent runtime with tool execution and
+event streaming, while OpenClaw is the embedding reference for wrapping that
+loop with sessions, gateway/channel concerns, policy filtering, and persistence.
+Taskplane should keep those ideas, but preserve its own control-plane model
+instead of copying an execution-first agent shell.
 
 ## v2 Slice 1: Runtime Event Spine
 

@@ -2,17 +2,38 @@
 
 ## Status
 
-Accepted as the evaluation layer before expanding Taskplane's agent execution
-runtime beyond the current local acceptance gate.
+Accepted as the reference-architecture assessment for Taskplane's agent
+execution layer.
 
-This document should be read before using
-[AGENT_EXECUTION_LAYER_V2_DECISION.md](AGENT_EXECUTION_LAYER_V2_DECISION.md) to
-implement larger runtime changes.
+This document supersedes the first lightweight assessment. It separates
+first-principles product requirements from framework-specific ideas, and it
+must be read before using
+[AGENT_EXECUTION_LAYER_V2_DECISION.md](AGENT_EXECUTION_LAYER_V2_DECISION.md)
+for further execution-layer work.
+
+## Why This Was Re-Assessed
+
+The first assessment treated "OpenClaw-like" systems as one category and did
+not evaluate Pi as its own reference. That was too coarse.
+
+OpenClaw's public documentation describes an embedded Pi integration:
+OpenClaw prepares sessions, tools, policies, channels, and runtime metadata,
+then calls Pi through `runEmbeddedPiAgent` / `createAgentSession()` and bridges
+Pi events into the OpenClaw agent stream. Pi is therefore not merely a flavor
+of OpenClaw; it is a direct execution-layer reference.
+
+The corrected evaluation is:
+
+- **Pi** is a primary reference for the inner agent loop.
+- **OpenClaw** is a primary reference for embedding that loop into a local,
+  message-driven product with gateway, session, policy, and channel concerns.
+- Other frameworks are evaluated for specific patterns, not as wholesale
+  dependencies.
 
 ## First-Principles Product Chain
 
-Taskplane's agent execution layer exists to turn a Task into recoverable work,
-not to become a generic autonomous agent shell.
+Taskplane's execution layer exists to turn a Task into recoverable work. It
+should not become a generic autonomous shell.
 
 The product chain is:
 
@@ -27,350 +48,544 @@ Task context
   -> Task recovery, continuation, or closeout
 ```
 
-The control plane must stay visible:
+The visible control plane must remain:
 
-- `Task` owns meaning, priority, recovery, blockers, dependencies, criteria,
-  and closeout context.
-- `Run` owns one execution attempt and its observable trace.
-- `Decision` owns human judgment and approval.
-- `Artifact` owns durable useful output.
-- `Timeline` owns user-readable causality.
+- `Task`: user meaning, priority, recovery, blockers, dependencies, completion
+  criteria, and closeout context
+- `Run`: one execution attempt and its observable trace
+- `Decision`: human judgment, approval, deferral, and cancellation
+- `Artifact`: durable useful output
+- `Timeline`: user-readable causality
 
-Therefore the execution layer should optimize for:
-
-1. **Recoverability**: a run can pause, resume, fail safely, or explain why it
-   cannot continue.
-2. **Policy gates**: registry availability, prompt/schema exposure, and runtime
-   execution permission are separate decisions.
-3. **Human control**: higher-risk actions create checkpoints and Decisions
-   before mutating task or workspace state.
-4. **Evidence**: outputs become artifacts, timeline events, or completion
-   evidence; they are not buried in raw logs.
-5. **Provider portability**: provider-native tool calls normalize into the same
-   Taskplane proposal/event contract.
-6. **Local-first safety**: workspace and credential access should start
-   narrower than the model's apparent capability.
-
-## Recommendation
-
-Do not adopt one framework wholesale for v2.
-
-Instead, keep a Taskplane-native runtime and selectively borrow mature patterns:
-
-- **LangGraph / Microsoft Agent Framework** for durable event/workflow concepts.
-- **OpenHands / SWE-agent / Plandex** for code-workspace safety, diff review,
-  command containment, and coding-agent ergonomics.
-- **MCP** for future tool/resource interoperability vocabulary.
-- **CrewAI / AutoGen-style systems** for later multi-agent role patterns, not
-  for the first v2 runtime.
-- **OpenClaw-like local autonomous agents** as a cautionary reference for
-  sandboxing, permission defaults, and remote exposure risks.
-
-The next implementation should continue the current v2 direction:
-
-1. typed runtime events
-2. event-to-run-step mapping
-3. restart-safe checkpoint/resume contract
-4. explicit tool exposure matrix
-5. only then consider narrow user-requested workspace write or command UI
-   opt-ins
+The execution layer is successful when it makes work recoverable, reviewable,
+and auditable without hiding a second task system inside the agent runtime.
 
 ## Evaluation Criteria
 
-References are useful only when they improve Taskplane's product chain. Each
-framework or protocol is evaluated against these criteria:
+Every reference was evaluated against these criteria:
 
-1. **Control-plane fit**: can Task, Run, Decision, Artifact, and Timeline remain
-   the user-visible source of truth?
-2. **Durability**: can a run pause, resume, recover from process failure, and
-   avoid repeating side effects?
-3. **Tool boundary clarity**: does it separate tool definition, model exposure,
+1. **Control-plane fit**: can Task/Run/Decision/Artifact/Timeline remain the
+   source of truth?
+2. **Inner-loop clarity**: does it define the model/tool/observation/session
+   loop cleanly?
+3. **Durability**: can work pause, resume, recover, and avoid repeating side
+   effects?
+4. **Tool boundary**: does it separate tool definition, model exposure,
    execution policy, and user consent?
-4. **Sandbox posture**: does it assume host access, container isolation, remote
-   isolation, or a selectable model?
-5. **Human judgment**: can uncertain or risky actions stop at a reviewable
-   checkpoint instead of becoming silent mutations?
-6. **Observability**: can execution be summarized as product evidence, not just
-   raw logs?
-7. **Local desktop fit**: can it run without introducing a heavy hosted control
-   plane or a second product model?
-8. **Implementation cost**: does adopting it now reduce risk, or does it
-   increase coupling before the product needs that power?
+5. **Sandbox posture**: does it assume host access, container isolation, remote
+   isolation, or a selectable sandbox?
+6. **Human judgment**: can risky actions stop at a reviewable checkpoint?
+7. **Observability**: can execution be projected into product-level evidence,
+   not only raw logs?
+8. **Provider portability**: does it avoid locking sessions to one model
+   provider's exact message/tool format?
+9. **Local desktop fit**: can it support a local-first product without imposing
+   a hosted control plane?
+10. **Implementation cost**: does adopting the idea now reduce risk, or does it
+    increase coupling before Taskplane needs it?
 
-## Reference Matrix
+## Reference Architecture Matrix
 
-| Reference | Mature Pattern To Learn | Fit For Taskplane | What Not To Copy |
+| Reference | What It Actually Optimizes For | Adopt For Taskplane | Do Not Copy Now |
 | --- | --- | --- | --- |
-| LangGraph | Durable execution, human-in-the-loop, stateful workflow graph, streaming and persistence concepts | Strong reference for runtime event spine, resumable nodes, and explicit state transitions | Do not force Taskplane tasks into a graph DSL before product flows need graph authoring |
-| Microsoft Agent Framework / AutoGen lineage | Separation between agents and workflows, type-safe routing, checkpointing, session state, telemetry | Strong reference for distinguishing open-ended agent work from explicit workflow steps | Do not import enterprise abstraction layers before local desktop flows justify them |
-| OpenHands | Sandbox provider model for code/file/command execution; Docker vs process vs remote tradeoffs | Strong reference for future workspace write/command isolation | Do not run broad host tools by default; Taskplane should keep write/command registry-only until UI opt-in |
-| SWE-agent | Agent-computer interface for coding tasks and issue-to-patch flow | Useful reference for future code-agent UX, patch loops, test feedback, and repository task framing | Do not make GitHub issue fixing the center of Taskplane; Task remains broader than code issues |
-| Plandex | Long-task planning, multi-file diff review, terminal coding workflow, user-reviewed changes | Useful reference for future document/code patch review surfaces | Do not require terminal-first operation or a separate planning object model that bypasses Task/Run |
-| CrewAI | Agent roles, crews, flows, memory, task processes, human-in-the-loop triggers | Later reference for multi-agent collaboration or team-like task decomposition | Do not introduce multiple autonomous roles before single-session recovery is robust |
-| MCP | Standard vocabulary for tools/resources/prompts and external server interoperability | Strong future reference for tool contracts and resource exposure | Do not treat any MCP tool as safe merely because it is discoverable; Taskplane policy gates still apply |
-| OpenClaw-like local autonomous agents | Local-first always-on agents, skills, gateways, messaging integrations, sandbox configuration pressure | Useful as a cautionary reference for permission defaults, marketplace/tool risk, and remote gateway exposure | Do not copy always-on autonomy, broad host access, or remote tool exposure into the alpha execution layer |
+| Pi / pi-agent-core / pi-coding-agent | Minimal inner loop, stateful session, tool execution, event streaming, message queues, provider abstraction, coding-agent extensions | Make Taskplane's `AgentExecutor` small, event-shaped, provider-normalized, and tool-registry driven | Do not copy broad Read/Write/Edit/Bash powers or agent self-extension before sandbox and Decision gates exist |
+| OpenClaw | Embedding Pi into a persistent messaging gateway with sessions, channels, skills, custom tools, policy filtering, compaction, auth failover, event streams | Learn embedding architecture: prepared run, session lanes, event bridge, policy-filtered tool set, channel-aware output shaping | Do not copy always-on autonomy, messaging channels, remote gateways, cron, broad host access, or skill marketplaces into alpha |
+| LangGraph | Durable graph/workflow execution with checkpoints, interrupts, persistence, deterministic replay, and human-in-the-loop | Borrow durability concepts: checkpoint IDs, replay-safe side effects, pause/resume semantics | Do not force Taskplane into a graph DSL until product users need workflow authoring |
+| Microsoft Agent Framework / AutoGen lineage | Explicit split between agents and workflows, session state, middleware, telemetry, checkpoint storage, human-in-the-loop workflows | Borrow the agent-vs-workflow distinction and storage-pluggable checkpoint model | Do not import enterprise workflow layers before the local single-session loop is stable |
+| OpenHands | Software-agent platform with sandbox providers, remote/local workspace abstractions, event callbacks, lifecycle control | Primary reference for future code-execution sandbox design | Do not expose arbitrary code/file/command execution in Taskplane until a sandbox decision exists |
+| SWE-agent | Agent-computer interface for software tasks: specialized file viewer, edit command, lint/test feedback, benchmarkable issue-to-patch loop | Borrow the ACI idea: narrow task-specific tools outperform generic terminals | Do not make GitHub issue fixing the center of Taskplane; Taskplane tasks are broader |
+| Plandex | Terminal coding workflow for large multi-file tasks, context management, cumulative diff review, configurable autonomy | Borrow planning + diff-review ergonomics for future workspace patch mode | Do not add a separate terminal-first plan object that bypasses Task/Run/Decision |
+| CrewAI | Multi-agent crews, flows, event-driven workflow state, persistence, human feedback decorators | Later reference for process-template-driven collaboration and HITL routing | Do not introduce crews before one-agent session recovery is robust |
+| MCP | Standard protocol for tools/resources/prompts, schemas, structured tool results, host/client/server boundaries, consent guidance | Future compatibility layer for external tools/resources; useful naming/schema discipline now | Do not treat discovered MCP tools as safe; Taskplane policy must sit above MCP |
+| OpenAI Agents SDK | Agents, tools, handoffs, guardrails, sessions, tracing, hosted/sandbox tools | Borrow guardrail boundary vocabulary and tracing/span shape | Do not depend on SDK guardrails for built-in/hosted tools; Taskplane needs registry-level policy |
+| Google ADK | Event-backed session state, tool/callback contexts, state deltas, session services | Borrow "state changes must flow through events" principle | Do not adopt ADK as runtime; Taskplane already owns domain state |
+| Pydantic AI | Typed agent interface plus durable integrations through Temporal/DBOS/Prefect/Restate | Borrow durable-execution integration posture and typed output validation | Do not add a Python durable runtime underneath Electron for v2 |
+| smolagents | Small multi-step agents, CodeAgent vs ToolCallingAgent, callbacks, sandbox options | Borrow the small-core bias and explicit code-agent sandbox warning | Do not use code-as-action as the default Taskplane execution model |
 
-## Adopted Architecture Principles
+## Primary Reference Notes
 
-### 1. Taskplane Runtime Before Framework Runtime
+### Pi
 
-Taskplane should own the runtime contract:
+Pi is the most important correction to the assessment.
 
-```text
-AgentSessionEvent
-  -> event-to-run-step mapper
-  -> checkpoint/Decision mapper
-  -> artifact/timeline settlement
-```
+Sources reviewed include Pi's generated docs for `@mariozechner/pi-agent-core`,
+the `badlogic/pi-mono` repository, OpenClaw's `docs/pi.md`, PyPI metadata for
+`pi-agent-core`, and Armin Ronacher's "Pi: The Minimal Agent Within OpenClaw".
 
-External frameworks can inspire individual mechanisms, but Taskplane should not
-outsource control-plane semantics to them.
+Key architectural ideas:
 
-### 2. Explicit State Beats Hidden Agent Memory
+- `pi-agent-core` is a stateful runtime for tool execution, message queuing, and
+  event streaming.
+- The agent state includes system prompt, active model, thinking level, tools,
+  message history, and stream status.
+- Pi emits granular events such as agent start/end, turn start/end, message
+  start/update/end, and tool-related updates.
+- Pi's design favors a tiny core and lets applications embed or extend the
+  agent rather than forcing a large workflow framework.
+- Pi sessions can carry custom application messages and extension state; the
+  broader Pi coding-agent stack adds session persistence, branching,
+  compaction, extensions, and skills.
+- The Pi/OpenClaw integration is embedded in-process rather than subprocess or
+  RPC-first, giving OpenClaw control over session lifecycle, event handling,
+  custom tools, system prompts, auth profile rotation, and provider switching.
 
-Long-running agents need state, but the durable state should be Taskplane state:
+Taskplane decision:
 
-- run steps
-- checkpoints
-- decisions
-- artifacts
-- task timeline
-- agent session metadata
+- Adopt Pi's **small inner-loop shape**:
 
-Framework memory can be useful later, but it must not replace visible task
-recovery or evidence.
+  ```text
+  AgentSession
+    -> model turn
+    -> tool proposal
+    -> policy check
+    -> tool execution
+    -> observation event
+    -> next turn or terminal event
+  ```
 
-### 3. Tool Exposure Has Three Gates
+- Keep Taskplane's current `AgentSessionEvent` spine and extend it toward Pi's
+  lifecycle/tool/message event shape.
+- Keep provider-normalized sessions; do not tie session history to one provider
+  format.
+- Treat session branching as a future design input for "side quests" such as
+  fixing a tool, gathering extra context, or trying an alternate plan without
+  polluting the main Run.
+- Do not copy Pi's broad coding powers until Taskplane has a sandbox decision.
+  Pi's default Read/Write/Edit/Bash philosophy is powerful for coding agents,
+  but Taskplane's alpha boundary requires registry/exposure/policy gates and
+  Decisions before mutation.
 
-Every tool belongs to three independent gates:
+### OpenClaw
 
-1. registered in `AgentToolRegistry`
-2. exposed to prompts or provider-native schemas
-3. executable under the current runtime policy
+OpenClaw is best understood as an embedding/product-shell reference around Pi.
 
-This is stricter than many agent frameworks, but it fits Taskplane's local-first
-and human-control requirements.
+Sources reviewed include OpenClaw's Agent Loop docs, Agent Runtime docs,
+repository README, and `docs/pi.md`.
 
-### 4. Workflow Graphs Are Optional, Events Are Required
+Key architectural ideas:
 
-Graph-style orchestration is useful when the product needs branching,
-multi-agent coordination, or repeated long workflows.
+- OpenClaw's agent loop is described as intake -> context assembly -> model
+  inference -> tool execution -> streaming replies -> persistence.
+- Runs are serialized per session lane, with global lanes available for broader
+  concurrency control.
+- OpenClaw prepares workspace, skills, context files, system prompt sections,
+  model/provider settings, and auth profile state before entering the Pi loop.
+- It bridges Pi lifecycle/tool/assistant events into OpenClaw's own agent
+  stream.
+- Its tool architecture layers base coding tools, replacements, OpenClaw tools,
+  channel tools, policy filtering, schema normalization, and abort wrapping.
+- It also exposes the risk side of local autonomous agents: broad host access,
+  messaging channels, cron, skills, remote gateways, and credential-bearing
+  integrations become dangerous quickly.
 
-For v2, typed runtime events are enough. They let Taskplane persist,
-summarize, and resume execution without prematurely adopting a full graph
-runtime.
+Taskplane decision:
 
-### 5. Code Execution Needs Sandbox Design First
+- Adopt the **prepared-run wrapper** idea:
 
-Before Taskplane exposes code execution or broad command access, it needs a
-separate sandbox decision:
+  ```text
+  RunOrchestrator prepares context, policy, provider, and tools
+    -> AgentExecutor owns the model/tool loop
+    -> Event bridge writes RunStep/Checkpoint/Decision/Artifact/Timeline
+  ```
 
-- host process vs container vs remote sandbox
-- workspace root containment
-- environment variable policy
-- network policy
-- file write policy
-- command allowlist
-- output truncation and artifact promotion
-
-The current `workspace.run_command` and `workspace.write_patch` registry-only
-paths are useful acceptance slices, not a reason to expose coding-agent powers
-yet.
-
-## Implications For v2
-
-### Keep
-
-- Task/Run/Decision/Artifact/Timeline as the control plane.
-- `AgentToolRegistry` as the only mutation path.
-- provider-native normalization into Taskplane proposals/events.
-- local acceptance through `npm run accept:agent-local`.
-- workspace write/command prompt exposure deferred.
-
-### Add Next
-
-- event emission from the current local executor path
-- event-to-run-step mapper integration in `RunOrchestrator`
-- checkpoint payloads that carry a policy snapshot and continuation target
-- resume tests that simulate app restart using persisted SQLite state
-- a written sandbox decision before any coding-agent execution mode
-
-### Defer
-
-- multi-agent crews
-- browser/computer control
-- arbitrary shell commands
-- external posting/email/calendar/social tools
-- always-on autonomous scheduling
-- automatic completion satisfaction or task closeout
-
-## Framework-Specific Notes
+- Adopt session/global lane thinking later if Taskplane adds background or
+  long-running runs.
+- Adopt tool layering, but keep it stricter:
+  registry availability, prompt/schema exposure, and runtime execution remain
+  separate gates.
+- Do not adopt messaging channels, cron, always-on execution, or broad host
+  tools in v2.
 
 ### LangGraph
 
-LangGraph is the closest conceptual match for durable stateful orchestration.
-Its main lesson is not "use LangGraph now"; it is that durable execution,
-human-in-the-loop state inspection, and long-running workflow state should be
-first-class runtime concerns.
+LangGraph is the clearest durability reference.
 
-Taskplane should borrow the durable-state idea while keeping its own Task/Run
-objects as the persisted state boundary.
+Sources reviewed include LangGraph durable execution and overview docs.
 
-Decision: learn from LangGraph's checkpointer, thread identifier, interrupt,
-and replay discipline. Do not import a graph runtime into the alpha desktop app
-until Taskplane has product-level graph authoring or repeated branching flows.
+Key architectural ideas:
 
-### Microsoft Agent Framework / AutoGen
+- Durable execution persists workflow progress at key points.
+- Checkpointers and thread identifiers make a workflow instance resumable.
+- Human-in-the-loop and long-running workflows are first-class use cases.
+- Durable replay requires deterministic/idempotent design; side effects and
+  non-deterministic work should be wrapped so they are not repeated on resume.
+- Interrupts and commands provide pause/resume mechanics.
 
-Microsoft's current Agent Framework separates agent-style open-ended work from
-workflow-style explicit routing and emphasizes session state, type safety,
-checkpointing, telemetry, and human-in-the-loop scenarios.
+Taskplane decision:
 
-Taskplane should mirror that separation: agent sessions can remain flexible,
-while high-risk task transitions and workspace mutations should be explicit
-workflow/checkpoint moments.
+- Adopt durable semantics, not the graph DSL:
+  checkpoint IDs, resume targets, side-effect idempotency, and persisted
+  execution history belong in Taskplane.
+- `RunCheckpoint` should eventually carry enough structured state to resume
+  exactly one pending continuation.
+- Tool results that mutate state should be idempotent or guarded by existing
+  domain state checks.
+- Defer graph authoring until users need visible workflow design.
 
-Decision: borrow the distinction between open-ended agents and explicit
-workflows, plus middleware/telemetry/session-state vocabulary. Do not add a
-multi-agent framework dependency before the single-agent session is restart-safe.
+### Microsoft Agent Framework / AutoGen Lineage
+
+Microsoft Agent Framework is useful because it distinguishes open-ended agents
+from explicit workflows.
+
+Sources reviewed include Microsoft Agent Framework overview and workflow
+checkpoint docs.
+
+Key architectural ideas:
+
+- Use agents for open-ended/conversational work; use workflows for explicit
+  execution order and coordination.
+- The framework emphasizes session-based state, type safety, middleware,
+  telemetry, checkpoint storage, and graph-based multi-agent workflows.
+- Checkpoint storage is pluggable: in-memory, local file, or Cosmos DB.
+
+Taskplane decision:
+
+- Keep Taskplane's agent loop flexible, but make risky transitions explicit
+  workflow/checkpoint moments.
+- Store checkpoints in Taskplane's SQLite domain model, not in a framework-owned
+  checkpoint store.
+- Borrow the "if a function can handle it, do that instead of an AI agent"
+  discipline for domain services.
+- Defer multi-agent orchestration until the single-agent loop can pause,
+  resume, and explain itself.
 
 ### OpenHands
 
-OpenHands is most relevant to future coding-agent work. Its sandbox-provider
-model highlights the real design question for code execution: where does code
-run, with what isolation, and what host access is allowed?
+OpenHands is the strongest sandbox/code-execution reference.
 
-Taskplane should not expose code execution until it has an explicit sandbox
-decision. The current `test` / `lint` command runner is intentionally much
-narrower.
+Sources reviewed include OpenHands sandbox overview, runtime architecture docs,
+SDK API sandbox docs, and project site/repository.
 
-Decision: use OpenHands as the primary future reference for sandbox-provider
-choices: process is fast but unsafe, Docker gives host isolation, and remote
-sandboxes change deployment shape. Taskplane should write its own sandbox
-decision before any broad code-agent mode.
+Key architectural ideas:
+
+- Code execution is treated as a sandbox/workspace problem.
+- OpenHands distinguishes Docker sandbox, process sandbox, and remote sandbox
+  providers.
+- Older runtime docs describe a client/server runtime that executes actions in
+  the sandbox and returns observations.
+- Remote workspaces can move infrastructure and lifecycle management to a
+  hosted runtime API.
+
+Taskplane decision:
+
+- Before broad coding-agent mode, write a dedicated sandbox decision covering:
+  host process vs Docker vs remote, workspace mounts, environment variables,
+  network policy, command allowlist, output limits, artifact promotion, and
+  teardown.
+- Keep current `workspace.write_patch` and `workspace.run_command` registry-only
+  slices as acceptance scaffolding, not as prompt-exposed capabilities.
 
 ### SWE-agent
 
-SWE-agent is useful for thinking about coding tasks as agent-computer
-interfaces: issue context, repository inspection, patching, and feedback from
-tests.
+SWE-agent is the strongest "interface design matters" reference for coding
+tasks.
 
-Taskplane should learn from that loop when it later designs code-task execution,
-but code tasks should still feed Taskplane Runs, Artifacts, Decisions, and
-Timeline events.
+Sources reviewed include SWE-agent ACI docs, repository, and paper.
 
-Decision: borrow the agent-computer-interface idea for future code work: the
-agent should get a narrow, task-specific interface rather than a human terminal
-with broad privileges.
+Key architectural ideas:
+
+- SWE-agent is built around an Agent-Computer Interface (ACI).
+- ACI is the set of tools and interaction format that lets the agent operate a
+  computer environment.
+- SWE-agent's custom ACI includes specialized file viewing/editing and feedback
+  mechanisms such as linting edits.
+- Benchmarks show the interface itself affects software-engineering
+  performance.
+
+Taskplane decision:
+
+- Design Taskplane tools as product-specific interfaces, not generic shell
+  access.
+- For future code work, provide file viewers, patch review, test feedback, and
+  repo summaries shaped for agents.
+- Keep code issue fixing as one task type, not the whole product.
 
 ### Plandex
 
-Plandex is useful for long coding tasks and user-reviewed multi-file changes.
-The relevant idea is disciplined planning plus diff review for large tasks.
+Plandex is useful for large coding tasks and review ergonomics.
 
-Taskplane can reuse the pattern later for workspace patch review, but should
-not adopt a separate terminal-first project model.
+Sources reviewed include Plandex site, repository, and context-management docs.
 
-Decision: borrow cumulative diff review, model mixing, and stepwise autonomy
-concepts for future code execution UX. Keep Taskplane's current Decision-based
-patch approval as the durable review object.
+Key architectural ideas:
+
+- Plandex is a terminal-based coding agent for large projects/tasks.
+- It emphasizes context loading/selection, large-file/project maps, model
+  mixing, full-auto vs stepwise control, command execution, and cumulative diff
+  review.
+- Changes stay isolated until reviewed/applied.
+
+Taskplane decision:
+
+- Borrow cumulative diff review and configurable autonomy for future workspace
+  patch mode.
+- Keep review as Taskplane `Decision` objects, not a separate terminal-only
+  approval model.
+- Keep context management tied to Task/Run and workspace root policy.
 
 ### CrewAI
 
-CrewAI's agents/crews/flows model is useful later if Taskplane adds
-multi-role execution or process-template-driven agent collaboration.
+CrewAI is a later-stage orchestration reference.
 
-For now, it is too much structure. Single-session recoverability is the
-precondition.
+Sources reviewed include CrewAI Flows, Flow persistence, and human-feedback
+docs.
 
-Decision: defer crews, delegated roles, and hierarchical processes until
-Taskplane can explain, resume, and audit one agent session cleanly.
+Key architectural ideas:
+
+- Flows provide structured event-driven workflows with state, routers, branches,
+  persistence, and resume.
+- `@human_feedback` can pause execution, collect feedback, and resume from a
+  pending flow.
+- Crews/tasks/processes support multi-agent collaboration.
+
+Taskplane decision:
+
+- Borrow human-feedback routing ideas for future Decision UX.
+- Borrow process-template-to-flow thinking only after Taskplane has repeated
+  user workflows that justify it.
+- Do not introduce crews/multi-role agents before one-agent recovery is stable.
 
 ### MCP
 
-MCP is useful vocabulary for tools, resources, and prompts, and could become a
-future interoperability layer for external context/tools.
+MCP is a protocol reference, not a safety boundary by itself.
 
-Taskplane should keep MCP behind the same registry/exposure/policy gates. A
-discoverable tool is not automatically a safe tool.
+Sources reviewed include the MCP specification and current tools specification.
 
-Decision: use MCP's vocabulary and schema discipline as a future compatibility
-target, especially resources/prompts/tools and structured tool results. Keep
-Taskplane's policy layer above MCP because MCP itself cannot enforce consent or
-local file safety.
+Key architectural ideas:
 
-### OpenClaw-like Systems
+- MCP defines host/client/server boundaries and exposes resources, prompts, and
+  tools.
+- Tools have names, descriptions, input schemas, optional output schemas, and
+  structured/unstructured results.
+- The spec explicitly warns that tools can represent arbitrary code execution;
+  hosts should provide consent, authorization, visibility, access controls,
+  timeouts, validation, and audit logging.
+- Tool annotations must be treated as untrusted unless from trusted servers.
 
-OpenClaw-like always-on local agents are relevant because they expose the
-permission problem sharply: broad local host access, gateway integrations,
-skills, messaging, and remote control become powerful quickly.
+Taskplane decision:
 
-For Taskplane, this is a reason to keep v2 conservative. Always-on autonomy and
-broad host access are non-goals until the checkpoint, sandbox, and audit model
-is much stronger.
+- Adopt MCP-compatible naming/schema discipline where useful.
+- Treat MCP servers as external tool providers behind `AgentToolRegistry`.
+- Apply Taskplane policy above MCP discovery:
+  a discovered tool is not exposed, executable, or trusted by default.
 
-Decision: treat this family as a risk reference, not an adoption target. The
-useful lessons are channel allowlists, remote-input distrust, per-session
-sandboxing, and clear warnings before host tools or messaging integrations are
-enabled.
+## Secondary Reference Notes
 
-## Resulting Architecture Decision
+### OpenAI Agents SDK
 
-Taskplane's v2 execution layer should be:
+Useful for guardrail and tracing vocabulary.
+
+Sources reviewed include official Agents SDK intro, guardrails, sessions, and
+tracing docs.
+
+Key architectural ideas:
+
+- Agents, tools, handoffs, sessions, guardrails, tracing, and MCP support are
+  first-class SDK concepts.
+- Tool guardrails wrap custom function tools before/after execution.
+- The docs explicitly note guardrail boundary limits: handoffs, hosted tools,
+  and built-in execution tools do not all pass through the same tool guardrail
+  pipeline.
+
+Taskplane decision:
+
+- Borrow guardrail vocabulary and tracing/span shape.
+- Do not rely on framework guardrails as the source of truth. Taskplane's
+  registry/exposure/policy gates remain mandatory.
+
+### Google ADK
+
+Useful for event-backed state mutation.
+
+Sources reviewed include ADK runtime/session state docs.
+
+Key architectural ideas:
+
+- State changes made inside callbacks/tools are routed into event actions and
+  persisted by the session service when events are appended.
+- Direct session-state mutation outside the managed event lifecycle is
+  discouraged because it bypasses audit history, persistence, thread-safety, and
+  timestamps.
+
+Taskplane decision:
+
+- This directly supports Taskplane's event-spine direction:
+  state changes should become events first, then persisted domain objects.
+- Keep Taskplane's SQLite repositories as the durable state layer.
+
+### Pydantic AI
+
+Useful for typed agents and durable integration posture.
+
+Sources reviewed include Pydantic AI durable execution docs and core agent
+docs.
+
+Key architectural ideas:
+
+- Durable agent execution is supported through Temporal, DBOS, Prefect, and
+  Restate.
+- The integrations use public interfaces and serve as references for other
+  durable systems.
+- Pydantic AI emphasizes typed outputs, tools, streaming, MCP, and agent graphs.
+
+Taskplane decision:
+
+- Borrow typed validation and durable-integration boundaries.
+- Do not introduce a Python runtime dependency for v2.
+
+### smolagents
+
+Useful as a small-core/code-agent contrast.
+
+Sources reviewed include Hugging Face smolagents docs and repository.
+
+Key architectural ideas:
+
+- Agents inherit from a multi-step loop.
+- `CodeAgent` writes actions as Python code; `ToolCallingAgent` uses JSON-style
+  tool calls.
+- It supports callbacks, managed agents, run summaries, final answer checks,
+  and sandbox backends such as Docker or Pyodide/Deno WebAssembly.
+
+Taskplane decision:
+
+- Borrow the small-core bias and explicit distinction between code actions and
+  tool calls.
+- Do not make code-as-action the default Taskplane execution mode.
+
+## Adopted Taskplane Reference Model
+
+Taskplane should use a native runtime, inspired most directly by Pi's inner loop
+and OpenClaw's embedded-product wrapper:
 
 ```text
 RunService
   -> RunOrchestrator
+       prepares task context, provider config, policies, exposed tool schemas
   -> AgentExecutor
+       owns one agent session loop
   -> AgentSessionEvent stream
+       session.started
+       plan.proposed
+       model.completed / model.delta later
+       tool.started
+       tool.completed / tool.failed
+       checkpoint.created
+       session.paused / session.completed / session.failed
   -> Event mappers
-       -> RunStep
-       -> Checkpoint / Decision
-       -> Artifact / Timeline
+       RunStep
+       RunCheckpoint
+       Decision
+       Artifact
+       Timeline
   -> AgentToolRegistry
-       -> tool definition
-       -> prompt/schema exposure
-       -> runtime policy
-       -> optional human confirmation
+       registry availability
+       prompt/provider schema exposure
+       runtime policy execution
+       confirmation / Decision gate
 ```
 
-This keeps external frameworks as reference architectures instead of product
-dependencies. The implementation sequence should stay:
+This intentionally keeps framework ideas behind Taskplane domain objects.
 
-1. Wire current executor outputs through `AgentSessionEvent` handling.
-2. Persist run steps from event mappers instead of ad hoc orchestrator branches.
-3. Normalize checkpoint creation and resume through event handling.
-4. Add restart-safe resume tests around persisted SQLite state.
-5. Write a separate sandbox decision before exposing any broad code-agent,
-   browser, computer-control, external-posting, or always-on agent mode.
+## Adoption Decisions
 
-## Immediate Next Task
+### Adopt Now
 
-The next code task is not to add a new framework. It is to finish Slice 0 by
-wiring the already-created runtime event types and
-`agent-runtime-event-step-mapper` into `RunOrchestrator`, while proving that the
-existing text-only, provider-native safe-read, checkpoint, and denied-tool paths
-still settle the same way.
+- Pi-style small inner loop, but Taskplane-owned.
+- OpenClaw-style embedding wrapper, but Taskplane control plane first.
+- Typed `AgentSessionEvent` as the runtime event spine.
+- Event-to-RunStep mapping as the first visible projection.
+- Tool registry/exposure/policy as three independent gates.
+- Provider-native tool calls normalized into Taskplane proposals/events.
+- Decision-backed checkpoints before higher-risk mutations.
+
+### Study Next
+
+- Pi session branching for future side quests and sub-runs.
+- OpenClaw session lanes for future background/long-running execution.
+- LangGraph durable replay/idempotency patterns for restart-safe resume.
+- OpenHands sandbox-provider choices for future code-agent mode.
+- MCP resource/tool schemas for external connector compatibility.
+- CrewAI human-feedback routing for richer Decision UX.
+
+### Defer
+
+- Full graph workflow runtime.
+- Multi-agent crews.
+- Always-on autonomy or cron.
+- Messaging-channel execution.
+- Browser/computer-control tools.
+- Arbitrary shell or broad workspace mutation.
+- Agent self-extension or skill marketplace.
+- External posting/email/calendar/social tools.
+- Automatic completion satisfaction or task closeout.
+
+## Immediate Implementation Implications
+
+The next implementation work should stay on Slice 0:
+
+1. Keep wiring current executor paths through `AgentSessionEvent` handling.
+2. Normalize checkpoint creation through the same event pipeline.
+3. Persist enough checkpoint payload to resume one pending action safely after
+   app restart.
+4. Add resume tests that rebuild services from persisted SQLite state.
+5. Do not add a framework dependency until the event/checkpoint contract is
+   stable.
+
+After Slice 0, write a separate sandbox decision before broad code execution.
 
 ## Sources Reviewed
 
-- LangGraph overview:
-  <https://docs.langchain.com/oss/python/langgraph/overview>
+Primary sources and near-primary technical references:
+
+- Pi agent core overview:
+  <https://www.mintlify.com/badlogic/pi-mono/agent/overview>
+- Pi monorepo:
+  <https://github.com/badlogic/pi-mono>
+- Pi coding-agent package:
+  <https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent>
+- OpenClaw Pi integration:
+  <https://github.com/openclaw/openclaw/blob/main/docs/pi.md>
+- OpenClaw agent loop:
+  <https://docs.openclaw.ai/concepts/agent-loop>
+- OpenClaw sandbox/runtime concepts:
+  <https://docs.openclaw.ai/concepts/agent-runtimes>
+- Armin Ronacher on Pi:
+  <https://lucumr.pocoo.org/2026/1/31/pi/>
 - LangGraph durable execution:
   <https://docs.langchain.com/oss/python/langgraph/durable-execution>
 - Microsoft Agent Framework overview:
   <https://learn.microsoft.com/en-us/agent-framework/overview/>
+- Microsoft Agent Framework checkpoints:
+  <https://learn.microsoft.com/en-us/agent-framework/workflows/checkpoints>
 - OpenHands sandbox overview:
-  <https://docs.openhands.dev/openhands/usage/sandboxes/overview>
+  <https://docs.openhands.dev/openhands/usage/runtimes/overview>
+- OpenHands SDK API sandbox:
+  <https://docs.openhands.dev/sdk/guides/agent-server/api-sandbox>
+- SWE-agent Agent-Computer Interface:
+  <https://swe-agent.com/1.0/background/aci/>
 - SWE-agent repository:
-  <https://github.com/swe-agent/swe-agent>
+  <https://github.com/swe-agent/SWE-agent>
 - Plandex project:
   <https://plandex.ai/>
-- CrewAI documentation:
-  <https://docs.crewai.com/>
-- MCP tool specification:
-  <https://modelcontextprotocol.io/specification/draft/server/tools>
+- Plandex repository:
+  <https://github.com/plandex-ai/plandex>
+- Plandex context management:
+  <https://docs.plandex.ai/core-concepts/context-management/>
+- CrewAI Flows:
+  <https://docs.crewai.com/en/concepts/flows>
+- CrewAI Human Feedback in Flows:
+  <https://docs.crewai.com/en/learn/human-feedback-in-flows>
 - MCP specification:
   <https://modelcontextprotocol.io/specification/draft>
-- OpenClaw repository:
-  <https://github.com/openclaw/openclaw>
+- MCP tools specification:
+  <https://modelcontextprotocol.io/specification/2025-11-25/server/tools>
+- OpenAI Agents SDK:
+  <https://openai.github.io/openai-agents-python/>
+- OpenAI Agents SDK guardrails:
+  <https://openai.github.io/openai-agents-python/guardrails/>
+- Google ADK session state:
+  <https://adk.dev/sessions/state/>
+- Pydantic AI durable execution:
+  <https://pydantic.dev/docs/ai/integrations/durable_execution/overview/>
+- Hugging Face smolagents:
+  <https://huggingface.co/docs/smolagents/reference/agents>

@@ -64,10 +64,12 @@ The project is past initial architecture assembly. Current work should favor pro
   keep workspace write/command, browser/computer control, external posting, and
   autonomous scheduling deferred.
 - [AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md](AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md)
-  records the first-principles execution-layer reference assessment: Taskplane
-  should keep its own Task/Run/Decision/Artifact/Timeline control plane, borrow
-  durable execution and sandbox/tool-boundary lessons from mature frameworks,
-  and avoid adopting a full external agent runtime before Slice 0 is complete.
+  records the re-assessed execution-layer reference architecture: Pi is now
+  evaluated separately as the inner-loop reference, OpenClaw as the embedding
+  and gateway reference, and LangGraph/OpenHands/SWE-agent/Plandex/CrewAI/MCP
+  plus secondary frameworks as pattern sources. Taskplane should keep its own
+  Task/Run/Decision/Artifact/Timeline control plane and avoid adopting a full
+  external agent runtime before Slice 0 is complete.
 
 ## Verification Baseline
 
