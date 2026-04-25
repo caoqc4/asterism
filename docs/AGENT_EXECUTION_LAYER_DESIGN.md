@@ -471,9 +471,9 @@ and persists artifacts.
   events.
 - `AgentSessionStore`: persists enough session state to resume or explain why a
   run cannot resume after restart.
-- `AgentRuntimeCapabilities`: records whether the selected provider supports
-  structured tool calling, text-only planning, streaming, file context, or
-  long-running sessions.
+- `AgentRuntimeCapabilities`: records whether the selected provider/session
+  supports structured tool calling, text-only planning, streaming, read-only
+  file context, task mutation tools, or long-running sessions.
 - `AgentToolRegistry`: remains the only way executors mutate Taskplane domain
   state.
 - `RunOrchestrator`: adapts session events into `run_steps`, checkpoints, and
@@ -501,7 +501,8 @@ Completed slice:
 1. Add a small `AgentSessionStore` abstraction that can record session metadata
    for a run without changing public `Run` shape yet.
 2. Persist runtime capability metadata for each agent run, including whether it
-   used text-only planning or structured tool calling.
+   used text-only planning, structured tool calling, read-only file context, or
+   task update tools.
 3. Teach `RunOrchestrator` to write the session metadata before starting the
    executor.
 
@@ -540,6 +541,14 @@ Completed slice:
 2. Add coverage that an opted-in agent run stores `fileContext=true` while a
    default run stores `fileContext=false`.
 3. Keep patch and command execution unavailable.
+
+Completed slice:
+
+1. Add explicit per-run task update tool opt-in.
+2. Make prompts, run-loop plan acceptance, and session metadata reflect
+   `allowTaskMutationTools`.
+3. Surface task update tool capability in Runs detail.
+4. Keep workspace patch and command tools unavailable to normal agent plans.
 
 Completed slice:
 
