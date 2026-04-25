@@ -60,6 +60,21 @@ export type AgentRunLoopStep =
         title: string;
         content: string;
       };
+    }
+  | {
+      kind: 'workspace_search';
+      tool: Extract<AgentToolName, 'workspace.search'>;
+      input: {
+        query: string;
+        maxResults?: number;
+      };
+    }
+  | {
+      kind: 'workspace_read_file';
+      tool: Extract<AgentToolName, 'workspace.read_file'>;
+      input: {
+        path: string;
+      };
     };
 
 type AgentRunLoopPlan = {
@@ -94,6 +109,42 @@ function buildInspectTimelineStep(): Extract<AgentRunLoopStep, { kind: 'inspect_
     kind: 'inspect_timeline',
     tool: 'task.inspect_timeline',
     input: {},
+  };
+}
+
+function parseWorkspaceSearchStep(
+  input: Record<string, unknown> | undefined,
+): Extract<AgentRunLoopStep, { kind: 'workspace_search' }> | null {
+  const query = typeof input?.query === 'string' ? input.query.trim() : '';
+
+  if (!query) {
+    return null;
+  }
+
+  const maxResults = typeof input?.maxResults === 'number'
+    ? Math.max(1, Math.floor(input.maxResults))
+    : undefined;
+
+  return {
+    kind: 'workspace_search',
+    tool: 'workspace.search',
+    input: maxResults ? { query, maxResults } : { query },
+  };
+}
+
+function parseWorkspaceReadFileStep(
+  input: Record<string, unknown> | undefined,
+): Extract<AgentRunLoopStep, { kind: 'workspace_read_file' }> | null {
+  const filePath = typeof input?.path === 'string' ? input.path.trim() : '';
+
+  if (!filePath) {
+    return null;
+  }
+
+  return {
+    kind: 'workspace_read_file',
+    tool: 'workspace.read_file',
+    input: { path: filePath },
   };
 }
 
@@ -241,9 +292,10 @@ export class AgentRunLoop {
   buildPlanFromProposal(params: {
     proposal: AgentStepProposal | null | undefined;
     modelOutput: string;
+    policy?: AgentRunRequest['policy'];
     taskTitle: string;
   }): AgentRunLoopStep[] {
-    const { modelOutput, proposal, taskTitle } = params;
+    const { modelOutput, policy, proposal, taskTitle } = params;
 
     if (!proposal?.steps.length) {
       return this.buildLocalNotePlan({ modelOutput, taskTitle });
@@ -259,6 +311,36 @@ export class AgentRunLoop {
 
       if (step.tool === 'task.inspect_timeline') {
         nextPlan.push(buildInspectTimelineStep());
+        continue;
+      }
+
+      if (step.tool === 'workspace.search') {
+        if (!policy?.allowLocalWorkspaceRead) {
+          return this.buildLocalNotePlan({ modelOutput, taskTitle });
+        }
+
+        const parsed = parseWorkspaceSearchStep(step.input);
+
+        if (!parsed) {
+          return this.buildLocalNotePlan({ modelOutput, taskTitle });
+        }
+
+        nextPlan.push(parsed);
+        continue;
+      }
+
+      if (step.tool === 'workspace.read_file') {
+        if (!policy?.allowLocalWorkspaceRead) {
+          return this.buildLocalNotePlan({ modelOutput, taskTitle });
+        }
+
+        const parsed = parseWorkspaceReadFileStep(step.input);
+
+        if (!parsed) {
+          return this.buildLocalNotePlan({ modelOutput, taskTitle });
+        }
+
+        nextPlan.push(parsed);
         continue;
       }
 
@@ -294,6 +376,7 @@ export class AgentRunLoop {
   buildExecutionPlan(params: {
     proposal: AgentStepProposal | null | undefined;
     modelOutput: string;
+    policy?: AgentRunRequest['policy'];
     taskTitle: string;
   }): AgentRunLoopPlan {
     const fallbackPlan = this.buildLocalNotePlan(params);
@@ -438,6 +521,7 @@ export class AgentRunLoop {
     const executionPlan = this.buildExecutionPlan({
       proposal: parsedProposal,
       modelOutput: effectiveModelOutput,
+      policy: request.policy,
       taskTitle,
     });
 

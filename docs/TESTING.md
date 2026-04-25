@@ -69,7 +69,7 @@ Covered today:
 - `LocalAgentExecutor`
   adapter behavior that preserves current local agent-loop outcomes behind the executor/session boundary
 - `AgentRunLoop`
-  typed local observe-then-write plan building, constrained JSON proposal parsing, required read-only observation steps before local writes, observation-aware planner continue/stop decision writes, fallback behavior, visible plan-source run-step writes, in-memory tool observations, persisted structured observation-summary run steps, and failed / confirmation-needed tool outcomes
+  typed local observe-then-write plan building, constrained JSON proposal parsing, policy-gated workspace read steps, required read-only observation steps before local writes, observation-aware planner continue/stop decision writes, fallback behavior, visible plan-source run-step writes, in-memory tool observations, persisted structured observation-summary run steps, and failed / confirmation-needed tool outcomes
 - `AgentWorkingContext`
   task-detail compression into typed agent run context, default policy, and plan-step request summaries
 - `AgentToolRegistry`

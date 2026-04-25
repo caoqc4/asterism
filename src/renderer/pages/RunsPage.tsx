@@ -62,6 +62,8 @@ function formatAgentToolLabel(tool: string): string {
     'task.inspect_context': '读取任务上下文',
     'task.inspect_timeline': '读取最近时间线',
     'artifact.create_note': '写入本地 note',
+    'workspace.search': '搜索工作区',
+    'workspace.read_file': '读取工作区文件',
   };
 
   return labels[tool] ?? tool;

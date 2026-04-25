@@ -510,7 +510,7 @@ Completed slice:
 3. Persist every call/result as ordinary run steps.
 4. Add tests proving these tools cannot write files and cannot run commands.
 
-Next code slice:
+Completed slice:
 
 1. Decide how workspace tools enter agent plans: conservative local-only
    heuristic first, then model-proposed tool calls later.
@@ -518,6 +518,11 @@ Next code slice:
    only when `allowLocalWorkspaceRead` is true.
 3. Keep patch and command tools out of the available planner set.
 
-Success: Taskplane can inspect local project context for coding-like tasks
-without yet granting patch or command execution, and the planner cannot request
-workspace reads unless the session policy explicitly allows them.
+Next code slice:
+
+1. Add a UI/config path for enabling read-only workspace access per run.
+2. Keep the default agent run policy disabled until the user opts in.
+3. Surface the resulting capability in the run session metadata.
+
+Success: Taskplane can inspect local project context for coding-like tasks only
+when the user has explicitly enabled read-only workspace access for that run.

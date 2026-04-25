@@ -276,6 +276,89 @@ describe('AgentRunLoop', () => {
     }));
   });
 
+  it('accepts workspace read steps only when policy allows local workspace reads', () => {
+    const loop = new AgentRunLoop({ execute: vi.fn() } as never);
+    const proposal = {
+      steps: [
+        { tool: 'task.inspect_context' as const },
+        {
+          tool: 'workspace.search' as const,
+          input: {
+            query: 'AgentToolRegistry',
+            maxResults: 3,
+          },
+        },
+        {
+          tool: 'workspace.read_file' as const,
+          input: {
+            path: 'src/main/domain/run/agent-tool-registry.ts',
+          },
+        },
+        {
+          tool: 'artifact.create_note' as const,
+          input: {
+            title: 'Workspace note',
+            content: 'Workspace context reviewed',
+          },
+        },
+      ],
+    };
+
+    expect(loop.buildPlanFromProposal({
+      proposal,
+      modelOutput: 'Agent output',
+      policy: {
+        ...buildRequest().policy,
+        allowLocalWorkspaceRead: true,
+      },
+      taskTitle: 'Task 1',
+    })).toEqual([
+      {
+        kind: 'inspect_context',
+        tool: 'task.inspect_context',
+        input: {},
+      },
+      {
+        kind: 'inspect_timeline',
+        tool: 'task.inspect_timeline',
+        input: {},
+      },
+      {
+        kind: 'workspace_search',
+        tool: 'workspace.search',
+        input: {
+          query: 'AgentToolRegistry',
+          maxResults: 3,
+        },
+      },
+      {
+        kind: 'workspace_read_file',
+        tool: 'workspace.read_file',
+        input: {
+          path: 'src/main/domain/run/agent-tool-registry.ts',
+        },
+      },
+      {
+        kind: 'create_note',
+        tool: 'artifact.create_note',
+        input: {
+          title: 'Workspace note',
+          content: 'Workspace context reviewed',
+        },
+      },
+    ]);
+
+    expect(loop.buildPlanFromProposal({
+      proposal,
+      modelOutput: 'Agent output',
+      policy: buildRequest().policy,
+      taskTitle: 'Task 1',
+    })).toEqual(loop.buildLocalNotePlan({
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    }));
+  });
+
   it('labels execution plans by source', () => {
     const loop = new AgentRunLoop({ execute: vi.fn() } as never);
 
@@ -653,6 +736,115 @@ describe('AgentRunLoop', () => {
         taskId: 'task_1',
       }),
       expect.objectContaining({ confirmationRequiredRisks: ['external_write', 'sensitive'] }),
+    );
+  });
+
+  it('runs policy-enabled workspace reads before a model-produced local note', async () => {
+    const agentToolRegistry = {
+      execute: vi
+        .fn()
+        .mockResolvedValueOnce({
+          success: true,
+          summary: 'Inspected context',
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          summary: 'Inspected timeline',
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          summary: 'Searched workspace',
+          output: 'src/main/domain/run/agent-tool-registry.ts: class AgentToolRegistry',
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          summary: 'Read file',
+          output: 'export class AgentToolRegistry {}',
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          summary: 'Created note',
+          output: 'Final content',
+          artifactId: 'artifact_1',
+        }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const loop = new AgentRunLoop(agentToolRegistry as never, runStepRepository as never);
+    const request: AgentRunRequest = {
+      ...buildRequest(),
+      policy: {
+        ...buildRequest().policy,
+        allowLocalWorkspaceRead: true,
+      },
+    };
+
+    const result = await loop.executeLocalNoteLoop({
+      request,
+      modelOutput: JSON.stringify({
+        finalOutput: 'Final content',
+        steps: [
+          { tool: 'task.inspect_context' },
+          {
+            tool: 'workspace.search',
+            input: {
+              query: 'AgentToolRegistry',
+              maxResults: 1,
+            },
+          },
+          {
+            tool: 'workspace.read_file',
+            input: {
+              path: 'src/main/domain/run/agent-tool-registry.ts',
+            },
+          },
+          {
+            tool: 'artifact.create_note',
+            input: {
+              title: 'Workspace note',
+              content: 'Final content',
+            },
+          },
+        ],
+      }),
+      taskTitle: 'Task 1',
+    });
+
+    expect(result).toEqual({
+      status: 'completed',
+      output: 'Final content',
+      observations: [
+        expect.objectContaining({ tool: 'task.inspect_context', status: 'completed' }),
+        expect.objectContaining({ tool: 'task.inspect_timeline', status: 'completed' }),
+        expect.objectContaining({ tool: 'workspace.search', status: 'completed' }),
+        expect.objectContaining({ tool: 'workspace.read_file', status: 'completed' }),
+        expect.objectContaining({ tool: 'artifact.create_note', status: 'completed' }),
+      ],
+    });
+    expect(agentToolRegistry.execute).toHaveBeenNthCalledWith(
+      2,
+      'task.inspect_timeline',
+      {},
+      expect.any(Object),
+      request.policy,
+    );
+    expect(agentToolRegistry.execute).toHaveBeenNthCalledWith(
+      3,
+      'workspace.search',
+      {
+        query: 'AgentToolRegistry',
+        maxResults: 1,
+      },
+      expect.any(Object),
+      request.policy,
+    );
+    expect(agentToolRegistry.execute).toHaveBeenNthCalledWith(
+      4,
+      'workspace.read_file',
+      {
+        path: 'src/main/domain/run/agent-tool-registry.ts',
+      },
+      expect.any(Object),
+      request.policy,
     );
   });
 
