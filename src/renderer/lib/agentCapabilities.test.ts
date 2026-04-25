@@ -88,6 +88,16 @@ describe('agent capability formatting', () => {
     }, true)).toContain('structured tool calls enabled for provider safe-read tools');
   });
 
+  it('previews the sandbox coding lane as gated when the rollout flag is enabled', () => {
+    expect(formatPreRunAgentCapabilitySummary({
+      ...buildAiStatus('anthropic'),
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+    }, true)).toContain('sandbox coding lane gate enabled; waiting for provider eligibility');
+  });
+
   it('formats provider-native agent session metadata for run detail', () => {
     expect(formatAgentSessionMetadataSummary({
       id: 'agent_session_1',

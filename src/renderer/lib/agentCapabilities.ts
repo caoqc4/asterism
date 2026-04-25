@@ -3,6 +3,7 @@ import type { AiConfigStatus } from '@shared/types/settings';
 import { getProviderExecutionCapabilities } from '@shared/agent-provider-capabilities';
 
 const SANDBOX_CODING_DISABLED_SUMMARY = 'sandbox coding lane disabled; workspace patch/commands unavailable';
+const SANDBOX_CODING_GATED_SUMMARY = 'sandbox coding lane gate enabled; waiting for provider eligibility';
 
 function formatProviderSummary(aiStatus: AiConfigStatus | null): string {
   if (!aiStatus?.provider || !aiStatus.model) {
@@ -28,6 +29,12 @@ function formatPreRunStructuredToolSummary(aiStatus: AiConfigStatus | null): str
   }
 
   return 'structured tool calls disabled until provider-native flag is enabled';
+}
+
+function formatPreRunSandboxCodingSummary(aiStatus: AiConfigStatus | null): string {
+  return aiStatus?.featureFlags.enableSandboxCodingAgent
+    ? SANDBOX_CODING_GATED_SUMMARY
+    : SANDBOX_CODING_DISABLED_SUMMARY;
 }
 
 export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord): string {
@@ -130,6 +137,6 @@ export function formatPreRunAgentCapabilitySummary(
     workspaceSummary,
     taskToolsSummary,
     formatPreRunStructuredToolSummary(aiStatus),
-    SANDBOX_CODING_DISABLED_SUMMARY,
+    formatPreRunSandboxCodingSummary(aiStatus),
   ].join(' / ');
 }
