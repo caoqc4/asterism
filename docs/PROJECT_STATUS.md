@@ -36,7 +36,7 @@ npm run verify
 Latest local baseline:
 
 - 43 test files
-- 310 tests
+- 311 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -54,7 +54,7 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 
 ## Recommended Next Focus
 
-1. Add run-session capability metadata for the per-run workspace-read opt-in before considering patch or command execution.
+1. Evaluate a safe alpha path for read-only workspace agent runs before considering patch or command execution.
 2. Keep signed/notarized release work deferred until a dedicated release-readiness pass targets signing and notarization.
 3. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 4. Defer GitHub Actions work until quota is restored.

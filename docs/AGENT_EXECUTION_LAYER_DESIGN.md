@@ -524,12 +524,20 @@ Completed slice:
 2. Keep the default agent run policy disabled until the user opts in.
 3. Surface the resulting capability in the run session metadata.
 
-Next code slice:
+Completed slice:
 
 1. Make run-session capability metadata reflect the per-run workspace-read
    opt-in.
 2. Add coverage that an opted-in agent run stores `fileContext=true` while a
    default run stores `fileContext=false`.
+3. Keep patch and command execution unavailable.
+
+Next code slice:
+
+1. Evaluate the alpha flow for a read-only workspace agent run from task setup
+   through Runs detail.
+2. Decide whether the next implementation step should be workspace-read prompt
+   guidance or a stricter workspace root selector.
 3. Keep patch and command execution unavailable.
 
 Success: Taskplane can inspect local project context for coding-like tasks only
