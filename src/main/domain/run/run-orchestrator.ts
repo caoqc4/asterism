@@ -3,6 +3,7 @@ import type { TaskDetail } from '../../../shared/types/task.js';
 import type {
   AgentRuntimeCapabilities,
   AgentSessionEvent,
+  AgentSessionResult,
   ProviderToolCallNormalizationResult,
 } from '../../../shared/types/agent-execution.js';
 import { AgentSessionRepository } from '../../db/repositories/agent-session-repository.js';
@@ -266,6 +267,7 @@ export class RunOrchestrator {
     }
 
     await this.agentSessionRepository.updateStatus(agentSession.id, sessionResult.status);
+    await this.recordAgentSessionResultEvent(params.run.id, sessionResult);
 
     if (sessionResult.status === 'needs_confirmation') {
       return {
@@ -375,6 +377,7 @@ export class RunOrchestrator {
     }
 
     await this.agentSessionRepository.updateStatus(agentSession.id, sessionResult.status);
+    await this.recordAgentSessionResultEvent(params.run.id, sessionResult);
 
     if (sessionResult.status === 'needs_confirmation') {
       return {
@@ -523,6 +526,45 @@ export class RunOrchestrator {
       ...draft,
       ...overrides,
       runId: draft.runId,
+    });
+  }
+
+  private async recordAgentSessionResultEvent(
+    runId: string,
+    sessionResult: AgentSessionResult,
+  ): Promise<void> {
+    if (sessionResult.status === 'completed') {
+      await this.createRunStepFromAgentEvent({
+        type: 'session.completed',
+        runId,
+        output: sessionResult.output || 'Agent session 已完成。',
+      }, {
+        title: '完成 Agent session',
+      });
+      return;
+    }
+
+    if (sessionResult.status === 'failed') {
+      await this.createRunStepFromAgentEvent({
+        type: 'session.failed',
+        runId,
+        failureKind: sessionResult.failureKind,
+        message: sessionResult.message,
+      }, {
+        title: 'Agent session 执行失败',
+      });
+      return;
+    }
+
+    await this.createRunStepFromAgentEvent({
+      type: 'session.paused',
+      runId,
+      checkpointId: sessionResult.checkpointId,
+      message: sessionResult.message,
+    }, {
+      title: sessionResult.status === 'needs_confirmation'
+        ? 'Agent session 等待确认'
+        : 'Agent session 已暂停',
     });
   }
 }
