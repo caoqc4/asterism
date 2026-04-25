@@ -34,6 +34,7 @@ For recording a concrete manual pass, use [ALPHA_MANUAL_RUN_LOG.md](ALPHA_MANUAL
 - Trigger a run from a task.
 - Confirm run output or failure writes back to the task timeline.
 - Open the related Decision or Run from task / object timeline actions.
+- For an agent run, optionally enable read-only workspace context and confirm the Runs detail shows the session capability while no patch or command execution is available.
 
 ## Completion Loop
 

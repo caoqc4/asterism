@@ -58,7 +58,7 @@ Manual result / need:
 
 ## Decision And Run Loop
 
-Status: validated manually for both no-key failure and successful AI-backed draft run.
+Status: validated manually for no-key failure and successful AI-backed draft run; read-only workspace agent runs are code-covered and still need a focused manual pass.
 
 Automated coverage:
 
@@ -66,6 +66,7 @@ Automated coverage:
 - run service tests cover success, failure, artifact creation, and task restoration behavior
 - repository tests cover decision/run timeline writes
 - renderer tests cover quick decision, quick run, related object entry, and refresh behavior
+- agent execution tests cover read-only workspace tools, policy-gated workspace plan steps, per-run workspace opt-in, session capability metadata, and prompt guidance that only exposes workspace tools when opted in
 
 Manual result / need:
 
@@ -73,6 +74,7 @@ Manual result / need:
 - Decision page now keeps formal approve/defer/cancel actions limited to pending Decisions; resolved Decisions retain task recovery without exposing duplicate formal actions
 - draft run without Keychain API key failed clearly with `AI API Key is not configured in system Keychain`
 - with deliberate local `.env` Replicate credentials, the dev app triggered a `draft` run for `Replicate alpha successful run check` under isolated `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-replicate-run-20260424`; SQLite confirmed `status=completed`, `output_source=ai`, output length `1540`, a `run.completed` timeline event, a `run_output` artifact, and a next-step update
+- read-only workspace agent runs should be manually validated with `TASKPLANE_WORKSPACE_ROOT` set, the per-run opt-in enabled, and Runs detail checked for `fileContext` capability; patch and command execution should remain unavailable
 
 ## Completion Loop
 
