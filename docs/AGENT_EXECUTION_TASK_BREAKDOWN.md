@@ -10,6 +10,7 @@ Read first:
 - [AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md](AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md)
 - [AGENT_EXECUTION_LAYER_V2_DECISION.md](AGENT_EXECUTION_LAYER_V2_DECISION.md)
 - [AGENT_EXECUTION_SANDBOX_DECISION.md](AGENT_EXECUTION_SANDBOX_DECISION.md)
+- [AGENT_EXECUTION_FUTURE_DESIGN.md](AGENT_EXECUTION_FUTURE_DESIGN.md)
 - [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md)
 
 ## First-Principles Rule
@@ -53,6 +54,8 @@ Completed:
   text prompts and provider-native schemas consuming the same matrix
 - sandbox decision accepted: broad code-agent mode remains deferred until a
   dedicated sandbox provider boundary exists
+- post-Slice-0 future execution design drafted, covering side quests, replay,
+  sandbox provider boundary, human feedback routing, and MCP constraints
 - provider-native safe-read path remains gated and locally tested
 - workspace write/command tools remain registry-only and Decision-gated
 
@@ -277,11 +280,11 @@ Non-goals until explicitly accepted:
 
 ## Recommended Next Implementation Task
 
-Start with **T1: AgentRunLoop Event Emitter**.
+Start with **Slice 0 acceptance assessment refresh**.
 
-This is the smallest step that aligns Taskplane with the Pi-style inner loop
-without expanding capability. It should be implemented as an internal event
-stream first, with no new user-facing execution power.
+T1 through T7 now have implementation or design coverage. The next useful step
+is to update the alpha/execution acceptance assessment so the project status
+reflects what is actually done before new execution power is added.
 
 ## Verification Policy
 

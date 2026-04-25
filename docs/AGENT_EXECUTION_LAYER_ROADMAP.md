@@ -87,6 +87,9 @@ Task breakdown:
 Sandbox decision:
 [AGENT_EXECUTION_SANDBOX_DECISION.md](AGENT_EXECUTION_SANDBOX_DECISION.md).
 
+Future execution design:
+[AGENT_EXECUTION_FUTURE_DESIGN.md](AGENT_EXECUTION_FUTURE_DESIGN.md).
+
 Goal: make the local agent runtime more durable before making it more
 powerful. The next implementation pass should introduce a typed runtime event
 spine, restart-safe resume contract, and explicit tool exposure matrix while
