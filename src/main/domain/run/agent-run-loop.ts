@@ -1,5 +1,6 @@
 import type {
   AgentRunRequest,
+  AgentSessionEvent,
   AgentWorkingContext,
   AgentStepProposal,
   AgentToolName,
@@ -42,6 +43,8 @@ export type AgentRunLoopObservation = {
   error: string | null;
   checkpointId: string | null;
 };
+
+export type AgentRunLoopEventSink = (event: AgentSessionEvent) => void | Promise<void>;
 
 export type AgentRunLoopStep =
   | {
@@ -417,6 +420,17 @@ export class AgentRunLoop {
     private readonly runCheckpointRepository: RunCheckpointRepository = new RunCheckpointRepository(),
   ) {}
 
+  private async emitEvent(
+    eventSink: AgentRunLoopEventSink | null | undefined,
+    event: AgentSessionEvent,
+  ): Promise<void> {
+    if (!eventSink) {
+      return;
+    }
+
+    await eventSink(event);
+  }
+
   extractStepProposal(modelOutput: string): AgentStepProposal | null {
     return parseModelProposal(modelOutput);
   }
@@ -699,13 +713,20 @@ export class AgentRunLoop {
     modelOutput: string;
     taskTitle: string;
     proposal?: AgentStepProposal | null;
+    onEvent?: AgentRunLoopEventSink | null;
   }): Promise<AgentRunLoopResult> {
-    const { modelOutput, proposal, request, taskTitle } = params;
+    const { modelOutput, onEvent, proposal, request, taskTitle } = params;
     const parsedProposal = proposal ?? this.extractStepProposal(modelOutput);
     const effectiveModelOutput = parsedProposal?.finalOutput ?? modelOutput;
     const trimmedOutput = effectiveModelOutput.trim();
 
     if (!trimmedOutput && !parsedProposal?.steps.length) {
+      await this.emitEvent(onEvent, {
+        type: 'session.completed',
+        runId: request.runId,
+        output: effectiveModelOutput,
+      });
+
       return {
         status: 'completed',
         output: effectiveModelOutput,
@@ -719,6 +740,15 @@ export class AgentRunLoop {
       policy: request.policy,
       taskTitle,
     });
+    const planOutput = executionPlan.steps.map((step, index) => `${index + 1}. ${step.tool}`).join('\n')
+      || '无可执行步骤。';
+
+    await this.emitEvent(onEvent, {
+      type: 'plan.proposed',
+      runId: request.runId,
+      summary: planOutput,
+      source: executionPlan.source === 'model_proposal' ? 'model' : 'fallback',
+    });
 
     await this.runStepRepository.create({
       runId: request.runId,
@@ -728,7 +758,7 @@ export class AgentRunLoop {
         ? '采用模型提出的 agent 步骤计划'
         : '采用保守 fallback agent 步骤计划',
       input: parsedProposal ? JSON.stringify(parsedProposal) : null,
-      output: executionPlan.steps.map((step, index) => `${index + 1}. ${step.tool}`).join('\n') || '无可执行步骤。',
+      output: planOutput,
     });
 
     const observations: AgentRunLoopObservation[] = [];
@@ -758,9 +788,23 @@ export class AgentRunLoop {
             nextInput: step.input,
             reason: plannerDecision.reason,
           });
+          await this.emitEvent(onEvent, {
+            type: 'checkpoint.created',
+            runId: request.runId,
+            checkpointId,
+            checkpointKind: 'resume',
+            reason: plannerDecision.reason,
+            tool: step.tool,
+          });
           await this.recordObservationSummary({
             runId: request.runId,
             observations,
+          });
+          await this.emitEvent(onEvent, {
+            type: 'session.paused',
+            runId: request.runId,
+            checkpointId,
+            message: plannerDecision.reason,
           });
 
           return {
@@ -772,6 +816,12 @@ export class AgentRunLoop {
         }
       }
 
+      await this.emitEvent(onEvent, {
+        type: 'tool.started',
+        runId: request.runId,
+        tool: step.tool,
+        input: step.input,
+      });
       const result = await this.agentToolRegistry.execute(
         step.tool,
         step.input,
@@ -788,9 +838,23 @@ export class AgentRunLoop {
       observations.push(observationFromTool(step.tool, result));
 
       if (result.status === 'needs_confirmation' && result.checkpointId) {
+        await this.emitEvent(onEvent, {
+          type: 'checkpoint.created',
+          runId: request.runId,
+          checkpointId: result.checkpointId,
+          checkpointKind: 'confirmation',
+          reason: result.summary,
+          tool: step.tool,
+        });
         await this.recordObservationSummary({
           runId: request.runId,
           observations,
+        });
+        await this.emitEvent(onEvent, {
+          type: 'session.paused',
+          runId: request.runId,
+          checkpointId: result.checkpointId,
+          message: result.summary,
         });
 
         return {
@@ -802,23 +866,54 @@ export class AgentRunLoop {
       }
 
       if (!result.success) {
+        const failureMessage = result.error ?? result.summary;
+
+        await this.emitEvent(onEvent, {
+          type: 'tool.failed',
+          runId: request.runId,
+          tool: step.tool,
+          error: failureMessage,
+        });
         await this.recordObservationSummary({
           runId: request.runId,
           observations,
         });
 
-        return failedFromTool(result, observations);
+        const failedResult = failedFromTool(result, observations);
+
+        await this.emitEvent(onEvent, {
+          type: 'session.failed',
+          runId: request.runId,
+          failureKind: 'tool',
+          message: failureMessage,
+        });
+
+        return failedResult;
       }
+
+      await this.emitEvent(onEvent, {
+        type: 'tool.completed',
+        runId: request.runId,
+        tool: step.tool,
+        result,
+      });
     }
 
     await this.recordObservationSummary({
       runId: request.runId,
       observations,
     });
+    const output = trimmedOutput ? effectiveModelOutput : outputFromObservations(observations);
+
+    await this.emitEvent(onEvent, {
+      type: 'session.completed',
+      runId: request.runId,
+      output,
+    });
 
     return {
       status: 'completed',
-      output: trimmedOutput ? effectiveModelOutput : outputFromObservations(observations),
+      output,
       observations,
     };
   }

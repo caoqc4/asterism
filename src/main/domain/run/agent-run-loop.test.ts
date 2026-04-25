@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { AgentRunRequest } from '../../../shared/types/agent-execution.js';
+import type { AgentRunRequest, AgentSessionEvent } from '../../../shared/types/agent-execution.js';
 import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
 import { normalizeProviderNativeToolCalls } from '../../../shared/provider-native-tool-call-adapter.js';
 import { AgentRunLoop } from './agent-run-loop.js';
@@ -1016,11 +1016,15 @@ describe('AgentRunLoop', () => {
       runStepRepository as never,
       runCheckpointRepository as never,
     );
+    const events: AgentSessionEvent[] = [];
 
     const result = await loop.executeLocalNoteLoop({
       request: buildRequest(),
       modelOutput: 'Agent output',
       taskTitle: 'Task 1',
+      onEvent: (event) => {
+        events.push(event);
+      },
     });
 
     expect(result).toEqual({
@@ -1120,6 +1124,35 @@ describe('AgentRunLoop', () => {
       },
       expect.objectContaining({ confirmationRequiredRisks: ['external_write', 'sensitive'] }),
     );
+    expect(events.map((event) => event.type)).toEqual([
+      'plan.proposed',
+      'tool.started',
+      'tool.completed',
+      'tool.started',
+      'tool.completed',
+      'tool.started',
+      'tool.completed',
+      'session.completed',
+    ]);
+    expect(events[0]).toEqual(expect.objectContaining({
+      type: 'plan.proposed',
+      runId: 'run_1',
+      source: 'fallback',
+      summary: '1. task.inspect_context\n2. task.inspect_timeline\n3. artifact.create_note',
+    }));
+    expect(events[5]).toEqual(expect.objectContaining({
+      type: 'tool.started',
+      tool: 'artifact.create_note',
+      input: {
+        title: 'Task 1 agent note',
+        content: 'Agent output',
+      },
+    }));
+    expect(events.at(-1)).toEqual(expect.objectContaining({
+      type: 'session.completed',
+      runId: 'run_1',
+      output: 'Agent output',
+    }));
   });
 
   it('executes provider-native proposal steps when the model text is empty', async () => {
@@ -1293,11 +1326,15 @@ describe('AgentRunLoop', () => {
         owner: 'Legal',
       },
     ];
+    const events: AgentSessionEvent[] = [];
 
     const result = await loop.executeLocalNoteLoop({
       request: blockedRequest,
       modelOutput: 'Agent output',
       taskTitle: 'Task 1',
+      onEvent: (event) => {
+        events.push(event);
+      },
     });
 
     expect(result).toEqual({
@@ -1348,6 +1385,26 @@ describe('AgentRunLoop', () => {
         output: expect.not.stringContaining('artifact.create_note'),
       }),
     );
+    expect(events.map((event) => event.type)).toEqual([
+      'plan.proposed',
+      'tool.started',
+      'tool.completed',
+      'tool.started',
+      'tool.completed',
+      'checkpoint.created',
+      'session.paused',
+    ]);
+    expect(events.at(-2)).toEqual(expect.objectContaining({
+      type: 'checkpoint.created',
+      checkpointId: 'run_checkpoint_1',
+      checkpointKind: 'resume',
+      tool: 'artifact.create_note',
+    }));
+    expect(events.at(-1)).toEqual(expect.objectContaining({
+      type: 'session.paused',
+      checkpointId: 'run_checkpoint_1',
+      message: '观察到任务仍有阻塞项：Waiting on legal review。暂停执行 artifact.create_note，等待先解除阻塞。',
+    }));
   });
 
   it('runs a valid model-produced proposal with final output', async () => {
@@ -1557,11 +1614,15 @@ describe('AgentRunLoop', () => {
       agentToolRegistry as never,
       runStepRepository as never,
     );
+    const events: AgentSessionEvent[] = [];
 
     const result = await loop.executeLocalNoteLoop({
       request: buildRequest(),
       modelOutput: 'Agent output',
       taskTitle: 'Task 1',
+      onEvent: (event) => {
+        events.push(event);
+      },
     });
 
     expect(result).toEqual({
@@ -1588,6 +1649,27 @@ describe('AgentRunLoop', () => {
         output: expect.stringContaining('artifact.create_note [needs_confirmation] Needs confirmation；checkpoint=run_checkpoint_1'),
       }),
     );
+    expect(events.map((event) => event.type)).toEqual([
+      'plan.proposed',
+      'tool.started',
+      'tool.completed',
+      'tool.started',
+      'tool.completed',
+      'tool.started',
+      'checkpoint.created',
+      'session.paused',
+    ]);
+    expect(events.at(-2)).toEqual(expect.objectContaining({
+      type: 'checkpoint.created',
+      checkpointId: 'run_checkpoint_1',
+      checkpointKind: 'confirmation',
+      tool: 'artifact.create_note',
+    }));
+    expect(events.at(-1)).toEqual(expect.objectContaining({
+      type: 'session.paused',
+      checkpointId: 'run_checkpoint_1',
+      message: 'Needs confirmation',
+    }));
   });
 
   it('returns failed when inspection fails', async () => {
@@ -1603,11 +1685,15 @@ describe('AgentRunLoop', () => {
       agentToolRegistry as never,
       runStepRepository as never,
     );
+    const events: AgentSessionEvent[] = [];
 
     const result = await loop.executeLocalNoteLoop({
       request: buildRequest(),
       modelOutput: 'Agent output',
       taskTitle: 'Task 1',
+      onEvent: (event) => {
+        events.push(event);
+      },
     });
 
     expect(result).toEqual({
@@ -1632,5 +1718,21 @@ describe('AgentRunLoop', () => {
         output: '1. task.inspect_context [failed] Inspection failed；error=Missing context',
       }),
     );
+    expect(events.map((event) => event.type)).toEqual([
+      'plan.proposed',
+      'tool.started',
+      'tool.failed',
+      'session.failed',
+    ]);
+    expect(events[2]).toEqual(expect.objectContaining({
+      type: 'tool.failed',
+      tool: 'task.inspect_context',
+      error: 'Missing context',
+    }));
+    expect(events[3]).toEqual(expect.objectContaining({
+      type: 'session.failed',
+      failureKind: 'tool',
+      message: 'Missing context',
+    }));
   });
 });
