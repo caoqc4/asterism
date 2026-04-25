@@ -68,8 +68,9 @@ The project is past initial architecture assembly. Current work should favor pro
   evaluated separately as the inner-loop reference, OpenClaw as the embedding
   and gateway reference, and LangGraph/OpenHands/SWE-agent/Plandex/CrewAI/MCP
   plus secondary frameworks as pattern sources. Taskplane should keep its own
-  Task/Run/Decision/Artifact/Timeline control plane and avoid adopting a full
-  external agent runtime before Slice 0 is complete.
+  Task/Run/Decision/Artifact/Timeline control plane; Slice 0 implements
+  Pi-like inner-loop ideas in Taskplane-owned code without embedding Pi as a
+  runtime dependency or claiming Pi compatibility.
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
   now records the completed Slice 0 execution-layer pass: runtime events,
   event-driven RunStep projection, checkpoint normalization, restart-safe
