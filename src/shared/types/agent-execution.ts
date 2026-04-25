@@ -133,7 +133,7 @@ export type AgentSessionEvent =
   | (AgentRuntimeEventBase & {
       type: 'checkpoint.created';
       checkpointId: string;
-      checkpointKind: 'resume' | 'confirmation' | 'tool_permission' | 'external_wait';
+      checkpointKind: 'resume' | 'confirmation' | 'tool_permission' | 'patch_promotion' | 'external_wait';
       reason: string;
       decisionId?: string | null;
       tool?: AgentToolName | null;

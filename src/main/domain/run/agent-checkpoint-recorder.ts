@@ -4,10 +4,12 @@ import type {
   AgentToolName,
   AgentToolRisk,
 } from '../../../shared/types/agent-execution.js';
+import type { AgentToolExecutionPolicy } from '../../../shared/agent-tool-scaffold.js';
 import type { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import {
+  createPatchPromotionCheckpointPayload,
   createResumeCheckpointPayload,
   createToolPermissionCheckpointPayload,
 } from '../../../shared/types/run-checkpoint-payload.js';
@@ -22,6 +24,13 @@ export type AgentToolPermissionCheckpointResult = {
 export type AgentResumeCheckpointResult = {
   checkpointId: string;
   event: Extract<AgentSessionEvent, { type: 'checkpoint.created' }>;
+};
+
+export type AgentPatchPromotionCheckpointResult = {
+  checkpointId: string;
+  decisionId: string | null;
+  event: Extract<AgentSessionEvent, { type: 'checkpoint.created' }>;
+  summary: string;
 };
 
 export class AgentCheckpointRecorder {
@@ -157,6 +166,85 @@ export class AgentCheckpointRecorder {
     return {
       checkpointId: checkpoint.id,
       event,
+    };
+  }
+
+  async createPatchPromotionCheckpoint(params: {
+    runId: string;
+    taskId: string;
+    artifactId: string;
+    artifactSummary: string;
+    sessionId: string;
+    policySnapshot: AgentToolExecutionPolicy;
+    decisionTitle: string;
+    preview?: string | null;
+  }): Promise<AgentPatchPromotionCheckpointResult> {
+    const step = await this.runStepRepository.create({
+      runId: params.runId,
+      kind: 'checkpoint',
+      status: 'pending',
+      title: '等待确认：sandbox patch promotion',
+      input: params.preview ?? params.artifactSummary,
+      output: `等待确认是否将 sandbox patch 提升到工作区：${params.artifactSummary}`,
+    });
+    const checkpoint = await this.runCheckpointRepository.create({
+      runId: params.runId,
+      stepId: step.id,
+      kind: 'patch_promotion',
+      payload: JSON.stringify(createPatchPromotionCheckpointPayload({
+        artifactId: params.artifactId,
+        artifactSummary: params.artifactSummary,
+        sessionId: params.sessionId,
+        descriptorId: 'workspace.staged_patch',
+        decisionId: null,
+        decisionTitle: params.decisionTitle,
+        policySnapshot: params.policySnapshot,
+        preview: params.preview ?? null,
+      })),
+    });
+    const decision = this.decisionRepository
+      ? await this.decisionRepository.create({
+          taskId: params.taskId,
+          title: params.decisionTitle,
+          sourceType: 'agent_checkpoint',
+          sourceId: checkpoint.id,
+          sourceLabel: 'workspace.staged_patch',
+        })
+      : null;
+    const checkpointWithDecision = decision
+      ? await this.runCheckpointRepository.updatePayload(
+          checkpoint.id,
+          JSON.stringify(createPatchPromotionCheckpointPayload({
+            artifactId: params.artifactId,
+            artifactSummary: params.artifactSummary,
+            sessionId: params.sessionId,
+            descriptorId: 'workspace.staged_patch',
+            decisionId: decision.id,
+            decisionTitle: params.decisionTitle,
+            policySnapshot: params.policySnapshot,
+            preview: params.preview ?? null,
+          })),
+        )
+      : checkpoint;
+    const summary = decision
+      ? `Sandbox patch promotion 需要确认后才能继续，已创建 Decision：${decision.title}。`
+      : 'Sandbox patch promotion 需要确认后才能继续。';
+
+    const event: Extract<AgentSessionEvent, { type: 'checkpoint.created' }> = {
+      type: 'checkpoint.created',
+      runId: params.runId,
+      checkpointId: checkpointWithDecision.id,
+      checkpointKind: 'patch_promotion',
+      reason: summary,
+      decisionId: decision?.id ?? null,
+      tool: null,
+    };
+
+    return {
+      checkpointId: checkpointWithDecision.id,
+      decisionId: decision?.id ?? null,
+      event,
+      summary,
     };
   }
 }

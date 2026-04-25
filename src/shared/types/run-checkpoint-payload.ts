@@ -1,4 +1,5 @@
 import type { AgentPolicy, AgentToolName, AgentToolRisk } from './agent-execution.js';
+import type { AgentToolExecutionPolicy } from '../agent-tool-scaffold.js';
 
 export const RUN_CHECKPOINT_PAYLOAD_VERSION = 1;
 
@@ -24,9 +25,23 @@ export type ResumeCheckpointPayloadV1 = {
   taskId?: string;
 };
 
+export type PatchPromotionCheckpointPayloadV1 = {
+  version: 1;
+  kind: 'patch_promotion';
+  artifactId: string;
+  artifactSummary: string;
+  sessionId: string;
+  descriptorId: 'workspace.staged_patch';
+  decisionId: string | null;
+  decisionTitle: string;
+  policySnapshot: AgentToolExecutionPolicy;
+  preview?: string | null;
+};
+
 export type RunCheckpointPayloadV1 =
   | ToolPermissionCheckpointPayloadV1
-  | ResumeCheckpointPayloadV1;
+  | ResumeCheckpointPayloadV1
+  | PatchPromotionCheckpointPayloadV1;
 
 export type ParsedRunCheckpointPayload = Record<string, unknown> & {
   version?: unknown;
@@ -38,6 +53,11 @@ export type ParsedRunCheckpointPayload = Record<string, unknown> & {
   runId?: unknown;
   decisionId?: unknown;
   decisionTitle?: unknown;
+  artifactId?: unknown;
+  artifactSummary?: unknown;
+  sessionId?: unknown;
+  descriptorId?: unknown;
+  preview?: unknown;
   input?: unknown;
   nextInput?: unknown;
   policySnapshot?: unknown;
@@ -59,6 +79,16 @@ export function createResumeCheckpointPayload(
   return {
     version: RUN_CHECKPOINT_PAYLOAD_VERSION,
     kind: 'resume',
+    ...input,
+  };
+}
+
+export function createPatchPromotionCheckpointPayload(
+  input: Omit<PatchPromotionCheckpointPayloadV1, 'version' | 'kind'>,
+): PatchPromotionCheckpointPayloadV1 {
+  return {
+    version: RUN_CHECKPOINT_PAYLOAD_VERSION,
+    kind: 'patch_promotion',
     ...input,
   };
 }

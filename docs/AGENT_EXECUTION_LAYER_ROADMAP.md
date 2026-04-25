@@ -359,7 +359,10 @@ Implementation sequence:
 5. Add Decision review and promotion semantics before any staged patch can
    touch the user's workspace. Shared promotion-checkpoint helpers now build a
    `patch_promotion` checkpoint descriptor with reason, consequence, preview,
-   resume target, and policy snapshot without applying the patch.
+   resume target, and policy snapshot without applying the patch. The run
+   checkpoint payload and `AgentCheckpointRecorder` now also recognize
+   Decision-linked `patch_promotion` checkpoints, still without applying or
+   promoting staged files.
 6. Only after the above is accepted, expose a narrow coding-agent run option in
    the UI and prompt/provider exposure matrix.
 

@@ -200,4 +200,86 @@ describe('AgentCheckpointRecorder', () => {
       },
     });
   });
+
+  it('creates a Decision-linked patch-promotion checkpoint without applying the patch', async () => {
+    const runCheckpointRepository = buildRunCheckpointRepositoryMock();
+    const runStepRepository = buildRunStepRepositoryMock();
+    const decisionRepository = {
+      create: vi.fn().mockResolvedValue({
+        id: 'decision_patch_1',
+        taskId: 'task_1',
+        title: '确认提升 sandbox patch',
+        status: 'pending',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+    };
+    const recorder = new AgentCheckpointRecorder(
+      runCheckpointRepository as never,
+      runStepRepository as never,
+      decisionRepository as never,
+    );
+
+    const result = await recorder.createPatchPromotionCheckpoint({
+      runId: 'run_1',
+      taskId: 'task_1',
+      artifactId: 'artifact_1',
+      artifactSummary: 'Reviewable sandbox patch',
+      sessionId: 'sandbox_session_1',
+      policySnapshot: {
+        descriptorId: 'workspace.staged_patch',
+        sessionKind: 'sandbox',
+        credentialPolicy: 'none',
+        networkPolicy: 'disabled',
+        timeoutMs: 120_000,
+        outputLimitBytes: 64_000,
+      },
+      decisionTitle: '确认提升 sandbox patch',
+      preview: 'diff --git a/src/a.ts b/src/a.ts',
+    });
+
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        kind: 'checkpoint',
+        status: 'pending',
+        title: '等待确认：sandbox patch promotion',
+        input: 'diff --git a/src/a.ts b/src/a.ts',
+        output: '等待确认是否将 sandbox patch 提升到工作区：Reviewable sandbox patch',
+      }),
+    );
+    expect(runCheckpointRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        stepId: 'run_step_2',
+        kind: 'patch_promotion',
+        payload: expect.stringContaining('"descriptorId":"workspace.staged_patch"'),
+      }),
+    );
+    expect(decisionRepository.create).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      title: '确认提升 sandbox patch',
+      sourceType: 'agent_checkpoint',
+      sourceId: 'run_checkpoint_1',
+      sourceLabel: 'workspace.staged_patch',
+    });
+    expect(runCheckpointRepository.updatePayload).toHaveBeenCalledWith(
+      'run_checkpoint_1',
+      expect.stringContaining('"decisionId":"decision_patch_1"'),
+    );
+    expect(result).toEqual({
+      checkpointId: 'run_checkpoint_1',
+      decisionId: 'decision_patch_1',
+      event: {
+        type: 'checkpoint.created',
+        runId: 'run_1',
+        checkpointId: 'run_checkpoint_1',
+        checkpointKind: 'patch_promotion',
+        reason: 'Sandbox patch promotion 需要确认后才能继续，已创建 Decision：确认提升 sandbox patch。',
+        decisionId: 'decision_patch_1',
+        tool: null,
+      },
+      summary: 'Sandbox patch promotion 需要确认后才能继续，已创建 Decision：确认提升 sandbox patch。',
+    });
+  });
 });

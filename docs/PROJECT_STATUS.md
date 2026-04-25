@@ -117,6 +117,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - Agent session metadata and capability summaries now explicitly report the
   sandbox coding lane as disabled, so reserved sandbox contracts cannot be
   mistaken for an enabled code-agent execution path.
+- Run checkpoint contracts and `AgentCheckpointRecorder` now recognize
+  Decision-linked sandbox `patch_promotion` checkpoints, giving future patch
+  artifacts a reviewable/auditable promotion shell without applying staged
+  files.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -160,8 +164,8 @@ Latest local baseline:
 - `npm run accept:provider-native-live:preflight` reports the current local
   provider-native setup is ready; live provider validation remains opt-in
   because it spends configured provider credit
-- `npm run verify` passed locally on 2026-04-25 after the agent sandbox
-  capability-summary honesty update landed: 69 test files / 506 tests
+- `npm run verify` passed locally on 2026-04-25 after Decision-linked sandbox
+  patch-promotion checkpoint payloads landed: 69 test files / 508 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

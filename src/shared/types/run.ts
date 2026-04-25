@@ -6,7 +6,7 @@ export type RunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'needs_
 export type RunOutputSource = 'ai' | 'fallback' | 'system';
 export type RunStepKind = 'plan' | 'model' | 'tool_call' | 'tool_result' | 'artifact' | 'decision' | 'checkpoint' | 'final';
 export type RunStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
-export type RunCheckpointKind = 'resume' | 'confirmation' | 'tool_permission' | 'external_wait';
+export type RunCheckpointKind = 'resume' | 'confirmation' | 'tool_permission' | 'patch_promotion' | 'external_wait';
 export type RunCheckpointStatus = 'open' | 'resolved' | 'cancelled';
 
 export type RunRecord = {

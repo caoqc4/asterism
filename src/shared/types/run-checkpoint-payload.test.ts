@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  createPatchPromotionCheckpointPayload,
   createResumeCheckpointPayload,
   createToolPermissionCheckpointPayload,
   parseRunCheckpointPayload,
@@ -58,6 +59,43 @@ describe('run checkpoint payload helpers', () => {
     });
   });
 
+  it('creates versioned patch-promotion checkpoint payloads', () => {
+    const payload = createPatchPromotionCheckpointPayload({
+      artifactId: 'artifact_1',
+      artifactSummary: 'Reviewable sandbox patch',
+      sessionId: 'sandbox_session_1',
+      descriptorId: 'workspace.staged_patch',
+      decisionId: null,
+      decisionTitle: '确认提升 sandbox patch',
+      policySnapshot: {
+        descriptorId: 'workspace.staged_patch',
+        sessionKind: 'sandbox',
+        credentialPolicy: 'none',
+        networkPolicy: 'disabled',
+        timeoutMs: 120_000,
+        outputLimitBytes: 64_000,
+      },
+      preview: 'diff --git a/src/a.ts b/src/a.ts',
+    });
+
+    expect(payload).toEqual({
+      version: 1,
+      kind: 'patch_promotion',
+      artifactId: 'artifact_1',
+      artifactSummary: 'Reviewable sandbox patch',
+      sessionId: 'sandbox_session_1',
+      descriptorId: 'workspace.staged_patch',
+      decisionId: null,
+      decisionTitle: '确认提升 sandbox patch',
+      policySnapshot: expect.objectContaining({
+        descriptorId: 'workspace.staged_patch',
+        timeoutMs: 120_000,
+        outputLimitBytes: 64_000,
+      }),
+      preview: 'diff --git a/src/a.ts b/src/a.ts',
+    });
+  });
+
   it('parses versioned and legacy JSON payloads', () => {
     expect(parseRunCheckpointPayload(JSON.stringify({
       version: 1,
@@ -78,6 +116,19 @@ describe('run checkpoint payload helpers', () => {
       nextInput: {},
     }))).toMatchObject({
       nextTool: 'artifact.create_note',
+    });
+
+    expect(parseRunCheckpointPayload(JSON.stringify({
+      version: 1,
+      kind: 'patch_promotion',
+      artifactId: 'artifact_1',
+      sessionId: 'sandbox_session_1',
+      descriptorId: 'workspace.staged_patch',
+      decisionId: 'decision_1',
+    }))).toMatchObject({
+      kind: 'patch_promotion',
+      artifactId: 'artifact_1',
+      decisionId: 'decision_1',
     });
 
     expect(parseRunCheckpointPayload('not json')).toBeNull();
