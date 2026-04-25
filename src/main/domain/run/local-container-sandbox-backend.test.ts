@@ -1,12 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  buildAgentSandboxCheckPlan,
   buildAgentSandboxBackendProfileFromProbe,
   buildAgentSandboxProviderCapabilitiesFromBackendProfile,
+  buildDefaultAgentSandboxCommandPolicy,
   evaluateAgentSandboxBackendReadiness,
   summarizeAgentSandboxBackendProbe,
+  type AgentSandboxSessionRequest,
 } from '../../../shared/agent-sandbox-provider.js';
+import { buildDefaultAgentToolExecutionPolicy } from '../../../shared/agent-tool-scaffold.js';
 import {
+  buildLocalContainerSandboxCommandPlans,
   buildLocalContainerSandboxBackendProbe,
   probeLocalContainerSandboxBackend,
 } from './local-container-sandbox-backend.js';
@@ -88,5 +93,108 @@ describe('local container sandbox backend probe', () => {
       reason: 'docker: command not found',
       status: 'unavailable',
     });
+  });
+
+  it('builds auditable docker run plans without credentials, network, or writable workspace mounts', () => {
+    const commandPolicy = buildDefaultAgentSandboxCommandPolicy({ timeoutMs: 30_000 });
+    const request: AgentSandboxSessionRequest = {
+      commandPolicy,
+      descriptorId: 'workspace.staged_patch',
+      executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+      providerKind: 'local_container',
+      runId: 'run_1',
+      taskId: 'task_1',
+      workspace: {
+        mode: 'staged_write',
+        mountPath: '/workspace',
+        workspaceRoot: '/tmp/taskplane-workspace',
+      },
+    };
+    const plans = buildLocalContainerSandboxCommandPlans({
+      checkPlan: buildAgentSandboxCheckPlan({
+        policy: commandPolicy,
+        requestedScripts: ['test', 'lint', 'test'],
+      }),
+      handle: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        id: 'sandbox_1',
+        providerKind: 'local_container',
+        stagingRoot: '/tmp/taskplane-sandbox-1',
+        workspaceMode: 'staged_write',
+      },
+      request,
+    });
+
+    expect(plans.map((plan) => plan.script)).toEqual(['test', 'lint']);
+    expect(plans[0]).toMatchObject({
+      command: 'docker',
+      environment: {},
+      image: 'node:22-bookworm-slim',
+      networkMode: 'disabled',
+      outputLimitBytes: 64_000,
+      timeoutMs: 30_000,
+      workspaceMount: {
+        readonly: true,
+        source: '/tmp/taskplane-workspace',
+        target: '/workspace',
+      },
+      stagingMount: {
+        readonly: false,
+        source: '/tmp/taskplane-sandbox-1',
+        target: '/taskplane-staging',
+      },
+    });
+    expect(plans[0]?.args).toEqual([
+      'run',
+      '--rm',
+      '--network',
+      'none',
+      '--mount',
+      'type=bind,source=/tmp/taskplane-workspace,target=/workspace,readonly',
+      '--mount',
+      'type=bind,source=/tmp/taskplane-sandbox-1,target=/taskplane-staging',
+      '--workdir',
+      '/workspace',
+      'node:22-bookworm-slim',
+      'npm',
+      'run',
+      'test',
+    ]);
+    expect(plans[0]?.args).not.toContain('--env');
+  });
+
+  it('rejects local container command plans that would inherit credentials or network', () => {
+    const commandPolicy = buildDefaultAgentSandboxCommandPolicy();
+    const request: AgentSandboxSessionRequest = {
+      commandPolicy,
+      descriptorId: 'workspace.staged_patch',
+      executionPolicy: {
+        ...buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+        credentialPolicy: 'explicit_config',
+      },
+      providerKind: 'local_container',
+      runId: 'run_1',
+      taskId: 'task_1',
+      workspace: {
+        mode: 'staged_write',
+        mountPath: '/workspace',
+        workspaceRoot: '/tmp/taskplane-workspace',
+      },
+    };
+
+    expect(() => buildLocalContainerSandboxCommandPlans({
+      checkPlan: buildAgentSandboxCheckPlan({
+        policy: commandPolicy,
+        requestedScripts: ['test'],
+      }),
+      handle: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        id: 'sandbox_1',
+        providerKind: 'local_container',
+        stagingRoot: '/tmp/taskplane-sandbox-1',
+        workspaceMode: 'staged_write',
+      },
+      request,
+    })).toThrow('must not pass credentials');
   });
 });

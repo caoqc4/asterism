@@ -180,6 +180,11 @@ The project is past initial architecture assembly. Current work should favor pro
 - Sandbox backend readiness can now be converted into sandbox coding-lane
   eligibility through the shared guard, and Settings shows that separate lane
   summary so a ready backend is not mistaken for rollout approval.
+- The local-container sandbox backend now has a pure Docker command-plan
+  builder for future targeted `test` / `lint` checks. It produces auditable
+  `docker run` arguments with network disabled, no environment/credential
+  passthrough, the source workspace mounted read-only, and the sandbox staging
+  root mounted writable, but it still does not execute Docker or user scripts.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
