@@ -36,6 +36,19 @@ For recording a concrete manual pass, use [ALPHA_MANUAL_RUN_LOG.md](ALPHA_MANUAL
 - Open the related Decision or Run from task / object timeline actions.
 - For an agent run, optionally enable read-only workspace context and confirm the Runs detail shows the session capability while no patch or command execution is available.
 
+### Task Tool Opt-In Agent Path
+
+Use this to validate the first user-facing task-update tool exposure. It should
+not modify workspace files or run commands.
+
+- Create a task with a clear next-step update request.
+- Trigger an `agent` run with `允许任务内更新工具` enabled.
+- Confirm the capability preview and Runs detail show task update tools enabled.
+- Confirm the task timeline records the service-routed task update.
+- Confirm the run steps include the accepted domain tool call/result.
+- Confirm workspace patch and command tools remain unavailable to the normal
+  agent run.
+
 ### Read-Only Workspace Agent Packaged Pass
 
 Use this before release-readiness signoff, after `npm run dist:mac:dir` has produced
