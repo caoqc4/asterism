@@ -9,6 +9,7 @@ import {
   canUseAgentSandboxProviderForCoding,
   DISABLED_AGENT_SANDBOX_PROVIDER_CAPABILITIES,
   evaluateAgentSandboxCodingLaneEligibility,
+  summarizeAgentSandboxSessionManifest,
   summarizeAgentSandboxCheckResults,
   toAgentToolArtifactDescriptor,
   type AgentSandboxProviderCapabilities,
@@ -235,6 +236,45 @@ describe('agent sandbox provider contracts', () => {
         workspaceRoot: '/tmp/taskplane-sandbox-workspace',
       }),
     });
+  });
+
+  it('summarizes sandbox session manifests without expanding raw policy JSON', () => {
+    const manifest = buildAgentSandboxSessionManifest({
+      handle: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        id: 'sandbox_session_1',
+        providerKind: 'local_container',
+        stagingRoot: '/tmp/taskplane-sandbox-session',
+        workspaceMode: 'staged_write',
+      },
+      providerCapabilities: {
+        kind: 'local_container',
+        enabled: true,
+        supportsReadOnlyWorkspace: true,
+        supportsStagedWrites: true,
+        supportsTargetedCommands: false,
+        supportsPatchArtifacts: false,
+        networkMode: 'disabled',
+        credentialPassthrough: false,
+      },
+      request: {
+        commandPolicy: buildDefaultAgentSandboxCommandPolicy(),
+        descriptorId: 'workspace.staged_patch',
+        executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+        providerKind: 'local_container',
+        runId: 'run_1',
+        taskId: 'task_1',
+        workspace: {
+          mountPath: '/workspace',
+          mode: 'staged_write',
+          workspaceRoot: '/tmp/taskplane-sandbox-workspace',
+        },
+      },
+    });
+
+    expect(summarizeAgentSandboxSessionManifest(manifest)).toBe(
+      'sandbox=sandbox_session_1 / provider=local_container / workspace=staged_write / network=disabled / credentials=none / commands=test,lint / patchArtifacts=unsupported',
+    );
   });
 
   it('builds a normalized staged patch artifact for later Decision review', () => {

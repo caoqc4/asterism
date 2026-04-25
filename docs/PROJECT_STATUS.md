@@ -144,6 +144,8 @@ The project is past initial architecture assembly. Current work should favor pro
   provider writes `session.json` with run/task ids, workspace mount, provider
   capabilities, command policy, and execution policy for later audit/artifact
   attachment without running commands or copying source files.
+- Sandbox session manifests now have a compact summary helper for future
+  RunStep/Artifact display without expanding raw policy JSON.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -187,8 +189,8 @@ Latest local baseline:
 - `npm run accept:provider-native-live:preflight` reports the current local
   provider-native setup is ready; live provider validation remains opt-in
   because it spends configured provider credit
-- `npm run verify` passed locally on 2026-04-25 after sandbox session
-  manifests landed: 69 test files / 517 tests
+- `npm run verify` passed locally on 2026-04-25 after sandbox manifest
+  summaries landed: 69 test files / 518 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

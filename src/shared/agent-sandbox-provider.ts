@@ -261,6 +261,20 @@ export function buildAgentSandboxSessionManifest(params: {
   };
 }
 
+export function summarizeAgentSandboxSessionManifest(
+  manifest: AgentSandboxSessionManifest,
+): string {
+  return [
+    `sandbox=${manifest.id}`,
+    `provider=${manifest.providerKind}`,
+    `workspace=${manifest.workspace.mode}`,
+    `network=${manifest.providerCapabilities.networkMode}`,
+    `credentials=${manifest.providerCapabilities.credentialPassthrough ? 'passthrough' : 'none'}`,
+    `commands=${manifest.commandPolicy.allowedScripts.join(',') || 'none'}`,
+    `patchArtifacts=${manifest.providerCapabilities.supportsPatchArtifacts ? 'supported' : 'unsupported'}`,
+  ].join(' / ');
+}
+
 export function buildAgentSandboxPatchArtifact(
   input: BuildAgentSandboxPatchArtifactInput,
 ): AgentSandboxPatchArtifact {
