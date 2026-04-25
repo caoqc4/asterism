@@ -54,8 +54,8 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 
 ## Recommended Next Focus
 
-1. Evaluate the read-only workspace alpha flow manually before considering patch or command execution.
-2. Keep signed/notarized release work deferred until a dedicated release-readiness pass targets signing and notarization.
+1. Keep signed/notarized release work deferred until a dedicated release-readiness pass targets signing and notarization.
+2. Repeat the read-only workspace agent path manually in the packaged app before release-readiness signoff.
 3. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 4. Defer GitHub Actions work until quota is restored.
 5. Avoid adding new domain objects until the release-readiness pass is cleaner.
