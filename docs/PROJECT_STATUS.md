@@ -121,6 +121,9 @@ Latest local baseline:
   unsigned macOS package path
 - `npm run accept:agent-local` passed locally after the restart-safe checkpoint
   Decision integration coverage
+- `npm run accept:provider-native-live:preflight` reports the current local
+  provider-native setup is ready; live provider validation remains opt-in
+  because it spends configured provider credit
 - `npm run verify` passed locally on 2026-04-25 after the Home recovery and
   execution-layer status cleanup
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
