@@ -296,7 +296,9 @@ If Taskplane adds MCP later:
 1. Keep Slice 0 accepted and docs aligned.
 2. Define shared tool scaffold contracts for descriptors, exposure policy,
    execution policy, sessions, artifacts, and checkpoints.
-3. Define `SandboxProvider` types behind a disabled feature flag.
+3. Define `SandboxProvider` types behind a disabled feature flag. Initial
+   disabled-by-default contracts now exist in
+   `src/shared/agent-sandbox-provider.ts`.
 4. Add sandbox smoke tests using a temporary workspace and no credentials.
 5. Add a coding-agent patch artifact path before any file promotion.
 6. Make checkpoint events the command boundary for checkpoint creation.

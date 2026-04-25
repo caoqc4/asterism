@@ -341,7 +341,9 @@ Design docs:
 Implementation sequence:
 
 1. Define disabled-by-default `SandboxProvider` interfaces and capability
-   metadata, without exposing any new model-visible tools.
+   metadata, without exposing any new model-visible tools. Initial shared
+   contracts now exist in `src/shared/agent-sandbox-provider.ts`; the default
+   provider remains disabled.
 2. Add a temp-workspace sandbox smoke path that uses no credentials and cannot
    mutate the user's workspace.
 3. Add a staged patch artifact format for file changes, logs, and risk
