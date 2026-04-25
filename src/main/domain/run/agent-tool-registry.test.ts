@@ -158,6 +158,11 @@ describe('AgentToolRegistry', () => {
         requiresConfirmation: false,
       }),
       expect.objectContaining({
+        name: 'task.review_completion_evidence',
+        risk: 'safe_read',
+        requiresConfirmation: false,
+      }),
+      expect.objectContaining({
         name: 'task.update_next_step',
         risk: 'local_write',
         requiresConfirmation: false,
@@ -258,6 +263,53 @@ describe('AgentToolRegistry', () => {
     expect(runStepRepository.update).toHaveBeenCalledWith(
       'run_step_1',
       expect.objectContaining({ status: 'completed' }),
+    );
+  });
+
+  it('reviews completion evidence without mutating task closeout state', async () => {
+    const runStepRepository = buildRunStepRepositoryMock();
+    const registry = new AgentToolRegistry({} as never, runStepRepository as never);
+
+    const result = await registry.execute(
+      'task.review_completion_evidence',
+      {},
+      {
+        runId: 'run_1',
+        taskId: 'task_1',
+        workingContext: {
+          ...buildWorkingContext(),
+          blockers: [],
+          dependencies: [],
+          recentTimeline: [
+            {
+              type: 'task.decision_approved',
+              summary: '已批准最终收尾依据。',
+              createdAt: '2026-01-01T02:00:00.000Z',
+            },
+            {
+              type: 'task.next_step_changed',
+              summary: '下一步调整为 Review the context',
+              createdAt: '2026-01-01T01:00:00.000Z',
+            },
+          ],
+        },
+      },
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      status: 'completed',
+      summary: '已审查完成证据；未修改完成标准或任务状态。',
+    });
+    expect(result.output).toContain('完成证据审查：只读结果，不会满足完成标准或完成任务。');
+    expect(result.output).toContain('仍需补证据或人工确认：Confirm output quality');
+    expect(result.output).toContain('task.decision_approved');
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_1',
+      expect.objectContaining({
+        status: 'completed',
+        output: '已审查完成证据；未修改完成标准或任务状态。',
+      }),
     );
   });
 

@@ -66,6 +66,7 @@ function formatAgentToolLabel(tool: string): string {
   const labels: Record<string, string> = {
     'task.inspect_context': '读取任务上下文',
     'task.inspect_timeline': '读取最近时间线',
+    'task.review_completion_evidence': '审查完成证据',
     'task.update_next_step': '更新任务下一步',
     'task.create_completion_criterion': '创建完成标准',
     'artifact.create_note': '写入本地 note',

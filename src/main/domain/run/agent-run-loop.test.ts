@@ -514,6 +514,27 @@ describe('AgentRunLoop', () => {
       proposal: {
         steps: [
           { tool: 'task.inspect_context' },
+          { tool: 'task.review_completion_evidence' },
+          {
+            tool: 'artifact.create_note',
+            input: {
+              title: 'Completion evidence note',
+              content: 'Evidence reviewed',
+            },
+          },
+        ],
+      },
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    })).toEqual(loop.buildLocalNotePlan({
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    }));
+
+    expect(loop.buildPlanFromProposal({
+      proposal: {
+        steps: [
+          { tool: 'task.inspect_context' },
           {
             tool: 'task.create_completion_criterion',
             input: {
@@ -590,6 +611,56 @@ describe('AgentRunLoop', () => {
         input: {
           title: 'Next step note',
           content: 'Next step proposed',
+        },
+      },
+    ]);
+  });
+
+  it('accepts completion evidence review only when task tools opt in', () => {
+    const loop = new AgentRunLoop({ execute: vi.fn() } as never);
+
+    expect(loop.buildPlanFromProposal({
+      proposal: {
+        steps: [
+          { tool: 'task.inspect_context' },
+          { tool: 'task.review_completion_evidence' },
+          {
+            tool: 'artifact.create_note',
+            input: {
+              title: 'Completion evidence note',
+              content: 'Evidence reviewed',
+            },
+          },
+        ],
+      },
+      modelOutput: 'Agent output',
+      policy: {
+        ...buildRequest().policy,
+        allowTaskMutationTools: true,
+      },
+      taskTitle: 'Task 1',
+    })).toEqual([
+      {
+        kind: 'inspect_context',
+        tool: 'task.inspect_context',
+        input: {},
+      },
+      {
+        kind: 'inspect_timeline',
+        tool: 'task.inspect_timeline',
+        input: {},
+      },
+      {
+        kind: 'review_completion_evidence',
+        tool: 'task.review_completion_evidence',
+        input: {},
+      },
+      {
+        kind: 'create_note',
+        tool: 'artifact.create_note',
+        input: {
+          title: 'Completion evidence note',
+          content: 'Evidence reviewed',
         },
       },
     ]);

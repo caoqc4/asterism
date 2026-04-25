@@ -17,6 +17,7 @@ import { closeDatabase, setDatabaseUserDataPathForTests } from '../../db/client.
 import { makeTempDir } from '../../test-utils.js';
 import { DecisionService } from '../decision/decision-service.js';
 import { TaskService } from '../task/task-service.js';
+import { buildAgentWorkingContext } from './agent-working-context.js';
 import { AgentToolRegistry } from './agent-tool-registry.js';
 
 describe('AgentToolRegistry integration', () => {
@@ -135,6 +136,73 @@ describe('AgentToolRegistry integration', () => {
       step.kind === 'tool_result' &&
       step.status === 'completed' &&
       step.output === 'Final draft has owner approval'
+    )).toBe(true);
+  });
+
+  it('reviews completion evidence without satisfying criteria or completing the task', async () => {
+    const taskRepository = new TaskRepository();
+    const waitingItemRepository = new WaitingItemRepository();
+    const artifactRepository = new ArtifactRepository();
+    const runStepRepository = new RunStepRepository();
+    const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const taskService = new TaskService(
+      taskRepository,
+      waitingItemRepository,
+      artifactRepository,
+      null,
+      null,
+      null,
+      null,
+      null,
+      completionCriteriaRepository,
+    );
+    const registry = new AgentToolRegistry(
+      artifactRepository,
+      runStepRepository,
+      undefined,
+      null,
+      undefined,
+      taskService,
+    );
+    const task = await taskService.create({
+      title: 'Agent completion evidence review integration',
+    });
+    await taskService.createCompletionCriteria({
+      taskId: task.id,
+      text: 'Owner has approved the final draft',
+    });
+    const beforeDetail = await taskService.getDetail(task.id);
+
+    const result = await registry.execute(
+      'task.review_completion_evidence',
+      {},
+      {
+        runId: 'run_integration_completion_review',
+        taskId: task.id,
+        workingContext: buildAgentWorkingContext(beforeDetail!),
+      },
+    );
+    const afterDetail = await taskService.getDetail(task.id);
+    const steps = await runStepRepository.listForRun('run_integration_completion_review');
+
+    expect(result).toMatchObject({
+      success: true,
+      status: 'completed',
+      summary: '已审查完成证据；未修改完成标准或任务状态。',
+    });
+    expect(result.output).toContain('完成证据审查：只读结果');
+    expect(result.output).toContain('仍需补证据或人工确认：Owner has approved the final draft');
+    expect(afterDetail?.state).toBe('captured');
+    expect(afterDetail?.completionCriteria).toEqual([
+      expect.objectContaining({
+        text: 'Owner has approved the final draft',
+        status: 'open',
+      }),
+    ]);
+    expect(steps.some((step) =>
+      step.kind === 'tool_result' &&
+      step.status === 'completed' &&
+      step.output?.includes('不会满足完成标准或完成任务')
     )).toBe(true);
   });
 

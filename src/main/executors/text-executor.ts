@@ -45,6 +45,7 @@ function buildPrompt(
         ? [
             '    { "tool": "task.update_next_step", "input": { "nextStep": "新的下一步" } },',
             '    { "tool": "task.create_completion_criterion", "input": { "text": "新的完成标准" } },',
+            '    { "tool": "task.review_completion_evidence" },',
             '    { "tool": "source_context.create", "input": { "title": "来源标题", "kind": "note", "note": "来源摘要" } },',
             '    { "tool": "decision.draft", "input": { "note": "需要拍板的问题" } },',
           ]
@@ -56,6 +57,7 @@ function buildPrompt(
         input.allowLocalWorkspaceRead ? 'workspace.read_file' : null,
         input.allowTaskMutationTools ? 'task.update_next_step' : null,
         input.allowTaskMutationTools ? 'task.create_completion_criterion' : null,
+        input.allowTaskMutationTools ? 'task.review_completion_evidence' : null,
         input.allowTaskMutationTools ? 'source_context.create' : null,
         input.allowTaskMutationTools ? 'decision.draft' : null,
         'artifact.create_note',
@@ -71,11 +73,12 @@ function buildPrompt(
           ];
       const taskMutationGuidance = input.allowTaskMutationTools
         ? [
-            '- 可以使用任务内更新工具来更新下一步、添加完成标准、补充来源上下文或草拟 Decision。',
+            '- 可以使用任务内更新工具来更新下一步、添加完成标准、审查完成证据、补充来源上下文或草拟 Decision。',
             '- 每次计划最多使用一个任务内更新工具；decision.draft 只能草拟，不会创建正式 Decision。',
+            '- task.review_completion_evidence 只能审查证据，不能满足完成标准，也不能把任务转为 completed。',
           ]
         : [
-            '- 当前没有开启任务内更新工具，不允许使用 task.update_next_step、task.create_completion_criterion、source_context.create 或 decision.draft。',
+            '- 当前没有开启任务内更新工具，不允许使用 task.update_next_step、task.create_completion_criterion、task.review_completion_evidence、source_context.create 或 decision.draft。',
           ];
 
       return [

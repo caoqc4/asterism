@@ -581,6 +581,49 @@ function formatTimelineSummary(context: AgentWorkingContext): string {
     .join('\n');
 }
 
+function isPotentialCompletionEvidence(event: AgentWorkingContext['recentTimeline'][number]): boolean {
+  return (
+    event.type === 'task.decision_approved' ||
+    event.type === 'task.run_completed' ||
+    event.type === 'artifact.created' ||
+    event.summary.includes('完成') ||
+    event.summary.includes('收尾') ||
+    event.summary.includes('证据')
+  );
+}
+
+function formatCompletionEvidenceReview(context: AgentWorkingContext): string {
+  const evidence = context.recentTimeline.filter(isPotentialCompletionEvidence);
+  const missingEvidence = context.completion.nextOpenCriterion
+    ? `仍需补证据或人工确认：${context.completion.nextOpenCriterion}`
+    : context.completion.open > 0
+      ? `仍有 ${context.completion.open} 条完成标准未满足，需要人工核对。`
+      : '当前没有未完成标准；仍需用户确认是否转为 completed。';
+  const blockers = context.blockers.length
+    ? `阻塞项仍存在：${context.blockers.map((item) => item.title).join('；')}`
+    : '阻塞项：无';
+  const dependencies = context.dependencies.length
+    ? `依赖项仍存在：${context.dependencies.map((item) => item.title).join('；')}`
+    : '依赖项：无';
+
+  return [
+    '完成证据审查：只读结果，不会满足完成标准或完成任务。',
+    `完成标准进度：${context.completion.satisfied}/${context.completion.total}`,
+    missingEvidence,
+    blockers,
+    dependencies,
+    evidence.length
+      ? [
+          '可能支持收尾的近期证据：',
+          ...evidence.map((event, index) => `${index + 1}. ${event.createdAt} · ${event.type} · ${event.summary}`),
+        ].join('\n')
+      : '可能支持收尾的近期证据：暂无。',
+    context.task.riskLevel === 'none'
+      ? '建议：用户复核证据后再手动满足标准或完成任务。'
+      : `建议：该任务风险为 ${context.task.riskLevel}，收尾前建议先草拟或处理 Decision。`,
+  ].join('\n');
+}
+
 async function walkWorkspace(root: string): Promise<string[]> {
   const files: string[] = [];
 
@@ -698,6 +741,12 @@ export class AgentToolRegistry {
     {
       name: 'task.inspect_timeline',
       description: 'Inspect recent Taskplane timeline events available in the working context.',
+      risk: 'safe_read',
+      requiresConfirmation: false,
+    },
+    {
+      name: 'task.review_completion_evidence',
+      description: 'Review completion criteria and recent evidence without mutating task closeout state.',
       risk: 'safe_read',
       requiresConfirmation: false,
     },
@@ -1074,6 +1123,20 @@ export class AgentToolRegistry {
           success: true,
           status: 'completed',
           summary: '已读取当前任务最近时间线。',
+          output,
+        };
+      }
+      case 'task.review_completion_evidence': {
+        if (!context.workingContext) {
+          throw new Error('task.review_completion_evidence requires a working context.');
+        }
+
+        const output = formatCompletionEvidenceReview(context.workingContext);
+
+        return {
+          success: true,
+          status: 'completed',
+          summary: '已审查完成证据；未修改完成标准或任务状态。',
           output,
         };
       }

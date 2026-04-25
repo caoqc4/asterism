@@ -2,7 +2,12 @@
 
 ## Status
 
-Proposed for the next agent execution-layer slice.
+Accepted for the first read-only closeout review slice.
+
+Implementation update: `task.review_completion_evidence` now exists as a
+safe-read registry tool and can be prompt-exposed only behind
+`allowTaskMutationTools=true`. It writes run-step observations and final output,
+but does not satisfy criteria, reopen criteria, or transition tasks.
 
 ## Decision
 
@@ -48,7 +53,7 @@ The agent should reinforce that loop before it can mutate it.
 
 Introduce a draft-only closeout review path before any mutating closeout tool.
 
-Possible registry tool name:
+Registry tool name:
 
 ```text
 task.review_completion_evidence
@@ -65,10 +70,10 @@ Suggested behavior:
   - whether a Decision is recommended before closeout
 - write only run-step observations and final run output
 
-This tool may be prompt-exposed behind `allowTaskMutationTools=true` only if it
-does not mutate task state. If it later creates a draft Decision, that should use
-the existing draft-only `decision.draft` behavior rather than creating a formal
-Decision automatically.
+This tool may be prompt-exposed behind `allowTaskMutationTools=true` because it
+does not mutate task state. If a later flow creates a draft Decision, that
+should use the existing draft-only `decision.draft` behavior rather than
+creating a formal Decision automatically.
 
 ## Deferred Tools
 

@@ -17,8 +17,8 @@ export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord)
       ? 'read-only workspace context enabled'
       : 'read-only workspace context unavailable',
     capabilities.taskMutationTools
-      ? 'task update tools enabled'
-      : 'task update tools unavailable',
+      ? 'task update/evidence tools enabled'
+      : 'task update/evidence tools unavailable',
     capabilities.structuredToolCalls
       ? 'structured tool calls'
       : 'structured tool calls unavailable',
@@ -42,8 +42,8 @@ export function formatPreRunAgentCapabilitySummary(
     ? 'read-only workspace context enabled for this run'
     : 'read-only workspace context disabled for this run';
   const taskToolsSummary = allowTaskMutationTools
-    ? 'task update tools enabled for this run'
-    : 'task update tools disabled for this run';
+    ? 'task update/evidence tools enabled for this run'
+    : 'task update/evidence tools disabled for this run';
 
   return [
     `Agent 能力预览：${providerSummary}`,

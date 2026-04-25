@@ -18,6 +18,7 @@ Recommended first opt-in:
 
 - `task.update_next_step`
 - `task.create_completion_criterion`
+- `task.review_completion_evidence`
 - `source_context.create`
 - `decision.draft`
 
@@ -90,13 +91,13 @@ The run form should describe this as task updates, not automation:
 Supporting copy:
 
 ```text
-可更新下一步、添加完成标准、补充来源上下文或草拟 Decision。不会修改工作区文件或运行命令。
+可更新下一步、添加完成标准、审查完成证据、补充来源上下文或草拟 Decision。不会修改工作区文件或运行命令，也不会自动完成任务。
 ```
 
 Capability preview should distinguish:
 
 - read-only workspace context
-- task update tools
+- task update/evidence tools
 - workspace patch/command tools
 
 ## Testing Requirements
@@ -109,7 +110,8 @@ Accepted implementation coverage:
 - renderer tests prove the run form separates read-only workspace context from
   task update tools and workspace write/command tools
 - existing integration and service tests prove the allowed tools still route
-  through domain services and write run-step observations
+  through domain services where needed, keep completion review read-only, and
+  write run-step observations
 - full local verification passes without GitHub Actions
 
 ## Non-Goals

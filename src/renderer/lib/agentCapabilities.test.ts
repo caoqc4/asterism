@@ -23,7 +23,7 @@ function buildAiStatus(provider: AiConfigStatus['provider']): AiConfigStatus {
 describe('agent capability formatting', () => {
   it('previews local executor capabilities before an agent run', () => {
     expect(formatPreRunAgentCapabilitySummary(buildAiStatus('anthropic'), false)).toBe(
-      'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context disabled for this run / task update tools disabled for this run / structured tool calls unavailable / patch/commands unavailable',
+      'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable / patch/commands unavailable',
     );
     expect(formatPreRunAgentCapabilitySummary(buildAiStatus('anthropic'), true)).toContain(
       'read-only workspace context enabled for this run',
@@ -32,13 +32,13 @@ describe('agent capability formatting', () => {
 
   it('names Replicate as text-only planning before an agent run', () => {
     expect(formatPreRunAgentCapabilitySummary(buildAiStatus('replicate'), true)).toBe(
-      'Agent 能力预览：replicate / openai/gpt-oss-20b / text-only planning via Replicate / read-only workspace context enabled for this run / task update tools disabled for this run / structured tool calls unavailable / patch/commands unavailable',
+      'Agent 能力预览：replicate / openai/gpt-oss-20b / text-only planning via Replicate / read-only workspace context enabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable / patch/commands unavailable',
     );
   });
 
   it('names task update tool opt-in before an agent run', () => {
     expect(formatPreRunAgentCapabilitySummary(buildAiStatus('anthropic'), false, true)).toContain(
-      'task update tools enabled for this run',
+      'task update/evidence tools enabled for this run',
     );
   });
 
@@ -53,7 +53,7 @@ describe('agent capability formatting', () => {
     expect(summary).toContain(`${provider} / claude-3-5-sonnet-latest`);
     expect(summary).toContain('text-only planning in the local executor');
     expect(summary).toContain('read-only workspace context disabled for this run');
-    expect(summary).toContain('task update tools disabled for this run');
+    expect(summary).toContain('task update/evidence tools disabled for this run');
     expect(summary).toContain('structured tool calls unavailable');
     expect(summary).toContain('patch/commands unavailable');
   });

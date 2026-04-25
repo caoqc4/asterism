@@ -19,6 +19,7 @@ export type AgentToolName =
   | 'task.create_completion_criterion'
   | 'task.inspect_context'
   | 'task.inspect_timeline'
+  | 'task.review_completion_evidence'
   | 'task.update_next_step'
   | 'workspace.read_file'
   | 'workspace.run_command'

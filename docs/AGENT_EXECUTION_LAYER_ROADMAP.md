@@ -139,6 +139,9 @@ Completed registry-level tools:
   not exposed in prompts or normal agent plans)
 - `task.create_completion_criterion` (implemented as a registry-level
   service-routed tool; not exposed in prompts or normal agent plans)
+- `task.review_completion_evidence` (implemented as a registry-level safe-read
+  tool; prompt-exposed only through the explicit task-tool opt-in, and does not
+  satisfy criteria or complete tasks)
 - `source_context.create` (implemented as a registry-level service-routed tool;
   not exposed in prompts or normal agent plans)
 - `decision.draft` (implemented as a registry-level draft-only tool; it does

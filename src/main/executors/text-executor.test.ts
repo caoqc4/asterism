@@ -207,6 +207,16 @@ describe('TextExecutor', () => {
     );
     expect(generateTextMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        prompt: expect.stringContaining('"tool": "task.review_completion_evidence"'),
+      }),
+    );
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('不能满足完成标准，也不能把任务转为 completed'),
+      }),
+    );
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
         prompt: expect.stringContaining('每次计划最多使用一个任务内更新工具'),
       }),
     );

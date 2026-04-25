@@ -55,6 +55,11 @@ export type AgentRunLoopStep =
       input: Record<string, never>;
     }
   | {
+      kind: 'review_completion_evidence';
+      tool: Extract<AgentToolName, 'task.review_completion_evidence'>;
+      input: Record<string, never>;
+    }
+  | {
       kind: 'create_note';
       tool: Extract<AgentToolName, 'artifact.create_note'>;
       input: {
@@ -142,6 +147,14 @@ function buildInspectTimelineStep(): Extract<AgentRunLoopStep, { kind: 'inspect_
   return {
     kind: 'inspect_timeline',
     tool: 'task.inspect_timeline',
+    input: {},
+  };
+}
+
+function buildReviewCompletionEvidenceStep(): Extract<AgentRunLoopStep, { kind: 'review_completion_evidence' }> {
+  return {
+    kind: 'review_completion_evidence',
+    tool: 'task.review_completion_evidence',
     input: {},
   };
 }
@@ -422,6 +435,15 @@ export class AgentRunLoop {
 
       if (step.tool === 'task.inspect_timeline') {
         nextPlan.push(buildInspectTimelineStep());
+        continue;
+      }
+
+      if (step.tool === 'task.review_completion_evidence') {
+        if (!policy?.allowTaskMutationTools) {
+          return this.buildLocalNotePlan({ modelOutput, taskTitle });
+        }
+
+        nextPlan.push(buildReviewCompletionEvidenceStep());
         continue;
       }
 
@@ -753,6 +775,7 @@ export class AgentRunLoop {
           runId: request.runId,
           taskId: request.taskId,
           workingContext: step.kind === 'inspect_context' || step.kind === 'inspect_timeline'
+            || step.kind === 'review_completion_evidence'
             ? request.context
             : undefined,
         },

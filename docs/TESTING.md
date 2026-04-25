@@ -92,17 +92,17 @@ Covered today:
 - `AgentWorkingContext`
   task-detail compression into typed agent run context, default policy, and plan-step request summaries
 - `AgentToolRegistry`
-  internal tool discovery, read-only context/timeline inspection, service-routed task next-step updates, completion-criterion creation, source-context creation, and draft-only Decision proposals, policy-gated read-only workspace search/file reads, dynamic workspace-root resolution, local note artifact creation, confirmation-gated workspace patch application, tool call/result step writes, validation failure recording, policy-driven confirmation checkpoints, and Decision creation for confirmation checkpoints
+  internal tool discovery, read-only context/timeline inspection, read-only completion evidence review, service-routed task next-step updates, completion-criterion creation, source-context creation, and draft-only Decision proposals, policy-gated read-only workspace search/file reads, dynamic workspace-root resolution, local note artifact creation, confirmation-gated workspace patch application, tool call/result step writes, validation failure recording, policy-driven confirmation checkpoints, and Decision creation for confirmation checkpoints
 - `AgentToolRegistry integration`
-  service-routed task next-step updates, completion-criterion creation, source-context creation, and draft-only Decision proposals through real SQLite repositories, including task timeline evidence and run-step observations
+  service-routed task next-step updates, completion-criterion creation, read-only completion evidence review without satisfying criteria or completing tasks, source-context creation, and draft-only Decision proposals through real SQLite repositories, including task timeline evidence and run-step observations
 - `Run checkpoint payload`
   versioned v1 payload helpers for tool-permission and resume checkpoints, with legacy JSON parsing compatibility
 - `DecisionService`
   checkpoint Decision approval can resume both local note creation and confirmation-gated workspace patch application
 - `TextExecutor`
-  lane-aware run prompt composition, constrained JSON proposal prompting for agent runs, opt-in workspace tool prompt guidance, and opt-in domain task tool prompt guidance
+  lane-aware run prompt composition, constrained JSON proposal prompting for agent runs, opt-in workspace tool prompt guidance, and opt-in domain task/evidence tool prompt guidance
 - `Agent capability UI helpers`
-  pre-run agent capability preview wording, including text-only local executor behavior, read-only workspace opt-in state, task update tool opt-in state, and Replicate-specific text-only planning wording
+  pre-run agent capability preview wording, including text-only local executor behavior, read-only workspace opt-in state, task update/evidence tool opt-in state, and Replicate-specific text-only planning wording
 - `AI clients`
   Vercel SDK client routing plus native Replicate text prediction request/response handling
 - `HomeBriefService`
