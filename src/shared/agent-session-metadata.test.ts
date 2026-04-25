@@ -14,7 +14,7 @@ describe('agent session metadata formatting', () => {
   });
 
   it('formats provider-native session metadata without raw payloads', () => {
-    expect(formatProviderNativeAgentSessionMetadata({
+    const metadata = formatProviderNativeAgentSessionMetadata({
       source: 'provider_tool_call',
       provider: 'openai-compatible',
       model: 'relay-model',
@@ -24,12 +24,16 @@ describe('agent session metadata formatting', () => {
       proposal: {
         steps: [
           {
-            tool: 'task.inspect_context',
-            input: {},
+              tool: 'task.inspect_context',
+            input: {
+              privatePromptFragment: 'do not persist me',
+            },
           },
         ],
       },
-    })).toBe([
+    });
+
+    expect(metadata).toBe([
       'executor=provider_native_agent',
       'loop=provider_tool_call',
       'provider=openai-compatible',
@@ -39,5 +43,7 @@ describe('agent session metadata formatting', () => {
       'providerCallIds=call_1,call_2',
       'stopReason=tool_calls',
     ].join('\n'));
+    expect(metadata).not.toContain('privatePromptFragment');
+    expect(metadata).not.toContain('do not persist me');
   });
 });
