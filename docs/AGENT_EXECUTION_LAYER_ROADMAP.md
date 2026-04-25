@@ -92,9 +92,11 @@ Acceptance:
 
 ### Slice 2: Provider Capability Truthfulness
 
+Status: first UI/session truthfulness slice completed.
+
 Goal: stop treating every model provider as equally agent-capable.
 
-Started:
+Completed:
 
 - Tasks and Runs agent forms preview provider/session capability before
   triggering a run.
@@ -102,19 +104,20 @@ Started:
   structured tool-call unavailability, and patch/command unavailability.
 - Provider preview coverage now asserts Anthropic, OpenAI, OpenAI-compatible,
   fal/OpenRouter, and Replicate wording stays truthful.
-
-Remaining:
-
-- keep `textOnlyPlanning`, `structuredToolCalls`, `fileContext`, `streaming`,
-  and `longRunningSessions` as explicit session metadata
-- make Replicate/text-only runs explain that they can draft and plan but do not
-  have reliable structured tool calling
+- Agent sessions keep `textOnlyPlanning`, `structuredToolCalls`, `fileContext`,
+  `streaming`, and `longRunningSessions` as explicit metadata.
 
 Acceptance:
 
 - default local runs show honest capability copy
 - read-only workspace opt-in updates `fileContext=true`
 - provider limitations do not silently enable tool plans
+
+Deferred:
+
+- enabling true structured tool calls for providers or relays that can support
+  them
+- provider-specific long-running session adapters
 
 ### Slice 3: Domain-Shaped Task Tools
 
