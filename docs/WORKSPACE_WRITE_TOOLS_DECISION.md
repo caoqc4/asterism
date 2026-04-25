@@ -2,13 +2,16 @@
 
 ## Status
 
-Draft decision for the next execution-layer phase. Do not implement
-`workspace.write_patch` or `workspace.run_command` until this document is
-accepted and the packaged read-only workspace path has been manually repeated.
+Accepted for the first `workspace.write_patch` slice. Keep
+`workspace.run_command` deferred until the patch/checkpoint UX is proven.
 
 Prerequisite update: the packaged read-only workspace path was manually repeated
-on 2026-04-25. This document still needs explicit acceptance or revision before
-write/command tools are implemented.
+on 2026-04-25.
+
+Implementation update: `workspace.write_patch` now exists as a confirmation-gated
+local-write tool. It is disabled without explicit `allowLocalFileWrite` policy,
+is still absent from model prompts, stores a diff preview in the checkpoint, and
+applies only after the linked Decision is approved.
 
 ## Decision
 
@@ -17,9 +20,9 @@ confirmed, resumable agent actions. The first write-capable phase should support
 patch proposal and local command execution as separate capabilities:
 
 - `workspace.write_patch`: applies a bounded textual patch inside the configured
-  workspace root.
+  workspace root. First slice implemented.
 - `workspace.run_command`: runs a bounded command inside the configured
-  workspace root.
+  workspace root. Still deferred.
 
 Both tools must be disabled by default, unavailable to model prompts unless the
 run opts in, and blocked by a confirmation checkpoint before execution.

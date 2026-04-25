@@ -443,6 +443,108 @@ describe('DecisionService', () => {
     expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'agent', true, 'run_1');
   });
 
+  it('resumes an approved workspace patch checkpoint with local file-write policy', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord(),
+        status: 'approved',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+    };
+    const patchInput = {
+      summary: 'Update notes',
+      expectedFiles: ['notes.md'],
+      patch: [
+        '*** Begin Patch',
+        '*** Update File: notes.md',
+        '@@',
+        '-alpha',
+        '+beta',
+        '*** End Patch',
+      ].join('\n'),
+      diffPreview: 'Files: notes.md',
+    };
+    const runCheckpointRepository = {
+      findOpenByDecisionId: vi.fn().mockResolvedValue({
+        id: 'run_checkpoint_1',
+        runId: 'run_1',
+        stepId: 'run_step_1',
+        kind: 'tool_permission',
+        status: 'open',
+        payload: JSON.stringify({
+          version: 1,
+          kind: 'tool_permission',
+          tool: 'workspace.write_patch',
+          risk: 'local_write',
+          input: patchInput,
+          decisionId: 'decision_1',
+          decisionTitle: '确认本地写入：workspace.write_patch',
+        }),
+        createdAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      }),
+      updateStatus: vi.fn(),
+    };
+    const runStepRepository = {
+      create: vi.fn(),
+    };
+    const runRepository = {
+      getDetail: vi.fn().mockResolvedValue({
+        id: 'run_1',
+        taskId: 'task_1',
+        type: 'agent',
+      }),
+      updateResult: vi.fn(),
+    };
+    const agentToolRegistry = {
+      execute: vi.fn().mockResolvedValue({
+        success: true,
+        summary: '已应用工作区 patch：notes.md',
+        output: patchInput.patch,
+      }),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+      undefined,
+      runCheckpointRepository as never,
+      runStepRepository as never,
+      runRepository as never,
+      agentToolRegistry as never,
+    );
+
+    await service.act({
+      id: 'decision_1',
+      action: 'approve',
+    });
+
+    expect(agentToolRegistry.execute).toHaveBeenCalledWith(
+      'workspace.write_patch',
+      patchInput,
+      { runId: 'run_1', taskId: 'task_1' },
+      expect.objectContaining({
+        allowLocalFileWrite: true,
+        confirmationRequiredRisks: [],
+      }),
+    );
+    expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith('run_checkpoint_1', 'resolved');
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_1',
+      'completed',
+      patchInput.patch,
+      'system',
+    );
+  });
+
   it('moves the task to waiting_external when a decision is deferred', async () => {
     const decisionRepository = {
       list: vi.fn(),

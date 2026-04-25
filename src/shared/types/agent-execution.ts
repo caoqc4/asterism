@@ -16,7 +16,8 @@ export type AgentToolName =
   | 'task.inspect_context'
   | 'task.inspect_timeline'
   | 'workspace.read_file'
-  | 'workspace.search';
+  | 'workspace.search'
+  | 'workspace.write_patch';
 
 export type AgentPolicy = {
   maxSteps: number;

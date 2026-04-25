@@ -568,13 +568,22 @@ Completed slice:
    confirmation, diff preview, sandbox, and rollback story as a separate
    decision doc. See [WORKSPACE_WRITE_TOOLS_DECISION.md](WORKSPACE_WRITE_TOOLS_DECISION.md).
 
-Next code slice:
+Completed slice:
 
 1. Accept the write/command-tool decision or revise it before implementation.
-2. Implement only the smallest confirmation-gated local-write slice first,
-   preferably `workspace.write_patch` with diff preview and tests.
-3. Keep `workspace.run_command` separate unless the patch slice proves the
+2. Implement the smallest confirmation-gated local-write slice first:
+   `workspace.write_patch` with workspace-root validation, expected-file checks,
+   diff preview in the checkpoint payload, Decision approval resume, and tests.
+3. Keep the patch tool absent from model prompts and disabled without explicit
+   local file-write policy.
+
+Next code slice:
+
+1. Exercise `workspace.write_patch` through a local approval flow before making
+   it visible in any user-facing prompt or UI opt-in.
+2. Keep `workspace.run_command` separate unless the patch slice proves the
    checkpoint/resume UX is coherent.
+3. Design the eventual command allowlist as a separate decision update.
 
 Success: Taskplane can inspect local project context for coding-like tasks only
 when the user has explicitly enabled read-only workspace access for that run,

@@ -266,7 +266,10 @@ export class DecisionService {
       return;
     }
 
-    if (tool !== 'artifact.create_note' || !this.agentToolRegistry) {
+    if (
+      (tool !== 'artifact.create_note' && tool !== 'workspace.write_patch') ||
+      !this.agentToolRegistry
+    ) {
       await this.runCheckpointRepository.updateStatus(checkpoint.id, 'resolved');
       await this.runStepRepository.create({
         runId: checkpoint.runId,
@@ -287,6 +290,7 @@ export class DecisionService {
       },
       {
         ...DEFAULT_AGENT_POLICY,
+        allowLocalFileWrite: tool === 'workspace.write_patch',
         confirmationRequiredRisks: [],
       },
     );

@@ -171,6 +171,11 @@ describe('AgentToolRegistry', () => {
         risk: 'safe_read',
         requiresConfirmation: false,
       }),
+      expect.objectContaining({
+        name: 'workspace.write_patch',
+        risk: 'local_write',
+        requiresConfirmation: true,
+      }),
     ]);
   });
 
@@ -519,6 +524,222 @@ describe('AgentToolRegistry', () => {
     } finally {
       fs.rmSync(firstRoot, { recursive: true, force: true });
       fs.rmSync(secondRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('requires local file-write policy before checkpointing workspace patches', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-workspace-patch-policy-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'alpha\n');
+      const runStepRepository = buildRunStepRepositoryMock();
+      const runCheckpointRepository = buildRunCheckpointRepositoryMock();
+      const decisionRepository = buildDecisionRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        runCheckpointRepository as never,
+        decisionRepository as never,
+        () => tempRoot,
+      );
+
+      const result = await registry.execute(
+        'workspace.write_patch',
+        {
+          summary: 'Update notes',
+          expectedFiles: ['notes.md'],
+          patch: [
+            '*** Begin Patch',
+            '*** Update File: notes.md',
+            '@@',
+            '-alpha',
+            '+beta',
+            '*** End Patch',
+          ].join('\n'),
+        },
+        { runId: 'run_1', taskId: 'task_1' },
+        {
+          maxSteps: 8,
+          maxWallTimeMs: 120_000,
+          allowNetwork: false,
+          allowLocalWorkspaceRead: false,
+          allowLocalFileWrite: false,
+          confirmationRequiredRisks: ['local_write'],
+        },
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('workspace.write_patch requires allowLocalFileWrite policy.');
+      expect(fs.readFileSync(path.join(tempRoot, 'notes.md'), 'utf8')).toBe('alpha\n');
+      expect(runCheckpointRepository.create).not.toHaveBeenCalled();
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('creates a confirmation checkpoint with a diff preview before applying workspace patches', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-workspace-patch-confirm-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'alpha\n');
+      const runStepRepository = buildRunStepRepositoryMock();
+      const runCheckpointRepository = buildRunCheckpointRepositoryMock();
+      const decisionRepository = buildDecisionRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        runCheckpointRepository as never,
+        decisionRepository as never,
+        () => tempRoot,
+      );
+
+      const result = await registry.execute(
+        'workspace.write_patch',
+        {
+          summary: 'Update notes',
+          expectedFiles: ['notes.md'],
+          patch: [
+            '*** Begin Patch',
+            '*** Update File: notes.md',
+            '@@',
+            '-alpha',
+            '+beta',
+            '*** End Patch',
+          ].join('\n'),
+        },
+        { runId: 'run_1', taskId: 'task_1' },
+        {
+          maxSteps: 8,
+          maxWallTimeMs: 120_000,
+          allowNetwork: false,
+          allowLocalWorkspaceRead: false,
+          allowLocalFileWrite: true,
+          confirmationRequiredRisks: ['local_write'],
+        },
+      );
+
+      expect(result).toMatchObject({
+        success: false,
+        status: 'needs_confirmation',
+        checkpointId: 'run_checkpoint_1',
+      });
+      expect(fs.readFileSync(path.join(tempRoot, 'notes.md'), 'utf8')).toBe('alpha\n');
+      expect(runCheckpointRepository.updatePayload).toHaveBeenCalledWith(
+        'run_checkpoint_1',
+        expect.stringContaining('"diffPreview"'),
+      );
+      expect(runStepRepository.create).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          kind: 'checkpoint',
+          status: 'pending',
+          input: expect.stringContaining('Files: notes.md'),
+        }),
+      );
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('applies an approved workspace patch inside the configured root', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-workspace-patch-apply-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'alpha\n');
+      const runStepRepository = buildRunStepRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        undefined,
+        null,
+        () => tempRoot,
+      );
+
+      const result = await registry.execute(
+        'workspace.write_patch',
+        {
+          summary: 'Update notes',
+          expectedFiles: ['notes.md'],
+          patch: [
+            '*** Begin Patch',
+            '*** Update File: notes.md',
+            '@@',
+            '-alpha',
+            '+beta',
+            '*** End Patch',
+          ].join('\n'),
+        },
+        { runId: 'run_1', taskId: 'task_1' },
+        {
+          maxSteps: 8,
+          maxWallTimeMs: 120_000,
+          allowNetwork: false,
+          allowLocalWorkspaceRead: false,
+          allowLocalFileWrite: true,
+          confirmationRequiredRisks: [],
+        },
+      );
+
+      expect(result).toMatchObject({
+        success: true,
+        status: 'completed',
+        summary: '已应用工作区 patch：notes.md',
+      });
+      expect(fs.readFileSync(path.join(tempRoot, 'notes.md'), 'utf8')).toBe('beta\n');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('does not partially apply a workspace patch when a later hunk fails', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-workspace-patch-atomic-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'first.md'), 'alpha\n');
+      fs.writeFileSync(path.join(tempRoot, 'second.md'), 'gamma\n');
+      const runStepRepository = buildRunStepRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        undefined,
+        null,
+        () => tempRoot,
+      );
+
+      const result = await registry.execute(
+        'workspace.write_patch',
+        {
+          summary: 'Update two files',
+          expectedFiles: ['first.md', 'second.md'],
+          patch: [
+            '*** Begin Patch',
+            '*** Update File: first.md',
+            '@@',
+            '-alpha',
+            '+beta',
+            '*** Update File: second.md',
+            '@@',
+            '-missing',
+            '+delta',
+            '*** End Patch',
+          ].join('\n'),
+        },
+        { runId: 'run_1', taskId: 'task_1' },
+        {
+          maxSteps: 8,
+          maxWallTimeMs: 120_000,
+          allowNetwork: false,
+          allowLocalWorkspaceRead: false,
+          allowLocalFileWrite: true,
+          confirmationRequiredRisks: [],
+        },
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('workspace.write_patch could not match update hunk in second.md.');
+      expect(fs.readFileSync(path.join(tempRoot, 'first.md'), 'utf8')).toBe('alpha\n');
+      expect(fs.readFileSync(path.join(tempRoot, 'second.md'), 'utf8')).toBe('gamma\n');
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
     }
   });
 });

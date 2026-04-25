@@ -41,8 +41,15 @@ type WorkspaceSearchInput = {
   maxResults?: number;
 };
 
+type WorkspaceWritePatchInput = {
+  summary: string;
+  patch: string;
+  expectedFiles: string[];
+};
+
 const WORKSPACE_READ_LIMIT = 20_000;
 const WORKSPACE_SEARCH_MAX_RESULTS = 25;
+const WORKSPACE_PATCH_MAX_BYTES = 40_000;
 const WORKSPACE_SEARCH_SKIP_DIRS = new Set([
   '.git',
   'dist',
@@ -114,6 +121,37 @@ function parseWorkspaceSearchInput(input: unknown): WorkspaceSearchInput {
   return { query, maxResults };
 }
 
+function parseWorkspaceWritePatchInput(input: unknown): WorkspaceWritePatchInput {
+  if (!input || typeof input !== 'object') {
+    throw new Error('workspace.write_patch requires an object input.');
+  }
+
+  const candidate = input as Partial<WorkspaceWritePatchInput>;
+  const summary = candidate.summary?.trim();
+  const patch = candidate.patch?.trim();
+  const expectedFiles = Array.isArray(candidate.expectedFiles)
+    ? candidate.expectedFiles.map((item) => (typeof item === 'string' ? item.trim() : '')).filter(Boolean)
+    : [];
+
+  if (!summary) {
+    throw new Error('workspace.write_patch requires a summary.');
+  }
+
+  if (!patch) {
+    throw new Error('workspace.write_patch requires a patch.');
+  }
+
+  if (Buffer.byteLength(patch, 'utf8') > WORKSPACE_PATCH_MAX_BYTES) {
+    throw new Error('workspace.write_patch patch is too large.');
+  }
+
+  if (!expectedFiles.length) {
+    throw new Error('workspace.write_patch requires expectedFiles.');
+  }
+
+  return { summary, patch, expectedFiles };
+}
+
 function resolveWorkspacePath(workspaceRoot: string, requestedPath: string): string {
   const root = path.resolve(workspaceRoot);
   const resolved = path.resolve(root, requestedPath);
@@ -124,6 +162,225 @@ function resolveWorkspacePath(workspaceRoot: string, requestedPath: string): str
   }
 
   return resolved;
+}
+
+type ParsedPatchOperation =
+  | {
+      type: 'add';
+      file: string;
+      content: string;
+    }
+  | {
+      type: 'update';
+      file: string;
+      replacements: Array<{
+        oldText: string;
+        newText: string;
+      }>;
+    };
+
+type ParsedPatchReplacement = Extract<ParsedPatchOperation, { type: 'update' }>['replacements'][number];
+
+function normalizePatchFilePath(filePath: string): string {
+  return filePath.replace(/^a\//, '').replace(/^b\//, '').trim();
+}
+
+function parseApplyPatch(patch: string): ParsedPatchOperation[] {
+  const lines = patch.replace(/\r\n/g, '\n').split('\n');
+  const operations: ParsedPatchOperation[] = [];
+  let index = 0;
+
+  if (lines[index]?.trim() !== '*** Begin Patch') {
+    throw new Error('workspace.write_patch patch must start with *** Begin Patch.');
+  }
+  index += 1;
+
+  while (index < lines.length) {
+    const line = lines[index];
+
+    if (line?.trim() === '*** End Patch') {
+      return operations;
+    }
+
+    if (line?.startsWith('*** Delete File:') || line?.startsWith('*** Move to:')) {
+      throw new Error('workspace.write_patch does not support delete or move operations.');
+    }
+
+    if (line?.startsWith('*** Add File:')) {
+      const file = normalizePatchFilePath(line.slice('*** Add File:'.length));
+      index += 1;
+      const contentLines: string[] = [];
+
+      while (index < lines.length && !lines[index]?.startsWith('*** ')) {
+        const contentLine = lines[index];
+        if (!contentLine?.startsWith('+')) {
+          throw new Error('workspace.write_patch add-file lines must start with +.');
+        }
+        contentLines.push(contentLine.slice(1));
+        index += 1;
+      }
+
+      operations.push({ type: 'add', file, content: `${contentLines.join('\n')}\n` });
+      continue;
+    }
+
+    if (line?.startsWith('*** Update File:')) {
+      const file = normalizePatchFilePath(line.slice('*** Update File:'.length));
+      index += 1;
+      const replacements: ParsedPatchReplacement[] = [];
+
+      while (index < lines.length && !lines[index]?.startsWith('*** ')) {
+        if (!lines[index]?.startsWith('@@')) {
+          index += 1;
+          continue;
+        }
+
+        index += 1;
+        const oldLines: string[] = [];
+        const newLines: string[] = [];
+
+        while (index < lines.length && !lines[index]?.startsWith('@@') && !lines[index]?.startsWith('*** ')) {
+          const patchLine = lines[index] ?? '';
+          const prefix = patchLine[0];
+          const body = patchLine.slice(1);
+
+          if (prefix === ' ') {
+            oldLines.push(body);
+            newLines.push(body);
+          } else if (prefix === '-') {
+            oldLines.push(body);
+          } else if (prefix === '+') {
+            newLines.push(body);
+          } else if (patchLine.trim() !== '') {
+            throw new Error('workspace.write_patch update lines must start with space, -, or +.');
+          }
+
+          index += 1;
+        }
+
+        replacements.push({
+          oldText: `${oldLines.join('\n')}\n`,
+          newText: `${newLines.join('\n')}\n`,
+        });
+      }
+
+      if (!replacements.length) {
+        throw new Error(`workspace.write_patch update for ${file} must include at least one hunk.`);
+      }
+
+      operations.push({ type: 'update', file, replacements });
+      continue;
+    }
+
+    throw new Error('workspace.write_patch contains an unsupported patch section.');
+  }
+
+  throw new Error('workspace.write_patch patch must end with *** End Patch.');
+}
+
+function getPatchTouchedFiles(operations: ParsedPatchOperation[]): string[] {
+  return [...new Set(operations.map((operation) => operation.file))];
+}
+
+async function buildWorkspacePatchPreview(params: {
+  input: WorkspaceWritePatchInput;
+  workspaceRoot: string;
+}): Promise<string> {
+  const operations = parseApplyPatch(params.input.patch);
+  const touchedFiles = getPatchTouchedFiles(operations);
+  const expected = new Set(params.input.expectedFiles);
+
+  if (!operations.length) {
+    throw new Error('workspace.write_patch patch does not contain any file operation.');
+  }
+
+  for (const file of touchedFiles) {
+    if (!expected.has(file)) {
+      throw new Error(`workspace.write_patch touched unexpected file: ${file}`);
+    }
+
+    resolveWorkspacePath(params.workspaceRoot, file);
+  }
+
+  return [
+    `Summary: ${params.input.summary}`,
+    `Files: ${touchedFiles.join(', ')}`,
+    params.input.patch,
+  ].join('\n\n');
+}
+
+async function applyWorkspacePatch(params: {
+  input: WorkspaceWritePatchInput;
+  workspaceRoot: string;
+}): Promise<string[]> {
+  const operations = parseApplyPatch(params.input.patch);
+  const expected = new Set(params.input.expectedFiles);
+  const touchedFiles = getPatchTouchedFiles(operations);
+  const pendingWrites: Array<{
+    filePath: string;
+    content: string;
+    ensureDirectory: boolean;
+  }> = [];
+
+  for (const file of touchedFiles) {
+    if (!expected.has(file)) {
+      throw new Error(`workspace.write_patch touched unexpected file: ${file}`);
+    }
+  }
+
+  for (const operation of operations) {
+    const filePath = resolveWorkspacePath(params.workspaceRoot, operation.file);
+
+    if (operation.type === 'add') {
+      try {
+        await fs.stat(filePath);
+        throw new Error(`workspace.write_patch add target already exists: ${operation.file}`);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          throw error;
+        }
+      }
+
+      pendingWrites.push({
+        filePath,
+        content: operation.content,
+        ensureDirectory: true,
+      });
+      continue;
+    }
+
+    const stat = await fs.stat(filePath);
+
+    if (!stat.isFile()) {
+      throw new Error('workspace.write_patch can only update files.');
+    }
+
+    let content = await fs.readFile(filePath, 'utf8');
+
+    for (const replacement of operation.replacements) {
+      if (!content.includes(replacement.oldText)) {
+        throw new Error(`workspace.write_patch could not match update hunk in ${operation.file}.`);
+      }
+
+      content = content.replace(replacement.oldText, replacement.newText);
+    }
+
+    pendingWrites.push({
+      filePath,
+      content,
+      ensureDirectory: false,
+    });
+  }
+
+  for (const write of pendingWrites) {
+    if (write.ensureDirectory) {
+      await fs.mkdir(path.dirname(write.filePath), { recursive: true });
+    }
+
+    await fs.writeFile(write.filePath, write.content, 'utf8');
+  }
+
+  return touchedFiles;
 }
 
 function buildConfirmationDecisionTitle(name: AgentToolName, risk: AgentToolRisk): string {
@@ -228,6 +485,12 @@ export class AgentToolRegistry {
       risk: 'safe_read',
       requiresConfirmation: false,
     },
+    {
+      name: 'workspace.write_patch',
+      description: 'Apply a bounded textual patch inside the configured local workspace root.',
+      risk: 'local_write',
+      requiresConfirmation: true,
+    },
   ];
 
   constructor(
@@ -264,6 +527,80 @@ export class AgentToolRegistry {
 
     try {
       if (policy?.confirmationRequiredRisks.includes(definition.risk)) {
+        if (name === 'workspace.write_patch') {
+          if (!policy.allowLocalFileWrite) {
+            throw new Error('workspace.write_patch requires allowLocalFileWrite policy.');
+          }
+
+          const parsed = parseWorkspaceWritePatchInput(input);
+          const workspaceRoot = this.workspaceRootResolver();
+          const diffPreview = await buildWorkspacePatchPreview({
+            input: parsed,
+            workspaceRoot,
+          });
+          const decisionTitle = buildConfirmationDecisionTitle(name, definition.risk);
+          const checkpoint = await this.runCheckpointRepository.create({
+            runId: context.runId,
+            stepId: callStep.id,
+            kind: 'tool_permission',
+            payload: JSON.stringify(createToolPermissionCheckpointPayload({
+              tool: name,
+              risk: definition.risk,
+              input: {
+                ...parsed,
+                diffPreview,
+              },
+              decisionId: null,
+              decisionTitle,
+            })),
+          });
+          const decision = this.decisionRepository
+            ? await this.decisionRepository.create({
+                taskId: context.taskId,
+                title: decisionTitle,
+                sourceType: 'agent_checkpoint',
+                sourceId: checkpoint.id,
+                sourceLabel: name,
+              })
+            : null;
+          const payload = JSON.stringify(createToolPermissionCheckpointPayload({
+            tool: name,
+            risk: definition.risk,
+            input: {
+              ...parsed,
+              diffPreview,
+            },
+            decisionId: decision?.id ?? null,
+            decisionTitle,
+          }));
+          const checkpointWithDecision = decision
+            ? await this.runCheckpointRepository.updatePayload(checkpoint.id, payload)
+            : checkpoint;
+          const summary = decision
+            ? `工具 ${name} 需要确认后才能继续，已创建 Decision：${decision.title}。`
+            : `工具 ${name} 需要确认后才能继续。`;
+
+          await this.runStepRepository.update(callStep.id, {
+            status: 'skipped',
+            output: summary,
+          });
+          await this.runStepRepository.create({
+            runId: context.runId,
+            kind: 'checkpoint',
+            status: 'pending',
+            title: `等待确认：${name}`,
+            input: diffPreview,
+            output: summary,
+          });
+
+          return {
+            success: false,
+            status: 'needs_confirmation',
+            summary,
+            checkpointId: checkpointWithDecision.id,
+          };
+        }
+
         const decisionTitle = buildConfirmationDecisionTitle(name, definition.risk);
         const checkpoint = await this.runCheckpointRepository.create({
           runId: context.runId,
@@ -462,6 +799,25 @@ export class AgentToolRegistry {
             ? `工作区搜索找到 ${matches.length} 条结果。`
             : '工作区搜索没有找到结果。',
           output: matches.join('\n') || null,
+        };
+      }
+      case 'workspace.write_patch': {
+        if (!policy?.allowLocalFileWrite) {
+          throw new Error('workspace.write_patch requires allowLocalFileWrite policy.');
+        }
+
+        const parsed = parseWorkspaceWritePatchInput(input);
+        const workspaceRoot = this.workspaceRootResolver();
+        const touchedFiles = await applyWorkspacePatch({
+          input: parsed,
+          workspaceRoot,
+        });
+
+        return {
+          success: true,
+          status: 'completed',
+          summary: `已应用工作区 patch：${touchedFiles.join(', ')}`,
+          output: parsed.patch,
         };
       }
       default:

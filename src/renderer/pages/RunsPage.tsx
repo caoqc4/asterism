@@ -65,6 +65,7 @@ function formatAgentToolLabel(tool: string): string {
     'artifact.create_note': '写入本地 note',
     'workspace.search': '搜索工作区',
     'workspace.read_file': '读取工作区文件',
+    'workspace.write_patch': '应用工作区 patch',
   };
 
   return labels[tool] ?? tool;
