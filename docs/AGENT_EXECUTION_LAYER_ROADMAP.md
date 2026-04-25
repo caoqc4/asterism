@@ -162,7 +162,9 @@ Deferred:
 Before enabling provider-native tool calls, use
 [STRUCTURED_TOOL_CALLS_DECISION.md](STRUCTURED_TOOL_CALLS_DECISION.md). The
 current accepted behavior remains text-only JSON planning with
-`structuredToolCalls=false` in persisted sessions.
+`structuredToolCalls=false` in persisted sessions. Follow
+[PROVIDER_NATIVE_TOOL_CALL_ROLLOUT_PLAN.md](PROVIDER_NATIVE_TOOL_CALL_ROLLOUT_PLAN.md)
+for any future staged wiring.
 
 ### Slice 3: Domain-Shaped Task Tools
 

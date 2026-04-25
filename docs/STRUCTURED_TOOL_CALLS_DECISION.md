@@ -63,6 +63,9 @@ The pre-run capability preview may say a provider path is deferred or limited,
 but persisted session metadata must describe what Taskplane actually used for
 that run.
 
+Rollout sequencing is tracked in
+[PROVIDER_NATIVE_TOOL_CALL_ROLLOUT_PLAN.md](PROVIDER_NATIVE_TOOL_CALL_ROLLOUT_PLAN.md).
+
 ## Adapter Requirements
 
 Before any provider-native structured tool-call path is enabled, the adapter
@@ -162,6 +165,8 @@ Rules:
 
 Before implementation is accepted:
 
+- rollout must follow
+  [PROVIDER_NATIVE_TOOL_CALL_ROLLOUT_PLAN.md](PROVIDER_NATIVE_TOOL_CALL_ROLLOUT_PLAN.md)
 - adapter unit tests cover each enabled provider or relay response shape
 - shared provider capability descriptor tests keep unconfigured, Replicate, and
   OpenAI-compatible-style providers on truthful text-only or deferred states
