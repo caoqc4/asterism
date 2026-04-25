@@ -92,6 +92,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Home Recent Activity now routes cancelled Decisions through an explicit
   `重新评估决策` recovery action, matching the existing Home recommendation
   semantics and steering the user toward an alternative next step.
+- The first user-facing registry-tool opt-in remains the existing task
+  update/evidence toggle; workspace patch and command tools stay
+  registry/checkpoint-review only until manual review shows repeated friction.
 - `npm run release:mac:preflight` now provides a read-only local check for
   macOS signed/notarized release prerequisites: Developer ID signing source,
   `notarytool`, Apple notarization env vars, and package metadata. It does not

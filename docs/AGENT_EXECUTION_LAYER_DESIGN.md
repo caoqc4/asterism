@@ -621,13 +621,22 @@ Completed slice:
 2. Show `重新评估决策` instead of falling through to a generic task open.
 3. Prefill the task next-step draft with an alternative-path prompt.
 
+Completed slice:
+
+1. Treat the existing task update/evidence opt-in as the first user-facing
+   registry-tool exposure surface.
+2. Keep workspace patch and command tools at registry/checkpoint-review tier
+   only; do not add a normal run-form opt-in for them yet.
+3. Require repeated manual review friction before introducing a dedicated
+   manual workspace patch or command request surface.
+
 Next code/design slice:
 
-1. Choose the first user-facing opt-in surface, if any, for registry-only
-   domain tools or workspace tools only after manual review confirms the current
-   recovery surfaces are clear enough.
-2. Keep broad browser/computer/social/coding execution deferred until the
+1. Keep broad browser/computer/social/coding execution deferred until the
    executor/session boundary can survive interruption and restart.
+2. If manual alpha use shows repeated friction around checkpoint review,
+   revisit a dedicated workspace manual-request surface before any prompt-level
+   workspace write/command exposure.
 
 For the shorter implementation sequence after the alpha task-management pass,
 see [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md).
