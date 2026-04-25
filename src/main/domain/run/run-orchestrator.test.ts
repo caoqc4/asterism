@@ -143,6 +143,9 @@ describe('RunOrchestrator', () => {
         provider: 'anthropic',
         model: 'claude-3-5-sonnet-latest',
         apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: false,
+        },
       }),
     };
     const textExecutor = {
@@ -625,6 +628,11 @@ describe('RunOrchestrator', () => {
         provider: 'anthropic',
         model: 'claude-3-5-sonnet-latest',
         apiKey: 'secret',
+        workspaceRoot: '/tmp/taskplane-workspace',
+        featureFlags: {
+          enableScheduler: false,
+          enableSandboxCodingAgent: true,
+        },
       }),
     };
     const textExecutor = {
@@ -683,7 +691,7 @@ describe('RunOrchestrator', () => {
         taskMutationTools: false,
         longRunningSessions: false,
       },
-      metadata: 'executor=local_agent\nloop=local_note\nsandboxCoding=disabled\nsandboxProvider=disabled\nsandboxPromotion=decision_required',
+      metadata: 'executor=local_agent\nloop=local_note\nsandboxCoding=blocked\nsandboxProvider=not_ready\nsandboxPromotion=decision_required\nsandboxBlockedReasons=sandbox provider does not expose the required staged-write, targeted-check, patch-artifact capability set',
     });
     expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
       'agent_session_1',

@@ -36,6 +36,7 @@ import {
   type AgentRuntimeRunStepDraft,
 } from './agent-runtime-event-step-mapper.js';
 import { AgentSessionEventRecorder } from './agent-session-event-recorder.js';
+import { evaluateTempWorkspaceSandboxCodingLane } from './temp-workspace-sandbox-provider.js';
 
 export type RunOrchestrationResult =
   | {
@@ -251,7 +252,14 @@ export class RunOrchestrator {
         allowLocalWorkspaceRead: Boolean(input.allowLocalWorkspaceRead),
         allowTaskMutationTools: Boolean(input.allowTaskMutationTools),
       }),
-      metadata: formatLocalAgentSessionMetadata(),
+      metadata: formatLocalAgentSessionMetadata(
+        result.runtimeConfig?.featureFlags?.enableSandboxCodingAgent
+          ? evaluateTempWorkspaceSandboxCodingLane({
+              featureFlags: result.runtimeConfig.featureFlags,
+              workspaceRoot: result.runtimeConfig.workspaceRoot,
+            })
+          : null,
+      ),
     });
     const eventRecorder = new AgentSessionEventRecorder(this.runStepRepository);
 

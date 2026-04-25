@@ -16,6 +16,23 @@ describe('agent session metadata formatting', () => {
     ].join('\n'));
   });
 
+  it('formats local agent metadata with sandbox eligibility details', () => {
+    expect(formatLocalAgentSessionMetadata({
+      blockedReasons: [
+        'sandbox provider does not expose the required staged-write, targeted-check, patch-artifact capability set',
+      ],
+      eligible: false,
+      summary: 'Sandbox coding lane unavailable.',
+    })).toBe([
+      'executor=local_agent',
+      'loop=local_note',
+      'sandboxCoding=blocked',
+      'sandboxProvider=not_ready',
+      'sandboxPromotion=decision_required',
+      'sandboxBlockedReasons=sandbox provider does not expose the required staged-write, targeted-check, patch-artifact capability set',
+    ].join('\n'));
+  });
+
   it('formats provider-native session metadata without raw payloads', () => {
     const metadata = formatProviderNativeAgentSessionMetadata({
       source: 'provider_tool_call',

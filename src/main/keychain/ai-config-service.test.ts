@@ -94,6 +94,7 @@ describe('AiConfigService', () => {
     appConfigService.write({
       aiProvider: 'fal-openrouter',
       aiModel: 'google/gemini-2.5-flash',
+      workspaceRoot: '/tmp/taskplane-workspace',
     });
     const service = new AiConfigService(appConfigService);
 
@@ -105,6 +106,7 @@ describe('AiConfigService', () => {
     expect(status.apiKeySource).toBe('env');
     expect(runtimeConfig.apiKey).toBe('env-secret');
     expect(runtimeConfig.provider).toBe('fal-openrouter');
+    expect(runtimeConfig.workspaceRoot).toBe('/tmp/taskplane-workspace');
     expect(setPasswordMock).not.toHaveBeenCalled();
   });
 

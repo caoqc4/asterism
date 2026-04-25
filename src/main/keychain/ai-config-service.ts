@@ -12,6 +12,7 @@ export type RuntimeAiConfig = {
   provider: AiProvider;
   model: string;
   baseUrl?: string | null;
+  workspaceRoot?: string | null;
   apiKey: string;
   featureFlags: FeatureFlags;
 };
@@ -99,6 +100,7 @@ export class AiConfigService {
       provider: config.aiProvider,
       model: config.aiModel,
       baseUrl: config.aiBaseUrl,
+      workspaceRoot: config.workspaceRoot,
       apiKey,
       featureFlags: config.featureFlags,
     };

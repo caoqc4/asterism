@@ -146,4 +146,33 @@ describe('agent capability formatting', () => {
       'executor=local_agent / loop=local_note / sandboxCoding=disabled / sandboxProvider=disabled / sandboxPromotion=decision_required',
     );
   });
+
+  it('formats local agent session metadata with sandbox blocked reasons', () => {
+    expect(formatAgentSessionMetadataSummary({
+      id: 'agent_session_1',
+      runId: 'run_1',
+      mode: 'agent',
+      status: 'completed',
+      capabilities: {
+        structuredToolCalls: false,
+        textOnlyPlanning: true,
+        streaming: false,
+        fileContext: true,
+        taskMutationTools: true,
+        longRunningSessions: false,
+      },
+      metadata: [
+        'executor=local_agent',
+        'loop=local_note',
+        'sandboxCoding=blocked',
+        'sandboxProvider=not_ready',
+        'sandboxPromotion=decision_required',
+        'sandboxBlockedReasons=sandbox provider does not expose the required staged-write, targeted-check, patch-artifact capability set',
+      ].join('\n'),
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    })).toBe(
+      'executor=local_agent / loop=local_note / sandboxCoding=blocked / sandboxProvider=not_ready / sandboxPromotion=decision_required / sandboxBlockedReasons=sandbox provider does not expose the required staged-write, targeted-check, patch-artifact capability set',
+    );
+  });
 });

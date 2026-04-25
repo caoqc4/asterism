@@ -1,13 +1,22 @@
+import type { AgentSandboxCodingLaneEligibility } from './agent-sandbox-provider.js';
 import type { ProviderToolCallPlan } from './types/agent-execution.js';
 
-export function formatLocalAgentSessionMetadata(): string {
-  return [
+export function formatLocalAgentSessionMetadata(
+  sandboxEligibility?: AgentSandboxCodingLaneEligibility | null,
+): string {
+  const parts = [
     'executor=local_agent',
     'loop=local_note',
-    'sandboxCoding=disabled',
-    'sandboxProvider=disabled',
+    `sandboxCoding=${sandboxEligibility ? sandboxEligibility.eligible ? 'eligible' : 'blocked' : 'disabled'}`,
+    `sandboxProvider=${sandboxEligibility ? sandboxEligibility.eligible ? 'eligible' : 'not_ready' : 'disabled'}`,
     'sandboxPromotion=decision_required',
-  ].join('\n');
+  ];
+
+  if (sandboxEligibility?.blockedReasons.length) {
+    parts.push(`sandboxBlockedReasons=${sandboxEligibility.blockedReasons.join('; ')}`);
+  }
+
+  return parts.join('\n');
 }
 
 export function formatProviderNativeAgentSessionMetadata(plan: ProviderToolCallPlan): string {

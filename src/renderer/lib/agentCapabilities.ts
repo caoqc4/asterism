@@ -78,6 +78,7 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
   const sandboxCoding = entries.get('sandboxCoding');
   const sandboxProvider = entries.get('sandboxProvider');
   const sandboxPromotion = entries.get('sandboxPromotion');
+  const sandboxBlockedReasons = entries.get('sandboxBlockedReasons');
 
   if (executor === 'provider_native_agent') {
     return [
@@ -97,6 +98,7 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
       sandboxCoding ? `sandboxCoding=${sandboxCoding}` : null,
       sandboxProvider ? `sandboxProvider=${sandboxProvider}` : null,
       sandboxPromotion ? `sandboxPromotion=${sandboxPromotion}` : null,
+      sandboxBlockedReasons ? `sandboxBlockedReasons=${sandboxBlockedReasons}` : null,
     ].filter(Boolean).join(' / ');
   }
 
