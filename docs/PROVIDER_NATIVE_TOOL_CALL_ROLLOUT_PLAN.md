@@ -132,6 +132,8 @@ Status: internal executor entry prepared; not wired into production runs.
 Only after shadow and parity coverage pass, allow a dedicated internal executor
 path to use native normalized proposals for one run session.
 
+Acceptance gate: [PROVIDER_NATIVE_SESSION_ACCEPTANCE.md](PROVIDER_NATIVE_SESSION_ACCEPTANCE.md).
+
 Rules:
 
 - must require `featureFlags.enableProviderNativeToolCalls=true`
