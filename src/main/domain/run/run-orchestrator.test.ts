@@ -452,6 +452,80 @@ describe('RunOrchestrator', () => {
     );
   });
 
+  it('keeps structured tool calls disabled for tool-capable providers until an adapter exists', async () => {
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'openai',
+        model: 'gpt-4.1',
+        apiKey: 'secret',
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn().mockResolvedValue('Agent local note output'),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No template needed.',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const agentExecutor = {
+      executeLocalNoteSession: vi.fn().mockResolvedValue({
+        status: 'completed',
+        output: 'Agent local note output',
+      }),
+    };
+    const agentSessionRepository = {
+      create: vi.fn().mockResolvedValue({ id: 'agent_session_1' }),
+      updateStatus: vi.fn().mockResolvedValue({ id: 'agent_session_1', status: 'completed' }),
+    };
+    const orchestrator = new RunOrchestrator(
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+      { execute: vi.fn() } as never,
+      agentExecutor as never,
+      agentSessionRepository as never,
+    );
+
+    await orchestrator.executeAgentRun({
+      run: buildRun(),
+      task: buildTaskDetail(),
+      input: {
+        ...buildInput(),
+        type: 'agent',
+        allowLocalWorkspaceRead: true,
+        allowTaskMutationTools: true,
+      },
+    });
+
+    expect(agentSessionRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        capabilities: {
+          structuredToolCalls: false,
+          textOnlyPlanning: true,
+          streaming: false,
+          fileContext: true,
+          taskMutationTools: true,
+          longRunningSessions: false,
+        },
+      }),
+    );
+    expect(agentExecutor.executeLocalNoteSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        request: expect.objectContaining({
+          policy: expect.objectContaining({
+            allowLocalWorkspaceRead: true,
+            allowTaskMutationTools: true,
+          }),
+        }),
+      }),
+    );
+  });
+
   it('returns paused when the agent loop stops before a local write', async () => {
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({

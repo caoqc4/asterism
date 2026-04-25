@@ -84,7 +84,7 @@ Covered today:
 - `RunService`
   successful execution path, failure path, paused path, paused checkpoint continuation, task restoration after settled runs, artifact creation on successful output, orchestration result settlement, an isolated read-only workspace agent path through persisted run detail, and an isolated task-mutation tool opt-in path through persisted task detail
 - `RunOrchestrator`
-  plan/model/final step writes, process-template selector fallback, executor failure recording, agent-mode handoff into the local run loop, and paused agent-loop propagation
+  plan/model/final step writes, process-template selector fallback, executor failure recording, agent-mode handoff into the local run loop, truthful structured-tool capability metadata for tool-capable providers, and paused agent-loop propagation
 - `LocalAgentExecutor`
   adapter behavior that preserves current local agent-loop outcomes behind the executor/session boundary
 - `AgentRunLoop`
