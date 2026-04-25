@@ -70,8 +70,10 @@ type ProviderToolCallPlan = {
   source: 'provider_tool_call';
   provider: string;
   model: string;
-  steps: AgentStepProposal[];
+  proposal: AgentStepProposal;
   rawSummary: string;
+  providerCallIds: string[];
+  stopReason?: string | null;
 };
 ```
 

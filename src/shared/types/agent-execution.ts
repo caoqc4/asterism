@@ -140,6 +140,29 @@ export type AgentStepProposal = {
   }>;
 };
 
+export type ProviderToolCallPlan = {
+  source: 'provider_tool_call';
+  provider: string;
+  model: string;
+  proposal: AgentStepProposal;
+  rawSummary: string;
+  providerCallIds: string[];
+  stopReason?: string | null;
+};
+
+export type ProviderToolCallNormalizationResult =
+  | {
+      status: 'normalized';
+      plan: ProviderToolCallPlan;
+    }
+  | {
+      status: 'failed';
+      provider: string;
+      model: string;
+      error: string;
+      rawSummary: string;
+    };
+
 export type AgentToolResult = {
   success: boolean;
   summary: string;

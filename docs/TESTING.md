@@ -111,6 +111,10 @@ Covered today:
   shared provider execution descriptors for unconfigured, local text-executor,
   OpenAI-compatible-style, fal/OpenRouter, and Replicate native text paths,
   while keeping Taskplane structured tool calls disabled until an adapter exists
+- `Provider tool-call normalizer`
+  shared normalized provider tool-call plan validation, including fail-closed
+  handling for malformed or raw provider payloads before any provider adapter
+  can execute steps
 - `AI clients`
   Vercel SDK client routing plus native Replicate text prediction request/response handling
 - `HomeBriefService`
