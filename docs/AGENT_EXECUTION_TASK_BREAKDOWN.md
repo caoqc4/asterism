@@ -41,6 +41,8 @@ Completed:
   through `checkpoint.created` events
 - resume checkpoint payloads include `runId` and a policy snapshot, and paused
   run continuation passes the snapshot back into tool execution
+- tool prompt/provider exposure is centralized in `agent-tool-exposure`, with
+  text prompts and provider-native schemas consuming the same matrix
 - provider-native safe-read path remains gated and locally tested
 - workspace write/command tools remain registry-only and Decision-gated
 
@@ -50,8 +52,6 @@ Still incomplete:
   single checkpoint event boundary
 - checkpoint payloads are not yet fully validated for stale or incompatible
   resume contracts
-- tool exposure is spread across registry, schema builder, prompt construction,
-  and runtime policy checks
 - no dedicated sandbox decision for broad code execution
 
 ## Task Sequence

@@ -115,6 +115,10 @@ Each tool should have three explicit gates:
 - prompt/provider schema exposure
 - runtime policy execution
 
+The current implementation records prompt/provider exposure in
+`src/shared/agent-tool-exposure.ts`. Text prompts and provider-native schemas
+must consume that shared matrix instead of carrying separate allowlists.
+
 For the current alpha boundary:
 
 | Tool group | Registry | Prompt/schema exposure | Runtime execution |

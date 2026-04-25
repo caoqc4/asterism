@@ -4,6 +4,7 @@ import type {
   AgentToolRisk,
 } from '../../../shared/types/agent-execution.js';
 import { toProviderNativeToolName } from '../../../shared/provider-native-tool-names.js';
+import { shouldExposeAgentTool } from '../../../shared/agent-tool-exposure.js';
 import type { AgentToolDefinition } from './agent-tool-registry.js';
 
 type JsonSchemaObject = {
@@ -70,25 +71,11 @@ const INPUT_SCHEMAS: Partial<Record<AgentToolName, JsonSchemaObject>> = {
 };
 
 function canExposeTool(definition: AgentToolDefinition, policy: AgentPolicy): boolean {
-  if (definition.risk !== 'safe_read') {
-    return false;
-  }
-
-  if (
-    (definition.name === 'task.review_completion_evidence' || definition.name === 'decision.draft')
-    && !policy.allowTaskMutationTools
-  ) {
-    return false;
-  }
-
-  if (
-    (definition.name === 'workspace.search' || definition.name === 'workspace.read_file')
-    && !policy.allowLocalWorkspaceRead
-  ) {
-    return false;
-  }
-
-  return Boolean(INPUT_SCHEMAS[definition.name]);
+  return shouldExposeAgentTool({
+    name: definition.name,
+    channel: 'provider_native',
+    policy,
+  }) && Boolean(INPUT_SCHEMAS[definition.name]);
 }
 
 export function buildProviderNativeToolSchemas(params: {
