@@ -14,6 +14,7 @@ import {
   buildLocalContainerSandboxCommandPlans,
   buildLocalContainerSandboxBackendProbe,
   probeLocalContainerSandboxBackend,
+  runLocalContainerSandboxCommandPlan,
 } from './local-container-sandbox-backend.js';
 
 describe('local container sandbox backend probe', () => {
@@ -196,5 +197,58 @@ describe('local container sandbox backend probe', () => {
       },
       request,
     })).toThrow('must not pass credentials');
+  });
+
+  it('normalizes injected local container command runner results without executing docker directly', async () => {
+    const commandPolicy = buildDefaultAgentSandboxCommandPolicy({
+      outputLimitBytes: 18,
+      timeoutMs: 30_000,
+    });
+    const request: AgentSandboxSessionRequest = {
+      commandPolicy,
+      descriptorId: 'workspace.staged_patch',
+      executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+      providerKind: 'local_container',
+      runId: 'run_1',
+      taskId: 'task_1',
+      workspace: {
+        mode: 'staged_write',
+        mountPath: '/workspace',
+        workspaceRoot: '/tmp/taskplane-workspace',
+      },
+    };
+    const [plan] = buildLocalContainerSandboxCommandPlans({
+      checkPlan: buildAgentSandboxCheckPlan({
+        policy: commandPolicy,
+        requestedScripts: ['test'],
+      }),
+      handle: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        id: 'sandbox_1',
+        providerKind: 'local_container',
+        stagingRoot: '/tmp/taskplane-sandbox-1',
+        workspaceMode: 'staged_write',
+      },
+      request,
+    });
+    const runner = vi.fn().mockResolvedValue({
+      exitCode: 1,
+      stderr: '0123456789abcdefghij',
+      stdout: 'tests failed',
+    });
+
+    await expect(runLocalContainerSandboxCommandPlan(plan!, runner)).resolves.toEqual({
+      outputPreview: 'tests failed\n01234\n[output truncated]',
+      script: 'test',
+      status: 'failed',
+    });
+    expect(runner).toHaveBeenCalledWith(plan);
+
+    await expect(runLocalContainerSandboxCommandPlan(plan!, vi.fn().mockRejectedValue(new Error('docker failed'))))
+      .resolves.toEqual({
+        outputPreview: 'docker failed',
+        script: 'test',
+        status: 'failed',
+      });
   });
 });

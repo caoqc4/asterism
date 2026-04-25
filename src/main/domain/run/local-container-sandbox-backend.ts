@@ -4,6 +4,7 @@ import { promisify } from 'node:util';
 import type {
   AgentSandboxBackendProbe,
   AgentSandboxCheckPlan,
+  AgentSandboxCheckResult,
   AgentSandboxCheckScript,
   AgentSandboxSessionHandle,
   AgentSandboxSessionRequest,
@@ -57,6 +58,14 @@ export type BuildLocalContainerSandboxCommandPlansInput = {
   image?: string;
   request: AgentSandboxSessionRequest;
 };
+
+export type LocalContainerSandboxCommandRunner = (
+  plan: LocalContainerSandboxCommandPlan,
+) => Promise<{
+  exitCode: number;
+  stderr: string;
+  stdout: string;
+}>;
 
 const DEFAULT_LOCAL_CONTAINER_SANDBOX_IMAGE = 'node:22-bookworm-slim';
 const LOCAL_CONTAINER_STAGING_MOUNT_PATH = '/taskplane-staging';
@@ -186,6 +195,44 @@ export function buildLocalContainerSandboxCommandPlans(
     timeoutMs: input.checkPlan.timeoutMs,
     workspaceMount,
   }));
+}
+
+export async function runLocalContainerSandboxCommandPlan(
+  plan: LocalContainerSandboxCommandPlan,
+  runner: LocalContainerSandboxCommandRunner,
+): Promise<AgentSandboxCheckResult> {
+  try {
+    const result = await runner(plan);
+    const outputPreview = limitSandboxCommandOutput(
+      [result.stdout, result.stderr].filter(Boolean).join('\n'),
+      plan.outputLimitBytes,
+    );
+
+    return {
+      outputPreview,
+      script: plan.script,
+      status: result.exitCode === 0 ? 'passed' : 'failed',
+    };
+  } catch (error) {
+    return {
+      outputPreview: limitSandboxCommandOutput(
+        error instanceof Error ? error.message : 'Sandbox command failed.',
+        plan.outputLimitBytes,
+      ),
+      script: plan.script,
+      status: 'failed',
+    };
+  }
+}
+
+function limitSandboxCommandOutput(value: string, outputLimitBytes: number): string {
+  const normalized = value.trim();
+
+  if (normalized.length <= outputLimitBytes) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, outputLimitBytes)}\n[output truncated]`;
 }
 
 async function defaultLocalContainerRuntimeProbeRunner(params: {

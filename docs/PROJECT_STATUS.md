@@ -185,6 +185,9 @@ The project is past initial architecture assembly. Current work should favor pro
   `docker run` arguments with network disabled, no environment/credential
   passthrough, the source workspace mounted read-only, and the sandbox staging
   root mounted writable, but it still does not execute Docker or user scripts.
+- Local-container check-result normalization now exists behind an injected
+  runner boundary, converting mocked command outcomes into sandbox check
+  results with output limits; no default Docker execution path is wired.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
