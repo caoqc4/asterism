@@ -124,6 +124,9 @@ Completed:
 - An offline OpenAI-compatible chat-completion-style fixture adapter can
   translate `tool_calls` into normalized Taskplane proposals, but it is not
   connected to provider execution or run sessions.
+- An offline Anthropic Messages-style fixture adapter can translate `tool_use`
+  content blocks into normalized Taskplane proposals, but it is not connected
+  to provider execution or run sessions.
 
 Acceptance:
 
@@ -136,6 +139,8 @@ Acceptance:
 - raw provider tool-call payloads do not become executable steps without a
   dedicated adapter translation
 - OpenAI-compatible fixture translation validates JSON function arguments before
+  producing normalized proposals
+- Anthropic fixture translation validates `tool_use.input` objects before
   producing normalized proposals
 
 Deferred:
