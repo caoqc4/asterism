@@ -36,6 +36,28 @@ For recording a concrete manual pass, use [ALPHA_MANUAL_RUN_LOG.md](ALPHA_MANUAL
 - Open the related Decision or Run from task / object timeline actions.
 - For an agent run, optionally enable read-only workspace context and confirm the Runs detail shows the session capability while no patch or command execution is available.
 
+### Read-Only Workspace Agent Packaged Pass
+
+Use this before release-readiness signoff, after `npm run dist:mac:dir` has produced
+`release/mac-arm64/Taskplane.app`.
+
+- Create an isolated workspace directory with a small text file containing a unique marker.
+- Launch the packaged app with isolated user data and workspace root, for example:
+
+```bash
+TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-workspace-agent \
+TASKPLANE_WORKSPACE_ROOT=/tmp/taskplane-alpha-workspace-root \
+open release/mac-arm64/Taskplane.app
+```
+
+- Configure deliberate local AI credentials through `.env`, Settings, or Keychain.
+- Create a task that asks the agent to inspect the unique marker before writing a note.
+- Trigger an `agent` run with `允许只读工作区上下文` enabled.
+- Confirm Runs detail shows read-only workspace context enabled and patch/commands unavailable.
+- Confirm the run steps include workspace search/read observations for the marker.
+- Confirm the final run output is readable agent output, not raw proposal JSON.
+- Confirm no local patch or command execution is available.
+
 ## Completion Loop
 
 - Add at least one completion criterion.
