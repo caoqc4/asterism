@@ -98,10 +98,12 @@ npm run lint
 ```bash
 npm run accept:provider-native-live:preflight
 npm run accept:provider-native-live
+npm run accept:provider-native-live:run
 ```
 
   A local fal OpenRouter run with `google/gemini-2.5-flash` has passed the
-  safe-read `task.inspect_context` tool-call probe.
+  safe-read `task.inspect_context` tool-call probe and an isolated RunService
+  settlement pass using the real provider tool-call payload.
 
 ## Non-Goals For First Wiring
 

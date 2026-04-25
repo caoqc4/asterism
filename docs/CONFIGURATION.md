@@ -181,6 +181,15 @@ schema and verifies that the provider returns a matching tool call:
 npm run accept:provider-native-live
 ```
 
+To validate that a real provider tool call can cross the Taskplane RunService
+boundary in an isolated temporary database, run:
+
+```bash
+npm run accept:provider-native-live:run
+```
+
+This command also spends one small provider request when preflight is ready.
+
 ## Fallback Behavior
 
 If an AI API key is missing:

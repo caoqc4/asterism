@@ -104,7 +104,10 @@ Covered today:
 - `Provider-native live validation`
   `npm run accept:provider-native-live:preflight` checks local readiness without
   spending provider credit, and `npm run accept:provider-native-live` performs a
-  guarded one-call safe-read tool probe when explicitly configured
+  guarded one-call safe-read tool probe when explicitly configured.
+  `npm run accept:provider-native-live:run` feeds a real provider tool-call
+  payload through an isolated RunService database and verifies the gated
+  provider-native session settlement path.
 - `AgentWorkingContext`
   task-detail compression into typed agent run context, default policy, and plan-step request summaries
 - `AgentToolRegistry`

@@ -565,10 +565,6 @@ export class AgentRunLoop {
       return this.buildLocalNotePlan({ modelOutput, taskTitle });
     }
 
-    if (!nextPlan.some(isMutationStep)) {
-      return this.buildLocalNotePlan({ modelOutput, taskTitle });
-    }
-
     return ensurePreWriteObservationSteps(nextPlan);
   }
 

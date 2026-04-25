@@ -244,7 +244,7 @@ describe('AgentRunLoop', () => {
     expect(loop.extractStepProposal('plain model output')).toBeNull();
   });
 
-  it('falls back to the fixed plan when a proposal is incomplete', () => {
+  it('accepts safe-read-only proposals and falls back when a write proposal is incomplete', () => {
     const loop = new AgentRunLoop({ execute: vi.fn() } as never);
 
     expect(loop.buildPlanFromProposal({
@@ -253,10 +253,13 @@ describe('AgentRunLoop', () => {
       },
       modelOutput: 'Agent output',
       taskTitle: 'Task 1',
-    })).toEqual(loop.buildLocalNotePlan({
-      modelOutput: 'Agent output',
-      taskTitle: 'Task 1',
-    }));
+    })).toEqual([
+      {
+        kind: 'inspect_context',
+        tool: 'task.inspect_context',
+        input: {},
+      },
+    ]);
     expect(loop.buildPlanFromProposal({
       proposal: {
         steps: [

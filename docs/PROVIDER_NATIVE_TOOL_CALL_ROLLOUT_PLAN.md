@@ -178,6 +178,9 @@ Current boundary:
 - provider-native agent sessions can proceed when the provider response contains
   normalized tool calls but no assistant text; in that case the final run output
   is taken from the completed tool observation instead of the empty model text
+- provider-native safe-read-only proposals execute their observation steps
+  instead of falling back to an empty local note plan, while write and command
+  proposals remain gated or fallback-only
 - fal/OpenAI-compatible relay model creation uses the AI SDK chat-completions
   path so provider-native tool-call extraction sees chat-style tool calls rather
   than OpenAI Responses payloads
