@@ -27,6 +27,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - The packaged read-only workspace agent path has been manually repeated with isolated user data and workspace root: a packaged `agent` run completed with `fileContext=true`, workspace search/read observations, note/run-output artifacts, and no open checkpoints.
 - Run checkpoint payloads now have versioned v1 helper shapes for tool-permission and resume checkpoints, while old JSON payloads remain readable.
 - The first local-write execution slice is in place but not model-exposed: `workspace.write_patch` requires explicit local file-write policy, creates a confirmation checkpoint with a diff preview, applies only after the linked Decision is approved, and has tests for normal-run fallback plus workspace-boundary / expected-file rejection.
+- A focused `npm run accept:workspace-patch` command now exercises the local patch approval path without exposing write access in the product UI.
 
 ## Verification Baseline
 

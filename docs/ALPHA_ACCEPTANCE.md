@@ -64,6 +64,12 @@ release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane
 Use this as a code-level execution-layer validation only. The patch tool is not
 yet exposed in agent prompts or the task UI.
 
+- Run the repeatable local approval exercise:
+
+```bash
+npm run accept:workspace-patch
+```
+
 - Create an isolated workspace file and a `workspace.write_patch` checkpoint through the internal tool registry or service integration path.
 - Confirm the checkpoint payload includes expected files and a diff preview.
 - Confirm Runs detail surfaces the file list and preview before approval.

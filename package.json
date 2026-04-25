@@ -23,6 +23,7 @@
     "rebuild:electron": "electron-rebuild --force --module-dir . --which-module better-sqlite3 --build-from-source",
     "lint": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.electron.json",
     "test": "vitest run",
+    "accept:workspace-patch": "vitest run src/main/domain/decision/decision-service.integration.test.ts -t \"approves a workspace patch checkpoint\"",
     "verify": "npm run test && npm run lint && npm run build",
     "smoke:build": "npm run build && node scripts/smoke-build.mjs",
     "smoke:package:mac": "node scripts/smoke-package-mac.mjs",

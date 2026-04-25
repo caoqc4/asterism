@@ -75,8 +75,8 @@ any user-facing write opt-in exists.
 
 - keep the tool absent from model prompts and task run UI
 - keep local write disabled in normal runs
-- add one manual packaged or scripted local approval exercise that starts from a
-  real pending Decision and approves the checkpoint
+- use `npm run accept:workspace-patch` as the repeatable local approval exercise
+  that starts from a real pending Decision and approves the checkpoint
 - confirm Runs and Decisions explain the affected files, preview, risk, and
   consequence
 - update the alpha checklist with the exact repeatable command or fixture
@@ -158,4 +158,3 @@ Only after that should Taskplane choose between:
 
 - adding safe domain-shaped task tools, or
 - designing the command allowlist for coding-agent workflows.
-
