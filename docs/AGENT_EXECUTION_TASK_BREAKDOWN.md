@@ -302,32 +302,31 @@ Non-goals until explicitly accepted:
 
 ## Recommended Next Implementation Task
 
-Start with **tool scaffold contracts**, then **SandboxProvider and coding-agent
-patch lane design**.
+Start with the **sandboxed coding session producer design**.
 
-T1 through T7 now have Slice 0 implementation or design coverage, and the
-acceptance assessment has been refreshed. The next product-relevant execution
-task is to reserve the shared tool scaffold needed by AI programming,
-creator/self-media, and future domains:
+T1 through T7 now have Slice 0 implementation or design coverage, the shared
+tool scaffold exists, and the sandbox patch draft source boundary is implemented.
+The next product-relevant execution task is to design the first real internal
+producer that can create a validated `SandboxPatchDraftSource` without exposing
+Pi-style broad powers to the normal model loop.
 
-- `ToolDescriptor` for MCP, browser/Playwright, skills, coding, computer-use,
-  and connector tools
-- separate exposure and runtime execution policies
-- tool-session metadata for sandbox, browser, MCP, and connector sessions
-- artifact/checkpoint metadata for patches, screenshots, traces, generated
-  drafts, and connector previews
+The producer design should answer:
 
-After that, design the narrow path for AI programming work:
+- which prepared execution loop is allowed to propose edits
+- where staged writes live and how they stay outside the host workspace
+- how changed files and diffs are collected without applying them
+- how evidence is summarized without leaking secrets
+- how requested checks are selected from the `test` / `lint` allowlist
+- how source id, run id, task id, workspace root, and idempotency survive resume
+- how a failed, paused, or partial producer run becomes visible in RunSteps
+- how the resulting source feeds `previewFromSource()` and still stops at a
+  Decision-linked `patch_promotion` checkpoint
 
-- a disabled-by-default `SandboxProvider` interface
-- read-only workspace preparation followed by staged edit capability
-- targeted allowed checks, starting with test/lint style commands
-- patch/log/risk artifacts
-- Decision review before promotion to the user's workspace
-
-Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer control,
-external posting, or social/media publishing as model-visible tools until their
-own sandbox or connector Decisions are accepted.
+Only after that producer design is accepted should implementation start on a
+real sandbox provider backend. Do not expose Pi-style Read/Write/Edit/Bash
+powers, browser/computer control, external posting, or social/media publishing
+as model-visible tools until their own sandbox or connector Decisions are
+accepted.
 
 ## Verification Policy
 

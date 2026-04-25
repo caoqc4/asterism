@@ -281,6 +281,10 @@ The project is past initial architecture assembly. Current work should favor pro
   artifact plus review metadata: sandbox session id, session summary, and
   optional audit/source identity. This keeps persisted review artifacts
   recoverable without changing the artifact table schema.
+- Execution-layer planning docs now mark the patch draft source boundary as
+  implemented and move the next task to designing the first real internal
+  producer: sandboxed coding session output that can create a validated source
+  without exposing broad coding powers to the normal model loop.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

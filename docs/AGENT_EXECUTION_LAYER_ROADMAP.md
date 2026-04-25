@@ -378,15 +378,27 @@ Current guardrail state:
 - session manifests and summaries exist for audit/run-step copy
 - the temp provider remains intentionally ineligible because it does not yet
   support targeted command execution or patch artifact production
+- the internal patch draft source boundary exists and is validated before
+  review planning: ordinary local-note runs, provider-native payloads,
+  host-process tools, unsafe file paths, credential passthrough, non-Decision
+  promotion, and non-allowlisted checks are blocked before a ready plan can be
+  created
+- validated source identity is now carried through preview planning, request
+  audit, idempotency keys, session manifest summaries, and persisted patch
+  artifact review metadata
 
 Next implementation target:
 
-Define and validate the internal patch draft source boundary before any real
-sandbox patch-review plan can become ready. Then build or select a real sandbox
-provider backend that can safely support targeted `test` / `lint` checks and
-patch artifacts inside the sandbox boundary. Do not expose a UI run option
-until that provider passes the shared eligibility gate and still routes every
-promotion through a Decision-linked `patch_promotion` checkpoint.
+Design the first real internal producer for `SandboxPatchDraftSource`: a
+sandboxed coding session output path. It should specify the prepared execution
+loop, staged-write area, changed-file collection, diff extraction, evidence
+summary, requested-check selection, and restart/idempotency semantics before
+any model-visible coding UI is exposed. After that design is accepted, build or
+select a real sandbox provider backend that can safely support targeted
+`test` / `lint` checks and patch artifacts inside the sandbox boundary. Do not
+expose a UI run option until that provider passes the shared eligibility gate
+and still routes every promotion through a Decision-linked `patch_promotion`
+checkpoint.
 
 Backend candidate readiness is now represented in code by
 `AgentSandboxBackendProfile` and `evaluateAgentSandboxBackendReadiness`. A

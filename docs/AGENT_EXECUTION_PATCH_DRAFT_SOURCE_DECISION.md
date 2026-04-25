@@ -204,14 +204,22 @@ Before a source can feed a ready plan:
 
 ## Implementation Plan
 
-1. Add a shared/source-local `SandboxPatchDraftSource` type and validator.
-2. Add focused tests for rejected local-note/provider-native/host-process
-   sources.
-3. Add `SandboxPatchReviewPlanningService.previewFromSource(source)` that
-   validates the source, then calls the existing non-executing planner.
-4. Keep `previewLocalNoteDiagnostic()` as blocked-only.
-5. Persist source identity into request audit and session manifest summaries.
-6. Only after this boundary is accepted, design the first real producer:
+Completed boundary work:
+
+1. `SandboxPatchDraftSource` now exists as a source-local type and validator.
+2. Focused tests reject local-note, provider-native, host-process, unsafe path,
+   credential-passthrough, non-Decision-promotion, and non-allowlisted check
+   payloads.
+3. `SandboxPatchReviewPlanningService.previewFromSource(source)` validates the
+   source, optionally checks selected workspace identity, then calls the
+   existing non-executing planner.
+4. `previewLocalNoteDiagnostic()` remains blocked-only.
+5. Source identity is now persisted into request audit, idempotency keys,
+   session manifest summaries, and sandbox patch-review artifact metadata.
+
+Next implementation work:
+
+6. Design the first real producer:
    sandboxed coding session output.
 7. Only after a real producer exists, consider a UI-visible coding run option.
 
