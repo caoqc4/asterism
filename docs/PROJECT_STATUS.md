@@ -339,6 +339,9 @@ The project is past initial architecture assembly. Current work should favor pro
   backend readiness, combining the manual backend probe with current AI config
   feature flags and workspace root before the UI can claim the producer backend
   is ready.
+- Agent pre-run capability summaries now reuse producer backend readiness after
+  sandbox backend detection has run, so blocked Docker/flag/workspace reasons
+  are visible before a user starts an agent run.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -369,7 +372,7 @@ npm run verify
 Latest local baseline:
 
 - 83 test files
-- 601 tests
+- 602 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -408,6 +411,9 @@ Latest local baseline:
   producer integration coverage: 82 test files / 596 tests
 - `npm run verify` passed locally on 2026-04-26 after adding sandboxed coding
   producer backend readiness gating: 83 test files / 601 tests
+- `npm run verify` passed locally on 2026-04-26 after surfacing producer
+  backend readiness in pre-run agent capability summaries: 83 test files / 602
+  tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

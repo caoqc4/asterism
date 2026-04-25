@@ -98,6 +98,32 @@ describe('agent capability formatting', () => {
     }, true)).toContain('sandbox coding lane gate enabled; waiting for provider eligibility');
   });
 
+  it('previews producer backend readiness when sandbox backend detection has run', () => {
+    expect(formatPreRunAgentCapabilitySummary({
+      ...buildAiStatus('anthropic'),
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      sandboxBackendStatus: {
+        probe: {
+          backendId: 'local-container',
+          kind: 'local_container',
+          reason: 'docker: command not found',
+          status: 'unavailable',
+        },
+        profile: null,
+        producerBackendReadiness: {
+          blockedReasons: ['docker: command not found'],
+          ready: false,
+          summary: 'Sandboxed coding producer backend blocked: docker: command not found',
+        },
+        readiness: null,
+        summary: 'backend=local-container / kind=local_container / available=no / reason=docker: command not found',
+      },
+    }, true)).toContain('Sandboxed coding producer backend blocked: docker: command not found');
+  });
+
   it('formats provider-native agent session metadata for run detail', () => {
     expect(formatAgentSessionMetadataSummary({
       id: 'agent_session_1',

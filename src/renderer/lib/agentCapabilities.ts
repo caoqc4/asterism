@@ -32,9 +32,16 @@ function formatPreRunStructuredToolSummary(aiStatus: AiConfigStatus | null): str
 }
 
 function formatPreRunSandboxCodingSummary(aiStatus: AiConfigStatus | null): string {
-  return aiStatus?.featureFlags.enableSandboxCodingAgent
-    ? SANDBOX_CODING_GATED_SUMMARY
-    : SANDBOX_CODING_DISABLED_SUMMARY;
+  if (!aiStatus?.featureFlags.enableSandboxCodingAgent) {
+    return SANDBOX_CODING_DISABLED_SUMMARY;
+  }
+
+  const producerBackendReadiness = aiStatus.sandboxBackendStatus?.producerBackendReadiness;
+  if (producerBackendReadiness) {
+    return producerBackendReadiness.summary;
+  }
+
+  return SANDBOX_CODING_GATED_SUMMARY;
 }
 
 export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord): string {
