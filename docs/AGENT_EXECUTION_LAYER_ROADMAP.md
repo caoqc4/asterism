@@ -134,6 +134,11 @@ Deferred:
   them
 - provider-specific long-running session adapters
 
+Before enabling provider-native tool calls, use
+[STRUCTURED_TOOL_CALLS_DECISION.md](STRUCTURED_TOOL_CALLS_DECISION.md). The
+current accepted behavior remains text-only JSON planning with
+`structuredToolCalls=false` in persisted sessions.
+
 ### Slice 3: Domain-Shaped Task Tools
 
 Status: first opt-in exposure implemented, including read-only completion
@@ -208,8 +213,9 @@ Acceptance:
 
 Keep `workspace.run_command` and `workspace.write_patch` registry-only. The
 domain-shaped task tools are now exposed behind an explicit per-run opt-in, so
-the next execution-layer work should either deepen provider capability handling
-or continue workspace checkpoint review without prompt-level workspace mutation
+the next execution-layer work should deepen provider capability handling through
+[STRUCTURED_TOOL_CALLS_DECISION.md](STRUCTURED_TOOL_CALLS_DECISION.md) or
+continue workspace checkpoint review without prompt-level workspace mutation
 exposure. For workspace tools, use
 [WORKSPACE_TOOL_UI_OPT_IN_DECISION.md](WORKSPACE_TOOL_UI_OPT_IN_DECISION.md)
 before any prompt-level exposure.
