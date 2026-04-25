@@ -1235,6 +1235,57 @@ describe('AgentToolRegistry', () => {
     }
   });
 
+  it('fails workspace commands that exceed the configured timeout', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-workspace-command-timeout-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'package.json'), JSON.stringify({
+        scripts: {
+          test: 'node -e "setTimeout(() => console.log(\\"late\\"), 5000)"',
+        },
+      }));
+      const runStepRepository = buildRunStepRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        undefined,
+        null,
+        () => tempRoot,
+      );
+
+      const result = await registry.execute(
+        'workspace.run_command',
+        {
+          summary: 'Run slow test',
+          script: 'test',
+          timeoutMs: 1,
+        },
+        { runId: 'run_1', taskId: 'task_1' },
+        {
+          maxSteps: 8,
+          maxWallTimeMs: 120_000,
+          allowNetwork: false,
+          allowLocalWorkspaceRead: false,
+          allowLocalFileWrite: false,
+          allowLocalCommandRun: true,
+          confirmationRequiredRisks: [],
+        },
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('workspace.run_command timed out after 1000ms.');
+      expect(runStepRepository.update).toHaveBeenCalledWith(
+        'run_step_1',
+        expect.objectContaining({
+          status: 'failed',
+          error: 'workspace.run_command timed out after 1000ms.',
+        }),
+      );
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it('rejects workspace commands outside the allowlist', async () => {
     const runStepRepository = buildRunStepRepositoryMock();
     const registry = new AgentToolRegistry({} as never, runStepRepository as never);

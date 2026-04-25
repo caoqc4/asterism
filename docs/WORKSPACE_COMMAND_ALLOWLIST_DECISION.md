@@ -110,14 +110,11 @@ Accepted implementation coverage:
   prompt/UI slice intentionally exposes them
 - full `npm run verify` passes locally
 
-Still worth adding in a later hardening pass:
-
-- timeout behavior coverage without slowing the suite
-
 Recent hardening:
 
 - missing workspace-root `package.json` now fails with an explicit
   `workspace.run_command` error before any checkpoint is created
+- timeout behavior is covered with a clamped 1000ms local package-script test
 
 ## Open Questions
 
