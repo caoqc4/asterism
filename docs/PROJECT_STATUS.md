@@ -235,6 +235,10 @@ The project is past initial architecture assembly. Current work should favor pro
   resolution (`disabled` or `available`) and reason, so Runs detail can expose
   the internal readiness signal without adding a UI action, model-visible tool,
   or automatic sandbox execution path.
+- Sandbox patch-review run requests now have a pure internal builder that
+  constructs the staged session request, targeted check plan, idempotency key,
+  and audit fields for later manifests without executing commands or exposing
+  a UI/model entrypoint.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

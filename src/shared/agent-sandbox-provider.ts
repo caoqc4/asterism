@@ -112,6 +112,17 @@ export type AgentSandboxSessionRequest = {
   workspace: AgentSandboxWorkspaceMount;
   commandPolicy: AgentSandboxCommandPolicy;
   executionPolicy: AgentToolExecutionPolicy;
+  audit?: AgentSandboxSessionAudit | null;
+};
+
+export type AgentSandboxSessionAudit = {
+  idempotencyKey: string;
+  initiatedBy: 'internal_sandbox_patch_review';
+  reason: string;
+  requestedScripts: string[];
+  acceptedScripts: AgentSandboxCheckScript[];
+  rejectedScripts: string[];
+  workspaceRoot: string;
 };
 
 export type AgentSandboxSessionHandle = {
@@ -134,6 +145,7 @@ export type AgentSandboxSessionManifest = {
   providerCapabilities: AgentSandboxProviderCapabilities;
   commandPolicy: AgentSandboxCommandPolicy;
   executionPolicy: AgentToolExecutionPolicy;
+  audit?: AgentSandboxSessionAudit | null;
 };
 
 export type AgentSandboxPatchArtifact = {
@@ -464,6 +476,7 @@ export function buildAgentSandboxSessionManifest(params: {
     createdAt: params.handle.createdAt,
     descriptorId: params.request.descriptorId,
     executionPolicy: params.request.executionPolicy,
+    audit: params.request.audit ?? null,
     id: params.handle.id,
     providerCapabilities: params.providerCapabilities,
     providerKind: params.handle.providerKind,
