@@ -24,6 +24,7 @@ import {
 } from '@shared/working-context/timeline';
 import {
   formatAgentSessionCapabilitySummary,
+  formatAgentSessionMetadataSummary,
   formatPreRunAgentCapabilitySummary,
 } from '../lib/agentCapabilities';
 
@@ -389,6 +390,9 @@ export function RunsPage({
   const detailSteps = detail?.steps ?? [];
   const detailCheckpoints = detail?.checkpoints ?? [];
   const latestAgentSession = detail?.agentSessions?.at(-1) ?? null;
+  const latestAgentSessionMetadata = latestAgentSession
+    ? formatAgentSessionMetadataSummary(latestAgentSession)
+    : null;
 
   return (
     <section className="tasks-layout">
@@ -420,9 +424,16 @@ export function RunsPage({
               <p className="meta">创建时间：{detail.createdAt}</p>
               <p className="meta">结果来源：{detail.outputSource || '尚未产生'}</p>
               {latestAgentSession ? (
-                <p className="meta">
-                  Agent session：{formatAgentSessionCapabilitySummary(latestAgentSession)}
-                </p>
+                <>
+                  <p className="meta">
+                    Agent session：{formatAgentSessionCapabilitySummary(latestAgentSession)}
+                  </p>
+                  {latestAgentSessionMetadata ? (
+                    <p className="meta">
+                      Session metadata：{latestAgentSessionMetadata}
+                    </p>
+                  ) : null}
+                </>
               ) : null}
               <p className="meta">附加要求：{detail.instructions || '无'}</p>
               <p className="meta">这里负责确认这次执行本身是否成功、为什么失败，以及是否值得继续推进。</p>

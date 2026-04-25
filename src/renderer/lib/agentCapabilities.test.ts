@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AiConfigStatus } from '@shared/types/settings';
-import { formatPreRunAgentCapabilitySummary } from './agentCapabilities';
+import {
+  formatAgentSessionMetadataSummary,
+  formatPreRunAgentCapabilitySummary,
+} from './agentCapabilities';
 
 function buildAiStatus(provider: AiConfigStatus['provider']): AiConfigStatus {
   return {
@@ -73,5 +76,36 @@ describe('agent capability formatting', () => {
     expect(summary).toContain('task update/evidence tools disabled for this run');
     expect(summary).toContain('structured tool calls deferred in Taskplane local executor');
     expect(summary).toContain('patch/commands unavailable');
+  });
+
+  it('formats provider-native agent session metadata for run detail', () => {
+    expect(formatAgentSessionMetadataSummary({
+      id: 'agent_session_1',
+      runId: 'run_1',
+      mode: 'agent',
+      status: 'completed',
+      capabilities: {
+        structuredToolCalls: true,
+        textOnlyPlanning: false,
+        streaming: false,
+        fileContext: false,
+        taskMutationTools: false,
+        longRunningSessions: false,
+      },
+      metadata: [
+        'executor=provider_native_agent',
+        'loop=provider_tool_call',
+        'provider=openai-compatible',
+        'model=relay-model',
+        'adapter=provider_native_tool_call_adapter',
+        'rawSummary=tool_calls=1',
+        'providerCallIds=call_1',
+        'stopReason=tool_calls',
+      ].join('\n'),
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    })).toBe(
+      'Provider-native session / openai-compatible / relay-model / adapter=provider_native_tool_call_adapter / calls=call_1 / stop=tool_calls',
+    );
   });
 });

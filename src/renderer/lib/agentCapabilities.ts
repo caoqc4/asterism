@@ -44,6 +44,51 @@ export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord)
   return parts.join(' / ');
 }
 
+export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): string | null {
+  if (!session.metadata?.trim()) {
+    return null;
+  }
+
+  const entries = new Map(
+    session.metadata
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const separatorIndex = line.indexOf('=');
+        return separatorIndex > 0
+          ? [line.slice(0, separatorIndex), line.slice(separatorIndex + 1)] as const
+          : [line, ''] as const;
+      }),
+  );
+  const executor = entries.get('executor');
+  const loop = entries.get('loop');
+  const provider = entries.get('provider');
+  const model = entries.get('model');
+  const adapter = entries.get('adapter');
+  const providerCallIds = entries.get('providerCallIds');
+  const stopReason = entries.get('stopReason');
+
+  if (executor === 'provider_native_agent') {
+    return [
+      'Provider-native session',
+      provider && model ? `${provider} / ${model}` : null,
+      adapter ? `adapter=${adapter}` : null,
+      providerCallIds ? `calls=${providerCallIds}` : null,
+      stopReason ? `stop=${stopReason}` : null,
+    ].filter(Boolean).join(' / ');
+  }
+
+  if (executor || loop) {
+    return [
+      executor ? `executor=${executor}` : null,
+      loop ? `loop=${loop}` : null,
+    ].filter(Boolean).join(' / ');
+  }
+
+  return session.metadata.trim();
+}
+
 export function formatPreRunAgentCapabilitySummary(
   aiStatus: AiConfigStatus | null,
   allowLocalWorkspaceRead: boolean,

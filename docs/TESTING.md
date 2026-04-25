@@ -112,6 +112,9 @@ Covered today:
   lane-aware run prompt composition, constrained JSON proposal prompting for agent runs, opt-in workspace tool prompt guidance, opt-in domain task/evidence tool prompt guidance, and result-shaped text generation with optional minimal provider payload extraction
 - `Agent capability UI helpers`
   pre-run agent capability preview wording, including text-only local executor behavior, read-only workspace opt-in state, task update/evidence tool opt-in state, structured tool-call deferral wording, and Replicate-specific text-only planning wording
+- `Runs agent session summaries`
+  run-detail capability summaries plus concise session metadata summaries for
+  local and future provider-native executor sessions
 - `Agent provider capability descriptors`
   shared provider execution descriptors for unconfigured, local text-executor,
   OpenAI-compatible-style, fal/OpenRouter, and Replicate native text paths,

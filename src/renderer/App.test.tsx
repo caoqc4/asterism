@@ -3260,6 +3260,7 @@ describe('App UI flow', () => {
         'Agent session：text-only planning / read-only workspace context enabled / task update/evidence tools enabled / structured tool calls unavailable / patch/commands unavailable / single local session',
       ),
     ).toBeTruthy();
+    expect(screen.getByText('Session metadata：executor=local_agent / loop=local_note')).toBeTruthy();
   });
 
   it('shows readable agent tool observation summaries on the runs page', async () => {
