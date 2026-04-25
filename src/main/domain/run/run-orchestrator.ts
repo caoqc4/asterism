@@ -315,7 +315,7 @@ export class RunOrchestrator {
       runId: params.runId,
       kind: 'model',
       status: shadow.status === 'observed' ? 'completed' : 'skipped',
-      title: 'Provider-native tool-call shadow observation',
+      title: 'Provider 原生工具调用影子观察',
       input: [
         `provider=${params.provider}`,
         `model=${params.model}`,
@@ -323,14 +323,14 @@ export class RunOrchestrator {
       ].join('\n'),
       output: shadow.status === 'observed'
         ? [
-            'Shadow normalization observed provider-native tool calls.',
+            '影子观察已识别 provider 原生工具调用，但未执行任何工具。',
             `providerCallCount=${shadow.providerCallCount}`,
             `stopReason=${shadow.stopReason ?? 'unknown'}`,
             `rawSummary=${shadow.rawSummary}`,
           ].join('\n')
         : shadow.status === 'failed'
-          ? `Shadow normalization failed without changing run execution: ${shadow.error}`
-          : `Shadow normalization skipped without changing run execution: ${shadow.reason}`,
+          ? `影子观察解析失败，Run 执行结果不受影响：${shadow.error}`
+          : `影子观察已跳过，Run 执行结果不受影响：${shadow.reason}`,
     });
   }
 }

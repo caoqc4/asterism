@@ -313,7 +313,7 @@ describe('RunOrchestrator', () => {
       expect.objectContaining({
         kind: 'model',
         status: 'completed',
-        title: 'Provider-native tool-call shadow observation',
+        title: 'Provider 原生工具调用影子观察',
         input: [
           'provider=openai-compatible',
           'model=relay-model',
@@ -388,8 +388,8 @@ describe('RunOrchestrator', () => {
       expect.objectContaining({
         kind: 'model',
         status: 'skipped',
-        title: 'Provider-native tool-call shadow observation',
-        output: expect.stringContaining('Shadow normalization failed without changing run execution'),
+        title: 'Provider 原生工具调用影子观察',
+        output: expect.stringContaining('影子观察解析失败，Run 执行结果不受影响'),
       }),
     );
     expect(runStepRepository.create).toHaveBeenLastCalledWith(
