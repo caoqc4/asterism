@@ -33,6 +33,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - A focused `npm run accept:domain-agent-tools` command now exercises those registry-only domain tools through real SQLite repositories without exposing them to normal model plans.
 - The first command-execution slice is in place but not model-exposed: `workspace.run_command` requires explicit local command policy, accepts only allowlisted `package.json` scripts, creates a confirmation checkpoint with command preview, and resumes once after the linked Decision is approved.
 - The first tool-exposure decision is implemented for domain-shaped task tools; workspace write and command prompt exposure remains deferred.
+- The workspace-tool UI opt-in decision recommends improving checkpoint review clarity before exposing patch or command tools to normal agent prompts.
 
 ## Verification Baseline
 
@@ -68,7 +69,7 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 2. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
-5. Keep workspace write and command tools registry-only until a separate opt-in slice handles their UI and policy.
+5. Follow [WORKSPACE_TOOL_UI_OPT_IN_DECISION.md](WORKSPACE_TOOL_UI_OPT_IN_DECISION.md): improve checkpoint review clarity before any workspace write/command prompt exposure.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.

@@ -190,4 +190,6 @@ Keep `workspace.run_command` registry-only. The next execution-layer slice shoul
 start from [AGENT_TOOL_OPT_IN_DECISION.md](AGENT_TOOL_OPT_IN_DECISION.md):
 expose domain-shaped task tools first behind an explicit per-run opt-in, while
 workspace patch and command tools remain reserved for acceptance commands and
-internal confirmation resumes.
+internal confirmation resumes. For workspace tools, use
+[WORKSPACE_TOOL_UI_OPT_IN_DECISION.md](WORKSPACE_TOOL_UI_OPT_IN_DECISION.md):
+improve checkpoint review UX before any prompt-level exposure.
