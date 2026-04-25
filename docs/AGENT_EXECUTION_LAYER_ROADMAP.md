@@ -118,7 +118,7 @@ Acceptance:
 Goal: let the agent help advance Taskplane tasks without touching the local
 workspace.
 
-Candidate tools:
+Completed registry-level tools:
 
 - `task.update_next_step` (implemented as a registry-level service-routed tool;
   not exposed in prompts or normal agent plans)
@@ -147,6 +147,8 @@ Acceptance:
 
 Goal: design before implementing `workspace.run_command`.
 
+Decision doc: [WORKSPACE_COMMAND_ALLOWLIST_DECISION.md](WORKSPACE_COMMAND_ALLOWLIST_DECISION.md).
+
 The decision must specify:
 
 - allowed command families
@@ -164,10 +166,6 @@ Acceptance:
 
 ## Near-Term Recommendation
 
-Do Slice 1 next. It closes the gap between the existing write-patch backend and
-the future UI/prompt exposure decision without increasing agent autonomy.
-
-Only after that should Taskplane choose between:
-
-- adding safe domain-shaped task tools, or
-- designing the command allowlist for coding-agent workflows.
+Do not implement `workspace.run_command` yet. Review and accept the command
+allowlist decision first, then implement the smallest confirmed local validation
+script runner.
