@@ -60,6 +60,19 @@ function formatSandboxCodingLaneReadiness(aiStatus: AiConfigStatus | null): stri
   return eligibility.summary;
 }
 
+function formatSandboxProducerBackendReadiness(aiStatus: AiConfigStatus | null): string {
+  if (!aiStatus?.sandboxBackendStatus?.probe) {
+    return '等待 Sandbox Backend 检测';
+  }
+
+  const readiness = aiStatus.sandboxBackendStatus.producerBackendReadiness;
+  if (!readiness) {
+    return '等待 Producer Backend readiness 评估';
+  }
+
+  return readiness.summary;
+}
+
 export function SettingsPage({
   aiStatus,
   configForm,
@@ -111,6 +124,7 @@ export function SettingsPage({
           </button>
         </div>
         <p className="meta">Sandbox Coding Lane：{formatSandboxCodingLaneReadiness(aiStatus)}</p>
+        <p className="meta">Producer Backend：{formatSandboxProducerBackendReadiness(aiStatus)}</p>
       </article>
 
       <article className="panel">

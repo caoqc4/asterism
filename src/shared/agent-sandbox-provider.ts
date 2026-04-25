@@ -36,10 +36,17 @@ export type AgentSandboxBackendReadiness = {
   blockedReasons: string[];
 };
 
+export type AgentSandboxProducerBackendReadiness = {
+  ready: boolean;
+  summary: string;
+  blockedReasons: string[];
+};
+
 export type AgentSandboxBackendStatus = {
   probe: AgentSandboxBackendProbe | null;
   profile: AgentSandboxBackendProfile | null;
   readiness: AgentSandboxBackendReadiness | null;
+  producerBackendReadiness?: AgentSandboxProducerBackendReadiness | null;
   summary: string;
 };
 

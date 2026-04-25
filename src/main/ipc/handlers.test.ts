@@ -103,6 +103,21 @@ describe('registerIpcHandlers', () => {
   });
 
   it('runs the sandbox backend probe only through the explicit settings channel', async () => {
+    servicesMock.aiConfigService.getStatus.mockResolvedValue({
+      configured: true,
+      apiKeyStored: true,
+      apiKeySource: 'keychain',
+      provider: 'openai-compatible',
+      model: 'relay-model',
+      baseUrl: 'https://relay.example.com/v1',
+      workspaceRoot: '/tmp/taskplane-workspace',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      configPath: '/tmp/config.json',
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+    });
     probeLocalContainerSandboxBackendMock.mockResolvedValue({
       backendId: 'local-container',
       environmentPolicy: 'empty',
@@ -127,6 +142,7 @@ describe('registerIpcHandlers', () => {
     expect(probeLocalContainerSandboxBackendMock).toHaveBeenCalledTimes(1);
     expect(result.probe?.status).toBe('available');
     expect(result.readiness?.ready).toBe(true);
+    expect(result.producerBackendReadiness?.ready).toBe(true);
     expect(result.summary).toBe('Sandbox backend ready: local-container.');
   });
 

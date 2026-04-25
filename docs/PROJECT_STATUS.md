@@ -335,6 +335,10 @@ The project is past initial architecture assembly. Current work should favor pro
   local backend probe for the future real sandbox provider pass. It checks
   Docker server availability and prints ready/blocked status without starting
   containers, pulling images, running checks, or spending provider credit.
+- Settings sandbox backend detection now also returns and displays producer
+  backend readiness, combining the manual backend probe with current AI config
+  feature flags and workspace root before the UI can claim the producer backend
+  is ready.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

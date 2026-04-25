@@ -5475,6 +5475,13 @@ describe('App UI flow', () => {
           ready: true,
           summary: 'Sandbox backend ready: local-container.',
         },
+        producerBackendReadiness: {
+          blockedReasons: [
+            'sandbox coding-agent feature flag is disabled',
+          ],
+          ready: false,
+          summary: 'Sandboxed coding producer backend blocked: sandbox coding-agent feature flag is disabled',
+        },
         summary: 'Sandbox backend ready: local-container.',
       } satisfies Awaited<ReturnType<NonNullable<ElectronApi['probeSandboxBackend']>>>)),
       subscribeToEvents: vi.fn().mockImplementation((callback) => {
@@ -5537,7 +5544,8 @@ describe('App UI flow', () => {
     await user.click(screen.getByRole('button', { name: '检测 Sandbox Backend' }));
     await screen.findByText(/Sandbox Backend：可用：Sandbox backend ready: local-container\./);
     expect(screen.getByText(/Sandbox Coding Lane：Sandbox coding lane unavailable/)).toBeTruthy();
-    expect(screen.getByText(/sandbox coding-agent feature flag is disabled/)).toBeTruthy();
+    expect(screen.getByText(/Producer Backend：Sandboxed coding producer backend blocked/)).toBeTruthy();
+    expect(screen.getAllByText(/sandbox coding-agent feature flag is disabled/)).toHaveLength(2);
     expect(eventingApi.probeSandboxBackend).toHaveBeenCalledTimes(1);
 
     await user.selectOptions(screen.getByLabelText('Provider'), 'openai');

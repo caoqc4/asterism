@@ -26,6 +26,7 @@ import type {
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import { getServices } from '../bootstrap/services.js';
 import { probeLocalContainerSandboxBackend } from '../domain/run/local-container-sandbox-backend.js';
+import { evaluateSandboxedCodingProducerBackendReadiness } from '../domain/run/sandboxed-coding-producer-backend.js';
 import { ipcMain } from '../electron.js';
 import { emitAppEvent } from './event-bus.js';
 
@@ -58,8 +59,43 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('settings:probeSandboxBackend', async () => {
+    const aiStatus = await getServices().aiConfigService.getStatus();
     const probe = await probeLocalContainerSandboxBackend();
-    return buildAgentSandboxBackendStatus(probe);
+    const status = buildAgentSandboxBackendStatus(probe);
+    const producerBackendReadiness = evaluateSandboxedCodingProducerBackendReadiness({
+      featureFlags: aiStatus.featureFlags,
+      probe,
+      request: {
+        commandPolicy: {
+          allowedScripts: ['test', 'lint'],
+          outputLimitBytes: 64_000,
+          timeoutMs: 120_000,
+        },
+        executionPolicy: {
+          network: 'disabled',
+          noCredentialPassthrough: true,
+          promotion: 'decision_required',
+        },
+        intent: {
+          completionCriteria: ['Backend readiness probe only'],
+          instructions: 'Validate sandboxed coding producer backend readiness.',
+          taskTitle: 'Sandbox backend readiness probe',
+        },
+        modelPolicy: {
+          providerKind: aiStatus.provider ?? 'unconfigured',
+          toolExposure: 'sandboxed_coding_producer',
+        },
+        runId: 'settings_probe',
+        sourceId: 'settings_probe',
+        taskId: 'settings_probe',
+        workspaceRoot: aiStatus.workspaceRoot ?? '',
+      },
+    });
+
+    return {
+      ...status,
+      producerBackendReadiness,
+    };
   });
 
   ipcMain.handle('task:list', async () => {
