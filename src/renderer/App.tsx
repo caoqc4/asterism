@@ -607,6 +607,15 @@ export function App() {
         return;
       }
 
+      if (activity.status === 'cancelled') {
+        handleOpenTask(activity.taskId, {
+          type: 'focus_next_step',
+          focusArea: 'detail',
+          prefillNextStep: `重新评估该决策并确定替代推进路径：${activity.title}`,
+        });
+        return;
+      }
+
       handleOpenTask(activity.taskId, {
         type: 'open_task',
         focusArea: 'quick-actions',

@@ -512,6 +512,16 @@ describe('App UI flow', () => {
         updatedAt: '2026-01-01T00:30:00.000Z',
       },
       {
+        id: 'decision:decision_4',
+        sourceType: 'decision',
+        sourceId: 'decision_4',
+        taskId: riskTask.id,
+        taskTitle: riskTask.title,
+        title: 'Cancel unsafe checkpoint',
+        status: 'cancelled',
+        updatedAt: '2026-01-01T00:20:00.000Z',
+      },
+      {
         id: 'run:run_1',
         sourceType: 'run',
         sourceId: 'run_1',
@@ -2376,7 +2386,7 @@ describe('App UI flow', () => {
     );
   });
 
-  it('opens deferred decision and completed run follow-up actions from home recent activity', async () => {
+  it('opens decision and run follow-up actions from home recent activity', async () => {
     const user = userEvent.setup();
 
     render(<App />);
@@ -2390,6 +2400,19 @@ describe('App UI flow', () => {
 
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
       '跟进该决策是否可以恢复拍板，或准备替代推进路径。',
+    );
+
+    await user.click(screen.getByRole('button', { name: /home/i }));
+
+    const reassessDecisionButton = await screen.findByRole('button', { name: '重新评估决策' });
+    await user.click(reassessDecisionButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '重新评估该决策并确定替代推进路径：Cancel unsafe checkpoint',
     );
 
     await user.click(screen.getByRole('button', { name: /home/i }));

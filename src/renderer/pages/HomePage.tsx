@@ -37,6 +37,10 @@ function getActivityActionLabel(activity: HomeActivityRecord): string | null {
     return '跟进拍板进度';
   }
 
+  if (activity.sourceType === 'decision' && activity.status === 'cancelled') {
+    return '重新评估决策';
+  }
+
   if (activity.sourceType === 'run' && activity.status === 'failed') {
     return '处理失败结果';
   }
