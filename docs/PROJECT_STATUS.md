@@ -269,6 +269,10 @@ The project is past initial architecture assembly. Current work should favor pro
   connector sources, normalizes changed files and checks, and blocks local-note,
   provider-native, host-process, path-traversal, credential-passthrough, and
   non-Decision-promotion payloads before they can feed review planning.
+- `SandboxPatchReviewPlanningService.previewFromSource()` now connects that
+  validated source boundary to the existing non-executing run planner, with an
+  optional selected-workspace match check and no adapter, runner, model tool, or
+  UI-visible coding entrypoint.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -299,7 +303,7 @@ npm run verify
 Latest local baseline:
 
 - 79 test files
-- 569 tests
+- 572 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -318,6 +322,9 @@ Latest local baseline:
   diagnostic guard: 78 test files / 564 tests
 - `npm run verify` passed locally on 2026-04-26 after adding the
   `SandboxPatchDraftSource` validator boundary: 79 test files / 569 tests
+- `npm run verify` passed locally on 2026-04-26 after connecting
+  `previewFromSource()` to validated patch draft sources: 79 test files / 572
+  tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
