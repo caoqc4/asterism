@@ -1,6 +1,7 @@
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
 import type { AgentToolName } from '../../../shared/types/agent-execution.js';
+import { parseRunCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import type {
   CreateRunInput,
   RunDetailRecord,
@@ -233,11 +234,13 @@ export class RunService {
   } {
     let parsed: ResumeCheckpointPayload;
 
-    try {
-      parsed = JSON.parse(payload) as ResumeCheckpointPayload;
-    } catch {
+    const parsedPayload = parseRunCheckpointPayload(payload);
+
+    if (!parsedPayload) {
       throw new Error('Resume checkpoint payload is not valid JSON.');
     }
+
+    parsed = parsedPayload as ResumeCheckpointPayload;
 
     if (parsed.nextTool !== 'artifact.create_note') {
       throw new Error(`Unsupported resume tool: ${String(parsed.nextTool ?? 'unknown')}`);

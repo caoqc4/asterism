@@ -558,15 +558,23 @@ Completed slice:
 4. Return completed session final output from `RunOrchestrator` instead of raw
    structured proposal JSON.
 
-Next code slice:
+Completed slice:
 
 1. Repeat the read-only workspace agent path in a packaged app before
    release-readiness signoff.
-2. Before adding `workspace.write_patch` or `workspace.run_command`, design the
+2. Add versioned v1 checkpoint payload helpers for tool-permission and resume
+   checkpoints, while keeping legacy JSON payloads readable.
+3. Before adding `workspace.write_patch` or `workspace.run_command`, design the
    confirmation, diff preview, sandbox, and rollback story as a separate
    decision doc. See [WORKSPACE_WRITE_TOOLS_DECISION.md](WORKSPACE_WRITE_TOOLS_DECISION.md).
-3. Keep new execution tools out of scope until the packaged read-only path is
-   boring.
+
+Next code slice:
+
+1. Accept the write/command-tool decision or revise it before implementation.
+2. Implement only the smallest confirmation-gated local-write slice first,
+   preferably `workspace.write_patch` with diff preview and tests.
+3. Keep `workspace.run_command` separate unless the patch slice proves the
+   checkpoint/resume UX is coherent.
 
 Success: Taskplane can inspect local project context for coding-like tasks only
 when the user has explicitly enabled read-only workspace access for that run,

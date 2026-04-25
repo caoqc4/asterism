@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 
 import type { AgentSessionRecord } from '@shared/types/agent-execution';
+import { parseRunCheckpointPayload } from '@shared/types/run-checkpoint-payload';
 import type { RecommendedActionIntent } from '@shared/types/brief';
 import type {
   CreateRunInput,
@@ -181,8 +182,9 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
     return '该 checkpoint 没有额外内容。';
   }
 
-  try {
-    const payload = JSON.parse(checkpoint.payload) as Record<string, unknown>;
+  const payload = parseRunCheckpointPayload(checkpoint.payload);
+
+  if (payload) {
     const summaryParts = [
       typeof payload.tool === 'string' ? `工具：${payload.tool}` : null,
       typeof payload.nextTool === 'string' ? `下一工具：${payload.nextTool}` : null,
@@ -194,10 +196,6 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
     if (summaryParts.length) {
       return summaryParts.join('；');
     }
-  } catch {
-    return checkpoint.payload.length > 180
-      ? `${checkpoint.payload.slice(0, 180)}...`
-      : checkpoint.payload;
   }
 
   return checkpoint.payload.length > 180

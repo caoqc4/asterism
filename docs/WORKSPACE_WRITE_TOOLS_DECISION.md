@@ -6,6 +6,10 @@ Draft decision for the next execution-layer phase. Do not implement
 `workspace.write_patch` or `workspace.run_command` until this document is
 accepted and the packaged read-only workspace path has been manually repeated.
 
+Prerequisite update: the packaged read-only workspace path was manually repeated
+on 2026-04-25. This document still needs explicit acceptance or revision before
+write/command tools are implemented.
+
 ## Decision
 
 Taskplane will add workspace write and command tools only as explicitly
@@ -155,4 +159,3 @@ Before implementation is accepted:
   ordinary run artifacts?
 - What is the first real user-facing workflow that justifies write access:
   code patching, document editing, test execution, or release preparation?
-

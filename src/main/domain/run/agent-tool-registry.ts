@@ -8,6 +8,7 @@ import type {
   AgentToolRisk,
   AgentWorkingContext,
 } from '../../../shared/types/agent-execution.js';
+import { createToolPermissionCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import type { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
@@ -268,13 +269,13 @@ export class AgentToolRegistry {
           runId: context.runId,
           stepId: callStep.id,
           kind: 'tool_permission',
-          payload: JSON.stringify({
+          payload: JSON.stringify(createToolPermissionCheckpointPayload({
             tool: name,
             risk: definition.risk,
             input,
             decisionId: null,
             decisionTitle,
-          }),
+          })),
         });
         const decision = this.decisionRepository
           ? await this.decisionRepository.create({
@@ -285,13 +286,13 @@ export class AgentToolRegistry {
               sourceLabel: name,
             })
           : null;
-        const payload = JSON.stringify({
+        const payload = JSON.stringify(createToolPermissionCheckpointPayload({
           tool: name,
           risk: definition.risk,
           input,
           decisionId: decision?.id ?? null,
           decisionTitle,
-        });
+        }));
         const checkpointWithDecision = decision
           ? await this.runCheckpointRepository.updatePayload(checkpoint.id, payload)
           : checkpoint;

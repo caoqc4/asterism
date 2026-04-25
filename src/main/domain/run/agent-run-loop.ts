@@ -5,6 +5,7 @@ import type {
   AgentToolName,
   AgentToolResult,
 } from '../../../shared/types/agent-execution.js';
+import { createResumeCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import type { AgentToolRegistry } from './agent-tool-registry.js';
@@ -487,13 +488,13 @@ export class AgentRunLoop {
       runId: params.request.runId,
       stepId: step.id,
       kind: 'resume',
-      payload: JSON.stringify({
+      payload: JSON.stringify(createResumeCheckpointPayload({
         reason: params.reason,
         nextTool: params.nextTool,
         nextInput: params.nextInput,
         observations: params.observations,
         taskId: params.request.taskId,
-      }),
+      })),
     });
 
     return checkpoint.id;

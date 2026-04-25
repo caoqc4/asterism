@@ -17,6 +17,7 @@ import { AiConfigService } from '../../keychain/ai-config-service.js';
 import { TaskService } from '../task/task-service.js';
 import type { AgentToolRegistry } from '../run/agent-tool-registry.js';
 import { DEFAULT_AGENT_POLICY } from '../run/agent-working-context.js';
+import { parseRunCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import {
   DecisionProcessTemplateSelector,
   type DecisionProcessTemplateSelectionResult,
@@ -94,18 +95,6 @@ function buildDraftPrompt(
         )
       : ['- 无']),
   ].join('\n');
-}
-
-function parseCheckpointPayload(payload: string | null): Record<string, unknown> | null {
-  if (!payload) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(payload) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
 }
 
 export class DecisionService {
@@ -247,7 +236,7 @@ export class DecisionService {
       return;
     }
 
-    const payload = parseCheckpointPayload(checkpoint.payload);
+    const payload = parseRunCheckpointPayload(checkpoint.payload);
     const tool = payload?.tool;
     const toolInput = payload?.input;
 

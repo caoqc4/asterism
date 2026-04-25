@@ -5,6 +5,7 @@ import type {
   RunCheckpointRecord,
   RunCheckpointStatus,
 } from '../../../shared/types/run.js';
+import { parseRunCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import { initDatabase } from '../client.js';
 import { runCheckpoints } from '../schema.js';
 import { generateId, nowIso } from './repository-utils.js';
@@ -54,12 +55,8 @@ export class RunCheckpointRepository {
         return false;
       }
 
-      try {
-        const payload = JSON.parse(checkpoint.payload) as Record<string, unknown>;
-        return payload.decisionId === decisionId;
-      } catch {
-        return false;
-      }
+      const payload = parseRunCheckpointPayload(checkpoint.payload);
+      return payload?.decisionId === decisionId;
     }) ?? null;
   }
 
