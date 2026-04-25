@@ -322,6 +322,10 @@ The project is past initial architecture assembly. Current work should favor pro
   complete. The next execution-layer task is to review and connect the first
   real sandbox provider backend for targeted checks and patch artifacts without
   exposing a UI-visible coding mode.
+- Sandboxed coding producer backend readiness now composes producer request
+  validation, backend probe/profile readiness, the sandbox coding feature flag,
+  and the shared coding-lane eligibility gate before any real backend can be
+  connected.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -351,8 +355,8 @@ npm run verify
 
 Latest local baseline:
 
-- 82 test files
-- 596 tests
+- 83 test files
+- 601 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -389,6 +393,8 @@ Latest local baseline:
   sandboxed coding producer preview path: 81 test files / 592 tests
 - `npm run verify` passed locally on 2026-04-26 after adding sandboxed coding
   producer integration coverage: 82 test files / 596 tests
+- `npm run verify` passed locally on 2026-04-26 after adding sandboxed coding
+  producer backend readiness gating: 83 test files / 601 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
