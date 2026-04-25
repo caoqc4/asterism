@@ -4,6 +4,7 @@ import {
   buildAgentSandboxCheckPlan,
   buildAgentSandboxPatchArtifact,
   buildAgentSandboxPatchPromotionCheckpoint,
+  buildAgentSandboxProviderCapabilitiesFromBackendProfile,
   buildAgentSandboxSessionManifest,
   buildDefaultAgentSandboxCommandPolicy,
   canUseAgentSandboxProviderForCoding,
@@ -97,6 +98,47 @@ describe('agent sandbox provider contracts', () => {
       'sandbox backend must enforce command output limits',
       'sandbox backend must produce patch artifacts',
     ]);
+  });
+
+  it('derives provider capabilities only from ready backend profiles', () => {
+    expect(buildAgentSandboxProviderCapabilitiesFromBackendProfile({
+      credentialPassthrough: false,
+      environmentPolicy: 'allowlisted',
+      id: 'remote-vm-candidate',
+      isolation: 'remote_vm',
+      kind: 'remote',
+      networkMode: 'allowlisted',
+      supportsOutputLimits: true,
+      supportsPatchArtifacts: true,
+      supportsStagedWrites: true,
+      supportsStructuredCommands: true,
+      supportsTargetedCommands: true,
+      supportsWorkspaceMount: true,
+    })).toEqual({
+      credentialPassthrough: false,
+      enabled: true,
+      kind: 'remote',
+      networkMode: 'allowlisted',
+      supportsPatchArtifacts: true,
+      supportsReadOnlyWorkspace: true,
+      supportsStagedWrites: true,
+      supportsTargetedCommands: true,
+    });
+
+    expect(() => buildAgentSandboxProviderCapabilitiesFromBackendProfile({
+      credentialPassthrough: false,
+      environmentPolicy: 'empty',
+      id: 'incomplete-container-candidate',
+      isolation: 'container',
+      kind: 'local_container',
+      networkMode: 'disabled',
+      supportsOutputLimits: true,
+      supportsPatchArtifacts: false,
+      supportsStagedWrites: true,
+      supportsStructuredCommands: true,
+      supportsTargetedCommands: true,
+      supportsWorkspaceMount: true,
+    })).toThrow('Sandbox backend not ready: sandbox backend must produce patch artifacts.');
   });
 
   it('explains why the sandbox coding lane is unavailable by default', () => {

@@ -214,6 +214,27 @@ export function evaluateAgentSandboxBackendReadiness(
   };
 }
 
+export function buildAgentSandboxProviderCapabilitiesFromBackendProfile(
+  profile: AgentSandboxBackendProfile,
+): AgentSandboxProviderCapabilities {
+  const readiness = evaluateAgentSandboxBackendReadiness(profile);
+
+  if (!readiness.ready) {
+    throw new Error(readiness.summary);
+  }
+
+  return {
+    credentialPassthrough: false,
+    enabled: true,
+    kind: profile.kind,
+    networkMode: profile.networkMode,
+    supportsPatchArtifacts: profile.supportsPatchArtifacts,
+    supportsReadOnlyWorkspace: profile.supportsWorkspaceMount,
+    supportsStagedWrites: profile.supportsStagedWrites,
+    supportsTargetedCommands: profile.supportsTargetedCommands,
+  };
+}
+
 export function buildDefaultAgentSandboxCommandPolicy(
   overrides: Partial<Pick<AgentSandboxCommandPolicy, 'timeoutMs' | 'outputLimitBytes'>> = {},
 ): AgentSandboxCommandPolicy {

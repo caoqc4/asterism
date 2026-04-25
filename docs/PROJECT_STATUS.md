@@ -157,6 +157,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Shared sandbox backend readiness contracts now describe candidate backend
   requirements and explicitly reject host-process or incomplete profiles before
   they can be treated as provider implementations.
+- Provider capabilities for a real sandbox backend now derive from a ready
+  backend profile, so incomplete candidates cannot be promoted into a coding
+  provider capability set by hand.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -200,8 +203,8 @@ Latest local baseline:
 - `npm run accept:provider-native-live:preflight` reports the current local
   provider-native setup is ready; live provider validation remains opt-in
   because it spends configured provider credit
-- `npm run verify` passed locally on 2026-04-25 after sandbox backend
-  readiness contracts landed: 69 test files / 521 tests
+- `npm run verify` passed locally on 2026-04-25 after backend-derived sandbox
+  provider capabilities landed: 69 test files / 522 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
