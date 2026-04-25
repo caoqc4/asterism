@@ -2,6 +2,7 @@ import type { CreateRunInput, RunRecord, RunStepRecord } from '../../../shared/t
 import type { TaskDetail } from '../../../shared/types/task.js';
 import type {
   AgentRuntimeCapabilities,
+  AgentSessionEvent,
   ProviderToolCallNormalizationResult,
 } from '../../../shared/types/agent-execution.js';
 import { AgentSessionRepository } from '../../db/repositories/agent-session-repository.js';
@@ -29,6 +30,10 @@ import {
   formatAgentRunRequestForStep,
   LOCAL_AGENT_TOOL_POLICY,
 } from './agent-working-context.js';
+import {
+  mapAgentRuntimeEventToRunStep,
+  type AgentRuntimeRunStepDraft,
+} from './agent-runtime-event-step-mapper.js';
 
 export type RunOrchestrationResult =
   | {
@@ -79,13 +84,14 @@ export class RunOrchestrator {
     const { input, run, task } = params;
     const request = buildAgentRunRequest({ run, task, input });
 
-    await this.runStepRepository.create({
+    await this.createRunStepFromAgentEvent({
+      type: 'plan.proposed',
       runId: run.id,
-      kind: 'plan',
-      status: 'completed',
+      summary: '已读取任务上下文，并准备进入模型执行。',
+      source: 'fallback',
+    }, {
       title: '准备执行上下文',
       input: formatAgentRunRequestForStep(request),
-      output: '已读取任务上下文，并准备进入模型执行。',
     });
 
     let modelStep: RunStepRecord | null = null;
@@ -95,9 +101,13 @@ export class RunOrchestrator {
       const runtimeConfig = await this.aiConfigService.resolveRuntimeConfig();
       selection = await this.selectProcessTemplates(task, input, runtimeConfig);
 
-      modelStep = await this.runStepRepository.create({
+      modelStep = await this.createRunStepFromAgentEvent({
+        type: 'model.completed',
         runId: run.id,
-        kind: 'model',
+        output: '模型执行中。',
+        provider: runtimeConfig.provider,
+        model: runtimeConfig.model,
+      }, {
         status: 'running',
         title: `${input.type} 模型执行`,
         input: [
@@ -132,14 +142,14 @@ export class RunOrchestrator {
         textResult,
         enabled: Boolean(runtimeConfig.featureFlags?.enableProviderNativeToolCalls),
       });
-      await this.runStepRepository.create({
+      await this.createRunStepFromAgentEvent({
+        type: 'session.completed',
         runId: run.id,
-        kind: 'final',
-        status: 'completed',
-        title: '完成 Run 执行',
         output: output?.trim()
           ? 'Run 执行已完成，输出可由服务层保存为任务产物并写入任务时间线。'
           : 'Run 执行已完成，但没有可保存的输出产物。',
+      }, {
+        title: '完成 Run 执行',
       });
 
       return {
@@ -159,12 +169,13 @@ export class RunOrchestrator {
         });
       }
 
-      await this.runStepRepository.create({
+      await this.createRunStepFromAgentEvent({
+        type: 'session.failed',
         runId: run.id,
-        kind: 'final',
-        status: 'failed',
+        failureKind: 'model',
+        message,
+      }, {
         title: 'Run 执行失败',
-        error: message,
       });
 
       return {
@@ -499,6 +510,19 @@ export class RunOrchestrator {
         : shadow.status === 'failed'
           ? `影子观察解析失败，Run 执行结果不受影响：${shadow.error}`
           : `影子观察已跳过，Run 执行结果不受影响：${shadow.reason}`,
+    });
+  }
+
+  private async createRunStepFromAgentEvent(
+    event: AgentSessionEvent,
+    overrides: Partial<Omit<AgentRuntimeRunStepDraft, 'runId'>> = {},
+  ): Promise<RunStepRecord> {
+    const draft = mapAgentRuntimeEventToRunStep(event);
+
+    return this.runStepRepository.create({
+      ...draft,
+      ...overrides,
+      runId: draft.runId,
     });
   }
 }
