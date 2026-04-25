@@ -62,6 +62,15 @@ Completed:
 - provider-native safe-read path remains gated and locally tested
 - workspace write/command tools remain registry-only and Decision-gated
 
+Pi reference boundary:
+
+- implemented: Taskplane-owned small loop, typed runtime events,
+  event-to-RunStep projection, tool registry execution, policy gates,
+  checkpoint/Decision pauses, and restart-safe resume validation
+- not implemented: Pi runtime embedding, Pi compatibility, Pi coding-agent
+  Read/Write/Edit/Bash defaults, session branching, compaction, side quests,
+  and full replay/idempotency
+
 Still incomplete:
 
 - no known Slice 0 blocker remains; future checkpoint work should focus on

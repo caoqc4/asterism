@@ -155,6 +155,17 @@ Taskplane decision:
   but Taskplane's alpha boundary requires registry/exposure/policy gates and
   Decisions before mutation.
 
+Current Taskplane support boundary:
+
+- Slice 0 implements Pi-like inner-loop ideas inside Taskplane-owned code:
+  typed session events, event-to-RunStep projection, provider-normalized
+  sessions, registry-driven tools, policy gates, checkpoint/Decision pauses,
+  and restart-safe resume validation.
+- Taskplane does **not** embed Pi as a runtime dependency, expose Pi's coding
+  tool set, or claim compatibility with Pi session extensions.
+- Pi-style branching, compaction, side quests, and richer message/event
+  replay remain future design inputs, not current product capabilities.
+
 ### OpenClaw
 
 OpenClaw is best understood as an embedding/product-shell reference around Pi.
