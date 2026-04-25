@@ -257,15 +257,19 @@ stdout/stderr, or model chain-of-thought.
 
 ## Implementation Slices
 
-1. Add producer request/result types and pure validation helpers.
-2. Add a fake/injected producer runner for tests only.
-3. Add staged file collector that converts staging contents into a patch draft.
-4. Add producer event types and compact RunStep projection.
-5. Add a non-live `previewProducerResult()` path that feeds
-   `previewFromSource()`.
+Completed non-live slices:
+
+1. Producer request/result types and pure validation helpers.
+2. Fake/injected producer runner preview path for tests only.
+3. Staged file collector that converts staging contents into a patch draft.
+4. Producer event types and compact RunStep projection.
+5. Non-live source/preview bridge into `previewFromSource()`.
+
+Next slices:
+
 6. Add integration coverage for blocked, failed, empty-diff, and source-ready
    producer results.
-7. Only after this, connect a real sandbox backend.
+7. Only after that integration coverage passes, connect a real sandbox backend.
 
 ## Acceptance
 

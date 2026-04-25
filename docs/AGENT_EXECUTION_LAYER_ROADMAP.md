@@ -390,14 +390,14 @@ Current guardrail state:
 
 Next implementation target:
 
-Implement the first non-live slices from
+Finish the remaining non-live slice from
 [AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md](AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md):
-producer request/result types, pure validation, staged file collection, and
-fake/injected-runner tests. After those slices pass, build or select a real
-sandbox provider backend that can safely support targeted `test` / `lint`
-checks and patch artifacts inside the sandbox boundary. Do not expose a UI run
-option until that provider passes the shared eligibility gate and still routes
-every promotion through a Decision-linked `patch_promotion` checkpoint.
+integration coverage for blocked, failed, empty-diff, and source-ready producer
+results. After that integration coverage passes, build or select a real sandbox
+provider backend that can safely support targeted `test` / `lint` checks and
+patch artifacts inside the sandbox boundary. Do not expose a UI run option
+until that provider passes the shared eligibility gate and still routes every
+promotion through a Decision-linked `patch_promotion` checkpoint.
 
 Backend candidate readiness is now represented in code by
 `AgentSandboxBackendProfile` and `evaluateAgentSandboxBackendReadiness`. A

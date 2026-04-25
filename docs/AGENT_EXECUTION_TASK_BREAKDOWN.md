@@ -307,21 +307,15 @@ Start with the first non-live slices from
 
 T1 through T7 now have Slice 0 implementation or design coverage, the shared
 tool scaffold exists, the sandbox patch draft source boundary is implemented,
-and the first producer design is drafted. The next product-relevant execution
-task is to implement the safe, non-live producer scaffolding before connecting
-any real sandbox backend.
+the first producer design is drafted, and the non-live producer scaffolding is
+in place.
 
-The next implementation slices are:
+The next implementation slice is:
 
-- producer request/result types and pure validation helpers
-- fake/injected producer runner for tests only
-- staged file collector that converts staging contents into a patch draft
-- producer event types and compact RunStep projection
-- non-live `previewProducerResult()` path into `previewFromSource()`
 - integration coverage for blocked, failed, empty-diff, and source-ready
   producer results
 
-Only after those pass should implementation start on a real sandbox provider
+Only after that passes should implementation start on a real sandbox provider
 backend. Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer
 control, external posting, or social/media publishing as model-visible tools
 until their own sandbox or connector Decisions are accepted.
