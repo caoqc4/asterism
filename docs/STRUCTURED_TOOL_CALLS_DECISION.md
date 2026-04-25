@@ -136,6 +136,9 @@ Rules:
 
 - Pre-run copy may distinguish provider potential from Taskplane runtime
   support.
+- Shared provider capability descriptors may support pre-run copy and future
+  adapter selection, but they must remain descriptive until the adapter path
+  exists.
 - Persisted agent-session capability metadata must describe actual run behavior,
   not provider marketing capability.
 - A run may record `structuredToolCalls=true` only after the normalized adapter
@@ -150,6 +153,8 @@ Rules:
 Before implementation is accepted:
 
 - adapter unit tests cover each enabled provider or relay response shape
+- shared provider capability descriptor tests keep unconfigured, Replicate, and
+  OpenAI-compatible-style providers on truthful text-only or deferred states
 - malformed provider tool-call payloads fall back without executing tools
 - run-loop tests prove policy gates behave the same for native tool calls and
   text JSON proposals
