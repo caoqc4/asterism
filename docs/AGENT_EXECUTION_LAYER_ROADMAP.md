@@ -199,3 +199,8 @@ workspace patch and command tools remain reserved for acceptance commands and
 internal confirmation resumes. For workspace tools, use
 [WORKSPACE_TOOL_UI_OPT_IN_DECISION.md](WORKSPACE_TOOL_UI_OPT_IN_DECISION.md):
 improve checkpoint review UX before any prompt-level exposure.
+
+Before adding any stronger closeout mutation, use
+[COMPLETION_EVIDENCE_TOOL_DECISION.md](COMPLETION_EVIDENCE_TOOL_DECISION.md):
+the next closeout-adjacent agent slice should review evidence only, without
+satisfying criteria or completing tasks automatically.

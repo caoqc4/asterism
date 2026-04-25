@@ -126,3 +126,9 @@ Accepted implementation coverage:
   `decision.draft` and `source_context.create`?
 - Should an agent-created completion criterion require a follow-up Decision when
   the task is high risk?
+
+## Follow-Up Decisions
+
+- [COMPLETION_EVIDENCE_TOOL_DECISION.md](COMPLETION_EVIDENCE_TOOL_DECISION.md)
+  keeps completion satisfaction and task closeout unavailable to agents until a
+  separate evidence and confirmation model is accepted.
