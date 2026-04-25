@@ -135,7 +135,7 @@ Automated/local coverage:
 - `npm run build` passes through `npm run verify`
 - `npm run smoke:build` passes
 - `npm run dist:mac:dir` passes and produces `release/mac-arm64/Taskplane.app`
-- unpacked app structure, `Info.plist`, native module unpacking, and ad-hoc code signature were inspected locally
+- `npm run smoke:package:mac` verifies unpacked app structure, `Info.plist`, native module unpacking, ASAR integrity metadata, executable bit, and the ad-hoc code signature locally
 - packaged runtime launch now works with isolated `TASKPLANE_USER_DATA_DIR`; Home renders from `app.asar/dist/index.html`, SQLite/config are created in the isolated directory, and task creation persists
 
 Manual need:

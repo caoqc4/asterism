@@ -1,0 +1,80 @@
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
+
+const root = process.cwd();
+const appPath = path.join(root, 'release/mac-arm64/Taskplane.app');
+const contentsPath = path.join(appPath, 'Contents');
+const resourcesPath = path.join(contentsPath, 'Resources');
+const infoPlistPath = path.join(contentsPath, 'Info.plist');
+const executablePath = path.join(contentsPath, 'MacOS/Taskplane');
+const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+
+function fail(message) {
+  console.error(message);
+  process.exit(1);
+}
+
+function assertExists(relativePath) {
+  const absolutePath = path.join(root, relativePath);
+
+  if (!fs.existsSync(absolutePath)) {
+    fail(`Missing packaged app file: ${relativePath}`);
+  }
+
+  return absolutePath;
+}
+
+function readInfoPlist() {
+  if (process.platform !== 'darwin') {
+    fail('macOS package smoke check requires macOS.');
+  }
+
+  const output = execFileSync('plutil', ['-convert', 'json', '-o', '-', infoPlistPath], {
+    encoding: 'utf8',
+  });
+
+  return JSON.parse(output);
+}
+
+assertExists('release/mac-arm64/Taskplane.app');
+assertExists('release/mac-arm64/Taskplane.app/Contents/Info.plist');
+assertExists('release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane');
+assertExists('release/mac-arm64/Taskplane.app/Contents/Resources/app.asar');
+assertExists('release/mac-arm64/Taskplane.app/Contents/Resources/icon.icns');
+assertExists('release/mac-arm64/Taskplane.app/Contents/Resources/app.asar.unpacked/node_modules/better-sqlite3');
+assertExists('release/mac-arm64/Taskplane.app/Contents/Resources/app.asar.unpacked/node_modules/keytar');
+assertExists('release/mac-arm64/Taskplane.app/Contents/_CodeSignature/CodeResources');
+
+const executableStat = fs.statSync(executablePath);
+
+if ((executableStat.mode & 0o111) === 0) {
+  fail('Packaged app executable is not executable.');
+}
+
+const info = readInfoPlist();
+
+const expectedInfo = {
+  CFBundleDisplayName: packageJson.productName,
+  CFBundleExecutable: packageJson.productName,
+  CFBundleIdentifier: packageJson.build?.appId,
+  CFBundleShortVersionString: packageJson.version,
+  CFBundleVersion: packageJson.version,
+};
+
+for (const [key, expected] of Object.entries(expectedInfo)) {
+  if (info[key] !== expected) {
+    fail(`Info.plist ${key} expected ${expected}, received ${info[key] ?? 'missing'}.`);
+  }
+}
+
+if (!info.ElectronAsarIntegrity?.['Resources/app.asar']?.hash) {
+  fail('Info.plist is missing Electron ASAR integrity metadata.');
+}
+
+execFileSync('codesign', ['--verify', '--deep', '--strict', '--verbose=2', appPath], {
+  stdio: 'inherit',
+});
+
+console.log('macOS package smoke check passed.');

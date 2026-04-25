@@ -47,8 +47,11 @@ the local Node ABI afterward. It currently produces:
 After packaging, verify the unpacked app signature locally:
 
 ```bash
-codesign --verify --deep --strict --verbose=2 release/mac-arm64/Taskplane.app
+npm run smoke:package:mac
 ```
+
+This checks the app bundle, key `Info.plist` metadata, native module unpacking,
+ASAR integrity metadata, executable bit, and the local code signature.
 
 ### Produce macOS release artifacts
 
@@ -78,7 +81,7 @@ As of the current alpha path:
 - `npm run verify` passes locally
 - `npm run smoke:build` passes locally
 - `npm run dist:mac:dir` passes locally
-- `codesign --verify --deep --strict --verbose=2 release/mac-arm64/Taskplane.app` passes for the unpacked app
+- `npm run smoke:package:mac` passes locally for the unpacked app
 - notarization is skipped because release credentials/options are not configured
 
 ## Why macOS first
