@@ -164,6 +164,95 @@ describe('SandboxPatchReviewPersister', () => {
       preview: preparation.artifact.diff,
     });
     expect(result.artifact.id).toBe('artifact_patch_1');
-    expect(result.checkpoint.checkpointId).toBe('run_checkpoint_patch_1');
+    expect(result.checkpoint?.checkpointId).toBe('run_checkpoint_patch_1');
+  });
+
+  it('persists failed sandbox checks without creating a promotion checkpoint', async () => {
+    const artifactRepository = {
+      createPatchFromRun: vi.fn().mockResolvedValue({
+        id: 'artifact_patch_failed',
+        taskId: 'task_1',
+        sourceType: 'run',
+        sourceId: 'run_1',
+        kind: 'patch',
+        title: 'Patch with failed checks',
+        content: '{}',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      } satisfies ArtifactRecord),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const checkpointRecorder = {
+      createPatchPromotionCheckpoint: vi.fn(),
+    };
+    const preparation: LocalContainerSandboxPatchReviewPreparation = {
+      artifact: {
+        commandLogs: [
+          {
+            outputPreview: 'test failed',
+            script: 'test',
+            status: 'failed',
+          },
+        ],
+        diff: '--- a/notes.md\n+++ b/notes.md',
+        files: ['notes.md'],
+        kind: 'patch',
+        riskSummary: 'Checks: test: failed. Pending human review before workspace promotion.',
+        summary: 'Patch with failed checks',
+      },
+      checkRun: {
+        results: [
+          {
+            outputPreview: 'test failed',
+            script: 'test',
+            status: 'failed',
+          },
+        ],
+        summary: 'test: failed',
+      },
+      checkpoint: {
+        consequence: 'Review required',
+        kind: 'patch_promotion',
+        policySnapshot: {
+          descriptorId: 'workspace.staged_patch',
+          sessionKind: 'sandbox',
+          credentialPolicy: 'none',
+          networkPolicy: 'disabled',
+          timeoutMs: 120_000,
+          outputLimitBytes: 64_000,
+        },
+        preview: '--- a/notes.md\n+++ b/notes.md',
+        reason: 'Review sandbox patch.',
+        resumeTarget: 'sandbox_1:promote',
+      },
+      handle: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        id: 'sandbox_1',
+        providerKind: 'local_container',
+        stagingRoot: '/tmp/taskplane-sandbox-1',
+        workspaceMode: 'staged_write',
+      },
+      sessionSummary: 'sandbox=sandbox_1 / provider=local_container / patchArtifacts=supported',
+    };
+
+    const persister = new SandboxPatchReviewPersister(
+      artifactRepository as never,
+      runStepRepository as never,
+      checkpointRecorder as never,
+    );
+
+    const result = await persister.persist({
+      preparation,
+      runId: 'run_1',
+      taskId: 'task_1',
+    });
+
+    expect(runStepRepository.create).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      kind: 'tool_result',
+      status: 'failed',
+      output: 'test: failed',
+    }));
+    expect(checkpointRecorder.createPatchPromotionCheckpoint).not.toHaveBeenCalled();
+    expect(result.checkpoint).toBeNull();
   });
 });

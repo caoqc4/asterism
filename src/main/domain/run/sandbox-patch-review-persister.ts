@@ -10,7 +10,7 @@ import type { LocalContainerSandboxPatchReviewPreparation } from './local-contai
 
 export type PersistSandboxPatchReviewResult = {
   artifact: ArtifactRecord;
-  checkpoint: AgentPatchPromotionCheckpointResult;
+  checkpoint: AgentPatchPromotionCheckpointResult | null;
   steps: {
     session: RunStepRecord;
     checks: RunStepRecord;
@@ -64,16 +64,19 @@ export class SandboxPatchReviewPersister {
       input: preparation.artifact.files.join(', '),
       output: artifact.id,
     });
-    const checkpoint = await this.checkpointRecorder.createPatchPromotionCheckpoint({
-      runId: params.runId,
-      taskId: params.taskId,
-      artifactId: artifact.id,
-      artifactSummary: preparation.artifact.summary,
-      sessionId: preparation.handle.id,
-      policySnapshot: preparation.checkpoint.policySnapshot,
-      decisionTitle: params.decisionTitle?.trim() || '确认提升 sandbox patch',
-      preview: preparation.artifact.diff,
-    });
+    const checksPassed = preparation.checkRun.results.every((result) => result.status !== 'failed');
+    const checkpoint = checksPassed
+      ? await this.checkpointRecorder.createPatchPromotionCheckpoint({
+          runId: params.runId,
+          taskId: params.taskId,
+          artifactId: artifact.id,
+          artifactSummary: preparation.artifact.summary,
+          sessionId: preparation.handle.id,
+          policySnapshot: preparation.checkpoint.policySnapshot,
+          decisionTitle: params.decisionTitle?.trim() || '确认提升 sandbox patch',
+          preview: preparation.artifact.diff,
+        })
+      : null;
 
     return {
       artifact,

@@ -212,6 +212,9 @@ The project is past initial architecture assembly. Current work should favor pro
   session/check/artifact RunSteps, persists a `patch` artifact, and delegates
   Decision-linked `patch_promotion` checkpoint creation to
   `AgentCheckpointRecorder` without exposing the path to UI or models.
+- Failed sandbox checks are persisted as failed check RunSteps and patch
+  artifacts without creating a promotion checkpoint, so a failing sandbox run
+  cannot accidentally enter the Decision promotion path.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
