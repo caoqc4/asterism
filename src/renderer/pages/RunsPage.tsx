@@ -178,6 +178,10 @@ function formatRunStepSummary(step: RunStepRecord): string {
   return '该步骤已记录，但没有额外内容。';
 }
 
+function truncateSummary(value: string, limit = 180): string {
+  return value.length > limit ? `${value.slice(0, limit)}...` : value;
+}
+
 function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
   if (!checkpoint.payload) {
     return '该 checkpoint 没有额外内容。';
@@ -186,11 +190,22 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
   const payload = parseRunCheckpointPayload(checkpoint.payload);
 
   if (payload) {
+    const input = payload.input && typeof payload.input === 'object'
+      ? payload.input as Record<string, unknown>
+      : null;
+    const expectedFiles = Array.isArray(input?.expectedFiles)
+      ? input.expectedFiles.filter((item): item is string => typeof item === 'string')
+      : [];
+    const diffPreview = typeof input?.diffPreview === 'string'
+      ? truncateSummary(input.diffPreview.replace(/\s+/g, ' '))
+      : null;
     const summaryParts = [
       typeof payload.tool === 'string' ? `工具：${payload.tool}` : null,
       typeof payload.nextTool === 'string' ? `下一工具：${payload.nextTool}` : null,
       typeof payload.risk === 'string' ? `风险：${payload.risk}` : null,
       typeof payload.reason === 'string' ? `原因：${payload.reason}` : null,
+      expectedFiles.length ? `文件：${expectedFiles.join(', ')}` : null,
+      diffPreview ? `预览：${diffPreview}` : null,
       typeof payload.decisionTitle === 'string' ? `Decision：${payload.decisionTitle}` : null,
     ].filter((part): part is string => Boolean(part));
 
@@ -199,9 +214,7 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
     }
   }
 
-  return checkpoint.payload.length > 180
-    ? `${checkpoint.payload.slice(0, 180)}...`
-    : checkpoint.payload;
+  return truncateSummary(checkpoint.payload);
 }
 
 type RunsPageProps = {

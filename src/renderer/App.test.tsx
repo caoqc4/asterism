@@ -2899,6 +2899,79 @@ describe('App UI flow', () => {
     expect(runCheckpointApi.getRunDetail).toHaveBeenCalledWith('run_checkpointed');
   });
 
+  it('shows workspace patch checkpoint files and diff preview on the runs page', async () => {
+    const user = userEvent.setup();
+    const checkpointRun = buildRunRecord({
+      id: 'run_patch_checkpointed',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'needs_confirmation',
+      output: '需要确认 workspace.write_patch 后才能继续。',
+      outputSource: 'system',
+    });
+    const checkpointDetail: RunDetailRecord = {
+      ...checkpointRun,
+      steps: [
+        buildRunStep({
+          id: 'run_step_patch_tool_call',
+          runId: checkpointRun.id,
+          index: 2,
+          kind: 'checkpoint',
+          title: 'Await patch permission',
+        }),
+      ],
+      checkpoints: [
+        buildRunCheckpoint({
+          id: 'run_checkpoint_patch_permission',
+          runId: checkpointRun.id,
+          stepId: 'run_step_patch_tool_call',
+          payload: JSON.stringify({
+            version: 1,
+            kind: 'tool_permission',
+            tool: 'workspace.write_patch',
+            risk: 'local_write',
+            input: {
+              summary: 'Update notes',
+              expectedFiles: ['notes.md'],
+              diffPreview: [
+                'Summary: Update notes',
+                '',
+                'Files: notes.md',
+                '',
+                '*** Begin Patch',
+                '*** Update File: notes.md',
+                '@@',
+                '-alpha',
+                '+beta',
+                '*** End Patch',
+              ].join('\n'),
+            },
+            decisionTitle: '确认本地写入：workspace.write_patch',
+          }),
+        }),
+      ],
+    };
+    const runCheckpointApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [checkpointRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === checkpointRun.id ? checkpointDetail : null,
+      ),
+    };
+
+    window.api = runCheckpointApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    await screen.findByRole('heading', { name: '执行记录' });
+
+    expect(await screen.findByRole('heading', { name: 'agent / needs_confirmation' })).toBeTruthy();
+    expect(
+      screen.getByText(/工具：workspace\.write_patch；风险：local_write；文件：notes\.md；预览：Summary: Update notes Files: notes\.md/),
+    ).toBeTruthy();
+  });
+
   it('shows resume checkpoints on the runs page for paused agent runs', async () => {
     const user = userEvent.setup();
     const pausedRun = buildRunRecord({
