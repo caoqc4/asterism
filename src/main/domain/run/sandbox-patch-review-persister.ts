@@ -1,5 +1,9 @@
 import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { RunStepRecord } from '../../../shared/types/run.js';
+import type {
+  AgentSandboxPatchArtifact,
+  AgentSandboxSessionAudit,
+} from '../../../shared/agent-sandbox-provider.js';
 import type { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import type {
@@ -15,6 +19,15 @@ export type PersistSandboxPatchReviewResult = {
     session: RunStepRecord;
     checks: RunStepRecord;
     artifact: RunStepRecord;
+  };
+};
+
+export type SandboxPatchReviewArtifactContent = {
+  artifact: AgentSandboxPatchArtifact;
+  review: {
+    audit: AgentSandboxSessionAudit | null;
+    sandboxSessionId: string;
+    sessionSummary: string;
   };
 };
 
@@ -54,7 +67,7 @@ export class SandboxPatchReviewPersister {
       taskId: params.taskId,
       runId: params.runId,
       title: preparation.artifact.summary,
-      content: JSON.stringify(preparation.artifact, null, 2),
+      content: JSON.stringify(buildSandboxPatchReviewArtifactContent(preparation), null, 2),
     });
     const artifactStep = await this.runStepRepository.create({
       runId: params.runId,
@@ -88,4 +101,17 @@ export class SandboxPatchReviewPersister {
       },
     };
   }
+}
+
+export function buildSandboxPatchReviewArtifactContent(
+  preparation: LocalContainerSandboxPatchReviewPreparation,
+): SandboxPatchReviewArtifactContent {
+  return {
+    artifact: preparation.artifact,
+    review: {
+      audit: preparation.audit,
+      sandboxSessionId: preparation.handle.id,
+      sessionSummary: preparation.sessionSummary,
+    },
+  };
 }

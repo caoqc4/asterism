@@ -465,6 +465,19 @@ describe('local container sandbox backend probe', () => {
     const provider = new LocalContainerSandboxProvider();
     const commandPolicy = buildDefaultAgentSandboxCommandPolicy({ timeoutMs: 30_000 });
     const request: AgentSandboxSessionRequest = {
+      audit: {
+        acceptedScripts: ['test'],
+        idempotencyKey: 'sandbox-patch-review:sandbox_session:sandbox_session_1:run_1:task_1:test',
+        initiatedBy: 'internal_sandbox_patch_review',
+        patchDraftSource: {
+          sourceId: 'sandbox_session_1',
+          sourceKind: 'sandbox_session',
+        },
+        reason: 'Review sandbox patch before promotion.',
+        rejectedScripts: [],
+        requestedScripts: ['test'],
+        workspaceRoot,
+      },
       commandPolicy,
       descriptorId: 'workspace.staged_patch',
       executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
@@ -505,6 +518,10 @@ describe('local container sandbox backend probe', () => {
       });
       handlePath = preparation.handle.stagingRoot;
 
+      expect(preparation.audit?.patchDraftSource).toEqual({
+        sourceId: 'sandbox_session_1',
+        sourceKind: 'sandbox_session',
+      });
       expect(preparation.checkRun.summary).toBe('test: passed');
       expect(preparation.artifact).toMatchObject({
         commandLogs: [

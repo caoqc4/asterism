@@ -75,6 +75,19 @@ describe('SandboxPatchReviewPersister', () => {
         riskSummary: 'Checks: lint: passed. Pending human review before workspace promotion.',
         summary: 'Reviewable sandbox patch',
       },
+      audit: {
+        acceptedScripts: ['lint'],
+        idempotencyKey: 'sandbox-patch-review:sandbox_session:sandbox_session_1:run_1:task_1:lint',
+        initiatedBy: 'internal_sandbox_patch_review',
+        patchDraftSource: {
+          sourceId: 'sandbox_session_1',
+          sourceKind: 'sandbox_session',
+        },
+        reason: 'Review sandbox patch before promotion.',
+        rejectedScripts: [],
+        requestedScripts: ['lint'],
+        workspaceRoot: '/tmp/taskplane-sandbox-workspace',
+      },
       checkRun: {
         results: [
           {
@@ -143,7 +156,14 @@ describe('SandboxPatchReviewPersister', () => {
       taskId: 'task_1',
       runId: 'run_1',
       title: 'Reviewable sandbox patch',
-      content: JSON.stringify(preparation.artifact, null, 2),
+      content: JSON.stringify({
+        artifact: preparation.artifact,
+        review: {
+          audit: preparation.audit,
+          sandboxSessionId: 'sandbox_1',
+          sessionSummary: preparation.sessionSummary,
+        },
+      }, null, 2),
     });
     expect(runStepRepository.create).toHaveBeenNthCalledWith(3, {
       runId: 'run_1',
@@ -200,6 +220,7 @@ describe('SandboxPatchReviewPersister', () => {
         riskSummary: 'Checks: test: failed. Pending human review before workspace promotion.',
         summary: 'Patch with failed checks',
       },
+      audit: null,
       checkRun: {
         results: [
           {

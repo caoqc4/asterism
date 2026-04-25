@@ -12,6 +12,7 @@ import type {
   AgentSandboxProvider,
   AgentSandboxProviderCapabilities,
   AgentSandboxCheckScript,
+  AgentSandboxSessionAudit,
   AgentSandboxSessionHandle,
   AgentSandboxSessionManifest,
   AgentSandboxSessionRequest,
@@ -109,6 +110,7 @@ export type LocalContainerSandboxPatchDraft = {
 
 export type LocalContainerSandboxPatchReviewPreparation = {
   artifact: AgentSandboxPatchArtifact;
+  audit: AgentSandboxSessionAudit | null;
   checkRun: LocalContainerSandboxCheckRun;
   checkpoint: AgentToolCheckpointDescriptor;
   handle: AgentSandboxSessionHandle;
@@ -235,6 +237,7 @@ export async function prepareLocalContainerSandboxPatchReview(params: {
 
     return {
       artifact,
+      audit: params.request.audit ?? null,
       checkRun,
       checkpoint: buildAgentSandboxPatchPromotionCheckpoint({
         artifact,

@@ -59,6 +59,19 @@ describe('SandboxPatchReviewPersister integration', () => {
         riskSummary: 'Checks: lint: passed. Pending human review before workspace promotion.',
         summary: 'Reviewable sandbox patch',
       },
+      audit: {
+        acceptedScripts: ['lint'],
+        idempotencyKey: 'sandbox-patch-review:sandbox_session:sandbox_session_1:run_1:task_1:lint',
+        initiatedBy: 'internal_sandbox_patch_review',
+        patchDraftSource: {
+          sourceId: 'sandbox_session_1',
+          sourceKind: 'sandbox_session',
+        },
+        reason: 'Review sandbox patch before promotion.',
+        rejectedScripts: [],
+        requestedScripts: ['lint'],
+        workspaceRoot: '/tmp/taskplane-sandbox-workspace',
+      },
       checkRun: {
         results: [
           {
@@ -109,8 +122,19 @@ describe('SandboxPatchReviewPersister integration', () => {
     expect(result.artifact.kind).toBe('patch');
     expect(artifacts[0]?.id).toBe(result.artifact.id);
     expect(JSON.parse(artifacts[0]?.content ?? '{}')).toMatchObject({
-      summary: 'Reviewable sandbox patch',
-      files: ['notes.md'],
+      artifact: {
+        summary: 'Reviewable sandbox patch',
+        files: ['notes.md'],
+      },
+      review: {
+        audit: {
+          patchDraftSource: {
+            sourceId: 'sandbox_session_1',
+            sourceKind: 'sandbox_session',
+          },
+        },
+        sandboxSessionId: 'sandbox_1',
+      },
     });
     expect(steps.map((step) => [step.kind, step.status, step.title])).toEqual([
       ['plan', 'completed', '准备 sandbox patch review'],

@@ -277,6 +277,10 @@ The project is past initial architecture assembly. Current work should favor pro
   identity into idempotency keys and session manifest summaries, so future
   resumable review runs can trace a ready plan back to the validated source
   that produced it.
+- Sandbox patch-review artifact content now stores an envelope with the patch
+  artifact plus review metadata: sandbox session id, session summary, and
+  optional audit/source identity. This keeps persisted review artifacts
+  recoverable without changing the artifact table schema.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
