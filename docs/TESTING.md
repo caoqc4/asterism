@@ -122,6 +122,10 @@ Covered today:
   offline Messages-style `tool_use` content block normalization, including
   object input validation and fail-closed handling when no supported tool is
   present
+- `Provider native tool-call adapter`
+  offline provider dispatch across Anthropic, OpenAI, OpenAI-compatible,
+  fal/OpenRouter, and Replicate fail-closed behavior without connecting the run
+  loop
 - `Agent tool helpers`
   shared runtime tool-name guard used by provider normalization so future
   adapters validate against the same Taskplane tool list
