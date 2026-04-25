@@ -94,6 +94,9 @@ describe('TempWorkspaceSandboxProvider', () => {
         supportsStagedWrites: true,
         supportsTargetedCommands: false,
       });
+      await expect(provider.summarizeSession(handle)).resolves.toBe(
+        `${'sandbox='}${handle.id} / provider=local_container / workspace=staged_write / network=disabled / credentials=none / commands=test,lint / patchArtifacts=unsupported`,
+      );
     } finally {
       await provider.disposeSession(handle);
       fs.rmSync(workspaceRoot, { force: true, recursive: true });

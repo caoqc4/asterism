@@ -146,6 +146,8 @@ The project is past initial architecture assembly. Current work should favor pro
   attachment without running commands or copying source files.
 - Sandbox session manifests now have a compact summary helper for future
   RunStep/Artifact display without expanding raw policy JSON.
+- The temp-workspace sandbox provider can now summarize a prepared session from
+  its manifest, keeping future run-step copy decoupled from raw JSON structure.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

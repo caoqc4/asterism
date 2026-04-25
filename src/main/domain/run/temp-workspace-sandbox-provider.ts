@@ -12,6 +12,8 @@ import {
   buildAgentSandboxSessionManifest,
   buildDefaultAgentSandboxCommandPolicy,
   evaluateAgentSandboxCodingLaneEligibility,
+  summarizeAgentSandboxSessionManifest,
+  type AgentSandboxSessionManifest,
 } from '../../../shared/agent-sandbox-provider.js';
 import { buildDefaultAgentToolExecutionPolicy } from '../../../shared/agent-tool-scaffold.js';
 import type { FeatureFlags } from '../../../shared/types/settings.js';
@@ -71,6 +73,11 @@ export class TempWorkspaceSandboxProvider implements AgentSandboxProvider {
 
   async disposeSession(handle: AgentSandboxSessionHandle): Promise<void> {
     await fs.rm(handle.stagingRoot, { force: true, recursive: true });
+  }
+
+  async summarizeSession(handle: AgentSandboxSessionHandle): Promise<string> {
+    const raw = await fs.readFile(path.join(handle.stagingRoot, 'session.json'), 'utf8');
+    return summarizeAgentSandboxSessionManifest(JSON.parse(raw) as AgentSandboxSessionManifest);
   }
 }
 
