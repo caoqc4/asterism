@@ -364,7 +364,10 @@ Implementation sequence:
    Decision-linked `patch_promotion` checkpoints, still without applying or
    promoting staged files.
 6. Only after the above is accepted, expose a narrow coding-agent run option in
-   the UI and prompt/provider exposure matrix.
+   the UI and prompt/provider exposure matrix. A shared eligibility gate now
+   combines the default-off feature flag, sandbox provider capabilities,
+   workspace root, command policy, and execution policy into explicit blocked
+   reasons before any entrypoint can become eligible.
 
 Acceptance:
 

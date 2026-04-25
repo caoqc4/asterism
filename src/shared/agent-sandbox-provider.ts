@@ -3,6 +3,7 @@ import type {
   AgentToolCheckpointDescriptor,
   AgentToolExecutionPolicy,
 } from './agent-tool-scaffold.js';
+import type { FeatureFlags } from './types/settings.js';
 
 export type AgentSandboxProviderKind = 'local_container' | 'remote' | 'disabled';
 
@@ -105,6 +106,12 @@ export type AgentSandboxSessionResult =
       outputPreview?: string | null;
     };
 
+export type AgentSandboxCodingLaneEligibility = {
+  eligible: boolean;
+  summary: string;
+  blockedReasons: string[];
+};
+
 export interface AgentSandboxProvider {
   readonly capabilities: AgentSandboxProviderCapabilities;
   prepareSession(request: AgentSandboxSessionRequest): Promise<AgentSandboxSessionHandle>;
@@ -163,6 +170,61 @@ export function canUseAgentSandboxProviderForCoding(
     && capabilities.supportsTargetedCommands
     && capabilities.supportsPatchArtifacts
     && capabilities.credentialPassthrough === false;
+}
+
+export function evaluateAgentSandboxCodingLaneEligibility(params: {
+  featureFlags: FeatureFlags;
+  providerCapabilities: AgentSandboxProviderCapabilities;
+  workspaceRoot?: string | null;
+  commandPolicy: AgentSandboxCommandPolicy;
+  executionPolicy: AgentToolExecutionPolicy;
+}): AgentSandboxCodingLaneEligibility {
+  const blockedReasons: string[] = [];
+
+  if (!params.featureFlags.enableSandboxCodingAgent) {
+    blockedReasons.push('sandbox coding-agent feature flag is disabled');
+  }
+
+  if (!canUseAgentSandboxProviderForCoding(params.providerCapabilities)) {
+    blockedReasons.push('sandbox provider does not expose the required staged-write, targeted-check, patch-artifact capability set');
+  }
+
+  if (!params.workspaceRoot?.trim()) {
+    blockedReasons.push('workspace root is required before preparing a sandbox coding session');
+  }
+
+  if (params.executionPolicy.descriptorId !== 'workspace.staged_patch') {
+    blockedReasons.push('execution policy must target workspace.staged_patch');
+  }
+
+  if (params.executionPolicy.sessionKind !== 'sandbox') {
+    blockedReasons.push('execution policy must run in a sandbox session');
+  }
+
+  if (params.executionPolicy.credentialPolicy !== 'none') {
+    blockedReasons.push('sandbox coding sessions must not receive credentials');
+  }
+
+  if (params.executionPolicy.networkPolicy !== 'disabled') {
+    blockedReasons.push('sandbox coding sessions must start with network disabled');
+  }
+
+  if (params.commandPolicy.allowArbitraryShell || params.commandPolicy.allowInteractive) {
+    blockedReasons.push('sandbox checks must be non-interactive and cannot allow arbitrary shell');
+  }
+
+  const allowedScripts = new Set<AgentSandboxCheckScript>(['test', 'lint']);
+  if (params.commandPolicy.allowedScripts.some((script) => !allowedScripts.has(script))) {
+    blockedReasons.push('sandbox checks are limited to test/lint scripts');
+  }
+
+  return {
+    blockedReasons,
+    eligible: blockedReasons.length === 0,
+    summary: blockedReasons.length
+      ? `Sandbox coding lane unavailable: ${blockedReasons.join('; ')}.`
+      : 'Sandbox coding lane eligible for a gated staged-patch session.',
+  };
 }
 
 export function buildAgentSandboxPatchArtifact(

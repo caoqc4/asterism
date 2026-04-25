@@ -127,6 +127,11 @@ The project is past initial architecture assembly. Current work should favor pro
 - The sandbox coding-agent lane now has a default-off configuration gate,
   `TASKPLANE_ENABLE_SANDBOX_CODING_AGENT`, surfaced in Settings status while
   remaining disabled unless explicitly set for execution-layer development.
+- A shared sandbox coding-lane eligibility helper now requires the rollout
+  flag, a fully capable sandbox provider, workspace root, non-credentialed
+  sandbox execution policy, disabled network, and non-interactive test/lint
+  command policy before any future staged-patch entrypoint can be considered
+  available.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -171,7 +176,7 @@ Latest local baseline:
   provider-native setup is ready; live provider validation remains opt-in
   because it spends configured provider credit
 - `npm run verify` passed locally on 2026-04-25 after the sandbox coding-agent
-  feature flag/status gate landed: 69 test files / 509 tests
+  eligibility gate landed: 69 test files / 512 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

@@ -7,6 +7,7 @@ import {
   buildDefaultAgentSandboxCommandPolicy,
   canUseAgentSandboxProviderForCoding,
   DISABLED_AGENT_SANDBOX_PROVIDER_CAPABILITIES,
+  evaluateAgentSandboxCodingLaneEligibility,
   summarizeAgentSandboxCheckResults,
   toAgentToolArtifactDescriptor,
   type AgentSandboxProviderCapabilities,
@@ -44,6 +45,93 @@ describe('agent sandbox provider contracts', () => {
     expect(canUseAgentSandboxProviderForCoding(ready)).toBe(true);
     expect(canUseAgentSandboxProviderForCoding({ ...ready, supportsPatchArtifacts: false })).toBe(false);
     expect(canUseAgentSandboxProviderForCoding({ ...ready, enabled: false })).toBe(false);
+  });
+
+  it('explains why the sandbox coding lane is unavailable by default', () => {
+    const result = evaluateAgentSandboxCodingLaneEligibility({
+      commandPolicy: buildDefaultAgentSandboxCommandPolicy(),
+      executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: false,
+      },
+      providerCapabilities: DISABLED_AGENT_SANDBOX_PROVIDER_CAPABILITIES,
+      workspaceRoot: null,
+    });
+
+    expect(result.eligible).toBe(false);
+    expect(result.blockedReasons).toEqual([
+      'sandbox coding-agent feature flag is disabled',
+      'sandbox provider does not expose the required staged-write, targeted-check, patch-artifact capability set',
+      'workspace root is required before preparing a sandbox coding session',
+    ]);
+    expect(result.summary).toContain('Sandbox coding lane unavailable');
+  });
+
+  it('marks the sandbox coding lane eligible only after all guard conditions pass', () => {
+    const ready: AgentSandboxProviderCapabilities = {
+      kind: 'local_container',
+      enabled: true,
+      supportsReadOnlyWorkspace: true,
+      supportsStagedWrites: true,
+      supportsTargetedCommands: true,
+      supportsPatchArtifacts: true,
+      networkMode: 'disabled',
+      credentialPassthrough: false,
+    };
+
+    const result = evaluateAgentSandboxCodingLaneEligibility({
+      commandPolicy: buildDefaultAgentSandboxCommandPolicy(),
+      executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      providerCapabilities: ready,
+      workspaceRoot: '/tmp/taskplane-workspace',
+    });
+
+    expect(result).toEqual({
+      blockedReasons: [],
+      eligible: true,
+      summary: 'Sandbox coding lane eligible for a gated staged-patch session.',
+    });
+  });
+
+  it('rejects unsafe sandbox coding policies even when the rollout flag is enabled', () => {
+    const ready: AgentSandboxProviderCapabilities = {
+      kind: 'remote',
+      enabled: true,
+      supportsReadOnlyWorkspace: true,
+      supportsStagedWrites: true,
+      supportsTargetedCommands: true,
+      supportsPatchArtifacts: true,
+      networkMode: 'allowlisted',
+      credentialPassthrough: false,
+    };
+
+    const result = evaluateAgentSandboxCodingLaneEligibility({
+      commandPolicy: {
+        ...buildDefaultAgentSandboxCommandPolicy(),
+        allowArbitraryShell: true as false,
+      },
+      executionPolicy: {
+        ...buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+        credentialPolicy: 'explicit_config',
+        networkPolicy: 'allowlisted',
+      },
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      providerCapabilities: ready,
+      workspaceRoot: '/tmp/taskplane-workspace',
+    });
+
+    expect(result.eligible).toBe(false);
+    expect(result.blockedReasons).toContain('sandbox coding sessions must not receive credentials');
+    expect(result.blockedReasons).toContain('sandbox coding sessions must start with network disabled');
+    expect(result.blockedReasons).toContain('sandbox checks must be non-interactive and cannot allow arbitrary shell');
   });
 
   it('builds a narrow command policy for targeted checks only', () => {
