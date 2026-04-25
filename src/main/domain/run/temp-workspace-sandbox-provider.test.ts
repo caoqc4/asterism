@@ -9,13 +9,31 @@ import {
   type AgentSandboxSessionRequest,
 } from '../../../shared/agent-sandbox-provider.js';
 import { buildDefaultAgentToolExecutionPolicy } from '../../../shared/agent-tool-scaffold.js';
-import { TempWorkspaceSandboxProvider } from './temp-workspace-sandbox-provider.js';
+import {
+  evaluateTempWorkspaceSandboxCodingLane,
+  TempWorkspaceSandboxProvider,
+} from './temp-workspace-sandbox-provider.js';
 
 function makeTempDir(prefix: string): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
 describe('TempWorkspaceSandboxProvider', () => {
+  it('reports the temp provider as not yet eligible for coding-agent sessions', () => {
+    const eligibility = evaluateTempWorkspaceSandboxCodingLane({
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      workspaceRoot: '/tmp/taskplane-workspace',
+    });
+
+    expect(eligibility.eligible).toBe(false);
+    expect(eligibility.blockedReasons).toEqual([
+      'sandbox provider does not expose the required staged-write, targeted-check, patch-artifact capability set',
+    ]);
+  });
+
   it('prepares an isolated staging root without mutating the source workspace', async () => {
     const workspaceRoot = makeTempDir('taskplane-source-workspace-');
     const sourceFile = path.join(workspaceRoot, 'source.txt');

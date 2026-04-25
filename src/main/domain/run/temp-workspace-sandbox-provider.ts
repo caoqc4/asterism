@@ -8,6 +8,12 @@ import type {
   AgentSandboxSessionHandle,
   AgentSandboxSessionRequest,
 } from '../../../shared/agent-sandbox-provider.js';
+import {
+  buildDefaultAgentSandboxCommandPolicy,
+  evaluateAgentSandboxCodingLaneEligibility,
+} from '../../../shared/agent-sandbox-provider.js';
+import { buildDefaultAgentToolExecutionPolicy } from '../../../shared/agent-tool-scaffold.js';
+import type { FeatureFlags } from '../../../shared/types/settings.js';
 
 export class TempWorkspaceSandboxProvider implements AgentSandboxProvider {
   readonly capabilities: AgentSandboxProviderCapabilities = {
@@ -58,4 +64,19 @@ export class TempWorkspaceSandboxProvider implements AgentSandboxProvider {
   async disposeSession(handle: AgentSandboxSessionHandle): Promise<void> {
     await fs.rm(handle.stagingRoot, { force: true, recursive: true });
   }
+}
+
+export function evaluateTempWorkspaceSandboxCodingLane(params: {
+  featureFlags: FeatureFlags;
+  workspaceRoot?: string | null;
+}) {
+  const provider = new TempWorkspaceSandboxProvider();
+
+  return evaluateAgentSandboxCodingLaneEligibility({
+    commandPolicy: buildDefaultAgentSandboxCommandPolicy(),
+    executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+    featureFlags: params.featureFlags,
+    providerCapabilities: provider.capabilities,
+    workspaceRoot: params.workspaceRoot,
+  });
 }

@@ -132,6 +132,9 @@ The project is past initial architecture assembly. Current work should favor pro
   sandbox execution policy, disabled network, and non-interactive test/lint
   command policy before any future staged-patch entrypoint can be considered
   available.
+- The temp-workspace sandbox provider now exposes its eligibility through that
+  shared gate and remains correctly blocked for coding-agent sessions because
+  it does not yet support targeted checks or patch artifacts.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -175,8 +178,8 @@ Latest local baseline:
 - `npm run accept:provider-native-live:preflight` reports the current local
   provider-native setup is ready; live provider validation remains opt-in
   because it spends configured provider credit
-- `npm run verify` passed locally on 2026-04-25 after the sandbox coding-agent
-  eligibility gate landed: 69 test files / 512 tests
+- `npm run verify` passed locally on 2026-04-25 after the temp sandbox
+  eligibility status check landed: 69 test files / 513 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
