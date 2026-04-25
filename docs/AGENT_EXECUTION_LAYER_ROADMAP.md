@@ -130,23 +130,27 @@ Deferred:
 
 ### Slice 3: Domain-Shaped Task Tools
 
+Status: first opt-in exposure implemented, including read-only completion
+evidence review.
+
 Goal: let the agent help advance Taskplane tasks without touching the local
 workspace.
 
-Completed registry-level tools:
+Completed tools:
 
 - `task.update_next_step` (implemented as a registry-level service-routed tool;
-  not exposed in prompts or normal agent plans)
+  prompt-exposed only through the explicit task-tool opt-in)
 - `task.create_completion_criterion` (implemented as a registry-level
-  service-routed tool; not exposed in prompts or normal agent plans)
+  service-routed tool; prompt-exposed only through the explicit task-tool
+  opt-in)
 - `task.review_completion_evidence` (implemented as a registry-level safe-read
   tool; prompt-exposed only through the explicit task-tool opt-in, and does not
   satisfy criteria or complete tasks)
 - `source_context.create` (implemented as a registry-level service-routed tool;
-  not exposed in prompts or normal agent plans)
+  prompt-exposed only through the explicit task-tool opt-in)
 - `decision.draft` (implemented as a registry-level draft-only tool; it does
-  not create a formal Decision and is not exposed in prompts or normal agent
-  plans)
+  not create a formal Decision and is prompt-exposed only through the explicit
+  task-tool opt-in)
 
 Repeatable local acceptance:
 
@@ -164,6 +168,7 @@ Acceptance:
 - the task timeline explains the change
 - Home recovery reflects the change
 - failed tool calls leave retryable run output
+- completion evidence review leaves criteria and task state unchanged
 
 ### Slice 4: Command Allowlist Decision
 
@@ -195,15 +200,15 @@ Acceptance:
 
 ## Near-Term Recommendation
 
-Keep `workspace.run_command` registry-only. The next execution-layer slice should
-start from [AGENT_TOOL_OPT_IN_DECISION.md](AGENT_TOOL_OPT_IN_DECISION.md):
-expose domain-shaped task tools first behind an explicit per-run opt-in, while
-workspace patch and command tools remain reserved for acceptance commands and
-internal confirmation resumes. For workspace tools, use
-[WORKSPACE_TOOL_UI_OPT_IN_DECISION.md](WORKSPACE_TOOL_UI_OPT_IN_DECISION.md):
-improve checkpoint review UX before any prompt-level exposure.
+Keep `workspace.run_command` and `workspace.write_patch` registry-only. The
+domain-shaped task tools are now exposed behind an explicit per-run opt-in, so
+the next execution-layer work should either deepen provider capability handling
+or continue workspace checkpoint review without prompt-level workspace mutation
+exposure. For workspace tools, use
+[WORKSPACE_TOOL_UI_OPT_IN_DECISION.md](WORKSPACE_TOOL_UI_OPT_IN_DECISION.md)
+before any prompt-level exposure.
 
 Before adding any stronger closeout mutation, use
 [COMPLETION_EVIDENCE_TOOL_DECISION.md](COMPLETION_EVIDENCE_TOOL_DECISION.md):
-the next closeout-adjacent agent slice should review evidence only, without
+the accepted closeout-adjacent agent slice reviews evidence only, without
 satisfying criteria or completing tasks automatically.

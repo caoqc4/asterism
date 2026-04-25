@@ -124,10 +124,15 @@ Accepted implementation coverage:
 
 ## Open Questions
 
-- Should the first UI expose all four domain tools together, or begin with only
-  `decision.draft` and `source_context.create`?
 - Should an agent-created completion criterion require a follow-up Decision when
   the task is high risk?
+
+## Resolved Questions
+
+- The first UI exposes the first domain/evidence tool set together behind the
+  explicit per-run opt-in: `task.update_next_step`,
+  `task.create_completion_criterion`, `task.review_completion_evidence`,
+  `source_context.create`, and `decision.draft`.
 
 ## Follow-Up Decisions
 
