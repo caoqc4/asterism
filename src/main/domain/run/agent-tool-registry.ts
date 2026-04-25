@@ -656,7 +656,19 @@ async function walkWorkspace(root: string): Promise<string[]> {
 
 async function readPackageScripts(workspaceRoot: string): Promise<Record<string, string>> {
   const packageJsonPath = resolveWorkspacePath(workspaceRoot, 'package.json');
-  const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8')) as {
+  let rawPackageJson: string;
+
+  try {
+    rawPackageJson = await fs.readFile(packageJsonPath, 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new Error('workspace.run_command requires package.json in the workspace root.');
+    }
+
+    throw error;
+  }
+
+  const packageJson = JSON.parse(rawPackageJson) as {
     scripts?: unknown;
   };
 

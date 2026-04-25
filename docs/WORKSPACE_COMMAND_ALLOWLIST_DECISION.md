@@ -112,8 +112,12 @@ Accepted implementation coverage:
 
 Still worth adding in a later hardening pass:
 
-- explicit missing `package.json` coverage
 - timeout behavior coverage without slowing the suite
+
+Recent hardening:
+
+- missing workspace-root `package.json` now fails with an explicit
+  `workspace.run_command` error before any checkpoint is created
 
 ## Open Questions
 

@@ -1148,6 +1148,46 @@ describe('AgentToolRegistry', () => {
     }
   });
 
+  it('rejects workspace commands when the workspace root has no package file', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-workspace-command-no-package-');
+
+    try {
+      const runStepRepository = buildRunStepRepositoryMock();
+      const runCheckpointRepository = buildRunCheckpointRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        runCheckpointRepository as never,
+        null,
+        () => tempRoot,
+      );
+
+      const result = await registry.execute(
+        'workspace.run_command',
+        {
+          summary: 'Run tests',
+          script: 'test',
+        },
+        { runId: 'run_1', taskId: 'task_1' },
+        {
+          maxSteps: 8,
+          maxWallTimeMs: 120_000,
+          allowNetwork: false,
+          allowLocalWorkspaceRead: false,
+          allowLocalFileWrite: false,
+          allowLocalCommandRun: true,
+          confirmationRequiredRisks: ['local_command'],
+        },
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('workspace.run_command requires package.json in the workspace root.');
+      expect(runCheckpointRepository.create).not.toHaveBeenCalled();
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it('runs an approved allowlisted workspace command inside the configured root', async () => {
     const tempRoot = makeTempDir('taskplane-agent-workspace-command-run-');
 
