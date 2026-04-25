@@ -83,14 +83,21 @@ yet exposed in agent prompts or the task UI.
 npm run accept:workspace-patch
 ```
 
+- Run the renderer checkpoint review coverage:
+
+```bash
+npm test -- src/renderer/App.test.tsx
+```
+
 - Create an isolated workspace file and a `workspace.write_patch` checkpoint through the internal tool registry or service integration path.
 - Confirm the checkpoint payload includes expected files and a diff preview.
-- Confirm Runs detail surfaces the file list and preview before approval.
+- Confirm Runs detail surfaces `摘要`, expected files, and the patch-body preview before approval.
 - Approve the linked Decision.
 - Confirm the patch applies only after approval and the checkpoint resolves.
 - Confirm `workspace.run_command` remains unavailable to normal agent prompts
   and task UI, while its registry-level command checkpoint path remains covered
-  separately by local tests.
+  separately by local tests and visible Runs summary coverage for script, args,
+  timeout, cwd, and preview.
 
 ## Completion Loop
 

@@ -53,6 +53,10 @@ Status: implemented.
 
 Recommended next workspace-tool slice.
 
+Status: in progress. Runs detail now separates `workspace.write_patch` summary,
+expected files, and patch-body preview, and separately surfaces
+`workspace.run_command` script, args, timeout, cwd, and command preview.
+
 - no prompt exposure
 - no normal run-form opt-in
 - improve Runs/Decisions checkpoint review copy and layout
@@ -89,6 +93,8 @@ Deferred.
 - renderer tests show patch checkpoint file list and diff preview remain
   visible and readable
 - renderer tests show command checkpoint script, args, timeout, and cwd preview
+- `npm test -- src/renderer/App.test.tsx` covers the current renderer review
+  summaries
 - Decision guidance tests explain approve/defer/cancel consequences for both
   tools
 - local acceptance commands continue to pass

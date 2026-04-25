@@ -72,6 +72,8 @@ The next runtime should have five clear layers:
 
 ### Slice 1: Approval UX Readiness
 
+Status: first Runs checkpoint summary clarity pass completed.
+
 Goal: make the existing `workspace.write_patch` checkpoint understandable before
 any user-facing write opt-in exists.
 
@@ -81,7 +83,9 @@ any user-facing write opt-in exists.
   that starts from a real pending Decision and approves the checkpoint
 - confirm Runs and Decisions explain the affected files, preview, risk, and
   consequence
-- update the alpha checklist with the exact repeatable command or fixture
+- use `npm test -- src/renderer/App.test.tsx` as the renderer checkpoint review
+  coverage for visible patch and command checkpoint summaries
+- keep the alpha checklist aligned with the exact repeatable commands
 
 Acceptance:
 
@@ -89,6 +93,8 @@ Acceptance:
 - approved Decision resumes and resolves the checkpoint
 - deferred or cancelled Decision settles the run clearly
 - UI never implies command execution is available
+- Runs detail separates patch summary, expected files, and patch-body preview
+- Runs detail separates command script, args, timeout, cwd, and preview
 
 ### Slice 2: Provider Capability Truthfulness
 
