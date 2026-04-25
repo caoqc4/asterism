@@ -12,6 +12,7 @@ const envKeys = [
   'TASKPLANE_WORKSPACE_ROOT',
   'TASKPLANE_ENABLE_SCHEDULER',
   'TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS',
+  'TASKPLANE_ENABLE_SANDBOX_CODING_AGENT',
 ];
 
 describe('AppConfigService', () => {
@@ -42,6 +43,7 @@ describe('AppConfigService', () => {
     expect(config.workspaceRoot).toBeNull();
     expect(config.featureFlags.enableScheduler).toBe(false);
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(false);
+    expect(config.featureFlags.enableSandboxCodingAgent).toBe(false);
     expect(fs.existsSync(getConfigPath(() => tempRoot))).toBe(true);
   });
 
@@ -68,6 +70,7 @@ describe('AppConfigService', () => {
       featureFlags: {
         enableScheduler: true,
         enableProviderNativeToolCalls: true,
+        enableSandboxCodingAgent: true,
       },
     });
 
@@ -79,6 +82,7 @@ describe('AppConfigService', () => {
     expect(config.workspaceRoot).toBe('/Users/example/project');
     expect(config.featureFlags.enableScheduler).toBe(true);
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(true);
+    expect(config.featureFlags.enableSandboxCodingAgent).toBe(true);
   });
 
   it('falls back to the default provider when config contains an unknown provider', async () => {
@@ -110,6 +114,7 @@ describe('AppConfigService', () => {
     process.env.TASKPLANE_WORKSPACE_ROOT = '/tmp/taskplane-workspace';
     process.env.TASKPLANE_ENABLE_SCHEDULER = 'true';
     process.env.TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS = 'true';
+    process.env.TASKPLANE_ENABLE_SANDBOX_CODING_AGENT = 'true';
     const { AppConfigService } = await import('./app-config-service.js');
     const service = new AppConfigService(() => tempRoot);
 
@@ -120,6 +125,7 @@ describe('AppConfigService', () => {
       featureFlags: {
         enableScheduler: false,
         enableProviderNativeToolCalls: false,
+        enableSandboxCodingAgent: false,
       },
     });
 
@@ -131,6 +137,7 @@ describe('AppConfigService', () => {
     expect(config.workspaceRoot).toBe('/tmp/taskplane-workspace');
     expect(config.featureFlags.enableScheduler).toBe(true);
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(true);
+    expect(config.featureFlags.enableSandboxCodingAgent).toBe(true);
   });
 
   it('falls back to default feature flags when stored flags have invalid values', async () => {
@@ -143,6 +150,7 @@ describe('AppConfigService', () => {
         featureFlags: {
           enableScheduler: 'yes',
           enableProviderNativeToolCalls: 'yes',
+          enableSandboxCodingAgent: 'yes',
         },
       }),
       'utf8',
@@ -154,6 +162,7 @@ describe('AppConfigService', () => {
     expect(config.aiProvider).toBe('openai');
     expect(config.featureFlags.enableScheduler).toBe(false);
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(false);
+    expect(config.featureFlags.enableSandboxCodingAgent).toBe(false);
   });
 
   it('migrates legacy settings.json into config.json', async () => {

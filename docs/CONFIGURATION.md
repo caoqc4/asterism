@@ -85,11 +85,15 @@ TASKPLANE_AI_API_KEY=your-test-key
 TASKPLANE_WORKSPACE_ROOT=/absolute/path/to/your/workspace
 TASKPLANE_ENABLE_SCHEDULER=false
 TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS=false
+TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=false
 ```
 
 Keep `TASKPLANE_ENABLE_SCHEDULER=false` for local AI/provider validation unless
 you specifically want hourly brief snapshots and stale-run checks running in the
 background. It is independent from provider-native tool-call validation.
+Keep `TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=false` unless you are deliberately
+working on the disabled-by-default sandbox coding-agent lane; the flag is a
+rollout gate and does not by itself expose broad code execution.
 
 For fal OpenRouter:
 
@@ -100,6 +104,7 @@ TASKPLANE_AI_BASE_URL=
 TASKPLANE_AI_API_KEY=your-fal-key
 TASKPLANE_ENABLE_SCHEDULER=false
 TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS=true
+TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=false
 ```
 
 For a generic OpenAI-compatible relay:
@@ -111,6 +116,7 @@ TASKPLANE_AI_BASE_URL=https://your-relay.example.com/v1
 TASKPLANE_AI_API_KEY=your-test-key
 TASKPLANE_ENABLE_SCHEDULER=false
 TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS=true
+TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=false
 ```
 
 Set `TASKPLANE_ENV_FILE=/absolute/path/to/.env` to load a different file. Existing shell

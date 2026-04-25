@@ -3,6 +3,7 @@ export type AiProvider = 'anthropic' | 'openai' | 'openai-compatible' | 'fal-ope
 export type FeatureFlags = {
   enableScheduler: boolean;
   enableProviderNativeToolCalls?: boolean;
+  enableSandboxCodingAgent?: boolean;
 };
 
 export type AppConfigFile = {

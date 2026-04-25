@@ -8,6 +8,7 @@ import { readEnvBoolean, readEnvValue } from './env.js';
 const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   enableScheduler: false,
   enableProviderNativeToolCalls: false,
+  enableSandboxCodingAgent: false,
 };
 
 const DEFAULT_CONFIG: AppConfigFile = {
@@ -74,6 +75,10 @@ function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
         typeof nextFeatureFlags.enableProviderNativeToolCalls === 'boolean'
           ? nextFeatureFlags.enableProviderNativeToolCalls
           : DEFAULT_FEATURE_FLAGS.enableProviderNativeToolCalls,
+      enableSandboxCodingAgent:
+        typeof nextFeatureFlags.enableSandboxCodingAgent === 'boolean'
+          ? nextFeatureFlags.enableSandboxCodingAgent
+          : DEFAULT_FEATURE_FLAGS.enableSandboxCodingAgent,
     },
     updatedAt: input.updatedAt ?? new Date().toISOString(),
   };
@@ -86,6 +91,7 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
   const workspaceRoot = readEnvValue('TASKPLANE_WORKSPACE_ROOT');
   const enableScheduler = readEnvBoolean('TASKPLANE_ENABLE_SCHEDULER');
   const enableProviderNativeToolCalls = readEnvBoolean('TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS');
+  const enableSandboxCodingAgent = readEnvBoolean('TASKPLANE_ENABLE_SANDBOX_CODING_AGENT');
 
   return sanitizeConfig({
     ...config,
@@ -100,6 +106,10 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
         enableProviderNativeToolCalls
         ?? config.featureFlags.enableProviderNativeToolCalls
         ?? DEFAULT_FEATURE_FLAGS.enableProviderNativeToolCalls,
+      enableSandboxCodingAgent:
+        enableSandboxCodingAgent
+        ?? config.featureFlags.enableSandboxCodingAgent
+        ?? DEFAULT_FEATURE_FLAGS.enableSandboxCodingAgent,
     },
   });
 }

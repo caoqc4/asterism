@@ -50,6 +50,9 @@ export function SettingsPage({ aiStatus, configForm, onChange, onSubmit }: Setti
         <p className="meta">
           Scheduler 开关：{aiStatus?.featureFlags.enableScheduler ? '启用' : '未启用'}
         </p>
+        <p className="meta">
+          Sandbox Coding Agent：{aiStatus?.featureFlags.enableSandboxCodingAgent ? '启用' : '未启用'}
+        </p>
       </article>
 
       <article className="panel">
