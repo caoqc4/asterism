@@ -222,6 +222,11 @@ The project is past initial architecture assembly. Current work should favor pro
   persistence path into a run-level result shape (`blocked`, `persisted`, or
   `failed`) while staying unconnected to UI, prompts, scheduler, or automatic
   execution.
+- A sandbox patch-review service factory now gives future orchestration code a
+  discoverable adapter resolution point. It remains disabled by the sandbox
+  coding-agent feature flag and, when enabled, only returns an adapter for
+  explicit runner calls; the factory does not create a container runner or wire
+  the path into automatic execution.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
