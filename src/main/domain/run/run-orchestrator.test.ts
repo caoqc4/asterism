@@ -327,6 +327,129 @@ describe('RunOrchestrator', () => {
     );
   });
 
+  it('does not record provider-native shadow observation when the reserved flag is disabled', async () => {
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'openai-compatible',
+        model: 'relay-model',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: false,
+          enableProviderNativeToolCalls: false,
+        },
+      }),
+    };
+    const textExecutor = {
+      executeWithResult: vi.fn().mockResolvedValue({
+        text: 'Generated output',
+        providerPayload: {
+          source: 'provider_response_body',
+          provider: 'openai-compatible',
+          model: 'relay-model',
+          rawSummary: 'choices=1; tool_calls=1',
+          payload: {
+            choices: [
+              {
+                message: {
+                  tool_calls: [
+                    {
+                      id: 'call_1',
+                      type: 'function',
+                      function: {
+                        name: 'task.inspect_context',
+                        arguments: '{}',
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      }),
+      execute: vi.fn(),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No template needed.',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const orchestrator = new RunOrchestrator(
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+    );
+
+    await orchestrator.executeTextRun({
+      run: buildRun(),
+      task: buildTaskDetail(),
+      input: buildInput(),
+    });
+
+    expect(runStepRepository.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Provider 原生工具调用影子观察',
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({ kind: 'final', status: 'completed' }),
+    );
+  });
+
+  it('does not record provider-native shadow observation without a provider payload', async () => {
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'openai-compatible',
+        model: 'relay-model',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: false,
+          enableProviderNativeToolCalls: true,
+        },
+      }),
+    };
+    const textExecutor = {
+      executeWithResult: vi.fn().mockResolvedValue({
+        text: 'Generated output',
+        providerPayload: null,
+      }),
+      execute: vi.fn(),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No template needed.',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const orchestrator = new RunOrchestrator(
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+    );
+
+    await orchestrator.executeTextRun({
+      run: buildRun(),
+      task: buildTaskDetail(),
+      input: buildInput(),
+    });
+
+    expect(runStepRepository.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Provider 原生工具调用影子观察',
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({ kind: 'final', status: 'completed' }),
+    );
+  });
+
   it('keeps text execution completed when shadow normalization fails', async () => {
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
