@@ -6,6 +6,7 @@ import {
   getAgentToolScaffoldDescriptorsByFamily,
   getReservedAgentToolScaffoldDescriptors,
 } from './agent-tool-scaffold.js';
+import { AGENT_TOOL_NAMES } from './agent-tools.js';
 
 describe('agent tool scaffold descriptors', () => {
   it('represents the shared scaffold families needed for future execution lanes', () => {
@@ -37,6 +38,13 @@ describe('agent tool scaffold descriptors', () => {
     ))).toBe(true);
   });
 
+  it('maps every current runtime agent tool into the scaffold', () => {
+    expect(AGENT_TOOL_SCAFFOLD_DESCRIPTORS
+      .map((descriptor) => ('runtimeToolName' in descriptor ? descriptor.runtimeToolName : undefined))
+      .filter((name) => name !== undefined)
+      .sort()).toEqual([...AGENT_TOOL_NAMES].sort());
+  });
+
   it('marks high-risk future lanes with sessions, artifacts, checkpoints, or credential gates', () => {
     expect(getAgentToolScaffoldDescriptor('workspace.staged_patch')).toMatchObject({
       family: 'workspace_coding',
@@ -63,7 +71,10 @@ describe('agent tool scaffold descriptors', () => {
 
   it('can list descriptors by family without exposing them', () => {
     expect(getAgentToolScaffoldDescriptorsByFamily('workspace_coding').map((descriptor) => descriptor.id)).toEqual([
-      'workspace.read_context',
+      'workspace.search',
+      'workspace.read_file',
+      'workspace.run_command',
+      'workspace.write_patch',
       'workspace.staged_patch',
     ]);
   });
