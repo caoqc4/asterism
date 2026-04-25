@@ -80,6 +80,7 @@ Use this when package/build entrypoints change. It runs the production build and
 npm run smoke:package:mac
 npm run smoke:runtime:mac
 npm run smoke:release:mac
+npm run release:mac:preflight
 ```
 
 Run this after `npm run dist:mac:dir`. It checks the unpacked app bundle,
@@ -90,7 +91,10 @@ isolated user data and confirms startup creates `config.json` and
 `taskplane.db`; it also clears `ELECTRON_RUN_AS_NODE` so shell tooling
 environment does not accidentally force the packaged app into Node mode. Use
 `npm run smoke:release:mac` when you want to build the unpacked macOS app and
-run both package/runtime smoke checks in one command.
+run both package/runtime smoke checks in one command. Use
+`npm run release:mac:preflight` before a dedicated signed/notarized release pass;
+it only checks local prerequisites and does not sign, notarize, upload, or call
+Apple services.
 
 ### Standard verification
 

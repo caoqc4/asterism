@@ -64,6 +64,30 @@ runtime smoke check launches the packaged executable with isolated user data and
 confirms it creates `config.json` and `taskplane.db` while clearing
 `ELECTRON_RUN_AS_NODE`.
 
+### Check signed/notarized release readiness
+
+```bash
+npm run release:mac:preflight
+```
+
+This is a read-only local preflight. It does not sign, notarize, upload, or call
+Apple services. It checks whether the current machine and environment have the
+basic pieces electron-builder expects for a signed/notarized macOS pass:
+
+- a macOS host with `notarytool`
+- a `Developer ID Application` signing identity, `CSC_NAME`, or `CSC_LINK`
+- `APPLE_ID`
+- `APPLE_APP_SPECIFIC_PASSWORD`
+- `APPLE_TEAM_ID`
+- package metadata required for macOS artifacts
+
+Use the strict form when the preflight should fail the shell command if any
+required signing/notarization input is missing:
+
+```bash
+npm run release:mac:preflight -- --strict
+```
+
 ### Produce macOS release artifacts
 
 ```bash
@@ -79,8 +103,8 @@ Artifacts are written to:
 
 ## Not Included Yet
 
-- code signing
-- notarization
+- signed macOS artifact production
+- notarization submission and stapling
 - final branded icons
 - Windows installer configuration
 - Linux packaging
@@ -95,7 +119,8 @@ As of the current alpha path:
 - `npm run smoke:package:mac` passes locally for the unpacked app
 - `npm run smoke:runtime:mac` passes locally for isolated packaged startup
 - `npm run smoke:release:mac` passes locally for the combined unsigned macOS path
-- notarization is skipped because release credentials/options are not configured
+- `npm run release:mac:preflight` reports local signing/notarization readiness without performing signing or Apple network calls
+- notarization submission is skipped because the dedicated signed/notarized release pass has not been executed
 
 ## Why macOS first
 

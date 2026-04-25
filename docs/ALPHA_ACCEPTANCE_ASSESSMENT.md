@@ -149,18 +149,19 @@ Automated/local coverage:
 - `npm run smoke:runtime:mac` launches the packaged executable with isolated user data, clears `ELECTRON_RUN_AS_NODE`, and confirms `config.json` plus `taskplane.db` are created
 - `npm run smoke:release:mac` combines the unsigned macOS package build and both package/runtime smoke checks
 - on 2026-04-25, `npm run smoke:release:mac` passed locally after the execution-layer v2 work, including Electron native module rebuild, unsigned app packaging, package smoke, and runtime smoke
+- `npm run release:mac:preflight` now checks local signed/notarized release prerequisites without signing, notarizing, uploading, or calling Apple services
 - packaged runtime launch now works with isolated `TASKPLANE_USER_DATA_DIR`; Home renders from `app.asar/dist/index.html`, SQLite/config are created in the isolated directory, and task creation persists
 
 Manual need:
 
 - keep using the fixed `dist:mac:dir` script, which rebuilds native modules for Electron before packaging and restores Node ABI afterward
-- defer signed/notarized release work until product friction from the alpha path is addressed
+- defer the actual signed/notarized release pass until product friction from the alpha path is addressed
 
 ## Recommended Next Step
 
 Finish the remaining alpha work in this order:
 
-1. Keep signed/notarized packaging out of scope until the next release-readiness pass explicitly targets signing and notarization.
+1. Keep actual signed/notarized packaging out of scope until the next release-readiness pass explicitly targets signing and notarization execution.
 2. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
 3. Treat the current execution-layer v2 slice as locally accepted for the alpha path; next execution work should be acceptance/documentation cleanup, release-readiness hardening, or explicitly deferred design work, not new model-visible power.
 
