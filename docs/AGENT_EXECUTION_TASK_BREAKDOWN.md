@@ -39,6 +39,8 @@ Completed:
   events into RunSteps for real local/provider-native agent sessions
 - tool-permission checkpoints surface `checkpointKind` and linked `decisionId`
   through `checkpoint.created` events
+- resume checkpoint payloads include `runId` and a policy snapshot, and paused
+  run continuation passes the snapshot back into tool execution
 - provider-native safe-read path remains gated and locally tested
 - workspace write/command tools remain registry-only and Decision-gated
 
@@ -46,7 +48,8 @@ Still incomplete:
 
 - checkpoint creation still happens inside tool/loop code paths rather than a
   single checkpoint event boundary
-- checkpoint payloads are not yet the full restart-safe resume contract
+- checkpoint payloads are not yet fully validated for stale or incompatible
+  resume contracts
 - tool exposure is spread across registry, schema builder, prompt construction,
   and runtime policy checks
 - no dedicated sandbox decision for broad code execution

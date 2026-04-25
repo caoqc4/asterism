@@ -1379,6 +1379,16 @@ describe('AgentRunLoop', () => {
         payload: expect.stringContaining('"nextInput":{"title":"Task 1 agent note","content":"Agent output"}'),
       }),
     );
+    expect(runCheckpointRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.stringContaining('"runId":"run_1"'),
+      }),
+    );
+    expect(runCheckpointRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.stringContaining('"policySnapshot"'),
+      }),
+    );
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         title: '汇总 agent 工具观察',

@@ -698,8 +698,10 @@ export class AgentRunLoop {
       kind: 'resume',
       payload: JSON.stringify(createResumeCheckpointPayload({
         reason: params.reason,
+        runId: params.request.runId,
         nextTool: params.nextTool,
         nextInput: params.nextInput,
+        policySnapshot: params.request.policy,
         observations: params.observations,
         taskId: params.request.taskId,
       })),

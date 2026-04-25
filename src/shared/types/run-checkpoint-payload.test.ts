@@ -30,16 +30,30 @@ describe('run checkpoint payload helpers', () => {
   it('creates versioned resume checkpoint payloads', () => {
     const payload = createResumeCheckpointPayload({
       reason: '等待先解除阻塞。',
+      runId: 'run_1',
       nextTool: 'artifact.create_note',
       nextInput: { title: 'Recovered note', content: 'Recovered note' },
+      policySnapshot: {
+        maxSteps: 8,
+        maxWallTimeMs: 120_000,
+        allowNetwork: false,
+        allowLocalWorkspaceRead: false,
+        allowLocalFileWrite: false,
+        confirmationRequiredRisks: ['external_write', 'sensitive'],
+      },
       taskId: 'task_1',
     });
 
     expect(payload).toMatchObject({
       version: 1,
       kind: 'resume',
+      runId: 'run_1',
       reason: '等待先解除阻塞。',
       nextTool: 'artifact.create_note',
+      policySnapshot: expect.objectContaining({
+        allowLocalFileWrite: false,
+        confirmationRequiredRisks: ['external_write', 'sensitive'],
+      }),
       taskId: 'task_1',
     });
   });

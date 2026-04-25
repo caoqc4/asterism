@@ -547,12 +547,24 @@ describe('RunService', () => {
           kind: 'resume',
           status: 'open',
           payload: JSON.stringify({
+            version: 1,
+            kind: 'resume',
             reason: '等待先解除阻塞。',
+            runId: 'run_1',
             nextTool: 'artifact.create_note',
             nextInput: {
               title: 'Recovered note',
               content: 'Recovered note',
             },
+            policySnapshot: {
+              maxSteps: 8,
+              maxWallTimeMs: 120_000,
+              allowNetwork: false,
+              allowLocalWorkspaceRead: false,
+              allowLocalFileWrite: false,
+              confirmationRequiredRisks: ['external_write', 'sensitive'],
+            },
+            taskId: 'task_1',
           }),
           createdAt: '2026-01-01T00:00:00.000Z',
           resolvedAt: null,
@@ -599,6 +611,10 @@ describe('RunService', () => {
         runId: 'run_1',
         taskId: 'task_1',
       },
+      expect.objectContaining({
+        allowLocalFileWrite: false,
+        confirmationRequiredRisks: ['external_write', 'sensitive'],
+      }),
     );
     expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith(
       'run_checkpoint_resume',

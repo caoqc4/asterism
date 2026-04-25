@@ -1,6 +1,6 @@
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
-import type { AgentToolName } from '../../../shared/types/agent-execution.js';
+import type { AgentPolicy, AgentToolName } from '../../../shared/types/agent-execution.js';
 import { parseRunCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import type {
   CreateRunInput,
@@ -19,10 +19,29 @@ import { RunOrchestrator, type RunOrchestrationResult } from './run-orchestrator
 
 type ResumeCheckpointPayload = {
   reason?: unknown;
+  runId?: unknown;
   nextTool?: unknown;
   nextInput?: unknown;
+  policySnapshot?: unknown;
   taskId?: unknown;
 };
+
+function isAgentPolicy(value: unknown): value is AgentPolicy {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const candidate = value as Partial<AgentPolicy>;
+
+  return (
+    typeof candidate.maxSteps === 'number' &&
+    typeof candidate.maxWallTimeMs === 'number' &&
+    typeof candidate.allowNetwork === 'boolean' &&
+    typeof candidate.allowLocalWorkspaceRead === 'boolean' &&
+    typeof candidate.allowLocalFileWrite === 'boolean' &&
+    Array.isArray(candidate.confirmationRequiredRisks)
+  );
+}
 
 export class RunService {
   constructor(
@@ -190,6 +209,7 @@ export class RunService {
         runId,
         taskId: run.taskId,
       },
+      isAgentPolicy(payload.policySnapshot) ? payload.policySnapshot : undefined,
     );
 
     if (!result.success) {

@@ -1,4 +1,4 @@
-import type { AgentToolName, AgentToolRisk } from './agent-execution.js';
+import type { AgentPolicy, AgentToolName, AgentToolRisk } from './agent-execution.js';
 
 export const RUN_CHECKPOINT_PAYLOAD_VERSION = 1;
 
@@ -15,9 +15,11 @@ export type ToolPermissionCheckpointPayloadV1 = {
 export type ResumeCheckpointPayloadV1 = {
   version: 1;
   kind: 'resume';
+  runId: string;
   reason: string;
   nextTool: AgentToolName;
   nextInput: unknown;
+  policySnapshot: AgentPolicy;
   observations?: unknown;
   taskId?: string;
 };
@@ -33,10 +35,12 @@ export type ParsedRunCheckpointPayload = Record<string, unknown> & {
   nextTool?: unknown;
   risk?: unknown;
   reason?: unknown;
+  runId?: unknown;
   decisionId?: unknown;
   decisionTitle?: unknown;
   input?: unknown;
   nextInput?: unknown;
+  policySnapshot?: unknown;
 };
 
 export function createToolPermissionCheckpointPayload(
