@@ -82,7 +82,7 @@ Covered today:
 - `DecisionService`
   task existence checks, decision-to-task lifecycle linkage, AI/fallback decision-draft composition, checkpoint Decision approval/defer settlement, and isolated workspace patch approval through real SQLite repositories
 - `RunService`
-  successful execution path, failure path, paused path, paused checkpoint continuation, task restoration after settled runs, artifact creation on successful output, orchestration result settlement, and an isolated read-only workspace agent path through persisted run detail
+  successful execution path, failure path, paused path, paused checkpoint continuation, task restoration after settled runs, artifact creation on successful output, orchestration result settlement, an isolated read-only workspace agent path through persisted run detail, and an isolated task-mutation tool opt-in path through persisted task detail
 - `RunOrchestrator`
   plan/model/final step writes, process-template selector fallback, executor failure recording, agent-mode handoff into the local run loop, and paused agent-loop propagation
 - `LocalAgentExecutor`

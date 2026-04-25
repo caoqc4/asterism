@@ -177,4 +177,125 @@ describe('RunService integration', () => {
       ]),
     );
   });
+
+  it('runs an opted-in task mutation agent path through persisted task detail', async () => {
+    const taskRepository = new TaskRepository();
+    const waitingItemRepository = new WaitingItemRepository();
+    const artifactRepository = new ArtifactRepository();
+    const sourceContextRepository = new SourceContextRepository();
+    const processTemplateRepository = new ProcessTemplateRepository();
+    const taskProcessBindingRepository = new TaskProcessBindingRepository();
+    const blockerRepository = new BlockerRepository();
+    const taskDependencyRepository = new TaskDependencyRepository();
+    const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const runRepository = new RunRepository();
+    const runStepRepository = new RunStepRepository();
+    const runCheckpointRepository = new RunCheckpointRepository();
+    const decisionRepository = new DecisionRepository();
+    const taskService = new TaskService(
+      taskRepository,
+      waitingItemRepository,
+      artifactRepository,
+      sourceContextRepository,
+      processTemplateRepository,
+      taskProcessBindingRepository,
+      blockerRepository,
+      taskDependencyRepository,
+      completionCriteriaRepository,
+    );
+    const agentToolRegistry = new AgentToolRegistry(
+      artifactRepository,
+      runStepRepository,
+      runCheckpointRepository,
+      decisionRepository,
+      () => workspaceRoot,
+      taskService,
+    );
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'openai-compatible',
+        model: 'local-alpha-model',
+        apiKey: 'test-key',
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn().mockResolvedValue(JSON.stringify({
+        finalOutput: 'Task next step updated by agent',
+        steps: [
+          {
+            tool: 'task.update_next_step',
+            input: { nextStep: 'Review the updated owner plan' },
+          },
+          {
+            tool: 'artifact.create_note',
+            input: {
+              title: 'Task update note',
+              content: 'Task next step updated by agent',
+            },
+          },
+        ],
+      })),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No process template needed for task mutation alpha test.',
+      }),
+    };
+    const service = new RunService(
+      runRepository,
+      taskService,
+      artifactRepository,
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository,
+      agentToolRegistry,
+      runCheckpointRepository,
+    );
+    const task = await taskService.create({
+      title: 'Task mutation alpha agent path',
+      summary: 'Validate task mutation tool opt-in.',
+    });
+
+    const run = await service.trigger({
+      taskId: task.id,
+      type: 'agent',
+      instructions: 'Update the task next step and write a note.',
+      allowTaskMutationTools: true,
+    });
+    const detail = await service.getDetail(run.id);
+    const taskDetail = await taskService.getDetail(task.id);
+    const steps = detail?.steps ?? [];
+    const artifacts = await artifactRepository.listRecentForTask(task.id, 10);
+
+    expect(run).toMatchObject({
+      status: 'completed',
+      output: 'Task next step updated by agent',
+      outputSource: 'ai',
+    });
+    expect(taskDetail?.nextStep).toBe('审阅最新 agent 产物，并决定是否继续推进。');
+    expect(taskDetail?.timeline.some((event) =>
+      event.type === 'task.next_step_changed' &&
+      event.payload.includes('Review the updated owner plan')
+    )).toBe(true);
+    expect(steps.some((step) =>
+      step.kind === 'tool_result' &&
+      step.output === 'Review the updated owner plan'
+    )).toBe(true);
+    expect(steps.some((step) =>
+      step.kind === 'decision' &&
+      step.output?.includes('task.update_next_step [completed]')
+    )).toBe(true);
+    expect(artifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'note',
+          title: 'Task update note',
+          content: 'Task next step updated by agent',
+        }),
+      ]),
+    );
+  });
 });
