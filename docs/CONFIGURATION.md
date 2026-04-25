@@ -65,8 +65,8 @@ Supported provider values:
 
 - `anthropic`: native Anthropic SDK path.
 - `openai`: native OpenAI SDK path.
-- `openai-compatible`: OpenAI-compatible relay using `Authorization: Bearer <key>` and the configured base URL.
-- `fal-openrouter`: fal OpenRouter relay using `https://fal.run/openrouter/router/openai/v1` by default and `Authorization: Key <key>`.
+- `openai-compatible`: OpenAI-compatible relay using `Authorization: Bearer <key>` and the configured base URL. Taskplane uses the relay's `/chat/completions` path through the AI SDK.
+- `fal-openrouter`: fal OpenRouter relay using `https://fal.run/openrouter/router/openai/v1` by default and `Authorization: Key <key>`. Taskplane uses the relay's `/chat/completions` path through the AI SDK.
 - `replicate`: native Replicate prediction API using `https://api.replicate.com/v1` by default and `Authorization: Bearer <key>`.
 
 Replicate native support currently covers prompt-to-text Run and Brief generation with text models that accept `prompt` and `system_prompt` inputs. Use a Replicate model slug such as `openai/gpt-oss-20b`. If the chosen Replicate-facing relay exposes an OpenAI-compatible `/v1` endpoint instead, use `openai-compatible`.

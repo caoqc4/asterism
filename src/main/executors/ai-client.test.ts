@@ -23,7 +23,7 @@ describe('getLanguageModel', () => {
 
   it('uses the fal OpenRouter endpoint with Key authorization', () => {
     const modelMock = vi.fn().mockReturnValue('fal-model');
-    createOpenAIMock.mockReturnValue(modelMock);
+    createOpenAIMock.mockReturnValue({ chat: modelMock });
 
     const result = getLanguageModel({
       provider: 'fal-openrouter',
@@ -48,7 +48,7 @@ describe('getLanguageModel', () => {
 
   it('passes custom base URLs to OpenAI-compatible providers', () => {
     const modelMock = vi.fn().mockReturnValue('relay-model');
-    createOpenAIMock.mockReturnValue(modelMock);
+    createOpenAIMock.mockReturnValue({ chat: modelMock });
 
     const result = getLanguageModel({
       provider: 'openai-compatible',

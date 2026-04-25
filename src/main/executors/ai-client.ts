@@ -24,7 +24,7 @@ export function getLanguageModel(config: RuntimeAiConfig) {
       },
       name: 'fal-openrouter',
     });
-    return fal(config.model);
+    return fal.chat(config.model);
   }
 
   const openai = createOpenAI({
@@ -32,5 +32,9 @@ export function getLanguageModel(config: RuntimeAiConfig) {
     baseURL: config.provider === 'openai-compatible' ? config.baseUrl ?? undefined : undefined,
     name: config.provider === 'openai-compatible' ? 'openai-compatible' : 'openai',
   });
+  if (config.provider === 'openai-compatible') {
+    return openai.chat(config.model);
+  }
+
   return openai(config.model);
 }

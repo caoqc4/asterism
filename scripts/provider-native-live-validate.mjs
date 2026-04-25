@@ -24,14 +24,20 @@ function getLanguageModel(config) {
         Authorization: `Key ${config.apiKey}`,
       },
       name: 'fal-openrouter',
-    })(config.model);
+    }).chat(config.model);
   }
 
-  return createOpenAI({
+  const openai = createOpenAI({
     apiKey: config.apiKey,
     baseURL: config.provider === 'openai-compatible' ? config.baseUrl : undefined,
     name: config.provider === 'openai-compatible' ? 'openai-compatible' : 'openai',
-  })(config.model);
+  });
+
+  if (config.provider === 'openai-compatible') {
+    return openai.chat(config.model);
+  }
+
+  return openai(config.model);
 }
 
 const preflight = getProviderNativeLivePreflight();
