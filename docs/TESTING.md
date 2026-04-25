@@ -97,6 +97,10 @@ Covered today:
   gates as text JSON proposals in tests, including fallback for workspace
   mutation and command proposals, without wiring provider-native payloads into
   real runs
+- `Provider-native tool-call acceptance`
+  `npm run accept:provider-native-tools` exercises provider-native extraction,
+  provider adapters, safe-read schema exposure, selection gates, run-loop policy
+  parity, and RunService persistence without calling external providers
 - `AgentWorkingContext`
   task-detail compression into typed agent run context, default policy, and plan-step request summaries
 - `AgentToolRegistry`
