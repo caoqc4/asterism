@@ -2692,7 +2692,17 @@ describe('App UI flow', () => {
     await screen.findByRole('heading', { name: 'High risk task' });
 
     await user.selectOptions(screen.getByLabelText('Run 类型'), 'agent');
+    expect(
+      screen.getByText(
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context disabled for this run / structured tool calls unavailable / patch/commands unavailable',
+      ),
+    ).toBeTruthy();
     await user.click(screen.getByRole('checkbox', { name: '允许只读工作区上下文' }));
+    expect(
+      screen.getByText(
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context enabled for this run / structured tool calls unavailable / patch/commands unavailable',
+      ),
+    ).toBeTruthy();
 
     const instructionsInput = screen.getByLabelText('附加要求');
     await user.clear(instructionsInput);
@@ -3331,6 +3341,31 @@ describe('App UI flow', () => {
     expect(await screen.findByText('Fresh summary 2')).toBeTruthy();
     expect(screen.queryByText('Fresh summary 1')).toBeNull();
     expect(runsRefreshApi.getRunDetail).toHaveBeenCalledWith('run_runs_refresh_2');
+  });
+
+  it('previews agent capabilities before triggering a run from the runs page', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    await screen.findByRole('heading', { name: '执行记录' });
+
+    await user.selectOptions(screen.getByLabelText('Run 类型'), 'agent');
+
+    expect(
+      screen.getByText(
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context disabled for this run / structured tool calls unavailable / patch/commands unavailable',
+      ),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole('checkbox', { name: '允许只读工作区上下文' }));
+
+    expect(
+      screen.getByText(
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context enabled for this run / structured tool calls unavailable / patch/commands unavailable',
+      ),
+    ).toBeTruthy();
   });
 
   it('shows related task timeline context on the runs page', async () => {

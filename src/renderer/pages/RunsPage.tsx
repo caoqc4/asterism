@@ -1,6 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
 
-import type { AgentSessionRecord } from '@shared/types/agent-execution';
 import { parseRunCheckpointPayload } from '@shared/types/run-checkpoint-payload';
 import type { RecommendedActionIntent } from '@shared/types/brief';
 import type {
@@ -10,6 +9,7 @@ import type {
   RunRecord,
   RunStepRecord,
 } from '@shared/types/run';
+import type { AiConfigStatus } from '@shared/types/settings';
 import type { TaskDetail, TaskListItemRecord, TimelineEventRecord } from '@shared/types/task';
 import {
   formatTaskTimelineEventSummary,
@@ -22,6 +22,10 @@ import {
   groupTaskTimelineEventsByPriority,
   parseTimelinePayload,
 } from '@shared/working-context/timeline';
+import {
+  formatAgentSessionCapabilitySummary,
+  formatPreRunAgentCapabilitySummary,
+} from '../lib/agentCapabilities';
 
 const RELATED_TIMELINE_PREVIEW_COUNT = 4;
 
@@ -79,23 +83,6 @@ function formatAgentToolStatus(status: string): string {
   };
 
   return labels[status] ?? status;
-}
-
-function formatAgentSessionCapabilitySummary(session: AgentSessionRecord): string {
-  const capabilities = session.capabilities;
-  const parts = [
-    capabilities.textOnlyPlanning ? 'text-only planning' : 'text planning unavailable',
-    capabilities.fileContext
-      ? 'read-only workspace context enabled'
-      : 'read-only workspace context unavailable',
-    capabilities.structuredToolCalls
-      ? 'structured tool calls'
-      : 'structured tool calls unavailable',
-    'patch/commands unavailable',
-    capabilities.longRunningSessions ? 'long-running session' : 'single local session',
-  ];
-
-  return parts.join(' / ');
 }
 
 function formatActionError(error: unknown): string {
@@ -218,6 +205,7 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
 }
 
 type RunsPageProps = {
+  aiStatus: AiConfigStatus | null;
   focusedRunId: string | null;
   runs: RunRecord[];
   tasks: TaskListItemRecord[];
@@ -229,6 +217,7 @@ type RunsPageProps = {
 };
 
 export function RunsPage({
+  aiStatus,
   focusedRunId,
   runs,
   tasks,
@@ -620,19 +609,24 @@ export function RunsPage({
               />
             </label>
             {form.type === 'agent' ? (
-              <label>
-                <input
-                  checked={Boolean(form.allowLocalWorkspaceRead)}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      allowLocalWorkspaceRead: event.target.checked || undefined,
-                    }))
-                  }
-                  type="checkbox"
-                />
-                允许只读工作区上下文
-              </label>
+              <>
+                <label>
+                  <input
+                    checked={Boolean(form.allowLocalWorkspaceRead)}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        allowLocalWorkspaceRead: event.target.checked || undefined,
+                      }))
+                    }
+                    type="checkbox"
+                  />
+                  允许只读工作区上下文
+                </label>
+                <p className="meta">
+                  {formatPreRunAgentCapabilitySummary(aiStatus, Boolean(form.allowLocalWorkspaceRead))}
+                </p>
+              </>
             ) : null}
             <button type="submit">触发 Run</button>
           </form>

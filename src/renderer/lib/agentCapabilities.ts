@@ -1,0 +1,48 @@
+import type { AgentSessionRecord } from '@shared/types/agent-execution';
+import type { AiConfigStatus } from '@shared/types/settings';
+
+function formatProviderSummary(aiStatus: AiConfigStatus | null): string {
+  if (!aiStatus?.provider || !aiStatus.model) {
+    return 'provider not configured';
+  }
+
+  return `${aiStatus.provider} / ${aiStatus.model}`;
+}
+
+export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord): string {
+  const capabilities = session.capabilities;
+  const parts = [
+    capabilities.textOnlyPlanning ? 'text-only planning' : 'text planning unavailable',
+    capabilities.fileContext
+      ? 'read-only workspace context enabled'
+      : 'read-only workspace context unavailable',
+    capabilities.structuredToolCalls
+      ? 'structured tool calls'
+      : 'structured tool calls unavailable',
+    'patch/commands unavailable',
+    capabilities.longRunningSessions ? 'long-running session' : 'single local session',
+  ];
+
+  return parts.join(' / ');
+}
+
+export function formatPreRunAgentCapabilitySummary(
+  aiStatus: AiConfigStatus | null,
+  allowLocalWorkspaceRead: boolean,
+): string {
+  const providerSummary = formatProviderSummary(aiStatus);
+  const planningSummary = aiStatus?.provider === 'replicate'
+    ? 'text-only planning via Replicate'
+    : 'text-only planning in the local executor';
+  const workspaceSummary = allowLocalWorkspaceRead
+    ? 'read-only workspace context enabled for this run'
+    : 'read-only workspace context disabled for this run';
+
+  return [
+    `Agent 能力预览：${providerSummary}`,
+    planningSummary,
+    workspaceSummary,
+    'structured tool calls unavailable',
+    'patch/commands unavailable',
+  ].join(' / ');
+}

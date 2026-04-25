@@ -92,9 +92,17 @@ Acceptance:
 
 Goal: stop treating every model provider as equally agent-capable.
 
+Started:
+
+- Tasks and Runs agent forms preview provider/session capability before
+  triggering a run.
+- The preview names text-only planning, per-run read-only workspace context,
+  structured tool-call unavailability, and patch/command unavailability.
+
+Remaining:
+
 - keep `textOnlyPlanning`, `structuredToolCalls`, `fileContext`, `streaming`,
   and `longRunningSessions` as explicit session metadata
-- show capability hints before triggering an agent run, not only after
 - make Replicate/text-only runs explain that they can draft and plan but do not
   have reliable structured tool calling
 - add provider-routing tests around capability calculation

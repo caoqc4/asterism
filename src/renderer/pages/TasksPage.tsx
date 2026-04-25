@@ -28,6 +28,7 @@ import type {
   UpdateProcessTemplateInput,
 } from '@shared/types/process-template';
 import type { CreateRunInput, RunRecord } from '@shared/types/run';
+import type { AiConfigStatus } from '@shared/types/settings';
 import type {
   CreateSourceContextInput,
   SourceContextKind,
@@ -71,6 +72,7 @@ import {
   getTaskTransitionGuidance,
   orderTaskTransitions,
 } from '@shared/working-context/transitions';
+import { formatPreRunAgentCapabilitySummary } from '../lib/agentCapabilities';
 
 const riskOptions: TaskRiskLevel[] = ['none', 'low', 'medium', 'high'];
 const sourceContextKindOptions: SourceContextKind[] = [
@@ -662,6 +664,7 @@ function formatActionError(error: unknown): string {
 }
 
 type TasksPageProps = {
+  aiStatus: AiConfigStatus | null;
   decisions: DecisionRecord[];
   focusedTaskRequest: {
     key: string;
@@ -711,6 +714,7 @@ type TasksPageProps = {
 };
 
 export function TasksPage({
+  aiStatus,
   decisions,
   focusedTaskRequest,
   runs,
@@ -2053,14 +2057,19 @@ export function TasksPage({
         />
       </label>
       {quickRunType === 'agent' ? (
-        <label>
-          <input
-            checked={quickRunAllowLocalWorkspaceRead}
-            onChange={(event) => setQuickRunAllowLocalWorkspaceRead(event.target.checked)}
-            type="checkbox"
-          />
-          允许只读工作区上下文
-        </label>
+        <>
+          <label>
+            <input
+              checked={quickRunAllowLocalWorkspaceRead}
+              onChange={(event) => setQuickRunAllowLocalWorkspaceRead(event.target.checked)}
+              type="checkbox"
+            />
+            允许只读工作区上下文
+          </label>
+          <p className="meta">
+            {formatPreRunAgentCapabilitySummary(aiStatus, quickRunAllowLocalWorkspaceRead)}
+          </p>
+        </>
       ) : null}
       <p className="meta">{quickRunGuidance}</p>
       <button type="submit">触发 Run</button>

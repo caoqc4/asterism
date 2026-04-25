@@ -772,6 +772,7 @@ export function App() {
         ) : null}
         {route === 'tasks' ? (
           <TasksPage
+            aiStatus={aiStatus}
             decisions={decisions}
             focusedTaskRequest={focusedTaskRequest}
             runs={runs}
@@ -822,6 +823,7 @@ export function App() {
         ) : null}
         {route === 'runs' ? (
           <RunsPage
+            aiStatus={aiStatus}
             focusedRunId={focusedRunId}
             runs={runs}
             tasks={tasks}
