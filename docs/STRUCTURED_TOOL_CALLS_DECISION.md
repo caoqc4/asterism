@@ -2,15 +2,17 @@
 
 ## Status
 
-Proposed. Do not enable provider-native structured tool calls in normal agent
-runs until this decision is accepted and locally validated.
+Accepted for the first gated provider-native safe-read slice.
+
+Provider-native structured tool calls are available only when the explicit
+`enableProviderNativeToolCalls` flag is on and the provider response passes the
+adapter, session gate, and `AgentRunLoop` policy checks. Workspace mutation,
+commands, and stronger task closeout tools remain deferred.
 
 ## Decision
 
-Keep the current Taskplane agent runtime on text-only JSON planning for now.
-
-Provider-native structured tool calls should become available only after a
-dedicated provider adapter boundary can normalize each provider or relay into
+Taskplane may accept provider-native structured tool calls only through a
+dedicated provider adapter boundary that normalizes each provider or relay into
 the existing Taskplane execution contract:
 
 ```text
@@ -22,9 +24,9 @@ Provider tool-call response
   -> Run steps / checkpoints / Decisions
 ```
 
-Until that adapter exists, all persisted agent sessions must continue to record
-`structuredToolCalls=false`, even when the selected provider can technically
-support tool calls outside Taskplane.
+Persisted agent sessions may record `structuredToolCalls=true` only after this
+normalized path actually executes for that run. Text-only fallback sessions and
+unsupported provider paths must keep `structuredToolCalls=false`.
 
 ## Why
 
@@ -54,10 +56,11 @@ Current agent runs use:
 - explicit per-run opt-ins for read-only workspace context and task/evidence
   tools
 - registry-only workspace patch and command tools
-- `structuredToolCalls=false` in persisted session capability metadata
-- `featureFlags.enableProviderNativeToolCalls=false` by default; setting it in
-  config or env is reserved for future rollout and does not change current run
-  behavior yet
+- provider-native safe-read tool schemas for supported providers only when
+  `featureFlags.enableProviderNativeToolCalls=true`
+- provider-native sessions with `structuredToolCalls=true` only when the
+  provider payload normalizes successfully and the session gate passes
+- `featureFlags.enableProviderNativeToolCalls=false` by default
 
 The pre-run capability preview may say a provider path is deferred or limited,
 but persisted session metadata must describe what Taskplane actually used for
@@ -68,8 +71,8 @@ Rollout sequencing is tracked in
 
 ## Adapter Requirements
 
-Before any provider-native structured tool-call path is enabled, the adapter
-must provide a small normalized contract:
+Provider-native structured tool-call paths must provide a small normalized
+contract:
 
 ```ts
 type ProviderToolCallPlan = {
@@ -127,15 +130,15 @@ Rules:
 
 ## Provider Notes
 
-- Anthropic: may map tool-use blocks into normalized proposals when an adapter
-  exists.
-- OpenAI: may map tool calls or response tool items into normalized proposals
-  when an adapter exists.
-- OpenAI-compatible relays: must be treated as capability-unknown until the
-  relay's exact request/response shape is covered by tests.
-- fal/OpenRouter-style relays: can be supported through the same
-  OpenAI-compatible adapter only when their tool-call behavior is verified for
-  the configured model path.
+- Anthropic: maps tested Messages-style `tool_use` blocks into normalized
+  proposals.
+- OpenAI: maps tested chat-completion-style tool calls into normalized
+  proposals.
+- OpenAI-compatible relays: use the same chat-completion adapter only after the
+  relay's request/response shape is covered by tests.
+- fal/OpenRouter-style relays: use the OpenAI-compatible adapter through the AI
+  SDK chat-completions path; `google/gemini-2.5-flash` has passed the guarded
+  safe-read live probe and isolated RunService live acceptance.
 - Replicate: remains text-only unless the specific model or relay path exposes
   a tested structured tool-call response shape. Native Replicate text
   prediction must keep `structuredToolCalls=false`.
@@ -144,18 +147,18 @@ Rules:
 
 - Pre-run copy may distinguish provider potential from Taskplane runtime
   support.
-- Shared provider capability descriptors may support pre-run copy and future
-  adapter selection, but they must remain descriptive until the adapter path
-  exists.
+- Shared provider capability descriptors support pre-run copy and adapter
+  selection but do not grant permissions by themselves.
 - Capability descriptors may report the reserved
-  `enableProviderNativeToolCalls` flag, but `taskplaneStructuredToolCallsEnabled`
-  must remain false until the adapter is wired into a run.
+  `enableProviderNativeToolCalls` flag, but actual session metadata changes only
+  when a gated provider-native session executes.
 - Persisted agent-session capability metadata must describe actual run behavior,
   not provider marketing capability.
 - A run may record `structuredToolCalls=true` only after the normalized adapter
   path has executed for that run.
 - `enableProviderNativeToolCalls` must not flip session metadata by itself; it
-  only becomes meaningful when the adapter path is explicitly wired and tested.
+  only becomes meaningful when provider payload extraction, adapter
+  normalization, and the session gate all pass.
 - Runs detail should keep showing whether the session used text-only planning or
   structured tool calling.
 - Workspace patch and command tools must still remain unavailable in normal
@@ -163,7 +166,7 @@ Rules:
 
 ## Testing Requirements
 
-Before implementation is accepted:
+Before additional provider-native expansion is accepted:
 
 - rollout must follow
   [PROVIDER_NATIVE_TOOL_CALL_ROLLOUT_PLAN.md](PROVIDER_NATIVE_TOOL_CALL_ROLLOUT_PLAN.md)
@@ -178,6 +181,10 @@ Before implementation is accepted:
 - integration tests prove workspace write and command calls still checkpoint
   instead of executing directly
 - local verification passes without GitHub Actions
+- guarded live validation should use
+  `npm run accept:provider-native-live:preflight`,
+  `npm run accept:provider-native-live`, and
+  `npm run accept:provider-native-live:run` only with explicit local test keys
 
 ## Non-Goals
 

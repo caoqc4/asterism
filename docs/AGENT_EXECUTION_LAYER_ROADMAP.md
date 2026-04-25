@@ -165,18 +165,16 @@ Acceptance:
 - shadow observation exposes `skipped`, `observed`, or `failed` summaries only;
   it does not feed `AgentRunLoop`
 
-Deferred:
+Still deferred:
 
-- enabling true structured tool calls for providers or relays that can support
-  them
+- exposing provider-native workspace mutation or command tools in prompts
 - provider-specific long-running session adapters
+- broader provider/model matrices beyond the tested safe-read path
 
-Before enabling provider-native tool calls, use
-[STRUCTURED_TOOL_CALLS_DECISION.md](STRUCTURED_TOOL_CALLS_DECISION.md). The
-current accepted behavior remains text-only JSON planning with
-`structuredToolCalls=false` in persisted sessions. Follow
-[PROVIDER_NATIVE_TOOL_CALL_ROLLOUT_PLAN.md](PROVIDER_NATIVE_TOOL_CALL_ROLLOUT_PLAN.md)
-for any future staged wiring.
+Before expanding provider-native tool calls beyond the current gated safe-read
+slice, use [STRUCTURED_TOOL_CALLS_DECISION.md](STRUCTURED_TOOL_CALLS_DECISION.md)
+and follow
+[PROVIDER_NATIVE_TOOL_CALL_ROLLOUT_PLAN.md](PROVIDER_NATIVE_TOOL_CALL_ROLLOUT_PLAN.md).
 
 ### Slice 3: Domain-Shaped Task Tools
 
