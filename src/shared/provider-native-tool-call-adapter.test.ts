@@ -89,4 +89,54 @@ describe('normalizeProviderNativeToolCalls', () => {
       rawSummary: 'replicate',
     });
   });
+
+  it('propagates OpenAI-compatible adapter failures', () => {
+    expect(normalizeProviderNativeToolCalls({
+      provider: 'openai',
+      model: 'gpt-4.1-mini',
+      payload: {
+        choices: [
+          {
+            message: {
+              tool_calls: [
+                {
+                  id: 'call_1',
+                  type: 'custom',
+                  function: {
+                    name: 'task.inspect_context',
+                    arguments: '{}',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    })).toEqual({
+      status: 'failed',
+      provider: 'openai',
+      model: 'gpt-4.1-mini',
+      error: 'OpenAI-compatible tool call type must be function.',
+      rawSummary: 'tool_calls',
+    });
+  });
+
+  it('propagates Anthropic adapter failures', () => {
+    expect(normalizeProviderNativeToolCalls({
+      provider: 'anthropic',
+      model: 'claude-3-5-sonnet-latest',
+      payload: {
+        stop_reason: 'tool_use',
+        content: [
+          'unexpected block',
+        ],
+      },
+    })).toEqual({
+      status: 'failed',
+      provider: 'anthropic',
+      model: 'claude-3-5-sonnet-latest',
+      error: 'Anthropic content blocks must be objects.',
+      rawSummary: 'content',
+    });
+  });
 });
