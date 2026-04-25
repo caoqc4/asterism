@@ -745,6 +745,105 @@ describe('AgentToolRegistry', () => {
     }
   });
 
+  it('rejects workspace patches that touch files outside expectedFiles', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-workspace-patch-unexpected-');
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'alpha\n');
+      const runStepRepository = buildRunStepRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        undefined,
+        null,
+        () => tempRoot,
+      );
+
+      const result = await registry.execute(
+        'workspace.write_patch',
+        {
+          summary: 'Update other file',
+          expectedFiles: ['notes.md'],
+          patch: [
+            '*** Begin Patch',
+            '*** Add File: other.md',
+            '+outside expected files',
+            '*** End Patch',
+          ].join('\n'),
+        },
+        { runId: 'run_1', taskId: 'task_1' },
+        {
+          maxSteps: 8,
+          maxWallTimeMs: 120_000,
+          allowNetwork: false,
+          allowLocalWorkspaceRead: false,
+          allowLocalFileWrite: true,
+          confirmationRequiredRisks: [],
+        },
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('workspace.write_patch touched unexpected file: other.md');
+      expect(fs.readFileSync(path.join(tempRoot, 'notes.md'), 'utf8')).toBe('alpha\n');
+      expect(fs.existsSync(path.join(tempRoot, 'other.md'))).toBe(false);
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects workspace patches that escape the configured root', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-workspace-patch-escape-');
+    const outsideFileName = `${path.basename(tempRoot)}-outside.md`;
+    const escapedRelativePath = `../${outsideFileName}`;
+    const outsidePath = path.resolve(tempRoot, escapedRelativePath);
+
+    try {
+      fs.writeFileSync(path.join(tempRoot, 'notes.md'), 'alpha\n');
+      fs.writeFileSync(outsidePath, 'outside\n');
+      const runStepRepository = buildRunStepRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        undefined,
+        null,
+        () => tempRoot,
+      );
+
+      const result = await registry.execute(
+        'workspace.write_patch',
+        {
+          summary: 'Escape workspace',
+          expectedFiles: [escapedRelativePath],
+          patch: [
+            '*** Begin Patch',
+            `*** Update File: ${escapedRelativePath}`,
+            '@@',
+            '-outside',
+            '+escaped',
+            '*** End Patch',
+          ].join('\n'),
+        },
+        { runId: 'run_1', taskId: 'task_1' },
+        {
+          maxSteps: 8,
+          maxWallTimeMs: 120_000,
+          allowNetwork: false,
+          allowLocalWorkspaceRead: false,
+          allowLocalFileWrite: true,
+          confirmationRequiredRisks: [],
+        },
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Workspace path must stay inside the configured workspace root.');
+      expect(fs.readFileSync(path.join(tempRoot, 'notes.md'), 'utf8')).toBe('alpha\n');
+      expect(fs.readFileSync(outsidePath, 'utf8')).toBe('outside\n');
+    } finally {
+      fs.rmSync(outsidePath, { force: true });
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it('does not partially apply a workspace patch when a later hunk fails', async () => {
     const tempRoot = makeTempDir('taskplane-agent-workspace-patch-atomic-');
 
