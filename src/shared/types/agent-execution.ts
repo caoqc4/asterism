@@ -220,6 +220,7 @@ export type AgentToolResult = {
   artifactId?: string | null;
   checkpointId?: string | null;
   checkpointKind?: RunCheckpointKind | null;
+  checkpointEvent?: Extract<AgentSessionEvent, { type: 'checkpoint.created' }> | null;
   decisionId?: string | null;
   error?: string | null;
   status?: 'completed' | 'failed' | 'needs_confirmation';

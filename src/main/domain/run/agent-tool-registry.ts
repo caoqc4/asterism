@@ -901,6 +901,7 @@ export class AgentToolRegistry {
             summary: checkpoint.summary,
             checkpointId: checkpoint.checkpointId,
             checkpointKind: 'tool_permission',
+            checkpointEvent: checkpoint.event,
             decisionId: checkpoint.decisionId,
           };
         }
@@ -943,6 +944,7 @@ export class AgentToolRegistry {
             summary: checkpoint.summary,
             checkpointId: checkpoint.checkpointId,
             checkpointKind: 'tool_permission',
+            checkpointEvent: checkpoint.event,
             decisionId: checkpoint.decisionId,
           };
         }
@@ -964,6 +966,7 @@ export class AgentToolRegistry {
           summary: checkpoint.summary,
           checkpointId: checkpoint.checkpointId,
           checkpointKind: 'tool_permission',
+          checkpointEvent: checkpoint.event,
           decisionId: checkpoint.decisionId,
         };
       }

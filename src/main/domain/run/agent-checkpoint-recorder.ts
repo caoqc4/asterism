@@ -1,5 +1,6 @@
 import type {
   AgentPolicy,
+  AgentSessionEvent,
   AgentToolName,
   AgentToolRisk,
 } from '../../../shared/types/agent-execution.js';
@@ -14,7 +15,13 @@ import {
 export type AgentToolPermissionCheckpointResult = {
   checkpointId: string;
   decisionId: string | null;
+  event: Extract<AgentSessionEvent, { type: 'checkpoint.created' }>;
   summary: string;
+};
+
+export type AgentResumeCheckpointResult = {
+  checkpointId: string;
+  event: Extract<AgentSessionEvent, { type: 'checkpoint.created' }>;
 };
 
 export class AgentCheckpointRecorder {
@@ -84,9 +91,20 @@ export class AgentCheckpointRecorder {
       output: summary,
     });
 
+    const event: Extract<AgentSessionEvent, { type: 'checkpoint.created' }> = {
+      type: 'checkpoint.created',
+      runId: params.runId,
+      checkpointId: checkpointWithDecision.id,
+      checkpointKind: 'tool_permission',
+      reason: summary,
+      decisionId: decision?.id ?? null,
+      tool: params.tool,
+    };
+
     return {
       checkpointId: checkpointWithDecision.id,
       decisionId: decision?.id ?? null,
+      event,
       summary,
     };
   }
@@ -99,7 +117,7 @@ export class AgentCheckpointRecorder {
     nextInput: unknown;
     policySnapshot: AgentPolicy;
     observations?: unknown;
-  }): Promise<{ checkpointId: string }> {
+  }): Promise<AgentResumeCheckpointResult> {
     const step = await this.runStepRepository.create({
       runId: params.runId,
       kind: 'checkpoint',
@@ -127,8 +145,18 @@ export class AgentCheckpointRecorder {
       })),
     });
 
+    const event: Extract<AgentSessionEvent, { type: 'checkpoint.created' }> = {
+      type: 'checkpoint.created',
+      runId: params.runId,
+      checkpointId: checkpoint.id,
+      checkpointKind: 'resume',
+      reason: params.reason,
+      tool: params.nextTool,
+    };
+
     return {
       checkpointId: checkpoint.id,
+      event,
     };
   }
 }

@@ -50,6 +50,9 @@ Completed:
   and result metadata
 - resume checkpoint creation also flows through `AgentCheckpointRecorder`,
   preserving the restart-safe payload shape
+- `AgentCheckpointRecorder` now returns the canonical `checkpoint.created`
+  event for each persisted checkpoint, so callers emit recorder-produced events
+  instead of hand-assembling checkpoint events
 - tool prompt/provider exposure is centralized in `agent-tool-exposure`, with
   text prompts and provider-native schemas consuming the same matrix
 - sandbox decision accepted: broad code-agent mode remains deferred until a
@@ -61,8 +64,8 @@ Completed:
 
 Still incomplete:
 
-- checkpoint events are emitted after checkpoint persistence instead of being
-  the sole creation command boundary
+- no known Slice 0 blocker remains; future checkpoint work should focus on
+  event replay/compaction rather than expanding model-visible power
 
 ## Task Sequence
 

@@ -122,6 +122,15 @@ describe('AgentCheckpointRecorder', () => {
     expect(result).toEqual({
       checkpointId: 'run_checkpoint_1',
       decisionId: 'decision_1',
+      event: {
+        type: 'checkpoint.created',
+        runId: 'run_1',
+        checkpointId: 'run_checkpoint_1',
+        checkpointKind: 'tool_permission',
+        reason: '工具 workspace.write_patch 需要确认后才能继续，已创建 Decision：确认本地写入：workspace.write_patch。',
+        decisionId: 'decision_1',
+        tool: 'workspace.write_patch',
+      },
       summary: '工具 workspace.write_patch 需要确认后才能继续，已创建 Decision：确认本地写入：workspace.write_patch。',
     });
   });
@@ -181,6 +190,14 @@ describe('AgentCheckpointRecorder', () => {
     );
     expect(result).toEqual({
       checkpointId: 'run_checkpoint_1',
+      event: {
+        type: 'checkpoint.created',
+        runId: 'run_1',
+        checkpointId: 'run_checkpoint_1',
+        checkpointKind: 'resume',
+        reason: '等待先解除阻塞。',
+        tool: 'artifact.create_note',
+      },
     });
   });
 });

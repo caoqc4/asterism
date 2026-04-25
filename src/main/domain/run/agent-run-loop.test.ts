@@ -1618,6 +1618,15 @@ describe('AgentRunLoop', () => {
           summary: 'Needs confirmation',
           checkpointId: 'run_checkpoint_1',
           checkpointKind: 'tool_permission',
+          checkpointEvent: {
+            type: 'checkpoint.created',
+            runId: 'run_1',
+            checkpointId: 'run_checkpoint_1',
+            checkpointKind: 'tool_permission',
+            reason: 'Needs confirmation',
+            decisionId: 'decision_1',
+            tool: 'artifact.create_note',
+          },
           decisionId: 'decision_1',
         }),
     };

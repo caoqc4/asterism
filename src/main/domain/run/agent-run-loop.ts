@@ -9,6 +9,7 @@ import type {
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { AgentCheckpointRecorder } from './agent-checkpoint-recorder.js';
+import type { AgentResumeCheckpointResult } from './agent-checkpoint-recorder.js';
 import type { AgentToolRegistry } from './agent-tool-registry.js';
 
 export type AgentRunLoopResult =
@@ -686,8 +687,8 @@ export class AgentRunLoop {
     nextTool: AgentToolName;
     nextInput: unknown;
     reason: string;
-  }): Promise<string> {
-    const checkpoint = await this.checkpointRecorder.createResumeCheckpoint({
+  }): Promise<AgentResumeCheckpointResult> {
+    return this.checkpointRecorder.createResumeCheckpoint({
       runId: params.request.runId,
       taskId: params.request.taskId,
       reason: params.reason,
@@ -696,8 +697,6 @@ export class AgentRunLoop {
       policySnapshot: params.request.policy,
       observations: params.observations,
     });
-
-    return checkpoint.checkpointId;
   }
 
   async executeLocalNoteLoop(params: {
@@ -789,21 +788,14 @@ export class AgentRunLoop {
         recordedPlannerDecision = true;
 
         if (plannerDecision.action === 'stop') {
-          const checkpointId = await this.recordResumeCheckpoint({
+          const checkpoint = await this.recordResumeCheckpoint({
             request,
             observations,
             nextTool: step.tool,
             nextInput: step.input,
             reason: plannerDecision.reason,
           });
-          await this.emitEvent(onEvent, {
-            type: 'checkpoint.created',
-            runId: request.runId,
-            checkpointId,
-            checkpointKind: 'resume',
-            reason: plannerDecision.reason,
-            tool: step.tool,
-          });
+          await this.emitEvent(onEvent, checkpoint.event);
           await this.recordObservationSummary({
             runId: request.runId,
             observations,
@@ -811,14 +803,14 @@ export class AgentRunLoop {
           await this.emitEvent(onEvent, {
             type: 'session.paused',
             runId: request.runId,
-            checkpointId,
+            checkpointId: checkpoint.checkpointId,
             message: plannerDecision.reason,
           });
 
           return {
             status: 'paused',
             message: plannerDecision.reason,
-            checkpointId,
+            checkpointId: checkpoint.checkpointId,
             observations,
           };
         }
@@ -846,7 +838,7 @@ export class AgentRunLoop {
       observations.push(observationFromTool(step.tool, result));
 
       if (result.status === 'needs_confirmation' && result.checkpointId) {
-        await this.emitEvent(onEvent, {
+        await this.emitEvent(onEvent, result.checkpointEvent ?? {
           type: 'checkpoint.created',
           runId: request.runId,
           checkpointId: result.checkpointId,
