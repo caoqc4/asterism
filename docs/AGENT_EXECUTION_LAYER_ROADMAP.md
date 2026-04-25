@@ -72,7 +72,8 @@ The next runtime should have five clear layers:
 
 ### Slice 1: Approval UX Readiness
 
-Status: first Runs and Decisions checkpoint clarity pass completed.
+Status: completed for the existing Runs and Decisions checkpoint review
+surfaces.
 
 Goal: make the existing `workspace.write_patch` checkpoint understandable before
 any user-facing write opt-in exists.
@@ -95,6 +96,8 @@ Acceptance:
 - UI never implies command execution is available
 - Runs detail separates patch summary, expected files, and patch-body preview
 - Runs detail separates command script, args, timeout, cwd, and preview
+- Decisions detail repeats write/command consequences and the command allowlist
+  constraint before approval
 
 ### Slice 2: Provider Capability Truthfulness
 

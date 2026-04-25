@@ -53,7 +53,8 @@ Status: implemented.
 
 Recommended next workspace-tool slice.
 
-Status: in progress. Runs detail now separates `workspace.write_patch` summary,
+Status: completed for the existing Runs and Decisions surfaces. Runs detail now
+separates `workspace.write_patch` summary,
 expected files, and patch-body preview, and separately surfaces
 `workspace.run_command` script, args, timeout, cwd, and command preview.
 Decisions now make checkpoint consequences explicit for patch writes, command
@@ -64,7 +65,7 @@ the Decisions approval guidance repeats that allowlist constraint.
 - no prompt exposure
 - no normal run-form opt-in
 - improve Runs/Decisions checkpoint review copy and layout
-- add a manual alpha path for reviewing a pending patch/command checkpoint
+- keep the manual alpha path on the existing Runs and Decisions surfaces
 
 ### Tier 2: Manual Tool Request
 
@@ -118,9 +119,13 @@ Deferred.
 
 ## Open Questions
 
-- Should Tier 1 use the existing Runs/Decisions surfaces only, or add a small
-  dedicated checkpoint detail panel?
 - Should command output become a first-class artifact after approval, or remain
   run-step output?
 - Should command allowlists stay fixed in code for alpha, or move into local
   config before any UI exposure?
+
+## Resolved Questions
+
+- Tier 1 uses the existing Runs and Decisions surfaces. A dedicated checkpoint
+  detail panel is deferred until there is repeated manual review friction or
+  until Tier 2 introduces explicit manual tool requests.
