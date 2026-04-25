@@ -85,11 +85,19 @@ function getCheckpointDecisionGuidance(decision: DecisionRecord): string | null 
       : '本地工具调用';
 
   if (decision.status === 'pending') {
+    if (sourceLabel === 'workspace.write_patch') {
+      return `来源：Agent checkpoint（${sourceLabel}）。批准后会恢复等待中的${actionLabel}并写入受影响文件；延后或取消会终止本次 run，不会继续应用该 patch。`;
+    }
+
+    if (sourceLabel === 'workspace.run_command') {
+      return `来源：Agent checkpoint（${sourceLabel}）。批准后会恢复等待中的${actionLabel}；请先在 Runs 查看脚本、参数、超时和工作目录；延后或取消会终止本次 run，不会继续运行该命令。`;
+    }
+
     return `来源：Agent checkpoint（${sourceLabel}）。批准后会恢复等待中的${actionLabel}；延后或取消会终止本次 run。`;
   }
 
   if (decision.status === 'approved') {
-    return `来源：Agent checkpoint（${sourceLabel}）。该确认已批准，系统会尝试恢复等待中的本地工具调用。`;
+    return `来源：Agent checkpoint（${sourceLabel}）。该确认已批准，系统会尝试恢复等待中的${actionLabel}。`;
   }
 
   return `来源：Agent checkpoint（${sourceLabel}）。该确认未批准，本次 run 会作为不可续跑的执行记录收束。`;
