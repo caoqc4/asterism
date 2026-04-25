@@ -77,7 +77,7 @@ Manual result / need:
 - read-only workspace agent runs are covered in an isolated local RunService path with workspace root, per-run opt-in, persisted `fileContext` capability, workspace search/read observations, final agent output, and no patch or command execution
 - packaged app manual pass under `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-workspace-agent-manual-20260425` and `TASKPLANE_WORKSPACE_ROOT=/tmp/taskplane-alpha-workspace-root-manual-20260425` triggered an `agent` run with read-only workspace context enabled; SQLite confirmed the run completed with `output_source=ai`, agent session `fileContext=true`, workspace search/read observations for `docs/marker.txt`, note/run-output artifacts, and no open checkpoints
 - `workspace.write_patch` now requires explicit local file-write policy, creates a confirmation checkpoint with expected files and diff preview, applies only after the linked Decision is approved, rejects path escapes or files outside `expectedFiles`, and falls back instead of accepting model-proposed patch steps in normal runs; `workspace.run_command` now follows the accepted allowlist decision as a registry-only confirmed package-script runner with Decision approval resume, while still staying out of model prompts and normal agent plans
-- registry-only domain tools can update a task next step, create a completion criterion, create source context, and draft a Decision through services; these are not prompt-exposed or accepted from normal model plans yet
+- domain tools can update a task next step, create a completion criterion, create source context, and draft a Decision through services; they are prompt-exposed and accepted from model plans only when a run explicitly opts into `allowTaskMutationTools`
 
 ## Completion Loop
 
@@ -154,6 +154,6 @@ Finish the remaining alpha work in this order:
 
 1. Keep signed/notarized packaging out of scope until the next release-readiness pass explicitly targets signing and notarization.
 2. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
-3. Start the next execution-layer phase from the accepted write/command-tool decision, not from broad new domain expansion.
+3. Keep the next execution-layer phase focused on opt-in policy and checkpoint UX rather than broad new domain expansion.
 
 Do not expand the domain model until the release-readiness pass is cleaner.

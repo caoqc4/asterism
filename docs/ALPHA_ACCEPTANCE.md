@@ -75,7 +75,9 @@ npm run accept:workspace-patch
 - Confirm Runs detail surfaces the file list and preview before approval.
 - Approve the linked Decision.
 - Confirm the patch applies only after approval and the checkpoint resolves.
-- Confirm `workspace.run_command` remains unavailable.
+- Confirm `workspace.run_command` remains unavailable to normal agent prompts
+  and task UI, while its registry-level command checkpoint path remains covered
+  separately by local tests.
 
 ## Completion Loop
 
