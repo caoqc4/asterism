@@ -111,7 +111,7 @@ npm run verify
 Latest local baseline:
 
 - 66 test files
-- 482 tests
+- 484 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -121,6 +121,8 @@ Latest local baseline:
   unsigned macOS package path
 - `npm run accept:agent-local` passed locally after the restart-safe checkpoint
   Decision integration coverage
+- `npm run verify` passed locally on 2026-04-25 after the Home recovery and
+  execution-layer status cleanup
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

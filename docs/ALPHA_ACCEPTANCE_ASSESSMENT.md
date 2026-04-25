@@ -13,6 +13,8 @@ Strong automated coverage already exists for the main control-plane semantics, r
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
+- on 2026-04-25, `npm run verify` passed locally with 66 test files / 484 tests
+  after the Home recovery and execution-layer status cleanup.
 - `npm run smoke:build` has passed locally for build/entrypoint smoke coverage.
 - on 2026-04-25, `npm run smoke:build` passed again after the execution-layer
   checkpoint-event boundary refactor.
