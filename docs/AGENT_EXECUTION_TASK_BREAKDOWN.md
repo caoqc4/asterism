@@ -283,11 +283,14 @@ Non-goals until explicitly accepted:
 
 ## Recommended Next Implementation Task
 
-Start with **Slice 0 acceptance assessment refresh**.
+No new execution-layer implementation task is currently recommended.
 
-T1 through T7 now have implementation or design coverage. The next useful step
-is to update the alpha/execution acceptance assessment so the project status
-reflects what is actually done before new execution power is added.
+T1 through T7 now have implementation or design coverage, and the Slice 0
+acceptance assessment has been refreshed. Keep the next work limited to small
+alpha acceptance fixes, release-readiness hardening, or explicitly accepted
+design work. Do not add new model-visible execution power until a future
+decision deliberately reopens live provider validation, signed/notarized
+release execution, sandboxed code-agent mode, or broader tool exposure.
 
 ## Verification Policy
 
