@@ -326,6 +326,11 @@ The project is past initial architecture assembly. Current work should favor pro
   validation, backend probe/profile readiness, the sandbox coding feature flag,
   and the shared coding-lane eligibility gate before any real backend can be
   connected.
+- Local Docker backend probe on 2026-04-26 is not ready: Docker CLI reached the
+  configured socket path but the daemon/socket was unavailable at
+  `/Users/caoq/.docker/run/docker.sock`. Real local-container backend live
+  validation remains blocked until Docker is running; non-live producer and
+  sandbox acceptance tests remain the current gate.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
