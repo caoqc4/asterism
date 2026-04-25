@@ -82,6 +82,8 @@ Implementation boundary:
 
 ### Slice 2: Parser Parity Harness
 
+Status: first policy-parity tests completed; not wired into real runs.
+
 Before any execution wiring, compare native normalized proposals with current
 text JSON proposals through the same plan-building code.
 
@@ -98,6 +100,13 @@ Acceptance:
 - task/evidence calls require `allowTaskMutationTools=true`
 - workspace patch and command still require explicit policy plus confirmation
 - unknown provider tools become validation/fallback output, not execution
+
+Implementation boundary:
+
+- provider-native normalized proposals can be passed into `AgentRunLoop`
+  plan-building tests
+- production runs still do not feed provider-native proposals into
+  `AgentRunLoop`
 
 ### Slice 3: Explicit Provider-Native Session
 

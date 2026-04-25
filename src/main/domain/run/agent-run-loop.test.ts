@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { AgentRunRequest } from '../../../shared/types/agent-execution.js';
 import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
+import { normalizeProviderNativeToolCalls } from '../../../shared/provider-native-tool-call-adapter.js';
 import { AgentRunLoop } from './agent-run-loop.js';
 
 function buildRunStepRepositoryMock() {
@@ -413,6 +414,98 @@ describe('AgentRunLoop', () => {
     }));
   });
 
+  it('applies the same policy gates to provider-native normalized workspace read proposals', () => {
+    const loop = new AgentRunLoop({ execute: vi.fn() } as never);
+    const normalized = normalizeProviderNativeToolCalls({
+      provider: 'openai-compatible',
+      model: 'relay/model',
+      payload: {
+        choices: [
+          {
+            message: {
+              tool_calls: [
+                {
+                  id: 'call_search',
+                  type: 'function',
+                  function: {
+                    name: 'workspace.search',
+                    arguments: '{"query":"AgentRunLoop","maxResults":2}',
+                  },
+                },
+                {
+                  id: 'call_note',
+                  type: 'function',
+                  function: {
+                    name: 'artifact.create_note',
+                    arguments: '{"title":"Workspace note","content":"Workspace search proposed"}',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    expect(normalized.status).toBe('normalized');
+
+    const proposal = normalized.status === 'normalized' ? normalized.plan.proposal : null;
+    const fallbackPlan = loop.buildLocalNotePlan({
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    });
+
+    expect(loop.buildExecutionPlan({
+      proposal,
+      modelOutput: 'Agent output',
+      policy: buildRequest().policy,
+      taskTitle: 'Task 1',
+    })).toEqual({
+      source: 'fallback',
+      steps: fallbackPlan,
+    });
+
+    expect(loop.buildExecutionPlan({
+      proposal,
+      modelOutput: 'Agent output',
+      policy: {
+        ...buildRequest().policy,
+        allowLocalWorkspaceRead: true,
+      },
+      taskTitle: 'Task 1',
+    })).toEqual({
+      source: 'model_proposal',
+      steps: [
+        {
+          kind: 'inspect_context',
+          tool: 'task.inspect_context',
+          input: {},
+        },
+        {
+          kind: 'inspect_timeline',
+          tool: 'task.inspect_timeline',
+          input: {},
+        },
+        {
+          kind: 'workspace_search',
+          tool: 'workspace.search',
+          input: {
+            query: 'AgentRunLoop',
+            maxResults: 2,
+          },
+        },
+        {
+          kind: 'create_note',
+          tool: 'artifact.create_note',
+          input: {
+            title: 'Workspace note',
+            content: 'Workspace search proposed',
+          },
+        },
+      ],
+    });
+  });
+
   it('does not accept model-produced workspace mutation or command steps in the normal run plan', () => {
     const loop = new AgentRunLoop({ execute: vi.fn() } as never);
 
@@ -614,6 +707,91 @@ describe('AgentRunLoop', () => {
         },
       },
     ]);
+  });
+
+  it('applies the same policy gates to provider-native normalized task mutation proposals', () => {
+    const loop = new AgentRunLoop({ execute: vi.fn() } as never);
+    const normalized = normalizeProviderNativeToolCalls({
+      provider: 'anthropic',
+      model: 'claude-3-5-sonnet-latest',
+      payload: {
+        stop_reason: 'tool_use',
+        content: [
+          {
+            type: 'tool_use',
+            id: 'toolu_next_step',
+            name: 'task.update_next_step',
+            input: {
+              nextStep: 'Follow up with the owner',
+            },
+          },
+          {
+            type: 'tool_use',
+            id: 'toolu_note',
+            name: 'artifact.create_note',
+            input: {
+              title: 'Next step note',
+              content: 'Next step proposed',
+            },
+          },
+        ],
+      },
+    });
+
+    expect(normalized.status).toBe('normalized');
+
+    const proposal = normalized.status === 'normalized' ? normalized.plan.proposal : null;
+    const fallbackPlan = loop.buildLocalNotePlan({
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    });
+
+    expect(loop.buildExecutionPlan({
+      proposal,
+      modelOutput: 'Agent output',
+      policy: buildRequest().policy,
+      taskTitle: 'Task 1',
+    })).toEqual({
+      source: 'fallback',
+      steps: fallbackPlan,
+    });
+
+    expect(loop.buildExecutionPlan({
+      proposal,
+      modelOutput: 'Agent output',
+      policy: {
+        ...buildRequest().policy,
+        allowTaskMutationTools: true,
+      },
+      taskTitle: 'Task 1',
+    })).toMatchObject({
+      source: 'model_proposal',
+      steps: [
+        {
+          kind: 'inspect_context',
+          tool: 'task.inspect_context',
+        },
+        {
+          kind: 'inspect_timeline',
+          tool: 'task.inspect_timeline',
+        },
+        {
+          kind: 'update_next_step',
+          tool: 'task.update_next_step',
+          input: {
+            nextStep: 'Follow up with the owner',
+          },
+        },
+        {
+          kind: 'create_note',
+          tool: 'artifact.create_note',
+          input: {
+            title: 'Next step note',
+            content: 'Next step proposed',
+          },
+        },
+      ],
+    });
   });
 
   it('accepts completion evidence review only when task tools opt in', () => {
