@@ -26,6 +26,7 @@
     "accept:workspace-patch": "vitest run src/main/domain/decision/decision-service.integration.test.ts -t \"approves a workspace patch checkpoint\"",
     "accept:domain-agent-tools": "vitest run src/main/domain/run/agent-tool-registry.integration.test.ts",
     "accept:provider-native-tools": "vitest run src/shared/openai-compatible-tool-call-adapter.test.ts src/shared/anthropic-tool-use-adapter.test.ts src/shared/provider-native-tool-call-adapter.test.ts src/shared/provider-tool-call-normalizer.test.ts src/main/domain/run/provider-native-tool-schema.test.ts src/main/domain/run/provider-native-session-gate.test.ts src/main/domain/run/agent-run-loop.test.ts src/main/domain/run/run-orchestrator.test.ts src/main/domain/run/run-service.integration.test.ts src/main/executors/text-generation.test.ts",
+    "accept:provider-native-live:preflight": "node scripts/provider-native-live-preflight.mjs",
     "verify": "npm run test && npm run lint && npm run build",
     "smoke:build": "npm run build && node scripts/smoke-build.mjs",
     "smoke:package:mac": "node scripts/smoke-package-mac.mjs",

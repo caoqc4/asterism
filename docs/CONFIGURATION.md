@@ -94,6 +94,7 @@ TASKPLANE_AI_PROVIDER=fal-openrouter
 TASKPLANE_AI_MODEL=google/gemini-2.5-flash
 TASKPLANE_AI_BASE_URL=
 TASKPLANE_AI_API_KEY=your-fal-key
+TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS=true
 ```
 
 For a generic OpenAI-compatible relay:
@@ -103,6 +104,7 @@ TASKPLANE_AI_PROVIDER=openai-compatible
 TASKPLANE_AI_MODEL=your-model-id
 TASKPLANE_AI_BASE_URL=https://your-relay.example.com/v1
 TASKPLANE_AI_API_KEY=your-test-key
+TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS=true
 ```
 
 Set `TASKPLANE_ENV_FILE=/absolute/path/to/.env` to load a different file. Existing shell
@@ -146,10 +148,24 @@ When `false`:
 
 `featureFlags.enableProviderNativeToolCalls`
 
-This flag is reserved for a future structured tool-call adapter rollout. It is
-persisted and can be overridden with `TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS`,
-but current agent runs still use text-only JSON planning and persist
-`structuredToolCalls=false`.
+This flag enables the current gated provider-native structured tool-call path for
+tool-capable providers. It is persisted and can be overridden with
+`TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS`.
+
+Current boundaries:
+
+- supported providers: `anthropic`, `openai`, `openai-compatible`, and `fal-openrouter`
+- unsupported provider: `replicate` native text predictions
+- provider-side tools are limited to policy-allowed safe-read schemas
+- Taskplane does not pass local AI SDK `execute` handlers to providers
+- local execution still requires provider payload extraction, adapter normalization,
+  the provider-native session gate, and `AgentRunLoop` policy checks
+
+Use this preflight before spending provider credit on a live local validation:
+
+```bash
+npm run accept:provider-native-live:preflight
+```
 
 ## Fallback Behavior
 
