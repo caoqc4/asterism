@@ -9,9 +9,9 @@ import {
 } from './provider-native-live-preflight.mjs';
 
 const FAL_OPENROUTER_BASE_URL = 'https://fal.run/openrouter/router/openai/v1';
-const TOOL_NAME = 'taskplane__task__inspect_context';
+export const PROVIDER_NATIVE_LIVE_TOOL_NAME = 'taskplane__task__inspect_context';
 
-function getLanguageModel(config) {
+export function getProviderNativeLiveLanguageModel(config) {
   if (config.provider === 'anthropic') {
     return createAnthropic({ apiKey: config.apiKey })(config.model);
   }
@@ -40,57 +40,64 @@ function getLanguageModel(config) {
   return openai(config.model);
 }
 
-const preflight = getProviderNativeLivePreflight();
-printProviderNativeLivePreflight(preflight);
+export async function runProviderNativeLiveValidation() {
+  const preflight = getProviderNativeLivePreflight();
+  printProviderNativeLivePreflight(preflight);
 
-if (!preflight.ready) {
-  process.exit(0);
-}
+  if (!preflight.ready) {
+    return 0;
+  }
 
-const result = await generateText({
-  experimental_include: {
-    responseBody: true,
-  },
-  model: getLanguageModel({
-    apiKey: preflight.apiKey,
-    baseUrl: preflight.baseUrl,
-    model: preflight.model,
-    provider: preflight.provider,
-  }),
-  prompt: [
-    'Call the available tool exactly once.',
-    'Do not answer with prose.',
-    'The tool has no input fields.',
-  ].join('\n'),
-  toolChoice: {
-    type: 'tool',
-    toolName: TOOL_NAME,
-  },
-  tools: {
-    [TOOL_NAME]: tool({
-      description: 'Inspect the current Taskplane working context snapshot for this run.',
-      inputSchema: jsonSchema({
-        type: 'object',
-        properties: {},
-        additionalProperties: false,
-      }),
+  const result = await generateText({
+    experimental_include: {
+      responseBody: true,
+    },
+    model: getProviderNativeLiveLanguageModel({
+      apiKey: preflight.apiKey,
+      baseUrl: preflight.baseUrl,
+      model: preflight.model,
+      provider: preflight.provider,
     }),
-  },
-});
+    prompt: [
+      'Call the available tool exactly once.',
+      'Do not answer with prose.',
+      'The tool has no input fields.',
+    ].join('\n'),
+    toolChoice: {
+      type: 'tool',
+      toolName: PROVIDER_NATIVE_LIVE_TOOL_NAME,
+    },
+    tools: {
+      [PROVIDER_NATIVE_LIVE_TOOL_NAME]: tool({
+        description: 'Inspect the current Taskplane working context snapshot for this run.',
+        inputSchema: jsonSchema({
+          type: 'object',
+          properties: {},
+          additionalProperties: false,
+        }),
+      }),
+    },
+  });
 
-const toolCalls = Array.isArray(result.toolCalls) ? result.toolCalls : [];
-const matched = toolCalls.some((item) => item.toolName === TOOL_NAME);
+  const toolCalls = Array.isArray(result.toolCalls) ? result.toolCalls : [];
+  const matched = toolCalls.some((item) => item.toolName === PROVIDER_NATIVE_LIVE_TOOL_NAME);
 
-console.log('Provider-native live validation');
-console.log(`finishReason=${result.finishReason ?? '<unknown>'}`);
-console.log(`textLength=${result.text?.length ?? 0}`);
-console.log(`toolCalls=${toolCalls.length}`);
-console.log(`matchedTool=${matched ? 'true' : 'false'}`);
-console.log(`responseBody=${result.response?.body ? '<present>' : '<empty>'}`);
+  console.log('Provider-native live validation');
+  console.log(`finishReason=${result.finishReason ?? '<unknown>'}`);
+  console.log(`textLength=${result.text?.length ?? 0}`);
+  console.log(`toolCalls=${toolCalls.length}`);
+  console.log(`matchedTool=${matched ? 'true' : 'false'}`);
+  console.log(`responseBody=${result.response?.body ? '<present>' : '<empty>'}`);
 
-if (!matched) {
-  console.log('status=failed');
-  process.exit(1);
+  if (!matched) {
+    console.log('status=failed');
+    return 1;
+  }
+
+  console.log('status=passed');
+  return 0;
 }
 
-console.log('status=passed');
+if (import.meta.url === `file://${process.argv[1]}`) {
+  process.exitCode = await runProviderNativeLiveValidation();
+}
