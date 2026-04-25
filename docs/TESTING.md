@@ -86,7 +86,7 @@ Covered today:
 - `RunOrchestrator`
   plan/model/final step writes, process-template selector fallback, executor failure recording, diagnostic-only provider-native shadow step writes, agent-mode handoff into the local run loop, truthful structured-tool capability metadata for tool-capable providers, and paused agent-loop propagation
 - `LocalAgentExecutor`
-  adapter behavior that preserves current local agent-loop outcomes behind the executor/session boundary
+  adapter behavior that preserves current local agent-loop outcomes behind the executor/session boundary, plus an internal provider-native session entry that delegates normalized proposals through the same run loop
 - `AgentRunLoop`
   typed local observe-then-write plan building, constrained JSON proposal parsing, policy-gated workspace read steps, explicit task-mutation tool opt-in, required read-only observation steps before local writes, observation-aware planner continue/stop decision writes, fallback behavior, visible plan-source run-step writes, in-memory tool observations, persisted structured observation-summary run steps, and failed / confirmation-needed tool outcomes
 - `AgentRunLoop provider-native parity`

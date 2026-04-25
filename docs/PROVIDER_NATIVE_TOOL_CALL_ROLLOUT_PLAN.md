@@ -127,6 +127,8 @@ Implementation boundary:
 
 ### Slice 3: Explicit Provider-Native Session
 
+Status: internal executor entry prepared; not wired into production runs.
+
 Only after shadow and parity coverage pass, allow a dedicated internal executor
 path to use native normalized proposals for one run session.
 
@@ -139,6 +141,13 @@ Rules:
   reason into run steps or session metadata
 - must keep task/evidence, workspace read, workspace write, and command policy
   gates unchanged
+
+Current boundary:
+
+- `LocalAgentExecutor.executeProviderNativeSession` can delegate a normalized
+  `ProviderToolCallPlan.proposal` through the existing `AgentRunLoop`
+- RunOrchestrator still does not select this path, so normal runs remain
+  text-only plus optional shadow diagnostics
 
 Acceptance:
 

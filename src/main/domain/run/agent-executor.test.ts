@@ -56,4 +56,52 @@ describe('LocalAgentExecutor', () => {
       message: 'Tool failed',
     });
   });
+
+  it('delegates provider-native sessions through the same local run loop with the normalized proposal', async () => {
+    const agentRunLoop = {
+      executeLocalNoteLoop: vi.fn().mockResolvedValue({
+        status: 'completed',
+        output: 'Provider native note',
+        observations: [],
+      }),
+    };
+    const executor = new LocalAgentExecutor(agentRunLoop as never);
+    const input = {
+      ...buildInput(),
+      modelOutput: 'Fallback text output',
+      providerPlan: {
+        source: 'provider_tool_call',
+        provider: 'openai-compatible',
+        model: 'relay-model',
+        rawSummary: 'tool_calls=1',
+        providerCallIds: ['call_1'],
+        stopReason: 'tool_calls',
+        proposal: {
+          finalOutput: 'Provider native note',
+          steps: [
+            {
+              tool: 'artifact.create_note',
+              input: {
+                title: 'Provider note',
+                content: 'Provider native note',
+              },
+            },
+          ],
+        },
+      },
+    };
+
+    const result = await executor.executeProviderNativeSession(input as never);
+
+    expect(agentRunLoop.executeLocalNoteLoop).toHaveBeenCalledWith({
+      request: input.request,
+      modelOutput: 'Fallback text output',
+      proposal: input.providerPlan.proposal,
+      taskTitle: 'Task 1',
+    });
+    expect(result).toEqual({
+      status: 'completed',
+      output: 'Provider native note',
+    });
+  });
 });
