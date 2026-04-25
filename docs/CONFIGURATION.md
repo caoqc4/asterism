@@ -167,6 +167,14 @@ Use this preflight before spending provider credit on a live local validation:
 npm run accept:provider-native-live:preflight
 ```
 
+When the preflight reports `status=ready`, run the live validation. It sends one
+small provider request that forces the safe-read `task.inspect_context` tool
+schema and verifies that the provider returns a matching tool call:
+
+```bash
+npm run accept:provider-native-live
+```
+
 ## Fallback Behavior
 
 If an AI API key is missing:
