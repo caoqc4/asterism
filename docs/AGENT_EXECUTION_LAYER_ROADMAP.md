@@ -130,6 +130,9 @@ Completed:
 - A shared offline provider-native dispatcher selects the Anthropic or
   OpenAI-compatible fixture adapter by provider and fails closed for Replicate;
   it is not connected to provider execution or run sessions.
+- `featureFlags.enableProviderNativeToolCalls` now exists as a default-off
+  rollout flag, but current runs ignore it for execution and still persist
+  `structuredToolCalls=false`.
 
 Acceptance:
 
@@ -147,6 +150,8 @@ Acceptance:
   producing normalized proposals
 - provider-native dispatch keeps Replicate on the unsupported structured
   tool-call path
+- enabling the reserved feature flag alone does not change session capability
+  metadata
 
 Deferred:
 
