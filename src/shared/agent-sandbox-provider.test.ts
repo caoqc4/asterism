@@ -4,6 +4,7 @@ import {
   buildAgentSandboxCheckPlan,
   buildAgentSandboxPatchArtifact,
   buildAgentSandboxPatchPromotionCheckpoint,
+  buildAgentSandboxSessionManifest,
   buildDefaultAgentSandboxCommandPolicy,
   canUseAgentSandboxProviderForCoding,
   DISABLED_AGENT_SANDBOX_PROVIDER_CAPABILITIES,
@@ -188,6 +189,52 @@ describe('agent sandbox provider contracts', () => {
     });
     expect(request.workspace.mode).toBe('staged_write');
     expect(request.commandPolicy.allowedScripts).toEqual(['test', 'lint']);
+  });
+
+  it('builds a session manifest for later audit and artifact attachment', () => {
+    const request: AgentSandboxSessionRequest = {
+      commandPolicy: buildDefaultAgentSandboxCommandPolicy({ timeoutMs: 30_000 }),
+      descriptorId: 'workspace.staged_patch',
+      executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+      providerKind: 'local_container',
+      runId: 'run_1',
+      taskId: 'task_1',
+      workspace: {
+        mountPath: '/workspace',
+        mode: 'staged_write',
+        workspaceRoot: '/tmp/taskplane-sandbox-workspace',
+      },
+    };
+
+    expect(buildAgentSandboxSessionManifest({
+      handle: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        id: 'sandbox_session_1',
+        providerKind: 'local_container',
+        stagingRoot: '/tmp/taskplane-sandbox-session',
+        workspaceMode: 'staged_write',
+      },
+      providerCapabilities: DISABLED_AGENT_SANDBOX_PROVIDER_CAPABILITIES,
+      request,
+    })).toMatchObject({
+      commandPolicy: expect.objectContaining({
+        allowArbitraryShell: false,
+        timeoutMs: 30_000,
+      }),
+      descriptorId: 'workspace.staged_patch',
+      executionPolicy: expect.objectContaining({
+        credentialPolicy: 'none',
+        descriptorId: 'workspace.staged_patch',
+      }),
+      id: 'sandbox_session_1',
+      providerKind: 'local_container',
+      runId: 'run_1',
+      taskId: 'task_1',
+      workspace: expect.objectContaining({
+        mode: 'staged_write',
+        workspaceRoot: '/tmp/taskplane-sandbox-workspace',
+      }),
+    });
   });
 
   it('builds a normalized staged patch artifact for later Decision review', () => {

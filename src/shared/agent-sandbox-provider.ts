@@ -68,6 +68,20 @@ export type AgentSandboxSessionHandle = {
   createdAt: string;
 };
 
+export type AgentSandboxSessionManifest = {
+  id: string;
+  runId: string;
+  taskId: string;
+  descriptorId: 'workspace.staged_patch';
+  providerKind: Exclude<AgentSandboxProviderKind, 'disabled'>;
+  stagingRoot: string;
+  createdAt: string;
+  workspace: AgentSandboxWorkspaceMount;
+  providerCapabilities: AgentSandboxProviderCapabilities;
+  commandPolicy: AgentSandboxCommandPolicy;
+  executionPolicy: AgentToolExecutionPolicy;
+};
+
 export type AgentSandboxPatchArtifact = {
   kind: 'patch';
   summary: string;
@@ -224,6 +238,26 @@ export function evaluateAgentSandboxCodingLaneEligibility(params: {
     summary: blockedReasons.length
       ? `Sandbox coding lane unavailable: ${blockedReasons.join('; ')}.`
       : 'Sandbox coding lane eligible for a gated staged-patch session.',
+  };
+}
+
+export function buildAgentSandboxSessionManifest(params: {
+  handle: AgentSandboxSessionHandle;
+  request: AgentSandboxSessionRequest;
+  providerCapabilities: AgentSandboxProviderCapabilities;
+}): AgentSandboxSessionManifest {
+  return {
+    commandPolicy: params.request.commandPolicy,
+    createdAt: params.handle.createdAt,
+    descriptorId: params.request.descriptorId,
+    executionPolicy: params.request.executionPolicy,
+    id: params.handle.id,
+    providerCapabilities: params.providerCapabilities,
+    providerKind: params.handle.providerKind,
+    runId: params.request.runId,
+    stagingRoot: params.handle.stagingRoot,
+    taskId: params.request.taskId,
+    workspace: params.request.workspace,
   };
 }
 

@@ -9,6 +9,7 @@ import type {
   AgentSandboxSessionRequest,
 } from '../../../shared/agent-sandbox-provider.js';
 import {
+  buildAgentSandboxSessionManifest,
   buildDefaultAgentSandboxCommandPolicy,
   evaluateAgentSandboxCodingLaneEligibility,
 } from '../../../shared/agent-sandbox-provider.js';
@@ -40,25 +41,32 @@ export class TempWorkspaceSandboxProvider implements AgentSandboxProvider {
     const stagingRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'taskplane-sandbox-'));
     const createdAt = new Date().toISOString();
 
-    await fs.writeFile(
-      path.join(stagingRoot, 'session.json'),
-      JSON.stringify({
-        mountPath: request.workspace.mountPath,
-        runId: request.runId,
-        taskId: request.taskId,
-        workspaceMode: request.workspace.mode,
-        workspaceRoot,
-      }, null, 2),
-      'utf8',
-    );
-
-    return {
+    const handle: AgentSandboxSessionHandle = {
       createdAt,
       id: path.basename(stagingRoot),
       providerKind: 'local_container',
       stagingRoot,
       workspaceMode: request.workspace.mode,
     };
+    const manifest = buildAgentSandboxSessionManifest({
+      handle,
+      providerCapabilities: this.capabilities,
+      request: {
+        ...request,
+        workspace: {
+          ...request.workspace,
+          workspaceRoot,
+        },
+      },
+    });
+
+    await fs.writeFile(
+      path.join(stagingRoot, 'session.json'),
+      JSON.stringify(manifest, null, 2),
+      'utf8',
+    );
+
+    return handle;
   }
 
   async disposeSession(handle: AgentSandboxSessionHandle): Promise<void> {

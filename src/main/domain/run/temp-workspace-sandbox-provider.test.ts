@@ -61,7 +61,32 @@ describe('TempWorkspaceSandboxProvider', () => {
       expect(handle.workspaceMode).toBe('staged_write');
       expect(handle.stagingRoot).not.toBe(workspaceRoot);
       expect(fs.existsSync(handle.stagingRoot)).toBe(true);
-      expect(fs.existsSync(path.join(handle.stagingRoot, 'session.json'))).toBe(true);
+      const manifestPath = path.join(handle.stagingRoot, 'session.json');
+      expect(fs.existsSync(manifestPath)).toBe(true);
+      expect(JSON.parse(fs.readFileSync(manifestPath, 'utf8'))).toMatchObject({
+        commandPolicy: {
+          allowArbitraryShell: false,
+          allowInteractive: false,
+          allowedScripts: ['test', 'lint'],
+        },
+        descriptorId: 'workspace.staged_patch',
+        executionPolicy: {
+          credentialPolicy: 'none',
+          descriptorId: 'workspace.staged_patch',
+          networkPolicy: 'disabled',
+          sessionKind: 'sandbox',
+        },
+        providerCapabilities: {
+          supportsPatchArtifacts: false,
+          supportsTargetedCommands: false,
+        },
+        runId: 'run_1',
+        taskId: 'task_1',
+        workspace: {
+          mode: 'staged_write',
+          workspaceRoot,
+        },
+      });
       expect(fs.readFileSync(sourceFile, 'utf8')).toBe('original workspace content');
       expect(provider.capabilities).toMatchObject({
         credentialPassthrough: false,
