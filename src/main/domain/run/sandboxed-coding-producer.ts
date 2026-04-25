@@ -11,6 +11,7 @@ import {
   SandboxPatchReviewPlanningService,
 } from './sandbox-patch-review-planning-service.js';
 import type { SandboxPatchReviewRunPlan } from './sandbox-patch-review-run-plan.js';
+import { collectSandboxedCodingStagedPatchDraft } from './sandboxed-coding-staged-patch.js';
 
 export type SandboxedCodingProducerRequest = {
   commandPolicy: {
@@ -61,6 +62,44 @@ export type SandboxedCodingProducerResult =
       reason: string;
       sessionSummary: string;
       status: 'blocked' | 'failed' | 'paused';
+    };
+
+export type SandboxedCodingInjectedProducerRunnerResult =
+  | {
+      evidence?: Partial<SandboxPatchDraftSourceEvidence>;
+      sessionSummary: string;
+      status: 'completed';
+      summary: string;
+    }
+  | {
+      reason: string;
+      sessionSummary: string;
+      status: 'blocked' | 'failed' | 'paused';
+    };
+
+export type SandboxedCodingInjectedProducerRunner = (params: {
+  emit: (event: SandboxedCodingProducerEvent) => void;
+  request: NormalizedSandboxedCodingProducerRequest;
+  sessionId: string;
+  stagingRoot: string;
+}) => Promise<SandboxedCodingInjectedProducerRunnerResult>;
+
+export type PreviewSandboxedCodingInjectedProducerRunResult =
+  | {
+      events: SandboxedCodingProducerEvent[];
+      plan: SandboxPatchReviewRunPlan;
+      sessionSummary: string;
+      source: SandboxPatchDraftSource;
+      status: 'preview_ready';
+      steps: SandboxedCodingProducerRunStepDraft[];
+    }
+  | {
+      events: SandboxedCodingProducerEvent[];
+      plan?: SandboxPatchReviewRunPlan | null;
+      reason: string;
+      sessionSummary: string;
+      status: 'blocked' | 'failed' | 'paused';
+      steps: SandboxedCodingProducerRunStepDraft[];
     };
 
 export type SandboxedCodingProducerRunStepDraft = {
@@ -318,6 +357,177 @@ export function previewSandboxedCodingProducerPatchReview(params: {
   });
 }
 
+export async function previewSandboxedCodingInjectedProducerRun(params: {
+  decisionTitle?: string | null;
+  featureFlags: FeatureFlags;
+  patchSummary: string;
+  planningService?: Pick<SandboxPatchReviewPlanningService, 'previewFromSource'>;
+  request: unknown;
+  runner: SandboxedCodingInjectedProducerRunner;
+  stagingRoot: string;
+}): Promise<PreviewSandboxedCodingInjectedProducerRunResult> {
+  const requestValidation = validateSandboxedCodingProducerRequest(params.request);
+  if (!requestValidation.valid) {
+    return {
+      events: [],
+      plan: null,
+      reason: requestValidation.blockedReasons.join(' '),
+      sessionSummary: requestValidation.summary,
+      status: 'blocked',
+      steps: [],
+    };
+  }
+
+  const request = requestValidation.request;
+  const sessionId = `sandboxed_producer:${request.sourceId}`;
+  const events: SandboxedCodingProducerEvent[] = [];
+  const emit = (event: SandboxedCodingProducerEvent) => {
+    events.push(event);
+  };
+
+  emit({
+    runId: request.runId,
+    sessionId,
+    sourceId: request.sourceId,
+    status: 'started',
+    summary: requestValidation.summary,
+    type: 'sandbox_producer.started',
+  });
+
+  let runnerResult: SandboxedCodingInjectedProducerRunnerResult;
+  try {
+    runnerResult = await params.runner({
+      emit,
+      request,
+      sessionId,
+      stagingRoot: params.stagingRoot,
+    });
+  } catch (error) {
+    runnerResult = {
+      reason: error instanceof Error ? error.message : 'Sandboxed coding producer runner failed.',
+      sessionSummary: requestValidation.summary,
+      status: 'failed',
+    };
+  }
+
+  if (runnerResult.status !== 'completed') {
+    emitTerminalProducerEvent({
+      emit,
+      reason: runnerResult.reason,
+      request,
+      sessionId,
+      status: runnerResult.status,
+    });
+
+    return {
+      events,
+      plan: null,
+      reason: runnerResult.reason,
+      sessionSummary: runnerResult.sessionSummary,
+      status: runnerResult.status,
+      steps: events.map(mapSandboxedCodingProducerEventToRunStep),
+    };
+  }
+
+  const stagedPatch = await collectSandboxedCodingStagedPatchDraft({
+    stagingRoot: params.stagingRoot,
+    summary: params.patchSummary,
+    workspaceRoot: request.workspaceRoot,
+  });
+
+  if (!stagedPatch.valid) {
+    const reason = stagedPatch.blockedReasons.join(' ');
+    emitTerminalProducerEvent({
+      emit,
+      reason,
+      request,
+      sessionId,
+      status: 'failed',
+    });
+
+    return {
+      events,
+      plan: null,
+      reason,
+      sessionSummary: runnerResult.sessionSummary,
+      status: 'failed',
+      steps: events.map(mapSandboxedCodingProducerEventToRunStep),
+    };
+  }
+
+  const plan = previewSandboxedCodingProducerPatchReview({
+    decisionTitle: params.decisionTitle,
+    evidence: runnerResult.evidence,
+    featureFlags: params.featureFlags,
+    patchDraft: stagedPatch.patchDraft,
+    planningService: params.planningService,
+    request,
+  });
+
+  if (plan.status === 'blocked') {
+    emitTerminalProducerEvent({
+      emit,
+      reason: plan.reason,
+      request,
+      sessionId,
+      status: 'blocked',
+    });
+
+    return {
+      events,
+      plan,
+      reason: plan.reason,
+      sessionSummary: runnerResult.sessionSummary,
+      status: 'blocked',
+      steps: events.map(mapSandboxedCodingProducerEventToRunStep),
+    };
+  }
+
+  const sourceResult = buildSandboxedCodingProducerSource({
+    evidence: runnerResult.evidence,
+    patchDraft: stagedPatch.patchDraft,
+    request,
+  });
+
+  if (!sourceResult.valid) {
+    const reason = sourceResult.blockedReasons.join(' ');
+    emitTerminalProducerEvent({
+      emit,
+      reason,
+      request,
+      sessionId,
+      status: 'failed',
+    });
+
+    return {
+      events,
+      plan,
+      reason,
+      sessionSummary: runnerResult.sessionSummary,
+      status: 'failed',
+      steps: events.map(mapSandboxedCodingProducerEventToRunStep),
+    };
+  }
+
+  emit({
+    files: sourceResult.source.patchDraft.files,
+    runId: request.runId,
+    sessionId,
+    sourceId: request.sourceId,
+    summary: plan.summary,
+    type: 'sandbox_producer.source_ready',
+  });
+
+  return {
+    events,
+    plan,
+    sessionSummary: runnerResult.sessionSummary,
+    source: sourceResult.source,
+    status: 'preview_ready',
+    steps: events.map(mapSandboxedCodingProducerEventToRunStep),
+  };
+}
+
 export function mapSandboxedCodingProducerEventToRunStep(
   event: SandboxedCodingProducerEvent,
 ): SandboxedCodingProducerRunStepDraft {
@@ -391,6 +601,22 @@ export function mapSandboxedCodingProducerEventToRunStep(
     case 'sandbox_producer.paused':
       return terminalProducerStep(event, 'pending', 'Sandbox producer paused');
   }
+}
+
+function emitTerminalProducerEvent(params: {
+  emit: (event: SandboxedCodingProducerEvent) => void;
+  reason: string;
+  request: NormalizedSandboxedCodingProducerRequest;
+  sessionId: string;
+  status: 'blocked' | 'failed' | 'paused';
+}): void {
+  params.emit({
+    reason: params.reason,
+    runId: params.request.runId,
+    sessionId: params.sessionId,
+    sourceId: params.request.sourceId,
+    type: `sandbox_producer.${params.status}`,
+  });
 }
 
 function invalidRequest(blockedReasons: string[]): SandboxedCodingProducerRequestValidation {

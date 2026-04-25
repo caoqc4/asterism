@@ -309,6 +309,11 @@ The project is past initial architecture assembly. Current work should favor pro
   compact RunStep drafts, giving the future sandboxed coding producer a
   timeline projection path without expanding the ordinary agent event union or
   starting a live runner.
+- Producer scaffolding now includes an injected-runner preview path for tests:
+  the injected runner can write staged files, the collector converts them into
+  a patch draft, producer output becomes a validated source, and the result
+  previews the existing sandbox patch-review plan without starting a real model
+  loop, command runner, sandbox backend, or UI entrypoint.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -339,7 +344,7 @@ npm run verify
 Latest local baseline:
 
 - 81 test files
-- 590 tests
+- 592 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -372,6 +377,8 @@ Latest local baseline:
   producer source/preview bridge: 81 test files / 588 tests
 - `npm run verify` passed locally on 2026-04-26 after adding producer-local
   event-to-RunStep projection: 81 test files / 590 tests
+- `npm run verify` passed locally on 2026-04-26 after adding the injected
+  sandboxed coding producer preview path: 81 test files / 592 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

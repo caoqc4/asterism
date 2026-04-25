@@ -1,8 +1,13 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import {
   buildSandboxedCodingProducerSource,
   mapSandboxedCodingProducerEventToRunStep,
+  previewSandboxedCodingInjectedProducerRun,
   previewSandboxedCodingProducerPatchReview,
   validateSandboxedCodingProducerRequest,
 } from './sandboxed-coding-producer.js';
@@ -334,6 +339,110 @@ describe('validateSandboxedCodingProducerRequest', () => {
       kind: 'checkpoint',
       status: 'pending',
       title: 'Sandbox producer paused',
+    });
+  });
+
+  it('previews an injected producer run by collecting staged files into a source plan', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'taskplane-producer-run-'));
+    const workspaceRoot = path.join(tempRoot, 'workspace');
+    const stagingRoot = path.join(tempRoot, 'staging');
+
+    try {
+      await fs.mkdir(path.join(workspaceRoot, 'src'), { recursive: true });
+      await fs.mkdir(path.join(stagingRoot, 'src'), { recursive: true });
+      await fs.writeFile(path.join(workspaceRoot, 'src', 'notes.md'), 'old\n', 'utf8');
+
+      const result = await previewSandboxedCodingInjectedProducerRun({
+        decisionTitle: '确认提升 injected producer patch',
+        featureFlags: {
+          enableScheduler: false,
+          enableSandboxCodingAgent: true,
+        },
+        patchSummary: 'Update notes from injected producer',
+        request: {
+          ...validRequest,
+          workspaceRoot,
+        },
+        runner: async ({ emit, request, sessionId, stagingRoot: nextStagingRoot }) => {
+          emit({
+            inputSummary: 'path=src/notes.md',
+            runId: request.runId,
+            sessionId,
+            sourceId: request.sourceId,
+            tool: 'staging.write_file',
+            type: 'sandbox_producer.tool_requested',
+          });
+          await fs.writeFile(path.join(nextStagingRoot, 'src', 'notes.md'), 'new\n', 'utf8');
+          emit({
+            outputSummary: 'wrote src/notes.md',
+            runId: request.runId,
+            sessionId,
+            sourceId: request.sourceId,
+            tool: 'staging.write_file',
+            type: 'sandbox_producer.tool_completed',
+          });
+
+          return {
+            evidence: {
+              commandSummaries: ['lint: passed'],
+              observations: ['Updated staged notes file'],
+            },
+            sessionSummary: 'injected producer completed',
+            status: 'completed',
+            summary: 'Updated staged notes file',
+          };
+        },
+        stagingRoot,
+      });
+
+      expect(result.status).toBe('preview_ready');
+
+      if (result.status === 'preview_ready') {
+        expect(result.source.patchDraft.files).toEqual(['src/notes.md']);
+        expect(result.plan.status).toBe('ready');
+        expect(result.events.map((event) => event.type)).toEqual([
+          'sandbox_producer.started',
+          'sandbox_producer.tool_requested',
+          'sandbox_producer.tool_completed',
+          'sandbox_producer.source_ready',
+        ]);
+        expect(result.steps.map((step) => step.kind)).toEqual([
+          'plan',
+          'tool_call',
+          'tool_result',
+          'artifact',
+        ]);
+        expect(await fs.readFile(path.join(workspaceRoot, 'src', 'notes.md'), 'utf8')).toBe('old\n');
+      }
+    } finally {
+      await fs.rm(tempRoot, { force: true, recursive: true });
+    }
+  });
+
+  it('returns blocked injected producer runs without collecting staged files', async () => {
+    const result = await previewSandboxedCodingInjectedProducerRun({
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      patchSummary: 'No patch',
+      request: validRequest,
+      runner: async () => ({
+        reason: 'No sandbox backend is ready.',
+        sessionSummary: 'blocked before work',
+        status: 'blocked',
+      }),
+      stagingRoot: '/tmp/nonexistent-taskplane-staging',
+    });
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      reason: 'No sandbox backend is ready.',
+      sessionSummary: 'blocked before work',
+    });
+    expect(result.steps.at(-1)).toMatchObject({
+      kind: 'final',
+      title: 'Sandbox producer blocked',
     });
   });
 });
