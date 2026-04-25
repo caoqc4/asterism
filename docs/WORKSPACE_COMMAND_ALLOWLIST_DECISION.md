@@ -118,9 +118,16 @@ Recent hardening:
 
 ## Open Questions
 
-- Should allowlisted scripts be fixed in code first, configurable later, or read
-  from a local config file immediately?
-- Should command output become an Artifact when the command succeeds, or remain
-  only a run-step observation?
-- Should `verify` be allowed in the first UI opt-in, or should the first exposed
-  slice only permit targeted `test` and `lint`?
+- Before any UI opt-in, should `verify` remain in the exposed allowlist or
+  should the first user-facing slice narrow to targeted `test` and `lint`?
+
+## Resolved Questions
+
+- Allowlisted scripts stay fixed in code for the first registry-level slice.
+  Config-backed allowlists are deferred until there is a user-facing command
+  opt-in.
+- Successful command output remains a run-step observation, not a first-class
+  Artifact, until a later workflow shows that command output needs artifact
+  lifecycle behavior.
+- `verify` is allowed in the current registry-level allowlist, but no normal
+  prompt or UI exposes command execution yet.

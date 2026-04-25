@@ -119,13 +119,16 @@ Deferred.
 
 ## Open Questions
 
-- Should command output become a first-class artifact after approval, or remain
-  run-step output?
-- Should command allowlists stay fixed in code for alpha, or move into local
-  config before any UI exposure?
+- Before any UI opt-in, should command exposure allow `verify`, or narrow to
+  targeted `test` and `lint` first?
 
 ## Resolved Questions
 
 - Tier 1 uses the existing Runs and Decisions surfaces. A dedicated checkpoint
   detail panel is deferred until there is repeated manual review friction or
   until Tier 2 introduces explicit manual tool requests.
+- Command output remains run-step output for the current registry-level slice.
+  Artifact creation is deferred until a real workflow needs command output to be
+  promoted.
+- Command allowlists stay fixed in code for alpha registry-level execution;
+  local config is deferred until a user-facing command opt-in exists.
