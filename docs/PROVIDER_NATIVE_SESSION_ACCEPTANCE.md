@@ -2,8 +2,8 @@
 
 ## Purpose
 
-This gate defines what must be true before Taskplane wires provider-native
-structured tool calls into production agent runs.
+This gate defines what must be true before Taskplane expands provider-native
+structured tool calls beyond the first gated production agent-session path.
 
 Current accepted behavior remains:
 
@@ -29,6 +29,9 @@ Current accepted behavior remains:
   otherwise usable.
 - Replicate native text prediction must remain unsupported for provider-native
   structured tool execution.
+- Current text generation does not yet send provider-side tool schemas, so this
+  path activates only when a provider response body already contains a tested
+  tool-call shape.
 
 ### Session Truthfulness
 

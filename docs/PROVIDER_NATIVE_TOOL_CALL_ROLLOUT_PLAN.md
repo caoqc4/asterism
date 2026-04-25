@@ -2,13 +2,14 @@
 
 ## Status
 
-Proposed. Do not wire provider-native structured tool calls into real agent
-runs yet.
+In progress. The first explicit provider-native agent-session path is wired
+behind `evaluateProviderNativeSessionGate`; normal runs still use text-only
+planning unless every gate passes.
 
 This plan defines the safe sequence for using the reserved
-`featureFlags.enableProviderNativeToolCalls` flag later. The flag exists in
-config/env, but current runs still use text-only JSON planning and persist
-`structuredToolCalls=false`.
+`featureFlags.enableProviderNativeToolCalls` flag. The first wired path still
+requires a provider response-body payload and successful adapter normalization
+before any session can persist `structuredToolCalls=true`.
 
 ## Goal
 
@@ -159,6 +160,9 @@ Current boundary:
   succeeds
 - normal runs, failed normalization, unsupported providers, and missing payloads
   remain text-only plus optional shadow diagnostics
+- current text generation does not yet send provider-side tool schemas, so this
+  path only activates when the provider response body already contains a tested
+  tool-call shape
 
 Acceptance:
 
