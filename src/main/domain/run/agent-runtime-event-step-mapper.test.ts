@@ -9,13 +9,14 @@ describe('mapAgentRuntimeEventToRunStep', () => {
       type: 'plan.proposed',
       runId: 'run_1',
       source: 'provider_tool_call',
+      detail: '{"steps":[]}',
       summary: 'Inspect context, then create a note.',
     })).toEqual({
       runId: 'run_1',
       kind: 'plan',
       status: 'completed',
       title: 'Agent plan proposed',
-      input: 'source=provider_tool_call',
+      input: '{"steps":[]}',
       output: 'Inspect context, then create a note.',
     });
 

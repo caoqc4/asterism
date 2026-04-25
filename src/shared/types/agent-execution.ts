@@ -120,7 +120,12 @@ export type AgentSessionEvent =
       mode: AgentRunMode;
       capabilities: AgentRuntimeCapabilities;
     })
-  | (AgentRuntimeEventBase & { type: 'plan.proposed'; summary: string; source: 'model' | 'fallback' | 'provider_tool_call' })
+  | (AgentRuntimeEventBase & {
+      type: 'plan.proposed';
+      summary: string;
+      source: 'model' | 'fallback' | 'provider_tool_call';
+      detail?: string | null;
+    })
   | (AgentRuntimeEventBase & { type: 'model.completed'; output: string; provider?: string | null; model?: string | null })
   | (AgentRuntimeEventBase & { type: 'tool.started'; tool: AgentToolName; input: unknown })
   | (AgentRuntimeEventBase & { type: 'tool.completed'; tool: AgentToolName; result: AgentToolResult })

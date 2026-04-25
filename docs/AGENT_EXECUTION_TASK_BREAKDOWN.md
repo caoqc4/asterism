@@ -33,12 +33,15 @@ Completed:
 - `mapAgentRuntimeEventToRunStep`
 - text run plan/model/final writes routed through event-to-step mapping
 - agent session terminal result steps routed through event-to-step mapping
+- `AgentRunLoop` emits plan, tool, checkpoint, paused, completed, and failed
+  runtime events
+- `AgentSessionEventRecorder` projects loop plan/tool-terminal/session-terminal
+  events into RunSteps for real local/provider-native agent sessions
 - provider-native safe-read path remains gated and locally tested
 - workspace write/command tools remain registry-only and Decision-gated
 
 Still incomplete:
 
-- `AgentRunLoop` does not yet emit a first-class runtime event stream
 - checkpoint creation still happens inside tool/loop code paths
 - checkpoint payloads are not yet the full restart-safe resume contract
 - tool exposure is spread across registry, schema builder, prompt construction,

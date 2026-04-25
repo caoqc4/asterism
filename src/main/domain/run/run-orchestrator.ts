@@ -35,6 +35,7 @@ import {
   mapAgentRuntimeEventToRunStep,
   type AgentRuntimeRunStepDraft,
 } from './agent-runtime-event-step-mapper.js';
+import { AgentSessionEventRecorder } from './agent-session-event-recorder.js';
 
 export type RunOrchestrationResult =
   | {
@@ -252,13 +253,21 @@ export class RunOrchestrator {
       }),
       metadata: formatLocalAgentSessionMetadata(),
     });
+    const eventRecorder = new AgentSessionEventRecorder(this.runStepRepository);
 
     let sessionResult: Awaited<ReturnType<AgentExecutor['executeLocalNoteSession']>>;
 
     try {
       sessionResult = await this.agentExecutor.executeLocalNoteSession({
+        onEvent: async (event) => {
+          await eventRecorder.record({
+            ...event,
+            sessionId: agentSession.id,
+          });
+        },
         request,
         modelOutput: result.output,
+        recordPlanRunStep: false,
         taskTitle: params.task.title,
       });
     } catch (error) {
@@ -267,7 +276,10 @@ export class RunOrchestrator {
     }
 
     await this.agentSessionRepository.updateStatus(agentSession.id, sessionResult.status);
-    await this.recordAgentSessionResultEvent(params.run.id, sessionResult);
+
+    if (!eventRecorder.hasTerminalEvent()) {
+      await this.recordAgentSessionResultEvent(params.run.id, sessionResult);
+    }
 
     if (sessionResult.status === 'needs_confirmation') {
       return {
@@ -361,14 +373,22 @@ export class RunOrchestrator {
       }),
       metadata: formatProviderNativeAgentSessionMetadata(normalization.plan),
     });
+    const eventRecorder = new AgentSessionEventRecorder(this.runStepRepository);
 
     let sessionResult: Awaited<ReturnType<AgentExecutor['executeProviderNativeSession']>>;
 
     try {
       sessionResult = await executor.executeProviderNativeSession({
+        onEvent: async (event) => {
+          await eventRecorder.record({
+            ...event,
+            sessionId: agentSession.id,
+          });
+        },
         request: params.request,
         modelOutput: params.result.output,
         providerPlan: normalization.plan,
+        recordPlanRunStep: false,
         taskTitle: params.taskTitle,
       });
     } catch (error) {
@@ -377,7 +397,10 @@ export class RunOrchestrator {
     }
 
     await this.agentSessionRepository.updateStatus(agentSession.id, sessionResult.status);
-    await this.recordAgentSessionResultEvent(params.run.id, sessionResult);
+
+    if (!eventRecorder.hasTerminalEvent()) {
+      await this.recordAgentSessionResultEvent(params.run.id, sessionResult);
+    }
 
     if (sessionResult.status === 'needs_confirmation') {
       return {

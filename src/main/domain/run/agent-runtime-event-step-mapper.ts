@@ -50,7 +50,7 @@ export function mapAgentRuntimeEventToRunStep(
         kind: 'plan',
         status: 'completed',
         title: 'Agent plan proposed',
-        input: `source=${event.source}`,
+        input: event.detail ?? `source=${event.source}`,
         output: event.summary,
       };
     case 'model.completed':

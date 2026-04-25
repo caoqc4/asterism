@@ -713,9 +713,22 @@ export class AgentRunLoop {
     modelOutput: string;
     taskTitle: string;
     proposal?: AgentStepProposal | null;
+    proposalSource?: Extract<
+      Extract<AgentSessionEvent, { type: 'plan.proposed' }>['source'],
+      'model' | 'provider_tool_call'
+    >;
     onEvent?: AgentRunLoopEventSink | null;
+    recordPlanRunStep?: boolean;
   }): Promise<AgentRunLoopResult> {
-    const { modelOutput, onEvent, proposal, request, taskTitle } = params;
+    const {
+      modelOutput,
+      onEvent,
+      proposal,
+      proposalSource,
+      recordPlanRunStep = true,
+      request,
+      taskTitle,
+    } = params;
     const parsedProposal = proposal ?? this.extractStepProposal(modelOutput);
     const effectiveModelOutput = parsedProposal?.finalOutput ?? modelOutput;
     const trimmedOutput = effectiveModelOutput.trim();
@@ -747,19 +760,22 @@ export class AgentRunLoop {
       type: 'plan.proposed',
       runId: request.runId,
       summary: planOutput,
-      source: executionPlan.source === 'model_proposal' ? 'model' : 'fallback',
+      source: executionPlan.source === 'model_proposal' ? proposalSource ?? 'model' : 'fallback',
+      detail: parsedProposal ? JSON.stringify(parsedProposal) : null,
     });
 
-    await this.runStepRepository.create({
-      runId: request.runId,
-      kind: 'plan',
-      status: 'completed',
-      title: executionPlan.source === 'model_proposal'
-        ? '采用模型提出的 agent 步骤计划'
-        : '采用保守 fallback agent 步骤计划',
-      input: parsedProposal ? JSON.stringify(parsedProposal) : null,
-      output: planOutput,
-    });
+    if (recordPlanRunStep) {
+      await this.runStepRepository.create({
+        runId: request.runId,
+        kind: 'plan',
+        status: 'completed',
+        title: executionPlan.source === 'model_proposal'
+          ? '采用模型提出的 agent 步骤计划'
+          : '采用保守 fallback agent 步骤计划',
+        input: parsedProposal ? JSON.stringify(parsedProposal) : null,
+        output: planOutput,
+      });
+    }
 
     const observations: AgentRunLoopObservation[] = [];
     let recordedPlannerDecision = false;

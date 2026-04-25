@@ -3,13 +3,15 @@ import type {
   AgentSessionResult,
   ProviderToolCallPlan,
 } from '../../../shared/types/agent-execution.js';
-import type { AgentRunLoopResult } from './agent-run-loop.js';
+import type { AgentRunLoopEventSink, AgentRunLoopResult } from './agent-run-loop.js';
 import type { AgentRunLoop } from './agent-run-loop.js';
 
 export type AgentLocalNoteSessionInput = {
   request: AgentRunRequest;
   modelOutput: string;
   taskTitle: string;
+  onEvent?: AgentRunLoopEventSink | null;
+  recordPlanRunStep?: boolean;
 };
 
 export type AgentProviderNativeSessionInput = AgentLocalNoteSessionInput & {
@@ -31,9 +33,12 @@ export class LocalAgentExecutor implements AgentExecutor {
 
   async executeProviderNativeSession(input: AgentProviderNativeSessionInput): Promise<AgentSessionResult> {
     const result = await this.agentRunLoop.executeLocalNoteLoop({
+      onEvent: input.onEvent,
       request: input.request,
       modelOutput: input.modelOutput,
       proposal: input.providerPlan.proposal,
+      proposalSource: 'provider_tool_call',
+      recordPlanRunStep: input.recordPlanRunStep,
       taskTitle: input.taskTitle,
     });
 
