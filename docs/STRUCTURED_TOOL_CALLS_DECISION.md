@@ -178,8 +178,11 @@ Before additional provider-native expansion is accepted:
   text JSON proposals
 - renderer capability tests distinguish pre-run deferral copy from persisted
   `structuredToolCalls=true/false` session summaries
-- integration tests prove workspace write and command calls still checkpoint
-  instead of executing directly
+- integration tests prove registry-level workspace write and command calls still
+  checkpoint instead of executing directly
+- RunService integration tests prove provider-native workspace write or command
+  proposals fall back without creating checkpoints or changing files unless a
+  later explicit exposure decision accepts that path
 - local verification passes without GitHub Actions
 - guarded live validation should use
   `npm run accept:provider-native-live:preflight`,
