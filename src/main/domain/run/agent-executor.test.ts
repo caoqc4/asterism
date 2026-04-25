@@ -94,9 +94,12 @@ describe('LocalAgentExecutor', () => {
     const result = await executor.executeProviderNativeSession(input as never);
 
     expect(agentRunLoop.executeLocalNoteLoop).toHaveBeenCalledWith({
+      onEvent: undefined,
       request: input.request,
       modelOutput: 'Fallback text output',
       proposal: input.providerPlan.proposal,
+      proposalSource: 'provider_tool_call',
+      recordPlanRunStep: undefined,
       taskTitle: 'Task 1',
     });
     expect(result).toEqual({

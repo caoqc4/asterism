@@ -71,10 +71,20 @@ The project is past initial architecture assembly. Current work should favor pro
   Task/Run/Decision/Artifact/Timeline control plane and avoid adopting a full
   external agent runtime before Slice 0 is complete.
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
-  splits the next execution-layer work into concrete tasks: start with the
-  `AgentRunLoop` event emitter, then move event-driven RunStep projection,
-  checkpoint normalization, restart-safe resume, tool exposure gates, and the
-  sandbox decision in order.
+  now records the completed Slice 0 execution-layer pass: runtime events,
+  event-driven RunStep projection, checkpoint normalization, restart-safe
+  resume validation, centralized tool exposure gates, sandbox boundary, and
+  future execution design.
+- [AGENT_EXECUTION_SANDBOX_DECISION.md](AGENT_EXECUTION_SANDBOX_DECISION.md)
+  keeps broad code-agent mode deferred until a dedicated sandbox provider
+  boundary exists.
+- [AGENT_EXECUTION_FUTURE_DESIGN.md](AGENT_EXECUTION_FUTURE_DESIGN.md)
+  captures the post-Slice-0 design for side quests, replay/idempotency,
+  sandbox providers, human feedback routing, and future MCP constraints.
+- `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
+  persistence and returns canonical `checkpoint.created` events for callers to
+  emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
+  tool visibility rules.
 
 ## Verification Baseline
 
@@ -86,13 +96,15 @@ npm run verify
 
 Latest local baseline:
 
-- 63 test files
-- 470 tests
+- 66 test files
+- 482 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents and isolated startup
+- `npm run smoke:release:mac` passed locally on 2026-04-25 for the combined
+  unsigned macOS package path
 
 Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging configuration changes. Run `npm run smoke:release:mac` for the combined unsigned macOS package path.
 
@@ -110,11 +122,9 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 2. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
-5. Use [AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md](AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md)
-   and [AGENT_EXECUTION_LAYER_V2_DECISION.md](AGENT_EXECUTION_LAYER_V2_DECISION.md)
-   plus [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
-   for the next implementation pass: typed runtime events, restart-safe resume,
-   and explicit tool exposure gates before any new execution power is exposed.
+5. Treat the execution-layer Slice 0 pass as locally accepted for the alpha
+   path; future execution work should stay behind the accepted sandbox and
+   exposure boundaries.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.
