@@ -20,6 +20,7 @@ Current test files:
 - `src/main/keychain/ai-config-service.test.ts`
 - `src/main/domain/task/task-service.test.ts`
 - `src/main/domain/decision/decision-service.test.ts`
+- `src/main/domain/decision/decision-service.integration.test.ts`
 - `src/main/domain/run/run-service.test.ts`
 - `src/main/domain/run/run-service.integration.test.ts`
 - `src/main/domain/run/run-orchestrator.test.ts`
@@ -77,7 +78,7 @@ Covered today:
 - `TaskService`
   transitions, invalid transitions, signal updates, task-resume derivation, blocker/dependency/completion-criteria lifecycle writes, decision annotations, and completed/failed/paused run-settlement annotations
 - `DecisionService`
-  task existence checks, decision-to-task lifecycle linkage, AI/fallback decision-draft composition, and checkpoint Decision approval/defer settlement
+  task existence checks, decision-to-task lifecycle linkage, AI/fallback decision-draft composition, checkpoint Decision approval/defer settlement, and isolated workspace patch approval through real SQLite repositories
 - `RunService`
   successful execution path, failure path, paused path, paused checkpoint continuation, task restoration after settled runs, artifact creation on successful output, orchestration result settlement, and an isolated read-only workspace agent path through persisted run detail
 - `RunOrchestrator`
