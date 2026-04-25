@@ -107,6 +107,17 @@ export type AgentSessionResult =
   | { status: 'needs_confirmation'; checkpointId: string; message: string }
   | { status: 'paused'; checkpointId: string; message: string };
 
+export type AgentSessionRecord = {
+  id: string;
+  runId: string;
+  mode: AgentRunMode;
+  status: 'running' | 'completed' | 'failed' | 'paused' | 'needs_confirmation' | 'cancelled';
+  capabilities: AgentRuntimeCapabilities;
+  metadata: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type AgentStepProposal = {
   finalOutput?: string | null;
   steps: Array<{

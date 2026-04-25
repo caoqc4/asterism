@@ -27,6 +27,7 @@ Current test files:
 - `src/main/db/repositories/task-repository.integration.test.ts`
 - `src/main/db/repositories/run-repository.integration.test.ts`
 - `src/main/db/repositories/decision-repository.integration.test.ts`
+- `src/main/db/repositories/agent-session-repository.integration.test.ts`
 - `src/main/db/repositories/brief-snapshot-repository.integration.test.ts`
 - `src/main/db/repositories/waiting-item-repository.integration.test.ts`
 - `src/main/db/repositories/artifact-repository.integration.test.ts`
@@ -94,6 +95,8 @@ Covered today:
   ordered execution-step creation, updates, and per-run retrieval
 - `RunCheckpointRepository`
   open checkpoint creation, per-run retrieval, resume checkpoint creation, decision-id lookup, and checkpoint settlement
+- `AgentSessionRepository`
+  agent session metadata persistence for run-scoped executor capabilities
 - `DecisionRepository`
   decision creation, optional source metadata persistence, action persistence, timeline writes
 - `BriefSnapshotRepository`

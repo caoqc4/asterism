@@ -1,5 +1,7 @@
 import type { CreateRunInput, RunRecord, RunStepRecord } from '../../../shared/types/run.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
+import type { AgentRuntimeCapabilities } from '../../../shared/types/agent-execution.js';
+import { AgentSessionRepository } from '../../db/repositories/agent-session-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
@@ -49,6 +51,9 @@ export class RunOrchestrator {
     private readonly agentToolRegistry: AgentToolRegistry | null = null,
     private readonly agentExecutor: AgentExecutor | null = agentToolRegistry
       ? new LocalAgentExecutor(new AgentRunLoop(agentToolRegistry, runStepRepository))
+      : null,
+    private readonly agentSessionRepository: AgentSessionRepository | null = agentToolRegistry
+      ? new AgentSessionRepository()
       : null,
   ) {}
 
@@ -153,7 +158,12 @@ export class RunOrchestrator {
       input,
     });
 
-    if (result.status !== 'completed' || !this.agentExecutor || !result.output.trim()) {
+    if (
+      result.status !== 'completed' ||
+      !this.agentExecutor ||
+      !this.agentSessionRepository ||
+      !result.output.trim()
+    ) {
       return result;
     }
 
@@ -167,6 +177,16 @@ export class RunOrchestrator {
     if (request.policy.confirmationRequiredRisks.includes('local_write')) {
       return result;
     }
+
+    await this.agentSessionRepository.create({
+      runId: params.run.id,
+      mode: 'agent',
+      capabilities: getLocalAgentRuntimeCapabilities(),
+      metadata: [
+        'executor=local_agent',
+        'loop=local_note',
+      ].join('\n'),
+    });
 
     const sessionResult = await this.agentExecutor.executeLocalNoteSession({
       request,
@@ -221,4 +241,14 @@ export class RunOrchestrator {
       };
     }
   }
+}
+
+function getLocalAgentRuntimeCapabilities(): AgentRuntimeCapabilities {
+  return {
+    structuredToolCalls: false,
+    textOnlyPlanning: true,
+    streaming: false,
+    fileContext: false,
+    longRunningSessions: false,
+  };
 }

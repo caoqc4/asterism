@@ -487,7 +487,7 @@ Completed slice:
 5. Add unit tests proving current paused/completed/failed agent outcomes still
    settle exactly as before.
 
-Next code slice:
+Completed slice:
 
 1. Add a small `AgentSessionStore` abstraction that can record session metadata
    for a run without changing public `Run` shape yet.
@@ -495,8 +495,13 @@ Next code slice:
    used text-only planning or structured tool calling.
 3. Teach `RunOrchestrator` to write the session metadata before starting the
    executor.
-4. Surface the capability summary in run steps or Runs page copy.
 
-Success: no new user-facing capability is required, but interrupted runs and
-future coding/research/social executors have a durable place to explain what
-kind of session they were running.
+Next code slice:
+
+1. Add agent session records to `RunDetailRecord`.
+2. Surface the capability summary in run detail or Runs page copy.
+3. Add renderer coverage for the capability hint.
+
+Success: interrupted runs and future coding/research/social executors have a
+durable place to explain what kind of session they were running, and the user
+can see whether a run used text-only planning or a tool-capable session.

@@ -265,6 +265,9 @@ describe('RunOrchestrator', () => {
         output: 'Agent local note output',
       }),
     };
+    const agentSessionRepository = {
+      create: vi.fn().mockResolvedValue({ id: 'agent_session_1' }),
+    };
     const orchestrator = new RunOrchestrator(
       aiConfigService as never,
       textExecutor as never,
@@ -272,6 +275,7 @@ describe('RunOrchestrator', () => {
       runStepRepository as never,
       agentToolRegistry as never,
       agentExecutor as never,
+      agentSessionRepository as never,
     );
 
     const result = await orchestrator.executeAgentRun({
@@ -283,6 +287,18 @@ describe('RunOrchestrator', () => {
     expect(result).toMatchObject({
       status: 'completed',
       output: 'Agent local note output',
+    });
+    expect(agentSessionRepository.create).toHaveBeenCalledWith({
+      runId: 'run_1',
+      mode: 'agent',
+      capabilities: {
+        structuredToolCalls: false,
+        textOnlyPlanning: true,
+        streaming: false,
+        fileContext: false,
+        longRunningSessions: false,
+      },
+      metadata: 'executor=local_agent\nloop=local_note',
     });
     expect(agentExecutor.executeLocalNoteSession).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -329,6 +345,9 @@ describe('RunOrchestrator', () => {
         checkpointId: 'run_checkpoint_1',
       }),
     };
+    const agentSessionRepository = {
+      create: vi.fn().mockResolvedValue({ id: 'agent_session_1' }),
+    };
     const orchestrator = new RunOrchestrator(
       aiConfigService as never,
       textExecutor as never,
@@ -336,6 +355,7 @@ describe('RunOrchestrator', () => {
       runStepRepository as never,
       agentToolRegistry as never,
       agentExecutor as never,
+      agentSessionRepository as never,
     );
 
     const result = await orchestrator.executeAgentRun({

@@ -71,6 +71,17 @@ export const runCheckpoints = sqliteTable('run_checkpoints', {
   resolvedAt: text('resolved_at'),
 });
 
+export const agentSessions = sqliteTable('agent_sessions', {
+  id: text('id').primaryKey(),
+  runId: text('run_id').notNull(),
+  mode: text('mode').notNull(),
+  status: text('status').notNull(),
+  capabilities: text('capabilities').notNull(),
+  metadata: text('metadata'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
 export const briefSnapshots = sqliteTable('brief_snapshots', {
   id: text('id').primaryKey(),
   kind: text('kind').notNull(),
