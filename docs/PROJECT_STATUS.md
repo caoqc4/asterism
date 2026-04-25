@@ -40,6 +40,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - The first shadow-normalization helper can summarize skipped/observed/failed provider-native tool-call adapter outcomes without exposing executable `AgentStepProposal` objects, and RunOrchestrator can now write a diagnostic-only shadow step when the reserved flag is enabled and a minimal provider payload exists.
 - Text generation now has a result-shaped helper that preserves the existing text-only API while optionally carrying a minimal provider response-body payload for non-executing shadow observation.
 - `LocalAgentExecutor` now has an internal provider-native session entry that can pass a normalized provider proposal through the same `AgentRunLoop`, but RunOrchestrator still does not select that path for production runs.
+- Shared agent-session metadata helpers now define both current local executor metadata and the future provider-native metadata shape without persisting raw provider payloads.
 - The first domain-shaped task tools are in the registry and can be prompt-exposed only through the explicit per-run `allowTaskMutationTools` opt-in: `task.update_next_step` routes through `TaskService.update`, `task.create_completion_criterion` routes through `TaskService.createCompletionCriteria`, `task.review_completion_evidence` reviews completion status and recent evidence without mutating criteria or task state, `source_context.create` routes through `TaskService.createSourceContext`, and `decision.draft` routes through `DecisionService.draft` without creating a formal Decision. These tools write run-step observations, and normal agent plans still fall back if a model proposes them without the opt-in.
 - A focused `npm run accept:domain-agent-tools` command now exercises those registry-only domain tools through real SQLite repositories without exposing them to normal model plans.
 - The first command-execution slice is in place but not model-exposed: `workspace.run_command` requires explicit local command policy, accepts only allowlisted `package.json` scripts, creates a confirmation checkpoint with command preview, and resumes once after the linked Decision is approved.
@@ -56,8 +57,8 @@ npm run verify
 
 Latest local baseline:
 
-- 56 test files
-- 421 tests
+- 57 test files
+- 423 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build

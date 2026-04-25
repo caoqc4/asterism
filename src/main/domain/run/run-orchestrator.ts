@@ -7,6 +7,7 @@ import { TextExecutor } from '../../executors/text-executor.js';
 import type { RuntimeTextResult } from '../../executors/text-generation.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
 import { observeProviderNativeToolCalls } from '../../../shared/provider-tool-call-shadow.js';
+import { formatLocalAgentSessionMetadata } from '../../../shared/agent-session-metadata.js';
 import { AgentRunLoop } from './agent-run-loop.js';
 import { LocalAgentExecutor, type AgentExecutor } from './agent-executor.js';
 import type { AgentToolRegistry } from './agent-tool-registry.js';
@@ -199,10 +200,7 @@ export class RunOrchestrator {
         allowLocalWorkspaceRead: Boolean(input.allowLocalWorkspaceRead),
         allowTaskMutationTools: Boolean(input.allowTaskMutationTools),
       }),
-      metadata: [
-        'executor=local_agent',
-        'loop=local_note',
-      ].join('\n'),
+      metadata: formatLocalAgentSessionMetadata(),
     });
 
     let sessionResult: Awaited<ReturnType<AgentExecutor['executeLocalNoteSession']>>;

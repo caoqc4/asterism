@@ -146,6 +146,9 @@ Current boundary:
 
 - `LocalAgentExecutor.executeProviderNativeSession` can delegate a normalized
   `ProviderToolCallPlan.proposal` through the existing `AgentRunLoop`
+- shared agent-session metadata helpers define the current local executor
+  metadata and the future provider-native metadata shape with provider, model,
+  adapter, raw summary, provider call ids, and stop reason
 - RunOrchestrator still does not select this path, so normal runs remain
   text-only plus optional shadow diagnostics
 

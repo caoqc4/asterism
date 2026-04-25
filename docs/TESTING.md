@@ -116,6 +116,9 @@ Covered today:
   shared provider execution descriptors for unconfigured, local text-executor,
   OpenAI-compatible-style, fal/OpenRouter, and Replicate native text paths,
   while keeping Taskplane structured tool calls disabled until an adapter exists
+- `Agent session metadata`
+  shared local executor metadata formatting and future provider-native session
+  metadata formatting without persisting raw provider payloads
 - `Provider tool-call normalizer`
   shared normalized provider tool-call plan validation, including fail-closed
   handling for malformed, mixed known/unknown, or raw provider payloads before
