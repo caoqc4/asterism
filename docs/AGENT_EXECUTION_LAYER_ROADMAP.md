@@ -121,6 +121,9 @@ Completed:
 - Shared provider capability descriptors and provider tool-call normalization
   types now define the future adapter entry shape while failing closed for raw
   or malformed provider payloads.
+- An offline OpenAI-compatible chat-completion-style fixture adapter can
+  translate `tool_calls` into normalized Taskplane proposals, but it is not
+  connected to provider execution or run sessions.
 
 Acceptance:
 
@@ -132,6 +135,8 @@ Acceptance:
   capabilities
 - raw provider tool-call payloads do not become executable steps without a
   dedicated adapter translation
+- OpenAI-compatible fixture translation validates JSON function arguments before
+  producing normalized proposals
 
 Deferred:
 
