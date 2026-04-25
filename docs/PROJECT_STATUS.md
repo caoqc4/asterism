@@ -317,6 +317,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - Producer planning docs now mark the first non-live slices as implemented and
   name the remaining pre-backend task: integration coverage for blocked,
   failed, empty-diff, and source-ready producer results.
+- Sandboxed coding producer integration coverage now exercises those
+  pre-backend outcomes with real temp workspace/staging directories and an
+  injected runner: source-ready, runner-blocked, runner-failed, and empty-diff
+  failed paths.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -346,8 +350,8 @@ npm run verify
 
 Latest local baseline:
 
-- 81 test files
-- 592 tests
+- 82 test files
+- 596 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -382,6 +386,8 @@ Latest local baseline:
   event-to-RunStep projection: 81 test files / 590 tests
 - `npm run verify` passed locally on 2026-04-26 after adding the injected
   sandboxed coding producer preview path: 81 test files / 592 tests
+- `npm run verify` passed locally on 2026-04-26 after adding sandboxed coding
+  producer integration coverage: 82 test files / 596 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
