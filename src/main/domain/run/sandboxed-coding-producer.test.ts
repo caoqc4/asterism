@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { validateSandboxedCodingProducerRequest } from './sandboxed-coding-producer.js';
+import {
+  buildSandboxedCodingProducerSource,
+  previewSandboxedCodingProducerPatchReview,
+  validateSandboxedCodingProducerRequest,
+} from './sandboxed-coding-producer.js';
 
 const validRequest = {
   commandPolicy: {
@@ -131,5 +135,104 @@ describe('validateSandboxedCodingProducerRequest', () => {
         'Sandboxed coding producer requires Decision promotion.',
       ]));
     }
+  });
+
+  it('builds a validated sandbox patch draft source from a producer request and staged patch', () => {
+    const result = buildSandboxedCodingProducerSource({
+      evidence: {
+        commandSummaries: ['lint: passed'],
+        modelSummary: 'Changed notes workflow.',
+        observations: ['Read src/notes.md'],
+      },
+      patchDraft: {
+        diff: '--- a/src/notes.md\n+++ b/src/notes.md',
+        files: ['src/notes.md'],
+        summary: 'Update notes workflow',
+      },
+      request: validRequest,
+    });
+
+    expect(result.valid).toBe(true);
+
+    if (result.valid) {
+      expect(result.source).toMatchObject({
+        runId: 'run_1',
+        sourceId: 'sandbox_source_1',
+        sourceKind: 'sandbox_session',
+        taskId: 'task_1',
+        workspaceRoot: '/tmp/taskplane-workspace',
+      });
+      expect(result.source.requestedScripts).toEqual(['lint', 'test']);
+      expect(result.summary).toContain('Sandboxed coding producer source ready');
+    }
+  });
+
+  it('blocks producer source creation when the staged patch draft is empty', () => {
+    const result = buildSandboxedCodingProducerSource({
+      patchDraft: {
+        diff: '',
+        files: [],
+        summary: '',
+      },
+      request: validRequest,
+    });
+
+    expect(result).toMatchObject({
+      valid: false,
+      blockedReasons: expect.arrayContaining([
+        'Sandbox patch draft source requires a patch summary.',
+        'Sandbox patch draft source requires a diff preview.',
+        'Sandbox patch draft source requires at least one changed file.',
+      ]),
+    });
+  });
+
+  it('previews a ready sandbox patch review plan from producer output without execution dependencies', () => {
+    const plan = previewSandboxedCodingProducerPatchReview({
+      decisionTitle: '确认提升 producer sandbox patch',
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      patchDraft: {
+        diff: '--- a/src/notes.md\n+++ b/src/notes.md',
+        files: ['src/notes.md'],
+        summary: 'Update notes workflow',
+      },
+      request: validRequest,
+    });
+
+    expect(plan.status).toBe('ready');
+
+    if (plan.status === 'ready') {
+      expect(plan.decisionTitle).toBe('确认提升 producer sandbox patch');
+      expect(plan.requestBundle.audit.patchDraftSource).toEqual({
+        sourceId: 'sandbox_source_1',
+        sourceKind: 'sandbox_session',
+      });
+      expect(plan.requestBundle.audit.idempotencyKey).toBe(
+        'sandbox-patch-review:sandbox_session:sandbox_source_1:run_1:task_1:lint,test',
+      );
+    }
+  });
+
+  it('keeps producer patch review blocked while the sandbox feature flag is disabled', () => {
+    const plan = previewSandboxedCodingProducerPatchReview({
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: false,
+      },
+      patchDraft: {
+        diff: '--- a/src/notes.md\n+++ b/src/notes.md',
+        files: ['src/notes.md'],
+        summary: 'Update notes workflow',
+      },
+      request: validRequest,
+    });
+
+    expect(plan).toMatchObject({
+      status: 'blocked',
+      reason: expect.stringContaining('feature flag is off'),
+    });
   });
 });

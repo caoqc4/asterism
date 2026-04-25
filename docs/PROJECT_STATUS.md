@@ -300,6 +300,11 @@ The project is past initial architecture assembly. Current work should favor pro
   workspace. It blocks staging roots inside the workspace, leaves workspace
   files untouched, and still does not run a model, command runner, backend, or
   UI entrypoint.
+- Producer scaffolding now has a non-live source/preview bridge: a validated
+  producer request plus staged patch draft can build a validated
+  `SandboxPatchDraftSource` and preview the existing sandbox patch-review plan
+  through `previewFromSource()`, still without starting a model loop, runner,
+  sandbox backend, or UI entrypoint.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -330,7 +335,7 @@ npm run verify
 Latest local baseline:
 
 - 81 test files
-- 584 tests
+- 588 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -359,6 +364,8 @@ Latest local baseline:
   `SandboxedCodingProducerRequest` validation: 80 test files / 579 tests
 - `npm run verify` passed locally on 2026-04-26 after adding the non-live
   sandboxed coding staged patch collector: 81 test files / 584 tests
+- `npm run verify` passed locally on 2026-04-26 after adding the non-live
+  producer source/preview bridge: 81 test files / 588 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

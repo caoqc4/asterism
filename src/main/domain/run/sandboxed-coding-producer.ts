@@ -1,5 +1,15 @@
 import type { AgentSandboxCheckScript } from '../../../shared/agent-sandbox-provider.js';
-import type { SandboxPatchDraftSource } from './sandbox-patch-draft-source.js';
+import type { FeatureFlags } from '../../../shared/types/settings.js';
+import type { LocalContainerSandboxPatchDraft } from './local-container-sandbox-backend.js';
+import {
+  type SandboxPatchDraftSource,
+  type SandboxPatchDraftSourceEvidence,
+  validateSandboxPatchDraftSource,
+} from './sandbox-patch-draft-source.js';
+import {
+  SandboxPatchReviewPlanningService,
+} from './sandbox-patch-review-planning-service.js';
+import type { SandboxPatchReviewRunPlan } from './sandbox-patch-review-run-plan.js';
 
 export type SandboxedCodingProducerRequest = {
   commandPolicy: {
@@ -55,6 +65,18 @@ export type SandboxedCodingProducerResult =
 export type SandboxedCodingProducerRequestValidation =
   | {
       request: NormalizedSandboxedCodingProducerRequest;
+      summary: string;
+      valid: true;
+    }
+  | {
+      blockedReasons: string[];
+      summary: string;
+      valid: false;
+    };
+
+export type BuildSandboxedCodingProducerSourceResult =
+  | {
+      source: SandboxPatchDraftSource;
       summary: string;
       valid: true;
     }
@@ -139,6 +161,92 @@ export function validateSandboxedCodingProducerRequest(
     ].join(' / '),
     valid: true,
   };
+}
+
+export function buildSandboxedCodingProducerSource(params: {
+  evidence?: Partial<SandboxPatchDraftSourceEvidence>;
+  patchDraft: LocalContainerSandboxPatchDraft;
+  request: unknown;
+}): BuildSandboxedCodingProducerSourceResult {
+  const requestValidation = validateSandboxedCodingProducerRequest(params.request);
+  if (!requestValidation.valid) {
+    return {
+      blockedReasons: requestValidation.blockedReasons,
+      summary: requestValidation.summary,
+      valid: false,
+    };
+  }
+
+  const request = requestValidation.request;
+  const source: SandboxPatchDraftSource = {
+    evidence: {
+      commandSummaries: normalizeStringArray(params.evidence?.commandSummaries),
+      modelSummary: params.evidence?.modelSummary?.trim() || null,
+      observations: normalizeStringArray(params.evidence?.observations),
+    },
+    patchDraft: params.patchDraft,
+    policySnapshot: {
+      network: request.executionPolicy.network,
+      noCredentialPassthrough: true,
+      promotion: 'decision_required',
+    },
+    requestedScripts: request.commandPolicy.allowedScripts,
+    runId: request.runId,
+    sourceId: request.sourceId,
+    sourceKind: 'sandbox_session',
+    taskId: request.taskId,
+    workspaceRoot: request.workspaceRoot,
+  };
+  const sourceValidation = validateSandboxPatchDraftSource(source);
+
+  if (!sourceValidation.valid) {
+    return {
+      blockedReasons: sourceValidation.blockedReasons,
+      summary: sourceValidation.summary,
+      valid: false,
+    };
+  }
+
+  return {
+    source: sourceValidation.source,
+    summary: [
+      'Sandboxed coding producer source ready',
+      requestValidation.summary,
+      sourceValidation.summary,
+    ].join(' / '),
+    valid: true,
+  };
+}
+
+export function previewSandboxedCodingProducerPatchReview(params: {
+  decisionTitle?: string | null;
+  evidence?: Partial<SandboxPatchDraftSourceEvidence>;
+  featureFlags: FeatureFlags;
+  patchDraft: LocalContainerSandboxPatchDraft;
+  planningService?: Pick<SandboxPatchReviewPlanningService, 'previewFromSource'>;
+  request: unknown;
+}): SandboxPatchReviewRunPlan {
+  const sourceResult = buildSandboxedCodingProducerSource({
+    evidence: params.evidence,
+    patchDraft: params.patchDraft,
+    request: params.request,
+  });
+
+  if (!sourceResult.valid) {
+    return {
+      reason: sourceResult.blockedReasons.join(' '),
+      status: 'blocked',
+      summary: sourceResult.summary,
+    };
+  }
+
+  const planningService = params.planningService ?? new SandboxPatchReviewPlanningService();
+  return planningService.previewFromSource({
+    decisionTitle: params.decisionTitle,
+    expectedWorkspaceRoot: sourceResult.source.workspaceRoot,
+    featureFlags: params.featureFlags,
+    source: sourceResult.source,
+  });
 }
 
 function invalidRequest(blockedReasons: string[]): SandboxedCodingProducerRequestValidation {
