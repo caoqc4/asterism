@@ -269,10 +269,13 @@ Completed non-live slices:
 7. Bounded producer session metadata formatting for future `agent_sessions`
    persistence and Run detail diagnostics, without persisting raw provider
    prompts, environment variables, or unbounded logs.
+8. Non-live producer preview persister that records bounded agent session
+   metadata and compact RunStep drafts through existing repositories without
+   creating patch artifacts or promotion checkpoints.
 
 Next slice:
 
-8. Connect a real sandbox backend only after a backend decision/review confirms
+9. Connect a real sandbox backend only after a backend decision/review confirms
    the implementation still satisfies the sandbox decision and source boundary.
 
 ## Acceptance

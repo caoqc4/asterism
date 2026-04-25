@@ -345,6 +345,11 @@ The project is past initial architecture assembly. Current work should favor pro
   for future `agent_sessions` persistence and Run detail diagnostics, including
   producer status, source id, provider, checks, network, promotion, backend,
   and blocked reasons without raw provider prompts or environment data.
+- A non-live sandboxed coding producer preview persister can now record that
+  bounded session metadata plus compact producer RunStep drafts through the
+  existing `agent_sessions` and `run_steps` repositories, while leaving patch
+  artifact creation and promotion checkpoints to the separate patch-review
+  persister.
 - Local Docker backend probe on 2026-04-26 is not ready: Docker CLI reached the
   configured socket path but the daemon/socket was unavailable at
   `/Users/caoq/.docker/run/docker.sock`. Real local-container backend live
@@ -393,8 +398,8 @@ npm run verify
 
 Latest local baseline:
 
-- 83 test files
-- 609 tests
+- 84 test files
+- 611 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -453,6 +458,11 @@ Latest local baseline:
   src/main/domain/run/sandboxed-coding-producer.test.ts`,
   `npm run accept:sandbox-coding`, and `npm run verify` passed locally on
   2026-04-26 after adding producer session metadata: 83 test files / 609 tests
+- `npm test -- src/main/domain/run/sandboxed-coding-producer-persister.test.ts
+  src/main/domain/run/sandboxed-coding-producer.test.ts`,
+  `npm run accept:sandbox-coding`, and `npm run verify` passed locally on
+  2026-04-26 after adding non-live producer preview persistence: 84 test files
+  / 611 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
