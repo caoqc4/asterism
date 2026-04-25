@@ -32,6 +32,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - The first domain-shaped task tools are in the registry but not prompt-exposed: `task.update_next_step` routes through `TaskService.update`, `task.create_completion_criterion` routes through `TaskService.createCompletionCriteria`, `source_context.create` routes through `TaskService.createSourceContext`, and `decision.draft` routes through `DecisionService.draft` without creating a formal Decision. These tools write run-step observations, and normal agent plans still fall back if a model proposes them.
 - A focused `npm run accept:domain-agent-tools` command now exercises those registry-only domain tools through real SQLite repositories without exposing them to normal model plans.
 - The first command-execution slice is in place but not model-exposed: `workspace.run_command` requires explicit local command policy, accepts only allowlisted `package.json` scripts, creates a confirmation checkpoint with command preview, and resumes once after the linked Decision is approved.
+- The first tool-exposure decision now recommends a per-run opt-in for domain-shaped task tools before any workspace write or command prompt exposure.
 
 ## Verification Baseline
 
@@ -67,7 +68,7 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 2. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
-5. Keep `workspace.run_command` registry-only until a dedicated UI/policy opt-in slice decides how users enable command execution per run.
+5. Implement [AGENT_TOOL_OPT_IN_DECISION.md](AGENT_TOOL_OPT_IN_DECISION.md) before exposing registry-only tools to normal agent runs.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.

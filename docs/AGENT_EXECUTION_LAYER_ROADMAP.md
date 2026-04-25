@@ -184,6 +184,7 @@ Acceptance:
 ## Near-Term Recommendation
 
 Keep `workspace.run_command` registry-only. The next execution-layer slice should
-decide whether command execution gets a per-run UI opt-in, a config-file
-allowlist extension, or remains reserved for acceptance commands and internal
-resumes.
+start from [AGENT_TOOL_OPT_IN_DECISION.md](AGENT_TOOL_OPT_IN_DECISION.md):
+expose domain-shaped task tools first behind an explicit per-run opt-in, while
+workspace patch and command tools remain reserved for acceptance commands and
+internal confirmation resumes.
