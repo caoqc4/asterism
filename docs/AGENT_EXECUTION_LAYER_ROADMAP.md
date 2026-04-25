@@ -123,10 +123,13 @@ Completed:
   or malformed provider payloads.
 - An offline OpenAI-compatible chat-completion-style fixture adapter can
   translate `tool_calls` into normalized Taskplane proposals, but it is not
-  connected to provider execution or run sessions.
+  connected to provider execution or run sessions. It fails closed for malformed
+  tool-call envelopes, non-`function` calls, missing `function` objects, and
+  non-object JSON arguments.
 - An offline Anthropic Messages-style fixture adapter can translate `tool_use`
   content blocks into normalized Taskplane proposals, but it is not connected
-  to provider execution or run sessions.
+  to provider execution or run sessions. It fails closed for malformed content
+  blocks, unsupported block types, missing ids/names, and non-object inputs.
 - A shared offline provider-native dispatcher selects the Anthropic or
   OpenAI-compatible fixture adapter by provider and fails closed for Replicate;
   it is not connected to provider execution or run sessions.
@@ -146,6 +149,8 @@ Acceptance:
   capabilities
 - raw provider tool-call payloads do not become executable steps without a
   dedicated adapter translation
+- mixed valid and invalid provider tool-call payloads fail as a whole instead
+  of executing the valid subset
 - OpenAI-compatible fixture translation validates JSON function arguments before
   producing normalized proposals
 - Anthropic fixture translation validates `tool_use.input` objects before
