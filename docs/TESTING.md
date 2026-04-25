@@ -115,6 +115,9 @@ Covered today:
   shared normalized provider tool-call plan validation, including fail-closed
   handling for malformed or raw provider payloads before any provider adapter
   can execute steps
+- `Agent tool helpers`
+  shared runtime tool-name guard used by provider normalization so future
+  adapters validate against the same Taskplane tool list
 - `AI clients`
   Vercel SDK client routing plus native Replicate text prediction request/response handling
 - `HomeBriefService`

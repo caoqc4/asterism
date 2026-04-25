@@ -1,23 +1,8 @@
 import type {
   AgentStepProposal,
-  AgentToolName,
   ProviderToolCallNormalizationResult,
 } from './types/agent-execution.js';
-
-const AGENT_TOOL_NAMES = new Set<AgentToolName>([
-  'artifact.create_note',
-  'decision.draft',
-  'source_context.create',
-  'task.create_completion_criterion',
-  'task.inspect_context',
-  'task.inspect_timeline',
-  'task.review_completion_evidence',
-  'task.update_next_step',
-  'workspace.read_file',
-  'workspace.run_command',
-  'workspace.search',
-  'workspace.write_patch',
-]);
+import { isAgentToolName } from './agent-tools.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -49,16 +34,12 @@ function parseProposal(value: unknown): AgentStepProposal | null {
   }
 
   const steps = value.steps.flatMap((step) => {
-    if (!isRecord(step) || typeof step.tool !== 'string') {
-      return [];
-    }
-
-    if (!AGENT_TOOL_NAMES.has(step.tool as AgentToolName)) {
+    if (!isRecord(step) || !isAgentToolName(step.tool)) {
       return [];
     }
 
     return [{
-      tool: step.tool as AgentToolName,
+      tool: step.tool,
       input: isRecord(step.input) ? step.input : undefined,
     }];
   });
