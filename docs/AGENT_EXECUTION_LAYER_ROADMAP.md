@@ -110,8 +110,9 @@ Completed:
 - Tasks and Runs agent forms preview provider/session capability before
   triggering a run.
 - The preview names text-only planning, per-run read-only workspace context,
-  task update tool opt-in state, structured tool-call unavailability, and
-  patch/command unavailability.
+  task update/evidence tool opt-in state, structured tool-call deferral in the
+  local executor, Replicate native text-path limitations, and patch/command
+  unavailability.
 - Provider preview coverage now asserts Anthropic, OpenAI, OpenAI-compatible,
   fal/OpenRouter, and Replicate wording stays truthful.
 - Agent sessions keep `textOnlyPlanning`, `structuredToolCalls`, `fileContext`,
@@ -124,6 +125,8 @@ Acceptance:
 - read-only workspace opt-in updates `fileContext=true`
 - task update tool opt-in updates `taskMutationTools=true`
 - provider limitations do not silently enable tool plans
+- pre-run copy distinguishes provider text paths from persisted session
+  capabilities
 
 Deferred:
 

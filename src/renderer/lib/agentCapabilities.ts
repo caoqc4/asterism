@@ -9,6 +9,14 @@ function formatProviderSummary(aiStatus: AiConfigStatus | null): string {
   return `${aiStatus.provider} / ${aiStatus.model}`;
 }
 
+function formatPreRunStructuredToolSummary(aiStatus: AiConfigStatus | null): string {
+  if (aiStatus?.provider === 'replicate') {
+    return 'structured tool calls unavailable on native Replicate text path';
+  }
+
+  return 'structured tool calls deferred in Taskplane local executor';
+}
+
 export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord): string {
   const capabilities = session.capabilities;
   const parts = [
@@ -50,7 +58,7 @@ export function formatPreRunAgentCapabilitySummary(
     planningSummary,
     workspaceSummary,
     taskToolsSummary,
-    'structured tool calls unavailable',
+    formatPreRunStructuredToolSummary(aiStatus),
     'patch/commands unavailable',
   ].join(' / ');
 }

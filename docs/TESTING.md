@@ -106,7 +106,7 @@ Covered today:
 - `TextExecutor`
   lane-aware run prompt composition, constrained JSON proposal prompting for agent runs, opt-in workspace tool prompt guidance, and opt-in domain task/evidence tool prompt guidance
 - `Agent capability UI helpers`
-  pre-run agent capability preview wording, including text-only local executor behavior, read-only workspace opt-in state, task update/evidence tool opt-in state, and Replicate-specific text-only planning wording
+  pre-run agent capability preview wording, including text-only local executor behavior, read-only workspace opt-in state, task update/evidence tool opt-in state, structured tool-call deferral wording, and Replicate-specific text-only planning wording
 - `AI clients`
   Vercel SDK client routing plus native Replicate text prediction request/response handling
 - `HomeBriefService`
