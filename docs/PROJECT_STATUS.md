@@ -89,6 +89,9 @@ The project is past initial architecture assembly. Current work should favor pro
   approved workspace-patch checkpoints resume after a database/service restart,
   while deferred or cancelled checkpoint Decisions settle the run as
   non-resumable without mutating workspace files.
+- Home Recent Activity now routes cancelled Decisions through an explicit
+  `重新评估决策` recovery action, matching the existing Home recommendation
+  semantics and steering the user toward an alternative next step.
 - `npm run release:mac:preflight` now provides a read-only local check for
   macOS signed/notarized release prerequisites: Developer ID signing source,
   `notarytool`, Apple notarization env vars, and package metadata. It does not

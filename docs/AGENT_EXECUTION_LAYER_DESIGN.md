@@ -423,10 +423,14 @@ Implemented baseline:
 - versioned v1 tool-permission and resume checkpoint payload helpers
 - restart-safe integration coverage for approved, deferred, and cancelled
   checkpoint Decisions after database/service restart
+- Home Recent Activity now gives cancelled Decisions an explicit
+  `重新评估决策` recovery path back to task detail with an alternative-path
+  next-step draft
 
 Remaining cleanup:
 
-- surface cancelled/non-resumable states more clearly in Home recommendations
+- if manual review still finds ambiguity, add more specific copy for failed
+  checkpoint-origin runs in Home recovery surfaces
 
 ## Current Major Phase: Executor Session Boundary
 
@@ -610,13 +614,19 @@ Completed slice:
 3. Confirm deferred and cancelled checkpoint Decisions settle the run as
    non-resumable without mutating workspace files.
 
+Completed slice:
+
+1. Align Home Recent Activity with the existing recommended-action semantics for
+   cancelled Decisions.
+2. Show `重新评估决策` instead of falling through to a generic task open.
+3. Prefill the task next-step draft with an alternative-path prompt.
+
 Next code/design slice:
 
-1. Improve how cancelled/non-resumable checkpoint runs appear in recovery
-   surfaces if manual review shows Home wording is still ambiguous.
-2. Choose the first user-facing opt-in surface, if any, for registry-only
-   domain tools or workspace tools only after that recovery wording is clear.
-3. Keep broad browser/computer/social/coding execution deferred until the
+1. Choose the first user-facing opt-in surface, if any, for registry-only
+   domain tools or workspace tools only after manual review confirms the current
+   recovery surfaces are clear enough.
+2. Keep broad browser/computer/social/coding execution deferred until the
    executor/session boundary can survive interruption and restart.
 
 For the shorter implementation sequence after the alpha task-management pass,
