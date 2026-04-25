@@ -10,6 +10,7 @@ import {
   isAgentToolScaffoldId,
   requiresAgentToolCheckpoint,
   shouldExposeAgentToolScaffold,
+  summarizeAgentToolScaffoldFamilies,
   validateAgentToolExecutionPolicy,
 } from './agent-tool-scaffold.js';
 import { AGENT_TOOL_NAMES } from './agent-tools.js';
@@ -234,5 +235,39 @@ describe('agent tool scaffold descriptors', () => {
     expect(requiresAgentToolCheckpoint('workspace.staged_patch')).toBe(true);
     expect(requiresAgentToolCheckpoint('creator.publish_preview')).toBe(true);
     expect(requiresAgentToolCheckpoint('computer.inspect_only')).toBe(true);
+  });
+
+  it('summarizes scaffold family exposure without enabling reserved lanes', () => {
+    const summaries = summarizeAgentToolScaffoldFamilies({
+      policy: buildPolicy({
+        allowLocalWorkspaceRead: true,
+        allowTaskMutationTools: true,
+      }),
+    });
+
+    expect(summaries.map((summary) => summary.family)).toEqual([
+      'task_domain',
+      'workspace_coding',
+      'browser_playwright',
+      'mcp',
+      'skill',
+      'computer_use',
+      'creator_connector',
+    ]);
+    expect(summaries.find((summary) => summary.family === 'workspace_coding')).toMatchObject({
+      checkpointRequiredIds: ['workspace.run_command', 'workspace.write_patch', 'workspace.staged_patch'],
+      credentialGatedIds: [],
+      implementedCount: 4,
+      providerNativeExposedIds: ['workspace.search', 'workspace.read_file'],
+      reservedCount: 1,
+      textPromptExposedIds: ['workspace.search', 'workspace.read_file'],
+    });
+    expect(summaries.find((summary) => summary.family === 'browser_playwright')).toMatchObject({
+      credentialGatedIds: ['browser.readonly_evidence'],
+      implementedCount: 0,
+      providerNativeExposedIds: [],
+      reservedCount: 1,
+      textPromptExposedIds: [],
+    });
   });
 });

@@ -21,6 +21,11 @@ session, network, credential, timeout, and output boundaries. This keeps future
 lane-specific code from treating a hand-built policy as trusted runtime
 permission.
 
+Family-level scaffold summaries can now report, without enabling a lane, which
+descriptors are implemented versus reserved, which are exposed to text prompts
+or provider-native schemas under the current policy, and which require
+checkpoints or credentials.
+
 Read with:
 
 - [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md)
@@ -197,6 +202,8 @@ forms.
    unknown descriptor, drifts away from the descriptor's session or credential
    boundary, asks local-only tools for network access, or exceeds bounded
    timeout/output limits.
+   Family-level summaries also provide a future Settings/preflight fact source
+   while keeping reserved lanes hidden.
 
 2. **Sandboxed coding lane**
    Implement `SandboxProvider`, staged patch artifacts, targeted checks, and

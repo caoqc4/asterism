@@ -118,6 +118,18 @@ export type AgentToolScaffoldDescriptor = {
   summary: string;
 };
 
+export type AgentToolScaffoldFamilySummary = {
+  family: AgentToolScaffoldFamily;
+  descriptorIds: string[];
+  implementedCount: number;
+  reservedCount: number;
+  textPromptExposedIds: string[];
+  providerNativeExposedIds: string[];
+  checkpointRequiredIds: string[];
+  credentialGatedIds: string[];
+  summary: string;
+};
+
 export const AGENT_TOOL_SCAFFOLD_DESCRIPTORS = [
   {
     id: 'task.inspect_context',
@@ -527,6 +539,60 @@ export function shouldExposeAgentToolScaffold(params: {
     name: descriptor.runtimeToolName,
     channel: params.channel,
     policy: params.policy,
+  });
+}
+
+export function summarizeAgentToolScaffoldFamilies(params: {
+  policy: Pick<AgentPolicy, 'allowLocalWorkspaceRead' | 'allowTaskMutationTools'>;
+}): AgentToolScaffoldFamilySummary[] {
+  const families = Array.from(
+    new Set<AgentToolScaffoldFamily>(AGENT_TOOL_SCAFFOLD_DESCRIPTORS.map((descriptor) => descriptor.family)),
+  );
+
+  return families.map((family) => {
+    const descriptors = getAgentToolScaffoldDescriptorsByFamily(family);
+    const implementedCount = descriptors.filter((descriptor) => descriptor.lifecycle === 'implemented').length;
+    const reservedCount = descriptors.filter((descriptor) => descriptor.lifecycle === 'reserved').length;
+    const textPromptExposedIds = descriptors
+      .filter((descriptor) => shouldExposeAgentToolScaffold({
+        channel: 'text_prompt',
+        id: descriptor.id,
+        policy: params.policy,
+      }))
+      .map((descriptor) => descriptor.id);
+    const providerNativeExposedIds = descriptors
+      .filter((descriptor) => shouldExposeAgentToolScaffold({
+        channel: 'provider_native',
+        id: descriptor.id,
+        policy: params.policy,
+      }))
+      .map((descriptor) => descriptor.id);
+    const checkpointRequiredIds = descriptors
+      .filter((descriptor) => descriptor.checkpointKind !== 'none')
+      .map((descriptor) => descriptor.id);
+    const credentialGatedIds = descriptors
+      .filter((descriptor) => descriptor.credentialPolicy !== 'none')
+      .map((descriptor) => descriptor.id);
+
+    return {
+      checkpointRequiredIds,
+      credentialGatedIds,
+      descriptorIds: descriptors.map((descriptor) => descriptor.id),
+      family,
+      implementedCount,
+      providerNativeExposedIds,
+      reservedCount,
+      summary: [
+        `${family}: ${descriptors.length} descriptors`,
+        `implemented=${implementedCount}`,
+        `reserved=${reservedCount}`,
+        `textPromptExposed=${textPromptExposedIds.length}`,
+        `providerNativeExposed=${providerNativeExposedIds.length}`,
+        `checkpoints=${checkpointRequiredIds.length}`,
+        `credentialGated=${credentialGatedIds.length}`,
+      ].join(' / '),
+      textPromptExposedIds,
+    };
   });
 }
 

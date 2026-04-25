@@ -106,6 +106,10 @@ The project is past initial architecture assembly. Current work should favor pro
   timeout, output limit, and optional session ids. The sandbox coding lane
   readiness path reuses that validator before applying its stricter
   staged-patch-specific checks.
+- Tool scaffold family summaries can now report implemented versus reserved
+  descriptors, current text/provider-native exposure, checkpoint requirements,
+  and credential gates for each future tool family without enabling those
+  lanes.
 - `src/shared/agent-sandbox-provider.ts` now starts Slice 6 by defining the
   disabled-by-default `SandboxProvider` contract, sandbox capability metadata,
   staged workspace mount shape, targeted `test` / `lint` command policy,
@@ -380,7 +384,7 @@ npm run verify
 Latest local baseline:
 
 - 83 test files
-- 606 tests
+- 607 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -428,6 +432,9 @@ Latest local baseline:
 - `npm run accept:sandbox-coding` and `npm run verify` passed locally on
   2026-04-26 after adding shared execution policy validation: 83 test files /
   606 tests
+- `npm test -- src/shared/agent-tool-scaffold.test.ts` and `npm run verify`
+  passed locally on 2026-04-26 after adding scaffold family summaries: 83 test
+  files / 607 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
