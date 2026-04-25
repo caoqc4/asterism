@@ -14,12 +14,18 @@ Taskplane currently uses a layered testing strategy:
 
 Current test files:
 
+- `src/main/bootstrap/runtime-paths.test.ts`
 - `src/main/config/app-config-service.test.ts`
+- `src/main/db/client.test.ts`
 - `src/main/keychain/ai-config-service.test.ts`
 - `src/main/domain/task/task-service.test.ts`
 - `src/main/domain/decision/decision-service.test.ts`
 - `src/main/domain/run/run-service.test.ts`
 - `src/main/domain/run/run-service.integration.test.ts`
+- `src/main/domain/run/run-orchestrator.test.ts`
+- `src/main/domain/run/agent-run-loop.test.ts`
+- `src/main/domain/run/agent-tool-registry.test.ts`
+- `src/main/domain/run/agent-working-context.test.ts`
 - `src/main/domain/run/agent-executor.test.ts`
 - `src/main/domain/brief/home-brief-service.test.ts`
 - `src/main/domain/brief/process-template-selector.test.ts`
@@ -27,6 +33,8 @@ Current test files:
 - `src/main/scheduler/scheduler-service.test.ts`
 - `src/main/db/repositories/task-repository.integration.test.ts`
 - `src/main/db/repositories/run-repository.integration.test.ts`
+- `src/main/db/repositories/run-step-repository.integration.test.ts`
+- `src/main/db/repositories/run-checkpoint-repository.integration.test.ts`
 - `src/main/db/repositories/decision-repository.integration.test.ts`
 - `src/main/db/repositories/agent-session-repository.integration.test.ts`
 - `src/main/db/repositories/brief-snapshot-repository.integration.test.ts`
@@ -40,7 +48,9 @@ Current test files:
 - `src/main/db/repositories/task-process-binding-repository.integration.test.ts`
 - `src/main/domain/run/process-template-selector.test.ts`
 - `src/main/domain/decision/process-template-selector.test.ts`
+- `src/main/executors/ai-client.test.ts`
 - `src/main/executors/brief-executor.test.ts`
+- `src/main/executors/replicate-client.test.ts`
 - `src/main/executors/text-executor.test.ts`
 - `src/main/ipc/handlers.test.ts`
 - `src/main/preload.test.ts`
@@ -55,8 +65,12 @@ Current test files:
 
 Covered today:
 
+- `runtime-paths`
+  dev/packaged renderer path resolution and user-data override behavior
 - `AppConfigService`
   config defaults, persistence, workspace-root config, migration behavior
+- `db/client`
+  SQLite user-data path override, bootstrap, and connection lifecycle behavior
 - `AiConfigService`
   config-path reporting and legacy keychain API-key migration behavior
 - `TaskService`
@@ -77,6 +91,8 @@ Covered today:
   internal tool discovery, read-only context/timeline inspection, policy-gated read-only workspace search/file reads, dynamic workspace-root resolution, local note artifact creation, tool call/result step writes, validation failure recording, policy-driven confirmation checkpoints, and Decision creation for confirmation checkpoints
 - `TextExecutor`
   lane-aware run prompt composition, constrained JSON proposal prompting for agent runs, and opt-in workspace tool prompt guidance
+- `AI clients`
+  Vercel SDK client routing plus native Replicate text prediction request/response handling
 - `HomeBriefService`
   waiting, risk, missing-next-step, recommended actions, recent artifacts, recent lifecycle activity, artifact-aware brief semantics, and active-task process-template candidate aggregation
 - `SchedulerService`
