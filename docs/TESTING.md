@@ -110,7 +110,14 @@ Covered today:
   parity, and RunService persistence without calling external providers
 - `Agent local acceptance`
   `npm run accept:agent-local` combines the non-live workspace patch, domain
-  tool, and provider-native acceptance scripts into one local gate
+  tool, provider-native, and sandbox-coding acceptance scripts into one local
+  gate
+- `Sandbox coding acceptance`
+  `npm run accept:sandbox-coding` exercises the disabled-by-default sandbox
+  provider contracts, temp/local-container sandbox boundaries, targeted-check
+  helpers, patch-review persistence, run adapter, service factory, and session
+  metadata/readiness summaries without calling Docker, external providers, or
+  live services
 - `Provider-native live validation`
   `npm run accept:provider-native-live:preflight` checks local readiness without
   spending provider credit, and `npm run accept:provider-native-live` performs a
