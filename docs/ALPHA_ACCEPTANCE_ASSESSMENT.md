@@ -15,9 +15,16 @@ Status: mostly covered.
 - `npm run verify` has passed locally with tests, type-checking, and production build.
 - on 2026-04-25, `npm run verify` passed locally with 66 test files / 484 tests
   after the Home recovery and execution-layer status cleanup.
+- on 2026-04-25, `npm run verify` passed again after the runtime schema smoke
+  coverage and local alpha gate documentation refresh.
 - `npm run smoke:build` has passed locally for build/entrypoint smoke coverage.
 - on 2026-04-25, `npm run smoke:build` passed again after the execution-layer
   checkpoint-event boundary refactor.
+- `npm run accept:agent-local` passes locally for the non-live agent execution
+  boundary.
+- `npm run accept:provider-native-live:preflight` reports the current local
+  provider-native `.env` as ready without calling the provider or spending
+  test credit.
 - GitHub Actions should remain unused while monthly quota is unavailable.
 
 Manual need:
@@ -84,6 +91,13 @@ Manual result / need:
 - `workspace.write_patch` now requires explicit local file-write policy, creates a confirmation checkpoint with expected files and diff preview, applies only after the linked Decision is approved, rejects path escapes or files outside `expectedFiles`, and falls back instead of accepting model-proposed patch steps in normal runs; `workspace.run_command` now follows the accepted `test` / `lint` allowlist decision as a registry-only confirmed package-script runner with Decision approval resume, while still staying out of model prompts and normal agent plans
 - on 2026-04-25, `npm run accept:agent-local` passed locally, covering workspace patch approval, domain task tools, and provider-native tool-call boundaries without external provider calls; renderer coverage also confirms Runs and Decisions expose checkpoint review wording for patch and command tools without adding prompt exposure
 - on 2026-04-25, `npm run accept:agent-local` passed again after the execution-layer v2 slices, covering workspace patch approval, domain task tools, provider-native tool-call boundaries, checkpoint recorder refactoring, and restart-safe resume payload validation without external provider calls
+- on 2026-04-25, `npm run accept:agent-local` passed again after the runtime
+  schema smoke coverage and alpha gate documentation refresh
+- `npm run accept:provider-native-live:preflight` reports the current local
+  `fal-openrouter` / `google/gemini-2.5-flash` setup is ready with
+  provider-native tool calls enabled; the live provider-native validation
+  commands remain deliberately opt-in because they spend configured provider
+  credit
 - domain tools can update a task next step, create a completion criterion, review completion evidence without satisfying criteria or completing the task, create source context, and draft a Decision through services; they are prompt-exposed and accepted from model plans only when a run explicitly opts into `allowTaskMutationTools`, and high-risk criterion creation now requires Decision approval before the task is mutated
 - execution-layer design docs now define the accepted v2 boundary, sandbox boundary, tool exposure matrix, and future post-Slice-0 design; broad code-agent mode, arbitrary shell, browser/computer control, external posting, and always-on autonomy remain deferred
 
@@ -151,7 +165,12 @@ Automated/local coverage:
 - `npm run smoke:runtime:mac` launches the packaged executable with isolated user data, clears `ELECTRON_RUN_AS_NODE`, and confirms `config.json` plus `taskplane.db` are created with the core SQLite schema
 - `npm run smoke:release:mac` combines the unsigned macOS package build and both package/runtime smoke checks
 - on 2026-04-25, `npm run smoke:release:mac` passed locally after the execution-layer v2 work, including Electron native module rebuild, unsigned app packaging, package smoke, and runtime smoke
+- on 2026-04-25, `npm run smoke:release:mac` passed again after runtime smoke
+  started checking the packaged SQLite schema
 - `npm run release:mac:preflight` now checks local signed/notarized release prerequisites without signing, notarizing, uploading, or calling Apple services
+- on 2026-04-25, `npm run release:mac:preflight` reported the host has
+  `notarytool` and package metadata, while Developer ID signing and Apple
+  notarization credentials remain unconfigured
 - packaged runtime launch now works with isolated `TASKPLANE_USER_DATA_DIR`; Home renders from `app.asar/dist/index.html`, SQLite/config are created in the isolated directory, and task creation persists
 
 Manual need:
@@ -164,8 +183,10 @@ Manual need:
 Finish the remaining alpha work in this order:
 
 1. Keep actual signed/notarized packaging out of scope until the next release-readiness pass explicitly targets signing and notarization execution.
-2. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
-3. Treat the current execution-layer v2 slice as locally accepted for the alpha path; next execution work should be acceptance/documentation cleanup, release-readiness hardening, or explicitly deferred design work, not new model-visible power.
+2. Keep live provider-native validation opt-in because it spends configured
+   provider credit, even though the local preflight is ready.
+3. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
+4. Treat the current execution-layer v2 slice as locally accepted for the alpha path; next execution work should be acceptance/documentation cleanup, release-readiness hardening, or explicitly deferred design work, not new model-visible power.
 
 Do not expand the domain model until signed/notarized release work is explicitly
 in scope.
