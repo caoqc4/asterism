@@ -104,4 +104,75 @@ describe('LocalAgentExecutor', () => {
       output: 'Provider native note',
     });
   });
+
+  it.each([
+    {
+      loopResult: {
+        status: 'failed',
+        message: 'Provider proposal tool failed',
+        observations: [],
+      },
+      sessionResult: {
+        status: 'failed',
+        failureKind: 'tool',
+        message: 'Provider proposal tool failed',
+      },
+    },
+    {
+      loopResult: {
+        status: 'paused',
+        checkpointId: 'checkpoint_1',
+        message: 'Provider proposal paused',
+        observations: [],
+      },
+      sessionResult: {
+        status: 'paused',
+        checkpointId: 'checkpoint_1',
+        message: 'Provider proposal paused',
+      },
+    },
+    {
+      loopResult: {
+        status: 'needs_confirmation',
+        checkpointId: 'checkpoint_2',
+        message: 'Provider proposal needs confirmation',
+        observations: [],
+      },
+      sessionResult: {
+        status: 'needs_confirmation',
+        checkpointId: 'checkpoint_2',
+        message: 'Provider proposal needs confirmation',
+      },
+    },
+  ])('normalizes provider-native loop result $loopResult.status into a session result', async ({
+    loopResult,
+    sessionResult,
+  }) => {
+    const agentRunLoop = {
+      executeLocalNoteLoop: vi.fn().mockResolvedValue(loopResult),
+    };
+    const executor = new LocalAgentExecutor(agentRunLoop as never);
+
+    await expect(executor.executeProviderNativeSession({
+      ...buildInput(),
+      providerPlan: {
+        source: 'provider_tool_call',
+        provider: 'openai-compatible',
+        model: 'relay-model',
+        rawSummary: 'tool_calls=1',
+        providerCallIds: ['call_1'],
+        proposal: {
+          steps: [
+            {
+              tool: 'artifact.create_note',
+              input: {
+                title: 'Provider note',
+                content: 'Provider native note',
+              },
+            },
+          ],
+        },
+      },
+    } as never)).resolves.toEqual(sessionResult);
+  });
 });
