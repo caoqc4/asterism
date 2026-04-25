@@ -42,7 +42,13 @@ export function normalizeAnthropicToolUse(params: {
 
   for (const block of payload.content) {
     if (!isRecord(block)) {
-      continue;
+      return {
+        status: 'failed',
+        provider,
+        model,
+        error: 'Anthropic content blocks must be objects.',
+        rawSummary: 'content',
+      };
     }
 
     if (block.type === 'text' && typeof block.text === 'string') {
@@ -51,7 +57,13 @@ export function normalizeAnthropicToolUse(params: {
     }
 
     if (block.type !== 'tool_use') {
-      continue;
+      return {
+        status: 'failed',
+        provider,
+        model,
+        error: 'Anthropic content block type is not supported for client tool-use normalization.',
+        rawSummary: 'content',
+      };
     }
 
     if (typeof block.name !== 'string') {

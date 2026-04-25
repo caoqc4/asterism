@@ -71,6 +71,59 @@ describe('normalizeAnthropicToolUse', () => {
     });
   });
 
+  it('fails closed when any content block is malformed', () => {
+    expect(normalizeAnthropicToolUse({
+      provider: 'anthropic',
+      model: 'claude-3-5-sonnet-latest',
+      payload: {
+        stop_reason: 'tool_use',
+        content: [
+          'malformed',
+          {
+            type: 'tool_use',
+            id: 'toolu_good',
+            name: 'task.inspect_context',
+            input: {},
+          },
+        ],
+      },
+    })).toEqual({
+      status: 'failed',
+      provider: 'anthropic',
+      model: 'claude-3-5-sonnet-latest',
+      error: 'Anthropic content blocks must be objects.',
+      rawSummary: 'content',
+    });
+  });
+
+  it('fails closed when any content block type is unsupported', () => {
+    expect(normalizeAnthropicToolUse({
+      provider: 'anthropic',
+      model: 'claude-3-5-sonnet-latest',
+      payload: {
+        stop_reason: 'tool_use',
+        content: [
+          {
+            type: 'image',
+            source: { type: 'base64', media_type: 'image/png', data: '...' },
+          },
+          {
+            type: 'tool_use',
+            id: 'toolu_good',
+            name: 'task.inspect_context',
+            input: {},
+          },
+        ],
+      },
+    })).toEqual({
+      status: 'failed',
+      provider: 'anthropic',
+      model: 'claude-3-5-sonnet-latest',
+      error: 'Anthropic content block type is not supported for client tool-use normalization.',
+      rawSummary: 'content',
+    });
+  });
+
   it('fails closed when content blocks do not include supported tools', () => {
     expect(normalizeAnthropicToolUse({
       provider: 'anthropic',

@@ -126,8 +126,8 @@ Covered today:
   or include non-function call shapes
 - `Anthropic tool-use adapter`
   offline Messages-style `tool_use` content block normalization, including
-  object input validation and fail-closed handling when no supported tool is
-  present
+  object input validation and fail-closed handling when content blocks are
+  malformed, unsupported, or contain no supported tool
 - `Provider native tool-call adapter`
   offline provider dispatch across Anthropic, OpenAI, OpenAI-compatible,
   fal/OpenRouter, and Replicate fail-closed behavior without connecting the run
