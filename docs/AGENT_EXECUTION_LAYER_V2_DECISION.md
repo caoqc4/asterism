@@ -5,6 +5,10 @@
 Accepted as the next design boundary after the alpha task-management and local
 agent acceptance slices.
 
+Read
+[AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md](AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md)
+first for the first-principles framework assessment that supports this boundary.
+
 ## Decision
 
 Agent execution layer v2 should make Taskplane's local agent runtime more

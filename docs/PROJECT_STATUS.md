@@ -63,6 +63,11 @@ The project is past initial architecture assembly. Current work should favor pro
   runtime events, restart-safe resume, and the registry/exposure/policy matrix;
   keep workspace write/command, browser/computer control, external posting, and
   autonomous scheduling deferred.
+- [AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md](AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md)
+  records the first-principles execution-layer reference assessment: Taskplane
+  should keep its own Task/Run/Decision/Artifact/Timeline control plane, borrow
+  durable execution and sandbox/tool-boundary lessons from mature frameworks,
+  and avoid adopting a full external agent runtime before Slice 0 is complete.
 
 ## Verification Baseline
 
@@ -98,7 +103,10 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 2. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
-5. Use [AGENT_EXECUTION_LAYER_V2_DECISION.md](AGENT_EXECUTION_LAYER_V2_DECISION.md) for the next implementation pass: typed runtime events, restart-safe resume, and explicit tool exposure gates before any new execution power is exposed.
+5. Use [AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md](AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md)
+   and [AGENT_EXECUTION_LAYER_V2_DECISION.md](AGENT_EXECUTION_LAYER_V2_DECISION.md)
+   for the next implementation pass: typed runtime events, restart-safe resume,
+   and explicit tool exposure gates before any new execution power is exposed.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.

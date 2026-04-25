@@ -78,6 +78,9 @@ Status: accepted as the next design boundary.
 Decision doc:
 [AGENT_EXECUTION_LAYER_V2_DECISION.md](AGENT_EXECUTION_LAYER_V2_DECISION.md).
 
+Reference architecture assessment:
+[AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md](AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md).
+
 Goal: make the local agent runtime more durable before making it more
 powerful. The next implementation pass should introduce a typed runtime event
 spine, restart-safe resume contract, and explicit tool exposure matrix while
@@ -89,6 +92,8 @@ Acceptance:
 - current text-only and provider-native paths still settle the same way
 - run steps can be written from typed runtime events
 - checkpoint events map to persisted checkpoints and pending Decisions
+- external frameworks remain references rather than runtime dependencies until
+  Taskplane has a separate sandbox or workflow-authoring decision
 - provider-native workspace write/command proposals still fall back without side
   effects
 - `npm run accept:agent-local` and `npm run verify` pass
