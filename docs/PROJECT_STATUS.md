@@ -242,6 +242,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - Sandbox session summaries now include compact audit identity and idempotency
   when a request carries audit metadata, without expanding raw policy or patch
   data into RunStep-facing text.
+- Sandbox patch-review run planning now has a pure ready/blocked planner that
+  combines feature-gate availability, request/audit construction, normalized
+  patch-draft metadata, and Decision title selection without returning an
+  adapter, runner, UI action, or executable command path.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

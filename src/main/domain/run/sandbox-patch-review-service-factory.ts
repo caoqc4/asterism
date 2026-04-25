@@ -19,6 +19,16 @@ export type SandboxPatchReviewAdapterResolution =
       reason: string;
     };
 
+export type SandboxPatchReviewAdapterAvailability =
+  | {
+      status: 'disabled';
+      reason: string;
+    }
+  | {
+      status: 'available';
+      reason: string;
+    };
+
 export type SandboxPatchReviewServiceDependencies = {
   artifactRepository?: ArtifactRepository;
   decisionRepository?: DecisionRepository | null;
@@ -27,15 +37,29 @@ export type SandboxPatchReviewServiceDependencies = {
   runStepRepository?: RunStepRepository;
 };
 
+export function evaluateSandboxPatchReviewAdapterAvailability(
+  featureFlags: FeatureFlags,
+): SandboxPatchReviewAdapterAvailability {
+  return featureFlags.enableSandboxCodingAgent
+    ? {
+        status: 'available',
+        reason:
+          'Sandbox patch review adapter is available for explicit runner calls only; no container runner is created by the factory.',
+      }
+    : {
+        status: 'disabled',
+        reason: 'Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
+      };
+}
+
 export function resolveSandboxPatchReviewRunAdapter(params: {
   featureFlags: FeatureFlags;
   dependencies?: SandboxPatchReviewServiceDependencies;
 }): SandboxPatchReviewAdapterResolution {
-  if (!params.featureFlags.enableSandboxCodingAgent) {
-    return {
-      status: 'disabled',
-      reason: 'Sandbox patch review adapter is disabled because the sandbox coding-agent feature flag is off.',
-    };
+  const availability = evaluateSandboxPatchReviewAdapterAvailability(params.featureFlags);
+
+  if (availability.status === 'disabled') {
+    return availability;
   }
 
   const runStepRepository = params.dependencies?.runStepRepository ?? new RunStepRepository();
@@ -64,8 +88,6 @@ export function resolveSandboxPatchReviewRunAdapter(params: {
 
   return {
     adapter,
-    status: 'available',
-    reason:
-      'Sandbox patch review adapter is available for explicit runner calls only; no container runner is created by the factory.',
+    ...availability,
   };
 }

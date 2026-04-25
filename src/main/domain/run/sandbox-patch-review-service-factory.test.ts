@@ -2,9 +2,22 @@ import { describe, expect, it } from 'vitest';
 
 import { LocalContainerSandboxProvider } from './local-container-sandbox-backend.js';
 import { SandboxPatchReviewRunAdapter } from './sandbox-patch-review-run-adapter.js';
-import { resolveSandboxPatchReviewRunAdapter } from './sandbox-patch-review-service-factory.js';
+import {
+  evaluateSandboxPatchReviewAdapterAvailability,
+  resolveSandboxPatchReviewRunAdapter,
+} from './sandbox-patch-review-service-factory.js';
 
 describe('resolveSandboxPatchReviewRunAdapter', () => {
+  it('evaluates adapter availability without constructing the adapter', () => {
+    expect(evaluateSandboxPatchReviewAdapterAvailability({
+      enableScheduler: false,
+      enableSandboxCodingAgent: true,
+    })).toEqual({
+      status: 'available',
+      reason: expect.stringContaining('explicit runner calls only'),
+    });
+  });
+
   it('keeps the sandbox patch review adapter disabled while the feature flag is off', () => {
     const resolution = resolveSandboxPatchReviewRunAdapter({
       featureFlags: {
