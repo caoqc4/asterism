@@ -92,6 +92,17 @@ npm test
 npm run lint
 ```
 
+- Live provider validation is optional and should be run only with an explicitly
+  configured local test key:
+
+```bash
+npm run accept:provider-native-live:preflight
+npm run accept:provider-native-live
+```
+
+  A local fal OpenRouter run with `google/gemini-2.5-flash` has passed the
+  safe-read `task.inspect_context` tool-call probe.
+
 ## Non-Goals For First Wiring
 
 - no autonomous scheduling

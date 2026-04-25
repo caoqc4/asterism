@@ -129,7 +129,8 @@ Implementation boundary:
 ### Slice 3: Explicit Provider-Native Session
 
 Status: first explicit RunOrchestrator wiring completed behind the provider-native
-session gate.
+session gate, with a guarded live fal OpenRouter safe-read tool-call probe now
+passing locally.
 
 Only after shadow and parity coverage pass, allow a dedicated internal executor
 path to use native normalized proposals for one run session.
@@ -176,6 +177,9 @@ Current boundary:
 - provider-native agent sessions can proceed when the provider response contains
   normalized tool calls but no assistant text; in that case the final run output
   is taken from the completed tool observation instead of the empty model text
+- fal/OpenAI-compatible relay model creation uses the AI SDK chat-completions
+  path so provider-native tool-call extraction sees chat-style tool calls rather
+  than OpenAI Responses payloads
 - normal runs, failed normalization, unsupported providers, and missing payloads
   remain text-only plus optional shadow diagnostics
 - provider-side tool exposure remains limited to the schema builder's safe-read
