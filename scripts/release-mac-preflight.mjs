@@ -87,6 +87,7 @@ const developerId = findDeveloperIdIdentity();
 const notarytool = checkNotarytool();
 const cscName = envValue(envValues, 'CSC_NAME');
 const cscLink = envValue(envValues, 'CSC_LINK');
+const cscKeyPassword = envValue(envValues, 'CSC_KEY_PASSWORD');
 
 addCheck({
   detail: process.platform,
@@ -108,6 +109,12 @@ addCheck({
         : 'Set CSC_NAME or CSC_LINK, or install a Developer ID Application certificate.',
   name: 'electron-builder signing certificate source',
   ok: Boolean(cscName || cscLink || developerId.found),
+});
+addCheck({
+  detail: cscLink ? redactedEnv('CSC_KEY_PASSWORD') : 'Not needed when using keychain identity or CSC_NAME.',
+  name: 'CSC_KEY_PASSWORD for CSC_LINK',
+  ok: !cscLink || Boolean(cscKeyPassword),
+  required: Boolean(cscLink),
 });
 addCheck({
   detail: notarytool.message,

@@ -76,6 +76,7 @@ basic pieces electron-builder expects for a signed/notarized macOS pass:
 
 - a macOS host with `notarytool`
 - a `Developer ID Application` signing identity, `CSC_NAME`, or `CSC_LINK`
+- `CSC_KEY_PASSWORD` when using `CSC_LINK`
 - `APPLE_ID`
 - `APPLE_APP_SPECIFIC_PASSWORD`
 - `APPLE_TEAM_ID`
