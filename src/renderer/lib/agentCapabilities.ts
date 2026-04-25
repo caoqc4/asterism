@@ -1,5 +1,6 @@
 import type { AgentSessionRecord } from '@shared/types/agent-execution';
 import type { AiConfigStatus } from '@shared/types/settings';
+import { getProviderExecutionCapabilities } from '@shared/agent-provider-capabilities';
 
 function formatProviderSummary(aiStatus: AiConfigStatus | null): string {
   if (!aiStatus?.provider || !aiStatus.model) {
@@ -10,11 +11,13 @@ function formatProviderSummary(aiStatus: AiConfigStatus | null): string {
 }
 
 function formatPreRunStructuredToolSummary(aiStatus: AiConfigStatus | null): string {
-  if (!aiStatus?.provider || !aiStatus.model) {
+  const capabilities = getProviderExecutionCapabilities(aiStatus);
+
+  if (capabilities.structuredToolCallState === 'unconfigured') {
     return 'structured tool calls unavailable until provider configured';
   }
 
-  if (aiStatus?.provider === 'replicate') {
+  if (capabilities.structuredToolCallState === 'unavailable_on_replicate_text_path') {
     return 'structured tool calls unavailable on native Replicate text path';
   }
 
@@ -47,9 +50,10 @@ export function formatPreRunAgentCapabilitySummary(
   allowTaskMutationTools = false,
 ): string {
   const providerSummary = formatProviderSummary(aiStatus);
-  const planningSummary = !aiStatus?.provider || !aiStatus.model
+  const providerCapabilities = getProviderExecutionCapabilities(aiStatus);
+  const planningSummary = providerCapabilities.textPlanningPath === 'unconfigured'
     ? 'text-only planning unavailable until provider configured'
-    : aiStatus.provider === 'replicate'
+    : providerCapabilities.textPlanningPath === 'replicate_native_text'
       ? 'text-only planning via Replicate'
       : 'text-only planning in the local executor';
   const workspaceSummary = allowLocalWorkspaceRead
