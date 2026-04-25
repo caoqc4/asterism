@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import type {
+  AgentSandboxCodingLaneEligibility,
   AgentSandboxProvider,
   AgentSandboxProviderCapabilities,
   AgentSandboxSessionHandle,
@@ -17,6 +18,18 @@ import {
 } from '../../../shared/agent-sandbox-provider.js';
 import { buildDefaultAgentToolExecutionPolicy } from '../../../shared/agent-tool-scaffold.js';
 import type { FeatureFlags } from '../../../shared/types/settings.js';
+
+export type TempWorkspaceSandboxCodingSessionPreparation =
+  | {
+      status: 'blocked';
+      eligibility: AgentSandboxCodingLaneEligibility;
+    }
+  | {
+      status: 'prepared';
+      eligibility: AgentSandboxCodingLaneEligibility;
+      handle: AgentSandboxSessionHandle;
+      summary: string;
+    };
 
 export class TempWorkspaceSandboxProvider implements AgentSandboxProvider {
   readonly capabilities: AgentSandboxProviderCapabilities = {
@@ -94,4 +107,34 @@ export function evaluateTempWorkspaceSandboxCodingLane(params: {
     providerCapabilities: provider.capabilities,
     workspaceRoot: params.workspaceRoot,
   });
+}
+
+export async function prepareTempWorkspaceSandboxCodingSession(params: {
+  featureFlags: FeatureFlags;
+  request: AgentSandboxSessionRequest;
+}): Promise<TempWorkspaceSandboxCodingSessionPreparation> {
+  const provider = new TempWorkspaceSandboxProvider();
+  const eligibility = evaluateAgentSandboxCodingLaneEligibility({
+    commandPolicy: params.request.commandPolicy,
+    executionPolicy: params.request.executionPolicy,
+    featureFlags: params.featureFlags,
+    providerCapabilities: provider.capabilities,
+    workspaceRoot: params.request.workspace.workspaceRoot,
+  });
+
+  if (!eligibility.eligible) {
+    return {
+      eligibility,
+      status: 'blocked',
+    };
+  }
+
+  const handle = await provider.prepareSession(params.request);
+
+  return {
+    eligibility,
+    handle,
+    status: 'prepared',
+    summary: await provider.summarizeSession(handle),
+  };
 }

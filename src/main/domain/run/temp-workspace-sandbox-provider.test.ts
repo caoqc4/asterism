@@ -11,6 +11,7 @@ import {
 import { buildDefaultAgentToolExecutionPolicy } from '../../../shared/agent-tool-scaffold.js';
 import {
   evaluateTempWorkspaceSandboxCodingLane,
+  prepareTempWorkspaceSandboxCodingSession,
   TempWorkspaceSandboxProvider,
 } from './temp-workspace-sandbox-provider.js';
 
@@ -19,6 +20,47 @@ function makeTempDir(prefix: string): string {
 }
 
 describe('TempWorkspaceSandboxProvider', () => {
+  it('blocks coding-session preparation before creating a staging root when eligibility fails', async () => {
+    const workspaceRoot = makeTempDir('taskplane-source-workspace-');
+    const request: AgentSandboxSessionRequest = {
+      commandPolicy: buildDefaultAgentSandboxCommandPolicy(),
+      descriptorId: 'workspace.staged_patch',
+      executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+      providerKind: 'local_container',
+      runId: 'run_1',
+      taskId: 'task_1',
+      workspace: {
+        mountPath: '/workspace',
+        mode: 'staged_write',
+        workspaceRoot,
+      },
+    };
+    const sandboxDirsBefore = fs.readdirSync(os.tmpdir()).filter((entry) => entry.startsWith('taskplane-sandbox-'));
+
+    try {
+      await expect(prepareTempWorkspaceSandboxCodingSession({
+        featureFlags: {
+          enableScheduler: false,
+          enableSandboxCodingAgent: true,
+        },
+        request,
+      })).resolves.toMatchObject({
+        eligibility: {
+          blockedReasons: [
+            'sandbox provider does not expose the required staged-write, targeted-check, patch-artifact capability set',
+          ],
+          eligible: false,
+        },
+        status: 'blocked',
+      });
+      expect(fs.readdirSync(os.tmpdir()).filter((entry) => entry.startsWith('taskplane-sandbox-'))).toEqual(
+        sandboxDirsBefore,
+      );
+    } finally {
+      fs.rmSync(workspaceRoot, { force: true, recursive: true });
+    }
+  });
+
   it('reports the temp provider as not yet eligible for coding-agent sessions', () => {
     const eligibility = evaluateTempWorkspaceSandboxCodingLane({
       featureFlags: {

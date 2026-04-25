@@ -148,6 +148,9 @@ The project is past initial architecture assembly. Current work should favor pro
   RunStep/Artifact display without expanding raw policy JSON.
 - The temp-workspace sandbox provider can now summarize a prepared session from
   its manifest, keeping future run-step copy decoupled from raw JSON structure.
+- A gated temp sandbox coding-session prepare helper now returns `blocked`
+  without creating a staging root when eligibility fails, keeping future entry
+  points behind the shared guard.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -191,8 +194,8 @@ Latest local baseline:
 - `npm run accept:provider-native-live:preflight` reports the current local
   provider-native setup is ready; live provider validation remains opt-in
   because it spends configured provider credit
-- `npm run verify` passed locally on 2026-04-25 after sandbox manifest
-  summaries landed: 69 test files / 518 tests
+- `npm run verify` passed locally on 2026-04-25 after gated sandbox prepare
+  landed: 69 test files / 519 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
