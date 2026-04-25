@@ -43,7 +43,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - A provider-native session gate captures the RunOrchestrator selection requirements: agent run type, reserved flag, supported provider, provider payload, and successful normalization are all required.
 - Provider-native safe-read tool schema exposure has started behind the reserved flag: Taskplane-owned provider-safe tool aliases can normalize back into internal tool names, the schema builder exposes only policy-allowed safe-read tools while excluding local write and command tools, and AI SDK receives those schemas without local execute handlers.
 - Agent capability previews now distinguish disabled provider-native structured calls from the limited safe-read provider-tool path when the reserved flag is enabled.
-- RunService integration coverage now persists the provider-native session boundary: a gated provider-native session with `structuredToolCalls=true`, including the common textless provider `tool_calls` response shape, a missing-payload fallback session with `structuredToolCalls=false`, and a policy-denied provider-native task-tool proposal that falls back without mutating the task.
+- RunService integration coverage now persists the provider-native session boundary: a gated provider-native session with `structuredToolCalls=true`, including the common textless provider `tool_calls` response shape, a missing-payload fallback session with `structuredToolCalls=false`, a policy-denied provider-native task-tool proposal that falls back without mutating the task, and provider-native workspace write/command proposals that fall back without creating checkpoints or changing files.
 - A focused `npm run accept:provider-native-tools` command now exercises the provider-native adapter, schema, gate, run-loop, orchestration, and persistence boundary without calling external providers.
 - `npm run accept:provider-native-live:preflight` now checks local `.env` readiness for live provider-native validation without printing API keys or calling external providers.
 - `npm run accept:provider-native-live` now runs the guarded one-call provider-native tool-call probe only when preflight is ready; unsupported local configs skip without spending provider credit.
@@ -68,7 +68,7 @@ npm run verify
 Latest local baseline:
 
 - 61 test files
-- 462 tests
+- 463 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build

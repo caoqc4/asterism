@@ -95,8 +95,8 @@ Covered today:
 - `AgentRunLoop provider-native parity`
   provider-native normalized proposals go through the same plan-building policy
   gates as text JSON proposals in tests, including fallback for workspace
-  mutation and command proposals, without wiring provider-native payloads into
-  real runs
+  mutation and command proposals, plus RunService integration coverage proving
+  those denied workspace proposals do not create checkpoints or change files
 - `Provider-native tool-call acceptance`
   `npm run accept:provider-native-tools` exercises provider-native extraction,
   provider adapters, safe-read schema exposure, selection gates, run-loop policy

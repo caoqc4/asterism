@@ -833,4 +833,170 @@ describe('RunService integration', () => {
       ]),
     );
   });
+
+  it('falls back inside the provider-native session when workspace write or command tools are proposed', async () => {
+    fs.writeFileSync(path.join(workspaceRoot, 'notes.md'), 'alpha\n');
+
+    const taskRepository = new TaskRepository();
+    const waitingItemRepository = new WaitingItemRepository();
+    const artifactRepository = new ArtifactRepository();
+    const sourceContextRepository = new SourceContextRepository();
+    const processTemplateRepository = new ProcessTemplateRepository();
+    const taskProcessBindingRepository = new TaskProcessBindingRepository();
+    const blockerRepository = new BlockerRepository();
+    const taskDependencyRepository = new TaskDependencyRepository();
+    const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const runRepository = new RunRepository();
+    const runStepRepository = new RunStepRepository();
+    const runCheckpointRepository = new RunCheckpointRepository();
+    const decisionRepository = new DecisionRepository();
+    const taskService = new TaskService(
+      taskRepository,
+      waitingItemRepository,
+      artifactRepository,
+      sourceContextRepository,
+      processTemplateRepository,
+      taskProcessBindingRepository,
+      blockerRepository,
+      taskDependencyRepository,
+      completionCriteriaRepository,
+    );
+    const agentToolRegistry = new AgentToolRegistry(
+      artifactRepository,
+      runStepRepository,
+      runCheckpointRepository,
+      decisionRepository,
+      () => workspaceRoot,
+      taskService,
+    );
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'openai-compatible',
+        model: 'local-alpha-model',
+        apiKey: 'test-key',
+        featureFlags: {
+          enableScheduler: false,
+          enableProviderNativeToolCalls: true,
+        },
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn(),
+      executeWithResult: vi.fn().mockResolvedValue({
+        text: 'Denied workspace tool fallback output',
+        providerPayload: {
+          source: 'provider_response_body',
+          provider: 'openai-compatible',
+          model: 'local-alpha-model',
+          rawSummary: 'choices=1; tool_calls=2',
+          payload: {
+            choices: [
+              {
+                finish_reason: 'tool_calls',
+                message: {
+                  content: 'Denied workspace tool fallback output',
+                  tool_calls: [
+                    {
+                      id: 'call_denied_patch_1',
+                      type: 'function',
+                      function: {
+                        name: 'taskplane__workspace__write_patch',
+                        arguments: JSON.stringify({
+                          summary: 'Update notes',
+                          expectedFiles: ['notes.md'],
+                          patch: [
+                            '*** Begin Patch',
+                            '*** Update File: notes.md',
+                            '@@',
+                            '-alpha',
+                            '+beta',
+                            '*** End Patch',
+                          ].join('\n'),
+                        }),
+                      },
+                    },
+                    {
+                      id: 'call_denied_command_1',
+                      type: 'function',
+                      function: {
+                        name: 'taskplane__workspace__run_command',
+                        arguments: JSON.stringify({
+                          summary: 'Run tests',
+                          script: 'test',
+                        }),
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      }),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No process template needed for provider-native workspace policy fallback test.',
+      }),
+    };
+    const service = new RunService(
+      runRepository,
+      taskService,
+      artifactRepository,
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository,
+      agentToolRegistry,
+      runCheckpointRepository,
+    );
+    const task = await taskService.create({
+      title: 'Provider native denied workspace tools',
+      summary: 'Validate policy fallback for provider-native workspace write and command tools.',
+    });
+
+    const run = await service.trigger({
+      taskId: task.id,
+      type: 'agent',
+      instructions: 'Do not expose workspace write or command tools.',
+    });
+    const detail = await service.getDetail(run.id);
+    const agentSessions = detail?.agentSessions ?? [];
+    const steps = detail?.steps ?? [];
+    const artifacts = await artifactRepository.listRecentForTask(task.id, 10);
+    const checkpoints = await runCheckpointRepository.listForRun(run.id);
+
+    expect(run).toMatchObject({
+      status: 'completed',
+      output: 'Denied workspace tool fallback output',
+      outputSource: 'ai',
+    });
+    expect(fs.readFileSync(path.join(workspaceRoot, 'notes.md'), 'utf8')).toBe('alpha\n');
+    expect(checkpoints).toEqual([]);
+    expect(agentSessions[0]).toMatchObject({
+      status: 'completed',
+      capabilities: expect.objectContaining({
+        structuredToolCalls: true,
+        fileContext: false,
+        taskMutationTools: false,
+      }),
+    });
+    expect(steps.some((step) =>
+      step.kind === 'plan' &&
+      step.title === '采用保守 fallback agent 步骤计划' &&
+      step.input?.includes('workspace.write_patch') &&
+      step.input?.includes('workspace.run_command')
+    )).toBe(true);
+    expect(artifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'note',
+          title: 'Provider native denied workspace tools agent note',
+          content: 'Denied workspace tool fallback output',
+        }),
+      ]),
+    );
+  });
 });
