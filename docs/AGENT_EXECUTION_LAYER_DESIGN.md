@@ -564,7 +564,7 @@ Next code slice:
    release-readiness signoff.
 2. Before adding `workspace.write_patch` or `workspace.run_command`, design the
    confirmation, diff preview, sandbox, and rollback story as a separate
-   decision doc.
+   decision doc. See [WORKSPACE_WRITE_TOOLS_DECISION.md](WORKSPACE_WRITE_TOOLS_DECISION.md).
 3. Keep new execution tools out of scope until the packaged read-only path is
    boring.
 
