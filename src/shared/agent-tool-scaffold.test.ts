@@ -5,8 +5,22 @@ import {
   getAgentToolScaffoldDescriptor,
   getAgentToolScaffoldDescriptorsByFamily,
   getReservedAgentToolScaffoldDescriptors,
+  shouldExposeAgentToolScaffold,
 } from './agent-tool-scaffold.js';
 import { AGENT_TOOL_NAMES } from './agent-tools.js';
+import type { AgentPolicy } from './types/agent-execution.js';
+
+function buildPolicy(overrides: Partial<AgentPolicy> = {}): AgentPolicy {
+  return {
+    maxSteps: 4,
+    maxWallTimeMs: 120_000,
+    allowNetwork: false,
+    allowLocalWorkspaceRead: false,
+    allowLocalFileWrite: false,
+    confirmationRequiredRisks: ['local_command', 'local_write'],
+    ...overrides,
+  };
+}
 
 describe('agent tool scaffold descriptors', () => {
   it('represents the shared scaffold families needed for future execution lanes', () => {
@@ -77,5 +91,37 @@ describe('agent tool scaffold descriptors', () => {
       'workspace.write_patch',
       'workspace.staged_patch',
     ]);
+  });
+
+  it('delegates implemented runtime exposure while keeping reserved scaffold descriptors hidden', () => {
+    expect(shouldExposeAgentToolScaffold({
+      id: 'task.inspect_context',
+      channel: 'text_prompt',
+      policy: buildPolicy(),
+    })).toBe(true);
+
+    expect(shouldExposeAgentToolScaffold({
+      id: 'workspace.search',
+      channel: 'text_prompt',
+      policy: buildPolicy(),
+    })).toBe(false);
+
+    expect(shouldExposeAgentToolScaffold({
+      id: 'workspace.search',
+      channel: 'text_prompt',
+      policy: buildPolicy({ allowLocalWorkspaceRead: true }),
+    })).toBe(true);
+
+    expect(shouldExposeAgentToolScaffold({
+      id: 'workspace.write_patch',
+      channel: 'text_prompt',
+      policy: buildPolicy({ allowLocalFileWrite: true }),
+    })).toBe(false);
+
+    expect(shouldExposeAgentToolScaffold({
+      id: 'browser.readonly_evidence',
+      channel: 'provider_native',
+      policy: buildPolicy({ allowLocalWorkspaceRead: true, allowTaskMutationTools: true }),
+    })).toBe(false);
   });
 });

@@ -1,4 +1,8 @@
-import type { AgentToolName, AgentToolRisk } from './types/agent-execution.js';
+import {
+  shouldExposeAgentTool,
+  type AgentToolExposureChannel,
+} from './agent-tool-exposure.js';
+import type { AgentPolicy, AgentToolName, AgentToolRisk } from './types/agent-execution.js';
 
 export type AgentToolScaffoldFamily =
   | 'task_domain'
@@ -312,4 +316,22 @@ export function getAgentToolScaffoldDescriptorsByFamily(
 
 export function getReservedAgentToolScaffoldDescriptors(): AgentToolScaffoldDescriptor[] {
   return AGENT_TOOL_SCAFFOLD_DESCRIPTORS.filter((descriptor) => descriptor.lifecycle === 'reserved');
+}
+
+export function shouldExposeAgentToolScaffold(params: {
+  id: string;
+  channel: AgentToolExposureChannel;
+  policy: Pick<AgentPolicy, 'allowLocalWorkspaceRead' | 'allowTaskMutationTools'>;
+}): boolean {
+  const descriptor = getAgentToolScaffoldDescriptor(params.id);
+
+  if (descriptor.defaultExposure === 'hidden' || descriptor.lifecycle === 'reserved' || !descriptor.runtimeToolName) {
+    return false;
+  }
+
+  return shouldExposeAgentTool({
+    name: descriptor.runtimeToolName,
+    channel: params.channel,
+    policy: params.policy,
+  });
 }
