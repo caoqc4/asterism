@@ -26,6 +26,7 @@
     "verify": "npm run test && npm run lint && npm run build",
     "smoke:build": "npm run build && node scripts/smoke-build.mjs",
     "smoke:package:mac": "node scripts/smoke-package-mac.mjs",
+    "smoke:runtime:mac": "node scripts/smoke-runtime-mac.mjs",
     "dist:mac:dir": "npm run build && npm run rebuild:electron && node node_modules/electron-builder/cli.js --mac dir && npm run rebuild:node",
     "dist:mac": "npm run build && npm run rebuild:electron && node node_modules/electron-builder/cli.js --mac && npm run rebuild:node"
   },

@@ -78,12 +78,16 @@ Use this when package/build entrypoints change. It runs the production build and
 
 ```bash
 npm run smoke:package:mac
+npm run smoke:runtime:mac
 ```
 
 Run this after `npm run dist:mac:dir`. It checks the unpacked app bundle,
 `Info.plist`, native module unpacking, ASAR integrity metadata, required ASAR
 entries, absence of compiled test files, executable bit, and local code
-signature.
+signature. The runtime smoke check launches the packaged executable with
+isolated user data and confirms startup creates `config.json` and
+`taskplane.db`; it also clears `ELECTRON_RUN_AS_NODE` so shell tooling
+environment does not accidentally force the packaged app into Node mode.
 
 ### Standard verification
 
@@ -151,8 +155,8 @@ Main-process rules:
 - SQLite integration tests currently cover `TaskRepository`, `RunRepository`, `DecisionRepository`, `BriefSnapshotRepository`, `WaitingItemRepository`, `ArtifactRepository`, `SourceContextRepository`, `BlockerRepository`, `TaskDependencyRepository`, `CompletionCriteriaRepository`, `ProcessTemplateRepository`, and `TaskProcessBindingRepository`.
 - IPC handler tests cover critical event-emitting channels such as settings save, completion-criteria writes, decision action, and run trigger.
 - Renderer interaction tests cover the main control-plane flows from Home, Tasks, Decisions, Runs, Settings, timeline actions, waiting-item flows, blocker flows, dependency flows, completion-criteria flows, source-context flows, process-context flows, task-resume visibility and recovery actions, home resume-preview recovery flows, lane-aware list ordering, lane-aware summaries, and failed-run refresh paths.
-- Local development currently relies on running `npm run verify` before pushing changes, with `npm run smoke:build` added when package/build entrypoints change and `npm run smoke:package:mac` after producing an unpacked macOS app.
-- If GitHub Actions is unavailable or disabled because of monthly quota, treat local `npm run verify` as the required gate for ordinary code changes, add `npm run smoke:build` for package/build entrypoint changes, and add `npm run smoke:package:mac` after `npm run dist:mac:dir`. Do not manually dispatch or watch remote workflow runs during that period.
+- Local development currently relies on running `npm run verify` before pushing changes, with `npm run smoke:build` added when package/build entrypoints change and `npm run smoke:package:mac` plus `npm run smoke:runtime:mac` after producing an unpacked macOS app.
+- If GitHub Actions is unavailable or disabled because of monthly quota, treat local `npm run verify` as the required gate for ordinary code changes, add `npm run smoke:build` for package/build entrypoint changes, and add `npm run smoke:package:mac` plus `npm run smoke:runtime:mac` after `npm run dist:mac:dir`. Do not manually dispatch or watch remote workflow runs during that period.
 
 For the current coverage map and recommended next targets, see [TESTING.md](TESTING.md).
 

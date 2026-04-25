@@ -314,12 +314,14 @@ Current verification:
 - GitHub Actions runs `npm run verify` on pushes to `main` and pull requests when Actions capacity is available
 - `npm run smoke:build` when package/build entrypoints change
 - `npm run smoke:package:mac` after producing `release/mac-arm64/Taskplane.app`, including ASAR content checks
+- `npm run smoke:runtime:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged startup
 
 When GitHub Actions is unavailable or disabled because of monthly quota, local verification is the temporary source of truth:
 
 - run `npm run verify` before pushing ordinary changes
 - run `npm run smoke:build` when package/build entrypoints change
 - run `npm run smoke:package:mac` after `npm run dist:mac:dir`
+- run `npm run smoke:runtime:mac` after `npm run dist:mac:dir`
 - avoid manually dispatching or watching remote workflow runs until Actions capacity is restored
 
 ## Suggested Next Test Targets

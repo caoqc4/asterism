@@ -1,4 +1,5 @@
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { applyUserDataPathOverride, getPackagedRendererIndexPath } from './bootstrap/runtime-paths.js';
@@ -12,7 +13,17 @@ const __dirname = path.dirname(__filename);
 
 let mainWindow: InstanceType<typeof BrowserWindow> | null = null;
 
+function appendRuntimeSmokeEvent(event: string): void {
+  const smokePath = process.env.TASKPLANE_RUNTIME_SMOKE_PATH;
+
+  if (smokePath) {
+    fs.appendFileSync(smokePath, `${event}\n`, 'utf8');
+  }
+}
+
+appendRuntimeSmokeEvent('main:start');
 applyUserDataPathOverride(app);
+appendRuntimeSmokeEvent('main:userDataReady');
 
 function createMainWindow(): void {
   mainWindow = new BrowserWindow({
@@ -38,17 +49,20 @@ function createMainWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
-  initServices();
-  void initServices().schedulerService.start();
-  registerIpcHandlers();
-  createMainWindow();
+await app.whenReady();
+appendRuntimeSmokeEvent('main:electronReady');
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createMainWindow();
-    }
-  });
+initServices();
+appendRuntimeSmokeEvent('main:servicesReady');
+void initServices().schedulerService.start();
+registerIpcHandlers();
+createMainWindow();
+appendRuntimeSmokeEvent('main:windowCreated');
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createMainWindow();
+  }
 });
 
 app.on('window-all-closed', () => {

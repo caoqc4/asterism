@@ -41,9 +41,9 @@ Latest local baseline:
 - production renderer build
 - Electron main-process build
 - build smoke check
-- macOS package smoke check for the unpacked app, including ASAR contents
+- macOS package and runtime smoke checks for the unpacked app, including ASAR contents and isolated startup
 
-Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging configuration changes. Run `npm run smoke:package:mac` after `npm run dist:mac:dir`.
+Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging configuration changes. Run `npm run smoke:package:mac` and `npm run smoke:runtime:mac` after `npm run dist:mac:dir`.
 
 ## Current Risks
 

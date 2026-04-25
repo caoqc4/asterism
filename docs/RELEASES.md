@@ -48,11 +48,15 @@ After packaging, verify the unpacked app signature locally:
 
 ```bash
 npm run smoke:package:mac
+npm run smoke:runtime:mac
 ```
 
-This checks the app bundle, key `Info.plist` metadata, native module unpacking,
-ASAR integrity metadata, required ASAR entries, absence of compiled test files,
-executable bit, and the local code signature.
+The package smoke check validates the app bundle, key `Info.plist` metadata,
+native module unpacking, ASAR integrity metadata, required ASAR entries, absence
+of compiled test files, executable bit, and the local code signature. The
+runtime smoke check launches the packaged executable with isolated user data and
+confirms it creates `config.json` and `taskplane.db` while clearing
+`ELECTRON_RUN_AS_NODE`.
 
 ### Produce macOS release artifacts
 
@@ -83,6 +87,7 @@ As of the current alpha path:
 - `npm run smoke:build` passes locally
 - `npm run dist:mac:dir` passes locally
 - `npm run smoke:package:mac` passes locally for the unpacked app
+- `npm run smoke:runtime:mac` passes locally for isolated packaged startup
 - notarization is skipped because release credentials/options are not configured
 
 ## Why macOS first
