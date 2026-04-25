@@ -259,8 +259,8 @@ describe('RunOrchestrator', () => {
     const agentToolRegistry = {
       execute: vi.fn(),
     };
-    const agentRunLoop = {
-      executeLocalNoteLoop: vi.fn().mockResolvedValue({
+    const agentExecutor = {
+      executeLocalNoteSession: vi.fn().mockResolvedValue({
         status: 'completed',
         output: 'Agent local note output',
       }),
@@ -271,7 +271,7 @@ describe('RunOrchestrator', () => {
       processTemplateSelector as never,
       runStepRepository as never,
       agentToolRegistry as never,
-      agentRunLoop as never,
+      agentExecutor as never,
     );
 
     const result = await orchestrator.executeAgentRun({
@@ -284,7 +284,7 @@ describe('RunOrchestrator', () => {
       status: 'completed',
       output: 'Agent local note output',
     });
-    expect(agentRunLoop.executeLocalNoteLoop).toHaveBeenCalledWith(
+    expect(agentExecutor.executeLocalNoteSession).toHaveBeenCalledWith(
       expect.objectContaining({
         modelOutput: 'Agent local note output',
         taskTitle: 'Task 1',
@@ -322,12 +322,11 @@ describe('RunOrchestrator', () => {
     const agentToolRegistry = {
       execute: vi.fn(),
     };
-    const agentRunLoop = {
-      executeLocalNoteLoop: vi.fn().mockResolvedValue({
+    const agentExecutor = {
+      executeLocalNoteSession: vi.fn().mockResolvedValue({
         status: 'paused',
         message: '观察到任务仍有阻塞项。暂停执行 artifact.create_note。',
         checkpointId: 'run_checkpoint_1',
-        observations: [],
       }),
     };
     const orchestrator = new RunOrchestrator(
@@ -336,7 +335,7 @@ describe('RunOrchestrator', () => {
       processTemplateSelector as never,
       runStepRepository as never,
       agentToolRegistry as never,
-      agentRunLoop as never,
+      agentExecutor as never,
     );
 
     const result = await orchestrator.executeAgentRun({

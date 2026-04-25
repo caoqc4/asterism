@@ -472,9 +472,9 @@ and persists artifacts.
 
 ### First Concrete Next Task
 
-Implement the executor/session interface without adding new external tools.
+Continue the executor/session boundary without adding new external tools.
 
-Recommended code slice:
+Completed slice:
 
 1. Add shared/internal types for `AgentSessionRequest`, `AgentSessionEvent`,
    `AgentSessionResult`, and `AgentRuntimeCapabilities`.
@@ -487,6 +487,16 @@ Recommended code slice:
 5. Add unit tests proving current paused/completed/failed agent outcomes still
    settle exactly as before.
 
-Success: no new user-facing capability is required, but the next coding,
-research, or social executor can plug in without changing `RunService` or the
-Task/Run/Decision product model.
+Next code slice:
+
+1. Add a small `AgentSessionStore` abstraction that can record session metadata
+   for a run without changing public `Run` shape yet.
+2. Persist runtime capability metadata for each agent run, including whether it
+   used text-only planning or structured tool calling.
+3. Teach `RunOrchestrator` to write the session metadata before starting the
+   executor.
+4. Surface the capability summary in run steps or Runs page copy.
+
+Success: no new user-facing capability is required, but interrupted runs and
+future coding/research/social executors have a durable place to explain what
+kind of session they were running.

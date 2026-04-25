@@ -19,6 +19,7 @@ Current test files:
 - `src/main/domain/task/task-service.test.ts`
 - `src/main/domain/decision/decision-service.test.ts`
 - `src/main/domain/run/run-service.test.ts`
+- `src/main/domain/run/agent-executor.test.ts`
 - `src/main/domain/brief/home-brief-service.test.ts`
 - `src/main/domain/brief/process-template-selector.test.ts`
 - `src/main/domain/working-context/assembler.test.ts`
@@ -64,6 +65,8 @@ Covered today:
   successful execution path, failure path, paused path, paused checkpoint continuation, task restoration after settled runs, artifact creation on successful output, and orchestration result settlement
 - `RunOrchestrator`
   plan/model/final step writes, process-template selector fallback, executor failure recording, agent-mode handoff into the local run loop, and paused agent-loop propagation
+- `LocalAgentExecutor`
+  adapter behavior that preserves current local agent-loop outcomes behind the executor/session boundary
 - `AgentRunLoop`
   typed local observe-then-write plan building, constrained JSON proposal parsing, required read-only observation steps before local writes, observation-aware planner continue/stop decision writes, fallback behavior, visible plan-source run-step writes, in-memory tool observations, persisted structured observation-summary run steps, and failed / confirmation-needed tool outcomes
 - `AgentWorkingContext`

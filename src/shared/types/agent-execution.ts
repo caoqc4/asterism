@@ -81,6 +81,32 @@ export type AgentRunRequest = {
   policy: AgentPolicy;
 };
 
+export type AgentRuntimeCapabilities = {
+  structuredToolCalls: boolean;
+  textOnlyPlanning: boolean;
+  streaming: boolean;
+  fileContext: boolean;
+  longRunningSessions: boolean;
+};
+
+export type AgentSessionRequest = AgentRunRequest & {
+  capabilities: AgentRuntimeCapabilities;
+};
+
+export type AgentSessionEvent =
+  | { type: 'plan'; summary: string }
+  | { type: 'model'; output: string }
+  | { type: 'tool_call'; tool: AgentToolName; input: unknown }
+  | { type: 'tool_result'; tool: AgentToolName; result: AgentToolResult }
+  | { type: 'checkpoint'; checkpointId: string; reason: string }
+  | { type: 'final'; output: string };
+
+export type AgentSessionResult =
+  | { status: 'completed'; output: string }
+  | { status: 'failed'; failureKind: string; message: string }
+  | { status: 'needs_confirmation'; checkpointId: string; message: string }
+  | { status: 'paused'; checkpointId: string; message: string };
+
 export type AgentStepProposal = {
   finalOutput?: string | null;
   steps: Array<{

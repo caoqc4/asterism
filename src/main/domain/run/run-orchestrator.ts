@@ -4,6 +4,7 @@ import { RunStepRepository } from '../../db/repositories/run-step-repository.js'
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
 import { AgentRunLoop } from './agent-run-loop.js';
+import { LocalAgentExecutor, type AgentExecutor } from './agent-executor.js';
 import type { AgentToolRegistry } from './agent-tool-registry.js';
 import {
   ProcessTemplateSelector,
@@ -46,8 +47,8 @@ export class RunOrchestrator {
     private readonly processTemplateSelector: ProcessTemplateSelector = new ProcessTemplateSelector(),
     private readonly runStepRepository: RunStepRepository = new RunStepRepository(),
     private readonly agentToolRegistry: AgentToolRegistry | null = null,
-    private readonly agentRunLoop: AgentRunLoop | null = agentToolRegistry
-      ? new AgentRunLoop(agentToolRegistry, runStepRepository)
+    private readonly agentExecutor: AgentExecutor | null = agentToolRegistry
+      ? new LocalAgentExecutor(new AgentRunLoop(agentToolRegistry, runStepRepository))
       : null,
   ) {}
 
@@ -152,7 +153,7 @@ export class RunOrchestrator {
       input,
     });
 
-    if (result.status !== 'completed' || !this.agentRunLoop || !result.output.trim()) {
+    if (result.status !== 'completed' || !this.agentExecutor || !result.output.trim()) {
       return result;
     }
 
@@ -167,34 +168,34 @@ export class RunOrchestrator {
       return result;
     }
 
-    const loopResult = await this.agentRunLoop.executeLocalNoteLoop({
+    const sessionResult = await this.agentExecutor.executeLocalNoteSession({
       request,
       modelOutput: result.output,
       taskTitle: params.task.title,
     });
 
-    if (loopResult.status === 'needs_confirmation') {
+    if (sessionResult.status === 'needs_confirmation') {
       return {
         status: 'needs_confirmation',
-        message: loopResult.message,
-        checkpointId: loopResult.checkpointId,
+        message: sessionResult.message,
+        checkpointId: sessionResult.checkpointId,
         selection: result.selection,
       };
     }
 
-    if (loopResult.status === 'failed') {
+    if (sessionResult.status === 'failed') {
       return {
         status: 'failed',
-        message: loopResult.message,
+        message: sessionResult.message,
         selection: result.selection,
       };
     }
 
-    if (loopResult.status === 'paused') {
+    if (sessionResult.status === 'paused') {
       return {
         status: 'paused',
-        message: loopResult.message,
-        checkpointId: loopResult.checkpointId,
+        message: sessionResult.message,
+        checkpointId: sessionResult.checkpointId,
         selection: result.selection,
       };
     }
