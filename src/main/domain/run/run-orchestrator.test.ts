@@ -198,6 +198,10 @@ describe('RunOrchestrator', () => {
         provider: 'openai',
         model: 'gpt-4.1',
         apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: false,
+          enableProviderNativeToolCalls: true,
+        },
       }),
     };
     const textExecutor = {

@@ -7,6 +7,7 @@ import { readEnvBoolean, readEnvValue } from './env.js';
 
 const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   enableScheduler: false,
+  enableProviderNativeToolCalls: false,
 };
 
 const DEFAULT_CONFIG: AppConfigFile = {
@@ -69,6 +70,10 @@ function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
         typeof nextFeatureFlags.enableScheduler === 'boolean'
           ? nextFeatureFlags.enableScheduler
           : DEFAULT_FEATURE_FLAGS.enableScheduler,
+      enableProviderNativeToolCalls:
+        typeof nextFeatureFlags.enableProviderNativeToolCalls === 'boolean'
+          ? nextFeatureFlags.enableProviderNativeToolCalls
+          : DEFAULT_FEATURE_FLAGS.enableProviderNativeToolCalls,
     },
     updatedAt: input.updatedAt ?? new Date().toISOString(),
   };
@@ -80,6 +85,7 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
   const aiBaseUrl = readEnvValue('TASKPLANE_AI_BASE_URL');
   const workspaceRoot = readEnvValue('TASKPLANE_WORKSPACE_ROOT');
   const enableScheduler = readEnvBoolean('TASKPLANE_ENABLE_SCHEDULER');
+  const enableProviderNativeToolCalls = readEnvBoolean('TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS');
 
   return sanitizeConfig({
     ...config,
@@ -90,6 +96,10 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
     featureFlags: {
       ...config.featureFlags,
       enableScheduler: enableScheduler ?? config.featureFlags.enableScheduler,
+      enableProviderNativeToolCalls:
+        enableProviderNativeToolCalls
+        ?? config.featureFlags.enableProviderNativeToolCalls
+        ?? DEFAULT_FEATURE_FLAGS.enableProviderNativeToolCalls,
     },
   });
 }

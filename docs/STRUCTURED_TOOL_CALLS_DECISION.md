@@ -55,6 +55,9 @@ Current agent runs use:
   tools
 - registry-only workspace patch and command tools
 - `structuredToolCalls=false` in persisted session capability metadata
+- `featureFlags.enableProviderNativeToolCalls=false` by default; setting it in
+  config or env is reserved for future rollout and does not change current run
+  behavior yet
 
 The pre-run capability preview may say a provider path is deferred or limited,
 but persisted session metadata must describe what Taskplane actually used for
@@ -145,6 +148,8 @@ Rules:
   not provider marketing capability.
 - A run may record `structuredToolCalls=true` only after the normalized adapter
   path has executed for that run.
+- `enableProviderNativeToolCalls` must not flip session metadata by itself; it
+  only becomes meaningful when the adapter path is explicitly wired and tested.
 - Runs detail should keep showing whether the session used text-only planning or
   structured tool calling.
 - Workspace patch and command tools must still remain unavailable in normal

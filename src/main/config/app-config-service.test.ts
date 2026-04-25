@@ -11,6 +11,7 @@ const envKeys = [
   'TASKPLANE_AI_BASE_URL',
   'TASKPLANE_WORKSPACE_ROOT',
   'TASKPLANE_ENABLE_SCHEDULER',
+  'TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS',
 ];
 
 describe('AppConfigService', () => {
@@ -40,6 +41,7 @@ describe('AppConfigService', () => {
     expect(config.aiBaseUrl).toBeNull();
     expect(config.workspaceRoot).toBeNull();
     expect(config.featureFlags.enableScheduler).toBe(false);
+    expect(config.featureFlags.enableProviderNativeToolCalls).toBe(false);
     expect(fs.existsSync(getConfigPath(() => tempRoot))).toBe(true);
   });
 
@@ -65,6 +67,7 @@ describe('AppConfigService', () => {
       workspaceRoot: ' /Users/example/project ',
       featureFlags: {
         enableScheduler: true,
+        enableProviderNativeToolCalls: true,
       },
     });
 
@@ -75,6 +78,7 @@ describe('AppConfigService', () => {
     expect(config.aiBaseUrl).toBe('https://relay.example.com/v1');
     expect(config.workspaceRoot).toBe('/Users/example/project');
     expect(config.featureFlags.enableScheduler).toBe(true);
+    expect(config.featureFlags.enableProviderNativeToolCalls).toBe(true);
   });
 
   it('falls back to the default provider when config contains an unknown provider', async () => {
@@ -105,6 +109,7 @@ describe('AppConfigService', () => {
     process.env.TASKPLANE_AI_BASE_URL = 'https://relay.example.com/v1';
     process.env.TASKPLANE_WORKSPACE_ROOT = '/tmp/taskplane-workspace';
     process.env.TASKPLANE_ENABLE_SCHEDULER = 'true';
+    process.env.TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS = 'true';
     const { AppConfigService } = await import('./app-config-service.js');
     const service = new AppConfigService(() => tempRoot);
 
@@ -114,6 +119,7 @@ describe('AppConfigService', () => {
       aiBaseUrl: null,
       featureFlags: {
         enableScheduler: false,
+        enableProviderNativeToolCalls: false,
       },
     });
 
@@ -124,6 +130,7 @@ describe('AppConfigService', () => {
     expect(config.aiBaseUrl).toBe('https://relay.example.com/v1');
     expect(config.workspaceRoot).toBe('/tmp/taskplane-workspace');
     expect(config.featureFlags.enableScheduler).toBe(true);
+    expect(config.featureFlags.enableProviderNativeToolCalls).toBe(true);
   });
 
   it('falls back to default feature flags when stored flags have invalid values', async () => {
@@ -135,6 +142,7 @@ describe('AppConfigService', () => {
         aiModel: 'gpt-4.1',
         featureFlags: {
           enableScheduler: 'yes',
+          enableProviderNativeToolCalls: 'yes',
         },
       }),
       'utf8',
@@ -145,6 +153,7 @@ describe('AppConfigService', () => {
 
     expect(config.aiProvider).toBe('openai');
     expect(config.featureFlags.enableScheduler).toBe(false);
+    expect(config.featureFlags.enableProviderNativeToolCalls).toBe(false);
   });
 
   it('migrates legacy settings.json into config.json', async () => {

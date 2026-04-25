@@ -32,7 +32,8 @@ Example shape:
   "aiBaseUrl": null,
   "workspaceRoot": null,
   "featureFlags": {
-    "enableScheduler": false
+    "enableScheduler": false,
+    "enableProviderNativeToolCalls": false
   },
   "updatedAt": "2026-04-22T00:00:00.000Z"
 }
@@ -83,6 +84,7 @@ TASKPLANE_AI_BASE_URL=
 TASKPLANE_AI_API_KEY=your-test-key
 TASKPLANE_WORKSPACE_ROOT=/absolute/path/to/your/workspace
 TASKPLANE_ENABLE_SCHEDULER=false
+TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS=false
 ```
 
 For fal OpenRouter:
@@ -139,6 +141,15 @@ When `true`:
 When `false`:
 
 - scheduler jobs are not registered
+
+## Provider-Native Tool Call Flag
+
+`featureFlags.enableProviderNativeToolCalls`
+
+This flag is reserved for a future structured tool-call adapter rollout. It is
+persisted and can be overridden with `TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS`,
+but current agent runs still use text-only JSON planning and persist
+`structuredToolCalls=false`.
 
 ## Fallback Behavior
 
