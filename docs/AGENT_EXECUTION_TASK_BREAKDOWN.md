@@ -308,17 +308,18 @@ Start with the first non-live slices from
 T1 through T7 now have Slice 0 implementation or design coverage, the shared
 tool scaffold exists, the sandbox patch draft source boundary is implemented,
 the first producer design is drafted, and the non-live producer scaffolding is
-in place.
+in place with integration coverage for source-ready, blocked, failed, and
+empty-diff outcomes.
 
 The next implementation slice is:
 
-- integration coverage for blocked, failed, empty-diff, and source-ready
-  producer results
+- review and connect the first real sandbox provider backend for targeted
+  `test` / `lint` checks and patch artifacts
 
-Only after that passes should implementation start on a real sandbox provider
-backend. Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer
-control, external posting, or social/media publishing as model-visible tools
-until their own sandbox or connector Decisions are accepted.
+Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer control,
+external posting, or social/media publishing as model-visible tools until the
+real backend passes the shared eligibility gate and those other tool families
+have their own sandbox or connector Decisions accepted.
 
 ## Verification Policy
 

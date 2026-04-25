@@ -314,13 +314,14 @@ The project is past initial architecture assembly. Current work should favor pro
   a patch draft, producer output becomes a validated source, and the result
   previews the existing sandbox patch-review plan without starting a real model
   loop, command runner, sandbox backend, or UI entrypoint.
-- Producer planning docs now mark the first non-live slices as implemented and
-  name the remaining pre-backend task: integration coverage for blocked,
-  failed, empty-diff, and source-ready producer results.
 - Sandboxed coding producer integration coverage now exercises those
   pre-backend outcomes with real temp workspace/staging directories and an
   injected runner: source-ready, runner-blocked, runner-failed, and empty-diff
   failed paths.
+- Producer planning docs now mark the pre-backend non-live producer slices as
+  complete. The next execution-layer task is to review and connect the first
+  real sandbox provider backend for targeted checks and patch artifacts without
+  exposing a UI-visible coding mode.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

@@ -264,12 +264,13 @@ Completed non-live slices:
 3. Staged file collector that converts staging contents into a patch draft.
 4. Producer event types and compact RunStep projection.
 5. Non-live source/preview bridge into `previewFromSource()`.
-
-Next slices:
-
 6. Add integration coverage for blocked, failed, empty-diff, and source-ready
    producer results.
-7. Only after that integration coverage passes, connect a real sandbox backend.
+
+Next slice:
+
+7. Connect a real sandbox backend only after a backend decision/review confirms
+   the implementation still satisfies the sandbox decision and source boundary.
 
 ## Acceptance
 
