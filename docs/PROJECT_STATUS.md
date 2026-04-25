@@ -331,6 +331,10 @@ The project is past initial architecture assembly. Current work should favor pro
   `/Users/caoq/.docker/run/docker.sock`. Real local-container backend live
   validation remains blocked until Docker is running; non-live producer and
   sandbox acceptance tests remain the current gate.
+- `npm run accept:sandbox-coding:backend-preflight` now provides a read-only
+  local backend probe for the future real sandbox provider pass. It checks
+  Docker server availability and prints ready/blocked status without starting
+  containers, pulling images, running checks, or spending provider credit.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
