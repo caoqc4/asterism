@@ -234,7 +234,10 @@ export class RunOrchestrator {
       };
     }
 
-    return result;
+    return {
+      ...result,
+      output: sessionResult.output,
+    };
   }
 
   private async selectProcessTemplates(

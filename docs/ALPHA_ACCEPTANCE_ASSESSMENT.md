@@ -66,7 +66,7 @@ Automated coverage:
 - run service tests cover success, failure, artifact creation, and task restoration behavior
 - repository tests cover decision/run timeline writes
 - renderer tests cover quick decision, quick run, related object entry, and refresh behavior
-- agent execution tests cover read-only workspace tools, policy-gated workspace plan steps, per-run workspace opt-in, session capability metadata, Runs-page workspace / patch-command capability visibility, and prompt guidance that only exposes workspace tools when opted in
+- agent execution tests cover read-only workspace tools, an isolated RunService read-only workspace agent path through persisted run detail, policy-gated workspace plan steps, per-run workspace opt-in, session capability metadata, Runs-page workspace / patch-command capability visibility, and prompt guidance that only exposes workspace tools when opted in
 
 Manual result / need:
 
