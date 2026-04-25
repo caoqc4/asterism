@@ -76,9 +76,14 @@ function getCheckpointDecisionGuidance(decision: DecisionRecord): string | null 
   }
 
   const sourceLabel = decision.sourceLabel ?? '等待中的 agent 工具调用';
+  const actionLabel = sourceLabel === 'workspace.write_patch'
+    ? '工作区 patch 应用'
+    : sourceLabel === 'artifact.create_note'
+      ? '本地 note 产物写入'
+      : '本地工具调用';
 
   if (decision.status === 'pending') {
-    return `来源：Agent checkpoint（${sourceLabel}）。批准后会恢复等待中的本地 note 产物写入；延后或取消会终止本次 run。`;
+    return `来源：Agent checkpoint（${sourceLabel}）。批准后会恢复等待中的${actionLabel}；延后或取消会终止本次 run。`;
   }
 
   if (decision.status === 'approved') {
