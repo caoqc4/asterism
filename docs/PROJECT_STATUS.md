@@ -151,6 +151,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - A gated temp sandbox coding-session prepare helper now returns `blocked`
   without creating a staging root when eligibility fails, keeping future entry
   points behind the shared guard.
+- The roadmap now names the next Slice 6 implementation target explicitly: a
+  real sandbox provider backend that supports targeted checks and patch
+  artifacts before any coding-agent UI/prompt exposure.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

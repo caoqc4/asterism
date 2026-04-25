@@ -369,6 +369,23 @@ Implementation sequence:
    workspace root, command policy, and execution policy into explicit blocked
    reasons before any entrypoint can become eligible.
 
+Current guardrail state:
+
+- the temp-workspace provider is a smoke/staging-root provider only
+- coding-session preparation is gated and returns `blocked` before creating a
+  staging root when eligibility fails
+- session manifests and summaries exist for audit/run-step copy
+- the temp provider remains intentionally ineligible because it does not yet
+  support targeted command execution or patch artifact production
+
+Next implementation target:
+
+Build or select a real sandbox provider backend that can safely support
+targeted `test` / `lint` checks and patch artifacts inside the sandbox
+boundary. Do not expose a UI run option until that provider passes the shared
+eligibility gate and still routes every promotion through a Decision-linked
+`patch_promotion` checkpoint.
+
 Acceptance:
 
 - no host-process arbitrary shell
@@ -391,10 +408,10 @@ Out of scope for this slice:
 ## Near-Term Recommendation
 
 Keep `workspace.run_command` and `workspace.write_patch` registry-only in the
-current host workspace. The next execution-layer work should design and
-implement Slice 5 tool scaffold contracts, then Slice 6: a disabled-by-default
-sandboxed coding-agent lane that returns patch artifacts and Decisions before
-any promotion. For workspace tools inside the current host workspace, still use
+current host workspace. Slice 5 tool scaffold contracts and Slice 6 guardrails
+now exist for a disabled-by-default sandboxed coding-agent lane. The next
+concrete work is a real sandbox provider backend for targeted checks and patch
+artifacts before any UI/prompt exposure. For workspace tools inside the current host workspace, still use
 [WORKSPACE_TOOL_UI_OPT_IN_DECISION.md](WORKSPACE_TOOL_UI_OPT_IN_DECISION.md)
 before any prompt-level exposure.
 
