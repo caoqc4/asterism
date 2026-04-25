@@ -45,6 +45,7 @@ Use this before release-readiness signoff, after `npm run dist:mac:dir` has prod
 - Launch the packaged app executable with isolated user data and workspace root, for example:
 
 ```bash
+ELECTRON_RUN_AS_NODE= \
 TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-workspace-agent \
 TASKPLANE_WORKSPACE_ROOT=/tmp/taskplane-alpha-workspace-root \
 release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane
