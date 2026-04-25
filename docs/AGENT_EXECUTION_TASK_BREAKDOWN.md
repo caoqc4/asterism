@@ -47,6 +47,8 @@ Completed:
 - tool-permission checkpoint creation is centralized in
   `AgentCheckpointRecorder`, covering RunCheckpoint, Decision, pending RunStep,
   and result metadata
+- resume checkpoint creation also flows through `AgentCheckpointRecorder`,
+  preserving the restart-safe payload shape
 - tool prompt/provider exposure is centralized in `agent-tool-exposure`, with
   text prompts and provider-native schemas consuming the same matrix
 - sandbox decision accepted: broad code-agent mode remains deferred until a
@@ -56,8 +58,8 @@ Completed:
 
 Still incomplete:
 
-- resume checkpoint creation still happens inside `AgentRunLoop` rather than
-  the shared checkpoint recorder
+- checkpoint events are emitted after checkpoint persistence instead of being
+  the sole creation command boundary
 
 ## Task Sequence
 

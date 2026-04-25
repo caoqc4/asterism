@@ -1,11 +1,15 @@
 import type {
+  AgentPolicy,
   AgentToolName,
   AgentToolRisk,
 } from '../../../shared/types/agent-execution.js';
 import type { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
-import { createToolPermissionCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
+import {
+  createResumeCheckpointPayload,
+  createToolPermissionCheckpointPayload,
+} from '../../../shared/types/run-checkpoint-payload.js';
 
 export type AgentToolPermissionCheckpointResult = {
   checkpointId: string;
@@ -84,6 +88,47 @@ export class AgentCheckpointRecorder {
       checkpointId: checkpointWithDecision.id,
       decisionId: decision?.id ?? null,
       summary,
+    };
+  }
+
+  async createResumeCheckpoint(params: {
+    runId: string;
+    taskId: string;
+    reason: string;
+    nextTool: AgentToolName;
+    nextInput: unknown;
+    policySnapshot: AgentPolicy;
+    observations?: unknown;
+  }): Promise<{ checkpointId: string }> {
+    const step = await this.runStepRepository.create({
+      runId: params.runId,
+      kind: 'checkpoint',
+      status: 'pending',
+      title: '等待恢复 agent run',
+      input: JSON.stringify({
+        reason: params.reason,
+        nextTool: params.nextTool,
+        nextInput: params.nextInput,
+      }),
+      output: params.reason,
+    });
+    const checkpoint = await this.runCheckpointRepository.create({
+      runId: params.runId,
+      stepId: step.id,
+      kind: 'resume',
+      payload: JSON.stringify(createResumeCheckpointPayload({
+        reason: params.reason,
+        runId: params.runId,
+        nextTool: params.nextTool,
+        nextInput: params.nextInput,
+        policySnapshot: params.policySnapshot,
+        observations: params.observations,
+        taskId: params.taskId,
+      })),
+    });
+
+    return {
+      checkpointId: checkpoint.id,
     };
   }
 }

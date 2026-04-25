@@ -6,9 +6,9 @@ import type {
   AgentToolName,
   AgentToolResult,
 } from '../../../shared/types/agent-execution.js';
-import { createResumeCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import { AgentCheckpointRecorder } from './agent-checkpoint-recorder.js';
 import type { AgentToolRegistry } from './agent-tool-registry.js';
 
 export type AgentRunLoopResult =
@@ -418,7 +418,14 @@ export class AgentRunLoop {
     private readonly agentToolRegistry: AgentToolRegistry,
     private readonly runStepRepository: RunStepRepository = new RunStepRepository(),
     private readonly runCheckpointRepository: RunCheckpointRepository = new RunCheckpointRepository(),
-  ) {}
+  ) {
+    this.checkpointRecorder = new AgentCheckpointRecorder(
+      this.runCheckpointRepository,
+      this.runStepRepository,
+    );
+  }
+
+  private readonly checkpointRecorder: AgentCheckpointRecorder;
 
   private async emitEvent(
     eventSink: AgentRunLoopEventSink | null | undefined,
@@ -680,34 +687,17 @@ export class AgentRunLoop {
     nextInput: unknown;
     reason: string;
   }): Promise<string> {
-    const step = await this.runStepRepository.create({
+    const checkpoint = await this.checkpointRecorder.createResumeCheckpoint({
       runId: params.request.runId,
-      kind: 'checkpoint',
-      status: 'pending',
-      title: '等待恢复 agent run',
-      input: JSON.stringify({
-        reason: params.reason,
-        nextTool: params.nextTool,
-        nextInput: params.nextInput,
-      }),
-      output: params.reason,
-    });
-    const checkpoint = await this.runCheckpointRepository.create({
-      runId: params.request.runId,
-      stepId: step.id,
-      kind: 'resume',
-      payload: JSON.stringify(createResumeCheckpointPayload({
-        reason: params.reason,
-        runId: params.request.runId,
-        nextTool: params.nextTool,
-        nextInput: params.nextInput,
-        policySnapshot: params.request.policy,
-        observations: params.observations,
-        taskId: params.request.taskId,
-      })),
+      taskId: params.request.taskId,
+      reason: params.reason,
+      nextTool: params.nextTool,
+      nextInput: params.nextInput,
+      policySnapshot: params.request.policy,
+      observations: params.observations,
     });
 
-    return checkpoint.id;
+    return checkpoint.checkpointId;
   }
 
   async executeLocalNoteLoop(params: {

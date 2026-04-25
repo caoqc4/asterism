@@ -125,4 +125,62 @@ describe('AgentCheckpointRecorder', () => {
       summary: '工具 workspace.write_patch 需要确认后才能继续，已创建 Decision：确认本地写入：workspace.write_patch。',
     });
   });
+
+  it('creates a resume checkpoint with a restart-safe payload', async () => {
+    const runCheckpointRepository = buildRunCheckpointRepositoryMock();
+    const runStepRepository = buildRunStepRepositoryMock();
+    const recorder = new AgentCheckpointRecorder(
+      runCheckpointRepository as never,
+      runStepRepository as never,
+    );
+
+    const result = await recorder.createResumeCheckpoint({
+      runId: 'run_1',
+      taskId: 'task_1',
+      reason: '等待先解除阻塞。',
+      nextTool: 'artifact.create_note',
+      nextInput: {
+        title: 'Recovered note',
+        content: 'Recovered note',
+      },
+      policySnapshot: {
+        maxSteps: 8,
+        maxWallTimeMs: 120_000,
+        allowNetwork: false,
+        allowLocalWorkspaceRead: false,
+        allowLocalFileWrite: false,
+        confirmationRequiredRisks: ['external_write', 'sensitive'],
+      },
+      observations: [
+        { tool: 'task.inspect_context', status: 'completed' },
+      ],
+    });
+
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        kind: 'checkpoint',
+        status: 'pending',
+        title: '等待恢复 agent run',
+        input: expect.stringContaining('"nextTool":"artifact.create_note"'),
+        output: '等待先解除阻塞。',
+      }),
+    );
+    expect(runCheckpointRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        stepId: 'run_step_2',
+        kind: 'resume',
+        payload: expect.stringContaining('"policySnapshot"'),
+      }),
+    );
+    expect(runCheckpointRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.stringContaining('"runId":"run_1"'),
+      }),
+    );
+    expect(result).toEqual({
+      checkpointId: 'run_checkpoint_1',
+    });
+  });
 });
