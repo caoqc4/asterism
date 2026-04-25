@@ -490,6 +490,10 @@ describe('local container sandbox backend probe', () => {
           policy: commandPolicy,
           requestedScripts: ['test'],
         }),
+        featureFlags: {
+          enableScheduler: false,
+          enableSandboxCodingAgent: true,
+        },
         patchDraft: {
           diff: '--- a/notes.md\n+++ b/notes.md\n@@\n-original\n+updated',
           files: ['notes.md'],
@@ -564,6 +568,10 @@ describe('local container sandbox backend probe', () => {
           policy: commandPolicy,
           requestedScripts: ['test'],
         }),
+        featureFlags: {
+          enableScheduler: false,
+          enableSandboxCodingAgent: true,
+        },
         patchDraft: {
           diff: '',
           files: ['notes.md'],
@@ -585,6 +593,51 @@ describe('local container sandbox backend probe', () => {
       if (preparedHandlePath) {
         fs.rmSync(preparedHandlePath, { force: true, recursive: true });
       }
+    }
+  });
+
+  it('blocks patch review preparation before creating a session when eligibility fails', async () => {
+    const workspaceRoot = makeTempDir('taskplane-local-container-ineligible-workspace-');
+    const provider = new LocalContainerSandboxProvider();
+    const prepareSessionSpy = vi.spyOn(provider, 'prepareSession');
+    const commandPolicy = buildDefaultAgentSandboxCommandPolicy({ timeoutMs: 30_000 });
+    const request: AgentSandboxSessionRequest = {
+      commandPolicy,
+      descriptorId: 'workspace.staged_patch',
+      executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+      providerKind: 'local_container',
+      runId: 'run_1',
+      taskId: 'task_1',
+      workspace: {
+        mode: 'staged_write',
+        mountPath: '/workspace',
+        workspaceRoot,
+      },
+    };
+
+    try {
+      await expect(prepareLocalContainerSandboxPatchReview({
+        checkPlan: buildAgentSandboxCheckPlan({
+          policy: commandPolicy,
+          requestedScripts: ['test'],
+        }),
+        featureFlags: {
+          enableScheduler: false,
+          enableSandboxCodingAgent: false,
+        },
+        patchDraft: {
+          diff: '--- a/notes.md\n+++ b/notes.md',
+          files: ['notes.md'],
+          summary: 'Blocked patch draft',
+        },
+        provider,
+        request,
+        runner: vi.fn(),
+      })).rejects.toThrow('sandbox coding-agent feature flag is disabled');
+
+      expect(prepareSessionSpy).not.toHaveBeenCalled();
+    } finally {
+      fs.rmSync(workspaceRoot, { force: true, recursive: true });
     }
   });
 });

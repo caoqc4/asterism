@@ -21,8 +21,10 @@ import {
   buildAgentSandboxPatchArtifactFromCheckResults,
   buildAgentSandboxPatchPromotionCheckpoint,
   buildAgentSandboxSessionManifest,
+  evaluateAgentSandboxCodingLaneEligibility,
   summarizeAgentSandboxSessionManifest,
 } from '../../../shared/agent-sandbox-provider.js';
+import type { FeatureFlags } from '../../../shared/types/settings.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -196,11 +198,24 @@ export class LocalContainerSandboxProvider implements AgentSandboxProvider {
 
 export async function prepareLocalContainerSandboxPatchReview(params: {
   checkPlan: AgentSandboxCheckPlan;
+  featureFlags: FeatureFlags;
   patchDraft: LocalContainerSandboxPatchDraft;
   provider: LocalContainerSandboxProvider;
   request: AgentSandboxSessionRequest;
   runner: LocalContainerSandboxCommandRunner;
 }): Promise<LocalContainerSandboxPatchReviewPreparation> {
+  const eligibility = evaluateAgentSandboxCodingLaneEligibility({
+    commandPolicy: params.request.commandPolicy,
+    executionPolicy: params.request.executionPolicy,
+    featureFlags: params.featureFlags,
+    providerCapabilities: params.provider.capabilities,
+    workspaceRoot: params.request.workspace.workspaceRoot,
+  });
+
+  if (!eligibility.eligible) {
+    throw new Error(eligibility.summary);
+  }
+
   const handle = await params.provider.prepareSession(params.request);
 
   try {

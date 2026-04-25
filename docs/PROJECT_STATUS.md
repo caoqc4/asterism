@@ -205,6 +205,9 @@ The project is past initial architecture assembly. Current work should favor pro
   preparation, targeted checks, sandbox patch artifact creation, and a
   `patch_promotion` checkpoint descriptor without applying files or wiring the
   path into product execution.
+- Patch-review preparation now runs the shared sandbox coding-lane eligibility
+  gate before creating a session, so disabled rollout flags, unsafe policies,
+  or missing workspace roots block before any staging directory is created.
 - Patch-review preparation now disposes the prepared sandbox session if checks
   or artifact construction fail, so failed internal preparation does not leave
   a staging directory behind.
