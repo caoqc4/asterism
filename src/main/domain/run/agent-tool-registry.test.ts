@@ -158,6 +158,11 @@ describe('AgentToolRegistry', () => {
         requiresConfirmation: false,
       }),
       expect.objectContaining({
+        name: 'task.update_next_step',
+        risk: 'local_write',
+        requiresConfirmation: false,
+      }),
+      expect.objectContaining({
         name: 'artifact.create_note',
         risk: 'local_write',
       }),
@@ -233,6 +238,99 @@ describe('AgentToolRegistry', () => {
     expect(runStepRepository.update).toHaveBeenCalledWith(
       'run_step_1',
       expect.objectContaining({ status: 'completed' }),
+    );
+  });
+
+  it('updates the current task next step through TaskService', async () => {
+    const taskService = {
+      update: vi.fn().mockResolvedValue({
+        id: 'task_1',
+        title: 'Inspect agent context',
+        summary: null,
+        state: 'running',
+        nextStep: 'Review the agent output with the owner',
+        waitingReason: null,
+        riskLevel: 'none',
+        riskNote: null,
+        activeWaitingItem: null,
+        activeBlocker: null,
+        activeDependency: null,
+        dependencyReevaluation: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:01:00.000Z',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const registry = new AgentToolRegistry(
+      {} as never,
+      runStepRepository as never,
+      undefined,
+      null,
+      undefined,
+      taskService as never,
+    );
+
+    const result = await registry.execute(
+      'task.update_next_step',
+      { nextStep: ' Review the agent output with the owner ' },
+      { runId: 'run_1', taskId: 'task_1' },
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      status: 'completed',
+      summary: '已更新任务下一步：Review the agent output with the owner',
+      output: 'Review the agent output with the owner',
+    });
+    expect(taskService.update).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextStep: 'Review the agent output with the owner',
+    });
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_1',
+      expect.objectContaining({
+        status: 'completed',
+        output: '已更新任务下一步：Review the agent output with the owner',
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        kind: 'tool_result',
+        status: 'completed',
+        output: 'Review the agent output with the owner',
+      }),
+    );
+  });
+
+  it('records task next-step validation failures as tool result failures', async () => {
+    const taskService = {
+      update: vi.fn(),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const registry = new AgentToolRegistry(
+      {} as never,
+      runStepRepository as never,
+      undefined,
+      null,
+      undefined,
+      taskService as never,
+    );
+
+    const result = await registry.execute(
+      'task.update_next_step',
+      { nextStep: '   ' },
+      { runId: 'run_1', taskId: 'task_1' },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('task.update_next_step requires nextStep.');
+    expect(taskService.update).not.toHaveBeenCalled();
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_1',
+      expect.objectContaining({
+        status: 'failed',
+        error: 'task.update_next_step requires nextStep.',
+      }),
     );
   });
 

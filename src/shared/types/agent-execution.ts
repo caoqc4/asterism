@@ -15,6 +15,7 @@ export type AgentToolName =
   | 'artifact.create_note'
   | 'task.inspect_context'
   | 'task.inspect_timeline'
+  | 'task.update_next_step'
   | 'workspace.read_file'
   | 'workspace.search'
   | 'workspace.write_patch';

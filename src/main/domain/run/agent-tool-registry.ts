@@ -13,6 +13,7 @@ import { ArtifactRepository } from '../../db/repositories/artifact-repository.js
 import type { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import type { TaskService } from '../task/task-service.js';
 
 export type AgentToolDefinition = {
   name: AgentToolName;
@@ -30,6 +31,10 @@ type ToolExecutionContext = {
 type ArtifactCreateNoteInput = {
   title: string;
   content: string;
+};
+
+type TaskUpdateNextStepInput = {
+  nextStep: string;
 };
 
 type WorkspaceReadFileInput = {
@@ -85,6 +90,21 @@ function parseArtifactCreateNoteInput(input: unknown): ArtifactCreateNoteInput {
   }
 
   return { title, content };
+}
+
+function parseTaskUpdateNextStepInput(input: unknown): TaskUpdateNextStepInput {
+  if (!input || typeof input !== 'object') {
+    throw new Error('task.update_next_step requires an object input.');
+  }
+
+  const candidate = input as Partial<TaskUpdateNextStepInput>;
+  const nextStep = candidate.nextStep?.trim();
+
+  if (!nextStep) {
+    throw new Error('task.update_next_step requires nextStep.');
+  }
+
+  return { nextStep };
 }
 
 function parseWorkspaceReadFileInput(input: unknown): WorkspaceReadFileInput {
@@ -468,6 +488,12 @@ export class AgentToolRegistry {
       requiresConfirmation: false,
     },
     {
+      name: 'task.update_next_step',
+      description: 'Update the current Taskplane task next step through TaskService.',
+      risk: 'local_write',
+      requiresConfirmation: false,
+    },
+    {
       name: 'artifact.create_note',
       description: 'Create a local note artifact attached to the current Taskplane run.',
       risk: 'local_write',
@@ -499,6 +525,7 @@ export class AgentToolRegistry {
     private readonly runCheckpointRepository: RunCheckpointRepository = new RunCheckpointRepository(),
     private readonly decisionRepository: Pick<DecisionRepository, 'create'> | null = null,
     private readonly workspaceRootResolver: () => string = () => process.cwd(),
+    private readonly taskService: Pick<TaskService, 'update'> | null = null,
   ) {}
 
   list(): AgentToolDefinition[] {
@@ -724,6 +751,24 @@ export class AgentToolRegistry {
           status: 'completed',
           summary: '已读取当前任务最近时间线。',
           output,
+        };
+      }
+      case 'task.update_next_step': {
+        if (!this.taskService) {
+          throw new Error('task.update_next_step requires TaskService.');
+        }
+
+        const parsed = parseTaskUpdateNextStepInput(input);
+        const updated = await this.taskService.update({
+          id: context.taskId,
+          nextStep: parsed.nextStep,
+        });
+
+        return {
+          success: true,
+          status: 'completed',
+          summary: `已更新任务下一步：${updated.nextStep ?? '未填写'}`,
+          output: updated.nextStep,
         };
       }
       case 'artifact.create_note': {

@@ -58,13 +58,6 @@ const homeBriefService = new HomeBriefService(
 const textExecutor = new TextExecutor();
 const briefExecutor = new BriefExecutor();
 const aiConfigService = new AiConfigService(appConfigService);
-const agentToolRegistry = new AgentToolRegistry(
-  artifactRepository,
-  runStepRepository,
-  runCheckpointRepository,
-  decisionRepository,
-  () => appConfigService.read().workspaceRoot ?? process.cwd(),
-);
 const taskService = new TaskService(
   taskRepository,
   waitingItemRepository,
@@ -75,6 +68,14 @@ const taskService = new TaskService(
   blockerRepository,
   taskDependencyRepository,
   completionCriteriaRepository,
+);
+const agentToolRegistry = new AgentToolRegistry(
+  artifactRepository,
+  runStepRepository,
+  runCheckpointRepository,
+  decisionRepository,
+  () => appConfigService.read().workspaceRoot ?? process.cwd(),
+  taskService,
 );
 schedulerService = new SchedulerService(
   appConfigService,

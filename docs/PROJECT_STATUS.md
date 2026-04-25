@@ -29,6 +29,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - The first local-write execution slice is in place but not model-exposed: `workspace.write_patch` requires explicit local file-write policy, creates a confirmation checkpoint with a diff preview, applies only after the linked Decision is approved, and has tests for normal-run fallback plus workspace-boundary / expected-file rejection.
 - A focused `npm run accept:workspace-patch` command now exercises the local patch approval path without exposing write access in the product UI.
 - Agent run forms now preview provider/session capability before execution, including text-only planning, read-only workspace context opt-in, structured tool-call unavailability, and patch/command unavailability.
+- The first domain-shaped task mutation tool is in the registry but not prompt-exposed: `task.update_next_step` routes through `TaskService.update`, writes run-step observations, and normal agent plans still fall back if a model proposes it.
 
 ## Verification Baseline
 
@@ -41,7 +42,7 @@ npm run verify
 Latest local baseline:
 
 - 47 test files
-- 332 tests
+- 335 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build

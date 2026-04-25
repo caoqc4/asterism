@@ -91,7 +91,7 @@ Covered today:
 - `AgentWorkingContext`
   task-detail compression into typed agent run context, default policy, and plan-step request summaries
 - `AgentToolRegistry`
-  internal tool discovery, read-only context/timeline inspection, policy-gated read-only workspace search/file reads, dynamic workspace-root resolution, local note artifact creation, confirmation-gated workspace patch application, tool call/result step writes, validation failure recording, policy-driven confirmation checkpoints, and Decision creation for confirmation checkpoints
+  internal tool discovery, read-only context/timeline inspection, service-routed task next-step updates, policy-gated read-only workspace search/file reads, dynamic workspace-root resolution, local note artifact creation, confirmation-gated workspace patch application, tool call/result step writes, validation failure recording, policy-driven confirmation checkpoints, and Decision creation for confirmation checkpoints
 - `Run checkpoint payload`
   versioned v1 payload helpers for tool-permission and resume checkpoints, with legacy JSON parsing compatibility
 - `DecisionService`

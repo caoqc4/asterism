@@ -417,6 +417,37 @@ describe('AgentRunLoop', () => {
     }).source).toBe('fallback');
   });
 
+  it('does not accept model-produced task mutation steps in the normal run plan', () => {
+    const loop = new AgentRunLoop({ execute: vi.fn() } as never);
+    const proposal = {
+      steps: [
+        { tool: 'task.inspect_context' as const },
+        {
+          tool: 'task.update_next_step' as const,
+          input: {
+            nextStep: 'Follow up with the owner',
+          },
+        },
+        {
+          tool: 'artifact.create_note' as const,
+          input: {
+            title: 'Next step note',
+            content: 'Next step proposed',
+          },
+        },
+      ],
+    };
+
+    expect(loop.buildPlanFromProposal({
+      proposal,
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    })).toEqual(loop.buildLocalNotePlan({
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    }));
+  });
+
   it('labels execution plans by source', () => {
     const loop = new AgentRunLoop({ execute: vi.fn() } as never);
 
