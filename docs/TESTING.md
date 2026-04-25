@@ -272,6 +272,8 @@ Covered today:
 - `Runs` page paused agent checkpoint continuation action
 - `Runs` page paused agent checkpoint continuation error feedback
 - `Runs` page agent session capability summary
+- provider-specific agent capability preview wording for Anthropic, OpenAI,
+  OpenAI-compatible, fal/OpenRouter, and Replicate
 - `Runs` page readable agent plan-source summaries
 - `Runs` page readable agent tool observation summaries
 - `Runs` page trigger form refresh and newly-created run selection, including repeated triggers

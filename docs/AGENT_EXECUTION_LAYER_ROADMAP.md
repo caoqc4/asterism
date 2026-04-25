@@ -100,6 +100,8 @@ Started:
   triggering a run.
 - The preview names text-only planning, per-run read-only workspace context,
   structured tool-call unavailability, and patch/command unavailability.
+- Provider preview coverage now asserts Anthropic, OpenAI, OpenAI-compatible,
+  fal/OpenRouter, and Replicate wording stays truthful.
 
 Remaining:
 
@@ -107,7 +109,6 @@ Remaining:
   and `longRunningSessions` as explicit session metadata
 - make Replicate/text-only runs explain that they can draft and plan but do not
   have reliable structured tool calling
-- add provider-routing tests around capability calculation
 
 Acceptance:
 

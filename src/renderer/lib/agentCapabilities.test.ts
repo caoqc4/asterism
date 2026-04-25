@@ -35,4 +35,19 @@ describe('agent capability formatting', () => {
       'Agent 能力预览：replicate / openai/gpt-oss-20b / text-only planning via Replicate / read-only workspace context enabled for this run / structured tool calls unavailable / patch/commands unavailable',
     );
   });
+
+  it.each([
+    'anthropic',
+    'openai',
+    'openai-compatible',
+    'fal-openrouter',
+  ] as const)('keeps %s routed through the local text-only executor preview', (provider) => {
+    const summary = formatPreRunAgentCapabilitySummary(buildAiStatus(provider), false);
+
+    expect(summary).toContain(`${provider} / claude-3-5-sonnet-latest`);
+    expect(summary).toContain('text-only planning in the local executor');
+    expect(summary).toContain('read-only workspace context disabled for this run');
+    expect(summary).toContain('structured tool calls unavailable');
+    expect(summary).toContain('patch/commands unavailable');
+  });
 });
