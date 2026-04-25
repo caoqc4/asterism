@@ -87,6 +87,10 @@ TASKPLANE_ENABLE_SCHEDULER=false
 TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS=false
 ```
 
+Keep `TASKPLANE_ENABLE_SCHEDULER=false` for local AI/provider validation unless
+you specifically want hourly brief snapshots and stale-run checks running in the
+background. It is independent from provider-native tool-call validation.
+
 For fal OpenRouter:
 
 ```bash
@@ -94,6 +98,7 @@ TASKPLANE_AI_PROVIDER=fal-openrouter
 TASKPLANE_AI_MODEL=google/gemini-2.5-flash
 TASKPLANE_AI_BASE_URL=
 TASKPLANE_AI_API_KEY=your-fal-key
+TASKPLANE_ENABLE_SCHEDULER=false
 TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS=true
 ```
 
@@ -104,6 +109,7 @@ TASKPLANE_AI_PROVIDER=openai-compatible
 TASKPLANE_AI_MODEL=your-model-id
 TASKPLANE_AI_BASE_URL=https://your-relay.example.com/v1
 TASKPLANE_AI_API_KEY=your-test-key
+TASKPLANE_ENABLE_SCHEDULER=false
 TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS=true
 ```
 

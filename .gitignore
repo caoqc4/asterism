@@ -7,3 +7,5 @@ release
 npm-debug.log*
 doc_privice
 .env
+.env.*
+!.env.example
