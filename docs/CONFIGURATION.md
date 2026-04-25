@@ -116,6 +116,37 @@ TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS=true
 Set `TASKPLANE_ENV_FILE=/absolute/path/to/.env` to load a different file. Existing shell
 environment variables win over values from `.env`.
 
+## macOS Release Signing Variables
+
+These values are not required for normal local development, unsigned package
+smoke checks, or AI provider validation. Add them only when preparing a
+dedicated signed/notarized macOS release pass:
+
+```bash
+CSC_NAME=
+CSC_LINK=
+CSC_KEY_PASSWORD=
+APPLE_ID=
+APPLE_APP_SPECIFIC_PASSWORD=
+APPLE_TEAM_ID=
+```
+
+Use either a local keychain `Developer ID Application` certificate, `CSC_NAME`,
+or `CSC_LINK` for signing certificate selection. `APPLE_ID`,
+`APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID` are the electron-builder
+environment variables required for Apple notarization.
+
+Before attempting actual signing or notarization, run:
+
+```bash
+npm run release:mac:preflight
+```
+
+The preflight is read-only. It reports missing local prerequisites without
+signing, notarizing, uploading, or calling Apple services. Use
+`npm run release:mac:preflight -- --strict` only when a missing prerequisite
+should fail the shell command.
+
 ## Read-Only Workspace Root
 
 `TASKPLANE_WORKSPACE_ROOT` or `config.json.workspaceRoot` defines the root used by opted-in
