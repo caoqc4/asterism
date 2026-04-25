@@ -4,7 +4,7 @@ This assessment maps the alpha checklist to the current automated coverage and t
 
 ## Summary
 
-Current status: functionally alpha-accepted for the local unsigned build path, with signed/notarized release work still deferred. A focused manual alpha pass has covered the core local path through task creation, task state transition, decision creation, no-key run failure, successful AI-backed run, Home recovery, Settings config save, completion closeout, and unsigned macOS directory packaging.
+Current status: functionally alpha-accepted for the local unsigned build path, with signed/notarized release work still deferred. A focused manual alpha pass has covered the core local path through task creation, task state transition, decision creation, no-key run failure, successful AI-backed run, packaged read-only workspace agent execution, Home recovery, Settings config save, completion closeout, and unsigned macOS directory packaging.
 
 Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now release-focused: keep local verification as the source of truth while GitHub Actions quota is unavailable, and defer signed/notarized release work until the unsigned package path stays stable.
 
@@ -58,7 +58,7 @@ Manual result / need:
 
 ## Decision And Run Loop
 
-Status: validated manually for no-key failure and successful AI-backed draft run; read-only workspace agent runs now have an isolated automated acceptance path, with a desktop manual pass deferred to release-readiness.
+Status: validated manually for no-key failure, successful AI-backed draft run, and packaged read-only workspace agent execution.
 
 Automated coverage:
 
@@ -74,7 +74,8 @@ Manual result / need:
 - Decision page now keeps formal approve/defer/cancel actions limited to pending Decisions; resolved Decisions retain task recovery without exposing duplicate formal actions
 - draft run without Keychain API key failed clearly with `AI API Key is not configured in system Keychain`
 - with deliberate local `.env` Replicate credentials, the dev app triggered a `draft` run for `Replicate alpha successful run check` under isolated `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-replicate-run-20260424`; SQLite confirmed `status=completed`, `output_source=ai`, output length `1540`, a `run.completed` timeline event, a `run_output` artifact, and a next-step update
-- read-only workspace agent runs are covered in an isolated local RunService path with workspace root, per-run opt-in, persisted `fileContext` capability, workspace search/read observations, final agent output, and no patch or command execution; repeat the same path manually in the packaged app before release-readiness signoff
+- read-only workspace agent runs are covered in an isolated local RunService path with workspace root, per-run opt-in, persisted `fileContext` capability, workspace search/read observations, final agent output, and no patch or command execution
+- packaged app manual pass under `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-workspace-agent-manual-20260425` and `TASKPLANE_WORKSPACE_ROOT=/tmp/taskplane-alpha-workspace-root-manual-20260425` triggered an `agent` run with read-only workspace context enabled; SQLite confirmed the run completed with `output_source=ai`, agent session `fileContext=true`, workspace search/read observations for `docs/marker.txt`, note/run-output artifacts, and no open checkpoints
 
 ## Completion Loop
 
@@ -150,7 +151,7 @@ Manual need:
 Finish the remaining alpha work in this order:
 
 1. Keep signed/notarized packaging out of scope until the next release-readiness pass explicitly targets signing and notarization.
-2. Repeat the read-only workspace agent path manually in the packaged app before release-readiness signoff.
-3. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
+2. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
+3. Start the next execution-layer phase from the accepted write/command-tool decision, not from broad new domain expansion.
 
 Do not expand the domain model until the release-readiness pass is cleaner.
