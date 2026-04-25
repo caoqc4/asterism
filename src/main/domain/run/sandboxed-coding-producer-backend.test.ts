@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AgentSandboxBackendProbe } from '../../../shared/agent-sandbox-provider.js';
-import { evaluateSandboxedCodingProducerBackendReadiness } from './sandboxed-coding-producer-backend.js';
+import {
+  evaluateSandboxedCodingProducerBackendConnectionGate,
+  evaluateSandboxedCodingProducerBackendReadiness,
+} from './sandboxed-coding-producer-backend.js';
 
 const request = {
   commandPolicy: {
@@ -136,6 +139,55 @@ describe('evaluateSandboxedCodingProducerBackendReadiness', () => {
       blockedReasons: expect.arrayContaining([
         'Sandboxed coding producer requires sandbox-only tool exposure.',
       ]),
+    });
+  });
+
+  it('opens a connection gate only after readiness, profile, and request validation pass', () => {
+    expect(evaluateSandboxedCodingProducerBackendConnectionGate({
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      probe: availableProbe,
+      request,
+    })).toMatchObject({
+      profile: {
+        id: 'local-container',
+        isolation: 'container',
+        kind: 'local_container',
+      },
+      ready: true,
+      request: {
+        runId: 'run_1',
+        sourceId: 'sandbox_source_1',
+        workspaceRoot: '/tmp/taskplane-workspace',
+      },
+      summary: 'Sandboxed coding producer backend connection allowed / backend=local-container / kind=local_container / source=sandbox_source_1',
+    });
+  });
+
+  it('keeps the connection gate closed when Docker/backend probing is unavailable', () => {
+    expect(evaluateSandboxedCodingProducerBackendConnectionGate({
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      probe: {
+        backendId: 'local-container',
+        kind: 'local_container',
+        reason: 'docker daemon unavailable',
+        status: 'unavailable',
+      },
+      request,
+    })).toEqual({
+      blockedReasons: ['docker daemon unavailable'],
+      readiness: {
+        blockedReasons: ['docker daemon unavailable'],
+        ready: false,
+        summary: 'Sandboxed coding producer backend blocked: docker daemon unavailable',
+      },
+      ready: false,
+      summary: 'Sandboxed coding producer backend connection blocked: docker daemon unavailable',
     });
   });
 });

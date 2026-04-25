@@ -19,6 +19,10 @@ function makeTempDir(prefix: string): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
+function listTempWorkspaceSandboxDirs(): string[] {
+  return fs.readdirSync(os.tmpdir()).filter((entry) => /^taskplane-sandbox-[^-]+$/.test(entry));
+}
+
 describe('TempWorkspaceSandboxProvider', () => {
   it('blocks coding-session preparation before creating a staging root when eligibility fails', async () => {
     const workspaceRoot = makeTempDir('taskplane-source-workspace-');
@@ -35,7 +39,7 @@ describe('TempWorkspaceSandboxProvider', () => {
         workspaceRoot,
       },
     };
-    const sandboxDirsBefore = fs.readdirSync(os.tmpdir()).filter((entry) => entry.startsWith('taskplane-sandbox-'));
+    const sandboxDirsBefore = listTempWorkspaceSandboxDirs();
 
     try {
       await expect(prepareTempWorkspaceSandboxCodingSession({
@@ -53,9 +57,7 @@ describe('TempWorkspaceSandboxProvider', () => {
         },
         status: 'blocked',
       });
-      expect(fs.readdirSync(os.tmpdir()).filter((entry) => entry.startsWith('taskplane-sandbox-'))).toEqual(
-        sandboxDirsBefore,
-      );
+      expect(listTempWorkspaceSandboxDirs()).toEqual(sandboxDirsBefore);
     } finally {
       fs.rmSync(workspaceRoot, { force: true, recursive: true });
     }

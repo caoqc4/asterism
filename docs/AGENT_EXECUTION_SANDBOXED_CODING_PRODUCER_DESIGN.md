@@ -275,10 +275,13 @@ Completed non-live slices:
 9. Injected producer preview service that composes preview generation and
    preview persistence through existing repositories, giving the future real
    backend path a single non-live orchestration boundary.
+10. Backend connection gate that only opens after producer request validation,
+    backend probe/profile readiness, feature flags, and coding-lane eligibility
+    all pass; unavailable Docker/backend probes remain blocked.
 
 Next slice:
 
-10. Connect a real sandbox backend only after a backend decision/review confirms
+11. Connect a real sandbox backend only after a backend decision/review confirms
    the implementation still satisfies the sandbox decision and source boundary.
 
 ## Acceptance

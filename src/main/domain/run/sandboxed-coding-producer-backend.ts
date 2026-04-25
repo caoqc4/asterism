@@ -4,11 +4,15 @@ import {
   buildDefaultAgentSandboxCommandPolicy,
   evaluateAgentSandboxBackendReadiness,
   evaluateAgentSandboxCodingLaneEligibility,
+  type AgentSandboxBackendProfile,
   type AgentSandboxBackendProbe,
 } from '../../../shared/agent-sandbox-provider.js';
 import { buildDefaultAgentToolExecutionPolicy } from '../../../shared/agent-tool-scaffold.js';
 import type { FeatureFlags } from '../../../shared/types/settings.js';
-import { validateSandboxedCodingProducerRequest } from './sandboxed-coding-producer.js';
+import {
+  type NormalizedSandboxedCodingProducerRequest,
+  validateSandboxedCodingProducerRequest,
+} from './sandboxed-coding-producer.js';
 
 export type SandboxedCodingProducerBackendReadiness =
   | {
@@ -17,6 +21,21 @@ export type SandboxedCodingProducerBackendReadiness =
     }
   | {
       blockedReasons: string[];
+      ready: false;
+      summary: string;
+    };
+
+export type SandboxedCodingProducerBackendConnectionGate =
+  | {
+      profile: AgentSandboxBackendProfile;
+      readiness: Extract<SandboxedCodingProducerBackendReadiness, { ready: true }>;
+      ready: true;
+      request: NormalizedSandboxedCodingProducerRequest;
+      summary: string;
+    }
+  | {
+      blockedReasons: string[];
+      readiness: SandboxedCodingProducerBackendReadiness;
       ready: false;
       summary: string;
     };
@@ -88,5 +107,54 @@ export function evaluateSandboxedCodingProducerBackendReadiness(params: {
       `kind=${params.probe.kind}`,
       requestValidation.valid ? `workspace=${requestValidation.request.workspaceRoot}` : null,
     ].filter(Boolean).join(' / '),
+  };
+}
+
+export function evaluateSandboxedCodingProducerBackendConnectionGate(params: {
+  featureFlags: FeatureFlags;
+  probe: AgentSandboxBackendProbe;
+  request: unknown;
+}): SandboxedCodingProducerBackendConnectionGate {
+  const readiness = evaluateSandboxedCodingProducerBackendReadiness(params);
+  if (!readiness.ready) {
+    return {
+      blockedReasons: readiness.blockedReasons,
+      readiness,
+      ready: false,
+      summary: `Sandboxed coding producer backend connection blocked: ${readiness.blockedReasons.join(' ')}`,
+    };
+  }
+
+  const profile = buildAgentSandboxBackendProfileFromProbe(params.probe);
+  const requestValidation = validateSandboxedCodingProducerRequest(params.request);
+  if (!profile || !requestValidation.valid) {
+    const blockedReasons = [
+      !profile ? 'Sandbox backend profile is unavailable.' : null,
+      !requestValidation.valid ? requestValidation.blockedReasons.join(' ') : null,
+    ].filter((reason): reason is string => Boolean(reason));
+
+    return {
+      blockedReasons,
+      readiness: {
+        blockedReasons,
+        ready: false,
+        summary: `Sandboxed coding producer backend blocked: ${blockedReasons.join(' ')}`,
+      },
+      ready: false,
+      summary: `Sandboxed coding producer backend connection blocked: ${blockedReasons.join(' ')}`,
+    };
+  }
+
+  return {
+    profile,
+    readiness,
+    ready: true,
+    request: requestValidation.request,
+    summary: [
+      'Sandboxed coding producer backend connection allowed',
+      `backend=${profile.id}`,
+      `kind=${profile.kind}`,
+      `source=${requestValidation.request.sourceId}`,
+    ].join(' / '),
   };
 }
