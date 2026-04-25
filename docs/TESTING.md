@@ -118,6 +118,11 @@ Covered today:
   helpers, patch-review persistence, run adapter, service factory, and session
   metadata/readiness summaries without calling Docker, external providers, or
   live services
+- `Sandbox backend preflight`
+  `npm run accept:sandbox-coding:backend-preflight` performs a read-only Docker
+  server probe for the future real local-container backend path. It reports
+  ready/blocked status without starting containers, pulling images, running
+  checks, or calling AI providers.
 - `Provider-native live validation`
   `npm run accept:provider-native-live:preflight` checks local readiness without
   spending provider credit, and `npm run accept:provider-native-live` performs a

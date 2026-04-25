@@ -102,6 +102,19 @@ not run it during startup or AI config status reads. A ready backend status is
 only a prerequisite signal for later sandboxed coding-agent work and does not
 enable code-agent execution by itself.
 
+The same manual detection also displays Producer Backend readiness. That second
+line combines the backend probe with the current feature flags and workspace
+root. It should remain blocked when Docker is unavailable, when
+`TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=false`, or when no workspace root is
+configured. For a terminal-only read-only check, run:
+
+```bash
+npm run accept:sandbox-coding:backend-preflight
+```
+
+The preflight does not start containers, pull images, run checks, or call AI
+providers.
+
 For fal OpenRouter:
 
 ```bash

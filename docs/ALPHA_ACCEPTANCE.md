@@ -10,6 +10,9 @@ For recording a concrete manual pass, use [ALPHA_MANUAL_RUN_LOG.md](ALPHA_MANUAL
 - Run `npm run verify`.
 - Run `npm run accept:agent-local` for the non-live agent execution-layer
   acceptance slice. This does not call external providers.
+- Run `npm run accept:sandbox-coding:backend-preflight` when validating the
+  future sandbox backend path. It is read-only and should report blocked when
+  Docker is not running.
 - Run `npm run smoke:build` if package, build, Electron entrypoint, or packaging configuration changed.
 - Do not manually dispatch or watch GitHub Actions while Actions quota is unavailable.
 
@@ -73,6 +76,20 @@ release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane
 - Confirm the run steps include workspace search/read observations for the marker.
 - Confirm the final run output is readable agent output, not raw proposal JSON.
 - Confirm no local patch or command execution is available.
+
+### Sandbox Backend Diagnostic Path
+
+Use this when working on the disabled-by-default sandbox coding lane. It should
+not run containers or expose a coding-agent mode.
+
+- In Settings, click `检测 Sandbox Backend`.
+- Confirm `Sandbox Backend` reports ready only when Docker is available.
+- Confirm `Producer Backend` remains blocked when the sandbox coding-agent flag
+  is off or no workspace root is configured.
+- Run `npm run accept:sandbox-coding:backend-preflight` and confirm it reports
+  the same ready/blocked Docker availability at the terminal.
+- Confirm no new model-visible Read/Write/Edit/Bash, browser/computer, or
+  external publishing tools appear in a normal agent run.
 
 ### Workspace Patch Approval Path
 
