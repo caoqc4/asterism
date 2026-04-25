@@ -43,7 +43,7 @@ The project is past initial architecture assembly. Current work should favor pro
 - A provider-native session gate captures the RunOrchestrator selection requirements: agent run type, reserved flag, supported provider, provider payload, and successful normalization are all required.
 - Provider-native safe-read tool schema exposure has started behind the reserved flag: Taskplane-owned provider-safe tool aliases can normalize back into internal tool names, the schema builder exposes only policy-allowed safe-read tools while excluding local write and command tools, and AI SDK receives those schemas without local execute handlers.
 - Agent capability previews now distinguish disabled provider-native structured calls from the limited safe-read provider-tool path when the reserved flag is enabled.
-- RunService integration coverage now persists the provider-native session boundary: a gated provider-native session with `structuredToolCalls=true`, a missing-payload fallback session with `structuredToolCalls=false`, and a policy-denied provider-native task-tool proposal that falls back without mutating the task.
+- RunService integration coverage now persists the provider-native session boundary: a gated provider-native session with `structuredToolCalls=true`, including the common textless provider `tool_calls` response shape, a missing-payload fallback session with `structuredToolCalls=false`, and a policy-denied provider-native task-tool proposal that falls back without mutating the task.
 - Shared agent-session metadata helpers now define both current local executor metadata and the future provider-native metadata shape without persisting raw provider payloads.
 - Runs detail now surfaces concise agent session metadata alongside capability summaries so future provider-native sessions can be inspected without exposing raw provider payloads.
 - The first domain-shaped task tools are in the registry and can be prompt-exposed only through the explicit per-run `allowTaskMutationTools` opt-in: `task.update_next_step` routes through `TaskService.update`, `task.create_completion_criterion` routes through `TaskService.createCompletionCriteria`, `task.review_completion_evidence` reviews completion status and recent evidence without mutating criteria or task state, `source_context.create` routes through `TaskService.createSourceContext`, and `decision.draft` routes through `DecisionService.draft` without creating a formal Decision. These tools write run-step observations, and normal agent plans still fall back if a model proposes them without the opt-in.
@@ -63,7 +63,7 @@ npm run verify
 Latest local baseline:
 
 - 60 test files
-- 450 tests
+- 452 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build

@@ -193,7 +193,7 @@ export class RunOrchestrator {
       result.status !== 'completed' ||
       !this.agentExecutor ||
       !this.agentSessionRepository ||
-      !result.output.trim()
+      (!result.output.trim() && !result.textResult?.providerPayload)
     ) {
       return result;
     }
@@ -225,6 +225,10 @@ export class RunOrchestrator {
 
     if (providerNativeResult) {
       return providerNativeResult;
+    }
+
+    if (!result.output.trim()) {
+      return result;
     }
 
     const agentSession = await this.agentSessionRepository.create({

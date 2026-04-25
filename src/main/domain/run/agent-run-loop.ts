@@ -347,6 +347,14 @@ function failedFromTool(
   };
 }
 
+function outputFromObservations(observations: AgentRunLoopObservation[]): string {
+  const observation = [...observations]
+    .reverse()
+    .find((item) => item.status === 'completed' && item.output?.trim());
+
+  return observation?.output ?? '';
+}
+
 function formatObservationSummary(observations: AgentRunLoopObservation[]): string {
   if (!observations.length) {
     return '没有产生工具观察。';
@@ -701,7 +709,7 @@ export class AgentRunLoop {
     const effectiveModelOutput = parsedProposal?.finalOutput ?? modelOutput;
     const trimmedOutput = effectiveModelOutput.trim();
 
-    if (!trimmedOutput) {
+    if (!trimmedOutput && !parsedProposal?.steps.length) {
       return {
         status: 'completed',
         output: effectiveModelOutput,
@@ -814,7 +822,7 @@ export class AgentRunLoop {
 
     return {
       status: 'completed',
-      output: effectiveModelOutput,
+      output: trimmedOutput ? effectiveModelOutput : outputFromObservations(observations),
       observations,
     };
   }

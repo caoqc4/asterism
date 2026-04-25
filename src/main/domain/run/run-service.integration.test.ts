@@ -488,7 +488,7 @@ describe('RunService integration', () => {
     const textExecutor = {
       execute: vi.fn(),
       executeWithResult: vi.fn().mockResolvedValue({
-        text: 'Provider native final output',
+        text: '',
         providerPayload: {
           source: 'provider_response_body',
           provider: 'openai-compatible',
@@ -499,7 +499,7 @@ describe('RunService integration', () => {
               {
                 finish_reason: 'tool_calls',
                 message: {
-                  content: 'Provider native final output',
+                  content: null,
                   tool_calls: [
                     {
                       id: 'call_provider_native_1',

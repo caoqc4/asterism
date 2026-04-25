@@ -1137,6 +1137,100 @@ describe('RunOrchestrator', () => {
     );
   });
 
+  it('executes a provider-native agent session when the provider returns tool calls without text', async () => {
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'openai-compatible',
+        model: 'relay-model',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: false,
+          enableProviderNativeToolCalls: true,
+        },
+      }),
+    };
+    const textExecutor = {
+      executeWithResult: vi.fn().mockResolvedValue({
+        text: '',
+        providerPayload: {
+          source: 'provider_response_body',
+          provider: 'openai-compatible',
+          model: 'relay-model',
+          rawSummary: 'choices=1; tool_calls=1',
+          payload: {
+            choices: [
+              {
+                message: {
+                  tool_calls: [
+                    {
+                      id: 'call_textless_1',
+                      type: 'function',
+                      function: {
+                        name: 'artifact.create_note',
+                        arguments: JSON.stringify({
+                          title: 'Textless provider note',
+                          content: 'Output came from the tool result',
+                        }),
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      }),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: 'No template needed.',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const agentExecutor = {
+      executeLocalNoteSession: vi.fn(),
+      executeProviderNativeSession: vi.fn().mockResolvedValue({
+        status: 'completed',
+        output: 'Output came from the tool result',
+      }),
+    };
+    const agentSessionRepository = {
+      create: vi.fn().mockResolvedValue({ id: 'agent_session_textless_native' }),
+      updateStatus: vi.fn().mockResolvedValue({ id: 'agent_session_textless_native', status: 'completed' }),
+    };
+    const orchestrator = new RunOrchestrator(
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+      { execute: vi.fn() } as never,
+      agentExecutor as never,
+      agentSessionRepository as never,
+    );
+
+    const result = await orchestrator.executeAgentRun({
+      run: buildRun(),
+      task: buildTaskDetail(),
+      input: { ...buildInput(), type: 'agent' },
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      output: 'Output came from the tool result',
+    });
+    expect(agentExecutor.executeProviderNativeSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modelOutput: '',
+        providerPlan: expect.objectContaining({
+          providerCallIds: ['call_textless_1'],
+        }),
+      }),
+    );
+    expect(agentExecutor.executeLocalNoteSession).not.toHaveBeenCalled();
+  });
+
   it.each([
     {
       sessionResult: {

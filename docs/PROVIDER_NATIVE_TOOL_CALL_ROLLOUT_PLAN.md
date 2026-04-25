@@ -170,6 +170,9 @@ Current boundary:
   without local `execute` handlers; local execution still only happens after
   response-body extraction, adapter normalization, the provider-native session
   gate, and `AgentRunLoop` policy checks
+- provider-native agent sessions can proceed when the provider response contains
+  normalized tool calls but no assistant text; in that case the final run output
+  is taken from the completed tool observation instead of the empty model text
 - normal runs, failed normalization, unsupported providers, and missing payloads
   remain text-only plus optional shadow diagnostics
 - provider-side tool exposure remains limited to the schema builder's safe-read
