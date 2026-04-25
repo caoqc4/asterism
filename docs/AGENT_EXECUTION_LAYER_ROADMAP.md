@@ -124,7 +124,8 @@ Candidate tools:
   not exposed in prompts or normal agent plans)
 - `task.create_completion_criterion` (implemented as a registry-level
   service-routed tool; not exposed in prompts or normal agent plans)
-- `source_context.create`
+- `source_context.create` (implemented as a registry-level service-routed tool;
+  not exposed in prompts or normal agent plans)
 - `decision.draft`
 
 Rules:

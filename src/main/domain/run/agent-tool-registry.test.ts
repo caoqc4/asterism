@@ -172,6 +172,11 @@ describe('AgentToolRegistry', () => {
         risk: 'local_write',
       }),
       expect.objectContaining({
+        name: 'source_context.create',
+        risk: 'local_write',
+        requiresConfirmation: false,
+      }),
+      expect.objectContaining({
         name: 'workspace.search',
         risk: 'safe_read',
         requiresConfirmation: false,
@@ -335,6 +340,104 @@ describe('AgentToolRegistry', () => {
       expect.objectContaining({
         status: 'failed',
         error: 'task.update_next_step requires nextStep.',
+      }),
+    );
+  });
+
+  it('creates a source context item through TaskService', async () => {
+    const taskService = {
+      update: vi.fn(),
+      createCompletionCriteria: vi.fn(),
+      createSourceContext: vi.fn().mockResolvedValue({
+        id: 'source_context_1',
+        taskId: 'task_1',
+        title: 'Owner notes',
+        kind: 'note',
+        isKey: true,
+        uri: null,
+        content: 'Owner wants a shorter draft',
+        note: 'Use this as the next source',
+        status: 'active',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        archivedAt: null,
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const registry = new AgentToolRegistry(
+      {} as never,
+      runStepRepository as never,
+      undefined,
+      null,
+      undefined,
+      taskService as never,
+    );
+
+    const result = await registry.execute(
+      'source_context.create',
+      {
+        title: ' Owner notes ',
+        isKey: true,
+        content: 'Owner wants a shorter draft',
+        note: 'Use this as the next source',
+      },
+      { runId: 'run_1', taskId: 'task_1' },
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      status: 'completed',
+      summary: '已创建来源上下文：Owner notes',
+      output: 'Use this as the next source',
+    });
+    expect(taskService.createSourceContext).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      title: 'Owner notes',
+      kind: 'note',
+      isKey: true,
+      uri: undefined,
+      content: 'Owner wants a shorter draft',
+      note: 'Use this as the next source',
+    });
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        kind: 'tool_result',
+        status: 'completed',
+        output: 'Use this as the next source',
+      }),
+    );
+  });
+
+  it('records source context validation failures as tool result failures', async () => {
+    const taskService = {
+      update: vi.fn(),
+      createCompletionCriteria: vi.fn(),
+      createSourceContext: vi.fn(),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const registry = new AgentToolRegistry(
+      {} as never,
+      runStepRepository as never,
+      undefined,
+      null,
+      undefined,
+      taskService as never,
+    );
+
+    const result = await registry.execute(
+      'source_context.create',
+      { title: 'Source', kind: 'unsupported' },
+      { runId: 'run_1', taskId: 'task_1' },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('source_context.create received unsupported kind: unsupported');
+    expect(taskService.createSourceContext).not.toHaveBeenCalled();
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_1',
+      expect.objectContaining({
+        status: 'failed',
+        error: 'source_context.create received unsupported kind: unsupported',
       }),
     );
   });

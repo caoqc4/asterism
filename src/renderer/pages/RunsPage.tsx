@@ -69,6 +69,7 @@ function formatAgentToolLabel(tool: string): string {
     'task.update_next_step': '更新任务下一步',
     'task.create_completion_criterion': '创建完成标准',
     'artifact.create_note': '写入本地 note',
+    'source_context.create': '创建来源上下文',
     'workspace.search': '搜索工作区',
     'workspace.read_file': '读取工作区文件',
     'workspace.write_patch': '应用工作区 patch',

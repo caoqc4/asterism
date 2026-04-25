@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { CompletionCriteriaRepository } from '../../db/repositories/completion-criteria-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
 import { closeDatabase, setDatabaseUserDataPathForTests } from '../../db/client.js';
@@ -128,6 +129,67 @@ describe('AgentToolRegistry integration', () => {
       step.kind === 'tool_result' &&
       step.status === 'completed' &&
       step.output === 'Final draft has owner approval'
+    )).toBe(true);
+  });
+
+  it('creates a source context through TaskService and records task timeline evidence', async () => {
+    const taskRepository = new TaskRepository();
+    const waitingItemRepository = new WaitingItemRepository();
+    const artifactRepository = new ArtifactRepository();
+    const runStepRepository = new RunStepRepository();
+    const sourceContextRepository = new SourceContextRepository();
+    const taskService = new TaskService(
+      taskRepository,
+      waitingItemRepository,
+      artifactRepository,
+      sourceContextRepository,
+    );
+    const registry = new AgentToolRegistry(
+      artifactRepository,
+      runStepRepository,
+      undefined,
+      null,
+      undefined,
+      taskService,
+    );
+    const task = await taskService.create({
+      title: 'Agent source context integration',
+    });
+
+    const result = await registry.execute(
+      'source_context.create',
+      {
+        title: 'Owner source notes',
+        kind: 'note',
+        isKey: true,
+        note: 'Owner prefers a shorter final draft',
+      },
+      { runId: 'run_integration_3', taskId: task.id },
+    );
+    const detail = await taskService.getDetail(task.id);
+    const steps = await runStepRepository.listForRun('run_integration_3');
+
+    expect(result).toMatchObject({
+      success: true,
+      status: 'completed',
+      output: 'Owner prefers a shorter final draft',
+    });
+    expect(detail?.sourceContexts).toEqual([
+      expect.objectContaining({
+        title: 'Owner source notes',
+        kind: 'note',
+        isKey: true,
+        note: 'Owner prefers a shorter final draft',
+      }),
+    ]);
+    expect(detail?.timeline.some((event) =>
+      event.type === 'source_context.created' &&
+      event.payload.includes('Owner source notes')
+    )).toBe(true);
+    expect(steps.some((step) =>
+      step.kind === 'tool_result' &&
+      step.status === 'completed' &&
+      step.output === 'Owner prefers a shorter final draft'
     )).toBe(true);
   });
 });

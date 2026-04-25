@@ -8,6 +8,7 @@ import type {
   AgentToolRisk,
   AgentWorkingContext,
 } from '../../../shared/types/agent-execution.js';
+import type { SourceContextKind } from '../../../shared/types/source-context.js';
 import { createToolPermissionCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import type { DecisionRepository } from '../../db/repositories/decision-repository.js';
@@ -41,6 +42,15 @@ type TaskCreateCompletionCriterionInput = {
   text: string;
 };
 
+type SourceContextCreateInput = {
+  title: string;
+  kind?: SourceContextKind;
+  isKey?: boolean;
+  uri?: string | null;
+  content?: string | null;
+  note?: string | null;
+};
+
 type WorkspaceReadFileInput = {
   path: string;
 };
@@ -59,6 +69,7 @@ type WorkspaceWritePatchInput = {
 const WORKSPACE_READ_LIMIT = 20_000;
 const WORKSPACE_SEARCH_MAX_RESULTS = 25;
 const WORKSPACE_PATCH_MAX_BYTES = 40_000;
+const sourceContextKinds = new Set<SourceContextKind>(['link', 'doc', 'issue', 'pr', 'website_list', 'note']);
 const WORKSPACE_SEARCH_SKIP_DIRS = new Set([
   '.git',
   'dist',
@@ -124,6 +135,33 @@ function parseTaskCreateCompletionCriterionInput(input: unknown): TaskCreateComp
   }
 
   return { text };
+}
+
+function parseSourceContextCreateInput(input: unknown): Required<Pick<SourceContextCreateInput, 'kind' | 'title'>> & Omit<SourceContextCreateInput, 'kind' | 'title'> {
+  if (!input || typeof input !== 'object') {
+    throw new Error('source_context.create requires an object input.');
+  }
+
+  const candidate = input as Partial<SourceContextCreateInput>;
+  const title = candidate.title?.trim();
+  const kind = candidate.kind ?? 'note';
+
+  if (!title) {
+    throw new Error('source_context.create requires a title.');
+  }
+
+  if (!sourceContextKinds.has(kind)) {
+    throw new Error(`source_context.create received unsupported kind: ${kind}`);
+  }
+
+  return {
+    title,
+    kind,
+    isKey: candidate.isKey,
+    uri: candidate.uri,
+    content: candidate.content,
+    note: candidate.note,
+  };
 }
 
 function parseWorkspaceReadFileInput(input: unknown): WorkspaceReadFileInput {
@@ -525,6 +563,12 @@ export class AgentToolRegistry {
       requiresConfirmation: false,
     },
     {
+      name: 'source_context.create',
+      description: 'Create a source context item for the current Taskplane task through TaskService.',
+      risk: 'local_write',
+      requiresConfirmation: false,
+    },
+    {
       name: 'workspace.search',
       description: 'Search text files inside the configured local workspace root.',
       risk: 'safe_read',
@@ -550,7 +594,7 @@ export class AgentToolRegistry {
     private readonly runCheckpointRepository: RunCheckpointRepository = new RunCheckpointRepository(),
     private readonly decisionRepository: Pick<DecisionRepository, 'create'> | null = null,
     private readonly workspaceRootResolver: () => string = () => process.cwd(),
-    private readonly taskService: Pick<TaskService, 'createCompletionCriteria' | 'update'> | null = null,
+    private readonly taskService: Pick<TaskService, 'createCompletionCriteria' | 'createSourceContext' | 'update'> | null = null,
   ) {}
 
   list(): AgentToolDefinition[] {
@@ -828,6 +872,29 @@ export class AgentToolRegistry {
           summary: `已创建本地 note 产物：${artifact.title}`,
           output: artifact.content,
           artifactId: artifact.id,
+        };
+      }
+      case 'source_context.create': {
+        if (!this.taskService) {
+          throw new Error('source_context.create requires TaskService.');
+        }
+
+        const parsed = parseSourceContextCreateInput(input);
+        const sourceContext = await this.taskService.createSourceContext({
+          taskId: context.taskId,
+          title: parsed.title,
+          kind: parsed.kind,
+          isKey: parsed.isKey,
+          uri: parsed.uri,
+          content: parsed.content,
+          note: parsed.note,
+        });
+
+        return {
+          success: true,
+          status: 'completed',
+          summary: `已创建来源上下文：${sourceContext.title}`,
+          output: sourceContext.note ?? sourceContext.content ?? sourceContext.uri ?? sourceContext.title,
         };
       }
       case 'workspace.read_file': {
