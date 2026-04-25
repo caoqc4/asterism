@@ -518,11 +518,20 @@ Completed slice:
    only when `allowLocalWorkspaceRead` is true.
 3. Keep patch and command tools out of the available planner set.
 
-Next code slice:
+Completed slice:
 
 1. Add a UI/config path for enabling read-only workspace access per run.
 2. Keep the default agent run policy disabled until the user opts in.
 3. Surface the resulting capability in the run session metadata.
 
+Next code slice:
+
+1. Make run-session capability metadata reflect the per-run workspace-read
+   opt-in.
+2. Add coverage that an opted-in agent run stores `fileContext=true` while a
+   default run stores `fileContext=false`.
+3. Keep patch and command execution unavailable.
+
 Success: Taskplane can inspect local project context for coding-like tasks only
-when the user has explicitly enabled read-only workspace access for that run.
+when the user has explicitly enabled read-only workspace access for that run,
+and the run detail can explain that capability afterward.

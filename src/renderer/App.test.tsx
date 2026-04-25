@@ -2680,6 +2680,34 @@ describe('App UI flow', () => {
     });
   });
 
+  it('submits an agent quick run with read-only workspace access when enabled', async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    const riskTaskCard = await screen.findByRole('button', { name: /High risk task/i });
+    await user.click(riskTaskCard);
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    await user.selectOptions(screen.getByLabelText('Run 类型'), 'agent');
+    await user.click(screen.getByRole('checkbox', { name: '允许只读工作区上下文' }));
+
+    const instructionsInput = screen.getByLabelText('附加要求');
+    await user.clear(instructionsInput);
+    await user.type(instructionsInput, 'Inspect local files before writing the note');
+    await user.click(screen.getByRole('button', { name: '触发 Run' }));
+
+    await waitFor(() => {
+      expect(mockApi.triggerRun).toHaveBeenCalledWith({
+        taskId: riskTask.id,
+        type: 'agent',
+        instructions: 'Inspect local files before writing the note',
+        allowLocalWorkspaceRead: true,
+      });
+    });
+  });
+
   it('blocks saving a high-risk task without a risk note', async () => {
     const user = userEvent.setup();
 

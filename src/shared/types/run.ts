@@ -57,4 +57,5 @@ export type CreateRunInput = {
   taskId: string;
   type: RunType;
   instructions?: string;
+  allowLocalWorkspaceRead?: boolean;
 };

@@ -577,12 +577,16 @@ export function RunsPage({
               Run 类型
               <select
                 value={form.type}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const nextType = event.target.value as CreateRunInput['type'];
                   setForm((current) => ({
                     ...current,
-                    type: event.target.value as CreateRunInput['type'],
-                  }))
-                }
+                    type: nextType,
+                    allowLocalWorkspaceRead: nextType === 'agent'
+                      ? current.allowLocalWorkspaceRead
+                      : undefined,
+                  }));
+                }}
               >
                 <option value="draft">draft</option>
                 <option value="summarize">summarize</option>
@@ -599,6 +603,21 @@ export function RunsPage({
                 }
               />
             </label>
+            {form.type === 'agent' ? (
+              <label>
+                <input
+                  checked={Boolean(form.allowLocalWorkspaceRead)}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      allowLocalWorkspaceRead: event.target.checked || undefined,
+                    }))
+                  }
+                  type="checkbox"
+                />
+                允许只读工作区上下文
+              </label>
+            ) : null}
             <button type="submit">触发 Run</button>
           </form>
         </div>

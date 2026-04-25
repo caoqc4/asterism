@@ -182,6 +182,7 @@ Covered today:
 - `Brief fallback output` lane-grouped wording
 - `Tasks quick decision submission`
 - `Tasks quick run submission`
+- `Tasks agent quick run -> read-only workspace opt-in`
 - `Tasks paused run recovery -> checkpoint continuation`
 - `Tasks related activity -> Decisions / Runs`
 - `Tasks timeline -> Decisions / Runs`

@@ -171,7 +171,10 @@ export class RunOrchestrator {
       run: params.run,
       task: params.task,
       input,
-      policy: LOCAL_AGENT_TOOL_POLICY,
+      policy: {
+        ...LOCAL_AGENT_TOOL_POLICY,
+        allowLocalWorkspaceRead: Boolean(input.allowLocalWorkspaceRead),
+      },
     });
 
     if (request.policy.confirmationRequiredRisks.includes('local_write')) {
@@ -181,7 +184,9 @@ export class RunOrchestrator {
     await this.agentSessionRepository.create({
       runId: params.run.id,
       mode: 'agent',
-      capabilities: getLocalAgentRuntimeCapabilities(),
+      capabilities: getLocalAgentRuntimeCapabilities({
+        allowLocalWorkspaceRead: Boolean(input.allowLocalWorkspaceRead),
+      }),
       metadata: [
         'executor=local_agent',
         'loop=local_note',
@@ -243,12 +248,14 @@ export class RunOrchestrator {
   }
 }
 
-function getLocalAgentRuntimeCapabilities(): AgentRuntimeCapabilities {
+function getLocalAgentRuntimeCapabilities(params: {
+  allowLocalWorkspaceRead: boolean;
+}): AgentRuntimeCapabilities {
   return {
     structuredToolCalls: false,
     textOnlyPlanning: true,
     streaming: false,
-    fileContext: false,
+    fileContext: params.allowLocalWorkspaceRead,
     longRunningSessions: false,
   };
 }

@@ -308,6 +308,7 @@ describe('RunOrchestrator', () => {
           runId: 'run_1',
           taskId: 'task_1',
           policy: expect.objectContaining({
+            allowLocalWorkspaceRead: false,
             confirmationRequiredRisks: ['external_write', 'sensitive'],
           }),
         }),

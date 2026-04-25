@@ -760,6 +760,7 @@ export function TasksPage({
   const [quickDecisionRationale, setQuickDecisionRationale] = useState<string | null>(null);
   const [quickRunType, setQuickRunType] = useState<CreateRunInput['type']>('draft');
   const [quickRunInstructions, setQuickRunInstructions] = useState('');
+  const [quickRunAllowLocalWorkspaceRead, setQuickRunAllowLocalWorkspaceRead] = useState(false);
   const [transitionWaitingReason, setTransitionWaitingReason] = useState('');
   const [blockerEditingId, setBlockerEditingId] = useState<string | null>(null);
   const [blockerTitle, setBlockerTitle] = useState('');
@@ -1207,6 +1208,9 @@ export function TasksPage({
       taskId: detail.id,
       type: quickRunType,
       instructions: quickRunInstructions.trim(),
+      ...(quickRunType === 'agent' && quickRunAllowLocalWorkspaceRead
+        ? { allowLocalWorkspaceRead: true }
+        : {}),
     });
     await onRefresh();
   }
@@ -2027,9 +2031,13 @@ export function TasksPage({
         Run 类型
         <select
           value={quickRunType}
-          onChange={(event) =>
-            setQuickRunType(event.target.value as CreateRunInput['type'])
-          }
+          onChange={(event) => {
+            const nextType = event.target.value as CreateRunInput['type'];
+            setQuickRunType(nextType);
+            if (nextType !== 'agent') {
+              setQuickRunAllowLocalWorkspaceRead(false);
+            }
+          }}
         >
           <option value="draft">draft</option>
           <option value="summarize">summarize</option>
@@ -2044,6 +2052,16 @@ export function TasksPage({
           onChange={(event) => setQuickRunInstructions(event.target.value)}
         />
       </label>
+      {quickRunType === 'agent' ? (
+        <label>
+          <input
+            checked={quickRunAllowLocalWorkspaceRead}
+            onChange={(event) => setQuickRunAllowLocalWorkspaceRead(event.target.checked)}
+            type="checkbox"
+          />
+          允许只读工作区上下文
+        </label>
+      ) : null}
       <p className="meta">{quickRunGuidance}</p>
       <button type="submit">触发 Run</button>
     </form>
