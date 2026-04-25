@@ -218,6 +218,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - Failed sandbox checks are persisted as failed check RunSteps and patch
   artifacts without creating a promotion checkpoint, so a failing sandbox run
   cannot accidentally enter the Decision promotion path.
+- A `SandboxPatchReviewRunAdapter` now wraps the internal preparation and
+  persistence path into a run-level result shape (`blocked`, `persisted`, or
+  `failed`) while staying unconnected to UI, prompts, scheduler, or automatic
+  execution.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
