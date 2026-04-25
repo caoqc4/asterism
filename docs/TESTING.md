@@ -91,8 +91,9 @@ Covered today:
   typed local observe-then-write plan building, constrained JSON proposal parsing, policy-gated workspace read steps, explicit task-mutation tool opt-in, required read-only observation steps before local writes, observation-aware planner continue/stop decision writes, fallback behavior, visible plan-source run-step writes, in-memory tool observations, persisted structured observation-summary run steps, and failed / confirmation-needed tool outcomes
 - `AgentRunLoop provider-native parity`
   provider-native normalized proposals go through the same plan-building policy
-  gates as text JSON proposals in tests, without wiring provider-native payloads
-  into real runs
+  gates as text JSON proposals in tests, including fallback for workspace
+  mutation and command proposals, without wiring provider-native payloads into
+  real runs
 - `AgentWorkingContext`
   task-detail compression into typed agent run context, default policy, and plan-step request summaries
 - `AgentToolRegistry`

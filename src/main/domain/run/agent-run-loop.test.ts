@@ -573,6 +573,87 @@ describe('AgentRunLoop', () => {
     }).source).toBe('fallback');
   });
 
+  it('keeps provider-native normalized workspace mutation and command proposals out of the normal run plan', () => {
+    const loop = new AgentRunLoop({ execute: vi.fn() } as never);
+    const normalized = normalizeProviderNativeToolCalls({
+      provider: 'openai',
+      model: 'gpt-4.1',
+      payload: {
+        choices: [
+          {
+            message: {
+              tool_calls: [
+                {
+                  id: 'call_patch',
+                  type: 'function',
+                  function: {
+                    name: 'workspace.write_patch',
+                    arguments: JSON.stringify({
+                      summary: 'Update notes',
+                      expectedFiles: ['notes.md'],
+                      patch: [
+                        '*** Begin Patch',
+                        '*** Update File: notes.md',
+                        '@@',
+                        '-alpha',
+                        '+beta',
+                        '*** End Patch',
+                      ].join('\n'),
+                    }),
+                  },
+                },
+                {
+                  id: 'call_command',
+                  type: 'function',
+                  function: {
+                    name: 'workspace.run_command',
+                    arguments: JSON.stringify({
+                      summary: 'Run tests',
+                      script: 'test',
+                      args: [],
+                      timeoutMs: 120_000,
+                    }),
+                  },
+                },
+                {
+                  id: 'call_note',
+                  type: 'function',
+                  function: {
+                    name: 'artifact.create_note',
+                    arguments: '{"title":"Workspace mutation note","content":"Mutation proposed"}',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    expect(normalized.status).toBe('normalized');
+
+    const proposal = normalized.status === 'normalized' ? normalized.plan.proposal : null;
+    const fallbackPlan = loop.buildLocalNotePlan({
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    });
+
+    expect(loop.buildExecutionPlan({
+      proposal,
+      modelOutput: 'Agent output',
+      policy: {
+        ...buildRequest().policy,
+        allowLocalFileWrite: true,
+        allowLocalCommandRun: true,
+        confirmationRequiredRisks: ['local_write', 'local_command'],
+      },
+      taskTitle: 'Task 1',
+    })).toEqual({
+      source: 'fallback',
+      steps: fallbackPlan,
+    });
+  });
+
   it('does not accept model-produced task mutation steps in the normal run plan', () => {
     const loop = new AgentRunLoop({ execute: vi.fn() } as never);
     const proposal = {

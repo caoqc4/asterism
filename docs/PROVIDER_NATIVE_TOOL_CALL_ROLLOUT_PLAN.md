@@ -99,6 +99,8 @@ Acceptance:
 - policy-gated read-only workspace calls require `allowLocalWorkspaceRead=true`
 - task/evidence calls require `allowTaskMutationTools=true`
 - workspace patch and command still require explicit policy plus confirmation
+  and remain out of normal plans until workspace-tool exposure is separately
+  accepted
 - unknown provider tools become validation/fallback output, not execution
 
 Implementation boundary:
