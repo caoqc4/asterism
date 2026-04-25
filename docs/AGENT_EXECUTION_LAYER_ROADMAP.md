@@ -357,7 +357,9 @@ Implementation sequence:
    filter requested scripts to the allowlist and summarize check results
    without executing commands.
 5. Add Decision review and promotion semantics before any staged patch can
-   touch the user's workspace.
+   touch the user's workspace. Shared promotion-checkpoint helpers now build a
+   `patch_promotion` checkpoint descriptor with reason, consequence, preview,
+   resume target, and policy snapshot without applying the patch.
 6. Only after the above is accepted, expose a narrow coding-agent run option in
    the UI and prompt/provider exposure matrix.
 

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildAgentSandboxCheckPlan,
   buildAgentSandboxPatchArtifact,
+  buildAgentSandboxPatchPromotionCheckpoint,
   buildDefaultAgentSandboxCommandPolicy,
   canUseAgentSandboxProviderForCoding,
   DISABLED_AGENT_SANDBOX_PROVIDER_CAPABILITIES,
@@ -147,5 +148,42 @@ describe('agent sandbox provider contracts', () => {
     ])).toBe('lint: passed; test: failed');
 
     expect(summarizeAgentSandboxCheckResults([])).toBe('No sandbox checks were run.');
+  });
+
+  it('builds a patch promotion checkpoint descriptor without applying the patch', () => {
+    const artifact = buildAgentSandboxPatchArtifact({
+      diff: '--- a/src/a.ts\n+++ b/src/a.ts',
+      files: ['src/a.ts'],
+      riskSummary: 'Single source file change.',
+      summary: 'Reviewable patch',
+    });
+    const policySnapshot = buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' });
+
+    expect(buildAgentSandboxPatchPromotionCheckpoint({
+      artifact,
+      policySnapshot,
+      resumeTarget: 'sandbox-session-1:promote',
+    })).toMatchObject({
+      consequence: expect.stringContaining('workspace unchanged'),
+      kind: 'patch_promotion',
+      policySnapshot,
+      preview: expect.stringContaining('--- a/src/a.ts'),
+      reason: 'Review sandbox patch before workspace promotion: Reviewable patch | 1 file(s): src/a.ts | Single source file change.',
+      resumeTarget: 'sandbox-session-1:promote',
+    });
+  });
+
+  it('rejects patch promotion checkpoints with the wrong policy snapshot', () => {
+    const artifact = buildAgentSandboxPatchArtifact({
+      diff: '--- a/src/a.ts\n+++ b/src/a.ts',
+      files: ['src/a.ts'],
+      summary: 'Reviewable patch',
+    });
+
+    expect(() => buildAgentSandboxPatchPromotionCheckpoint({
+      artifact,
+      policySnapshot: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.search' }),
+      resumeTarget: 'sandbox-session-1:promote',
+    })).toThrow('Sandbox patch promotion requires a workspace.staged_patch policy snapshot.');
   });
 });

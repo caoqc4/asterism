@@ -1,5 +1,6 @@
 import type {
   AgentToolArtifactDescriptor,
+  AgentToolCheckpointDescriptor,
   AgentToolExecutionPolicy,
 } from './agent-tool-scaffold.js';
 
@@ -85,6 +86,12 @@ export type BuildAgentSandboxPatchArtifactInput = {
   diff: string;
   commandLogs?: AgentSandboxPatchArtifact['commandLogs'];
   riskSummary?: string | null;
+};
+
+export type AgentSandboxPatchPromotionRequest = {
+  artifact: AgentSandboxPatchArtifact;
+  policySnapshot: AgentToolExecutionPolicy;
+  resumeTarget: string;
 };
 
 export type AgentSandboxSessionResult =
@@ -205,4 +212,25 @@ export function summarizeAgentSandboxCheckResults(
   return results
     .map((result) => `${result.script}: ${result.status}`)
     .join('; ');
+}
+
+export function buildAgentSandboxPatchPromotionCheckpoint(
+  request: AgentSandboxPatchPromotionRequest,
+): AgentToolCheckpointDescriptor {
+  if (request.policySnapshot.descriptorId !== 'workspace.staged_patch') {
+    throw new Error('Sandbox patch promotion requires a workspace.staged_patch policy snapshot.');
+  }
+
+  return {
+    consequence: 'Approving will allow this staged patch to be promoted to the selected workspace; deferring or cancelling leaves the workspace unchanged.',
+    kind: 'patch_promotion',
+    policySnapshot: request.policySnapshot,
+    preview: request.artifact.diff.slice(0, 4_000),
+    reason: [
+      `Review sandbox patch before workspace promotion: ${request.artifact.summary}`,
+      `${request.artifact.files.length} file(s): ${request.artifact.files.join(', ')}`,
+      request.artifact.riskSummary,
+    ].join(' | '),
+    resumeTarget: request.resumeTarget,
+  };
 }
