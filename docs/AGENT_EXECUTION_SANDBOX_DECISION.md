@@ -12,7 +12,9 @@ Read first:
 
 ## Decision
 
-Taskplane alpha must not expose a broad coding-agent execution mode.
+Taskplane must support agent automation for AI programming and creator /
+self-media work, because those are primary product scenarios. Taskplane alpha
+must not expose that power as an unbounded host-process coding agent.
 
 The current execution layer may keep:
 
@@ -25,11 +27,19 @@ It must not expose arbitrary shell, browser/computer control, broad workspace
 write, credential-bearing tools, or autonomous background code execution to
 normal prompts or provider-native schemas.
 
-Before code-agent mode is accepted, Taskplane needs a dedicated sandbox
-implementation. The recommended first acceptable target is a local container
-sandbox with narrow mounts and explicit command policy, or a remote sandbox
-with equivalent isolation. Host-process execution is not acceptable for broad
-agent coding.
+Before Pi-coding-agent-like capabilities are accepted, Taskplane needs a
+dedicated sandbox implementation. The recommended first acceptable target is a
+local container sandbox with narrow mounts and explicit command policy, or a
+remote sandbox with equivalent isolation. Host-process execution is not
+acceptable for broad agent coding.
+
+The product direction is therefore **not** "no coding agent." It is "coding
+and creator automation must enter through Taskplane's control plane":
+
+```text
+Task intent -> Run -> sandboxed AgentSession -> patch/artifact/checkpoint
+-> Decision review -> promotion -> Timeline evidence
+```
 
 ## First-Principles Rationale
 
@@ -81,6 +91,23 @@ Rejected for broad code-agent mode because it cannot reliably bound:
 The existing `workspace.run_command` tool is not this mode. It remains a
 registry-only, allowlisted package-script tool behind explicit local command
 policy and Decision checkpoints.
+
+## Target Product Capabilities
+
+The sandbox boundary exists so Taskplane can eventually support these real
+workflows without granting ambient host authority:
+
+- AI programming: inspect a repository, make a proposed patch, run targeted
+  tests or lint, summarize risk, and wait for approval before promotion.
+- Creator and self-media work: gather local/project context, draft outlines,
+  generate scripts or posts, prepare asset/task checklists, and require review
+  before any external publishing or credential-bearing action.
+- Mixed work: coordinate coding tasks, content tasks, and follow-up Decisions
+  under one Task/Run/Artifact/Timeline history.
+
+The first implementation should focus on coding-agent patch generation and
+review. External posting, browser/computer control, social publishing, and
+credential-bearing creator connectors remain separate future decisions.
 
 ## Acceptable Sandbox Shape
 
@@ -147,8 +174,10 @@ properties before any prompt or provider schema can expose it.
 3. Keep `agent-tool-exposure` as the single prompt/provider exposure matrix.
 4. Design the sandbox provider interface without exposing it to prompts.
 5. Add a disabled-by-default sandbox smoke test using a temp workspace.
-6. Add patch-artifact review before any file promotion.
-7. Only then consider a narrow user-requested coding mode behind explicit
+6. Add a coding-agent patch artifact path: inspect, edit in sandbox/staging,
+   run targeted allowed checks, and return diff/log artifacts.
+7. Add patch-artifact review before any file promotion.
+8. Only then consider a narrow user-requested coding mode behind explicit
    local configuration.
 
 ## Acceptance
@@ -165,7 +194,8 @@ properties before any prompt or provider schema can expose it.
 - no browser/computer-control agent
 - no autonomous scheduled coding work
 - no arbitrary shell
-- no external posting/email/calendar/social tools
+- no external posting/email/calendar/social tools until a connector-specific
+  Decision accepts them
 - no GitHub mutation tools
 - no plugin or skill marketplace
 - no automatic file promotion without review

@@ -15,6 +15,10 @@ Read first:
 
 Taskplane's future agent execution layer should support longer, resumable,
 reviewable work without turning the product into a generic autonomous shell.
+AI programming and creator/self-media automation are target scenarios, not
+incidental add-ons. The design goal is to support those workflows through
+bounded execution, artifacts, Decisions, and recovery rather than through
+ambient host authority.
 
 The durable product control plane remains:
 
@@ -209,6 +213,33 @@ SandboxProvider
 The first implementation should prefer local container or equivalent isolation.
 Host-process arbitrary shell is not an acceptable code-agent foundation.
 
+## Coding And Creator Automation Lanes
+
+Taskplane should treat AI programming and creator/self-media work as two
+product lanes that share the same execution spine.
+
+Coding lane:
+
+- workspace context gathering
+- patch planning
+- sandboxed edit actions or staged diff generation
+- targeted `test` / `lint` checks under explicit command policy
+- patch artifacts and risk summaries
+- Decision review before promotion
+
+Creator lane:
+
+- source/context gathering
+- outline, script, post, and asset checklist drafting
+- artifact generation and versioning
+- review checkpoints for tone, claims, brand fit, and publication readiness
+- no external posting or credential-bearing connector action until a separate
+  connector decision accepts it
+
+Both lanes should still settle into Taskplane objects: RunSteps for trace,
+Artifacts for useful outputs, Decisions for human judgment, Timeline for
+causality, and Task state for recovery or closeout.
+
 ## Human Feedback Routing
 
 CrewAI-style human feedback should map to Taskplane Decisions, not a separate
@@ -241,15 +272,17 @@ If Taskplane adds MCP later:
 
 ## Suggested Build Order
 
-1. Finish Slice 0 acceptance assessment and keep docs aligned.
-2. Make checkpoint events the command boundary for checkpoint creation.
-3. Add event replay/compaction tests for longer sessions.
-4. Define `SandboxProvider` types behind a disabled feature flag.
-5. Add sandbox smoke tests using a temporary workspace and no credentials.
-6. Add patch artifact review and promotion flow.
-7. Add side-quest session records only after parent/child visibility is
+1. Keep Slice 0 accepted and docs aligned.
+2. Define `SandboxProvider` types behind a disabled feature flag.
+3. Add sandbox smoke tests using a temporary workspace and no credentials.
+4. Add a coding-agent patch artifact path before any file promotion.
+5. Make checkpoint events the command boundary for checkpoint creation.
+6. Add event replay/compaction tests for longer sessions.
+7. Add creator artifact/review lane after coding patch review proves the
+   artifact/Decision flow.
+8. Add side-quest session records only after parent/child visibility is
    designed.
-8. Reassess MCP connector support after local sandbox and checkpoint semantics
+9. Reassess MCP connector support after local sandbox and checkpoint semantics
    are stable.
 
 ## Non-Goals Until Accepted

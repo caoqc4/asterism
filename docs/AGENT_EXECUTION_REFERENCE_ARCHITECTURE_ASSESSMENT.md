@@ -165,6 +165,10 @@ Current Taskplane support boundary:
   tool set, or claim compatibility with Pi session extensions.
 - Pi-style branching, compaction, side quests, and richer message/event
   replay remain future design inputs, not current product capabilities.
+- Pi coding-agent capabilities are still strategically required for
+  Taskplane's target AI programming workflows. They should be reintroduced as
+  Taskplane-owned sandboxed patch/artifact capabilities, not as direct Pi
+  runtime embedding or unrestricted Read/Write/Edit/Bash host access.
 
 ### OpenClaw
 
@@ -511,6 +515,8 @@ This intentionally keeps framework ideas behind Taskplane domain objects.
 
 ### Study Next
 
+- Pi coding-agent patch/edit/test ergonomics behind a Taskplane
+  `SandboxProvider`, patch artifacts, and Decision review.
 - Pi session branching for future side quests and sub-runs.
 - OpenClaw session lanes for future background/long-running execution.
 - LangGraph durable replay/idempotency patterns for restart-safe resume.

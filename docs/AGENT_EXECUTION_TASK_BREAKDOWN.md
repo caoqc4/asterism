@@ -55,7 +55,8 @@ Completed:
   instead of hand-assembling checkpoint events
 - tool prompt/provider exposure is centralized in `agent-tool-exposure`, with
   text prompts and provider-native schemas consuming the same matrix
-- sandbox decision accepted: broad code-agent mode remains deferred until a
+- sandbox decision accepted: Pi-coding-agent-like power is required for the
+  AI programming lane, but broad code-agent mode remains deferred until a
   dedicated sandbox provider boundary exists
 - post-Slice-0 future execution design drafted, covering side quests, replay,
   sandbox provider boundary, human feedback routing, and MCP constraints
@@ -70,11 +71,14 @@ Pi reference boundary:
 - not implemented: Pi runtime embedding, Pi compatibility, Pi coding-agent
   Read/Write/Edit/Bash defaults, session branching, compaction, side quests,
   and full replay/idempotency
+- required next: Taskplane-owned coding-agent lane with sandboxed workspace
+  context, staged edits, targeted checks, patch artifacts, and Decision review
 
 Still incomplete:
 
-- no known Slice 0 blocker remains; future checkpoint work should focus on
-  event replay/compaction rather than expanding model-visible power
+- no known Slice 0 blocker remains
+- the next execution-layer phase should start with sandbox provider design and
+  coding-agent patch artifacts, not direct host shell/file access
 
 ## Task Sequence
 
@@ -288,18 +292,26 @@ Non-goals until explicitly accepted:
 - browser/computer-control tools
 - arbitrary shell
 - skill marketplace
-- external posting/email/calendar/social tools
+- external posting/email/calendar/social tools before connector-specific
+  Decisions exist
 
 ## Recommended Next Implementation Task
 
-No new execution-layer implementation task is currently recommended.
+Start with **SandboxProvider and coding-agent patch lane design**.
 
-T1 through T7 now have implementation or design coverage, and the Slice 0
-acceptance assessment has been refreshed. Keep the next work limited to small
-alpha acceptance fixes, release-readiness hardening, or explicitly accepted
-design work. Do not add new model-visible execution power until a future
-decision deliberately reopens live provider validation, signed/notarized
-release execution, sandboxed code-agent mode, or broader tool exposure.
+T1 through T7 now have Slice 0 implementation or design coverage, and the
+acceptance assessment has been refreshed. The next product-relevant execution
+task is to design the narrow path for AI programming work:
+
+- a disabled-by-default `SandboxProvider` interface
+- read-only workspace preparation followed by staged edit capability
+- targeted allowed checks, starting with test/lint style commands
+- patch/log/risk artifacts
+- Decision review before promotion to the user's workspace
+
+Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer control,
+external posting, or social/media publishing as model-visible tools until their
+own sandbox or connector Decisions are accepted.
 
 ## Verification Policy
 
