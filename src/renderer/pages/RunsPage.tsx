@@ -605,6 +605,9 @@ export function RunsPage({
                     allowLocalWorkspaceRead: nextType === 'agent'
                       ? current.allowLocalWorkspaceRead
                       : undefined,
+                    allowTaskMutationTools: nextType === 'agent'
+                      ? current.allowTaskMutationTools
+                      : undefined,
                   }));
                 }}
               >
@@ -638,8 +641,25 @@ export function RunsPage({
                   />
                   允许只读工作区上下文
                 </label>
+                <label>
+                  <input
+                    checked={Boolean(form.allowTaskMutationTools)}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        allowTaskMutationTools: event.target.checked || undefined,
+                      }))
+                    }
+                    type="checkbox"
+                  />
+                  允许任务内更新工具
+                </label>
                 <p className="meta">
-                  {formatPreRunAgentCapabilitySummary(aiStatus, Boolean(form.allowLocalWorkspaceRead))}
+                  {formatPreRunAgentCapabilitySummary(
+                    aiStatus,
+                    Boolean(form.allowLocalWorkspaceRead),
+                    Boolean(form.allowTaskMutationTools),
+                  )}
                 </p>
               </>
             ) : null}

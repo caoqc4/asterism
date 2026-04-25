@@ -2694,13 +2694,14 @@ describe('App UI flow', () => {
     await user.selectOptions(screen.getByLabelText('Run 类型'), 'agent');
     expect(
       screen.getByText(
-        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context disabled for this run / structured tool calls unavailable / patch/commands unavailable',
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context disabled for this run / task update tools disabled for this run / structured tool calls unavailable / patch/commands unavailable',
       ),
     ).toBeTruthy();
     await user.click(screen.getByRole('checkbox', { name: '允许只读工作区上下文' }));
+    await user.click(screen.getByRole('checkbox', { name: '允许任务内更新工具' }));
     expect(
       screen.getByText(
-        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context enabled for this run / structured tool calls unavailable / patch/commands unavailable',
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context enabled for this run / task update tools enabled for this run / structured tool calls unavailable / patch/commands unavailable',
       ),
     ).toBeTruthy();
 
@@ -2715,6 +2716,7 @@ describe('App UI flow', () => {
         type: 'agent',
         instructions: 'Inspect local files before writing the note',
         allowLocalWorkspaceRead: true,
+        allowTaskMutationTools: true,
       });
     });
   });
@@ -3422,15 +3424,16 @@ describe('App UI flow', () => {
 
     expect(
       screen.getByText(
-        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context disabled for this run / structured tool calls unavailable / patch/commands unavailable',
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context disabled for this run / task update tools disabled for this run / structured tool calls unavailable / patch/commands unavailable',
       ),
     ).toBeTruthy();
 
     await user.click(screen.getByRole('checkbox', { name: '允许只读工作区上下文' }));
+    await user.click(screen.getByRole('checkbox', { name: '允许任务内更新工具' }));
 
     expect(
       screen.getByText(
-        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context enabled for this run / structured tool calls unavailable / patch/commands unavailable',
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning in the local executor / read-only workspace context enabled for this run / task update tools enabled for this run / structured tool calls unavailable / patch/commands unavailable',
       ),
     ).toBeTruthy();
   });

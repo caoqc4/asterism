@@ -58,4 +58,5 @@ export type CreateRunInput = {
   type: RunType;
   instructions?: string;
   allowLocalWorkspaceRead?: boolean;
+  allowTaskMutationTools?: boolean;
 };

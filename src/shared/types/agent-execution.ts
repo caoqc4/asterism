@@ -30,6 +30,7 @@ export type AgentPolicy = {
   maxWallTimeMs: number;
   allowNetwork: boolean;
   allowLocalWorkspaceRead: boolean;
+  allowTaskMutationTools?: boolean;
   allowLocalCommandRun?: boolean;
   allowLocalFileWrite: boolean;
   confirmationRequiredRisks: AgentToolRisk[];

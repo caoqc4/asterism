@@ -537,6 +537,97 @@ describe('AgentRunLoop', () => {
     }));
   });
 
+  it('accepts one model-produced task mutation step when policy opts in', () => {
+    const loop = new AgentRunLoop({ execute: vi.fn() } as never);
+    const proposal = {
+      steps: [
+        { tool: 'task.inspect_context' as const },
+        {
+          tool: 'task.update_next_step' as const,
+          input: {
+            nextStep: 'Follow up with the owner',
+          },
+        },
+        {
+          tool: 'artifact.create_note' as const,
+          input: {
+            title: 'Next step note',
+            content: 'Next step proposed',
+          },
+        },
+      ],
+    };
+
+    expect(loop.buildPlanFromProposal({
+      proposal,
+      modelOutput: 'Agent output',
+      policy: {
+        ...buildRequest().policy,
+        allowTaskMutationTools: true,
+      },
+      taskTitle: 'Task 1',
+    })).toEqual([
+      {
+        kind: 'inspect_context',
+        tool: 'task.inspect_context',
+        input: {},
+      },
+      {
+        kind: 'inspect_timeline',
+        tool: 'task.inspect_timeline',
+        input: {},
+      },
+      {
+        kind: 'update_next_step',
+        tool: 'task.update_next_step',
+        input: {
+          nextStep: 'Follow up with the owner',
+        },
+      },
+      {
+        kind: 'create_note',
+        tool: 'artifact.create_note',
+        input: {
+          title: 'Next step note',
+          content: 'Next step proposed',
+        },
+      },
+    ]);
+  });
+
+  it('falls back when a model proposes more than one task mutation step', () => {
+    const loop = new AgentRunLoop({ execute: vi.fn() } as never);
+
+    expect(loop.buildPlanFromProposal({
+      proposal: {
+        steps: [
+          { tool: 'task.inspect_context' },
+          {
+            tool: 'task.update_next_step',
+            input: {
+              nextStep: 'Follow up with the owner',
+            },
+          },
+          {
+            tool: 'task.create_completion_criterion',
+            input: {
+              text: 'Owner has reviewed the final draft',
+            },
+          },
+        ],
+      },
+      modelOutput: 'Agent output',
+      policy: {
+        ...buildRequest().policy,
+        allowTaskMutationTools: true,
+      },
+      taskTitle: 'Task 1',
+    })).toEqual(loop.buildLocalNotePlan({
+      modelOutput: 'Agent output',
+      taskTitle: 'Task 1',
+    }));
+  });
+
   it('labels execution plans by source', () => {
     const loop = new AgentRunLoop({ execute: vi.fn() } as never);
 

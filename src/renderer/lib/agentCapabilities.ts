@@ -29,6 +29,7 @@ export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord)
 export function formatPreRunAgentCapabilitySummary(
   aiStatus: AiConfigStatus | null,
   allowLocalWorkspaceRead: boolean,
+  allowTaskMutationTools = false,
 ): string {
   const providerSummary = formatProviderSummary(aiStatus);
   const planningSummary = aiStatus?.provider === 'replicate'
@@ -37,11 +38,15 @@ export function formatPreRunAgentCapabilitySummary(
   const workspaceSummary = allowLocalWorkspaceRead
     ? 'read-only workspace context enabled for this run'
     : 'read-only workspace context disabled for this run';
+  const taskToolsSummary = allowTaskMutationTools
+    ? 'task update tools enabled for this run'
+    : 'task update tools disabled for this run';
 
   return [
     `Agent 能力预览：${providerSummary}`,
     planningSummary,
     workspaceSummary,
+    taskToolsSummary,
     'structured tool calls unavailable',
     'patch/commands unavailable',
   ].join(' / ');

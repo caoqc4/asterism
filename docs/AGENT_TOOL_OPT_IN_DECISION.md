@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed for the first user-facing exposure slice.
+Accepted and implemented for the first domain-tool exposure slice.
 
 The registry already contains domain tools, read-only workspace tools,
 confirmation-gated patching, and confirmation-gated package-script commands.
@@ -21,8 +21,8 @@ Recommended first opt-in:
 - `source_context.create`
 - `decision.draft`
 
-These tools should remain disabled by default and should require an explicit
-per-run option such as `allowTaskMutationTools=true`. The run form can present
+These tools remain disabled by default and require the explicit per-run
+`allowTaskMutationTools=true` option. The Tasks and Runs trigger forms present
 this separately from read-only workspace context.
 
 Workspace mutation tools stay registry-only for now:
@@ -101,15 +101,15 @@ Capability preview should distinguish:
 
 ## Testing Requirements
 
-Before implementation is accepted:
+Accepted implementation coverage:
 
 - run-loop tests prove domain mutation tools are accepted only when
   `allowTaskMutationTools=true`
 - prompt tests prove domain tools are mentioned only with the opt-in
 - renderer tests prove the run form separates read-only workspace context from
   task update tools and workspace write/command tools
-- integration or service tests prove the allowed tools still route through
-  domain services and write run-step observations
+- existing integration and service tests prove the allowed tools still route
+  through domain services and write run-step observations
 - full local verification passes without GitHub Actions
 
 ## Non-Goals
@@ -122,8 +122,6 @@ Before implementation is accepted:
 
 ## Open Questions
 
-- Should `allowTaskMutationTools` start on the Tasks page only, or also the Runs
-  page trigger form?
 - Should the first UI expose all four domain tools together, or begin with only
   `decision.draft` and `source_context.create`?
 - Should an agent-created completion criterion require a follow-up Decision when

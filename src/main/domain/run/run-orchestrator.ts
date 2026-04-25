@@ -174,6 +174,7 @@ export class RunOrchestrator {
       policy: {
         ...LOCAL_AGENT_TOOL_POLICY,
         allowLocalWorkspaceRead: Boolean(input.allowLocalWorkspaceRead),
+        allowTaskMutationTools: Boolean(input.allowTaskMutationTools),
       },
     });
 

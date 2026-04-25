@@ -88,7 +88,7 @@ Covered today:
 - `LocalAgentExecutor`
   adapter behavior that preserves current local agent-loop outcomes behind the executor/session boundary
 - `AgentRunLoop`
-  typed local observe-then-write plan building, constrained JSON proposal parsing, policy-gated workspace read steps, required read-only observation steps before local writes, observation-aware planner continue/stop decision writes, fallback behavior, visible plan-source run-step writes, in-memory tool observations, persisted structured observation-summary run steps, and failed / confirmation-needed tool outcomes
+  typed local observe-then-write plan building, constrained JSON proposal parsing, policy-gated workspace read steps, explicit task-mutation tool opt-in, required read-only observation steps before local writes, observation-aware planner continue/stop decision writes, fallback behavior, visible plan-source run-step writes, in-memory tool observations, persisted structured observation-summary run steps, and failed / confirmation-needed tool outcomes
 - `AgentWorkingContext`
   task-detail compression into typed agent run context, default policy, and plan-step request summaries
 - `AgentToolRegistry`
@@ -100,9 +100,9 @@ Covered today:
 - `DecisionService`
   checkpoint Decision approval can resume both local note creation and confirmation-gated workspace patch application
 - `TextExecutor`
-  lane-aware run prompt composition, constrained JSON proposal prompting for agent runs, and opt-in workspace tool prompt guidance
+  lane-aware run prompt composition, constrained JSON proposal prompting for agent runs, opt-in workspace tool prompt guidance, and opt-in domain task tool prompt guidance
 - `Agent capability UI helpers`
-  pre-run agent capability preview wording, including text-only local executor behavior, read-only workspace opt-in state, and Replicate-specific text-only planning wording
+  pre-run agent capability preview wording, including text-only local executor behavior, read-only workspace opt-in state, task update tool opt-in state, and Replicate-specific text-only planning wording
 - `AI clients`
   Vercel SDK client routing plus native Replicate text prediction request/response handling
 - `HomeBriefService`

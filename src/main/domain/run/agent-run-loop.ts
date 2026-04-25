@@ -63,6 +63,39 @@ export type AgentRunLoopStep =
       };
     }
   | {
+      kind: 'update_next_step';
+      tool: Extract<AgentToolName, 'task.update_next_step'>;
+      input: {
+        nextStep: string;
+      };
+    }
+  | {
+      kind: 'create_completion_criterion';
+      tool: Extract<AgentToolName, 'task.create_completion_criterion'>;
+      input: {
+        text: string;
+      };
+    }
+  | {
+      kind: 'create_source_context';
+      tool: Extract<AgentToolName, 'source_context.create'>;
+      input: {
+        title: string;
+        kind?: string;
+        isKey?: boolean;
+        uri?: string | null;
+        content?: string | null;
+        note?: string | null;
+      };
+    }
+  | {
+      kind: 'draft_decision';
+      tool: Extract<AgentToolName, 'decision.draft'>;
+      input: {
+        note?: string | null;
+      };
+    }
+  | {
       kind: 'workspace_search';
       tool: Extract<AgentToolName, 'workspace.search'>;
       input: {
@@ -149,8 +182,85 @@ function parseWorkspaceReadFileStep(
   };
 }
 
+function parseTaskUpdateNextStep(
+  input: Record<string, unknown> | undefined,
+): Extract<AgentRunLoopStep, { kind: 'update_next_step' }> | null {
+  const nextStep = typeof input?.nextStep === 'string' ? input.nextStep.trim() : '';
+
+  return nextStep
+    ? { kind: 'update_next_step', tool: 'task.update_next_step', input: { nextStep } }
+    : null;
+}
+
+function parseTaskCreateCompletionCriterion(
+  input: Record<string, unknown> | undefined,
+): Extract<AgentRunLoopStep, { kind: 'create_completion_criterion' }> | null {
+  const text = typeof input?.text === 'string' ? input.text.trim() : '';
+
+  return text
+    ? { kind: 'create_completion_criterion', tool: 'task.create_completion_criterion', input: { text } }
+    : null;
+}
+
+function parseSourceContextCreate(
+  input: Record<string, unknown> | undefined,
+): Extract<AgentRunLoopStep, { kind: 'create_source_context' }> | null {
+  const title = typeof input?.title === 'string' ? input.title.trim() : '';
+  const kind = typeof input?.kind === 'string' ? input.kind.trim() : undefined;
+  const note = typeof input?.note === 'string' ? input.note.trim() : null;
+  const uri = typeof input?.uri === 'string' ? input.uri.trim() : null;
+  const content = typeof input?.content === 'string' ? input.content.trim() : null;
+  const isKey = typeof input?.isKey === 'boolean' ? input.isKey : undefined;
+
+  return title
+    ? {
+        kind: 'create_source_context',
+        tool: 'source_context.create',
+        input: {
+          title,
+          ...(kind ? { kind } : {}),
+          ...(isKey === undefined ? {} : { isKey }),
+          uri,
+          content,
+          note,
+        },
+      }
+    : null;
+}
+
+function parseDecisionDraft(
+  input: Record<string, unknown> | undefined,
+): Extract<AgentRunLoopStep, { kind: 'draft_decision' }> {
+  const note = typeof input?.note === 'string' ? input.note.trim() : null;
+
+  return {
+    kind: 'draft_decision',
+    tool: 'decision.draft',
+    input: { note },
+  };
+}
+
+function isMutationStep(step: AgentRunLoopStep): boolean {
+  return (
+    step.kind === 'create_note' ||
+    step.kind === 'update_next_step' ||
+    step.kind === 'create_completion_criterion' ||
+    step.kind === 'create_source_context' ||
+    step.kind === 'draft_decision'
+  );
+}
+
+function isDomainMutationStep(step: AgentRunLoopStep): boolean {
+  return (
+    step.kind === 'update_next_step' ||
+    step.kind === 'create_completion_criterion' ||
+    step.kind === 'create_source_context' ||
+    step.kind === 'draft_decision'
+  );
+}
+
 function ensurePreWriteObservationSteps(steps: AgentRunLoopStep[]): AgentRunLoopStep[] {
-  if (!steps.some((step) => step.kind === 'create_note')) {
+  if (!steps.some(isMutationStep)) {
     return steps;
   }
 
@@ -364,10 +474,68 @@ export class AgentRunLoop {
         continue;
       }
 
+      if (step.tool === 'task.update_next_step') {
+        if (!policy?.allowTaskMutationTools) {
+          return this.buildLocalNotePlan({ modelOutput, taskTitle });
+        }
+
+        const parsed = parseTaskUpdateNextStep(step.input);
+
+        if (!parsed) {
+          return this.buildLocalNotePlan({ modelOutput, taskTitle });
+        }
+
+        nextPlan.push(parsed);
+        continue;
+      }
+
+      if (step.tool === 'task.create_completion_criterion') {
+        if (!policy?.allowTaskMutationTools) {
+          return this.buildLocalNotePlan({ modelOutput, taskTitle });
+        }
+
+        const parsed = parseTaskCreateCompletionCriterion(step.input);
+
+        if (!parsed) {
+          return this.buildLocalNotePlan({ modelOutput, taskTitle });
+        }
+
+        nextPlan.push(parsed);
+        continue;
+      }
+
+      if (step.tool === 'source_context.create') {
+        if (!policy?.allowTaskMutationTools) {
+          return this.buildLocalNotePlan({ modelOutput, taskTitle });
+        }
+
+        const parsed = parseSourceContextCreate(step.input);
+
+        if (!parsed) {
+          return this.buildLocalNotePlan({ modelOutput, taskTitle });
+        }
+
+        nextPlan.push(parsed);
+        continue;
+      }
+
+      if (step.tool === 'decision.draft') {
+        if (!policy?.allowTaskMutationTools) {
+          return this.buildLocalNotePlan({ modelOutput, taskTitle });
+        }
+
+        nextPlan.push(parseDecisionDraft(step.input));
+        continue;
+      }
+
       return this.buildLocalNotePlan({ modelOutput, taskTitle });
     }
 
-    if (!nextPlan.some((step) => step.kind === 'create_note')) {
+    if (nextPlan.filter(isDomainMutationStep).length > 1) {
+      return this.buildLocalNotePlan({ modelOutput, taskTitle });
+    }
+
+    if (!nextPlan.some(isMutationStep)) {
       return this.buildLocalNotePlan({ modelOutput, taskTitle });
     }
 
@@ -541,7 +709,7 @@ export class AgentRunLoop {
     let recordedPlannerDecision = false;
 
     for (const step of executionPlan.steps) {
-      if (step.kind === 'create_note' && !recordedPlannerDecision) {
+      if (isMutationStep(step) && !recordedPlannerDecision) {
         const plannerDecision = evaluateObservationPlannerDecision({
           context: request.context,
           observations,

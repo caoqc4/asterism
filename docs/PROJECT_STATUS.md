@@ -29,10 +29,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - The first local-write execution slice is in place but not model-exposed: `workspace.write_patch` requires explicit local file-write policy, creates a confirmation checkpoint with a diff preview, applies only after the linked Decision is approved, and has tests for normal-run fallback plus workspace-boundary / expected-file rejection.
 - A focused `npm run accept:workspace-patch` command now exercises the local patch approval path without exposing write access in the product UI.
 - Agent run forms now preview provider/session capability before execution, including text-only planning, read-only workspace context opt-in, structured tool-call unavailability, patch/command unavailability, and provider-specific wording for Replicate versus the local text-only executor path.
-- The first domain-shaped task tools are in the registry but not prompt-exposed: `task.update_next_step` routes through `TaskService.update`, `task.create_completion_criterion` routes through `TaskService.createCompletionCriteria`, `source_context.create` routes through `TaskService.createSourceContext`, and `decision.draft` routes through `DecisionService.draft` without creating a formal Decision. These tools write run-step observations, and normal agent plans still fall back if a model proposes them.
+- The first domain-shaped task tools are in the registry and can be prompt-exposed only through the explicit per-run `allowTaskMutationTools` opt-in: `task.update_next_step` routes through `TaskService.update`, `task.create_completion_criterion` routes through `TaskService.createCompletionCriteria`, `source_context.create` routes through `TaskService.createSourceContext`, and `decision.draft` routes through `DecisionService.draft` without creating a formal Decision. These tools write run-step observations, and normal agent plans still fall back if a model proposes them without the opt-in.
 - A focused `npm run accept:domain-agent-tools` command now exercises those registry-only domain tools through real SQLite repositories without exposing them to normal model plans.
 - The first command-execution slice is in place but not model-exposed: `workspace.run_command` requires explicit local command policy, accepts only allowlisted `package.json` scripts, creates a confirmation checkpoint with command preview, and resumes once after the linked Decision is approved.
-- The first tool-exposure decision now recommends a per-run opt-in for domain-shaped task tools before any workspace write or command prompt exposure.
+- The first tool-exposure decision is implemented for domain-shaped task tools; workspace write and command prompt exposure remains deferred.
 
 ## Verification Baseline
 
@@ -45,7 +45,7 @@ npm run verify
 Latest local baseline:
 
 - 48 test files
-- 357 tests
+- 361 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -68,7 +68,7 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 2. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
-5. Implement [AGENT_TOOL_OPT_IN_DECISION.md](AGENT_TOOL_OPT_IN_DECISION.md) before exposing registry-only tools to normal agent runs.
+5. Keep workspace write and command tools registry-only until a separate opt-in slice handles their UI and policy.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.

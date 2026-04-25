@@ -765,6 +765,7 @@ export function TasksPage({
   const [quickRunType, setQuickRunType] = useState<CreateRunInput['type']>('draft');
   const [quickRunInstructions, setQuickRunInstructions] = useState('');
   const [quickRunAllowLocalWorkspaceRead, setQuickRunAllowLocalWorkspaceRead] = useState(false);
+  const [quickRunAllowTaskMutationTools, setQuickRunAllowTaskMutationTools] = useState(false);
   const [transitionWaitingReason, setTransitionWaitingReason] = useState('');
   const [blockerEditingId, setBlockerEditingId] = useState<string | null>(null);
   const [blockerTitle, setBlockerTitle] = useState('');
@@ -1214,6 +1215,9 @@ export function TasksPage({
       instructions: quickRunInstructions.trim(),
       ...(quickRunType === 'agent' && quickRunAllowLocalWorkspaceRead
         ? { allowLocalWorkspaceRead: true }
+        : {}),
+      ...(quickRunType === 'agent' && quickRunAllowTaskMutationTools
+        ? { allowTaskMutationTools: true }
         : {}),
     });
     await onRefresh();
@@ -2040,6 +2044,7 @@ export function TasksPage({
             setQuickRunType(nextType);
             if (nextType !== 'agent') {
               setQuickRunAllowLocalWorkspaceRead(false);
+              setQuickRunAllowTaskMutationTools(false);
             }
           }}
         >
@@ -2066,8 +2071,20 @@ export function TasksPage({
             />
             允许只读工作区上下文
           </label>
+          <label>
+            <input
+              checked={quickRunAllowTaskMutationTools}
+              onChange={(event) => setQuickRunAllowTaskMutationTools(event.target.checked)}
+              type="checkbox"
+            />
+            允许任务内更新工具
+          </label>
           <p className="meta">
-            {formatPreRunAgentCapabilitySummary(aiStatus, quickRunAllowLocalWorkspaceRead)}
+            {formatPreRunAgentCapabilitySummary(
+              aiStatus,
+              quickRunAllowLocalWorkspaceRead,
+              quickRunAllowTaskMutationTools,
+            )}
           </p>
         </>
       ) : null}

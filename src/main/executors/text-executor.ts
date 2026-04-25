@@ -41,9 +41,25 @@ function buildPrompt(
             '    { "tool": "workspace.read_file", "input": { "path": "相对工作区根目录的文件路径" } },',
           ]
         : [];
-      const allowedTools = input.allowLocalWorkspaceRead
-        ? 'task.inspect_context、task.inspect_timeline、workspace.search、workspace.read_file 和 artifact.create_note'
-        : 'task.inspect_context、task.inspect_timeline 和 artifact.create_note';
+      const taskMutationStepExamples = input.allowTaskMutationTools
+        ? [
+            '    { "tool": "task.update_next_step", "input": { "nextStep": "新的下一步" } },',
+            '    { "tool": "task.create_completion_criterion", "input": { "text": "新的完成标准" } },',
+            '    { "tool": "source_context.create", "input": { "title": "来源标题", "kind": "note", "note": "来源摘要" } },',
+            '    { "tool": "decision.draft", "input": { "note": "需要拍板的问题" } },',
+          ]
+        : [];
+      const allowedToolParts = [
+        'task.inspect_context',
+        'task.inspect_timeline',
+        input.allowLocalWorkspaceRead ? 'workspace.search' : null,
+        input.allowLocalWorkspaceRead ? 'workspace.read_file' : null,
+        input.allowTaskMutationTools ? 'task.update_next_step' : null,
+        input.allowTaskMutationTools ? 'task.create_completion_criterion' : null,
+        input.allowTaskMutationTools ? 'source_context.create' : null,
+        input.allowTaskMutationTools ? 'decision.draft' : null,
+        'artifact.create_note',
+      ].filter((item): item is string => Boolean(item));
       const workspaceGuidance = input.allowLocalWorkspaceRead
         ? [
             '- workspace.search 只能用于搜索本地工作区内的文本文件。',
@@ -52,6 +68,14 @@ function buildPrompt(
           ]
         : [
             '- 当前没有开启只读工作区上下文，不允许使用 workspace.search 或 workspace.read_file。',
+          ];
+      const taskMutationGuidance = input.allowTaskMutationTools
+        ? [
+            '- 可以使用任务内更新工具来更新下一步、添加完成标准、补充来源上下文或草拟 Decision。',
+            '- 每次计划最多使用一个任务内更新工具；decision.draft 只能草拟，不会创建正式 Decision。',
+          ]
+        : [
+            '- 当前没有开启任务内更新工具，不允许使用 task.update_next_step、task.create_completion_criterion、source_context.create 或 decision.draft。',
           ];
 
       return [
@@ -64,12 +88,14 @@ function buildPrompt(
         '    { "tool": "task.inspect_context" },',
         '    { "tool": "task.inspect_timeline" },',
         ...workspaceStepExample,
+        ...taskMutationStepExamples,
         '    { "tool": "artifact.create_note", "input": { "title": "简短 note 标题", "content": "与 finalOutput 一致的正文" } }',
         '  ]',
         '}',
         '工具限制：',
-        `- 只能使用 ${allowedTools}。`,
+        `- 只能使用 ${allowedToolParts.join('、')}。`,
         ...workspaceGuidance,
+        ...taskMutationGuidance,
         '- artifact.create_note.input.title 必须简短明确。',
         '- artifact.create_note.input.content 必须与 finalOutput 保持一致。',
         '如果上下文不足，仍然基于现有信息给出合理的 finalOutput。',

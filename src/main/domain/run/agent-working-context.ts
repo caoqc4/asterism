@@ -16,6 +16,7 @@ export const DEFAULT_AGENT_POLICY: AgentPolicy = {
   maxWallTimeMs: 120_000,
   allowNetwork: false,
   allowLocalWorkspaceRead: false,
+  allowTaskMutationTools: false,
   allowLocalCommandRun: false,
   allowLocalFileWrite: false,
   confirmationRequiredRisks: ['local_command', 'local_write', 'external_write', 'sensitive'],
