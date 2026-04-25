@@ -119,8 +119,8 @@ Rules:
 - Execute as `npm run <script> -- <args...>`.
 - Use argv arrays, not a shell string.
 - Run with `cwd` set to the configured workspace root.
-- Start with an allowlist: test, lint, build, and smoke commands from the local
-  package scripts are acceptable candidates.
+- Start with an allowlist limited to targeted `test` and `lint` package
+  scripts.
 - Reject commands involving network publishing, credential inspection, global
   installs, destructive file operations, or git remote mutation.
 - Capture stdout/stderr with size limits.

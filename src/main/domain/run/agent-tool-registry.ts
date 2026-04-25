@@ -93,12 +93,6 @@ const sourceContextKinds = new Set<SourceContextKind>(['link', 'doc', 'issue', '
 const WORKSPACE_COMMAND_ALLOWED_SCRIPTS = new Set([
   'test',
   'lint',
-  'build',
-  'verify',
-  'smoke:build',
-  'smoke:package:mac',
-  'smoke:runtime:mac',
-  'smoke:release:mac',
 ]);
 const WORKSPACE_SEARCH_SKIP_DIRS = new Set([
   '.git',

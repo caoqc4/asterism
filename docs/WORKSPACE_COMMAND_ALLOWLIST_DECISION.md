@@ -35,21 +35,15 @@ The tool must use argument arrays, not a shell string.
 
 ## Initial Allowlist
 
-Start with local validation scripts only:
+Start with targeted local validation scripts only:
 
 - `test`
 - `lint`
-- `build`
-- `verify`
-- `smoke:build`
-- `smoke:package:mac`
-- `smoke:runtime:mac`
-- `smoke:release:mac`
 
-Do not include packaging or release scripts that mutate remote systems. Do not
-include `dist:mac`, `dist:mac:dir`, package-manager install scripts, git remote
-commands, deployment commands, credential commands, or arbitrary user-provided
-commands in the first slice.
+Do not include broad verification, build, packaging, or release scripts in the
+first slice. Do not include `verify`, `build`, smoke scripts, `dist:mac`,
+`dist:mac:dir`, package-manager install scripts, git remote commands,
+deployment commands, credential commands, or arbitrary user-provided commands.
 
 ## Execution Policy
 
@@ -115,11 +109,8 @@ Recent hardening:
 - missing workspace-root `package.json` now fails with an explicit
   `workspace.run_command` error before any checkpoint is created
 - timeout behavior is covered with a clamped 1000ms local package-script test
-
-## Open Questions
-
-- Before any UI opt-in, should `verify` remain in the exposed allowlist or
-  should the first user-facing slice narrow to targeted `test` and `lint`?
+- broad verification scripts such as `verify` are rejected by the first
+  command allowlist
 
 ## Resolved Questions
 
@@ -129,5 +120,6 @@ Recent hardening:
 - Successful command output remains a run-step observation, not a first-class
   Artifact, until a later workflow shows that command output needs artifact
   lifecycle behavior.
-- `verify` is allowed in the current registry-level allowlist, but no normal
-  prompt or UI exposes command execution yet.
+- `verify`, build, and smoke scripts are excluded from the first command
+  allowlist. They can be reconsidered only after a user-facing command opt-in
+  has a clearer review model.

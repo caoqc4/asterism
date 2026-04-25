@@ -117,11 +117,6 @@ Deferred.
     checkpoint guidance repeats the same constraint before approval
 - no normal prompt includes workspace mutation tools
 
-## Open Questions
-
-- Before any UI opt-in, should command exposure allow `verify`, or narrow to
-  targeted `test` and `lint` first?
-
 ## Resolved Questions
 
 - Tier 1 uses the existing Runs and Decisions surfaces. A dedicated checkpoint
@@ -132,3 +127,5 @@ Deferred.
   promoted.
 - Command allowlists stay fixed in code for alpha registry-level execution;
   local config is deferred until a user-facing command opt-in exists.
+- Command exposure starts with targeted `test` and `lint` only. `verify`,
+  build, and smoke scripts stay out of the first command allowlist.

@@ -1393,6 +1393,32 @@ describe('AgentToolRegistry', () => {
     expect(result.error).toBe('workspace.run_command script is not allowed: install');
   });
 
+  it('keeps broad verification scripts outside the first command allowlist', async () => {
+    const runStepRepository = buildRunStepRepositoryMock();
+    const registry = new AgentToolRegistry({} as never, runStepRepository as never);
+
+    const result = await registry.execute(
+      'workspace.run_command',
+      {
+        summary: 'Run full verification',
+        script: 'verify',
+      },
+      { runId: 'run_1', taskId: 'task_1' },
+      {
+        maxSteps: 8,
+        maxWallTimeMs: 120_000,
+        allowNetwork: false,
+        allowLocalWorkspaceRead: false,
+        allowLocalFileWrite: false,
+        allowLocalCommandRun: true,
+        confirmationRequiredRisks: [],
+      },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('workspace.run_command script is not allowed: verify');
+  });
+
   it('creates a confirmation checkpoint with a diff preview before applying workspace patches', async () => {
     const tempRoot = makeTempDir('taskplane-agent-workspace-patch-confirm-');
 
