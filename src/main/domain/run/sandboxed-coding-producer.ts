@@ -1,5 +1,6 @@
 import type { AgentSandboxCheckScript } from '../../../shared/agent-sandbox-provider.js';
 import type { FeatureFlags } from '../../../shared/types/settings.js';
+import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
 import type { LocalContainerSandboxPatchDraft } from './local-container-sandbox-backend.js';
 import {
   type SandboxPatchDraftSource,
@@ -60,6 +61,74 @@ export type SandboxedCodingProducerResult =
       reason: string;
       sessionSummary: string;
       status: 'blocked' | 'failed' | 'paused';
+    };
+
+export type SandboxedCodingProducerRunStepDraft = {
+  error?: string | null;
+  input?: string | null;
+  kind: RunStepKind;
+  output?: string | null;
+  runId: string;
+  status?: RunStepStatus;
+  title: string;
+};
+
+export type SandboxedCodingProducerEvent =
+  | {
+      runId: string;
+      sessionId: string;
+      sourceId: string;
+      status: 'started';
+      summary: string;
+      type: 'sandbox_producer.started';
+    }
+  | {
+      runId: string;
+      sessionId: string;
+      sourceId: string;
+      tool: 'workspace.read_file' | 'workspace.search_text' | 'staging.write_file' | 'staging.diff' | 'checks.run';
+      inputSummary: string;
+      type: 'sandbox_producer.tool_requested';
+    }
+  | {
+      reason: string;
+      runId: string;
+      sessionId: string;
+      sourceId: string;
+      tool: string;
+      type: 'sandbox_producer.tool_blocked';
+    }
+  | {
+      outputSummary: string;
+      runId: string;
+      sessionId: string;
+      sourceId: string;
+      tool: string;
+      type: 'sandbox_producer.tool_completed';
+    }
+  | {
+      outputSummary: string;
+      runId: string;
+      script: AgentSandboxCheckScript;
+      sessionId: string;
+      sourceId: string;
+      status: 'passed' | 'failed' | 'skipped';
+      type: 'sandbox_producer.check_completed';
+    }
+  | {
+      files: string[];
+      runId: string;
+      sessionId: string;
+      sourceId: string;
+      summary: string;
+      type: 'sandbox_producer.source_ready';
+    }
+  | {
+      reason: string;
+      runId: string;
+      sessionId: string;
+      sourceId: string;
+      type: 'sandbox_producer.blocked' | 'sandbox_producer.failed' | 'sandbox_producer.paused';
     };
 
 export type SandboxedCodingProducerRequestValidation =
@@ -249,11 +318,104 @@ export function previewSandboxedCodingProducerPatchReview(params: {
   });
 }
 
+export function mapSandboxedCodingProducerEventToRunStep(
+  event: SandboxedCodingProducerEvent,
+): SandboxedCodingProducerRunStepDraft {
+  switch (event.type) {
+    case 'sandbox_producer.started':
+      return {
+        input: `session=${event.sessionId}\nsource=${event.sourceId}`,
+        kind: 'plan',
+        output: event.summary,
+        runId: event.runId,
+        status: 'running',
+        title: 'Sandboxed coding producer started',
+      };
+    case 'sandbox_producer.tool_requested':
+      return {
+        input: [
+          `session=${event.sessionId}`,
+          `source=${event.sourceId}`,
+          event.inputSummary,
+        ].join('\n'),
+        kind: 'tool_call',
+        runId: event.runId,
+        status: 'running',
+        title: `Sandbox producer tool requested: ${event.tool}`,
+      };
+    case 'sandbox_producer.tool_blocked':
+      return {
+        error: event.reason,
+        input: `session=${event.sessionId}\nsource=${event.sourceId}`,
+        kind: 'tool_result',
+        output: event.reason,
+        runId: event.runId,
+        status: 'failed',
+        title: `Sandbox producer tool blocked: ${event.tool}`,
+      };
+    case 'sandbox_producer.tool_completed':
+      return {
+        input: `session=${event.sessionId}\nsource=${event.sourceId}`,
+        kind: 'tool_result',
+        output: event.outputSummary,
+        runId: event.runId,
+        status: 'completed',
+        title: `Sandbox producer tool completed: ${event.tool}`,
+      };
+    case 'sandbox_producer.check_completed':
+      return {
+        input: `session=${event.sessionId}\nsource=${event.sourceId}\nscript=${event.script}`,
+        kind: 'tool_result',
+        output: event.outputSummary,
+        runId: event.runId,
+        status: event.status === 'failed' ? 'failed' : 'completed',
+        title: `Sandbox producer check ${event.status}: ${event.script}`,
+      };
+    case 'sandbox_producer.source_ready':
+      return {
+        input: [
+          `session=${event.sessionId}`,
+          `source=${event.sourceId}`,
+          `files=${event.files.join(',')}`,
+        ].join('\n'),
+        kind: 'artifact',
+        output: event.summary,
+        runId: event.runId,
+        status: 'completed',
+        title: 'Sandbox producer source ready',
+      };
+    case 'sandbox_producer.blocked':
+      return terminalProducerStep(event, 'completed', 'Sandbox producer blocked');
+    case 'sandbox_producer.failed':
+      return terminalProducerStep(event, 'failed', 'Sandbox producer failed');
+    case 'sandbox_producer.paused':
+      return terminalProducerStep(event, 'pending', 'Sandbox producer paused');
+  }
+}
+
 function invalidRequest(blockedReasons: string[]): SandboxedCodingProducerRequestValidation {
   return {
     blockedReasons,
     summary: `Sandboxed coding producer request blocked: ${blockedReasons.join(' ')}`,
     valid: false,
+  };
+}
+
+function terminalProducerStep(
+  event: Extract<SandboxedCodingProducerEvent, {
+    type: 'sandbox_producer.blocked' | 'sandbox_producer.failed' | 'sandbox_producer.paused';
+  }>,
+  status: RunStepStatus,
+  title: string,
+): SandboxedCodingProducerRunStepDraft {
+  return {
+    error: event.type === 'sandbox_producer.failed' ? event.reason : null,
+    input: `session=${event.sessionId}\nsource=${event.sourceId}`,
+    kind: event.type === 'sandbox_producer.paused' ? 'checkpoint' : 'final',
+    output: event.reason,
+    runId: event.runId,
+    status,
+    title,
   };
 }
 

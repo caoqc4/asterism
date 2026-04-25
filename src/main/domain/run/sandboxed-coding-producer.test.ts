@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildSandboxedCodingProducerSource,
+  mapSandboxedCodingProducerEventToRunStep,
   previewSandboxedCodingProducerPatchReview,
   validateSandboxedCodingProducerRequest,
 } from './sandboxed-coding-producer.js';
@@ -233,6 +234,106 @@ describe('validateSandboxedCodingProducerRequest', () => {
     expect(plan).toMatchObject({
       status: 'blocked',
       reason: expect.stringContaining('feature flag is off'),
+    });
+  });
+
+  it('maps producer lifecycle, tool, check, and source events into compact run steps', () => {
+    expect(mapSandboxedCodingProducerEventToRunStep({
+      runId: 'run_1',
+      sessionId: 'producer_session_1',
+      sourceId: 'sandbox_source_1',
+      status: 'started',
+      summary: 'Preparing sandboxed coding producer.',
+      type: 'sandbox_producer.started',
+    })).toEqual({
+      runId: 'run_1',
+      kind: 'plan',
+      status: 'running',
+      title: 'Sandboxed coding producer started',
+      input: 'session=producer_session_1\nsource=sandbox_source_1',
+      output: 'Preparing sandboxed coding producer.',
+    });
+
+    expect(mapSandboxedCodingProducerEventToRunStep({
+      inputSummary: 'path=src/notes.md',
+      runId: 'run_1',
+      sessionId: 'producer_session_1',
+      sourceId: 'sandbox_source_1',
+      tool: 'workspace.read_file',
+      type: 'sandbox_producer.tool_requested',
+    })).toMatchObject({
+      kind: 'tool_call',
+      status: 'running',
+      title: 'Sandbox producer tool requested: workspace.read_file',
+    });
+
+    expect(mapSandboxedCodingProducerEventToRunStep({
+      outputSummary: 'lint: passed',
+      runId: 'run_1',
+      script: 'lint',
+      sessionId: 'producer_session_1',
+      sourceId: 'sandbox_source_1',
+      status: 'passed',
+      type: 'sandbox_producer.check_completed',
+    })).toMatchObject({
+      kind: 'tool_result',
+      status: 'completed',
+      title: 'Sandbox producer check passed: lint',
+      output: 'lint: passed',
+    });
+
+    expect(mapSandboxedCodingProducerEventToRunStep({
+      files: ['src/notes.md'],
+      runId: 'run_1',
+      sessionId: 'producer_session_1',
+      sourceId: 'sandbox_source_1',
+      summary: '1 file changed',
+      type: 'sandbox_producer.source_ready',
+    })).toMatchObject({
+      kind: 'artifact',
+      status: 'completed',
+      title: 'Sandbox producer source ready',
+      input: 'session=producer_session_1\nsource=sandbox_source_1\nfiles=src/notes.md',
+    });
+  });
+
+  it('maps terminal producer events into blocked, failed, and paused run steps', () => {
+    expect(mapSandboxedCodingProducerEventToRunStep({
+      reason: 'No sandbox backend is ready.',
+      runId: 'run_1',
+      sessionId: 'producer_session_1',
+      sourceId: 'sandbox_source_1',
+      type: 'sandbox_producer.blocked',
+    })).toMatchObject({
+      kind: 'final',
+      status: 'completed',
+      title: 'Sandbox producer blocked',
+      output: 'No sandbox backend is ready.',
+    });
+
+    expect(mapSandboxedCodingProducerEventToRunStep({
+      reason: 'Producer failed.',
+      runId: 'run_1',
+      sessionId: 'producer_session_1',
+      sourceId: 'sandbox_source_1',
+      type: 'sandbox_producer.failed',
+    })).toMatchObject({
+      kind: 'final',
+      status: 'failed',
+      title: 'Sandbox producer failed',
+      error: 'Producer failed.',
+    });
+
+    expect(mapSandboxedCodingProducerEventToRunStep({
+      reason: 'Waiting for review.',
+      runId: 'run_1',
+      sessionId: 'producer_session_1',
+      sourceId: 'sandbox_source_1',
+      type: 'sandbox_producer.paused',
+    })).toMatchObject({
+      kind: 'checkpoint',
+      status: 'pending',
+      title: 'Sandbox producer paused',
     });
   });
 });

@@ -305,6 +305,10 @@ The project is past initial architecture assembly. Current work should favor pro
   `SandboxPatchDraftSource` and preview the existing sandbox patch-review plan
   through `previewFromSource()`, still without starting a model loop, runner,
   sandbox backend, or UI entrypoint.
+- Producer-local lifecycle/tool/check/source/terminal events now map into
+  compact RunStep drafts, giving the future sandboxed coding producer a
+  timeline projection path without expanding the ordinary agent event union or
+  starting a live runner.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -335,7 +339,7 @@ npm run verify
 Latest local baseline:
 
 - 81 test files
-- 588 tests
+- 590 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -366,6 +370,8 @@ Latest local baseline:
   sandboxed coding staged patch collector: 81 test files / 584 tests
 - `npm run verify` passed locally on 2026-04-26 after adding the non-live
   producer source/preview bridge: 81 test files / 588 tests
+- `npm run verify` passed locally on 2026-04-26 after adding producer-local
+  event-to-RunStep projection: 81 test files / 590 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
