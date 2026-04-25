@@ -85,6 +85,10 @@ The project is past initial architecture assembly. Current work should favor pro
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
   tool visibility rules.
+- `npm run release:mac:preflight` now provides a read-only local check for
+  macOS signed/notarized release prerequisites: Developer ID signing source,
+  `notarytool`, Apple notarization env vars, and package metadata. It does not
+  sign, notarize, upload, or call Apple services.
 
 ## Verification Baseline
 
@@ -105,8 +109,14 @@ Latest local baseline:
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents and isolated startup
 - `npm run smoke:release:mac` passed locally on 2026-04-25 for the combined
   unsigned macOS package path
+- `npm run release:mac:preflight` currently reports the host has `notarytool`
+  and package metadata, but is not ready for signed/notarized release because
+  Developer ID and Apple notarization credentials are not configured
 
-Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging configuration changes. Run `npm run smoke:release:mac` for the combined unsigned macOS package path.
+Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
+configuration changes. Run `npm run smoke:release:mac` for the combined
+unsigned macOS package path. Run `npm run release:mac:preflight` before a
+dedicated signed/notarized release pass.
 
 ## Current Risks
 
@@ -114,11 +124,14 @@ Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 - The product surface is already broad; more feature work should be tied to a concrete user flow or alpha acceptance criterion.
 - README and testing documentation are comprehensive but long, so future docs should prefer concise status and decision notes over expanding the feature inventory.
 - Dependency upgrades that touch Electron or Vite should stay out of opportunistic cleanup work and go through a dedicated upgrade pass.
-- Signed/notarized release coverage is still manual and deferred; local smoke checks plus isolated dev and packaged-app passes are the current substitute.
+- Actual signed/notarized release execution is still deferred; local smoke checks,
+  isolated dev and packaged-app passes, and the read-only release preflight are
+  the current substitute.
 
 ## Recommended Next Focus
 
-1. Keep signed/notarized release work deferred until a dedicated release-readiness pass targets signing and notarization.
+1. Keep actual signed/notarized release execution deferred until Developer ID
+   signing and Apple notarization credentials are available.
 2. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
