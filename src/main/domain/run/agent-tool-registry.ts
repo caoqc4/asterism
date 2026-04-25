@@ -11,12 +11,12 @@ import type {
 } from '../../../shared/types/agent-execution.js';
 import type { DecisionDraftRecord, DraftDecisionInput } from '../../../shared/types/decision.js';
 import type { SourceContextKind } from '../../../shared/types/source-context.js';
-import { createToolPermissionCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import type { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import type { TaskService } from '../task/task-service.js';
+import { AgentCheckpointRecorder } from './agent-checkpoint-recorder.js';
 
 export type AgentToolDefinition = {
   name: AgentToolName;
@@ -819,9 +819,16 @@ export class AgentToolRegistry {
     private readonly decisionRepository: Pick<DecisionRepository, 'create'> | null = null,
     private readonly workspaceRootResolver: () => string = () => process.cwd(),
     private readonly taskService: Pick<TaskService, 'createCompletionCriteria' | 'createSourceContext' | 'update'> | null = null,
-  ) {}
+  ) {
+    this.checkpointRecorder = new AgentCheckpointRecorder(
+      this.runCheckpointRepository,
+      this.runStepRepository,
+      this.decisionRepository,
+    );
+  }
 
   private decisionDraftService: DecisionDraftService | null = null;
+  private readonly checkpointRecorder: AgentCheckpointRecorder;
 
   setDecisionDraftService(decisionDraftService: DecisionDraftService): void {
     this.decisionDraftService = decisionDraftService;
@@ -874,67 +881,27 @@ export class AgentToolRegistry {
             workspaceRoot,
           });
           const decisionTitle = buildConfirmationDecisionTitle(name, definition.risk);
-          const checkpoint = await this.runCheckpointRepository.create({
+          const checkpoint = await this.checkpointRecorder.createToolPermissionCheckpoint({
             runId: context.runId,
+            taskId: context.taskId,
             stepId: callStep.id,
-            kind: 'tool_permission',
-            payload: JSON.stringify(createToolPermissionCheckpointPayload({
-              tool: name,
-              risk: definition.risk,
-              input: {
-                ...parsed,
-                diffPreview,
-              },
-              decisionId: null,
-              decisionTitle,
-            })),
-          });
-          const decision = this.decisionRepository
-            ? await this.decisionRepository.create({
-                taskId: context.taskId,
-                title: decisionTitle,
-                sourceType: 'agent_checkpoint',
-                sourceId: checkpoint.id,
-                sourceLabel: name,
-              })
-            : null;
-          const payload = JSON.stringify(createToolPermissionCheckpointPayload({
             tool: name,
             risk: definition.risk,
             input: {
               ...parsed,
               diffPreview,
             },
-            decisionId: decision?.id ?? null,
             decisionTitle,
-          }));
-          const checkpointWithDecision = decision
-            ? await this.runCheckpointRepository.updatePayload(checkpoint.id, payload)
-            : checkpoint;
-          const summary = decision
-            ? `工具 ${name} 需要确认后才能继续，已创建 Decision：${decision.title}。`
-            : `工具 ${name} 需要确认后才能继续。`;
-
-          await this.runStepRepository.update(callStep.id, {
-            status: 'skipped',
-            output: summary,
-          });
-          await this.runStepRepository.create({
-            runId: context.runId,
-            kind: 'checkpoint',
-            status: 'pending',
-            title: `等待确认：${name}`,
-            input: diffPreview,
-            output: summary,
+            preview: diffPreview,
           });
 
           return {
             success: false,
             status: 'needs_confirmation',
-            summary,
-            checkpointId: checkpointWithDecision.id,
+            summary: checkpoint.summary,
+            checkpointId: checkpoint.checkpointId,
             checkpointKind: 'tool_permission',
-            decisionId: decision?.id ?? null,
+            decisionId: checkpoint.decisionId,
           };
         }
 
@@ -956,125 +923,48 @@ export class AgentToolRegistry {
             `Cwd: ${path.resolve(workspaceRoot)}`,
           ].join('\n');
           const decisionTitle = buildConfirmationDecisionTitle(name, definition.risk);
-          const checkpoint = await this.runCheckpointRepository.create({
+          const checkpoint = await this.checkpointRecorder.createToolPermissionCheckpoint({
             runId: context.runId,
+            taskId: context.taskId,
             stepId: callStep.id,
-            kind: 'tool_permission',
-            payload: JSON.stringify(createToolPermissionCheckpointPayload({
-              tool: name,
-              risk: definition.risk,
-              input: {
-                ...parsed,
-                commandPreview,
-              },
-              decisionId: null,
-              decisionTitle,
-            })),
-          });
-          const decision = this.decisionRepository
-            ? await this.decisionRepository.create({
-                taskId: context.taskId,
-                title: decisionTitle,
-                sourceType: 'agent_checkpoint',
-                sourceId: checkpoint.id,
-                sourceLabel: name,
-              })
-            : null;
-          const payload = JSON.stringify(createToolPermissionCheckpointPayload({
             tool: name,
             risk: definition.risk,
             input: {
               ...parsed,
               commandPreview,
             },
-            decisionId: decision?.id ?? null,
             decisionTitle,
-          }));
-          const checkpointWithDecision = decision
-            ? await this.runCheckpointRepository.updatePayload(checkpoint.id, payload)
-            : checkpoint;
-          const summary = decision
-            ? `工具 ${name} 需要确认后才能继续，已创建 Decision：${decision.title}。`
-            : `工具 ${name} 需要确认后才能继续。`;
-
-          await this.runStepRepository.update(callStep.id, {
-            status: 'skipped',
-            output: summary,
-          });
-          await this.runStepRepository.create({
-            runId: context.runId,
-            kind: 'checkpoint',
-            status: 'pending',
-            title: `等待确认：${name}`,
-            input: commandPreview,
-            output: summary,
+            preview: commandPreview,
           });
 
           return {
             success: false,
             status: 'needs_confirmation',
-            summary,
-            checkpointId: checkpointWithDecision.id,
+            summary: checkpoint.summary,
+            checkpointId: checkpoint.checkpointId,
             checkpointKind: 'tool_permission',
-            decisionId: decision?.id ?? null,
+            decisionId: checkpoint.decisionId,
           };
         }
 
         const decisionTitle = buildConfirmationDecisionTitle(name, definition.risk);
-        const checkpoint = await this.runCheckpointRepository.create({
+        const checkpoint = await this.checkpointRecorder.createToolPermissionCheckpoint({
           runId: context.runId,
+          taskId: context.taskId,
           stepId: callStep.id,
-          kind: 'tool_permission',
-          payload: JSON.stringify(createToolPermissionCheckpointPayload({
-            tool: name,
-            risk: definition.risk,
-            input: highRiskCompletionCriterionInput ?? input,
-            decisionId: null,
-            decisionTitle,
-          })),
-        });
-        const decision = this.decisionRepository
-          ? await this.decisionRepository.create({
-              taskId: context.taskId,
-              title: decisionTitle,
-              sourceType: 'agent_checkpoint',
-              sourceId: checkpoint.id,
-              sourceLabel: name,
-            })
-          : null;
-        const payload = JSON.stringify(createToolPermissionCheckpointPayload({
           tool: name,
           risk: definition.risk,
           input: highRiskCompletionCriterionInput ?? input,
-          decisionId: decision?.id ?? null,
           decisionTitle,
-        }));
-        const checkpointWithDecision = decision
-          ? await this.runCheckpointRepository.updatePayload(checkpoint.id, payload)
-          : checkpoint;
-        const summary = decision
-          ? `工具 ${name} 需要确认后才能继续，已创建 Decision：${decision.title}。`
-          : `工具 ${name} 需要确认后才能继续。`;
-
-        await this.runStepRepository.update(callStep.id, {
-          status: 'skipped',
-          output: summary,
-        });
-        await this.runStepRepository.create({
-          runId: context.runId,
-          kind: 'checkpoint',
-          status: 'pending',
-          title: `等待确认：${name}`,
-          output: summary,
         });
 
         return {
           success: false,
           status: 'needs_confirmation',
-          summary,
-          checkpointId: checkpointWithDecision.id,
+          summary: checkpoint.summary,
+          checkpointId: checkpoint.checkpointId,
           checkpointKind: 'tool_permission',
-          decisionId: decision?.id ?? null,
+          decisionId: checkpoint.decisionId,
         };
       }
 

@@ -44,6 +44,9 @@ Completed:
   run continuation passes the snapshot back into tool execution
 - paused run continuation rejects stale or incompatible resume payload versions,
   kinds, run ids, task ids, and policy snapshots before executing a tool
+- tool-permission checkpoint creation is centralized in
+  `AgentCheckpointRecorder`, covering RunCheckpoint, Decision, pending RunStep,
+  and result metadata
 - tool prompt/provider exposure is centralized in `agent-tool-exposure`, with
   text prompts and provider-native schemas consuming the same matrix
 - sandbox decision accepted: broad code-agent mode remains deferred until a
@@ -53,8 +56,8 @@ Completed:
 
 Still incomplete:
 
-- checkpoint creation still happens inside tool/loop code paths rather than a
-  single checkpoint event boundary
+- resume checkpoint creation still happens inside `AgentRunLoop` rather than
+  the shared checkpoint recorder
 
 ## Task Sequence
 
