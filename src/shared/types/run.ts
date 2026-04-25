@@ -1,3 +1,5 @@
+import type { AgentSessionRecord } from './agent-execution.js';
+
 export type RunType = 'draft' | 'summarize' | 'agent';
 
 export type RunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'needs_confirmation' | 'paused';
@@ -37,6 +39,7 @@ export type RunStepRecord = {
 export type RunDetailRecord = RunRecord & {
   steps?: RunStepRecord[];
   checkpoints?: RunCheckpointRecord[];
+  agentSessions?: AgentSessionRecord[];
 };
 
 export type RunCheckpointRecord = {

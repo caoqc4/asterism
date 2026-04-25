@@ -496,12 +496,19 @@ Completed slice:
 3. Teach `RunOrchestrator` to write the session metadata before starting the
    executor.
 
-Next code slice:
+Completed slice:
 
 1. Add agent session records to `RunDetailRecord`.
 2. Surface the capability summary in run detail or Runs page copy.
 3. Add renderer coverage for the capability hint.
 
-Success: interrupted runs and future coding/research/social executors have a
-durable place to explain what kind of session they were running, and the user
-can see whether a run used text-only planning or a tool-capable session.
+Next code slice:
+
+1. Add safe read-only workspace tools behind the executor boundary:
+   `workspace.search` and `workspace.read_file`.
+2. Keep them disabled unless policy explicitly allows local workspace reads.
+3. Persist every call/result as ordinary run steps.
+4. Add tests proving these tools cannot write files and cannot run commands.
+
+Success: Taskplane can inspect local project context for coding-like tasks
+without yet granting patch or command execution.

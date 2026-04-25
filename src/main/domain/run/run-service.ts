@@ -8,6 +8,7 @@ import type {
 } from '../../../shared/types/run.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { RunRepository } from '../../db/repositories/run-repository.js';
+import { AgentSessionRepository } from '../../db/repositories/agent-session-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { TaskService } from '../task/task-service.js';
@@ -33,12 +34,15 @@ export class RunService {
     private readonly runStepRepository: RunStepRepository = new RunStepRepository(),
     private readonly agentToolRegistry: AgentToolRegistry | null = null,
     private readonly runCheckpointRepository: RunCheckpointRepository = new RunCheckpointRepository(),
+    private readonly agentSessionRepository: AgentSessionRepository = new AgentSessionRepository(),
     private readonly runOrchestrator: RunOrchestrator = new RunOrchestrator(
       aiConfigService,
       textExecutor,
       processTemplateSelector,
       runStepRepository,
       agentToolRegistry,
+      undefined,
+      agentSessionRepository,
     ),
   ) {}
 
@@ -57,6 +61,7 @@ export class RunService {
       ...run,
       steps: await this.runStepRepository.listForRun(runId),
       checkpoints: await this.runCheckpointRepository.listForRun(runId),
+      agentSessions: await this.agentSessionRepository.listForRun(runId),
     };
   }
 

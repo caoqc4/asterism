@@ -3023,6 +3023,24 @@ describe('App UI flow', () => {
     });
     const agentPlanDetail: RunDetailRecord = {
       ...agentPlanRun,
+      agentSessions: [
+        {
+          id: 'agent_session_1',
+          runId: agentPlanRun.id,
+          mode: 'agent',
+          status: 'running',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: true,
+            streaming: false,
+            fileContext: false,
+            longRunningSessions: false,
+          },
+          metadata: 'executor=local_agent\nloop=local_note',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
       steps: [
         buildRunStep({
           id: 'run_step_agent_plan',
@@ -3053,6 +3071,11 @@ describe('App UI flow', () => {
     expect(await screen.findByRole('heading', { name: 'agent / completed' })).toBeTruthy();
     expect(
       screen.getByText('模型提出的步骤计划：读取任务上下文 -> 读取最近时间线 -> 写入本地 note'),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Agent session：text-only planning / structured tool calls unavailable / single local session',
+      ),
     ).toBeTruthy();
   });
 

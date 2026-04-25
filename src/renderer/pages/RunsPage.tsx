@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 
+import type { AgentSessionRecord } from '@shared/types/agent-execution';
 import type { RecommendedActionIntent } from '@shared/types/brief';
 import type {
   CreateRunInput,
@@ -74,6 +75,19 @@ function formatAgentToolStatus(status: string): string {
   };
 
   return labels[status] ?? status;
+}
+
+function formatAgentSessionCapabilitySummary(session: AgentSessionRecord): string {
+  const capabilities = session.capabilities;
+  const parts = [
+    capabilities.textOnlyPlanning ? 'text-only planning' : 'text planning unavailable',
+    capabilities.structuredToolCalls
+      ? 'structured tool calls'
+      : 'structured tool calls unavailable',
+    capabilities.longRunningSessions ? 'long-running session' : 'single local session',
+  ];
+
+  return parts.join(' / ');
 }
 
 function formatActionError(error: unknown): string {
@@ -310,6 +324,7 @@ export function RunsPage({
   const relatedTimelineGroups = groupTaskTimelineEventsByPriority(relatedTimeline);
   const detailSteps = detail?.steps ?? [];
   const detailCheckpoints = detail?.checkpoints ?? [];
+  const latestAgentSession = detail?.agentSessions?.at(-1) ?? null;
 
   return (
     <section className="tasks-layout">
@@ -340,6 +355,11 @@ export function RunsPage({
               <p className="meta">关联任务：{detail.taskId}</p>
               <p className="meta">创建时间：{detail.createdAt}</p>
               <p className="meta">结果来源：{detail.outputSource || '尚未产生'}</p>
+              {latestAgentSession ? (
+                <p className="meta">
+                  Agent session：{formatAgentSessionCapabilitySummary(latestAgentSession)}
+                </p>
+              ) : null}
               <p className="meta">附加要求：{detail.instructions || '无'}</p>
               <p className="meta">这里负责确认这次执行本身是否成功、为什么失败，以及是否值得继续推进。</p>
             </div>

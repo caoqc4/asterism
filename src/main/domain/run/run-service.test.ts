@@ -183,6 +183,44 @@ function buildRunStepRepositoryMock() {
 }
 
 describe('RunService', () => {
+  it('returns run detail with execution steps, checkpoints, and agent sessions', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildRunRecord('completed')),
+      create: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const runStepRepository = {
+      listForRun: vi.fn().mockResolvedValue([{ id: 'run_step_1' }]),
+    };
+    const runCheckpointRepository = {
+      listForRun: vi.fn().mockResolvedValue([{ id: 'run_checkpoint_1' }]),
+    };
+    const agentSessionRepository = {
+      listForRun: vi.fn().mockResolvedValue([{ id: 'agent_session_1' }]),
+    };
+    const service = new RunService(
+      runRepository as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      undefined,
+      runStepRepository as never,
+      null,
+      runCheckpointRepository as never,
+      agentSessionRepository as never,
+    );
+
+    const result = await service.getDetail('run_1');
+
+    expect(runRepository.getDetail).toHaveBeenCalledWith('run_1');
+    expect(runStepRepository.listForRun).toHaveBeenCalledWith('run_1');
+    expect(runCheckpointRepository.listForRun).toHaveBeenCalledWith('run_1');
+    expect(agentSessionRepository.listForRun).toHaveBeenCalledWith('run_1');
+    expect(result?.agentSessions).toEqual([{ id: 'agent_session_1' }]);
+  });
+
   it('completes a run when the executor succeeds', async () => {
     const runRepository = {
       list: vi.fn(),
@@ -441,6 +479,7 @@ describe('RunService', () => {
       undefined,
       null,
       undefined,
+      undefined as never,
       runOrchestrator as never,
     );
 
@@ -532,6 +571,9 @@ describe('RunService', () => {
         output: 'Recovered note',
       }),
     };
+    const agentSessionRepository = {
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
     const service = new RunService(
       runRepository as never,
       taskService as never,
@@ -542,6 +584,7 @@ describe('RunService', () => {
       runStepRepository as never,
       agentToolRegistry as never,
       runCheckpointRepository as never,
+      agentSessionRepository as never,
     );
 
     const result = await service.continuePausedRun('run_1');
