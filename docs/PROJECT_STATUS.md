@@ -188,6 +188,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Local-container check-result normalization now exists behind an injected
   runner boundary, converting mocked command outcomes into sandbox check
   results with output limits; no default Docker execution path is wired.
+- Multiple local-container check plans can now be run sequentially through the
+  same injected runner boundary, preserving both passing and failing
+  `test` / `lint` outcomes for later RunStep and patch-artifact attachment.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

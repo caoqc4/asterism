@@ -15,6 +15,7 @@ import {
   buildLocalContainerSandboxBackendProbe,
   probeLocalContainerSandboxBackend,
   runLocalContainerSandboxCommandPlan,
+  runLocalContainerSandboxCommandPlans,
 } from './local-container-sandbox-backend.js';
 
 describe('local container sandbox backend probe', () => {
@@ -250,5 +251,65 @@ describe('local container sandbox backend probe', () => {
         script: 'test',
         status: 'failed',
       });
+  });
+
+  it('runs injected local container command plans sequentially and keeps failed checks visible', async () => {
+    const commandPolicy = buildDefaultAgentSandboxCommandPolicy({ timeoutMs: 30_000 });
+    const request: AgentSandboxSessionRequest = {
+      commandPolicy,
+      descriptorId: 'workspace.staged_patch',
+      executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+      providerKind: 'local_container',
+      runId: 'run_1',
+      taskId: 'task_1',
+      workspace: {
+        mode: 'staged_write',
+        mountPath: '/workspace',
+        workspaceRoot: '/tmp/taskplane-workspace',
+      },
+    };
+    const plans = buildLocalContainerSandboxCommandPlans({
+      checkPlan: buildAgentSandboxCheckPlan({
+        policy: commandPolicy,
+        requestedScripts: ['lint', 'test'],
+      }),
+      handle: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        id: 'sandbox_1',
+        providerKind: 'local_container',
+        stagingRoot: '/tmp/taskplane-sandbox-1',
+        workspaceMode: 'staged_write',
+      },
+      request,
+    });
+    const runner = vi.fn()
+      .mockResolvedValueOnce({
+        exitCode: 0,
+        stderr: '',
+        stdout: 'lint ok',
+      })
+      .mockResolvedValueOnce({
+        exitCode: 1,
+        stderr: 'test failed',
+        stdout: '',
+      });
+
+    await expect(runLocalContainerSandboxCommandPlans(plans, runner)).resolves.toEqual({
+      results: [
+        {
+          outputPreview: 'lint ok',
+          script: 'lint',
+          status: 'passed',
+        },
+        {
+          outputPreview: 'test failed',
+          script: 'test',
+          status: 'failed',
+        },
+      ],
+      summary: 'lint: passed; test: failed',
+    });
+    expect(runner).toHaveBeenNthCalledWith(1, plans[0]);
+    expect(runner).toHaveBeenNthCalledWith(2, plans[1]);
   });
 });

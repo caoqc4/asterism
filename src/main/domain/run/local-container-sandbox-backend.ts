@@ -67,6 +67,11 @@ export type LocalContainerSandboxCommandRunner = (
   stdout: string;
 }>;
 
+export type LocalContainerSandboxCheckRun = {
+  results: AgentSandboxCheckResult[];
+  summary: string;
+};
+
 const DEFAULT_LOCAL_CONTAINER_SANDBOX_IMAGE = 'node:22-bookworm-slim';
 const LOCAL_CONTAINER_STAGING_MOUNT_PATH = '/taskplane-staging';
 
@@ -223,6 +228,24 @@ export async function runLocalContainerSandboxCommandPlan(
       status: 'failed',
     };
   }
+}
+
+export async function runLocalContainerSandboxCommandPlans(
+  plans: LocalContainerSandboxCommandPlan[],
+  runner: LocalContainerSandboxCommandRunner,
+): Promise<LocalContainerSandboxCheckRun> {
+  const results: AgentSandboxCheckResult[] = [];
+
+  for (const plan of plans) {
+    results.push(await runLocalContainerSandboxCommandPlan(plan, runner));
+  }
+
+  return {
+    results,
+    summary: results.length
+      ? results.map((result) => `${result.script}: ${result.status}`).join('; ')
+      : 'No sandbox checks were run.',
+  };
 }
 
 function limitSandboxCommandOutput(value: string, outputLimitBytes: number): string {
