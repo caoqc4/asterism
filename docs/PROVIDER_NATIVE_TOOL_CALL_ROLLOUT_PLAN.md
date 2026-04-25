@@ -51,7 +51,7 @@ Acceptance:
 
 ### Slice 1: Shadow Normalization
 
-Next implementation slice.
+Status: shared helper completed; not wired into real runs.
 
 When the flag is true, the provider response may be copied into the dispatcher
 only for a non-executing shadow pass. The shadow result may be written as a
@@ -72,6 +72,13 @@ Acceptance:
 - tests prove execution still uses text-only planning
 - failed shadow normalization does not fail the run
 - session metadata remains truthful: `structuredToolCalls=false`
+
+Implementation boundary:
+
+- `observeProviderNativeToolCalls` summarizes `skipped`, `observed`, or `failed`
+  shadow outcomes without returning executable `AgentStepProposal` objects
+- future RunOrchestrator wiring must keep this diagnostic-only until parser
+  parity coverage is complete
 
 ### Slice 2: Parser Parity Harness
 

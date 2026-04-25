@@ -126,6 +126,9 @@ Covered today:
   offline provider dispatch across Anthropic, OpenAI, OpenAI-compatible,
   fal/OpenRouter, and Replicate fail-closed behavior without connecting the run
   loop
+- `Provider tool-call shadow observation`
+  non-executing shadow normalization result summaries that skip when the
+  reserved flag is disabled and never expose executable steps
 - `Agent tool helpers`
   shared runtime tool-name guard used by provider normalization so future
   adapters validate against the same Taskplane tool list

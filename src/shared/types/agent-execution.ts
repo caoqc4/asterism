@@ -163,6 +163,29 @@ export type ProviderToolCallNormalizationResult =
       rawSummary: string;
     };
 
+export type ProviderToolCallShadowResult =
+  | {
+      status: 'skipped';
+      provider: string;
+      model: string;
+      reason: string;
+    }
+  | {
+      status: 'observed';
+      provider: string;
+      model: string;
+      rawSummary: string;
+      providerCallCount: number;
+      stopReason: string | null;
+    }
+  | {
+      status: 'failed';
+      provider: string;
+      model: string;
+      error: string;
+      rawSummary: string;
+    };
+
 export type AgentToolResult = {
   success: boolean;
   summary: string;
