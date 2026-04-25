@@ -4,6 +4,9 @@ export function formatLocalAgentSessionMetadata(): string {
   return [
     'executor=local_agent',
     'loop=local_note',
+    'sandboxCoding=disabled',
+    'sandboxProvider=disabled',
+    'sandboxPromotion=decision_required',
   ].join('\n');
 }
 

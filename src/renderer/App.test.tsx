@@ -2717,14 +2717,14 @@ describe('App UI flow', () => {
     await user.selectOptions(screen.getByLabelText('Run 类型'), 'agent');
     expect(
       screen.getByText(
-        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / workspace patch/commands unavailable',
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / sandbox coding lane disabled; workspace patch/commands unavailable',
       ),
     ).toBeTruthy();
     await user.click(screen.getByRole('checkbox', { name: '允许只读工作区上下文' }));
     await user.click(screen.getByRole('checkbox', { name: '允许任务内更新/证据工具' }));
     expect(
       screen.getByText(
-        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context enabled for this run / task update/evidence tools enabled for this run / structured tool calls unavailable until AI config is ready / workspace patch/commands unavailable',
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context enabled for this run / task update/evidence tools enabled for this run / structured tool calls unavailable until AI config is ready / sandbox coding lane disabled; workspace patch/commands unavailable',
       ),
     ).toBeTruthy();
 
@@ -3280,7 +3280,7 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        'Agent session：text-only planning / read-only workspace context enabled / task update/evidence tools enabled / structured tool calls unavailable / workspace patch/commands unavailable / single local session',
+        'Agent session：text-only planning / read-only workspace context enabled / task update/evidence tools enabled / structured tool calls unavailable / sandbox coding lane disabled; workspace patch/commands unavailable / single local session',
       ),
     ).toBeTruthy();
     expect(screen.getByText('Session metadata：executor=local_agent / loop=local_note')).toBeTruthy();
@@ -3450,7 +3450,7 @@ describe('App UI flow', () => {
 
     expect(
       screen.getByText(
-        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / workspace patch/commands unavailable',
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / sandbox coding lane disabled; workspace patch/commands unavailable',
       ),
     ).toBeTruthy();
 
@@ -3459,7 +3459,7 @@ describe('App UI flow', () => {
 
     expect(
       screen.getByText(
-        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context enabled for this run / task update/evidence tools enabled for this run / structured tool calls unavailable until AI config is ready / workspace patch/commands unavailable',
+        'Agent 能力预览：anthropic / claude-3-5-sonnet-latest / text-only planning unavailable until AI config is ready / read-only workspace context enabled for this run / task update/evidence tools enabled for this run / structured tool calls unavailable until AI config is ready / sandbox coding lane disabled; workspace patch/commands unavailable',
       ),
     ).toBeTruthy();
   });

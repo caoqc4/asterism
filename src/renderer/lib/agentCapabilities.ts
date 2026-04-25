@@ -2,6 +2,8 @@ import type { AgentSessionRecord } from '@shared/types/agent-execution';
 import type { AiConfigStatus } from '@shared/types/settings';
 import { getProviderExecutionCapabilities } from '@shared/agent-provider-capabilities';
 
+const SANDBOX_CODING_DISABLED_SUMMARY = 'sandbox coding lane disabled; workspace patch/commands unavailable';
+
 function formatProviderSummary(aiStatus: AiConfigStatus | null): string {
   if (!aiStatus?.provider || !aiStatus.model) {
     return 'provider not configured';
@@ -41,7 +43,7 @@ export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord)
     capabilities.structuredToolCalls
       ? 'structured tool calls'
       : 'structured tool calls unavailable',
-    'workspace patch/commands unavailable',
+    SANDBOX_CODING_DISABLED_SUMMARY,
     capabilities.longRunningSessions ? 'long-running session' : 'single local session',
   ];
 
@@ -73,6 +75,9 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
   const rawSummary = entries.get('rawSummary');
   const providerCallIds = entries.get('providerCallIds');
   const stopReason = entries.get('stopReason');
+  const sandboxCoding = entries.get('sandboxCoding');
+  const sandboxProvider = entries.get('sandboxProvider');
+  const sandboxPromotion = entries.get('sandboxPromotion');
 
   if (executor === 'provider_native_agent') {
     return [
@@ -89,6 +94,9 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
     return [
       executor ? `executor=${executor}` : null,
       loop ? `loop=${loop}` : null,
+      sandboxCoding ? `sandboxCoding=${sandboxCoding}` : null,
+      sandboxProvider ? `sandboxProvider=${sandboxProvider}` : null,
+      sandboxPromotion ? `sandboxPromotion=${sandboxPromotion}` : null,
     ].filter(Boolean).join(' / ');
   }
 
@@ -120,6 +128,6 @@ export function formatPreRunAgentCapabilitySummary(
     workspaceSummary,
     taskToolsSummary,
     formatPreRunStructuredToolSummary(aiStatus),
-    'workspace patch/commands unavailable',
+    SANDBOX_CODING_DISABLED_SUMMARY,
   ].join(' / ');
 }

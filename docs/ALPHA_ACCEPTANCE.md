@@ -69,7 +69,7 @@ release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane
 - Configure deliberate local AI credentials through `.env`, Settings, or Keychain.
 - Create a task that asks the agent to inspect the unique marker before writing a note.
 - Trigger an `agent` run with `允许只读工作区上下文` enabled.
-- Confirm Runs detail shows read-only workspace context enabled and workspace patch/commands unavailable.
+- Confirm Runs detail shows read-only workspace context enabled and sandbox coding lane disabled; workspace patch/commands unavailable.
 - Confirm the run steps include workspace search/read observations for the marker.
 - Confirm the final run output is readable agent output, not raw proposal JSON.
 - Confirm no local patch or command execution is available.

@@ -684,7 +684,7 @@ describe('RunService integration', () => {
         structuredToolCalls: false,
         textOnlyPlanning: true,
       }),
-      metadata: 'executor=local_agent\nloop=local_note',
+      metadata: 'executor=local_agent\nloop=local_note\nsandboxCoding=disabled\nsandboxProvider=disabled\nsandboxPromotion=decision_required',
     });
     expect(steps.some((step) => step.title === 'Provider 原生工具调用影子观察')).toBe(false);
   });

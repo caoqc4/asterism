@@ -683,7 +683,7 @@ describe('RunOrchestrator', () => {
         taskMutationTools: false,
         longRunningSessions: false,
       },
-      metadata: 'executor=local_agent\nloop=local_note',
+      metadata: 'executor=local_agent\nloop=local_note\nsandboxCoding=disabled\nsandboxProvider=disabled\nsandboxPromotion=decision_required',
     });
     expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
       'agent_session_1',
@@ -1009,7 +1009,7 @@ describe('RunOrchestrator', () => {
           structuredToolCalls: false,
           textOnlyPlanning: true,
         }),
-        metadata: 'executor=local_agent\nloop=local_note',
+        metadata: 'executor=local_agent\nloop=local_note\nsandboxCoding=disabled\nsandboxProvider=disabled\nsandboxPromotion=decision_required',
       }),
     );
     expect(agentExecutor.executeLocalNoteSession).toHaveBeenCalledWith(
