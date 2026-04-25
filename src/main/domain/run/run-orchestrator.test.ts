@@ -703,6 +703,14 @@ describe('RunOrchestrator', () => {
         }),
       }),
     );
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        kind: 'final',
+        status: 'completed',
+        title: '完成 Agent session',
+        output: 'Agent local note output',
+      }),
+    );
   });
 
   it('stores file-context capability when an agent run opts into workspace reads', async () => {
@@ -1427,6 +1435,15 @@ describe('RunOrchestrator', () => {
     expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
       'agent_session_1',
       'paused',
+    );
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        kind: 'checkpoint',
+        status: 'pending',
+        title: 'Agent session 已暂停',
+        input: 'checkpoint=run_checkpoint_1',
+        output: '观察到任务仍有阻塞项。暂停执行 artifact.create_note。',
+      }),
     );
   });
 });
