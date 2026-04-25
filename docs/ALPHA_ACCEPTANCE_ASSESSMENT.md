@@ -148,6 +148,7 @@ Manual need:
 Finish the remaining alpha work in this order:
 
 1. Keep signed/notarized packaging out of scope until the next release-readiness pass explicitly targets signing and notarization.
-2. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
+2. Repeat the read-only workspace agent path manually in the packaged app before release-readiness signoff.
+3. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
 
 Do not expand the domain model until the release-readiness pass is cleaner.
