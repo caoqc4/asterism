@@ -340,6 +340,15 @@ const SCAFFOLD_BY_ID = new Map<string, AgentToolScaffoldDescriptor>(
   AGENT_TOOL_SCAFFOLD_DESCRIPTORS.map((descriptor) => [descriptor.id, descriptor]),
 );
 
+export const AGENT_TOOL_SCAFFOLD_IDS = AGENT_TOOL_SCAFFOLD_DESCRIPTORS
+  .map((descriptor) => descriptor.id);
+
+const AGENT_TOOL_SCAFFOLD_ID_SET = new Set<string>(AGENT_TOOL_SCAFFOLD_IDS);
+
+export function isAgentToolScaffoldId(value: unknown): value is string {
+  return typeof value === 'string' && AGENT_TOOL_SCAFFOLD_ID_SET.has(value);
+}
+
 export function getAgentToolScaffoldDescriptor(id: string): AgentToolScaffoldDescriptor {
   const descriptor = SCAFFOLD_BY_ID.get(id);
 

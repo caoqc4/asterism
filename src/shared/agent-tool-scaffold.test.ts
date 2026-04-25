@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  AGENT_TOOL_SCAFFOLD_IDS,
   AGENT_TOOL_SCAFFOLD_DESCRIPTORS,
   buildDefaultAgentToolExecutionPolicy,
   getAgentToolScaffoldDescriptor,
   getAgentToolScaffoldDescriptorsByFamily,
   getReservedAgentToolScaffoldDescriptors,
+  isAgentToolScaffoldId,
   requiresAgentToolCheckpoint,
   shouldExposeAgentToolScaffold,
 } from './agent-tool-scaffold.js';
@@ -25,6 +27,13 @@ function buildPolicy(overrides: Partial<AgentPolicy> = {}): AgentPolicy {
 }
 
 describe('agent tool scaffold descriptors', () => {
+  it('keeps descriptor ids unique and guardable', () => {
+    expect(new Set(AGENT_TOOL_SCAFFOLD_IDS).size).toBe(AGENT_TOOL_SCAFFOLD_IDS.length);
+    expect(isAgentToolScaffoldId('workspace.staged_patch')).toBe(true);
+    expect(isAgentToolScaffoldId('browser.click_and_post')).toBe(false);
+    expect(isAgentToolScaffoldId(null)).toBe(false);
+  });
+
   it('represents the shared scaffold families needed for future execution lanes', () => {
     expect(new Set(AGENT_TOOL_SCAFFOLD_DESCRIPTORS.map((descriptor) => descriptor.family))).toEqual(new Set([
       'task_domain',
