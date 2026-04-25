@@ -81,8 +81,9 @@ any user-facing write opt-in exists.
 
 - keep the tool absent from model prompts and task run UI
 - keep local write disabled in normal runs
-- use `npm run accept:workspace-patch` as the repeatable local approval exercise
-  that starts from a real pending Decision and approves the checkpoint
+- use `npm run accept:agent-local` as the repeatable non-live agent acceptance
+  gate; its workspace-patch slice starts from a real pending Decision and
+  approves the checkpoint
 - confirm Runs and Decisions explain the affected files, preview, risk, and
   consequence
 - use `npm test -- src/renderer/App.test.tsx` as the renderer checkpoint review
@@ -203,7 +204,9 @@ Completed tools:
 
 Repeatable local acceptance:
 
-- `npm run accept:domain-agent-tools`
+- `npm run accept:agent-local` for the combined non-live agent gate
+- `npm run accept:domain-agent-tools` when only this slice needs a focused
+  rerun
 
 Rules:
 
