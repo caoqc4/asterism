@@ -5,7 +5,7 @@ Use this file when running the manual alpha path. Keep entries short and actiona
 ## Run Metadata
 
 - Date: 2026-04-25
-- Build / commit: local working tree after `a7a5f7f`
+- Build / commit: `4e4c4ad`
 - Tester: Codex
 - Local verification run: targeted main/preload tests, `npm run lint`, `npm run build`, `npm run verify`
 - Smoke check run: `npm run dev` manual launch, isolated `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-20260424-fresh npm run dev`, `npm run smoke:build`, `npm run smoke:package:mac`, `npm run smoke:runtime:mac`, `npm run smoke:release:mac`
