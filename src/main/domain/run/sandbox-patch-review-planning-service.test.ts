@@ -53,4 +53,22 @@ describe('SandboxPatchReviewPlanningService', () => {
       reason: expect.stringContaining('feature flag is off'),
     });
   });
+
+  it('keeps local-note diagnostics blocked even when the sandbox flag is enabled', () => {
+    const service = new SandboxPatchReviewPlanningService();
+
+    expect(service.previewLocalNoteDiagnostic({
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      runId: 'run_1',
+      taskId: 'task_1',
+      workspaceRoot: '/tmp/taskplane-workspace',
+    })).toEqual({
+      status: 'blocked',
+      reason: 'Sandbox patch review run plan requires a patch summary.',
+      summary: 'Sandbox patch review run plan blocked: Sandbox patch review run plan requires a patch summary.',
+    });
+  });
 });

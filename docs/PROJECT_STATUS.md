@@ -255,6 +255,10 @@ The project is past initial architecture assembly. Current work should favor pro
   querying the planning service with an empty patch draft, so it remains
   blocked until a real internal patch draft exists and still does not construct
   an adapter, runner, UI action, or model tool.
+- `SandboxPatchReviewPlanningService.previewLocalNoteDiagnostic()` now makes
+  that local-note restriction explicit: regular local agent sessions can only
+  record a blocked sandbox patch-review diagnostic, even when the sandbox flag
+  is enabled, because they do not carry an internal patch draft.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native

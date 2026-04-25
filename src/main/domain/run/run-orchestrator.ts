@@ -267,14 +267,8 @@ export class RunOrchestrator {
           ? evaluateSandboxPatchReviewAdapterAvailability(getRuntimeFeatureFlags(result.runtimeConfig))
           : null,
         result.runtimeConfig
-          ? this.sandboxPatchReviewPlanningService.preview({
+          ? this.sandboxPatchReviewPlanningService.previewLocalNoteDiagnostic({
               featureFlags: getRuntimeFeatureFlags(result.runtimeConfig),
-              patchDraft: {
-                diff: '',
-                files: [],
-                summary: '',
-              },
-              requestedScripts: ['test', 'lint'],
               runId: params.run.id,
               taskId: params.task.id,
               workspaceRoot: result.runtimeConfig.workspaceRoot,
