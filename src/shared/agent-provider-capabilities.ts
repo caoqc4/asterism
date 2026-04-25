@@ -15,6 +15,7 @@ export type ProviderExecutionCapabilities = {
   model: string | null;
   textPlanningPath: ProviderTextPlanningPath;
   structuredToolCallState: ProviderStructuredToolCallState;
+  providerNativeToolCallFlagEnabled: boolean;
   taskplaneStructuredToolCallsEnabled: false;
 };
 
@@ -27,6 +28,9 @@ export function getProviderExecutionCapabilities(
       model: aiStatus?.model ?? null,
       textPlanningPath: 'unconfigured',
       structuredToolCallState: 'unconfigured',
+      providerNativeToolCallFlagEnabled: Boolean(
+        aiStatus?.featureFlags.enableProviderNativeToolCalls,
+      ),
       taskplaneStructuredToolCallsEnabled: false,
     };
   }
@@ -37,6 +41,9 @@ export function getProviderExecutionCapabilities(
       model: aiStatus.model,
       textPlanningPath: 'replicate_native_text',
       structuredToolCallState: 'unavailable_on_replicate_text_path',
+      providerNativeToolCallFlagEnabled: Boolean(
+        aiStatus.featureFlags.enableProviderNativeToolCalls,
+      ),
       taskplaneStructuredToolCallsEnabled: false,
     };
   }
@@ -46,6 +53,9 @@ export function getProviderExecutionCapabilities(
     model: aiStatus.model,
     textPlanningPath: 'local_text_executor',
     structuredToolCallState: 'deferred_until_adapter',
+    providerNativeToolCallFlagEnabled: Boolean(
+      aiStatus.featureFlags.enableProviderNativeToolCalls,
+    ),
     taskplaneStructuredToolCallsEnabled: false,
   };
 }

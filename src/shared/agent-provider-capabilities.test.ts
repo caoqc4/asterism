@@ -27,6 +27,7 @@ describe('getProviderExecutionCapabilities', () => {
       model: null,
       textPlanningPath: 'unconfigured',
       structuredToolCallState: 'unconfigured',
+      providerNativeToolCallFlagEnabled: false,
       taskplaneStructuredToolCallsEnabled: false,
     });
   });
@@ -42,6 +43,23 @@ describe('getProviderExecutionCapabilities', () => {
       model: 'claude-3-5-sonnet-latest',
       textPlanningPath: 'unconfigured',
       structuredToolCallState: 'unconfigured',
+      providerNativeToolCallFlagEnabled: false,
+      taskplaneStructuredToolCallsEnabled: false,
+    });
+  });
+
+  it('reports the reserved native tool-call flag without enabling Taskplane structured calls', () => {
+    expect(getProviderExecutionCapabilities({
+      ...buildAiStatus('openai'),
+      featureFlags: {
+        enableScheduler: false,
+        enableProviderNativeToolCalls: true,
+      },
+    })).toMatchObject({
+      provider: 'openai',
+      textPlanningPath: 'local_text_executor',
+      structuredToolCallState: 'deferred_until_adapter',
+      providerNativeToolCallFlagEnabled: true,
       taskplaneStructuredToolCallsEnabled: false,
     });
   });
@@ -56,6 +74,7 @@ describe('getProviderExecutionCapabilities', () => {
       provider,
       textPlanningPath: 'local_text_executor',
       structuredToolCallState: 'deferred_until_adapter',
+      providerNativeToolCallFlagEnabled: false,
       taskplaneStructuredToolCallsEnabled: false,
     });
   });
@@ -66,6 +85,7 @@ describe('getProviderExecutionCapabilities', () => {
       model: 'openai/gpt-oss-20b',
       textPlanningPath: 'replicate_native_text',
       structuredToolCallState: 'unavailable_on_replicate_text_path',
+      providerNativeToolCallFlagEnabled: false,
       taskplaneStructuredToolCallsEnabled: false,
     });
   });

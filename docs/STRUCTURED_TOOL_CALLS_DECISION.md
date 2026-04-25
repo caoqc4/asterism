@@ -144,6 +144,9 @@ Rules:
 - Shared provider capability descriptors may support pre-run copy and future
   adapter selection, but they must remain descriptive until the adapter path
   exists.
+- Capability descriptors may report the reserved
+  `enableProviderNativeToolCalls` flag, but `taskplaneStructuredToolCallsEnabled`
+  must remain false until the adapter is wired into a run.
 - Persisted agent-session capability metadata must describe actual run behavior,
   not provider marketing capability.
 - A run may record `structuredToolCalls=true` only after the normalized adapter
