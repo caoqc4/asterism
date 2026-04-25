@@ -295,6 +295,11 @@ The project is past initial architecture assembly. Current work should favor pro
   tool exposure, allowlisted `test` / `lint` checks, bounded command policy,
   no credential passthrough, and Decision-required promotion. It does not start
   a model loop, runner, sandbox backend, or UI entrypoint.
+- A non-live staged patch collector now converts text files from a sandbox
+  staging root into a bounded patch draft by comparing against the selected
+  workspace. It blocks staging roots inside the workspace, leaves workspace
+  files untouched, and still does not run a model, command runner, backend, or
+  UI entrypoint.
 - `AgentCheckpointRecorder` now owns tool-permission and resume checkpoint
   persistence and returns canonical `checkpoint.created` events for callers to
   emit, while `agent-tool-exposure` centralizes text-prompt and provider-native
@@ -324,8 +329,8 @@ npm run verify
 
 Latest local baseline:
 
-- 80 test files
-- 579 tests
+- 81 test files
+- 584 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -352,6 +357,8 @@ Latest local baseline:
   tests
 - `npm run verify` passed locally on 2026-04-26 after adding
   `SandboxedCodingProducerRequest` validation: 80 test files / 579 tests
+- `npm run verify` passed locally on 2026-04-26 after adding the non-live
+  sandboxed coding staged patch collector: 81 test files / 584 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
