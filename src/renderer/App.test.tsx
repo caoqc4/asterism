@@ -3062,7 +3062,7 @@ describe('App UI flow', () => {
             structuredToolCalls: false,
             textOnlyPlanning: true,
             streaming: false,
-            fileContext: false,
+            fileContext: true,
             longRunningSessions: false,
           },
           metadata: 'executor=local_agent\nloop=local_note',
@@ -3103,7 +3103,7 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        'Agent session：text-only planning / structured tool calls unavailable / single local session',
+        'Agent session：text-only planning / read-only workspace context enabled / structured tool calls unavailable / patch/commands unavailable / single local session',
       ),
     ).toBeTruthy();
   });

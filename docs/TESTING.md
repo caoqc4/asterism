@@ -183,6 +183,7 @@ Covered today:
 - `Tasks quick decision submission`
 - `Tasks quick run submission`
 - `Tasks agent quick run -> read-only workspace opt-in`
+- `Runs agent session summary -> read-only workspace and patch/command capability visibility`
 - `Tasks paused run recovery -> checkpoint continuation`
 - `Tasks related activity -> Decisions / Runs`
 - `Tasks timeline -> Decisions / Runs`

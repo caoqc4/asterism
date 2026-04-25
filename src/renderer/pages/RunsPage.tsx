@@ -83,9 +83,13 @@ function formatAgentSessionCapabilitySummary(session: AgentSessionRecord): strin
   const capabilities = session.capabilities;
   const parts = [
     capabilities.textOnlyPlanning ? 'text-only planning' : 'text planning unavailable',
+    capabilities.fileContext
+      ? 'read-only workspace context enabled'
+      : 'read-only workspace context unavailable',
     capabilities.structuredToolCalls
       ? 'structured tool calls'
       : 'structured tool calls unavailable',
+    'patch/commands unavailable',
     capabilities.longRunningSessions ? 'long-running session' : 'single local session',
   ];
 
