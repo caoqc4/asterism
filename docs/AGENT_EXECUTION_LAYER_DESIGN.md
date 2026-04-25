@@ -536,9 +536,11 @@ Next code slice:
 
 1. Evaluate the alpha flow for a read-only workspace agent run from task setup
    through Runs detail.
-2. Decide whether the next implementation step should be workspace-read prompt
-   guidance or a stricter workspace root selector.
-3. Keep patch and command execution unavailable.
+2. Add workspace-read prompt guidance so the model only sees workspace tools
+   when the run opts in.
+3. Decide whether the next implementation step should be a stricter workspace
+   root selector.
+4. Keep patch and command execution unavailable.
 
 Success: Taskplane can inspect local project context for coding-like tasks only
 when the user has explicitly enabled read-only workspace access for that run,

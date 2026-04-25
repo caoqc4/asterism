@@ -156,5 +156,54 @@ describe('TextExecutor', () => {
         prompt: expect.stringContaining('只能使用 task.inspect_context、task.inspect_timeline 和 artifact.create_note'),
       }),
     );
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('不允许使用 workspace.search 或 workspace.read_file'),
+      }),
+    );
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.not.stringContaining('"tool": "workspace.search"'),
+      }),
+    );
+  });
+
+  it('allows workspace read tools in agent prompts only when explicitly enabled', async () => {
+    generateTextMock.mockResolvedValue({ text: '{"finalOutput":"Generated output","steps":[]}' });
+    const executor = new TextExecutor();
+
+    await executor.execute(
+      buildTaskDetail(),
+      {
+        taskId: 'task_1',
+        type: 'agent',
+        instructions: 'Inspect local context',
+        allowLocalWorkspaceRead: true,
+      },
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: true,
+        },
+      },
+    );
+
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('workspace.search'),
+      }),
+    );
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('workspace.read_file'),
+      }),
+    );
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('不允许请求写文件、打补丁、运行命令或访问工作区外路径'),
+      }),
+    );
   });
 });

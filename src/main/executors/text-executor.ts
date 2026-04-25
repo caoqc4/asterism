@@ -35,6 +35,25 @@ function buildPrompt(
 
   if (input.type === 'draft' || input.type === 'agent') {
     if (input.type === 'agent') {
+      const workspaceStepExample = input.allowLocalWorkspaceRead
+        ? [
+            '    { "tool": "workspace.search", "input": { "query": "需要查找的关键词", "maxResults": 5 } },',
+            '    { "tool": "workspace.read_file", "input": { "path": "相对工作区根目录的文件路径" } },',
+          ]
+        : [];
+      const allowedTools = input.allowLocalWorkspaceRead
+        ? 'task.inspect_context、task.inspect_timeline、workspace.search、workspace.read_file 和 artifact.create_note'
+        : 'task.inspect_context、task.inspect_timeline 和 artifact.create_note';
+      const workspaceGuidance = input.allowLocalWorkspaceRead
+        ? [
+            '- workspace.search 只能用于搜索本地工作区内的文本文件。',
+            '- workspace.read_file 只能读取 workspace.search 找到或用户明确提到的相对路径。',
+            '- 不允许请求写文件、打补丁、运行命令或访问工作区外路径。',
+          ]
+        : [
+            '- 当前没有开启只读工作区上下文，不允许使用 workspace.search 或 workspace.read_file。',
+          ];
+
       return [
         '请基于下面的任务信息，完成一轮受限本地 agent 推进。',
         '你必须只输出一个合法 JSON 对象，不要输出 Markdown，不要输出额外解释。',
@@ -44,11 +63,13 @@ function buildPrompt(
         '  "steps": [',
         '    { "tool": "task.inspect_context" },',
         '    { "tool": "task.inspect_timeline" },',
+        ...workspaceStepExample,
         '    { "tool": "artifact.create_note", "input": { "title": "简短 note 标题", "content": "与 finalOutput 一致的正文" } }',
         '  ]',
         '}',
         '工具限制：',
-        '- 只能使用 task.inspect_context、task.inspect_timeline 和 artifact.create_note。',
+        `- 只能使用 ${allowedTools}。`,
+        ...workspaceGuidance,
         '- artifact.create_note.input.title 必须简短明确。',
         '- artifact.create_note.input.content 必须与 finalOutput 保持一致。',
         '如果上下文不足，仍然基于现有信息给出合理的 finalOutput。',
