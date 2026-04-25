@@ -107,13 +107,35 @@ export type AgentSessionRequest = AgentRunRequest & {
   capabilities: AgentRuntimeCapabilities;
 };
 
+export type AgentRuntimeEventBase = {
+  runId: string;
+  sessionId?: string | null;
+  createdAt?: string | null;
+};
+
 export type AgentSessionEvent =
-  | { type: 'plan'; summary: string }
-  | { type: 'model'; output: string }
-  | { type: 'tool_call'; tool: AgentToolName; input: unknown }
-  | { type: 'tool_result'; tool: AgentToolName; result: AgentToolResult }
-  | { type: 'checkpoint'; checkpointId: string; reason: string }
-  | { type: 'final'; output: string };
+  | (AgentRuntimeEventBase & {
+      type: 'session.started';
+      taskId: string;
+      mode: AgentRunMode;
+      capabilities: AgentRuntimeCapabilities;
+    })
+  | (AgentRuntimeEventBase & { type: 'plan.proposed'; summary: string; source: 'model' | 'fallback' | 'provider_tool_call' })
+  | (AgentRuntimeEventBase & { type: 'model.completed'; output: string; provider?: string | null; model?: string | null })
+  | (AgentRuntimeEventBase & { type: 'tool.started'; tool: AgentToolName; input: unknown })
+  | (AgentRuntimeEventBase & { type: 'tool.completed'; tool: AgentToolName; result: AgentToolResult })
+  | (AgentRuntimeEventBase & { type: 'tool.failed'; tool: AgentToolName; error: string; result?: AgentToolResult | null })
+  | (AgentRuntimeEventBase & {
+      type: 'checkpoint.created';
+      checkpointId: string;
+      checkpointKind: 'resume' | 'confirmation' | 'tool_permission' | 'external_wait';
+      reason: string;
+      decisionId?: string | null;
+      tool?: AgentToolName | null;
+    })
+  | (AgentRuntimeEventBase & { type: 'session.paused'; checkpointId: string; message: string })
+  | (AgentRuntimeEventBase & { type: 'session.completed'; output: string })
+  | (AgentRuntimeEventBase & { type: 'session.failed'; failureKind: string; message: string });
 
 export type AgentSessionResult =
   | { status: 'completed'; output: string }

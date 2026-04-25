@@ -58,6 +58,7 @@ Current test files:
 - `src/main/preload.test.ts`
 - `src/renderer/App.test.tsx`
 - `src/renderer/lib/agentCapabilities.test.ts`
+- `src/shared/agent-runtime-events.test.ts`
 - `src/shared/working-context/priority-lanes.test.ts`
 - `src/shared/working-context/timeline.test.ts`
 - `src/shared/working-context/transitions.test.ts`
@@ -87,6 +88,9 @@ Covered today:
   plan/model/final step writes, process-template selector fallback, executor failure recording, diagnostic-only provider-native shadow step writes, gated provider-native session selection, agent-mode handoff into the local run loop, truthful structured-tool capability metadata for tool-capable providers, and paused agent-loop propagation
 - `LocalAgentExecutor`
   adapter behavior that preserves current local agent-loop outcomes behind the executor/session boundary, plus an internal provider-native session entry that delegates normalized proposals through the same run loop
+- `Agent runtime events`
+  typed v2 runtime event names, checkpoint event metadata, and terminal event
+  classification before the event-to-run-step mapper is implemented
 - `Provider native session gate`
   explicit pre-wiring runtime selection gates for run type, feature flag,
   provider support, provider payload presence, and normalization success

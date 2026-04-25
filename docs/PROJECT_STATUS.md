@@ -74,8 +74,8 @@ npm run verify
 
 Latest local baseline:
 
-- 61 test files
-- 463 tests
+- 62 test files
+- 466 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
