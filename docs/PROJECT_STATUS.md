@@ -118,6 +118,10 @@ The project is past initial architecture assembly. Current work should favor pro
   checkpoint, and pending Decision. This gives the preview path a formal review
   object while still leaving workspace mutation impossible without a later
   approved promotion flow.
+- Decisions now distinguish `workspace.staged_patch` promotion checkpoints from
+  direct `workspace.write_patch` checkpoints: approving the current sandbox
+  promotion review records and resolves the checkpoint, but does not auto-apply
+  files to the workspace.
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
   now records the completed Slice 0 execution-layer pass: runtime events,
   event-driven RunStep projection, checkpoint normalization, restart-safe

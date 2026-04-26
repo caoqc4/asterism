@@ -4136,6 +4136,37 @@ describe('App UI flow', () => {
     ).toBeTruthy();
   });
 
+  it('explains sandbox patch promotion checkpoints do not auto-apply workspace files', async () => {
+    const user = userEvent.setup();
+    const checkpointDecisionApi: ElectronApi = {
+      ...mockApi,
+      listDecisions: vi.fn(async () => [
+        {
+          id: 'decision_checkpoint_staged_patch',
+          taskId: riskTask.id,
+          title: 'Review Code Agent preview',
+          status: 'pending' as const,
+          sourceType: 'agent_checkpoint' as const,
+          sourceId: 'run_checkpoint_staged_patch',
+          sourceLabel: 'workspace.staged_patch',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]),
+    };
+
+    window.api = checkpointDecisionApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /decisions/i }));
+
+    expect(await screen.findByRole('heading', { name: 'Review Code Agent preview' })).toBeTruthy();
+    expect(
+      screen.getByText('来源：Agent checkpoint（workspace.staged_patch）。这是 sandbox staged patch 的提升审查；当前版本批准后只会确认并关闭 promotion checkpoint，不会自动写入工作区文件。'),
+    ).toBeTruthy();
+  });
+
   it('shows related task timeline context on the decisions page', async () => {
     const user = userEvent.setup();
 

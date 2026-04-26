@@ -80,6 +80,8 @@ function getCheckpointDecisionGuidance(decision: DecisionRecord): string | null 
     ? '工作区 patch 应用'
     : sourceLabel === 'workspace.run_command'
       ? '工作区命令运行'
+    : sourceLabel === 'workspace.staged_patch'
+      ? 'sandbox patch promotion'
     : sourceLabel === 'artifact.create_note'
       ? '本地 note 产物写入'
       : '本地工具调用';
@@ -93,10 +95,18 @@ function getCheckpointDecisionGuidance(decision: DecisionRecord): string | null 
       return `来源：Agent checkpoint（${sourceLabel}）。批准后会恢复等待中的${actionLabel}，且仅限 package.json 中的 test / lint 脚本；请先在 Runs 查看脚本、参数、超时和工作目录；延后或取消会终止本次 run，不会继续运行该命令。`;
     }
 
+    if (sourceLabel === 'workspace.staged_patch') {
+      return `来源：Agent checkpoint（${sourceLabel}）。这是 sandbox staged patch 的提升审查；当前版本批准后只会确认并关闭 promotion checkpoint，不会自动写入工作区文件。`;
+    }
+
     return `来源：Agent checkpoint（${sourceLabel}）。批准后会恢复等待中的${actionLabel}；延后或取消会终止本次 run。`;
   }
 
   if (decision.status === 'approved') {
+    if (sourceLabel === 'workspace.staged_patch') {
+      return `来源：Agent checkpoint（${sourceLabel}）。该 promotion 已批准并记录，但当前版本不会自动写入工作区文件。`;
+    }
+
     return `来源：Agent checkpoint（${sourceLabel}）。该确认已批准，系统会尝试恢复等待中的${actionLabel}。`;
   }
 
