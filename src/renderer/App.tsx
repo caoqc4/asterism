@@ -140,6 +140,7 @@ export function App() {
     apiKey: '',
     featureFlags: {
       enableScheduler: false,
+      enableSandboxPatchPromotionApply: false,
     },
   });
   const [lastEvent, setLastEvent] = useState<AppEvent | null>(null);
@@ -866,6 +867,7 @@ export function App() {
         ) : null}
         {route === 'decisions' ? (
           <DecisionsPage
+            aiStatus={aiStatus}
             decisions={decisions}
             focusedDecisionId={focusedDecisionId}
             tasks={tasks}

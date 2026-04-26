@@ -136,6 +136,9 @@ export function SettingsPage({
         <p className="meta">
           Sandbox Coding Agent：{aiStatus?.featureFlags.enableSandboxCodingAgent ? '启用' : '未启用'}
         </p>
+        <p className="meta">
+          Sandbox Patch Promotion Apply：{aiStatus?.featureFlags.enableSandboxPatchPromotionApply ? '启用' : '未启用'}
+        </p>
         <div className="settings-status-row">
           <p className="meta">Sandbox Backend：{formatSandboxBackendState(aiStatus)}</p>
           <button

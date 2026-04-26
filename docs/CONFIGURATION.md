@@ -33,7 +33,9 @@ Example shape:
   "workspaceRoot": null,
   "featureFlags": {
     "enableScheduler": false,
-    "enableProviderNativeToolCalls": false
+    "enableProviderNativeToolCalls": false,
+    "enableSandboxCodingAgent": false,
+    "enableSandboxPatchPromotionApply": false
   },
   "updatedAt": "2026-04-22T00:00:00.000Z"
 }
@@ -87,6 +89,7 @@ TASKPLANE_WORKSPACE_ROOT=/absolute/path/to/your/workspace
 TASKPLANE_ENABLE_SCHEDULER=false
 TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS=false
 TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=false
+TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=false
 ```
 
 Keep `TASKPLANE_ENABLE_SCHEDULER=false` for local AI/provider validation unless
@@ -95,6 +98,10 @@ background. It is independent from provider-native tool-call validation.
 Keep `TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=false` unless you are deliberately
 working on the disabled-by-default sandbox coding-agent lane; the flag is a
 rollout gate and does not by itself expose broad code execution.
+Keep `TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=false` unless you are
+deliberately validating approved sandbox patch promotion against a disposable
+workspace. When enabled, approving a ready `workspace.staged_patch` Decision can
+write the reviewed files after promotion preflight passes.
 
 The Settings page can manually detect the local sandbox backend. This is an
 explicit button-triggered, read-only Docker availability probe; Taskplane does

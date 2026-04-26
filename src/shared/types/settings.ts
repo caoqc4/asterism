@@ -7,6 +7,7 @@ export type FeatureFlags = {
   enableScheduler: boolean;
   enableProviderNativeToolCalls?: boolean;
   enableSandboxCodingAgent?: boolean;
+  enableSandboxPatchPromotionApply?: boolean;
 };
 
 export type AppConfigFile = {

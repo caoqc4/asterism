@@ -9,6 +9,7 @@ const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   enableScheduler: false,
   enableProviderNativeToolCalls: false,
   enableSandboxCodingAgent: false,
+  enableSandboxPatchPromotionApply: false,
 };
 
 const DEFAULT_CONFIG: AppConfigFile = {
@@ -79,6 +80,10 @@ function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
         typeof nextFeatureFlags.enableSandboxCodingAgent === 'boolean'
           ? nextFeatureFlags.enableSandboxCodingAgent
           : DEFAULT_FEATURE_FLAGS.enableSandboxCodingAgent,
+      enableSandboxPatchPromotionApply:
+        typeof nextFeatureFlags.enableSandboxPatchPromotionApply === 'boolean'
+          ? nextFeatureFlags.enableSandboxPatchPromotionApply
+          : DEFAULT_FEATURE_FLAGS.enableSandboxPatchPromotionApply,
     },
     updatedAt: input.updatedAt ?? new Date().toISOString(),
   };
@@ -92,6 +97,7 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
   const enableScheduler = readEnvBoolean('TASKPLANE_ENABLE_SCHEDULER');
   const enableProviderNativeToolCalls = readEnvBoolean('TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS');
   const enableSandboxCodingAgent = readEnvBoolean('TASKPLANE_ENABLE_SANDBOX_CODING_AGENT');
+  const enableSandboxPatchPromotionApply = readEnvBoolean('TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY');
 
   return sanitizeConfig({
     ...config,
@@ -110,6 +116,10 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
         enableSandboxCodingAgent
         ?? config.featureFlags.enableSandboxCodingAgent
         ?? DEFAULT_FEATURE_FLAGS.enableSandboxCodingAgent,
+      enableSandboxPatchPromotionApply:
+        enableSandboxPatchPromotionApply
+        ?? config.featureFlags.enableSandboxPatchPromotionApply
+        ?? DEFAULT_FEATURE_FLAGS.enableSandboxPatchPromotionApply,
     },
   });
 }

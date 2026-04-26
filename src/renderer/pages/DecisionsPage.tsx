@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react';
 
 import type { RecommendedActionIntent } from '@shared/types/brief';
 import type { CreateDecisionInput, DecisionDraftRecord, DecisionRecord } from '@shared/types/decision';
+import type { AiConfigStatus } from '@shared/types/settings';
 import type { TaskDetail, TaskListItemRecord, TimelineEventRecord } from '@shared/types/task';
 import {
   formatTaskTimelineEventSummary,
@@ -70,7 +71,10 @@ function getDecisionActionGuidance(status: DecisionRecord['status']): string {
   return '这条拍板已取消，正式动作已完成；下一步应回到任务重新评估推进路径。';
 }
 
-function getCheckpointDecisionGuidance(decision: DecisionRecord): string | null {
+function getCheckpointDecisionGuidance(
+  decision: DecisionRecord,
+  sandboxPatchPromotionApplyEnabled: boolean,
+): string | null {
   if (decision.sourceType !== 'agent_checkpoint') {
     return null;
   }
@@ -96,7 +100,9 @@ function getCheckpointDecisionGuidance(decision: DecisionRecord): string | null 
     }
 
     if (sourceLabel === 'workspace.staged_patch') {
-      return `来源：Agent checkpoint（${sourceLabel}）。这是 sandbox staged patch 的提升审查；请先查看 Run 证据与 promotion readiness；当前版本批准后只会确认并关闭 promotion checkpoint，不会自动写入工作区文件。`;
+      return sandboxPatchPromotionApplyEnabled
+        ? `来源：Agent checkpoint（${sourceLabel}）。这是 sandbox staged patch 的提升审查；请先查看 Run 证据与 promotion readiness；批准后会通过 promotion preflight/apply service 写入受影响文件；延后或取消不会写入工作区文件。`
+        : `来源：Agent checkpoint（${sourceLabel}）。这是 sandbox staged patch 的提升审查；请先查看 Run 证据与 promotion readiness；当前版本批准后只会确认并关闭 promotion checkpoint，不会自动写入工作区文件。`;
     }
 
     return `来源：Agent checkpoint（${sourceLabel}）。批准后会恢复等待中的${actionLabel}；延后或取消会终止本次 run。`;
@@ -104,7 +110,9 @@ function getCheckpointDecisionGuidance(decision: DecisionRecord): string | null 
 
   if (decision.status === 'approved') {
     if (sourceLabel === 'workspace.staged_patch') {
-      return `来源：Agent checkpoint（${sourceLabel}）。该 promotion 已批准并记录，但当前版本不会自动写入工作区文件。`;
+      return sandboxPatchPromotionApplyEnabled
+        ? `来源：Agent checkpoint（${sourceLabel}）。该 promotion 已批准；若 apply service 通过预检，Run 证据会记录已写入或已应用状态。`
+        : `来源：Agent checkpoint（${sourceLabel}）。该 promotion 已批准并记录，但当前版本不会自动写入工作区文件。`;
     }
 
     return `来源：Agent checkpoint（${sourceLabel}）。该确认已批准，系统会尝试恢复等待中的${actionLabel}。`;
@@ -114,6 +122,7 @@ function getCheckpointDecisionGuidance(decision: DecisionRecord): string | null 
 }
 
 type DecisionsPageProps = {
+  aiStatus: AiConfigStatus | null;
   decisions: DecisionRecord[];
   focusedDecisionId: string | null;
   tasks: TaskListItemRecord[];
@@ -126,6 +135,7 @@ type DecisionsPageProps = {
 };
 
 export function DecisionsPage({
+  aiStatus,
   decisions,
   focusedDecisionId,
   tasks,
@@ -220,7 +230,9 @@ export function DecisionsPage({
     ? getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.title)
     : [];
   const relatedTimelineGroups = groupTaskTimelineEventsByPriority(relatedTimeline);
-  const checkpointGuidance = detail ? getCheckpointDecisionGuidance(detail) : null;
+  const checkpointGuidance = detail
+    ? getCheckpointDecisionGuidance(detail, Boolean(aiStatus?.featureFlags.enableSandboxPatchPromotionApply))
+    : null;
 
   return (
     <section className="tasks-layout">

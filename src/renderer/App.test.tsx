@@ -4281,6 +4281,44 @@ describe('App UI flow', () => {
     expect(checkpointDecisionApi.getRunDetail).toHaveBeenCalledWith('run_staged_patch_review');
   });
 
+  it('explains enabled sandbox patch promotion apply writes through the gated service', async () => {
+    const user = userEvent.setup();
+    const checkpointDecisionApi: ElectronApi = {
+      ...mockApi,
+      getAiConfigStatus: vi.fn().mockResolvedValue({
+        ...aiStatus,
+        featureFlags: {
+          ...aiStatus.featureFlags,
+          enableSandboxPatchPromotionApply: true,
+        },
+      }),
+      listDecisions: vi.fn(async () => [
+        {
+          id: 'decision_checkpoint_staged_patch_apply',
+          taskId: riskTask.id,
+          title: 'Apply Code Agent preview',
+          status: 'pending' as const,
+          sourceType: 'agent_checkpoint' as const,
+          sourceId: 'run_checkpoint_staged_patch',
+          sourceLabel: 'workspace.staged_patch',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]),
+    };
+
+    window.api = checkpointDecisionApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /decisions/i }));
+
+    expect(await screen.findByRole('heading', { name: 'Apply Code Agent preview' })).toBeTruthy();
+    expect(
+      screen.getByText('来源：Agent checkpoint（workspace.staged_patch）。这是 sandbox staged patch 的提升审查；请先查看 Run 证据与 promotion readiness；批准后会通过 promotion preflight/apply service 写入受影响文件；延后或取消不会写入工作区文件。'),
+    ).toBeTruthy();
+  });
+
   it('shows related task timeline context on the decisions page', async () => {
     const user = userEvent.setup();
 

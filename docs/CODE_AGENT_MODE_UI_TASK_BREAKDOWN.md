@@ -921,6 +921,33 @@ Acceptance:
 - already-promoted workspace content is idempotently detected
 - `accept:sandbox-coding` covers apply, blocked, and idempotent outcomes
 
+### T30: Gated Patch Promotion Apply Integration
+
+Status: feature-flagged Decision integration implemented.
+
+Goal: close the approved sandbox patch promotion loop without making workspace
+writes the default behavior for existing local alpha setups.
+
+Work:
+
+- add `enableSandboxPatchPromotionApply` and
+  `TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY`
+- wire `SandboxPatchPromotionApplyService` through main-process bootstrap
+- keep default Decision behavior as preflight-only no-write output
+- when the flag is enabled, route approved `patch_promotion` checkpoints through
+  the apply service
+- record applied / already-applied / blocked outcomes as checkpoint RunSteps and
+  Run results
+- update Decision and Settings copy so the UI reflects the active flag
+
+Acceptance:
+
+- default local config still does not apply staged patches
+- enabled config applies only after the service passes preflight/base-content
+  validation
+- blocked apply results fail closed and write no files
+- renderer copy distinguishes no-write mode from apply-enabled mode
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:
@@ -939,7 +966,7 @@ Each needs its own decision before implementation.
 
 ## Next Decision
 
-The next implementation step is gated Decision integration for the apply
-service. It should call the service only after the read-only preflight is ready,
-record explicit RunSteps for applied / already-applied / blocked outcomes, and
-preserve the current no-write UI copy until that integration is accepted.
+The next implementation step is local manual validation on a disposable
+workspace with `TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=true`, followed by
+polishing Runs/Decisions applied-state copy if the packaged flow behaves as
+expected.

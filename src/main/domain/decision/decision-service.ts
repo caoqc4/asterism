@@ -20,6 +20,9 @@ import { DEFAULT_AGENT_POLICY } from '../run/agent-working-context.js';
 import type {
   SandboxPatchPromotionPreflightService,
 } from '../run/sandbox-patch-promotion-preflight-service.js';
+import type {
+  SandboxPatchPromotionApplyService,
+} from '../run/sandbox-patch-promotion-apply-service.js';
 import { parseRunCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import {
   DecisionProcessTemplateSelector,
@@ -111,6 +114,8 @@ export class DecisionService {
     private readonly runRepository: Pick<RunRepository, 'getDetail' | 'updateResult'> | null = null,
     private readonly agentToolRegistry: AgentToolRegistry | null = null,
     private readonly sandboxPatchPromotionPreflightService: Pick<SandboxPatchPromotionPreflightService, 'preflight'> | null = null,
+    private readonly sandboxPatchPromotionApplyService: Pick<SandboxPatchPromotionApplyService, 'apply'> | null = null,
+    private readonly sandboxPatchPromotionApplyEnabled: () => boolean = () => false,
   ) {}
 
   list(): Promise<DecisionRecord[]> {
@@ -360,6 +365,11 @@ export class DecisionService {
       return;
     }
 
+    if (this.sandboxPatchPromotionApplyEnabled() && this.sandboxPatchPromotionApplyService) {
+      await this.applyPatchPromotionCheckpoint(decision, checkpointId, runId);
+      return;
+    }
+
     if (!this.sandboxPatchPromotionPreflightService) {
       await this.runCheckpointRepository.updateStatus(checkpointId, 'resolved');
       await this.runStepRepository.create({
@@ -408,5 +418,70 @@ export class DecisionService {
         'Workspace file application is still deferred; no workspace files were written.',
       ].join('\n'),
     });
+  }
+
+  private async applyPatchPromotionCheckpoint(
+    decision: DecisionRecord,
+    checkpointId: string,
+    runId: string,
+  ): Promise<void> {
+    if (
+      !this.runCheckpointRepository ||
+      !this.runStepRepository ||
+      !this.runRepository ||
+      !this.sandboxPatchPromotionApplyService
+    ) {
+      return;
+    }
+
+    const result = await this.sandboxPatchPromotionApplyService.apply(checkpointId);
+
+    if (result.status === 'blocked') {
+      await this.runCheckpointRepository.updateStatus(checkpointId, 'cancelled');
+      await this.runStepRepository.create({
+        runId,
+        kind: 'checkpoint',
+        status: 'failed',
+        title: `提升应用阻塞：${decision.title}`,
+        error: result.auditSummary,
+        output: [
+          result.auditSummary,
+          'No workspace files were written.',
+        ].join('\n'),
+      });
+      await this.runRepository.updateResult(
+        runId,
+        'failed',
+        result.auditSummary,
+        'system',
+        result.auditSummary,
+      );
+      return;
+    }
+
+    const run = await this.runRepository.getDetail(runId);
+    await this.runCheckpointRepository.updateStatus(checkpointId, 'resolved');
+    await this.runStepRepository.create({
+      runId,
+      kind: 'checkpoint',
+      status: 'completed',
+      title: `提升已应用：${decision.title}`,
+      output: [
+        result.auditSummary,
+        `Touched files: ${result.touchedFiles.join(', ')}`,
+      ].join('\n'),
+    });
+    await this.runRepository.updateResult(
+      runId,
+      'completed',
+      result.auditSummary,
+      'system',
+    );
+    await this.taskService.annotateRunCompleted(
+      decision.taskId,
+      run?.type ?? 'agent',
+      true,
+      runId,
+    );
   }
 }

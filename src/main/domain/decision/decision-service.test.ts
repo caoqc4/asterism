@@ -845,6 +845,100 @@ describe('DecisionService', () => {
     expect(runRepository.updateResult).not.toHaveBeenCalled();
   });
 
+  it('applies approved patch-promotion checkpoints only when the apply flag is enabled', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord(),
+        status: 'approved',
+        title: '确认提升 sandbox patch',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+    };
+    const runCheckpointRepository = {
+      findOpenByDecisionId: vi.fn().mockResolvedValue(buildPatchPromotionCheckpoint()),
+      updateStatus: vi.fn(),
+    };
+    const runStepRepository = {
+      create: vi.fn(),
+    };
+    const runRepository = {
+      getDetail: vi.fn().mockResolvedValue({
+        id: 'run_1',
+        taskId: 'task_1',
+        type: 'agent',
+      }),
+      updateResult: vi.fn(),
+    };
+    const sandboxPatchPromotionPreflightService = {
+      preflight: vi.fn(),
+    };
+    const sandboxPatchPromotionApplyService = {
+      apply: vi.fn().mockResolvedValue({
+        auditSummary: 'Sandbox patch promotion applied / checkpoint=run_checkpoint_patch_1 / files=notes.md',
+        promotion: {},
+        status: 'applied',
+        touchedFiles: ['notes.md'],
+      }),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+      undefined,
+      runCheckpointRepository as never,
+      runStepRepository as never,
+      runRepository as never,
+      null,
+      sandboxPatchPromotionPreflightService as never,
+      sandboxPatchPromotionApplyService as never,
+      () => true,
+    );
+
+    await service.act({
+      id: 'decision_1',
+      action: 'approve',
+    });
+
+    expect(sandboxPatchPromotionPreflightService.preflight).not.toHaveBeenCalled();
+    expect(sandboxPatchPromotionApplyService.apply).toHaveBeenCalledWith('run_checkpoint_patch_1');
+    expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith(
+      'run_checkpoint_patch_1',
+      'resolved',
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'checkpoint',
+        output: [
+          'Sandbox patch promotion applied / checkpoint=run_checkpoint_patch_1 / files=notes.md',
+          'Touched files: notes.md',
+        ].join('\n'),
+        runId: 'run_1',
+        status: 'completed',
+        title: '提升已应用：确认提升 sandbox patch',
+      }),
+    );
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_1',
+      'completed',
+      'Sandbox patch promotion applied / checkpoint=run_checkpoint_patch_1 / files=notes.md',
+      'system',
+    );
+    expect(taskService.annotateRunCompleted).toHaveBeenCalledWith(
+      'task_1',
+      'agent',
+      true,
+      'run_1',
+    );
+  });
+
   it('blocks approved patch-promotion checkpoints when preflight evidence diverges', async () => {
     const decisionRepository = {
       list: vi.fn(),

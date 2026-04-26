@@ -2,9 +2,10 @@
 
 ## Status
 
-Decision proposal. This document defines the requirements for turning a
-reviewed sandbox staged patch into workspace files. It does not approve
-automatic application yet.
+Decision accepted for a default-off, feature-flagged apply path. This document
+defines the requirements for turning a reviewed sandbox staged patch into
+workspace files. It does not approve automatic or scheduler-triggered
+application.
 
 Current product state:
 
@@ -12,8 +13,9 @@ Current product state:
 - Runs detail can summarize source, files, checks, promotion status, linked
   Decision title, artifact summary, and patch preview
 - pending `workspace.staged_patch` Decisions can jump back to the Run evidence
-- approving a `workspace.staged_patch` Decision currently resolves the
-  checkpoint only; it does not write workspace files
+- approving a `workspace.staged_patch` Decision is preflight-only by default;
+  when `enableSandboxPatchPromotionApply` is enabled, approval can apply the
+  reviewed patch through the promotion apply service
 
 ## First-Principles Problem
 
@@ -269,11 +271,13 @@ promotion service only when readiness is `ready`; otherwise it should fail
 closed with a RunStep explaining why no files were written.
 
 Current behavior: approved `patch_promotion` checkpoints call
-`SandboxPatchPromotionPreflightService` before any resume path. `ready` and
-`already_applied` results close the checkpoint with explicit no-write output;
-`blocked` results create a failed checkpoint RunStep, mark the Run failed, and
-record that no workspace files were written. Actual file application remains
-deferred to the future apply service.
+`SandboxPatchPromotionPreflightService` before any resume path while
+`enableSandboxPatchPromotionApply` is false. With
+`TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=true`, approval calls
+`SandboxPatchPromotionApplyService`; applied and already-applied results resolve
+the checkpoint with touched-file evidence, while blocked results create a failed
+checkpoint RunStep, mark the Run failed, and record that no workspace files were
+written.
 
 ### P5: UI Copy Upgrade
 

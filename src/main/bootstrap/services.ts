@@ -19,6 +19,7 @@ import { HomeBriefService } from '../domain/brief/home-brief-service.js';
 import { DecisionService } from '../domain/decision/decision-service.js';
 import { AgentToolRegistry } from '../domain/run/agent-tool-registry.js';
 import { RunService } from '../domain/run/run-service.js';
+import { SandboxPatchPromotionApplyService } from '../domain/run/sandbox-patch-promotion-apply-service.js';
 import { SandboxPatchPromotionPreflightService } from '../domain/run/sandbox-patch-promotion-preflight-service.js';
 import { TaskService } from '../domain/task/task-service.js';
 import { BriefExecutor } from '../executors/brief-executor.js';
@@ -85,6 +86,11 @@ const sandboxPatchPromotionPreflightService = new SandboxPatchPromotionPreflight
   runCheckpointRepository,
   artifactRepository,
 );
+const sandboxPatchPromotionApplyService = new SandboxPatchPromotionApplyService(
+  sandboxPatchPromotionPreflightService,
+  sandboxPatchPromotionRepository,
+  () => appConfigService.read().workspaceRoot ?? process.cwd(),
+);
 schedulerService = new SchedulerService(
   appConfigService,
   homeBriefService,
@@ -103,6 +109,8 @@ const decisionService = new DecisionService(
   runRepository,
   agentToolRegistry,
   sandboxPatchPromotionPreflightService,
+  sandboxPatchPromotionApplyService,
+  () => Boolean(appConfigService.read().featureFlags.enableSandboxPatchPromotionApply),
 );
 agentToolRegistry.setDecisionDraftService(decisionService);
 const runService = new RunService(
@@ -138,6 +146,7 @@ const services = {
   briefExecutor,
   agentToolRegistry,
   sandboxPatchPromotionPreflightService,
+  sandboxPatchPromotionApplyService,
   taskService,
   decisionService,
   runService,

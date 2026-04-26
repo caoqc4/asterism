@@ -13,6 +13,7 @@ const envKeys = [
   'TASKPLANE_ENABLE_SCHEDULER',
   'TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS',
   'TASKPLANE_ENABLE_SANDBOX_CODING_AGENT',
+  'TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY',
 ];
 
 describe('AppConfigService', () => {
@@ -44,6 +45,7 @@ describe('AppConfigService', () => {
     expect(config.featureFlags.enableScheduler).toBe(false);
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(false);
     expect(config.featureFlags.enableSandboxCodingAgent).toBe(false);
+    expect(config.featureFlags.enableSandboxPatchPromotionApply).toBe(false);
     expect(fs.existsSync(getConfigPath(() => tempRoot))).toBe(true);
   });
 
@@ -71,6 +73,7 @@ describe('AppConfigService', () => {
         enableScheduler: true,
         enableProviderNativeToolCalls: true,
         enableSandboxCodingAgent: true,
+        enableSandboxPatchPromotionApply: true,
       },
     });
 
@@ -83,6 +86,7 @@ describe('AppConfigService', () => {
     expect(config.featureFlags.enableScheduler).toBe(true);
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(true);
     expect(config.featureFlags.enableSandboxCodingAgent).toBe(true);
+    expect(config.featureFlags.enableSandboxPatchPromotionApply).toBe(true);
   });
 
   it('falls back to the default provider when config contains an unknown provider', async () => {
@@ -115,6 +119,7 @@ describe('AppConfigService', () => {
     process.env.TASKPLANE_ENABLE_SCHEDULER = 'true';
     process.env.TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS = 'true';
     process.env.TASKPLANE_ENABLE_SANDBOX_CODING_AGENT = 'true';
+    process.env.TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY = 'true';
     const { AppConfigService } = await import('./app-config-service.js');
     const service = new AppConfigService(() => tempRoot);
 
@@ -126,6 +131,7 @@ describe('AppConfigService', () => {
         enableScheduler: false,
         enableProviderNativeToolCalls: false,
         enableSandboxCodingAgent: false,
+        enableSandboxPatchPromotionApply: false,
       },
     });
 
@@ -138,6 +144,7 @@ describe('AppConfigService', () => {
     expect(config.featureFlags.enableScheduler).toBe(true);
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(true);
     expect(config.featureFlags.enableSandboxCodingAgent).toBe(true);
+    expect(config.featureFlags.enableSandboxPatchPromotionApply).toBe(true);
   });
 
   it('falls back to default feature flags when stored flags have invalid values', async () => {
@@ -151,6 +158,7 @@ describe('AppConfigService', () => {
           enableScheduler: 'yes',
           enableProviderNativeToolCalls: 'yes',
           enableSandboxCodingAgent: 'yes',
+          enableSandboxPatchPromotionApply: 'yes',
         },
       }),
       'utf8',
@@ -163,6 +171,7 @@ describe('AppConfigService', () => {
     expect(config.featureFlags.enableScheduler).toBe(false);
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(false);
     expect(config.featureFlags.enableSandboxCodingAgent).toBe(false);
+    expect(config.featureFlags.enableSandboxPatchPromotionApply).toBe(false);
   });
 
   it('migrates legacy settings.json into config.json', async () => {

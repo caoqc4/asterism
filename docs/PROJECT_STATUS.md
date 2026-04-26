@@ -216,6 +216,13 @@ The project is past initial architecture assembly. Current work should favor pro
   collector's review diff, verifies expected files and current workspace base
   content, prepares all writes before writing any file, detects already-promoted
   content idempotently, and marks promotion records applied or blocked.
+- Sandbox patch promotion apply is now wired behind
+  `enableSandboxPatchPromotionApply` /
+  `TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY`. Default local config remains
+  preflight-only and no-write; when the flag is enabled, approved
+  `workspace.staged_patch` Decisions call the apply service and record applied,
+  already-applied, or blocked outcomes in Run evidence. Settings and Decision
+  copy reflect whether apply is enabled.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -283,6 +290,11 @@ The project is past initial architecture assembly. Current work should favor pro
   run accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally
   on 2026-04-26 after adding the sandbox patch-promotion apply core: 35
   sandbox-coding files / 211 tests.
+- `npm test -- src/main/domain/decision/decision-service.test.ts
+  src/main/config/app-config-service.test.ts src/renderer/App.test.tsx`, `npm
+  run accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally
+  on 2026-04-26 after wiring sandbox patch-promotion apply behind the default-off
+  feature flag: 36 sandbox-coding files / 220 tests.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts
