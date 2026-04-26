@@ -2873,6 +2873,9 @@ describe('App UI flow', () => {
       'Automatic start：disabled / requires mature skill or process, complete inputs, allowed tools, risk policy, accepted evidence or explicit enablement, and runtime readiness / no scheduler or auto-run flag is persisted',
     )).toBeTruthy();
     expect(intent.getByText(/Completion criteria：暂无/)).toBeTruthy();
+    expect(intent.getByText(
+      'Context selection：none selected / 3 suggestions available / files are not read until the run starts',
+    )).toBeTruthy();
 
     const startButton = intent.getByRole('button', { name: '启动 sandbox preview run' });
     expect(startButton.hasAttribute('disabled')).toBe(true);
@@ -2882,8 +2885,14 @@ describe('App UI flow', () => {
     expect(intent.getByRole('button', { name: 'src/app.ts' })).toBeTruthy();
     await user.click(intent.getByRole('button', { name: 'src/feature.ts' }));
     expect((intent.getByLabelText('Context files') as HTMLTextAreaElement).value).toBe('src/feature.ts');
+    expect(intent.getByText(
+      'Context selection：1 selected / src/feature.ts / files are not read until the run starts',
+    )).toBeTruthy();
     await user.clear(intent.getByLabelText('Context files'));
     await user.type(intent.getByLabelText('Context files'), 'docs/notes.md\nsrc/app.ts');
+    expect(intent.getByText(
+      'Context selection：2 selected / docs/notes.md、src/app.ts / files are not read until the run starts',
+    )).toBeTruthy();
     await user.click(intent.getByRole('checkbox', {
       name: '我确认后续执行可能启动 Docker 容器，但工作区只会收到 Decision 批准后的变更',
     }));

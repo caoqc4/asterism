@@ -179,6 +179,19 @@ function extractWorkspacePathCandidates(...values: Array<string | null | undefin
   return candidates.slice(0, CODE_AGENT_CONTEXT_CANDIDATE_LIMIT);
 }
 
+function parseCodeAgentContextFileInput(value: string): string[] {
+  const files: string[] = [];
+
+  for (const rawFile of value.split(/[\n,]/)) {
+    const file = rawFile.trim();
+    if (file && !files.includes(file)) {
+      files.push(file);
+    }
+  }
+
+  return files;
+}
+
 function getCodeAgentContextFileCandidates(detail: TaskDetail | null): string[] {
   if (!detail) {
     return [];
@@ -1321,10 +1334,7 @@ export function TasksPage({
         codeAgentRunTestCheck ? 'test' : null,
         codeAgentRunLintCheck ? 'lint' : null,
       ].filter((check): check is 'test' | 'lint' => Boolean(check));
-      const contextFiles = codeAgentContextFiles
-        .split(/[\n,]/)
-        .map((file) => file.trim())
-        .filter(Boolean);
+      const contextFiles = parseCodeAgentContextFileInput(codeAgentContextFiles);
       const created = await onTriggerCodeAgentRun({
         ...(contextFiles.length ? { contextFiles } : {}),
         operatorConfirmed: codeAgentOperatorConfirmed,
@@ -2095,6 +2105,7 @@ export function TasksPage({
   const snapshotArtifact = detail?.artifacts[0] ?? null;
   const snapshotSourceContext = detail?.sourceContexts[0] ?? null;
   const codeAgentContextFileCandidates = getCodeAgentContextFileCandidates(detail);
+  const selectedCodeAgentContextFiles = parseCodeAgentContextFileInput(codeAgentContextFiles);
   const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
   const orderedLaneLabels = tasks.reduce<string[]>((labels, task) => {
     const laneLabel = getPriorityLaneLabel(taskPriorityLanes.get(task.id));
@@ -2263,6 +2274,13 @@ export function TasksPage({
           <p className="meta">
             Context files are read-only evidence for the model producer; Taskplane still blocks path escapes, secrets, binary files, and oversized context.
           </p>
+          <p className="meta">
+            Context selection：{
+              selectedCodeAgentContextFiles.length
+                ? `${selectedCodeAgentContextFiles.length} selected / ${selectedCodeAgentContextFiles.join('、')}`
+                : `none selected / ${codeAgentContextFileCandidates.length} suggestions available`
+            } / files are not read until the run starts
+          </p>
           {codeAgentContextFileCandidates.length ? (
             <div className="inline-actions" aria-label="Context file candidates">
               {codeAgentContextFileCandidates.map((candidate) => (
@@ -2270,10 +2288,7 @@ export function TasksPage({
                   className="ghost-button"
                   key={candidate}
                   onClick={() => {
-                    const current = codeAgentContextFiles
-                      .split(/[\n,]/)
-                      .map((file) => file.trim())
-                      .filter(Boolean);
+                    const current = parseCodeAgentContextFileInput(codeAgentContextFiles);
                     if (!current.includes(candidate)) {
                       setCodeAgentContextFiles([...current, candidate].join('\n'));
                     }

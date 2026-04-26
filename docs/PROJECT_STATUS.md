@@ -164,6 +164,9 @@ The project is past initial architecture assembly. Current work should favor pro
   derived from task/source/artifact text. Clicking a candidate appends the path
   to the field, but still does not read files in the renderer or bypass
   main-process validation.
+- The same panel now shows a pre-run context selection summary. It reuses the
+  run-payload parser, shows selected path count/list or candidate count, and
+  reminds users that files are not read until the run starts.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size

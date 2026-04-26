@@ -643,6 +643,27 @@ Acceptance:
 - provider calls and Docker probes remain out of the preflight
 - the main process remains the final authority when a real run starts
 
+### T18: Context Selection Pre-Run Summary
+
+Status: implemented in the Task detail Code Agent panel.
+
+Goal: make the explicit workspace-context boundary visible before the user
+starts a sandbox preview run.
+
+Work:
+
+- reuse one parser for the context-field summary and the run payload
+- show the selected context-file count and selected workspace-relative paths
+- show the available candidate count when nothing has been selected
+- state that files are not read until the run starts
+
+Acceptance:
+
+- the summary never reads local files in the renderer
+- the displayed selection matches the payload sent to
+  `CreateCodeAgentRunInput.contextFiles`
+- candidate hints remain suggestions only until the user clicks or types them
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:
@@ -661,9 +682,7 @@ Each needs its own decision before implementation.
 
 ## Next Decision
 
-The next implementation decision is the first workspace-context input path for
-model producer runs. The current model producer prompt receives task title,
-patch intent, completion criteria, selected checks, and sandbox policy. It does
-not yet receive selected file snippets, retrieval results, skill outputs,
-browser observations, MCP context, or prior accepted task habits. That context
-must enter as bounded evidence before broader coding quality can improve.
+The next implementation decision is the first run-review surface for staged
+patch evidence. The model producer can now receive explicit bounded workspace
+context, but the user still needs a clearer way to inspect staged files,
+checks, and promotion readiness before approving any workspace mutation.
