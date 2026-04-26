@@ -132,11 +132,16 @@ TASKPLANE_AI_PROVIDER=fal-openrouter
 TASKPLANE_AI_MODEL=google/gemini-2.5-flash
 TASKPLANE_AI_API_KEY=your-test-key
 TASKPLANE_WORKSPACE_ROOT=/absolute/path/to/workspace
+# Optional: comma-separated workspace-relative files to provide as read-only evidence.
+TASKPLANE_CODE_AGENT_CONTEXT_FILES=src/example.ts,docs/notes.md
 ```
 
 For `openai-compatible`, also set `TASKPLANE_AI_BASE_URL`. For `replicate`, use
-an `owner/model` model id. The preflight only checks local configuration; it
-does not call the provider, start Docker, or mutate the workspace.
+an `owner/model` model id. `TASKPLANE_CODE_AGENT_CONTEXT_FILES` is optional; if
+set, Taskplane validates those selected files before the model producer runs
+and blocks path escapes, sensitive files, binary content, missing files, and
+oversized context. The preflight only checks local configuration; it does not
+call the provider, start Docker, or mutate the workspace.
 
 After the preflight reports `status=ready`, an explicit one-request live smoke
 is available:

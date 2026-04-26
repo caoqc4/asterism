@@ -100,6 +100,10 @@ describe('prepareCodeAgentModelProducerRuntime', () => {
       },
       allowProviderCalls: true,
       generateText,
+      workspaceContext: {
+        files: [{ content: 'old\n', path: 'docs/runtime-note.md' }],
+        summary: 'Code Agent workspace context collected 1 file(s).',
+      },
     });
 
     expect(runtime).toMatchObject({
@@ -123,7 +127,7 @@ describe('prepareCodeAgentModelProducerRuntime', () => {
 
     expect(generateText).toHaveBeenCalledWith(
       runtimeConfig,
-      expect.stringContaining('Task: Create note'),
+      expect.stringContaining('--- file: docs/runtime-note.md'),
     );
     await expect(fs.readFile(path.join(stagingRoot, 'docs/runtime-note.md'), 'utf8')).resolves.toBe('note\n');
     expect(result).toMatchObject({

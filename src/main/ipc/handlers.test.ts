@@ -127,6 +127,7 @@ describe('registerIpcHandlers', () => {
     emitAppEventMock.mockClear();
     probeLocalContainerSandboxBackendMock.mockReset();
     delete process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER;
+    delete process.env.TASKPLANE_CODE_AGENT_CONTEXT_FILES;
     servicesMock.aiConfigService.resolveRuntimeConfig.mockReset();
     Object.values(servicesMock).forEach((service) => {
       Object.values(service).forEach((member) => {
@@ -962,6 +963,100 @@ describe('registerIpcHandlers', () => {
       'Code Agent model producer runtime blocked: Missing API key',
       'system',
       'Missing API key',
+    );
+    expect(result.status).toBe('failed');
+  });
+
+  it('blocks env-gated model producer runs when selected workspace context is invalid', async () => {
+    process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
+    process.env.TASKPLANE_CODE_AGENT_CONTEXT_FILES = '../escape.md';
+    servicesMock.taskService.getDetail.mockResolvedValue({
+      id: 'task_1',
+      title: 'Prepare notes patch',
+      summary: null,
+      nextStep: null,
+      state: 'planned',
+      riskLevel: 'none',
+      riskNote: null,
+      waitingReason: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      blockers: [],
+      completionCriteria: [],
+      dependencies: [],
+      processBindings: [],
+      sourceContexts: [],
+      timeline: [],
+    });
+    servicesMock.aiConfigService.getStatus.mockResolvedValue({
+      configured: true,
+      apiKeyStored: true,
+      apiKeySource: 'env',
+      provider: 'fal-openrouter',
+      model: 'google/gemini-2.5-flash',
+      baseUrl: null,
+      workspaceRoot: '/tmp/taskplane-workspace',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      configPath: '/tmp/config.json',
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+    });
+    servicesMock.aiConfigService.resolveRuntimeConfig.mockResolvedValue({
+      apiKey: 'secret',
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      model: 'google/gemini-2.5-flash',
+      provider: 'fal-openrouter',
+      workspaceRoot: '/tmp/taskplane-workspace',
+    });
+    servicesMock.runRepository.create.mockResolvedValue({
+      id: 'run_code_agent_1',
+      taskId: 'task_1',
+      type: 'agent',
+      status: 'running',
+      instructions: 'Code Agent manual sandbox producer preview.',
+      output: null,
+      outputSource: null,
+      failureReason: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    servicesMock.runRepository.updateResult.mockResolvedValue({
+      id: 'run_code_agent_1',
+      taskId: 'task_1',
+      type: 'agent',
+      status: 'failed',
+      instructions: 'Code Agent manual sandbox producer preview.',
+      output: 'Code Agent workspace context blocked: Code Agent workspace context path is not allowed: ../escape.md.',
+      outputSource: 'system',
+      failureReason: 'Code Agent workspace context path is not allowed: ../escape.md.',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; patchIntent: string; requestedChecks: ['test']; operatorConfirmed: true }],
+      Awaited<ReturnType<typeof servicesMock.runRepository.updateResult>>
+    >('run:triggerCodeAgent');
+
+    const result = await handler({}, {
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      taskId: 'task_1',
+    });
+
+    expect(codeAgentExecutionRunMock).not.toHaveBeenCalled();
+    expect(servicesMock.runRepository.updateResult).toHaveBeenCalledWith(
+      'run_code_agent_1',
+      'failed',
+      'Code Agent workspace context blocked: Code Agent workspace context path is not allowed: ../escape.md.',
+      'system',
+      'Code Agent workspace context path is not allowed: ../escape.md.',
     );
     expect(result.status).toBe('failed');
   });

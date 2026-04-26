@@ -36,23 +36,42 @@ export async function runCodeAgentModelProducerLiveSmoke() {
   const textGenerationModulePath = path.join(distMainDir, 'executors', 'text-generation.js');
   const producerLoopModulePath = path.join(distMainDir, 'domain', 'run', 'code-agent-model-producer-loop.js');
   const stagedFilePlanModulePath = path.join(distMainDir, 'domain', 'run', 'code-agent-staged-file-plan.js');
+  const workspaceContextModulePath = path.join(distMainDir, 'domain', 'run', 'code-agent-workspace-context.js');
 
   await Promise.all([
     assertBuiltModule(textGenerationModulePath),
     assertBuiltModule(producerLoopModulePath),
     assertBuiltModule(stagedFilePlanModulePath),
+    assertBuiltModule(workspaceContextModulePath),
   ]);
 
   const [
     { generateRuntimeText },
     { buildCodeAgentModelProducerPrompt },
     { parseCodeAgentStagedFilePlanPayload },
+    { collectCodeAgentWorkspaceContext },
   ] = await Promise.all([
     import(pathToFileURL(textGenerationModulePath).href),
     import(pathToFileURL(producerLoopModulePath).href),
     import(pathToFileURL(stagedFilePlanModulePath).href),
+    import(pathToFileURL(workspaceContextModulePath).href),
   ]);
   const request = buildRequest(preflight);
+  const workspaceContext = await collectCodeAgentWorkspaceContext({
+    files: preflight.contextFiles,
+    workspaceRoot: preflight.workspaceRoot,
+  });
+
+  if (workspaceContext.status === 'blocked') {
+    console.log('Code Agent model producer live smoke');
+    console.log('status=failed');
+    console.log(workspaceContext.summary);
+    console.log('provider=not-called');
+    console.log('docker=not-started');
+    console.log('workspace=unchanged');
+    return 1;
+  }
+
   const text = await generateRuntimeText({
     apiKey: preflight.apiKey,
     baseUrl: preflight.baseUrl || null,
@@ -63,13 +82,16 @@ export async function runCodeAgentModelProducerLiveSmoke() {
     model: preflight.model,
     provider: preflight.provider,
     workspaceRoot: preflight.workspaceRoot,
-  }, buildCodeAgentModelProducerPrompt(request));
+  }, buildCodeAgentModelProducerPrompt(request, {
+    workspaceContext: workspaceContext.snapshot,
+  }));
   const normalized = parseCodeAgentStagedFilePlanPayload(text);
 
   console.log('Code Agent model producer live smoke');
   console.log(`provider=${preflight.provider}`);
   console.log(`model=${preflight.model}`);
   console.log(`textLength=${text.length}`);
+  console.log(`contextFiles=${workspaceContext.snapshot.files.length}`);
 
   if (normalized.status === 'blocked') {
     console.log('status=failed');

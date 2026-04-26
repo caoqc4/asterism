@@ -21,6 +21,10 @@ export function getCodeAgentModelProducerPreflight() {
   const model = envValue(values, 'TASKPLANE_AI_MODEL');
   const baseUrl = envValue(values, 'TASKPLANE_AI_BASE_URL');
   const workspaceRoot = envValue(values, 'TASKPLANE_WORKSPACE_ROOT');
+  const contextFiles = envValue(values, 'TASKPLANE_CODE_AGENT_CONTEXT_FILES')
+    .split(',')
+    .map((file) => file.trim())
+    .filter(Boolean);
   const hasApiKey = Boolean(envValue(values, 'TASKPLANE_AI_API_KEY'));
   const sandboxFlag = envBoolean(values, 'TASKPLANE_ENABLE_SANDBOX_CODING_AGENT');
   const modelProducerFlag = envBoolean(values, 'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER');
@@ -65,6 +69,7 @@ export function getCodeAgentModelProducerPreflight() {
     baseUrl,
     envPath,
     hasApiKey,
+    contextFiles,
     issues,
     model,
     modelProducerFlag,
@@ -83,6 +88,7 @@ export function printCodeAgentModelProducerPreflight(result) {
   console.log(`baseUrl=${result.baseUrl ? '<set>' : '<empty>'}`);
   console.log(`apiKey=${result.hasApiKey ? '<set>' : '<empty>'}`);
   console.log(`workspaceRoot=${result.workspaceRoot || '<empty>'}`);
+  console.log(`contextFiles=${result.contextFiles.length}`);
   console.log(`sandboxCodingAgent=${formatBoolean(result.sandboxFlag)}`);
   console.log(`modelProducer=${formatBoolean(result.modelProducerFlag)}`);
 

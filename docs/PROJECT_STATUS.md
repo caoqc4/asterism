@@ -150,6 +150,20 @@ The project is past initial architecture assembly. Current work should favor pro
   the env-gated model producer validation commands and names the next design
   decision: the first bounded workspace-context input path for model producer
   runs.
+- Env-gated model producer runs can now receive explicit bounded workspace
+  context via `TASKPLANE_CODE_AGENT_CONTEXT_FILES`; Taskplane collects only
+  selected workspace-relative text files, blocks sensitive/path-escape/binary/
+  oversized context, records a compact RunStep for collected context, and
+  formats accepted files into the producer prompt as read-only evidence.
+- `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
+  src/main/domain/run/code-agent-model-producer-loop.test.ts
+  src/main/domain/run/code-agent-model-producer-runtime.test.ts
+  src/main/ipc/handlers.test.ts`, `npm run
+  accept:sandbox-coding:model-producer-preflight`, default-skipped `npm run
+  accept:sandbox-coding:model-producer-live`, `npm run accept:sandbox-coding`,
+  `npm run lint`, and `npm run build` passed locally on 2026-04-26 after adding
+  explicit workspace context input for env-gated model producer runs: 30
+  sandbox-coding files / 183 tests.
 - Decisions now distinguish `workspace.staged_patch` promotion checkpoints from
   direct `workspace.write_patch` checkpoints: approving the current sandbox
   promotion review records and resolves the checkpoint, but does not auto-apply

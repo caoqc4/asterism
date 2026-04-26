@@ -31,7 +31,7 @@ import type {
 
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import { getServices } from '../bootstrap/services.js';
-import { readEnvBoolean } from '../config/env.js';
+import { readEnvBoolean, readEnvValue } from '../config/env.js';
 import { probeLocalContainerSandboxBackend } from '../domain/run/local-container-sandbox-backend.js';
 import { LocalContainerSandboxedCodingProducerExecutionService } from '../domain/run/local-container-sandboxed-coding-producer-execution-service.js';
 import type { LocalContainerSandboxPatchReviewPreparation } from '../domain/run/local-container-sandbox-backend.js';
@@ -41,6 +41,7 @@ import {
   writeCodeAgentStagedFilePlan,
 } from '../domain/run/code-agent-staged-file-plan.js';
 import { prepareCodeAgentModelProducerRuntime } from '../domain/run/code-agent-model-producer-runtime.js';
+import { collectCodeAgentWorkspaceContext } from '../domain/run/code-agent-workspace-context.js';
 import type {
   PreviewSandboxedCodingInjectedProducerRunResult,
   SandboxedCodingProducerEvent,
@@ -54,6 +55,7 @@ import { emitAppEvent } from './event-bus.js';
 const PING_CHANNEL = 'app:ping';
 const DEFAULT_CODE_AGENT_PREVIEW_FILE = '.taskplane/code-agent-preview.md';
 const ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV = 'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER';
+const CODE_AGENT_CONTEXT_FILES_ENV = 'TASKPLANE_CODE_AGENT_CONTEXT_FILES';
 
 export function registerIpcHandlers(): void {
   ipcMain.handle(PING_CHANNEL, async (): Promise<PingResponse> => {
@@ -377,8 +379,29 @@ async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promis
     );
   }
 
+  const workspaceContext = modelRuntime.status === 'ready'
+    ? await collectSelectedCodeAgentWorkspaceContext({
+        files: readSelectedCodeAgentContextFiles(),
+        runId: run.id,
+        services,
+        workspaceRoot: workspaceRoot ?? '',
+      })
+    : null;
+
+  if (workspaceContext?.status === 'blocked') {
+    return services.runRepository.updateResult(
+      run.id,
+      'failed',
+      workspaceContext.summary,
+      'system',
+      workspaceContext.blockedReasons.join(' '),
+    );
+  }
+
   const producerLoop = modelRuntime.status === 'ready'
-    ? modelRuntime.createLoop()
+    ? modelRuntime.createLoop({
+        workspaceContext: workspaceContext?.snapshot ?? null,
+      })
     : createManualCodeAgentPreviewLoop({
         patchIntent,
         runId: run.id,
@@ -438,6 +461,46 @@ async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promis
     'system',
     execution.preview.preflight.summary,
   );
+}
+
+async function collectSelectedCodeAgentWorkspaceContext(params: {
+  files: string[];
+  runId: string;
+  services: ReturnType<typeof getServices>;
+  workspaceRoot: string;
+}): ReturnType<typeof collectCodeAgentWorkspaceContext> {
+  const result = await collectCodeAgentWorkspaceContext({
+    files: params.files,
+    workspaceRoot: params.workspaceRoot,
+  });
+
+  if (result.status === 'collected' && result.snapshot.files.length) {
+    await params.services.runStepRepository.create({
+      input: params.files.join('\n'),
+      kind: 'tool_result',
+      output: result.summary,
+      runId: params.runId,
+      status: 'completed',
+      title: 'Code Agent workspace context collected',
+    });
+  }
+
+  return result;
+}
+
+function readSelectedCodeAgentContextFiles(): string[] {
+  return (readEnvValue(CODE_AGENT_CONTEXT_FILES_ENV) ?? '')
+    .split(',')
+    .map((file) => file.trim())
+    .filter(Boolean);
+}
+
+function createBlockedModelRuntimeLoop(summary: string): LocalContainerSandboxedCodingProducerLoop {
+  return async () => ({
+    reason: summary,
+    sessionSummary: summary,
+    status: 'blocked',
+  });
 }
 
 async function persistCodeAgentPatchReview(params: {

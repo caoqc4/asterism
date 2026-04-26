@@ -4,9 +4,14 @@ import {
   createCodeAgentModelProducerLoop,
   type CodeAgentPlanTextGenerator,
 } from './code-agent-model-producer-loop.js';
+import type { CodeAgentWorkspaceContextSnapshot } from './code-agent-workspace-context.js';
 import type {
   LocalContainerSandboxedCodingProducerLoop,
 } from './local-container-sandboxed-coding-producer-runner.js';
+
+type CreateCodeAgentModelProducerLoopOptions = {
+  workspaceContext?: CodeAgentWorkspaceContextSnapshot | null;
+};
 
 export type CodeAgentModelProducerRuntime =
   | {
@@ -15,7 +20,7 @@ export type CodeAgentModelProducerRuntime =
       summary: string;
     }
   | {
-      createLoop: () => LocalContainerSandboxedCodingProducerLoop;
+      createLoop: (options?: CreateCodeAgentModelProducerLoopOptions) => LocalContainerSandboxedCodingProducerLoop;
       model: string;
       provider: RuntimeAiConfig['provider'];
       status: 'ready';
@@ -28,6 +33,7 @@ export async function prepareCodeAgentModelProducerRuntime(params: {
   };
   allowProviderCalls?: boolean;
   generateText?: (config: RuntimeAiConfig, prompt: string) => Promise<string>;
+  workspaceContext?: CodeAgentWorkspaceContextSnapshot | null;
 }): Promise<CodeAgentModelProducerRuntime> {
   if (!params.allowProviderCalls) {
     return blockedRuntime(
@@ -55,7 +61,10 @@ export async function prepareCodeAgentModelProducerRuntime(params: {
     generateText(runtimeConfig, prompt);
 
   return {
-    createLoop: () => createCodeAgentModelProducerLoop({ generatePlanText }),
+    createLoop: (options = {}) => createCodeAgentModelProducerLoop({
+      generatePlanText,
+      workspaceContext: options.workspaceContext ?? params.workspaceContext,
+    }),
     model: runtimeConfig.model,
     provider: runtimeConfig.provider,
     status: 'ready',

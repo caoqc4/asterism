@@ -531,6 +531,40 @@ Implemented notes:
   `parseCodeAgentStagedFilePlanPayload()`, and prints only redacted readiness
   plus bounded plan metadata.
 
+### T14: Explicit Workspace Context Input
+
+Status: first bounded file-context path implemented.
+
+Goal: improve model producer quality by giving it deliberate read-only
+evidence, without exposing arbitrary workspace read tools to the model.
+
+Work:
+
+- add `TASKPLANE_CODE_AGENT_CONTEXT_FILES` as a comma-separated local opt-in
+  file list for env-gated model producer runs
+- collect only explicit workspace-relative files under the selected workspace
+  root
+- block path escapes, `.env*`, `.git`, `node_modules`, missing files, binary
+  content, oversized files, and too many files
+- format accepted files into the producer prompt as read-only evidence
+- record a compact RunStep when selected context is collected
+
+Acceptance:
+
+- no context files selected keeps existing behavior
+- invalid selected context fails before sandbox execution or provider work
+- accepted context appears in the model producer prompt as bounded evidence
+- model still cannot ask to read additional files
+
+Implemented notes:
+
+- `code-agent-workspace-context` now collects and formats bounded selected
+  files.
+- `buildCodeAgentModelProducerPrompt()` includes an explicit workspace context
+  section and states that it is read-only evidence, not permission to read more.
+- `run:triggerCodeAgent` reads `TASKPLANE_CODE_AGENT_CONTEXT_FILES` only when
+  the model producer env opt-in is active.
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:

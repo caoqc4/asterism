@@ -46,6 +46,26 @@ describe('buildCodeAgentModelProducerPrompt', () => {
     expect(prompt).toContain('Allowed checks after staging: lint, test');
     expect(prompt).toContain('Network policy: disabled');
     expect(prompt).toContain('Promotion policy: Decision review is required');
+    expect(prompt).toContain('No workspace file context was provided for this run.');
+  });
+
+  it('includes explicitly selected workspace context as read-only evidence', () => {
+    const prompt = buildCodeAgentModelProducerPrompt(request, {
+      workspaceContext: {
+        files: [
+          {
+            content: 'existing notes\n',
+            path: 'docs/notes.md',
+          },
+        ],
+        summary: 'Code Agent workspace context collected 1 file(s).',
+      },
+    });
+
+    expect(prompt).toContain('Treat workspace context as read-only evidence.');
+    expect(prompt).toContain('--- file: docs/notes.md');
+    expect(prompt).toContain('existing notes');
+    expect(prompt).toContain('--- end file: docs/notes.md');
   });
 });
 
@@ -63,7 +83,13 @@ describe('createCodeAgentModelProducerLoop', () => {
       summary: 'Update docs notes.',
     }));
     const emit = vi.fn();
-    const loop = createCodeAgentModelProducerLoop({ generatePlanText });
+    const loop = createCodeAgentModelProducerLoop({
+      generatePlanText,
+      workspaceContext: {
+        files: [{ content: 'old\n', path: 'docs/notes.md' }],
+        summary: 'Code Agent workspace context collected 1 file(s).',
+      },
+    });
 
     const result = await loop({
       emit,
@@ -75,7 +101,7 @@ describe('createCodeAgentModelProducerLoop', () => {
     });
 
     expect(generatePlanText).toHaveBeenCalledWith({
-      prompt: expect.stringContaining('Task: Docs update'),
+      prompt: expect.stringContaining('--- file: docs/notes.md'),
       request,
     });
     await expect(fs.readFile(path.join(stagingRoot, 'docs/notes.md'), 'utf8')).resolves.toBe('# Notes\n');

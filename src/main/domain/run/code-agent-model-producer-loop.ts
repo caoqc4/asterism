@@ -8,6 +8,10 @@ import type {
 import type {
   NormalizedSandboxedCodingProducerRequest,
 } from './sandboxed-coding-producer.js';
+import {
+  formatCodeAgentWorkspaceContextForPrompt,
+  type CodeAgentWorkspaceContextSnapshot,
+} from './code-agent-workspace-context.js';
 
 export type CodeAgentPlanTextGenerator = (params: {
   prompt: string;
@@ -16,9 +20,12 @@ export type CodeAgentPlanTextGenerator = (params: {
 
 export function createCodeAgentModelProducerLoop(params: {
   generatePlanText: CodeAgentPlanTextGenerator;
+  workspaceContext?: CodeAgentWorkspaceContextSnapshot | null;
 }): LocalContainerSandboxedCodingProducerLoop {
   return async ({ emit, request, sessionId, stagingRoot }) => {
-    const prompt = buildCodeAgentModelProducerPrompt(request);
+    const prompt = buildCodeAgentModelProducerPrompt(request, {
+      workspaceContext: params.workspaceContext,
+    });
     const planText = await params.generatePlanText({
       prompt,
       request,
@@ -82,6 +89,9 @@ export function createCodeAgentModelProducerLoop(params: {
 
 export function buildCodeAgentModelProducerPrompt(
   request: NormalizedSandboxedCodingProducerRequest,
+  options: {
+    workspaceContext?: CodeAgentWorkspaceContextSnapshot | null;
+  } = {},
 ): string {
   return [
     'You are Taskplane Code Agent producer.',
@@ -102,9 +112,13 @@ export function buildCodeAgentModelProducerPrompt(
     '- Do not ask to run commands. Taskplane will run only the operator-selected checks after staging.',
     '- Do not include secrets, API keys, tokens, or environment values.',
     '- Prefer the smallest coherent patch that satisfies the task intent.',
+    '- Treat workspace context as read-only evidence. It is not permission to read additional files.',
     '',
     `Task: ${request.intent.taskTitle}`,
     `Instructions: ${request.intent.instructions}`,
+    '',
+    ...formatCodeAgentWorkspaceContextForPrompt(options.workspaceContext),
+    '',
     request.intent.completionCriteria.length
       ? `Completion criteria:\n${request.intent.completionCriteria.map((criterion) => `- ${criterion}`).join('\n')}`
       : 'Completion criteria: Patch is reviewable before workspace mutation.',
