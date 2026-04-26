@@ -664,6 +664,29 @@ Acceptance:
   `CreateCodeAgentRunInput.contextFiles`
 - candidate hints remain suggestions only until the user clicks or types them
 
+### T19: Staged Patch Review Summary
+
+Status: first Runs detail surface implemented.
+
+Goal: make the sandbox patch evidence reviewable as a single object before any
+Decision promotion step is handled.
+
+Work:
+
+- add a `Staged Patch Review` block to Runs detail when sandbox source or
+  patch-promotion checkpoint evidence exists
+- summarize source id, changed files, check outcomes, promotion checkpoint
+  status, and linked Decision title
+- show artifact summary and bounded patch preview when available
+- keep the invariant visible: workspace remains unchanged until Decision
+  approval
+
+Acceptance:
+
+- ordinary runs without sandbox patch evidence do not show the review block
+- the review block derives from existing RunSteps and RunCheckpoints
+- approving or applying the patch remains outside this display-only surface
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:
@@ -682,7 +705,8 @@ Each needs its own decision before implementation.
 
 ## Next Decision
 
-The next implementation decision is the first run-review surface for staged
-patch evidence. The model producer can now receive explicit bounded workspace
-context, but the user still needs a clearer way to inspect staged files,
-checks, and promotion readiness before approving any workspace mutation.
+The next implementation decision is how patch-promotion Decisions should link
+back to the staged patch review object. The Runs page can now summarize staged
+files, checks, promotion status, and preview evidence, but the Decision page
+still needs a direct review affordance before approval semantics become
+stronger.

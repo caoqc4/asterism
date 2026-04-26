@@ -3518,7 +3518,36 @@ describe('App UI flow', () => {
           output: 'Sandbox patch review run plan ready: src/notes.md',
         }),
       ],
-      checkpoints: [],
+      checkpoints: [
+        buildRunCheckpoint({
+          id: 'run_checkpoint_sandbox_patch_promotion',
+          runId: sandboxProducerRun.id,
+          stepId: 'run_step_sandbox_source',
+          kind: 'patch_promotion',
+          status: 'open',
+          payload: JSON.stringify({
+            version: 1,
+            kind: 'patch_promotion',
+            artifactId: 'artifact_sandbox_patch_1',
+            artifactSummary: '1 file(s): src/notes.md | Checks: lint: passed.',
+            sessionId: 'sandboxed_producer:sandbox_source_1',
+            descriptorId: 'workspace.staged_patch',
+            decisionId: 'decision_sandbox_patch_1',
+            decisionTitle: '确认提升 sandbox patch',
+            policySnapshot: {
+              descriptorId: 'workspace.staged_patch',
+            },
+            preview: [
+              'Summary: Update notes',
+              'Files: src/notes.md',
+              '*** Begin Patch',
+              '*** Update File: src/notes.md',
+              '+Reviewable note',
+              '*** End Patch',
+            ].join('\n'),
+          }),
+        }),
+      ],
     };
     const sandboxProducerApi: ElectronApi = {
       ...mockApi,
@@ -3549,6 +3578,18 @@ describe('App UI flow', () => {
       screen.getByText(
         'AgentRunLifecycle：source-ready / source=sandbox_source_1 / checks=test,lint / policy=network=disabled, promotion=decision_required, workspace mutation requires approved Decision / next=review patch-promotion Decision; workspace changes only after approval',
       ),
+    ).toBeTruthy();
+    expect(screen.getByText('审阅 sandbox 产出的 staged patch 证据')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Staged patch review：source=sandbox_source_1 / files=src/notes.md / checks=lint passed / promotion=open / Decision=确认提升 sandbox patch / workspace unchanged until Decision approval',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('Artifact：1 file(s): src/notes.md | Checks: lint: passed.'),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/Patch preview：\*\*\* Begin Patch \*\*\* Update File: src\/notes\.md/),
     ).toBeTruthy();
     expect(
       screen.getByText('Check evidence：lint passed；lint: passed'),

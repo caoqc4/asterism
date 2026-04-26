@@ -31,6 +31,16 @@ import {
 
 const RELATED_TIMELINE_PREVIEW_COUNT = 4;
 
+type StagedPatchReviewSummary = {
+  artifactSummary: string | null;
+  checks: string[];
+  decisionTitle: string | null;
+  files: string[];
+  patchPreview: string | null;
+  promotionStatus: string | null;
+  sourceId: string | null;
+};
+
 function formatRelatedTimelineSummary(event: TimelineEventRecord): string {
   return formatTaskTimelineEventSummary(event);
 }
@@ -356,6 +366,55 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
   return truncateSummary(checkpoint.payload);
 }
 
+function getStagedPatchReviewSummary(detail: RunDetailRecord | null): StagedPatchReviewSummary | null {
+  if (!detail) {
+    return null;
+  }
+
+  const sourceStep = (detail.steps ?? []).find((step) => step.title === 'Sandbox producer source ready');
+  const sourceInput = parseRunStepInput(sourceStep?.input);
+  const sourceFiles = sourceInput.get('files')
+    ?.split(',')
+    .map((file) => file.trim())
+    .filter(Boolean) ?? [];
+  const checks = (detail.steps ?? [])
+    .map((step) => {
+      const match = step.title.match(/^Sandbox producer check (passed|failed): (.+)$/);
+      return match ? `${match[2]} ${match[1]}` : null;
+    })
+    .filter((check): check is string => Boolean(check));
+  const promotionCheckpoint = (detail.checkpoints ?? []).find((checkpoint) => {
+    const payload = parseRunCheckpointPayload(checkpoint.payload);
+    return checkpoint.kind === 'patch_promotion' || payload?.kind === 'patch_promotion';
+  });
+  const promotionPayload = parseRunCheckpointPayload(promotionCheckpoint?.payload);
+  const preview = typeof promotionPayload?.preview === 'string' ? promotionPayload.preview : null;
+  const previewFiles = extractPreviewLine(preview, 'Files')
+    ?.split(',')
+    .map((file) => file.trim())
+    .filter(Boolean) ?? [];
+  const files = sourceFiles.length ? sourceFiles : previewFiles;
+
+  if (!sourceStep && !promotionCheckpoint) {
+    return null;
+  }
+
+  return {
+    artifactSummary: typeof promotionPayload?.artifactSummary === 'string'
+      ? promotionPayload.artifactSummary
+      : null,
+    checks,
+    decisionTitle: typeof promotionPayload?.decisionTitle === 'string'
+      ? promotionPayload.decisionTitle
+      : null,
+    files,
+    patchPreview: formatDiffPreview(preview),
+    promotionStatus: promotionCheckpoint?.status ?? null,
+    sourceId: sourceInput.get('source')
+      ?? (typeof promotionPayload?.sessionId === 'string' ? promotionPayload.sessionId : null),
+  };
+}
+
 type RunsPageProps = {
   aiStatus: AiConfigStatus | null;
   focusedRunId: string | null;
@@ -488,6 +547,7 @@ export function RunsPage({
     ? formatAgentSessionMetadataSummary(latestAgentSession)
     : null;
   const sandboxProducerLifecycle = formatSandboxProducerLifecycleSummary(latestAgentSession);
+  const stagedPatchReview = getStagedPatchReviewSummary(detail);
 
   return (
     <section className="tasks-layout">
@@ -588,6 +648,30 @@ export function RunsPage({
                 </div>
               </div>
             </div>
+            {stagedPatchReview ? (
+              <div className="task-card detail-card-group detail-card-wide">
+                <p className="eyebrow">Staged Patch Review</p>
+                <strong>审阅 sandbox 产出的 staged patch 证据</strong>
+                <p className="meta">
+                  Staged patch review：{
+                    [
+                      stagedPatchReview.sourceId ? `source=${stagedPatchReview.sourceId}` : null,
+                      stagedPatchReview.files.length ? `files=${stagedPatchReview.files.join(', ')}` : null,
+                      stagedPatchReview.checks.length ? `checks=${stagedPatchReview.checks.join(', ')}` : null,
+                      stagedPatchReview.promotionStatus ? `promotion=${stagedPatchReview.promotionStatus}` : null,
+                      stagedPatchReview.decisionTitle ? `Decision=${stagedPatchReview.decisionTitle}` : null,
+                      'workspace unchanged until Decision approval',
+                    ].filter(Boolean).join(' / ')
+                  }
+                </p>
+                {stagedPatchReview.artifactSummary ? (
+                  <p className="meta">Artifact：{stagedPatchReview.artifactSummary}</p>
+                ) : null}
+                {stagedPatchReview.patchPreview ? (
+                  <p className="meta">Patch preview：{stagedPatchReview.patchPreview}</p>
+                ) : null}
+              </div>
+            ) : null}
             <div className="task-card detail-card-group detail-card-wide">
               <p className="eyebrow">Execution Steps</p>
               <strong>{detailSteps.length ? '这次执行的步骤轨迹' : '这次执行还没有步骤轨迹'}</strong>

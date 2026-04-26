@@ -167,6 +167,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - The same panel now shows a pre-run context selection summary. It reuses the
   run-payload parser, shows selected path count/list or candidate count, and
   reminds users that files are not read until the run starts.
+- Runs detail now shows a display-only `Staged Patch Review` block when sandbox
+  source or patch-promotion checkpoint evidence exists, summarizing source,
+  files, checks, promotion status, linked Decision title, artifact summary, and
+  bounded patch preview while keeping workspace mutation Decision-gated.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -186,6 +190,9 @@ The project is past initial architecture assembly. Current work should favor pro
   src/main/domain/run/code-agent-workspace-context.test.ts`, `npm run
   accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally on
   2026-04-26 after adding renderer-only context-file candidate hints.
+- `npm test -- src/renderer/App.test.tsx`, `npm run accept:sandbox-coding`,
+  `npm run lint`, and `npm run build` passed locally on 2026-04-26 after
+  adding the Code Agent context selection summary and staged patch review block.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts
