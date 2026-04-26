@@ -312,12 +312,16 @@ Completed non-live slices:
 18. Optional Docker-backed check smoke for the same script, gated by the
     additional `TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS=true` environment
     variable so container startup and image pulls remain manual.
+19. Explicit local-container producer execution service that requires operator
+    confirmation before probing Docker, then passes the probe result into the
+    non-UI preview service. Without confirmation it returns blocked before any
+    Docker probe.
 
 Next slice:
 
-19. Add an explicit local-container producer execution entrypoint only after
-    manual Docker-backed checks are validated on a machine with Docker
-    available; keep UI/prompt exposure deferred.
+20. Decide where this explicit execution service is allowed to be invoked
+    from. UI/prompt exposure remains deferred until that product-surface
+    decision is accepted.
 
 ## Acceptance
 

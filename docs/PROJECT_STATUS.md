@@ -530,6 +530,19 @@ Latest local baseline:
   `TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS=true`, for local Docker-backed
   `test` / `lint` checks; this path remains manual and was not run in the
   current Docker-unavailable environment
+- `npm run accept:sandbox-coding:backend-preflight` passed locally on
+  2026-04-26 with Docker Desktop available: backend ready,
+  `dockerServer=29.3.1`
+- `TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE=true
+  TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS=true npm run
+  accept:sandbox-coding:producer-preview-smoke` passed locally on 2026-04-26:
+  Docker checks started, AI was not called, and the workspace stayed unchanged
+- `npm test -- src/main/domain/run/local-container-sandboxed-coding-producer-execution-service.test.ts`
+  passed locally on 2026-04-26 after adding the explicit local-container
+  producer execution service with operator confirmation before Docker probing
+- `npm run accept:sandbox-coding` and `npm run verify` passed locally on
+  2026-04-26 after adding the explicit execution service: 90 test files / 634
+  tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
