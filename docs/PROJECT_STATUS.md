@@ -100,9 +100,10 @@ The project is past initial architecture assembly. Current work should favor pro
   allowlisted `test` / `lint` toggles, and explicit Docker/Decision
   confirmation. The check toggles now come from a main-process read-only
   `workspaceRoot/package.json` script availability check, so missing `test` or
-  `lint` scripts are shown as unavailable and are not sent in the run payload.
-  It initially recorded only a local diagnostic; the dedicated manual sandbox
-  preview IPC path is now wired for this surface.
+  `lint` scripts are shown as unavailable and are not sent in the run payload;
+  the `run:triggerCodeAgent` IPC handler also rechecks availability before
+  creating the Run. It initially recorded only a local diagnostic; the
+  dedicated manual sandbox preview IPC path is now wired for this surface.
 - Runs detail now projects sandbox producer sessions into an
   `AgentRunLifecycle` summary with source id, check policy, network/promotion
   constraints, blocked reasons, and next recovery/review moves. Sandbox
