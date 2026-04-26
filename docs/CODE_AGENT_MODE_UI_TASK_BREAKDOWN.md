@@ -1051,16 +1051,17 @@ Runs detail now also shows the sandbox producer source from session metadata:
 local diagnostic previews are labeled as no-provider-call evidence, while
 model-backed runs are labeled as provider-backed and still Decision-gated.
 
-The model-backed disposable-workspace preview has now passed again after the env
-template and local-acceptance updates, using `package.json` as selected
-read-only context. The next product decision is no longer whether the model
-producer loop can produce a staged preview; it can. The next decision is whether
-the real Task detail UI is clear enough for a manual alpha operator to select
-runtime readiness, checks, context files, model-producer usage, and provider
-spend before launching the same path from the application.
+The real Task detail UI has now passed the local diagnostic staged-patch loop
+with isolated user data and a disposable workspace: a manual Code Agent run can
+start from Task detail, run an allowlisted Docker check, produce staged patch
+evidence in Runs, create a pending promotion Decision, jump from Runs to that
+Decision, and return to the Task object through a Code Agent recovery card. The
+default path still does not call providers or write workspace files.
 
-That next pass should use isolated user data and a disposable workspace. It
-should confirm the UI copy and button states first, then launch one model-backed
-Code Agent run only if the operator deliberately accepts provider spend. The
-expected outcome remains staged patch evidence plus Decision-gated promotion,
-not direct workspace mutation.
+The next product decision is no longer whether the UI can carry a local
+diagnostic staged-patch review loop; it can. The next decision is whether to
+spend one deliberate provider request from the real Task detail UI with
+`Use model producer` selected, explicit context files, selected checks,
+operator confirmation, and the same Decision-gated promotion boundary. The
+expected outcome remains staged patch evidence plus review, not direct
+workspace mutation.
