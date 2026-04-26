@@ -259,12 +259,13 @@ Current apply core: `SandboxPatchPromotionApplyService` calls the preflight
 gate, parses the sandbox review diff emitted by the staged patch collector,
 checks touched files against expected files, verifies current workspace content
 still matches the reviewed base, prepares all pending writes before writing any
-file, and marks the durable promotion record as `applied` or `blocked`. It is
-not yet called by Decision approval or UI flows.
+file, and marks the durable promotion record as `applied` or `blocked`.
+Decision approval calls it only when the default-off
+`enableSandboxPatchPromotionApply` flag is enabled.
 
 ### P4: Decision Approval Integration
 
-Status: first preflight-only integration implemented.
+Status: feature-flagged apply integration implemented.
 
 Change `DecisionService` only after P1-P3 exist. Approval should call the
 promotion service only when readiness is `ready`; otherwise it should fail
@@ -278,6 +279,11 @@ Current behavior: approved `patch_promotion` checkpoints call
 the checkpoint with touched-file evidence, while blocked results create a failed
 checkpoint RunStep, mark the Run failed, and record that no workspace files were
 written.
+
+Integration coverage now recreates the approval service after the promotion
+record, checkpoint, artifact, and Decision have already been persisted. This
+proves app-restart behavior for both default no-write approval and
+flag-enabled workspace application.
 
 ### P5: UI Copy Upgrade
 

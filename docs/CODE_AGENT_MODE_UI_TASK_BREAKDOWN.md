@@ -947,6 +947,8 @@ Acceptance:
   validation
 - blocked apply results fail closed and write no files
 - renderer copy distinguishes no-write mode from apply-enabled mode
+- real SQLite integration coverage recreates DecisionService after persistence
+  to verify restart-safe default no-write and flag-enabled apply behavior
 
 ## Deferred Tasks
 

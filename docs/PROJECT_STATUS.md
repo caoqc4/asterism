@@ -223,6 +223,11 @@ The project is past initial architecture assembly. Current work should favor pro
   `workspace.staged_patch` Decisions call the apply service and record applied,
   already-applied, or blocked outcomes in Run evidence. Settings and Decision
   copy reflect whether apply is enabled.
+- DecisionService integration coverage now validates restart-safe sandbox patch
+  promotion behavior against real SQLite and a temporary workspace: default
+  approval keeps the durable promotion pending and leaves workspace files
+  unchanged, while the enabled flag applies the reviewed patch and marks the
+  promotion applied.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -295,6 +300,10 @@ The project is past initial architecture assembly. Current work should favor pro
   run accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally
   on 2026-04-26 after wiring sandbox patch-promotion apply behind the default-off
   feature flag: 36 sandbox-coding files / 220 tests.
+- `npm test -- src/main/domain/decision/decision-service.integration.test.ts`,
+  `npm run accept:sandbox-coding`, `npm run lint`, and `npm run build` passed
+  locally on 2026-04-26 after adding restart-safe sandbox patch-promotion
+  approval coverage: 37 sandbox-coding files / 225 tests.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts
