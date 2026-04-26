@@ -325,11 +325,38 @@ Completed non-live slices:
     Task/Run UI shape, required readiness copy, sandbox policy summary, staged
     patch review expectations, and deferred tool families before any visible
     mode is built.
+22. First visible Code Agent UI tasks: runtime readiness block, manual intent
+    surface, check selection, automatic-start disabled copy, and Runs detail
+    lifecycle rendering.
+23. Manual Task detail Code Agent preview wiring through `run:triggerCodeAgent`,
+    still using a local staged diagnostic producer by default.
+24. Source-ready manual previews now persist patch artifacts,
+    `patch_promotion` checkpoints, and pending Decisions through the existing
+    patch-review persister.
+25. Staged-file plan contract for future model producer output: strict JSON,
+    bounded workspace-relative text files, sensitive-path blocking, duplicate
+    blocking, binary blocking, and staging-root-only writes.
+26. Non-live injected model producer loop adapter that builds the Code Agent
+    prompt, accepts an injected text generator, validates the generated plan,
+    emits staged-write producer events, and remains disconnected from normal UI
+    by default.
+27. Default-closed model producer runtime factory that blocks before resolving
+    AI config unless provider calls are explicitly allowed, requires sandbox
+    coding to be enabled, and wraps existing runtime text generation.
+28. Env-gated manual model producer opt-in through
+    `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=true`; absent the flag, the
+    manual UI path keeps the local diagnostic preview and never resolves
+    runtime AI config.
+29. Read-only model producer preflight and default-skipped one-request live
+    smoke commands for deliberate local validation without Docker or workspace
+    mutation.
 
 Next slice:
 
-22. Convert the proposed product-surface decision into UI tasks only after the
-    proposal is accepted and the Run detail display requirements are verified.
+30. Decide the first workspace-context input path for model producer runs. The
+    current producer prompt has task intent and completion criteria but does not
+    yet feed selected file context, retrieval snippets, or Skills/MCP/browser
+    observations into the sandboxed model loop.
 
 ## Acceptance
 

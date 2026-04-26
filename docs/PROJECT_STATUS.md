@@ -146,6 +146,10 @@ The project is past initial architecture assembly. Current work should favor pro
   requires `TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE=true`, reuses the
   preflight, validates the provider response through the staged-file plan
   parser, and still avoids Docker and workspace mutation.
+- The sandboxed coding producer design now records completed slices through
+  the env-gated model producer validation commands and names the next design
+  decision: the first bounded workspace-context input path for model producer
+  runs.
 - Decisions now distinguish `workspace.staged_patch` promotion checkpoints from
   direct `workspace.write_patch` checkpoints: approving the current sandbox
   promotion review records and resolves the checkpoint, but does not auto-apply

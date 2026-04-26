@@ -535,7 +535,7 @@ Implemented notes:
 
 These are intentionally outside the first visible mode:
 
-- model-visible generic coding tools
+- broad model-visible generic coding tools outside the sandboxed producer
 - arbitrary shell
 - package installation
 - network-enabled coding
@@ -546,3 +546,12 @@ These are intentionally outside the first visible mode:
 - remote sandbox defaulting
 
 Each needs its own decision before implementation.
+
+## Next Decision
+
+The next implementation decision is the first workspace-context input path for
+model producer runs. The current model producer prompt receives task title,
+patch intent, completion criteria, selected checks, and sandbox policy. It does
+not yet receive selected file snippets, retrieval results, skill outputs,
+browser observations, MCP context, or prior accepted task habits. That context
+must enter as bounded evidence before broader coding quality can improve.
