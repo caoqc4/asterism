@@ -8,6 +8,7 @@ import type { AgentToolExecutionPolicy } from '../../../shared/agent-tool-scaffo
 import type { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import type { SandboxPatchPromotionRepository } from '../../db/repositories/sandbox-patch-promotion-repository.js';
 import {
   createPatchPromotionCheckpointPayload,
   createResumeCheckpointPayload,
@@ -38,6 +39,7 @@ export class AgentCheckpointRecorder {
     private readonly runCheckpointRepository: RunCheckpointRepository,
     private readonly runStepRepository: RunStepRepository,
     private readonly decisionRepository: Pick<DecisionRepository, 'create'> | null = null,
+    private readonly sandboxPatchPromotionRepository: Pick<SandboxPatchPromotionRepository, 'createPending'> | null = null,
   ) {}
 
   async createToolPermissionCheckpoint(params: {
@@ -232,6 +234,24 @@ export class AgentCheckpointRecorder {
           })),
         )
       : checkpoint;
+    if (
+      decision
+      && this.sandboxPatchPromotionRepository
+      && params.expectedFiles?.length
+      && params.patchDigest
+    ) {
+      await this.sandboxPatchPromotionRepository.createPending({
+        artifactId: params.artifactId,
+        auditSummary: params.artifactSummary,
+        checkpointId: checkpointWithDecision.id,
+        decisionId: decision.id,
+        expectedFiles: params.expectedFiles,
+        patchDigest: params.patchDigest,
+        runId: params.runId,
+        sourceId: params.sessionId,
+        taskId: params.taskId,
+      });
+    }
     const summary = decision
       ? `Sandbox patch promotion 需要确认后才能继续，已创建 Decision：${decision.title}。`
       : 'Sandbox patch promotion 需要确认后才能继续。';

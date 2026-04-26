@@ -197,6 +197,10 @@ The project is past initial architecture assembly. Current work should favor pro
   `expectedFiles` and a `sha256:` patch digest computed over the sandbox patch
   artifact diff. Older checkpoint payloads remain valid and continue to surface
   as `missing_apply_metadata`.
+- Decision-linked patch-promotion checkpoint creation now writes a pending
+  `sandbox_patch_promotions` record when `expectedFiles` and `patchDigest` are
+  available. The record creation is idempotent by checkpoint id and is not wired
+  to Decision approval or workspace file application.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -241,6 +245,13 @@ The project is past initial architecture assembly. Current work should favor pro
   accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally on
   2026-04-26 after adding `expectedFiles` and `patchDigest` to newly generated
   sandbox patch-promotion checkpoint payloads.
+- `npm test -- src/main/domain/run/agent-checkpoint-recorder.test.ts
+  src/main/domain/run/sandbox-patch-review-persister.integration.test.ts
+  src/main/domain/run/sandbox-patch-review-run-adapter.integration.test.ts
+  src/main/db/repositories/sandbox-patch-promotion-repository.integration.test.ts`,
+  `npm run accept:sandbox-coding`, `npm run lint`, and `npm run build` passed
+  locally on 2026-04-26 after creating pending durable promotion records for
+  metadata-complete sandbox patch-promotion checkpoints.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts

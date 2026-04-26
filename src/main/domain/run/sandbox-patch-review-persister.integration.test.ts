@@ -7,6 +7,7 @@ import { ArtifactRepository } from '../../db/repositories/artifact-repository.js
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import { SandboxPatchPromotionRepository } from '../../db/repositories/sandbox-patch-promotion-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { makeTempDir } from '../../test-utils.js';
 import { AgentCheckpointRecorder } from './agent-checkpoint-recorder.js';
@@ -32,12 +33,14 @@ describe('SandboxPatchReviewPersister integration', () => {
     const artifactRepository = new ArtifactRepository();
     const runStepRepository = new RunStepRepository();
     const runCheckpointRepository = new RunCheckpointRepository();
+    const sandboxPatchPromotionRepository = new SandboxPatchPromotionRepository();
     const decisionRepository = new DecisionRepository();
     const task = await taskRepository.create({ title: 'Persist sandbox patch review' });
     const checkpointRecorder = new AgentCheckpointRecorder(
       runCheckpointRepository,
       runStepRepository,
       decisionRepository,
+      sandboxPatchPromotionRepository,
     );
     const persister = new SandboxPatchReviewPersister(
       artifactRepository,
@@ -115,12 +118,22 @@ describe('SandboxPatchReviewPersister integration', () => {
     });
 
     const artifacts = await artifactRepository.listRecentForTask(task.id);
+    const promotion = result.checkpoint
+      ? await sandboxPatchPromotionRepository.findByCheckpointId(result.checkpoint.checkpointId)
+      : null;
     const steps = await runStepRepository.listForRun('run_1');
     const checkpoints = await runCheckpointRepository.listForRun('run_1');
     const decisions = await decisionRepository.list();
 
     expect(result.artifact.kind).toBe('patch');
     expect(artifacts[0]?.id).toBe(result.artifact.id);
+    expect(promotion).toMatchObject({
+      artifactId: result.artifact.id,
+      decisionId: result.checkpoint?.decisionId,
+      expectedFiles: ['notes.md'],
+      sourceId: 'sandbox_1',
+      status: 'pending',
+    });
     expect(JSON.parse(artifacts[0]?.content ?? '{}')).toMatchObject({
       artifact: {
         summary: 'Reviewable sandbox patch',

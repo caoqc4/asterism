@@ -3,6 +3,7 @@ import { ArtifactRepository } from '../../db/repositories/artifact-repository.js
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import { SandboxPatchPromotionRepository } from '../../db/repositories/sandbox-patch-promotion-repository.js';
 import { AgentCheckpointRecorder } from './agent-checkpoint-recorder.js';
 import { LocalContainerSandboxProvider } from './local-container-sandbox-backend.js';
 import { SandboxPatchReviewPersister } from './sandbox-patch-review-persister.js';
@@ -35,6 +36,7 @@ export type SandboxPatchReviewServiceDependencies = {
   provider?: LocalContainerSandboxProvider;
   runCheckpointRepository?: RunCheckpointRepository;
   runStepRepository?: RunStepRepository;
+  sandboxPatchPromotionRepository?: SandboxPatchPromotionRepository | null;
 };
 
 export function evaluateSandboxPatchReviewAdapterAvailability(
@@ -70,10 +72,15 @@ export function resolveSandboxPatchReviewRunAdapter(params: {
     params.dependencies && 'decisionRepository' in params.dependencies
       ? params.dependencies.decisionRepository
       : new DecisionRepository();
+  const sandboxPatchPromotionRepository =
+    params.dependencies && 'sandboxPatchPromotionRepository' in params.dependencies
+      ? params.dependencies.sandboxPatchPromotionRepository
+      : new SandboxPatchPromotionRepository();
   const checkpointRecorder = new AgentCheckpointRecorder(
     runCheckpointRepository,
     runStepRepository,
     decisionRepository,
+    sandboxPatchPromotionRepository,
   );
   const persister = new SandboxPatchReviewPersister(
     artifactRepository,

@@ -65,10 +65,14 @@ describe('AgentCheckpointRecorder', () => {
         updatedAt: '2026-01-01T00:00:00.000Z',
       }),
     };
+    const sandboxPatchPromotionRepository = {
+      createPending: vi.fn().mockResolvedValue({ id: 'sandbox_patch_promotion_1' }),
+    };
     const recorder = new AgentCheckpointRecorder(
       runCheckpointRepository as never,
       runStepRepository as never,
       decisionRepository as never,
+      sandboxPatchPromotionRepository as never,
     );
 
     const result = await recorder.createToolPermissionCheckpoint({
@@ -215,10 +219,14 @@ describe('AgentCheckpointRecorder', () => {
         updatedAt: '2026-01-01T00:00:00.000Z',
       }),
     };
+    const sandboxPatchPromotionRepository = {
+      createPending: vi.fn().mockResolvedValue({ id: 'sandbox_patch_promotion_1' }),
+    };
     const recorder = new AgentCheckpointRecorder(
       runCheckpointRepository as never,
       runStepRepository as never,
       decisionRepository as never,
+      sandboxPatchPromotionRepository as never,
     );
 
     const result = await recorder.createPatchPromotionCheckpoint({
@@ -282,6 +290,17 @@ describe('AgentCheckpointRecorder', () => {
       decisionId: 'decision_patch_1',
       expectedFiles: ['src/a.ts'],
       patchDigest: 'sha256:abc123',
+    });
+    expect(sandboxPatchPromotionRepository.createPending).toHaveBeenCalledWith({
+      artifactId: 'artifact_1',
+      auditSummary: 'Reviewable sandbox patch',
+      checkpointId: 'run_checkpoint_1',
+      decisionId: 'decision_patch_1',
+      expectedFiles: ['src/a.ts'],
+      patchDigest: 'sha256:abc123',
+      runId: 'run_1',
+      sourceId: 'sandbox_session_1',
+      taskId: 'task_1',
     });
     expect(result).toEqual({
       checkpointId: 'run_checkpoint_1',

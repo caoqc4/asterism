@@ -558,6 +558,7 @@ async function persistCodeAgentPatchReview(params: {
       params.services.runCheckpointRepository,
       params.services.runStepRepository,
       params.services.decisionRepository,
+      params.services.sandboxPatchPromotionRepository,
     ),
   );
   const result = await persister.persist({

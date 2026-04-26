@@ -8,6 +8,7 @@ import { CompletionCriteriaRepository } from '../db/repositories/completion-crit
 import { RunCheckpointRepository } from '../db/repositories/run-checkpoint-repository.js';
 import { RunRepository } from '../db/repositories/run-repository.js';
 import { RunStepRepository } from '../db/repositories/run-step-repository.js';
+import { SandboxPatchPromotionRepository } from '../db/repositories/sandbox-patch-promotion-repository.js';
 import { ProcessTemplateRepository } from '../db/repositories/process-template-repository.js';
 import { SourceContextRepository } from '../db/repositories/source-context-repository.js';
 import { TaskDependencyRepository } from '../db/repositories/task-dependency-repository.js';
@@ -31,6 +32,7 @@ const decisionRepository = new DecisionRepository();
 const runRepository = new RunRepository();
 const runStepRepository = new RunStepRepository();
 const runCheckpointRepository = new RunCheckpointRepository();
+const sandboxPatchPromotionRepository = new SandboxPatchPromotionRepository();
 const artifactRepository = new ArtifactRepository();
 const blockerRepository = new BlockerRepository();
 const completionCriteriaRepository = new CompletionCriteriaRepository();
@@ -114,6 +116,7 @@ const services = {
   runRepository,
   runStepRepository,
   runCheckpointRepository,
+  sandboxPatchPromotionRepository,
   briefSnapshotRepository,
   waitingItemRepository,
   blockerRepository,

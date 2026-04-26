@@ -822,6 +822,28 @@ Acceptance:
 - old checkpoints still parse and surface `missing_apply_metadata`
 - no Decision approval path or apply service is enabled
 
+### T26: Pending Patch Promotion Record Creation
+
+Status: pending record creation implemented.
+
+Goal: connect readiness-eligible patch-promotion checkpoints to the durable
+promotion metadata table without applying files.
+
+Work:
+
+- inject `SandboxPatchPromotionRepository` into `AgentCheckpointRecorder`
+- create a pending promotion record after a Decision-linked patch-promotion
+  checkpoint has `expectedFiles` and `patchDigest`
+- key pending creation by checkpoint id for idempotency
+- wire the repository through service construction, IPC patch-review
+  persistence, and sandbox patch-review adapter factory
+
+Acceptance:
+
+- generated sandbox patch evidence creates a pending promotion record
+- missing apply metadata still skips pending record creation
+- no Decision approval path or workspace apply path is enabled
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:
@@ -840,6 +862,6 @@ Each needs its own decision before implementation.
 
 ## Next Decision
 
-The next implementation step is connecting ready patch-promotion checkpoints to
-the durable `sandbox_patch_promotions` pending record when they are created,
-still without applying workspace files.
+The next implementation step is a promotion apply service preflight that reads
+the pending record, artifact content, and checkpoint payload, validates they
+match, and returns `ready` or blocked reasons without writing files.

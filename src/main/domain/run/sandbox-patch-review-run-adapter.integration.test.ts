@@ -7,6 +7,7 @@ import { ArtifactRepository } from '../../db/repositories/artifact-repository.js
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import { SandboxPatchPromotionRepository } from '../../db/repositories/sandbox-patch-promotion-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { makeTempDir } from '../../test-utils.js';
 import { buildDefaultAgentSandboxCommandPolicy } from '../../../shared/agent-sandbox-provider.js';
@@ -35,12 +36,14 @@ describe('SandboxPatchReviewRunAdapter integration', () => {
     const artifactRepository = new ArtifactRepository();
     const runStepRepository = new RunStepRepository();
     const runCheckpointRepository = new RunCheckpointRepository();
+    const sandboxPatchPromotionRepository = new SandboxPatchPromotionRepository();
     const decisionRepository = new DecisionRepository();
     const provider = new LocalContainerSandboxProvider();
     const checkpointRecorder = new AgentCheckpointRecorder(
       runCheckpointRepository,
       runStepRepository,
       decisionRepository,
+      sandboxPatchPromotionRepository,
     );
     const persister = new SandboxPatchReviewPersister(
       artifactRepository,
@@ -88,6 +91,9 @@ describe('SandboxPatchReviewRunAdapter integration', () => {
       const steps = await runStepRepository.listForRun('run_1');
       const artifacts = await artifactRepository.listRecentForTask(task.id);
       const checkpoints = await runCheckpointRepository.listForRun('run_1');
+      const promotion = checkpoints[0]
+        ? await sandboxPatchPromotionRepository.findByCheckpointId(checkpoints[0].id)
+        : null;
       const decisions = await decisionRepository.list();
 
       expect(result.status).toBe('persisted');
@@ -106,6 +112,11 @@ describe('SandboxPatchReviewRunAdapter integration', () => {
       expect(checkpoints[0]).toMatchObject({
         kind: 'patch_promotion',
         status: 'open',
+      });
+      expect(promotion).toMatchObject({
+        checkpointId: checkpoints[0]?.id,
+        expectedFiles: ['notes.md'],
+        status: 'pending',
       });
       expect(decisions[0]).toMatchObject({
         sourceLabel: 'workspace.staged_patch',
