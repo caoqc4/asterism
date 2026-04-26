@@ -4,8 +4,10 @@ import type { AgentSandboxBackendProbe } from '../../../shared/agent-sandbox-pro
 import {
   buildSandboxedCodingProducerBackendBlockedPreviewResult,
   buildSandboxedCodingProducerBackendConnectionPlan,
+  buildSandboxedCodingProducerBackendLaunchEnvelope,
   evaluateSandboxedCodingProducerBackendConnectionGate,
   evaluateSandboxedCodingProducerBackendReadiness,
+  validateSandboxedCodingProducerBackendLaunchEnvelope,
 } from './sandboxed-coding-producer-backend.js';
 
 const request = {
@@ -294,5 +296,117 @@ describe('evaluateSandboxedCodingProducerBackendReadiness', () => {
     expect(result.sessionMetadata).toContain('blockedReasons=docker daemon unavailable');
     expect(result.sessionMetadata).toContain('workspace=/tmp/taskplane-workspace');
     expect(result.steps[0].input).toContain('gate=Sandboxed coding producer backend connection blocked: docker daemon unavailable');
+  });
+
+  it('builds and validates a ready backend launch envelope without starting a runner', () => {
+    const gate = evaluateSandboxedCodingProducerBackendConnectionGate({
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      probe: availableProbe,
+      request,
+    });
+
+    const envelope = buildSandboxedCodingProducerBackendLaunchEnvelope(gate);
+
+    expect(envelope).toMatchObject({
+      backendId: 'local-container',
+      backendKind: 'local_container',
+      commandPolicy: {
+        allowedScripts: ['lint', 'test'],
+      },
+      executionPolicy: {
+        network: 'disabled',
+        noCredentialPassthrough: true,
+        promotion: 'decision_required',
+      },
+      invariants: {
+        noCredentialPassthrough: true,
+        noHostEnvironment: true,
+        noHostProcess: true,
+        promotion: 'decision_required',
+        stagedWritesOnly: true,
+        workspaceReadOnly: true,
+      },
+      requiredRunner: 'local_container_sandboxed_coding_producer',
+      runId: 'run_1',
+      sessionId: 'sandboxed_producer:sandbox_source_1',
+      sourceId: 'sandbox_source_1',
+      status: 'ready',
+      taskId: 'task_1',
+      workspaceRoot: '/tmp/taskplane-workspace',
+    });
+    expect(validateSandboxedCodingProducerBackendLaunchEnvelope(envelope)).toMatchObject({
+      valid: true,
+      summary: 'Sandboxed coding producer backend launch envelope ready / backend=local-container / runner=local_container_sandboxed_coding_producer / run=run_1 / source=sandbox_source_1',
+    });
+  });
+
+  it('keeps launch envelopes blocked when the connection gate is closed', () => {
+    const gate = evaluateSandboxedCodingProducerBackendConnectionGate({
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      probe: {
+        backendId: 'local-container',
+        kind: 'local_container',
+        reason: 'docker daemon unavailable',
+        status: 'unavailable',
+      },
+      request,
+    });
+
+    const envelope = buildSandboxedCodingProducerBackendLaunchEnvelope(gate);
+
+    expect(envelope).toEqual({
+      blockedReasons: ['docker daemon unavailable'],
+      gateSummary: 'Sandboxed coding producer backend connection blocked: docker daemon unavailable',
+      status: 'blocked',
+      summary: 'Sandboxed coding producer backend launch blocked: docker daemon unavailable',
+    });
+    expect(validateSandboxedCodingProducerBackendLaunchEnvelope(envelope)).toEqual({
+      blockedReasons: ['docker daemon unavailable'],
+      summary: 'Sandboxed coding producer backend launch blocked: docker daemon unavailable',
+      valid: false,
+    });
+  });
+
+  it('rejects launch envelopes that weaken sandbox invariants', () => {
+    const gate = evaluateSandboxedCodingProducerBackendConnectionGate({
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      probe: availableProbe,
+      request,
+    });
+    const envelope = buildSandboxedCodingProducerBackendLaunchEnvelope(gate);
+    if (envelope.status !== 'ready') {
+      throw new Error('Expected a ready launch envelope');
+    }
+
+    const invalidEnvelope = {
+      ...envelope,
+      executionPolicy: {
+        ...envelope.executionPolicy,
+        network: 'allowlisted' as const,
+      },
+      invariants: {
+        ...envelope.invariants,
+        noHostEnvironment: false as true,
+      },
+      requiredRunner: 'remote_sandboxed_coding_producer' as const,
+    };
+
+    expect(validateSandboxedCodingProducerBackendLaunchEnvelope(invalidEnvelope)).toMatchObject({
+      valid: false,
+      blockedReasons: expect.arrayContaining([
+        'Local container backend launch envelope requires the local container producer runner.',
+        'Sandboxed coding producer backend launch envelope must start with disabled network.',
+        'Sandboxed coding producer backend launch envelope must preserve sandbox isolation invariants.',
+      ]),
+    });
   });
 });

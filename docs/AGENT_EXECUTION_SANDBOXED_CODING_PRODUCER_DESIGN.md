@@ -286,10 +286,14 @@ Completed non-live slices:
     existing producer preview/persister shape, so Docker/backend failures can
     create bounded `agent_sessions` metadata and a compact final RunStep without
     starting any runner.
+13. Backend launch envelope and fail-closed validation, keeping the future
+    runner handoff explicit about backend id/kind, runner family, run/task/source
+    identity, provider/model policy, disabled network, no credentials, read-only
+    workspace input, staged writes, and Decision-only promotion.
 
 Next slice:
 
-13. Connect a real sandbox backend only after a backend decision/review confirms
+14. Connect a real sandbox backend only after a backend decision/review confirms
    the implementation still satisfies the sandbox decision and source boundary.
 
 ## Acceptance

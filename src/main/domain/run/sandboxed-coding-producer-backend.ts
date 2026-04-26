@@ -65,6 +65,49 @@ export type SandboxedCodingProducerBackendConnectionPlan =
       workspaceRoot: string;
     };
 
+export type SandboxedCodingProducerBackendLaunchEnvelope =
+  | {
+      blockedReasons: string[];
+      gateSummary: string;
+      status: 'blocked';
+      summary: string;
+    }
+  | {
+      backendId: string;
+      backendKind: AgentSandboxBackendProfile['kind'];
+      commandPolicy: NormalizedSandboxedCodingProducerRequest['commandPolicy'];
+      executionPolicy: NormalizedSandboxedCodingProducerRequest['executionPolicy'];
+      invariants: {
+        noCredentialPassthrough: true;
+        noHostEnvironment: true;
+        noHostProcess: true;
+        promotion: 'decision_required';
+        stagedWritesOnly: true;
+        workspaceReadOnly: true;
+      };
+      modelPolicy: NormalizedSandboxedCodingProducerRequest['modelPolicy'];
+      requiredRunner: 'local_container_sandboxed_coding_producer' | 'remote_sandboxed_coding_producer';
+      runId: string;
+      sessionId: string;
+      sourceId: string;
+      status: 'ready';
+      summary: string;
+      taskId: string;
+      workspaceRoot: string;
+    };
+
+export type SandboxedCodingProducerBackendLaunchEnvelopeValidation =
+  | {
+      envelope: Extract<SandboxedCodingProducerBackendLaunchEnvelope, { status: 'ready' }>;
+      summary: string;
+      valid: true;
+    }
+  | {
+      blockedReasons: string[];
+      summary: string;
+      valid: false;
+    };
+
 export function evaluateSandboxedCodingProducerBackendReadiness(params: {
   featureFlags: FeatureFlags;
   probe: AgentSandboxBackendProbe;
@@ -170,6 +213,143 @@ export function buildSandboxedCodingProducerBackendConnectionPlan(
       `checks=${gate.request.commandPolicy.allowedScripts.join(',') || 'none'}`,
     ].join(' / '),
     workspaceRoot: gate.request.workspaceRoot,
+  };
+}
+
+export function buildSandboxedCodingProducerBackendLaunchEnvelope(
+  gate: SandboxedCodingProducerBackendConnectionGate,
+): SandboxedCodingProducerBackendLaunchEnvelope {
+  if (!gate.ready) {
+    return {
+      blockedReasons: gate.blockedReasons,
+      gateSummary: gate.summary,
+      status: 'blocked',
+      summary: `Sandboxed coding producer backend launch blocked: ${gate.blockedReasons.join(' ')}`,
+    };
+  }
+
+  const plan = buildSandboxedCodingProducerBackendConnectionPlan(gate);
+  if (plan.status !== 'ready') {
+    return {
+      blockedReasons: plan.blockedReasons,
+      gateSummary: plan.gateSummary,
+      status: 'blocked',
+      summary: `Sandboxed coding producer backend launch blocked: ${plan.blockedReasons.join(' ')}`,
+    };
+  }
+
+  return {
+    backendId: plan.backendId,
+    backendKind: plan.backendKind,
+    commandPolicy: gate.request.commandPolicy,
+    executionPolicy: gate.request.executionPolicy,
+    invariants: {
+      noCredentialPassthrough: true,
+      noHostEnvironment: true,
+      noHostProcess: true,
+      promotion: 'decision_required',
+      stagedWritesOnly: true,
+      workspaceReadOnly: true,
+    },
+    modelPolicy: gate.request.modelPolicy,
+    requiredRunner: plan.requiredRunner,
+    runId: gate.request.runId,
+    sessionId: `sandboxed_producer:${gate.request.sourceId}`,
+    sourceId: gate.request.sourceId,
+    status: 'ready',
+    summary: [
+      'Sandboxed coding producer backend launch envelope ready',
+      `backend=${plan.backendId}`,
+      `runner=${plan.requiredRunner}`,
+      `run=${gate.request.runId}`,
+      `source=${gate.request.sourceId}`,
+    ].join(' / '),
+    taskId: gate.request.taskId,
+    workspaceRoot: gate.request.workspaceRoot,
+  };
+}
+
+export function validateSandboxedCodingProducerBackendLaunchEnvelope(
+  value: SandboxedCodingProducerBackendLaunchEnvelope,
+): SandboxedCodingProducerBackendLaunchEnvelopeValidation {
+  if (value.status === 'blocked') {
+    return {
+      blockedReasons: value.blockedReasons.length
+        ? value.blockedReasons
+        : ['Sandboxed coding producer backend launch envelope is blocked.'],
+      summary: value.summary,
+      valid: false,
+    };
+  }
+
+  const blockedReasons: string[] = [];
+
+  for (const [field, fieldValue] of [
+    ['backendId', value.backendId],
+    ['runId', value.runId],
+    ['taskId', value.taskId],
+    ['sourceId', value.sourceId],
+    ['sessionId', value.sessionId],
+    ['workspaceRoot', value.workspaceRoot],
+  ] as const) {
+    if (!fieldValue.trim()) {
+      blockedReasons.push(`Sandboxed coding producer backend launch envelope requires ${field}.`);
+    }
+  }
+
+  if (value.backendKind === 'local_container' && value.requiredRunner !== 'local_container_sandboxed_coding_producer') {
+    blockedReasons.push('Local container backend launch envelope requires the local container producer runner.');
+  }
+
+  if (value.backendKind === 'remote' && value.requiredRunner !== 'remote_sandboxed_coding_producer') {
+    blockedReasons.push('Remote backend launch envelope requires the remote producer runner.');
+  }
+
+  if (value.executionPolicy.noCredentialPassthrough !== true || value.invariants.noCredentialPassthrough !== true) {
+    blockedReasons.push('Sandboxed coding producer backend launch envelope forbids credential passthrough.');
+  }
+
+  if (value.executionPolicy.network !== 'disabled') {
+    blockedReasons.push('Sandboxed coding producer backend launch envelope must start with disabled network.');
+  }
+
+  if (value.executionPolicy.promotion !== 'decision_required' || value.invariants.promotion !== 'decision_required') {
+    blockedReasons.push('Sandboxed coding producer backend launch envelope requires Decision promotion.');
+  }
+
+  if (value.modelPolicy.toolExposure !== 'sandboxed_coding_producer') {
+    blockedReasons.push('Sandboxed coding producer backend launch envelope requires sandbox-only tool exposure.');
+  }
+
+  if (
+    value.invariants.noHostEnvironment !== true
+    || value.invariants.noHostProcess !== true
+    || value.invariants.stagedWritesOnly !== true
+    || value.invariants.workspaceReadOnly !== true
+  ) {
+    blockedReasons.push('Sandboxed coding producer backend launch envelope must preserve sandbox isolation invariants.');
+  }
+
+  const allowedScripts = new Set<AgentSandboxCheckScript>(['test', 'lint']);
+  if (!value.commandPolicy.allowedScripts.length) {
+    blockedReasons.push('Sandboxed coding producer backend launch envelope requires allowlisted checks.');
+  }
+  if (value.commandPolicy.allowedScripts.some((script) => !allowedScripts.has(script))) {
+    blockedReasons.push('Sandboxed coding producer backend launch envelope only allows test/lint scripts.');
+  }
+
+  if (blockedReasons.length > 0) {
+    return {
+      blockedReasons,
+      summary: `Sandboxed coding producer backend launch envelope blocked: ${blockedReasons.join(' ')}`,
+      valid: false,
+    };
+  }
+
+  return {
+    envelope: value,
+    summary: value.summary,
+    valid: true,
   };
 }
 
