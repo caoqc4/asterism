@@ -8,6 +8,7 @@ export type SandboxedCodingProducerSessionMetadataInput = {
   network: 'disabled' | 'allowlisted';
   promotion: 'decision_required';
   providerKind: string;
+  producerSource?: 'local_diagnostic' | 'model_backed' | null;
   sessionId: string;
   sourceId: string;
   status: 'prepared' | 'running' | 'source_ready' | 'blocked' | 'failed' | 'paused';
@@ -78,6 +79,7 @@ export function formatSandboxedCodingProducerSessionMetadata(
     `sessionId=${sanitizeMetadataValue(input.sessionId)}`,
     `sourceId=${sanitizeMetadataValue(input.sourceId)}`,
     `provider=${sanitizeMetadataValue(input.providerKind)}`,
+    ...(input.producerSource ? [`producerSource=${input.producerSource}`] : []),
     `workspace=${sanitizeMetadataValue(input.workspaceRoot)}`,
     `commands=${sanitizeMetadataValue(input.commandScripts.join(',') || 'none')}`,
     `network=${sanitizeMetadataValue(input.network)}`,

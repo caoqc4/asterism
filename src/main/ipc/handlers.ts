@@ -676,6 +676,7 @@ function createManualCodeAgentPreviewLoop(params: {
           'Workspace input stayed read-only; promotion remains Decision-gated.',
         ],
       },
+      producerSource: 'local_diagnostic',
       sessionSummary: 'manual sandbox producer preview completed without external AI call',
       status: 'completed',
       summary: `Staged ${writeResult.files.join(', ')}`,

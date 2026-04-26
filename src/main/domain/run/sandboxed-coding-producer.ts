@@ -68,12 +68,14 @@ export type SandboxedCodingProducerResult =
 export type SandboxedCodingInjectedProducerRunnerResult =
   | {
       evidence?: Partial<SandboxPatchDraftSourceEvidence>;
+      producerSource?: 'local_diagnostic' | 'model_backed';
       sessionSummary: string;
       status: 'completed';
       summary: string;
     }
   | {
       reason: string;
+      producerSource?: 'local_diagnostic' | 'model_backed';
       sessionSummary: string;
       status: 'blocked' | 'failed' | 'paused';
     };
@@ -428,6 +430,7 @@ export async function previewSandboxedCodingInjectedProducerRun(params: {
       reason: runnerResult.reason,
       sessionMetadata: buildSandboxedCodingProducerPreviewSessionMetadata({
         blockedReasons: [runnerResult.reason],
+        producerSource: runnerResult.producerSource,
         request,
         sessionId,
         status: runnerResult.status,
@@ -461,6 +464,7 @@ export async function previewSandboxedCodingInjectedProducerRun(params: {
       reason,
       sessionMetadata: buildSandboxedCodingProducerPreviewSessionMetadata({
         blockedReasons: stagedPatch.blockedReasons,
+        producerSource: runnerResult.producerSource,
         request,
         sessionId,
         status: 'failed',
@@ -496,6 +500,7 @@ export async function previewSandboxedCodingInjectedProducerRun(params: {
       reason: plan.reason,
       sessionMetadata: buildSandboxedCodingProducerPreviewSessionMetadata({
         blockedReasons: [plan.reason],
+        producerSource: runnerResult.producerSource,
         request,
         sessionId,
         status: 'blocked',
@@ -529,6 +534,7 @@ export async function previewSandboxedCodingInjectedProducerRun(params: {
       reason,
       sessionMetadata: buildSandboxedCodingProducerPreviewSessionMetadata({
         blockedReasons: sourceResult.blockedReasons,
+        producerSource: runnerResult.producerSource,
         request,
         sessionId,
         status: 'failed',
@@ -553,6 +559,7 @@ export async function previewSandboxedCodingInjectedProducerRun(params: {
     events,
     plan,
     sessionMetadata: buildSandboxedCodingProducerPreviewSessionMetadata({
+      producerSource: runnerResult.producerSource,
       request,
       sessionId,
       status: 'source_ready',
@@ -567,6 +574,7 @@ export async function previewSandboxedCodingInjectedProducerRun(params: {
 
 function buildSandboxedCodingProducerPreviewSessionMetadata(params: {
   blockedReasons?: string[];
+  producerSource?: 'local_diagnostic' | 'model_backed';
   request: NormalizedSandboxedCodingProducerRequest;
   sessionId: string;
   status: 'running' | 'source_ready' | 'blocked' | 'failed' | 'paused';
@@ -577,6 +585,7 @@ function buildSandboxedCodingProducerPreviewSessionMetadata(params: {
     commandScripts: params.request.commandPolicy.allowedScripts,
     network: params.request.executionPolicy.network,
     promotion: params.request.executionPolicy.promotion,
+    producerSource: params.producerSource,
     providerKind: params.request.modelPolicy.providerKind,
     sessionId: params.sessionId,
     sourceId: params.request.sourceId,

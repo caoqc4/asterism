@@ -27,6 +27,7 @@ import {
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
   formatPreRunAgentCapabilitySummary,
+  formatSandboxProducerSourceSummary,
   formatSandboxProducerLifecycleSummary,
 } from '../lib/agentCapabilities';
 
@@ -589,6 +590,9 @@ export function RunsPage({
   const latestAgentSessionMetadata = latestAgentSession
     ? formatAgentSessionMetadataSummary(latestAgentSession)
     : null;
+  const sandboxProducerSource = latestAgentSession
+    ? formatSandboxProducerSourceSummary(latestAgentSession)
+    : null;
   const sandboxProducerLifecycle = formatSandboxProducerLifecycleSummary(latestAgentSession);
   const stagedPatchReview = getStagedPatchReviewSummary(detail);
 
@@ -629,6 +633,11 @@ export function RunsPage({
                   {latestAgentSessionMetadata ? (
                     <p className="meta">
                       Session metadata：{latestAgentSessionMetadata}
+                    </p>
+                  ) : null}
+                  {sandboxProducerSource ? (
+                    <p className="meta">
+                      {sandboxProducerSource}
                     </p>
                   ) : null}
                   {sandboxProducerLifecycle ? (

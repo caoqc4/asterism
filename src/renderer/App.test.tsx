@@ -3501,6 +3501,7 @@ describe('App UI flow', () => {
             'sessionId=sandboxed_producer:sandbox_source_1',
             'sourceId=sandbox_source_1',
             'provider=openai-compatible',
+            'producerSource=local_diagnostic',
             'commands=test,lint',
             'network=disabled',
             'promotion=decision_required',
@@ -3585,8 +3586,11 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        'Session metadata：Sandboxed coding producer / status=source_ready / provider=openai-compatible / session=sandboxed_producer:sandbox_source_1 / source=sandbox_source_1 / backend=local-container / commands=test,lint / network=disabled / promotion=decision_required / summary=Local container producer preview ready',
+        'Session metadata：Sandboxed coding producer / status=source_ready / producer=local diagnostic preview / provider=openai-compatible / session=sandboxed_producer:sandbox_source_1 / source=sandbox_source_1 / backend=local-container / commands=test,lint / network=disabled / promotion=decision_required / summary=Local container producer preview ready',
       ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('Producer source：local diagnostic preview / no provider call'),
     ).toBeTruthy();
     expect(
       screen.getByText(
@@ -3749,6 +3753,7 @@ describe('App UI flow', () => {
             'sessionId=sandboxed_producer:sandbox_source_1',
             'sourceId=sandbox_source_1',
             'provider=openai-compatible',
+            'producerSource=model_backed',
             'commands=test,lint',
             'network=disabled',
             'promotion=decision_required',
@@ -3801,8 +3806,11 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        'Session metadata：Sandboxed coding producer / status=blocked / provider=openai-compatible / session=sandboxed_producer:sandbox_source_1 / source=sandbox_source_1 / backend=local-container / commands=test,lint / network=disabled / promotion=decision_required / blockedReasons=docker daemon unavailable / summary=Sandboxed coding producer backend connection plan blocked: docker daemon unavailable',
+        'Session metadata：Sandboxed coding producer / status=blocked / producer=model-backed / provider=openai-compatible / session=sandboxed_producer:sandbox_source_1 / source=sandbox_source_1 / backend=local-container / commands=test,lint / network=disabled / promotion=decision_required / blockedReasons=docker daemon unavailable / summary=Sandboxed coding producer backend connection plan blocked: docker daemon unavailable',
       ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('Producer source：model-backed / provider call already spent for this run / Decision promotion still required'),
     ).toBeTruthy();
     expect(
       screen.getByText(

@@ -77,6 +77,7 @@ export function createCodeAgentModelProducerLoop(params: {
         modelSummary: normalizedPlan.plan.summary,
         observations: normalizedPlan.plan.observations,
       },
+      producerSource: 'model_backed',
       sessionSummary: [
         'model-backed sandbox producer loop completed through staged-file plan contract',
         `files=${writeResult.files.join(',')}`,

@@ -105,6 +105,7 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
   const sandboxPatchReviewPlanSummary = entries.get('sandboxPatchReviewPlanSummary');
   const sandboxPatchReviewPlanReason = entries.get('sandboxPatchReviewPlanReason');
   const producerStatus = entries.get('producerStatus');
+  const producerSource = entries.get('producerSource');
   const sessionId = entries.get('sessionId');
   const sourceId = entries.get('sourceId');
   const commands = entries.get('commands');
@@ -129,6 +130,7 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
     return [
       'Sandboxed coding producer',
       producerStatus ? `status=${producerStatus}` : null,
+      producerSource ? `producer=${formatSandboxProducerSourceLabel(producerSource)}` : null,
       provider && model ? `${provider} / ${model}` : provider ? `provider=${provider}` : null,
       sessionId ? `session=${sessionId}` : null,
       sourceId ? `source=${sourceId}` : null,
@@ -158,6 +160,36 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
   }
 
   return session.metadata.trim();
+}
+
+export function formatSandboxProducerSourceSummary(session: AgentSessionRecord): string | null {
+  const entries = parseAgentSessionMetadata(session.metadata);
+  if (entries.get('executor') !== 'sandboxed_coding_producer') {
+    return null;
+  }
+
+  const producerSource = entries.get('producerSource');
+  if (producerSource === 'local_diagnostic') {
+    return 'Producer source：local diagnostic preview / no provider call';
+  }
+
+  if (producerSource === 'model_backed') {
+    return 'Producer source：model-backed / provider call already spent for this run / Decision promotion still required';
+  }
+
+  return null;
+}
+
+function formatSandboxProducerSourceLabel(source: string): string {
+  if (source === 'local_diagnostic') {
+    return 'local diagnostic preview';
+  }
+
+  if (source === 'model_backed') {
+    return 'model-backed';
+  }
+
+  return source;
 }
 
 export function formatSandboxProducerLifecycleSummary(
