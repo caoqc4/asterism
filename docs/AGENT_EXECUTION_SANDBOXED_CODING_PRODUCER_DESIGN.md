@@ -300,14 +300,16 @@ Completed non-live slices:
     an injected producer loop, runs allowlisted checks through an injected
     command runner, emits bounded check events, and keeps Docker out of normal
     tests.
+16. Local-container producer preview service that composes backend preflight,
+    runner-session preparation, injected producer loop execution, existing
+    preview/persistence, and guaranteed session disposal. Blocked preflights
+    return diagnostics without preparing a provider session.
 
 Next slice:
 
-16. Connect the local-container runner adapter into the producer preview service
-   only after
-   [AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md](AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md)
-   confirms the implementation still satisfies the sandbox decision and source
-   boundary.
+17. Add manual local-container backend smoke wiring for this service, still
+    behind the disabled-by-default sandbox coding flag and without UI/prompt
+    exposure.
 
 ## Acceptance
 

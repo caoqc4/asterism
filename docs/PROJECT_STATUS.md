@@ -514,6 +514,13 @@ Latest local baseline:
 - `npm run accept:sandbox-coding` and `npm run verify` passed locally on
   2026-04-26 after adding the local-container producer runner adapter: 88 test
   files / 629 tests
+- `npm test -- src/main/domain/run/local-container-sandboxed-coding-producer-preview-service.test.ts`
+  passed locally on 2026-04-26 after connecting backend preflight, local
+  runner-session preparation, injected producer preview/persistence, and session
+  disposal in a non-UI service
+- `npm run accept:sandbox-coding` and `npm run verify` passed locally on
+  2026-04-26 after adding the local-container producer preview service: 89 test
+  files / 631 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
