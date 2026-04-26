@@ -123,6 +123,11 @@ The project is past initial architecture assembly. Current work should favor pro
   any live model wiring: only strict JSON plans with bounded workspace-relative
   text files can write to sandbox staging, while path escapes, sensitive files,
   duplicate paths, binary content, and oversized output are blocked.
+- The first non-live model producer loop adapter is in place but not UI-wired:
+  it builds a strict staged-file prompt from the normalized sandbox request,
+  accepts an injected `generatePlanText` function, validates the generated JSON
+  through the same staged-file contract, writes only accepted files to staging,
+  and blocks malformed output before any staged write.
 - Decisions now distinguish `workspace.staged_patch` promotion checkpoints from
   direct `workspace.write_patch` checkpoints: approving the current sandbox
   promotion review records and resolves the checkpoint, but does not auto-apply
@@ -619,6 +624,11 @@ Latest local baseline:
   `npm run lint`, `npm run build`, and full `npm test -- --reporter=dot`
   passed locally on 2026-04-26 after adding the Code Agent staged-file plan
   contract: 91 test files / 649 tests in the full pass
+- `npm test -- src/main/domain/run/code-agent-model-producer-loop.test.ts
+  src/main/domain/run/code-agent-staged-file-plan.test.ts`, `npm run
+  accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally on
+  2026-04-26 after adding the injected non-live model producer loop adapter:
+  28 sandbox-coding files / 174 tests
 - Added `docs/CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md` as the proposed
   product-surface gate before any visible Task/Run code-agent mode or
   model-visible coding tools are built

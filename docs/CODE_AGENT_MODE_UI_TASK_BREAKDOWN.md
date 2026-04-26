@@ -368,6 +368,41 @@ Implemented notes:
 - `npm run accept:sandbox-coding` includes the staged-file plan contract tests
   so future model-backed producer work cannot bypass this gate silently.
 
+### T9: Injected Model Producer Loop Adapter
+
+Status: first non-live adapter implemented; real provider wiring remains
+deferred.
+
+Goal: make the future model-backed Code Agent path a small adapter around the
+same staged-file contract instead of a new privileged execution surface.
+
+Work:
+
+- build the producer prompt from the normalized sandbox request
+- require the model-facing prompt to return strict JSON only
+- inject the text-generation function so tests and future providers share one
+  loop boundary
+- parse and validate generated output through the staged-file plan contract
+- write only validated files to sandbox staging and emit producer tool events
+
+Acceptance:
+
+- valid generated JSON writes staged files and returns bounded evidence
+- malformed generated output blocks before writing files
+- no live provider call is made by the adapter itself
+- the adapter remains unconnected from the current UI until a separate wiring
+  decision accepts provider spend and runtime behavior
+
+Implemented notes:
+
+- `code-agent-model-producer-loop` now exposes
+  `buildCodeAgentModelProducerPrompt()` and
+  `createCodeAgentModelProducerLoop({ generatePlanText })`.
+- The loop emits `staging.write_file` request/completion or blocked events,
+  then lets the existing producer runner perform allowlisted checks and patch
+  review planning.
+- `accept:sandbox-coding` includes the non-live adapter tests.
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:
