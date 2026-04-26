@@ -1,0 +1,344 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+import type { SandboxPatchPromotionRecord } from '../../../shared/types/sandbox-patch-promotion.js';
+import type { SandboxPatchPromotionRepository } from '../../db/repositories/sandbox-patch-promotion-repository.js';
+import type {
+  SandboxPatchPromotionPreflightResult,
+  SandboxPatchPromotionPreflightService,
+} from './sandbox-patch-promotion-preflight-service.js';
+import type { SandboxPatchReviewArtifactContent } from './sandbox-patch-review-persister.js';
+
+export type SandboxPatchPromotionApplyResult =
+  | {
+      auditSummary: string;
+      promotion: SandboxPatchPromotionRecord;
+      status: 'already_applied';
+      touchedFiles: string[];
+    }
+  | {
+      auditSummary: string;
+      promotion: SandboxPatchPromotionRecord;
+      status: 'applied';
+      touchedFiles: string[];
+    }
+  | {
+      auditSummary: string;
+      blockedReasons: string[];
+      promotion?: SandboxPatchPromotionRecord;
+      status: 'blocked';
+      touchedFiles: string[];
+    };
+
+type ParsedSandboxPatchFile = {
+  file: string;
+  newContent: string;
+  oldContent: string;
+};
+
+export class SandboxPatchPromotionApplyService {
+  constructor(
+    private readonly preflightService: Pick<SandboxPatchPromotionPreflightService, 'preflight'>,
+    private readonly promotionRepository: Pick<SandboxPatchPromotionRepository, 'markApplied' | 'markBlocked'>,
+    private readonly workspaceRootResolver: () => string,
+  ) {}
+
+  async apply(checkpointId: string): Promise<SandboxPatchPromotionApplyResult> {
+    const preflight = await this.preflightService.preflight(checkpointId);
+
+    if (preflight.status === 'blocked') {
+      return this.blocked(preflight.blockedReasons, undefined);
+    }
+
+    if (preflight.status === 'already_applied') {
+      return {
+        auditSummary: `Sandbox patch promotion already applied: checkpoint=${preflight.promotion.checkpointId}`,
+        promotion: preflight.promotion,
+        status: 'already_applied',
+        touchedFiles: preflight.promotion.expectedFiles,
+      };
+    }
+
+    return this.applyReady(preflight);
+  }
+
+  private async applyReady(
+    preflight: Extract<SandboxPatchPromotionPreflightResult, { status: 'ready' }>,
+  ): Promise<SandboxPatchPromotionApplyResult> {
+    const content = parseArtifactContent(preflight.artifact.content);
+    if (!content) {
+      return this.blocked(
+        ['Patch promotion artifact content is not valid sandbox patch review JSON.'],
+        preflight.promotion,
+      );
+    }
+
+    const parsedPatch = parseSandboxPatchDiff(content.artifact.diff);
+    const validation = await validateSandboxPatchApplication({
+      expectedFiles: preflight.promotion.expectedFiles,
+      parsedPatch,
+      workspaceRoot: this.workspaceRootResolver(),
+    });
+
+    if (!validation.valid) {
+      return this.blocked(validation.blockedReasons, preflight.promotion);
+    }
+
+    if (validation.alreadyApplied) {
+      const auditSummary = [
+        'Sandbox patch promotion already applied',
+        `checkpoint=${preflight.promotion.checkpointId}`,
+        `files=${validation.touchedFiles.join(', ')}`,
+      ].join(' / ');
+      const applied = await this.promotionRepository.markApplied(preflight.promotion.id, auditSummary);
+      return {
+        auditSummary,
+        promotion: applied,
+        status: 'already_applied',
+        touchedFiles: validation.touchedFiles,
+      };
+    }
+
+    for (const write of validation.pendingWrites) {
+      await fs.mkdir(path.dirname(write.filePath), { recursive: true });
+      await fs.writeFile(write.filePath, write.content, 'utf8');
+    }
+
+    const auditSummary = [
+      'Sandbox patch promotion applied',
+      `checkpoint=${preflight.promotion.checkpointId}`,
+      `files=${validation.touchedFiles.join(', ')}`,
+    ].join(' / ');
+    const applied = await this.promotionRepository.markApplied(preflight.promotion.id, auditSummary);
+
+    return {
+      auditSummary,
+      promotion: applied,
+      status: 'applied',
+      touchedFiles: validation.touchedFiles,
+    };
+  }
+
+  private async blocked(
+    blockedReasons: string[],
+    promotion: SandboxPatchPromotionRecord | undefined,
+  ): Promise<SandboxPatchPromotionApplyResult> {
+    const auditSummary = `Sandbox patch promotion apply blocked: ${blockedReasons.join(' ')}`;
+    const blockedPromotion = promotion
+      ? await this.promotionRepository.markBlocked(promotion.id, blockedReasons, auditSummary)
+      : undefined;
+
+    return {
+      auditSummary,
+      blockedReasons,
+      promotion: blockedPromotion,
+      status: 'blocked',
+      touchedFiles: [],
+    };
+  }
+}
+
+function parseArtifactContent(value: string): SandboxPatchReviewArtifactContent | null {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!isRecord(parsed) || !isRecord(parsed.artifact) || typeof parsed.artifact.diff !== 'string') {
+      return null;
+    }
+
+    return parsed as SandboxPatchReviewArtifactContent;
+  } catch {
+    return null;
+  }
+}
+
+function parseSandboxPatchDiff(diff: string): ParsedSandboxPatchFile[] {
+  const lines = diff.replace(/\r\n/g, '\n').split('\n');
+  const files: ParsedSandboxPatchFile[] = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    while (index < lines.length && !lines[index]?.startsWith('--- ')) {
+      index += 1;
+    }
+
+    if (index >= lines.length) {
+      break;
+    }
+
+    const oldHeader = lines[index] ?? '';
+    const newHeader = lines[index + 1] ?? '';
+    const hunkHeader = lines[index + 2] ?? '';
+    if (!newHeader.startsWith('+++ ') || !hunkHeader.startsWith('@@')) {
+      throw new Error('Sandbox patch promotion diff is not in the supported review format.');
+    }
+
+    const file = normalizeDiffFilePath(newHeader.slice('+++ '.length));
+    const oldLines: string[] = [];
+    const newLines: string[] = [];
+    index += 3;
+
+    while (index < lines.length && !lines[index]?.startsWith('--- ')) {
+      const line = lines[index] ?? '';
+      if (line.startsWith('-')) {
+        oldLines.push(line.slice(1));
+      } else if (line.startsWith('+')) {
+        newLines.push(line.slice(1));
+      } else if (line.trim()) {
+        throw new Error('Sandbox patch promotion diff contains unsupported context lines.');
+      }
+      index += 1;
+    }
+
+    files.push({
+      file,
+      newContent: joinDiffContent(newLines),
+      oldContent: oldHeader === '--- /dev/null' ? '' : joinDiffContent(oldLines),
+    });
+  }
+
+  if (!files.length) {
+    throw new Error('Sandbox patch promotion diff does not contain changed files.');
+  }
+
+  return files;
+}
+
+async function validateSandboxPatchApplication(params: {
+  expectedFiles: string[];
+  parsedPatch: ParsedSandboxPatchFile[];
+  workspaceRoot: string;
+}): Promise<
+  | {
+      alreadyApplied: boolean;
+      pendingWrites: Array<{ content: string; filePath: string }>;
+      touchedFiles: string[];
+      valid: true;
+    }
+  | {
+      blockedReasons: string[];
+      valid: false;
+    }
+> {
+  const workspaceRoot = path.resolve(params.workspaceRoot);
+  const expectedFiles = new Set(params.expectedFiles);
+  const blockedReasons: string[] = [];
+  const touchedFiles = params.parsedPatch.map((item) => item.file);
+  const pendingWrites: Array<{ content: string; filePath: string }> = [];
+  let alreadyApplied = true;
+
+  for (const file of touchedFiles) {
+    if (!expectedFiles.has(file)) {
+      blockedReasons.push(`Patch promotion touched unexpected file: ${file}`);
+    }
+
+    if (!isSafeWorkspaceRelativePath(file)) {
+      blockedReasons.push(`Patch promotion touched unsafe file: ${file}`);
+    }
+  }
+
+  if (!sameStringSet(touchedFiles, params.expectedFiles)) {
+    blockedReasons.push('Patch promotion touched files do not match expected files.');
+  }
+
+  if (blockedReasons.length) {
+    return { blockedReasons, valid: false };
+  }
+
+  for (const operation of params.parsedPatch) {
+    const filePath = resolveWorkspacePath(workspaceRoot, operation.file);
+    const currentContent = await readWorkspaceText(filePath);
+
+    if (currentContent === operation.newContent) {
+      continue;
+    }
+
+    alreadyApplied = false;
+
+    if (currentContent !== operation.oldContent) {
+      blockedReasons.push(`Patch promotion workspace content does not match reviewed base: ${operation.file}`);
+      continue;
+    }
+
+    pendingWrites.push({
+      content: operation.newContent,
+      filePath,
+    });
+  }
+
+  if (blockedReasons.length) {
+    return { blockedReasons, valid: false };
+  }
+
+  return {
+    alreadyApplied,
+    pendingWrites,
+    touchedFiles,
+    valid: true,
+  };
+}
+
+async function readWorkspaceText(filePath: string): Promise<string> {
+  try {
+    return await fs.readFile(filePath, 'utf8');
+  } catch (error) {
+    if (isNodeError(error) && error.code === 'ENOENT') {
+      return '';
+    }
+
+    throw error;
+  }
+}
+
+function resolveWorkspacePath(workspaceRoot: string, requestedPath: string): string {
+  const root = path.resolve(workspaceRoot);
+  const resolved = path.resolve(root, requestedPath);
+  const relative = path.relative(root, resolved);
+
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error('Patch promotion workspace path must stay inside the configured workspace root.');
+  }
+
+  return resolved;
+}
+
+function normalizeDiffFilePath(filePath: string): string {
+  return filePath.replace(/^a\//, '').replace(/^b\//, '').trim();
+}
+
+function joinDiffContent(lines: string[]): string {
+  return lines.length ? `${lines.join('\n')}\n` : '';
+}
+
+function sameStringSet(left: string[], right: string[]): boolean {
+  const leftSet = new Set(left);
+  const rightSet = new Set(right);
+  return leftSet.size === rightSet.size && [...leftSet].every((value) => rightSet.has(value));
+}
+
+function isSafeWorkspaceRelativePath(value: string): boolean {
+  const normalized = value.replaceAll('\\', '/').trim();
+  if (!normalized
+    || normalized.startsWith('/')
+    || normalized.startsWith('../')
+    || normalized.includes('/../')
+    || normalized === '.'
+    || normalized === '..') {
+    return false;
+  }
+
+  const segments = normalized.split('/');
+  return segments.every((segment) =>
+    Boolean(segment)
+    && segment !== '.git'
+    && segment !== 'node_modules'
+    && !segment.startsWith('.env'),
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error;
+}

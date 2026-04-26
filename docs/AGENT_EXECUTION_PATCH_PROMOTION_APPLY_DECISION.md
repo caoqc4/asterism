@@ -240,7 +240,8 @@ Decision approval or file writes yet.
 
 ### P3: Apply Service
 
-Status: read-only preflight implemented; workspace application still deferred.
+Status: first domain apply service implemented; Decision/UI integration still
+deferred.
 
 Implement `promoteStagedPatch()` behind main-process-only domain code. Reuse
 the same structured patch parser and all-or-nothing write posture used by
@@ -251,6 +252,13 @@ promotion record, checkpoint payload, and patch artifact agree on ids, expected
 files, digest, run, and task ownership. It returns `ready`, `blocked`, or
 `already_applied` without reading or writing workspace files. This is the input
 gate for the future apply service, not the apply service itself.
+
+Current apply core: `SandboxPatchPromotionApplyService` calls the preflight
+gate, parses the sandbox review diff emitted by the staged patch collector,
+checks touched files against expected files, verifies current workspace content
+still matches the reviewed base, prepares all pending writes before writing any
+file, and marks the durable promotion record as `applied` or `blocked`. It is
+not yet called by Decision approval or UI flows.
 
 ### P4: Decision Approval Integration
 

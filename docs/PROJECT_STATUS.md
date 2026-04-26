@@ -211,6 +211,11 @@ The project is past initial architecture assembly. Current work should favor pro
   the checkpoint with explicit no-write output; blocked preflight writes a failed
   RunStep, marks the Run failed, and does not fall through to model/tool resume
   or workspace file application.
+- The first sandbox patch-promotion apply core now exists as a domain service
+  but is not wired to Decision/UI approval yet. It parses the staged patch
+  collector's review diff, verifies expected files and current workspace base
+  content, prepares all writes before writing any file, detects already-promoted
+  content idempotently, and marks promotion records applied or blocked.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -273,6 +278,11 @@ The project is past initial architecture assembly. Current work should favor pro
   run accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally
   on 2026-04-26 after connecting Decision approval to the read-only
   patch-promotion preflight: 34 sandbox-coding files / 208 tests.
+- `npm test -- src/main/domain/run/sandbox-patch-promotion-apply-service.test.ts
+  src/main/domain/run/sandbox-patch-promotion-preflight-service.test.ts`, `npm
+  run accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally
+  on 2026-04-26 after adding the sandbox patch-promotion apply core: 35
+  sandbox-coding files / 211 tests.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts
