@@ -369,6 +369,7 @@ Design docs:
 - [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md)
 - [AGENT_EXECUTION_PATCH_DRAFT_SOURCE_DECISION.md](AGENT_EXECUTION_PATCH_DRAFT_SOURCE_DECISION.md)
 - [AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md](AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md)
+- [AGENT_EXECUTION_PATCH_PROMOTION_APPLY_DECISION.md](AGENT_EXECUTION_PATCH_PROMOTION_APPLY_DECISION.md)
 
 Implementation sequence:
 
@@ -395,6 +396,9 @@ Implementation sequence:
    checkpoint payload and `AgentCheckpointRecorder` now also recognize
    Decision-linked `patch_promotion` checkpoints, still without applying or
    promoting staged files.
+   `AGENT_EXECUTION_PATCH_PROMOTION_APPLY_DECISION.md` now defines the gates
+   required before this can safely advance from review-only confirmation to
+   actual workspace file application.
 6. Only after the above is accepted, expose a narrow coding-agent run option in
    the UI and prompt/provider exposure matrix. A shared eligibility gate now
    combines the default-off feature flag, sandbox provider capabilities,

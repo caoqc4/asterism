@@ -707,6 +707,29 @@ Acceptance:
 - the lookup uses existing Run detail checkpoint records
 - workspace mutation remains gated by separate Decision semantics
 
+### T21: Patch Promotion Apply Decision
+
+Status: decision proposal documented.
+
+Goal: define what must be true before approving a sandbox patch-promotion
+Decision can write workspace files.
+
+Work:
+
+- add `AGENT_EXECUTION_PATCH_PROMOTION_APPLY_DECISION.md`
+- separate review-only `workspace.staged_patch` confirmation from future
+  workspace mutation semantics
+- define pre-apply gates for source identity, policy snapshot, expected files,
+  digest, workspace state, and idempotency
+- split implementation into readiness model, durable promotion record, apply
+  service, Decision integration, and UI copy upgrade
+
+Acceptance:
+
+- no workspace file application is implemented in this slice
+- the next implementation step is a read-only promotion readiness evaluator
+- approval remains fail-closed until apply metadata and persistence exist
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:
@@ -725,8 +748,6 @@ Each needs its own decision before implementation.
 
 ## Next Decision
 
-The next implementation decision is the approval semantic for sandbox patch
-promotion. The UI can now guide a user from the Decision to the Run evidence,
-but current approval still records and closes the checkpoint rather than
-applying workspace files. Applying staged files needs a separate, explicit
-implementation plan and rollback story.
+The next implementation step is the read-only promotion readiness model. It
+should evaluate a `workspace.staged_patch` checkpoint as ready, blocked,
+already resolved, or missing apply metadata, without writing files.

@@ -174,6 +174,11 @@ The project is past initial architecture assembly. Current work should favor pro
 - Pending `workspace.staged_patch` Decisions now include a review-only
   `查看 Run 证据` action that resolves the checkpoint id back to the owning Run
   and opens the staged patch review surface before any approval action.
+- Patch promotion apply semantics are now documented in
+  `AGENT_EXECUTION_PATCH_PROMOTION_APPLY_DECISION.md`. The document keeps the
+  current approval path review-only, defines the pre-apply gates required before
+  workspace mutation, and names a read-only promotion readiness model as the
+  next implementation step.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
