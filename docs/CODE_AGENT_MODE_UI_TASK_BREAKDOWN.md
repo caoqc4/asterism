@@ -370,8 +370,8 @@ Implemented notes:
 
 ### T9: Injected Model Producer Loop Adapter
 
-Status: first non-live adapter implemented; real provider wiring remains
-deferred.
+Status: adapter implemented; live use remains gated by the manual run-level
+model producer opt-in.
 
 Goal: make the future model-backed Code Agent path a small adapter around the
 same staged-file contract instead of a new privileged execution surface.
@@ -390,7 +390,7 @@ Acceptance:
 - valid generated JSON writes staged files and returns bounded evidence
 - malformed generated output blocks before writing files
 - no live provider call is made by the adapter itself
-- the adapter remains unconnected from the current UI until a separate wiring
+- UI/runtime wiring can call the adapter only after a separate run-level
   decision accepts provider spend and runtime behavior
 
 Implemented notes:
@@ -405,8 +405,8 @@ Implemented notes:
 
 ### T10: Provider Runtime Factory Gate
 
-Status: first default-closed runtime factory implemented; UI/provider spend
-remains deferred.
+Status: default-closed runtime factory implemented; provider spend remains
+run-level gated.
 
 Goal: make live model-backed producer execution possible only through an
 explicit opt-in boundary, rather than by importing the adapter from a UI path.
@@ -418,7 +418,8 @@ Work:
   allowed
 - require `enableSandboxCodingAgent=true` before returning a model producer loop
 - wrap existing runtime text generation behind the injected model producer loop
-- keep the helper unconnected from the current Task detail Code Agent button
+- keep the helper default-closed until the current run explicitly allows model
+  producer provider calls
 
 Acceptance:
 

@@ -123,15 +123,17 @@ The project is past initial architecture assembly. Current work should favor pro
   any live model wiring: only strict JSON plans with bounded workspace-relative
   text files can write to sandbox staging, while path escapes, sensitive files,
   duplicate paths, binary content, and oversized output are blocked.
-- The first non-live model producer loop adapter is in place but not UI-wired:
-  it builds a strict staged-file prompt from the normalized sandbox request,
-  accepts an injected `generatePlanText` function, validates the generated JSON
-  through the same staged-file contract, writes only accepted files to staging,
-  and blocks malformed output before any staged write.
-- A default-closed Code Agent model producer runtime factory now exists but is
-  still not UI-wired: it blocks before resolving AI config unless provider
-  calls are explicitly allowed, requires `enableSandboxCodingAgent=true`, then
-  wraps existing runtime text generation in the staged-file producer adapter.
+- The first model producer loop adapter is in place and wired only behind the
+  manual Code Agent run gate: it builds a strict staged-file prompt from the
+  normalized sandbox request, accepts an injected `generatePlanText` function,
+  validates generated JSON through the same staged-file contract, writes only
+  accepted files to staging, and blocks malformed output before any staged
+  write.
+- A default-closed Code Agent model producer runtime factory now backs that
+  manual gate: it blocks before resolving AI config unless provider calls are
+  explicitly allowed for the current run, requires
+  `enableSandboxCodingAgent=true`, then wraps existing runtime text generation
+  in the staged-file producer adapter.
 - The Task detail manual Code Agent path now separates model-producer
   availability from provider-spend consent: `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=true`
   only exposes the capability, while each run must also select `Use model
