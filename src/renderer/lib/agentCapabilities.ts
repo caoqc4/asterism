@@ -4,6 +4,8 @@ import { getProviderExecutionCapabilities } from '@shared/agent-provider-capabil
 
 const SANDBOX_CODING_DISABLED_SUMMARY = 'sandbox coding lane disabled; workspace patch/commands unavailable';
 const SANDBOX_CODING_GATED_SUMMARY = 'sandbox coding lane gate enabled; waiting for provider eligibility';
+const CODE_AGENT_AUTOMATIC_START_POLICY_SUMMARY =
+  'Automatic start：disabled / requires mature skill or process, complete inputs, allowed tools, risk policy, accepted evidence or explicit enablement, and runtime readiness / no scheduler or auto-run flag is persisted';
 
 function formatProviderSummary(aiStatus: AiConfigStatus | null): string {
   if (!aiStatus?.provider || !aiStatus.model) {
@@ -299,4 +301,8 @@ export function formatExecutionRuntimeReadinessSummary(
   }
 
   return `ExecutionRuntime：not ready / ${status.summary}`;
+}
+
+export function formatCodeAgentAutomaticStartPolicySummary(): string {
+  return CODE_AGENT_AUTOMATIC_START_POLICY_SUMMARY;
 }

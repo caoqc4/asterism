@@ -2843,6 +2843,9 @@ describe('App UI flow', () => {
     expect(intent.getByText('AgentProfile：manual sandbox producer')).toBeTruthy();
     expect(intent.getByText(/Task：High risk task/)).toBeTruthy();
     expect(intent.getByText(/Skill readiness：deferred until policy exists/)).toBeTruthy();
+    expect(intent.getByText(
+      'Automatic start：disabled / requires mature skill or process, complete inputs, allowed tools, risk policy, accepted evidence or explicit enablement, and runtime readiness / no scheduler or auto-run flag is persisted',
+    )).toBeTruthy();
     expect(intent.getByText(/Completion criteria：暂无/)).toBeTruthy();
 
     const startButton = intent.getByRole('button', { name: '准备 Code Agent Run' });

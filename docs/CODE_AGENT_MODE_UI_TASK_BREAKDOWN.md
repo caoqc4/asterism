@@ -207,6 +207,9 @@ Implemented notes:
 
 ### T5: Future Automatic Start Policy Stub
 
+Status: completed as a disabled policy diagnostic on the manual intent surface.
+No scheduler or auto-run behavior is enabled.
+
 Goal: reserve the product boundary for automatic starts without enabling them
 in the first UI.
 
@@ -225,6 +228,16 @@ Acceptance:
 - first UI cannot schedule or auto-start a code-agent run
 - docs explain what later policy work must prove before auto-start exists
 - no scheduler integration is introduced
+
+Implemented notes:
+
+- The manual Code Agent intent surface now renders `Automatic start: disabled`
+  and lists the future policy signals required before automatic start can be
+  reconsidered: mature skill/process, complete inputs, allowed tools, risk
+  policy, accepted evidence or explicit enablement, and runtime readiness.
+- Preparing a Code Agent Run still records only a local intent diagnostic in
+  the renderer; it does not persist an auto-run flag and does not call the
+  scheduler or producer execution path.
 
 ### T6: Manual Alpha Validation
 

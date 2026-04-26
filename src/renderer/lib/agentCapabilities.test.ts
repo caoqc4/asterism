@@ -4,6 +4,7 @@ import type { AiConfigStatus } from '@shared/types/settings';
 import {
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
+  formatCodeAgentAutomaticStartPolicySummary,
   formatExecutionRuntimeReadinessSummary,
   formatPreRunAgentCapabilitySummary,
   formatSandboxProducerLifecycleSummary,
@@ -27,6 +28,12 @@ function buildAiStatus(provider: AiConfigStatus['provider']): AiConfigStatus {
 }
 
 describe('agent capability formatting', () => {
+  it('keeps automatic code-agent start disabled until policy signals exist', () => {
+    expect(formatCodeAgentAutomaticStartPolicySummary()).toBe(
+      'Automatic start：disabled / requires mature skill or process, complete inputs, allowed tools, risk policy, accepted evidence or explicit enablement, and runtime readiness / no scheduler or auto-run flag is persisted',
+    );
+  });
+
   it('keeps the pre-run preview honest before a provider is configured', () => {
     expect(formatPreRunAgentCapabilitySummary(null, false)).toBe(
       'Agent 能力预览：provider not configured / text-only planning unavailable until AI config is ready / read-only workspace context disabled for this run / task update/evidence tools disabled for this run / structured tool calls unavailable until AI config is ready / sandbox coding lane disabled; workspace patch/commands unavailable',

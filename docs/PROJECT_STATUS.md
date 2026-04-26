@@ -103,6 +103,9 @@ The project is past initial architecture assembly. Current work should favor pro
   producer steps now show readable check evidence, staged patch source
   readiness, and blocked/failed/paused diagnostics while preserving
   Decision-only workspace mutation.
+- The manual Code Agent intent surface now also shows automatic start as
+  disabled, with the future maturity/input/tool/risk/evidence/runtime policy
+  signals listed explicitly and no scheduler or auto-run flag persisted.
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
   now records the completed Slice 0 execution-layer pass: runtime events,
   event-driven RunStep projection, checkpoint normalization, restart-safe

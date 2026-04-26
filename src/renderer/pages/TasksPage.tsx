@@ -73,6 +73,7 @@ import {
   orderTaskTransitions,
 } from '@shared/working-context/transitions';
 import {
+  formatCodeAgentAutomaticStartPolicySummary,
   formatExecutionRuntimeReadinessSummary,
   formatPreRunAgentCapabilitySummary,
 } from '../lib/agentCapabilities';
@@ -2120,6 +2121,9 @@ export function TasksPage({
           <strong>AgentProfile：manual sandbox producer</strong>
           <p className="meta">
             Task：{detail?.title ?? '未选择任务'} / Skill readiness：deferred until policy exists
+          </p>
+          <p className="meta">
+            {formatCodeAgentAutomaticStartPolicySummary()}
           </p>
           <p className="meta">
             Completion criteria：{
