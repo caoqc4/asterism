@@ -32,6 +32,16 @@ export type AiConfigStatus = {
   configured: boolean;
   apiKeyStored: boolean;
   apiKeySource: 'keychain' | 'env' | null;
+  codeAgentWorkspaceChecks?: {
+    lint: {
+      available: boolean;
+      reason: string;
+    };
+    test: {
+      available: boolean;
+      reason: string;
+    };
+  };
   codeAgentModelProducerEnabled?: boolean;
   provider: AiProvider | null;
   model: string | null;

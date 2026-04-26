@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 import keytar from 'keytar';
 
 import type { AiConfigInput, AiConfigStatus, AiProvider, FeatureFlags } from '../../shared/types/settings.js';
@@ -14,6 +17,7 @@ const DEFAULT_TOOL_SCAFFOLD_POLICY = {
   allowTaskMutationTools: false,
 };
 const ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV = 'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER';
+const CODE_AGENT_CHECK_SCRIPTS = ['test', 'lint'] as const;
 
 export type RuntimeAiConfig = {
   provider: AiProvider;
@@ -23,6 +27,57 @@ export type RuntimeAiConfig = {
   apiKey: string;
   featureFlags: FeatureFlags;
 };
+
+function detectCodeAgentWorkspaceChecks(
+  workspaceRoot: string | null,
+): NonNullable<AiConfigStatus['codeAgentWorkspaceChecks']> {
+  const unavailable = (reason: string) => ({
+    lint: {
+      available: false,
+      reason,
+    },
+    test: {
+      available: false,
+      reason,
+    },
+  });
+
+  if (!workspaceRoot?.trim()) {
+    return unavailable('workspace root is not configured.');
+  }
+
+  const packageJsonPath = path.join(workspaceRoot, 'package.json');
+
+  try {
+    if (!fs.existsSync(packageJsonPath)) {
+      return unavailable('package.json was not found in the configured workspace root.');
+    }
+
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as {
+      scripts?: Record<string, unknown>;
+    };
+    const scripts = packageJson.scripts && typeof packageJson.scripts === 'object'
+      ? packageJson.scripts
+      : {};
+
+    return Object.fromEntries(CODE_AGENT_CHECK_SCRIPTS.map((script) => {
+      const value = scripts[script];
+      const available = typeof value === 'string' && Boolean(value.trim());
+
+      return [
+        script,
+        {
+          available,
+          reason: available
+            ? `package.json exposes npm run ${script}.`
+            : `package.json does not expose npm run ${script}.`,
+        },
+      ];
+    })) as NonNullable<AiConfigStatus['codeAgentWorkspaceChecks']>;
+  } catch {
+    return unavailable('package.json could not be read or parsed.');
+  }
+}
 
 export class AiConfigService {
   constructor(private readonly appConfigService: AppConfigService) {}
@@ -54,6 +109,7 @@ export class AiConfigService {
       configured: Boolean(apiKey),
       apiKeyStored: Boolean(storedApiKey),
       apiKeySource: envApiKey ? 'env' : storedApiKey ? 'keychain' : null,
+      codeAgentWorkspaceChecks: detectCodeAgentWorkspaceChecks(config.workspaceRoot),
       codeAgentModelProducerEnabled: readEnvBoolean(ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV) === true,
       provider: config.aiProvider,
       model: config.aiModel,
@@ -90,6 +146,7 @@ export class AiConfigService {
       configured: Boolean(apiKey),
       apiKeyStored: Boolean(storedApiKey),
       apiKeySource: envApiKey ? 'env' : storedApiKey ? 'keychain' : null,
+      codeAgentWorkspaceChecks: detectCodeAgentWorkspaceChecks(config.workspaceRoot),
       codeAgentModelProducerEnabled: readEnvBoolean(ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV) === true,
       provider: config.aiProvider,
       model: config.aiModel,

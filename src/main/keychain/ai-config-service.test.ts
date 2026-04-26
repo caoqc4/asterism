@@ -70,6 +70,17 @@ describe('AiConfigService', () => {
 
   it('trims and stores new API keys when settings are saved', async () => {
     getPasswordMock.mockResolvedValue('new-secret');
+    const workspaceRoot = path.join(tempRoot, 'workspace');
+    fs.mkdirSync(workspaceRoot, { recursive: true });
+    fs.writeFileSync(
+      path.join(workspaceRoot, 'package.json'),
+      JSON.stringify({
+        scripts: {
+          test: 'vitest run',
+        },
+      }),
+      'utf8',
+    );
     const { AppConfigService } = await import('../config/app-config-service.js');
     const { AiConfigService } = await import('./ai-config-service.js');
     const service = new AiConfigService(new AppConfigService(() => tempRoot));
@@ -78,7 +89,7 @@ describe('AiConfigService', () => {
       provider: 'openai',
       model: ' gpt-4.1 ',
       baseUrl: ' https://relay.example.com/v1 ',
-      workspaceRoot: ' /tmp/taskplane-workspace ',
+      workspaceRoot: ` ${workspaceRoot} `,
       apiKey: '  new-secret  ',
       featureFlags: {
         enableScheduler: true,
@@ -89,9 +100,19 @@ describe('AiConfigService', () => {
     expect(status.provider).toBe('openai');
     expect(status.model).toBe('gpt-4.1');
     expect(status.baseUrl).toBe('https://relay.example.com/v1');
-    expect(status.workspaceRoot).toBe('/tmp/taskplane-workspace');
+    expect(status.workspaceRoot).toBe(workspaceRoot);
     expect(status.apiKeySource).toBe('keychain');
     expect(status.configured).toBe(true);
+    expect(status.codeAgentWorkspaceChecks).toEqual({
+      lint: {
+        available: false,
+        reason: 'package.json does not expose npm run lint.',
+      },
+      test: {
+        available: true,
+        reason: 'package.json exposes npm run test.',
+      },
+    });
     expect(status.toolScaffoldSummaries?.map((summary) => summary.family)).toEqual([
       'task_domain',
       'workspace_coding',
@@ -128,6 +149,30 @@ describe('AiConfigService', () => {
     expect(runtimeConfig.provider).toBe('fal-openrouter');
     expect(runtimeConfig.workspaceRoot).toBe('/tmp/taskplane-workspace');
     expect(setPasswordMock).not.toHaveBeenCalled();
+  });
+
+  it('reports Code Agent checks unavailable when workspace package metadata is missing', async () => {
+    getPasswordMock.mockResolvedValue(null);
+    const { AppConfigService } = await import('../config/app-config-service.js');
+    const { AiConfigService } = await import('./ai-config-service.js');
+    const appConfigService = new AppConfigService(() => tempRoot);
+    appConfigService.write({
+      workspaceRoot: path.join(tempRoot, 'missing-workspace'),
+    });
+    const service = new AiConfigService(appConfigService);
+
+    const status = await service.getStatus();
+
+    expect(status.codeAgentWorkspaceChecks).toEqual({
+      lint: {
+        available: false,
+        reason: 'package.json was not found in the configured workspace root.',
+      },
+      test: {
+        available: false,
+        reason: 'package.json was not found in the configured workspace root.',
+      },
+    });
   });
 
   it('rejects runtime config resolution when no API key is stored', async () => {

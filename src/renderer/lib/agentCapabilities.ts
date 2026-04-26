@@ -341,7 +341,9 @@ export function formatCodeAgentStartBlockedReason(input: {
   runPending: boolean;
   selectedContextFileCount: number;
   testCheck: boolean;
+  testCheckAvailable: boolean;
   lintCheck: boolean;
+  lintCheckAvailable: boolean;
   useModelProducer: boolean;
 }): string | null {
   if (input.runPending) {
@@ -360,8 +362,12 @@ export function formatCodeAgentStartBlockedReason(input: {
     return 'Start blocked：select at least one context file before using model producer.';
   }
 
+  if (!input.testCheckAvailable && !input.lintCheckAvailable) {
+    return 'Start blocked：no package.json test/lint scripts are available.';
+  }
+
   if (!input.testCheck && !input.lintCheck) {
-    return 'Start blocked：select at least one allowlisted check.';
+    return 'Start blocked：select at least one available allowlisted check.';
   }
 
   return null;

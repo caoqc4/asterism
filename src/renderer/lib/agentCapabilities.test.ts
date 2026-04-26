@@ -230,30 +230,36 @@ describe('agent capability formatting', () => {
 
     expect(formatCodeAgentStartBlockedReason({
       aiStatus: null,
+      lintCheckAvailable: true,
       lintCheck: true,
       operatorConfirmed: true,
       runPending: false,
       selectedContextFileCount: 1,
+      testCheckAvailable: true,
       testCheck: true,
       useModelProducer: true,
     })).toBe('Start blocked：check Code Agent runtime readiness first.');
 
     expect(formatCodeAgentStartBlockedReason({
       aiStatus: readyStatus,
+      lintCheckAvailable: true,
       lintCheck: true,
       operatorConfirmed: false,
       runPending: false,
       selectedContextFileCount: 1,
+      testCheckAvailable: true,
       testCheck: true,
       useModelProducer: true,
     })).toBe('Start blocked：confirm Docker/Decision review before starting.');
 
     expect(formatCodeAgentStartBlockedReason({
       aiStatus: readyStatus,
+      lintCheckAvailable: true,
       lintCheck: true,
       operatorConfirmed: true,
       runPending: false,
       selectedContextFileCount: 0,
+      testCheckAvailable: true,
       testCheck: true,
       useModelProducer: true,
     })).toBe('Start blocked：select at least one context file before using model producer.');
@@ -261,20 +267,36 @@ describe('agent capability formatting', () => {
     expect(formatCodeAgentStartBlockedReason({
       aiStatus: readyStatus,
       lintCheck: false,
+      lintCheckAvailable: false,
       operatorConfirmed: true,
       runPending: false,
       selectedContextFileCount: 1,
       testCheck: false,
+      testCheckAvailable: false,
       useModelProducer: false,
-    })).toBe('Start blocked：select at least one allowlisted check.');
+    })).toBe('Start blocked：no package.json test/lint scripts are available.');
+
+    expect(formatCodeAgentStartBlockedReason({
+      aiStatus: readyStatus,
+      lintCheck: false,
+      lintCheckAvailable: true,
+      operatorConfirmed: true,
+      runPending: false,
+      selectedContextFileCount: 1,
+      testCheck: false,
+      testCheckAvailable: true,
+      useModelProducer: false,
+    })).toBe('Start blocked：select at least one available allowlisted check.');
 
     expect(formatCodeAgentStartBlockedReason({
       aiStatus: readyStatus,
       lintCheck: true,
+      lintCheckAvailable: true,
       operatorConfirmed: true,
       runPending: false,
       selectedContextFileCount: 1,
       testCheck: false,
+      testCheckAvailable: true,
       useModelProducer: true,
     })).toBeNull();
   });

@@ -2881,6 +2881,16 @@ describe('App UI flow', () => {
       getAiConfigStatus: vi.fn(async () => ({
         ...aiStatus,
         codeAgentModelProducerEnabled: true,
+        codeAgentWorkspaceChecks: {
+          lint: {
+            available: true,
+            reason: 'package.json exposes npm run lint.',
+          },
+          test: {
+            available: true,
+            reason: 'package.json exposes npm run test.',
+          },
+        },
         sandboxBackendStatus: readySandboxBackendStatus,
       })),
       getRunDetail: vi.fn(async (runId: string) => (runId === codeAgentRun.id ? codeAgentRun : null)),

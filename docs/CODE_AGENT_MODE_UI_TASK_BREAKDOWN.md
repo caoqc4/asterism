@@ -169,6 +169,9 @@ Implemented notes:
 - The form shows the selected Task, current completion criteria, a patch intent
   textarea, allowlisted `test` / `lint` check toggles, and explicit Docker /
   Decision confirmation.
+- The `test` / `lint` toggles are backed by main-process read-only
+  `workspaceRoot/package.json` script detection. Missing scripts render as
+  unavailable and cannot be selected or sent in `requestedChecks`.
 - The first version originally recorded an intent-only diagnostic. The current
   implementation now calls only the dedicated `run:triggerCodeAgent` path after
   explicit operator confirmation, creates a real Run, and opens Runs detail for

@@ -1334,8 +1334,8 @@ export function TasksPage({
 
     try {
       const requestedChecks = [
-        codeAgentRunTestCheck ? 'test' : null,
-        codeAgentRunLintCheck ? 'lint' : null,
+        codeAgentSelectedTestCheck ? 'test' : null,
+        codeAgentSelectedLintCheck ? 'lint' : null,
       ].filter((check): check is 'test' | 'lint' => Boolean(check));
       const contextFiles = parseCodeAgentContextFileInput(codeAgentContextFiles);
       const created = await onTriggerCodeAgentRun({
@@ -2113,13 +2113,19 @@ export function TasksPage({
   const codeAgentEffectiveUseModelProducer = Boolean(
     aiStatus?.codeAgentModelProducerEnabled && codeAgentUseModelProducer,
   );
+  const codeAgentTestAvailable = aiStatus?.codeAgentWorkspaceChecks?.test.available === true;
+  const codeAgentLintAvailable = aiStatus?.codeAgentWorkspaceChecks?.lint.available === true;
+  const codeAgentSelectedTestCheck = codeAgentRunTestCheck && codeAgentTestAvailable;
+  const codeAgentSelectedLintCheck = codeAgentRunLintCheck && codeAgentLintAvailable;
   const codeAgentStartBlockedReason = formatCodeAgentStartBlockedReason({
     aiStatus,
-    lintCheck: codeAgentRunLintCheck,
+    lintCheck: codeAgentSelectedLintCheck,
+    lintCheckAvailable: codeAgentLintAvailable,
     operatorConfirmed: codeAgentOperatorConfirmed,
     runPending: codeAgentRunPending,
     selectedContextFileCount: selectedCodeAgentContextFiles.length,
-    testCheck: codeAgentRunTestCheck,
+    testCheck: codeAgentSelectedTestCheck,
+    testCheckAvailable: codeAgentTestAvailable,
     useModelProducer: codeAgentEffectiveUseModelProducer,
   });
   const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
@@ -2333,21 +2339,30 @@ export function TasksPage({
             <legend>Allowed checks</legend>
             <label>
               <input
-                checked={codeAgentRunTestCheck}
+                checked={codeAgentSelectedTestCheck}
+                disabled={!codeAgentTestAvailable}
                 onChange={(event) => setCodeAgentRunTestCheck(event.target.checked)}
                 type="checkbox"
               />
-              test
+              test{codeAgentTestAvailable ? '' : '（unavailable）'}
             </label>
             <label>
               <input
-                checked={codeAgentRunLintCheck}
+                checked={codeAgentSelectedLintCheck}
+                disabled={!codeAgentLintAvailable}
                 onChange={(event) => setCodeAgentRunLintCheck(event.target.checked)}
                 type="checkbox"
               />
-              lint
+              lint{codeAgentLintAvailable ? '' : '（unavailable）'}
             </label>
           </fieldset>
+          <p className="meta">
+            Check availability：test={
+              aiStatus?.codeAgentWorkspaceChecks?.test.reason ?? 'workspace status not loaded.'
+            } / lint={
+              aiStatus?.codeAgentWorkspaceChecks?.lint.reason ?? 'workspace status not loaded.'
+            }
+          </p>
           <label>
             <input
               checked={codeAgentOperatorConfirmed}
