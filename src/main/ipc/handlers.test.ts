@@ -564,7 +564,8 @@ describe('registerIpcHandlers', () => {
     expect(result.failureReason).toBe('Missing API key');
   });
 
-  it('creates a manual code-agent sandbox preview run and emits refresh events', async () => {
+  it('keeps env-available model producer disabled until the run requests it', async () => {
+    process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
     servicesMock.taskService.getDetail.mockResolvedValue({
       id: 'task_1',
       title: 'Prepare notes patch',
