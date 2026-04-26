@@ -121,6 +121,12 @@ files.
 - Open a task and confirm the Code Agent panel says model producer is available
   by local env, while still requiring `Use model producer`, context files, and
   operator confirmation.
+- Confirm the Code Agent preflight summary is visible before start. It should
+  summarize runtime readiness, selected checks, producer mode, context-file
+  requirement, Decision promotion, and the next required action.
+- Confirm unavailable `test` or `lint` package scripts are shown as unavailable
+  and are not selected; if both are unavailable, the start button remains
+  blocked.
 - Without selecting `Use model producer`, start a manual sandbox preview and
   confirm it stays on the local diagnostic producer and does not call the
   provider. Runs detail should show `Producer source：local diagnostic preview
