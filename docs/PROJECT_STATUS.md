@@ -236,6 +236,10 @@ The project is past initial architecture assembly. Current work should favor pro
   `TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=true`, including disposable
   workspace setup, staged review, Decision approval, applied-state evidence,
   and the default-off no-write comparison pass.
+- `npm run accept:sandbox-coding:patch-promotion-apply-smoke` now provides a
+  repeatable local smoke for sandbox patch promotion approval. It builds main
+  code, uses real SQLite and a throwaway workspace, verifies default no-write
+  approval, verifies flag-enabled apply, and does not start Docker or call AI.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -318,6 +322,9 @@ The project is past initial architecture assembly. Current work should favor pro
   accept:sandbox-coding:producer-preview-smoke` passed locally on 2026-04-26
   without Docker or AI calls, confirming the producer preview half of the
   staged patch flow still leaves the workspace unchanged.
+- `npm run accept:sandbox-coding:patch-promotion-apply-smoke` passed locally on
+  2026-04-26 with `default=no-write` and `enabled=applied`, without Docker or
+  AI calls.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts

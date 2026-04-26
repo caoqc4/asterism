@@ -98,6 +98,9 @@ not run containers or expose a coding-agent mode.
   TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS=true npm run
   accept:sandbox-coding:producer-preview-smoke` only for a deliberate local
   Docker check smoke. It may start containers or pull the default image.
+- Run `npm run accept:sandbox-coding:patch-promotion-apply-smoke` to validate
+  the default no-write and flag-enabled apply promotion paths against real
+  SQLite and a throwaway workspace, without Docker or AI calls.
 - Confirm no new model-visible Read/Write/Edit/Bash, browser/computer, or
   external publishing tools appear in a normal agent run.
 
@@ -159,6 +162,11 @@ release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane
 - Repeat once with `TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=false` and
   confirm approval resolves preflight-only while leaving workspace files
   unchanged.
+- The repeatable local smoke for the same core behavior is:
+
+```bash
+npm run accept:sandbox-coding:patch-promotion-apply-smoke
+```
 
 ## Completion Loop
 
