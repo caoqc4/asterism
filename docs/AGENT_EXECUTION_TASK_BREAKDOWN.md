@@ -80,6 +80,8 @@ Completed:
 - Task detail now exposes a Code Agent recovery card anchored on pending
   `workspace.staged_patch` promotion Decisions, with Run lookup routed through
   the checkpoint when available
+- the recovery card can also prepare a bounded Code Agent rerun intent without
+  automatically starting the run or spending provider credit
 
 Pi reference boundary:
 

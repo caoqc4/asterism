@@ -465,6 +465,9 @@ The project is past initial architecture assembly. Current work should favor pro
   The recovery card can appear even when the lightweight run list lacks Code
   Agent output text, and `查看 Code Agent Run` prefers checkpoint-to-Run lookup
   before falling back to a directly identified Code Agent run.
+- The same recovery card now includes a `准备重跑 Code Agent` affordance that
+  returns the operator to the Code Agent input surface and pre-fills a bounded
+  rerun intent without starting a run or spending provider credit.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx

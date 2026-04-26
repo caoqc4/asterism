@@ -2178,6 +2178,20 @@ export function TasksPage({
     setCodeAgentReviewError('未能从当前 run 列表定位到这个 promotion checkpoint；请先打开 promotion Decision。');
   }
 
+  function prepareCodeAgentRerun(): void {
+    setCodeAgentReviewError(null);
+    setQuickRunType('agent');
+
+    if (!codeAgentPatchIntent.trim()) {
+      const decisionContext = latestCodeAgentPromotionDecision
+        ? ` Review prior promotion Decision: ${latestCodeAgentPromotionDecision.title}.`
+        : '';
+      setCodeAgentPatchIntent(`Re-run the Code Agent staged patch review for ${detail?.title ?? 'this task'}.${decisionContext}`);
+    }
+
+    focusActionTarget('run');
+  }
+
   const visibleTimeline = detail
     ? showAllTimeline
       ? detail.timeline
@@ -3315,6 +3329,13 @@ export function TasksPage({
                         type="button"
                       >
                         查看 Code Agent Run
+                      </button>
+                      <button
+                        className="ghost-button"
+                        onClick={prepareCodeAgentRerun}
+                        type="button"
+                      >
+                        准备重跑 Code Agent
                       </button>
                       {codeAgentReviewError ? <p className="meta">{codeAgentReviewError}</p> : null}
                       {latestCodeAgentPromotionDecision ? (

@@ -3069,6 +3069,11 @@ describe('App UI flow', () => {
     await user.click(screen.getByRole('button', { name: /tasks/i }));
     const [riskTaskCardAfterRun] = await screen.findAllByRole('button', { name: /High risk task/i });
     await user.click(riskTaskCardAfterRun!);
+    await user.click(screen.getByRole('button', { name: '准备重跑 Code Agent' }));
+    expect((screen.getByLabelText('Patch intent') as HTMLTextAreaElement).value).toBe(
+      'Re-run the Code Agent staged patch review for High risk task. Review prior promotion Decision: Review Code Agent preview for High risk task.',
+    );
+
     await user.click(screen.getByRole('button', { name: '打开 promotion Decision' }));
 
     expect(await screen.findByRole('heading', {
