@@ -1029,11 +1029,13 @@ dedicated signed/notarized release pass.
 2. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
-5. Treat the execution-layer Slice 0 and hidden tool-scaffold baseline as
-   locally accepted for the alpha path; the next execution design task is
-   real model-backed sandbox producer validation, still behind explicit local
-   opt-in, bounded workspace context, selected `test` / `lint` checks, sandbox
-   readiness, provider-spend awareness, and Decision-gated promotion.
+5. Treat the execution-layer Slice 0, hidden tool-scaffold baseline, and
+   provider-backed disposable-workspace Code Agent preview as locally accepted
+   for the alpha path. The next execution task is a real Task detail UI manual
+   pass with isolated user data and a disposable workspace, verifying that
+   runtime readiness, checks, context files, model-producer opt-in, provider
+   spend, and Decision-gated promotion are understandable before any broader
+   agent-execution expansion.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.

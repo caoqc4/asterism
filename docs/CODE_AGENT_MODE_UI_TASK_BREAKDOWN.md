@@ -1025,3 +1025,17 @@ and Decision-gated promotion.
 Runs detail now also shows the sandbox producer source from session metadata:
 local diagnostic previews are labeled as no-provider-call evidence, while
 model-backed runs are labeled as provider-backed and still Decision-gated.
+
+The model-backed disposable-workspace preview has now passed again after the env
+template and local-acceptance updates, using `package.json` as selected
+read-only context. The next product decision is no longer whether the model
+producer loop can produce a staged preview; it can. The next decision is whether
+the real Task detail UI is clear enough for a manual alpha operator to select
+runtime readiness, checks, context files, model-producer usage, and provider
+spend before launching the same path from the application.
+
+That next pass should use isolated user data and a disposable workspace. It
+should confirm the UI copy and button states first, then launch one model-backed
+Code Agent run only if the operator deliberately accepts provider spend. The
+expected outcome remains staged patch evidence plus Decision-gated promotion,
+not direct workspace mutation.
