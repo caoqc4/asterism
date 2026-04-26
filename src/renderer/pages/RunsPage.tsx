@@ -522,6 +522,32 @@ function getStagedPatchEvidenceStatusLabel(status: StagedPatchEvidenceItem['stat
   return labels[status];
 }
 
+function getStagedPatchReviewNextMove(review: StagedPatchReviewSummary): string {
+  const failedChecks = review.checks.filter((check) => check.includes('failed'));
+
+  if (failedChecks.length) {
+    return `next=review failed check evidence before rerun: ${failedChecks.join(', ')}`;
+  }
+
+  if (!review.decisionId) {
+    return 'next=inspect checkpoint evidence; promotion Decision link is missing';
+  }
+
+  if (review.promotionStatus === 'open') {
+    return 'next=open promotion Decision; workspace remains unchanged until approval';
+  }
+
+  if (review.workspaceStatus.includes('applied') || review.workspaceStatus.includes('already matched')) {
+    return 'next=return to task and verify completion criteria against promoted workspace changes';
+  }
+
+  if (review.workspaceStatus.includes('not written') || review.workspaceStatus.includes('deferred')) {
+    return 'next=return to task and prepare rerun or explicit apply validation';
+  }
+
+  return 'next=review Run result and task timeline before deciding whether to rerun';
+}
+
 function getStagedPatchRerunIntent(
   detail: RunDetailRecord,
   review: StagedPatchReviewSummary,
@@ -806,6 +832,7 @@ export function RunsPage({
                 {stagedPatchReview.patchPreview ? (
                   <p className="meta">Patch preview：{stagedPatchReview.patchPreview}</p>
                 ) : null}
+                <p className="meta">Next review move：{getStagedPatchReviewNextMove(stagedPatchReview)}</p>
                 <div className="timeline-list">
                   {stagedPatchEvidenceChecklist.map((item) => (
                     <div className={`timeline-item timeline-item-${item.status}`} key={item.label}>

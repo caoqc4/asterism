@@ -3780,6 +3780,9 @@ describe('App UI flow', () => {
     expect(
       screen.getByText(/Patch preview：\*\*\* Begin Patch \*\*\* Update File: src\/notes\.md/),
     ).toBeTruthy();
+    expect(
+      screen.getByText('Next review move：next=open promotion Decision; workspace remains unchanged until approval'),
+    ).toBeTruthy();
     expect(screen.getByText('Source evidence')).toBeTruthy();
     expect(screen.getByText('source=sandbox_source_1; files=src/notes.md')).toBeTruthy();
     expect(screen.getByText('Targeted checks')).toBeTruthy();

@@ -475,6 +475,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - From that same Runs review, `回到任务准备重跑` now returns to the Task Code
   Agent input surface with a bounded rerun intent pre-filled from the persisted
   run id, changed files, promotion Decision, and workspace mutation state.
+- Runs / Staged Patch Review now also shows a `Next review move` derived from
+  failed checks, missing promotion Decisions, open Decisions, applied patches,
+  or deferred/no-write workspace state, keeping rerun/apply guidance local to
+  persisted evidence.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx

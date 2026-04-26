@@ -87,6 +87,9 @@ Completed:
   state
 - Runs can route a staged patch review back to the Task Code Agent input
   surface with a bounded rerun intent, without automatically starting execution
+- staged patch review now derives a next review move from failed checks,
+  missing/open Decisions, applied patches, and deferred/no-write workspace
+  states
 
 Pi reference boundary:
 
