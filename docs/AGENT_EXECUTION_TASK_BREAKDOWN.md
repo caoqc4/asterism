@@ -94,6 +94,9 @@ Completed:
 - the next lane decision is drafted for Browser / Playwright read-only
   evidence; it keeps browser tools hidden and names shared evidence-contract
   types as the next code slice
+- Browser Evidence Contract B1 is implemented as shared types and validation
+  tests only; no browser runtime, UI, IPC, provider exposure, or network call is
+  enabled
 
 Pi reference boundary:
 
@@ -350,12 +353,11 @@ review, and pending promotion Decision creation.
 
 The next implementation slice is:
 
-- start Browser / Playwright read-only lane B1 from
+- continue Browser / Playwright read-only lane B2 from
   [AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md](AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md):
-  add shared `BrowserEvidenceRequest`, `BrowserEvidenceResult`,
-  `BrowserEvidenceArtifact`, and `BrowserSessionPolicy` types plus tests, while
-  keeping `browser.readonly_evidence` reserved and hidden from prompts,
-  provider-native schemas, and runtime execution
+  add a read-only preflight summary that reports the lane as reserved, hidden,
+  and configurable without opening a browser, calling the network, exposing
+  tools to models, or creating runtime sessions
 
 Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer control,
 external posting, or social/media publishing as model-visible tools until the

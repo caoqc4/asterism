@@ -214,8 +214,9 @@ forms.
    Keep mutation/posting/login actions out of scope.
    The accepted planning boundary is
    [AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md](AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md):
-   begin with shared evidence-contract types and tests only, keeping
-   `browser.readonly_evidence` reserved and hidden.
+   shared evidence-contract types and tests are in place, and the next slice is
+   a no-browser, no-network preflight summary. `browser.readonly_evidence`
+   remains reserved and hidden.
 
 4. **Skills/process lane**
    Map Taskplane process templates and imported skills into prompt-shaping
@@ -251,6 +252,6 @@ forms.
 
 Plan for all scaffold families now, but implement them in risk order. The
 sandboxed coding patch lane has validated the first staged review loop, so the
-next planning target is the Browser/Playwright read-only evidence lane. It
-should start with shared contracts and preflight facts only; browser execution,
-model exposure, credentials, and posting/mutation remain deferred.
+next planning target is the Browser/Playwright read-only evidence lane. Shared
+contracts are now in place, so the next step is preflight facts only; browser
+execution, model exposure, credentials, and posting/mutation remain deferred.

@@ -93,6 +93,8 @@ Acceptance:
 
 ### B1: Browser Evidence Contract
 
+Status: implemented at shared-type level.
+
 Add shared types only:
 
 - `BrowserEvidenceRequest`
@@ -108,6 +110,9 @@ Acceptance:
 - no Playwright runtime is started
 - no renderer UI is exposed
 - tests prove mutation actions are not representable in the v1 request
+- request validation rejects mutation actions, credential use, non-isolated
+  profiles, unrestricted network, off-allowlist URLs, oversized output, and
+  excessive timeouts
 
 ### B2: Read-Only Preflight
 
@@ -145,7 +150,8 @@ Acceptance:
 
 ## Current Decision
 
-Do not implement browser automation as an agent tool yet. The next code slice
-should be B1: shared Browser Evidence Contract types and tests, with the
-existing scaffold descriptor still hidden.
-
+Do not implement browser automation as an agent tool yet. B1 shared Browser
+Evidence Contract types and tests are in place, with the existing scaffold
+descriptor still hidden. The next code slice should be B2: a read-only preflight
+summary that reports the browser evidence lane as reserved/hidden/configurable
+without opening a browser or making network calls.

@@ -483,6 +483,11 @@ The project is past initial architecture assembly. Current work should favor pro
   read-only evidence. It keeps `browser.readonly_evidence` reserved and hidden,
   forbids login/post/publish/credential-bearing actions in the first lane, and
   names shared Browser Evidence Contract types as the next code slice.
+- Browser Evidence Contract B1 is implemented as shared types plus validation:
+  read-only actions, artifact kinds, credential-free isolated session policy,
+  allowlisted-network requirement, bounded time/output, and fail-closed request
+  checks. No browser runtime, UI, IPC, provider exposure, or network call is
+  enabled.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
@@ -1092,9 +1097,9 @@ dedicated signed/notarized release pass.
    provider-backed disposable-workspace Code Agent preview, real Task detail
    Code Agent UI layout pass, and Code Agent lifecycle recovery/evidence slice
    as locally accepted for the alpha path. The next execution task should start
-   the Browser / Playwright read-only lane with shared evidence-contract types
-   and tests only, while keeping browser execution, credentials, model exposure,
-   and external mutation deferred.
+   the Browser / Playwright read-only lane B2 with a no-browser, no-network
+   preflight summary, while keeping browser execution, credentials, model
+   exposure, and external mutation deferred.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.
