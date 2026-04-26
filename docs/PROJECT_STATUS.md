@@ -411,7 +411,8 @@ The project is past initial architecture assembly. Current work should favor pro
   `producerSource` (`local_diagnostic` or `model_backed`), and Runs detail
   surfaces that source explicitly so local diagnostic previews are visible as
   no-provider-call evidence while model-backed runs are visible as provider
-  credit already spent and still Decision-gated.
+  credit already spent and still Decision-gated. The source marker is preserved
+  for malformed model output and backend-preflight blocked runs as well.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts
