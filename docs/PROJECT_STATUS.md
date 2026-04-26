@@ -506,6 +506,8 @@ Latest local baseline:
 - `npm run accept:sandbox-coding` and `npm run verify` passed locally on
   2026-04-26 after adding the backend preflight service: 87 test files / 626
   tests
+- Added `docs/AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md` as the accepted review
+  gate before connecting the first real sandboxed coding producer runner
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

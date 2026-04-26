@@ -404,6 +404,9 @@ source and Decision-linked `patch_promotion` path. Do not expose a UI run option
 until that provider passes the shared eligibility gate and the producer path has
 manual local validation.
 
+Backend review gate:
+[AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md](AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md).
+
 Backend candidate readiness is now represented in code by
 `AgentSandboxBackendProfile` and `evaluateAgentSandboxBackendReadiness`. A
 candidate must be a container or remote VM style backend, must not inherit the

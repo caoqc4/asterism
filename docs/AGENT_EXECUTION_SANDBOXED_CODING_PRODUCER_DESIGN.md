@@ -13,6 +13,7 @@ Read first:
 
 - [AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md](AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md)
 - [AGENT_EXECUTION_SANDBOX_DECISION.md](AGENT_EXECUTION_SANDBOX_DECISION.md)
+- [AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md](AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md)
 - [AGENT_EXECUTION_PATCH_DRAFT_SOURCE_DECISION.md](AGENT_EXECUTION_PATCH_DRAFT_SOURCE_DECISION.md)
 - [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md)
 
@@ -297,8 +298,10 @@ Completed non-live slices:
 
 Next slice:
 
-15. Connect a real sandbox backend only after a backend decision/review confirms
-   the implementation still satisfies the sandbox decision and source boundary.
+15. Connect a real sandbox backend only after
+   [AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md](AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md)
+   confirms the implementation still satisfies the sandbox decision and source
+   boundary.
 
 ## Acceptance
 
