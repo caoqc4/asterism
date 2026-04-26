@@ -141,6 +141,11 @@ The project is past initial architecture assembly. Current work should favor pro
   read-only local readiness check for the model-backed Code Agent opt-in,
   reporting required `.env` variables without calling providers, probing
   Docker, or touching the workspace.
+- `npm run accept:sandbox-coding:model-producer-live` now provides a
+  default-skipped one-request live smoke for the model producer contract. It
+  requires `TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE=true`, reuses the
+  preflight, validates the provider response through the staged-file plan
+  parser, and still avoids Docker and workspace mutation.
 - Decisions now distinguish `workspace.staged_patch` promotion checkpoints from
   direct `workspace.write_patch` checkpoints: approving the current sandbox
   promotion review records and resolves the checkpoint, but does not auto-apply
@@ -661,6 +666,11 @@ Latest local baseline:
   state; it reported readiness without provider calls, Docker probes, or
   workspace mutation. `npm run accept:sandbox-coding`, `npm run lint`, and
   `npm run build` passed afterward.
+- `npm run accept:sandbox-coding:model-producer-live` passed locally on
+  2026-04-26 in its default skipped state, after building main-process modules;
+  it reported provider not called, Docker not started, and workspace unchanged.
+  `npm run accept:sandbox-coding`, `npm run lint`, and `npm run build` passed
+  afterward.
 - Added `docs/CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md` as the proposed
   product-surface gate before any visible Task/Run code-agent mode or
   model-visible coding tools are built

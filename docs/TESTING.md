@@ -128,6 +128,11 @@ Covered today:
   readiness for the explicit model-backed Code Agent opt-in. It reports
   missing provider/model/key/workspace/feature flags without calling providers,
   probing Docker, or touching the workspace.
+- `Code Agent model producer live smoke`
+  `npm run accept:sandbox-coding:model-producer-live` is skipped by default.
+  With `TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE=true`, it sends one
+  provider request, validates the returned staged-file JSON contract, and still
+  avoids Docker and workspace mutation.
 - `Provider-native live validation`
   `npm run accept:provider-native-live:preflight` checks local readiness without
   spending provider credit, and `npm run accept:provider-native-live` performs a

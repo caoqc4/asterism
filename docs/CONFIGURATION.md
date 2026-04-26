@@ -138,6 +138,19 @@ For `openai-compatible`, also set `TASKPLANE_AI_BASE_URL`. For `replicate`, use
 an `owner/model` model id. The preflight only checks local configuration; it
 does not call the provider, start Docker, or mutate the workspace.
 
+After the preflight reports `status=ready`, an explicit one-request live smoke
+is available:
+
+```bash
+npm run accept:sandbox-coding:model-producer-live
+TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE=true npm run accept:sandbox-coding:model-producer-live
+```
+
+The first command should report `status=skip`. The second command builds the
+main process, sends one provider request, validates the returned strict JSON
+through the staged-file contract, and still does not start Docker or mutate the
+workspace.
+
 The producer preview service also has an opt-in non-live smoke path:
 
 ```bash

@@ -501,6 +501,36 @@ Implemented notes:
 - `docs/CONFIGURATION.md` and `docs/TESTING.md` now document the preflight and
   required env variables.
 
+### T13: Model Producer Live Smoke
+
+Status: implemented as a default-skipped script.
+
+Goal: allow a deliberate one-request validation of the model producer contract
+before wiring broader UI behavior.
+
+Work:
+
+- add `accept:sandbox-coding:model-producer-live`
+- keep the command skipped unless
+  `TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE=true`
+- reuse the model producer preflight before making any provider request
+- build the same producer prompt used by the runtime adapter
+- validate the provider response through the staged-file plan parser
+- avoid Docker startup and workspace mutation
+
+Acceptance:
+
+- default command reports skip and no provider call
+- env-enabled command sends one provider request only after preflight is ready
+- malformed model output fails the smoke without writing staged files
+
+Implemented notes:
+
+- `scripts/code-agent-model-producer-live-smoke.mjs` imports built main-process
+  modules, calls `generateRuntimeText()`, parses the response with
+  `parseCodeAgentStagedFilePlanPayload()`, and prints only redacted readiness
+  plus bounded plan metadata.
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:

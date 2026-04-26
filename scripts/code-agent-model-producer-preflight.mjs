@@ -61,6 +61,7 @@ export function getCodeAgentModelProducerPreflight() {
   }
 
   return {
+    apiKey: envValue(values, 'TASKPLANE_AI_API_KEY'),
     baseUrl,
     envPath,
     hasApiKey,
