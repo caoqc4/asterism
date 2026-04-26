@@ -3908,6 +3908,69 @@ describe('App UI flow', () => {
     ).toBeTruthy();
   });
 
+  it('shows failed sandbox check review guidance before rerun', async () => {
+    const user = userEvent.setup();
+    const failedCheckRun = buildRunRecord({
+      id: 'run_sandbox_failed_check',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'failed',
+      output: 'Sandbox producer checks failed',
+      outputSource: 'system',
+      failureReason: 'lint failed',
+    });
+    const failedCheckDetail: RunDetailRecord = {
+      ...failedCheckRun,
+      steps: [
+        buildRunStep({
+          id: 'run_step_failed_check_source',
+          runId: failedCheckRun.id,
+          index: 1,
+          kind: 'artifact',
+          status: 'completed',
+          title: 'Sandbox producer source ready',
+          input: 'session=sandboxed_producer:sandbox_source_failed\nsource=sandbox_source_failed\nfiles=src/notes.md',
+          output: 'Sandbox patch review run plan ready: src/notes.md',
+        }),
+        buildRunStep({
+          id: 'run_step_failed_check_lint',
+          runId: failedCheckRun.id,
+          index: 2,
+          kind: 'tool_result',
+          status: 'failed',
+          title: 'Sandbox producer check failed: lint',
+          output: 'lint failed: expected semicolon',
+        }),
+      ],
+      checkpoints: [],
+    };
+    const failedCheckApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [failedCheckRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === failedCheckRun.id ? failedCheckDetail : null,
+      ),
+    };
+
+    window.api = failedCheckApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+
+    expect(await screen.findByRole('heading', { name: 'agent / failed' })).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Staged patch review：source=sandbox_source_failed / files=src/notes.md / checks=lint failed / workspace unchanged until Decision approval',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('Next review move：next=review failed check evidence before rerun: lint failed'),
+    ).toBeTruthy();
+    expect(screen.getByText('failed=lint failed')).toBeTruthy();
+    expect(screen.getByText('missing promotion Decision link')).toBeTruthy();
+  });
+
   it('shows blocked sandbox producer diagnostics on the runs page', async () => {
     const user = userEvent.setup();
     const sandboxBlockedRun = buildRunRecord({
