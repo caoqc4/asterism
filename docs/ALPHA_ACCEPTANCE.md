@@ -144,6 +144,15 @@ files.
 - Confirm Runs detail shows the selected check evidence, staged patch review,
   promotion readiness, and `打开 promotion Decision`; opening that action should
   land on the matching pending `workspace.staged_patch` Decision.
+- Confirm Runs detail also shows the staged patch evidence checklist:
+  `Source evidence`, `Targeted checks`, `Promotion Decision`, and
+  `Workspace mutation`. The checklist should be derived from persisted
+  RunSteps/checkpoints, not from a fresh provider or Docker call.
+- Confirm `Next review move` explains whether to open the promotion Decision,
+  inspect failed checks, prepare a rerun, or validate apply state.
+- Confirm `回到任务准备重跑` opens the task Code Agent input surface and
+  pre-fills a bounded rerun intent without starting execution or spending
+  provider credit.
 - Select `Use model producer` with no context files and confirm the start
   button remains blocked with a clear context-file reason.
 - Add one or more workspace-relative context files, keep at least one
@@ -153,6 +162,11 @@ files.
   workspace unchanged before any later promotion approval. For a model-backed
   run, Runs detail should show `Producer source：model-backed / provider call
   already spent for this run / Decision promotion still required`.
+- Return to Task detail and confirm the Code Agent Review card is anchored on
+  the pending `workspace.staged_patch` Decision even if the lightweight run list
+  lacks Code Agent output text. `查看 Code Agent Run` should locate the Run from
+  the checkpoint when possible, and `准备重跑 Code Agent` should prefill the
+  Code Agent intent without launching a run.
 
 ### Workspace Patch Approval Path
 
