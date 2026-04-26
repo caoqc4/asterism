@@ -949,6 +949,8 @@ Acceptance:
 - renderer copy distinguishes no-write mode from apply-enabled mode
 - real SQLite integration coverage recreates DecisionService after persistence
   to verify restart-safe default no-write and flag-enabled apply behavior
+- Runs detail staged patch review distinguishes open, preflight-only resolved,
+  blocked/cancelled, and applied workspace-promotion evidence
 
 ## Deferred Tasks
 

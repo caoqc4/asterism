@@ -228,6 +228,10 @@ The project is past initial architecture assembly. Current work should favor pro
   approval keeps the durable promotion pending and leaves workspace files
   unchanged, while the enabled flag applies the reviewed patch and marks the
   promotion applied.
+- Runs detail staged patch review now derives a workspace status from checkpoint
+  and RunStep evidence, so open reviews still say the workspace is unchanged,
+  default-off approvals say no files were written, and applied promotions show
+  that the workspace promotion happened after Decision approval.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -304,6 +308,8 @@ The project is past initial architecture assembly. Current work should favor pro
   `npm run accept:sandbox-coding`, `npm run lint`, and `npm run build` passed
   locally on 2026-04-26 after adding restart-safe sandbox patch-promotion
   approval coverage: 37 sandbox-coding files / 225 tests.
+- `npm test -- src/renderer/App.test.tsx` passed locally on 2026-04-26 after
+  adding Runs detail applied-promotion status copy coverage: 119 App tests.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts

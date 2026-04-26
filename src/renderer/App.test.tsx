@@ -3604,6 +3604,103 @@ describe('App UI flow', () => {
     ).toBeTruthy();
   });
 
+  it('shows applied sandbox patch promotion evidence on the runs page', async () => {
+    const user = userEvent.setup();
+    const appliedPromotionRun = buildRunRecord({
+      id: 'run_sandbox_promotion_applied',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'completed',
+      output: 'Sandbox patch promotion applied / checkpoint=run_checkpoint_sandbox_patch_promotion / files=src/notes.md',
+      outputSource: 'system',
+    });
+    const appliedPromotionDetail: RunDetailRecord = {
+      ...appliedPromotionRun,
+      steps: [
+        buildRunStep({
+          id: 'run_step_sandbox_source_applied',
+          runId: appliedPromotionRun.id,
+          index: 1,
+          kind: 'artifact',
+          status: 'completed',
+          title: 'Sandbox producer source ready',
+          input: 'session=sandboxed_producer:sandbox_source_1\nsource=sandbox_source_1\nfiles=src/notes.md',
+          output: 'Sandbox patch review run plan ready: src/notes.md',
+        }),
+        buildRunStep({
+          id: 'run_step_sandbox_apply_applied',
+          runId: appliedPromotionRun.id,
+          index: 2,
+          kind: 'checkpoint',
+          status: 'completed',
+          title: '提升已应用：确认提升 sandbox patch',
+          output: [
+            'Sandbox patch promotion applied / checkpoint=run_checkpoint_sandbox_patch_promotion / files=src/notes.md',
+            'Touched files: src/notes.md',
+          ].join('\n'),
+        }),
+      ],
+      checkpoints: [
+        buildRunCheckpoint({
+          id: 'run_checkpoint_sandbox_patch_promotion',
+          runId: appliedPromotionRun.id,
+          stepId: 'run_step_sandbox_source_applied',
+          kind: 'patch_promotion',
+          status: 'resolved',
+          payload: JSON.stringify({
+            version: 1,
+            kind: 'patch_promotion',
+            artifactId: 'artifact_sandbox_patch_1',
+            artifactSummary: '1 file(s): src/notes.md | Checks: lint: passed.',
+            sessionId: 'sandboxed_producer:sandbox_source_1',
+            descriptorId: 'workspace.staged_patch',
+            decisionId: 'decision_sandbox_patch_1',
+            decisionTitle: '确认提升 sandbox patch',
+            expectedFiles: ['src/notes.md'],
+            patchDigest: 'sha256:123456',
+            policySnapshot: {
+              descriptorId: 'workspace.staged_patch',
+            },
+            preview: [
+              'Summary: Update notes',
+              'Files: src/notes.md',
+              '*** Begin Patch',
+              '*** Update File: src/notes.md',
+              '+Reviewable note',
+              '*** End Patch',
+            ].join('\n'),
+          }),
+        }),
+      ],
+    };
+    const appliedPromotionApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [appliedPromotionRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === appliedPromotionRun.id ? appliedPromotionDetail : null,
+      ),
+    };
+
+    window.api = appliedPromotionApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+
+    expect(await screen.findByRole('heading', { name: 'agent / completed' })).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Staged patch review：source=sandbox_source_1 / files=src/notes.md / promotion=resolved / readiness=already_resolved / Decision=确认提升 sandbox patch / workspace promotion applied after Decision approval',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('Promotion readiness：Sandbox patch promotion readiness: already_resolved / checkpoint is no longer open'),
+    ).toBeTruthy();
+    expect(
+      screen.getAllByText('Sandbox patch promotion applied / checkpoint=run_checkpoint_sandbox_patch_promotion / files=src/notes.md').length,
+    ).toBeTruthy();
+  });
+
   it('shows blocked sandbox producer diagnostics on the runs page', async () => {
     const user = userEvent.setup();
     const sandboxBlockedRun = buildRunRecord({

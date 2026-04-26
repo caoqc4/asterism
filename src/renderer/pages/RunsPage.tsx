@@ -42,6 +42,7 @@ type StagedPatchReviewSummary = {
   readinessSummary: string | null;
   readinessStatus: string | null;
   sourceId: string | null;
+  workspaceStatus: string;
 };
 
 function formatRelatedTimelineSummary(event: TimelineEventRecord): string {
@@ -420,7 +421,41 @@ function getStagedPatchReviewSummary(detail: RunDetailRecord | null): StagedPatc
     readinessStatus: promotionReadiness?.status ?? null,
     sourceId: sourceInput.get('source')
       ?? (typeof promotionPayload?.sessionId === 'string' ? promotionPayload.sessionId : null),
+    workspaceStatus: getStagedPatchWorkspaceStatus(detail, promotionCheckpoint ?? null),
   };
+}
+
+function getStagedPatchWorkspaceStatus(
+  detail: RunDetailRecord,
+  promotionCheckpoint: RunCheckpointRecord | null,
+): string {
+  const evidence = [
+    detail.output,
+    detail.failureReason,
+    ...(detail.steps ?? []).flatMap((step) => [step.title, step.output, step.error]),
+  ].filter((part): part is string => typeof part === 'string' && part.trim().length > 0).join('\n');
+
+  if (evidence.includes('Sandbox patch promotion applied')) {
+    return 'workspace promotion applied after Decision approval';
+  }
+
+  if (evidence.includes('Sandbox patch promotion already applied')) {
+    return 'workspace already matched the promoted patch';
+  }
+
+  if (evidence.includes('Workspace file application is still deferred')) {
+    return 'Decision resolved in preflight-only mode; workspace files were not written';
+  }
+
+  if (evidence.includes('No workspace files were written.') || promotionCheckpoint?.status === 'cancelled') {
+    return 'promotion blocked or cancelled; workspace files were not written';
+  }
+
+  if (promotionCheckpoint?.status === 'resolved') {
+    return 'Decision resolved; inspect Run result and steps for workspace application evidence';
+  }
+
+  return 'workspace unchanged until Decision approval';
 }
 
 type RunsPageProps = {
@@ -669,7 +704,7 @@ export function RunsPage({
                       stagedPatchReview.promotionStatus ? `promotion=${stagedPatchReview.promotionStatus}` : null,
                       stagedPatchReview.readinessStatus ? `readiness=${stagedPatchReview.readinessStatus}` : null,
                       stagedPatchReview.decisionTitle ? `Decision=${stagedPatchReview.decisionTitle}` : null,
-                      'workspace unchanged until Decision approval',
+                      stagedPatchReview.workspaceStatus,
                     ].filter(Boolean).join(' / ')
                   }
                 </p>
