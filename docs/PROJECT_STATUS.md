@@ -414,6 +414,9 @@ The project is past initial architecture assembly. Current work should favor pro
   locally after the model-producer preview rerun: default approval remained
   preflight-only `no-write`, flag-enabled approval applied only the reviewed
   disposable-workspace file, Docker was not started, and AI was not called.
+- `npm run verify` passed locally after the latest Code Agent env-template,
+  local-acceptance, model preview, and patch-promotion smoke updates: 99 test
+  files / 703 tests, followed by type-checking and production build.
 - The Task detail Code Agent panel now surfaces whether the env-only
   `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER` capability is active. Disabled
   mode states that manual preview uses the local diagnostic producer without
