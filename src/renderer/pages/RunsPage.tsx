@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 
 import { parseRunCheckpointPayload } from '@shared/types/run-checkpoint-payload';
+import { evaluateSandboxPatchPromotionReadiness } from '@shared/sandbox-patch-promotion-readiness';
 import type { RecommendedActionIntent } from '@shared/types/brief';
 import type {
   CreateRunInput,
@@ -38,6 +39,8 @@ type StagedPatchReviewSummary = {
   files: string[];
   patchPreview: string | null;
   promotionStatus: string | null;
+  readinessSummary: string | null;
+  readinessStatus: string | null;
   sourceId: string | null;
 };
 
@@ -387,6 +390,9 @@ function getStagedPatchReviewSummary(detail: RunDetailRecord | null): StagedPatc
     const payload = parseRunCheckpointPayload(checkpoint.payload);
     return checkpoint.kind === 'patch_promotion' || payload?.kind === 'patch_promotion';
   });
+  const promotionReadiness = promotionCheckpoint
+    ? evaluateSandboxPatchPromotionReadiness(promotionCheckpoint)
+    : null;
   const promotionPayload = parseRunCheckpointPayload(promotionCheckpoint?.payload);
   const preview = typeof promotionPayload?.preview === 'string' ? promotionPayload.preview : null;
   const previewFiles = extractPreviewLine(preview, 'Files')
@@ -410,6 +416,8 @@ function getStagedPatchReviewSummary(detail: RunDetailRecord | null): StagedPatc
     files,
     patchPreview: formatDiffPreview(preview),
     promotionStatus: promotionCheckpoint?.status ?? null,
+    readinessSummary: promotionReadiness?.summary ?? null,
+    readinessStatus: promotionReadiness?.status ?? null,
     sourceId: sourceInput.get('source')
       ?? (typeof promotionPayload?.sessionId === 'string' ? promotionPayload.sessionId : null),
   };
@@ -659,6 +667,7 @@ export function RunsPage({
                       stagedPatchReview.files.length ? `files=${stagedPatchReview.files.join(', ')}` : null,
                       stagedPatchReview.checks.length ? `checks=${stagedPatchReview.checks.join(', ')}` : null,
                       stagedPatchReview.promotionStatus ? `promotion=${stagedPatchReview.promotionStatus}` : null,
+                      stagedPatchReview.readinessStatus ? `readiness=${stagedPatchReview.readinessStatus}` : null,
                       stagedPatchReview.decisionTitle ? `Decision=${stagedPatchReview.decisionTitle}` : null,
                       'workspace unchanged until Decision approval',
                     ].filter(Boolean).join(' / ')
@@ -666,6 +675,9 @@ export function RunsPage({
                 </p>
                 {stagedPatchReview.artifactSummary ? (
                   <p className="meta">Artifact：{stagedPatchReview.artifactSummary}</p>
+                ) : null}
+                {stagedPatchReview.readinessSummary ? (
+                  <p className="meta">Promotion readiness：{stagedPatchReview.readinessSummary}</p>
                 ) : null}
                 {stagedPatchReview.patchPreview ? (
                   <p className="meta">Patch preview：{stagedPatchReview.patchPreview}</p>

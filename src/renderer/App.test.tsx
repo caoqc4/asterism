@@ -3582,11 +3582,14 @@ describe('App UI flow', () => {
     expect(screen.getByText('审阅 sandbox 产出的 staged patch 证据')).toBeTruthy();
     expect(
       screen.getByText(
-        'Staged patch review：source=sandbox_source_1 / files=src/notes.md / checks=lint passed / promotion=open / Decision=确认提升 sandbox patch / workspace unchanged until Decision approval',
+        'Staged patch review：source=sandbox_source_1 / files=src/notes.md / checks=lint passed / promotion=open / readiness=missing_apply_metadata / Decision=确认提升 sandbox patch / workspace unchanged until Decision approval',
       ),
     ).toBeTruthy();
     expect(
       screen.getByText('Artifact：1 file(s): src/notes.md | Checks: lint: passed.'),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('Promotion readiness：Sandbox patch promotion readiness: missing_apply_metadata / Patch promotion apply metadata is missing: expectedFiles. Patch promotion apply metadata is missing: patchDigest.'),
     ).toBeTruthy();
     expect(
       screen.getByText(/Patch preview：\*\*\* Begin Patch \*\*\* Update File: src\/notes\.md/),
@@ -4269,7 +4272,7 @@ describe('App UI flow', () => {
 
     expect(await screen.findByRole('heading', { name: 'Review Code Agent preview' })).toBeTruthy();
     expect(
-      screen.getByText('来源：Agent checkpoint（workspace.staged_patch）。这是 sandbox staged patch 的提升审查；当前版本批准后只会确认并关闭 promotion checkpoint，不会自动写入工作区文件。'),
+      screen.getByText('来源：Agent checkpoint（workspace.staged_patch）。这是 sandbox staged patch 的提升审查；请先查看 Run 证据与 promotion readiness；当前版本批准后只会确认并关闭 promotion checkpoint，不会自动写入工作区文件。'),
     ).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '查看 Run 证据' }));

@@ -755,6 +755,28 @@ Acceptance:
 - current patch-promotion Decisions remain non-applying until metadata and
   service integration exist
 
+### T23: Patch Promotion Readiness UI Copy
+
+Status: first Runs and Decisions copy implemented.
+
+Goal: make the read-only promotion readiness state visible before users handle
+patch-promotion Decisions.
+
+Work:
+
+- move the readiness evaluator to shared code so renderer and main can reuse
+  the same classifier
+- show readiness status and summary in the Runs `Staged Patch Review` block
+- update pending `workspace.staged_patch` Decision guidance to tell users to
+  review Run evidence and promotion readiness first
+- keep the current approval language explicit: no automatic workspace writes
+
+Acceptance:
+
+- renderer reads checkpoint payloads only from existing Run detail data
+- no workspace file reads or writes are introduced
+- current review-only payloads surface as `missing_apply_metadata`
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:
@@ -773,7 +795,6 @@ Each needs its own decision before implementation.
 
 ## Next Decision
 
-The next implementation step is surfacing promotion readiness in the Run and
-Decision UI copy, still without applying staged files. Current review-only
-checkpoints should say they are missing apply metadata, not silently imply that
-approval can write files.
+The next implementation step is deciding where durable promotion metadata
+should live: dedicated table, checkpoint payload extension, artifact metadata,
+or a combination. This must be settled before any apply service can be safe.
