@@ -334,9 +334,9 @@ async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promis
     instructions: [
       'Code Agent manual sandbox producer preview.',
       patchIntent,
-      modelProducerOptIn
+      modelProducerRequested
         ? 'Model producer loop is explicitly requested for this run and remains sandbox/Decision gated.'
-        : 'Real model producer loop is not connected yet; this run records a staged local preview only.',
+        : 'Model producer loop is not requested for this run; this run records a staged local preview only.',
     ].join(' '),
   });
   const request = {

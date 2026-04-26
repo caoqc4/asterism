@@ -838,6 +838,7 @@ describe('registerIpcHandlers', () => {
     });
 
     expect(servicesMock.runRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      instructions: expect.stringContaining('Model producer loop is not requested for this run'),
       taskId: 'task_1',
       type: 'agent',
     }));
@@ -1043,6 +1044,9 @@ describe('registerIpcHandlers', () => {
 
     expect(servicesMock.aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
     expect(codeAgentExecutionRunMock).not.toHaveBeenCalled();
+    expect(servicesMock.runRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      instructions: expect.stringContaining('Model producer loop is explicitly requested for this run'),
+    }));
     expect(servicesMock.runRepository.updateResult).toHaveBeenCalledWith(
       'run_code_agent_1',
       'failed',
