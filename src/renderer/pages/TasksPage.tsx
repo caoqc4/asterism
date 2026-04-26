@@ -27,7 +27,7 @@ import type {
   ProcessTemplateRecord,
   UpdateProcessTemplateInput,
 } from '@shared/types/process-template';
-import type { CreateRunInput, RunRecord } from '@shared/types/run';
+import type { CreateCodeAgentRunInput, CreateRunInput, RunRecord } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type {
   CreateSourceContextInput,
@@ -701,6 +701,7 @@ type TasksPageProps = {
   onResolveBlocker: (id: string) => Promise<BlockerRecord>;
   onResolveTaskDependency: (id: string) => Promise<TaskDependencyRecord>;
   onSatisfyCompletionCriteria: (id: string) => Promise<CompletionCriteriaRecord>;
+  onTriggerCodeAgentRun: (input: CreateCodeAgentRunInput) => Promise<RunRecord>;
   onTriggerRun: (input: CreateRunInput) => Promise<RunRecord>;
   onUpdateBlocker: (input: UpdateBlockerInput) => Promise<BlockerRecord>;
   onUpdateCompletionCriteria: (
@@ -747,6 +748,7 @@ export function TasksPage({
   onResolveBlocker,
   onResolveTaskDependency,
   onSatisfyCompletionCriteria,
+  onTriggerCodeAgentRun,
   onTriggerRun,
   onUpdateBlocker,
   onUpdateCompletionCriteria,
@@ -779,6 +781,7 @@ export function TasksPage({
   const [codeAgentRunLintCheck, setCodeAgentRunLintCheck] = useState(true);
   const [codeAgentOperatorConfirmed, setCodeAgentOperatorConfirmed] = useState(false);
   const [codeAgentIntentDiagnostic, setCodeAgentIntentDiagnostic] = useState<string | null>(null);
+  const [codeAgentRunPending, setCodeAgentRunPending] = useState(false);
   const [transitionWaitingReason, setTransitionWaitingReason] = useState('');
   const [blockerEditingId, setBlockerEditingId] = useState<string | null>(null);
   const [blockerTitle, setBlockerTitle] = useState('');
@@ -1234,6 +1237,38 @@ export function TasksPage({
         : {}),
     });
     await onRefresh();
+  }
+
+  async function handleCodeAgentRunStart(): Promise<void> {
+    if (!detail) {
+      return;
+    }
+
+    setCodeAgentRunPending(true);
+    setCodeAgentIntentDiagnostic(null);
+
+    try {
+      const requestedChecks = [
+        codeAgentRunTestCheck ? 'test' : null,
+        codeAgentRunLintCheck ? 'lint' : null,
+      ].filter((check): check is 'test' | 'lint' => Boolean(check));
+      const created = await onTriggerCodeAgentRun({
+        operatorConfirmed: codeAgentOperatorConfirmed,
+        patchIntent: codeAgentPatchIntent,
+        requestedChecks,
+        taskId: detail.id,
+      });
+
+      setCodeAgentIntentDiagnostic(
+        `Code Agent sandbox preview run created: ${created.id}. Open Runs to review lifecycle and staged source evidence.`,
+      );
+      onOpenRun(created.id);
+      await onRefresh();
+    } catch (error) {
+      setCodeAgentIntentDiagnostic(`Code Agent sandbox preview failed: ${formatActionError(error)}`);
+    } finally {
+      setCodeAgentRunPending(false);
+    }
   }
 
   function populateBlockerForm(item: BlockerRecord) {
@@ -2170,15 +2205,15 @@ export function TasksPage({
           </label>
           <button
             className="ghost-button"
-            disabled={!codeAgentOperatorConfirmed || (!codeAgentRunTestCheck && !codeAgentRunLintCheck)}
-            onClick={() => {
-              setCodeAgentIntentDiagnostic(
-                'Code-agent execution wiring is deferred: intent captured locally; no producer run was started.',
-              );
-            }}
+            disabled={
+              codeAgentRunPending
+              || !codeAgentOperatorConfirmed
+              || (!codeAgentRunTestCheck && !codeAgentRunLintCheck)
+            }
+            onClick={() => void handleCodeAgentRunStart()}
             type="button"
           >
-            准备 Code Agent Run
+            {codeAgentRunPending ? '启动中' : '启动 sandbox preview run'}
           </button>
           {codeAgentIntentDiagnostic ? <p className="meta">{codeAgentIntentDiagnostic}</p> : null}
         </div>

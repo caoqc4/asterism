@@ -95,8 +95,8 @@ The project is past initial architecture assembly. Current work should favor pro
 - The manual code-agent intent surface now shows a static `manual sandbox
   producer` AgentProfile, selected Task, completion criteria, patch intent,
   allowlisted `test` / `lint` toggles, and explicit Docker/Decision
-  confirmation. It records only a local diagnostic for now; producer execution
-  IPC remains deferred.
+  confirmation. It initially recorded only a local diagnostic; the dedicated
+  manual sandbox preview IPC path is now wired for this surface.
 - Runs detail now projects sandbox producer sessions into an
   `AgentRunLifecycle` summary with source id, check policy, network/promotion
   constraints, blocked reasons, and next recovery/review moves. Sandbox
@@ -106,6 +106,13 @@ The project is past initial architecture assembly. Current work should favor pro
 - The manual Code Agent intent surface now also shows automatic start as
   disabled, with the future maturity/input/tool/risk/evidence/runtime policy
   signals listed explicitly and no scheduler or auto-run flag persisted.
+- The dedicated Task detail Code Agent button now starts a real manual sandbox
+  preview Run through `run:triggerCodeAgent`: it requires operator confirmation,
+  carries only selected `test` / `lint` checks, invokes the local-container
+  producer execution service, and opens Runs detail for lifecycle/source
+  evidence review. The preview path writes only a staged diagnostic patch inside
+  the sandbox; the real model-backed producer loop remains deliberately
+  unconnected.
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
   now records the completed Slice 0 execution-layer pass: runtime events,
   event-driven RunStep projection, checkpoint normalization, restart-safe
@@ -574,6 +581,12 @@ Latest local baseline:
   passed with workspace unchanged, `npm run accept:sandbox-coding` passed with
   26 test files / 165 tests, and `npm run verify` passed with 90 test files /
   641 tests plus lint/build.
+- `npm test -- src/main/ipc/handlers.test.ts src/main/preload.test.ts
+  src/renderer/App.test.tsx src/main/domain/run/sandboxed-coding-staged-patch.test.ts`,
+  `npm run lint`, `npm run build`, and `npm run accept:sandbox-coding` passed
+  locally on 2026-04-26 after wiring the first manual Code Agent sandbox
+  preview run path and excluding internal `session.json` manifests from staged
+  patch collection.
 - `npm test -- src/main/domain/run/local-container-sandboxed-coding-producer-execution-service.test.ts`
   passed locally on 2026-04-26 after adding the explicit local-container
   producer execution service with operator confirmation before Docker probing

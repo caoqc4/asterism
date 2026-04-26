@@ -4,9 +4,12 @@
 
 Accepted for the current alpha execution-layer slice.
 
-The explicit local-container producer execution service exists, but this
-decision does not expose a user-visible code-agent mode, normal task/run UI
-entrypoint, prompt-level tool, MCP tool, Skills execution, browser/computer
+Updated on 2026-04-26: the dedicated Task detail Code Agent surface may call
+the explicit local-container producer execution service for a manual sandbox
+preview run after the user confirms Docker/Decision constraints. This is still
+not a general code-agent runtime: the visible path uses a staged local preview
+producer, keeps the real model producer loop unconnected, and does not expose
+prompt-level coding tools, MCP tools, Skills execution, browser/computer
 control, external publishing, or autonomous scheduling.
 
 Read first:
@@ -33,10 +36,14 @@ Allowed now:
   `TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS=true` when an operator
   deliberately wants Docker-backed check validation
 - future local CLI/manual operator paths that pass `operatorConfirmed: true`
+- the dedicated Task detail Code Agent manual sandbox preview button, provided
+  it passes `operatorConfirmed: true`, selected `test` / `lint` checks only,
+  disabled network, no credential passthrough, and Decision-only promotion
 
 Not allowed yet:
 
-- normal Task/Run UI buttons for code-agent execution
+- generic Task/Run UI buttons for code-agent execution outside the dedicated
+  manual sandbox preview surface
 - model-visible Read / Write / Edit / Bash tools
 - automatic invocation from a normal agent run
 - scheduled/background code-agent work
@@ -73,6 +80,10 @@ Before a Task/Run UI entrypoint can call this service, Taskplane needs:
 5. Manual alpha validation on a real workspace with Docker available.
 6. `npm run accept:sandbox-coding`, producer preview smoke, and `npm run verify`
    passing locally.
+
+These gates are now satisfied for the first manual sandbox preview UI. They do
+not satisfy the separate requirement for a real model-backed producer loop or
+for model-visible coding tools.
 
 Before model prompt exposure, Taskplane additionally needs a separate tool
 exposure decision. The current producer remains an internal executor path, not a

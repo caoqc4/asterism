@@ -60,3 +60,12 @@ export type CreateRunInput = {
   allowLocalWorkspaceRead?: boolean;
   allowTaskMutationTools?: boolean;
 };
+
+export type CodeAgentAllowedCheck = 'test' | 'lint';
+
+export type CreateCodeAgentRunInput = {
+  taskId: string;
+  patchIntent: string;
+  requestedChecks: CodeAgentAllowedCheck[];
+  operatorConfirmed: boolean;
+};

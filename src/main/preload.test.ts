@@ -137,6 +137,12 @@ describe('preload bridge', () => {
     const draftDecisionInput = { taskId: 'task_1', note: 'Need stakeholder sign-off' };
     const decisionActionInput = { id: 'decision_1', action: 'approve' };
     const createRunInput = { taskId: 'task_1', type: 'summarize', instructions: 'Summarize blockers' };
+    const createCodeAgentRunInput = {
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      taskId: 'task_1',
+    };
 
     await api.ping();
     await api.getAiConfigStatus();
@@ -170,6 +176,7 @@ describe('preload bridge', () => {
     await api.listRuns();
     await api.getRunDetail('run_1');
     await api.triggerRun(createRunInput);
+    await api.triggerCodeAgentRun?.(createCodeAgentRunInput);
     await api.continuePausedRun('run_1');
 
     expect(invokeMock.mock.calls).toEqual([
@@ -205,6 +212,7 @@ describe('preload bridge', () => {
       ['run:list'],
       ['run:getDetail', 'run_1'],
       ['run:trigger', createRunInput],
+      ['run:triggerCodeAgent', createCodeAgentRunInput],
       ['run:continuePaused', 'run_1'],
     ]);
   });

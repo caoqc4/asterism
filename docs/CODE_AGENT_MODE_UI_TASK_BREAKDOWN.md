@@ -242,8 +242,9 @@ Implemented notes:
 ### T6: Manual Alpha Validation
 
 Status: completed for local non-live code-agent UI / sandbox producer
-validation on 2026-04-26. Broader real UI execution remains deferred because
-producer start from the Task detail UI is not wired yet.
+validation on 2026-04-26. A first manual sandbox preview run button is now
+wired, but broader real model-backed execution remains deferred because the
+actual producer model loop is not connected yet.
 
 Goal: validate the end-to-end local path before considering broader exposure.
 
@@ -277,6 +278,47 @@ Implemented notes:
 - `npm run accept:sandbox-coding` passed: 26 test files / 165 tests.
 - `npm run verify` passed afterward: 90 test files / 641 tests, then lint and
   build.
+
+### T7: Manual Sandbox Preview Run Wiring
+
+Status: completed for the first non-live/manual preview path.
+
+Goal: let the accepted Task detail Code Agent surface create a real Run and
+exercise the existing sandbox producer preview boundary without claiming full
+AI coding-agent capability.
+
+Work:
+
+- add a dedicated IPC contract for manual Code Agent sandbox preview runs
+- require `operatorConfirmed: true`
+- pass only selected allowlisted `test` / `lint` checks
+- create a real `agent` Run before producer execution starts
+- call the local-container producer execution service
+- keep the producer loop local and explicit while the real model producer loop
+  remains unconnected
+- persist sandbox producer session and RunSteps for Runs detail review
+- ignore internal `session.json` manifests when collecting staged patch files
+
+Acceptance:
+
+- the Task detail button calls only the dedicated sandbox preview IPC path
+- normal draft/summarize/agent run forms remain unchanged
+- source-ready / blocked producer results are visible from Runs detail
+- no external AI provider call is made by this preview path
+- workspace mutation remains impossible from this button alone
+
+Implemented notes:
+
+- `CreateCodeAgentRunInput` now carries `taskId`, patch intent, selected checks,
+  and explicit operator confirmation.
+- Main process `run:triggerCodeAgent` creates a real `agent` Run, builds a
+  constrained sandboxed producer request, invokes the local-container producer
+  execution service, and updates the Run result from the preview outcome.
+- The first producer loop writes a staged `.taskplane/code-agent-preview.md`
+  diagnostic inside the sandbox only. It is intentionally labeled as a manual
+  sandbox preview because the real model producer loop is not connected yet.
+- Renderer intent UI now starts that sandbox preview run and opens Runs detail
+  for lifecycle/source evidence review.
 
 ## Deferred Tasks
 

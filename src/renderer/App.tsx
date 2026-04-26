@@ -29,7 +29,7 @@ import type {
   CreateProcessTemplateInput,
   UpdateProcessTemplateInput,
 } from '@shared/types/process-template';
-import type { CreateRunInput, RunRecord } from '@shared/types/run';
+import type { CreateCodeAgentRunInput, CreateRunInput, RunRecord } from '@shared/types/run';
 import type { AiConfigInput, AiConfigStatus } from '@shared/types/settings';
 import type {
   CreateSourceContextInput,
@@ -533,6 +533,17 @@ export function App() {
     return created;
   }
 
+  async function handleTriggerCodeAgentRun(input: CreateCodeAgentRunInput) {
+    if (!window.api.triggerCodeAgentRun) {
+      throw new Error('Code Agent run IPC is not available.');
+    }
+
+    const created = await window.api.triggerCodeAgentRun(input);
+    setRuns((current) => [created, ...current.filter((run) => run.id !== created.id)]);
+    setBriefData(await window.api.getHomeBrief());
+    return created;
+  }
+
   async function handleContinuePausedRun(runId: string) {
     const updated = await window.api.continuePausedRun(runId);
     setRuns((current) => current.map((run) => (run.id === updated.id ? updated : run)));
@@ -827,6 +838,7 @@ export function App() {
             onResolveTaskDependency={handleResolveTaskDependency}
             onSatisfyCompletionCriteria={handleSatisfyCompletionCriteria}
             onTransitionTask={handleTransitionTask}
+            onTriggerCodeAgentRun={handleTriggerCodeAgentRun}
             onTriggerRun={handleTriggerRun}
             onUpdateBlocker={handleUpdateBlocker}
             onUpdateCompletionCriteria={handleUpdateCompletionCriteria}

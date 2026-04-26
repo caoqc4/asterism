@@ -1,3 +1,6 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
 import type { PingResponse } from '../../shared/types/ipc.js';
 import type { CreateBlockerInput, UpdateBlockerInput } from '../../shared/types/blocker.js';
 import type {
@@ -14,7 +17,7 @@ import type {
   CreateProcessTemplateInput,
   UpdateProcessTemplateInput,
 } from '../../shared/types/process-template.js';
-import type { CreateRunInput } from '../../shared/types/run.js';
+import type { CodeAgentAllowedCheck, CreateCodeAgentRunInput, CreateRunInput, RunRecord } from '../../shared/types/run.js';
 import type { AiConfigInput } from '../../shared/types/settings.js';
 import type { CreateSourceContextInput, UpdateSourceContextInput } from '../../shared/types/source-context.js';
 import type {
@@ -26,11 +29,13 @@ import type {
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import { getServices } from '../bootstrap/services.js';
 import { probeLocalContainerSandboxBackend } from '../domain/run/local-container-sandbox-backend.js';
+import { LocalContainerSandboxedCodingProducerExecutionService } from '../domain/run/local-container-sandboxed-coding-producer-execution-service.js';
 import { evaluateSandboxedCodingProducerBackendReadiness } from '../domain/run/sandboxed-coding-producer-backend.js';
 import { ipcMain } from '../electron.js';
 import { emitAppEvent } from './event-bus.js';
 
 const PING_CHANNEL = 'app:ping';
+const DEFAULT_CODE_AGENT_PREVIEW_FILE = '.taskplane/code-agent-preview.md';
 
 export function registerIpcHandlers(): void {
   ipcMain.handle(PING_CHANNEL, async (): Promise<PingResponse> => {
@@ -271,6 +276,14 @@ export function registerIpcHandlers(): void {
     return created;
   });
 
+  ipcMain.handle('run:triggerCodeAgent', async (_event, input: CreateCodeAgentRunInput) => {
+    const created = await triggerManualCodeAgentRun(input);
+    emitAppEvent('run.changed', created.id);
+    emitAppEvent('task.changed', created.taskId);
+    emitAppEvent('brief.changed');
+    return created;
+  });
+
   ipcMain.handle('run:continuePaused', async (_event, runId: string) => {
     const updated = await getServices().runService.continuePausedRun(runId);
     emitAppEvent('run.changed', updated.id);
@@ -278,4 +291,159 @@ export function registerIpcHandlers(): void {
     emitAppEvent('brief.changed');
     return updated;
   });
+}
+
+async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promise<RunRecord> {
+  const services = getServices();
+  const task = await services.taskService.getDetail(input.taskId);
+
+  if (!task) {
+    throw new Error(`Task not found: ${input.taskId}`);
+  }
+
+  const aiStatus = await services.aiConfigService.getStatus();
+  const workspaceRoot = aiStatus.workspaceRoot?.trim();
+  const requestedChecks = normalizeCodeAgentChecks(input.requestedChecks);
+  const patchIntent = input.patchIntent.trim() || `Prepare a staged patch for ${task.title}.`;
+  const run = await services.runRepository.create({
+    taskId: task.id,
+    type: 'agent',
+    instructions: [
+      'Code Agent manual sandbox producer preview.',
+      patchIntent,
+      'Real model producer loop is not connected yet; this run records a staged local preview only.',
+    ].join(' '),
+  });
+  const request = {
+    commandPolicy: {
+      allowedScripts: requestedChecks,
+      outputLimitBytes: 64_000,
+      timeoutMs: 120_000,
+    },
+    executionPolicy: {
+      network: 'disabled',
+      noCredentialPassthrough: true,
+      promotion: 'decision_required',
+    },
+    intent: {
+      completionCriteria: task.completionCriteria.length
+        ? task.completionCriteria.map((item) => item.text)
+        : ['Patch is reviewable before workspace mutation.'],
+      instructions: patchIntent,
+      taskTitle: task.title,
+    },
+    modelPolicy: {
+      providerKind: aiStatus.provider ?? 'openai-compatible',
+      toolExposure: 'sandboxed_coding_producer',
+    },
+    runId: run.id,
+    sourceId: `sandbox_source_${run.id}`,
+    taskId: task.id,
+    workspaceRoot: workspaceRoot ?? '',
+  };
+  const execution = await new LocalContainerSandboxedCodingProducerExecutionService().run({
+    decisionTitle: `Review Code Agent preview for ${task.title}`,
+    featureFlags: aiStatus.featureFlags,
+    operatorConfirmed: input.operatorConfirmed,
+    patchSummary: patchIntent,
+    producerLoop: async ({ stagingRoot }) => {
+      await writeManualCodeAgentPreview({
+        patchIntent,
+        runId: run.id,
+        stagingRoot,
+        taskTitle: task.title,
+      });
+
+      return {
+        evidence: {
+          modelSummary: 'Manual sandbox preview wrote a staged diagnostic patch; real producer model loop is not connected yet.',
+          observations: [
+            `Wrote ${DEFAULT_CODE_AGENT_PREVIEW_FILE} in staging only.`,
+            'Workspace input stayed read-only; promotion remains Decision-gated.',
+          ],
+        },
+        sessionSummary: 'manual sandbox producer preview completed without external AI call',
+        status: 'completed',
+        summary: `Staged ${DEFAULT_CODE_AGENT_PREVIEW_FILE}`,
+      };
+    },
+    request,
+  });
+
+  if (execution.status === 'blocked') {
+    return services.runRepository.updateResult(
+      run.id,
+      'failed',
+      execution.summary,
+      'system',
+      execution.reason,
+    );
+  }
+
+  const previewStatus = execution.preview.status;
+  if (previewStatus === 'previewed') {
+    const producerStatus = execution.preview.preview.preview.status;
+    const status = producerStatus === 'preview_ready'
+      ? 'completed'
+      : producerStatus === 'paused'
+        ? 'paused'
+        : 'failed';
+
+    return services.runRepository.updateResult(
+      run.id,
+      status,
+      execution.summary,
+      'system',
+      status === 'failed'
+        ? getCodeAgentPreviewFailureReason(execution.preview.preview.preview) ?? execution.summary
+        : null,
+    );
+  }
+
+  return services.runRepository.updateResult(
+    run.id,
+    'failed',
+    execution.summary,
+    'system',
+    execution.preview.preflight.summary,
+  );
+}
+
+function getCodeAgentPreviewFailureReason(preview: { status: string; reason?: string }): string | null {
+  return preview.reason?.trim() || null;
+}
+
+function normalizeCodeAgentChecks(checks: CodeAgentAllowedCheck[]): CodeAgentAllowedCheck[] {
+  const allowed = new Set<CodeAgentAllowedCheck>(['test', 'lint']);
+  const normalized = Array.from(new Set(checks.filter((check) => allowed.has(check))));
+
+  return normalized.length ? normalized : ['test'];
+}
+
+async function writeManualCodeAgentPreview(params: {
+  patchIntent: string;
+  runId: string;
+  stagingRoot: string;
+  taskTitle: string;
+}): Promise<void> {
+  const file = path.join(params.stagingRoot, DEFAULT_CODE_AGENT_PREVIEW_FILE);
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  await fs.writeFile(
+    file,
+    [
+      '# Taskplane Code Agent Preview',
+      '',
+      `Task: ${params.taskTitle}`,
+      `Run: ${params.runId}`,
+      '',
+      'Patch intent:',
+      params.patchIntent,
+      '',
+      'Status:',
+      'This is a manual sandbox preview. The real model producer loop is not connected yet.',
+      'Workspace mutation still requires an approved Decision in a later promotion flow.',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
 }

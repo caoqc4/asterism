@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { handleMock, emitAppEventMock, probeLocalContainerSandboxBackendMock, servicesMock } = vi.hoisted(() => ({
+const {
+  codeAgentExecutionRunMock,
+  handleMock,
+  emitAppEventMock,
+  probeLocalContainerSandboxBackendMock,
+  servicesMock,
+} = vi.hoisted(() => ({
+  codeAgentExecutionRunMock: vi.fn(),
   handleMock: vi.fn(),
   emitAppEventMock: vi.fn(),
   probeLocalContainerSandboxBackendMock: vi.fn(),
@@ -53,6 +60,10 @@ const { handleMock, emitAppEventMock, probeLocalContainerSandboxBackendMock, ser
       trigger: vi.fn(),
       continuePausedRun: vi.fn(),
     },
+    runRepository: {
+      create: vi.fn(),
+      updateResult: vi.fn(),
+    },
   },
 }));
 
@@ -74,6 +85,14 @@ vi.mock('../domain/run/local-container-sandbox-backend.js', () => ({
   probeLocalContainerSandboxBackend: probeLocalContainerSandboxBackendMock,
 }));
 
+vi.mock('../domain/run/local-container-sandboxed-coding-producer-execution-service.js', () => ({
+  LocalContainerSandboxedCodingProducerExecutionService: vi.fn().mockImplementation(function MockExecutionService() {
+    return {
+    run: codeAgentExecutionRunMock,
+    };
+  }),
+}));
+
 import { registerIpcHandlers } from './handlers.js';
 
 function getRegisteredHandler<TArgs extends unknown[], TResult>(channel: string) {
@@ -88,6 +107,7 @@ function getRegisteredHandler<TArgs extends unknown[], TResult>(channel: string)
 
 describe('registerIpcHandlers', () => {
   beforeEach(() => {
+    codeAgentExecutionRunMock.mockReset();
     handleMock.mockClear();
     emitAppEventMock.mockClear();
     probeLocalContainerSandboxBackendMock.mockReset();
@@ -524,6 +544,119 @@ describe('registerIpcHandlers', () => {
     expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
     expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'brief.changed');
     expect(result.failureReason).toBe('Missing API key');
+  });
+
+  it('creates a manual code-agent sandbox preview run and emits refresh events', async () => {
+    servicesMock.taskService.getDetail.mockResolvedValue({
+      id: 'task_1',
+      title: 'Prepare notes patch',
+      summary: null,
+      nextStep: null,
+      state: 'planned',
+      riskLevel: 'none',
+      riskNote: null,
+      waitingReason: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      blockers: [],
+      completionCriteria: [{ id: 'criteria_1', text: 'Patch is reviewable' }],
+      dependencies: [],
+      processBindings: [],
+      sourceContexts: [],
+      timeline: [],
+    });
+    servicesMock.aiConfigService.getStatus.mockResolvedValue({
+      configured: true,
+      apiKeyStored: true,
+      apiKeySource: 'env',
+      provider: 'openai-compatible',
+      model: 'relay-model',
+      baseUrl: 'https://relay.example.com/v1',
+      workspaceRoot: '/tmp/taskplane-workspace',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      configPath: '/tmp/config.json',
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+    });
+    servicesMock.runRepository.create.mockResolvedValue({
+      id: 'run_code_agent_1',
+      taskId: 'task_1',
+      type: 'agent',
+      status: 'running',
+      instructions: 'Code Agent manual sandbox producer preview.',
+      output: null,
+      outputSource: null,
+      failureReason: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    servicesMock.runRepository.updateResult.mockResolvedValue({
+      id: 'run_code_agent_1',
+      taskId: 'task_1',
+      type: 'agent',
+      status: 'completed',
+      instructions: 'Code Agent manual sandbox producer preview.',
+      output: 'preview completed',
+      outputSource: 'system',
+      failureReason: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+    codeAgentExecutionRunMock.mockResolvedValue({
+      preview: {
+        preview: {
+          preview: {
+            status: 'preview_ready',
+          },
+        },
+        status: 'previewed',
+        summary: 'preview completed',
+      },
+      status: 'completed',
+      summary: 'preview completed',
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; patchIntent: string; requestedChecks: ['test']; operatorConfirmed: true }],
+      Awaited<ReturnType<typeof servicesMock.runRepository.updateResult>>
+    >('run:triggerCodeAgent');
+
+    const result = await handler({}, {
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      taskId: 'task_1',
+    });
+
+    expect(servicesMock.runRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_1',
+      type: 'agent',
+    }));
+    expect(codeAgentExecutionRunMock).toHaveBeenCalledWith(expect.objectContaining({
+      operatorConfirmed: true,
+      patchSummary: 'Prepare a staged notes patch.',
+      request: expect.objectContaining({
+        commandPolicy: expect.objectContaining({
+          allowedScripts: ['test'],
+        }),
+        runId: 'run_code_agent_1',
+        sourceId: 'sandbox_source_run_code_agent_1',
+        taskId: 'task_1',
+      }),
+    }));
+    expect(servicesMock.runRepository.updateResult).toHaveBeenCalledWith(
+      'run_code_agent_1',
+      'completed',
+      'preview completed',
+      'system',
+      null,
+    );
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(1, 'run.changed', 'run_code_agent_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'brief.changed');
+    expect(result.status).toBe('completed');
   });
 
   it('emits run, task, and brief events after continuing a paused run', async () => {

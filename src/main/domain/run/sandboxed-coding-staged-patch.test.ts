@@ -49,6 +49,7 @@ describe('collectSandboxedCodingStagedPatchDraft', () => {
 
   it('collects newly staged files as additions', async () => {
     await fs.writeFile(path.join(stagingRoot, 'src', 'new.md'), 'new file\n', 'utf8');
+    await fs.writeFile(path.join(stagingRoot, 'session.json'), '{"internal":true}\n', 'utf8');
 
     const result = await collectSandboxedCodingStagedPatchDraft({
       stagingRoot,
@@ -62,6 +63,7 @@ describe('collectSandboxedCodingStagedPatchDraft', () => {
       expect(result.patchDraft.files).toEqual(['src/new.md']);
       expect(result.patchDraft.diff).toContain('--- /dev/null');
       expect(result.patchDraft.diff).toContain('+++ b/src/new.md');
+      expect(result.patchDraft.diff).not.toContain('session.json');
     }
   });
 

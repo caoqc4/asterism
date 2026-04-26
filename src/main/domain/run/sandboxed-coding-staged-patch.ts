@@ -57,6 +57,10 @@ export async function collectSandboxedCodingStagedPatchDraft(params: {
 
   for (const file of stagedFiles ?? []) {
     const relativeFile = normalizeRelativePath(path.relative(stagingRoot, file));
+    if (relativeFile === 'session.json') {
+      continue;
+    }
+
     if (!relativeFile || !isWorkspaceRelativeFile(relativeFile)) {
       blockedReasons.push('Sandboxed coding staged patch changed files must stay inside the workspace.');
       continue;

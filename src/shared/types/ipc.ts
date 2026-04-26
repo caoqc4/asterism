@@ -34,7 +34,7 @@ import type {
   ProcessTemplateRecord,
   UpdateProcessTemplateInput,
 } from './process-template.js';
-import type { CreateRunInput, RunDetailRecord, RunRecord } from './run.js';
+import type { CreateCodeAgentRunInput, CreateRunInput, RunDetailRecord, RunRecord } from './run.js';
 import type { AiConfigInput, AiConfigStatus } from './settings.js';
 import type { AgentSandboxBackendStatus } from '../agent-sandbox-provider.js';
 import type {
@@ -91,6 +91,7 @@ export type ElectronApi = {
   listRuns: () => Promise<RunRecord[]>;
   getRunDetail: (runId: string) => Promise<RunDetailRecord | null>;
   triggerRun: (input: CreateRunInput) => Promise<RunRecord>;
+  triggerCodeAgentRun?: (input: CreateCodeAgentRunInput) => Promise<RunRecord>;
   continuePausedRun: (runId: string) => Promise<RunRecord>;
   subscribeToEvents: (listener: (event: AppEvent) => void) => () => void;
 };

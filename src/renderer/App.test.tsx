@@ -2824,11 +2824,22 @@ describe('App UI flow', () => {
     )).toBeTruthy();
   });
 
-  it('collects manual code-agent run intent without executing the producer', async () => {
+  it('starts a manual code-agent sandbox preview run from explicit intent', async () => {
     const user = userEvent.setup();
+    const codeAgentRun = buildRunRecord({
+      id: 'run_code_agent_preview',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'completed',
+      output: 'Manual sandbox preview ready',
+      outputSource: 'system',
+    });
     const intentApi: ElectronApi = {
       ...mockApi,
+      getRunDetail: vi.fn(async (runId: string) => (runId === codeAgentRun.id ? codeAgentRun : null)),
+      listRuns: vi.fn(async () => [codeAgentRun]),
       probeSandboxBackend: vi.fn(),
+      triggerCodeAgentRun: vi.fn(async () => codeAgentRun),
     };
     window.api = intentApi;
 
@@ -2848,7 +2859,7 @@ describe('App UI flow', () => {
     )).toBeTruthy();
     expect(intent.getByText(/Completion criteria：暂无/)).toBeTruthy();
 
-    const startButton = intent.getByRole('button', { name: '准备 Code Agent Run' });
+    const startButton = intent.getByRole('button', { name: '启动 sandbox preview run' });
     expect(startButton.hasAttribute('disabled')).toBe(true);
 
     await user.type(intent.getByLabelText('Patch intent'), 'Create a staged patch for the notes file');
@@ -2861,9 +2872,13 @@ describe('App UI flow', () => {
 
     expect(intentApi.triggerRun).not.toHaveBeenCalled();
     expect(intentApi.probeSandboxBackend).not.toHaveBeenCalled();
-    expect(intent.getByText(
-      'Code-agent execution wiring is deferred: intent captured locally; no producer run was started.',
-    )).toBeTruthy();
+    expect(intentApi.triggerCodeAgentRun).toHaveBeenCalledWith({
+      operatorConfirmed: true,
+      patchIntent: 'Create a staged patch for the notes file',
+      requestedChecks: ['test', 'lint'],
+      taskId: riskTask.id,
+    });
+    expect(await screen.findByRole('heading', { name: 'agent / completed' })).toBeTruthy();
   });
 
   it('blocks saving a high-risk task without a risk note', async () => {

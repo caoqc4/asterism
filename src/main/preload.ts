@@ -40,6 +40,7 @@ const api: ElectronApi = {
   listRuns: () => ipcRenderer.invoke('run:list'),
   getRunDetail: (runId) => ipcRenderer.invoke('run:getDetail', runId),
   triggerRun: (input) => ipcRenderer.invoke('run:trigger', input),
+  triggerCodeAgentRun: (input) => ipcRenderer.invoke('run:triggerCodeAgent', input),
   continuePausedRun: (runId) => ipcRenderer.invoke('run:continuePaused', runId),
   subscribeToEvents: (listener) => {
     const wrapped = (_event: IpcRendererEvent, payload: Parameters<typeof listener>[0]) => {
