@@ -198,7 +198,8 @@ release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane
 - Open the generated Run and confirm `Staged Patch Review` shows the staged
   source, expected files, readiness, linked Decision, and workspace unchanged
   before approval.
-- Open the linked `workspace.staged_patch` Decision and approve it.
+- Use `打开 promotion Decision` from Runs detail, then open/approve the linked
+  `workspace.staged_patch` Decision.
 - Confirm the disposable workspace file changes only after approval.
 - Confirm Runs detail shows the promotion as resolved and the workspace status
   as applied after Decision approval, with touched files in the checkpoint

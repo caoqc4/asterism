@@ -885,6 +885,7 @@ export function App() {
             focusedRunId={focusedRunId}
             runs={runs}
             tasks={tasks}
+            onOpenDecision={handleOpenDecision}
             onOpenTask={handleOpenTask}
             onRefresh={loadShellData}
             onRunFocusConsumed={() => setFocusedRunId(null)}

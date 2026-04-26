@@ -3631,6 +3631,19 @@ describe('App UI flow', () => {
     };
     const sandboxProducerApi: ElectronApi = {
       ...mockApi,
+      listDecisions: vi.fn(async () => [
+        {
+          id: 'decision_sandbox_patch_1',
+          taskId: riskTask.id,
+          title: '确认提升 sandbox patch',
+          status: 'pending' as const,
+          sourceType: 'agent_checkpoint' as const,
+          sourceId: 'run_checkpoint_sandbox_patch_promotion',
+          sourceLabel: 'workspace.staged_patch',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]),
       listRuns: vi.fn(async () => [sandboxProducerRun]),
       getRunDetail: vi.fn(async (runId: string) =>
         runId === sandboxProducerRun.id ? sandboxProducerDetail : null,
@@ -3685,6 +3698,8 @@ describe('App UI flow', () => {
         'Patch source ready；source=sandbox_source_1；files=src/notes.md；Sandbox patch review run plan ready: src/notes.md；next=review patch-promotion Decision; workspace changes only after approval',
       ),
     ).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '打开 promotion Decision' }));
+    expect(await screen.findByRole('heading', { name: '确认提升 sandbox patch' })).toBeTruthy();
   });
 
   it('shows applied sandbox patch promotion evidence on the runs page', async () => {

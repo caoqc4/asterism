@@ -185,7 +185,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - Runs detail now shows a display-only `Staged Patch Review` block when sandbox
   source or patch-promotion checkpoint evidence exists, summarizing source,
   files, checks, promotion status, linked Decision title, artifact summary, and
-  bounded patch preview while keeping workspace mutation Decision-gated.
+  bounded patch preview while keeping workspace mutation Decision-gated. The
+  block now also carries the patch-promotion Decision id as an explicit
+  `打开 promotion Decision` recovery action, so Run evidence can flow directly
+  into the matching approval screen without broadening automatic starts.
 - Pending `workspace.staged_patch` Decisions now include a review-only
   `查看 Run 证据` action that resolves the checkpoint id back to the owning Run
   and opens the staged patch review surface before any approval action.

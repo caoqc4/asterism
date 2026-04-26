@@ -35,6 +35,7 @@ const RELATED_TIMELINE_PREVIEW_COUNT = 4;
 
 type StagedPatchReviewSummary = {
   artifactSummary: string | null;
+  decisionId: string | null;
   checks: string[];
   decisionTitle: string | null;
   files: string[];
@@ -412,6 +413,9 @@ function getStagedPatchReviewSummary(detail: RunDetailRecord | null): StagedPatc
       ? promotionPayload.artifactSummary
       : null,
     checks,
+    decisionId: typeof promotionPayload?.decisionId === 'string'
+      ? promotionPayload.decisionId
+      : null,
     decisionTitle: typeof promotionPayload?.decisionTitle === 'string'
       ? promotionPayload.decisionTitle
       : null,
@@ -465,6 +469,7 @@ type RunsPageProps = {
   runs: RunRecord[];
   tasks: TaskListItemRecord[];
   onOpenTask: (taskId: string, intent: RecommendedActionIntent) => void;
+  onOpenDecision: (decisionId: string) => void;
   onContinuePausedRun: (runId: string) => Promise<RunRecord>;
   onRefresh: () => Promise<void>;
   onRunFocusConsumed: () => void;
@@ -476,6 +481,7 @@ export function RunsPage({
   focusedRunId,
   runs,
   tasks,
+  onOpenDecision,
   onOpenTask,
   onContinuePausedRun,
   onRefresh,
@@ -725,6 +731,21 @@ export function RunsPage({
                 ) : null}
                 {stagedPatchReview.patchPreview ? (
                   <p className="meta">Patch preview：{stagedPatchReview.patchPreview}</p>
+                ) : null}
+                {stagedPatchReview.decisionId ? (
+                  <div className="chip-row">
+                    <button
+                      className="ghost-button"
+                      onClick={() => {
+                        if (stagedPatchReview.decisionId) {
+                          onOpenDecision(stagedPatchReview.decisionId);
+                        }
+                      }}
+                      type="button"
+                    >
+                      打开 promotion Decision
+                    </button>
+                  </div>
                 ) : null}
               </div>
             ) : null}
