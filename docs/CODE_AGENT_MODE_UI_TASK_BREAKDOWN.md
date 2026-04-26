@@ -565,6 +565,35 @@ Implemented notes:
 - `run:triggerCodeAgent` reads `TASKPLANE_CODE_AGENT_CONTEXT_FILES` only when
   the model producer env opt-in is active.
 
+### T15: Manual Context File Selection UI
+
+Status: first UI field implemented.
+
+Goal: move the bounded workspace context path from env-only validation toward
+the manual Code Agent product surface, while keeping selection explicit.
+
+Work:
+
+- add a `Context files` field to the Task detail Code Agent intent panel
+- accept comma-separated or newline-separated workspace-relative paths
+- pass selected files through `CreateCodeAgentRunInput.contextFiles`
+- keep the env fallback for local smoke and alpha validation
+- keep all path/content validation in the main-process context collector
+
+Acceptance:
+
+- empty context field keeps existing manual preview behavior
+- filled context field sends a normalized file list with the Code Agent run
+- renderer does not read local files directly
+- main process remains the only file reader and validator
+
+Implemented notes:
+
+- The renderer now sends `contextFiles` only when the field contains at least
+  one path.
+- The UI copy frames context files as read-only evidence for the model producer,
+  not as broad workspace read permission.
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:

@@ -155,6 +155,17 @@ The project is past initial architecture assembly. Current work should favor pro
   selected workspace-relative text files, blocks sensitive/path-escape/binary/
   oversized context, records a compact RunStep for collected context, and
   formats accepted files into the producer prompt as read-only evidence.
+- The Task detail Code Agent intent panel now has a manual `Context files`
+  field that accepts comma- or newline-separated workspace-relative paths and
+  passes them as `CreateCodeAgentRunInput.contextFiles`; the renderer does not
+  read files directly, and main-process validation still owns path/content
+  checks.
+- `npm test -- src/renderer/App.test.tsx src/main/ipc/handlers.test.ts
+  src/main/preload.test.ts src/main/domain/run/code-agent-workspace-context.test.ts
+  src/main/domain/run/code-agent-model-producer-loop.test.ts
+  src/main/domain/run/code-agent-model-producer-runtime.test.ts`, `npm run
+  accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally on
+  2026-04-26 after adding the manual Code Agent context-file field.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts

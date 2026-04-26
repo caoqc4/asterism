@@ -2863,6 +2863,7 @@ describe('App UI flow', () => {
     expect(startButton.hasAttribute('disabled')).toBe(true);
 
     await user.type(intent.getByLabelText('Patch intent'), 'Create a staged patch for the notes file');
+    await user.type(intent.getByLabelText('Context files'), 'docs/notes.md\nsrc/app.ts');
     await user.click(intent.getByRole('checkbox', {
       name: '我确认后续执行可能启动 Docker 容器，但工作区只会收到 Decision 批准后的变更',
     }));
@@ -2873,6 +2874,7 @@ describe('App UI flow', () => {
     expect(intentApi.triggerRun).not.toHaveBeenCalled();
     expect(intentApi.probeSandboxBackend).not.toHaveBeenCalled();
     expect(intentApi.triggerCodeAgentRun).toHaveBeenCalledWith({
+      contextFiles: ['docs/notes.md', 'src/app.ts'],
       operatorConfirmed: true,
       patchIntent: 'Create a staged patch for the notes file',
       requestedChecks: ['test', 'lint'],

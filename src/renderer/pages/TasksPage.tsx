@@ -777,6 +777,7 @@ export function TasksPage({
   const [quickRunAllowLocalWorkspaceRead, setQuickRunAllowLocalWorkspaceRead] = useState(false);
   const [quickRunAllowTaskMutationTools, setQuickRunAllowTaskMutationTools] = useState(false);
   const [codeAgentPatchIntent, setCodeAgentPatchIntent] = useState('');
+  const [codeAgentContextFiles, setCodeAgentContextFiles] = useState('');
   const [codeAgentRunTestCheck, setCodeAgentRunTestCheck] = useState(true);
   const [codeAgentRunLintCheck, setCodeAgentRunLintCheck] = useState(true);
   const [codeAgentOperatorConfirmed, setCodeAgentOperatorConfirmed] = useState(false);
@@ -1252,7 +1253,12 @@ export function TasksPage({
         codeAgentRunTestCheck ? 'test' : null,
         codeAgentRunLintCheck ? 'lint' : null,
       ].filter((check): check is 'test' | 'lint' => Boolean(check));
+      const contextFiles = codeAgentContextFiles
+        .split(/[\n,]/)
+        .map((file) => file.trim())
+        .filter(Boolean);
       const created = await onTriggerCodeAgentRun({
+        ...(contextFiles.length ? { contextFiles } : {}),
         operatorConfirmed: codeAgentOperatorConfirmed,
         patchIntent: codeAgentPatchIntent,
         requestedChecks,
@@ -2176,6 +2182,18 @@ export function TasksPage({
               placeholder="Describe the staged patch this code-agent run should try to produce."
             />
           </label>
+          <label>
+            Context files
+            <textarea
+              rows={2}
+              value={codeAgentContextFiles}
+              onChange={(event) => setCodeAgentContextFiles(event.target.value)}
+              placeholder="Optional workspace-relative files, comma or newline separated."
+            />
+          </label>
+          <p className="meta">
+            Context files are read-only evidence for the model producer; Taskplane still blocks path escapes, secrets, binary files, and oversized context.
+          </p>
           <fieldset className="inline-fieldset">
             <legend>Allowed checks</legend>
             <label>

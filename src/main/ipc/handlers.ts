@@ -381,7 +381,7 @@ async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promis
 
   const workspaceContext = modelRuntime.status === 'ready'
     ? await collectSelectedCodeAgentWorkspaceContext({
-        files: readSelectedCodeAgentContextFiles(),
+        files: readSelectedCodeAgentContextFiles(input),
         runId: run.id,
         services,
         workspaceRoot: workspaceRoot ?? '',
@@ -488,7 +488,13 @@ async function collectSelectedCodeAgentWorkspaceContext(params: {
   return result;
 }
 
-function readSelectedCodeAgentContextFiles(): string[] {
+function readSelectedCodeAgentContextFiles(input?: CreateCodeAgentRunInput): string[] {
+  if (input?.contextFiles?.length) {
+    return input.contextFiles
+      .map((file) => file.trim())
+      .filter(Boolean);
+  }
+
   return (readEnvValue(CODE_AGENT_CONTEXT_FILES_ENV) ?? '')
     .split(',')
     .map((file) => file.trim())
