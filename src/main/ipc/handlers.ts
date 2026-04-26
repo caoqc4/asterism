@@ -325,7 +325,9 @@ async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promis
   const workspaceRoot = aiStatus.workspaceRoot?.trim();
   const requestedChecks = normalizeCodeAgentChecks(input.requestedChecks);
   const patchIntent = input.patchIntent.trim() || `Prepare a staged patch for ${task.title}.`;
-  const modelProducerOptIn = readEnvBoolean(ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV) === true;
+  const modelProducerAvailable = readEnvBoolean(ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV) === true;
+  const modelProducerRequested = input.useModelProducer === true;
+  const modelProducerOptIn = modelProducerAvailable && modelProducerRequested;
   const run = await services.runRepository.create({
     taskId: task.id,
     type: 'agent',
@@ -333,7 +335,7 @@ async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promis
       'Code Agent manual sandbox producer preview.',
       patchIntent,
       modelProducerOptIn
-        ? 'Model producer loop is explicitly enabled by local env and remains sandbox/Decision gated.'
+        ? 'Model producer loop is explicitly requested for this run and remains sandbox/Decision gated.'
         : 'Real model producer loop is not connected yet; this run records a staged local preview only.',
     ].join(' '),
   });
@@ -368,6 +370,16 @@ async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promis
     aiConfigService: services.aiConfigService,
     allowProviderCalls: modelProducerOptIn,
   });
+
+  if (modelProducerRequested && !modelProducerAvailable) {
+    return services.runRepository.updateResult(
+      run.id,
+      'failed',
+      'Code Agent model producer runtime blocked: TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER is not enabled.',
+      'system',
+      'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER is not enabled.',
+    );
+  }
 
   if (modelProducerOptIn && modelRuntime.status === 'blocked') {
     return services.runRepository.updateResult(

@@ -944,7 +944,7 @@ describe('registerIpcHandlers', () => {
     });
 
     const handler = getRegisteredHandler<
-      [{ taskId: string; patchIntent: string; requestedChecks: ['test']; operatorConfirmed: true }],
+      [{ taskId: string; patchIntent: string; requestedChecks: ['test']; operatorConfirmed: true; useModelProducer: true }],
       Awaited<ReturnType<typeof servicesMock.runRepository.updateResult>>
     >('run:triggerCodeAgent');
 
@@ -953,6 +953,7 @@ describe('registerIpcHandlers', () => {
       patchIntent: 'Prepare a staged notes patch.',
       requestedChecks: ['test'],
       taskId: 'task_1',
+      useModelProducer: true,
     });
 
     expect(servicesMock.aiConfigService.resolveRuntimeConfig).toHaveBeenCalledTimes(1);
@@ -1039,7 +1040,7 @@ describe('registerIpcHandlers', () => {
     });
 
     const handler = getRegisteredHandler<
-      [{ taskId: string; patchIntent: string; requestedChecks: ['test']; operatorConfirmed: true }],
+      [{ taskId: string; patchIntent: string; requestedChecks: ['test']; operatorConfirmed: true; useModelProducer: true }],
       Awaited<ReturnType<typeof servicesMock.runRepository.updateResult>>
     >('run:triggerCodeAgent');
 
@@ -1048,6 +1049,7 @@ describe('registerIpcHandlers', () => {
       patchIntent: 'Prepare a staged notes patch.',
       requestedChecks: ['test'],
       taskId: 'task_1',
+      useModelProducer: true,
     });
 
     expect(codeAgentExecutionRunMock).not.toHaveBeenCalled();

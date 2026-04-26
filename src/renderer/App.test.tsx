@@ -2836,6 +2836,10 @@ describe('App UI flow', () => {
     });
     const intentApi: ElectronApi = {
       ...mockApi,
+      getAiConfigStatus: vi.fn(async () => ({
+        ...aiStatus,
+        codeAgentModelProducerEnabled: true,
+      })),
       getRunDetail: vi.fn(async (runId: string) => (runId === codeAgentRun.id ? codeAgentRun : null)),
       listRuns: vi.fn(async () => [codeAgentRun]),
       probeSandboxBackend: vi.fn(),
@@ -2872,6 +2876,9 @@ describe('App UI flow', () => {
     expect(intent.getByText(
       'Automatic start：disabled / requires mature skill or process, complete inputs, allowed tools, risk policy, accepted evidence or explicit enablement, and runtime readiness / no scheduler or auto-run flag is persisted',
     )).toBeTruthy();
+    expect(intent.getByText(
+      'Model producer：enabled by local env / may call the configured provider after operator confirmation / sandbox preview and Decision promotion still apply',
+    )).toBeTruthy();
     expect(intent.getByText(/Completion criteria：暂无/)).toBeTruthy();
     expect(intent.getByText(
       'Context selection：none selected / 3 suggestions available / files are not read until the run starts',
@@ -2894,6 +2901,9 @@ describe('App UI flow', () => {
       'Context selection：2 selected / docs/notes.md、src/app.ts / files are not read until the run starts',
     )).toBeTruthy();
     await user.click(intent.getByRole('checkbox', {
+      name: 'Use model producer（会调用已配置 provider；需要显式 context files）',
+    }));
+    await user.click(intent.getByRole('checkbox', {
       name: '我确认后续执行可能启动 Docker 容器，但工作区只会收到 Decision 批准后的变更',
     }));
     expect(startButton.hasAttribute('disabled')).toBe(false);
@@ -2908,6 +2918,7 @@ describe('App UI flow', () => {
       patchIntent: 'Create a staged patch for the notes file',
       requestedChecks: ['test', 'lint'],
       taskId: riskTask.id,
+      useModelProducer: true,
     });
     expect(await screen.findByRole('heading', { name: 'agent / completed' })).toBeTruthy();
   });

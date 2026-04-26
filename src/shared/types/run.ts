@@ -69,4 +69,5 @@ export type CreateCodeAgentRunInput = {
   contextFiles?: string[];
   requestedChecks: CodeAgentAllowedCheck[];
   operatorConfirmed: boolean;
+  useModelProducer?: boolean;
 };

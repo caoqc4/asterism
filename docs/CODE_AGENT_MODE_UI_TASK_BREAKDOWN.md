@@ -464,11 +464,12 @@ Acceptance:
 
 Implemented notes:
 
-- `run:triggerCodeAgent` now selects either the existing manual preview loop or
-  the model producer loop based on `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER`.
-- The env-enabled path still requires the existing operator confirmation,
-  sandbox feature flag, disabled network, no credential passthrough, and
-  Decision-only promotion.
+- `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER` now exposes local model producer
+  capability, but `run:triggerCodeAgent` selects the model producer loop only
+  when the current run also sets `useModelProducer=true`.
+- The run-level model producer path still requires the existing operator
+  confirmation, explicit context files, selected checks, sandbox feature flag,
+  disabled network, no credential passthrough, and Decision-only promotion.
 
 ### T12: Model Producer Local Preflight
 
@@ -975,12 +976,11 @@ Local disposable-workspace validation for patch promotion apply has passed via
 `no-write`, apply-enabled mode wrote only the reviewed temp-workspace file, and
 the smoke did not start Docker or call AI.
 
-The next implementation decision is how to validate the real model-backed
-producer path without turning on broad autonomy: either keep it env/smoke-only
-until one provider-backed disposable-workspace run is accepted, or add a
-manual-only product switch that requires explicit context files, selected
-checks, visible provider-spend copy, sandbox readiness, and Decision-gated
-promotion before the model loop can run.
+The manual-only product switch is now the accepted next step for validating the
+real model-backed producer path without turning on broad autonomy. The env flag
+only exposes capability; each run must still opt into model producer usage with
+explicit context files, selected checks, visible provider-spend copy, sandbox
+readiness, and Decision-gated promotion before the model loop can run.
 
 Current support for the first option exists as
 `accept:sandbox-coding:model-producer-preview-smoke`. It is skipped by default;
@@ -997,7 +997,9 @@ single fenced JSON object from providers before applying the same file/path/size
 contract, while still rejecting mixed natural-language responses.
 
 The Task detail Code Agent panel now also surfaces the env-only model producer
-opt-in state before the user starts a run. Disabled mode says the manual preview
-uses the local diagnostic producer and does not call the provider; enabled mode
-warns that the configured provider may be called after operator confirmation,
-while sandbox preview and Decision promotion still apply.
+availability before the user starts a run. Disabled mode says the manual
+preview uses the local diagnostic producer and does not call the provider;
+enabled mode reveals a per-run `Use model producer` checkbox. The env flag is
+therefore only capability availability; provider spend still requires explicit
+operator confirmation, explicit context files, selected checks, sandbox preview,
+and Decision-gated promotion.

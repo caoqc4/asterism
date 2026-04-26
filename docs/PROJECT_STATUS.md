@@ -132,11 +132,12 @@ The project is past initial architecture assembly. Current work should favor pro
   still not UI-wired: it blocks before resolving AI config unless provider
   calls are explicitly allowed, requires `enableSandboxCodingAgent=true`, then
   wraps existing runtime text generation in the staged-file producer adapter.
-- The Task detail manual Code Agent path can now opt into the model producer
-  loop only through `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=true`; without
-  that env flag it keeps the local diagnostic preview and does not resolve
-  runtime AI config. If the env flag is true but runtime config is unavailable,
-  the Run fails before sandbox execution starts.
+- The Task detail manual Code Agent path now separates model-producer
+  availability from provider-spend consent: `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=true`
+  only exposes the capability, while each run must also select `Use model
+  producer` before Taskplane resolves runtime AI config or can call the
+  provider. If a run requests model producer usage without the env capability,
+  it fails before sandbox execution starts.
 - `npm run accept:sandbox-coding:model-producer-preflight` now provides a
   read-only local readiness check for the model-backed Code Agent opt-in,
   reporting required `.env` variables without calling providers, probing
@@ -387,16 +388,18 @@ The project is past initial architecture assembly. Current work should favor pro
   fenced-JSON response, so the staged-file parser now accepts a single fenced
   JSON object before applying the existing strict staged-file contract.
 - The Task detail Code Agent panel now surfaces whether the env-only
-  `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER` opt-in is active. Disabled mode
-  states that manual preview uses the local diagnostic producer without provider
-  calls; enabled mode warns that the configured provider may be called after
-  operator confirmation while sandbox preview and Decision promotion still
-  apply.
+  `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER` capability is active. Disabled
+  mode states that manual preview uses the local diagnostic producer without
+  provider calls; enabled mode reveals a per-run `Use model producer` checkbox,
+  so provider spend requires both the env capability and explicit run-level
+  selection with context files, selected checks, operator confirmation, sandbox
+  preview, and Decision-gated promotion.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
-  src/renderer/App.test.tsx`, `npm run accept:sandbox-coding`, `npm run lint`,
-  and `npm run build` passed locally on 2026-04-26 after surfacing the
-  model-producer provider-spend status in the Code Agent panel.
+  src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
+  src/renderer/lib/agentCapabilities.test.ts`, `npm run accept:sandbox-coding`,
+  `npm run lint`, and `npm run build` passed locally on 2026-04-26 after
+  separating model-producer availability from per-run provider-spend selection.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts

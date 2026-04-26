@@ -863,6 +863,7 @@ export function TasksPage({
   const [codeAgentRunTestCheck, setCodeAgentRunTestCheck] = useState(true);
   const [codeAgentRunLintCheck, setCodeAgentRunLintCheck] = useState(true);
   const [codeAgentOperatorConfirmed, setCodeAgentOperatorConfirmed] = useState(false);
+  const [codeAgentUseModelProducer, setCodeAgentUseModelProducer] = useState(false);
   const [codeAgentIntentDiagnostic, setCodeAgentIntentDiagnostic] = useState<string | null>(null);
   const [codeAgentRunPending, setCodeAgentRunPending] = useState(false);
   const [transitionWaitingReason, setTransitionWaitingReason] = useState('');
@@ -1342,6 +1343,7 @@ export function TasksPage({
         patchIntent: codeAgentPatchIntent,
         requestedChecks,
         taskId: detail.id,
+        ...(codeAgentUseModelProducer ? { useModelProducer: true } : {}),
       });
 
       setCodeAgentIntentDiagnostic(
@@ -2250,6 +2252,16 @@ export function TasksPage({
           <p className="meta">
             {formatCodeAgentModelProducerOptInSummary(aiStatus)}
           </p>
+          {aiStatus?.codeAgentModelProducerEnabled ? (
+            <label>
+              <input
+                checked={codeAgentUseModelProducer}
+                onChange={(event) => setCodeAgentUseModelProducer(event.target.checked)}
+                type="checkbox"
+              />
+              Use model producer（会调用已配置 provider；需要显式 context files）
+            </label>
+          ) : null}
           <p className="meta">
             Completion criteria：{
               detail?.completionCriteria.length
@@ -2336,6 +2348,7 @@ export function TasksPage({
             disabled={
               codeAgentRunPending
               || !codeAgentOperatorConfirmed
+              || (codeAgentUseModelProducer && selectedCodeAgentContextFiles.length === 0)
               || (!codeAgentRunTestCheck && !codeAgentRunLintCheck)
             }
             onClick={() => void handleCodeAgentRunStart()}
