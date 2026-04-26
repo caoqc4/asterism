@@ -29,7 +29,8 @@ The project is past initial architecture assembly. Current work should favor pro
 - The first local-write execution slice is in place but not model-exposed: `workspace.write_patch` requires explicit local file-write policy, creates a confirmation checkpoint with a diff preview, applies only after the linked Decision is approved, and has tests for normal-run fallback plus workspace-boundary / expected-file rejection.
 - `npm run accept:agent-local` now combines the non-live agent acceptance checks
   for workspace patch approval, domain task tools, provider-native tool-call
-  boundaries, and sandbox-coding guardrails without calling external providers.
+  boundaries, sandbox-coding guardrails, and the visible Code Agent
+  UI/config/IPC preflight gate without calling external providers.
 - `npm run accept:sandbox-coding` now provides a focused non-live gate for the
   disabled sandbox provider contracts, local-container command planning,
   sandbox patch-review persistence/adapter/factory, and session metadata
@@ -122,8 +123,9 @@ The project is past initial architecture assembly. Current work should favor pro
   producer execution service, and opens Runs detail for lifecycle/source
   evidence review. The preview path writes only a staged diagnostic patch inside
   the sandbox through the same bounded staged-file plan validator reserved for
-  future model-backed producer output; the real model-backed producer loop
-  remains deliberately unconnected.
+  model-backed producer output. The default manual path stays on the local
+  diagnostic producer unless the env capability is enabled and the individual
+  run explicitly selects model producer usage.
 - Source-ready manual Code Agent previews now bridge into the existing patch
   review chain: ready plans persist a patch artifact, open `patch_promotion`
   checkpoint, and pending Decision. This gives the preview path a formal review
