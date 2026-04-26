@@ -282,10 +282,14 @@ Completed non-live slices:
     data for the future real runner: backend id/kind, runner family, source id,
     workspace root, checks, network, and promotion policy, still without
     starting Docker or creating a provider.
+12. Blocked backend connection diagnostics that map a blocked plan into the
+    existing producer preview/persister shape, so Docker/backend failures can
+    create bounded `agent_sessions` metadata and a compact final RunStep without
+    starting any runner.
 
 Next slice:
 
-12. Connect a real sandbox backend only after a backend decision/review confirms
+13. Connect a real sandbox backend only after a backend decision/review confirms
    the implementation still satisfies the sandbox decision and source boundary.
 
 ## Acceptance

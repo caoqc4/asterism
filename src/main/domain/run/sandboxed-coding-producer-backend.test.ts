@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { AgentSandboxBackendProbe } from '../../../shared/agent-sandbox-provider.js';
 import {
+  buildSandboxedCodingProducerBackendBlockedPreviewResult,
   buildSandboxedCodingProducerBackendConnectionPlan,
   evaluateSandboxedCodingProducerBackendConnectionGate,
   evaluateSandboxedCodingProducerBackendReadiness,
@@ -239,5 +240,59 @@ describe('evaluateSandboxedCodingProducerBackendReadiness', () => {
       status: 'blocked',
       summary: 'Sandboxed coding producer backend connection plan blocked: docker daemon unavailable',
     });
+  });
+
+  it('maps a blocked connection plan to a producer diagnostic preview result', () => {
+    const gate = evaluateSandboxedCodingProducerBackendConnectionGate({
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      probe: {
+        backendId: 'local-container',
+        kind: 'local_container',
+        reason: 'docker daemon unavailable',
+        status: 'unavailable',
+      },
+      request,
+    });
+    const plan = buildSandboxedCodingProducerBackendConnectionPlan(gate);
+
+    expect(plan.status).toBe('blocked');
+    if (plan.status !== 'blocked') {
+      throw new Error('Expected a blocked plan');
+    }
+
+    const result = buildSandboxedCodingProducerBackendBlockedPreviewResult({
+      commandScripts: request.commandPolicy.allowedScripts,
+      network: request.executionPolicy.network,
+      plan,
+      providerKind: request.modelPolicy.providerKind,
+      runId: request.runId,
+      sourceId: request.sourceId,
+      workspaceRoot: request.workspaceRoot,
+    });
+
+    expect(result).toMatchObject({
+      events: [],
+      plan: null,
+      reason: 'docker daemon unavailable',
+      sessionSummary: 'Sandboxed coding producer backend connection plan blocked: docker daemon unavailable',
+      status: 'blocked',
+      steps: [
+        {
+          kind: 'final',
+          output: 'Sandboxed coding producer backend connection plan blocked: docker daemon unavailable',
+          runId: 'run_1',
+          status: 'completed',
+          title: 'Sandbox producer backend blocked',
+        },
+      ],
+    });
+    expect(result.sessionMetadata).toContain('executor=sandboxed_coding_producer');
+    expect(result.sessionMetadata).toContain('producerStatus=blocked');
+    expect(result.sessionMetadata).toContain('blockedReasons=docker daemon unavailable');
+    expect(result.sessionMetadata).toContain('workspace=/tmp/taskplane-workspace');
+    expect(result.steps[0].input).toContain('gate=Sandboxed coding producer backend connection blocked: docker daemon unavailable');
   });
 });

@@ -1,4 +1,5 @@
 import {
+  type AgentSandboxCheckScript,
   buildAgentSandboxProviderCapabilitiesFromBackendProfile,
   buildAgentSandboxBackendProfileFromProbe,
   buildDefaultAgentSandboxCommandPolicy,
@@ -11,8 +12,10 @@ import { buildDefaultAgentToolExecutionPolicy } from '../../../shared/agent-tool
 import type { FeatureFlags } from '../../../shared/types/settings.js';
 import {
   type NormalizedSandboxedCodingProducerRequest,
+  type PreviewSandboxedCodingInjectedProducerRunResult,
   validateSandboxedCodingProducerRequest,
 } from './sandboxed-coding-producer.js';
+import { formatSandboxedCodingProducerSessionMetadata } from '../../../shared/agent-session-metadata.js';
 
 export type SandboxedCodingProducerBackendReadiness =
   | {
@@ -216,5 +219,56 @@ export function evaluateSandboxedCodingProducerBackendConnectionGate(params: {
       `kind=${profile.kind}`,
       `source=${requestValidation.request.sourceId}`,
     ].join(' / '),
+  };
+}
+
+export function buildSandboxedCodingProducerBackendBlockedPreviewResult(params: {
+  commandScripts?: AgentSandboxCheckScript[];
+  network?: NormalizedSandboxedCodingProducerRequest['executionPolicy']['network'];
+  plan: Extract<SandboxedCodingProducerBackendConnectionPlan, { status: 'blocked' }>;
+  providerKind?: string | null;
+  runId: string;
+  sessionId?: string | null;
+  sourceId?: string | null;
+  workspaceRoot?: string | null;
+}): PreviewSandboxedCodingInjectedProducerRunResult {
+  const sourceId = params.sourceId?.trim() || 'backend_connection_preflight';
+  const sessionId = params.sessionId?.trim() || `sandboxed_producer:${sourceId}`;
+  const commandScripts = params.commandScripts ?? [];
+  const reason = params.plan.blockedReasons.join(' ') || params.plan.summary;
+
+  return {
+    events: [],
+    plan: null,
+    reason,
+    sessionMetadata: formatSandboxedCodingProducerSessionMetadata({
+      blockedReasons: params.plan.blockedReasons,
+      commandScripts,
+      network: params.network ?? 'disabled',
+      promotion: 'decision_required',
+      providerKind: params.providerKind?.trim() || 'unconfigured',
+      sessionId,
+      sourceId,
+      status: 'blocked',
+      summary: params.plan.summary,
+      workspaceRoot: params.workspaceRoot?.trim() || 'unknown',
+    }),
+    sessionSummary: params.plan.summary,
+    status: 'blocked',
+    steps: [
+      {
+        input: [
+          `session=${sessionId}`,
+          `source=${sourceId}`,
+          `gate=${params.plan.gateSummary}`,
+          `blockedReasons=${params.plan.blockedReasons.join('; ') || 'unknown'}`,
+        ].join('\n'),
+        kind: 'final',
+        output: params.plan.summary,
+        runId: params.runId,
+        status: 'completed',
+        title: 'Sandbox producer backend blocked',
+      },
+    ],
   };
 }

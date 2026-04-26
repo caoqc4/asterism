@@ -7,6 +7,7 @@ import {
   summarizeSandboxedCodingProducerPreviewPersistence,
 } from './sandboxed-coding-producer-persister.js';
 import type { PreviewSandboxedCodingInjectedProducerRunResult } from './sandboxed-coding-producer.js';
+import { buildSandboxedCodingProducerBackendBlockedPreviewResult } from './sandboxed-coding-producer-backend.js';
 
 function buildAgentSessionRepositoryMock() {
   const session: AgentSessionRecord = {
@@ -201,5 +202,46 @@ describe('SandboxedCodingProducerPreviewPersister', () => {
       result,
       stepCount: persisted.steps.length,
     })).toBe('producer=blocked / session=failed / steps=1');
+  });
+
+  it('persists blocked backend connection diagnostics through the preview persister', async () => {
+    const agentSessionRepository = buildAgentSessionRepositoryMock();
+    const runStepRepository = buildRunStepRepositoryMock();
+    const result = buildSandboxedCodingProducerBackendBlockedPreviewResult({
+      commandScripts: ['lint', 'test'],
+      network: 'disabled',
+      plan: {
+        blockedReasons: ['docker daemon unavailable'],
+        gateSummary: 'Sandboxed coding producer backend connection blocked: docker daemon unavailable',
+        status: 'blocked',
+        summary: 'Sandboxed coding producer backend connection plan blocked: docker daemon unavailable',
+      },
+      providerKind: 'openai-compatible',
+      runId: 'run_1',
+      sourceId: 'sandbox_source_1',
+      workspaceRoot: '/tmp/taskplane-workspace',
+    });
+    const persister = new SandboxedCodingProducerPreviewPersister(
+      agentSessionRepository as never,
+      runStepRepository as never,
+    );
+
+    const persisted = await persister.persist({
+      result,
+      runId: 'run_1',
+    });
+
+    expect(agentSessionRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.stringContaining('producerStatus=blocked'),
+      runId: 'run_1',
+    }));
+    expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith('agent_session_1', 'failed');
+    expect(persisted.steps).toHaveLength(1);
+    expect(persisted.steps[0]).toMatchObject({
+      kind: 'final',
+      output: 'Sandboxed coding producer backend connection plan blocked: docker daemon unavailable',
+      status: 'completed',
+      title: 'Sandbox producer backend blocked',
+    });
   });
 });

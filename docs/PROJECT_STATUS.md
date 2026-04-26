@@ -488,6 +488,13 @@ Latest local baseline:
 - `npm test -- src/main/domain/run/sandboxed-coding-producer-backend.test.ts`,
   `npm run accept:sandbox-coding`, and `npm run verify` passed locally on
   2026-04-26 after adding backend connection plans: 86 test files / 618 tests
+- `npm test -- src/main/domain/run/sandboxed-coding-producer-backend.test.ts
+  src/main/domain/run/sandboxed-coding-producer-persister.test.ts` passed
+  locally on 2026-04-26 after mapping blocked backend connection plans into
+  producer diagnostics that can be persisted through the preview persister
+- `npm run accept:sandbox-coding` and `npm run verify` passed locally on
+  2026-04-26 after adding blocked backend connection diagnostics: 86 test files
+  / 620 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
