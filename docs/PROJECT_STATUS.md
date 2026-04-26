@@ -358,6 +358,10 @@ The project is past initial architecture assembly. Current work should favor pro
   only opens after request validation, backend probe/profile readiness, feature
   flags, and coding-lane eligibility all pass; unavailable Docker/backend probes
   remain blocked before any real backend runner can be wired.
+- Backend connection gates can now produce pure connection plans for the future
+  real runner, naming backend id/kind, runner family, source id, workspace root,
+  checks, network, and promotion policy without starting Docker or constructing
+  a provider.
 - Local Docker backend probe on 2026-04-26 is not ready: Docker CLI reached the
   configured socket path but the daemon/socket was unavailable at
   `/Users/caoq/.docker/run/docker.sock`. Real local-container backend live
@@ -407,7 +411,7 @@ npm run verify
 Latest local baseline:
 
 - 86 test files
-- 616 tests
+- 618 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -481,6 +485,9 @@ Latest local baseline:
   `npm run accept:sandbox-coding`, and `npm run verify` passed locally on
   2026-04-26 after adding the producer backend connection gate and tightening
   temp sandbox directory assertions: 86 test files / 616 tests
+- `npm test -- src/main/domain/run/sandboxed-coding-producer-backend.test.ts`,
+  `npm run accept:sandbox-coding`, and `npm run verify` passed locally on
+  2026-04-26 after adding backend connection plans: 86 test files / 618 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

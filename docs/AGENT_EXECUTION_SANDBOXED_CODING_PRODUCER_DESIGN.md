@@ -278,10 +278,14 @@ Completed non-live slices:
 10. Backend connection gate that only opens after producer request validation,
     backend probe/profile readiness, feature flags, and coding-lane eligibility
     all pass; unavailable Docker/backend probes remain blocked.
+11. Backend connection plan that turns the gate result into pure diagnostic
+    data for the future real runner: backend id/kind, runner family, source id,
+    workspace root, checks, network, and promotion policy, still without
+    starting Docker or creating a provider.
 
 Next slice:
 
-11. Connect a real sandbox backend only after a backend decision/review confirms
+12. Connect a real sandbox backend only after a backend decision/review confirms
    the implementation still satisfies the sandbox decision and source boundary.
 
 ## Acceptance

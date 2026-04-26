@@ -40,6 +40,28 @@ export type SandboxedCodingProducerBackendConnectionGate =
       summary: string;
     };
 
+export type SandboxedCodingProducerBackendConnectionPlan =
+  | {
+      blockedReasons: string[];
+      gateSummary: string;
+      status: 'blocked';
+      summary: string;
+    }
+  | {
+      backendId: string;
+      backendKind: AgentSandboxBackendProfile['kind'];
+      commandScripts: string[];
+      gateSummary: string;
+      network: NormalizedSandboxedCodingProducerRequest['executionPolicy']['network'];
+      noCredentialPassthrough: true;
+      promotion: 'decision_required';
+      requiredRunner: 'local_container_sandboxed_coding_producer' | 'remote_sandboxed_coding_producer';
+      sourceId: string;
+      status: 'ready';
+      summary: string;
+      workspaceRoot: string;
+    };
+
 export function evaluateSandboxedCodingProducerBackendReadiness(params: {
   featureFlags: FeatureFlags;
   probe: AgentSandboxBackendProbe;
@@ -107,6 +129,44 @@ export function evaluateSandboxedCodingProducerBackendReadiness(params: {
       `kind=${params.probe.kind}`,
       requestValidation.valid ? `workspace=${requestValidation.request.workspaceRoot}` : null,
     ].filter(Boolean).join(' / '),
+  };
+}
+
+export function buildSandboxedCodingProducerBackendConnectionPlan(
+  gate: SandboxedCodingProducerBackendConnectionGate,
+): SandboxedCodingProducerBackendConnectionPlan {
+  if (!gate.ready) {
+    return {
+      blockedReasons: gate.blockedReasons,
+      gateSummary: gate.summary,
+      status: 'blocked',
+      summary: `Sandboxed coding producer backend connection plan blocked: ${gate.blockedReasons.join(' ')}`,
+    };
+  }
+
+  const requiredRunner = gate.profile.kind === 'local_container'
+    ? 'local_container_sandboxed_coding_producer'
+    : 'remote_sandboxed_coding_producer';
+
+  return {
+    backendId: gate.profile.id,
+    backendKind: gate.profile.kind,
+    commandScripts: gate.request.commandPolicy.allowedScripts,
+    gateSummary: gate.summary,
+    network: gate.request.executionPolicy.network,
+    noCredentialPassthrough: true,
+    promotion: 'decision_required',
+    requiredRunner,
+    sourceId: gate.request.sourceId,
+    status: 'ready',
+    summary: [
+      'Sandboxed coding producer backend connection plan ready',
+      `backend=${gate.profile.id}`,
+      `runner=${requiredRunner}`,
+      `source=${gate.request.sourceId}`,
+      `checks=${gate.request.commandPolicy.allowedScripts.join(',') || 'none'}`,
+    ].join(' / '),
+    workspaceRoot: gate.request.workspaceRoot,
   };
 }
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { AgentSandboxBackendProbe } from '../../../shared/agent-sandbox-provider.js';
 import {
+  buildSandboxedCodingProducerBackendConnectionPlan,
   evaluateSandboxedCodingProducerBackendConnectionGate,
   evaluateSandboxedCodingProducerBackendReadiness,
 } from './sandboxed-coding-producer-backend.js';
@@ -188,6 +189,55 @@ describe('evaluateSandboxedCodingProducerBackendReadiness', () => {
       },
       ready: false,
       summary: 'Sandboxed coding producer backend connection blocked: docker daemon unavailable',
+    });
+  });
+
+  it('builds a ready connection plan from an open gate without starting a backend runner', () => {
+    const gate = evaluateSandboxedCodingProducerBackendConnectionGate({
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      probe: availableProbe,
+      request,
+    });
+
+    expect(buildSandboxedCodingProducerBackendConnectionPlan(gate)).toEqual({
+      backendId: 'local-container',
+      backendKind: 'local_container',
+      commandScripts: ['lint', 'test'],
+      gateSummary: 'Sandboxed coding producer backend connection allowed / backend=local-container / kind=local_container / source=sandbox_source_1',
+      network: 'disabled',
+      noCredentialPassthrough: true,
+      promotion: 'decision_required',
+      requiredRunner: 'local_container_sandboxed_coding_producer',
+      sourceId: 'sandbox_source_1',
+      status: 'ready',
+      summary: 'Sandboxed coding producer backend connection plan ready / backend=local-container / runner=local_container_sandboxed_coding_producer / source=sandbox_source_1 / checks=lint,test',
+      workspaceRoot: '/tmp/taskplane-workspace',
+    });
+  });
+
+  it('builds a blocked connection plan from a closed gate', () => {
+    const gate = evaluateSandboxedCodingProducerBackendConnectionGate({
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      probe: {
+        backendId: 'local-container',
+        kind: 'local_container',
+        reason: 'docker daemon unavailable',
+        status: 'unavailable',
+      },
+      request,
+    });
+
+    expect(buildSandboxedCodingProducerBackendConnectionPlan(gate)).toEqual({
+      blockedReasons: ['docker daemon unavailable'],
+      gateSummary: 'Sandboxed coding producer backend connection blocked: docker daemon unavailable',
+      status: 'blocked',
+      summary: 'Sandboxed coding producer backend connection plan blocked: docker daemon unavailable',
     });
   });
 });
