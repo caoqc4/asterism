@@ -153,7 +153,7 @@ describe('local container sandbox backend probe', () => {
         target: '/workspace',
       },
       stagingMount: {
-        readonly: false,
+        readonly: true,
         source: '/tmp/taskplane-sandbox-1',
         target: '/taskplane-staging',
       },
@@ -166,14 +166,27 @@ describe('local container sandbox backend probe', () => {
       '--mount',
       'type=bind,source=/tmp/taskplane-workspace,target=/workspace,readonly',
       '--mount',
-      'type=bind,source=/tmp/taskplane-sandbox-1,target=/taskplane-staging',
+      'type=bind,source=/tmp/taskplane-sandbox-1,target=/taskplane-staging,readonly',
       '--workdir',
-      '/workspace',
+      '/',
       'node:22-bookworm-slim',
-      'npm',
-      'run',
+      '/bin/sh',
+      '-lc',
+      [
+        'set -eu',
+        'rm -rf /taskplane-workdir',
+        'mkdir -p /taskplane-workdir',
+        'cp -a /workspace/. /taskplane-workdir/',
+        'cp -a /taskplane-staging/. /taskplane-workdir/',
+        'rm -f /taskplane-workdir/session.json',
+        'cd /taskplane-workdir',
+        'npm run "$1"',
+      ].join('\n'),
+      'taskplane-check',
       'test',
     ]);
+    expect(plans[0]?.args.join('\n')).toContain('cp -a /taskplane-staging/. /taskplane-workdir/');
+    expect(plans[0]?.args.join('\n')).toContain('npm run "$1"');
     expect(plans[0]?.args).not.toContain('--env');
   });
 

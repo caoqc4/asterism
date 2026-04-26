@@ -254,6 +254,11 @@ The project is past initial architecture assembly. Current work should favor pro
   shared validator when continuing paused runs, preserving the same fail-closed
   stale-payload wording while making the resume contract reusable by future UI
   and diagnostics.
+- Local-container sandbox targeted checks now validate the staged candidate
+  patch instead of the untouched workspace: Docker mounts the workspace and
+  staging root read-only, builds a temporary merged work tree inside the
+  container, removes internal `session.json`, and then runs only the selected
+  `test` / `lint` script.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -353,6 +358,19 @@ The project is past initial architecture assembly. Current work should favor pro
   src/main/domain/run/run-service.integration.test.ts` and `npm run
   accept:agent-runtime` passed locally on 2026-04-26 after moving resume
   checkpoint validation into shared checkpoint payload helpers.
+- `npm test -- src/main/domain/run/local-container-sandbox-backend.test.ts
+  src/main/domain/run/local-container-sandboxed-coding-producer-runner.test.ts
+  src/main/domain/run/local-container-sandboxed-coding-producer-preview-service.test.ts
+  src/main/domain/run/local-container-sandboxed-coding-producer-execution-service.test.ts`
+  and `npm run lint` passed locally on 2026-04-26 after making local-container
+  checks run against the merged workspace/staging candidate patch.
+- `npm run accept:sandbox-coding`, `npm run build`,
+  `TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE=true npm run
+  accept:sandbox-coding:producer-preview-smoke`, and
+  `TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE=true
+  TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS=true npm run
+  accept:sandbox-coding:producer-preview-smoke` passed locally on 2026-04-26
+  after the same local-container merged-worktree check change.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts

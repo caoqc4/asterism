@@ -71,6 +71,9 @@ Completed:
   sandbox provider boundary, human feedback routing, and MCP constraints
 - provider-native safe-read path remains gated and locally tested
 - workspace write/command tools remain registry-only and Decision-gated
+- local-container targeted checks now run against a container-internal merged
+  workspace/staging work tree, so `test` / `lint` validate the candidate patch
+  without mutating the selected workspace or staging root
 
 Pi reference boundary:
 
@@ -324,8 +327,9 @@ empty-diff outcomes.
 
 The next implementation slice is:
 
-- review and connect the first real sandbox provider backend for targeted
-  `test` / `lint` checks and patch artifacts
+- decide and implement the first workspace-context input path for model
+  producer runs, so the sandboxed model loop receives bounded selected file
+  context before it writes staged files
 
 Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer control,
 external posting, or social/media publishing as model-visible tools until the

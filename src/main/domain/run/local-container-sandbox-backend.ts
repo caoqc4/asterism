@@ -63,7 +63,7 @@ export type LocalContainerSandboxCommandPlan = {
     target: string;
   };
   stagingMount: {
-    readonly: false;
+    readonly: true;
     source: string;
     target: string;
   };
@@ -119,6 +119,17 @@ export type LocalContainerSandboxPatchReviewPreparation = {
 
 const DEFAULT_LOCAL_CONTAINER_SANDBOX_IMAGE = 'node:22-bookworm-slim';
 const LOCAL_CONTAINER_STAGING_MOUNT_PATH = '/taskplane-staging';
+const LOCAL_CONTAINER_CHECK_WORKDIR_PATH = '/taskplane-workdir';
+const LOCAL_CONTAINER_CHECK_ENTRYPOINT = [
+  'set -eu',
+  `rm -rf ${LOCAL_CONTAINER_CHECK_WORKDIR_PATH}`,
+  `mkdir -p ${LOCAL_CONTAINER_CHECK_WORKDIR_PATH}`,
+  `cp -a /workspace/. ${LOCAL_CONTAINER_CHECK_WORKDIR_PATH}/`,
+  `cp -a ${LOCAL_CONTAINER_STAGING_MOUNT_PATH}/. ${LOCAL_CONTAINER_CHECK_WORKDIR_PATH}/`,
+  `rm -f ${LOCAL_CONTAINER_CHECK_WORKDIR_PATH}/session.json`,
+  `cd ${LOCAL_CONTAINER_CHECK_WORKDIR_PATH}`,
+  'npm run "$1"',
+].join('\n');
 
 export class LocalContainerSandboxProvider implements AgentSandboxProvider {
   readonly capabilities: AgentSandboxProviderCapabilities = {
@@ -346,7 +357,7 @@ export function buildLocalContainerSandboxCommandPlans(
     target: input.request.workspace.mountPath,
   } as const;
   const stagingMount = {
-    readonly: false,
+    readonly: true,
     source: input.handle.stagingRoot,
     target: LOCAL_CONTAINER_STAGING_MOUNT_PATH,
   } as const;
@@ -360,12 +371,14 @@ export function buildLocalContainerSandboxCommandPlans(
       '--mount',
       `type=bind,source=${workspaceMount.source},target=${workspaceMount.target},readonly`,
       '--mount',
-      `type=bind,source=${stagingMount.source},target=${stagingMount.target}`,
+      `type=bind,source=${stagingMount.source},target=${stagingMount.target},readonly`,
       '--workdir',
-      workspaceMount.target,
+      '/',
       image,
-      'npm',
-      'run',
+      '/bin/sh',
+      '-lc',
+      LOCAL_CONTAINER_CHECK_ENTRYPOINT,
+      'taskplane-check',
       script,
     ],
     command: 'docker',

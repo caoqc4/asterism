@@ -350,10 +350,17 @@ Completed non-live slices:
 29. Read-only model producer preflight and default-skipped one-request live
     smoke commands for deliberate local validation without Docker or workspace
     mutation.
+30. Local-container targeted checks now run against a container-internal merged
+    work tree: the selected workspace is mounted read-only, the staging root is
+    mounted read-only, the container copies workspace files into
+    `/taskplane-workdir`, overlays staged files, removes the internal
+    `session.json`, and then runs only the allowlisted `test` / `lint` script.
+    This keeps checks from mutating the host workspace or staging root while
+    validating the candidate patch rather than the unmodified workspace.
 
 Next slice:
 
-30. Decide the first workspace-context input path for model producer runs. The
+31. Decide the first workspace-context input path for model producer runs. The
     current producer prompt has task intent and completion criteria but does not
     yet feed selected file context, retrieval snippets, or Skills/MCP/browser
     observations into the sandboxed model loop.
