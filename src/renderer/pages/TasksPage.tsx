@@ -241,7 +241,15 @@ function isCodeAgentPromotionDecision(decision: DecisionRecord): boolean {
     || decision.title.startsWith('Review Code Agent preview');
 }
 
-function formatLatestCodeAgentRunSummary(run: RunRecord): string {
+function formatLatestCodeAgentReviewSummary(run: RunRecord | null, decision: DecisionRecord | null): string {
+  if (!run && decision) {
+    return '已有待处理的 Code Agent staged patch promotion Decision；先复核 Run 证据、staged patch 和 promotion Decision。';
+  }
+
+  if (!run) {
+    return '当前没有可恢复的 Code Agent staged patch review。';
+  }
+
   if (run.status === 'completed') {
     return '最近一次 Code Agent sandbox preview 已完成，先复核 Run 证据、staged patch 和 promotion Decision。';
   }
@@ -815,6 +823,7 @@ type TasksPageProps = {
   onContinuePausedRun: (runId: string) => Promise<RunRecord>;
   onOpenDecision: (decisionId: string) => void;
   onOpenRun: (runId: string) => void;
+  onOpenRunForCheckpoint: (checkpointId: string) => Promise<boolean>;
   onRefresh: () => Promise<void>;
   onReopenCompletionCriteria: (id: string) => Promise<CompletionCriteriaRecord>;
   onCreateTask: (input: CreateTaskInput) => Promise<TaskListItemRecord>;
@@ -862,6 +871,7 @@ export function TasksPage({
   onContinuePausedRun,
   onOpenDecision,
   onOpenRun,
+  onOpenRunForCheckpoint,
   onRefresh,
   onReopenCompletionCriteria,
   onCreateTask,
@@ -942,6 +952,7 @@ export function TasksPage({
   const [processTemplateContent, setProcessTemplateContent] = useState('');
   const [processTemplateError, setProcessTemplateError] = useState<string | null>(null);
   const [pausedRunError, setPausedRunError] = useState<string | null>(null);
+  const [codeAgentReviewError, setCodeAgentReviewError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [transitionError, setTransitionError] = useState<string | null>(null);
   const [showAllTimeline, setShowAllTimeline] = useState(false);
@@ -2132,11 +2143,10 @@ export function TasksPage({
     : null;
   const latestCodeAgentRun = detail
     ? [...taskRuns]
-        .filter((run) => isCodeAgentSandboxRun(run) || (
-          Boolean(latestCodeAgentPromotionDecision) && run.type === 'agent'
-        ))
+        .filter(isCodeAgentSandboxRun)
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null
     : null;
+  const shouldShowCodeAgentReview = Boolean(latestCodeAgentRun || latestCodeAgentPromotionDecision);
 
   async function continuePausedRun(run: RunRecord): Promise<void> {
     setPausedRunError(null);
@@ -2147,6 +2157,25 @@ export function TasksPage({
     } catch (error) {
       setPausedRunError(`继续 paused run 失败：${formatActionError(error)}`);
     }
+  }
+
+  async function openLatestCodeAgentRun(): Promise<void> {
+    setCodeAgentReviewError(null);
+
+    if (latestCodeAgentPromotionDecision?.sourceType === 'agent_checkpoint' && latestCodeAgentPromotionDecision.sourceId) {
+      const opened = await onOpenRunForCheckpoint(latestCodeAgentPromotionDecision.sourceId);
+
+      if (opened) {
+        return;
+      }
+    }
+
+    if (latestCodeAgentRun) {
+      onOpenRun(latestCodeAgentRun.id);
+      return;
+    }
+
+    setCodeAgentReviewError('未能从当前 run 列表定位到这个 promotion checkpoint；请先打开 promotion Decision。');
   }
 
   const visibleTimeline = detail
@@ -3271,20 +3300,23 @@ export function TasksPage({
                 <div className="transition-group detail-card-group detail-action-setup">
                   <h3>Action Setup</h3>
                   <p className="meta">{getActionSetupGuidance(detail)}</p>
-                  {latestCodeAgentRun ? (
+                  {shouldShowCodeAgentReview ? (
                     <div className="timeline-item timeline-item-waiting">
                       <strong>Code Agent Review</strong>
-                      <p className="meta">{formatLatestCodeAgentRunSummary(latestCodeAgentRun)}</p>
-                      <p className="meta">
-                        Run：{latestCodeAgentRun.status} / {latestCodeAgentRun.updatedAt}
-                      </p>
+                      <p className="meta">{formatLatestCodeAgentReviewSummary(latestCodeAgentRun, latestCodeAgentPromotionDecision)}</p>
+                      {latestCodeAgentRun ? (
+                        <p className="meta">
+                          Run：{latestCodeAgentRun.status} / {latestCodeAgentRun.updatedAt}
+                        </p>
+                      ) : null}
                       <button
                         className="ghost-button"
-                        onClick={() => onOpenRun(latestCodeAgentRun.id)}
+                        onClick={() => void openLatestCodeAgentRun()}
                         type="button"
                       >
                         查看 Code Agent Run
                       </button>
+                      {codeAgentReviewError ? <p className="meta">{codeAgentReviewError}</p> : null}
                       {latestCodeAgentPromotionDecision ? (
                         <button
                           className="ghost-button"

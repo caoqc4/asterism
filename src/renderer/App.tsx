@@ -845,6 +845,7 @@ export function App() {
             onContinuePausedRun={handleContinuePausedRun}
             onOpenDecision={handleOpenDecision}
             onOpenRun={handleOpenRun}
+            onOpenRunForCheckpoint={handleOpenRunForCheckpoint}
             onRefresh={loadShellData}
             onReopenCompletionCriteria={handleReopenCompletionCriteria}
             onProbeSandboxBackend={handleProbeSandboxBackend}

@@ -3003,6 +3003,28 @@ describe('App UI flow', () => {
       outputSource: 'system',
       updatedAt: '2026-01-03T00:00:00.000Z',
     });
+    const unrelatedAgentRun = buildRunRecord({
+      id: 'run_unrelated_agent',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'completed',
+      instructions: null,
+      output: null,
+      outputSource: 'system',
+      updatedAt: '2026-01-03T00:00:02.000Z',
+    });
+    const codeAgentRunDetail: RunDetailRecord = {
+      ...codeAgentRun,
+      output: 'Code Agent review source ready',
+      checkpoints: [
+        buildRunCheckpoint({
+          id: 'run_checkpoint_code_agent_review',
+          runId: codeAgentRun.id,
+          kind: 'patch_promotion',
+          status: 'open',
+        }),
+      ],
+    };
     const codeAgentDecision: DecisionRecord = {
       id: 'decision_code_agent_review',
       taskId: riskTask.id,
@@ -3017,8 +3039,14 @@ describe('App UI flow', () => {
     const codeAgentApi: ElectronApi = {
       ...mockApi,
       listDecisions: vi.fn(async () => [codeAgentDecision]),
-      listRuns: vi.fn(async () => [codeAgentRun]),
-      getRunDetail: vi.fn(async (runId: string) => (runId === codeAgentRun.id ? codeAgentRun : null)),
+      listRuns: vi.fn(async () => [unrelatedAgentRun, codeAgentRun]),
+      getRunDetail: vi.fn(async (runId: string) => {
+        if (runId === codeAgentRun.id) {
+          return codeAgentRunDetail;
+        }
+
+        return runId === unrelatedAgentRun.id ? unrelatedAgentRun : null;
+      }),
     };
     window.api = codeAgentApi;
 
@@ -3030,9 +3058,17 @@ describe('App UI flow', () => {
 
     expect(await screen.findByText('Code Agent Review')).toBeTruthy();
     expect(screen.getByText(
-      '最近一次 Code Agent sandbox preview 已完成，先复核 Run 证据、staged patch 和 promotion Decision。',
+      '已有待处理的 Code Agent staged patch promotion Decision；先复核 Run 证据、staged patch 和 promotion Decision。',
     )).toBeTruthy();
 
+    await user.click(screen.getByRole('button', { name: '查看 Code Agent Run' }));
+    expect(await screen.findByText('Code Agent review source ready')).toBeTruthy();
+    expect(codeAgentApi.getRunDetail).toHaveBeenCalledWith('run_unrelated_agent');
+    expect(codeAgentApi.getRunDetail).toHaveBeenCalledWith('run_code_agent_review');
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    const [riskTaskCardAfterRun] = await screen.findAllByRole('button', { name: /High risk task/i });
+    await user.click(riskTaskCardAfterRun!);
     await user.click(screen.getByRole('button', { name: '打开 promotion Decision' }));
 
     expect(await screen.findByRole('heading', {

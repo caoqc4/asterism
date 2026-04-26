@@ -460,6 +460,11 @@ The project is past initial architecture assembly. Current work should favor pro
   one staged file through the staged-file contract, passed `lint` and `test` in
   the local-container sandbox, created a pending promotion Decision, and kept
   workspace mutation Decision-gated.
+- Task detail Code Agent recovery now treats the pending
+  `workspace.staged_patch` promotion Decision as the durable recovery anchor.
+  The recovery card can appear even when the lightweight run list lacks Code
+  Agent output text, and `查看 Code Agent Run` prefers checkpoint-to-Run lookup
+  before falling back to a directly identified Code Agent run.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx

@@ -74,6 +74,12 @@ Completed:
 - local-container targeted checks now run against a container-internal merged
   workspace/staging work tree, so `test` / `lint` validate the candidate patch
   without mutating the selected workspace or staging root
+- bounded workspace-context input for sandboxed model-producer runs is wired
+  into the Task detail Code Agent panel and validated through a real
+  disposable-workspace model-backed UI pass
+- Task detail now exposes a Code Agent recovery card anchored on pending
+  `workspace.staged_patch` promotion Decisions, with Run lookup routed through
+  the checkpoint when available
 
 Pi reference boundary:
 
@@ -83,8 +89,9 @@ Pi reference boundary:
 - not implemented: Pi runtime embedding, Pi compatibility, Pi coding-agent
   Read/Write/Edit/Bash defaults, session branching, compaction, side quests,
   and full replay/idempotency
-- required next: Taskplane-owned coding-agent lane with sandboxed workspace
-  context, staged edits, targeted checks, patch artifacts, and Decision review
+- required next: tighten the Taskplane-owned coding-agent lane lifecycle around
+  source evidence, staged edits, targeted checks, patch artifacts, Decision
+  review, and rerun/recovery affordances
 - scaffold baseline: MCP, browser/Playwright, skills, computer-use, creator
   connectors, and future tool families now have common descriptor, exposure,
   execution-policy, session, artifact, checkpoint, credential, and diagnostic
@@ -94,8 +101,8 @@ Still incomplete:
 
 - no known Slice 0 blocker remains
 - the next execution-layer phase should continue the sandboxed coding lane from
-  the existing non-live producer/source/preview/backend-readiness work, not
-  direct host shell/file access
+  the accepted producer/source/preview/backend-readiness/model-backed UI work,
+  not direct host shell/file access
 
 ## Task Sequence
 
@@ -321,15 +328,18 @@ Start with the first non-live slices from
 
 T1 through T7 now have Slice 0 implementation or design coverage, the shared
 tool scaffold exists, the sandbox patch draft source boundary is implemented,
-the first producer design is drafted, and the non-live producer scaffolding is
-in place with integration coverage for source-ready, blocked, failed, and
-empty-diff outcomes.
+the first producer design is drafted, the non-live producer scaffolding is in
+place with integration coverage for source-ready, blocked, failed, and
+empty-diff outcomes, and the first real model-backed Task detail UI pass has
+validated bounded context, staged-file output, targeted checks, patch artifact
+review, and pending promotion Decision creation.
 
 The next implementation slice is:
 
-- decide and implement the first workspace-context input path for model
-  producer runs, so the sandboxed model loop receives bounded selected file
-  context before it writes staged files
+- tighten Code Agent lifecycle recovery and evidence ergonomics without
+  broadening model-visible powers: Task and Runs should both make source
+  evidence, staged patch, checkpoint/Decision state, workspace mutation status,
+  and rerun/recovery actions clear from persisted records
 
 Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer control,
 external posting, or social/media publishing as model-visible tools until the
