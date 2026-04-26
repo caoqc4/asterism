@@ -172,6 +172,9 @@ Implemented notes:
 
 ### T4: AgentRunLifecycle Projection
 
+Status: completed for sandbox producer Run detail projection. Producer start
+from the UI remains deferred.
+
 Goal: make the execution lifecycle reviewable before any workspace mutation.
 
 Work:
@@ -189,6 +192,18 @@ Acceptance:
 - source-ready runs are understandable without raw JSON
 - blocked and failed runs explain the next recovery move
 - approving a Decision remains the only path to workspace mutation
+
+Implemented notes:
+
+- Runs detail now projects sandbox producer session metadata into an
+  `AgentRunLifecycle` line with lifecycle state, source id, check policy,
+  network/promotion policy, blocked reasons when present, and the next recovery
+  or review move.
+- Sandbox producer RunSteps now render readable summaries for producer start,
+  check evidence, staged patch source readiness, blocked/failed/paused terminal
+  states, and sandbox tool events.
+- Source-ready wording keeps staged patch review explicit: workspace mutation
+  still requires an approved patch-promotion Decision.
 
 ### T5: Future Automatic Start Policy Stub
 

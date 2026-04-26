@@ -6,6 +6,7 @@ import {
   formatAgentSessionMetadataSummary,
   formatExecutionRuntimeReadinessSummary,
   formatPreRunAgentCapabilitySummary,
+  formatSandboxProducerLifecycleSummary,
 } from './agentCapabilities';
 
 function buildAiStatus(provider: AiConfigStatus['provider']): AiConfigStatus {
@@ -286,6 +287,41 @@ describe('agent capability formatting', () => {
     );
     expect(formatAgentSessionCapabilitySummary(session)).toBe(
       'sandboxed coding producer / status=blocked / backend=local-container / checks=test,lint / network=disabled / promotion=decision_required / read-only workspace input / staged patch output / Decision review required',
+    );
+    expect(formatSandboxProducerLifecycleSummary(session)).toBe(
+      'AgentRunLifecycle：blocked / source=source_1 / checks=test,lint / policy=network=disabled, promotion=decision_required, workspace mutation requires approved Decision / blocked=docker is unavailable / next=fix runtime readiness, then start a new manual run',
+    );
+  });
+
+  it('formats source-ready sandbox producer lifecycle with Decision-only promotion', () => {
+    const session = {
+      id: 'agent_session_1',
+      runId: 'run_1',
+      mode: 'agent',
+      status: 'completed',
+      capabilities: {
+        structuredToolCalls: false,
+        textOnlyPlanning: false,
+        streaming: false,
+        fileContext: true,
+        taskMutationTools: false,
+        longRunningSessions: true,
+      },
+      metadata: [
+        'executor=sandboxed_coding_producer',
+        'producerStatus=source_ready',
+        'sourceId=source_1',
+        'commands=test,lint',
+        'files=src/notes.md',
+        'network=disabled',
+        'promotion=decision_required',
+      ].join('\n'),
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    } as const;
+
+    expect(formatSandboxProducerLifecycleSummary(session)).toBe(
+      'AgentRunLifecycle：source-ready / source=source_1 / files=src/notes.md / checks=test,lint / policy=network=disabled, promotion=decision_required, workspace mutation requires approved Decision / next=review patch-promotion Decision; workspace changes only after approval',
     );
   });
 });

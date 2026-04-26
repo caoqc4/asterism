@@ -158,6 +158,72 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
   return session.metadata.trim();
 }
 
+export function formatSandboxProducerLifecycleSummary(
+  session: AgentSessionRecord | null,
+): string | null {
+  if (!session) {
+    return null;
+  }
+
+  const entries = parseAgentSessionMetadata(session.metadata);
+  if (entries.get('executor') !== 'sandboxed_coding_producer') {
+    return null;
+  }
+
+  const status = entries.get('producerStatus') ?? session.status;
+  const lifecycleLabel = getSandboxProducerLifecycleLabel(status);
+  const source = entries.get('sourceId');
+  const files = entries.get('files');
+  const commands = entries.get('commands');
+  const network = entries.get('network');
+  const promotion = entries.get('promotion');
+  const blockedReasons = entries.get('blockedReasons');
+  const nextMove = getSandboxProducerLifecycleNextMove(status);
+  const policy = [
+    network ? `network=${network}` : null,
+    promotion ? `promotion=${promotion}` : null,
+    'workspace mutation requires approved Decision',
+  ].filter(Boolean).join(', ');
+
+  return [
+    `AgentRunLifecycle：${lifecycleLabel}`,
+    source ? `source=${source}` : null,
+    files ? `files=${files}` : null,
+    commands ? `checks=${commands}` : null,
+    `policy=${policy}`,
+    blockedReasons ? `blocked=${blockedReasons}` : null,
+    nextMove ? `next=${nextMove}` : null,
+  ].filter(Boolean).join(' / ');
+}
+
+function getSandboxProducerLifecycleLabel(status: string): string {
+  const labels: Record<string, string> = {
+    ready: 'ready',
+    confirmed: 'confirmed',
+    running: 'running checks',
+    blocked: 'blocked',
+    failed: 'failed',
+    paused: 'paused',
+    source_ready: 'source-ready',
+    completed: 'completed',
+  };
+
+  return labels[status] ?? status;
+}
+
+function getSandboxProducerLifecycleNextMove(status: string): string | null {
+  const nextMoves: Record<string, string> = {
+    blocked: 'fix runtime readiness, then start a new manual run',
+    failed: 'review failed check/tool evidence before retry',
+    paused: 'resolve the linked Decision or checkpoint',
+    source_ready: 'review patch-promotion Decision; workspace changes only after approval',
+    completed: 'review result evidence before closing the task',
+    running: 'wait for check evidence and staged patch source',
+  };
+
+  return nextMoves[status] ?? null;
+}
+
 function parseAgentSessionMetadata(metadata?: string | null): Map<string, string> {
   return new Map(
     (metadata ?? '')

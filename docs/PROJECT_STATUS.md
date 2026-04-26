@@ -97,6 +97,12 @@ The project is past initial architecture assembly. Current work should favor pro
   allowlisted `test` / `lint` toggles, and explicit Docker/Decision
   confirmation. It records only a local diagnostic for now; producer execution
   IPC remains deferred.
+- Runs detail now projects sandbox producer sessions into an
+  `AgentRunLifecycle` summary with source id, check policy, network/promotion
+  constraints, blocked reasons, and next recovery/review moves. Sandbox
+  producer steps now show readable check evidence, staged patch source
+  readiness, and blocked/failed/paused diagnostics while preserving
+  Decision-only workspace mutation.
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
   now records the completed Slice 0 execution-layer pass: runtime events,
   event-driven RunStep projection, checkpoint normalization, restart-safe

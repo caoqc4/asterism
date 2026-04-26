@@ -26,6 +26,7 @@ import {
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
   formatPreRunAgentCapabilitySummary,
+  formatSandboxProducerLifecycleSummary,
 } from '../lib/agentCapabilities';
 
 const RELATED_TIMELINE_PREVIEW_COUNT = 4;
@@ -144,6 +145,93 @@ function formatAgentObservationSummary(step: RunStepRecord): string | null {
   return `工具观察：${summaries.join('；')}`;
 }
 
+function parseRunStepInput(input?: string | null): Map<string, string> {
+  return new Map(
+    (input ?? '')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const separatorIndex = line.indexOf('=');
+        return separatorIndex > 0
+          ? [line.slice(0, separatorIndex), line.slice(separatorIndex + 1)] as const
+          : [line, ''] as const;
+      }),
+  );
+}
+
+function formatSandboxProducerStepSummary(step: RunStepRecord): string | null {
+  if (!step.title.startsWith('Sandbox producer') && step.title !== 'Sandboxed coding producer started') {
+    return null;
+  }
+
+  const input = parseRunStepInput(step.input);
+
+  if (step.title === 'Sandboxed coding producer started') {
+    return [
+      'Producer started',
+      input.get('source') ? `source=${input.get('source')}` : null,
+      step.output || null,
+    ].filter(Boolean).join('；');
+  }
+
+  const checkMatch = step.title.match(/^Sandbox producer check (passed|failed): (.+)$/);
+  if (checkMatch) {
+    const [, status, script] = checkMatch;
+
+    return [
+      `Check evidence：${script} ${status}`,
+      input.get('source') ? `source=${input.get('source')}` : null,
+      step.output || step.error || null,
+      status === 'failed' ? 'next=review failed check evidence before retry' : null,
+    ].filter(Boolean).join('；');
+  }
+
+  if (step.title === 'Sandbox producer source ready') {
+    return [
+      'Patch source ready',
+      input.get('source') ? `source=${input.get('source')}` : null,
+      input.get('files') ? `files=${input.get('files')}` : null,
+      step.output || null,
+      'next=review patch-promotion Decision; workspace changes only after approval',
+    ].filter(Boolean).join('；');
+  }
+
+  if (step.title.includes('blocked')) {
+    return [
+      'Producer blocked',
+      step.output || step.error || input.get('blockedReasons') || null,
+      'next=fix runtime readiness, then start a new manual run',
+    ].filter(Boolean).join('；');
+  }
+
+  if (step.title.includes('failed')) {
+    return [
+      'Producer failed',
+      step.error || step.output || null,
+      'next=review failed evidence before retry',
+    ].filter(Boolean).join('；');
+  }
+
+  if (step.title.includes('paused')) {
+    return [
+      'Producer paused',
+      step.output || step.error || null,
+      'next=resolve linked Decision or checkpoint',
+    ].filter(Boolean).join('；');
+  }
+
+  if (step.title.includes('tool requested') || step.title.includes('tool completed')) {
+    return [
+      `Sandbox tool：${step.title.replace(/^Sandbox producer tool (requested|completed):\s*/, '')}`,
+      input.get('source') ? `source=${input.get('source')}` : null,
+      step.output || step.error || null,
+    ].filter(Boolean).join('；');
+  }
+
+  return null;
+}
+
 function formatRunStepSummary(step: RunStepRecord): string {
   const agentPlanSummary = formatAgentPlanStepSummary(step);
 
@@ -155,6 +243,12 @@ function formatRunStepSummary(step: RunStepRecord): string {
 
   if (agentObservationSummary) {
     return agentObservationSummary;
+  }
+
+  const sandboxProducerStepSummary = formatSandboxProducerStepSummary(step);
+
+  if (sandboxProducerStepSummary) {
+    return sandboxProducerStepSummary;
   }
 
   if (step.error) {
@@ -393,6 +487,7 @@ export function RunsPage({
   const latestAgentSessionMetadata = latestAgentSession
     ? formatAgentSessionMetadataSummary(latestAgentSession)
     : null;
+  const sandboxProducerLifecycle = formatSandboxProducerLifecycleSummary(latestAgentSession);
 
   return (
     <section className="tasks-layout">
@@ -431,6 +526,11 @@ export function RunsPage({
                   {latestAgentSessionMetadata ? (
                     <p className="meta">
                       Session metadata：{latestAgentSessionMetadata}
+                    </p>
+                  ) : null}
+                  {sandboxProducerLifecycle ? (
+                    <p className="meta">
+                      {sandboxProducerLifecycle}
                     </p>
                   ) : null}
                 </>

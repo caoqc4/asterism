@@ -3496,8 +3496,19 @@ describe('App UI flow', () => {
         'Session metadata：Sandboxed coding producer / status=source_ready / provider=openai-compatible / session=sandboxed_producer:sandbox_source_1 / source=sandbox_source_1 / backend=local-container / commands=test,lint / network=disabled / promotion=decision_required / summary=Local container producer preview ready',
       ),
     ).toBeTruthy();
-    expect(screen.getByText('lint: passed')).toBeTruthy();
-    expect(screen.getByText('Sandbox patch review run plan ready: src/notes.md')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'AgentRunLifecycle：source-ready / source=sandbox_source_1 / checks=test,lint / policy=network=disabled, promotion=decision_required, workspace mutation requires approved Decision / next=review patch-promotion Decision; workspace changes only after approval',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('Check evidence：lint passed；lint: passed'),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Patch source ready；source=sandbox_source_1；files=src/notes.md；Sandbox patch review run plan ready: src/notes.md；next=review patch-promotion Decision; workspace changes only after approval',
+      ),
+    ).toBeTruthy();
   });
 
   it('shows blocked sandbox producer diagnostics on the runs page', async () => {
@@ -3589,9 +3600,15 @@ describe('App UI flow', () => {
         'Session metadata：Sandboxed coding producer / status=blocked / provider=openai-compatible / session=sandboxed_producer:sandbox_source_1 / source=sandbox_source_1 / backend=local-container / commands=test,lint / network=disabled / promotion=decision_required / blockedReasons=docker daemon unavailable / summary=Sandboxed coding producer backend connection plan blocked: docker daemon unavailable',
       ),
     ).toBeTruthy();
-    expect(screen.getByText('docker daemon unavailable')).toBeTruthy();
     expect(
-      screen.getByText('Sandboxed coding producer backend connection plan blocked: docker daemon unavailable'),
+      screen.getByText(
+        'AgentRunLifecycle：blocked / source=sandbox_source_1 / checks=test,lint / policy=network=disabled, promotion=decision_required, workspace mutation requires approved Decision / blocked=docker daemon unavailable / next=fix runtime readiness, then start a new manual run',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Producer blocked；Sandboxed coding producer backend connection plan blocked: docker daemon unavailable；next=fix runtime readiness, then start a new manual run',
+      ),
     ).toBeTruthy();
   });
 
