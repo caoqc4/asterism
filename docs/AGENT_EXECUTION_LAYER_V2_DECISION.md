@@ -82,6 +82,12 @@ Acceptance:
 - checkpoint events map to persisted `run_checkpoints` and pending Decisions
 - `npm run accept:agent-local` passes
 
+Current implementation note: session event recording persists session-start,
+plan, tool-result, checkpoint-created, pause, completion, and failure events.
+`tool.started` is mapped to a RunStep draft but is not persisted by the recorder
+yet, because the current recorder cannot update that started step when the tool
+later completes or fails.
+
 ## v2 Slice 2: Resume Contract
 
 Goal: make pause/resume behavior a runtime contract instead of a special case

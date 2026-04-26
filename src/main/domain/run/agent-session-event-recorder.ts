@@ -8,9 +8,11 @@ import {
 
 type RecordableAgentSessionEvent = Extract<
   AgentSessionEvent,
+  | { type: 'session.started' }
   | { type: 'plan.proposed' }
   | { type: 'tool.completed' }
   | { type: 'tool.failed' }
+  | { type: 'checkpoint.created' }
   | { type: 'session.paused' }
   | { type: 'session.completed' }
   | { type: 'session.failed' }
@@ -18,9 +20,11 @@ type RecordableAgentSessionEvent = Extract<
 
 function isRecordableEvent(event: AgentSessionEvent): event is RecordableAgentSessionEvent {
   return (
+    event.type === 'session.started' ||
     event.type === 'plan.proposed' ||
     event.type === 'tool.completed' ||
     event.type === 'tool.failed' ||
+    event.type === 'checkpoint.created' ||
     event.type === 'session.paused' ||
     event.type === 'session.completed' ||
     event.type === 'session.failed'
@@ -37,6 +41,10 @@ function isTerminalEvent(event: AgentSessionEvent): boolean {
 
 function titleOverrides(event: RecordableAgentSessionEvent): Partial<Omit<AgentRuntimeRunStepDraft, 'runId'>> {
   switch (event.type) {
+    case 'session.started':
+      return {
+        title: '开始 Agent session',
+      };
     case 'plan.proposed':
       return {
         title: event.source === 'fallback'
@@ -50,6 +58,10 @@ function titleOverrides(event: RecordableAgentSessionEvent): Partial<Omit<AgentR
     case 'tool.failed':
       return {
         title: `Agent 工具失败：${event.tool}`,
+      };
+    case 'checkpoint.created':
+      return {
+        title: `创建 Agent checkpoint：${event.checkpointKind}`,
       };
     case 'session.paused':
       return {
