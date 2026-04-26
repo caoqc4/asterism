@@ -15,6 +15,14 @@ describe('AgentSessionEventRecorder', () => {
         id: `run_step_${runStepRepository.create.mock.calls.length}`,
         ...input,
       })),
+      update: vi.fn().mockImplementation(async (id: string, input: {
+        status: RunStepStatus;
+        output?: string | null;
+        error?: string | null;
+      }) => ({
+        id,
+        ...input,
+      })),
     };
     const recorder = new AgentSessionEventRecorder(runStepRepository as never);
 
@@ -70,7 +78,7 @@ describe('AgentSessionEventRecorder', () => {
       output: 'Final output',
     });
 
-    expect(runStepRepository.create).toHaveBeenCalledTimes(5);
+    expect(runStepRepository.create).toHaveBeenCalledTimes(6);
     expect(runStepRepository.create).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
@@ -91,13 +99,29 @@ describe('AgentSessionEventRecorder', () => {
     expect(runStepRepository.create).toHaveBeenNthCalledWith(
       3,
       expect.objectContaining({
+        kind: 'tool_call',
+        status: 'running',
+        title: 'Agent 工具开始：artifact.create_note',
+        input: '{"title":"Note"}',
+      }),
+    );
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_3',
+      {
+        status: 'completed',
+        output: 'Note content',
+      },
+    );
+    expect(runStepRepository.create).toHaveBeenNthCalledWith(
+      4,
+      expect.objectContaining({
         kind: 'tool_result',
         title: 'Agent 工具完成：artifact.create_note',
         output: 'Note content',
       }),
     );
     expect(runStepRepository.create).toHaveBeenNthCalledWith(
-      4,
+      5,
       expect.objectContaining({
         kind: 'checkpoint',
         status: 'pending',
@@ -107,7 +131,7 @@ describe('AgentSessionEventRecorder', () => {
       }),
     );
     expect(runStepRepository.create).toHaveBeenNthCalledWith(
-      5,
+      6,
       expect.objectContaining({
         kind: 'final',
         title: '完成 Agent session',
@@ -115,5 +139,64 @@ describe('AgentSessionEventRecorder', () => {
       }),
     );
     expect(recorder.hasTerminalEvent()).toBe(true);
+  });
+
+  it('marks a started tool step failed before recording the failed result event', async () => {
+    const runStepRepository = {
+      create: vi.fn().mockImplementation(async (input: {
+        runId: string;
+        kind: RunStepKind;
+        status?: RunStepStatus;
+        title: string;
+      }) => ({
+        id: `run_step_${runStepRepository.create.mock.calls.length}`,
+        ...input,
+      })),
+      update: vi.fn().mockImplementation(async (id: string, input: {
+        status: RunStepStatus;
+        output?: string | null;
+        error?: string | null;
+      }) => ({
+        id,
+        ...input,
+      })),
+    };
+    const recorder = new AgentSessionEventRecorder(runStepRepository as never);
+
+    await recorder.record({
+      type: 'tool.started',
+      runId: 'run_1',
+      tool: 'workspace.search',
+      input: { query: 'missing' },
+    });
+    await recorder.record({
+      type: 'tool.failed',
+      runId: 'run_1',
+      tool: 'workspace.search',
+      error: 'Workspace search failed.',
+      result: {
+        error: 'Workspace search failed.',
+        success: false,
+        summary: 'Search failed',
+      },
+    });
+
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_1',
+      {
+        error: 'Workspace search failed.',
+        output: 'Search failed',
+        status: 'failed',
+      },
+    );
+    expect(runStepRepository.create).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        kind: 'tool_result',
+        status: 'failed',
+        title: 'Agent 工具失败：workspace.search',
+        error: 'Workspace search failed.',
+      }),
+    );
   });
 });

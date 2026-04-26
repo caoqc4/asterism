@@ -244,11 +244,11 @@ The project is past initial architecture assembly. Current work should favor pro
   spine: shared event types, event-to-RunStep mapping, and the session event
   recorder. `npm run accept:agent-local` runs it before workspace patch,
   domain-tool, provider-native, and sandbox-coding acceptance checks.
-- Agent session event recording now persists `session.started` and
-  `checkpoint.created` events in addition to plan, tool result, pause,
-  completion, and failure events. `tool.started` remains mapper-covered but not
-  recorder-persisted until the lifecycle can update the started step rather
-  than leaving a stale running step.
+- Agent session event recording now persists the full current runtime event
+  spine: session start, plan, tool start, tool result/failure,
+  checkpoint-created, pause, completion, and failure. Started tool steps are
+  updated to completed/failed when the matching result event arrives, so Runs
+  detail does not retain stale running tool calls.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -340,6 +340,9 @@ The project is past initial architecture assembly. Current work should favor pro
   / `run-service` tests, `npm run accept:provider-native-tools`, and `npm run
   accept:agent-local` passed locally on 2026-04-26 after recording agent
   session-start and checkpoint-created runtime events.
+- `npm run accept:agent-runtime`, `npm run accept:agent-local`, `npm run lint`,
+  and `npm run build` passed locally on 2026-04-26 after recording and
+  completing/failing `tool.started` runtime events.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts

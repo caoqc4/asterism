@@ -10,6 +10,7 @@ type RecordableAgentSessionEvent = Extract<
   AgentSessionEvent,
   | { type: 'session.started' }
   | { type: 'plan.proposed' }
+  | { type: 'tool.started' }
   | { type: 'tool.completed' }
   | { type: 'tool.failed' }
   | { type: 'checkpoint.created' }
@@ -22,6 +23,7 @@ function isRecordableEvent(event: AgentSessionEvent): event is RecordableAgentSe
   return (
     event.type === 'session.started' ||
     event.type === 'plan.proposed' ||
+    event.type === 'tool.started' ||
     event.type === 'tool.completed' ||
     event.type === 'tool.failed' ||
     event.type === 'checkpoint.created' ||
@@ -50,6 +52,10 @@ function titleOverrides(event: RecordableAgentSessionEvent): Partial<Omit<AgentR
         title: event.source === 'fallback'
           ? '采用保守 fallback agent 步骤计划'
           : '采用模型提出的 agent 步骤计划',
+      };
+    case 'tool.started':
+      return {
+        title: `Agent 工具开始：${event.tool}`,
       };
     case 'tool.completed':
       return {
@@ -80,6 +86,7 @@ function titleOverrides(event: RecordableAgentSessionEvent): Partial<Omit<AgentR
 
 export class AgentSessionEventRecorder {
   private terminalEventRecorded = false;
+  private readonly pendingToolStepIds = new Map<string, string[]>();
 
   constructor(private readonly runStepRepository: RunStepRepository) {}
 
@@ -98,10 +105,58 @@ export class AgentSessionEventRecorder {
 
     const draft = mapAgentRuntimeEventToRunStep(event);
 
-    return this.runStepRepository.create({
+    if (event.type === 'tool.completed' || event.type === 'tool.failed') {
+      await this.finishPendingToolStep(event);
+    }
+
+    const record = await this.runStepRepository.create({
       ...draft,
       ...titleOverrides(event),
       runId: draft.runId,
     });
+
+    if (event.type === 'tool.started') {
+      const key = pendingToolKey(event.runId, event.tool);
+      this.pendingToolStepIds.set(key, [
+        ...(this.pendingToolStepIds.get(key) ?? []),
+        record.id,
+      ]);
+    }
+
+    return record;
   }
+
+  private async finishPendingToolStep(
+    event: Extract<AgentSessionEvent, { type: 'tool.completed' | 'tool.failed' }>,
+  ): Promise<void> {
+    const key = pendingToolKey(event.runId, event.tool);
+    const pending = this.pendingToolStepIds.get(key);
+    const stepId = pending?.shift();
+
+    if (!pending?.length) {
+      this.pendingToolStepIds.delete(key);
+    }
+
+    if (!stepId) {
+      return;
+    }
+
+    if (event.type === 'tool.completed') {
+      await this.runStepRepository.update(stepId, {
+        status: 'completed',
+        output: event.result.output ?? event.result.summary,
+      });
+      return;
+    }
+
+    await this.runStepRepository.update(stepId, {
+      status: 'failed',
+      output: event.result?.output ?? event.result?.summary ?? null,
+      error: event.error,
+    });
+  }
+}
+
+function pendingToolKey(runId: string, tool: string): string {
+  return `${runId}:${tool}`;
 }

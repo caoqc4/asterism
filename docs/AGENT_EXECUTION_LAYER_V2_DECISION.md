@@ -83,10 +83,10 @@ Acceptance:
 - `npm run accept:agent-local` passes
 
 Current implementation note: session event recording persists session-start,
-plan, tool-result, checkpoint-created, pause, completion, and failure events.
-`tool.started` is mapped to a RunStep draft but is not persisted by the recorder
-yet, because the current recorder cannot update that started step when the tool
-later completes or fails.
+plan, tool-start, tool-result/failure, checkpoint-created, pause, completion,
+and failure events. `tool.started` creates a running tool-call RunStep, and the
+recorder updates that step to completed or failed when the matching result event
+arrives.
 
 ## v2 Slice 2: Resume Contract
 
