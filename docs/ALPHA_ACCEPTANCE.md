@@ -114,6 +114,9 @@ files.
 - Run `npm run accept:sandbox-coding:model-producer-preflight` first. Confirm
   it reports ready or clearly explains missing local `.env` values without
   calling providers, probing Docker, or touching the workspace.
+- Run `npm run accept:sandbox-coding:code-agent-ui` to validate the preflight
+  summary, package-script availability gates, UI payload filtering, and IPC
+  recheck without Docker or provider calls.
 - Launch Taskplane with isolated state and a disposable workspace. Set
   `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=true`,
   `TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=true`, provider/model/API key values,

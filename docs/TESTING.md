@@ -136,6 +136,10 @@ Covered today:
   block the model producer run before sandbox execution starts. The preflight
   also validates configured context files locally without spending provider
   credit.
+- `Code Agent UI/config/IPС acceptance`
+  `npm run accept:sandbox-coding:code-agent-ui` exercises the Code Agent
+  preflight summary, package-script availability detection, renderer payload
+  filtering, and IPC recheck without Docker or provider calls.
 - `Code Agent model producer live smoke`
   `npm run accept:sandbox-coding:model-producer-live` is skipped by default.
   With `TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE=true`, it sends one
@@ -445,9 +449,11 @@ Current verification:
 - `npm run smoke:package:mac` after producing `release/mac-arm64/Taskplane.app`, including ASAR content checks
 - `npm run smoke:runtime:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged startup and SQLite schema initialization
 - `npm run smoke:release:mac` for the combined unsigned macOS build/package/runtime path
-- `npm run accept:sandbox-coding` for the non-live sandbox/code-agent boundary,
-  including Code Agent preflight summary formatting, package-script availability
-  gates, staged patch contracts, and Decision-gated promotion behavior
+- `npm run accept:sandbox-coding` for the non-live sandbox/code-agent domain
+  boundary, including staged patch contracts and Decision-gated promotion behavior
+- `npm run accept:sandbox-coding:code-agent-ui` for the Code Agent preflight
+  summary, package-script availability gates, renderer payload filtering, and
+  IPC recheck
 
 When GitHub Actions is unavailable or disabled because of monthly quota, local verification is the temporary source of truth:
 
