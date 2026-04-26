@@ -117,6 +117,10 @@ files.
 - Run `npm run accept:sandbox-coding:code-agent-ui` to validate the preflight
   summary, package-script availability gates, UI payload filtering, and IPC
   recheck without Docker or provider calls.
+- Run `npm run manual:code-agent-ui-fixture` when you need a fresh isolated
+  user-data directory plus disposable workspace for the UI pass. The script
+  prints a launch command and does not start Taskplane, probe Docker, call a
+  provider, or mutate the real workspace.
 - Launch Taskplane with isolated state and a disposable workspace. Set
   `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=true`,
   `TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=true`, provider/model/API key values,
