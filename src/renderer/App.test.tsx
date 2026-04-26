@@ -3904,6 +3904,9 @@ describe('App UI flow', () => {
       screen.getByText('Promotion readiness：Sandbox patch promotion readiness: already_resolved / checkpoint is no longer open'),
     ).toBeTruthy();
     expect(
+      screen.getByText('Next review move：next=return to task and verify completion criteria against promoted workspace changes'),
+    ).toBeTruthy();
+    expect(
       screen.getAllByText('Sandbox patch promotion applied / checkpoint=run_checkpoint_sandbox_patch_promotion / files=src/notes.md').length,
     ).toBeTruthy();
   });
