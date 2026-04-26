@@ -4210,8 +4210,42 @@ describe('App UI flow', () => {
 
   it('explains sandbox patch promotion checkpoints do not auto-apply workspace files', async () => {
     const user = userEvent.setup();
+    const stagedPatchRun = buildRunRecord({
+      id: 'run_staged_patch_review',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'completed',
+      output: 'Sandbox patch source ready',
+      outputSource: 'system',
+    });
+    const stagedPatchRunDetail: RunDetailRecord = {
+      ...stagedPatchRun,
+      steps: [
+        buildRunStep({
+          id: 'run_step_staged_patch_source',
+          runId: stagedPatchRun.id,
+          index: 1,
+          kind: 'artifact',
+          status: 'completed',
+          title: 'Sandbox producer source ready',
+          input: 'source=sandbox_source_1\nfiles=src/notes.md',
+        }),
+      ],
+      checkpoints: [
+        buildRunCheckpoint({
+          id: 'run_checkpoint_staged_patch',
+          runId: stagedPatchRun.id,
+          kind: 'patch_promotion',
+          status: 'open',
+        }),
+      ],
+    };
     const checkpointDecisionApi: ElectronApi = {
       ...mockApi,
+      listRuns: vi.fn(async () => [stagedPatchRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === stagedPatchRun.id ? stagedPatchRunDetail : null,
+      ),
       listDecisions: vi.fn(async () => [
         {
           id: 'decision_checkpoint_staged_patch',
@@ -4237,6 +4271,11 @@ describe('App UI flow', () => {
     expect(
       screen.getByText('来源：Agent checkpoint（workspace.staged_patch）。这是 sandbox staged patch 的提升审查；当前版本批准后只会确认并关闭 promotion checkpoint，不会自动写入工作区文件。'),
     ).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '查看 Run 证据' }));
+
+    expect(await screen.findByRole('heading', { name: 'agent / completed' })).toBeTruthy();
+    expect(checkpointDecisionApi.getRunDetail).toHaveBeenCalledWith('run_staged_patch_review');
   });
 
   it('shows related task timeline context on the decisions page', async () => {

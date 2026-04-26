@@ -171,6 +171,9 @@ The project is past initial architecture assembly. Current work should favor pro
   source or patch-promotion checkpoint evidence exists, summarizing source,
   files, checks, promotion status, linked Decision title, artifact summary, and
   bounded patch preview while keeping workspace mutation Decision-gated.
+- Pending `workspace.staged_patch` Decisions now include a review-only
+  `查看 Run 证据` action that resolves the checkpoint id back to the owning Run
+  and opens the staged patch review surface before any approval action.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -193,6 +196,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - `npm test -- src/renderer/App.test.tsx`, `npm run accept:sandbox-coding`,
   `npm run lint`, and `npm run build` passed locally on 2026-04-26 after
   adding the Code Agent context selection summary and staged patch review block.
+- `npm test -- src/renderer/App.test.tsx`, `npm run accept:sandbox-coding`,
+  `npm run lint`, and `npm run build` passed locally on 2026-04-26 after adding
+  the patch-promotion Decision to Run evidence review link.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts

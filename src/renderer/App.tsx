@@ -764,6 +764,20 @@ export function App() {
     setRoute('runs');
   }
 
+  async function handleOpenRunForCheckpoint(checkpointId: string): Promise<boolean> {
+    for (const run of runs) {
+      const detail = await window.api.getRunDetail(run.id);
+      const hasCheckpoint = detail?.checkpoints?.some((checkpoint) => checkpoint.id === checkpointId);
+
+      if (hasCheckpoint) {
+        handleOpenRun(run.id);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -860,6 +874,7 @@ export function App() {
             onCreateDecision={handleCreateDecision}
             onDraftDecision={handleDraftDecision}
             onDecisionFocusConsumed={() => setFocusedDecisionId(null)}
+            onOpenRunForCheckpoint={handleOpenRunForCheckpoint}
           />
         ) : null}
         {route === 'runs' ? (

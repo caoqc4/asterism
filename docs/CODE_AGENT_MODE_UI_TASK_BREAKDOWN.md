@@ -687,6 +687,26 @@ Acceptance:
 - the review block derives from existing RunSteps and RunCheckpoints
 - approving or applying the patch remains outside this display-only surface
 
+### T20: Patch Promotion Decision Review Link
+
+Status: first Decision-to-Run review jump implemented.
+
+Goal: keep patch-promotion Decisions anchored to their Run evidence before a
+user approves, defers, or cancels.
+
+Work:
+
+- show `查看 Run 证据` on pending `workspace.staged_patch` checkpoint Decisions
+- resolve the Decision source checkpoint id back to the owning Run detail
+- open the matched Run in the Runs page for staged patch evidence review
+- show a local fallback message if the linked Run cannot be found
+
+Acceptance:
+
+- the link is review-only and does not approve or apply a patch
+- the lookup uses existing Run detail checkpoint records
+- workspace mutation remains gated by separate Decision semantics
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:
@@ -705,8 +725,8 @@ Each needs its own decision before implementation.
 
 ## Next Decision
 
-The next implementation decision is how patch-promotion Decisions should link
-back to the staged patch review object. The Runs page can now summarize staged
-files, checks, promotion status, and preview evidence, but the Decision page
-still needs a direct review affordance before approval semantics become
-stronger.
+The next implementation decision is the approval semantic for sandbox patch
+promotion. The UI can now guide a user from the Decision to the Run evidence,
+but current approval still records and closes the checkpoint rather than
+applying workspace files. Applying staged files needs a separate, explicit
+implementation plan and rollback story.

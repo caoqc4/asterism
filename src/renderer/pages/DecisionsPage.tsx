@@ -118,6 +118,7 @@ type DecisionsPageProps = {
   focusedDecisionId: string | null;
   tasks: TaskListItemRecord[];
   onOpenTask: (taskId: string, intent: RecommendedActionIntent) => void;
+  onOpenRunForCheckpoint: (checkpointId: string) => Promise<boolean>;
   onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
   onDraftDecision: (taskId: string, note?: string | null) => Promise<DecisionDraftRecord>;
   onAct: (id: string, action: 'approve' | 'defer' | 'cancel') => Promise<void>;
@@ -129,6 +130,7 @@ export function DecisionsPage({
   focusedDecisionId,
   tasks,
   onOpenTask,
+  onOpenRunForCheckpoint,
   onCreateDecision,
   onDraftDecision,
   onAct,
@@ -144,6 +146,7 @@ export function DecisionsPage({
   });
   const [draftNote, setDraftNote] = useState('');
   const [draftRationale, setDraftRationale] = useState<string | null>(null);
+  const [checkpointReviewError, setCheckpointReviewError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selectedDecisionId && decisions[0]) {
@@ -163,6 +166,13 @@ export function DecisionsPage({
   }, [decisions, focusedDecisionId, onDecisionFocusConsumed]);
 
   const detail = decisions.find((decision) => decision.id === selectedDecisionId) ?? null;
+  const canOpenCheckpointRun = detail?.sourceType === 'agent_checkpoint'
+    && detail.sourceLabel === 'workspace.staged_patch'
+    && Boolean(detail.sourceId);
+
+  useEffect(() => {
+    setCheckpointReviewError(null);
+  }, [detail?.id]);
 
   useEffect(() => {
     let mounted = true;
@@ -192,6 +202,17 @@ export function DecisionsPage({
 
     if (objectAction.targetType === 'decision' && objectAction.targetId) {
       setSelectedDecisionId(objectAction.targetId);
+    }
+  }
+
+  async function handleOpenCheckpointRun(): Promise<void> {
+    if (!detail?.sourceId) {
+      return;
+    }
+
+    const opened = await onOpenRunForCheckpoint(detail.sourceId);
+    if (!opened) {
+      setCheckpointReviewError('没有找到关联的 Run 证据；请从 Runs 队列手动查找这次 checkpoint。');
     }
   }
 
@@ -261,7 +282,17 @@ export function DecisionsPage({
                   >
                     回到任务推进
                   </button>
+                  {canOpenCheckpointRun ? (
+                    <button
+                      className="ghost-button"
+                      onClick={() => void handleOpenCheckpointRun()}
+                      type="button"
+                    >
+                      查看 Run 证据
+                    </button>
+                  ) : null}
                 </div>
+                {checkpointReviewError ? <p className="meta">{checkpointReviewError}</p> : null}
                 <p className="meta">正式拍板</p>
                 <p className="meta">{getDecisionActionGuidance(detail.status)}</p>
                 {detail.status === 'pending' ? (
