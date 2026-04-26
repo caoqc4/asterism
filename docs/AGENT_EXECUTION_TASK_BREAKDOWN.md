@@ -100,6 +100,8 @@ Completed:
 - Browser read-only preflight B2 is implemented as a shared helper that reports
   reserved/hidden state, configured origin count, no browser start, and no
   network call
+- Settings surfaces the B2 preflight as read-only diagnostics without adding a
+  run control or starting browser/network activity
 
 Pi reference boundary:
 
@@ -356,9 +358,8 @@ review, and pending promotion Decision creation.
 
 The next implementation slice is:
 
-- keep Browser / Playwright read-only lane pre-runtime: either surface the B2
-  preflight summary in Settings/Runs without opening a browser, or define B3
-  isolated runner-smoke fixtures before adding Playwright runtime code
+- keep Browser / Playwright read-only lane pre-runtime: define B3 isolated
+  runner-smoke fixtures before adding Playwright runtime code
 
 Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer control,
 external posting, or social/media publishing as model-visible tools until the

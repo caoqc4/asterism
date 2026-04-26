@@ -5,6 +5,7 @@ import {
   buildDefaultAgentSandboxCommandPolicy,
   evaluateAgentSandboxCodingLaneEligibilityFromBackendStatus,
 } from '@shared/agent-sandbox-provider';
+import { buildBrowserEvidencePreflight } from '@shared/types/browser-evidence';
 
 type SettingsPageProps = {
   aiStatus: AiConfigStatus | null;
@@ -72,6 +73,10 @@ function formatSandboxProducerBackendReadiness(aiStatus: AiConfigStatus | null):
   }
 
   return readiness.summary;
+}
+
+function formatBrowserEvidencePreflightState(): string {
+  return buildBrowserEvidencePreflight().summary;
 }
 
 function formatToolScaffoldFamilyLabel(family: AgentToolScaffoldFamilySummary['family']): string {
@@ -154,6 +159,7 @@ export function SettingsPage({
         </div>
         <p className="meta">Sandbox Coding Lane：{formatSandboxCodingLaneReadiness(aiStatus)}</p>
         <p className="meta">Producer Backend：{formatSandboxProducerBackendReadiness(aiStatus)}</p>
+        <p className="meta">Browser Evidence：{formatBrowserEvidencePreflightState()}</p>
         <div className="tool-scaffold-summary" aria-label="Tool scaffold diagnostics">
           {(aiStatus?.toolScaffoldSummaries?.length ? aiStatus.toolScaffoldSummaries : []).map((summary) => (
             <div className="tool-scaffold-row" key={summary.family}>

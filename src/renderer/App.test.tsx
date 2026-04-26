@@ -6448,6 +6448,9 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(screen.getByText(/Sandbox Backend：未检测/)).toBeTruthy();
     expect(screen.getByText(/Sandbox Coding Lane：等待 Sandbox Backend 检测/)).toBeTruthy();
+    expect(screen.getByText(
+      'Browser Evidence：Browser evidence preflight: reserved / configuredOrigins=0 / modelExposure=hidden / browserStart=no / networkCall=no / next=implement isolated runner smoke only after B2 is accepted',
+    )).toBeTruthy();
     expect(screen.getByText('Workspace Coding')).toBeTruthy();
     expect(screen.getByText('4 implemented / 1 reserved / 0 text / 0 native / 3 approval / 0 credential')).toBeTruthy();
     const toolScaffoldDiagnostics = screen.getByLabelText('Tool scaffold diagnostics');

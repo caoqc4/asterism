@@ -156,6 +156,7 @@ Acceptance:
 
 Do not implement browser automation as an agent tool yet. B1 shared Browser
 Evidence Contract types and B2 preflight summary helpers are in place, with the
-existing scaffold descriptor still hidden. The next code slice should remain
-pre-runtime: either surface the preflight in Settings/Runs without starting a
-browser, or define B3 runner-smoke fixtures before adding Playwright.
+existing scaffold descriptor still hidden. Settings now surfaces the preflight
+as read-only diagnostics without starting a browser or calling the network. The
+next code slice should remain pre-runtime: define B3 runner-smoke fixtures
+before adding Playwright.
