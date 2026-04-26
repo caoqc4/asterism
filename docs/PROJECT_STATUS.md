@@ -543,6 +543,10 @@ Latest local baseline:
 - `npm run accept:sandbox-coding` and `npm run verify` passed locally on
   2026-04-26 after adding the explicit execution service: 90 test files / 634
   tests
+- Added `docs/AGENT_EXECUTION_SANDBOX_PRODUCER_INVOCATION_DECISION.md` to keep
+  the explicit local-container producer execution service limited to tests,
+  manual smoke, and future CLI/manual operator calls; Task/Run UI and prompt
+  exposure remain deferred
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

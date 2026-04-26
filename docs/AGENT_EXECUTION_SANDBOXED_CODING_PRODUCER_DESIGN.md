@@ -14,6 +14,7 @@ Read first:
 - [AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md](AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md)
 - [AGENT_EXECUTION_SANDBOX_DECISION.md](AGENT_EXECUTION_SANDBOX_DECISION.md)
 - [AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md](AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md)
+- [AGENT_EXECUTION_SANDBOX_PRODUCER_INVOCATION_DECISION.md](AGENT_EXECUTION_SANDBOX_PRODUCER_INVOCATION_DECISION.md)
 - [AGENT_EXECUTION_PATCH_DRAFT_SOURCE_DECISION.md](AGENT_EXECUTION_PATCH_DRAFT_SOURCE_DECISION.md)
 - [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md)
 
@@ -316,12 +317,14 @@ Completed non-live slices:
     confirmation before probing Docker, then passes the probe result into the
     non-UI preview service. Without confirmation it returns blocked before any
     Docker probe.
+20. Invocation decision that limits the execution service to tests, manual
+    smoke, and future explicit CLI/manual operator calls. Normal UI and prompt
+    exposure remain deferred.
 
 Next slice:
 
-20. Decide where this explicit execution service is allowed to be invoked
-    from. UI/prompt exposure remains deferred until that product-surface
-    decision is accepted.
+21. Design the future code-agent mode product surface before any Task/Run UI
+    button or model-visible tool exposure can call the execution service.
 
 ## Acceptance
 

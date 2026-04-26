@@ -407,6 +407,9 @@ manual local validation.
 Backend review gate:
 [AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md](AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md).
 
+Invocation gate:
+[AGENT_EXECUTION_SANDBOX_PRODUCER_INVOCATION_DECISION.md](AGENT_EXECUTION_SANDBOX_PRODUCER_INVOCATION_DECISION.md).
+
 Backend candidate readiness is now represented in code by
 `AgentSandboxBackendProfile` and `evaluateAgentSandboxBackendReadiness`. A
 candidate must be a container or remote VM style backend, must not inherit the
@@ -440,9 +443,10 @@ Out of scope for this slice:
 
 Keep `workspace.run_command` and `workspace.write_patch` registry-only in the
 current host workspace. Slice 5 tool scaffold contracts and Slice 6 guardrails
-now exist for a disabled-by-default sandboxed coding-agent lane. The next
-concrete work is a real sandbox provider backend for targeted checks and patch
-artifacts before any UI/prompt exposure. For workspace tools inside the current host workspace, still use
+now exist for a disabled-by-default sandboxed coding-agent lane. The local
+container producer backend can now be manually invoked through explicit
+operator-confirmed paths, but UI/prompt exposure still requires a separate
+code-agent mode product-surface decision. For workspace tools inside the current host workspace, still use
 [WORKSPACE_TOOL_UI_OPT_IN_DECISION.md](WORKSPACE_TOOL_UI_OPT_IN_DECISION.md)
 before any prompt-level exposure.
 
