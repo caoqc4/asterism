@@ -1370,7 +1370,7 @@ export function TasksPage({
         patchIntent: codeAgentPatchIntent,
         requestedChecks,
         taskId: detail.id,
-        ...(codeAgentUseModelProducer ? { useModelProducer: true } : {}),
+        ...(codeAgentEffectiveUseModelProducer ? { useModelProducer: true } : {}),
       });
 
       setCodeAgentIntentDiagnostic(
@@ -2136,13 +2136,16 @@ export function TasksPage({
   const snapshotSourceContext = detail?.sourceContexts[0] ?? null;
   const codeAgentContextFileCandidates = getCodeAgentContextFileCandidates(detail);
   const selectedCodeAgentContextFiles = parseCodeAgentContextFileInput(codeAgentContextFiles);
+  const codeAgentEffectiveUseModelProducer = Boolean(
+    aiStatus?.codeAgentModelProducerEnabled && codeAgentUseModelProducer,
+  );
   const codeAgentStartBlockedReason = getCodeAgentStartBlockedReason({
     lintCheck: codeAgentRunLintCheck,
     operatorConfirmed: codeAgentOperatorConfirmed,
     runPending: codeAgentRunPending,
     selectedContextFileCount: selectedCodeAgentContextFiles.length,
     testCheck: codeAgentRunTestCheck,
-    useModelProducer: codeAgentUseModelProducer,
+    useModelProducer: codeAgentEffectiveUseModelProducer,
   });
   const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
   const orderedLaneLabels = tasks.reduce<string[]>((labels, task) => {
