@@ -295,10 +295,16 @@ Completed non-live slices:
     validation, and blocked diagnostic persistence: ready preflights return the
     envelope without starting a runner, while blocked preflights persist bounded
     diagnostics when a run id is available.
+15. Local-container producer runner adapter that prepares an explicit sandbox
+    provider session from a validated launch envelope, hands its staging root to
+    an injected producer loop, runs allowlisted checks through an injected
+    command runner, emits bounded check events, and keeps Docker out of normal
+    tests.
 
 Next slice:
 
-15. Connect a real sandbox backend only after
+16. Connect the local-container runner adapter into the producer preview service
+   only after
    [AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md](AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md)
    confirms the implementation still satisfies the sandbox decision and source
    boundary.

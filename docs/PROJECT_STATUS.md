@@ -508,6 +508,12 @@ Latest local baseline:
   tests
 - Added `docs/AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md` as the accepted review
   gate before connecting the first real sandboxed coding producer runner
+- `npm test -- src/main/domain/run/local-container-sandboxed-coding-producer-runner.test.ts`
+  passed locally on 2026-04-26 after adding the local-container producer runner
+  adapter with injected producer loop and injected command runner
+- `npm run accept:sandbox-coding` and `npm run verify` passed locally on
+  2026-04-26 after adding the local-container producer runner adapter: 88 test
+  files / 629 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
