@@ -42,6 +42,17 @@ export class RunCheckpointRepository {
     return rows.map(toRecord);
   }
 
+  async findById(id: string): Promise<RunCheckpointRecord | null> {
+    const db = initDatabase();
+    const [row] = await db
+      .select()
+      .from(runCheckpoints)
+      .where(eq(runCheckpoints.id, id))
+      .limit(1);
+
+    return row ? toRecord(row) : null;
+  }
+
   async findOpenByDecisionId(decisionId: string): Promise<RunCheckpointRecord | null> {
     const db = initDatabase();
     const rows = await db

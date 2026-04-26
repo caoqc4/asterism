@@ -844,6 +844,32 @@ Acceptance:
 - missing apply metadata still skips pending record creation
 - no Decision approval path or workspace apply path is enabled
 
+### T27: Patch Promotion Apply Preflight
+
+Status: read-only apply preflight implemented.
+
+Goal: validate that the durable promotion record, checkpoint payload, and patch
+artifact still describe the same staged patch before any approval path can write
+workspace files.
+
+Work:
+
+- add `SandboxPatchPromotionPreflightService`
+- load the pending promotion record by checkpoint id
+- load the checkpoint and artifact by id through repository lookups
+- compare artifact id, Decision id, source id, expected files, patch digest, run,
+  and task ownership
+- return `ready`, `blocked`, or `already_applied`
+- include blocked reasons that explain which durable evidence diverged
+
+Acceptance:
+
+- no workspace file reads or writes are introduced
+- no Decision approval path calls the preflight yet
+- missing, blocked, mismatched, and already-applied records fail closed or return
+  idempotent status
+- `accept:sandbox-coding` covers the service and repository lookup helpers
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:
@@ -862,6 +888,7 @@ Each needs its own decision before implementation.
 
 ## Next Decision
 
-The next implementation step is a promotion apply service preflight that reads
-the pending record, artifact content, and checkpoint payload, validates they
-match, and returns `ready` or blocked reasons without writing files.
+The next implementation step is Decision approval integration for patch
+promotion preflight. Approval should call the read-only preflight first and write
+a readable blocked diagnostic when evidence is missing or mismatched; actual
+workspace file application should remain behind a later apply-service slice.

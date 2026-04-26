@@ -34,10 +34,15 @@ describe('ArtifactRepository integration', () => {
     });
 
     const recentArtifacts = await artifactRepository.listRecentForTask(task.id);
+    const foundArtifact = await artifactRepository.findById(artifact.id);
+    const missingArtifact = await artifactRepository.findById('artifact_missing');
     const detail = await taskRepository.getDetail(task.id);
 
     expect(artifact.kind).toBe('run_output');
     expect(artifact.sourceType).toBe('run');
+    expect(foundArtifact?.id).toBe(artifact.id);
+    expect(foundArtifact?.content).toBe('Drafted follow-up response body.');
+    expect(missingArtifact).toBeNull();
     expect(recentArtifacts).toHaveLength(1);
     expect(recentArtifacts[0]?.title).toBe('draft output');
     expect(recentArtifacts[0]?.content).toBe('Drafted follow-up response body.');

@@ -201,6 +201,11 @@ The project is past initial architecture assembly. Current work should favor pro
   `sandbox_patch_promotions` record when `expectedFiles` and `patchDigest` are
   available. The record creation is idempotent by checkpoint id and is not wired
   to Decision approval or workspace file application.
+- Patch promotion now has a read-only apply preflight service that loads the
+  pending promotion record, checkpoint payload, and patch artifact, verifies
+  they still agree on artifact/Decision/source ids, expected files, digest, run,
+  and task ownership, and returns `ready`, `blocked`, or `already_applied`
+  without reading or writing workspace files.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -252,6 +257,12 @@ The project is past initial architecture assembly. Current work should favor pro
   `npm run accept:sandbox-coding`, `npm run lint`, and `npm run build` passed
   locally on 2026-04-26 after creating pending durable promotion records for
   metadata-complete sandbox patch-promotion checkpoints.
+- `npm test -- src/main/domain/run/sandbox-patch-promotion-preflight-service.test.ts
+  src/main/db/repositories/artifact-repository.integration.test.ts
+  src/main/db/repositories/run-checkpoint-repository.integration.test.ts`, `npm
+  run accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally
+  on 2026-04-26 after adding the read-only patch-promotion apply preflight: 33
+  sandbox-coding files / 194 tests.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts

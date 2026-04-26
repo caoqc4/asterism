@@ -47,10 +47,15 @@ describe('RunCheckpointRepository integration', () => {
     });
 
     const checkpoints = await checkpointRepository.listForRun(run.id);
+    const foundCheckpoint = await checkpointRepository.findById(checkpoint.id);
+    const missingCheckpoint = await checkpointRepository.findById('run_checkpoint_missing');
 
     expect(checkpoint.status).toBe('open');
     expect(checkpoint.kind).toBe('tool_permission');
     expect(checkpoint.stepId).toBe(step.id);
+    expect(foundCheckpoint?.id).toBe(checkpoint.id);
+    expect(foundCheckpoint?.payload).toContain('artifact.create_note');
+    expect(missingCheckpoint).toBeNull();
     expect(checkpoints).toHaveLength(1);
     expect(checkpoints[0]?.payload).toContain('artifact.create_note');
   });

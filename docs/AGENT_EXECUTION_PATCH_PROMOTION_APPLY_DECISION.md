@@ -240,9 +240,17 @@ Decision approval or file writes yet.
 
 ### P3: Apply Service
 
+Status: read-only preflight implemented; workspace application still deferred.
+
 Implement `promoteStagedPatch()` behind main-process-only domain code. Reuse
 the same structured patch parser and all-or-nothing write posture used by
 `workspace.write_patch` where possible.
+
+Current preflight: `SandboxPatchPromotionPreflightService` validates the durable
+promotion record, checkpoint payload, and patch artifact agree on ids, expected
+files, digest, run, and task ownership. It returns `ready`, `blocked`, or
+`already_applied` without reading or writing workspace files. This is the input
+gate for the future apply service, not the apply service itself.
 
 ### P4: Decision Approval Integration
 

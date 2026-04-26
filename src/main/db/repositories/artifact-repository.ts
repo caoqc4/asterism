@@ -43,6 +43,17 @@ export class ArtifactRepository {
     return rows.map(toRecord);
   }
 
+  async findById(id: string): Promise<ArtifactRecord | null> {
+    const db = initDatabase();
+    const [row] = await db
+      .select()
+      .from(artifacts)
+      .where(eq(artifacts.id, id))
+      .limit(1);
+
+    return row ? toRecord(row) : null;
+  }
+
   async createFromRun(params: {
     taskId: string;
     runId: string;
