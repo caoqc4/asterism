@@ -140,6 +140,7 @@ describe('createCodeAgentModelProducerLoop', () => {
     });
 
     expect(result).toMatchObject({
+      producerSource: 'model_backed',
       reason: expect.stringContaining('strict JSON'),
       status: 'blocked',
     });

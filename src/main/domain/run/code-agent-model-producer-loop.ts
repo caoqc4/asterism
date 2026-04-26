@@ -43,6 +43,7 @@ export function createCodeAgentModelProducerLoop(params: {
       });
 
       return {
+        producerSource: 'model_backed',
         reason: normalizedPlan.summary,
         sessionSummary: normalizedPlan.summary,
         status: 'blocked',
