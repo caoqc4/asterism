@@ -2877,7 +2877,7 @@ describe('App UI flow', () => {
       'Automatic start：disabled / requires mature skill or process, complete inputs, allowed tools, risk policy, accepted evidence or explicit enablement, and runtime readiness / no scheduler or auto-run flag is persisted',
     )).toBeTruthy();
     expect(intent.getByText(
-      'Model producer：enabled by local env / may call the configured provider after operator confirmation / sandbox preview and Decision promotion still apply',
+      'Model producer：available by local env / provider calls require Use model producer, context files, and operator confirmation / sandbox preview and Decision promotion still apply',
     )).toBeTruthy();
     expect(intent.getByText(/Completion criteria：暂无/)).toBeTruthy();
     expect(intent.getByText(

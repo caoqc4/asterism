@@ -35,7 +35,7 @@ describe('agent capability formatting', () => {
     );
   });
 
-  it('surfaces whether the model-backed producer env opt-in may spend provider credit', () => {
+  it('surfaces whether the model-backed producer can be selected per run', () => {
     expect(formatCodeAgentModelProducerOptInSummary(buildAiStatus('fal-openrouter'))).toBe(
       'Model producer：disabled / manual preview uses the local diagnostic producer and does not call the provider',
     );
@@ -43,7 +43,7 @@ describe('agent capability formatting', () => {
       ...buildAiStatus('fal-openrouter'),
       codeAgentModelProducerEnabled: true,
     })).toBe(
-      'Model producer：enabled by local env / may call the configured provider after operator confirmation / sandbox preview and Decision promotion still apply',
+      'Model producer：available by local env / provider calls require Use model producer, context files, and operator confirmation / sandbox preview and Decision promotion still apply',
     );
   });
 
