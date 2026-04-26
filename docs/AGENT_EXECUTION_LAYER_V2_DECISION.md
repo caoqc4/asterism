@@ -166,6 +166,7 @@ Acceptance:
 Use local verification while GitHub Actions quota is unavailable:
 
 ```bash
+npm run accept:agent-runtime
 npm run accept:agent-local
 npm run verify
 ```

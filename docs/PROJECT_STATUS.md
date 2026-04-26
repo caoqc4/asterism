@@ -240,6 +240,10 @@ The project is past initial architecture assembly. Current work should favor pro
   repeatable local smoke for sandbox patch promotion approval. It builds main
   code, uses real SQLite and a throwaway workspace, verifies default no-write
   approval, verifies flag-enabled apply, and does not start Docker or call AI.
+- `npm run accept:agent-runtime` now explicitly gates the v2 runtime event
+  spine: shared event types, event-to-RunStep mapping, and the session event
+  recorder. `npm run accept:agent-local` runs it before workspace patch,
+  domain-tool, provider-native, and sandbox-coding acceptance checks.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -325,6 +329,8 @@ The project is past initial architecture assembly. Current work should favor pro
 - `npm run accept:sandbox-coding:patch-promotion-apply-smoke` passed locally on
   2026-04-26 with `default=no-write` and `enabled=applied`, without Docker or
   AI calls.
+- `npm run accept:agent-runtime` passed locally on 2026-04-26 after promoting
+  the runtime event spine to an explicit local acceptance gate.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts
