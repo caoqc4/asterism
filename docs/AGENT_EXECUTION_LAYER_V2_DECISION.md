@@ -110,6 +110,11 @@ Acceptance:
 - app restart does not lose the pending reason or next action
 - stale or incompatible checkpoint payloads fail safely with visible wording
 
+Current implementation note: resume checkpoint payload validation is shared in
+`src/shared/types/run-checkpoint-payload.ts`. It validates JSON shape,
+version/kind, run/task ownership, policy snapshot shape, next tool identity, and
+next input presence before `RunService.continuePausedRun()` executes anything.
+
 ## v2 Slice 3: Tool Exposure Matrix
 
 Goal: separate "tool exists in registry" from "model can see it" and "runtime

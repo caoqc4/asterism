@@ -249,6 +249,11 @@ The project is past initial architecture assembly. Current work should favor pro
   checkpoint-created, pause, completion, and failure. Started tool steps are
   updated to completed/failed when the matching result event arrives, so Runs
   detail does not retain stale running tool calls.
+- Resume checkpoint validation now lives in the shared checkpoint payload
+  contract instead of as RunService-private parsing. RunService consumes that
+  shared validator when continuing paused runs, preserving the same fail-closed
+  stale-payload wording while making the resume contract reusable by future UI
+  and diagnostics.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -343,6 +348,11 @@ The project is past initial architecture assembly. Current work should favor pro
 - `npm run accept:agent-runtime`, `npm run accept:agent-local`, `npm run lint`,
   and `npm run build` passed locally on 2026-04-26 after recording and
   completing/failing `tool.started` runtime events.
+- `npm test -- src/shared/types/run-checkpoint-payload.test.ts
+  src/main/domain/run/run-service.test.ts
+  src/main/domain/run/run-service.integration.test.ts` and `npm run
+  accept:agent-runtime` passed locally on 2026-04-26 after moving resume
+  checkpoint validation into shared checkpoint payload helpers.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts

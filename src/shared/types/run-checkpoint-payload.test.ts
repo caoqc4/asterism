@@ -5,6 +5,7 @@ import {
   createResumeCheckpointPayload,
   createToolPermissionCheckpointPayload,
   parseRunCheckpointPayload,
+  validateResumeCheckpointPayload,
 } from './run-checkpoint-payload.js';
 
 describe('run checkpoint payload helpers', () => {
@@ -136,5 +137,86 @@ describe('run checkpoint payload helpers', () => {
     });
 
     expect(parseRunCheckpointPayload('not json')).toBeNull();
+  });
+
+  it('validates restart-safe resume checkpoint payloads', () => {
+    const validation = validateResumeCheckpointPayload(JSON.stringify({
+      version: 1,
+      kind: 'resume',
+      reason: '等待先解除阻塞。',
+      runId: 'run_1',
+      taskId: 'task_1',
+      nextTool: 'artifact.create_note',
+      nextInput: { title: 'Recovered note', content: 'Recovered note' },
+      policySnapshot: {
+        maxSteps: 8,
+        maxWallTimeMs: 120_000,
+        allowNetwork: false,
+        allowLocalWorkspaceRead: false,
+        allowLocalFileWrite: false,
+        confirmationRequiredRisks: ['external_write', 'sensitive'],
+      },
+    }), {
+      runId: 'run_1',
+      taskId: 'task_1',
+    });
+
+    expect(validation).toEqual({
+      status: 'valid',
+      payload: expect.objectContaining({
+        kind: 'resume',
+        nextTool: 'artifact.create_note',
+        nextInput: { title: 'Recovered note', content: 'Recovered note' },
+        policySnapshot: expect.objectContaining({
+          allowLocalFileWrite: false,
+        }),
+        runId: 'run_1',
+        taskId: 'task_1',
+        version: 1,
+      }),
+    });
+  });
+
+  it.each([
+    {
+      payload: 'not json',
+      reason: 'Resume checkpoint payload is not valid JSON.',
+    },
+    {
+      payload: JSON.stringify({ version: 2, kind: 'resume', nextTool: 'artifact.create_note', nextInput: {} }),
+      reason: 'Unsupported resume checkpoint payload version: 2.',
+    },
+    {
+      payload: JSON.stringify({ version: 1, kind: 'tool_permission', nextTool: 'artifact.create_note', nextInput: {} }),
+      reason: 'Resume checkpoint payload kind is not resume: tool_permission.',
+    },
+    {
+      payload: JSON.stringify({ version: 1, kind: 'resume', runId: 'run_other', nextTool: 'artifact.create_note', nextInput: {} }),
+      reason: 'Resume checkpoint payload runId does not match run: run_1.',
+    },
+    {
+      payload: JSON.stringify({ version: 1, kind: 'resume', taskId: 'task_other', nextTool: 'artifact.create_note', nextInput: {} }),
+      reason: 'Resume checkpoint payload taskId does not match task: task_1.',
+    },
+    {
+      payload: JSON.stringify({ version: 1, kind: 'resume', nextTool: 'artifact.create_note', nextInput: {}, policySnapshot: { allowNetwork: false } }),
+      reason: 'Resume checkpoint payload policySnapshot is invalid.',
+    },
+    {
+      payload: JSON.stringify({ version: 1, kind: 'resume', nextTool: 'not.a_tool', nextInput: {} }),
+      reason: 'Unsupported resume tool: not.a_tool',
+    },
+    {
+      payload: JSON.stringify({ version: 1, kind: 'resume', nextTool: 'artifact.create_note' }),
+      reason: 'Resume checkpoint payload is missing nextInput.',
+    },
+  ])('rejects invalid resume checkpoint payloads: $reason', ({ payload, reason }) => {
+    expect(validateResumeCheckpointPayload(payload, {
+      runId: 'run_1',
+      taskId: 'task_1',
+    })).toEqual({
+      status: 'invalid',
+      reason,
+    });
   });
 });

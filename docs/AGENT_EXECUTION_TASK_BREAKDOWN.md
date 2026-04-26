@@ -51,6 +51,9 @@ Completed:
   run continuation passes the snapshot back into tool execution
 - paused run continuation rejects stale or incompatible resume payload versions,
   kinds, run ids, task ids, and policy snapshots before executing a tool
+- resume checkpoint payload validation is now shared in
+  `run-checkpoint-payload`, so RunService and future UI/diagnostics can rely on
+  the same restart-safe contract
 - tool-permission checkpoint creation is centralized in
   `AgentCheckpointRecorder`, covering RunCheckpoint, Decision, pending RunStep,
   and result metadata
