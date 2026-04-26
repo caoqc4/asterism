@@ -91,7 +91,10 @@ The project is past initial architecture assembly. Current work should favor pro
   shows a passive `Code Agent Runtime` readiness block with a manual runtime
   check action. The surface starts in a not-checked state, reuses the existing
   sandbox backend probe on demand, and does not trigger a Run or producer
-  execution.
+  execution. The Code Agent start gate now consumes the same producer backend
+  readiness fact: a manual sandbox preview cannot start from the UI until
+  `producerBackendReadiness.ready` is true, and the blocked reason is covered
+  by shared renderer capability tests.
 - The manual code-agent intent surface now shows a static `manual sandbox
   producer` AgentProfile, selected Task, completion criteria, patch intent,
   allowlisted `test` / `lint` toggles, and explicit Docker/Decision

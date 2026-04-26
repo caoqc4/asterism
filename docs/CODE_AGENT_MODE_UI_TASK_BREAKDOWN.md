@@ -131,6 +131,10 @@ Implemented notes:
   Run or producer execution.
 - The block states the invariant: staged patch, network disabled, credentials
   none, Decision promotion.
+- The manual start button now shares the same producer backend readiness gate:
+  it remains blocked until `producerBackendReadiness.ready` is true, then still
+  requires operator confirmation, at least one selected check, and context files
+  when model producer usage is selected.
 
 ### T3: Manual AgentProfile / Run Intent Form
 
