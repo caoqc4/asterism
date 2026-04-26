@@ -2998,8 +2998,8 @@ describe('App UI flow', () => {
       taskId: riskTask.id,
       type: 'agent',
       status: 'completed',
-      instructions: 'Code Agent manual sandbox producer preview.',
-      output: 'Local container sandboxed coding producer runner prepared / patch review Decision created: decision_code_agent_review',
+      instructions: null,
+      output: null,
       outputSource: 'system',
       updatedAt: '2026-01-03T00:00:00.000Z',
     });

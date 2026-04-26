@@ -453,6 +453,13 @@ The project is past initial architecture assembly. Current work should favor pro
   sandbox preview as a `Code Agent Review` recovery card. It links back to the
   latest Run evidence and, when present, opens the pending promotion Decision,
   keeping the task object as the home base for the staged-patch review loop.
+- The first real Task detail model-backed Code Agent UI pass is validated on a
+  disposable workspace. With `Use model producer` selected and one explicit
+  context file, Taskplane spent one configured `fal-openrouter` /
+  `google/gemini-2.5-flash` provider request, collected bounded context, wrote
+  one staged file through the staged-file contract, passed `lint` and `test` in
+  the local-container sandbox, created a pending promotion Decision, and kept
+  workspace mutation Decision-gated.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx

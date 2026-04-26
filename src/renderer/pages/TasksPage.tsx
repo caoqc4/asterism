@@ -2125,14 +2125,16 @@ export function TasksPage({
         .filter((run) => run.status === 'paused')
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null
     : null;
-  const latestCodeAgentRun = detail
-    ? [...taskRuns]
-        .filter(isCodeAgentSandboxRun)
-        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null
-    : null;
   const latestCodeAgentPromotionDecision = detail
     ? [...taskDecisions]
         .filter((decision) => decision.status === 'pending' && isCodeAgentPromotionDecision(decision))
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null
+    : null;
+  const latestCodeAgentRun = detail
+    ? [...taskRuns]
+        .filter((run) => isCodeAgentSandboxRun(run) || (
+          Boolean(latestCodeAgentPromotionDecision) && run.type === 'agent'
+        ))
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null
     : null;
 

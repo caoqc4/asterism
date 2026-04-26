@@ -1058,10 +1058,15 @@ evidence in Runs, create a pending promotion Decision, jump from Runs to that
 Decision, and return to the Task object through a Code Agent recovery card. The
 default path still does not call providers or write workspace files.
 
-The next product decision is no longer whether the UI can carry a local
-diagnostic staged-patch review loop; it can. The next decision is whether to
-spend one deliberate provider request from the real Task detail UI with
-`Use model producer` selected, explicit context files, selected checks,
-operator confirmation, and the same Decision-gated promotion boundary. The
-expected outcome remains staged patch evidence plus review, not direct
-workspace mutation.
+The next product decision is no longer whether the real Task detail UI can
+launch a model-backed staged-patch review loop; it can. A disposable-workspace
+pass spent one deliberate `fal-openrouter` / `google/gemini-2.5-flash`
+provider request, used one explicit bounded context file, passed `lint` and
+`test`, created a pending promotion Decision, and kept workspace mutation
+Decision-gated.
+
+The next decision is whether to improve the evidence and recovery ergonomics
+around that accepted loop, or to start the next execution-layer design slice for
+real agent execution capabilities beyond the staged-file producer. Broad tools,
+automatic starts, browser/MCP/skills/computer-use, and direct workspace writes
+remain deferred until separate decisions accept their policies.
