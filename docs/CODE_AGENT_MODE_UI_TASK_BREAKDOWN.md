@@ -981,3 +981,10 @@ until one provider-backed disposable-workspace run is accepted, or add a
 manual-only product switch that requires explicit context files, selected
 checks, visible provider-spend copy, sandbox readiness, and Decision-gated
 promotion before the model loop can run.
+
+Current support for the first option exists as
+`accept:sandbox-coding:model-producer-preview-smoke`. It is skipped by default;
+with `TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_PREVIEW_SMOKE=true`, it sends one
+provider request, runs the model-backed loop through the sandbox producer
+preview service on a disposable workspace, uses an injected check runner, and
+does not start Docker or mutate the selected workspace.

@@ -159,12 +159,17 @@ is available:
 ```bash
 npm run accept:sandbox-coding:model-producer-live
 TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE=true npm run accept:sandbox-coding:model-producer-live
+npm run accept:sandbox-coding:model-producer-preview-smoke
+TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_PREVIEW_SMOKE=true npm run accept:sandbox-coding:model-producer-preview-smoke
 ```
 
-The first command should report `status=skip`. The second command builds the
-main process, sends one provider request, validates the returned strict JSON
-through the staged-file contract, and still does not start Docker or mutate the
-workspace.
+The default commands should report `status=skip`. The model-producer live smoke
+sends one provider request, validates the returned strict JSON through the
+staged-file contract, and still does not start Docker or mutate the workspace.
+The model-producer preview smoke also sends one provider request, but runs the
+result through the local-container sandbox producer preview service on a
+disposable workspace with an injected check runner; it does not start Docker and
+does not mutate the selected workspace.
 
 The producer preview service also has an opt-in non-live smoke path:
 

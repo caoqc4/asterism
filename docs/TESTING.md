@@ -138,6 +138,12 @@ Covered today:
   With `TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE=true`, it sends one
   provider request, validates the returned staged-file JSON contract, and still
   avoids Docker and workspace mutation.
+- `Code Agent model producer preview smoke`
+  `npm run accept:sandbox-coding:model-producer-preview-smoke` is skipped by
+  default. With `TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_PREVIEW_SMOKE=true`,
+  it sends one provider request, feeds the model-backed loop through the
+  sandbox producer preview service on a disposable workspace, uses an injected
+  check runner, and still avoids Docker and selected-workspace mutation.
 - `Provider-native live validation`
   `npm run accept:provider-native-live:preflight` checks local readiness without
   spending provider credit, and `npm run accept:provider-native-live` performs a

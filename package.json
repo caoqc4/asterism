@@ -32,6 +32,7 @@
     "accept:sandbox-coding:backend-preflight": "node scripts/sandbox-coding-backend-preflight.mjs",
     "accept:sandbox-coding:model-producer-preflight": "node scripts/code-agent-model-producer-preflight.mjs",
     "accept:sandbox-coding:model-producer-live": "npm run build:main && node scripts/code-agent-model-producer-live-smoke.mjs",
+    "accept:sandbox-coding:model-producer-preview-smoke": "npm run build:main && node scripts/code-agent-model-producer-preview-smoke.mjs",
     "accept:sandbox-coding:producer-preview-smoke": "npm run build:main && node scripts/sandbox-coding-producer-preview-smoke.mjs",
     "accept:sandbox-coding:patch-promotion-apply-smoke": "npm run build:main && node scripts/sandbox-patch-promotion-apply-smoke.mjs",
     "accept:provider-native-live:preflight": "node scripts/provider-native-live-preflight.mjs",

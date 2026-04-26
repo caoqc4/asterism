@@ -371,6 +371,10 @@ The project is past initial architecture assembly. Current work should favor pro
   TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS=true npm run
   accept:sandbox-coding:producer-preview-smoke` passed locally on 2026-04-26
   after the same local-container merged-worktree check change.
+- `npm run accept:sandbox-coding:model-producer-preview-smoke` passed locally
+  in default skipped mode on 2026-04-26 after adding the provider-backed
+  disposable-workspace preview smoke. `npm run accept:sandbox-coding`,
+  `npm run lint`, and `npm run build` passed afterward.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts
