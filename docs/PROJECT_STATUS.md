@@ -405,6 +405,11 @@ The project is past initial architecture assembly. Current work should favor pro
   selected workspace stayed unchanged. The first attempt exposed a provider
   fenced-JSON response, so the staged-file parser now accepts a single fenced
   JSON object before applying the existing strict staged-file contract.
+- The same model-producer preview smoke passed again locally on 2026-04-26 after
+  the Code Agent env-template and local-acceptance updates, this time with
+  `TASKPLANE_CODE_AGENT_CONTEXT_FILES=package.json`; it reached `preview_ready`,
+  staged `.taskplane/code-agent-model-producer-preview-smoke.md`, did not start
+  Docker, and left the selected workspace unchanged.
 - The Task detail Code Agent panel now surfaces whether the env-only
   `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER` capability is active. Disabled
   mode states that manual preview uses the local diagnostic producer without
