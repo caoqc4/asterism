@@ -75,6 +75,12 @@ The project is past initial architecture assembly. Current work should favor pro
   Task/Run/Decision/Artifact/Timeline control plane; Slice 0 implements
   Pi-like inner-loop ideas in Taskplane-owned code without embedding Pi as a
   runtime dependency or claiming Pi compatibility.
+- [AGENT_EXECUTION_MULTICA_REFERENCE_ASSESSMENT.md](AGENT_EXECUTION_MULTICA_REFERENCE_ASSESSMENT.md)
+  adds Multica as the control-plane bridge reference: runtime registry,
+  agent-profile/runtime separation, queue/claim lifecycle, local daemon/provider
+  wrapping, and skill-informed automation readiness. It keeps automatic start
+  as a future policy outcome for mature workflows, not as a blanket assignment
+  side effect.
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
   now records the completed Slice 0 execution-layer pass: runtime events,
   event-driven RunStep projection, checkpoint normalization, restart-safe

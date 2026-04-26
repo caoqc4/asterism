@@ -14,6 +14,7 @@ Read first:
 - [AGENT_EXECUTION_SANDBOX_DECISION.md](AGENT_EXECUTION_SANDBOX_DECISION.md)
 - [AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md](AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md)
 - [AGENT_EXECUTION_SANDBOX_PRODUCER_INVOCATION_DECISION.md](AGENT_EXECUTION_SANDBOX_PRODUCER_INVOCATION_DECISION.md)
+- [AGENT_EXECUTION_MULTICA_REFERENCE_ASSESSMENT.md](AGENT_EXECUTION_MULTICA_REFERENCE_ASSESSMENT.md)
 - [CODE_AGENT_MODE_UI_TASK_BREAKDOWN.md](CODE_AGENT_MODE_UI_TASK_BREAKDOWN.md)
 - [WORKSPACE_TOOL_UI_OPT_IN_DECISION.md](WORKSPACE_TOOL_UI_OPT_IN_DECISION.md)
 
@@ -26,6 +27,12 @@ The normal agent run remains for planning, task updates, evidence, and read-only
 workspace context. Code-agent mode is different because it may start Docker,
 produce staged file changes, run project checks, and create a patch promotion
 Decision. It needs a separate product surface with explicit user intent.
+
+This does not permanently rule out automatic starts. It only sets the first UI
+boundary. Future automatic starts are allowed when a task matches a mature
+skill/process template, the required inputs and allowed tools are known, the
+runtime is ready, and the user/workspace policy explicitly permits that workflow
+to start without another manual click.
 
 ## First Version Shape
 
@@ -41,6 +48,7 @@ The first UI version should be narrow:
 - staged patch output only
 - Decision-required promotion
 - no autonomous scheduling
+- no automatic start until skill/process readiness policy exists
 
 The primary action should read like an explicit manual command, not like a chat
 message. The user should understand that containers may start and project checks
@@ -92,7 +100,9 @@ The first code-agent mode must not include:
 - autonomous background coding
 
 Those can be evaluated later as separate tool-family decisions after the
-sandboxed coding lane is stable.
+sandboxed coding lane is stable. Automatic execution should be revisited after
+Taskplane has a runtime readiness model, skill/process maturity signals, and
+policy evidence that the workflow is clear enough to start safely.
 
 ## Acceptance Before Implementation
 
@@ -123,3 +133,5 @@ Do not build the UI until these are true:
 - Should failed checks still allow patch promotion review, or should the first
   version require passing checks before a Decision is created?
 - What wording best separates "staged patch created" from "workspace modified"?
+- Which skill/process maturity signals are sufficient to allow a later
+  automatic start without making assignment itself the execution trigger?

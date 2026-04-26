@@ -11,6 +11,10 @@ must be read before using
 [AGENT_EXECUTION_LAYER_V2_DECISION.md](AGENT_EXECUTION_LAYER_V2_DECISION.md)
 for further execution-layer work.
 
+Focused follow-up assessments:
+
+- [AGENT_EXECUTION_MULTICA_REFERENCE_ASSESSMENT.md](AGENT_EXECUTION_MULTICA_REFERENCE_ASSESSMENT.md)
+
 ## Why This Was Re-Assessed
 
 The first assessment treated "OpenClaw-like" systems as one category and did
@@ -27,6 +31,9 @@ The corrected evaluation is:
 - **Pi** is a primary reference for the inner agent loop.
 - **OpenClaw** is a primary reference for embedding that loop into a local,
   message-driven product with gateway, session, policy, and channel concerns.
+- **Multica** is a primary reference for bridging task management to managed
+  coding-agent execution through agents, runtimes, task queues, local daemons,
+  provider adapters, and skills.
 - Other frameworks are evaluated for specific patterns, not as wholesale
   dependencies.
 
@@ -90,6 +97,7 @@ Every reference was evaluated against these criteria:
 | --- | --- | --- | --- |
 | Pi / pi-agent-core / pi-coding-agent | Minimal inner loop, stateful session, tool execution, event streaming, message queues, provider abstraction, coding-agent extensions | Make Taskplane's `AgentExecutor` small, event-shaped, provider-normalized, and tool-registry driven | Do not copy broad Read/Write/Edit/Bash powers or agent self-extension before sandbox and Decision gates exist |
 | OpenClaw | Embedding Pi into a persistent messaging gateway with sessions, channels, skills, custom tools, policy filtering, compaction, auth failover, event streams | Learn embedding architecture: prepared run, session lanes, event bridge, policy-filtered tool set, channel-aware output shaping | Do not copy always-on autonomy, messaging channels, remote gateways, cron, broad host access, or skill marketplaces into alpha |
+| Multica | Task-management control plane for managed coding agents, local daemon execution, runtime registry, queue/claim lifecycle, multi-provider CLI wrapping, skill-aware agents | Borrow runtime registry, agent profile/runtime separation, task lifecycle vocabulary, local worker boundary, and provider adapter shape | Do not copy assignment-equals-execution as a blanket rule, cloud-team complexity, broad host authority, or automatic starts without skill/policy readiness |
 | LangGraph | Durable graph/workflow execution with checkpoints, interrupts, persistence, deterministic replay, and human-in-the-loop | Borrow durability concepts: checkpoint IDs, replay-safe side effects, pause/resume semantics | Do not force Taskplane into a graph DSL until product users need workflow authoring |
 | Microsoft Agent Framework / AutoGen lineage | Explicit split between agents and workflows, session state, middleware, telemetry, checkpoint storage, human-in-the-loop workflows | Borrow the agent-vs-workflow distinction and storage-pluggable checkpoint model | Do not import enterprise workflow layers before the local single-session loop is stable |
 | OpenHands | Software-agent platform with sandbox providers, remote/local workspace abstractions, event callbacks, lifecycle control | Primary reference for future code-execution sandbox design | Do not expose arbitrary code/file/command execution in Taskplane until a sandbox decision exists |
@@ -210,6 +218,58 @@ Taskplane decision:
   separate gates.
 - Do not adopt messaging channels, cron, always-on execution, or broad host
   tools in v2.
+
+### Multica
+
+Multica is best understood as a product/control-plane reference for managed
+coding agents.
+
+Sources reviewed include the Multica website, README, CLI/daemon guide,
+self-hosting guide, product overview docs, and local source review of the
+daemon, task lifecycle handlers, runtime migrations, and provider adapters.
+
+Key architectural ideas:
+
+- Agents are first-class assignees in the task system, not hidden prompt
+  presets.
+- A runtime is effectively `daemon x provider`: one local daemon can register
+  multiple coding-agent CLIs for a workspace.
+- The daemon heartbeats, claims tasks, starts them, streams messages, completes
+  or fails them, and preserves session/workdir resume pointers.
+- The agent backend layer wraps mature coding-agent CLIs such as Claude,
+  Codex, OpenClaw, OpenCode, Gemini, Pi, Cursor, Hermes, Copilot, and Kimi
+  behind one `Execute(prompt, options)` shape.
+- Skills, instructions, MCP config, custom environment, custom args, model, and
+  runtime binding are all agent-level product configuration.
+
+Taskplane decision:
+
+- Adopt Multica's **control-plane bridge** ideas:
+
+  ```text
+  AgentProfile
+    -> ExecutionRuntime
+    -> AgentRunLifecycle
+    -> RunStep / Decision / Artifact / Timeline projection
+  ```
+
+- Use a runtime registry and readiness model rather than burying execution
+  capability in ad hoc Run metadata.
+- Keep agent identity, runtime location, provider adapter, and run lifecycle as
+  separate concepts.
+- Treat automatic start as a policy outcome. It is acceptable when a task
+  matches a mature skill/process template, required inputs are present, allowed
+  tools are known, and workspace/user policy permits it. It is not acceptable as
+  a blanket consequence of assignment, mention, or model confidence.
+
+Alpha boundary:
+
+- The first visible code-agent mode can remain manual, sandboxed, and
+  Decision-gated.
+- Future automatic starts should be gated by skill/process maturity, risk
+  classification, tool-family policy, and prior accepted run evidence.
+- Do not copy Multica's cloud-team surface, broad local CLI authority, or
+  assignment-equals-execution default into Taskplane's first code-agent UI.
 
 ### LangGraph
 
@@ -507,6 +567,8 @@ This intentionally keeps framework ideas behind Taskplane domain objects.
 
 - Pi-style small inner loop, but Taskplane-owned.
 - OpenClaw-style embedding wrapper, but Taskplane control plane first.
+- Multica-style runtime registry and task-to-worker lifecycle vocabulary, but
+  Taskplane local-first and Decision-centered.
 - Typed `AgentSessionEvent` as the runtime event spine.
 - Event-to-RunStep mapping as the first visible projection.
 - Tool registry/exposure/policy as three independent gates.
@@ -518,6 +580,10 @@ This intentionally keeps framework ideas behind Taskplane domain objects.
 - Shared tool scaffold contracts for MCP, browser/Playwright, skills,
   computer-use, coding tools, and creator connectors before lane-specific
   exposure.
+- Skill/process-template maturity as one input to future automatic-start
+  policy.
+- External coding-agent CLI adapters after the Taskplane-owned sandboxed
+  producer lane is stable.
 - Pi coding-agent patch/edit/test ergonomics behind a Taskplane
   `SandboxProvider`, patch artifacts, and Decision review.
 - Pi session branching for future side quests and sub-runs.
@@ -532,6 +598,7 @@ This intentionally keeps framework ideas behind Taskplane domain objects.
 - Full graph workflow runtime.
 - Multi-agent crews.
 - Always-on autonomy or cron.
+- Assignment-equals-execution as a blanket default.
 - Messaging-channel execution.
 - Browser/computer-control tools.
 - Arbitrary shell or broad workspace mutation.
@@ -569,6 +636,14 @@ Primary sources and near-primary technical references:
   <https://docs.openclaw.ai/concepts/agent-loop>
 - OpenClaw sandbox/runtime concepts:
   <https://docs.openclaw.ai/concepts/agent-runtimes>
+- Multica website:
+  <https://multica.ai/>
+- Multica repository:
+  <https://github.com/multica-ai/multica>
+- Multica CLI and daemon guide:
+  <https://github.com/multica-ai/multica/blob/main/CLI_AND_DAEMON.md>
+- Multica self-hosting guide:
+  <https://github.com/multica-ai/multica/blob/main/SELF_HOSTING.md>
 - Armin Ronacher on Pi:
   <https://lucumr.pocoo.org/2026/1/31/pi/>
 - LangGraph durable execution:

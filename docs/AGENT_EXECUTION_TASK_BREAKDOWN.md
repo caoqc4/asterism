@@ -8,6 +8,7 @@ architecture reassessment.
 Read first:
 
 - [AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md](AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md)
+- [AGENT_EXECUTION_MULTICA_REFERENCE_ASSESSMENT.md](AGENT_EXECUTION_MULTICA_REFERENCE_ASSESSMENT.md)
 - [AGENT_EXECUTION_LAYER_V2_DECISION.md](AGENT_EXECUTION_LAYER_V2_DECISION.md)
 - [AGENT_EXECUTION_SANDBOX_DECISION.md](AGENT_EXECUTION_SANDBOX_DECISION.md)
 - [AGENT_EXECUTION_FUTURE_DESIGN.md](AGENT_EXECUTION_FUTURE_DESIGN.md)
@@ -26,7 +27,8 @@ Task -> Run -> AgentSession -> RunStep -> Checkpoint / Decision -> Artifact -> T
 ```
 
 Pi is the main inner-loop reference. OpenClaw is the main embedding reference.
-Both are references, not runtime dependencies for this phase.
+Multica is the main task-management-to-runtime control-plane reference. All are
+references, not runtime dependencies for this phase.
 
 ## Current Implementation Baseline
 
@@ -96,13 +98,15 @@ Work:
 
 - maintain this task breakdown
 - link it from the roadmap and project status
-- keep the Pi/OpenClaw distinction in the execution-layer docs
+- keep the Pi/OpenClaw/Multica distinction in the execution-layer docs
 
 Acceptance:
 
 - docs name the next implementation task unambiguously
 - docs do not imply broad workspace write/command exposure is available
 - docs still say no external framework is adopted as a runtime dependency
+- docs treat automatic start as a future skill/process-policy outcome, not as a
+  blanket side effect of assignment
 
 ### T1: AgentRunLoop Event Emitter
 

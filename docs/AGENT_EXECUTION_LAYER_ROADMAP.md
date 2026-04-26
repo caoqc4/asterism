@@ -81,6 +81,9 @@ Decision doc:
 Reference architecture assessment:
 [AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md](AGENT_EXECUTION_REFERENCE_ARCHITECTURE_ASSESSMENT.md).
 
+Multica focused reference:
+[AGENT_EXECUTION_MULTICA_REFERENCE_ASSESSMENT.md](AGENT_EXECUTION_MULTICA_REFERENCE_ASSESSMENT.md).
+
 Task breakdown:
 [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md).
 
@@ -104,6 +107,8 @@ Acceptance:
 - current text-only and provider-native paths still settle the same way
 - run steps can be written from typed runtime events
 - checkpoint events map to persisted checkpoints and pending Decisions
+- runtime readiness has a named domain concept before the code-agent UI
+  expands beyond the sandboxed producer lane
 - external frameworks remain references rather than runtime dependencies until
   Taskplane has a separate sandbox or workflow-authoring decision
 - the task sequence in
@@ -112,6 +117,24 @@ Acceptance:
 - provider-native workspace write/command proposals still fall back without side
   effects
 - `npm run accept:agent-local` and `npm run verify` pass
+
+### Automatic Start Boundary
+
+Do not treat "automatic" and "unsafe" as the same thing.
+
+Taskplane should allow automatic start only when the execution path is already
+clear enough to be policy-evaluated before launch:
+
+- a mature skill or process template matches the task
+- required inputs are present
+- allowed tool families are known
+- risk level is within user/workspace policy
+- prior similar runs have been accepted or the user explicitly enabled this
+  workflow
+- the runtime is ready and its sandbox/credential/network posture is visible
+
+When those conditions are absent, the system should fall back to proposal,
+checkpoint, or Decision review before work starts.
 
 ### Slice 1: Approval UX Readiness
 
