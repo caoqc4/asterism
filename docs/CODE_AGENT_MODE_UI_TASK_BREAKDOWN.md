@@ -970,8 +970,14 @@ Each needs its own decision before implementation.
 
 ## Next Decision
 
-The next implementation step is local manual validation on a disposable
-workspace with `TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=true`. Runs and
-Decisions applied-state copy is now covered at renderer level; the remaining
-question is whether the packaged/local flow behaves cleanly with real isolated
-user data and a throwaway workspace.
+Local disposable-workspace validation for patch promotion apply has passed via
+`npm run accept:sandbox-coding:patch-promotion-apply-smoke`: default mode stayed
+`no-write`, apply-enabled mode wrote only the reviewed temp-workspace file, and
+the smoke did not start Docker or call AI.
+
+The next implementation decision is how to validate the real model-backed
+producer path without turning on broad autonomy: either keep it env/smoke-only
+until one provider-backed disposable-workspace run is accepted, or add a
+manual-only product switch that requires explicit context files, selected
+checks, visible provider-spend copy, sandbox readiness, and Decision-gated
+promotion before the model loop can run.

@@ -642,10 +642,10 @@ The project is past initial architecture assembly. Current work should favor pro
   pre-backend outcomes with real temp workspace/staging directories and an
   injected runner: source-ready, runner-blocked, runner-failed, and empty-diff
   failed paths.
-- Producer planning docs now mark the pre-backend non-live producer slices as
-  complete. The next execution-layer task is to review and connect the first
-  real sandbox provider backend for targeted checks and patch artifacts without
-  exposing a UI-visible coding mode.
+- Producer planning docs now mark the pre-backend non-live producer slices and
+  the first local-container targeted-check backend semantics as complete.
+  Local-container checks validate the merged workspace/staging candidate patch
+  without exposing a UI-visible generic coding shell.
 - Sandboxed coding producer backend readiness now composes producer request
   validation, backend probe/profile readiness, the sandbox coding feature flag,
   and the shared coding-lane eligibility gate before any real backend can be
@@ -950,10 +950,10 @@ dedicated signed/notarized release pass.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
 5. Treat the execution-layer Slice 0 and hidden tool-scaffold baseline as
-   locally accepted for the alpha path; the next execution design task is the
-   sandboxed coding lane beyond its current non-live producer/source/preview
-   and backend-readiness slices, still behind the accepted sandbox and exposure
-   boundaries.
+   locally accepted for the alpha path; the next execution design task is
+   real model-backed sandbox producer validation, still behind explicit local
+   opt-in, bounded workspace context, selected `test` / `lint` checks, sandbox
+   readiness, provider-spend awareness, and Decision-gated promotion.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.
