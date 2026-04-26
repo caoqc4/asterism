@@ -995,3 +995,9 @@ smoke reached `preview_ready`, staged
 and left the selected workspace unchanged. The staged-file parser now accepts a
 single fenced JSON object from providers before applying the same file/path/size
 contract, while still rejecting mixed natural-language responses.
+
+The Task detail Code Agent panel now also surfaces the env-only model producer
+opt-in state before the user starts a run. Disabled mode says the manual preview
+uses the local diagnostic producer and does not call the provider; enabled mode
+warns that the configured provider may be called after operator confirmation,
+while sandbox preview and Decision promotion still apply.

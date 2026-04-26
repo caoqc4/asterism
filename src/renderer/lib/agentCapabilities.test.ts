@@ -5,6 +5,7 @@ import {
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
   formatCodeAgentAutomaticStartPolicySummary,
+  formatCodeAgentModelProducerOptInSummary,
   formatExecutionRuntimeReadinessSummary,
   formatPreRunAgentCapabilitySummary,
   formatSandboxProducerLifecycleSummary,
@@ -31,6 +32,18 @@ describe('agent capability formatting', () => {
   it('keeps automatic code-agent start disabled until policy signals exist', () => {
     expect(formatCodeAgentAutomaticStartPolicySummary()).toBe(
       'Automatic start：disabled / requires mature skill or process, complete inputs, allowed tools, risk policy, accepted evidence or explicit enablement, and runtime readiness / no scheduler or auto-run flag is persisted',
+    );
+  });
+
+  it('surfaces whether the model-backed producer env opt-in may spend provider credit', () => {
+    expect(formatCodeAgentModelProducerOptInSummary(buildAiStatus('fal-openrouter'))).toBe(
+      'Model producer：disabled / manual preview uses the local diagnostic producer and does not call the provider',
+    );
+    expect(formatCodeAgentModelProducerOptInSummary({
+      ...buildAiStatus('fal-openrouter'),
+      codeAgentModelProducerEnabled: true,
+    })).toBe(
+      'Model producer：enabled by local env / may call the configured provider after operator confirmation / sandbox preview and Decision promotion still apply',
     );
   });
 

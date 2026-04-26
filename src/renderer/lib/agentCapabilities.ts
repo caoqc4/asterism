@@ -306,3 +306,9 @@ export function formatExecutionRuntimeReadinessSummary(
 export function formatCodeAgentAutomaticStartPolicySummary(): string {
   return CODE_AGENT_AUTOMATIC_START_POLICY_SUMMARY;
 }
+
+export function formatCodeAgentModelProducerOptInSummary(aiStatus: AiConfigStatus | null): string {
+  return aiStatus?.codeAgentModelProducerEnabled
+    ? 'Model producer：enabled by local env / may call the configured provider after operator confirmation / sandbox preview and Decision promotion still apply'
+    : 'Model producer：disabled / manual preview uses the local diagnostic producer and does not call the provider';
+}

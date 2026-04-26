@@ -74,6 +74,7 @@ import {
 } from '@shared/working-context/transitions';
 import {
   formatCodeAgentAutomaticStartPolicySummary,
+  formatCodeAgentModelProducerOptInSummary,
   formatExecutionRuntimeReadinessSummary,
   formatPreRunAgentCapabilitySummary,
 } from '../lib/agentCapabilities';
@@ -2245,6 +2246,9 @@ export function TasksPage({
           </p>
           <p className="meta">
             {formatCodeAgentAutomaticStartPolicySummary()}
+          </p>
+          <p className="meta">
+            {formatCodeAgentModelProducerOptInSummary(aiStatus)}
           </p>
           <p className="meta">
             Completion criteria：{

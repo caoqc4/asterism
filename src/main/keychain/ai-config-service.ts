@@ -4,7 +4,7 @@ import type { AiConfigInput, AiConfigStatus, AiProvider, FeatureFlags } from '..
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import { summarizeAgentToolScaffoldFamilies } from '../../shared/agent-tool-scaffold.js';
 import { AppConfigService } from '../config/app-config-service.js';
-import { readEnvValue } from '../config/env.js';
+import { readEnvBoolean, readEnvValue } from '../config/env.js';
 
 const SERVICE_NAME = 'taskplane';
 const LEGACY_SERVICE_NAME = 'supersecretary';
@@ -13,6 +13,7 @@ const DEFAULT_TOOL_SCAFFOLD_POLICY = {
   allowLocalWorkspaceRead: false,
   allowTaskMutationTools: false,
 };
+const ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV = 'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER';
 
 export type RuntimeAiConfig = {
   provider: AiProvider;
@@ -53,6 +54,7 @@ export class AiConfigService {
       configured: Boolean(apiKey),
       apiKeyStored: Boolean(storedApiKey),
       apiKeySource: envApiKey ? 'env' : storedApiKey ? 'keychain' : null,
+      codeAgentModelProducerEnabled: readEnvBoolean(ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV) === true,
       provider: config.aiProvider,
       model: config.aiModel,
       baseUrl: config.aiBaseUrl,
@@ -88,6 +90,7 @@ export class AiConfigService {
       configured: Boolean(apiKey),
       apiKeyStored: Boolean(storedApiKey),
       apiKeySource: envApiKey ? 'env' : storedApiKey ? 'keychain' : null,
+      codeAgentModelProducerEnabled: readEnvBoolean(ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV) === true,
       provider: config.aiProvider,
       model: config.aiModel,
       baseUrl: config.aiBaseUrl,

@@ -386,6 +386,17 @@ The project is past initial architecture assembly. Current work should favor pro
   selected workspace stayed unchanged. The first attempt exposed a provider
   fenced-JSON response, so the staged-file parser now accepts a single fenced
   JSON object before applying the existing strict staged-file contract.
+- The Task detail Code Agent panel now surfaces whether the env-only
+  `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER` opt-in is active. Disabled mode
+  states that manual preview uses the local diagnostic producer without provider
+  calls; enabled mode warns that the configured provider may be called after
+  operator confirmation while sandbox preview and Decision promotion still
+  apply.
+- `npm test -- src/main/keychain/ai-config-service.test.ts
+  src/renderer/lib/agentCapabilities.test.ts`, `npm test --
+  src/renderer/App.test.tsx`, `npm run accept:sandbox-coding`, `npm run lint`,
+  and `npm run build` passed locally on 2026-04-26 after surfacing the
+  model-producer provider-spend status in the Code Agent panel.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts

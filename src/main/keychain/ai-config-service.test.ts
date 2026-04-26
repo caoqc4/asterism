@@ -22,6 +22,7 @@ describe('AiConfigService', () => {
     fs.rmSync(tempRoot, { recursive: true, force: true });
     fs.mkdirSync(tempRoot, { recursive: true });
     delete process.env.TASKPLANE_AI_API_KEY;
+    delete process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER;
     getPasswordMock.mockReset();
     setPasswordMock.mockReset();
   });
@@ -29,6 +30,7 @@ describe('AiConfigService', () => {
   afterEach(() => {
     fs.rmSync(tempRoot, { recursive: true, force: true });
     delete process.env.TASKPLANE_AI_API_KEY;
+    delete process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER;
   });
 
   it('returns the injected config path in status responses', async () => {
@@ -43,6 +45,7 @@ describe('AiConfigService', () => {
     expect(status.configPath).toBe(path.join(tempRoot, 'config.json'));
     expect(status.provider).toBe('anthropic');
     expect(status.apiKeyStored).toBe(false);
+    expect(status.codeAgentModelProducerEnabled).toBe(false);
     expect(status.toolScaffoldSummaries?.find((summary) => summary.family === 'workspace_coding')).toMatchObject({
       implementedCount: 4,
       providerNativeExposedIds: [],
@@ -102,6 +105,7 @@ describe('AiConfigService', () => {
 
   it('uses environment API keys without storing them in Keychain', async () => {
     process.env.TASKPLANE_AI_API_KEY = 'env-secret';
+    process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
     getPasswordMock.mockResolvedValue(null);
     const { AppConfigService } = await import('../config/app-config-service.js');
     const { AiConfigService } = await import('./ai-config-service.js');
@@ -119,6 +123,7 @@ describe('AiConfigService', () => {
     expect(status.configured).toBe(true);
     expect(status.apiKeyStored).toBe(false);
     expect(status.apiKeySource).toBe('env');
+    expect(status.codeAgentModelProducerEnabled).toBe(true);
     expect(runtimeConfig.apiKey).toBe('env-secret');
     expect(runtimeConfig.provider).toBe('fal-openrouter');
     expect(runtimeConfig.workspaceRoot).toBe('/tmp/taskplane-workspace');
