@@ -17,6 +17,9 @@ import { AiConfigService } from '../../keychain/ai-config-service.js';
 import { TaskService } from '../task/task-service.js';
 import type { AgentToolRegistry } from '../run/agent-tool-registry.js';
 import { DEFAULT_AGENT_POLICY } from '../run/agent-working-context.js';
+import type {
+  SandboxPatchPromotionPreflightService,
+} from '../run/sandbox-patch-promotion-preflight-service.js';
 import { parseRunCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import {
   DecisionProcessTemplateSelector,
@@ -107,6 +110,7 @@ export class DecisionService {
     private readonly runStepRepository: Pick<RunStepRepository, 'create'> | null = null,
     private readonly runRepository: Pick<RunRepository, 'getDetail' | 'updateResult'> | null = null,
     private readonly agentToolRegistry: AgentToolRegistry | null = null,
+    private readonly sandboxPatchPromotionPreflightService: Pick<SandboxPatchPromotionPreflightService, 'preflight'> | null = null,
   ) {}
 
   list(): Promise<DecisionRecord[]> {
@@ -266,6 +270,10 @@ export class DecisionService {
       return;
     }
 
+    if (checkpoint.kind === 'patch_promotion' || payload?.kind === 'patch_promotion') {
+      await this.settlePatchPromotionCheckpoint(decision, checkpoint.id, checkpoint.runId);
+      return;
+    }
     if (
       (
         tool !== 'artifact.create_note' &&
@@ -341,5 +349,64 @@ export class DecisionService {
       Boolean((result.output ?? result.summary).trim()),
       checkpoint.runId,
     );
+  }
+
+  private async settlePatchPromotionCheckpoint(
+    decision: DecisionRecord,
+    checkpointId: string,
+    runId: string,
+  ): Promise<void> {
+    if (!this.runCheckpointRepository || !this.runStepRepository || !this.runRepository) {
+      return;
+    }
+
+    if (!this.sandboxPatchPromotionPreflightService) {
+      await this.runCheckpointRepository.updateStatus(checkpointId, 'resolved');
+      await this.runStepRepository.create({
+        runId,
+        kind: 'checkpoint',
+        status: 'completed',
+        title: `确认已通过：${decision.title}`,
+        output: '关联 Decision 已批准，但当前工具暂不支持自动续跑。',
+      });
+      return;
+    }
+
+    const preflight = await this.sandboxPatchPromotionPreflightService.preflight(checkpointId);
+
+    if (preflight.status === 'blocked') {
+      await this.runCheckpointRepository.updateStatus(checkpointId, 'cancelled');
+      await this.runStepRepository.create({
+        runId,
+        kind: 'checkpoint',
+        status: 'failed',
+        title: `提升预检阻塞：${decision.title}`,
+        error: preflight.summary,
+        output: [
+          preflight.summary,
+          'No workspace files were written.',
+        ].join('\n'),
+      });
+      await this.runRepository.updateResult(
+        runId,
+        'failed',
+        preflight.summary,
+        'system',
+        preflight.summary,
+      );
+      return;
+    }
+
+    await this.runCheckpointRepository.updateStatus(checkpointId, 'resolved');
+    await this.runStepRepository.create({
+      runId,
+      kind: 'checkpoint',
+      status: 'completed',
+      title: `确认已通过：${decision.title}`,
+      output: [
+        preflight.summary,
+        'Workspace file application is still deferred; no workspace files were written.',
+      ].join('\n'),
+    });
   }
 }

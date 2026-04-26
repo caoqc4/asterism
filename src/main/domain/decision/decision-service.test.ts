@@ -10,6 +10,7 @@ vi.mock('ai', () => ({
 
 import type { DecisionRecord } from '../../../shared/types/decision.js';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
+import type { RunCheckpointRecord } from '../../../shared/types/run.js';
 import type { TaskDetail, TaskRecord } from '../../../shared/types/task.js';
 import { DecisionService } from './decision-service.js';
 
@@ -119,6 +120,40 @@ function buildTaskRecord(state: TaskRecord['state']): TaskRecord {
     riskNote: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+
+function buildPatchPromotionCheckpoint(
+  partial: Partial<RunCheckpointRecord> = {},
+): RunCheckpointRecord {
+  return {
+    id: partial.id ?? 'run_checkpoint_patch_1',
+    runId: partial.runId ?? 'run_1',
+    stepId: partial.stepId ?? 'run_step_1',
+    kind: partial.kind ?? 'patch_promotion',
+    status: partial.status ?? 'open',
+    payload: partial.payload ?? JSON.stringify({
+      version: 1,
+      kind: 'patch_promotion',
+      artifactId: 'artifact_1',
+      artifactSummary: 'Reviewable sandbox patch',
+      sessionId: 'sandbox_session_1',
+      descriptorId: 'workspace.staged_patch',
+      decisionId: 'decision_1',
+      decisionTitle: '确认提升 sandbox patch',
+      expectedFiles: ['notes.md'],
+      patchDigest: 'sha256:patch_digest',
+      policySnapshot: {
+        descriptorId: 'workspace.staged_patch',
+        sessionKind: 'sandbox',
+        credentialPolicy: 'none',
+        networkPolicy: 'disabled',
+        timeoutMs: 120_000,
+        outputLimitBytes: 64_000,
+      },
+    }),
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    resolvedAt: partial.resolvedAt ?? null,
   };
 }
 
@@ -753,33 +788,7 @@ describe('DecisionService', () => {
       annotateRunCompleted: vi.fn(),
     };
     const runCheckpointRepository = {
-      findOpenByDecisionId: vi.fn().mockResolvedValue({
-        id: 'run_checkpoint_patch_1',
-        runId: 'run_1',
-        stepId: 'run_step_1',
-        kind: 'patch_promotion',
-        status: 'open',
-        payload: JSON.stringify({
-          version: 1,
-          kind: 'patch_promotion',
-          artifactId: 'artifact_1',
-          artifactSummary: 'Reviewable sandbox patch',
-          sessionId: 'sandbox_session_1',
-          descriptorId: 'workspace.staged_patch',
-          decisionId: 'decision_1',
-          decisionTitle: '确认提升 sandbox patch',
-          policySnapshot: {
-            descriptorId: 'workspace.staged_patch',
-            sessionKind: 'sandbox',
-            credentialPolicy: 'none',
-            networkPolicy: 'disabled',
-            timeoutMs: 120_000,
-            outputLimitBytes: 64_000,
-          },
-        }),
-        createdAt: '2026-01-01T00:00:00.000Z',
-        resolvedAt: null,
-      }),
+      findOpenByDecisionId: vi.fn().mockResolvedValue(buildPatchPromotionCheckpoint()),
       updateStatus: vi.fn(),
     };
     const runStepRepository = {
@@ -792,6 +801,12 @@ describe('DecisionService', () => {
     const agentToolRegistry = {
       execute: vi.fn(),
     };
+    const sandboxPatchPromotionPreflightService = {
+      preflight: vi.fn().mockResolvedValue({
+        status: 'ready',
+        summary: 'Sandbox patch promotion preflight: ready / checkpoint=run_checkpoint_patch_1 / source=sandbox_session_1 / files=notes.md / no workspace files written',
+      }),
+    };
     const service = new DecisionService(
       decisionRepository as never,
       taskService as never,
@@ -801,6 +816,7 @@ describe('DecisionService', () => {
       runStepRepository as never,
       runRepository as never,
       agentToolRegistry as never,
+      sandboxPatchPromotionPreflightService as never,
     );
 
     await service.act({
@@ -809,6 +825,7 @@ describe('DecisionService', () => {
     });
 
     expect(agentToolRegistry.execute).not.toHaveBeenCalled();
+    expect(sandboxPatchPromotionPreflightService.preflight).toHaveBeenCalledWith('run_checkpoint_patch_1');
     expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith(
       'run_checkpoint_patch_1',
       'resolved',
@@ -819,10 +836,95 @@ describe('DecisionService', () => {
         kind: 'checkpoint',
         status: 'completed',
         title: '确认已通过：确认提升 sandbox patch',
-        output: '关联 Decision 已批准，但当前工具暂不支持自动续跑。',
+        output: [
+          'Sandbox patch promotion preflight: ready / checkpoint=run_checkpoint_patch_1 / source=sandbox_session_1 / files=notes.md / no workspace files written',
+          'Workspace file application is still deferred; no workspace files were written.',
+        ].join('\n'),
       }),
     );
     expect(runRepository.updateResult).not.toHaveBeenCalled();
+  });
+
+  it('blocks approved patch-promotion checkpoints when preflight evidence diverges', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord(),
+        status: 'approved',
+        title: '确认提升 sandbox patch',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+    };
+    const runCheckpointRepository = {
+      findOpenByDecisionId: vi.fn().mockResolvedValue(buildPatchPromotionCheckpoint()),
+      updateStatus: vi.fn(),
+    };
+    const runStepRepository = {
+      create: vi.fn(),
+    };
+    const runRepository = {
+      getDetail: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const agentToolRegistry = {
+      execute: vi.fn(),
+    };
+    const sandboxPatchPromotionPreflightService = {
+      preflight: vi.fn().mockResolvedValue({
+        blockedReasons: ['Patch promotion artifact digest does not match promotion record.'],
+        status: 'blocked',
+        summary: 'Sandbox patch promotion preflight blocked: Patch promotion artifact digest does not match promotion record.',
+      }),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+      undefined,
+      runCheckpointRepository as never,
+      runStepRepository as never,
+      runRepository as never,
+      agentToolRegistry as never,
+      sandboxPatchPromotionPreflightService as never,
+    );
+
+    await service.act({
+      id: 'decision_1',
+      action: 'approve',
+    });
+
+    expect(agentToolRegistry.execute).not.toHaveBeenCalled();
+    expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith(
+      'run_checkpoint_patch_1',
+      'cancelled',
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: 'Sandbox patch promotion preflight blocked: Patch promotion artifact digest does not match promotion record.',
+        kind: 'checkpoint',
+        output: [
+          'Sandbox patch promotion preflight blocked: Patch promotion artifact digest does not match promotion record.',
+          'No workspace files were written.',
+        ].join('\n'),
+        runId: 'run_1',
+        status: 'failed',
+        title: '提升预检阻塞：确认提升 sandbox patch',
+      }),
+    );
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_1',
+      'failed',
+      'Sandbox patch promotion preflight blocked: Patch promotion artifact digest does not match promotion record.',
+      'system',
+      'Sandbox patch promotion preflight blocked: Patch promotion artifact digest does not match promotion record.',
+    );
   });
 
   it('moves the task to waiting_external when a decision is deferred', async () => {

@@ -254,9 +254,18 @@ gate for the future apply service, not the apply service itself.
 
 ### P4: Decision Approval Integration
 
+Status: first preflight-only integration implemented.
+
 Change `DecisionService` only after P1-P3 exist. Approval should call the
 promotion service only when readiness is `ready`; otherwise it should fail
 closed with a RunStep explaining why no files were written.
+
+Current behavior: approved `patch_promotion` checkpoints call
+`SandboxPatchPromotionPreflightService` before any resume path. `ready` and
+`already_applied` results close the checkpoint with explicit no-write output;
+`blocked` results create a failed checkpoint RunStep, mark the Run failed, and
+record that no workspace files were written. Actual file application remains
+deferred to the future apply service.
 
 ### P5: UI Copy Upgrade
 

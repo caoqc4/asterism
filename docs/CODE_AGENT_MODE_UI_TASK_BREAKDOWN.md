@@ -870,6 +870,32 @@ Acceptance:
   idempotent status
 - `accept:sandbox-coding` covers the service and repository lookup helpers
 
+### T28: Patch Promotion Decision Preflight Integration
+
+Status: first fail-closed Decision integration implemented.
+
+Goal: ensure approving a `workspace.staged_patch` Decision cannot silently close
+or continue a promotion checkpoint when durable promotion evidence is missing or
+mismatched.
+
+Work:
+
+- route approved `patch_promotion` checkpoints through
+  `SandboxPatchPromotionPreflightService`
+- keep model/tool execution out of the promotion path
+- if preflight is ready or already-applied, close the checkpoint with a readable
+  no-write diagnostic
+- if preflight is blocked, record a failed RunStep, mark the Run failed, and
+  state that no workspace files were written
+- wire the preflight service into main-process service bootstrap
+
+Acceptance:
+
+- Decision approval still does not apply workspace files
+- blocked preflight cannot fall through to generic tool resume
+- ready preflight records the exact no-write boundary
+- `accept:sandbox-coding` includes the Decision service coverage
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:
@@ -888,7 +914,7 @@ Each needs its own decision before implementation.
 
 ## Next Decision
 
-The next implementation step is Decision approval integration for patch
-promotion preflight. Approval should call the read-only preflight first and write
-a readable blocked diagnostic when evidence is missing or mismatched; actual
-workspace file application should remain behind a later apply-service slice.
+The next implementation step is the real apply-service design slice: reuse or
+extract the structured patch application logic used by `workspace.write_patch`,
+add workspace base-content/hunk validation, and keep all-or-nothing file writes
+behind the already-integrated Decision preflight gate.
