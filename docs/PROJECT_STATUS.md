@@ -410,6 +410,10 @@ The project is past initial architecture assembly. Current work should favor pro
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES=package.json`; it reached `preview_ready`,
   staged `.taskplane/code-agent-model-producer-preview-smoke.md`, did not start
   Docker, and left the selected workspace unchanged.
+- `npm run accept:sandbox-coding:patch-promotion-apply-smoke` passed again
+  locally after the model-producer preview rerun: default approval remained
+  preflight-only `no-write`, flag-enabled approval applied only the reviewed
+  disposable-workspace file, Docker was not started, and AI was not called.
 - The Task detail Code Agent panel now surfaces whether the env-only
   `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER` capability is active. Disabled
   mode states that manual preview uses the local diagnostic producer without
