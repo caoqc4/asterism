@@ -968,6 +968,90 @@ describe('registerIpcHandlers', () => {
     expect(result.status).toBe('failed');
   });
 
+  it('blocks run-level model producer requests when the env capability is disabled', async () => {
+    servicesMock.taskService.getDetail.mockResolvedValue({
+      id: 'task_1',
+      title: 'Prepare notes patch',
+      summary: null,
+      nextStep: null,
+      state: 'planned',
+      riskLevel: 'none',
+      riskNote: null,
+      waitingReason: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      blockers: [],
+      completionCriteria: [],
+      dependencies: [],
+      processBindings: [],
+      sourceContexts: [],
+      timeline: [],
+    });
+    servicesMock.aiConfigService.getStatus.mockResolvedValue({
+      configured: true,
+      apiKeyStored: true,
+      apiKeySource: 'env',
+      provider: 'fal-openrouter',
+      model: 'google/gemini-2.5-flash',
+      baseUrl: null,
+      workspaceRoot: '/tmp/taskplane-workspace',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      configPath: '/tmp/config.json',
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+    });
+    servicesMock.runRepository.create.mockResolvedValue({
+      id: 'run_code_agent_1',
+      taskId: 'task_1',
+      type: 'agent',
+      status: 'running',
+      instructions: 'Code Agent manual sandbox producer preview.',
+      output: null,
+      outputSource: null,
+      failureReason: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    servicesMock.runRepository.updateResult.mockResolvedValue({
+      id: 'run_code_agent_1',
+      taskId: 'task_1',
+      type: 'agent',
+      status: 'failed',
+      instructions: 'Code Agent manual sandbox producer preview.',
+      output: 'Code Agent model producer runtime blocked: TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER is not enabled.',
+      outputSource: 'system',
+      failureReason: 'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER is not enabled.',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; patchIntent: string; requestedChecks: ['test']; operatorConfirmed: true; useModelProducer: true }],
+      Awaited<ReturnType<typeof servicesMock.runRepository.updateResult>>
+    >('run:triggerCodeAgent');
+
+    const result = await handler({}, {
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      taskId: 'task_1',
+      useModelProducer: true,
+    });
+
+    expect(servicesMock.aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(codeAgentExecutionRunMock).not.toHaveBeenCalled();
+    expect(servicesMock.runRepository.updateResult).toHaveBeenCalledWith(
+      'run_code_agent_1',
+      'failed',
+      'Code Agent model producer runtime blocked: TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER is not enabled.',
+      'system',
+      'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER is not enabled.',
+    );
+    expect(result.status).toBe('failed');
+  });
+
   it('blocks env-gated model producer runs when selected workspace context is invalid', async () => {
     process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
     process.env.TASKPLANE_CODE_AGENT_CONTEXT_FILES = '../escape.md';
