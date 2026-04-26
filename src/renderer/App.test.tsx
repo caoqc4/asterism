@@ -2814,6 +2814,7 @@ describe('App UI flow', () => {
     expect(screen.getByText(
       'staged patch / network disabled / credentials none / Decision promotion',
     )).toBeTruthy();
+    expect(screen.getByText('Start blocked：check Code Agent runtime readiness first.')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '检查运行时' }));
 
@@ -2834,11 +2835,53 @@ describe('App UI flow', () => {
       output: 'Manual sandbox preview ready',
       outputSource: 'system',
     });
+    const readySandboxBackendStatus: NonNullable<AiConfigStatus['sandboxBackendStatus']> = {
+      probe: {
+        backendId: 'local-container',
+        environmentPolicy: 'empty',
+        isolation: 'container',
+        kind: 'local_container',
+        networkMode: 'disabled',
+        status: 'available',
+        supportsOutputLimits: true,
+        supportsPatchArtifacts: true,
+        supportsStagedWrites: true,
+        supportsStructuredCommands: true,
+        supportsTargetedCommands: true,
+        supportsWorkspaceMount: true,
+      },
+      profile: {
+        credentialPassthrough: false,
+        environmentPolicy: 'empty',
+        id: 'local-container',
+        isolation: 'container',
+        kind: 'local_container',
+        networkMode: 'disabled',
+        supportsOutputLimits: true,
+        supportsPatchArtifacts: true,
+        supportsStagedWrites: true,
+        supportsStructuredCommands: true,
+        supportsTargetedCommands: true,
+        supportsWorkspaceMount: true,
+      },
+      producerBackendReadiness: {
+        blockedReasons: [],
+        ready: true,
+        summary: 'Sandboxed coding producer backend ready: local-container',
+      },
+      readiness: {
+        blockedReasons: [],
+        ready: true,
+        summary: 'Sandbox backend ready: local-container.',
+      },
+      summary: 'Sandbox backend ready: local-container.',
+    };
     const intentApi: ElectronApi = {
       ...mockApi,
       getAiConfigStatus: vi.fn(async () => ({
         ...aiStatus,
         codeAgentModelProducerEnabled: true,
+        sandboxBackendStatus: readySandboxBackendStatus,
       })),
       getRunDetail: vi.fn(async (runId: string) => (runId === codeAgentRun.id ? codeAgentRun : null)),
       listRuns: vi.fn(async () => [codeAgentRun]),

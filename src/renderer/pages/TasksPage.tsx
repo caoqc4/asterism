@@ -219,6 +219,7 @@ function getCodeAgentContextFileCandidates(detail: TaskDetail | null): string[] 
 
 function getCodeAgentStartBlockedReason(input: {
   operatorConfirmed: boolean;
+  runtimeReady: boolean;
   runPending: boolean;
   selectedContextFileCount: number;
   testCheck: boolean;
@@ -227,6 +228,10 @@ function getCodeAgentStartBlockedReason(input: {
 }): string | null {
   if (input.runPending) {
     return 'Start blocked：run is already starting.';
+  }
+
+  if (!input.runtimeReady) {
+    return 'Start blocked：check Code Agent runtime readiness first.';
   }
 
   if (!input.operatorConfirmed) {
@@ -2139,9 +2144,13 @@ export function TasksPage({
   const codeAgentEffectiveUseModelProducer = Boolean(
     aiStatus?.codeAgentModelProducerEnabled && codeAgentUseModelProducer,
   );
+  const codeAgentRuntimeReady = Boolean(
+    aiStatus?.sandboxBackendStatus?.producerBackendReadiness?.ready,
+  );
   const codeAgentStartBlockedReason = getCodeAgentStartBlockedReason({
     lintCheck: codeAgentRunLintCheck,
     operatorConfirmed: codeAgentOperatorConfirmed,
+    runtimeReady: codeAgentRuntimeReady,
     runPending: codeAgentRunPending,
     selectedContextFileCount: selectedCodeAgentContextFiles.length,
     testCheck: codeAgentRunTestCheck,
