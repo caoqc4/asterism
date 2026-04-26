@@ -568,6 +568,12 @@ Latest local baseline:
   TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS=true npm run
   accept:sandbox-coding:producer-preview-smoke` passed locally on 2026-04-26:
   Docker checks started, AI was not called, and the workspace stayed unchanged
+- The first visible code-agent UI validation pass completed locally on
+  2026-04-26: backend preflight ready with Docker Desktop, default/explicit
+  producer preview smokes passed without external AI calls, Docker-check smoke
+  passed with workspace unchanged, `npm run accept:sandbox-coding` passed with
+  26 test files / 165 tests, and `npm run verify` passed with 90 test files /
+  641 tests plus lint/build.
 - `npm test -- src/main/domain/run/local-container-sandboxed-coding-producer-execution-service.test.ts`
   passed locally on 2026-04-26 after adding the explicit local-container
   producer execution service with operator confirmation before Docker probing

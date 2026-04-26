@@ -241,6 +241,10 @@ Implemented notes:
 
 ### T6: Manual Alpha Validation
 
+Status: completed for local non-live code-agent UI / sandbox producer
+validation on 2026-04-26. Broader real UI execution remains deferred because
+producer start from the Task detail UI is not wired yet.
+
 Goal: validate the end-to-end local path before considering broader exposure.
 
 Work:
@@ -256,6 +260,23 @@ Acceptance:
 - manual log is updated
 - `npm run verify` passes afterward
 - no GitHub Actions dispatch is required
+
+Implemented notes:
+
+- `npm run accept:sandbox-coding:backend-preflight` reported local-container
+  backend ready with Docker Desktop available and network disabled.
+- `npm run accept:sandbox-coding:producer-preview-smoke` passed in default
+  skipped mode, confirming Docker and AI were not started.
+- `TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE=true npm run
+  accept:sandbox-coding:producer-preview-smoke` passed the non-live service
+  wiring smoke with workspace unchanged, Docker not started, and AI not called.
+- `TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE=true
+  TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS=true npm run
+  accept:sandbox-coding:producer-preview-smoke` passed with Docker checks
+  started, workspace unchanged, and AI not called.
+- `npm run accept:sandbox-coding` passed: 26 test files / 165 tests.
+- `npm run verify` passed afterward: 90 test files / 641 tests, then lint and
+  build.
 
 ## Deferred Tasks
 
