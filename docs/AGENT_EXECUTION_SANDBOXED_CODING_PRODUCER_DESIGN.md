@@ -290,10 +290,14 @@ Completed non-live slices:
     runner handoff explicit about backend id/kind, runner family, run/task/source
     identity, provider/model policy, disabled network, no credentials, read-only
     workspace input, staged writes, and Decision-only promotion.
+14. Backend preflight service that composes gate, plan, launch envelope
+    validation, and blocked diagnostic persistence: ready preflights return the
+    envelope without starting a runner, while blocked preflights persist bounded
+    diagnostics when a run id is available.
 
 Next slice:
 
-14. Connect a real sandbox backend only after a backend decision/review confirms
+15. Connect a real sandbox backend only after a backend decision/review confirms
    the implementation still satisfies the sandbox decision and source boundary.
 
 ## Acceptance

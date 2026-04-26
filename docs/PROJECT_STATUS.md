@@ -500,6 +500,12 @@ Latest local baseline:
   envelope and fail-closed invariant validation
 - `npm run accept:sandbox-coding` and `npm run verify` passed locally on
   2026-04-26 after adding the launch envelope: 86 test files / 623 tests
+- `npm test -- src/main/domain/run/sandboxed-coding-producer-backend-preflight-service.test.ts`
+  passed locally on 2026-04-26 after adding the producer backend preflight
+  service that returns ready envelopes and persists blocked diagnostics
+- `npm run accept:sandbox-coding` and `npm run verify` passed locally on
+  2026-04-26 after adding the backend preflight service: 87 test files / 626
+  tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
