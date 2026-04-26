@@ -14,6 +14,7 @@ Read first:
 - [AGENT_EXECUTION_SANDBOX_DECISION.md](AGENT_EXECUTION_SANDBOX_DECISION.md)
 - [AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md](AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md)
 - [AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md](AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md)
+- [CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md)
 - [WORKSPACE_TOOL_UI_OPT_IN_DECISION.md](WORKSPACE_TOOL_UI_OPT_IN_DECISION.md)
 
 ## Decision
@@ -60,8 +61,9 @@ for manual validation. It is not enough for broad UI exposure.
 
 Before a Task/Run UI entrypoint can call this service, Taskplane needs:
 
-1. A dedicated code-agent mode decision covering copy, warnings, and user
-   expectations.
+1. An accepted dedicated code-agent mode decision covering copy, warnings, and
+   user expectations. The current proposal is
+   [CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md).
 2. A visible run form that states Docker may start containers and checks may run
    inside them.
 3. A pre-run capability panel that shows workspace root, network disabled,

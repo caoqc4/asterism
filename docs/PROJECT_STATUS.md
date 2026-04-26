@@ -547,6 +547,9 @@ Latest local baseline:
   the explicit local-container producer execution service limited to tests,
   manual smoke, and future CLI/manual operator calls; Task/Run UI and prompt
   exposure remain deferred
+- Added `docs/CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md` as the proposed
+  product-surface gate before any visible Task/Run code-agent mode or
+  model-visible coding tools are built
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

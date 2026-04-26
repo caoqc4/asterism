@@ -16,6 +16,7 @@ Read first:
 - [AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md](AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md)
 - [AGENT_EXECUTION_SANDBOX_PRODUCER_INVOCATION_DECISION.md](AGENT_EXECUTION_SANDBOX_PRODUCER_INVOCATION_DECISION.md)
 - [AGENT_EXECUTION_PATCH_DRAFT_SOURCE_DECISION.md](AGENT_EXECUTION_PATCH_DRAFT_SOURCE_DECISION.md)
+- [CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md)
 - [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md)
 
 ## Goal
@@ -320,11 +321,15 @@ Completed non-live slices:
 20. Invocation decision that limits the execution service to tests, manual
     smoke, and future explicit CLI/manual operator calls. Normal UI and prompt
     exposure remain deferred.
+21. Proposed code-agent mode product-surface decision that defines the future
+    Task/Run UI shape, required readiness copy, sandbox policy summary, staged
+    patch review expectations, and deferred tool families before any visible
+    mode is built.
 
 Next slice:
 
-21. Design the future code-agent mode product surface before any Task/Run UI
-    button or model-visible tool exposure can call the execution service.
+22. Convert the proposed product-surface decision into UI tasks only after the
+    proposal is accepted and the Run detail display requirements are verified.
 
 ## Acceptance
 
