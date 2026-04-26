@@ -203,6 +203,8 @@ metadata.
 
 ### P1: Promotion Readiness Model
 
+Status: first read-only evaluator implemented.
+
 Add a read-only evaluator that maps a patch-promotion checkpoint to:
 
 - ready to apply
@@ -211,6 +213,12 @@ Add a read-only evaluator that maps a patch-promotion checkpoint to:
 - missing source/artifact metadata
 
 This can power UI copy without writing files.
+
+Current evaluator: `evaluateSandboxPatchPromotionReadiness()`.
+
+Current review-only checkpoint payloads return `missing_apply_metadata` until
+future persisted apply metadata such as `expectedFiles` and `patchDigest`
+exists.
 
 ### P2: Durable Promotion Record
 

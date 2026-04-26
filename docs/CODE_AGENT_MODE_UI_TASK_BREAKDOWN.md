@@ -730,6 +730,31 @@ Acceptance:
 - the next implementation step is a read-only promotion readiness evaluator
 - approval remains fail-closed until apply metadata and persistence exist
 
+### T22: Patch Promotion Readiness Evaluator
+
+Status: first read-only evaluator implemented.
+
+Goal: give backend and UI code one safe way to classify whether a
+`workspace.staged_patch` checkpoint could ever be promoted.
+
+Work:
+
+- add `evaluateSandboxPatchPromotionReadiness()`
+- classify checkpoints as `ready`, `missing_apply_metadata`, `blocked`, or
+  `already_resolved`
+- require future apply metadata such as `expectedFiles` and `patchDigest`
+  before returning `ready`
+- keep current review-only checkpoint payloads classified as
+  `missing_apply_metadata`
+- add the evaluator to `accept:sandbox-coding`
+
+Acceptance:
+
+- evaluator is pure/read-only and does not inspect or write workspace files
+- unsafe expected files block readiness
+- current patch-promotion Decisions remain non-applying until metadata and
+  service integration exist
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:
@@ -748,6 +773,7 @@ Each needs its own decision before implementation.
 
 ## Next Decision
 
-The next implementation step is the read-only promotion readiness model. It
-should evaluate a `workspace.staged_patch` checkpoint as ready, blocked,
-already resolved, or missing apply metadata, without writing files.
+The next implementation step is surfacing promotion readiness in the Run and
+Decision UI copy, still without applying staged files. Current review-only
+checkpoints should say they are missing apply metadata, not silently imply that
+approval can write files.

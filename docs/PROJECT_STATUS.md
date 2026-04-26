@@ -179,6 +179,11 @@ The project is past initial architecture assembly. Current work should favor pro
   current approval path review-only, defines the pre-apply gates required before
   workspace mutation, and names a read-only promotion readiness model as the
   next implementation step.
+- The first read-only patch-promotion readiness evaluator now classifies
+  `workspace.staged_patch` checkpoints as `ready`, `missing_apply_metadata`,
+  `blocked`, or `already_resolved`. Current review-only payloads intentionally
+  report missing apply metadata such as `expectedFiles` and `patchDigest`, and
+  the evaluator is included in `accept:sandbox-coding`.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -204,6 +209,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - `npm test -- src/renderer/App.test.tsx`, `npm run accept:sandbox-coding`,
   `npm run lint`, and `npm run build` passed locally on 2026-04-26 after adding
   the patch-promotion Decision to Run evidence review link.
+- `npm test -- src/main/domain/run/sandbox-patch-promotion-readiness.test.ts`,
+  `npm run accept:sandbox-coding`, `npm run lint`, and `npm run build` passed
+  locally on 2026-04-26 after adding the read-only patch-promotion readiness
+  evaluator: 31 sandbox-coding files / 188 tests.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts
