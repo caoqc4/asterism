@@ -51,6 +51,9 @@ const {
       create: vi.fn(),
       act: vi.fn(),
     },
+    decisionRepository: {
+      create: vi.fn(),
+    },
     homeBriefService: {
       getHomeData: vi.fn(),
     },
@@ -63,6 +66,17 @@ const {
     runRepository: {
       create: vi.fn(),
       updateResult: vi.fn(),
+    },
+    runStepRepository: {
+      create: vi.fn(),
+      update: vi.fn(),
+    },
+    runCheckpointRepository: {
+      create: vi.fn(),
+      updatePayload: vi.fn(),
+    },
+    artifactRepository: {
+      createPatchFromRun: vi.fn(),
     },
   },
 }));
@@ -598,17 +612,205 @@ describe('registerIpcHandlers', () => {
       type: 'agent',
       status: 'completed',
       instructions: 'Code Agent manual sandbox producer preview.',
-      output: 'preview completed',
+      output: 'preview completed / patch review Decision created: decision_1',
       outputSource: 'system',
       failureReason: null,
       createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+    servicesMock.artifactRepository.createPatchFromRun.mockResolvedValue({
+      id: 'artifact_1',
+      taskId: 'task_1',
+      runId: 'run_code_agent_1',
+      kind: 'patch',
+      title: 'Prepare a staged notes patch.',
+      content: '{}',
+      createdAt: '2026-01-02T00:00:00.000Z',
+    });
+    servicesMock.runStepRepository.create
+      .mockResolvedValueOnce({
+        id: 'step_review_session',
+        runId: 'run_code_agent_1',
+        index: 5,
+        kind: 'plan',
+        status: 'completed',
+        title: '准备 sandbox patch review',
+        input: null,
+        output: null,
+        error: null,
+        createdAt: '2026-01-02T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      })
+      .mockResolvedValueOnce({
+        id: 'step_review_checks',
+        runId: 'run_code_agent_1',
+        index: 6,
+        kind: 'tool_result',
+        status: 'completed',
+        title: 'sandbox targeted checks',
+        input: null,
+        output: null,
+        error: null,
+        createdAt: '2026-01-02T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      })
+      .mockResolvedValueOnce({
+        id: 'step_review_artifact',
+        runId: 'run_code_agent_1',
+        index: 7,
+        kind: 'artifact',
+        status: 'completed',
+        title: '记录 sandbox patch artifact',
+        input: null,
+        output: 'artifact_1',
+        error: null,
+        createdAt: '2026-01-02T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      })
+      .mockResolvedValueOnce({
+        id: 'step_review_checkpoint',
+        runId: 'run_code_agent_1',
+        index: 8,
+        kind: 'checkpoint',
+        status: 'pending',
+        title: '等待确认：sandbox patch promotion',
+        input: null,
+        output: null,
+        error: null,
+        createdAt: '2026-01-02T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      });
+    servicesMock.runCheckpointRepository.create.mockResolvedValue({
+      id: 'checkpoint_1',
+      runId: 'run_code_agent_1',
+      stepId: 'step_review_checkpoint',
+      kind: 'patch_promotion',
+      status: 'open',
+      payload: '{}',
+      createdAt: '2026-01-02T00:00:00.000Z',
+      resolvedAt: null,
+    });
+    servicesMock.runCheckpointRepository.updatePayload.mockResolvedValue({
+      id: 'checkpoint_1',
+      runId: 'run_code_agent_1',
+      stepId: 'step_review_checkpoint',
+      kind: 'patch_promotion',
+      status: 'open',
+      payload: '{}',
+      createdAt: '2026-01-02T00:00:00.000Z',
+      resolvedAt: null,
+    });
+    servicesMock.decisionRepository.create.mockResolvedValue({
+      id: 'decision_1',
+      taskId: 'task_1',
+      title: 'Review Code Agent preview for Prepare notes patch',
+      status: 'pending',
+      note: null,
+      sourceType: 'agent_checkpoint',
+      sourceId: 'checkpoint_1',
+      sourceLabel: 'workspace.staged_patch',
+      createdAt: '2026-01-02T00:00:00.000Z',
       updatedAt: '2026-01-02T00:00:00.000Z',
     });
     codeAgentExecutionRunMock.mockResolvedValue({
       preview: {
         preview: {
           preview: {
+            events: [
+              {
+                outputSummary: 'test: passed',
+                runId: 'run_code_agent_1',
+                script: 'test',
+                sessionId: 'sandboxed_producer:sandbox_source_run_code_agent_1',
+                sourceId: 'sandbox_source_run_code_agent_1',
+                status: 'passed',
+                type: 'sandbox_producer.check_completed',
+              },
+            ],
+            plan: {
+              decisionTitle: 'Review Code Agent preview for Prepare notes patch',
+              patchDraft: {
+                diff: '--- /dev/null\n+++ b/.taskplane/code-agent-preview.md',
+                files: ['.taskplane/code-agent-preview.md'],
+                riskSummary: 'Pending human review before workspace promotion.',
+                summary: 'Prepare a staged notes patch.',
+              },
+              requestBundle: {
+                audit: {
+                  acceptedScripts: ['test'],
+                  idempotencyKey: 'sandbox-patch-review:sandbox_session:sandbox_source_run_code_agent_1:run_code_agent_1:task_1:test',
+                  initiatedBy: 'internal_sandbox_patch_review',
+                  patchDraftSource: {
+                    sourceId: 'sandbox_source_run_code_agent_1',
+                    sourceKind: 'sandbox_session',
+                  },
+                  reason: 'Review sandbox patch before workspace promotion.',
+                  rejectedScripts: [],
+                  requestedScripts: ['test'],
+                  workspaceRoot: '/tmp/taskplane-workspace',
+                },
+                checkPlan: {
+                  scripts: ['test'],
+                },
+                request: {
+                  commandPolicy: {
+                    allowArbitraryShell: false,
+                    allowInteractive: false,
+                    allowedScripts: ['test', 'lint'],
+                    outputLimitBytes: 64_000,
+                    timeoutMs: 120_000,
+                  },
+                  descriptorId: 'workspace.staged_patch',
+                  executionPolicy: {
+                    credentialPolicy: 'none',
+                    descriptorId: 'workspace.staged_patch',
+                    networkPolicy: 'disabled',
+                    outputLimitBytes: 64_000,
+                    timeoutMs: 120_000,
+                    workspaceRoot: '/tmp/taskplane-workspace',
+                  },
+                  providerKind: 'local_container',
+                  runId: 'run_code_agent_1',
+                  taskId: 'task_1',
+                  workspace: {
+                    mode: 'staged_write',
+                    mountPath: '/workspace',
+                    workspaceRoot: '/tmp/taskplane-workspace',
+                  },
+                },
+                summary: 'descriptor=workspace.staged_patch',
+              },
+              status: 'ready',
+              summary: 'Sandbox patch review run plan ready',
+            },
+            sessionMetadata: 'executor=sandboxed_coding_producer',
+            sessionSummary: 'manual sandbox producer preview completed without external AI call',
+            source: {
+              evidence: {
+                commandSummaries: ['test: passed'],
+                modelSummary: 'Manual sandbox preview',
+                observations: ['Wrote staged diagnostic patch.'],
+              },
+              patchDraft: {
+                diff: '--- /dev/null\n+++ b/.taskplane/code-agent-preview.md',
+                files: ['.taskplane/code-agent-preview.md'],
+                riskSummary: 'Pending human review before workspace promotion.',
+                summary: 'Prepare a staged notes patch.',
+              },
+              policySnapshot: {
+                network: 'disabled',
+                noCredentialPassthrough: true,
+                promotion: 'decision_required',
+              },
+              requestedScripts: ['test'],
+              runId: 'run_code_agent_1',
+              sourceId: 'sandbox_source_run_code_agent_1',
+              sourceKind: 'sandbox_session',
+              taskId: 'task_1',
+              workspaceRoot: '/tmp/taskplane-workspace',
+            },
             status: 'preview_ready',
+            steps: [],
           },
         },
         status: 'previewed',
@@ -649,10 +851,25 @@ describe('registerIpcHandlers', () => {
     expect(servicesMock.runRepository.updateResult).toHaveBeenCalledWith(
       'run_code_agent_1',
       'completed',
-      'preview completed',
+      'preview completed / patch review Decision created: decision_1',
       'system',
       null,
     );
+    expect(servicesMock.artifactRepository.createPatchFromRun).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_code_agent_1',
+      taskId: 'task_1',
+      title: 'Prepare a staged notes patch.',
+    }));
+    expect(servicesMock.runCheckpointRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'patch_promotion',
+      runId: 'run_code_agent_1',
+    }));
+    expect(servicesMock.decisionRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      sourceLabel: 'workspace.staged_patch',
+      sourceType: 'agent_checkpoint',
+      taskId: 'task_1',
+      title: 'Review Code Agent preview for Prepare notes patch',
+    }));
     expect(emitAppEventMock).toHaveBeenNthCalledWith(1, 'run.changed', 'run_code_agent_1');
     expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
     expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'brief.changed');

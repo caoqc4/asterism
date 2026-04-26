@@ -281,7 +281,7 @@ Implemented notes:
 
 ### T7: Manual Sandbox Preview Run Wiring
 
-Status: completed for the first non-live/manual preview path.
+Status: completed for the first non-live/manual preview and review path.
 
 Goal: let the accepted Task detail Code Agent surface create a real Run and
 exercise the existing sandbox producer preview boundary without claiming full
@@ -297,6 +297,8 @@ Work:
 - keep the producer loop local and explicit while the real model producer loop
   remains unconnected
 - persist sandbox producer session and RunSteps for Runs detail review
+- convert source-ready preview plans into patch review artifacts, checkpoints,
+  and Decisions
 - ignore internal `session.json` manifests when collecting staged patch files
 
 Acceptance:
@@ -304,6 +306,8 @@ Acceptance:
 - the Task detail button calls only the dedicated sandbox preview IPC path
 - normal draft/summarize/agent run forms remain unchanged
 - source-ready / blocked producer results are visible from Runs detail
+- source-ready runs create a patch artifact plus patch-promotion Decision when
+  checks did not fail
 - no external AI provider call is made by this preview path
 - workspace mutation remains impossible from this button alone
 
@@ -319,6 +323,11 @@ Implemented notes:
   sandbox preview because the real model producer loop is not connected yet.
 - Renderer intent UI now starts that sandbox preview run and opens Runs detail
   for lifecycle/source evidence review.
+- When the producer preview returns `preview_ready`, main process now persists
+  the ready plan through the existing patch-review persister, creating a patch
+  artifact, open `patch_promotion` checkpoint, and pending Decision. Failed
+  checks still keep the artifact reviewable but do not create a promotion
+  Decision.
 
 ## Deferred Tasks
 

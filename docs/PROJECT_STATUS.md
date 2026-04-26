@@ -113,6 +113,11 @@ The project is past initial architecture assembly. Current work should favor pro
   evidence review. The preview path writes only a staged diagnostic patch inside
   the sandbox; the real model-backed producer loop remains deliberately
   unconnected.
+- Source-ready manual Code Agent previews now bridge into the existing patch
+  review chain: ready plans persist a patch artifact, open `patch_promotion`
+  checkpoint, and pending Decision. This gives the preview path a formal review
+  object while still leaving workspace mutation impossible without a later
+  approved promotion flow.
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
   now records the completed Slice 0 execution-layer pass: runtime events,
   event-driven RunStep projection, checkpoint normalization, restart-safe
@@ -587,6 +592,9 @@ Latest local baseline:
   locally on 2026-04-26 after wiring the first manual Code Agent sandbox
   preview run path and excluding internal `session.json` manifests from staged
   patch collection.
+- `npm test -- src/main/ipc/handlers.test.ts` and `npm run lint` passed locally
+  on 2026-04-26 after bridging Code Agent source-ready previews into patch
+  artifacts, `patch_promotion` checkpoints, and pending Decisions.
 - `npm test -- src/main/domain/run/local-container-sandboxed-coding-producer-execution-service.test.ts`
   passed locally on 2026-04-26 after adding the explicit local-container
   producer execution service with operator confirmation before Docker probing

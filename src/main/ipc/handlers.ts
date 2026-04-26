@@ -2,6 +2,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import type { PingResponse } from '../../shared/types/ipc.js';
+import type { AgentSandboxCheckResult } from '../../shared/agent-sandbox-provider.js';
+import {
+  buildAgentSandboxPatchArtifactFromCheckResults,
+  buildAgentSandboxPatchPromotionCheckpoint,
+  summarizeAgentSandboxCheckResults,
+} from '../../shared/agent-sandbox-provider.js';
 import type { CreateBlockerInput, UpdateBlockerInput } from '../../shared/types/blocker.js';
 import type {
   CreateCompletionCriteriaInput,
@@ -30,7 +36,14 @@ import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provi
 import { getServices } from '../bootstrap/services.js';
 import { probeLocalContainerSandboxBackend } from '../domain/run/local-container-sandbox-backend.js';
 import { LocalContainerSandboxedCodingProducerExecutionService } from '../domain/run/local-container-sandboxed-coding-producer-execution-service.js';
+import type { LocalContainerSandboxPatchReviewPreparation } from '../domain/run/local-container-sandbox-backend.js';
 import { evaluateSandboxedCodingProducerBackendReadiness } from '../domain/run/sandboxed-coding-producer-backend.js';
+import type {
+  PreviewSandboxedCodingInjectedProducerRunResult,
+  SandboxedCodingProducerEvent,
+} from '../domain/run/sandboxed-coding-producer.js';
+import { AgentCheckpointRecorder } from '../domain/run/agent-checkpoint-recorder.js';
+import { SandboxPatchReviewPersister } from '../domain/run/sandbox-patch-review-persister.js';
 import { ipcMain } from '../electron.js';
 import { emitAppEvent } from './event-bus.js';
 
@@ -382,7 +395,15 @@ async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promis
 
   const previewStatus = execution.preview.status;
   if (previewStatus === 'previewed') {
-    const producerStatus = execution.preview.preview.preview.status;
+    const producerPreview = execution.preview.preview.preview;
+    const reviewSummary = producerPreview.status === 'preview_ready'
+      ? await persistCodeAgentPatchReview({
+          decisionTitle: `Review Code Agent preview for ${task.title}`,
+          preview: producerPreview,
+          services,
+        })
+      : null;
+    const producerStatus = producerPreview.status;
     const status = producerStatus === 'preview_ready'
       ? 'completed'
       : producerStatus === 'paused'
@@ -392,10 +413,10 @@ async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promis
     return services.runRepository.updateResult(
       run.id,
       status,
-      execution.summary,
+      [execution.summary, reviewSummary].filter(Boolean).join(' / '),
       'system',
       status === 'failed'
-        ? getCodeAgentPreviewFailureReason(execution.preview.preview.preview) ?? execution.summary
+        ? getCodeAgentPreviewFailureReason(producerPreview) ?? execution.summary
         : null,
     );
   }
@@ -407,6 +428,92 @@ async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promis
     'system',
     execution.preview.preflight.summary,
   );
+}
+
+async function persistCodeAgentPatchReview(params: {
+  decisionTitle: string;
+  preview: Extract<PreviewSandboxedCodingInjectedProducerRunResult, { status: 'preview_ready' }>;
+  services: ReturnType<typeof getServices>;
+}): Promise<string | null> {
+  if (params.preview.plan.status !== 'ready') {
+    return null;
+  }
+
+  const checkResults = getProducerCheckResults(params.preview);
+  const artifact = buildAgentSandboxPatchArtifactFromCheckResults({
+    checkResults,
+    diff: params.preview.plan.patchDraft.diff,
+    files: params.preview.plan.patchDraft.files,
+    riskSummary: params.preview.plan.patchDraft.riskSummary,
+    summary: params.preview.plan.patchDraft.summary,
+  });
+  const preparation: LocalContainerSandboxPatchReviewPreparation = {
+    artifact,
+    audit: params.preview.plan.requestBundle.audit,
+    checkRun: {
+      results: checkResults,
+      summary: summarizeAgentSandboxCheckResults(checkResults),
+    },
+    checkpoint: buildAgentSandboxPatchPromotionCheckpoint({
+      artifact,
+      policySnapshot: params.preview.plan.requestBundle.request.executionPolicy,
+      resumeTarget: `${params.preview.source.sourceId}:promote`,
+    }),
+    handle: {
+      createdAt: new Date().toISOString(),
+      id: params.preview.source.sourceId,
+      providerKind: 'local_container',
+      stagingRoot: `sandbox_source:${params.preview.source.sourceId}`,
+      workspaceMode: 'staged_write',
+    },
+    sessionSummary: [
+      'sandbox source ready for patch review',
+      `source=${params.preview.source.sourceId}`,
+      `files=${params.preview.source.patchDraft.files.join(',')}`,
+    ].join(' / '),
+  };
+  const persister = new SandboxPatchReviewPersister(
+    params.services.artifactRepository,
+    params.services.runStepRepository,
+    new AgentCheckpointRecorder(
+      params.services.runCheckpointRepository,
+      params.services.runStepRepository,
+      params.services.decisionRepository,
+    ),
+  );
+  const result = await persister.persist({
+    decisionTitle: params.decisionTitle,
+    preparation,
+    runId: params.preview.source.runId,
+    taskId: params.preview.source.taskId,
+  });
+
+  return result.checkpoint
+    ? `patch review Decision created: ${result.checkpoint.decisionId ?? result.checkpoint.checkpointId}`
+    : `patch review artifact created: ${result.artifact.id}; no promotion Decision because checks did not pass`;
+}
+
+function getProducerCheckResults(
+  preview: Extract<PreviewSandboxedCodingInjectedProducerRunResult, { status: 'preview_ready' }>,
+): AgentSandboxCheckResult[] {
+  const eventResults = preview.events
+    .filter((event): event is Extract<SandboxedCodingProducerEvent, { type: 'sandbox_producer.check_completed' }> =>
+      event.type === 'sandbox_producer.check_completed')
+    .map((event) => ({
+      outputPreview: event.outputSummary,
+      script: event.script,
+      status: event.status,
+    }));
+
+  if (eventResults.length) {
+    return eventResults;
+  }
+
+  return preview.source.requestedScripts.map((script) => ({
+    outputPreview: 'No producer check evidence was recorded.',
+    script,
+    status: 'skipped',
+  }));
 }
 
 function getCodeAgentPreviewFailureReason(preview: { status: string; reason?: string }): string | null {
