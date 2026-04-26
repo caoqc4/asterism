@@ -232,6 +232,10 @@ The project is past initial architecture assembly. Current work should favor pro
   and RunStep evidence, so open reviews still say the workspace is unchanged,
   default-off approvals say no files were written, and applied promotions show
   that the workspace promotion happened after Decision approval.
+- Alpha acceptance now has an explicit isolated manual checklist for
+  `TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=true`, including disposable
+  workspace setup, staged review, Decision approval, applied-state evidence,
+  and the default-off no-write comparison pass.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -310,6 +314,10 @@ The project is past initial architecture assembly. Current work should favor pro
   approval coverage: 37 sandbox-coding files / 225 tests.
 - `npm test -- src/renderer/App.test.tsx` passed locally on 2026-04-26 after
   adding Runs detail applied-promotion status copy coverage: 119 App tests.
+- `TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE=true npm run
+  accept:sandbox-coding:producer-preview-smoke` passed locally on 2026-04-26
+  without Docker or AI calls, confirming the producer preview half of the
+  staged patch flow still leaves the workspace unchanged.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts

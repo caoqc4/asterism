@@ -128,6 +128,38 @@ npm test -- src/renderer/App.test.tsx
   separately by local tests and visible Runs summary coverage for script, args,
   timeout, cwd, and preview.
 
+### Sandbox Patch Promotion Apply Path
+
+Use this only with isolated user data and a disposable workspace. This validates
+the Code Agent staged patch promotion path, not normal agent prompt access.
+
+- Start from a throwaway workspace with a tiny text file and simple `test` /
+  `lint` scripts.
+- Launch Taskplane with isolated state and apply enabled, for example:
+
+```bash
+ELECTRON_RUN_AS_NODE= \
+TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-sandbox-promotion-apply \
+TASKPLANE_WORKSPACE_ROOT=/tmp/taskplane-alpha-sandbox-promotion-workspace \
+TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=true \
+TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=true \
+release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane
+```
+
+- In Task detail, use the manual Code Agent intent surface to produce a staged
+  patch review on the disposable file.
+- Open the generated Run and confirm `Staged Patch Review` shows the staged
+  source, expected files, readiness, linked Decision, and workspace unchanged
+  before approval.
+- Open the linked `workspace.staged_patch` Decision and approve it.
+- Confirm the disposable workspace file changes only after approval.
+- Confirm Runs detail shows the promotion as resolved and the workspace status
+  as applied after Decision approval, with touched files in the checkpoint
+  RunStep.
+- Repeat once with `TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=false` and
+  confirm approval resolves preflight-only while leaving workspace files
+  unchanged.
+
 ## Completion Loop
 
 - Add at least one completion criterion.
