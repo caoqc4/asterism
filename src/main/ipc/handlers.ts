@@ -1,6 +1,3 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
-
 import type { PingResponse } from '../../shared/types/ipc.js';
 import type { AgentSandboxCheckResult } from '../../shared/agent-sandbox-provider.js';
 import {
@@ -38,6 +35,10 @@ import { probeLocalContainerSandboxBackend } from '../domain/run/local-container
 import { LocalContainerSandboxedCodingProducerExecutionService } from '../domain/run/local-container-sandboxed-coding-producer-execution-service.js';
 import type { LocalContainerSandboxPatchReviewPreparation } from '../domain/run/local-container-sandbox-backend.js';
 import { evaluateSandboxedCodingProducerBackendReadiness } from '../domain/run/sandboxed-coding-producer-backend.js';
+import {
+  normalizeCodeAgentStagedFilePlanPayload,
+  writeCodeAgentStagedFilePlan,
+} from '../domain/run/code-agent-staged-file-plan.js';
 import type {
   PreviewSandboxedCodingInjectedProducerRunResult,
   SandboxedCodingProducerEvent,
@@ -359,25 +360,65 @@ async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promis
     featureFlags: aiStatus.featureFlags,
     operatorConfirmed: input.operatorConfirmed,
     patchSummary: patchIntent,
-    producerLoop: async ({ stagingRoot }) => {
-      await writeManualCodeAgentPreview({
+    producerLoop: async ({ emit, request: producerRequest, sessionId, stagingRoot }) => {
+      const plan = buildManualCodeAgentPreviewPlan({
         patchIntent,
         runId: run.id,
-        stagingRoot,
         taskTitle: task.title,
+      });
+      const normalizedPlan = normalizeCodeAgentStagedFilePlanPayload(plan);
+
+      if (normalizedPlan.status === 'blocked') {
+        emit({
+          reason: normalizedPlan.summary,
+          runId: producerRequest.runId,
+          sessionId,
+          sourceId: producerRequest.sourceId,
+          tool: 'staging.write_file',
+          type: 'sandbox_producer.tool_blocked',
+        });
+
+        return {
+          reason: normalizedPlan.summary,
+          sessionSummary: normalizedPlan.summary,
+          status: 'blocked',
+        };
+      }
+
+      emit({
+        inputSummary: normalizedPlan.summary,
+        runId: producerRequest.runId,
+        sessionId,
+        sourceId: producerRequest.sourceId,
+        tool: 'staging.write_file',
+        type: 'sandbox_producer.tool_requested',
+      });
+
+      const writeResult = await writeCodeAgentStagedFilePlan({
+        plan: normalizedPlan.plan,
+        stagingRoot,
+      });
+
+      emit({
+        outputSummary: writeResult.summary,
+        runId: producerRequest.runId,
+        sessionId,
+        sourceId: producerRequest.sourceId,
+        tool: 'staging.write_file',
+        type: 'sandbox_producer.tool_completed',
       });
 
       return {
         evidence: {
-          modelSummary: 'Manual sandbox preview wrote a staged diagnostic patch; real producer model loop is not connected yet.',
+          modelSummary: normalizedPlan.plan.summary,
           observations: [
-            `Wrote ${DEFAULT_CODE_AGENT_PREVIEW_FILE} in staging only.`,
+            ...normalizedPlan.plan.observations,
             'Workspace input stayed read-only; promotion remains Decision-gated.',
           ],
         },
         sessionSummary: 'manual sandbox producer preview completed without external AI call',
         status: 'completed',
-        summary: `Staged ${DEFAULT_CODE_AGENT_PREVIEW_FILE}`,
+        summary: `Staged ${writeResult.files.join(', ')}`,
       };
     },
     request,
@@ -527,30 +568,35 @@ function normalizeCodeAgentChecks(checks: CodeAgentAllowedCheck[]): CodeAgentAll
   return normalized.length ? normalized : ['test'];
 }
 
-async function writeManualCodeAgentPreview(params: {
+function buildManualCodeAgentPreviewPlan(params: {
   patchIntent: string;
   runId: string;
-  stagingRoot: string;
   taskTitle: string;
-}): Promise<void> {
-  const file = path.join(params.stagingRoot, DEFAULT_CODE_AGENT_PREVIEW_FILE);
-  await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(
-    file,
-    [
-      '# Taskplane Code Agent Preview',
-      '',
-      `Task: ${params.taskTitle}`,
-      `Run: ${params.runId}`,
-      '',
-      'Patch intent:',
-      params.patchIntent,
-      '',
-      'Status:',
-      'This is a manual sandbox preview. The real model producer loop is not connected yet.',
-      'Workspace mutation still requires an approved Decision in a later promotion flow.',
-      '',
-    ].join('\n'),
-    'utf8',
-  );
+}): unknown {
+  return {
+    files: [
+      {
+        content: [
+          '# Taskplane Code Agent Preview',
+          '',
+          `Task: ${params.taskTitle}`,
+          `Run: ${params.runId}`,
+          '',
+          'Patch intent:',
+          params.patchIntent,
+          '',
+          'Status:',
+          'This is a manual sandbox preview. The real model producer loop is not connected yet.',
+          'Workspace mutation still requires an approved Decision in a later promotion flow.',
+          '',
+        ].join('\n'),
+        path: DEFAULT_CODE_AGENT_PREVIEW_FILE,
+      },
+    ],
+    observations: [
+      `Wrote ${DEFAULT_CODE_AGENT_PREVIEW_FILE} in staging only.`,
+      'The same staged-file plan validator will be used before any model-backed producer write.',
+    ],
+    summary: 'Manual sandbox preview wrote a validated staged diagnostic patch; real producer model loop is not connected yet.',
+  };
 }

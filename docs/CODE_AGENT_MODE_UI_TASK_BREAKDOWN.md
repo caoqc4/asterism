@@ -319,8 +319,10 @@ Implemented notes:
   constrained sandboxed producer request, invokes the local-container producer
   execution service, and updates the Run result from the preview outcome.
 - The first producer loop writes a staged `.taskplane/code-agent-preview.md`
-  diagnostic inside the sandbox only. It is intentionally labeled as a manual
-  sandbox preview because the real model producer loop is not connected yet.
+  diagnostic inside the sandbox only through the same staged-file plan
+  validator reserved for model-backed producer output. It is intentionally
+  labeled as a manual sandbox preview because the real model producer loop is
+  not connected yet.
 - Renderer intent UI now starts that sandbox preview run and opens Runs detail
   for lifecycle/source evidence review.
 - When the producer preview returns `preview_ready`, main process now persists
@@ -328,6 +330,43 @@ Implemented notes:
   artifact, open `patch_promotion` checkpoint, and pending Decision. Failed
   checks still keep the artifact reviewable but do not create a promotion
   Decision.
+
+### T8: Model Producer Staged-File Contract
+
+Status: first fail-closed contract implemented; live model call remains
+deferred.
+
+Goal: prepare the real Code Agent producer loop without giving the model broad
+write, shell, credential, or workspace mutation capability.
+
+Work:
+
+- define the only accepted producer output shape as strict JSON with summary,
+  observations, and staged text files
+- validate workspace-relative paths before any staged write
+- block path escapes, absolute paths, internal `session.json`, `.env*`,
+  `.git`, `node_modules`, duplicate paths, binary content, and oversized output
+- write only validated files into the sandbox staging root
+- keep checks, artifact creation, checkpointing, and Decision promotion on the
+  existing sandbox producer / patch review chain
+
+Acceptance:
+
+- malformed model output produces a blocked producer result
+- accepted output can only write bounded text files to staging
+- the current manual preview path uses the same validator
+- no external AI provider call is introduced by this slice
+
+Implemented notes:
+
+- `code-agent-staged-file-plan` now parses strict JSON payloads, normalizes a
+  bounded staged-file plan, and writes accepted files only under the prepared
+  staging root.
+- The manual preview loop now builds its diagnostic patch as a staged-file plan
+  and emits `staging.write_file` producer tool request/completion steps before
+  normal check and source-ready review handling.
+- `npm run accept:sandbox-coding` includes the staged-file plan contract tests
+  so future model-backed producer work cannot bypass this gate silently.
 
 ## Deferred Tasks
 

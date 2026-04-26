@@ -111,13 +111,18 @@ The project is past initial architecture assembly. Current work should favor pro
   carries only selected `test` / `lint` checks, invokes the local-container
   producer execution service, and opens Runs detail for lifecycle/source
   evidence review. The preview path writes only a staged diagnostic patch inside
-  the sandbox; the real model-backed producer loop remains deliberately
-  unconnected.
+  the sandbox through the same bounded staged-file plan validator reserved for
+  future model-backed producer output; the real model-backed producer loop
+  remains deliberately unconnected.
 - Source-ready manual Code Agent previews now bridge into the existing patch
   review chain: ready plans persist a patch artifact, open `patch_promotion`
   checkpoint, and pending Decision. This gives the preview path a formal review
   object while still leaving workspace mutation impossible without a later
   approved promotion flow.
+- Code Agent producer output now has a fail-closed staged-file contract before
+  any live model wiring: only strict JSON plans with bounded workspace-relative
+  text files can write to sandbox staging, while path escapes, sensitive files,
+  duplicate paths, binary content, and oversized output are blocked.
 - Decisions now distinguish `workspace.staged_patch` promotion checkpoints from
   direct `workspace.write_patch` checkpoints: approving the current sandbox
   promotion review records and resolves the checkpoint, but does not auto-apply
@@ -609,6 +614,11 @@ Latest local baseline:
   the explicit local-container producer execution service limited to tests,
   manual smoke, and future CLI/manual operator calls; Task/Run UI and prompt
   exposure remain deferred
+- `npm test -- src/main/domain/run/code-agent-staged-file-plan.test.ts
+  src/main/ipc/handlers.test.ts`, `npm run accept:sandbox-coding`,
+  `npm run lint`, `npm run build`, and full `npm test -- --reporter=dot`
+  passed locally on 2026-04-26 after adding the Code Agent staged-file plan
+  contract: 91 test files / 649 tests in the full pass
 - Added `docs/CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md` as the proposed
   product-surface gate before any visible Task/Run code-agent mode or
   model-visible coding tools are built
