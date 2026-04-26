@@ -701,7 +701,7 @@ function buildManualCodeAgentPreviewPlan(params: {
           params.patchIntent,
           '',
           'Status:',
-          'This is a manual sandbox preview. The real model producer loop is not connected yet.',
+          'This is a manual sandbox preview. Model producer usage was not requested for this run.',
           'Workspace mutation still requires an approved Decision in a later promotion flow.',
           '',
         ].join('\n'),
@@ -712,6 +712,6 @@ function buildManualCodeAgentPreviewPlan(params: {
       `Wrote ${DEFAULT_CODE_AGENT_PREVIEW_FILE} in staging only.`,
       'The same staged-file plan validator will be used before any model-backed producer write.',
     ],
-    summary: 'Manual sandbox preview wrote a validated staged diagnostic patch; real producer model loop is not connected yet.',
+    summary: 'Manual sandbox preview wrote a validated staged diagnostic patch; model producer usage was not requested.',
   };
 }

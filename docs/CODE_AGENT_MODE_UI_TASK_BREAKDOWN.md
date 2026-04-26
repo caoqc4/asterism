@@ -243,8 +243,8 @@ Implemented notes:
 
 Status: completed for local non-live code-agent UI / sandbox producer
 validation on 2026-04-26. A first manual sandbox preview run button is now
-wired, but broader real model-backed execution remains deferred because the
-actual producer model loop is not connected yet.
+wired. Broader model-backed execution is now available only through the
+separate run-level model producer opt-in.
 
 Goal: validate the end-to-end local path before considering broader exposure.
 
@@ -321,8 +321,8 @@ Implemented notes:
 - The first producer loop writes a staged `.taskplane/code-agent-preview.md`
   diagnostic inside the sandbox only through the same staged-file plan
   validator reserved for model-backed producer output. It is intentionally
-  labeled as a manual sandbox preview because the real model producer loop is
-  not connected yet.
+  labeled as a manual sandbox preview when the run has not requested model
+  producer usage.
 - Renderer intent UI now starts that sandbox preview run and opens Runs detail
   for lifecycle/source evidence review.
 - When the producer preview returns `preview_ready`, main process now persists
