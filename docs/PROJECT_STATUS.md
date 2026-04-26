@@ -102,8 +102,11 @@ The project is past initial architecture assembly. Current work should favor pro
   `workspaceRoot/package.json` script availability check, so missing `test` or
   `lint` scripts are shown as unavailable and are not sent in the run payload;
   the `run:triggerCodeAgent` IPC handler also rechecks availability before
-  creating the Run. It initially recorded only a local diagnostic; the
-  dedicated manual sandbox preview IPC path is now wired for this surface.
+  creating the Run. The same start gates now render a compact Code Agent
+  preflight summary covering runtime readiness, selected checks, producer mode,
+  context-file requirement, Decision promotion, and the next required action.
+  It initially recorded only a local diagnostic; the dedicated manual sandbox
+  preview IPC path is now wired for this surface.
 - Runs detail now projects sandbox producer sessions into an
   `AgentRunLifecycle` summary with source id, check policy, network/promotion
   constraints, blocked reasons, and next recovery/review moves. Sandbox

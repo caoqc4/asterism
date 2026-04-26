@@ -335,7 +335,7 @@ export function formatExecutionRuntimeReadinessSummary(
   return `ExecutionRuntime：not ready / ${status.summary}`;
 }
 
-export function formatCodeAgentStartBlockedReason(input: {
+export type CodeAgentStartGateInput = {
   aiStatus: AiConfigStatus | null;
   operatorConfirmed: boolean;
   runPending: boolean;
@@ -345,7 +345,9 @@ export function formatCodeAgentStartBlockedReason(input: {
   lintCheck: boolean;
   lintCheckAvailable: boolean;
   useModelProducer: boolean;
-}): string | null {
+};
+
+export function formatCodeAgentStartBlockedReason(input: CodeAgentStartGateInput): string | null {
   if (input.runPending) {
     return 'Start blocked：run is already starting.';
   }
@@ -371,6 +373,40 @@ export function formatCodeAgentStartBlockedReason(input: {
   }
 
   return null;
+}
+
+export function formatCodeAgentPreflightSummary(input: CodeAgentStartGateInput): string {
+  const blockedReason = formatCodeAgentStartBlockedReason(input);
+  const runtimeSummary = input.aiStatus?.sandboxBackendStatus?.producerBackendReadiness?.ready
+    ? 'runtime=ready'
+    : 'runtime=needs readiness check';
+  const availableChecks = [
+    input.testCheckAvailable ? 'test' : null,
+    input.lintCheckAvailable ? 'lint' : null,
+  ].filter(Boolean).join(',');
+  const selectedChecks = [
+    input.testCheck ? 'test' : null,
+    input.lintCheck ? 'lint' : null,
+  ].filter(Boolean).join(',');
+  const checkSummary = availableChecks
+    ? selectedChecks
+      ? `checks=${selectedChecks}`
+      : `checks=none selected; available=${availableChecks}`
+    : 'checks=unavailable';
+  const producerSummary = input.useModelProducer
+    ? input.selectedContextFileCount > 0
+      ? `producer=model-backed; context=${input.selectedContextFileCount}`
+      : 'producer=model-backed; context required'
+    : 'producer=local diagnostic; no provider call';
+
+  return [
+    `Code Agent preflight：${blockedReason ? 'blocked' : 'ready'}`,
+    runtimeSummary,
+    checkSummary,
+    producerSummary,
+    'promotion=Decision required',
+    blockedReason ? blockedReason.replace('Start blocked：', 'next=') : 'next=start sandbox preview',
+  ].join(' / ');
 }
 
 export function formatCodeAgentAutomaticStartPolicySummary(): string {

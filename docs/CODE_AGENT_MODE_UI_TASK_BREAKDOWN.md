@@ -172,6 +172,10 @@ Implemented notes:
 - The `test` / `lint` toggles are backed by main-process read-only
   `workspaceRoot/package.json` script detection. Missing scripts render as
   unavailable and cannot be selected or sent in `requestedChecks`.
+- The intent panel now renders one compact preflight summary from the same
+  start gates used to enable the button: runtime readiness, selected checks,
+  local/model producer mode, context-file requirement, Decision promotion, and
+  the next required action.
 - The first version originally recorded an intent-only diagnostic. The current
   implementation now calls only the dedicated `run:triggerCodeAgent` path after
   explicit operator confirmation, creates a real Run, and opens Runs detail for

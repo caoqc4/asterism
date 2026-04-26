@@ -2814,6 +2814,9 @@ describe('App UI flow', () => {
     expect(screen.getByText(
       'staged patch / network disabled / credentials none / Decision promotion',
     )).toBeTruthy();
+    expect(screen.getByText(
+      'Code Agent preflight：blocked / runtime=needs readiness check / checks=unavailable / producer=local diagnostic; no provider call / promotion=Decision required / next=check Code Agent runtime readiness first.',
+    )).toBeTruthy();
     expect(screen.getByText('Start blocked：check Code Agent runtime readiness first.')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '检查运行时' }));
@@ -2939,6 +2942,9 @@ describe('App UI flow', () => {
 
     const startButton = intent.getByRole('button', { name: '启动 sandbox preview run' });
     expect(startButton.hasAttribute('disabled')).toBe(true);
+    expect(intent.getByText(
+      'Code Agent preflight：blocked / runtime=ready / checks=test,lint / producer=local diagnostic; no provider call / promotion=Decision required / next=confirm Docker/Decision review before starting.',
+    )).toBeTruthy();
     expect(intent.getByText('Start blocked：confirm Docker/Decision review before starting.')).toBeTruthy();
 
     await user.type(intent.getByLabelText('Patch intent'), 'Create a staged patch for the notes file');
@@ -2951,6 +2957,9 @@ describe('App UI flow', () => {
       name: '我确认后续执行可能启动 Docker 容器，但工作区只会收到 Decision 批准后的变更',
     }));
     expect(intent.getByText('Start blocked：select at least one context file before using model producer.')).toBeTruthy();
+    expect(intent.getByText(
+      'Code Agent preflight：blocked / runtime=ready / checks=test,lint / producer=model-backed; context required / promotion=Decision required / next=select at least one context file before using model producer.',
+    )).toBeTruthy();
     expect(startButton.hasAttribute('disabled')).toBe(true);
     await user.click(intent.getByRole('button', { name: 'src/feature.ts' }));
     expect((intent.getByLabelText('Context files') as HTMLTextAreaElement).value).toBe('src/feature.ts');
@@ -2961,6 +2970,9 @@ describe('App UI flow', () => {
     await user.type(intent.getByLabelText('Context files'), 'docs/notes.md\nsrc/app.ts');
     expect(intent.getByText(
       'Context selection：2 selected / docs/notes.md、src/app.ts / files are not read until the run starts',
+    )).toBeTruthy();
+    expect(intent.getByText(
+      'Code Agent preflight：ready / runtime=ready / checks=test,lint / producer=model-backed; context=2 / promotion=Decision required / next=start sandbox preview',
     )).toBeTruthy();
     expect(startButton.hasAttribute('disabled')).toBe(false);
 

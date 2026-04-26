@@ -74,6 +74,7 @@ import {
 } from '@shared/working-context/transitions';
 import {
   formatCodeAgentAutomaticStartPolicySummary,
+  formatCodeAgentPreflightSummary,
   formatCodeAgentStartBlockedReason,
   formatCodeAgentModelProducerOptInSummary,
   formatExecutionRuntimeReadinessSummary,
@@ -2117,7 +2118,7 @@ export function TasksPage({
   const codeAgentLintAvailable = aiStatus?.codeAgentWorkspaceChecks?.lint.available === true;
   const codeAgentSelectedTestCheck = codeAgentRunTestCheck && codeAgentTestAvailable;
   const codeAgentSelectedLintCheck = codeAgentRunLintCheck && codeAgentLintAvailable;
-  const codeAgentStartBlockedReason = formatCodeAgentStartBlockedReason({
+  const codeAgentStartGateInput = {
     aiStatus,
     lintCheck: codeAgentSelectedLintCheck,
     lintCheckAvailable: codeAgentLintAvailable,
@@ -2127,7 +2128,9 @@ export function TasksPage({
     testCheck: codeAgentSelectedTestCheck,
     testCheckAvailable: codeAgentTestAvailable,
     useModelProducer: codeAgentEffectiveUseModelProducer,
-  });
+  };
+  const codeAgentStartBlockedReason = formatCodeAgentStartBlockedReason(codeAgentStartGateInput);
+  const codeAgentPreflightSummary = formatCodeAgentPreflightSummary(codeAgentStartGateInput);
   const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
   const orderedLaneLabels = tasks.reduce<string[]>((labels, task) => {
     const laneLabel = getPriorityLaneLabel(taskPriorityLanes.get(task.id));
@@ -2363,6 +2366,7 @@ export function TasksPage({
               aiStatus?.codeAgentWorkspaceChecks?.lint.reason ?? 'workspace status not loaded.'
             }
           </p>
+          <p className="meta">{codeAgentPreflightSummary}</p>
           <label>
             <input
               checked={codeAgentOperatorConfirmed}

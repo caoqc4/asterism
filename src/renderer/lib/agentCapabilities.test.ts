@@ -6,6 +6,7 @@ import {
   formatAgentSessionMetadataSummary,
   formatCodeAgentAutomaticStartPolicySummary,
   formatCodeAgentModelProducerOptInSummary,
+  formatCodeAgentPreflightSummary,
   formatCodeAgentStartBlockedReason,
   formatExecutionRuntimeReadinessSummary,
   formatPreRunAgentCapabilitySummary,
@@ -299,6 +300,38 @@ describe('agent capability formatting', () => {
       testCheckAvailable: true,
       useModelProducer: true,
     })).toBeNull();
+  });
+
+  it('summarizes code-agent preflight state from the same start gates', () => {
+    const readyStatus = buildReadyCodeAgentAiStatus();
+
+    expect(formatCodeAgentPreflightSummary({
+      aiStatus: null,
+      lintCheck: true,
+      lintCheckAvailable: true,
+      operatorConfirmed: true,
+      runPending: false,
+      selectedContextFileCount: 1,
+      testCheck: true,
+      testCheckAvailable: true,
+      useModelProducer: true,
+    })).toBe(
+      'Code Agent preflight：blocked / runtime=needs readiness check / checks=test,lint / producer=model-backed; context=1 / promotion=Decision required / next=check Code Agent runtime readiness first.',
+    );
+
+    expect(formatCodeAgentPreflightSummary({
+      aiStatus: readyStatus,
+      lintCheck: true,
+      lintCheckAvailable: true,
+      operatorConfirmed: true,
+      runPending: false,
+      selectedContextFileCount: 2,
+      testCheck: false,
+      testCheckAvailable: true,
+      useModelProducer: true,
+    })).toBe(
+      'Code Agent preflight：ready / runtime=ready / checks=lint / producer=model-backed; context=2 / promotion=Decision required / next=start sandbox preview',
+    );
   });
 
   it('formats provider-native agent session metadata for run detail', () => {
