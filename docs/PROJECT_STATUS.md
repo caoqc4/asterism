@@ -132,6 +132,11 @@ The project is past initial architecture assembly. Current work should favor pro
   still not UI-wired: it blocks before resolving AI config unless provider
   calls are explicitly allowed, requires `enableSandboxCodingAgent=true`, then
   wraps existing runtime text generation in the staged-file producer adapter.
+- The Task detail manual Code Agent path can now opt into the model producer
+  loop only through `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=true`; without
+  that env flag it keeps the local diagnostic preview and does not resolve
+  runtime AI config. If the env flag is true but runtime config is unavailable,
+  the Run fails before sandbox execution starts.
 - Decisions now distinguish `workspace.staged_patch` promotion checkpoints from
   direct `workspace.write_patch` checkpoints: approving the current sandbox
   promotion review records and resolves the checkpoint, but does not auto-apply
@@ -639,6 +644,14 @@ Latest local baseline:
   accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally on
   2026-04-26 after adding the default-closed provider runtime factory: 29
   sandbox-coding files / 177 tests
+- `npm test -- src/main/ipc/handlers.test.ts
+  src/main/domain/run/code-agent-model-producer-runtime.test.ts
+  src/main/domain/run/code-agent-model-producer-loop.test.ts
+  src/main/domain/run/code-agent-staged-file-plan.test.ts`, `npm run
+  accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally on
+  2026-04-26 after adding
+  `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=true` as the explicit model
+  producer opt-in for the manual Code Agent path.
 - Added `docs/CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md` as the proposed
   product-surface gate before any visible Task/Run code-agent mode or
   model-visible coding tools are built

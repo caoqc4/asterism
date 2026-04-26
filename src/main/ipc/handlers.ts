@@ -31,6 +31,7 @@ import type {
 
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import { getServices } from '../bootstrap/services.js';
+import { readEnvBoolean } from '../config/env.js';
 import { probeLocalContainerSandboxBackend } from '../domain/run/local-container-sandbox-backend.js';
 import { LocalContainerSandboxedCodingProducerExecutionService } from '../domain/run/local-container-sandboxed-coding-producer-execution-service.js';
 import type { LocalContainerSandboxPatchReviewPreparation } from '../domain/run/local-container-sandbox-backend.js';
@@ -39,10 +40,12 @@ import {
   normalizeCodeAgentStagedFilePlanPayload,
   writeCodeAgentStagedFilePlan,
 } from '../domain/run/code-agent-staged-file-plan.js';
+import { prepareCodeAgentModelProducerRuntime } from '../domain/run/code-agent-model-producer-runtime.js';
 import type {
   PreviewSandboxedCodingInjectedProducerRunResult,
   SandboxedCodingProducerEvent,
 } from '../domain/run/sandboxed-coding-producer.js';
+import type { LocalContainerSandboxedCodingProducerLoop } from '../domain/run/local-container-sandboxed-coding-producer-runner.js';
 import { AgentCheckpointRecorder } from '../domain/run/agent-checkpoint-recorder.js';
 import { SandboxPatchReviewPersister } from '../domain/run/sandbox-patch-review-persister.js';
 import { ipcMain } from '../electron.js';
@@ -50,6 +53,7 @@ import { emitAppEvent } from './event-bus.js';
 
 const PING_CHANNEL = 'app:ping';
 const DEFAULT_CODE_AGENT_PREVIEW_FILE = '.taskplane/code-agent-preview.md';
+const ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV = 'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER';
 
 export function registerIpcHandlers(): void {
   ipcMain.handle(PING_CHANNEL, async (): Promise<PingResponse> => {
@@ -319,13 +323,16 @@ async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promis
   const workspaceRoot = aiStatus.workspaceRoot?.trim();
   const requestedChecks = normalizeCodeAgentChecks(input.requestedChecks);
   const patchIntent = input.patchIntent.trim() || `Prepare a staged patch for ${task.title}.`;
+  const modelProducerOptIn = readEnvBoolean(ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV) === true;
   const run = await services.runRepository.create({
     taskId: task.id,
     type: 'agent',
     instructions: [
       'Code Agent manual sandbox producer preview.',
       patchIntent,
-      'Real model producer loop is not connected yet; this run records a staged local preview only.',
+      modelProducerOptIn
+        ? 'Model producer loop is explicitly enabled by local env and remains sandbox/Decision gated.'
+        : 'Real model producer loop is not connected yet; this run records a staged local preview only.',
     ].join(' '),
   });
   const request = {
@@ -355,72 +362,34 @@ async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promis
     taskId: task.id,
     workspaceRoot: workspaceRoot ?? '',
   };
+  const modelRuntime = await prepareCodeAgentModelProducerRuntime({
+    aiConfigService: services.aiConfigService,
+    allowProviderCalls: modelProducerOptIn,
+  });
+
+  if (modelProducerOptIn && modelRuntime.status === 'blocked') {
+    return services.runRepository.updateResult(
+      run.id,
+      'failed',
+      modelRuntime.summary,
+      'system',
+      modelRuntime.reason,
+    );
+  }
+
+  const producerLoop = modelRuntime.status === 'ready'
+    ? modelRuntime.createLoop()
+    : createManualCodeAgentPreviewLoop({
+        patchIntent,
+        runId: run.id,
+        taskTitle: task.title,
+      });
   const execution = await new LocalContainerSandboxedCodingProducerExecutionService().run({
     decisionTitle: `Review Code Agent preview for ${task.title}`,
     featureFlags: aiStatus.featureFlags,
     operatorConfirmed: input.operatorConfirmed,
     patchSummary: patchIntent,
-    producerLoop: async ({ emit, request: producerRequest, sessionId, stagingRoot }) => {
-      const plan = buildManualCodeAgentPreviewPlan({
-        patchIntent,
-        runId: run.id,
-        taskTitle: task.title,
-      });
-      const normalizedPlan = normalizeCodeAgentStagedFilePlanPayload(plan);
-
-      if (normalizedPlan.status === 'blocked') {
-        emit({
-          reason: normalizedPlan.summary,
-          runId: producerRequest.runId,
-          sessionId,
-          sourceId: producerRequest.sourceId,
-          tool: 'staging.write_file',
-          type: 'sandbox_producer.tool_blocked',
-        });
-
-        return {
-          reason: normalizedPlan.summary,
-          sessionSummary: normalizedPlan.summary,
-          status: 'blocked',
-        };
-      }
-
-      emit({
-        inputSummary: normalizedPlan.summary,
-        runId: producerRequest.runId,
-        sessionId,
-        sourceId: producerRequest.sourceId,
-        tool: 'staging.write_file',
-        type: 'sandbox_producer.tool_requested',
-      });
-
-      const writeResult = await writeCodeAgentStagedFilePlan({
-        plan: normalizedPlan.plan,
-        stagingRoot,
-      });
-
-      emit({
-        outputSummary: writeResult.summary,
-        runId: producerRequest.runId,
-        sessionId,
-        sourceId: producerRequest.sourceId,
-        tool: 'staging.write_file',
-        type: 'sandbox_producer.tool_completed',
-      });
-
-      return {
-        evidence: {
-          modelSummary: normalizedPlan.plan.summary,
-          observations: [
-            ...normalizedPlan.plan.observations,
-            'Workspace input stayed read-only; promotion remains Decision-gated.',
-          ],
-        },
-        sessionSummary: 'manual sandbox producer preview completed without external AI call',
-        status: 'completed',
-        summary: `Staged ${writeResult.files.join(', ')}`,
-      };
-    },
+    producerLoop,
     request,
   });
 
@@ -566,6 +535,70 @@ function normalizeCodeAgentChecks(checks: CodeAgentAllowedCheck[]): CodeAgentAll
   const normalized = Array.from(new Set(checks.filter((check) => allowed.has(check))));
 
   return normalized.length ? normalized : ['test'];
+}
+
+function createManualCodeAgentPreviewLoop(params: {
+  patchIntent: string;
+  runId: string;
+  taskTitle: string;
+}): LocalContainerSandboxedCodingProducerLoop {
+  return async ({ emit, request: producerRequest, sessionId, stagingRoot }) => {
+    const plan = buildManualCodeAgentPreviewPlan(params);
+    const normalizedPlan = normalizeCodeAgentStagedFilePlanPayload(plan);
+
+    if (normalizedPlan.status === 'blocked') {
+      emit({
+        reason: normalizedPlan.summary,
+        runId: producerRequest.runId,
+        sessionId,
+        sourceId: producerRequest.sourceId,
+        tool: 'staging.write_file',
+        type: 'sandbox_producer.tool_blocked',
+      });
+
+      return {
+        reason: normalizedPlan.summary,
+        sessionSummary: normalizedPlan.summary,
+        status: 'blocked',
+      };
+    }
+
+    emit({
+      inputSummary: normalizedPlan.summary,
+      runId: producerRequest.runId,
+      sessionId,
+      sourceId: producerRequest.sourceId,
+      tool: 'staging.write_file',
+      type: 'sandbox_producer.tool_requested',
+    });
+
+    const writeResult = await writeCodeAgentStagedFilePlan({
+      plan: normalizedPlan.plan,
+      stagingRoot,
+    });
+
+    emit({
+      outputSummary: writeResult.summary,
+      runId: producerRequest.runId,
+      sessionId,
+      sourceId: producerRequest.sourceId,
+      tool: 'staging.write_file',
+      type: 'sandbox_producer.tool_completed',
+    });
+
+    return {
+      evidence: {
+        modelSummary: normalizedPlan.plan.summary,
+        observations: [
+          ...normalizedPlan.plan.observations,
+          'Workspace input stayed read-only; promotion remains Decision-gated.',
+        ],
+      },
+      sessionSummary: 'manual sandbox producer preview completed without external AI call',
+      status: 'completed',
+      summary: `Staged ${writeResult.files.join(', ')}`,
+    };
+  };
 }
 
 function buildManualCodeAgentPreviewPlan(params: {

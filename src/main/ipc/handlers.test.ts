@@ -14,6 +14,7 @@ const {
   servicesMock: {
     aiConfigService: {
       getStatus: vi.fn(),
+      resolveRuntimeConfig: vi.fn(),
       setConfig: vi.fn(),
     },
     schedulerService: {
@@ -125,6 +126,8 @@ describe('registerIpcHandlers', () => {
     handleMock.mockClear();
     emitAppEventMock.mockClear();
     probeLocalContainerSandboxBackendMock.mockReset();
+    delete process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER;
+    servicesMock.aiConfigService.resolveRuntimeConfig.mockReset();
     Object.values(servicesMock).forEach((service) => {
       Object.values(service).forEach((member) => {
         if (typeof member === 'function' && 'mockClear' in member) {
@@ -839,6 +842,7 @@ describe('registerIpcHandlers', () => {
     expect(codeAgentExecutionRunMock).toHaveBeenCalledWith(expect.objectContaining({
       operatorConfirmed: true,
       patchSummary: 'Prepare a staged notes patch.',
+      producerLoop: expect.any(Function),
       request: expect.objectContaining({
         commandPolicy: expect.objectContaining({
           allowedScripts: ['test'],
@@ -848,6 +852,7 @@ describe('registerIpcHandlers', () => {
         taskId: 'task_1',
       }),
     }));
+    expect(servicesMock.aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
     expect(servicesMock.runRepository.updateResult).toHaveBeenCalledWith(
       'run_code_agent_1',
       'completed',
@@ -874,6 +879,91 @@ describe('registerIpcHandlers', () => {
     expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
     expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'brief.changed');
     expect(result.status).toBe('completed');
+  });
+
+  it('blocks the manual code-agent path when model producer env opt-in cannot resolve runtime config', async () => {
+    process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
+    servicesMock.taskService.getDetail.mockResolvedValue({
+      id: 'task_1',
+      title: 'Prepare notes patch',
+      summary: null,
+      nextStep: null,
+      state: 'planned',
+      riskLevel: 'none',
+      riskNote: null,
+      waitingReason: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      blockers: [],
+      completionCriteria: [],
+      dependencies: [],
+      processBindings: [],
+      sourceContexts: [],
+      timeline: [],
+    });
+    servicesMock.aiConfigService.getStatus.mockResolvedValue({
+      configured: true,
+      apiKeyStored: true,
+      apiKeySource: 'env',
+      provider: 'fal-openrouter',
+      model: 'google/gemini-2.5-flash',
+      baseUrl: null,
+      workspaceRoot: '/tmp/taskplane-workspace',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      configPath: '/tmp/config.json',
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+    });
+    servicesMock.aiConfigService.resolveRuntimeConfig.mockRejectedValue(new Error('Missing API key'));
+    servicesMock.runRepository.create.mockResolvedValue({
+      id: 'run_code_agent_1',
+      taskId: 'task_1',
+      type: 'agent',
+      status: 'running',
+      instructions: 'Code Agent manual sandbox producer preview.',
+      output: null,
+      outputSource: null,
+      failureReason: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    servicesMock.runRepository.updateResult.mockResolvedValue({
+      id: 'run_code_agent_1',
+      taskId: 'task_1',
+      type: 'agent',
+      status: 'failed',
+      instructions: 'Code Agent manual sandbox producer preview.',
+      output: 'Code Agent model producer runtime blocked: Missing API key',
+      outputSource: 'system',
+      failureReason: 'Missing API key',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; patchIntent: string; requestedChecks: ['test']; operatorConfirmed: true }],
+      Awaited<ReturnType<typeof servicesMock.runRepository.updateResult>>
+    >('run:triggerCodeAgent');
+
+    const result = await handler({}, {
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      taskId: 'task_1',
+    });
+
+    expect(servicesMock.aiConfigService.resolveRuntimeConfig).toHaveBeenCalledTimes(1);
+    expect(codeAgentExecutionRunMock).not.toHaveBeenCalled();
+    expect(servicesMock.runRepository.updateResult).toHaveBeenCalledWith(
+      'run_code_agent_1',
+      'failed',
+      'Code Agent model producer runtime blocked: Missing API key',
+      'system',
+      'Missing API key',
+    );
+    expect(result.status).toBe('failed');
   });
 
   it('emits run, task, and brief events after continuing a paused run', async () => {

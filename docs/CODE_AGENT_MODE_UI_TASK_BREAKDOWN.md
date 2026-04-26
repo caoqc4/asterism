@@ -435,6 +435,41 @@ Implemented notes:
   inject a fake text generator so `accept:sandbox-coding` still makes no
   provider call.
 
+### T11: Explicit Env-Gated Model Producer Wiring
+
+Status: first wiring implemented behind a local env opt-in; default manual
+preview behavior remains unchanged.
+
+Goal: let local alpha operators deliberately test the real model producer path
+without making provider calls part of normal UI usage.
+
+Work:
+
+- add `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=true` as the explicit local
+  provider-call opt-in
+- keep the Task detail Code Agent button on the manual diagnostic producer when
+  the env flag is absent or false
+- when the env flag is true, prepare the default-closed model producer runtime
+  before Docker execution
+- if the model runtime cannot resolve config or sandbox coding is disabled,
+  fail the Run before starting the sandbox execution service
+- keep all model output behind staged-file validation, allowlisted checks, patch
+  artifacts, checkpoints, and Decisions
+
+Acceptance:
+
+- default UI path does not resolve runtime AI config
+- env-enabled path blocks clearly if AI runtime config is unavailable
+- no provider call is made by tests
+
+Implemented notes:
+
+- `run:triggerCodeAgent` now selects either the existing manual preview loop or
+  the model producer loop based on `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER`.
+- The env-enabled path still requires the existing operator confirmation,
+  sandbox feature flag, disabled network, no credential passthrough, and
+  Decision-only promotion.
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:
