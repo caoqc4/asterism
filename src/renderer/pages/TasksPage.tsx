@@ -1162,6 +1162,11 @@ export function TasksPage({
       setQuickRunInstructions(intent.prefillRunInstructions ?? '');
     }
 
+    if (intent?.prefillCodeAgentPatchIntent !== undefined) {
+      setQuickRunType('agent');
+      setCodeAgentPatchIntent(intent.prefillCodeAgentPatchIntent ?? '');
+    }
+
     if (intent?.prefillRiskLevel) {
       setDraftRiskLevel(intent.prefillRiskLevel);
     }
@@ -1183,6 +1188,8 @@ export function TasksPage({
     const focusTarget =
       intent?.type === 'focus_source_context'
         ? sourceContextSectionRef.current
+        : intent?.focusArea === 'code-agent'
+          ? quickRunCardRef.current
         : intent?.focusArea === 'quick-actions'
           ? quickActionsRef.current
           : detailFormRef.current;

@@ -472,6 +472,9 @@ The project is past initial architecture assembly. Current work should favor pro
   checklist for source evidence, targeted checks, promotion Decision, and
   workspace mutation state, so review can happen from persisted records without
   parsing one long lifecycle sentence.
+- From that same Runs review, `回到任务准备重跑` now returns to the Task Code
+  Agent input surface with a bounded rerun intent pre-filled from the persisted
+  run id, changed files, promotion Decision, and workspace mutation state.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx

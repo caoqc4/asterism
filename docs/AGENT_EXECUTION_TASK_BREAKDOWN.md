@@ -85,6 +85,8 @@ Completed:
 - Runs / Staged Patch Review now exposes a persisted evidence checklist for
   source evidence, targeted checks, promotion Decision, and workspace mutation
   state
+- Runs can route a staged patch review back to the Task Code Agent input
+  surface with a bounded rerun intent, without automatically starting execution
 
 Pi reference boundary:
 

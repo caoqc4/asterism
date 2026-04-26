@@ -3796,6 +3796,14 @@ describe('App UI flow', () => {
         'Patch source ready；source=sandbox_source_1；files=src/notes.md；Sandbox patch review run plan ready: src/notes.md；next=review patch-promotion Decision; workspace changes only after approval',
       ),
     ).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '回到任务准备重跑' }));
+    expect(await screen.findByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    expect((screen.getByLabelText('Patch intent') as HTMLTextAreaElement).value).toBe(
+      'Re-run the Code Agent staged patch review for run run_sandbox_producer. Review affected files: src/notes.md. Compare against promotion Decision: 确认提升 sandbox patch. Prior workspace status: workspace unchanged until Decision approval.',
+    );
+
+    await user.click(screen.getByRole('button', { name: /runs/i }));
+    expect(await screen.findByRole('heading', { name: 'agent / completed' })).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '打开 promotion Decision' }));
     expect(await screen.findByRole('heading', { name: '确认提升 sandbox patch' })).toBeTruthy();
   });

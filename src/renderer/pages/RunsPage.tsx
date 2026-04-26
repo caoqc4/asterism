@@ -522,6 +522,18 @@ function getStagedPatchEvidenceStatusLabel(status: StagedPatchEvidenceItem['stat
   return labels[status];
 }
 
+function getStagedPatchRerunIntent(
+  detail: RunDetailRecord,
+  review: StagedPatchReviewSummary,
+): string {
+  return [
+    `Re-run the Code Agent staged patch review for run ${detail.id}.`,
+    review.files.length ? `Review affected files: ${review.files.join(', ')}.` : null,
+    review.decisionTitle ? `Compare against promotion Decision: ${review.decisionTitle}.` : null,
+    `Prior workspace status: ${review.workspaceStatus}.`,
+  ].filter(Boolean).join(' ');
+}
+
 type RunsPageProps = {
   aiStatus: AiConfigStatus | null;
   focusedRunId: string | null;
@@ -817,6 +829,19 @@ export function RunsPage({
                       type="button"
                     >
                       打开 promotion Decision
+                    </button>
+                    <button
+                      className="ghost-button"
+                      onClick={() =>
+                        onOpenTask(detail.taskId, {
+                          type: 'focus_next_step',
+                          focusArea: 'code-agent',
+                          prefillCodeAgentPatchIntent: getStagedPatchRerunIntent(detail, stagedPatchReview),
+                        })
+                      }
+                      type="button"
+                    >
+                      回到任务准备重跑
                     </button>
                   </div>
                 ) : null}
