@@ -228,7 +228,8 @@ npm run accept:sandbox-coding:patch-promotion-apply-smoke
 - Run `npm run smoke:package:mac` after producing the unpacked macOS app.
 - Run `npm run smoke:runtime:mac` to confirm packaged startup creates isolated config and initializes SQLite data.
 - Or run `npm run smoke:release:mac` to combine the unpacked macOS build and both smoke checks.
-- Run `npm run release:mac:preflight` to check signed/notarized release
-  prerequisites without signing, notarizing, uploading, or calling Apple
-  services.
+- Run `npm run accept:release:mac-preflight` to check signed/notarized release
+  prerequisites and regression coverage for both Apple ID and App Store Connect
+  API key notarization env groups, without signing, notarizing, uploading, or
+  calling Apple services.
 - Do not start signed/notarized release work until the local alpha path passes without major friction.

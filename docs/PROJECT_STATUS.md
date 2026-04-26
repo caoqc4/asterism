@@ -239,6 +239,10 @@ The project is past initial architecture assembly. Current work should favor pro
   `TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=true`, including disposable
   workspace setup, staged review, Decision approval, applied-state evidence,
   and the default-off no-write comparison pass.
+- Release readiness now has a local `accept:release:mac-preflight` gate that
+  runs the read-only signing/notarization preflight and tests both Apple ID and
+  App Store Connect API key env groups without printing secret values or calling
+  Apple services.
 - `npm run accept:sandbox-coding:patch-promotion-apply-smoke` now provides a
   repeatable local smoke for sandbox patch promotion approval. It builds main
   code, uses real SQLite and a throwaway workspace, verifies default no-write

@@ -81,6 +81,7 @@ npm run smoke:package:mac
 npm run smoke:runtime:mac
 npm run smoke:release:mac
 npm run release:mac:preflight
+npm run accept:release:mac-preflight
 ```
 
 Run this after `npm run dist:mac:dir`. It checks the unpacked app bundle,
@@ -95,7 +96,9 @@ want to build the unpacked macOS app and run both package/runtime smoke checks
 in one command. Use
 `npm run release:mac:preflight` before a dedicated signed/notarized release pass;
 it only checks local prerequisites and does not sign, notarize, upload, or call
-Apple services.
+Apple services. Use `npm run accept:release:mac-preflight` when you want the
+same read-only preflight plus regression coverage for both Apple ID and App
+Store Connect API key notarization env groups without printing secret values.
 
 ### Standard verification
 
@@ -163,8 +166,8 @@ Main-process rules:
 - SQLite integration tests currently cover `TaskRepository`, `RunRepository`, `DecisionRepository`, `BriefSnapshotRepository`, `WaitingItemRepository`, `ArtifactRepository`, `SourceContextRepository`, `BlockerRepository`, `TaskDependencyRepository`, `CompletionCriteriaRepository`, `ProcessTemplateRepository`, and `TaskProcessBindingRepository`.
 - IPC handler tests cover critical event-emitting channels such as settings save, completion-criteria writes, decision action, and run trigger.
 - Renderer interaction tests cover the main control-plane flows from Home, Tasks, Decisions, Runs, Settings, timeline actions, waiting-item flows, blocker flows, dependency flows, completion-criteria flows, source-context flows, process-context flows, task-resume visibility and recovery actions, home resume-preview recovery flows, lane-aware list ordering, lane-aware summaries, and failed-run refresh paths.
-- Local development currently relies on running `npm run verify` before pushing changes, with `npm run smoke:build` added when package/build entrypoints change and `npm run smoke:release:mac` for the combined unsigned macOS package path.
-- If GitHub Actions is unavailable or disabled because of monthly quota, treat local `npm run verify` as the required gate for ordinary code changes, add `npm run smoke:build` for package/build entrypoint changes, and add `npm run smoke:release:mac` for the unsigned macOS package path. Do not manually dispatch or watch remote workflow runs during that period.
+- Local development currently relies on running `npm run verify` before pushing changes, with `npm run smoke:build` added when package/build entrypoints change, `npm run smoke:release:mac` for the combined unsigned macOS package path, and `npm run accept:release:mac-preflight` before signed/notarized release readiness checks.
+- If GitHub Actions is unavailable or disabled because of monthly quota, treat local `npm run verify` as the required gate for ordinary code changes, add `npm run smoke:build` for package/build entrypoint changes, `npm run smoke:release:mac` for the unsigned macOS package path, and `npm run accept:release:mac-preflight` for signed/notarized release preflight coverage. Do not manually dispatch or watch remote workflow runs during that period.
 
 For the current coverage map and recommended next targets, see [TESTING.md](TESTING.md).
 
