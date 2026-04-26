@@ -971,6 +971,7 @@ Each needs its own decision before implementation.
 ## Next Decision
 
 The next implementation step is local manual validation on a disposable
-workspace with `TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=true`, followed by
-polishing Runs/Decisions applied-state copy if the packaged flow behaves as
-expected.
+workspace with `TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=true`. Runs and
+Decisions applied-state copy is now covered at renderer level; the remaining
+question is whether the packaged/local flow behaves cleanly with real isolated
+user data and a throwaway workspace.
