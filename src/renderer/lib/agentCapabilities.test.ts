@@ -6,6 +6,7 @@ import {
   formatAgentSessionMetadataSummary,
   formatCodeAgentAutomaticStartPolicySummary,
   formatCodeAgentModelProducerOptInSummary,
+  formatCodeAgentStartBlockedReason,
   formatExecutionRuntimeReadinessSummary,
   formatPreRunAgentCapabilitySummary,
   formatSandboxProducerLifecycleSummary,
@@ -24,6 +25,53 @@ function buildAiStatus(provider: AiConfigStatus['provider']): AiConfigStatus {
     configPath: '/tmp/config.json',
     featureFlags: {
       enableScheduler: false,
+    },
+  };
+}
+
+function buildReadyCodeAgentAiStatus(): AiConfigStatus {
+  return {
+    ...buildAiStatus('fal-openrouter'),
+    sandboxBackendStatus: {
+      probe: {
+        backendId: 'local-container',
+        environmentPolicy: 'empty',
+        isolation: 'container',
+        kind: 'local_container',
+        networkMode: 'disabled',
+        status: 'available',
+        supportsOutputLimits: true,
+        supportsPatchArtifacts: true,
+        supportsStagedWrites: true,
+        supportsStructuredCommands: true,
+        supportsTargetedCommands: true,
+        supportsWorkspaceMount: true,
+      },
+      profile: {
+        credentialPassthrough: false,
+        environmentPolicy: 'empty',
+        id: 'local-container',
+        isolation: 'container',
+        kind: 'local_container',
+        networkMode: 'disabled',
+        supportsOutputLimits: true,
+        supportsPatchArtifacts: true,
+        supportsStagedWrites: true,
+        supportsStructuredCommands: true,
+        supportsTargetedCommands: true,
+        supportsWorkspaceMount: true,
+      },
+      producerBackendReadiness: {
+        blockedReasons: [],
+        ready: true,
+        summary: 'Sandboxed coding producer backend ready: local-container',
+      },
+      readiness: {
+        blockedReasons: [],
+        ready: true,
+        summary: 'Sandbox backend ready: local-container.',
+      },
+      summary: 'Sandbox backend ready: local-container.',
     },
   };
 }
@@ -175,6 +223,60 @@ describe('agent capability formatting', () => {
     })).toBe(
       'ExecutionRuntime：blocked / Sandboxed coding producer backend blocked: docker: command not found',
     );
+  });
+
+  it('keeps code-agent start blocked until producer runtime readiness is ready', () => {
+    const readyStatus = buildReadyCodeAgentAiStatus();
+
+    expect(formatCodeAgentStartBlockedReason({
+      aiStatus: null,
+      lintCheck: true,
+      operatorConfirmed: true,
+      runPending: false,
+      selectedContextFileCount: 1,
+      testCheck: true,
+      useModelProducer: true,
+    })).toBe('Start blocked：check Code Agent runtime readiness first.');
+
+    expect(formatCodeAgentStartBlockedReason({
+      aiStatus: readyStatus,
+      lintCheck: true,
+      operatorConfirmed: false,
+      runPending: false,
+      selectedContextFileCount: 1,
+      testCheck: true,
+      useModelProducer: true,
+    })).toBe('Start blocked：confirm Docker/Decision review before starting.');
+
+    expect(formatCodeAgentStartBlockedReason({
+      aiStatus: readyStatus,
+      lintCheck: true,
+      operatorConfirmed: true,
+      runPending: false,
+      selectedContextFileCount: 0,
+      testCheck: true,
+      useModelProducer: true,
+    })).toBe('Start blocked：select at least one context file before using model producer.');
+
+    expect(formatCodeAgentStartBlockedReason({
+      aiStatus: readyStatus,
+      lintCheck: false,
+      operatorConfirmed: true,
+      runPending: false,
+      selectedContextFileCount: 1,
+      testCheck: false,
+      useModelProducer: false,
+    })).toBe('Start blocked：select at least one allowlisted check.');
+
+    expect(formatCodeAgentStartBlockedReason({
+      aiStatus: readyStatus,
+      lintCheck: true,
+      operatorConfirmed: true,
+      runPending: false,
+      selectedContextFileCount: 1,
+      testCheck: false,
+      useModelProducer: true,
+    })).toBeNull();
   });
 
   it('formats provider-native agent session metadata for run detail', () => {

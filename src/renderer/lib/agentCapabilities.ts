@@ -335,6 +335,38 @@ export function formatExecutionRuntimeReadinessSummary(
   return `ExecutionRuntime：not ready / ${status.summary}`;
 }
 
+export function formatCodeAgentStartBlockedReason(input: {
+  aiStatus: AiConfigStatus | null;
+  operatorConfirmed: boolean;
+  runPending: boolean;
+  selectedContextFileCount: number;
+  testCheck: boolean;
+  lintCheck: boolean;
+  useModelProducer: boolean;
+}): string | null {
+  if (input.runPending) {
+    return 'Start blocked：run is already starting.';
+  }
+
+  if (!input.aiStatus?.sandboxBackendStatus?.producerBackendReadiness?.ready) {
+    return 'Start blocked：check Code Agent runtime readiness first.';
+  }
+
+  if (!input.operatorConfirmed) {
+    return 'Start blocked：confirm Docker/Decision review before starting.';
+  }
+
+  if (input.useModelProducer && input.selectedContextFileCount === 0) {
+    return 'Start blocked：select at least one context file before using model producer.';
+  }
+
+  if (!input.testCheck && !input.lintCheck) {
+    return 'Start blocked：select at least one allowlisted check.';
+  }
+
+  return null;
+}
+
 export function formatCodeAgentAutomaticStartPolicySummary(): string {
   return CODE_AGENT_AUTOMATIC_START_POLICY_SUMMARY;
 }

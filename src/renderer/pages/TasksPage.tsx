@@ -74,6 +74,7 @@ import {
 } from '@shared/working-context/transitions';
 import {
   formatCodeAgentAutomaticStartPolicySummary,
+  formatCodeAgentStartBlockedReason,
   formatCodeAgentModelProducerOptInSummary,
   formatExecutionRuntimeReadinessSummary,
   formatPreRunAgentCapabilitySummary,
@@ -215,38 +216,6 @@ function getCodeAgentContextFileCandidates(detail: TaskDetail | null): string[] 
       item.content,
     ]),
   );
-}
-
-function getCodeAgentStartBlockedReason(input: {
-  operatorConfirmed: boolean;
-  runtimeReady: boolean;
-  runPending: boolean;
-  selectedContextFileCount: number;
-  testCheck: boolean;
-  lintCheck: boolean;
-  useModelProducer: boolean;
-}): string | null {
-  if (input.runPending) {
-    return 'Start blocked：run is already starting.';
-  }
-
-  if (!input.runtimeReady) {
-    return 'Start blocked：check Code Agent runtime readiness first.';
-  }
-
-  if (!input.operatorConfirmed) {
-    return 'Start blocked：confirm Docker/Decision review before starting.';
-  }
-
-  if (input.useModelProducer && input.selectedContextFileCount === 0) {
-    return 'Start blocked：select at least one context file before using model producer.';
-  }
-
-  if (!input.testCheck && !input.lintCheck) {
-    return 'Start blocked：select at least one allowlisted check.';
-  }
-
-  return null;
 }
 
 function isEarlyTask(task: Pick<TaskListItemRecord, 'state'>): boolean {
@@ -2144,13 +2113,10 @@ export function TasksPage({
   const codeAgentEffectiveUseModelProducer = Boolean(
     aiStatus?.codeAgentModelProducerEnabled && codeAgentUseModelProducer,
   );
-  const codeAgentRuntimeReady = Boolean(
-    aiStatus?.sandboxBackendStatus?.producerBackendReadiness?.ready,
-  );
-  const codeAgentStartBlockedReason = getCodeAgentStartBlockedReason({
+  const codeAgentStartBlockedReason = formatCodeAgentStartBlockedReason({
+    aiStatus,
     lintCheck: codeAgentRunLintCheck,
     operatorConfirmed: codeAgentOperatorConfirmed,
-    runtimeReady: codeAgentRuntimeReady,
     runPending: codeAgentRunPending,
     selectedContextFileCount: selectedCodeAgentContextFiles.length,
     testCheck: codeAgentRunTestCheck,
