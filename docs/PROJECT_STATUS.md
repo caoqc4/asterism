@@ -562,6 +562,9 @@ Latest local baseline:
   sandbox producer diagnostics as well as source-ready producer sessions
 - `npm run verify` passed locally on 2026-04-26 after adding blocked sandbox
   producer diagnostics coverage: 90 test files / 636 tests
+- Added `docs/CODE_AGENT_MODE_UI_TASK_BREAKDOWN.md` as a planning-only task
+  sequence for the future visible code-agent mode; implementation remains gated
+  on accepting the product surface decision
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

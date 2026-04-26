@@ -413,6 +413,9 @@ Invocation gate:
 Future product-surface proposal:
 [CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md).
 
+Future UI task breakdown:
+[CODE_AGENT_MODE_UI_TASK_BREAKDOWN.md](CODE_AGENT_MODE_UI_TASK_BREAKDOWN.md).
+
 Backend candidate readiness is now represented in code by
 `AgentSandboxBackendProfile` and `evaluateAgentSandboxBackendReadiness`. A
 candidate must be a container or remote VM style backend, must not inherit the
