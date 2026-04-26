@@ -45,6 +45,21 @@ function formatPreRunSandboxCodingSummary(aiStatus: AiConfigStatus | null): stri
 }
 
 export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord): string {
+  const metadataEntries = parseAgentSessionMetadata(session.metadata);
+  if (metadataEntries.get('executor') === 'sandboxed_coding_producer') {
+    return [
+      'sandboxed coding producer',
+      metadataEntries.get('producerStatus') ? `status=${metadataEntries.get('producerStatus')}` : null,
+      metadataEntries.get('backend') ? `backend=${metadataEntries.get('backend')}` : null,
+      metadataEntries.get('commands') ? `checks=${metadataEntries.get('commands')}` : null,
+      metadataEntries.get('network') ? `network=${metadataEntries.get('network')}` : null,
+      metadataEntries.get('promotion') ? `promotion=${metadataEntries.get('promotion')}` : null,
+      'read-only workspace input',
+      'staged patch output',
+      'Decision review required',
+    ].filter(Boolean).join(' / ');
+  }
+
   const capabilities = session.capabilities;
   const parts = [
     capabilities.textOnlyPlanning ? 'text-only planning' : 'text planning unavailable',
@@ -69,18 +84,7 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
     return null;
   }
 
-  const entries = new Map(
-    session.metadata
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const separatorIndex = line.indexOf('=');
-        return separatorIndex > 0
-          ? [line.slice(0, separatorIndex), line.slice(separatorIndex + 1)] as const
-          : [line, ''] as const;
-      }),
-  );
+  const entries = parseAgentSessionMetadata(session.metadata);
   const executor = entries.get('executor');
   const loop = entries.get('loop');
   const provider = entries.get('provider');
@@ -152,6 +156,21 @@ export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): 
   }
 
   return session.metadata.trim();
+}
+
+function parseAgentSessionMetadata(metadata?: string | null): Map<string, string> {
+  return new Map(
+    (metadata ?? '')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const separatorIndex = line.indexOf('=');
+        return separatorIndex > 0
+          ? [line.slice(0, separatorIndex), line.slice(separatorIndex + 1)] as const
+          : [line, ''] as const;
+      }),
+  );
 }
 
 export function formatPreRunAgentCapabilitySummary(

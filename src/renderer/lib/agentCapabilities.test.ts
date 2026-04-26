@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { AiConfigStatus } from '@shared/types/settings';
 import {
+  formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
   formatPreRunAgentCapabilitySummary,
 } from './agentCapabilities';
@@ -218,7 +219,7 @@ describe('agent capability formatting', () => {
   });
 
   it('formats sandboxed coding producer session metadata for run detail', () => {
-    expect(formatAgentSessionMetadataSummary({
+    const session = {
       id: 'agent_session_1',
       runId: 'run_1',
       mode: 'agent',
@@ -247,8 +248,13 @@ describe('agent capability formatting', () => {
       ].join('\n'),
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z',
-    })).toBe(
+    } as const;
+
+    expect(formatAgentSessionMetadataSummary(session)).toBe(
       'Sandboxed coding producer / status=blocked / provider=openai-compatible / session=sandboxed_producer:source_1 / source=source_1 / backend=local-container / commands=test,lint / network=disabled / promotion=decision_required / blockedReasons=docker is unavailable / summary=Backend probe blocked',
+    );
+    expect(formatAgentSessionCapabilitySummary(session)).toBe(
+      'sandboxed coding producer / status=blocked / backend=local-container / checks=test,lint / network=disabled / promotion=decision_required / read-only workspace input / staged patch output / Decision review required',
     );
   });
 });

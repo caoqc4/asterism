@@ -550,6 +550,13 @@ Latest local baseline:
 - Added `docs/CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md` as the proposed
   product-surface gate before any visible Task/Run code-agent mode or
   model-visible coding tools are built
+- `npm test -- src/renderer/lib/agentCapabilities.test.ts
+  src/renderer/App.test.tsx -t "sandbox producer|sandboxed coding producer"`
+  passed locally on 2026-04-26 after making sandbox producer session
+  capabilities truthful in Runs detail and covering staged source/check RunStep
+  display
+- `npm run verify` passed locally on 2026-04-26 after the Runs detail sandbox
+  producer display update: 90 test files / 635 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

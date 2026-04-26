@@ -3293,6 +3293,101 @@ describe('App UI flow', () => {
     expect(screen.getByText('Session metadata：executor=local_agent / loop=local_note')).toBeTruthy();
   });
 
+  it('shows sandbox producer session policy and staged source steps on the runs page', async () => {
+    const user = userEvent.setup();
+    const sandboxProducerRun = buildRunRecord({
+      id: 'run_sandbox_producer',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'completed',
+      output: 'Sandbox producer preview ready',
+      outputSource: 'system',
+    });
+    const sandboxProducerDetail: RunDetailRecord = {
+      ...sandboxProducerRun,
+      agentSessions: [
+        {
+          id: 'agent_session_sandbox_producer',
+          runId: sandboxProducerRun.id,
+          mode: 'agent',
+          status: 'completed',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: false,
+            streaming: false,
+            fileContext: true,
+            taskMutationTools: false,
+            longRunningSessions: true,
+          },
+          metadata: [
+            'executor=sandboxed_coding_producer',
+            'loop=sandboxed_coding',
+            'producerStatus=source_ready',
+            'sessionId=sandboxed_producer:sandbox_source_1',
+            'sourceId=sandbox_source_1',
+            'provider=openai-compatible',
+            'commands=test,lint',
+            'network=disabled',
+            'promotion=decision_required',
+            'backend=local-container',
+            'summary=Local container producer preview ready',
+          ].join('\n'),
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      steps: [
+        buildRunStep({
+          id: 'run_step_sandbox_check',
+          runId: sandboxProducerRun.id,
+          index: 1,
+          kind: 'tool_result',
+          status: 'completed',
+          title: 'Sandbox producer check passed: lint',
+          output: 'lint: passed',
+        }),
+        buildRunStep({
+          id: 'run_step_sandbox_source',
+          runId: sandboxProducerRun.id,
+          index: 2,
+          kind: 'artifact',
+          status: 'completed',
+          title: 'Sandbox producer source ready',
+          input: 'session=sandboxed_producer:sandbox_source_1\nsource=sandbox_source_1\nfiles=src/notes.md',
+          output: 'Sandbox patch review run plan ready: src/notes.md',
+        }),
+      ],
+      checkpoints: [],
+    };
+    const sandboxProducerApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [sandboxProducerRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === sandboxProducerRun.id ? sandboxProducerDetail : null,
+      ),
+    };
+
+    window.api = sandboxProducerApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+
+    expect(await screen.findByRole('heading', { name: 'agent / completed' })).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Agent session：sandboxed coding producer / status=source_ready / backend=local-container / checks=test,lint / network=disabled / promotion=decision_required / read-only workspace input / staged patch output / Decision review required',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Session metadata：Sandboxed coding producer / status=source_ready / provider=openai-compatible / session=sandboxed_producer:sandbox_source_1 / source=sandbox_source_1 / backend=local-container / commands=test,lint / network=disabled / promotion=decision_required / summary=Local container producer preview ready',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText('lint: passed')).toBeTruthy();
+    expect(screen.getByText('Sandbox patch review run plan ready: src/notes.md')).toBeTruthy();
+  });
+
   it('shows readable agent tool observation summaries on the runs page', async () => {
     const user = userEvent.setup();
     const agentObservationRun = buildRunRecord({

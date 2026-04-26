@@ -70,6 +70,10 @@ During and after the run:
 - blocked/failed/paused diagnostics
 - linked Decision for patch promotion when a source is ready
 
+Current rendering status: sandbox producer session policy and staged
+source/check RunSteps are covered in renderer tests. Patch-promotion checkpoint
+rendering is covered by the existing workspace patch checkpoint tests.
+
 ## Explicit Non-Goals
 
 The first code-agent mode must not include:
@@ -101,6 +105,8 @@ Do not build the UI until these are true:
 - the invocation decision remains accepted
 - Run detail already has enough display vocabulary for producer sessions,
   staged diffs, check evidence, blocked diagnostics, and Decision promotion
+  - current status: partially verified by renderer tests; the first UI task
+    should still review wording on a real run detail screen before acceptance
 
 ## Open Questions
 
