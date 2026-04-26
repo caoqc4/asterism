@@ -14,6 +14,7 @@ Read first:
 - [AGENT_EXECUTION_FUTURE_DESIGN.md](AGENT_EXECUTION_FUTURE_DESIGN.md)
 - [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md)
 - [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md)
+- [AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md](AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md)
 
 ## First-Principles Rule
 
@@ -90,6 +91,9 @@ Completed:
 - staged patch review now derives a next review move from failed checks,
   missing/open Decisions, applied patches, and deferred/no-write workspace
   states
+- the next lane decision is drafted for Browser / Playwright read-only
+  evidence; it keeps browser tools hidden and names shared evidence-contract
+  types as the next code slice
 
 Pi reference boundary:
 
@@ -346,10 +350,12 @@ review, and pending promotion Decision creation.
 
 The next implementation slice is:
 
-- tighten Code Agent lifecycle recovery and evidence ergonomics without
-  broadening model-visible powers: Task and Runs should both make source
-  evidence, staged patch, checkpoint/Decision state, workspace mutation status,
-  and rerun/recovery actions clear from persisted records
+- start Browser / Playwright read-only lane B1 from
+  [AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md](AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md):
+  add shared `BrowserEvidenceRequest`, `BrowserEvidenceResult`,
+  `BrowserEvidenceArtifact`, and `BrowserSessionPolicy` types plus tests, while
+  keeping `browser.readonly_evidence` reserved and hidden from prompts,
+  provider-native schemas, and runtime execution
 
 Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer control,
 external posting, or social/media publishing as model-visible tools until the

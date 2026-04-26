@@ -479,6 +479,10 @@ The project is past initial architecture assembly. Current work should favor pro
   failed checks, missing promotion Decisions, open Decisions, applied patches,
   or deferred/no-write workspace state, keeping rerun/apply guidance local to
   persisted evidence.
+- The next execution-lane decision is now drafted for Browser / Playwright
+  read-only evidence. It keeps `browser.readonly_evidence` reserved and hidden,
+  forbids login/post/publish/credential-bearing actions in the first lane, and
+  names shared Browser Evidence Contract types as the next code slice.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
@@ -1085,12 +1089,13 @@ dedicated signed/notarized release pass.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
 5. Treat the execution-layer Slice 0, hidden tool-scaffold baseline,
-   provider-backed disposable-workspace Code Agent preview, and real Task detail
-   Code Agent UI layout pass as locally accepted for the alpha path. The next
-   execution task should be a tighter orchestration/UI slice for the Code Agent
-   run lifecycle: show source evidence, staged patch, checkpoint/Decision state,
-   and rerun/recovery affordances from Task and Runs without broadening
-   automatic starts or external tool access.
+   provider-backed disposable-workspace Code Agent preview, real Task detail
+   Code Agent UI layout pass, and Code Agent lifecycle recovery/evidence slice
+   as locally accepted for the alpha path. The next execution task should start
+   the Browser / Playwright read-only lane with shared evidence-contract types
+   and tests only, while keeping browser execution, credentials, model exposure,
+   and external mutation deferred.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.
+See [AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md](AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md) for the browser evidence lane boundary.

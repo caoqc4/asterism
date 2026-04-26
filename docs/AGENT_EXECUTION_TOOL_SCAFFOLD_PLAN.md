@@ -212,6 +212,10 @@ forms.
 3. **Browser/Playwright read-only lane**
    Add isolated browser sessions for inspect/screenshot/extract/test evidence.
    Keep mutation/posting/login actions out of scope.
+   The accepted planning boundary is
+   [AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md](AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md):
+   begin with shared evidence-contract types and tests only, keeping
+   `browser.readonly_evidence` reserved and hidden.
 
 4. **Skills/process lane**
    Map Taskplane process templates and imported skills into prompt-shaping
@@ -245,8 +249,8 @@ forms.
 
 ## Current Decision
 
-Plan for all scaffold families now, but implement them in risk order. The next
-implementation target remains `SandboxProvider` plus the coding-agent patch
-lane. Browser/Playwright, skills, MCP, creator connectors, and computer-use
-should be represented in the shared interfaces early, then enabled one lane at
-a time.
+Plan for all scaffold families now, but implement them in risk order. The
+sandboxed coding patch lane has validated the first staged review loop, so the
+next planning target is the Browser/Playwright read-only evidence lane. It
+should start with shared contracts and preflight facts only; browser execution,
+model exposure, credentials, and posting/mutation remain deferred.
