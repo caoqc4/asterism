@@ -521,6 +521,11 @@ Latest local baseline:
 - `npm run accept:sandbox-coding` and `npm run verify` passed locally on
   2026-04-26 after adding the local-container producer preview service: 89 test
   files / 631 tests
+- `npm run accept:sandbox-coding:producer-preview-smoke` passed locally on
+  2026-04-26 in default skipped mode, and
+  `TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE=true npm run
+  accept:sandbox-coding:producer-preview-smoke` passed the non-live service
+  wiring smoke with Docker not started, AI not called, and workspace unchanged
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

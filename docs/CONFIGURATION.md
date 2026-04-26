@@ -115,6 +115,19 @@ npm run accept:sandbox-coding:backend-preflight
 The preflight does not start containers, pull images, run checks, or call AI
 providers.
 
+The producer preview service also has an opt-in non-live smoke path:
+
+```bash
+npm run accept:sandbox-coding:producer-preview-smoke
+TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE=true npm run accept:sandbox-coding:producer-preview-smoke
+```
+
+The first command should report `skipped`. The second command builds the main
+process code, creates a temporary workspace, runs the local-container producer
+preview service with an injected producer loop and injected check runner, and
+confirms the workspace stays unchanged. It does not start Docker or call AI
+providers.
+
 For fal OpenRouter:
 
 ```bash

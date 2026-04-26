@@ -304,12 +304,17 @@ Completed non-live slices:
     runner-session preparation, injected producer loop execution, existing
     preview/persistence, and guaranteed session disposal. Blocked preflights
     return diagnostics without preparing a provider session.
+17. Manual producer preview smoke wiring through
+    `accept:sandbox-coding:producer-preview-smoke`. It is skipped by default;
+    when explicitly enabled, it runs the non-live local-container preview service
+    with injected producer/check runners and confirms Docker, AI, and workspace
+    mutation remain out of the path.
 
 Next slice:
 
-17. Add manual local-container backend smoke wiring for this service, still
-    behind the disabled-by-default sandbox coding flag and without UI/prompt
-    exposure.
+18. Add an explicit local-container producer execution entrypoint only after a
+    manual operator opts in to Docker-backed checks; keep UI/prompt exposure
+    deferred.
 
 ## Acceptance
 

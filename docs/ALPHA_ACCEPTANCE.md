@@ -88,6 +88,12 @@ not run containers or expose a coding-agent mode.
   is off or no workspace root is configured.
 - Run `npm run accept:sandbox-coding:backend-preflight` and confirm it reports
   the same ready/blocked Docker availability at the terminal.
+- Run `npm run accept:sandbox-coding:producer-preview-smoke` and confirm it
+  reports skipped by default.
+- Run `TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE=true npm run
+  accept:sandbox-coding:producer-preview-smoke` only when deliberately checking
+  the non-live producer preview service wiring; confirm it reports
+  `docker=not-started`, `ai=not-called`, and `workspace=unchanged`.
 - Confirm no new model-visible Read/Write/Edit/Bash, browser/computer, or
   external publishing tools appear in a normal agent run.
 
