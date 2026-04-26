@@ -557,6 +557,11 @@ Latest local baseline:
   display
 - `npm run verify` passed locally on 2026-04-26 after the Runs detail sandbox
   producer display update: 90 test files / 635 tests
+- `npm test -- src/renderer/App.test.tsx -t "blocked sandbox producer diagnostics|sandbox producer session policy"`
+  passed locally on 2026-04-26 after covering Runs detail display for blocked
+  sandbox producer diagnostics as well as source-ready producer sessions
+- `npm run verify` passed locally on 2026-04-26 after adding blocked sandbox
+  producer diagnostics coverage: 90 test files / 636 tests
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

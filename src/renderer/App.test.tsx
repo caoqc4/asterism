@@ -3388,6 +3388,101 @@ describe('App UI flow', () => {
     expect(screen.getByText('Sandbox patch review run plan ready: src/notes.md')).toBeTruthy();
   });
 
+  it('shows blocked sandbox producer diagnostics on the runs page', async () => {
+    const user = userEvent.setup();
+    const sandboxBlockedRun = buildRunRecord({
+      id: 'run_sandbox_producer_blocked',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'failed',
+      output: 'Sandbox producer blocked before runner start',
+      outputSource: 'system',
+      failureReason: 'docker daemon unavailable',
+    });
+    const sandboxBlockedDetail: RunDetailRecord = {
+      ...sandboxBlockedRun,
+      agentSessions: [
+        {
+          id: 'agent_session_sandbox_blocked',
+          runId: sandboxBlockedRun.id,
+          mode: 'agent',
+          status: 'failed',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: false,
+            streaming: false,
+            fileContext: true,
+            taskMutationTools: false,
+            longRunningSessions: true,
+          },
+          metadata: [
+            'executor=sandboxed_coding_producer',
+            'loop=sandboxed_coding',
+            'producerStatus=blocked',
+            'sessionId=sandboxed_producer:sandbox_source_1',
+            'sourceId=sandbox_source_1',
+            'provider=openai-compatible',
+            'commands=test,lint',
+            'network=disabled',
+            'promotion=decision_required',
+            'backend=local-container',
+            'blockedReasons=docker daemon unavailable',
+            'summary=Sandboxed coding producer backend connection plan blocked: docker daemon unavailable',
+          ].join('\n'),
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      steps: [
+        buildRunStep({
+          id: 'run_step_sandbox_blocked',
+          runId: sandboxBlockedRun.id,
+          index: 1,
+          kind: 'final',
+          status: 'completed',
+          title: 'Sandbox producer backend blocked',
+          input: [
+            'session=sandboxed_producer:sandbox_source_1',
+            'source=sandbox_source_1',
+            'gate=Sandboxed coding producer backend connection blocked: docker daemon unavailable',
+            'blockedReasons=docker daemon unavailable',
+          ].join('\n'),
+          output: 'Sandboxed coding producer backend connection plan blocked: docker daemon unavailable',
+        }),
+      ],
+      checkpoints: [],
+    };
+    const sandboxBlockedApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [sandboxBlockedRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === sandboxBlockedRun.id ? sandboxBlockedDetail : null,
+      ),
+    };
+
+    window.api = sandboxBlockedApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+
+    expect(await screen.findByRole('heading', { name: 'agent / failed' })).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Agent session：sandboxed coding producer / status=blocked / backend=local-container / checks=test,lint / network=disabled / promotion=decision_required / read-only workspace input / staged patch output / Decision review required',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Session metadata：Sandboxed coding producer / status=blocked / provider=openai-compatible / session=sandboxed_producer:sandbox_source_1 / source=sandbox_source_1 / backend=local-container / commands=test,lint / network=disabled / promotion=decision_required / blockedReasons=docker daemon unavailable / summary=Sandboxed coding producer backend connection plan blocked: docker daemon unavailable',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText('docker daemon unavailable')).toBeTruthy();
+    expect(
+      screen.getByText('Sandboxed coding producer backend connection plan blocked: docker daemon unavailable'),
+    ).toBeTruthy();
+  });
+
   it('shows readable agent tool observation summaries on the runs page', async () => {
     const user = userEvent.setup();
     const agentObservationRun = buildRunRecord({
