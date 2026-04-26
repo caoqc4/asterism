@@ -38,10 +38,13 @@ Completed:
 - `mapAgentRuntimeEventToRunStep`
 - text run plan/model/final writes routed through event-to-step mapping
 - agent session terminal result steps routed through event-to-step mapping
-- `AgentRunLoop` emits plan, tool, checkpoint, paused, completed, and failed
-  runtime events
-- `AgentSessionEventRecorder` projects loop plan/tool-terminal/session-terminal
-  events into RunSteps for real local/provider-native agent sessions
+- `AgentRunLoop` emits plan, tool-start, tool-result, checkpoint, paused,
+  completed, and failed runtime events
+- `AgentSessionEventRecorder` projects session-start, plan, tool-start,
+  tool-result/failure, checkpoint-created, pause, completion, and failure
+  events into RunSteps for real local/provider-native agent sessions; started
+  tool steps are updated to completed/failed when the matching result event
+  arrives
 - tool-permission checkpoints surface `checkpointKind` and linked `decisionId`
   through `checkpoint.created` events
 - resume checkpoint payloads include `runId` and a policy snapshot, and paused
