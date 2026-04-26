@@ -75,6 +75,19 @@ export type BrowserEvidenceRequestValidation =
       valid: false;
     };
 
+export type BrowserEvidencePreflightStatus = 'reserved' | 'blocked';
+
+export type BrowserEvidencePreflight = {
+  blockedReasons: string[];
+  browserWillStart: false;
+  configuredOriginCount: number;
+  descriptorId: 'browser.readonly_evidence';
+  exposedToModels: false;
+  networkWillBeCalled: false;
+  status: BrowserEvidencePreflightStatus;
+  summary: string;
+};
+
 const MAX_BROWSER_EVIDENCE_TIMEOUT_MS = 120_000;
 const MAX_BROWSER_EVIDENCE_OUTPUT_LIMIT_BYTES = 256_000;
 
@@ -101,6 +114,39 @@ export function buildDefaultBrowserSessionPolicy(params: {
     networkPolicy: 'allowlisted',
     outputLimitBytes: params.outputLimitBytes ?? 64_000,
     timeoutMs: params.timeoutMs ?? 30_000,
+  };
+}
+
+export function buildBrowserEvidencePreflight(params: {
+  allowedOrigins?: string[];
+  enabled?: boolean;
+} = {}): BrowserEvidencePreflight {
+  const allowedOrigins = params.allowedOrigins ?? [];
+  const blockedReasons = [
+    'browser.readonly_evidence remains reserved and hidden',
+    'browser evidence runtime is not implemented',
+  ];
+
+  if (params.enabled && allowedOrigins.length === 0) {
+    blockedReasons.push('browser evidence requires explicit allowed origins before runtime implementation');
+  }
+
+  return {
+    blockedReasons,
+    browserWillStart: false,
+    configuredOriginCount: allowedOrigins.length,
+    descriptorId: 'browser.readonly_evidence',
+    exposedToModels: false,
+    networkWillBeCalled: false,
+    status: 'reserved',
+    summary: [
+      'Browser evidence preflight: reserved',
+      `configuredOrigins=${allowedOrigins.length}`,
+      'modelExposure=hidden',
+      'browserStart=no',
+      'networkCall=no',
+      'next=implement isolated runner smoke only after B2 is accepted',
+    ].join(' / '),
   };
 }
 
@@ -232,4 +278,3 @@ function invalidBrowserEvidenceRequest(blockedReasons: string[]): BrowserEvidenc
     valid: false,
   };
 }
-

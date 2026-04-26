@@ -116,6 +116,8 @@ Acceptance:
 
 ### B2: Read-Only Preflight
 
+Status: implemented at shared-helper level.
+
 Add a local preflight that reports whether the browser evidence lane is
 configured, still hidden, and safe to keep disabled.
 
@@ -124,6 +126,8 @@ Acceptance:
 - preflight never opens a browser
 - preflight never calls the network
 - Settings or Runs can later reuse the same summary
+- preflight reports configured origin count, hidden model exposure, no browser
+  start, no network call, and the fact that the runtime remains reserved
 
 ### B3: Isolated Runner Smoke
 
@@ -151,7 +155,7 @@ Acceptance:
 ## Current Decision
 
 Do not implement browser automation as an agent tool yet. B1 shared Browser
-Evidence Contract types and tests are in place, with the existing scaffold
-descriptor still hidden. The next code slice should be B2: a read-only preflight
-summary that reports the browser evidence lane as reserved/hidden/configurable
-without opening a browser or making network calls.
+Evidence Contract types and B2 preflight summary helpers are in place, with the
+existing scaffold descriptor still hidden. The next code slice should remain
+pre-runtime: either surface the preflight in Settings/Runs without starting a
+browser, or define B3 runner-smoke fixtures before adding Playwright.

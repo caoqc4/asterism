@@ -97,6 +97,9 @@ Completed:
 - Browser Evidence Contract B1 is implemented as shared types and validation
   tests only; no browser runtime, UI, IPC, provider exposure, or network call is
   enabled
+- Browser read-only preflight B2 is implemented as a shared helper that reports
+  reserved/hidden state, configured origin count, no browser start, and no
+  network call
 
 Pi reference boundary:
 
@@ -353,11 +356,9 @@ review, and pending promotion Decision creation.
 
 The next implementation slice is:
 
-- continue Browser / Playwright read-only lane B2 from
-  [AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md](AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md):
-  add a read-only preflight summary that reports the lane as reserved, hidden,
-  and configurable without opening a browser, calling the network, exposing
-  tools to models, or creating runtime sessions
+- keep Browser / Playwright read-only lane pre-runtime: either surface the B2
+  preflight summary in Settings/Runs without opening a browser, or define B3
+  isolated runner-smoke fixtures before adding Playwright runtime code
 
 Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer control,
 external posting, or social/media publishing as model-visible tools until the

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   BROWSER_EVIDENCE_ACTIONS,
+  buildBrowserEvidencePreflight,
   buildDefaultBrowserSessionPolicy,
   isBrowserEvidenceAction,
   isBrowserEvidenceKind,
@@ -36,6 +37,45 @@ describe('browser evidence contract', () => {
       networkPolicy: 'allowlisted',
       outputLimitBytes: 64_000,
       timeoutMs: 30_000,
+    });
+  });
+
+  it('reports reserved preflight state without opening a browser or calling the network', () => {
+    expect(buildBrowserEvidencePreflight({
+      allowedOrigins: ['http://localhost:5173'],
+      enabled: true,
+    })).toEqual({
+      blockedReasons: [
+        'browser.readonly_evidence remains reserved and hidden',
+        'browser evidence runtime is not implemented',
+      ],
+      browserWillStart: false,
+      configuredOriginCount: 1,
+      descriptorId: 'browser.readonly_evidence',
+      exposedToModels: false,
+      networkWillBeCalled: false,
+      status: 'reserved',
+      summary: [
+        'Browser evidence preflight: reserved',
+        'configuredOrigins=1',
+        'modelExposure=hidden',
+        'browserStart=no',
+        'networkCall=no',
+        'next=implement isolated runner smoke only after B2 is accepted',
+      ].join(' / '),
+    });
+  });
+
+  it('keeps preflight blocked when enabled without explicit origins', () => {
+    expect(buildBrowserEvidencePreflight({ enabled: true })).toMatchObject({
+      blockedReasons: expect.arrayContaining([
+        'browser evidence requires explicit allowed origins before runtime implementation',
+      ]),
+      browserWillStart: false,
+      configuredOriginCount: 0,
+      exposedToModels: false,
+      networkWillBeCalled: false,
+      status: 'reserved',
     });
   });
 
@@ -110,4 +150,3 @@ describe('browser evidence contract', () => {
     });
   });
 });
-

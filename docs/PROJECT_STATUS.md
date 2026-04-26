@@ -488,6 +488,10 @@ The project is past initial architecture assembly. Current work should favor pro
   allowlisted-network requirement, bounded time/output, and fail-closed request
   checks. No browser runtime, UI, IPC, provider exposure, or network call is
   enabled.
+- Browser read-only preflight B2 is implemented as a shared helper that reports
+  the lane as reserved/hidden, counts configured allowed origins, and explicitly
+  states no browser will start, no network will be called, and no model exposure
+  exists.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
@@ -1097,9 +1101,10 @@ dedicated signed/notarized release pass.
    provider-backed disposable-workspace Code Agent preview, real Task detail
    Code Agent UI layout pass, and Code Agent lifecycle recovery/evidence slice
    as locally accepted for the alpha path. The next execution task should start
-   the Browser / Playwright read-only lane B2 with a no-browser, no-network
-   preflight summary, while keeping browser execution, credentials, model
-   exposure, and external mutation deferred.
+   the Browser / Playwright read-only lane pre-runtime: either surface the B2
+   preflight summary in Settings/Runs, or define B3 isolated runner-smoke
+   fixtures before adding Playwright runtime code. Browser execution,
+   credentials, model exposure, and external mutation remain deferred.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.
