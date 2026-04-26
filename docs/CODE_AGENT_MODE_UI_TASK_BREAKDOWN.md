@@ -403,6 +403,38 @@ Implemented notes:
   review planning.
 - `accept:sandbox-coding` includes the non-live adapter tests.
 
+### T10: Provider Runtime Factory Gate
+
+Status: first default-closed runtime factory implemented; UI/provider spend
+remains deferred.
+
+Goal: make live model-backed producer execution possible only through an
+explicit opt-in boundary, rather than by importing the adapter from a UI path.
+
+Work:
+
+- add a runtime preparation helper that defaults to blocked
+- do not resolve AI config or API keys until provider calls are explicitly
+  allowed
+- require `enableSandboxCodingAgent=true` before returning a model producer loop
+- wrap existing runtime text generation behind the injected model producer loop
+- keep the helper unconnected from the current Task detail Code Agent button
+
+Acceptance:
+
+- default preparation blocks before reading AI config
+- disabled sandbox coding flag blocks after config resolution
+- explicit opt-in returns a loop that calls the injected text generator
+- tests prove this path remains non-live under normal verification
+
+Implemented notes:
+
+- `prepareCodeAgentModelProducerRuntime()` now returns either a blocked
+  diagnostic or a ready runtime with `createLoop()`.
+- The ready path uses existing `generateRuntimeText` by default, but tests
+  inject a fake text generator so `accept:sandbox-coding` still makes no
+  provider call.
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:

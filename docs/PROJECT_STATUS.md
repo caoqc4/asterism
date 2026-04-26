@@ -128,6 +128,10 @@ The project is past initial architecture assembly. Current work should favor pro
   accepts an injected `generatePlanText` function, validates the generated JSON
   through the same staged-file contract, writes only accepted files to staging,
   and blocks malformed output before any staged write.
+- A default-closed Code Agent model producer runtime factory now exists but is
+  still not UI-wired: it blocks before resolving AI config unless provider
+  calls are explicitly allowed, requires `enableSandboxCodingAgent=true`, then
+  wraps existing runtime text generation in the staged-file producer adapter.
 - Decisions now distinguish `workspace.staged_patch` promotion checkpoints from
   direct `workspace.write_patch` checkpoints: approving the current sandbox
   promotion review records and resolves the checkpoint, but does not auto-apply
@@ -629,6 +633,12 @@ Latest local baseline:
   accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally on
   2026-04-26 after adding the injected non-live model producer loop adapter:
   28 sandbox-coding files / 174 tests
+- `npm test -- src/main/domain/run/code-agent-model-producer-runtime.test.ts
+  src/main/domain/run/code-agent-model-producer-loop.test.ts
+  src/main/domain/run/code-agent-staged-file-plan.test.ts`, `npm run
+  accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally on
+  2026-04-26 after adding the default-closed provider runtime factory: 29
+  sandbox-coding files / 177 tests
 - Added `docs/CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md` as the proposed
   product-surface gate before any visible Task/Run code-agent mode or
   model-visible coding tools are built

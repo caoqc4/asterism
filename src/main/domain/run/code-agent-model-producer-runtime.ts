@@ -1,0 +1,77 @@
+import type { RuntimeAiConfig } from '../../keychain/ai-config-service.js';
+import { generateRuntimeText } from '../../executors/text-generation.js';
+import {
+  createCodeAgentModelProducerLoop,
+  type CodeAgentPlanTextGenerator,
+} from './code-agent-model-producer-loop.js';
+import type {
+  LocalContainerSandboxedCodingProducerLoop,
+} from './local-container-sandboxed-coding-producer-runner.js';
+
+export type CodeAgentModelProducerRuntime =
+  | {
+      reason: string;
+      status: 'blocked';
+      summary: string;
+    }
+  | {
+      createLoop: () => LocalContainerSandboxedCodingProducerLoop;
+      model: string;
+      provider: RuntimeAiConfig['provider'];
+      status: 'ready';
+      summary: string;
+    };
+
+export async function prepareCodeAgentModelProducerRuntime(params: {
+  aiConfigService: {
+    resolveRuntimeConfig: () => Promise<RuntimeAiConfig>;
+  };
+  allowProviderCalls?: boolean;
+  generateText?: (config: RuntimeAiConfig, prompt: string) => Promise<string>;
+}): Promise<CodeAgentModelProducerRuntime> {
+  if (!params.allowProviderCalls) {
+    return blockedRuntime(
+      'Code Agent model producer runtime requires an explicit provider-call opt-in.',
+    );
+  }
+
+  let runtimeConfig: RuntimeAiConfig;
+  try {
+    runtimeConfig = await params.aiConfigService.resolveRuntimeConfig();
+  } catch (error) {
+    return blockedRuntime(error instanceof Error
+      ? error.message
+      : 'Code Agent model producer runtime could not resolve AI config.');
+  }
+
+  if (!runtimeConfig.featureFlags.enableSandboxCodingAgent) {
+    return blockedRuntime(
+      'Code Agent model producer runtime requires enableSandboxCodingAgent=true.',
+    );
+  }
+
+  const generateText = params.generateText ?? generateRuntimeText;
+  const generatePlanText: CodeAgentPlanTextGenerator = async ({ prompt }) =>
+    generateText(runtimeConfig, prompt);
+
+  return {
+    createLoop: () => createCodeAgentModelProducerLoop({ generatePlanText }),
+    model: runtimeConfig.model,
+    provider: runtimeConfig.provider,
+    status: 'ready',
+    summary: [
+      'Code Agent model producer runtime ready',
+      `provider=${runtimeConfig.provider}`,
+      `model=${runtimeConfig.model}`,
+      'providerCalls=explicit',
+    ].join(' / '),
+  };
+}
+
+function blockedRuntime(reason: string): CodeAgentModelProducerRuntime {
+  return {
+    reason,
+    status: 'blocked',
+    summary: `Code Agent model producer runtime blocked: ${reason}`,
+  };
+}
