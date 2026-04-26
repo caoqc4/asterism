@@ -417,6 +417,11 @@ The project is past initial architecture assembly. Current work should favor pro
 - `npm run verify` passed locally after the latest Code Agent env-template,
   local-acceptance, model preview, and patch-promotion smoke updates: 99 test
   files / 703 tests, followed by type-checking and production build.
+- `npm run manual:code-agent-ui-fixture` now creates a fresh isolated user-data
+  directory and disposable workspace with `test` / `lint` scripts plus selected
+  read-only context, then prints a launch command for the real Task detail Code
+  Agent UI pass without starting Taskplane, probing Docker, calling a provider,
+  or touching the real workspace.
 - The Task detail Code Agent panel now surfaces whether the env-only
   `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER` capability is active. Disabled
   mode states that manual preview uses the local diagnostic producer without
