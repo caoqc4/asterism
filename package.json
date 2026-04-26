@@ -23,7 +23,7 @@
     "rebuild:electron": "electron-rebuild --force --module-dir . --which-module better-sqlite3 --build-from-source",
     "lint": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.electron.json",
     "test": "vitest run",
-    "accept:agent-local": "npm run accept:agent-runtime && npm run accept:workspace-patch && npm run accept:domain-agent-tools && npm run accept:provider-native-tools && npm run accept:sandbox-coding",
+    "accept:agent-local": "npm run accept:agent-runtime && npm run accept:workspace-patch && npm run accept:domain-agent-tools && npm run accept:provider-native-tools && npm run accept:sandbox-coding && npm run accept:sandbox-coding:code-agent-ui",
     "accept:agent-runtime": "vitest run src/shared/agent-runtime-events.test.ts src/shared/types/run-checkpoint-payload.test.ts src/main/domain/run/agent-runtime-event-step-mapper.test.ts src/main/domain/run/agent-session-event-recorder.test.ts",
     "accept:workspace-patch": "vitest run src/main/domain/decision/decision-service.integration.test.ts -t \"approves a workspace patch checkpoint\"",
     "accept:domain-agent-tools": "vitest run src/main/domain/run/agent-tool-registry.integration.test.ts",

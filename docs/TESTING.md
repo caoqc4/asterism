@@ -449,11 +449,15 @@ Current verification:
 - `npm run smoke:package:mac` after producing `release/mac-arm64/Taskplane.app`, including ASAR content checks
 - `npm run smoke:runtime:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged startup and SQLite schema initialization
 - `npm run smoke:release:mac` for the combined unsigned macOS build/package/runtime path
-- `npm run accept:sandbox-coding` for the non-live sandbox/code-agent domain
-  boundary, including staged patch contracts and Decision-gated promotion behavior
-- `npm run accept:sandbox-coding:code-agent-ui` for the Code Agent preflight
-  summary, package-script availability gates, renderer payload filtering, and
-  IPC recheck
+- `npm run accept:agent-local` for the local agent stack, including the non-live
+  sandbox/code-agent domain boundary and the Code Agent preflight UI/config/IPC
+  gate
+- `npm run accept:sandbox-coding` when you only need the non-live sandbox/code-agent
+  domain boundary, including staged patch contracts and Decision-gated promotion
+  behavior
+- `npm run accept:sandbox-coding:code-agent-ui` when you only need the Code Agent
+  preflight summary, package-script availability gates, renderer payload
+  filtering, and IPC recheck
 
 When GitHub Actions is unavailable or disabled because of monthly quota, local verification is the temporary source of truth:
 

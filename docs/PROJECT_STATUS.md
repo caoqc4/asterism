@@ -988,6 +988,10 @@ Latest local baseline:
   unsigned/ad-hoc macOS package was generated, code-sign verified, launched with
   isolated `TASKPLANE_USER_DATA_DIR`, and initialized `config.json` plus the core
   SQLite schema without GitHub Actions or Apple notarization credentials.
+- `accept:agent-local` now includes `accept:sandbox-coding:code-agent-ui`, so
+  the local agent acceptance gate covers the visible Code Agent preflight
+  summary, package-script availability filtering, and IPC recheck in addition
+  to the sandbox/code-agent domain boundary.
 
 Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 configuration changes. Run `npm run smoke:release:mac` for the combined
