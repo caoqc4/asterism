@@ -5,11 +5,13 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const ENABLED = process.env.TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE === 'true';
+const USE_DOCKER_CHECKS = process.env.TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS === 'true';
 
 if (!ENABLED) {
   console.log([
     'Sandbox coding producer preview smoke: skipped',
     'set TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE=true to run the non-live service wiring smoke',
+    'set TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS=true as an additional opt-in for Docker-backed checks',
     'docker=not-started',
     'ai=not-called',
   ].join(' / '));
@@ -46,7 +48,7 @@ const [
   { SandboxedCodingProducerPreviewPersister },
   { SandboxedCodingInjectedProducerPreviewService },
   { SandboxedCodingProducerBackendPreflightService },
-  { LocalContainerSandboxProvider },
+  { createLocalContainerSandboxCommandRunner, LocalContainerSandboxProvider },
 ] = await Promise.all([
   import(pathToFileUrl(serviceModulePath)),
   import(pathToFileUrl(persisterModulePath)),
@@ -59,6 +61,17 @@ const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'taskplane-producer-pre
 const workspaceRoot = path.join(tempRoot, 'workspace');
 await fs.mkdir(path.join(workspaceRoot, 'src'), { recursive: true });
 await fs.writeFile(path.join(workspaceRoot, 'src', 'notes.md'), 'old\n', 'utf8');
+await fs.writeFile(
+  path.join(workspaceRoot, 'package.json'),
+  JSON.stringify({
+    private: true,
+    scripts: {
+      lint: 'node -e "console.log(\'lint smoke ok\')"',
+      test: 'node -e "console.log(\'test smoke ok\')"',
+    },
+  }, null, 2),
+  'utf8',
+);
 
 try {
   const persister = buildMemoryPersister();
@@ -69,11 +82,13 @@ try {
   );
 
   const result = await service.run({
-    commandRunner: async () => ({
-      exitCode: 0,
-      stderr: '',
-      stdout: 'smoke check ok',
-    }),
+    commandRunner: USE_DOCKER_CHECKS
+      ? createLocalContainerSandboxCommandRunner()
+      : async () => ({
+        exitCode: 0,
+        stderr: '',
+        stdout: 'smoke check ok',
+      }),
     featureFlags: {
       enableScheduler: false,
       enableSandboxCodingAgent: true,
@@ -123,7 +138,7 @@ try {
     'Sandbox coding producer preview smoke: ready',
     result.summary,
     'workspace=unchanged',
-    'docker=not-started',
+    `docker=${USE_DOCKER_CHECKS ? 'checks-started' : 'not-started'}`,
     'ai=not-called',
   ].join(' / '));
 } finally {

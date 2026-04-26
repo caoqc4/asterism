@@ -120,13 +120,16 @@ The producer preview service also has an opt-in non-live smoke path:
 ```bash
 npm run accept:sandbox-coding:producer-preview-smoke
 TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE=true npm run accept:sandbox-coding:producer-preview-smoke
+TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE=true TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS=true npm run accept:sandbox-coding:producer-preview-smoke
 ```
 
 The first command should report `skipped`. The second command builds the main
 process code, creates a temporary workspace, runs the local-container producer
 preview service with an injected producer loop and injected check runner, and
 confirms the workspace stays unchanged. It does not start Docker or call AI
-providers.
+providers. The third command is the explicit Docker-backed check smoke: it may
+start Docker containers or pull the default image, so keep it manual and run it
+only when validating the local container backend.
 
 For fal OpenRouter:
 

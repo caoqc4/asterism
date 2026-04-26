@@ -94,6 +94,10 @@ not run containers or expose a coding-agent mode.
   accept:sandbox-coding:producer-preview-smoke` only when deliberately checking
   the non-live producer preview service wiring; confirm it reports
   `docker=not-started`, `ai=not-called`, and `workspace=unchanged`.
+- Run `TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE=true
+  TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS=true npm run
+  accept:sandbox-coding:producer-preview-smoke` only for a deliberate local
+  Docker check smoke. It may start containers or pull the default image.
 - Confirm no new model-visible Read/Write/Edit/Bash, browser/computer, or
   external publishing tools appear in a normal agent run.
 

@@ -526,6 +526,10 @@ Latest local baseline:
   `TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE=true npm run
   accept:sandbox-coding:producer-preview-smoke` passed the non-live service
   wiring smoke with Docker not started, AI not called, and workspace unchanged
+- The producer preview smoke now has a second explicit opt-in,
+  `TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS=true`, for local Docker-backed
+  `test` / `lint` checks; this path remains manual and was not run in the
+  current Docker-unavailable environment
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured

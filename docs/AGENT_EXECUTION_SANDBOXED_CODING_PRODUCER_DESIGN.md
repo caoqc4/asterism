@@ -309,12 +309,15 @@ Completed non-live slices:
     when explicitly enabled, it runs the non-live local-container preview service
     with injected producer/check runners and confirms Docker, AI, and workspace
     mutation remain out of the path.
+18. Optional Docker-backed check smoke for the same script, gated by the
+    additional `TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS=true` environment
+    variable so container startup and image pulls remain manual.
 
 Next slice:
 
-18. Add an explicit local-container producer execution entrypoint only after a
-    manual operator opts in to Docker-backed checks; keep UI/prompt exposure
-    deferred.
+19. Add an explicit local-container producer execution entrypoint only after
+    manual Docker-backed checks are validated on a machine with Docker
+    available; keep UI/prompt exposure deferred.
 
 ## Acceptance
 
