@@ -92,7 +92,7 @@ export type LocalContainerSandboxCheckRun = {
 export type LocalContainerSandboxExecFileRunner = (params: {
   args: string[];
   command: string;
-  env: Record<string, never>;
+  env: NodeJS.ProcessEnv;
   maxBuffer: number;
   timeoutMs: number;
 }) => Promise<{
@@ -428,7 +428,7 @@ export function createLocalContainerSandboxCommandRunner(
     execFileRunner({
       args: plan.args,
       command: plan.command,
-      env: plan.environment,
+      env: { ...process.env, ...plan.environment },
       maxBuffer: plan.outputLimitBytes,
       timeoutMs: plan.timeoutMs,
     });
@@ -484,7 +484,7 @@ async function defaultLocalContainerRuntimeProbeRunner(params: {
 async function defaultLocalContainerSandboxExecFileRunner(params: {
   args: string[];
   command: string;
-  env: Record<string, never>;
+  env: NodeJS.ProcessEnv;
   maxBuffer: number;
   timeoutMs: number;
 }): Promise<{

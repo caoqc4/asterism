@@ -441,6 +441,14 @@ The project is past initial architecture assembly. Current work should favor pro
   readable without horizontal overflow or narrow-column wrapping. Provider spend
   still requires explicit model-producer opt-in and was not triggered during the
   UI layout pass.
+- The same isolated Task detail UI path now completes the local diagnostic
+  staged-patch loop with one allowlisted Docker check: `lint` passes inside the
+  local-container sandbox, Runs detail shows readable check evidence plus
+  `Staged Patch Review`, the patch-promotion readiness is `ready`, and
+  `打开 promotion Decision` opens the matching pending `workspace.staged_patch`
+  Decision. This pass also fixed a real Electron/runtime gap by making
+  local-container Docker command execution inherit the host process environment
+  before applying sandbox-specific overrides.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx

@@ -138,6 +138,12 @@ files.
   confirm it stays on the local diagnostic producer and does not call the
   provider. Runs detail should show `Producer source：local diagnostic preview
   / no provider call`.
+- Keep at least one available allowlisted check selected. For the disposable
+  fixture path, `lint` alone is enough to validate the review loop while keeping
+  provider calls disabled.
+- Confirm Runs detail shows the selected check evidence, staged patch review,
+  promotion readiness, and `打开 promotion Decision`; opening that action should
+  land on the matching pending `workspace.staged_patch` Decision.
 - Select `Use model producer` with no context files and confirm the start
   button remains blocked with a clear context-file reason.
 - Add one or more workspace-relative context files, keep at least one

@@ -386,7 +386,9 @@ describe('local container sandbox backend probe', () => {
     expect(execFileRunner).toHaveBeenCalledWith({
       args: plan?.args,
       command: 'docker',
-      env: {},
+      env: expect.objectContaining({
+        PATH: process.env.PATH,
+      }),
       maxBuffer: 4096,
       timeoutMs: 30_000,
     });
