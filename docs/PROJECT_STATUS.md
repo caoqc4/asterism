@@ -87,6 +87,11 @@ The project is past initial architecture assembly. Current work should favor pro
   `test` / `lint` checks with user deselection, staged patch wording, failed
   checks still reviewable through an explicit patch-promotion Decision, and no
   automatic start until skill/process readiness policy exists.
+- The first code-agent UI slice has started: Task detail / Action Desk now
+  shows a passive `Code Agent Runtime` readiness block with a manual runtime
+  check action. The surface starts in a not-checked state, reuses the existing
+  sandbox backend probe on demand, and does not trigger a Run or producer
+  execution.
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
   now records the completed Slice 0 execution-layer pass: runtime events,
   event-driven RunStep projection, checkpoint normalization, restart-safe

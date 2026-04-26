@@ -821,6 +821,7 @@ export function App() {
             onOpenRun={handleOpenRun}
             onRefresh={loadShellData}
             onReopenCompletionCriteria={handleReopenCompletionCriteria}
+            onProbeSandboxBackend={handleProbeSandboxBackend}
             onRemoveProcessTemplate={handleRemoveProcessTemplate}
             onResolveBlocker={handleResolveBlocker}
             onResolveTaskDependency={handleResolveTaskDependency}
@@ -834,6 +835,7 @@ export function App() {
             onUpdateSourceContext={handleUpdateSourceContext}
             onUpdateTask={handleUpdateTask}
             onTaskFocusConsumed={() => setFocusedTaskRequest(null)}
+            sandboxBackendProbePending={sandboxBackendProbePending}
           />
         ) : null}
         {route === 'decisions' ? (

@@ -4,6 +4,7 @@ import type { AiConfigStatus } from '@shared/types/settings';
 import {
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
+  formatExecutionRuntimeReadinessSummary,
   formatPreRunAgentCapabilitySummary,
 } from './agentCapabilities';
 
@@ -123,6 +124,36 @@ describe('agent capability formatting', () => {
         summary: 'backend=local-container / kind=local_container / available=no / reason=docker: command not found',
       },
     }, true)).toContain('Sandboxed coding producer backend blocked: docker: command not found');
+  });
+
+  it('summarizes execution runtime readiness before and after a manual probe', () => {
+    expect(formatExecutionRuntimeReadinessSummary(null)).toBe(
+      'ExecutionRuntime：未检查 / local_container / staged patch requires manual readiness check',
+    );
+    expect(formatExecutionRuntimeReadinessSummary(buildAiStatus('anthropic'), true)).toBe(
+      'ExecutionRuntime：检查中 / 不启动 producer / 不修改工作区',
+    );
+    expect(formatExecutionRuntimeReadinessSummary({
+      ...buildAiStatus('anthropic'),
+      sandboxBackendStatus: {
+        probe: {
+          backendId: 'local-container',
+          kind: 'local_container',
+          reason: 'docker: command not found',
+          status: 'unavailable',
+        },
+        profile: null,
+        producerBackendReadiness: {
+          blockedReasons: ['docker: command not found'],
+          ready: false,
+          summary: 'Sandboxed coding producer backend blocked: docker: command not found',
+        },
+        readiness: null,
+        summary: 'backend=local-container / kind=local_container / available=no / reason=docker: command not found',
+      },
+    })).toBe(
+      'ExecutionRuntime：blocked / Sandboxed coding producer backend blocked: docker: command not found',
+    );
   });
 
   it('formats provider-native agent session metadata for run detail', () => {

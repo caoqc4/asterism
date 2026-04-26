@@ -201,3 +201,36 @@ export function formatPreRunAgentCapabilitySummary(
     formatPreRunSandboxCodingSummary(aiStatus),
   ].join(' / ');
 }
+
+export function formatExecutionRuntimeReadinessSummary(
+  aiStatus: AiConfigStatus | null,
+  pending = false,
+): string {
+  if (pending) {
+    return 'ExecutionRuntime：检查中 / 不启动 producer / 不修改工作区';
+  }
+
+  const status = aiStatus?.sandboxBackendStatus;
+  if (!status) {
+    return 'ExecutionRuntime：未检查 / local_container / staged patch requires manual readiness check';
+  }
+
+  const producerReadiness = status.producerBackendReadiness;
+  if (producerReadiness?.ready) {
+    return `ExecutionRuntime：ready / ${producerReadiness.summary}`;
+  }
+
+  if (producerReadiness) {
+    return `ExecutionRuntime：blocked / ${producerReadiness.summary}`;
+  }
+
+  if (status.readiness?.ready) {
+    return `ExecutionRuntime：backend ready / ${status.readiness.summary} / producer readiness not checked`;
+  }
+
+  if (status.readiness) {
+    return `ExecutionRuntime：blocked / ${status.readiness.summary}`;
+  }
+
+  return `ExecutionRuntime：not ready / ${status.summary}`;
+}

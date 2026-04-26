@@ -2751,6 +2751,79 @@ describe('App UI flow', () => {
     });
   });
 
+  it('shows manual code-agent runtime readiness from task detail without starting a run', async () => {
+    const user = userEvent.setup();
+    const readySandboxStatus: Awaited<ReturnType<NonNullable<ElectronApi['probeSandboxBackend']>>> = {
+      probe: {
+        backendId: 'local-container',
+        environmentPolicy: 'empty',
+        isolation: 'container',
+        kind: 'local_container',
+        networkMode: 'disabled',
+        status: 'available',
+        supportsOutputLimits: true,
+        supportsPatchArtifacts: true,
+        supportsStagedWrites: true,
+        supportsStructuredCommands: true,
+        supportsTargetedCommands: true,
+        supportsWorkspaceMount: true,
+      },
+      profile: {
+        credentialPassthrough: false,
+        environmentPolicy: 'empty',
+        id: 'local-container',
+        isolation: 'container',
+        kind: 'local_container',
+        networkMode: 'disabled',
+        supportsOutputLimits: true,
+        supportsPatchArtifacts: true,
+        supportsStagedWrites: true,
+        supportsStructuredCommands: true,
+        supportsTargetedCommands: true,
+        supportsWorkspaceMount: true,
+      },
+      producerBackendReadiness: {
+        blockedReasons: ['sandbox coding-agent feature flag is disabled'],
+        ready: false,
+        summary: 'Sandboxed coding producer backend blocked: sandbox coding-agent feature flag is disabled',
+      },
+      readiness: {
+        blockedReasons: [],
+        ready: true,
+        summary: 'Sandbox backend ready: local-container.',
+      },
+      summary: 'Sandbox backend ready: local-container.',
+    };
+    const runtimeApi: ElectronApi = {
+      ...mockApi,
+      probeSandboxBackend: vi.fn(async () => readySandboxStatus),
+    };
+    window.api = runtimeApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    const riskTaskCard = await screen.findByRole('button', { name: /High risk task/i });
+    await user.click(riskTaskCard);
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    expect(screen.getByText('Code Agent Runtime')).toBeTruthy();
+    expect(screen.getByText(
+      'ExecutionRuntime：未检查 / local_container / staged patch requires manual readiness check',
+    )).toBeTruthy();
+    expect(screen.getByText(
+      'staged patch / network disabled / credentials none / Decision promotion',
+    )).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '检查运行时' }));
+
+    expect(runtimeApi.probeSandboxBackend).toHaveBeenCalledTimes(1);
+    expect(runtimeApi.triggerRun).not.toHaveBeenCalled();
+    expect(await screen.findByText(
+      'ExecutionRuntime：blocked / Sandboxed coding producer backend blocked: sandbox coding-agent feature flag is disabled',
+    )).toBeTruthy();
+  });
+
   it('blocks saving a high-risk task without a risk note', async () => {
     const user = userEvent.setup();
 

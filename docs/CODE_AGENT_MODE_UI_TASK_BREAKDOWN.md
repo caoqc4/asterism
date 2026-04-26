@@ -100,6 +100,8 @@ Acceptance:
 
 ### T2: ExecutionRuntime Readiness Surface
 
+Status: completed for the first passive Task detail surface.
+
 Goal: show code-agent runtime readiness without starting Docker containers or
 running a producer.
 
@@ -117,7 +119,18 @@ Acceptance:
 
 - opening the surface does not start containers
 - normal agent run prompt remains unchanged
-- renderer tests cover ready, blocked, and not-checked states
+- renderer tests cover not-checked and probed blocked states; readiness
+  formatting covers pending and blocked probe states
+
+Implemented notes:
+
+- Task detail / Action Desk now includes a `Code Agent Runtime` readiness block.
+- The block defaults to `ExecutionRuntime: not checked`.
+- The user must click `检查运行时` before sandbox backend status is probed.
+- The probe reuses the existing sandbox backend IPC path and does not trigger a
+  Run or producer execution.
+- The block states the invariant: staged patch, network disabled, credentials
+  none, Decision promotion.
 
 ### T3: Manual AgentProfile / Run Intent Form
 

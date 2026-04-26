@@ -72,7 +72,10 @@ import {
   getTaskTransitionGuidance,
   orderTaskTransitions,
 } from '@shared/working-context/transitions';
-import { formatPreRunAgentCapabilitySummary } from '../lib/agentCapabilities';
+import {
+  formatExecutionRuntimeReadinessSummary,
+  formatPreRunAgentCapabilitySummary,
+} from '../lib/agentCapabilities';
 
 const riskOptions: TaskRiskLevel[] = ['none', 'low', 'medium', 'high'];
 const sourceContextKindOptions: SourceContextKind[] = [
@@ -692,6 +695,7 @@ type TasksPageProps = {
   onRefresh: () => Promise<void>;
   onReopenCompletionCriteria: (id: string) => Promise<CompletionCriteriaRecord>;
   onCreateTask: (input: CreateTaskInput) => Promise<TaskListItemRecord>;
+  onProbeSandboxBackend: () => Promise<void>;
   onRemoveProcessTemplate: (bindingId: string) => Promise<AppliedProcessTemplateRecord>;
   onResolveBlocker: (id: string) => Promise<BlockerRecord>;
   onResolveTaskDependency: (id: string) => Promise<TaskDependencyRecord>;
@@ -711,6 +715,7 @@ type TasksPageProps = {
     waitingReason?: string,
   ) => Promise<TaskListItemRecord>;
   onTaskFocusConsumed: () => void;
+  sandboxBackendProbePending: boolean;
 };
 
 export function TasksPage({
@@ -736,6 +741,7 @@ export function TasksPage({
   onRefresh,
   onReopenCompletionCriteria,
   onCreateTask,
+  onProbeSandboxBackend,
   onRemoveProcessTemplate,
   onResolveBlocker,
   onResolveTaskDependency,
@@ -749,6 +755,7 @@ export function TasksPage({
   onUpdateTask,
   onTransitionTask,
   onTaskFocusConsumed,
+  sandboxBackendProbePending,
 }: TasksPageProps) {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(tasks[0]?.id ?? null);
   const [detail, setDetail] = useState<TaskDetail | null>(null);
@@ -2088,6 +2095,23 @@ export function TasksPage({
           </p>
         </>
       ) : null}
+      <div className="runtime-readiness">
+        <strong>Code Agent Runtime</strong>
+        <p className="meta">
+          {formatExecutionRuntimeReadinessSummary(aiStatus, sandboxBackendProbePending)}
+        </p>
+        <p className="meta">
+          staged patch / network disabled / credentials none / Decision promotion
+        </p>
+        <button
+          className="ghost-button"
+          disabled={sandboxBackendProbePending}
+          onClick={() => void onProbeSandboxBackend()}
+          type="button"
+        >
+          {sandboxBackendProbePending ? '检查中' : '检查运行时'}
+        </button>
+      </div>
       <p className="meta">{quickRunGuidance}</p>
       <button type="submit">触发 Run</button>
     </form>
