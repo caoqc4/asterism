@@ -123,14 +123,17 @@ files.
   operator confirmation.
 - Without selecting `Use model producer`, start a manual sandbox preview and
   confirm it stays on the local diagnostic producer and does not call the
-  provider.
+  provider. Runs detail should show `Producer source：local diagnostic preview
+  / no provider call`.
 - Select `Use model producer` with no context files and confirm the start
   button remains blocked with a clear context-file reason.
 - Add one or more workspace-relative context files, keep at least one
   allowlisted check selected, confirm the Docker/Decision notice, then start
   the run only when deliberately spending one provider request.
 - Confirm Runs detail keeps the staged patch Decision-gated and the selected
-  workspace unchanged before any later promotion approval.
+  workspace unchanged before any later promotion approval. For a model-backed
+  run, Runs detail should show `Producer source：model-backed / provider call
+  already spent for this run / Decision promotion still required`.
 
 ### Workspace Patch Approval Path
 

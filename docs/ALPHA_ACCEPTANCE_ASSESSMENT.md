@@ -104,6 +104,8 @@ Manual result / need:
   two-step gate: env capability is passive, and provider-backed runs require
   per-run `Use model producer`, explicit context files, selected `test` /
   `lint`, operator confirmation, sandbox preview, and Decision-gated promotion
+- Runs detail now makes that gate auditable by labeling sandbox producer source
+  as local diagnostic/no-provider-call or model-backed/provider-credit-spent
 
 Manual need:
 
