@@ -983,6 +983,11 @@ Latest local baseline:
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
+- `npm run smoke:build` and `npm run smoke:release:mac` passed locally on
+  2026-04-26 after the Code Agent preflight/check-availability UI slice: the
+  unsigned/ad-hoc macOS package was generated, code-sign verified, launched with
+  isolated `TASKPLANE_USER_DATA_DIR`, and initialized `config.json` plus the core
+  SQLite schema without GitHub Actions or Apple notarization credentials.
 
 Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 configuration changes. Run `npm run smoke:release:mac` for the combined
