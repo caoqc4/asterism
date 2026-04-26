@@ -470,6 +470,37 @@ Implemented notes:
   sandbox feature flag, disabled network, no credential passthrough, and
   Decision-only promotion.
 
+### T12: Model Producer Local Preflight
+
+Status: implemented as a read-only script.
+
+Goal: give local alpha validation a clear readiness command before spending
+provider credit on model-backed Code Agent producer runs.
+
+Work:
+
+- add `accept:sandbox-coding:model-producer-preflight`
+- read `.env` / `TASKPLANE_ENV_FILE` consistently with existing live
+  validation scripts
+- require the model producer opt-in, sandbox coding flag, provider, model, API
+  key, and workspace root
+- require `TASKPLANE_AI_BASE_URL` for generic OpenAI-compatible relays
+- validate Replicate model ids use `owner/model`
+
+Acceptance:
+
+- default local config reports `status=skip` with missing issues
+- ready config reports `status=ready`
+- the script does not call providers, probe Docker, or mutate workspace
+
+Implemented notes:
+
+- `scripts/code-agent-model-producer-preflight.mjs` prints redacted local
+  readiness and explicitly states no provider/Docker/workspace action was
+  performed.
+- `docs/CONFIGURATION.md` and `docs/TESTING.md` now document the preflight and
+  required env variables.
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:

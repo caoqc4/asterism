@@ -137,6 +137,10 @@ The project is past initial architecture assembly. Current work should favor pro
   that env flag it keeps the local diagnostic preview and does not resolve
   runtime AI config. If the env flag is true but runtime config is unavailable,
   the Run fails before sandbox execution starts.
+- `npm run accept:sandbox-coding:model-producer-preflight` now provides a
+  read-only local readiness check for the model-backed Code Agent opt-in,
+  reporting required `.env` variables without calling providers, probing
+  Docker, or touching the workspace.
 - Decisions now distinguish `workspace.staged_patch` promotion checkpoints from
   direct `workspace.write_patch` checkpoints: approving the current sandbox
   promotion review records and resolves the checkpoint, but does not auto-apply
@@ -652,6 +656,11 @@ Latest local baseline:
   2026-04-26 after adding
   `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=true` as the explicit model
   producer opt-in for the manual Code Agent path.
+- `npm run accept:sandbox-coding:model-producer-preflight` passed locally on
+  2026-04-26 in current skip state, missing-env skip state, and temporary ready
+  state; it reported readiness without provider calls, Docker probes, or
+  workspace mutation. `npm run accept:sandbox-coding`, `npm run lint`, and
+  `npm run build` passed afterward.
 - Added `docs/CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md` as the proposed
   product-surface gate before any visible Task/Run code-agent mode or
   model-visible coding tools are built

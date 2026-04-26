@@ -115,6 +115,29 @@ npm run accept:sandbox-coding:backend-preflight
 The preflight does not start containers, pull images, run checks, or call AI
 providers.
 
+The real model-backed Code Agent producer path is additionally locked behind a
+local env opt-in. Use this read-only preflight before turning it on from the
+manual Task detail Code Agent button:
+
+```bash
+npm run accept:sandbox-coding:model-producer-preflight
+```
+
+For the preflight to report `status=ready`, the local `.env` needs:
+
+```bash
+TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=true
+TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=true
+TASKPLANE_AI_PROVIDER=fal-openrouter
+TASKPLANE_AI_MODEL=google/gemini-2.5-flash
+TASKPLANE_AI_API_KEY=your-test-key
+TASKPLANE_WORKSPACE_ROOT=/absolute/path/to/workspace
+```
+
+For `openai-compatible`, also set `TASKPLANE_AI_BASE_URL`. For `replicate`, use
+an `owner/model` model id. The preflight only checks local configuration; it
+does not call the provider, start Docker, or mutate the workspace.
+
 The producer preview service also has an opt-in non-live smoke path:
 
 ```bash

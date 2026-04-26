@@ -123,6 +123,11 @@ Covered today:
   server probe for the future real local-container backend path. It reports
   ready/blocked status without starting containers, pulling images, running
   checks, or calling AI providers.
+- `Code Agent model producer preflight`
+  `npm run accept:sandbox-coding:model-producer-preflight` checks local `.env`
+  readiness for the explicit model-backed Code Agent opt-in. It reports
+  missing provider/model/key/workspace/feature flags without calling providers,
+  probing Docker, or touching the workspace.
 - `Provider-native live validation`
   `npm run accept:provider-native-live:preflight` checks local readiness without
   spending provider credit, and `npm run accept:provider-native-live` performs a
