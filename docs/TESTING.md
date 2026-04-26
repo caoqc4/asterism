@@ -130,7 +130,9 @@ Covered today:
   probing Docker, or touching the workspace.
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` can then select comma-separated
   workspace-relative files for bounded prompt context; invalid selected files
-  block the model producer run before sandbox execution starts.
+  block the model producer run before sandbox execution starts. The preflight
+  also validates configured context files locally without spending provider
+  credit.
 - `Code Agent model producer live smoke`
   `npm run accept:sandbox-coding:model-producer-live` is skipped by default.
   With `TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE=true`, it sends one

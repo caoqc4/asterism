@@ -622,6 +622,27 @@ Implemented notes:
 - The existing main-process context collector remains unchanged as the security
   boundary.
 
+### T17: Context File Preflight Validation
+
+Status: implemented in the read-only model producer preflight.
+
+Goal: catch bad selected context paths before a user spends provider credit or
+starts sandbox execution.
+
+Work:
+
+- validate `TASKPLANE_CODE_AGENT_CONTEXT_FILES` in
+  `accept:sandbox-coding:model-producer-preflight`
+- block path escapes, sensitive paths, missing files, directories, binary
+  files, oversized files, and too many selected files
+- report selected context byte totals without printing file contents
+
+Acceptance:
+
+- context validation is local-only and read-only
+- provider calls and Docker probes remain out of the preflight
+- the main process remains the final authority when a real run starts
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:

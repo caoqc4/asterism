@@ -164,6 +164,15 @@ The project is past initial architecture assembly. Current work should favor pro
   derived from task/source/artifact text. Clicking a candidate appends the path
   to the field, but still does not read files in the renderer or bypass
   main-process validation.
+- The model producer preflight now validates configured
+  `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
+  path checks, existence, file-vs-directory checks, text-only content, and size
+  limits, without printing file contents or calling providers.
+- `npm run accept:sandbox-coding:model-producer-preflight` passed locally on
+  2026-04-26 in current skip state, temporary ready-with-context state, and
+  invalid-context skip state; `npm test -- src/renderer/App.test.tsx
+  src/main/domain/run/code-agent-workspace-context.test.ts`, `npm run lint`,
+  and `npm run build` passed afterward.
 - `npm test -- src/renderer/App.test.tsx src/main/ipc/handlers.test.ts
   src/main/preload.test.ts src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts

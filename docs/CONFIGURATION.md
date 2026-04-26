@@ -142,6 +142,9 @@ set, Taskplane validates those selected files before the model producer runs
 and blocks path escapes, sensitive files, binary content, missing files, and
 oversized context. The preflight only checks local configuration; it does not
 call the provider, start Docker, or mutate the workspace.
+When context files are configured, the preflight also checks that they are
+workspace-relative, text-only, present under `TASKPLANE_WORKSPACE_ROOT`, and
+within the current context size limits.
 
 After the preflight reports `status=ready`, an explicit one-request live smoke
 is available:

@@ -11,6 +11,11 @@ const supportedProviders = new Set([
   'fal-openrouter',
   'replicate',
 ]);
+const forbiddenContextSegments = new Set(['.git', 'node_modules']);
+const forbiddenContextBasenames = new Set(['.env', '.env.local', '.npmrc', '.netrc']);
+const MAX_CONTEXT_FILES = 6;
+const MAX_CONTEXT_FILE_BYTES = 12_000;
+const MAX_CONTEXT_TOTAL_BYTES = 30_000;
 
 export function getCodeAgentModelProducerPreflight() {
   const envPath = process.env.TASKPLANE_ENV_FILE
@@ -64,12 +69,19 @@ export function getCodeAgentModelProducerPreflight() {
     issues.push('TASKPLANE_WORKSPACE_ROOT is empty; set it to the repository/workspace to inspect.');
   }
 
+  const contextValidation = validateContextFiles({
+    contextFiles,
+    workspaceRoot,
+  });
+  issues.push(...contextValidation.issues);
+
   return {
     apiKey: envValue(values, 'TASKPLANE_AI_API_KEY'),
     baseUrl,
     envPath,
     hasApiKey,
     contextFiles,
+    contextFileBytes: contextValidation.totalBytes,
     issues,
     model,
     modelProducerFlag,
@@ -89,6 +101,7 @@ export function printCodeAgentModelProducerPreflight(result) {
   console.log(`apiKey=${result.hasApiKey ? '<set>' : '<empty>'}`);
   console.log(`workspaceRoot=${result.workspaceRoot || '<empty>'}`);
   console.log(`contextFiles=${result.contextFiles.length}`);
+  console.log(`contextBytes=${result.contextFileBytes}`);
   console.log(`sandboxCodingAgent=${formatBoolean(result.sandboxFlag)}`);
   console.log(`modelProducer=${formatBoolean(result.modelProducerFlag)}`);
 
@@ -104,6 +117,99 @@ export function printCodeAgentModelProducerPreflight(result) {
   console.log('status=ready');
   console.log('No provider request, Docker probe, or workspace mutation was performed.');
   console.log('A later explicit model-producer smoke may call the configured provider and consume test credit.');
+}
+
+function validateContextFiles(params) {
+  const issues = [];
+  let totalBytes = 0;
+
+  if (!params.contextFiles.length) {
+    return { issues, totalBytes };
+  }
+
+  if (params.contextFiles.length > MAX_CONTEXT_FILES) {
+    issues.push(`TASKPLANE_CODE_AGENT_CONTEXT_FILES can include at most ${MAX_CONTEXT_FILES} files.`);
+  }
+
+  if (!params.workspaceRoot) {
+    return { issues, totalBytes };
+  }
+
+  const workspaceRoot = path.resolve(params.workspaceRoot);
+  for (const rawFile of params.contextFiles.slice(0, MAX_CONTEXT_FILES)) {
+    const file = normalizeContextPath(rawFile);
+
+    if (!isAllowedContextPath(file)) {
+      issues.push(`Context file path is not allowed: ${rawFile}.`);
+      continue;
+    }
+
+    const target = path.resolve(workspaceRoot, file);
+    if (!isInsidePath(target, workspaceRoot)) {
+      issues.push(`Context file path escaped workspace root: ${rawFile}.`);
+      continue;
+    }
+
+    if (!fs.existsSync(target)) {
+      issues.push(`Context file does not exist: ${file}.`);
+      continue;
+    }
+
+    const stat = fs.statSync(target);
+    if (!stat.isFile()) {
+      issues.push(`Context path is not a file: ${file}.`);
+      continue;
+    }
+
+    if (stat.size > MAX_CONTEXT_FILE_BYTES) {
+      issues.push(`Context file exceeds per-file size limit: ${file}.`);
+      continue;
+    }
+
+    const content = fs.readFileSync(target);
+    if (content.includes(0)) {
+      issues.push(`Context file must be text: ${file}.`);
+      continue;
+    }
+
+    totalBytes += content.byteLength;
+  }
+
+  if (totalBytes > MAX_CONTEXT_TOTAL_BYTES) {
+    issues.push('Selected context files exceed total size limit.');
+  }
+
+  return { issues, totalBytes };
+}
+
+function normalizeContextPath(file) {
+  return path.posix.normalize(file.replaceAll('\\', '/').trim());
+}
+
+function isAllowedContextPath(file) {
+  if (!file
+    || path.posix.isAbsolute(file)
+    || path.win32.isAbsolute(file)
+    || file === '.'
+    || file === '..'
+    || file.startsWith('../')
+    || file.includes('/../')
+    || file.endsWith('/..')) {
+    return false;
+  }
+
+  const segments = file.split('/');
+  if (segments.some((segment) => !segment || forbiddenContextSegments.has(segment))) {
+    return false;
+  }
+
+  const basename = segments.at(-1) ?? '';
+  return !forbiddenContextBasenames.has(basename);
+}
+
+function isInsidePath(candidate, root) {
+  const relative = path.relative(root, candidate);
+  return relative === '' || (Boolean(relative) && !relative.startsWith('..') && !path.isAbsolute(relative));
 }
 
 function formatBoolean(value) {
