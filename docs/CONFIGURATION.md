@@ -123,8 +123,11 @@ The preflight does not start containers, pull images, run checks, or call AI
 providers.
 
 The real model-backed Code Agent producer path is additionally locked behind a
-local env opt-in. Use this read-only preflight before turning it on from the
-manual Task detail Code Agent button:
+two-step gate. `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=true` only exposes
+local capability in the Task detail Code Agent panel; a provider call still
+requires the current run to select `Use model producer`, provide explicit
+context files, keep at least one allowlisted check selected, and confirm the
+operator notice. Use this read-only preflight before enabling the manual path:
 
 ```bash
 npm run accept:sandbox-coding:model-producer-preflight

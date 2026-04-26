@@ -104,6 +104,34 @@ not run containers or expose a coding-agent mode.
 - Confirm no new model-visible Read/Write/Edit/Bash, browser/computer, or
   external publishing tools appear in a normal agent run.
 
+### Code Agent Model Producer Manual Gate
+
+Use this only when deliberately validating the model-backed Code Agent path.
+The env flag exposes capability, but it must not spend provider credit unless a
+single run also selects `Use model producer` and provides explicit context
+files.
+
+- Run `npm run accept:sandbox-coding:model-producer-preflight` first. Confirm
+  it reports ready or clearly explains missing local `.env` values without
+  calling providers, probing Docker, or touching the workspace.
+- Launch Taskplane with isolated state and a disposable workspace. Set
+  `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=true`,
+  `TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=true`, provider/model/API key values,
+  and `TASKPLANE_WORKSPACE_ROOT`.
+- Open a task and confirm the Code Agent panel says model producer is available
+  by local env, while still requiring `Use model producer`, context files, and
+  operator confirmation.
+- Without selecting `Use model producer`, start a manual sandbox preview and
+  confirm it stays on the local diagnostic producer and does not call the
+  provider.
+- Select `Use model producer` with no context files and confirm the start
+  button remains blocked with a clear context-file reason.
+- Add one or more workspace-relative context files, keep at least one
+  allowlisted check selected, confirm the Docker/Decision notice, then start
+  the run only when deliberately spending one provider request.
+- Confirm Runs detail keeps the staged patch Decision-gated and the selected
+  workspace unchanged before any later promotion approval.
+
 ### Workspace Patch Approval Path
 
 Use this as a code-level execution-layer validation only. The patch tool is not

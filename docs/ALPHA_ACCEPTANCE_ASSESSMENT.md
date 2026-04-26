@@ -100,6 +100,16 @@ Manual result / need:
   credit
 - domain tools can update a task next step, create a completion criterion, review completion evidence without satisfying criteria or completing the task, create source context, and draft a Decision through services; they are prompt-exposed and accepted from model plans only when a run explicitly opts into `allowTaskMutationTools`, and high-risk criterion creation now requires Decision approval before the task is mutated
 - execution-layer design docs now define the accepted v2 boundary, sandbox boundary, tool exposure matrix, and future post-Slice-0 design; broad code-agent mode, arbitrary shell, browser/computer control, external posting, and always-on autonomy remain deferred
+- the model-backed Code Agent producer path is now documented as a manual
+  two-step gate: env capability is passive, and provider-backed runs require
+  per-run `Use model producer`, explicit context files, selected `test` /
+  `lint`, operator confirmation, sandbox preview, and Decision-gated promotion
+
+Manual need:
+
+- run a deliberate packaged/manual pass for the model producer gate only when
+  provider credit is intentionally being spent; until then, keep using
+  preflight, default-skipped smokes, and local renderer/IPC coverage
 
 ## Completion Loop
 

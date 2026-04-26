@@ -125,9 +125,12 @@ Covered today:
   checks, or calling AI providers.
 - `Code Agent model producer preflight`
   `npm run accept:sandbox-coding:model-producer-preflight` checks local `.env`
-  readiness for the explicit model-backed Code Agent opt-in. It reports
-  missing provider/model/key/workspace/feature flags without calling providers,
-  probing Docker, or touching the workspace.
+  readiness for the model-backed Code Agent capability. It reports missing
+  provider/model/key/workspace/feature flags without calling providers, probing
+  Docker, or touching the workspace. The env capability is passive by itself:
+  the manual Task detail run must also select `Use model producer`, provide
+  context files, keep at least one allowlisted check selected, and confirm the
+  operator notice before a provider-backed run can start.
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` can then select comma-separated
   workspace-relative files for bounded prompt context; invalid selected files
   block the model producer run before sandbox execution starts. The preflight
