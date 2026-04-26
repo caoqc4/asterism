@@ -375,6 +375,17 @@ The project is past initial architecture assembly. Current work should favor pro
   in default skipped mode on 2026-04-26 after adding the provider-backed
   disposable-workspace preview smoke. `npm run accept:sandbox-coding`,
   `npm run lint`, and `npm run build` passed afterward.
+- `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=true
+  TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=true
+  TASKPLANE_WORKSPACE_ROOT=/Users/caoq/git/Taskplane
+  TASKPLANE_CODE_AGENT_CONTEXT_FILES=src/main/domain/run/code-agent-model-producer-loop.ts
+  TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_PREVIEW_SMOKE=true npm run
+  accept:sandbox-coding:model-producer-preview-smoke` passed locally on
+  2026-04-26 with `fal-openrouter` / `google/gemini-2.5-flash`: provider was
+  called once, preview reached `preview_ready`, Docker was not started, and the
+  selected workspace stayed unchanged. The first attempt exposed a provider
+  fenced-JSON response, so the staged-file parser now accepts a single fenced
+  JSON object before applying the existing strict staged-file contract.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts

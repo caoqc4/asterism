@@ -39,7 +39,17 @@ export function parseCodeAgentStagedFilePlanPayload(text: string): NormalizeCode
   try {
     return normalizeCodeAgentStagedFilePlanPayload(JSON.parse(text));
   } catch {
-    return blockedPlan(['Code Agent staged file plan must be strict JSON.']);
+    const fencedPayload = extractFencedJsonPayload(text);
+
+    if (!fencedPayload) {
+      return blockedPlan(['Code Agent staged file plan must be strict JSON.']);
+    }
+
+    try {
+      return normalizeCodeAgentStagedFilePlanPayload(JSON.parse(fencedPayload));
+    } catch {
+      return blockedPlan(['Code Agent staged file plan must be strict JSON.']);
+    }
   }
 }
 
@@ -183,6 +193,13 @@ function blockedPlan(blockedReasons: string[]): NormalizeCodeAgentStagedFilePlan
 
 function normalizeRelativePath(file: string): string {
   return path.posix.normalize(file.replaceAll('\\', '/').trim());
+}
+
+function extractFencedJsonPayload(text: string): string | null {
+  const trimmed = text.trim();
+  const match = /^```(?:json)?\s*\n([\s\S]*?)\n```$/i.exec(trimmed);
+
+  return match?.[1]?.trim() || null;
 }
 
 function isAllowedStagedFilePath(file: string): boolean {

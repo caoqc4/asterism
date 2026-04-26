@@ -45,8 +45,25 @@ describe('normalizeCodeAgentStagedFilePlanPayload', () => {
     expect(result.status).toBe('accepted');
   });
 
+  it('accepts a single fenced JSON object from providers that wrap raw JSON', () => {
+    expect(parseCodeAgentStagedFilePlanPayload([
+      '```json',
+      JSON.stringify({
+        files: [{ content: 'ok', path: 'docs/provider.md' }],
+        summary: 'Provider wrapped JSON.',
+      }),
+      '```',
+    ].join('\n'))).toMatchObject({
+      status: 'accepted',
+      plan: {
+        files: [{ content: 'ok', path: 'docs/provider.md' }],
+        summary: 'Provider wrapped JSON.',
+      },
+    });
+  });
+
   it('blocks invalid JSON and non-object payloads', () => {
-    expect(parseCodeAgentStagedFilePlanPayload('```json\n{}\n```')).toMatchObject({
+    expect(parseCodeAgentStagedFilePlanPayload('Here is JSON: {"files":[]}')).toMatchObject({
       status: 'blocked',
       blockedReasons: ['Code Agent staged file plan must be strict JSON.'],
     });

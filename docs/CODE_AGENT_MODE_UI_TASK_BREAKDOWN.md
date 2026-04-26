@@ -988,3 +988,10 @@ with `TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_PREVIEW_SMOKE=true`, it sends one
 provider request, runs the model-backed loop through the sandbox producer
 preview service on a disposable workspace, uses an injected check runner, and
 does not start Docker or mutate the selected workspace.
+
+Local validation passed with `fal-openrouter` / `google/gemini-2.5-flash`: the
+smoke reached `preview_ready`, staged
+`.taskplane/code-agent-model-producer-preview-smoke.md`, did not start Docker,
+and left the selected workspace unchanged. The staged-file parser now accepts a
+single fenced JSON object from providers before applying the same file/path/size
+contract, while still rejecting mixed natural-language responses.

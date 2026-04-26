@@ -157,6 +157,13 @@ export async function runCodeAgentModelProducerPreviewSmoke() {
     console.log(`summary=${result.summary}`);
     if (result.status === 'previewed' && result.preview.preview.status === 'preview_ready') {
       console.log(`files=${result.preview.preview.source.patchDraft.files.join(',')}`);
+    } else if (result.status === 'previewed') {
+      console.log(`previewStatus=${result.preview.preview.status}`);
+      if ('reason' in result.preview.preview) {
+        console.log(`reason=${result.preview.preview.reason}`);
+      }
+    } else {
+      console.log(`preflightStatus=${result.preflight.status}`);
     }
     console.log('provider=called');
     console.log('docker=not-started');
