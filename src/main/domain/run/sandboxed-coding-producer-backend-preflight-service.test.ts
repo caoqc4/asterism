@@ -133,6 +133,7 @@ describe('SandboxedCodingProducerBackendPreflightService', () => {
         reason: 'docker daemon unavailable',
         status: 'unavailable',
       },
+      producerSource: 'model_backed',
       request,
     });
 
@@ -145,9 +146,14 @@ describe('SandboxedCodingProducerBackendPreflightService', () => {
       reason: 'docker daemon unavailable',
       status: 'blocked',
     });
+    const persistedResult = persister.persist.mock.calls[0]?.[0].result;
+    if (!persistedResult) {
+      throw new Error('Expected persisted blocked preflight result');
+    }
+    expect(persistedResult.sessionMetadata).toContain('producerSource=model_backed');
+    expect(persistedResult.sessionMetadata).toContain('blockedReasons=docker daemon unavailable');
     expect(persister.persist).toHaveBeenCalledWith({
       result: expect.objectContaining({
-        sessionMetadata: expect.stringContaining('blockedReasons=docker daemon unavailable'),
         status: 'blocked',
       }),
       runId: 'run_1',

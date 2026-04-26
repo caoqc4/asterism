@@ -50,6 +50,7 @@ export class SandboxedCodingProducerBackendPreflightService {
   async run(params: {
     featureFlags: FeatureFlags;
     probe: AgentSandboxBackendProbe;
+    producerSource?: 'local_diagnostic' | 'model_backed' | null;
     request: unknown;
   }): Promise<RunSandboxedCodingProducerBackendPreflightResult> {
     const gate = evaluateSandboxedCodingProducerBackendConnectionGate(params);
@@ -73,6 +74,7 @@ export class SandboxedCodingProducerBackendPreflightService {
       });
       return this.persistBlockedPreflight({
         plan: blockedPlan,
+        producerSource: params.producerSource,
         request: params.request,
       });
     }
@@ -88,12 +90,14 @@ export class SandboxedCodingProducerBackendPreflightService {
 
     return this.persistBlockedPreflight({
       plan: blockedPlan,
+      producerSource: params.producerSource,
       request: params.request,
     });
   }
 
   private async persistBlockedPreflight(params: {
     plan: Extract<SandboxedCodingProducerBackendConnectionPlan, { status: 'blocked' }>;
+    producerSource?: 'local_diagnostic' | 'model_backed' | null;
     request: unknown;
   }): Promise<Extract<RunSandboxedCodingProducerBackendPreflightResult, { status: 'blocked' }>> {
     const requestValidation = validateSandboxedCodingProducerRequest(params.request);
@@ -112,6 +116,7 @@ export class SandboxedCodingProducerBackendPreflightService {
 
     const diagnostic = buildBlockedDiagnostic({
       plan: params.plan,
+      producerSource: params.producerSource,
       request: normalizedRequest,
       runId,
     });
@@ -138,6 +143,7 @@ export class SandboxedCodingProducerBackendPreflightService {
 
 function buildBlockedDiagnostic(params: {
   plan: Extract<SandboxedCodingProducerBackendConnectionPlan, { status: 'blocked' }>;
+  producerSource?: 'local_diagnostic' | 'model_backed' | null;
   request: NormalizedSandboxedCodingProducerRequest | null;
   runId: string;
 }): PreviewSandboxedCodingInjectedProducerRunResult {
@@ -145,6 +151,7 @@ function buildBlockedDiagnostic(params: {
     commandScripts: params.request?.commandPolicy.allowedScripts,
     network: params.request?.executionPolicy.network,
     plan: params.plan,
+    producerSource: params.producerSource,
     providerKind: params.request?.modelPolicy.providerKind,
     runId: params.runId,
     sourceId: params.request?.sourceId,

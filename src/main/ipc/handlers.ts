@@ -419,12 +419,14 @@ async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promis
         runId: run.id,
         taskTitle: task.title,
       });
+  const producerSource = modelRuntime.status === 'ready' ? 'model_backed' : 'local_diagnostic';
   const execution = await new LocalContainerSandboxedCodingProducerExecutionService().run({
     decisionTitle: `Review Code Agent preview for ${task.title}`,
     featureFlags: aiStatus.featureFlags,
     operatorConfirmed: input.operatorConfirmed,
     patchSummary: patchIntent,
     producerLoop,
+    producerSource,
     request,
   });
 

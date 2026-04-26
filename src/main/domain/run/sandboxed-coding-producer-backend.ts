@@ -406,6 +406,7 @@ export function buildSandboxedCodingProducerBackendBlockedPreviewResult(params: 
   commandScripts?: AgentSandboxCheckScript[];
   network?: NormalizedSandboxedCodingProducerRequest['executionPolicy']['network'];
   plan: Extract<SandboxedCodingProducerBackendConnectionPlan, { status: 'blocked' }>;
+  producerSource?: 'local_diagnostic' | 'model_backed' | null;
   providerKind?: string | null;
   runId: string;
   sessionId?: string | null;
@@ -426,6 +427,7 @@ export function buildSandboxedCodingProducerBackendBlockedPreviewResult(params: 
       commandScripts,
       network: params.network ?? 'disabled',
       promotion: 'decision_required',
+      producerSource: params.producerSource,
       providerKind: params.providerKind?.trim() || 'unconfigured',
       sessionId,
       sourceId,

@@ -47,11 +47,13 @@ export class LocalContainerSandboxedCodingProducerPreviewService {
     planningService?: Pick<SandboxPatchReviewPlanningService, 'previewFromSource'>;
     probe: AgentSandboxBackendProbe;
     producerLoop: LocalContainerSandboxedCodingProducerLoop;
+    producerSource?: 'local_diagnostic' | 'model_backed' | null;
     request: unknown;
   }): Promise<RunLocalContainerSandboxedCodingProducerPreviewResult> {
     const preflight = await this.preflightService.run({
       featureFlags: params.featureFlags,
       probe: params.probe,
+      producerSource: params.producerSource,
       request: params.request,
     });
 

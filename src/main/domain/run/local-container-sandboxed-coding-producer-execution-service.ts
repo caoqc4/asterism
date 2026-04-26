@@ -40,6 +40,7 @@ export class LocalContainerSandboxedCodingProducerExecutionService {
     planningService?: Pick<SandboxPatchReviewPlanningService, 'previewFromSource'>;
     probeRunner?: LocalContainerRuntimeProbeRunner;
     producerLoop: LocalContainerSandboxedCodingProducerLoop;
+    producerSource?: 'local_diagnostic' | 'model_backed' | null;
     request: unknown;
   }): Promise<RunLocalContainerSandboxedCodingProducerExecutionResult> {
     if (!params.operatorConfirmed) {
@@ -62,6 +63,7 @@ export class LocalContainerSandboxedCodingProducerExecutionService {
       planningService: params.planningService,
       probe,
       producerLoop: params.producerLoop,
+      producerSource: params.producerSource,
       request: params.request,
     });
 
