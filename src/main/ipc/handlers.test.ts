@@ -120,6 +120,17 @@ function getRegisteredHandler<TArgs extends unknown[], TResult>(channel: string)
   return match[1] as (_event: unknown, ...args: TArgs) => Promise<TResult>;
 }
 
+const readyCodeAgentWorkspaceChecks = {
+  lint: {
+    available: true,
+    reason: 'package.json exposes npm run lint.',
+  },
+  test: {
+    available: true,
+    reason: 'package.json exposes npm run test.',
+  },
+};
+
 describe('registerIpcHandlers', () => {
   beforeEach(() => {
     codeAgentExecutionRunMock.mockReset();
@@ -149,6 +160,7 @@ describe('registerIpcHandlers', () => {
       model: 'relay-model',
       baseUrl: 'https://relay.example.com/v1',
       workspaceRoot: '/tmp/taskplane-workspace',
+      codeAgentWorkspaceChecks: readyCodeAgentWorkspaceChecks,
       updatedAt: '2026-01-01T00:00:00.000Z',
       configPath: '/tmp/config.json',
       featureFlags: {
@@ -193,6 +205,7 @@ describe('registerIpcHandlers', () => {
       model: 'relay-model',
       baseUrl: 'https://relay.example.com/v1',
       workspaceRoot: '/tmp/taskplane-workspace',
+      codeAgentWorkspaceChecks: readyCodeAgentWorkspaceChecks,
       updatedAt: '2026-01-01T00:00:00.000Z',
       configPath: '/tmp/config.json',
       featureFlags: {
@@ -592,6 +605,7 @@ describe('registerIpcHandlers', () => {
       model: 'relay-model',
       baseUrl: 'https://relay.example.com/v1',
       workspaceRoot: '/tmp/taskplane-workspace',
+      codeAgentWorkspaceChecks: readyCodeAgentWorkspaceChecks,
       updatedAt: '2026-01-01T00:00:00.000Z',
       configPath: '/tmp/config.json',
       featureFlags: {
@@ -884,6 +898,66 @@ describe('registerIpcHandlers', () => {
     expect(result.status).toBe('completed');
   });
 
+  it('rejects code-agent runs when requested checks are not available in package.json', async () => {
+    servicesMock.taskService.getDetail.mockResolvedValue({
+      id: 'task_1',
+      title: 'Prepare notes patch',
+      summary: null,
+      nextStep: null,
+      state: 'planned',
+      riskLevel: 'none',
+      riskNote: null,
+      waitingReason: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      blockers: [],
+      completionCriteria: [],
+      dependencies: [],
+      processBindings: [],
+      sourceContexts: [],
+      timeline: [],
+    });
+    servicesMock.aiConfigService.getStatus.mockResolvedValue({
+      configured: true,
+      apiKeyStored: true,
+      apiKeySource: 'env',
+      provider: 'openai-compatible',
+      model: 'relay-model',
+      baseUrl: 'https://relay.example.com/v1',
+      workspaceRoot: '/tmp/taskplane-workspace',
+      codeAgentWorkspaceChecks: {
+        lint: {
+          available: false,
+          reason: 'package.json does not expose npm run lint.',
+        },
+        test: {
+          available: false,
+          reason: 'package.json does not expose npm run test.',
+        },
+      },
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      configPath: '/tmp/config.json',
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; patchIntent: string; requestedChecks: ['test']; operatorConfirmed: true }],
+      unknown
+    >('run:triggerCodeAgent');
+
+    await expect(handler({}, {
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      taskId: 'task_1',
+    })).rejects.toThrow('Code Agent run requires at least one available package.json test/lint script.');
+    expect(servicesMock.runRepository.create).not.toHaveBeenCalled();
+    expect(codeAgentExecutionRunMock).not.toHaveBeenCalled();
+  });
+
   it('blocks the manual code-agent path when model producer env opt-in cannot resolve runtime config', async () => {
     process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
     servicesMock.taskService.getDetail.mockResolvedValue({
@@ -912,6 +986,7 @@ describe('registerIpcHandlers', () => {
       model: 'google/gemini-2.5-flash',
       baseUrl: null,
       workspaceRoot: '/tmp/taskplane-workspace',
+      codeAgentWorkspaceChecks: readyCodeAgentWorkspaceChecks,
       updatedAt: '2026-01-01T00:00:00.000Z',
       configPath: '/tmp/config.json',
       featureFlags: {
@@ -997,6 +1072,7 @@ describe('registerIpcHandlers', () => {
       model: 'google/gemini-2.5-flash',
       baseUrl: null,
       workspaceRoot: '/tmp/taskplane-workspace',
+      codeAgentWorkspaceChecks: readyCodeAgentWorkspaceChecks,
       updatedAt: '2026-01-01T00:00:00.000Z',
       configPath: '/tmp/config.json',
       featureFlags: {
@@ -1086,6 +1162,7 @@ describe('registerIpcHandlers', () => {
       model: 'google/gemini-2.5-flash',
       baseUrl: null,
       workspaceRoot: '/tmp/taskplane-workspace',
+      codeAgentWorkspaceChecks: readyCodeAgentWorkspaceChecks,
       updatedAt: '2026-01-01T00:00:00.000Z',
       configPath: '/tmp/config.json',
       featureFlags: {

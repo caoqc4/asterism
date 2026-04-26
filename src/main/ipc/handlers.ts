@@ -21,7 +21,7 @@ import type {
   UpdateProcessTemplateInput,
 } from '../../shared/types/process-template.js';
 import type { CodeAgentAllowedCheck, CreateCodeAgentRunInput, CreateRunInput, RunRecord } from '../../shared/types/run.js';
-import type { AiConfigInput } from '../../shared/types/settings.js';
+import type { AiConfigInput, AiConfigStatus } from '../../shared/types/settings.js';
 import type { CreateSourceContextInput, UpdateSourceContextInput } from '../../shared/types/source-context.js';
 import type {
   CreateTaskInput,
@@ -323,7 +323,15 @@ async function triggerManualCodeAgentRun(input: CreateCodeAgentRunInput): Promis
 
   const aiStatus = await services.aiConfigService.getStatus();
   const workspaceRoot = aiStatus.workspaceRoot?.trim();
-  const requestedChecks = normalizeCodeAgentChecks(input.requestedChecks);
+  const requestedChecks = normalizeCodeAgentChecks(
+    input.requestedChecks,
+    aiStatus.codeAgentWorkspaceChecks,
+  );
+
+  if (!requestedChecks.length) {
+    throw new Error('Code Agent run requires at least one available package.json test/lint script.');
+  }
+
   const patchIntent = input.patchIntent.trim() || `Prepare a staged patch for ${task.title}.`;
   const modelProducerAvailable = readEnvBoolean(ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV) === true;
   const modelProducerRequested = input.useModelProducer === true;
@@ -614,11 +622,14 @@ function getCodeAgentPreviewFailureReason(preview: { status: string; reason?: st
   return preview.reason?.trim() || null;
 }
 
-function normalizeCodeAgentChecks(checks: CodeAgentAllowedCheck[]): CodeAgentAllowedCheck[] {
+function normalizeCodeAgentChecks(
+  checks: CodeAgentAllowedCheck[],
+  availability: AiConfigStatus['codeAgentWorkspaceChecks'],
+): CodeAgentAllowedCheck[] {
   const allowed = new Set<CodeAgentAllowedCheck>(['test', 'lint']);
   const normalized = Array.from(new Set(checks.filter((check) => allowed.has(check))));
 
-  return normalized.length ? normalized : ['test'];
+  return normalized.filter((check) => availability?.[check].available === true);
 }
 
 function createManualCodeAgentPreviewLoop(params: {
