@@ -2,9 +2,8 @@
 
 ## Status
 
-Planning only. Do not implement these UI tasks until
-[CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md)
-is accepted.
+Ready for first implementation slice. The product surface decision is accepted
+for a manual, sandboxed, Decision-gated code-agent UI.
 
 Reference inputs:
 
@@ -51,6 +50,9 @@ future automatic starts once skill/process maturity and policy readiness exist.
 
 ### T0: Reconcile Product Surface With Multica Reference
 
+Status: completed in
+[CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md).
+
 Goal: update the product decision so the first UI is manual without making the
 architecture hostile to later policy-approved automatic starts.
 
@@ -73,21 +75,26 @@ Acceptance:
 
 ### T1: Accept Or Revise Product Surface Decision
 
+Status: completed. The first UI decisions are accepted.
+
 Goal: resolve the remaining open product questions before UI work starts.
 
-Decisions needed:
+Resolved decisions:
 
-- first entrypoint: Task detail, Run creation, or dedicated execution panel
-- Docker readiness: auto-check on open or manual button only
-- check selection: `test`, `lint`, or both
-- failed checks: allow patch review or block Decision creation
-- wording for staged patch versus workspace modification
-- which skill/process maturity signals are sufficient for later automatic start
+- first entrypoint: Task detail / Action Desk
+- Docker readiness: explicit readiness action; opening the surface stays passive
+- check selection: default to available allowlisted `test` / `lint`; user may
+  deselect, missing checks are shown as unavailable
+- failed checks: allow patch-promotion Decision review when a source exists,
+  with failed-check consequences visible
+- wording: "staged patch" / "patch source" before approval; "workspace changes"
+  only after Decision approval
+- later automatic start: deferred until skill/process maturity, input, tool,
+  risk, runtime, and user/workspace policy signals exist
 
 Acceptance:
 
-- `CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md` is accepted or explicitly
-  revised
+- `CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md` is accepted
 - out-of-scope tool families remain deferred
 - no UI code is changed in this task
 

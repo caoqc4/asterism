@@ -2,8 +2,12 @@
 
 ## Status
 
-Proposed. Do not expose a Task/Run UI entrypoint or model-visible coding tools
-until this decision is accepted and manually validated.
+Accepted for the first visible code-agent product surface.
+
+This acceptance only covers the manual, sandboxed, Decision-gated first UI. It
+does not accept model-visible generic coding tools, host shell/file access,
+automatic starts, MCP/browser/computer-use execution, external publishing, or
+remote sandbox defaulting.
 
 This document describes the product surface that must exist before Taskplane can
 turn the explicit sandboxed coding producer execution service into a visible
@@ -55,6 +59,75 @@ message. The user should understand that containers may start and project checks
 may run, while the workspace itself will not be modified until a Decision is
 approved.
 
+## Resolved First UI Decisions
+
+### Entrypoint
+
+The first visible entrypoint should live on Task detail / Action Desk.
+
+Rationale:
+
+- code-agent mode needs one selected Task, current context, completion criteria,
+  blockers, Decisions, Runs, and artifacts
+- Task detail is where the user can judge whether staged code work is relevant
+- Runs remains the evidence/recovery surface after launch, not the primary
+  starting point
+- a dedicated execution panel can come later if there are multiple runtime
+  modes, profiles, or policies to compare
+
+### Docker / Runtime Readiness
+
+Opening the surface should not start containers or run checks.
+
+The first UI should render runtime readiness as `not checked` until the user
+uses an explicit readiness action. That action may probe Docker/backend
+availability, but the actual producer execution still requires the separate run
+confirmation.
+
+### Check Selection
+
+The first UI should default to all available allowlisted checks:
+
+- `test` when the selected workspace exposes an allowlisted test script
+- `lint` when the selected workspace exposes an allowlisted lint script
+
+The user may deselect a check before starting. Missing checks should be shown as
+unavailable rather than silently ignored. No arbitrary command entry is allowed.
+
+### Failed Checks
+
+Failed checks should not hide a staged patch from review.
+
+If a source is produced, Taskplane should still create the patch-promotion
+Decision, but the Decision and Run detail must clearly show failed checks and
+the consequence of approving anyway. The first version should not auto-promote
+or auto-close anything based on check results.
+
+### Wording
+
+Use "staged patch" or "patch source" for files produced inside the sandbox.
+Reserve "workspace changes" or "applied changes" for files written into the
+user's selected workspace after a Decision is approved.
+
+Required copy meaning:
+
+```text
+Sandbox may create a staged patch. Your workspace is unchanged until you approve
+the patch promotion Decision.
+```
+
+### Later Automatic Start Signals
+
+Automatic start remains deferred. The minimum future signals are:
+
+- mature skill/process-template match
+- required inputs present
+- allowed tool families known
+- runtime ready
+- sandbox, credential, and network policy acceptable
+- prior similar run accepted or user/workspace explicitly enabled this workflow
+- risk classification below the configured manual-review threshold
+
 ## Required UI Elements
 
 Before the run starts:
@@ -104,9 +177,9 @@ sandboxed coding lane is stable. Automatic execution should be revisited after
 Taskplane has a runtime readiness model, skill/process maturity signals, and
 policy evidence that the workflow is clear enough to start safely.
 
-## Acceptance Before Implementation
+## Acceptance Before UI Implementation
 
-Do not build the UI until these are true:
+The implementation phase may start when these remain true:
 
 - `npm run accept:sandbox-coding` passes
 - `npm run verify` passes
@@ -115,23 +188,9 @@ Do not build the UI until these are true:
 - producer preview smoke passes with Docker-backed checks on a Docker-enabled
   machine
 - the invocation decision remains accepted
-- Run detail already has enough display vocabulary for producer sessions,
+- Run detail has enough display vocabulary for producer sessions,
   staged diffs, check evidence, blocked diagnostics, and Decision promotion
   - current status: producer session policy, blocked diagnostics, source/check
     RunSteps, and patch-promotion checkpoint summaries are covered by renderer
     tests; the first UI task should still review wording on a real run detail
     screen before acceptance
-
-## Open Questions
-
-- Should the first visible entrypoint live on Task detail, Run creation, or a
-  dedicated execution panel?
-- Should Docker readiness be checked automatically when opening the form, or
-  only after a manual button click?
-- Should the user choose `test`, `lint`, or both, or should the first version
-  always run both when available?
-- Should failed checks still allow patch promotion review, or should the first
-  version require passing checks before a Decision is created?
-- What wording best separates "staged patch created" from "workspace modified"?
-- Which skill/process maturity signals are sufficient to allow a later
-  automatic start without making assignment itself the execution trigger?

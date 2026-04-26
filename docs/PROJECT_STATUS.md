@@ -81,6 +81,12 @@ The project is past initial architecture assembly. Current work should favor pro
   wrapping, and skill-informed automation readiness. It keeps automatic start
   as a future policy outcome for mature workflows, not as a blanket assignment
   side effect.
+- [CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md)
+  is accepted for the first visible code-agent product surface: Task detail /
+  Action Desk entrypoint, manual runtime readiness action, default available
+  `test` / `lint` checks with user deselection, staged patch wording, failed
+  checks still reviewable through an explicit patch-promotion Decision, and no
+  automatic start until skill/process readiness policy exists.
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
   now records the completed Slice 0 execution-layer pass: runtime events,
   event-driven RunStep projection, checkpoint normalization, restart-safe
