@@ -971,6 +971,31 @@ Acceptance:
 - Runs detail staged patch review distinguishes open, preflight-only resolved,
   blocked/cancelled, and applied workspace-promotion evidence
 
+### T31: Task Detail Code Agent Recovery Card
+
+Status: first Task detail recovery projection implemented.
+
+Goal: make the Code Agent staged-patch loop recoverable from the task object
+after the user leaves Runs or Decisions.
+
+Work:
+
+- detect the latest task-linked Code Agent sandbox preview run from existing
+  Run records
+- show a compact `Code Agent Review` card in Task detail / Action Setup
+- link directly back to the latest Code Agent Run evidence
+- link directly to the pending patch-promotion Decision when one exists
+- explain the failed-check/no-Decision case as a rerun/review decision, not as
+  an automatic workspace action
+
+Acceptance:
+
+- the card is display/navigation only
+- no approval, apply, Docker, provider, or workspace mutation is triggered from
+  the card
+- ordinary tasks without Code Agent preview runs do not show the card
+- renderer coverage verifies the task-to-promotion-Decision jump
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:

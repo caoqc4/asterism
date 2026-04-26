@@ -219,6 +219,44 @@ function getCodeAgentContextFileCandidates(detail: TaskDetail | null): string[] 
   );
 }
 
+function isCodeAgentSandboxRun(run: RunRecord): boolean {
+  if (run.type !== 'agent') {
+    return false;
+  }
+
+  const evidence = [
+    run.instructions,
+    run.output,
+    run.failureReason,
+  ].filter(Boolean).join('\n');
+
+  return evidence.includes('Code Agent manual sandbox producer preview')
+    || evidence.includes('sandboxed coding producer')
+    || evidence.includes('staged patch')
+    || evidence.includes('patch review Decision');
+}
+
+function isCodeAgentPromotionDecision(decision: DecisionRecord): boolean {
+  return decision.sourceLabel === 'workspace.staged_patch'
+    || decision.title.startsWith('Review Code Agent preview');
+}
+
+function formatLatestCodeAgentRunSummary(run: RunRecord): string {
+  if (run.status === 'completed') {
+    return '最近一次 Code Agent sandbox preview 已完成，先复核 Run 证据、staged patch 和 promotion Decision。';
+  }
+
+  if (run.status === 'failed') {
+    return `最近一次 Code Agent sandbox preview 失败：${run.failureReason || run.output || '未记录失败原因'}`;
+  }
+
+  if (run.status === 'paused' || run.status === 'needs_confirmation') {
+    return '最近一次 Code Agent sandbox preview 正在等待确认或恢复处理。';
+  }
+
+  return '最近一次 Code Agent sandbox preview 仍在进行，先查看 Run 证据再决定下一步。';
+}
+
 function isEarlyTask(task: Pick<TaskListItemRecord, 'state'>): boolean {
   return task.state === 'captured' || task.state === 'triaged';
 }
@@ -2087,6 +2125,16 @@ export function TasksPage({
         .filter((run) => run.status === 'paused')
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null
     : null;
+  const latestCodeAgentRun = detail
+    ? [...taskRuns]
+        .filter(isCodeAgentSandboxRun)
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null
+    : null;
+  const latestCodeAgentPromotionDecision = detail
+    ? [...taskDecisions]
+        .filter((decision) => decision.status === 'pending' && isCodeAgentPromotionDecision(decision))
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null
+    : null;
 
   async function continuePausedRun(run: RunRecord): Promise<void> {
     setPausedRunError(null);
@@ -3221,6 +3269,35 @@ export function TasksPage({
                 <div className="transition-group detail-card-group detail-action-setup">
                   <h3>Action Setup</h3>
                   <p className="meta">{getActionSetupGuidance(detail)}</p>
+                  {latestCodeAgentRun ? (
+                    <div className="timeline-item timeline-item-waiting">
+                      <strong>Code Agent Review</strong>
+                      <p className="meta">{formatLatestCodeAgentRunSummary(latestCodeAgentRun)}</p>
+                      <p className="meta">
+                        Run：{latestCodeAgentRun.status} / {latestCodeAgentRun.updatedAt}
+                      </p>
+                      <button
+                        className="ghost-button"
+                        onClick={() => onOpenRun(latestCodeAgentRun.id)}
+                        type="button"
+                      >
+                        查看 Code Agent Run
+                      </button>
+                      {latestCodeAgentPromotionDecision ? (
+                        <button
+                          className="ghost-button"
+                          onClick={() => onOpenDecision(latestCodeAgentPromotionDecision.id)}
+                          type="button"
+                        >
+                          打开 promotion Decision
+                        </button>
+                      ) : (
+                        <p className="meta">
+                          当前没有待处理的 promotion Decision；如检查失败，请先从 Run 证据判断是否需要重跑。
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
                   {latestPausedRun ? (
                     <div className="timeline-item timeline-item-waiting">
                       <strong>Paused Run Recovery</strong>

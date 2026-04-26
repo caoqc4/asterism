@@ -449,6 +449,10 @@ The project is past initial architecture assembly. Current work should favor pro
   Decision. This pass also fixed a real Electron/runtime gap by making
   local-container Docker command execution inherit the host process environment
   before applying sandbox-specific overrides.
+- Task detail / Action Setup now projects the latest task-linked Code Agent
+  sandbox preview as a `Code Agent Review` recovery card. It links back to the
+  latest Run evidence and, when present, opens the pending promotion Decision,
+  keeping the task object as the home base for the staged-patch review loop.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx

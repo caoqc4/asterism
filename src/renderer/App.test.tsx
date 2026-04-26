@@ -2991,6 +2991,55 @@ describe('App UI flow', () => {
     expect(await screen.findByRole('heading', { name: 'agent / completed' })).toBeTruthy();
   });
 
+  it('surfaces recent code-agent staged patch review actions on the task detail', async () => {
+    const user = userEvent.setup();
+    const codeAgentRun = buildRunRecord({
+      id: 'run_code_agent_review',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'completed',
+      instructions: 'Code Agent manual sandbox producer preview.',
+      output: 'Local container sandboxed coding producer runner prepared / patch review Decision created: decision_code_agent_review',
+      outputSource: 'system',
+      updatedAt: '2026-01-03T00:00:00.000Z',
+    });
+    const codeAgentDecision: DecisionRecord = {
+      id: 'decision_code_agent_review',
+      taskId: riskTask.id,
+      title: 'Review Code Agent preview for High risk task',
+      status: 'pending',
+      sourceType: 'agent_checkpoint',
+      sourceId: 'run_checkpoint_code_agent_review',
+      sourceLabel: 'workspace.staged_patch',
+      createdAt: '2026-01-03T00:00:01.000Z',
+      updatedAt: '2026-01-03T00:00:01.000Z',
+    };
+    const codeAgentApi: ElectronApi = {
+      ...mockApi,
+      listDecisions: vi.fn(async () => [codeAgentDecision]),
+      listRuns: vi.fn(async () => [codeAgentRun]),
+      getRunDetail: vi.fn(async (runId: string) => (runId === codeAgentRun.id ? codeAgentRun : null)),
+    };
+    window.api = codeAgentApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    const [riskTaskCard] = await screen.findAllByRole('button', { name: /High risk task/i });
+    await user.click(riskTaskCard!);
+
+    expect(await screen.findByText('Code Agent Review')).toBeTruthy();
+    expect(screen.getByText(
+      '最近一次 Code Agent sandbox preview 已完成，先复核 Run 证据、staged patch 和 promotion Decision。',
+    )).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '打开 promotion Decision' }));
+
+    expect(await screen.findByRole('heading', {
+      name: 'Review Code Agent preview for High risk task',
+    })).toBeTruthy();
+  });
+
   it('blocks saving a high-risk task without a risk note', async () => {
     const user = userEvent.setup();
 
