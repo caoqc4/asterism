@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
+import { parseRunCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import { AgentCheckpointRecorder } from './agent-checkpoint-recorder.js';
 
 function buildRunStepRepositoryMock() {
@@ -225,6 +226,8 @@ describe('AgentCheckpointRecorder', () => {
       taskId: 'task_1',
       artifactId: 'artifact_1',
       artifactSummary: 'Reviewable sandbox patch',
+      expectedFiles: ['src/a.ts'],
+      patchDigest: 'sha256:abc123',
       sessionId: 'sandbox_session_1',
       policySnapshot: {
         descriptorId: 'workspace.staged_patch',
@@ -256,6 +259,12 @@ describe('AgentCheckpointRecorder', () => {
         payload: expect.stringContaining('"descriptorId":"workspace.staged_patch"'),
       }),
     );
+    expect(parseRunCheckpointPayload(
+      runCheckpointRepository.create.mock.calls[0]?.[0].payload,
+    )).toMatchObject({
+      expectedFiles: ['src/a.ts'],
+      patchDigest: 'sha256:abc123',
+    });
     expect(decisionRepository.create).toHaveBeenCalledWith({
       taskId: 'task_1',
       title: '确认提升 sandbox patch',
@@ -267,6 +276,13 @@ describe('AgentCheckpointRecorder', () => {
       'run_checkpoint_1',
       expect.stringContaining('"decisionId":"decision_patch_1"'),
     );
+    expect(parseRunCheckpointPayload(
+      runCheckpointRepository.updatePayload.mock.calls[0]?.[1],
+    )).toMatchObject({
+      decisionId: 'decision_patch_1',
+      expectedFiles: ['src/a.ts'],
+      patchDigest: 'sha256:abc123',
+    });
     expect(result).toEqual({
       checkpointId: 'run_checkpoint_1',
       decisionId: 'decision_patch_1',

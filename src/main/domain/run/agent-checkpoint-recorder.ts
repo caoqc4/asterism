@@ -174,6 +174,8 @@ export class AgentCheckpointRecorder {
     taskId: string;
     artifactId: string;
     artifactSummary: string;
+    expectedFiles?: string[];
+    patchDigest?: string | null;
     sessionId: string;
     policySnapshot: AgentToolExecutionPolicy;
     decisionTitle: string;
@@ -198,6 +200,8 @@ export class AgentCheckpointRecorder {
         descriptorId: 'workspace.staged_patch',
         decisionId: null,
         decisionTitle: params.decisionTitle,
+        ...(params.expectedFiles?.length ? { expectedFiles: params.expectedFiles } : {}),
+        ...(params.patchDigest ? { patchDigest: params.patchDigest } : {}),
         policySnapshot: params.policySnapshot,
         preview: params.preview ?? null,
       })),
@@ -221,6 +225,8 @@ export class AgentCheckpointRecorder {
             descriptorId: 'workspace.staged_patch',
             decisionId: decision.id,
             decisionTitle: params.decisionTitle,
+            ...(params.expectedFiles?.length ? { expectedFiles: params.expectedFiles } : {}),
+            ...(params.patchDigest ? { patchDigest: params.patchDigest } : {}),
             policySnapshot: params.policySnapshot,
             preview: params.preview ?? null,
           })),

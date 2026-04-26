@@ -67,6 +67,8 @@ describe('run checkpoint payload helpers', () => {
       descriptorId: 'workspace.staged_patch',
       decisionId: null,
       decisionTitle: '确认提升 sandbox patch',
+      expectedFiles: ['src/a.ts'],
+      patchDigest: 'sha256:abc123',
       policySnapshot: {
         descriptorId: 'workspace.staged_patch',
         sessionKind: 'sandbox',
@@ -87,6 +89,8 @@ describe('run checkpoint payload helpers', () => {
       descriptorId: 'workspace.staged_patch',
       decisionId: null,
       decisionTitle: '确认提升 sandbox patch',
+      expectedFiles: ['src/a.ts'],
+      patchDigest: 'sha256:abc123',
       policySnapshot: expect.objectContaining({
         descriptorId: 'workspace.staged_patch',
         timeoutMs: 120_000,

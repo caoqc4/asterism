@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { RunStepRecord } from '../../../shared/types/run.js';
 import type {
@@ -84,6 +86,8 @@ export class SandboxPatchReviewPersister {
           taskId: params.taskId,
           artifactId: artifact.id,
           artifactSummary: preparation.artifact.summary,
+          expectedFiles: preparation.artifact.files,
+          patchDigest: buildSandboxPatchDigest(preparation.artifact.diff),
           sessionId: preparation.handle.id,
           policySnapshot: preparation.checkpoint.policySnapshot,
           decisionTitle: params.decisionTitle?.trim() || '确认提升 sandbox patch',
@@ -101,6 +105,10 @@ export class SandboxPatchReviewPersister {
       },
     };
   }
+}
+
+export function buildSandboxPatchDigest(diff: string): string {
+  return `sha256:${createHash('sha256').update(diff, 'utf8').digest('hex')}`;
 }
 
 export function buildSandboxPatchReviewArtifactContent(

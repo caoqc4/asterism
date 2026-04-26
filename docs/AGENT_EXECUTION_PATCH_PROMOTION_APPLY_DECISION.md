@@ -220,6 +220,10 @@ Current review-only checkpoint payloads return `missing_apply_metadata` until
 future persisted apply metadata such as `expectedFiles` and `patchDigest`
 exists.
 
+New sandbox patch review checkpoints now carry `expectedFiles` and a `sha256:`
+digest of the sandbox patch artifact diff. Older checkpoints remain valid and
+continue to report `missing_apply_metadata`.
+
 ### P2: Durable Promotion Record
 
 Status: first repository/table implemented.

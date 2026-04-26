@@ -800,6 +800,28 @@ Acceptance:
 - no workspace file reads or writes are introduced
 - future apply service can query by checkpoint id or source/digest
 
+### T25: Patch Promotion Apply Metadata
+
+Status: checkpoint payload metadata implemented.
+
+Goal: let newly generated sandbox patch-promotion checkpoints become
+readiness-eligible without introducing workspace writes.
+
+Work:
+
+- extend patch-promotion checkpoint payloads with optional `expectedFiles` and
+  `patchDigest`
+- compute `patchDigest` as `sha256:` over the sandbox patch artifact diff
+- pass sandbox artifact files as `expectedFiles`
+- preserve backwards compatibility for older review-only checkpoints that lack
+  the fields
+
+Acceptance:
+
+- newly persisted sandbox patch review checkpoints carry apply metadata
+- old checkpoints still parse and surface `missing_apply_metadata`
+- no Decision approval path or apply service is enabled
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:
@@ -818,6 +840,6 @@ Each needs its own decision before implementation.
 
 ## Next Decision
 
-The next implementation step is enriching patch-promotion checkpoint payloads
-with explicit apply metadata (`expectedFiles`, `patchDigest`) at creation time,
-so readiness can become `ready` for newly generated sandbox patch evidence.
+The next implementation step is connecting ready patch-promotion checkpoints to
+the durable `sandbox_patch_promotions` pending record when they are created,
+still without applying workspace files.

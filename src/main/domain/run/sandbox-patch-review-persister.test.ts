@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
 import type { LocalContainerSandboxPatchReviewPreparation } from './local-container-sandbox-backend.js';
-import { SandboxPatchReviewPersister } from './sandbox-patch-review-persister.js';
+import {
+  buildSandboxPatchDigest,
+  SandboxPatchReviewPersister,
+} from './sandbox-patch-review-persister.js';
 
 function buildRunStepRepositoryMock() {
   let stepCount = 0;
@@ -178,6 +181,8 @@ describe('SandboxPatchReviewPersister', () => {
       taskId: 'task_1',
       artifactId: 'artifact_patch_1',
       artifactSummary: 'Reviewable sandbox patch',
+      expectedFiles: ['notes.md'],
+      patchDigest: buildSandboxPatchDigest(preparation.artifact.diff),
       sessionId: 'sandbox_1',
       policySnapshot: preparation.checkpoint.policySnapshot,
       decisionTitle: '确认提升 sandbox patch',

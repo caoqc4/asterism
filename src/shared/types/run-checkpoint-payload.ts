@@ -34,6 +34,8 @@ export type PatchPromotionCheckpointPayloadV1 = {
   descriptorId: 'workspace.staged_patch';
   decisionId: string | null;
   decisionTitle: string;
+  expectedFiles?: string[];
+  patchDigest?: string;
   policySnapshot: AgentToolExecutionPolicy;
   preview?: string | null;
 };
@@ -57,6 +59,8 @@ export type ParsedRunCheckpointPayload = Record<string, unknown> & {
   artifactSummary?: unknown;
   sessionId?: unknown;
   descriptorId?: unknown;
+  expectedFiles?: unknown;
+  patchDigest?: unknown;
   preview?: unknown;
   input?: unknown;
   nextInput?: unknown;
