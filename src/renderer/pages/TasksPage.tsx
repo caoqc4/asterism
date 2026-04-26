@@ -123,6 +123,10 @@ const transitionOptions: Record<TaskState, TaskState[]> = {
 
 const TIMELINE_PREVIEW_COUNT = 5;
 const COMPLETION_EVIDENCE_LIMIT = 3;
+const CODE_AGENT_CONTEXT_CANDIDATE_LIMIT = 8;
+const WORKSPACE_PATH_PATTERN = /(?:^|[\s"'`(：:])((?:[\w.-]+\/)+[\w.-]+\.[A-Za-z0-9]{1,12}|[\w.-]+\.(?:ts|tsx|js|jsx|mjs|cjs|json|md|mdx|css|scss|html|yml|yaml|toml|txt))(?:$|[\s"'`),，。；;!?])/g;
+const WORKSPACE_CONTEXT_FORBIDDEN_SEGMENTS = new Set(['.git', 'node_modules']);
+const WORKSPACE_CONTEXT_FORBIDDEN_BASENAMES = new Set(['.env', '.env.local', '.npmrc', '.netrc']);
 
 type CompletionEvidenceCard = {
   id: string;
@@ -134,6 +138,70 @@ type CompletionEvidenceCard = {
   matchedCriteriaIds: string[];
   targetId: string | null;
 };
+
+function normalizeWorkspaceContextCandidate(value: string): string | null {
+  const candidate = value.replaceAll('\\', '/').replace(/^\.\/+/, '').trim();
+
+  if (!candidate
+    || candidate.startsWith('/')
+    || candidate.startsWith('../')
+    || candidate.includes('/../')
+    || candidate === '.'
+    || candidate === '..') {
+    return null;
+  }
+
+  const segments = candidate.split('/');
+  if (segments.some((segment) => !segment || WORKSPACE_CONTEXT_FORBIDDEN_SEGMENTS.has(segment))) {
+    return null;
+  }
+
+  const basename = segments.at(-1) ?? '';
+  return WORKSPACE_CONTEXT_FORBIDDEN_BASENAMES.has(basename) ? null : candidate;
+}
+
+function extractWorkspacePathCandidates(...values: Array<string | null | undefined>): string[] {
+  const candidates: string[] = [];
+
+  for (const value of values) {
+    if (!value) {
+      continue;
+    }
+
+    for (const match of value.matchAll(WORKSPACE_PATH_PATTERN)) {
+      const candidate = normalizeWorkspaceContextCandidate(match[1] ?? '');
+      if (candidate && !candidates.includes(candidate)) {
+        candidates.push(candidate);
+      }
+    }
+  }
+
+  return candidates.slice(0, CODE_AGENT_CONTEXT_CANDIDATE_LIMIT);
+}
+
+function getCodeAgentContextFileCandidates(detail: TaskDetail | null): string[] {
+  if (!detail) {
+    return [];
+  }
+
+  return extractWorkspacePathCandidates(
+    detail.title,
+    detail.summary,
+    detail.nextStep,
+    detail.riskNote,
+    ...detail.completionCriteria.map((item) => item.text),
+    ...detail.sourceContexts.flatMap((item) => [
+      item.title,
+      item.uri,
+      item.content,
+      item.note,
+    ]),
+    ...detail.artifacts.flatMap((item) => [
+      item.title,
+      item.content,
+    ]),
+  );
+}
 
 function isEarlyTask(task: Pick<TaskListItemRecord, 'state'>): boolean {
   return task.state === 'captured' || task.state === 'triaged';
@@ -2026,6 +2094,7 @@ export function TasksPage({
   const actionSetupOrder = getActionSetupOrder(detail, resumeLane);
   const snapshotArtifact = detail?.artifacts[0] ?? null;
   const snapshotSourceContext = detail?.sourceContexts[0] ?? null;
+  const codeAgentContextFileCandidates = getCodeAgentContextFileCandidates(detail);
   const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
   const orderedLaneLabels = tasks.reduce<string[]>((labels, task) => {
     const laneLabel = getPriorityLaneLabel(taskPriorityLanes.get(task.id));
@@ -2194,6 +2263,28 @@ export function TasksPage({
           <p className="meta">
             Context files are read-only evidence for the model producer; Taskplane still blocks path escapes, secrets, binary files, and oversized context.
           </p>
+          {codeAgentContextFileCandidates.length ? (
+            <div className="inline-actions" aria-label="Context file candidates">
+              {codeAgentContextFileCandidates.map((candidate) => (
+                <button
+                  className="ghost-button"
+                  key={candidate}
+                  onClick={() => {
+                    const current = codeAgentContextFiles
+                      .split(/[\n,]/)
+                      .map((file) => file.trim())
+                      .filter(Boolean);
+                    if (!current.includes(candidate)) {
+                      setCodeAgentContextFiles([...current, candidate].join('\n'));
+                    }
+                  }}
+                  type="button"
+                >
+                  {candidate}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <fieldset className="inline-fieldset">
             <legend>Allowed checks</legend>
             <label>

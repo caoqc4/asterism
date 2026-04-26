@@ -160,12 +160,20 @@ The project is past initial architecture assembly. Current work should favor pro
   passes them as `CreateCodeAgentRunInput.contextFiles`; the renderer does not
   read files directly, and main-process validation still owns path/content
   checks.
+- The Code Agent intent panel now shows bounded context-file candidate buttons
+  derived from task/source/artifact text. Clicking a candidate appends the path
+  to the field, but still does not read files in the renderer or bypass
+  main-process validation.
 - `npm test -- src/renderer/App.test.tsx src/main/ipc/handlers.test.ts
   src/main/preload.test.ts src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts`, `npm run
   accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally on
   2026-04-26 after adding the manual Code Agent context-file field.
+- `npm test -- src/renderer/App.test.tsx src/main/ipc/handlers.test.ts
+  src/main/domain/run/code-agent-workspace-context.test.ts`, `npm run
+  accept:sandbox-coding`, `npm run lint`, and `npm run build` passed locally on
+  2026-04-26 after adding renderer-only context-file candidate hints.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts

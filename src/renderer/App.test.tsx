@@ -2841,6 +2841,21 @@ describe('App UI flow', () => {
       probeSandboxBackend: vi.fn(),
       triggerCodeAgentRun: vi.fn(async () => codeAgentRun),
     };
+    taskDetails[riskTask.id] = {
+      ...taskDetails[riskTask.id],
+      artifacts: [
+        buildArtifact({
+          content: 'Update docs/notes.md and src/app.ts before review.',
+          title: 'Patch notes',
+        }),
+      ],
+      sourceContexts: [
+        buildSourceContext({
+          content: 'Relevant file: src/feature.ts',
+          uri: null,
+        }),
+      ],
+    };
     window.api = intentApi;
 
     render(<App />);
@@ -2863,6 +2878,11 @@ describe('App UI flow', () => {
     expect(startButton.hasAttribute('disabled')).toBe(true);
 
     await user.type(intent.getByLabelText('Patch intent'), 'Create a staged patch for the notes file');
+    expect(intent.getByRole('button', { name: 'docs/notes.md' })).toBeTruthy();
+    expect(intent.getByRole('button', { name: 'src/app.ts' })).toBeTruthy();
+    await user.click(intent.getByRole('button', { name: 'src/feature.ts' }));
+    expect((intent.getByLabelText('Context files') as HTMLTextAreaElement).value).toBe('src/feature.ts');
+    await user.clear(intent.getByLabelText('Context files'));
     await user.type(intent.getByLabelText('Context files'), 'docs/notes.md\nsrc/app.ts');
     await user.click(intent.getByRole('checkbox', {
       name: '我确认后续执行可能启动 Docker 容器，但工作区只会收到 Decision 批准后的变更',

@@ -594,6 +594,34 @@ Implemented notes:
 - The UI copy frames context files as read-only evidence for the model producer,
   not as broad workspace read permission.
 
+### T16: Context File Candidate Hints
+
+Status: first renderer-only candidate hints implemented.
+
+Goal: reduce manual typing while preserving explicit user selection before any
+workspace file is read.
+
+Work:
+
+- derive path-like candidates from the selected task title, summary, next step,
+  risk note, completion criteria, source contexts, and artifacts
+- ignore path escapes and sensitive-looking paths in the renderer hint list
+- show candidates as small action buttons near the `Context files` field
+- clicking a candidate appends it to the context field without reading the file
+
+Acceptance:
+
+- candidate hints do not read local files
+- user must click or type paths before the run carries context files
+- main process remains the only authority for real validation and file reads
+
+Implemented notes:
+
+- The hint extractor recognizes common relative code/doc file patterns and
+  keeps the list bounded.
+- The existing main-process context collector remains unchanged as the security
+  boundary.
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:
