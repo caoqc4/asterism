@@ -748,8 +748,9 @@ The project is past initial architecture assembly. Current work should favor pro
   registry/checkpoint-review only until manual review shows repeated friction.
 - `npm run release:mac:preflight` now provides a read-only local check for
   macOS signed/notarized release prerequisites: Developer ID signing source,
-  `notarytool`, Apple notarization env vars, and package metadata. It does not
-  sign, notarize, upload, or call Apple services.
+  `notarytool`, Apple ID or App Store Connect API key notarization env vars,
+  and package metadata. It does not sign, notarize, upload, or call Apple
+  services.
 
 ## Verification Baseline
 

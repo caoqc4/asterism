@@ -37,6 +37,10 @@ function redactedEnv(key) {
   return envValue(envValues, key) ? '<set>' : '<empty>';
 }
 
+function missingEnvKeys(keys) {
+  return keys.filter((key) => !envValue(envValues, key));
+}
+
 function findDeveloperIdIdentity() {
   if (process.platform !== 'darwin') {
     return {
@@ -88,6 +92,12 @@ const notarytool = checkNotarytool();
 const cscName = envValue(envValues, 'CSC_NAME');
 const cscLink = envValue(envValues, 'CSC_LINK');
 const cscKeyPassword = envValue(envValues, 'CSC_KEY_PASSWORD');
+const appleIdNotarizationKeys = ['APPLE_ID', 'APPLE_APP_SPECIFIC_PASSWORD', 'APPLE_TEAM_ID'];
+const appleApiNotarizationKeys = ['APPLE_API_KEY', 'APPLE_API_KEY_ID', 'APPLE_API_ISSUER'];
+const missingAppleIdNotarizationKeys = missingEnvKeys(appleIdNotarizationKeys);
+const missingAppleApiNotarizationKeys = missingEnvKeys(appleApiNotarizationKeys);
+const hasAppleIdNotarization = missingAppleIdNotarizationKeys.length === 0;
+const hasAppleApiNotarization = missingAppleApiNotarizationKeys.length === 0;
 
 addCheck({
   detail: process.platform,
@@ -96,8 +106,9 @@ addCheck({
 });
 addCheck({
   detail: developerId.message,
-  name: 'Developer ID Application identity',
+  name: 'Developer ID Application identity (keychain diagnostic)',
   ok: developerId.found,
+  required: false,
 });
 addCheck({
   detail: cscName
@@ -122,19 +133,52 @@ addCheck({
   ok: notarytool.found,
 });
 addCheck({
-  detail: redactedEnv('APPLE_ID'),
-  name: 'APPLE_ID',
-  ok: Boolean(envValue(envValues, 'APPLE_ID')),
+  detail: hasAppleApiNotarization
+    ? 'App Store Connect API key env vars are set.'
+    : hasAppleIdNotarization
+      ? 'Apple ID app-specific password env vars are set.'
+      : [
+        `missing Apple ID vars: ${missingAppleIdNotarizationKeys.join(', ') || 'none'}`,
+        `missing API key vars: ${missingAppleApiNotarizationKeys.join(', ') || 'none'}`,
+      ].join(' / '),
+  name: 'notarization credential source',
+  ok: hasAppleIdNotarization || hasAppleApiNotarization,
 });
 addCheck({
   detail: redactedEnv('APPLE_APP_SPECIFIC_PASSWORD'),
-  name: 'APPLE_APP_SPECIFIC_PASSWORD',
+  name: 'APPLE_APP_SPECIFIC_PASSWORD (Apple ID path)',
   ok: Boolean(envValue(envValues, 'APPLE_APP_SPECIFIC_PASSWORD')),
+  required: false,
 });
 addCheck({
   detail: redactedEnv('APPLE_TEAM_ID'),
-  name: 'APPLE_TEAM_ID',
+  name: 'APPLE_TEAM_ID (Apple ID path)',
   ok: Boolean(envValue(envValues, 'APPLE_TEAM_ID')),
+  required: false,
+});
+addCheck({
+  detail: redactedEnv('APPLE_ID'),
+  name: 'APPLE_ID (Apple ID path)',
+  ok: Boolean(envValue(envValues, 'APPLE_ID')),
+  required: false,
+});
+addCheck({
+  detail: redactedEnv('APPLE_API_KEY'),
+  name: 'APPLE_API_KEY (App Store Connect API key path)',
+  ok: Boolean(envValue(envValues, 'APPLE_API_KEY')),
+  required: false,
+});
+addCheck({
+  detail: redactedEnv('APPLE_API_KEY_ID'),
+  name: 'APPLE_API_KEY_ID (App Store Connect API key path)',
+  ok: Boolean(envValue(envValues, 'APPLE_API_KEY_ID')),
+  required: false,
+});
+addCheck({
+  detail: redactedEnv('APPLE_API_ISSUER'),
+  name: 'APPLE_API_ISSUER (App Store Connect API key path)',
+  ok: Boolean(envValue(envValues, 'APPLE_API_ISSUER')),
+  required: false,
 });
 addCheck({
   detail: build.appId || '<missing>',

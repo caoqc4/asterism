@@ -182,7 +182,9 @@ Automated/local coverage:
 - `npm run release:mac:preflight` now checks local signed/notarized release prerequisites without signing, notarizing, uploading, or calling Apple services
 - on 2026-04-25, `npm run release:mac:preflight` reported the host has
   `notarytool` and package metadata, while Developer ID signing and Apple
-  notarization credentials remain unconfigured
+  notarization credentials remain unconfigured. The preflight now recognizes
+  either Apple ID app-specific password credentials or App Store Connect API
+  key credentials as valid notarization inputs.
 - packaged runtime launch now works with isolated `TASKPLANE_USER_DATA_DIR`; Home renders from `app.asar/dist/index.html`, SQLite/config are created in the isolated directory, and task creation persists
 
 Manual need:
