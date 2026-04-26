@@ -429,6 +429,15 @@ The project is past initial architecture assembly. Current work should favor pro
   so provider spend requires both the env capability and explicit run-level
   selection with context files, selected checks, operator confirmation, sandbox
   preview, and Decision-gated promotion.
+- The real Task detail Code Agent UI manual pass now runs on an isolated
+  `TASKPLANE_USER_DATA_DIR` and disposable workspace from
+  `npm run manual:code-agent-ui-fixture`. The pass created a task, opened Action
+  Desk, probed runtime readiness to `ready`, and confirmed long runtime,
+  workspace-path, and preflight text wrap inside the Run/Code Agent card. Action
+  Setup and the Run card now span the detail grid, so Code Agent readiness is
+  readable without horizontal overflow or narrow-column wrapping. Provider spend
+  still requires explicit model-producer opt-in and was not triggered during the
+  UI layout pass.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
@@ -1034,13 +1043,13 @@ dedicated signed/notarized release pass.
 2. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
-5. Treat the execution-layer Slice 0, hidden tool-scaffold baseline, and
-   provider-backed disposable-workspace Code Agent preview as locally accepted
-   for the alpha path. The next execution task is a real Task detail UI manual
-   pass with isolated user data and a disposable workspace, verifying that
-   runtime readiness, checks, context files, model-producer opt-in, provider
-   spend, and Decision-gated promotion are understandable before any broader
-   agent-execution expansion.
+5. Treat the execution-layer Slice 0, hidden tool-scaffold baseline,
+   provider-backed disposable-workspace Code Agent preview, and real Task detail
+   Code Agent UI layout pass as locally accepted for the alpha path. The next
+   execution task should be a tighter orchestration/UI slice for the Code Agent
+   run lifecycle: show source evidence, staged patch, checkpoint/Decision state,
+   and rerun/recovery affordances from Task and Runs without broadening
+   automatic starts or external tool access.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.

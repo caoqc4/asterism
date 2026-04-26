@@ -78,6 +78,7 @@ body {
 }
 
 .panel {
+  min-width: 0;
   border: 1px solid rgba(31, 41, 55, 0.08);
   border-radius: 24px;
   padding: 24px;
@@ -156,6 +157,8 @@ ul {
 .meta {
   color: #6b7280;
   font-size: 14px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .stack {
@@ -213,6 +216,7 @@ label {
 .checkbox-row {
   grid-template-columns: 20px 1fr;
   align-items: center;
+  min-width: 0;
 }
 
 .checkbox-row input {
@@ -269,6 +273,7 @@ button {
 }
 
 .task-card {
+  min-width: 0;
   padding: 14px;
   border-radius: 16px;
   background: rgba(17, 24, 39, 0.04);
@@ -396,9 +401,14 @@ button {
   align-content: start;
 }
 
+.quick-run-card {
+  grid-column: 1 / -1;
+}
+
 .runtime-readiness {
   display: grid;
   gap: 8px;
+  min-width: 0;
   padding: 12px;
   border: 1px solid rgba(17, 24, 39, 0.08);
   border-radius: 8px;
@@ -408,8 +418,14 @@ button {
 .code-agent-intent {
   display: grid;
   gap: 10px;
+  min-width: 0;
   padding-top: 10px;
   border-top: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.runtime-readiness *,
+.code-agent-intent * {
+  min-width: 0;
 }
 
 .inline-fieldset {
@@ -442,6 +458,7 @@ button {
 }
 
 .detail-stage {
+  min-width: 0;
   padding-top: 6px;
 }
 
@@ -488,11 +505,19 @@ button {
   gap: 16px;
 }
 
+.detail-cluster-grid > * {
+  min-width: 0;
+}
+
 .detail-card-group {
   margin-top: 0;
 }
 
 .detail-card-wide {
+  grid-column: 1 / -1;
+}
+
+.detail-action-setup {
   grid-column: 1 / -1;
 }
 

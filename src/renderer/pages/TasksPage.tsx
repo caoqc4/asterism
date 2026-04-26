@@ -2188,7 +2188,7 @@ export function TasksPage({
   );
   const quickRunSetup = (
     <form
-      className="stack task-card quick-action-card"
+      className="stack task-card quick-action-card quick-run-card"
       key="run"
       onSubmit={handleQuickRun}
       ref={quickRunCardRef}
@@ -3218,7 +3218,7 @@ export function TasksPage({
                   </div>
                 </div>
 
-                <div className="transition-group detail-card-group">
+                <div className="transition-group detail-card-group detail-action-setup">
                   <h3>Action Setup</h3>
                   <p className="meta">{getActionSetupGuidance(detail)}</p>
                   {latestPausedRun ? (
