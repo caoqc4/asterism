@@ -402,6 +402,11 @@ The project is past initial architecture assembly. Current work should favor pro
   src/renderer/lib/agentCapabilities.test.ts`, `npm run accept:sandbox-coding`,
   `npm run lint`, and `npm run build` passed locally on 2026-04-26 after
   separating model-producer availability from per-run provider-spend selection.
+- The same gate is now reflected in alpha/config/testing documentation, blocked
+  start UI copy, IPC fallback coverage, and manual preview Run evidence: hidden
+  or disabled model-producer UI state is inert, env capability alone remains
+  passive, and manual diagnostic previews no longer claim the model loop is
+  disconnected.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts
