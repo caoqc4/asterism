@@ -71,6 +71,24 @@ export const runCheckpoints = sqliteTable('run_checkpoints', {
   resolvedAt: text('resolved_at'),
 });
 
+export const sandboxPatchPromotions = sqliteTable('sandbox_patch_promotions', {
+  id: text('id').primaryKey(),
+  checkpointId: text('checkpoint_id').notNull(),
+  runId: text('run_id').notNull(),
+  taskId: text('task_id').notNull(),
+  artifactId: text('artifact_id').notNull(),
+  sourceId: text('source_id').notNull(),
+  decisionId: text('decision_id').notNull(),
+  patchDigest: text('patch_digest').notNull(),
+  expectedFiles: text('expected_files').notNull(),
+  status: text('status').notNull(),
+  auditSummary: text('audit_summary'),
+  blockedReasons: text('blocked_reasons').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  appliedAt: text('applied_at'),
+});
+
 export const agentSessions = sqliteTable('agent_sessions', {
   id: text('id').primaryKey(),
   runId: text('run_id').notNull(),

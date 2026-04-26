@@ -777,6 +777,29 @@ Acceptance:
 - no workspace file reads or writes are introduced
 - current review-only payloads surface as `missing_apply_metadata`
 
+### T24: Durable Patch Promotion Record
+
+Status: first persistence layer implemented.
+
+Goal: give future sandbox patch promotion a durable idempotency and audit
+record before any workspace write path exists.
+
+Work:
+
+- add `sandbox_patch_promotions` to the SQLite schema/bootstrap
+- add `SandboxPatchPromotionRepository`
+- persist checkpoint id, run id, task id, artifact id, source id, Decision id,
+  patch digest, expected files, status, audit summary, blocked reasons, and
+  applied timestamp
+- make `createPending()` idempotent by checkpoint id
+- include the repository integration test in `accept:sandbox-coding`
+
+Acceptance:
+
+- no Decision approval path calls the repository yet
+- no workspace file reads or writes are introduced
+- future apply service can query by checkpoint id or source/digest
+
 ## Deferred Tasks
 
 These are intentionally outside the first visible mode:
@@ -795,6 +818,6 @@ Each needs its own decision before implementation.
 
 ## Next Decision
 
-The next implementation step is deciding where durable promotion metadata
-should live: dedicated table, checkpoint payload extension, artifact metadata,
-or a combination. This must be settled before any apply service can be safe.
+The next implementation step is enriching patch-promotion checkpoint payloads
+with explicit apply metadata (`expectedFiles`, `patchDigest`) at creation time,
+so readiness can become `ready` for newly generated sandbox patch evidence.

@@ -222,8 +222,17 @@ exists.
 
 ### P2: Durable Promotion Record
 
+Status: first repository/table implemented.
+
 Add a repository/table or equivalent persisted event that records source id,
 artifact id, digest, touched files, status, and timestamps.
+
+Current persistence: `sandbox_patch_promotions`.
+
+The first record shape stores checkpoint id, run id, task id, artifact id,
+source id, Decision id, patch digest, expected files, status, audit summary,
+blocked reasons, and applied timestamp. It is intentionally not wired to
+Decision approval or file writes yet.
 
 ### P3: Apply Service
 

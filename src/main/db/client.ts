@@ -102,6 +102,27 @@ function bootstrapTables(connection: Database.Database): void {
       resolved_at TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS sandbox_patch_promotions (
+      id TEXT PRIMARY KEY,
+      checkpoint_id TEXT NOT NULL,
+      run_id TEXT NOT NULL,
+      task_id TEXT NOT NULL,
+      artifact_id TEXT NOT NULL,
+      source_id TEXT NOT NULL,
+      decision_id TEXT NOT NULL,
+      patch_digest TEXT NOT NULL,
+      expected_files TEXT NOT NULL,
+      status TEXT NOT NULL,
+      audit_summary TEXT,
+      blocked_reasons TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      applied_at TEXT
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS sandbox_patch_promotions_checkpoint_idx
+      ON sandbox_patch_promotions(checkpoint_id);
+
     CREATE TABLE IF NOT EXISTS agent_sessions (
       id TEXT PRIMARY KEY,
       run_id TEXT NOT NULL,

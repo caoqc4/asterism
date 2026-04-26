@@ -188,6 +188,11 @@ The project is past initial architecture assembly. Current work should favor pro
   Review` block, and pending `workspace.staged_patch` Decisions tell users to
   inspect Run evidence and promotion readiness before acting. The evaluator was
   moved to shared code so renderer and main use the same classifier.
+- Patch promotion now has a first durable metadata table/repository:
+  `sandbox_patch_promotions`. It records checkpoint/run/task/artifact/source/
+  Decision ids, patch digest, expected files, status, audit summary, blocked
+  reasons, and applied timestamp, without being wired to Decision approval or
+  file writes yet.
 - The model producer preflight now validates configured
   `TASKPLANE_CODE_AGENT_CONTEXT_FILES` locally, including workspace-relative
   path checks, existence, file-vs-directory checks, text-only content, and size
@@ -221,6 +226,10 @@ The project is past initial architecture assembly. Current work should favor pro
   src/renderer/App.test.tsx`, `npm run accept:sandbox-coding`, `npm run lint`,
   and `npm run build` passed locally on 2026-04-26 after surfacing promotion
   readiness in Runs and Decision copy.
+- `npm test -- src/main/db/repositories/sandbox-patch-promotion-repository.integration.test.ts`,
+  `npm run accept:sandbox-coding`, `npm run lint`, and `npm run build` passed
+  locally on 2026-04-26 after adding the durable patch-promotion metadata
+  repository: 32 sandbox-coding files / 190 tests.
 - `npm test -- src/main/domain/run/code-agent-workspace-context.test.ts
   src/main/domain/run/code-agent-model-producer-loop.test.ts
   src/main/domain/run/code-agent-model-producer-runtime.test.ts
