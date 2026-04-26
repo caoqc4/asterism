@@ -1004,3 +1004,7 @@ enabled mode reveals a per-run `Use model producer` checkbox. The env flag is
 therefore only capability availability; provider spend still requires explicit
 operator confirmation, explicit context files, selected checks, sandbox preview,
 and Decision-gated promotion.
+
+Runs detail now also shows the sandbox producer source from session metadata:
+local diagnostic previews are labeled as no-provider-call evidence, while
+model-backed runs are labeled as provider-backed and still Decision-gated.
