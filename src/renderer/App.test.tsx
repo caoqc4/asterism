@@ -2824,6 +2824,45 @@ describe('App UI flow', () => {
     )).toBeTruthy();
   });
 
+  it('collects manual code-agent run intent without executing the producer', async () => {
+    const user = userEvent.setup();
+    const intentApi: ElectronApi = {
+      ...mockApi,
+      probeSandboxBackend: vi.fn(),
+    };
+    window.api = intentApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    const riskTaskCard = await screen.findByRole('button', { name: /High risk task/i });
+    await user.click(riskTaskCard);
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    const intent = within(screen.getByLabelText('Code agent run intent'));
+    expect(intent.getByText('AgentProfile：manual sandbox producer')).toBeTruthy();
+    expect(intent.getByText(/Task：High risk task/)).toBeTruthy();
+    expect(intent.getByText(/Skill readiness：deferred until policy exists/)).toBeTruthy();
+    expect(intent.getByText(/Completion criteria：暂无/)).toBeTruthy();
+
+    const startButton = intent.getByRole('button', { name: '准备 Code Agent Run' });
+    expect(startButton.hasAttribute('disabled')).toBe(true);
+
+    await user.type(intent.getByLabelText('Patch intent'), 'Create a staged patch for the notes file');
+    await user.click(intent.getByRole('checkbox', {
+      name: '我确认后续执行可能启动 Docker 容器，但工作区只会收到 Decision 批准后的变更',
+    }));
+    expect(startButton.hasAttribute('disabled')).toBe(false);
+
+    await user.click(startButton);
+
+    expect(intentApi.triggerRun).not.toHaveBeenCalled();
+    expect(intentApi.probeSandboxBackend).not.toHaveBeenCalled();
+    expect(intent.getByText(
+      'Code-agent execution wiring is deferred: intent captured locally; no producer run was started.',
+    )).toBeTruthy();
+  });
+
   it('blocks saving a high-risk task without a risk note', async () => {
     const user = userEvent.setup();
 

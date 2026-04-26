@@ -134,6 +134,9 @@ Implemented notes:
 
 ### T3: Manual AgentProfile / Run Intent Form
 
+Status: completed for an intent-only first surface. Producer execution IPC is
+still deferred.
+
 Goal: collect deliberate user intent for one sandboxed coding attempt while
 leaving room for future profile/skill policy.
 
@@ -154,6 +157,18 @@ Acceptance:
 - no execution service call occurs without confirmation
 - the form does not expose generic Read / Write / Edit / Bash tools
 - failed preflight writes a readable run diagnostic
+
+Implemented notes:
+
+- Task detail / Action Desk now shows a static `manual sandbox producer`
+  AgentProfile summary under the runtime block.
+- The form shows the selected Task, current completion criteria, a patch intent
+  textarea, allowlisted `test` / `lint` check toggles, and explicit Docker /
+  Decision confirmation.
+- The first button records an intent-only diagnostic and does not call
+  `triggerRun`, sandbox backend probe, or producer execution.
+- Real producer execution remains a later IPC/orchestration task after the Run
+  lifecycle projection is visible.
 
 ### T4: AgentRunLifecycle Projection
 

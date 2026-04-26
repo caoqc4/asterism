@@ -92,6 +92,11 @@ The project is past initial architecture assembly. Current work should favor pro
   check action. The surface starts in a not-checked state, reuses the existing
   sandbox backend probe on demand, and does not trigger a Run or producer
   execution.
+- The manual code-agent intent surface now shows a static `manual sandbox
+  producer` AgentProfile, selected Task, completion criteria, patch intent,
+  allowlisted `test` / `lint` toggles, and explicit Docker/Decision
+  confirmation. It records only a local diagnostic for now; producer execution
+  IPC remains deferred.
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
   now records the completed Slice 0 execution-layer pass: runtime events,
   event-driven RunStep projection, checkpoint normalization, restart-safe

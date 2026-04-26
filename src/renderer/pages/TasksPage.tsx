@@ -773,6 +773,11 @@ export function TasksPage({
   const [quickRunInstructions, setQuickRunInstructions] = useState('');
   const [quickRunAllowLocalWorkspaceRead, setQuickRunAllowLocalWorkspaceRead] = useState(false);
   const [quickRunAllowTaskMutationTools, setQuickRunAllowTaskMutationTools] = useState(false);
+  const [codeAgentPatchIntent, setCodeAgentPatchIntent] = useState('');
+  const [codeAgentRunTestCheck, setCodeAgentRunTestCheck] = useState(true);
+  const [codeAgentRunLintCheck, setCodeAgentRunLintCheck] = useState(true);
+  const [codeAgentOperatorConfirmed, setCodeAgentOperatorConfirmed] = useState(false);
+  const [codeAgentIntentDiagnostic, setCodeAgentIntentDiagnostic] = useState<string | null>(null);
   const [transitionWaitingReason, setTransitionWaitingReason] = useState('');
   const [blockerEditingId, setBlockerEditingId] = useState<string | null>(null);
   const [blockerTitle, setBlockerTitle] = useState('');
@@ -2111,6 +2116,68 @@ export function TasksPage({
         >
           {sandboxBackendProbePending ? '检查中' : '检查运行时'}
         </button>
+        <div className="code-agent-intent" aria-label="Code agent run intent">
+          <strong>AgentProfile：manual sandbox producer</strong>
+          <p className="meta">
+            Task：{detail?.title ?? '未选择任务'} / Skill readiness：deferred until policy exists
+          </p>
+          <p className="meta">
+            Completion criteria：{
+              detail?.completionCriteria.length
+                ? detail.completionCriteria.map((item) => item.text).join('；')
+                : '暂无'
+            }
+          </p>
+          <label>
+            Patch intent
+            <textarea
+              rows={2}
+              value={codeAgentPatchIntent}
+              onChange={(event) => setCodeAgentPatchIntent(event.target.value)}
+              placeholder="Describe the staged patch this code-agent run should try to produce."
+            />
+          </label>
+          <fieldset className="inline-fieldset">
+            <legend>Allowed checks</legend>
+            <label>
+              <input
+                checked={codeAgentRunTestCheck}
+                onChange={(event) => setCodeAgentRunTestCheck(event.target.checked)}
+                type="checkbox"
+              />
+              test
+            </label>
+            <label>
+              <input
+                checked={codeAgentRunLintCheck}
+                onChange={(event) => setCodeAgentRunLintCheck(event.target.checked)}
+                type="checkbox"
+              />
+              lint
+            </label>
+          </fieldset>
+          <label>
+            <input
+              checked={codeAgentOperatorConfirmed}
+              onChange={(event) => setCodeAgentOperatorConfirmed(event.target.checked)}
+              type="checkbox"
+            />
+            我确认后续执行可能启动 Docker 容器，但工作区只会收到 Decision 批准后的变更
+          </label>
+          <button
+            className="ghost-button"
+            disabled={!codeAgentOperatorConfirmed || (!codeAgentRunTestCheck && !codeAgentRunLintCheck)}
+            onClick={() => {
+              setCodeAgentIntentDiagnostic(
+                'Code-agent execution wiring is deferred: intent captured locally; no producer run was started.',
+              );
+            }}
+            type="button"
+          >
+            准备 Code Agent Run
+          </button>
+          {codeAgentIntentDiagnostic ? <p className="meta">{codeAgentIntentDiagnostic}</p> : null}
+        </div>
       </div>
       <p className="meta">{quickRunGuidance}</p>
       <button type="submit">触发 Run</button>
