@@ -134,8 +134,8 @@ Implemented notes:
 
 ### T3: Manual AgentProfile / Run Intent Form
 
-Status: completed for an intent-only first surface. Producer execution IPC is
-still deferred.
+Status: completed for the manual run intent surface and later connected to the
+dedicated sandbox preview IPC path.
 
 Goal: collect deliberate user intent for one sandboxed coding attempt while
 leaving room for future profile/skill policy.
@@ -165,15 +165,18 @@ Implemented notes:
 - The form shows the selected Task, current completion criteria, a patch intent
   textarea, allowlisted `test` / `lint` check toggles, and explicit Docker /
   Decision confirmation.
-- The first button records an intent-only diagnostic and does not call
-  `triggerRun`, sandbox backend probe, or producer execution.
-- Real producer execution remains a later IPC/orchestration task after the Run
-  lifecycle projection is visible.
+- The first version originally recorded an intent-only diagnostic. The current
+  implementation now calls only the dedicated `run:triggerCodeAgent` path after
+  explicit operator confirmation, creates a real Run, and opens Runs detail for
+  lifecycle/source review.
+- Model-backed producer use is still a separate per-run opt-in. When that
+  opt-in is absent, the manual surface uses the local diagnostic producer and
+  does not call the provider.
 
 ### T4: AgentRunLifecycle Projection
 
-Status: completed for sandbox producer Run detail projection. Producer start
-from the UI remains deferred.
+Status: completed for sandbox producer Run detail projection and the current
+manual Task detail start path.
 
 Goal: make the execution lifecycle reviewable before any workspace mutation.
 
@@ -204,6 +207,9 @@ Implemented notes:
   states, and sandbox tool events.
 - Source-ready wording keeps staged patch review explicit: workspace mutation
   still requires an approved patch-promotion Decision.
+- The manual Task detail path now starts a sandbox preview Run through
+  `run:triggerCodeAgent`; Runs detail remains the review/recovery surface after
+  launch.
 
 ### T5: Future Automatic Start Policy Stub
 
