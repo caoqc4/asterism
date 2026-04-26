@@ -217,6 +217,33 @@ function getCodeAgentContextFileCandidates(detail: TaskDetail | null): string[] 
   );
 }
 
+function getCodeAgentStartBlockedReason(input: {
+  operatorConfirmed: boolean;
+  runPending: boolean;
+  selectedContextFileCount: number;
+  testCheck: boolean;
+  lintCheck: boolean;
+  useModelProducer: boolean;
+}): string | null {
+  if (input.runPending) {
+    return 'Start blocked：run is already starting.';
+  }
+
+  if (!input.operatorConfirmed) {
+    return 'Start blocked：confirm Docker/Decision review before starting.';
+  }
+
+  if (input.useModelProducer && input.selectedContextFileCount === 0) {
+    return 'Start blocked：select at least one context file before using model producer.';
+  }
+
+  if (!input.testCheck && !input.lintCheck) {
+    return 'Start blocked：select at least one allowlisted check.';
+  }
+
+  return null;
+}
+
 function isEarlyTask(task: Pick<TaskListItemRecord, 'state'>): boolean {
   return task.state === 'captured' || task.state === 'triaged';
 }
@@ -2109,6 +2136,14 @@ export function TasksPage({
   const snapshotSourceContext = detail?.sourceContexts[0] ?? null;
   const codeAgentContextFileCandidates = getCodeAgentContextFileCandidates(detail);
   const selectedCodeAgentContextFiles = parseCodeAgentContextFileInput(codeAgentContextFiles);
+  const codeAgentStartBlockedReason = getCodeAgentStartBlockedReason({
+    lintCheck: codeAgentRunLintCheck,
+    operatorConfirmed: codeAgentOperatorConfirmed,
+    runPending: codeAgentRunPending,
+    selectedContextFileCount: selectedCodeAgentContextFiles.length,
+    testCheck: codeAgentRunTestCheck,
+    useModelProducer: codeAgentUseModelProducer,
+  });
   const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
   const orderedLaneLabels = tasks.reduce<string[]>((labels, task) => {
     const laneLabel = getPriorityLaneLabel(taskPriorityLanes.get(task.id));
@@ -2345,17 +2380,13 @@ export function TasksPage({
           </label>
           <button
             className="ghost-button"
-            disabled={
-              codeAgentRunPending
-              || !codeAgentOperatorConfirmed
-              || (codeAgentUseModelProducer && selectedCodeAgentContextFiles.length === 0)
-              || (!codeAgentRunTestCheck && !codeAgentRunLintCheck)
-            }
+            disabled={codeAgentStartBlockedReason !== null}
             onClick={() => void handleCodeAgentRunStart()}
             type="button"
           >
             {codeAgentRunPending ? '启动中' : '启动 sandbox preview run'}
           </button>
+          {codeAgentStartBlockedReason ? <p className="meta">{codeAgentStartBlockedReason}</p> : null}
           {codeAgentIntentDiagnostic ? <p className="meta">{codeAgentIntentDiagnostic}</p> : null}
         </div>
       </div>

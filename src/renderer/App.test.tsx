@@ -2886,10 +2886,19 @@ describe('App UI flow', () => {
 
     const startButton = intent.getByRole('button', { name: '启动 sandbox preview run' });
     expect(startButton.hasAttribute('disabled')).toBe(true);
+    expect(intent.getByText('Start blocked：confirm Docker/Decision review before starting.')).toBeTruthy();
 
     await user.type(intent.getByLabelText('Patch intent'), 'Create a staged patch for the notes file');
     expect(intent.getByRole('button', { name: 'docs/notes.md' })).toBeTruthy();
     expect(intent.getByRole('button', { name: 'src/app.ts' })).toBeTruthy();
+    await user.click(intent.getByRole('checkbox', {
+      name: 'Use model producer（会调用已配置 provider；需要显式 context files）',
+    }));
+    await user.click(intent.getByRole('checkbox', {
+      name: '我确认后续执行可能启动 Docker 容器，但工作区只会收到 Decision 批准后的变更',
+    }));
+    expect(intent.getByText('Start blocked：select at least one context file before using model producer.')).toBeTruthy();
+    expect(startButton.hasAttribute('disabled')).toBe(true);
     await user.click(intent.getByRole('button', { name: 'src/feature.ts' }));
     expect((intent.getByLabelText('Context files') as HTMLTextAreaElement).value).toBe('src/feature.ts');
     expect(intent.getByText(
@@ -2900,12 +2909,6 @@ describe('App UI flow', () => {
     expect(intent.getByText(
       'Context selection：2 selected / docs/notes.md、src/app.ts / files are not read until the run starts',
     )).toBeTruthy();
-    await user.click(intent.getByRole('checkbox', {
-      name: 'Use model producer（会调用已配置 provider；需要显式 context files）',
-    }));
-    await user.click(intent.getByRole('checkbox', {
-      name: '我确认后续执行可能启动 Docker 容器，但工作区只会收到 Decision 批准后的变更',
-    }));
     expect(startButton.hasAttribute('disabled')).toBe(false);
 
     await user.click(startButton);
