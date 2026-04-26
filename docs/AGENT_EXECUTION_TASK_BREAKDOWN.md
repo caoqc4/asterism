@@ -82,6 +82,9 @@ Completed:
   the checkpoint when available
 - the recovery card can also prepare a bounded Code Agent rerun intent without
   automatically starting the run or spending provider credit
+- Runs / Staged Patch Review now exposes a persisted evidence checklist for
+  source evidence, targeted checks, promotion Decision, and workspace mutation
+  state
 
 Pi reference boundary:
 

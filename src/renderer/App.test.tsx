@@ -3780,6 +3780,14 @@ describe('App UI flow', () => {
     expect(
       screen.getByText(/Patch preview：\*\*\* Begin Patch \*\*\* Update File: src\/notes\.md/),
     ).toBeTruthy();
+    expect(screen.getByText('Source evidence')).toBeTruthy();
+    expect(screen.getByText('source=sandbox_source_1; files=src/notes.md')).toBeTruthy();
+    expect(screen.getByText('Targeted checks')).toBeTruthy();
+    expect(screen.getByText('passed=lint passed')).toBeTruthy();
+    expect(screen.getByText('Promotion Decision')).toBeTruthy();
+    expect(screen.getByText('open; 确认提升 sandbox patch')).toBeTruthy();
+    expect(screen.getByText('Workspace mutation')).toBeTruthy();
+    expect(screen.getByText('workspace unchanged until Decision approval')).toBeTruthy();
     expect(
       screen.getByText('Check evidence：lint passed；lint: passed'),
     ).toBeTruthy();

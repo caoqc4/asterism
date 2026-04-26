@@ -468,6 +468,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - The same recovery card now includes a `准备重跑 Code Agent` affordance that
   returns the operator to the Code Agent input surface and pre-fills a bounded
   rerun intent without starting a run or spending provider credit.
+- Runs / Staged Patch Review now breaks Code Agent evidence into a compact
+  checklist for source evidence, targeted checks, promotion Decision, and
+  workspace mutation state, so review can happen from persisted records without
+  parsing one long lifecycle sentence.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
