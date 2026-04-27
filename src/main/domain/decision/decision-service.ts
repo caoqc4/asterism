@@ -28,7 +28,7 @@ import type { BrowserControlledInteractionResult } from '../../../shared/types/b
 import { parseBrowserControlledInteractionCheckpointPayload } from '../../../shared/types/browser-controlled-interaction.js';
 import { parseRunCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import { AgentSessionStore } from '../run/agent-session-store.js';
-import { findLatestContinuableAgentSession } from '../run/agent-session-continuation.js';
+import { findLatestCheckpointBackedAgentSession } from '../run/agent-session-continuation.js';
 import {
   DecisionProcessTemplateSelector,
   type DecisionProcessTemplateSelectionResult,
@@ -620,7 +620,7 @@ export class DecisionService {
       return;
     }
 
-    const latestSession = findLatestContinuableAgentSession(
+    const latestSession = findLatestCheckpointBackedAgentSession(
       await this.agentSessionStore.listForRun(runId),
     );
 

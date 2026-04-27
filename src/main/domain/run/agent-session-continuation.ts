@@ -9,10 +9,24 @@ export function findLatestContinuableAgentSession(
     .at(-1) ?? null;
 }
 
+export function findLatestCheckpointBackedAgentSession(
+  sessions: AgentSessionRecord[],
+): AgentSessionRecord | null {
+  return [...sessions]
+    .filter(isCheckpointBackedAgentSession)
+    .sort(compareAgentSessionsByRecency)
+    .at(-1) ?? null;
+}
+
 function isContinuableAgentSession(session: AgentSessionRecord): boolean {
   return session.status === 'paused'
     || session.status === 'needs_confirmation'
     || session.status === 'running';
+}
+
+function isCheckpointBackedAgentSession(session: AgentSessionRecord): boolean {
+  return session.status === 'paused'
+    || session.status === 'needs_confirmation';
 }
 
 function compareAgentSessionsByRecency(

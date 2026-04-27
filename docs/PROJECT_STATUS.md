@@ -651,16 +651,19 @@ The project is past initial architecture assembly. Current work should favor pro
   treated as `interrupted_or_stale`, so task recovery copy asks the user to
   inspect evidence and start a new Run if no executor is active instead of
   implying automatic replay.
-- Paused-run continuation now synchronizes the latest continuable AgentSession
-  terminal status: successful resume marks it `completed`, failed resume marks
-  it `failed`, and invalid/stale checkpoint payloads still stop before any
-  tool execution or session mutation. This keeps restart/recovery summaries
-  aligned with the actual Run outcome after a manual resume.
-- Decision checkpoint settlement now uses the same AgentSession terminal-status
-  synchronization through the shared service wiring: approved tool/browser/patch
-  resume completion marks the latest continuable session `completed`, failed or
-  blocked resume marks it `failed`, and deferred/cancelled Decisions mark it
-  `cancelled`, while unsupported/no-op approvals remain review-only.
+- Paused-run continuation now synchronizes the latest checkpoint-backed
+  AgentSession terminal status: successful resume marks the latest `paused` /
+  `needs_confirmation` session `completed`, failed resume marks it `failed`,
+  and invalid/stale checkpoint payloads still stop before any tool execution or
+  session mutation. Stale `running` sessions are excluded from this settlement
+  target so a restart/interruption record cannot be accidentally marked
+  completed.
+- Decision checkpoint settlement now uses the same checkpoint-backed
+  AgentSession terminal-status synchronization through the shared service
+  wiring: approved tool/browser/patch resume completion marks the latest
+  checkpoint-backed session `completed`, failed or blocked resume marks it
+  `failed`, and deferred/cancelled Decisions mark it `cancelled`, while
+  unsupported/no-op approvals remain review-only.
 - Runs detail now only exposes `继续 paused run` when the paused Run has an
   open `resume` checkpoint payload. Paused Runs without a resumable checkpoint
   show review-first guidance instead of letting the user click into a known
@@ -1159,15 +1162,15 @@ npm run verify
 Latest local baseline:
 
 - 119 test files
-- 820 tests
+- 822 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
 - `npm run verify` passed locally on 2026-04-27 after tightening Code Agent
-  model-context gates and updating the local acceptance status: 119 test files
-  / 820 tests
+  model-context gates, checkpoint-backed session settlement, and updating the
+  local acceptance status: 119 test files / 822 tests
 - `npm run smoke:release:mac` passed locally on 2026-04-27 for the combined
   unsigned macOS package path after the Code Agent context-gate and
   restart/replay safety updates

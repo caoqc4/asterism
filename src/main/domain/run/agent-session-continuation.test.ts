@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
-import { findLatestContinuableAgentSession } from './agent-session-continuation.js';
+import {
+  findLatestCheckpointBackedAgentSession,
+  findLatestContinuableAgentSession,
+} from './agent-session-continuation.js';
 
 function buildSession(partial: Partial<AgentSessionRecord>): AgentSessionRecord {
   return {
@@ -49,6 +52,33 @@ describe('agent session continuation helper', () => {
       buildSession({ status: 'completed' }),
       buildSession({ status: 'failed' }),
       buildSession({ status: 'cancelled' }),
+    ])).toBeNull();
+  });
+
+  it('excludes stale running sessions when selecting a checkpoint-backed settlement target', () => {
+    expect(findLatestCheckpointBackedAgentSession([
+      buildSession({
+        id: 'agent_session_paused',
+        status: 'paused',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_running_stale',
+        status: 'running',
+        updatedAt: '2026-01-03T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_completed',
+        status: 'completed',
+        updatedAt: '2026-01-04T00:00:00.000Z',
+      }),
+    ])?.id).toBe('agent_session_paused');
+  });
+
+  it('returns null for checkpoint-backed settlement when only running sessions remain', () => {
+    expect(findLatestCheckpointBackedAgentSession([
+      buildSession({ status: 'running' }),
+      buildSession({ status: 'completed' }),
     ])).toBeNull();
   });
 });

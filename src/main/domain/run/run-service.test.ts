@@ -675,6 +675,23 @@ describe('RunService', () => {
           createdAt: '2026-01-01T00:00:00.000Z',
           updatedAt: '2026-01-01T00:00:00.000Z',
         },
+        {
+          id: 'agent_session_running_stale',
+          runId: 'run_1',
+          mode: 'agent',
+          status: 'running',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: true,
+            streaming: false,
+            fileContext: false,
+            taskMutationTools: false,
+            longRunningSessions: false,
+          },
+          metadata: 'executor=local_agent',
+          createdAt: '2026-01-02T00:00:00.000Z',
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        },
       ]),
       updateStatus: vi.fn(),
     };
