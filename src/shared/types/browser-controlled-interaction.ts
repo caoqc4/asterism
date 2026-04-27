@@ -1,5 +1,6 @@
 import type { BrowserEvidenceArtifact, BrowserEvidenceKind } from './browser-evidence.js';
-import type { RunStepKind, RunStepStatus } from './run.js';
+import type { DecisionStatus } from './decision.js';
+import type { RunCheckpointStatus, RunStepKind, RunStepStatus } from './run.js';
 
 export const BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID = 'browser.controlled_interaction' as const;
 
@@ -119,6 +120,52 @@ export type BrowserControlledInteractionCheckpointPayloadBuild =
   | {
       blockedReasons: [];
       payload: BrowserControlledInteractionCheckpointPayloadV1;
+      summary: string;
+      valid: true;
+    }
+  | {
+      blockedReasons: string[];
+      summary: string;
+      valid: false;
+    };
+
+export type BrowserControlledInteractionCheckpointPayloadParse =
+  | {
+      blockedReasons: [];
+      payload: BrowserControlledInteractionCheckpointPayloadV1;
+      valid: true;
+    }
+  | {
+      blockedReasons: string[];
+      valid: false;
+    };
+
+export type BrowserControlledInteractionResumeContext = {
+  checkpointStatus: RunCheckpointStatus;
+  currentPolicy?: BrowserControlledInteractionPolicy | null;
+  decisionStatus: DecisionStatus | null;
+  descriptorId: typeof BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID;
+  modelExposure: 'hidden' | 'visible';
+  providerCallAllowed: boolean;
+  requestedAction?: BrowserControlledAction | null;
+  requestedOrigin?: string | null;
+  schedulerAllowed: boolean;
+};
+
+export type BrowserControlledInteractionResumePlan = {
+  action: BrowserControlledInteractionAction;
+  currentUrl: string;
+  descriptorId: typeof BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID;
+  evidenceKinds: BrowserEvidenceKind[];
+  origin: string;
+  sideEffectClassification: 'possible_external_side_effect';
+  summary: string;
+};
+
+export type BrowserControlledInteractionResumeValidation =
+  | {
+      blockedReasons: [];
+      plan: BrowserControlledInteractionResumePlan;
       summary: string;
       valid: true;
     }
@@ -458,6 +505,173 @@ export function buildBrowserControlledInteractionCheckpointPayload(params: {
   };
 }
 
+export function parseBrowserControlledInteractionCheckpointPayload(
+  payload: unknown,
+): BrowserControlledInteractionCheckpointPayloadParse {
+  let parsed: unknown = payload;
+
+  if (typeof payload === 'string') {
+    try {
+      parsed = JSON.parse(payload);
+    } catch {
+      return invalidBrowserControlledCheckpointPayloadParse([
+        'Browser controlled checkpoint payload is not valid JSON.',
+      ]);
+    }
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return invalidBrowserControlledCheckpointPayloadParse([
+      'Browser controlled checkpoint payload must be an object.',
+    ]);
+  }
+
+  const candidate = parsed as Partial<BrowserControlledInteractionCheckpointPayloadV1>;
+
+  if (candidate.kind !== 'browser_controlled_interaction') {
+    return invalidBrowserControlledCheckpointPayloadParse([
+      'Browser controlled checkpoint payload kind is not supported.',
+    ]);
+  }
+
+  if (candidate.version !== 1) {
+    return invalidBrowserControlledCheckpointPayloadParse([
+      'Browser controlled checkpoint payload version is not supported.',
+    ]);
+  }
+
+  if (candidate.descriptorId !== BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID) {
+    return invalidBrowserControlledCheckpointPayloadParse([
+      'Browser controlled checkpoint descriptor does not match the controlled interaction tool.',
+    ]);
+  }
+
+  if (!candidate.action || typeof candidate.action !== 'object' || !isBrowserControlledAction(candidate.action.action)) {
+    return invalidBrowserControlledCheckpointPayloadParse([
+      'Browser controlled checkpoint action metadata is missing.',
+    ]);
+  }
+
+  if (!isBrowserControlledPolicySnapshot(candidate.policySnapshot)) {
+    return invalidBrowserControlledCheckpointPayloadParse([
+      'Browser controlled checkpoint policy snapshot is missing or invalid.',
+    ]);
+  }
+
+  if (
+    typeof candidate.currentUrl !== 'string'
+    || !parseBrowserControlledUrl(candidate.currentUrl)
+    || typeof candidate.origin !== 'string'
+    || candidate.sideEffectClassification !== 'possible_external_side_effect'
+  ) {
+    return invalidBrowserControlledCheckpointPayloadParse([
+      'Browser controlled checkpoint resume fields are incomplete.',
+    ]);
+  }
+
+  return {
+    blockedReasons: [],
+    payload: {
+      version: 1,
+      kind: 'browser_controlled_interaction',
+      descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+      action: candidate.action,
+      currentUrl: candidate.currentUrl,
+      decisionId: typeof candidate.decisionId === 'string' ? candidate.decisionId : null,
+      decisionTitle: typeof candidate.decisionTitle === 'string' && candidate.decisionTitle.trim()
+        ? candidate.decisionTitle.trim()
+        : `Approve browser action: ${candidate.action.action}`,
+      origin: candidate.origin,
+      policySnapshot: candidate.policySnapshot,
+      screenshotArtifactId: typeof candidate.screenshotArtifactId === 'string'
+        ? candidate.screenshotArtifactId
+        : null,
+      sideEffectClassification: 'possible_external_side_effect',
+      visibleTextSummary: typeof candidate.visibleTextSummary === 'string'
+        ? candidate.visibleTextSummary
+        : null,
+    },
+    valid: true,
+  };
+}
+
+export function validateBrowserControlledInteractionResume(params: {
+  context: BrowserControlledInteractionResumeContext;
+  payload: unknown;
+}): BrowserControlledInteractionResumeValidation {
+  const parsed = parseBrowserControlledInteractionCheckpointPayload(params.payload);
+  if (!parsed.valid) {
+    return invalidBrowserControlledResumeValidation(parsed.blockedReasons);
+  }
+
+  const payload = parsed.payload;
+  const policy = params.context.currentPolicy ?? payload.policySnapshot;
+  const blockedReasons: string[] = [];
+
+  if (params.context.descriptorId !== BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID) {
+    blockedReasons.push('Browser controlled resume descriptor does not match the controlled interaction tool.');
+  }
+
+  if (params.context.decisionStatus !== 'approved') {
+    blockedReasons.push(params.context.decisionStatus
+      ? `Browser controlled resume requires an approved Decision; current status is ${params.context.decisionStatus}.`
+      : 'Browser controlled resume requires an approved Decision.');
+  }
+
+  if (params.context.checkpointStatus !== 'open') {
+    blockedReasons.push(`Browser controlled resume requires an open checkpoint; current status is ${params.context.checkpointStatus}.`);
+  }
+
+  if (params.context.schedulerAllowed) {
+    blockedReasons.push('Browser controlled resume must not be scheduler-started.');
+  }
+
+  if (params.context.providerCallAllowed) {
+    blockedReasons.push('Browser controlled resume must not require a provider call.');
+  }
+
+  if (params.context.modelExposure !== 'hidden') {
+    blockedReasons.push('Browser controlled resume must stay hidden from model-visible tools.');
+  }
+
+  validateBrowserControlledResumePolicy(payload, policy, blockedReasons);
+
+  if (params.context.requestedAction && params.context.requestedAction !== payload.action.action) {
+    blockedReasons.push('Browser controlled resume requested action does not match the checkpoint payload.');
+  }
+
+  if (params.context.requestedOrigin && params.context.requestedOrigin !== payload.origin) {
+    blockedReasons.push('Browser controlled resume requested origin does not match the checkpoint payload.');
+  }
+
+  if (blockedReasons.length) {
+    return invalidBrowserControlledResumeValidation(blockedReasons);
+  }
+
+  const plan: BrowserControlledInteractionResumePlan = {
+    action: payload.action,
+    currentUrl: payload.currentUrl,
+    descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+    evidenceKinds: policy.allowedEvidenceKinds,
+    origin: payload.origin,
+    sideEffectClassification: 'possible_external_side_effect',
+    summary: [
+      'Browser controlled resume plan ready',
+      `action=${payload.action.action}`,
+      `origin=${payload.origin}`,
+      'oneAction=yes',
+      'modelExposure=hidden',
+    ].join(' / '),
+  };
+
+  return {
+    blockedReasons: [],
+    plan,
+    summary: plan.summary,
+    valid: true,
+  };
+}
+
 function validateBrowserControlledPolicy(
   policy: Partial<BrowserControlledInteractionPolicy>,
   blockedReasons: string[],
@@ -598,6 +812,54 @@ function readNonEmptyString(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
+function isBrowserControlledPolicySnapshot(value: unknown): value is BrowserControlledInteractionPolicy {
+  const blockedReasons: string[] = [];
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  validateBrowserControlledPolicy(value as Partial<BrowserControlledInteractionPolicy>, blockedReasons);
+  return blockedReasons.length === 0;
+}
+
+function validateBrowserControlledResumePolicy(
+  payload: BrowserControlledInteractionCheckpointPayloadV1,
+  policy: BrowserControlledInteractionPolicy,
+  blockedReasons: string[],
+): void {
+  validateBrowserControlledPolicy(policy, blockedReasons);
+
+  if (!policy.allowedActions.includes(payload.action.action)) {
+    blockedReasons.push('Browser controlled resume action is not allowed by the current policy.');
+  }
+
+  if (!policy.allowedOrigins.includes(payload.origin)) {
+    blockedReasons.push('Browser controlled resume origin is not allowed by the current policy.');
+  }
+
+  const parsedCurrentUrl = parseBrowserControlledUrl(payload.currentUrl);
+  if (!parsedCurrentUrl || parsedCurrentUrl.origin !== payload.origin) {
+    blockedReasons.push('Browser controlled resume current URL does not match the checkpoint origin.');
+  }
+
+  if (!hasBrowserControlledResumeActionTarget(payload.action)) {
+    blockedReasons.push('Browser controlled resume action target metadata is missing.');
+  }
+}
+
+function hasBrowserControlledResumeActionTarget(action: BrowserControlledInteractionAction): boolean {
+  if (action.action === 'navigate') {
+    return Boolean(readNonEmptyString(action.url));
+  }
+
+  if (action.action === 'capture_evidence' || action.action === 'wait_for' || action.action === 'scroll') {
+    return Boolean(readNonEmptyString(action.currentUrl));
+  }
+
+  return Boolean(readNonEmptyString(action.currentUrl) && (readNonEmptyString(action.targetRef)
+    || readNonEmptyString(action.targetLabel)));
+}
+
 function invalidBrowserControlledInteractionRequest(
   blockedReasons: string[],
 ): BrowserControlledInteractionRequestValidation {
@@ -622,6 +884,29 @@ function invalidBrowserControlledCheckpointPayload(
   return {
     blockedReasons: reasons,
     summary: `Browser controlled interaction checkpoint payload blocked: ${reasons.join(' ')}`,
+    valid: false,
+  };
+}
+
+function invalidBrowserControlledCheckpointPayloadParse(
+  blockedReasons: string[],
+): BrowserControlledInteractionCheckpointPayloadParse {
+  return {
+    blockedReasons,
+    valid: false,
+  };
+}
+
+function invalidBrowserControlledResumeValidation(
+  blockedReasons: string[],
+): BrowserControlledInteractionResumeValidation {
+  const reasons = blockedReasons.length
+    ? blockedReasons
+    : ['Browser controlled resume validation failed.'];
+
+  return {
+    blockedReasons: reasons,
+    summary: `Browser controlled resume blocked: ${reasons.join(' ')}`,
     valid: false,
   };
 }

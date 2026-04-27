@@ -150,6 +150,12 @@ Acceptance:
 
 ### BCR2: Resume Validator
 
+Status: locally accepted. Shared pure validation now parses browser controlled
+checkpoint payloads and returns either a one-action resume plan or blocked
+reasons for stale payloads, non-approved Decisions, consumed/cancelled
+checkpoints, descriptor mismatch, scheduler/provider/model exposure drift,
+action/origin drift, policy drift, or missing target metadata.
+
 Goal: centralize the pre-launch permission check.
 
 Implement a pure validator that accepts checkpoint payload, Decision state,
@@ -257,9 +263,10 @@ Acceptance:
 
 ## Recommended Next Task
 
-BCR1 is locally accepted. Next, implement BCR2 only.
+BCR1-BCR2 are locally accepted. Next, implement BCR3 only.
 
-BCR2 should be a pure resume validator that accepts checkpoint payload, Decision
-state, current policy, descriptor metadata, and requested resume context. Do not
-implement Playwright resume, Decision auto-resume, or UI approval controls until
-the review contract and validator are locally accepted.
+BCR3 should persist a dry-run resume audit trail using the shared validator:
+checkpoint reviewed, validation accepted or blocked, planned one-action resume,
+and expected post-action evidence requirements. Do not implement Playwright
+resume, Decision auto-resume, or UI approval controls until the dry-run recorder
+is locally accepted.

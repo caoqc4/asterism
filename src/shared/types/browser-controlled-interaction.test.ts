@@ -9,7 +9,9 @@ import {
   buildDefaultBrowserControlledInteractionPolicy,
   isBrowserControlledAction,
   mapBrowserControlledInteractionStepToRunSteps,
+  parseBrowserControlledInteractionCheckpointPayload,
   validateBrowserControlledInteractionRequest,
+  validateBrowserControlledInteractionResume,
 } from './browser-controlled-interaction.js';
 
 describe('browser controlled interaction schema draft', () => {
@@ -279,6 +281,132 @@ describe('browser controlled interaction schema draft', () => {
     });
   });
 
+  it('parses browser controlled checkpoint payloads for resume review', () => {
+    const payload = buildBrowserCheckpointPayload();
+
+    expect(parseBrowserControlledInteractionCheckpointPayload(JSON.stringify(payload))).toMatchObject({
+      payload: {
+        action: {
+          action: 'click',
+          targetLabel: 'Publish post',
+        },
+        decisionTitle: 'Approve browser publish click',
+        descriptorId: 'browser.controlled_interaction',
+        kind: 'browser_controlled_interaction',
+        origin: 'http://localhost:5173',
+        version: 1,
+      },
+      valid: true,
+    });
+
+    expect(parseBrowserControlledInteractionCheckpointPayload('{')).toEqual({
+      blockedReasons: ['Browser controlled checkpoint payload is not valid JSON.'],
+      valid: false,
+    });
+    expect(parseBrowserControlledInteractionCheckpointPayload({
+      ...payload,
+      version: 2,
+    })).toEqual({
+      blockedReasons: ['Browser controlled checkpoint payload version is not supported.'],
+      valid: false,
+    });
+  });
+
+  it('validates an approved one-action browser resume plan', () => {
+    const validation = validateBrowserControlledInteractionResume({
+      context: {
+        checkpointStatus: 'open',
+        decisionStatus: 'approved',
+        descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+        modelExposure: 'hidden',
+        providerCallAllowed: false,
+        requestedAction: 'click',
+        requestedOrigin: 'http://localhost:5173',
+        schedulerAllowed: false,
+      },
+      payload: buildBrowserCheckpointPayload(),
+    });
+
+    expect(validation).toEqual({
+      blockedReasons: [],
+      plan: {
+        action: {
+          action: 'click',
+          currentUrl: 'http://localhost:5173/draft',
+          targetLabel: 'Publish post',
+        },
+        currentUrl: 'http://localhost:5173/draft',
+        descriptorId: 'browser.controlled_interaction',
+        evidenceKinds: ['screenshot', 'visible_text', 'page_summary'],
+        origin: 'http://localhost:5173',
+        sideEffectClassification: 'possible_external_side_effect',
+        summary: 'Browser controlled resume plan ready / action=click / origin=http://localhost:5173 / oneAction=yes / modelExposure=hidden',
+      },
+      summary: 'Browser controlled resume plan ready / action=click / origin=http://localhost:5173 / oneAction=yes / modelExposure=hidden',
+      valid: true,
+    });
+  });
+
+  it('blocks browser resume when approval or execution context drifts', () => {
+    expect(validateBrowserControlledInteractionResume({
+      context: {
+        checkpointStatus: 'open',
+        decisionStatus: 'pending',
+        descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+        modelExposure: 'visible',
+        providerCallAllowed: true,
+        requestedAction: 'type_text',
+        requestedOrigin: 'http://localhost:9999',
+        schedulerAllowed: true,
+      },
+      payload: buildBrowserCheckpointPayload(),
+    })).toEqual({
+      blockedReasons: [
+        'Browser controlled resume requires an approved Decision; current status is pending.',
+        'Browser controlled resume must not be scheduler-started.',
+        'Browser controlled resume must not require a provider call.',
+        'Browser controlled resume must stay hidden from model-visible tools.',
+        'Browser controlled resume requested action does not match the checkpoint payload.',
+        'Browser controlled resume requested origin does not match the checkpoint payload.',
+      ],
+      summary: [
+        'Browser controlled resume blocked:',
+        'Browser controlled resume requires an approved Decision; current status is pending.',
+        'Browser controlled resume must not be scheduler-started.',
+        'Browser controlled resume must not require a provider call.',
+        'Browser controlled resume must stay hidden from model-visible tools.',
+        'Browser controlled resume requested action does not match the checkpoint payload.',
+        'Browser controlled resume requested origin does not match the checkpoint payload.',
+      ].join(' '),
+      valid: false,
+    });
+  });
+
+  it('blocks browser resume when policy or checkpoint state drifts', () => {
+    expect(validateBrowserControlledInteractionResume({
+      context: {
+        checkpointStatus: 'resolved',
+        currentPolicy: buildDefaultBrowserControlledInteractionPolicy({
+          allowedActions: ['capture_evidence'],
+          allowedOrigins: ['http://localhost:9999'],
+        }),
+        decisionStatus: 'approved',
+        descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+        modelExposure: 'hidden',
+        providerCallAllowed: false,
+        schedulerAllowed: false,
+      },
+      payload: buildBrowserCheckpointPayload(),
+    })).toMatchObject({
+      blockedReasons: [
+        'Browser controlled resume requires an open checkpoint; current status is resolved.',
+        'Browser controlled resume action is not allowed by the current policy.',
+        'Browser controlled resume origin is not allowed by the current policy.',
+      ],
+      valid: false,
+    });
+  });
+
   it('blocks credentials, unsafe actions, unsafe keys, and off-allowlist origins', () => {
     expect(validateBrowserControlledInteractionRequest({
       descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
@@ -320,3 +448,27 @@ describe('browser controlled interaction schema draft', () => {
     });
   });
 });
+
+function buildBrowserCheckpointPayload() {
+  return {
+    version: 1,
+    kind: 'browser_controlled_interaction',
+    descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+    action: {
+      action: 'click',
+      currentUrl: 'http://localhost:5173/draft',
+      targetLabel: 'Publish post',
+    },
+    currentUrl: 'http://localhost:5173/draft',
+    decisionId: 'decision_browser_1',
+    decisionTitle: 'Approve browser publish click',
+    origin: 'http://localhost:5173',
+    policySnapshot: buildDefaultBrowserControlledInteractionPolicy({
+      allowedActions: ['click'],
+      allowedOrigins: ['http://localhost:5173'],
+    }),
+    screenshotArtifactId: 'artifact_screenshot_1',
+    sideEffectClassification: 'possible_external_side_effect',
+    visibleTextSummary: 'Draft publish page is visible.',
+  };
+}

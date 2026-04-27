@@ -1,11 +1,12 @@
 import {
   BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
   mapBrowserControlledInteractionStepToRunSteps,
-  type BrowserControlledInteractionAction,
+  parseBrowserControlledInteractionCheckpointPayload,
   type BrowserControlledInteractionCheckpointPayloadV1,
   type BrowserControlledInteractionPolicy,
   type BrowserControlledInteractionRequestValidation,
   type BrowserControlledInteractionStepDraft,
+  validateBrowserControlledInteractionResume,
 } from '@shared/types/browser-controlled-interaction';
 import type { DecisionStatus } from '@shared/types/decision';
 import type { RunCheckpointRecord, RunDetailRecord, RunStepRecord } from '@shared/types/run';
@@ -111,7 +112,7 @@ export function buildBrowserControlledInteractionResumeReview(
   checkpoint: RunCheckpointRecord,
   options: BrowserControlledInteractionResumeReviewOptions = {},
 ): BrowserControlledInteractionResumeReview {
-  const parsed = parseBrowserControlledCheckpointPayload(checkpoint.payload);
+  const parsed = parseBrowserControlledInteractionCheckpointPayload(checkpoint.payload);
   if (!parsed.valid) {
     return {
       actionSummary: null,
@@ -129,7 +130,6 @@ export function buildBrowserControlledInteractionResumeReview(
 
   const payload = parsed.payload;
   const policy = options.currentPolicy ?? payload.policySnapshot;
-  const blockedReasons = validateBrowserControlledResumeReviewPayload(payload, policy);
   const decisionStatus = options.decisionStatus ?? null;
 
   if (checkpoint.status === 'resolved') {
@@ -143,15 +143,19 @@ export function buildBrowserControlledInteractionResumeReview(
     });
   }
 
-  if (checkpoint.status === 'cancelled') {
-    blockedReasons.push('Browser controlled checkpoint was cancelled.');
-  }
-
-  if (decisionStatus !== 'approved') {
-    blockedReasons.push(decisionStatus
-      ? `Browser controlled resume requires an approved Decision; current status is ${decisionStatus}.`
-      : 'Browser controlled resume requires an approved Decision.');
-  }
+  const validation = validateBrowserControlledInteractionResume({
+    context: {
+      checkpointStatus: checkpoint.status,
+      currentPolicy: policy,
+      decisionStatus,
+      descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+      modelExposure: 'hidden',
+      providerCallAllowed: false,
+      schedulerAllowed: false,
+    },
+    payload,
+  });
+  const blockedReasons = validation.valid ? [] : validation.blockedReasons;
 
   return buildBrowserControlledResumeState({
     blockedReasons,
@@ -338,100 +342,6 @@ function formatBrowserControlledCheckpointPayloadSummary(
   ].filter(Boolean).join(' / ');
 }
 
-type BrowserControlledCheckpointPayloadParseResult =
-  | {
-      blockedReasons: [];
-      payload: BrowserControlledInteractionCheckpointPayloadV1;
-      valid: true;
-    }
-  | {
-      blockedReasons: string[];
-      valid: false;
-    };
-
-function parseBrowserControlledCheckpointPayload(
-  payload: string | null,
-): BrowserControlledCheckpointPayloadParseResult {
-  if (!payload) {
-    return {
-      blockedReasons: ['Browser controlled checkpoint payload is missing.'],
-      valid: false,
-    };
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(payload);
-  } catch {
-    return {
-      blockedReasons: ['Browser controlled checkpoint payload is not valid JSON.'],
-      valid: false,
-    };
-  }
-
-  if (!isRecord(parsed)) {
-    return {
-      blockedReasons: ['Browser controlled checkpoint payload must be an object.'],
-      valid: false,
-    };
-  }
-
-  if (parsed.kind !== 'browser_controlled_interaction') {
-    return {
-      blockedReasons: ['Browser controlled checkpoint payload kind is not supported.'],
-      valid: false,
-    };
-  }
-
-  if (parsed.version !== 1) {
-    return {
-      blockedReasons: ['Browser controlled checkpoint payload version is not supported.'],
-      valid: false,
-    };
-  }
-
-  if (parsed.descriptorId !== BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID) {
-    return {
-      blockedReasons: ['Browser controlled checkpoint descriptor does not match the controlled interaction tool.'],
-      valid: false,
-    };
-  }
-
-  const action = parsed.action;
-  const policySnapshot = parsed.policySnapshot;
-  if (!isRecord(action) || typeof action.action !== 'string') {
-    return {
-      blockedReasons: ['Browser controlled checkpoint action metadata is missing.'],
-      valid: false,
-    };
-  }
-
-  if (!isBrowserControlledPolicy(policySnapshot)) {
-    return {
-      blockedReasons: ['Browser controlled checkpoint policy snapshot is missing or invalid.'],
-      valid: false,
-    };
-  }
-
-  const typedPayload = parsed as Partial<BrowserControlledInteractionCheckpointPayloadV1>;
-  if (
-    typeof typedPayload.currentUrl !== 'string'
-    || typeof typedPayload.origin !== 'string'
-    || typedPayload.sideEffectClassification !== 'possible_external_side_effect'
-  ) {
-    return {
-      blockedReasons: ['Browser controlled checkpoint resume fields are incomplete.'],
-      valid: false,
-    };
-  }
-
-  return {
-    blockedReasons: [],
-    payload: typedPayload as BrowserControlledInteractionCheckpointPayloadV1,
-    valid: true,
-  };
-}
-
 function buildBrowserControlledResumeState(params: {
   blockedReasons: string[];
   checkpoint: RunCheckpointRecord;
@@ -484,70 +394,4 @@ function formatBrowserControlledResumeNextMove(status: BrowserControlledInteract
   }
 
   return 'next=resolve blocked approval, policy, or checkpoint state before browser resume';
-}
-
-function validateBrowserControlledResumeReviewPayload(
-  payload: BrowserControlledInteractionCheckpointPayloadV1,
-  currentPolicy: BrowserControlledInteractionPolicy,
-): string[] {
-  const blockedReasons: string[] = [];
-  const action = payload.action;
-
-  if (!currentPolicy.allowedActions.includes(action.action)) {
-    blockedReasons.push('Browser controlled resume action is not allowed by the current policy.');
-  }
-
-  if (!currentPolicy.allowedOrigins.includes(payload.origin)) {
-    blockedReasons.push('Browser controlled resume origin is not allowed by the current policy.');
-  }
-
-  if (currentPolicy.allowCredentials !== false || currentPolicy.isolatedProfile !== true) {
-    blockedReasons.push('Browser controlled resume requires an isolated credential-free profile.');
-  }
-
-  if (currentPolicy.operatorStarted !== true || currentPolicy.networkPolicy !== 'allowlisted') {
-    blockedReasons.push('Browser controlled resume requires operator-started allowlisted network policy.');
-  }
-
-  if (currentPolicy.sideEffectPolicy !== 'checkpoint_required' || currentPolicy.sensitiveFieldPolicy !== 'block') {
-    blockedReasons.push('Browser controlled resume requires checkpointed side effects and blocked sensitive fields.');
-  }
-
-  if (!hasBrowserControlledActionTarget(action)) {
-    blockedReasons.push('Browser controlled resume action target metadata is missing.');
-  }
-
-  return blockedReasons;
-}
-
-function hasBrowserControlledActionTarget(action: BrowserControlledInteractionAction): boolean {
-  if (action.action === 'navigate') {
-    return Boolean(action.url);
-  }
-
-  if (action.action === 'capture_evidence' || action.action === 'wait_for' || action.action === 'scroll') {
-    return Boolean(action.currentUrl);
-  }
-
-  return Boolean(action.currentUrl && (action.targetRef || action.targetLabel));
-}
-
-function isBrowserControlledPolicy(value: unknown): value is BrowserControlledInteractionPolicy {
-  return isRecord(value)
-    && value.allowCredentials === false
-    && Array.isArray(value.allowedActions)
-    && Array.isArray(value.allowedEvidenceKinds)
-    && Array.isArray(value.allowedOrigins)
-    && value.isolatedProfile === true
-    && typeof value.maxActions === 'number'
-    && value.networkPolicy === 'allowlisted'
-    && value.operatorStarted === true
-    && typeof value.outputLimitBytes === 'number'
-    && value.sensitiveFieldPolicy === 'block'
-    && value.sideEffectPolicy === 'checkpoint_required'
-    && typeof value.timeoutMs === 'number';
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

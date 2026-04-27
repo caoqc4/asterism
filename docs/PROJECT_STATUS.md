@@ -691,9 +691,14 @@ The project is past initial architecture assembly. Current work should favor pro
   previously recorded `browser.controlled_interaction` action after validation,
   not a general browser session. BCR1 is locally accepted with renderer review
   helpers for approved-ready, blocked, stale-payload, and already-consumed
-  checkpoint resume states. The next recommended slice is BCR2 pure validation;
-  Playwright resume, arbitrary URLs, authenticated profiles, scheduler starts,
-  provider schemas, and model-visible browser tools remain deferred.
+  checkpoint resume states. BCR2 is locally accepted with a shared pure
+  validator that returns either a one-action resume plan or blocked reasons for
+  stale payloads, approval/checkpoint drift, descriptor mismatch,
+  scheduler/provider/model exposure drift, action/origin drift, policy drift,
+  or missing target metadata. The next recommended slice is BCR3 dry-run
+  resume recording; Playwright resume, arbitrary URLs, authenticated profiles,
+  scheduler starts, provider schemas, and model-visible browser tools remain
+  deferred.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
@@ -1308,8 +1313,8 @@ dedicated signed/notarized release pass.
    orchestration O1-O4 sequence, Code Agent O5 recovery helper layer, and
    Browser Evidence Tier 1 review helpers are now implemented locally.
    Browser Controlled Interaction BCI1-BCI6 are locally accepted for the
-   local-QA path, and BCR1 is locally accepted for checkpoint resume review.
-   The next execution task should be BCR2 from the browser controlled resume
+   local-QA path, and BCR1-BCR2 are locally accepted for checkpoint resume
+   review/validation. The next execution task should be BCR3 from the browser controlled resume
    plan, not broad browser/MCP/computer-use model exposure;
    do not expose browser, MCP, computer-use, skills, or creator connector tools
    to the model until that connector-specific slice is explicitly accepted.
