@@ -671,7 +671,7 @@ The project is past initial architecture assembly. Current work should favor pro
   every request before launch, blocks invalid or checkpoint-required actions
   before browser start, uses an isolated Playwright context, and remains
   unwired from IPC, UI, scheduler, provider schemas, and model-visible tools.
-- Browser controlled interaction BCI4 has started with a shared checkpoint
+- Browser controlled interaction BCI4 is locally accepted with a shared checkpoint
   payload builder for possible side-effect actions. It requires a validated
   checkpoint-required request, captures URL/origin/action/policy/screenshot/text
   review fields, and explicitly leaves resume deferred.

@@ -122,6 +122,12 @@ Acceptance:
 
 ### BCI4: Checkpoint Boundary
 
+Status: locally accepted at the shared payload-builder layer. Possible
+side-effect actions can now produce a versioned checkpoint payload with current
+URL, origin, action, policy snapshot, optional screenshot/text review fields,
+and `resume=deferred`. It does not create Decisions or auto-resume browser
+actions.
+
 Goal: stop before possible external side effects with a Decision payload that
 can resume later.
 
@@ -187,7 +193,7 @@ Acceptance:
 
 ## Recommended Next Task
 
-Start with BCI4. The next slice should formalize the checkpoint boundary for
-possible side effects, including current URL, origin, target label/ref,
-screenshot artifact id, visible-text summary, policy snapshot, and exact resume
-action. Approval should not auto-resume until a later resume slice is accepted.
+Start with BCI5. The next slice should make persisted controlled-browser
+dry-run, local-QA, blocked, and checkpoint-required evidence reviewable from
+Runs without adding a generic browser prompt box, IPC trigger, scheduler start,
+provider schema, or model-visible browser tool.
