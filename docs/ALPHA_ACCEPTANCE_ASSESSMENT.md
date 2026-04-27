@@ -28,6 +28,10 @@ Status: mostly covered.
 - `npm run accept:provider-native-live:preflight` reports the current local
   provider-native `.env` as ready without calling the provider or spending
   test credit.
+- on 2026-04-27, `npm run accept:release:mac-preflight` passed its local test
+  wrapper and read-only preflight. It performed no signing, notarization,
+  upload, or Apple network request, and reported `status=not-ready` because
+  Developer ID signing and Apple notarization credentials are not configured.
 - GitHub Actions should remain unused while monthly quota is unavailable.
 
 Manual need:
@@ -198,6 +202,12 @@ Automated/local coverage:
 - on 2026-04-25, `npm run smoke:release:mac` passed again after runtime smoke
   started checking the packaged SQLite schema
 - `npm run release:mac:preflight` now checks local signed/notarized release prerequisites without signing, notarizing, uploading, or calling Apple services
+- on 2026-04-27, `npm run accept:release:mac-preflight` passed locally. The
+  preflight found `notarytool`, `build.appId=com.taskplane.app`, product name
+  `Taskplane`, and mac targets `dmg, zip`, but still reported `status=not-ready`
+  because no Developer ID Application signing identity / `CSC_NAME` /
+  `CSC_LINK` and no Apple ID or App Store Connect API notarization credentials
+  are configured.
 - on 2026-04-25, `npm run release:mac:preflight` reported the host has
   `notarytool` and package metadata, while Developer ID signing and Apple
   notarization credentials remain unconfigured. The preflight now recognizes

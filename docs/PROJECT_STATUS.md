@@ -1365,6 +1365,11 @@ Latest local baseline:
 - `npm run release:mac:preflight` currently reports the host has `notarytool`
   and package metadata, but is not ready for signed/notarized release because
   Developer ID and Apple notarization credentials are not configured
+- `npm run accept:release:mac-preflight` passed locally on 2026-04-27 and
+  confirmed the same read-only state: `notarytool`, app id, product name, and
+  mac targets are present, while Developer ID signing and Apple notarization
+  credentials remain missing. It performed no signing, notarization, upload, or
+  Apple network request.
 - `npm run smoke:build` and `npm run smoke:release:mac` passed locally on
   2026-04-26 after the Code Agent preflight/check-availability UI slice: the
   unsigned/ad-hoc macOS package was generated, code-sign verified, launched with
