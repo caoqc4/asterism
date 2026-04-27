@@ -506,16 +506,26 @@ The latest implementation slice:
   connection, mutating a page, or exposing any model-visible browser tool.
   The fixture includes expected RunStep drafts for future runner comparison,
   but does not persist them.
+- Browser Controlled Interaction local-QA execution and checkpoint-approved
+  one-action resume are now locally accepted through manual smoke paths and
+  review helpers, while remaining hidden from model-visible prompts, provider
+  schemas, scheduler starts, authenticated profiles, and arbitrary URLs.
+- Default local-smoke skip-boundary tests now lock the no-provider / no-Docker /
+  no-workspace-mutation defaults for sandbox producer preview and Code Agent
+  model-producer live/preview smoke commands.
 
 The next implementation slice is:
 
-- return to the broader execution-layer orchestration plan or polish existing
-  evidence review UX; do not keep expanding browser runtime depth by default
-- keep Tier 2 controlled browser interaction schema-only until a separate
-  connector acceptance slice explicitly accepts a real local-dev QA runner
+- move from lane-specific smoke expansion back to the broader execution-layer
+  orchestration/UI design: runtime/profile/lifecycle visibility, manual
+  dispatch intent, and restart/recovery review before any queue worker or
+  automatic-start policy
+- tighten executor/session interruption and restart-safety gaps with
+  inspect-first recovery wording, checkpoint/Decision routing, and new manual
+  Run creation rather than automatic replay
 - keep browser, MCP, computer-use, skills, and creator connector tools hidden
   from model-visible channels until their connector-specific acceptance slices
-  are explicitly accepted
+  explicitly accept runtime authority, credentials, and side-effect policy
 
 Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer control,
 external posting, or social/media publishing as model-visible tools until the
