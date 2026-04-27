@@ -4,6 +4,7 @@ import {
   AGENT_TOOL_SCAFFOLD_IDS,
   AGENT_TOOL_SCAFFOLD_DESCRIPTORS,
   buildAgentToolConnectorPolicyRecord,
+  buildAgentToolFamilyAcceptanceChecklist,
   buildDefaultAgentToolExecutionPolicy,
   buildAgentToolLocalVerificationEvidence,
   getAgentToolScaffoldDescriptor,
@@ -351,5 +352,38 @@ describe('agent tool scaffold descriptors', () => {
       requiresCheckpointReview: false,
       requiresCredentialReview: false,
     });
+  });
+
+  it('builds a family acceptance checklist from policy and evidence records', () => {
+    const browserChecklist = buildAgentToolFamilyAcceptanceChecklist({
+      family: 'browser_playwright',
+      policy: buildPolicy({ allowLocalWorkspaceRead: true, allowTaskMutationTools: true }),
+    });
+
+    expect(browserChecklist).toMatchObject({
+      descriptorIds: ['browser.readonly_evidence'],
+      family: 'browser_playwright',
+      modelVisibleIds: [],
+      summary: 'family=browser_playwright / descriptors=1 / modelVisible=none / required=4 / optional=1',
+    });
+    expect(browserChecklist.items.map((item) => item.id)).toEqual([
+      'browser.readonly_evidence:policy',
+      'browser.readonly_evidence:model_visibility',
+      'browser.readonly_evidence:verification',
+      'browser.readonly_evidence:checkpoint',
+      'browser.readonly_evidence:credentials',
+    ]);
+    expect(browserChecklist.items.filter((item) => item.status === 'required').map((item) => item.id)).toEqual([
+      'browser.readonly_evidence:policy',
+      'browser.readonly_evidence:model_visibility',
+      'browser.readonly_evidence:verification',
+      'browser.readonly_evidence:credentials',
+    ]);
+
+    const workspaceChecklist = buildAgentToolFamilyAcceptanceChecklist({
+      family: 'workspace_coding',
+      policy: buildPolicy({ allowLocalWorkspaceRead: true }),
+    });
+    expect(workspaceChecklist.modelVisibleIds).toEqual(['workspace.search', 'workspace.read_file']);
   });
 });

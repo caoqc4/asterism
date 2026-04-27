@@ -16,6 +16,7 @@ Read first:
 - [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md)
 - [AGENT_EXECUTION_OPERATOR_STARTED_RUN_DECISION.md](AGENT_EXECUTION_OPERATOR_STARTED_RUN_DECISION.md)
 - [AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md](AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md)
+- [AGENT_EXECUTION_BROWSER_TIER1_ACCEPTANCE_CHECKLIST.md](AGENT_EXECUTION_BROWSER_TIER1_ACCEPTANCE_CHECKLIST.md)
 - [AGENT_EXECUTION_BROWSER_CONTROLLED_INTERACTION_DECISION.md](AGENT_EXECUTION_BROWSER_CONTROLLED_INTERACTION_DECISION.md)
 
 ## First-Principles Rule
@@ -473,11 +474,15 @@ The latest implementation slice:
   verification evidence requirements for every descriptor; Settings diagnostics
   show the verification-required count, and reserved connector families remain
   hidden from all model-visible channels
+- Browser / Playwright Tier 1 now has an acceptance checklist drafted from
+  those records:
+  [AGENT_EXECUTION_BROWSER_TIER1_ACCEPTANCE_CHECKLIST.md](AGENT_EXECUTION_BROWSER_TIER1_ACCEPTANCE_CHECKLIST.md)
 
 The next implementation slice is:
 
-- use the connector policy/evidence records to draft the first connector family
-  acceptance checklist before enabling any new model-visible tool
+- use the Browser Tier 1 checklist to decide whether the next browser work is
+  UX evidence polish or a separate Tier 2 local-dev QA design; do not expose
+  browser tools to the model
 - keep Tier 2 controlled browser interaction deferred until the draft decision
   is accepted and Tier 1 Run artifact review exists
 

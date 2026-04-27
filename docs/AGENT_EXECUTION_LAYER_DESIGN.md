@@ -503,6 +503,9 @@ Current implementation note:
   family. Settings diagnostics include the verification-required count, while
   reserved browser, MCP, computer-use, skill, and creator descriptors remain
   hidden from model prompts and provider-native tools.
+- Browser / Playwright Tier 1 has a dedicated acceptance checklist that accepts
+  only read-only evidence review readiness and keeps controlled interaction
+  deferred.
 
 ### First Concrete Next Task
 
@@ -653,8 +656,8 @@ Next code/design slice:
 
 1. Keep broad browser/computer/social/coding execution deferred until the
    executor/session boundary can survive interruption and restart.
-2. Use the connector policy/evidence records to draft the first connector
-   family acceptance checklist before enabling any new model-visible tool.
+2. Use the Browser Tier 1 checklist to decide whether the next browser work is
+   evidence-review polish or a separate Tier 2 local-dev QA design.
 3. If manual alpha use shows repeated friction around checkpoint review,
    revisit a dedicated workspace manual-request surface before any prompt-level
    workspace write/command exposure.

@@ -101,6 +101,22 @@ export type AgentToolLocalVerificationEvidence = {
   summary: string;
 };
 
+export type AgentToolFamilyAcceptanceChecklistItem = {
+  id: string;
+  descriptorId: string;
+  label: string;
+  status: 'required' | 'optional';
+  summary: string;
+};
+
+export type AgentToolFamilyAcceptanceChecklist = {
+  family: AgentToolScaffoldFamily;
+  descriptorIds: string[];
+  modelVisibleIds: string[];
+  items: AgentToolFamilyAcceptanceChecklistItem[];
+  summary: string;
+};
+
 export type AgentToolSessionRecord = {
   id: string;
   kind: AgentToolSessionKind;
@@ -624,6 +640,91 @@ export function buildAgentToolLocalVerificationEvidence(
       `runSteps=${Array.from(new Set(requiredRunStepKinds)).join(',') || 'none'}`,
       `checkpoint=${descriptor.checkpointKind}`,
       `credential=${descriptor.credentialPolicy}`,
+    ].join(' / '),
+  };
+}
+
+export function buildAgentToolFamilyAcceptanceChecklist(params: {
+  family: AgentToolScaffoldFamily;
+  policy: Pick<AgentPolicy, 'allowLocalWorkspaceRead' | 'allowTaskMutationTools'>;
+}): AgentToolFamilyAcceptanceChecklist {
+  const descriptors = getAgentToolScaffoldDescriptorsByFamily(params.family);
+  const connectorPolicyRecords = descriptors.map((descriptor) => buildAgentToolConnectorPolicyRecord({
+    descriptorId: descriptor.id,
+    policy: params.policy,
+  }));
+  const localVerificationEvidence = descriptors.map((descriptor) =>
+    buildAgentToolLocalVerificationEvidence(descriptor.id));
+  const items = descriptors.flatMap((descriptor) => {
+    const policyRecord = connectorPolicyRecords.find((record) => record.descriptorId === descriptor.id);
+    const evidence = localVerificationEvidence.find((record) => record.descriptorId === descriptor.id);
+
+    if (!policyRecord || !evidence) {
+      return [];
+    }
+
+    return [
+      {
+        descriptorId: descriptor.id,
+        id: `${descriptor.id}:policy`,
+        label: 'Policy boundary recorded',
+        status: 'required' as const,
+        summary: policyRecord.summary,
+      },
+      {
+        descriptorId: descriptor.id,
+        id: `${descriptor.id}:model_visibility`,
+        label: policyRecord.modelVisible
+          ? 'Model-visible exposure accepted'
+          : 'Model-visible exposure remains disabled',
+        status: policyRecord.modelVisible ? 'optional' as const : 'required' as const,
+        summary: `modelVisible=${policyRecord.modelVisible ? 'yes' : 'no'} / exposure=${policyRecord.exposure}`,
+      },
+      {
+        descriptorId: descriptor.id,
+        id: `${descriptor.id}:verification`,
+        label: evidence.required
+          ? 'Local verification evidence required'
+          : 'Local verification evidence optional',
+        status: evidence.required ? 'required' as const : 'optional' as const,
+        summary: evidence.summary,
+      },
+      {
+        descriptorId: descriptor.id,
+        id: `${descriptor.id}:checkpoint`,
+        label: descriptor.checkpointKind === 'none'
+          ? 'No checkpoint required by descriptor'
+          : 'Checkpoint review required',
+        status: descriptor.checkpointKind === 'none' ? 'optional' as const : 'required' as const,
+        summary: `checkpoint=${descriptor.checkpointKind}`,
+      },
+      {
+        descriptorId: descriptor.id,
+        id: `${descriptor.id}:credentials`,
+        label: descriptor.credentialPolicy === 'none'
+          ? 'No credential boundary required'
+          : 'Credential boundary required',
+        status: descriptor.credentialPolicy === 'none' ? 'optional' as const : 'required' as const,
+        summary: `credential=${descriptor.credentialPolicy}`,
+      },
+    ];
+  });
+  const modelVisibleIds = connectorPolicyRecords
+    .filter((record) => record.modelVisible)
+    .map((record) => record.descriptorId);
+  const requiredCount = items.filter((item) => item.status === 'required').length;
+
+  return {
+    descriptorIds: descriptors.map((descriptor) => descriptor.id),
+    family: params.family,
+    items,
+    modelVisibleIds,
+    summary: [
+      `family=${params.family}`,
+      `descriptors=${descriptors.length}`,
+      `modelVisible=${modelVisibleIds.join(',') || 'none'}`,
+      `required=${requiredCount}`,
+      `optional=${items.length - requiredCount}`,
     ].join(' / '),
   };
 }

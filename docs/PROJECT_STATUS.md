@@ -565,6 +565,11 @@ The project is past initial architecture assembly. Current work should favor pro
   include verification-required counts, but reserved browser, MCP,
   computer-use, skill, and creator descriptors remain hidden from text prompts
   and provider-native tool exposure.
+- Browser / Playwright Tier 1 now has an explicit acceptance checklist in
+  [AGENT_EXECUTION_BROWSER_TIER1_ACCEPTANCE_CHECKLIST.md](AGENT_EXECUTION_BROWSER_TIER1_ACCEPTANCE_CHECKLIST.md).
+  It accepts only read-only evidence review readiness and keeps model-visible
+  browser tools, controlled interaction, authenticated browsing, and scheduled
+  browser runs deferred.
 - The Browser / Playwright boundary has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references. The accepted direction is tiered capability:
