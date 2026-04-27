@@ -3707,6 +3707,16 @@ describe('App UI flow', () => {
         'Agent session：text-only planning / read-only workspace context enabled / task update/evidence tools enabled / structured tool calls unavailable / sandbox coding lane disabled; workspace patch/commands unavailable / single local session',
       ),
     ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Tool families：workspace=read_only / task=update_tools / provider_tools=not_exposed / coding=not_exposed / browser=not_exposed / computer_use=not_exposed / mcp=not_exposed / creator=not_exposed / restart=single_session_recorded',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Restart hint：restart=single_session_in_progress / replay=inspect_latest_run_step',
+      ),
+    ).toBeTruthy();
     expect(screen.getByText('Session metadata：executor=local_agent / loop=local_note')).toBeTruthy();
   });
 
@@ -3837,6 +3847,16 @@ describe('App UI flow', () => {
     expect(
       screen.getByText(
         'Agent session：sandboxed coding producer / status=source_ready / backend=local-container / checks=test,lint / network=disabled / promotion=decision_required / read-only workspace input / staged patch output / Decision review required',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Tool families：workspace=staged_patch_review / task=not_exposed / provider_tools=not_exposed / coding=sandboxed_producer / browser=not_exposed / computer_use=not_exposed / mcp=not_exposed / creator=not_exposed / restart=long_running_session_recorded',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Restart hint：restart=not_needed / replay=run_steps_and_artifacts',
       ),
     ).toBeTruthy();
     expect(
