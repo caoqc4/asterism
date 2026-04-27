@@ -504,6 +504,28 @@ export function formatCodeAgentReviewRecoverySummary(
   return '最近一次 Code Agent sandbox preview 仍在进行，先查看 Run 证据再决定下一步。';
 }
 
+export function formatCodeAgentRerunIntent(params: {
+  decisionTitle?: string | null;
+  files?: string[];
+  runId?: string | null;
+  taskTitle?: string | null;
+  workspaceStatus?: string | null;
+}): string {
+  if (!params.runId) {
+    return [
+      `Re-run the Code Agent staged patch review for ${params.taskTitle?.trim() || 'this task'}.`,
+      params.decisionTitle ? `Review prior promotion Decision: ${params.decisionTitle}.` : null,
+    ].filter(Boolean).join(' ');
+  }
+
+  return [
+    `Re-run the Code Agent staged patch review for run ${params.runId}.`,
+    params.files?.length ? `Review affected files: ${params.files.join(', ')}.` : null,
+    params.decisionTitle ? `Compare against promotion Decision: ${params.decisionTitle}.` : null,
+    params.workspaceStatus ? `Prior workspace status: ${params.workspaceStatus}.` : null,
+  ].filter(Boolean).join(' ');
+}
+
 export function formatCodeAgentModelProducerOptInSummary(aiStatus: AiConfigStatus | null): string {
   return aiStatus?.codeAgentModelProducerEnabled
     ? 'Model producer：available by local env / provider calls require Use model producer, context files, and operator confirmation / sandbox preview and Decision promotion still apply'

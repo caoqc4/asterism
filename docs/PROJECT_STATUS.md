@@ -112,6 +112,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Code Agent sandbox-run and promotion-Decision detection also moved into the
   shared renderer capability helpers, so task-side recovery uses tested coding
   lane predicates instead of page-local heuristics.
+- Code Agent rerun intent formatting is now shared between Task detail and Runs
+  staged-patch review, preserving bounded prefilled rerun prompts without
+  starting a run or spending provider credit.
 - [CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md)
   is accepted for the first visible code-agent product surface: Task detail /
   Action Desk entrypoint, manual runtime readiness action, default available
@@ -505,6 +508,8 @@ The project is past initial architecture assembly. Current work should favor pro
 - From that same Runs review, `回到任务准备重跑` now returns to the Task Code
   Agent input surface with a bounded rerun intent pre-filled from the persisted
   run id, changed files, promotion Decision, and workspace mutation state.
+- The Task and Runs rerun affordances now use the same tested Code Agent rerun
+  intent formatter, so recovery wording can evolve once for both surfaces.
 - Runs / Staged Patch Review now also shows a `Next review move` derived from
   failed checks, missing promotion Decisions, open Decisions, applied patches,
   or deferred/no-write workspace state, keeping rerun/apply guidance local to

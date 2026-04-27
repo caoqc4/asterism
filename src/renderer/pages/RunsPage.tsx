@@ -36,6 +36,7 @@ import {
   formatAgentSessionRestartSummary,
   formatAgentSessionReplayReviewSummary,
   formatAgentSessionToolFamiliesSummary,
+  formatCodeAgentRerunIntent,
   formatPreRunAgentCapabilitySummary,
   formatSandboxProducerSourceSummary,
   formatSandboxProducerLifecycleSummary,
@@ -612,18 +613,6 @@ function getStagedPatchReviewNextMove(review: StagedPatchReviewSummary): string 
   return 'next=review Run result and task timeline before deciding whether to rerun';
 }
 
-function getStagedPatchRerunIntent(
-  detail: RunDetailRecord,
-  review: StagedPatchReviewSummary,
-): string {
-  return [
-    `Re-run the Code Agent staged patch review for run ${detail.id}.`,
-    review.files.length ? `Review affected files: ${review.files.join(', ')}.` : null,
-    review.decisionTitle ? `Compare against promotion Decision: ${review.decisionTitle}.` : null,
-    `Prior workspace status: ${review.workspaceStatus}.`,
-  ].filter(Boolean).join(' ');
-}
-
 type RunsPageProps = {
   aiStatus: AiConfigStatus | null;
   focusedRunId: string | null;
@@ -995,7 +984,12 @@ export function RunsPage({
                         onOpenTask(detail.taskId, {
                           type: 'focus_next_step',
                           focusArea: 'code-agent',
-                          prefillCodeAgentPatchIntent: getStagedPatchRerunIntent(detail, stagedPatchReview),
+                          prefillCodeAgentPatchIntent: formatCodeAgentRerunIntent({
+                            decisionTitle: stagedPatchReview.decisionTitle,
+                            files: stagedPatchReview.files,
+                            runId: detail.id,
+                            workspaceStatus: stagedPatchReview.workspaceStatus,
+                          }),
                         })
                       }
                       type="button"

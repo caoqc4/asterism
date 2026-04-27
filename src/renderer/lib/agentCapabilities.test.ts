@@ -11,6 +11,7 @@ import {
   formatCodeAgentAutomaticStartPolicySummary,
   formatCodeAgentModelProducerOptInSummary,
   formatCodeAgentPreflightSummary,
+  formatCodeAgentRerunIntent,
   formatCodeAgentReviewRecoverySummary,
   formatCodeAgentStartBlockedReason,
   formatExecutionRuntimeReadinessSummary,
@@ -590,6 +591,24 @@ describe('agent capability formatting', () => {
       output: null,
       status: 'needs_confirmation',
     }, null)).toBe('最近一次 Code Agent sandbox preview 正在等待确认或恢复处理。');
+  });
+
+  it('formats Code Agent rerun intent for task and run recovery surfaces', () => {
+    expect(formatCodeAgentRerunIntent({
+      decisionTitle: 'Review Code Agent preview for High risk task',
+      taskTitle: 'High risk task',
+    })).toBe(
+      'Re-run the Code Agent staged patch review for High risk task. Review prior promotion Decision: Review Code Agent preview for High risk task.',
+    );
+
+    expect(formatCodeAgentRerunIntent({
+      decisionTitle: '确认提升 sandbox patch',
+      files: ['src/notes.md'],
+      runId: 'run_sandbox_producer',
+      workspaceStatus: 'workspace unchanged until Decision approval',
+    })).toBe(
+      'Re-run the Code Agent staged patch review for run run_sandbox_producer. Review affected files: src/notes.md. Compare against promotion Decision: 确认提升 sandbox patch. Prior workspace status: workspace unchanged until Decision approval.',
+    );
   });
 
   it('detects Code Agent sandbox runs and promotion Decisions', () => {

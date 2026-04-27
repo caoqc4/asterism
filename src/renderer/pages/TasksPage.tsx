@@ -79,6 +79,7 @@ import {
 import {
   formatCodeAgentAutomaticStartPolicySummary,
   formatCodeAgentPreflightSummary,
+  formatCodeAgentRerunIntent,
   formatCodeAgentReviewRecoverySummary,
   formatCodeAgentStartBlockedReason,
   formatCodeAgentModelProducerOptInSummary,
@@ -2151,10 +2152,10 @@ export function TasksPage({
     setQuickRunType('agent');
 
     if (!codeAgentPatchIntent.trim()) {
-      const decisionContext = latestCodeAgentPromotionDecision
-        ? ` Review prior promotion Decision: ${latestCodeAgentPromotionDecision.title}.`
-        : '';
-      setCodeAgentPatchIntent(`Re-run the Code Agent staged patch review for ${detail?.title ?? 'this task'}.${decisionContext}`);
+      setCodeAgentPatchIntent(formatCodeAgentRerunIntent({
+        decisionTitle: latestCodeAgentPromotionDecision?.title ?? null,
+        taskTitle: detail?.title ?? null,
+      }));
     }
 
     focusActionTarget('run');

@@ -225,6 +225,12 @@ Only after O1-O4 are locally accepted:
 - MCP lane: safe-read adapters after descriptor/policy review
 - computer-use lane: separate high-risk decision
 
+Current coding-lane implementation has started by moving recovery predicates,
+recovery summaries, and rerun intent formatting into shared renderer helpers.
+Task detail and Runs staged-patch review now generate bounded rerun prompts
+from persisted task/run/Decision evidence, without queue workers, workspace
+mutation, host shell access, or automatic starts.
+
 Recommended next lane: coding. It already has the strongest Taskplane evidence
 chain: manual Code Agent preview, sandboxed staged patch output, targeted
 checks, promotion Decision, Run recovery, and orchestration diagnostics. The
