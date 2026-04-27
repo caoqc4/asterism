@@ -516,6 +516,12 @@ The project is past initial architecture assembly. Current work should favor pro
 - Runs detail now surfaces persisted Browser Evidence artifacts as a dedicated
   review card with URL, artifact kinds, artifact id, summary, screenshot path,
   and a review reminder before any controlled browser interaction is enabled.
+- [AGENT_EXECUTION_OPERATOR_STARTED_RUN_DECISION.md](AGENT_EXECUTION_OPERATOR_STARTED_RUN_DECISION.md)
+  is accepted for manually started internal runs. The shared
+  `OperatorStartedRunRequest` contract now covers `browser_evidence_smoke`,
+  `code_agent_preview`, and `sandbox_patch_review`, requiring explicit operator
+  confirmation, hidden model exposure, no scheduler start, no provider call by
+  default, and descriptor/policy alignment.
 - The Browser / Playwright boundary has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references. The accepted direction is tiered capability:
@@ -1136,11 +1142,11 @@ dedicated signed/notarized release pass.
    provider-backed disposable-workspace Code Agent preview, real Task detail
    Code Agent UI layout pass, Code Agent lifecycle recovery/evidence slice, and
    manual Browser / Playwright Tier 1 smoke as locally accepted for the alpha
-   path. The next execution task should decide whether to wire the manual
-   browser smoke into a real operator-started Run or pause browser work and
-   return to broader execution-layer orchestration. Keep Tier 2 controlled
-   interaction deferred until its draft decision is accepted and the Tier 1
-   Run review path is accepted.
+   path. The next execution task should wire the manual Browser Evidence smoke
+   into a real operator-started Run using the shared request contract, or pause
+   browser work and return to broader execution-layer orchestration. Keep Tier
+   2 controlled interaction deferred until its draft decision is accepted and
+   the Tier 1 Run review path is accepted.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.

@@ -14,6 +14,7 @@ Read first:
 - [AGENT_EXECUTION_FUTURE_DESIGN.md](AGENT_EXECUTION_FUTURE_DESIGN.md)
 - [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md)
 - [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md)
+- [AGENT_EXECUTION_OPERATOR_STARTED_RUN_DECISION.md](AGENT_EXECUTION_OPERATOR_STARTED_RUN_DECISION.md)
 - [AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md](AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md)
 - [AGENT_EXECUTION_BROWSER_CONTROLLED_INTERACTION_DECISION.md](AGENT_EXECUTION_BROWSER_CONTROLLED_INTERACTION_DECISION.md)
 
@@ -121,6 +122,10 @@ Completed:
   `browser_evidence` artifacts, including URL, artifact kinds, artifact id,
   summary, screenshot path, and a reminder to review evidence before enabling
   controlled interaction
+- the shared operator-started run contract is implemented for
+  `browser_evidence_smoke`, `code_agent_preview`, and `sandbox_patch_review`;
+  it requires explicit operator confirmation, hidden model exposure, no
+  scheduler start, no provider call by default, and descriptor/policy alignment
 - the Browser / Playwright decision has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references; the chosen boundary is no longer "read-only
@@ -388,7 +393,8 @@ review, and pending promotion Decision creation.
 The next implementation slice is:
 
 - decide whether the next Browser / Playwright slice should wire a manual
-  operator-started smoke into a real Run, or pause browser work and return to
+  operator-started smoke into a real Run using the shared
+  `OperatorStartedRunRequest` contract, or pause browser work and return to
   broader execution-layer orchestration
 - keep Tier 2 controlled browser interaction deferred until the draft decision
   is accepted and Tier 1 Run artifact review exists
