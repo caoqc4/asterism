@@ -143,7 +143,8 @@ Covered today:
 - `Browser controlled local QA fixture`
   `npm run manual:browser-controlled-fixture` materializes the Tier 2
   controlled-interaction fixture plan without starting a browser, calling the
-  network, mutating a page, or exposing a model-visible browser tool.
+  network, mutating a page, or exposing a model-visible browser tool. It also
+  writes expected RunStep drafts for future runner comparison.
 - `Code Agent model producer live smoke`
   `npm run accept:sandbox-coding:model-producer-live` is skipped by default.
   With `TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE=true`, it sends one

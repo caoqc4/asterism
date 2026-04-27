@@ -7,6 +7,7 @@ import {
   buildBrowserControlledInteractionLocalQaFixture,
   buildDefaultBrowserControlledInteractionPolicy,
   isBrowserControlledAction,
+  mapBrowserControlledInteractionStepToRunSteps,
   validateBrowserControlledInteractionRequest,
 } from './browser-controlled-interaction.js';
 
@@ -55,6 +56,18 @@ describe('browser controlled interaction schema draft', () => {
     expect(fixture).toMatchObject({
       allowedOrigin: 'http://127.0.0.1:5173',
       expectedArtifactKinds: ['screenshot', 'visible_text', 'page_summary'],
+      expectedRunSteps: expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'tool_call',
+          status: 'running',
+          title: 'Browser action planned: click',
+        }),
+        expect.objectContaining({
+          kind: 'tool_result',
+          status: 'skipped',
+          title: 'Browser action evidence pending: capture_evidence',
+        }),
+      ]),
       name: 'browser-controlled-local-qa-fixture',
       path: '/browser-controlled-local-qa.html',
       smokeWillCallNetwork: false,
@@ -72,6 +85,7 @@ describe('browser controlled interaction schema draft', () => {
     ]);
     expect(fixture.requests.every((request) =>
       validateBrowserControlledInteractionRequest(request).valid)).toBe(true);
+    expect(fixture.expectedRunSteps).toHaveLength(10);
   });
 
   it('keeps local QA fixture actions checkpoint-free until side-effect targets appear', () => {
@@ -128,7 +142,7 @@ describe('browser controlled interaction schema draft', () => {
   });
 
   it('marks possible external side effects as checkpoint-required step drafts', () => {
-    expect(validateBrowserControlledInteractionRequest({
+    const validation = validateBrowserControlledInteractionRequest({
       descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
       action: {
         action: 'click',
@@ -140,7 +154,9 @@ describe('browser controlled interaction schema draft', () => {
         allowedOrigins: ['http://localhost:5173'],
       }),
       purpose: 'Prepare a publish preview without sending.',
-    })).toMatchObject({
+    });
+
+    expect(validation).toMatchObject({
       step: {
         checkpointRequired: true,
         sideEffectClassification: 'possible_external_side_effect',
@@ -148,6 +164,34 @@ describe('browser controlled interaction schema draft', () => {
       },
       valid: true,
     });
+    expect(validation.valid ? mapBrowserControlledInteractionStepToRunSteps(validation.step) : []).toEqual([
+      {
+        kind: 'tool_call',
+        status: 'pending',
+        title: 'Browser action planned: click',
+        input: [
+          'action=click',
+          'url=http://localhost:5173/draft',
+          'targetLabel=Publish post',
+        ].join('\n'),
+        output: 'Pending Decision before browser action execution.',
+      },
+      {
+        kind: 'checkpoint',
+        status: 'pending',
+        title: 'Browser action requires checkpoint',
+        input: [
+          'action=click',
+          'url=http://localhost:5173/draft',
+          'targetLabel=Publish post',
+        ].join('\n'),
+        output: [
+          'action=click / checkpoint=required / origin=http://localhost:5173',
+          'evidence=screenshot,visible_text,page_summary',
+          'sideEffect=possible_external_side_effect',
+        ].join('\n'),
+      },
+    ]);
   });
 
   it('blocks credentials, unsafe actions, unsafe keys, and off-allowlist origins', () => {

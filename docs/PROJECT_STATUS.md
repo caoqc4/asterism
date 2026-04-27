@@ -579,6 +579,9 @@ The project is past initial architecture assembly. Current work should favor pro
   `npm run manual:browser-controlled-fixture`. It writes HTML, request JSON, and
   plan JSON to a temporary directory while recording `browserStart=no`,
   `networkCall=no`, `pageMutation=no`, and `modelExposure=hidden`.
+- That fixture now also writes expected RunStep drafts for the planned browser
+  actions, giving the future runner a stable evidence shape to match without
+  persisting or executing anything today.
 - The Browser / Playwright boundary has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references. The accepted direction is tiered capability:

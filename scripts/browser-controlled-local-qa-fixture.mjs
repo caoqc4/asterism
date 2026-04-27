@@ -20,14 +20,17 @@ if (invalid) {
 const htmlPath = path.join(root, 'browser-controlled-local-qa.html');
 const requestsPath = path.join(root, 'browser-controlled-local-qa-requests.json');
 const planPath = path.join(root, 'browser-controlled-local-qa-plan.json');
+const expectedRunStepsPath = path.join(root, 'browser-controlled-local-qa-expected-run-steps.json');
 
 await fs.writeFile(htmlPath, fixture.html, 'utf8');
 await fs.writeFile(requestsPath, JSON.stringify(fixture.requests, null, 2), 'utf8');
+await fs.writeFile(expectedRunStepsPath, JSON.stringify(fixture.expectedRunSteps, null, 2), 'utf8');
 await fs.writeFile(
   planPath,
   JSON.stringify({
     allowedOrigin: fixture.allowedOrigin,
     expectedArtifactKinds: fixture.expectedArtifactKinds,
+    expectedRunStepsPath,
     name: fixture.name,
     path: fixture.path,
     smokeWillCallNetwork: fixture.smokeWillCallNetwork,
@@ -43,6 +46,7 @@ console.log('Browser Controlled Interaction local QA fixture');
 console.log(`root=${root}`);
 console.log(`html=${htmlPath}`);
 console.log(`requests=${requestsPath}`);
+console.log(`expectedRunSteps=${expectedRunStepsPath}`);
 console.log(`plan=${planPath}`);
 console.log(`allowedOrigin=${fixture.allowedOrigin}`);
 console.log(`actions=${fixture.requests.map((request) => request.action.action).join(',')}`);

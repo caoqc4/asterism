@@ -20,6 +20,8 @@ Current implementation note:
 - `npm run manual:browser-controlled-fixture` materializes that fixture to a
   temporary directory for review without starting an HTTP server, Playwright, or
   any browser action.
+- The fixture also writes expected RunStep drafts for each planned action. These
+  drafts are comparison targets for a future runner; they are not persisted.
 - `browser.controlled_interaction` is intentionally not registered in
   `agent-tool-scaffold`, so it remains unavailable to text prompts,
   provider-native schemas, IPC, scheduler runs, and product UI.
@@ -190,3 +192,6 @@ Current progress:
 - The local dev-server QA fixture plan is design-only and can be materialized
   locally. It must not start a browser or expose a model-visible tool until
   separately accepted.
+- Expected RunStep drafts are now generated from the validated action plan, so
+  future implementation can be checked against a stable evidence shape before
+  any browser runtime is wired.

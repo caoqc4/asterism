@@ -1,4 +1,5 @@
 import type { BrowserEvidenceArtifact, BrowserEvidenceKind } from './browser-evidence.js';
+import type { RunStepKind, RunStepStatus } from './run.js';
 
 export const BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID = 'browser.controlled_interaction' as const;
 
@@ -60,6 +61,14 @@ export type BrowserControlledInteractionStepDraft = {
   summary: string;
 };
 
+export type BrowserControlledInteractionRunStepDraft = {
+  kind: RunStepKind;
+  status: RunStepStatus;
+  title: string;
+  input: string | null;
+  output: string | null;
+};
+
 export type BrowserControlledInteractionResult =
   | {
       artifacts: BrowserEvidenceArtifact[];
@@ -109,6 +118,7 @@ export type BrowserControlledInteractionRequestValidation =
 export type BrowserControlledInteractionLocalQaFixture = {
   allowedOrigin: string;
   expectedArtifactKinds: BrowserEvidenceKind[];
+  expectedRunSteps: BrowserControlledInteractionRunStepDraft[];
   html: string;
   name: string;
   path: string;
@@ -238,10 +248,15 @@ export function buildBrowserControlledInteractionLocalQaFixture(params: {
       purpose: 'Capture post-action local QA evidence.',
     },
   ];
+  const expectedRunSteps = requests.flatMap((request) => {
+    const validation = validateBrowserControlledInteractionRequest(request);
+    return validation.valid ? mapBrowserControlledInteractionStepToRunSteps(validation.step) : [];
+  });
 
   return {
     allowedOrigin: url.origin,
     expectedArtifactKinds: ['screenshot', 'visible_text', 'page_summary'],
+    expectedRunSteps,
     html,
     name: params.name ?? 'browser-controlled-local-qa-fixture',
     path: url.pathname,
@@ -260,6 +275,41 @@ export function buildBrowserControlledInteractionLocalQaFixture(params: {
       'modelExposure=hidden',
     ].join(' / '),
   };
+}
+
+export function mapBrowserControlledInteractionStepToRunSteps(
+  step: BrowserControlledInteractionStepDraft,
+): BrowserControlledInteractionRunStepDraft[] {
+  const actionInput = [
+    `action=${step.action.action}`,
+    step.currentUrl ? `url=${step.currentUrl}` : null,
+    step.action.targetRef ? `targetRef=${step.action.targetRef}` : null,
+    step.action.targetLabel ? `targetLabel=${step.action.targetLabel}` : null,
+  ].filter(Boolean).join('\n');
+  const resultOutput = [
+    step.summary,
+    `evidence=${step.artifactKinds.join(',') || 'none'}`,
+    `sideEffect=${step.sideEffectClassification}`,
+  ].join('\n');
+
+  return [
+    {
+      kind: 'tool_call',
+      status: step.checkpointRequired ? 'pending' : 'running',
+      title: `Browser action planned: ${step.action.action}`,
+      input: actionInput || null,
+      output: step.checkpointRequired ? 'Pending Decision before browser action execution.' : null,
+    },
+    {
+      kind: step.checkpointRequired ? 'checkpoint' : 'tool_result',
+      status: step.checkpointRequired ? 'pending' : 'skipped',
+      title: step.checkpointRequired
+        ? 'Browser action requires checkpoint'
+        : `Browser action evidence pending: ${step.action.action}`,
+      input: step.checkpointRequired ? actionInput || null : null,
+      output: resultOutput,
+    },
+  ];
 }
 
 export function validateBrowserControlledInteractionRequest(

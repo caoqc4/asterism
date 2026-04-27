@@ -486,6 +486,8 @@ The latest implementation slice:
 - `npm run manual:browser-controlled-fixture` now materializes the Tier 2
   local-dev QA fixture plan without starting a browser, opening a network
   connection, mutating a page, or exposing any model-visible browser tool.
+  The fixture includes expected RunStep drafts for future runner comparison,
+  but does not persist them.
 
 The next implementation slice is:
 
