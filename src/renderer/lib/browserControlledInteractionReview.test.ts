@@ -9,8 +9,10 @@ import {
 import {
   buildBrowserControlledInteractionReview,
   buildBrowserControlledInteractionRunReview,
+  buildBrowserControlledInteractionResumeReview,
   formatBrowserControlledRunEvidenceStatusLabel,
   formatBrowserControlledActionSummary,
+  formatBrowserControlledCheckpointActionSummary,
 } from './browserControlledInteractionReview';
 
 describe('browser controlled interaction review helpers', () => {
@@ -272,6 +274,114 @@ describe('browser controlled interaction review helpers', () => {
     });
     expect(formatBrowserControlledRunEvidenceStatusLabel('pending')).toBe('pending');
   });
+
+  it('builds checkpoint resume review for an approved one-action payload', () => {
+    const checkpoint = buildBrowserCheckpoint({
+      status: 'open',
+    });
+    const review = buildBrowserControlledInteractionResumeReview(checkpoint, {
+      decisionStatus: 'approved',
+    });
+
+    expect(review).toMatchObject({
+      actionSummary: 'action=click / url=http://localhost:5173/draft / origin=http://localhost:5173 / targetLabel=Publish post / sideEffect=possible_external_side_effect',
+      blockedReasons: [],
+      checkpointId: 'run_checkpoint_browser',
+      consequence: 'approval resumes exactly one recorded click action; it does not grant a browser session',
+      decisionSummary: 'decision=approved / checkpoint=open',
+      evidenceSummary: 'screenshot=artifact_screenshot_1 / visibleText=Draft publish page is visible. / decisionTitle=Approve browser publish click',
+      nextMove: 'next=resume exactly one approved browser action after pre-launch validation',
+      policySummary: 'modelExposure=hidden / scheduler=no / providerCall=no / genericPrompt=no / origin=http://localhost:5173 / allowed=click',
+      status: 'resumeReady',
+      summary: 'Browser controlled resume ready: action=click / url=http://localhost:5173/draft / origin=http://localhost:5173 / targetLabel=Publish post / sideEffect=possible_external_side_effect',
+    });
+    expect(formatBrowserControlledCheckpointActionSummary(JSON.parse(checkpoint.payload ?? '{}'))).toContain(
+      'origin=http://localhost:5173',
+    );
+  });
+
+  it('blocks checkpoint resume until a Decision is approved', () => {
+    const review = buildBrowserControlledInteractionResumeReview(buildBrowserCheckpoint({ status: 'open' }), {
+      decisionStatus: 'pending',
+    });
+
+    expect(review.status).toBe('blocked');
+    expect(review.blockedReasons).toEqual([
+      'Browser controlled resume requires an approved Decision; current status is pending.',
+    ]);
+    expect(review.nextMove).toBe('next=resolve blocked approval, policy, or checkpoint state before browser resume');
+  });
+
+  it('blocks checkpoint resume when current policy no longer allows the payload action', () => {
+    const review = buildBrowserControlledInteractionResumeReview(buildBrowserCheckpoint({ status: 'open' }), {
+      currentPolicy: buildDefaultBrowserControlledInteractionPolicy({
+        allowedActions: ['capture_evidence'],
+        allowedOrigins: ['http://localhost:5173'],
+      }),
+      decisionStatus: 'approved',
+    });
+
+    expect(review.status).toBe('blocked');
+    expect(review.blockedReasons).toEqual([
+      'Browser controlled resume action is not allowed by the current policy.',
+    ]);
+    expect(review.policySummary).toBe(
+      'modelExposure=hidden / scheduler=no / providerCall=no / genericPrompt=no / origin=http://localhost:5173 / allowed=capture_evidence',
+    );
+  });
+
+  it('marks resolved checkpoint resume reviews as already consumed', () => {
+    const review = buildBrowserControlledInteractionResumeReview(buildBrowserCheckpoint({
+      resolvedAt: '2026-01-01T00:10:00.000Z',
+      status: 'resolved',
+    }), {
+      decisionStatus: 'approved',
+    });
+
+    expect(review.status).toBe('alreadyConsumed');
+    expect(review.blockedReasons).toEqual([
+      'Browser controlled checkpoint was already resolved or consumed.',
+    ]);
+    expect(review.nextMove).toBe('next=review post-resume evidence or create a new checkpoint for another action');
+  });
+
+  it('treats malformed or unsupported checkpoint payloads as stale', () => {
+    const malformed = buildBrowserControlledInteractionResumeReview(buildBrowserCheckpoint({
+      payload: '{',
+      status: 'open',
+    }), {
+      decisionStatus: 'approved',
+    });
+    expect(malformed).toMatchObject({
+      blockedReasons: ['Browser controlled checkpoint payload is not valid JSON.'],
+      status: 'stalePayload',
+    });
+
+    const wrongKind = buildBrowserControlledInteractionResumeReview(buildBrowserCheckpoint({
+      payload: JSON.stringify({ version: 1, kind: 'workspace_patch' }),
+      status: 'open',
+    }), {
+      decisionStatus: 'approved',
+    });
+    expect(wrongKind).toMatchObject({
+      blockedReasons: ['Browser controlled checkpoint payload kind is not supported.'],
+      status: 'stalePayload',
+    });
+
+    const wrongVersion = buildBrowserControlledInteractionResumeReview(buildBrowserCheckpoint({
+      payload: JSON.stringify({
+        ...buildBrowserCheckpointPayload(),
+        version: 2,
+      }),
+      status: 'open',
+    }), {
+      decisionStatus: 'approved',
+    });
+    expect(wrongVersion).toMatchObject({
+      blockedReasons: ['Browser controlled checkpoint payload version is not supported.'],
+      status: 'stalePayload',
+    });
+  });
 });
 
 function buildStep(overrides: {
@@ -293,5 +403,46 @@ function buildStep(overrides: {
     status: overrides.status ?? 'completed',
     title: overrides.title,
     updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+
+function buildBrowserCheckpoint(overrides: {
+  payload?: string | null;
+  resolvedAt?: string | null;
+  status: 'open' | 'resolved' | 'cancelled';
+}) {
+  return {
+    createdAt: '2026-01-01T00:00:00.000Z',
+    id: 'run_checkpoint_browser',
+    kind: 'external_wait' as const,
+    payload: overrides.payload ?? JSON.stringify(buildBrowserCheckpointPayload()),
+    resolvedAt: overrides.resolvedAt ?? null,
+    runId: 'run_browser',
+    status: overrides.status,
+    stepId: 'run_step_browser_checkpoint',
+  };
+}
+
+function buildBrowserCheckpointPayload() {
+  return {
+    version: 1,
+    kind: 'browser_controlled_interaction',
+    descriptorId: 'browser.controlled_interaction',
+    action: {
+      action: 'click',
+      currentUrl: 'http://localhost:5173/draft',
+      targetLabel: 'Publish post',
+    },
+    currentUrl: 'http://localhost:5173/draft',
+    decisionId: 'decision_browser_1',
+    decisionTitle: 'Approve browser publish click',
+    origin: 'http://localhost:5173',
+    policySnapshot: buildDefaultBrowserControlledInteractionPolicy({
+      allowedActions: ['click'],
+      allowedOrigins: ['http://localhost:5173'],
+    }),
+    screenshotArtifactId: 'artifact_screenshot_1',
+    sideEffectClassification: 'possible_external_side_effect',
+    visibleTextSummary: 'Draft publish page is visible.',
   };
 }

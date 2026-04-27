@@ -124,6 +124,11 @@ The runtime must block if:
 
 ### BCR1: Resume Review Contract
 
+Status: locally accepted. Renderer review helpers now summarize approved,
+blocked, stale-payload, and already-consumed browser controlled checkpoint
+resume states without adding browser launch, IPC, scheduler, provider schema,
+or model-visible tool exposure.
+
 Goal: make browser checkpoint approval readable before any resume runtime is
 wired.
 
@@ -252,10 +257,9 @@ Acceptance:
 
 ## Recommended Next Task
 
-Start with BCR1 only.
+BCR1 is locally accepted. Next, implement BCR2 only.
 
-BCR1 is the smallest useful step because it gives checkpoint payloads a readable
-approval/resume contract without changing runtime power. After BCR1 is accepted,
-implement BCR2 as a pure validator. Do not implement Playwright resume, Decision
-auto-resume, or UI approval controls until the review contract and validator are
-locally accepted.
+BCR2 should be a pure resume validator that accepts checkpoint payload, Decision
+state, current policy, descriptor metadata, and requested resume context. Do not
+implement Playwright resume, Decision auto-resume, or UI approval controls until
+the review contract and validator are locally accepted.
