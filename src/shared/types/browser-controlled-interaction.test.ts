@@ -5,6 +5,7 @@ import {
   BROWSER_CONTROLLED_ACTIONS,
   BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
   buildBrowserControlledInteractionLocalQaFixture,
+  buildBrowserControlledInteractionCheckpointPayload,
   buildDefaultBrowserControlledInteractionPolicy,
   isBrowserControlledAction,
   mapBrowserControlledInteractionStepToRunSteps,
@@ -192,6 +193,90 @@ describe('browser controlled interaction schema draft', () => {
         ].join('\n'),
       },
     ]);
+  });
+
+  it('builds checkpoint payloads for possible browser side effects without resuming execution', () => {
+    const request = {
+      descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+      action: {
+        action: 'click',
+        currentUrl: 'http://localhost:5173/draft',
+        targetLabel: 'Publish post',
+      },
+      policy: buildDefaultBrowserControlledInteractionPolicy({
+        allowedActions: ['click', 'capture_evidence'],
+        allowedOrigins: ['http://localhost:5173'],
+      }),
+      purpose: 'Prepare a publish preview without sending.',
+    } as const;
+
+    expect(buildBrowserControlledInteractionCheckpointPayload({
+      decisionId: 'decision_browser_1',
+      decisionTitle: 'Approve browser publish click',
+      request,
+      screenshotArtifactId: 'artifact_screenshot_1',
+      visibleTextSummary: 'Draft publish page is visible.',
+    })).toMatchObject({
+      payload: {
+        action: {
+          action: 'click',
+          currentUrl: 'http://localhost:5173/draft',
+          targetLabel: 'Publish post',
+        },
+        currentUrl: 'http://localhost:5173/draft',
+        decisionId: 'decision_browser_1',
+        decisionTitle: 'Approve browser publish click',
+        descriptorId: 'browser.controlled_interaction',
+        kind: 'browser_controlled_interaction',
+        origin: 'http://localhost:5173',
+        screenshotArtifactId: 'artifact_screenshot_1',
+        sideEffectClassification: 'possible_external_side_effect',
+        version: 1,
+        visibleTextSummary: 'Draft publish page is visible.',
+      },
+      summary: 'Browser controlled interaction checkpoint payload ready / action=click / origin=http://localhost:5173 / resume=deferred',
+      valid: true,
+    });
+  });
+
+  it('blocks checkpoint payloads for safe actions or invalid requests', () => {
+    expect(buildBrowserControlledInteractionCheckpointPayload({
+      request: {
+        descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+        action: {
+          action: 'click',
+          currentUrl: 'http://localhost:5173/tasks',
+          targetLabel: 'Open task detail',
+        },
+        policy: buildDefaultBrowserControlledInteractionPolicy({
+          allowedActions: ['click'],
+          allowedOrigins: ['http://localhost:5173'],
+        }),
+        purpose: 'Exercise local navigation.',
+      },
+    })).toMatchObject({
+      blockedReasons: ['Browser controlled interaction checkpoint payload requires a checkpoint-required action.'],
+      valid: false,
+    });
+
+    expect(buildBrowserControlledInteractionCheckpointPayload({
+      request: {
+        descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+        action: {
+          action: 'click',
+          currentUrl: 'https://external.example.com/draft',
+          targetLabel: 'Publish post',
+        },
+        policy: buildDefaultBrowserControlledInteractionPolicy({
+          allowedActions: ['click'],
+          allowedOrigins: ['http://localhost:5173'],
+        }),
+        purpose: 'Attempt off-allowlist publish.',
+      },
+    })).toMatchObject({
+      blockedReasons: ['Browser controlled interaction action URL must match an allowed origin.'],
+      valid: false,
+    });
   });
 
   it('blocks credentials, unsafe actions, unsafe keys, and off-allowlist origins', () => {

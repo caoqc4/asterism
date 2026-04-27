@@ -115,6 +115,19 @@ export type BrowserControlledInteractionRequestValidation =
       valid: false;
     };
 
+export type BrowserControlledInteractionCheckpointPayloadBuild =
+  | {
+      blockedReasons: [];
+      payload: BrowserControlledInteractionCheckpointPayloadV1;
+      summary: string;
+      valid: true;
+    }
+  | {
+      blockedReasons: string[];
+      summary: string;
+      valid: false;
+    };
+
 export type BrowserControlledInteractionLocalQaFixture = {
   allowedOrigin: string;
   expectedArtifactKinds: BrowserEvidenceKind[];
@@ -390,6 +403,61 @@ export function validateBrowserControlledInteractionRequest(
   };
 }
 
+export function buildBrowserControlledInteractionCheckpointPayload(params: {
+  decisionId?: string | null;
+  decisionTitle?: string | null;
+  request: BrowserControlledInteractionRequest;
+  screenshotArtifactId?: string | null;
+  visibleTextSummary?: string | null;
+}): BrowserControlledInteractionCheckpointPayloadBuild {
+  const validation = validateBrowserControlledInteractionRequest(params.request);
+  if (!validation.valid) {
+    return invalidBrowserControlledCheckpointPayload(validation.blockedReasons);
+  }
+
+  if (!validation.step.checkpointRequired) {
+    return invalidBrowserControlledCheckpointPayload([
+      'Browser controlled interaction checkpoint payload requires a checkpoint-required action.',
+    ]);
+  }
+
+  const currentUrl = validation.step.currentUrl;
+  const parsedUrl = currentUrl ? parseBrowserControlledUrl(currentUrl) : null;
+  if (!currentUrl || !parsedUrl) {
+    return invalidBrowserControlledCheckpointPayload([
+      'Browser controlled interaction checkpoint payload requires a valid current URL.',
+    ]);
+  }
+
+  const payload: BrowserControlledInteractionCheckpointPayloadV1 = {
+    version: 1,
+    kind: 'browser_controlled_interaction',
+    descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+    action: validation.step.action,
+    currentUrl,
+    decisionId: params.decisionId ?? null,
+    decisionTitle: params.decisionTitle?.trim()
+      || `Approve browser action: ${validation.step.action.action}`,
+    origin: parsedUrl.origin,
+    policySnapshot: validation.request.policy,
+    screenshotArtifactId: params.screenshotArtifactId ?? null,
+    sideEffectClassification: 'possible_external_side_effect',
+    visibleTextSummary: params.visibleTextSummary?.trim() || null,
+  };
+
+  return {
+    blockedReasons: [],
+    payload,
+    summary: [
+      'Browser controlled interaction checkpoint payload ready',
+      `action=${payload.action.action}`,
+      `origin=${payload.origin}`,
+      'resume=deferred',
+    ].join(' / '),
+    valid: true,
+  };
+}
+
 function validateBrowserControlledPolicy(
   policy: Partial<BrowserControlledInteractionPolicy>,
   blockedReasons: string[],
@@ -540,6 +608,20 @@ function invalidBrowserControlledInteractionRequest(
   return {
     blockedReasons: reasons,
     summary: `Browser controlled interaction request blocked: ${reasons.join(' ')}`,
+    valid: false,
+  };
+}
+
+function invalidBrowserControlledCheckpointPayload(
+  blockedReasons: string[],
+): BrowserControlledInteractionCheckpointPayloadBuild {
+  const reasons = blockedReasons.length
+    ? blockedReasons
+    : ['Browser controlled interaction checkpoint payload is invalid.'];
+
+  return {
+    blockedReasons: reasons,
+    summary: `Browser controlled interaction checkpoint payload blocked: ${reasons.join(' ')}`,
     valid: false,
   };
 }
