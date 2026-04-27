@@ -101,6 +101,11 @@ The project is past initial architecture assembly. Current work should favor pro
 - O3 has started with a shared lifecycle projection helper that maps current
   Run statuses into orchestration vocabulary. Runs detail now surfaces that
   projection while keeping queue, claim, and automatic-start behavior disabled.
+- O4 has started with a shared skill-informed automation readiness evaluator:
+  mature low-risk tasks can be marked `eligible` only when procedure, inputs,
+  runtime readiness, risk, and completion boundaries are present, and the
+  evaluator still returns `automaticStartAllowed=false`. Task detail now
+  surfaces the evaluator summary in the Code Agent area as diagnostics only.
 - [CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md)
   is accepted for the first visible code-agent product surface: Task detail /
   Action Desk entrypoint, manual runtime readiness action, default available

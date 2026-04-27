@@ -1,7 +1,10 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 
 import type { RecommendedActionIntent } from '@shared/types/brief';
-import { buildAgentExecutionOrchestrationSnapshot } from '@shared/agent-orchestration';
+import {
+  buildAgentExecutionOrchestrationSnapshot,
+  evaluateSkillInformedAutomationReadiness,
+} from '@shared/agent-orchestration';
 import type {
   BlockerKind,
   BlockerRecord,
@@ -2233,6 +2236,12 @@ export function TasksPage({
   const codeAgentStartBlockedReason = formatCodeAgentStartBlockedReason(codeAgentStartGateInput);
   const codeAgentPreflightSummary = formatCodeAgentPreflightSummary(codeAgentStartGateInput);
   const orchestrationSnapshot = buildAgentExecutionOrchestrationSnapshot(aiStatus);
+  const automationReadiness = detail
+    ? evaluateSkillInformedAutomationReadiness({
+        snapshot: orchestrationSnapshot,
+        task: detail,
+      })
+    : null;
   const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
   const orderedLaneLabels = tasks.reduce<string[]>((labels, task) => {
     const laneLabel = getPriorityLaneLabel(taskPriorityLanes.get(task.id));
@@ -2373,6 +2382,11 @@ export function TasksPage({
           <p className="meta">
             Orchestration：{orchestrationSnapshot.summary}
           </p>
+          {automationReadiness ? (
+            <p className="meta">
+              {automationReadiness.summary}
+            </p>
+          ) : null}
           <p className="meta">
             {formatCodeAgentAutomaticStartPolicySummary()}
           </p>

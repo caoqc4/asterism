@@ -11,6 +11,7 @@ import {
 } from './types/operator-started-run.js';
 import type { CodeAgentAllowedCheck, CreateCodeAgentRunInput, RunStatus } from './types/run.js';
 import type { AiConfigStatus } from './types/settings.js';
+import type { TaskDetail } from './types/task.js';
 
 export type ExecutionRuntimeStatus = 'not_checked' | 'ready' | 'blocked' | 'offline';
 export type ExecutionRuntimeKind =
@@ -68,6 +69,16 @@ export type AgentRunLifecycleProjection = {
   queueEnabled: false;
   claimEnabled: false;
   automaticStartEnabled: false;
+  summary: string;
+};
+
+export type AgentAutomationReadinessState = 'blocked' | 'diagnostic_only' | 'eligible';
+
+export type AgentAutomationReadinessEvaluation = {
+  state: AgentAutomationReadinessState;
+  automaticStartAllowed: false;
+  blockedReasons: string[];
+  evidence: string[];
   summary: string;
 };
 
@@ -488,6 +499,98 @@ export function projectAgentRunLifecycle(params: {
       `start=${params.startMode}`,
       'queue=no',
       'claim=no',
+      'autoStart=no',
+    ].join(' / '),
+  };
+}
+
+export function evaluateSkillInformedAutomationReadiness(params: {
+  task: Pick<
+    TaskDetail,
+    | 'activeBlocker'
+    | 'activeDependency'
+    | 'activeWaitingItem'
+    | 'completionCriteria'
+    | 'nextStep'
+    | 'processTemplates'
+    | 'riskLevel'
+    | 'sourceContexts'
+    | 'state'
+    | 'summary'
+    | 'waitingReason'
+  >;
+  snapshot: AgentExecutionOrchestrationSnapshot;
+}): AgentAutomationReadinessEvaluation {
+  const blockedReasons: string[] = [];
+  const evidence: string[] = [];
+  const hasProcedure = params.task.processTemplates.some((template) =>
+    template.kind === 'skill'
+      || template.kind === 'workflow'
+      || template.kind === 'sop'
+      || template.kind === 'checklist');
+  const hasInputs = Boolean(params.task.nextStep?.trim())
+    && (Boolean(params.task.summary?.trim()) || params.task.sourceContexts.length > 0);
+  const hasRuntime = params.snapshot.runtime.status === 'ready';
+  const hasOpenCompletionCriterion = params.task.completionCriteria.some((criteria) => criteria.status === 'open');
+
+  if (!hasProcedure) {
+    blockedReasons.push('No applied skill or process template is attached to this task.');
+  } else {
+    evidence.push('procedure=present');
+  }
+
+  if (!hasInputs) {
+    blockedReasons.push('Task needs a clear next step plus summary or source context before automation readiness.');
+  } else {
+    evidence.push('inputs=present');
+  }
+
+  if (!hasRuntime) {
+    blockedReasons.push(`Runtime is not ready: ${params.snapshot.runtime.status}.`);
+  } else {
+    evidence.push('runtime=ready');
+  }
+
+  if (params.task.riskLevel === 'high') {
+    blockedReasons.push('High-risk tasks require manual Decision or operator-started review before execution.');
+  } else {
+    evidence.push(`risk=${params.task.riskLevel}`);
+  }
+
+  if (params.task.state === 'waiting_external' || params.task.activeWaitingItem || params.task.waitingReason?.trim()) {
+    blockedReasons.push('Task is waiting on external input.');
+  }
+
+  if (params.task.activeBlocker) {
+    blockedReasons.push('Task has an active blocker.');
+  }
+
+  if (params.task.activeDependency) {
+    blockedReasons.push('Task has an active dependency.');
+  }
+
+  if (!hasOpenCompletionCriterion) {
+    blockedReasons.push('Task needs at least one open completion criterion to bound execution.');
+  } else {
+    evidence.push('openCompletionCriterion=present');
+  }
+
+  const state: AgentAutomationReadinessState = blockedReasons.length === 0
+    ? 'eligible'
+    : evidence.length > 0
+      ? 'diagnostic_only'
+      : 'blocked';
+
+  return {
+    state,
+    automaticStartAllowed: false,
+    blockedReasons,
+    evidence,
+    summary: [
+      'Automation readiness',
+      `state=${state}`,
+      `evidence=${evidence.length ? evidence.join(',') : 'none'}`,
+      `blocked=${blockedReasons.length ? blockedReasons.join('; ') : 'none'}`,
       'autoStart=no',
     ].join(' / '),
   };

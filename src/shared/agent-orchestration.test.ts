@@ -5,6 +5,7 @@ import {
   buildAgentExecutionOrchestrationSnapshot,
   buildCodeAgentOrchestrationRequest,
   buildOperatorStartedOrchestrationRequest,
+  evaluateSkillInformedAutomationReadiness,
   projectAgentRunLifecycle,
   validateAgentExecutionOrchestrationRequest,
 } from './agent-orchestration.js';
@@ -253,5 +254,175 @@ describe('agent orchestration snapshot', () => {
       runStatus: 'failed',
       startMode: 'manual',
     }).currentStage).toBe('failed');
+  });
+
+  it('marks mature low-risk workflows eligible without allowing automatic start', () => {
+    const snapshot = buildAgentExecutionOrchestrationSnapshot({
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: true,
+      },
+      sandboxBackendStatus: {
+        probe: {
+          backendId: 'local-container',
+          environmentPolicy: 'empty',
+          isolation: 'container',
+          kind: 'local_container',
+          networkMode: 'disabled',
+          status: 'available',
+          supportsOutputLimits: true,
+          supportsPatchArtifacts: true,
+          supportsStagedWrites: true,
+          supportsStructuredCommands: true,
+          supportsTargetedCommands: true,
+          supportsWorkspaceMount: true,
+        },
+        profile: {
+          credentialPassthrough: false,
+          environmentPolicy: 'empty',
+          id: 'local-container',
+          isolation: 'container',
+          kind: 'local_container',
+          networkMode: 'disabled',
+          supportsOutputLimits: true,
+          supportsPatchArtifacts: true,
+          supportsStagedWrites: true,
+          supportsStructuredCommands: true,
+          supportsTargetedCommands: true,
+          supportsWorkspaceMount: true,
+        },
+        readiness: {
+          blockedReasons: [],
+          ready: true,
+          summary: 'Sandbox backend ready.',
+        },
+        producerBackendReadiness: {
+          blockedReasons: [],
+          ready: true,
+          summary: 'Producer ready.',
+        },
+        summary: 'Sandbox backend ready.',
+      },
+      toolScaffoldSummaries: [],
+      workspaceRoot: '/tmp/workspace',
+    });
+
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot,
+      task: {
+        activeBlocker: null,
+        activeDependency: null,
+        activeWaitingItem: null,
+        completionCriteria: [
+          {
+            id: 'criterion_1',
+            taskId: 'task_1',
+            text: 'Patch is reviewable',
+            verificationResponsibility: null,
+            verificationResponsibilityLabel: null,
+            status: 'open',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+            satisfiedAt: null,
+          },
+        ],
+        nextStep: 'Prepare the next staged patch.',
+        processTemplates: [
+          {
+            id: 'template_1',
+            bindingId: 'binding_1',
+            taskId: 'task_1',
+            title: 'Patch review workflow',
+            summary: null,
+            content: 'Prepare, test, and review a staged patch.',
+            kind: 'skill',
+            tags: [],
+            status: 'active',
+            bindingStatus: 'active',
+            bindingNote: null,
+            boundAt: '2026-01-01T00:00:00.000Z',
+            bindingUpdatedAt: '2026-01-01T00:00:00.000Z',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+            archivedAt: null,
+            removedAt: null,
+          },
+        ],
+        riskLevel: 'low',
+        sourceContexts: [],
+        state: 'planned',
+        summary: 'Known low-risk patch workflow.',
+        waitingReason: null,
+      },
+    });
+
+    expect(readiness).toMatchObject({
+      automaticStartAllowed: false,
+      blockedReasons: [],
+      evidence: [
+        'procedure=present',
+        'inputs=present',
+        'runtime=ready',
+        'risk=low',
+        'openCompletionCriterion=present',
+      ],
+      state: 'eligible',
+    });
+    expect(readiness.summary).toContain('autoStart=no');
+  });
+
+  it('keeps risky or under-specified tasks diagnostic-only', () => {
+    const snapshot = buildAgentExecutionOrchestrationSnapshot({
+      featureFlags: {
+        enableScheduler: false,
+      },
+      sandboxBackendStatus: null,
+      toolScaffoldSummaries: [],
+      workspaceRoot: null,
+    });
+
+    const readiness = evaluateSkillInformedAutomationReadiness({
+      snapshot,
+      task: {
+        activeBlocker: {
+          id: 'blocker_1',
+          taskId: 'task_1',
+          title: 'Needs legal review',
+          kind: 'approval',
+          detail: null,
+          owner: null,
+          responsibility: null,
+          responsibilityLabel: null,
+          sourceContextId: null,
+          status: 'active',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          resolvedAt: null,
+        },
+        activeDependency: null,
+        activeWaitingItem: null,
+        completionCriteria: [],
+        nextStep: null,
+        processTemplates: [],
+        riskLevel: 'high',
+        sourceContexts: [],
+        state: 'running',
+        summary: null,
+        waitingReason: null,
+      },
+    });
+
+    expect(readiness).toMatchObject({
+      automaticStartAllowed: false,
+      blockedReasons: expect.arrayContaining([
+        'No applied skill or process template is attached to this task.',
+        'Task needs a clear next step plus summary or source context before automation readiness.',
+        'Runtime is not ready: not_checked.',
+        'High-risk tasks require manual Decision or operator-started review before execution.',
+        'Task has an active blocker.',
+        'Task needs at least one open completion criterion to bound execution.',
+      ]),
+      state: 'blocked',
+    });
   });
 });

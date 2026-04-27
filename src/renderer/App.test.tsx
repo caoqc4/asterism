@@ -2934,6 +2934,9 @@ describe('App UI flow', () => {
       'Orchestration：Orchestration snapshot / runtime=ready / profile=manual_sandbox_producer / lifecycle=drafted / queue=no / autoStart=no / hidden=browser_playwright,mcp,skill,computer_use,creator_connector',
     )).toBeTruthy();
     expect(intent.getByText(
+      'Automation readiness / state=diagnostic_only / evidence=inputs=present,runtime=ready / blocked=No applied skill or process template is attached to this task.; High-risk tasks require manual Decision or operator-started review before execution.; Task needs at least one open completion criterion to bound execution. / autoStart=no',
+    )).toBeTruthy();
+    expect(intent.getByText(
       'Automatic start：disabled / requires mature skill or process, complete inputs, allowed tools, risk policy, accepted evidence or explicit enablement, and runtime readiness / no scheduler or auto-run flag is persisted',
     )).toBeTruthy();
     expect(intent.getByText(

@@ -195,6 +195,11 @@ Acceptance:
 Goal: compute whether a task could be auto-started later, without auto-starting
 now.
 
+Status: started. A shared read-only evaluator can mark mature low-risk tasks as
+`eligible` when procedure, inputs, runtime readiness, risk, and completion
+boundaries are present. It still returns `automaticStartAllowed=false`, and Task
+detail surfaces the summary as diagnostics only.
+
 Work:
 
 - build a read-only readiness evaluator from task state, process template /
