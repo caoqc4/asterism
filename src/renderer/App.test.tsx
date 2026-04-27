@@ -2927,14 +2927,22 @@ describe('App UI flow', () => {
     await screen.findByRole('heading', { name: 'High risk task' });
 
     const intent = within(screen.getByLabelText('Code agent run intent'));
+    const readiness = within(intent.getByLabelText('Orchestration readiness'));
     expect(intent.getByText('AgentProfile：manual sandbox producer')).toBeTruthy();
-    expect(intent.getByText(/Task：High risk task/)).toBeTruthy();
-    expect(intent.getByText(/Skill readiness：deferred until policy exists/)).toBeTruthy();
-    expect(intent.getByText(
-      'Orchestration：Orchestration snapshot / runtime=ready / profile=manual_sandbox_producer / lifecycle=drafted / queue=no / autoStart=no / hidden=browser_playwright,mcp,skill,computer_use,creator_connector',
+    expect(readiness.getByText('manual only')).toBeTruthy();
+    expect(readiness.getByText(/Task：High risk task/)).toBeTruthy();
+    expect(readiness.getByText(/Skill readiness：deferred until policy exists/)).toBeTruthy();
+    expect(readiness.getByText(
+      'AgentRunLifecycle：drafted / start=manual_or_operator_started / queue=no / claim=no / scheduler=no / autoStart=no / lifecycle=drafted / start=manual_or_operator_started / queue=no / claim=no / scheduler=no / autoStart=no',
     )).toBeTruthy();
-    expect(intent.getByText(
-      'Automation readiness / state=diagnostic_only / evidence=inputs=present,runtime=ready / blocked=No applied skill or process template is attached to this task.; High-risk tasks require manual Decision or operator-started review before execution.; Task needs at least one open completion criterion to bound execution. / autoStart=no',
+    expect(readiness.getByText(
+      'Hidden tool families / families=browser_playwright,mcp,skill,computer_use,creator_connector / modelVisible=no',
+    )).toBeTruthy();
+    expect(readiness.getByText(
+      'Automation readiness：diagnostic_only / evidence=inputs=present,runtime=ready / blocked=No applied skill or process template is attached to this task.; High-risk tasks require manual Decision or operator-started review before execution.; Task needs at least one open completion criterion to bound execution. / autoStart=no',
+    )).toBeTruthy();
+    expect(readiness.getByText(
+      'Orchestration：runtime=ready / profile=manual_sandbox_producer / lifecycle=drafted / hidden=browser_playwright,mcp,skill,computer_use,creator_connector / modelVisibleHiddenTools=no / automation=diagnostic_only / autoStart=no',
     )).toBeTruthy();
     expect(intent.getByText(
       'Automatic start：disabled / requires mature skill or process, complete inputs, allowed tools, risk policy, accepted evidence or explicit enablement, and runtime readiness / no scheduler or auto-run flag is persisted',

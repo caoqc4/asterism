@@ -88,6 +88,7 @@ import {
   isCodeAgentPromotionDecision,
   isCodeAgentSandboxRun,
 } from '../lib/agentCapabilities';
+import { buildReadOnlyOrchestrationPresentation } from '../lib/agentOrchestrationPresentation';
 
 const riskOptions: TaskRiskLevel[] = ['none', 'low', 'medium', 'high'];
 const sourceContextKindOptions: SourceContextKind[] = [
@@ -2203,6 +2204,10 @@ export function TasksPage({
         task: detail,
       })
     : null;
+  const orchestrationPresentation = buildReadOnlyOrchestrationPresentation({
+    automationReadiness,
+    snapshot: orchestrationSnapshot,
+  });
   const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
   const orderedLaneLabels = tasks.reduce<string[]>((labels, task) => {
     const laneLabel = getPriorityLaneLabel(taskPriorityLanes.get(task.id));
@@ -2336,18 +2341,35 @@ export function TasksPage({
           {sandboxBackendProbePending ? '检查中' : '检查运行时'}
         </button>
         <div className="code-agent-intent" aria-label="Code agent run intent">
-          <strong>AgentProfile：manual sandbox producer</strong>
-          <p className="meta">
-            Task：{detail?.title ?? '未选择任务'} / Skill readiness：deferred until policy exists
-          </p>
-          <p className="meta">
-            Orchestration：{orchestrationSnapshot.summary}
-          </p>
-          {automationReadiness ? (
+          <div className="orchestration-readiness" aria-label="Orchestration readiness">
+            <div className="orchestration-readiness-header">
+              <strong>AgentProfile：manual sandbox producer</strong>
+              <span className="status lane-status lane-status-steady">manual only</span>
+            </div>
             <p className="meta">
-              {automationReadiness.summary}
+              Task：{detail?.title ?? '未选择任务'} / Skill readiness：deferred until policy exists
             </p>
-          ) : null}
+            <p className="meta">
+              {orchestrationPresentation.runtime}
+            </p>
+            <p className="meta">
+              {orchestrationPresentation.profile}
+            </p>
+            <p className="meta">
+              {orchestrationPresentation.lifecycle}
+            </p>
+            <p className="meta">
+              {orchestrationPresentation.hiddenToolFamilies}
+            </p>
+            {orchestrationPresentation.automationReadiness ? (
+              <p className="meta">
+                {orchestrationPresentation.automationReadiness}
+              </p>
+            ) : null}
+            <p className="meta">
+              Orchestration：{orchestrationPresentation.summary}
+            </p>
+          </div>
           <p className="meta">
             {formatCodeAgentAutomaticStartPolicySummary()}
           </p>

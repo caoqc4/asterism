@@ -152,6 +152,11 @@ The project is past initial architecture assembly. Current work should favor pro
   tool families, and automation readiness. It centralizes the no-queue,
   no-auto-start, and hidden-tool-family wording before Task detail / Runs
   detail / Settings are regrouped into fuller orchestration cards.
+- Task detail now uses that shared presentation helper in a compact
+  `Orchestration readiness` sub-card under the existing Code Agent intent
+  surface. App tests assert the grouped card still says manual-only,
+  queue/claim/scheduler/auto-start are disabled, hidden reserved tool families
+  stay model-hidden, and the sandbox preview start gates are unchanged.
 - Runs detail now projects sandbox producer sessions into an
   `AgentRunLifecycle` summary with source id, check policy, network/promotion
   constraints, blocked reasons, and next recovery/review moves. Sandbox

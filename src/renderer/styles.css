@@ -423,8 +423,30 @@ button {
   border-top: 1px solid rgba(17, 24, 39, 0.08);
 }
 
+.orchestration-readiness {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.035);
+}
+
+.orchestration-readiness-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.orchestration-readiness .meta {
+  margin-bottom: 0;
+}
+
 .runtime-readiness *,
-.code-agent-intent * {
+.code-agent-intent *,
+.orchestration-readiness * {
   min-width: 0;
 }
 

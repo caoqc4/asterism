@@ -138,6 +138,12 @@ now provides a shared read-only presentation model for runtime, profile,
 lifecycle, hidden tool families, and automation readiness; renderer tests lock
 the no-auto-start and hidden-family wording before the card is regrouped.
 
+Implementation status: started. Task detail now renders an `Orchestration
+readiness` sub-card inside the existing Code Agent intent surface. It reuses the
+shared presentation model for runtime, profile, lifecycle, hidden tool families,
+automation readiness, and no-auto-start summary while keeping the existing
+manual runtime check and sandbox preview start gates unchanged.
+
 Goal: make the current Code Agent Runtime / AgentProfile / readiness block read
 like one coherent execution preparation surface.
 
