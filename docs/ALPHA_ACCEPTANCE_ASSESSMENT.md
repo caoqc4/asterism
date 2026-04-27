@@ -13,6 +13,9 @@ Strong automated coverage already exists for the main control-plane semantics, r
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
+- on 2026-04-28, `npm run verify` passed locally with 122 test files / 844
+  tests after adding shared recovery intent projection and manual recovery
+  run-instruction prefill from Runs back to Tasks.
 - on 2026-04-28, `npm run verify` passed locally with 122 test files / 843
   tests after adding shared read-only orchestration presentation coverage for
   the manual sandbox producer, hidden tool families, and automation readiness

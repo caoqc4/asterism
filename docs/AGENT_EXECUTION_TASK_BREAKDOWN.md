@@ -530,17 +530,16 @@ The latest implementation slice:
 
 The next implementation slice is:
 
-- continue from the completed first read-only orchestration UI pass:
-  runtime/profile/lifecycle visibility, manual dispatch intent,
-  restart/recovery review, and Settings diagnostics are now visible without any
-  queue worker or automatic-start policy
-- use the shared presentation model from
-  [AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md](AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md)
-  as the stable wording source before adding new execution orchestration
-  behavior
-- tighten executor/session interruption and restart-safety gaps with
-  inspect-first recovery wording, checkpoint/Decision routing, and new manual
-  Run creation rather than automatic replay
+- keep the completed read-only orchestration UI and recovery-intent layer
+  stable: runtime/profile/lifecycle visibility, manual dispatch intent,
+  restart/recovery review, Settings diagnostics, and manual recovery run
+  prefill are now covered without any queue worker or automatic-start policy
+- define the next executor/session boundary before adding more runtime power:
+  how a real executor reports liveness, interruption, cancellation, and
+  terminal settlement back into RunSteps / AgentSession status
+- keep recovery routed through inspect-first evidence review, checkpoint /
+  Decision review, or explicit manual Run preparation rather than automatic
+  replay
 - keep browser, MCP, computer-use, skills, and creator connector tools hidden
   from model-visible channels until their connector-specific acceptance slices
   explicitly accept runtime authority, credentials, and side-effect policy
