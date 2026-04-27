@@ -10,6 +10,7 @@ import {
   buildBrowserControlledInteractionReview,
   buildBrowserControlledInteractionRunReview,
   buildBrowserControlledInteractionResumeReview,
+  buildBrowserControlledInteractionResumeRunReviews,
   formatBrowserControlledRunEvidenceStatusLabel,
   formatBrowserControlledActionSummary,
   formatBrowserControlledCheckpointActionSummary,
@@ -380,6 +381,56 @@ describe('browser controlled interaction review helpers', () => {
     expect(wrongVersion).toMatchObject({
       blockedReasons: ['Browser controlled checkpoint payload version is not supported.'],
       status: 'stalePayload',
+    });
+  });
+
+  it('builds run-level resume reviews from checkpoint Decisions and resume evidence', () => {
+    const ready = buildBrowserControlledInteractionResumeRunReviews({
+      output: null,
+      steps: [],
+      checkpoints: [
+        buildBrowserCheckpoint({ status: 'open' }),
+      ],
+    }, [
+      {
+        id: 'decision_browser_1',
+        sourceId: 'run_checkpoint_browser',
+        status: 'approved',
+      },
+    ]);
+
+    expect(ready).toHaveLength(1);
+    expect(ready[0]).toMatchObject({
+      decisionSummary: 'decision=approved / checkpoint=open',
+      status: 'resumeReady',
+    });
+
+    const resumed = buildBrowserControlledInteractionResumeRunReviews({
+      output: 'Browser controlled resume local QA completed / oneAction=yes',
+      steps: [
+        buildStep({
+          kind: 'tool_result',
+          status: 'skipped',
+          title: 'Browser resume evidence pending: click',
+        }),
+      ],
+      checkpoints: [
+        buildBrowserCheckpoint({
+          resolvedAt: '2026-01-01T00:10:00.000Z',
+          status: 'resolved',
+        }),
+      ],
+    }, [
+      {
+        id: 'decision_browser_1',
+        sourceId: 'run_checkpoint_browser',
+        status: 'approved',
+      },
+    ]);
+
+    expect(resumed[0]).toMatchObject({
+      nextMove: 'next=review post-resume evidence; another browser action requires a new checkpoint',
+      status: 'resumed',
     });
   });
 });

@@ -8,7 +8,7 @@ import {
   type BrowserControlledInteractionStepDraft,
   validateBrowserControlledInteractionResume,
 } from '@shared/types/browser-controlled-interaction';
-import type { DecisionStatus } from '@shared/types/decision';
+import type { DecisionRecord, DecisionStatus } from '@shared/types/decision';
 import type { RunCheckpointRecord, RunDetailRecord, RunStepRecord } from '@shared/types/run';
 
 export type BrowserControlledInteractionReviewStatus = 'ready' | 'checkpoint_required' | 'blocked';
@@ -45,7 +45,8 @@ export type BrowserControlledInteractionResumeReviewStatus =
   | 'resumeReady'
   | 'blocked'
   | 'stalePayload'
-  | 'alreadyConsumed';
+  | 'alreadyConsumed'
+  | 'resumed';
 
 export type BrowserControlledInteractionResumeReview = {
   actionSummary: string | null;
@@ -63,6 +64,7 @@ export type BrowserControlledInteractionResumeReview = {
 export type BrowserControlledInteractionResumeReviewOptions = {
   currentPolicy?: BrowserControlledInteractionPolicy | null;
   decisionStatus?: DecisionStatus | null;
+  resumed?: boolean;
 };
 
 export function buildBrowserControlledInteractionReview(
@@ -132,6 +134,17 @@ export function buildBrowserControlledInteractionResumeReview(
   const policy = options.currentPolicy ?? payload.policySnapshot;
   const decisionStatus = options.decisionStatus ?? null;
 
+  if (options.resumed) {
+    return buildBrowserControlledResumeState({
+      blockedReasons: [],
+      checkpoint,
+      decisionStatus,
+      payload,
+      policy,
+      status: 'resumed',
+    });
+  }
+
   if (checkpoint.status === 'resolved') {
     return buildBrowserControlledResumeState({
       blockedReasons: ['Browser controlled checkpoint was already resolved or consumed.'],
@@ -165,6 +178,38 @@ export function buildBrowserControlledInteractionResumeReview(
     policy,
     status: blockedReasons.length ? 'blocked' : 'resumeReady',
   });
+}
+
+export function buildBrowserControlledInteractionResumeRunReviews(
+  detail: Pick<RunDetailRecord, 'checkpoints' | 'output' | 'steps'> | null,
+  decisions: Array<Pick<DecisionRecord, 'id' | 'sourceId' | 'status'>> = [],
+): BrowserControlledInteractionResumeReview[] {
+  const checkpoints = detail?.checkpoints ?? [];
+  const hasResumeEvidence = Boolean(detail?.output?.includes('Browser controlled resume local QA completed'))
+    || (detail?.steps ?? []).some((step) =>
+      step.title.startsWith('Browser resume evidence pending:')
+      || step.title.startsWith('Browser resume planned:'));
+
+  return checkpoints
+    .filter((checkpoint) => checkpoint.payload)
+    .map((checkpoint) => {
+      const parsed = parseBrowserControlledInteractionCheckpointPayload(checkpoint.payload);
+      if (!parsed.valid && parsed.blockedReasons.includes('Browser controlled checkpoint payload kind is not supported.')) {
+        return null;
+      }
+
+      const linkedDecision = parsed.valid
+        ? decisions.find((decision) =>
+          decision.id === parsed.payload.decisionId
+          || decision.sourceId === checkpoint.id)
+        : null;
+
+      return buildBrowserControlledInteractionResumeReview(checkpoint, {
+        decisionStatus: linkedDecision?.status ?? null,
+        resumed: hasResumeEvidence,
+      });
+    })
+    .filter((review): review is BrowserControlledInteractionResumeReview => Boolean(review));
 }
 
 export function formatBrowserControlledActionSummary(step: BrowserControlledInteractionStepDraft): string {
@@ -381,6 +426,10 @@ function buildBrowserControlledResumeState(params: {
 }
 
 function formatBrowserControlledResumeNextMove(status: BrowserControlledInteractionResumeReviewStatus): string {
+  if (status === 'resumed') {
+    return 'next=review post-resume evidence; another browser action requires a new checkpoint';
+  }
+
   if (status === 'resumeReady') {
     return 'next=resume exactly one approved browser action after pre-launch validation';
   }

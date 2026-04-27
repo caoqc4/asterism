@@ -704,9 +704,13 @@ The project is past initial architecture assembly. Current work should favor pro
   browser launch, opens only the disposable localhost fixture in an isolated
   Playwright context, executes exactly one resumed action, captures
   page-summary / visible-text / screenshot artifacts, and blocks invalid resume
-  contexts before browser start. The next recommended slice is BCR5 review
-  surfacing; arbitrary URLs, authenticated profiles, scheduler starts, provider
-  schemas, and model-visible browser tools remain deferred.
+  contexts before browser start. BCR5 is locally accepted with a read-only Runs
+  detail Browser Controlled Resume review card for approved-ready, resumed,
+  blocked/stale, and consumed checkpoint payload states using linked Decision
+  status, checkpoint state, resume evidence, reviewed payload evidence,
+  consequence, policy, and next-review wording. The next recommended slice is
+  BCR6 service integration; arbitrary URLs, authenticated profiles, scheduler
+  starts, provider schemas, and model-visible browser tools remain deferred.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
@@ -1321,8 +1325,8 @@ dedicated signed/notarized release pass.
    orchestration O1-O4 sequence, Code Agent O5 recovery helper layer, and
    Browser Evidence Tier 1 review helpers are now implemented locally.
    Browser Controlled Interaction BCI1-BCI6 are locally accepted for the
-   local-QA path, and BCR1-BCR4 are locally accepted for checkpoint resume
-   review/validation/dry-run/local-QA smoke. The next execution task should be BCR5
+   local-QA path, and BCR1-BCR5 are locally accepted for checkpoint resume
+   review/validation/dry-run/local-QA smoke/review surfacing. The next execution task should be BCR6
    from the browser controlled resume
    plan, not broad browser/MCP/computer-use model exposure;
    do not expose browser, MCP, computer-use, skills, or creator connector tools

@@ -4,6 +4,7 @@ import { parseRunCheckpointPayload } from '@shared/types/run-checkpoint-payload'
 import { evaluateSandboxPatchPromotionReadiness } from '@shared/sandbox-patch-promotion-readiness';
 import { projectAgentRunLifecycle } from '@shared/agent-orchestration';
 import type { RecommendedActionIntent } from '@shared/types/brief';
+import type { DecisionRecord } from '@shared/types/decision';
 import {
   buildDefaultOperatorStartedRunRequest,
   type OperatorStartedRunRequest,
@@ -30,6 +31,7 @@ import {
 } from '@shared/working-context/timeline';
 import {
   buildBrowserControlledInteractionRunReview,
+  buildBrowserControlledInteractionResumeRunReviews,
   formatBrowserControlledRunEvidenceStatusLabel,
 } from '../lib/browserControlledInteractionReview';
 import {
@@ -389,6 +391,18 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
   return truncateSummary(checkpoint.payload);
 }
 
+function resumeReviewTimelineStatus(status: string): 'ready' | 'blocked' | 'pending' {
+  if (status === 'blocked' || status === 'stalePayload') {
+    return 'blocked';
+  }
+
+  if (status === 'resumeReady') {
+    return 'pending';
+  }
+
+  return 'ready';
+}
+
 function getStagedPatchReviewSummary(detail: RunDetailRecord | null): StagedPatchReviewSummary | null {
   if (!detail) {
     return null;
@@ -482,6 +496,7 @@ function getStagedPatchWorkspaceStatus(
 
 type RunsPageProps = {
   aiStatus: AiConfigStatus | null;
+  decisions: DecisionRecord[];
   focusedRunId: string | null;
   runs: RunRecord[];
   tasks: TaskListItemRecord[];
@@ -496,6 +511,7 @@ type RunsPageProps = {
 
 export function RunsPage({
   aiStatus,
+  decisions,
   focusedRunId,
   runs,
   tasks,
@@ -676,6 +692,7 @@ export function RunsPage({
     : [];
   const browserEvidenceReview = buildBrowserEvidenceReviewSummary(detail);
   const browserControlledReview = buildBrowserControlledInteractionRunReview(detail);
+  const browserControlledResumeReviews = buildBrowserControlledInteractionResumeRunReviews(detail, decisions);
   const runLifecycleProjection = detail
     ? projectAgentRunLifecycle({
         runStatus: detail.status,
@@ -918,6 +935,36 @@ export function RunsPage({
                         <span className="status">{formatBrowserControlledRunEvidenceStatusLabel(item.status)}</span>
                       </div>
                       <p className="meta">{item.summary}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {browserControlledResumeReviews.length ? (
+              <div className="task-card detail-card-group detail-card-wide">
+                <p className="eyebrow">Browser Controlled Resume</p>
+                <strong>审阅 checkpoint 批准后的单动作恢复状态</strong>
+                <p className="meta">这里只展示已记录 checkpoint 的恢复状态；批准不等于授予浏览器会话。</p>
+                <div className="timeline-list">
+                  {browserControlledResumeReviews.map((review) => (
+                    <div
+                      className={`timeline-item timeline-item-${resumeReviewTimelineStatus(review.status)}`}
+                      key={review.checkpointId}
+                    >
+                      <div className="task-row">
+                        <strong>{review.status}</strong>
+                        <span className="status">{review.checkpointId}</span>
+                      </div>
+                      <p className="meta">Resume：{review.summary}</p>
+                      {review.actionSummary ? <p className="meta">Action：{review.actionSummary}</p> : null}
+                      <p className="meta">Decision：{review.decisionSummary}</p>
+                      <p className="meta">Evidence：{review.evidenceSummary}</p>
+                      <p className="meta">Consequence：{review.consequence}</p>
+                      <p className="meta">Policy：{review.policySummary}</p>
+                      <p className="meta">Next review move：{review.nextMove}</p>
+                      {review.blockedReasons.length ? (
+                        <p className="meta">Blocked：{review.blockedReasons.join(' / ')}</p>
+                      ) : null}
                     </div>
                   ))}
                 </div>

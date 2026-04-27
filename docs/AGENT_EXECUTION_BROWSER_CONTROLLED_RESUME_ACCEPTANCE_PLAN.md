@@ -227,6 +227,14 @@ Acceptance:
 
 ### BCR5: Runs And Decisions Review Surface
 
+Status: locally accepted. Runs detail now surfaces Browser Controlled Resume
+review states for approved-ready, resumed, blocked/stale, and consumed
+checkpoint payloads using linked Decision status, checkpoint state, resume
+evidence, reviewed payload evidence, consequence, policy, and next-review
+wording. It adds no generic browser prompt, arbitrary URL input, Playwright
+launch from UI, scheduler start, provider schema, model-visible tool, or
+Decision auto-resume.
+
 Goal: make approval and resume outcomes inspectable from existing surfaces.
 
 Extend the existing review UI to show:
@@ -275,10 +283,10 @@ Acceptance:
 
 ## Recommended Next Task
 
-BCR1-BCR4 are locally accepted. Next, implement BCR5 only.
+BCR1-BCR5 are locally accepted. Next, implement BCR6 only.
 
-BCR5 should surface approved-ready, resumed, blocked-drift, and consumed
-checkpoint resume states on the existing Runs / Decisions review surfaces
-without adding a generic browser prompt, arbitrary URL input, Playwright launch
-from UI, scheduler start, provider schema, model-visible tool, or Decision
-auto-resume.
+BCR6 should connect the accepted local-QA resume path through the existing
+Run/Decision services in an idempotent, restart-safe way. Keep the implementation
+limited to accepted `browser_controlled_interaction` payloads and localhost QA
+resume; do not add arbitrary URLs, authenticated profiles, scheduler starts,
+provider schemas, model-visible tools, or broad multi-action continuation.

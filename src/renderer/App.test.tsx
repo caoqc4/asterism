@@ -3380,6 +3380,19 @@ describe('App UI flow', () => {
     };
     const browserControlledApi: ElectronApi = {
       ...mockApi,
+      listDecisions: vi.fn(async (): Promise<DecisionRecord[]> => [
+        {
+          createdAt: '2026-01-01T00:00:00.000Z',
+          id: 'decision_browser_1',
+          sourceId: 'run_checkpoint_browser_controlled',
+          sourceLabel: 'Browser controlled checkpoint',
+          sourceType: 'agent_checkpoint',
+          status: 'approved',
+          taskId: riskTask.id,
+          title: 'Approve browser publish click',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]),
       listRuns: vi.fn(async () => [browserControlledRun]),
       getRunDetail: vi.fn(async (runId: string) =>
         runId === browserControlledRun.id ? browserControlledDetail : null,
@@ -3409,6 +3422,18 @@ describe('App UI flow', () => {
     expect(screen.getByText('Checkpoint boundary')).toBeTruthy();
     expect(screen.getByText(
       'action=click / origin=http://localhost:5173 / targetLabel=Publish post / screenshot=artifact_screenshot_1 / visibleText=Draft publish page is visible. / resume=deferred',
+    )).toBeTruthy();
+    expect(screen.getByText('Browser Controlled Resume')).toBeTruthy();
+    expect(screen.getByText('审阅 checkpoint 批准后的单动作恢复状态')).toBeTruthy();
+    expect(screen.getByText(
+      'Resume：Browser controlled resume ready: action=click / url=http://localhost:5173/draft / origin=http://localhost:5173 / targetLabel=Publish post / sideEffect=possible_external_side_effect',
+    )).toBeTruthy();
+    expect(screen.getByText('Decision：decision=approved / checkpoint=open')).toBeTruthy();
+    expect(screen.getByText(
+      'Consequence：approval resumes exactly one recorded click action; it does not grant a browser session',
+    )).toBeTruthy();
+    expect(screen.getByText(
+      'Next review move：next=resume exactly one approved browser action after pre-launch validation',
     )).toBeTruthy();
   });
 

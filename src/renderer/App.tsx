@@ -895,6 +895,7 @@ export function App() {
         {route === 'runs' ? (
           <RunsPage
             aiStatus={aiStatus}
+            decisions={decisions}
             focusedRunId={focusedRunId}
             runs={runs}
             tasks={tasks}
