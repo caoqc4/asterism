@@ -1202,10 +1202,13 @@ dedicated signed/notarized release pass.
    provider-backed disposable-workspace Code Agent preview, real Task detail
    Code Agent UI layout pass, Code Agent lifecycle recovery/evidence slice, and
    manual Browser / Playwright Tier 1 smoke plus its operator-started Runs UI
-   entrypoint as locally accepted for the alpha path. The next execution task
-   should implement the T8 operator-started orchestration boundary and keep
-   Tier 2 controlled interaction deferred until its draft decision is accepted
-   and the Tier 1 Run review path is accepted.
+   entrypoint as locally accepted for the alpha path. The T8 operator-started
+   Code Agent boundary and the shared connector policy/evidence records are now
+   implemented locally. The next execution task should either polish existing
+   evidence review UX or return to the broader execution-layer orchestration
+   plan; do not expose browser, MCP, computer-use, skills, or creator connector
+   tools to the model until a connector-specific acceptance slice is explicitly
+   accepted.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.
