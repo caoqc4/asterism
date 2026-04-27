@@ -614,11 +614,11 @@ The project is past initial architecture assembly. Current work should favor pro
   it `failed`, and invalid/stale checkpoint payloads still stop before any
   tool execution or session mutation. This keeps restart/recovery summaries
   aligned with the actual Run outcome after a manual resume.
-- Decision-approved tool checkpoint resume now uses the same AgentSession
-  terminal-status synchronization through the shared service wiring: approved
-  tool resume completion marks the latest continuable session `completed`, and
-  failed tool resume marks it `failed`, while unsupported/no-op approvals remain
-  review-only.
+- Decision checkpoint settlement now uses the same AgentSession terminal-status
+  synchronization through the shared service wiring: approved tool/browser/patch
+  resume completion marks the latest continuable session `completed`, failed or
+  blocked resume marks it `failed`, and deferred/cancelled Decisions mark it
+  `cancelled`, while unsupported/no-op approvals remain review-only.
 - The Runs `回到任务推进` action now uses the replay review mode to prefill the
   task next-step draft, so manual-resume sessions point users back to open
   checkpoint / Decision review before continuing.

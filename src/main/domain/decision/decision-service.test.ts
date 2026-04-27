@@ -1335,6 +1335,28 @@ describe('DecisionService', () => {
       getDetail: vi.fn(),
       updateResult: vi.fn(),
     };
+    const agentSessionStore = {
+      listForRun: vi.fn().mockResolvedValue([
+        {
+          id: 'agent_session_confirmation',
+          runId: 'run_1',
+          mode: 'agent',
+          status: 'needs_confirmation',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: true,
+            streaming: false,
+            fileContext: false,
+            taskMutationTools: false,
+            longRunningSessions: false,
+          },
+          metadata: 'executor=local_agent',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]),
+      updateStatus: vi.fn(),
+    };
     const service = new DecisionService(
       decisionRepository as never,
       taskService as never,
@@ -1343,6 +1365,12 @@ describe('DecisionService', () => {
       runCheckpointRepository as never,
       runStepRepository as never,
       runRepository as never,
+      null,
+      null,
+      null,
+      undefined,
+      null,
+      agentSessionStore as never,
     );
 
     await service.act({
@@ -1351,6 +1379,10 @@ describe('DecisionService', () => {
     });
 
     expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith('run_checkpoint_1', 'cancelled');
+    expect(agentSessionStore.updateStatus).toHaveBeenCalledWith(
+      'agent_session_confirmation',
+      'cancelled',
+    );
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         runId: 'run_1',
