@@ -231,9 +231,7 @@ export function DecisionsPage({
   }, [decisions, focusedDecisionId, onDecisionFocusConsumed]);
 
   const detail = decisions.find((decision) => decision.id === selectedDecisionId) ?? null;
-  const canOpenCheckpointRun = detail?.sourceType === 'agent_checkpoint'
-    && detail.sourceLabel === 'workspace.staged_patch'
-    && Boolean(detail.sourceId);
+  const canOpenCheckpointRun = detail?.sourceType === 'agent_checkpoint' && Boolean(detail.sourceId);
 
   useEffect(() => {
     setCheckpointReviewError(null);

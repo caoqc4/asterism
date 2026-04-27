@@ -479,6 +479,9 @@ The latest implementation slice:
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation
+- Decisions `查看 Run 证据` now applies to all agent-checkpoint Decisions with a
+  source checkpoint id, so patch and command confirmations can jump to their
+  owning Run evidence without executing the pending action
 - `agent-tool-scaffold` now builds connector policy records and local
   verification evidence requirements for every descriptor; Settings diagnostics
   show the verification-required count, and reserved connector families remain

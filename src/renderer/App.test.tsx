@@ -4752,8 +4752,42 @@ describe('App UI flow', () => {
 
   it('explains workspace patch checkpoint consequences on the decisions page', async () => {
     const user = userEvent.setup();
+    const workspacePatchRun = buildRunRecord({
+      id: 'run_workspace_patch_review',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'needs_confirmation',
+      output: 'Workspace patch checkpoint pending',
+      outputSource: 'system',
+    });
+    const workspacePatchRunDetail: RunDetailRecord = {
+      ...workspacePatchRun,
+      steps: [
+        buildRunStep({
+          id: 'run_step_workspace_patch',
+          runId: workspacePatchRun.id,
+          index: 1,
+          kind: 'checkpoint',
+          status: 'pending',
+          title: 'Workspace patch requires confirmation',
+          output: 'checkpoint=run_checkpoint_patch',
+        }),
+      ],
+      checkpoints: [
+        buildRunCheckpoint({
+          id: 'run_checkpoint_patch',
+          runId: workspacePatchRun.id,
+          kind: 'confirmation',
+          status: 'open',
+        }),
+      ],
+    };
     const checkpointDecisionApi: ElectronApi = {
       ...mockApi,
+      listRuns: vi.fn(async () => [workspacePatchRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === workspacePatchRun.id ? workspacePatchRunDetail : null,
+      ),
       listDecisions: vi.fn(async () => [
         {
           id: 'decision_checkpoint_patch',
@@ -4779,6 +4813,11 @@ describe('App UI flow', () => {
     expect(
       screen.getByText('来源：Agent checkpoint（workspace.write_patch）。批准后会恢复等待中的工作区 patch 应用并写入受影响文件；延后或取消会终止本次 run，不会继续应用该 patch。'),
     ).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '查看 Run 证据' }));
+
+    expect(await screen.findByRole('heading', { name: 'agent / needs_confirmation' })).toBeTruthy();
+    expect(checkpointDecisionApi.getRunDetail).toHaveBeenCalledWith('run_workspace_patch_review');
   });
 
   it('explains workspace command checkpoint consequences on the decisions page', async () => {

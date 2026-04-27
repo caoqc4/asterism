@@ -570,6 +570,10 @@ The project is past initial architecture assembly. Current work should favor pro
   context into the task next-step draft, so workspace patch, command, staged
   patch, and note confirmations route users through evidence review before task
   continuation.
+- Decisions can open Run evidence from any agent checkpoint with a source
+  checkpoint id, not only staged-patch promotion checkpoints; this keeps
+  workspace patch and command confirmation review one click away without
+  executing the pending action.
 - Connector policy/evidence records are now generated from
   `agent-tool-scaffold`: each descriptor records model visibility, network,
   credential, checkpoint, and verification requirements. Settings diagnostics
