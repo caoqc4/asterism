@@ -171,6 +171,9 @@ The project is past initial architecture assembly. Current work should favor pro
   interrupted/stale or failed sessions are explicitly marked as
   `prepare new manual run`, checkpoint-backed sessions remain manual-resume
   only, and all paths keep `autoReplay=no`.
+- When that intent requires a new manual run, `回到任务推进` now preloads the
+  Task quick-run instructions with the latest evidence and recovery judgment,
+  but still leaves run creation as an explicit user action.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend

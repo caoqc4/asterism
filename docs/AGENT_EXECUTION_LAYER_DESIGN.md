@@ -509,6 +509,9 @@ Current implementation note:
   `inspect_evidence`, `manual_checkpoint_resume`, or
   `prepare_new_manual_run`, keeping manual new-run preparation explicit without
   granting replay authority.
+- Runs-to-Task recovery can now carry that new-run preparation into the Task
+  quick-run instruction draft, preserving evidence and intent while keeping the
+  actual Run trigger manual.
 - `agent-tool-scaffold` now emits connector policy records and local
   verification evidence requirements for every reserved or implemented tool
   family. Settings diagnostics include the verification-required count, while

@@ -493,6 +493,9 @@ The latest implementation slice:
 - Shared replay review now also projects a `Recovery intent` summary, separating
   inspect-only evidence review, manual checkpoint resume, and prepare-new-manual
   run paths while keeping `autoReplay=no`.
+- Runs `回到任务推进` now uses the prepare-new-manual-run intent to prefill the
+  task quick-run instructions with the latest failed/interrupted evidence; it
+  still does not create or start a run automatically.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation

@@ -157,6 +157,35 @@ export function formatAgentSessionReplayNextStepDraft(params: {
     : `审阅最近一次 ${params.runType} run 的证据和输出，再决定是否继续推进任务。`;
 }
 
+export function formatAgentSessionRecoveryRunInstructions(params: {
+  runType: string;
+  session: AgentSessionRecord;
+  steps: Pick<RunStepRecord, 'createdAt' | 'index' | 'kind' | 'status' | 'title'>[];
+  checkpoints?: Pick<RunCheckpointRecord, 'status'>[];
+}): string | null {
+  const review = buildAgentSessionReplayReview({
+    checkpoints: params.checkpoints ?? [],
+    session: params.session,
+    steps: params.steps,
+  });
+  const recoveryIntent = buildAgentSessionRecoveryIntent(review);
+
+  if (recoveryIntent.action !== 'prepare_new_manual_run') {
+    return null;
+  }
+
+  const latest = review.latestStepTitle
+    ? `最近步骤：${review.latestStepTitle}（${review.latestStepStatus ?? 'unknown'}）。`
+    : '最近步骤：暂无。';
+
+  return [
+    `基于最近一次 ${params.runType} run 的证据准备新的手动 run。`,
+    latest,
+    `恢复判断：${recoveryIntent.summary}`,
+    '不要自动重放旧 session；先复核失败/中断证据、补齐输入，再由用户手动启动。',
+  ].join(' ');
+}
+
 export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): string | null {
   if (!session.metadata?.trim()) {
     return null;

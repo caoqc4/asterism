@@ -53,6 +53,7 @@ import {
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
   formatAgentSessionRecoveryIntentSummary,
+  formatAgentSessionRecoveryRunInstructions,
   formatAgentSessionReplayNextStepDraft,
   formatAgentSessionRestartSummary,
   formatAgentSessionReplayReviewSummary,
@@ -793,6 +794,14 @@ export function RunsPage({
           ? `复核最近一次 ${detail.type} run 的暂停原因，处理阻塞后再继续。`
           : `审阅最近一次 ${detail.type} run 的结果，并决定是否继续推进。`
     : '';
+  const focusRunInstructionsDraft = detail && latestAgentSession
+    ? formatAgentSessionRecoveryRunInstructions({
+        checkpoints: detailCheckpoints,
+        runType: detail.type,
+        session: latestAgentSession,
+        steps: detailSteps,
+      })
+    : null;
 
   return (
     <section className="tasks-layout">
@@ -896,6 +905,7 @@ export function RunsPage({
                       type: 'focus_next_step',
                       focusArea: 'detail',
                       prefillNextStep: focusNextStepDraft,
+                      prefillRunInstructions: focusRunInstructionsDraft,
                     })
                   }
                   type="button"
