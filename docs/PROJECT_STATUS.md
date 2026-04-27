@@ -92,6 +92,10 @@ The project is past initial architecture assembly. Current work should favor pro
   manual/operator-started lifecycle, and hidden connector families. The Task
   detail Code Agent surface uses the same snapshot, without enabling
   queue/claim, scheduler starts, provider calls, or automatic starts.
+- The O2 orchestration request contract has started in shared code: manual Code
+  Agent preview input and operator-started Browser Evidence requests can now be
+  wrapped into a common runtime/profile/policy/idempotency envelope, while
+  `policy_auto`, scheduler starts, and automatic starts remain blocked.
 - [CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md)
   is accepted for the first visible code-agent product surface: Task detail /
   Action Desk entrypoint, manual runtime readiness action, default available

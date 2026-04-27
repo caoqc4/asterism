@@ -147,6 +147,11 @@ Acceptance:
 
 Goal: formalize the payload that turns task intent into a run attempt.
 
+Status: started. Shared `AgentExecutionOrchestrationRequest` helpers can wrap
+manual Code Agent preview input and operator-started Browser Evidence requests
+into the same runtime/profile/policy/idempotency envelope. The contract still
+blocks `policy_auto`, scheduler starts, and automatic starts.
+
 Work:
 
 - define shared request/result types

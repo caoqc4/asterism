@@ -1,4 +1,15 @@
-import type { AgentToolScaffoldFamily, AgentToolScaffoldFamilySummary } from './agent-tool-scaffold.js';
+import {
+  buildDefaultAgentToolExecutionPolicy,
+  validateAgentToolExecutionPolicy,
+  type AgentToolExecutionPolicy,
+  type AgentToolScaffoldFamily,
+  type AgentToolScaffoldFamilySummary,
+} from './agent-tool-scaffold.js';
+import {
+  validateOperatorStartedRunRequest,
+  type OperatorStartedRunRequest,
+} from './types/operator-started-run.js';
+import type { CodeAgentAllowedCheck, CreateCodeAgentRunInput } from './types/run.js';
 import type { AiConfigStatus } from './types/settings.js';
 
 export type ExecutionRuntimeStatus = 'not_checked' | 'ready' | 'blocked' | 'offline';
@@ -57,6 +68,64 @@ export type AgentExecutionOrchestrationSnapshot = {
   hiddenFamilies: AgentToolScaffoldFamily[];
   summary: string;
 };
+
+export type AgentExecutionOrchestrationLane =
+  | 'browser_evidence'
+  | 'coding'
+  | 'creator'
+  | 'general';
+
+export type AgentExecutionOrchestrationStartMode =
+  | 'manual'
+  | 'operator_started'
+  | 'policy_auto';
+
+export type AgentExecutionOrchestrationRequiredInput = {
+  key: string;
+  present: boolean;
+  reason: string;
+};
+
+export type AgentExecutionOrchestrationRequest = {
+  idempotencyKey: string;
+  taskId: string;
+  lane: AgentExecutionOrchestrationLane;
+  profileId: string;
+  runtimeId: string;
+  startMode: AgentExecutionOrchestrationStartMode;
+  policy: AgentToolExecutionPolicy;
+  requiredInputs: AgentExecutionOrchestrationRequiredInput[];
+  operatorConfirmed: true;
+  schedulerAllowed: false;
+  automaticStartAllowed: false;
+  providerCallAllowed: boolean;
+  source:
+    | {
+        kind: 'code_agent_preview';
+        requestedChecks: CodeAgentAllowedCheck[];
+        useModelProducer: boolean;
+        contextFileCount: number;
+      }
+    | {
+        kind: 'operator_started_run';
+        operatorKind: OperatorStartedRunRequest['kind'];
+        descriptorId: string;
+      };
+  summary: string;
+};
+
+export type AgentExecutionOrchestrationRequestValidation =
+  | {
+      blockedReasons: [];
+      request: AgentExecutionOrchestrationRequest;
+      summary: string;
+      valid: true;
+    }
+  | {
+      blockedReasons: string[];
+      summary: string;
+      valid: false;
+    };
 
 const RESERVED_CONNECTOR_FAMILIES: AgentToolScaffoldFamily[] = [
   'browser_playwright',
@@ -168,4 +237,253 @@ function getHiddenReservedFamilies(
   );
 
   return RESERVED_CONNECTOR_FAMILIES.filter((family) => !visibleFamilies.has(family));
+}
+
+export function buildCodeAgentOrchestrationRequest(
+  input: CreateCodeAgentRunInput,
+): AgentExecutionOrchestrationRequest {
+  const requestedChecks = normalizeRequestedChecks(input.requestedChecks);
+  const contextFileCount = Array.isArray(input.contextFiles)
+    ? input.contextFiles.filter((file) => file.trim()).length
+    : 0;
+  const requiredInputs: AgentExecutionOrchestrationRequiredInput[] = [
+    {
+      key: 'patch_intent',
+      present: Boolean(input.patchIntent.trim()),
+      reason: 'Code Agent preview needs a patch intent before it can prepare a staged diff.',
+    },
+    {
+      key: 'requested_checks',
+      present: requestedChecks.length > 0,
+      reason: 'Code Agent preview needs at least one selected test or lint check.',
+    },
+    {
+      key: 'operator_confirmation',
+      present: input.operatorConfirmed === true,
+      reason: 'Code Agent preview must be explicitly operator-started.',
+    },
+    {
+      key: 'context_files',
+      present: input.useModelProducer === true ? contextFileCount > 0 : true,
+      reason: 'Model-backed Code Agent preview requires bounded context files.',
+    },
+  ];
+
+  return {
+    idempotencyKey: [
+      'code_agent_preview',
+      input.taskId.trim(),
+      requestedChecks.join(',') || 'no_checks',
+      input.useModelProducer === true ? `model_context_${contextFileCount}` : 'local_diagnostic',
+    ].join(':'),
+    taskId: input.taskId.trim(),
+    lane: 'coding',
+    profileId: 'manual_sandbox_producer',
+    runtimeId: 'local_sandbox',
+    startMode: 'manual',
+    policy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
+    requiredInputs,
+    operatorConfirmed: true,
+    schedulerAllowed: false,
+    automaticStartAllowed: false,
+    providerCallAllowed: input.useModelProducer === true,
+    source: {
+      kind: 'code_agent_preview',
+      requestedChecks,
+      useModelProducer: input.useModelProducer === true,
+      contextFileCount,
+    },
+    summary: [
+      'Orchestration request',
+      'lane=coding',
+      'source=code_agent_preview',
+      'profile=manual_sandbox_producer',
+      'runtime=local_sandbox',
+      'start=manual',
+      `providerCall=${input.useModelProducer === true ? 'explicit_opt_in' : 'no'}`,
+      'queue=no',
+      'autoStart=no',
+    ].join(' / '),
+  };
+}
+
+export function buildOperatorStartedOrchestrationRequest(
+  input: OperatorStartedRunRequest,
+): AgentExecutionOrchestrationRequestValidation {
+  const validation = validateOperatorStartedRunRequest(input);
+  if (!validation.valid) {
+    return invalidOrchestrationRequest(validation.blockedReasons);
+  }
+
+  const request = validation.request;
+  const lane: AgentExecutionOrchestrationLane = request.kind === 'browser_evidence_smoke'
+    ? 'browser_evidence'
+    : 'coding';
+
+  return validateAgentExecutionOrchestrationRequest({
+    idempotencyKey: `operator_started:${request.kind}:${request.taskId}`,
+    taskId: request.taskId,
+    lane,
+    profileId: request.kind === 'browser_evidence_smoke'
+      ? 'operator_browser_evidence'
+      : 'manual_sandbox_producer',
+    runtimeId: request.policy.sessionKind === 'browser' ? 'browser_session' : 'local_sandbox',
+    startMode: 'operator_started',
+    policy: request.policy,
+    requiredInputs: [
+      {
+        key: 'operator_confirmation',
+        present: true,
+        reason: 'Operator-started runs require explicit confirmation.',
+      },
+      {
+        key: 'reason',
+        present: Boolean(request.reason.trim()),
+        reason: 'Operator-started runs require a visible reason.',
+      },
+    ],
+    operatorConfirmed: true,
+    schedulerAllowed: false,
+    automaticStartAllowed: false,
+    providerCallAllowed: false,
+    source: {
+      kind: 'operator_started_run',
+      operatorKind: request.kind,
+      descriptorId: request.descriptorId,
+    },
+    summary: [
+      'Orchestration request',
+      `lane=${lane}`,
+      `source=${request.kind}`,
+      'start=operator_started',
+      'providerCall=no',
+      'queue=no',
+      'autoStart=no',
+    ].join(' / '),
+  });
+}
+
+export function validateAgentExecutionOrchestrationRequest(
+  input: unknown,
+): AgentExecutionOrchestrationRequestValidation {
+  if (!input || typeof input !== 'object') {
+    return invalidOrchestrationRequest(['Orchestration request must be an object.']);
+  }
+
+  const candidate = input as Partial<AgentExecutionOrchestrationRequest>;
+  const blockedReasons: string[] = [];
+
+  if (typeof candidate.taskId !== 'string' || !candidate.taskId.trim()) {
+    blockedReasons.push('Orchestration request requires a task id.');
+  }
+
+  if (!isOrchestrationLane(candidate.lane)) {
+    blockedReasons.push('Orchestration request requires a supported lane.');
+  }
+
+  if (typeof candidate.profileId !== 'string' || !candidate.profileId.trim()) {
+    blockedReasons.push('Orchestration request requires a profile id.');
+  }
+
+  if (typeof candidate.runtimeId !== 'string' || !candidate.runtimeId.trim()) {
+    blockedReasons.push('Orchestration request requires a runtime id.');
+  }
+
+  if (!isOrchestrationStartMode(candidate.startMode)) {
+    blockedReasons.push('Orchestration request requires a supported start mode.');
+  }
+
+  if (candidate.startMode === 'policy_auto') {
+    blockedReasons.push('Orchestration request cannot use policy_auto until automation readiness is accepted.');
+  }
+
+  if (candidate.operatorConfirmed !== true) {
+    blockedReasons.push('Orchestration request requires explicit operator confirmation.');
+  }
+
+  if (candidate.schedulerAllowed !== false) {
+    blockedReasons.push('Orchestration request must not allow scheduler starts.');
+  }
+
+  if (candidate.automaticStartAllowed !== false) {
+    blockedReasons.push('Orchestration request must not allow automatic starts.');
+  }
+
+  if (typeof candidate.providerCallAllowed !== 'boolean') {
+    blockedReasons.push('Orchestration request must state whether provider calls are allowed.');
+  }
+
+  if (typeof candidate.idempotencyKey !== 'string' || !candidate.idempotencyKey.trim()) {
+    blockedReasons.push('Orchestration request requires an idempotency key.');
+  }
+
+  const requiredInputs = Array.isArray(candidate.requiredInputs) ? candidate.requiredInputs : [];
+  if (!requiredInputs.length) {
+    blockedReasons.push('Orchestration request requires required-input evidence.');
+  }
+
+  const missingInputs = requiredInputs.filter((item) => item?.present !== true);
+  if (missingInputs.length > 0) {
+    blockedReasons.push(
+      `Orchestration request is missing required inputs: ${missingInputs.map((item) => item.key).join(', ')}.`,
+    );
+  }
+
+  const policyValidation = validateAgentToolExecutionPolicy(candidate.policy);
+  if (!policyValidation.valid) {
+    blockedReasons.push(...policyValidation.blockedReasons);
+  }
+
+  if (!candidate.source || typeof candidate.source !== 'object') {
+    blockedReasons.push('Orchestration request requires a source envelope.');
+  }
+
+  if (blockedReasons.length > 0 || !policyValidation.valid) {
+    return invalidOrchestrationRequest(blockedReasons);
+  }
+
+  const request = candidate as AgentExecutionOrchestrationRequest;
+  return {
+    blockedReasons: [],
+    request: {
+      ...request,
+      taskId: request.taskId.trim(),
+      profileId: request.profileId.trim(),
+      runtimeId: request.runtimeId.trim(),
+      idempotencyKey: request.idempotencyKey.trim(),
+      policy: policyValidation.policy,
+    },
+    summary: request.summary,
+    valid: true,
+  };
+}
+
+function normalizeRequestedChecks(checks: CodeAgentAllowedCheck[]): CodeAgentAllowedCheck[] {
+  return checks.filter((check, index) =>
+    (check === 'test' || check === 'lint') && checks.indexOf(check) === index);
+}
+
+function isOrchestrationLane(value: unknown): value is AgentExecutionOrchestrationLane {
+  return value === 'browser_evidence'
+    || value === 'coding'
+    || value === 'creator'
+    || value === 'general';
+}
+
+function isOrchestrationStartMode(value: unknown): value is AgentExecutionOrchestrationStartMode {
+  return value === 'manual' || value === 'operator_started' || value === 'policy_auto';
+}
+
+function invalidOrchestrationRequest(
+  blockedReasons: string[],
+): AgentExecutionOrchestrationRequestValidation {
+  const reasons = blockedReasons.length
+    ? blockedReasons
+    : ['Orchestration request is invalid.'];
+
+  return {
+    blockedReasons: reasons,
+    summary: `Orchestration request blocked: ${reasons.join('; ')}`,
+    valid: false,
+  };
 }
