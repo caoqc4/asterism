@@ -385,10 +385,52 @@ Non-goals until explicitly accepted:
 - external posting/email/calendar/social tools before connector-specific
   Decisions exist
 
+### T8: Operator-Started Orchestration Boundary
+
+Goal: unify manually started runtime lanes without flattening their different
+provider, sandbox, and confirmation policies.
+
+Why:
+
+Browser Evidence now uses `OperatorStartedRunService`, while Code Agent preview
+still enters through a dedicated IPC handler. First principles say the common
+unit is not "a button" and not "a model call"; it is an operator-started Run
+that can state its policy before launch and project evidence back into
+RunSteps, Artifacts, Checkpoints, Decisions, and Timeline. The Code Agent lane
+also has a deliberate model-producer branch, so it cannot be naively forced
+into the current `providerCallAllowed=false` Browser Evidence contract.
+
+Work:
+
+- split operator-started launch semantics into:
+  - local/no-provider diagnostic runs
+  - explicit provider-spending model-producer runs
+  - future scheduler/automatic starts gated by skill/process policy
+- keep Browser Evidence Tier 1 on the strict hidden/no-provider contract
+- move manual Code Agent launch construction out of the IPC handler into a
+  domain service boundary, while preserving the current `run:triggerCodeAgent`
+  IPC contract
+- record an operator-started acceptance RunStep for Code Agent local diagnostic
+  previews only after the provider-call policy distinction is explicit
+- keep model-backed Code Agent preview behind its existing explicit UI opt-in,
+  selected context files, sandbox/Decision promotion, and provider-spend
+  readiness checks
+
+Acceptance:
+
+- `run:triggerCodeAgent` handler delegates orchestration instead of owning the
+  producer lifecycle directly
+- local diagnostic Code Agent preview remains no-provider by default
+- model-backed Code Agent preview still requires explicit `Use model producer`
+  and does not inherit Browser Evidence's no-provider contract accidentally
+- existing Code Agent UI tests and IPC tests still pass
+- Browser Evidence operator-started UI remains unchanged
+- `npm run accept:sandbox-coding:code-agent-ui` and `npm run verify` pass
+
 ## Recommended Next Implementation Task
 
-Start with the first non-live slices from
-[AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md](AGENT_EXECUTION_SANDBOXED_CODING_PRODUCER_DESIGN.md).
+Start by making the operator-started orchestration boundary explicit before
+adding more visible runtime power.
 
 T1 through T7 now have Slice 0 implementation or design coverage, the shared
 tool scaffold exists, the sandbox patch draft source boundary is implemented,
@@ -400,10 +442,11 @@ review, and pending promotion Decision creation.
 
 The next implementation slice is:
 
-- run an isolated manual UI pass for the new Browser Evidence smoke entrypoint,
-  then pause Tier 1 browser work unless the review UX exposes acceptance issues
-- return to broader execution-layer orchestration once the manual UI pass is
-  clean
+- implement T8 by extracting manual Code Agent launch orchestration into a
+  domain service while preserving the existing UI/IPC contract
+- keep the provider-call distinction explicit: local diagnostic previews can
+  share the strict no-provider operator-started shape; model-backed previews
+  remain an explicit spend-aware branch
 - keep Tier 2 controlled browser interaction deferred until the draft decision
   is accepted and Tier 1 Run artifact review exists
 

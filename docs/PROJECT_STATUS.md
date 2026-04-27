@@ -536,6 +536,12 @@ The project is past initial architecture assembly. Current work should favor pro
   manual button created a completed agent Run, persisted a `browser_evidence`
   artifact, showed the Browser Evidence review card, and SQLite confirmed the
   accepted/captured/artifact RunSteps plus timeline events.
+- The next execution-layer slice is T8 in
+  [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md): make
+  operator-started orchestration explicit by extracting manual Code Agent launch
+  construction out of the IPC handler while preserving the existing
+  `run:triggerCodeAgent` UI contract. The key policy distinction is local
+  no-provider diagnostic preview vs explicit provider-spending model producer.
 - The Browser / Playwright boundary has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references. The accepted direction is tiered capability:
@@ -1157,10 +1163,9 @@ dedicated signed/notarized release pass.
    Code Agent UI layout pass, Code Agent lifecycle recovery/evidence slice, and
    manual Browser / Playwright Tier 1 smoke plus its operator-started Runs UI
    entrypoint as locally accepted for the alpha path. The next execution task
-   should return to broader execution-layer orchestration unless a focused
-   Browser Evidence review issue appears. Keep Tier 2 controlled interaction
-   deferred until its draft decision is accepted and the Tier 1 Run review path
-   is accepted.
+   should implement the T8 operator-started orchestration boundary and keep
+   Tier 2 controlled interaction deferred until its draft decision is accepted
+   and the Tier 1 Run review path is accepted.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.
