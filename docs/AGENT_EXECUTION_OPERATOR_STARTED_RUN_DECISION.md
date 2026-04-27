@@ -81,3 +81,28 @@ preferably Browser Evidence Tier 1, because it is the smallest runtime lane:
 manual start, isolated local fixture or allowlisted dev URL, screenshot/text
 artifacts, no provider calls, no scheduler, no model-visible browser tool, and
 no mutation.
+
+## Implementation Status
+
+The first service entry is implemented in
+`src/main/domain/run/operator-started-run-service.ts`.
+
+Current behavior:
+
+- validates `OperatorStartedRunRequest`
+- implements only `browser_evidence_smoke`
+- creates an `agent` Run with operator-started instructions
+- records an accepted-plan RunStep
+- calls an injectable browser-evidence smoke executor
+- persists captured evidence through `BrowserEvidencePersister`
+- marks the Run completed on capture
+- writes a failed tool-result RunStep and marks the Run failed on blocked or
+  failed browser evidence
+
+Still deferred:
+
+- IPC exposure
+- renderer button
+- scheduler starts
+- provider/model calls
+- Code Agent / sandbox patch review migration onto this service

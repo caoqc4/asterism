@@ -126,6 +126,10 @@ Completed:
   `browser_evidence_smoke`, `code_agent_preview`, and `sandbox_patch_review`;
   it requires explicit operator confirmation, hidden model exposure, no
   scheduler start, no provider call by default, and descriptor/policy alignment
+- `OperatorStartedRunService` now implements the first concrete service entry
+  for `browser_evidence_smoke`: create Run, record accepted RunStep, call an
+  injectable browser-evidence executor, persist captured evidence, and mark the
+  Run completed or failed without exposing IPC/UI/model tools
 - the Browser / Playwright decision has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references; the chosen boundary is no longer "read-only
@@ -393,9 +397,8 @@ review, and pending promotion Decision creation.
 The next implementation slice is:
 
 - decide whether the next Browser / Playwright slice should wire a manual
-  operator-started smoke into a real Run using the shared
-  `OperatorStartedRunRequest` contract, or pause browser work and return to
-  broader execution-layer orchestration
+  operator-started smoke service into IPC/UI, or pause browser work and return
+  to broader execution-layer orchestration
 - keep Tier 2 controlled browser interaction deferred until the draft decision
   is accepted and Tier 1 Run artifact review exists
 
