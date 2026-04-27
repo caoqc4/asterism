@@ -5,6 +5,7 @@ import {
   buildAgentExecutionOrchestrationSnapshot,
   buildCodeAgentOrchestrationRequest,
   buildOperatorStartedOrchestrationRequest,
+  projectAgentRunLifecycle,
   validateAgentExecutionOrchestrationRequest,
 } from './agent-orchestration.js';
 import { buildDefaultOperatorStartedRunRequest } from './types/operator-started-run.js';
@@ -221,5 +222,36 @@ describe('agent orchestration snapshot', () => {
       ]),
       valid: false,
     });
+  });
+
+  it('projects run status into lifecycle vocabulary without queue workers', () => {
+    expect(projectAgentRunLifecycle({
+      runStatus: 'pending',
+      startMode: 'operator_started',
+    })).toMatchObject({
+      automaticStartEnabled: false,
+      claimEnabled: false,
+      currentStage: 'queued',
+      queueEnabled: false,
+      summary:
+        'AgentRunLifecycleProjection / stage=queued / runStatus=pending / start=operator_started / queue=no / claim=no / autoStart=no',
+    });
+
+    expect(projectAgentRunLifecycle({
+      runStatus: 'needs_confirmation',
+      startMode: 'manual',
+    }).currentStage).toBe('needs_confirmation');
+    expect(projectAgentRunLifecycle({
+      runStatus: 'paused',
+      startMode: 'manual',
+    }).currentStage).toBe('paused');
+    expect(projectAgentRunLifecycle({
+      runStatus: 'completed',
+      startMode: 'manual',
+    }).currentStage).toBe('completed');
+    expect(projectAgentRunLifecycle({
+      runStatus: 'failed',
+      startMode: 'manual',
+    }).currentStage).toBe('failed');
   });
 });

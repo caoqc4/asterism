@@ -9,7 +9,7 @@ import {
   validateOperatorStartedRunRequest,
   type OperatorStartedRunRequest,
 } from './types/operator-started-run.js';
-import type { CodeAgentAllowedCheck, CreateCodeAgentRunInput } from './types/run.js';
+import type { CodeAgentAllowedCheck, CreateCodeAgentRunInput, RunStatus } from './types/run.js';
 import type { AiConfigStatus } from './types/settings.js';
 
 export type ExecutionRuntimeStatus = 'not_checked' | 'ready' | 'blocked' | 'offline';
@@ -57,6 +57,16 @@ export type AgentRunLifecycleSnapshot = {
   queueEnabled: false;
   claimEnabled: false;
   schedulerEnabled: false;
+  automaticStartEnabled: false;
+  summary: string;
+};
+
+export type AgentRunLifecycleProjection = {
+  currentStage: AgentRunLifecycleStage;
+  runStatus: RunStatus;
+  startMode: AgentExecutionOrchestrationStartMode;
+  queueEnabled: false;
+  claimEnabled: false;
   automaticStartEnabled: false;
   summary: string;
 };
@@ -456,6 +466,55 @@ export function validateAgentExecutionOrchestrationRequest(
     summary: request.summary,
     valid: true,
   };
+}
+
+export function projectAgentRunLifecycle(params: {
+  runStatus: RunStatus;
+  startMode: Exclude<AgentExecutionOrchestrationStartMode, 'policy_auto'>;
+}): AgentRunLifecycleProjection {
+  const currentStage = mapRunStatusToLifecycleStage(params.runStatus);
+
+  return {
+    currentStage,
+    runStatus: params.runStatus,
+    startMode: params.startMode,
+    queueEnabled: false,
+    claimEnabled: false,
+    automaticStartEnabled: false,
+    summary: [
+      'AgentRunLifecycleProjection',
+      `stage=${currentStage}`,
+      `runStatus=${params.runStatus}`,
+      `start=${params.startMode}`,
+      'queue=no',
+      'claim=no',
+      'autoStart=no',
+    ].join(' / '),
+  };
+}
+
+function mapRunStatusToLifecycleStage(runStatus: RunStatus): AgentRunLifecycleStage {
+  if (runStatus === 'pending') {
+    return 'queued';
+  }
+
+  if (runStatus === 'running') {
+    return 'running';
+  }
+
+  if (runStatus === 'paused') {
+    return 'paused';
+  }
+
+  if (runStatus === 'needs_confirmation') {
+    return 'needs_confirmation';
+  }
+
+  if (runStatus === 'completed') {
+    return 'completed';
+  }
+
+  return 'failed';
 }
 
 function normalizeRequestedChecks(checks: CodeAgentAllowedCheck[]): CodeAgentAllowedCheck[] {
