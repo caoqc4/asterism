@@ -195,11 +195,12 @@ The project is past initial architecture assembly. Current work should favor pro
   prompt evidence, while selected source-context ids/titles are manifest-only
   audit entries. Source-context content, artifacts, browser, MCP, and Skill data
   remain outside provider prompts.
-- The source-context content gate is now documented separately from manifest
-  selection: content can become provider-visible only through a future explicit
+- The source-context content gate is now wired separately from manifest
+  selection: content becomes provider-visible only through explicit per-run
   opt-in, task-attached validation, per-item/total size bounds, no external URL
   fetching, no raw-content RunStep dump, and a separate read-only prompt
-  evidence section.
+  evidence section. Without that opt-in, selected source context remains
+  manifest-only.
 - A default-closed Code Agent model producer runtime factory now backs that
   manual gate: it blocks before resolving AI config unless provider calls are
   explicitly allowed for the current run, requires
@@ -1389,10 +1390,9 @@ dedicated signed/notarized release pass.
    exposure;
    do not expose browser, MCP, computer-use, skills, or creator connector tools
    to the model until that connector-specific slice is explicitly accepted.
-6. For Code Agent model context, implement source-context content only after
-   the explicit opt-in and bounded-content acceptance gate is wired; keep
-   artifact, browser, MCP, Skills, retrieval, and external URL fetching out of
-   that slice.
+6. For Code Agent model context, keep source-context content limited to the
+   explicit opt-in stored-snapshot path; keep artifact, browser, MCP, Skills,
+   retrieval, and external URL fetching out of that slice.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.

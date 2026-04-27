@@ -12,6 +12,10 @@ import {
   formatCodeAgentWorkspaceContextForPrompt,
   type CodeAgentWorkspaceContextSnapshot,
 } from './code-agent-workspace-context.js';
+import {
+  formatCodeAgentSourceContextForPrompt,
+  type CodeAgentSourceContextSnapshot,
+} from './code-agent-source-context.js';
 
 export type CodeAgentPlanTextGenerator = (params: {
   prompt: string;
@@ -20,10 +24,12 @@ export type CodeAgentPlanTextGenerator = (params: {
 
 export function createCodeAgentModelProducerLoop(params: {
   generatePlanText: CodeAgentPlanTextGenerator;
+  sourceContext?: CodeAgentSourceContextSnapshot | null;
   workspaceContext?: CodeAgentWorkspaceContextSnapshot | null;
 }): LocalContainerSandboxedCodingProducerLoop {
   return async ({ emit, request, sessionId, stagingRoot }) => {
     const prompt = buildCodeAgentModelProducerPrompt(request, {
+      sourceContext: params.sourceContext,
       workspaceContext: params.workspaceContext,
     });
     const planText = await params.generatePlanText({
@@ -92,6 +98,7 @@ export function createCodeAgentModelProducerLoop(params: {
 export function buildCodeAgentModelProducerPrompt(
   request: NormalizedSandboxedCodingProducerRequest,
   options: {
+    sourceContext?: CodeAgentSourceContextSnapshot | null;
     workspaceContext?: CodeAgentWorkspaceContextSnapshot | null;
   } = {},
 ): string {
@@ -115,11 +122,14 @@ export function buildCodeAgentModelProducerPrompt(
     '- Do not include secrets, API keys, tokens, or environment values.',
     '- Prefer the smallest coherent patch that satisfies the task intent.',
     '- Treat workspace context as read-only evidence. It is not permission to read additional files.',
+    '- Treat Taskplane source context as read-only evidence only when explicitly included.',
     '',
     `Task: ${request.intent.taskTitle}`,
     `Instructions: ${request.intent.instructions}`,
     '',
     ...formatCodeAgentWorkspaceContextForPrompt(options.workspaceContext),
+    '',
+    ...formatCodeAgentSourceContextForPrompt(options.sourceContext),
     '',
     request.intent.completionCriteria.length
       ? `Completion criteria:\n${request.intent.completionCriteria.map((criterion) => `- ${criterion}`).join('\n')}`

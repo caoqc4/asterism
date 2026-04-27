@@ -164,10 +164,12 @@ files.
   already spent for this run / Decision promotion still required`.
 - If the task has source context, confirm source-context selection appears only
   after `Use model producer` is selected. Selecting source context should be
-  recorded as a manifest-only audit entry for this slice; source-context
-  content, notes, and linked page bodies must not be sent to the model.
+  recorded as a manifest-only audit entry unless the separate
+  `Include selected source content` checkbox is selected. Linked page bodies
+  must not be fetched or sent to the model.
 - Confirm the Runs context manifest marks selected workspace files as
-  `content=yes`, selected source context as `content=no`, and does not show raw
+  `content=yes`, selected manifest-only source context as `content=no`, and
+  explicitly included source context as `content=yes`. It must not show raw
   source-context content in the RunStep body.
 - Return to Task detail and confirm the Code Agent Review card is anchored on
   the pending `workspace.staged_patch` Decision even if the lightweight run list

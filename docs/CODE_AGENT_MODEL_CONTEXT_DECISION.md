@@ -71,9 +71,9 @@ not send source-context content, notes, or URI page bodies to the provider.
 
 ### Taskplane Source Context Content
 
-Candidate next implementation slice.
+Accepted now behind a separate explicit content opt-in.
 
-Source-context content can become model-visible only after all of these
+Source-context content can become model-visible only when all of these
 conditions are true:
 
 - the run is already explicitly using the model producer
@@ -95,7 +95,7 @@ conditions are true:
 - invalid, duplicate, or detached source-context ids must fail closed before
   provider runtime config is resolved
 
-Until those conditions are implemented and tested, selecting source context is
+If source context is selected without the separate content opt-in, selection is
 audit-only and remains `contentIncluded=false`.
 
 ### Recent Artifacts And Run Outputs
@@ -144,11 +144,10 @@ Agent context.
    provider prompt contents.
 6. Only after that, evaluate artifact/run-output selection.
 
-Next accepted evaluation target:
-
 7. Define and implement explicit source-context content opt-in using the
-   source-context content conditions above. Do not combine this with artifact,
-   browser, MCP, Skills, retrieval, or external URL-fetching behavior.
+   source-context content conditions above. Accepted for stored local
+   source-context snapshots only; this does not include artifact, browser, MCP,
+   Skills, retrieval, or external URL-fetching behavior.
 
 ## Non-Goals
 

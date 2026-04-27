@@ -17,12 +17,13 @@ export type CodeAgentProviderVisibleContextManifest = {
 };
 
 export function buildCodeAgentProviderVisibleContextManifest(params: {
-  sourceContexts?: Array<{ id: string; title: string }>;
+  sourceContexts?: Array<{ contentIncluded?: boolean; id: string; title: string }>;
   workspaceFiles?: string[];
 }): CodeAgentProviderVisibleContextManifest {
   const workspaceFiles = normalizeSelectedValues(params.workspaceFiles ?? []);
   const sourceContexts = (params.sourceContexts ?? [])
     .map((item) => ({
+      contentIncluded: item.contentIncluded === true,
       id: item.id.trim(),
       title: item.title.trim(),
     }))
@@ -36,7 +37,7 @@ export function buildCodeAgentProviderVisibleContextManifest(params: {
       label: file,
     })),
     ...sourceContexts.map((item) => ({
-      contentIncluded: false,
+      contentIncluded: item.contentIncluded,
       id: item.id,
       kind: 'source_context' as const,
       label: item.title || item.id,

@@ -871,6 +871,7 @@ export function TasksPage({
   const [codeAgentPatchIntent, setCodeAgentPatchIntent] = useState('');
   const [codeAgentContextFiles, setCodeAgentContextFiles] = useState('');
   const [codeAgentSourceContextIds, setCodeAgentSourceContextIds] = useState<string[]>([]);
+  const [codeAgentIncludeSourceContextContent, setCodeAgentIncludeSourceContextContent] = useState(false);
   const [codeAgentRunTestCheck, setCodeAgentRunTestCheck] = useState(true);
   const [codeAgentRunLintCheck, setCodeAgentRunLintCheck] = useState(true);
   const [codeAgentOperatorConfirmed, setCodeAgentOperatorConfirmed] = useState(false);
@@ -1197,6 +1198,8 @@ export function TasksPage({
         setSourceContextContent('');
         setSourceContextNote('');
         setSourceContextError(null);
+        setCodeAgentSourceContextIds([]);
+        setCodeAgentIncludeSourceContextContent(false);
         setProcessTemplateEditingId(null);
         setProcessTemplateTitle('');
         setProcessTemplateSummary('');
@@ -1355,6 +1358,9 @@ export function TasksPage({
         ...(contextFiles.length ? { contextFiles } : {}),
         ...(codeAgentEffectiveUseModelProducer && codeAgentSourceContextIds.length
           ? { sourceContextIds: codeAgentSourceContextIds }
+          : {}),
+        ...(codeAgentEffectiveUseModelProducer && codeAgentIncludeSourceContextContent
+          ? { includeSourceContextContent: true }
           : {}),
         operatorConfirmed: codeAgentOperatorConfirmed,
         patchIntent: codeAgentPatchIntent,
@@ -2344,7 +2350,12 @@ export function TasksPage({
             <label>
               <input
                 checked={codeAgentUseModelProducer}
-                onChange={(event) => setCodeAgentUseModelProducer(event.target.checked)}
+                onChange={(event) => {
+                  setCodeAgentUseModelProducer(event.target.checked);
+                  if (!event.target.checked) {
+                    setCodeAgentIncludeSourceContextContent(false);
+                  }
+                }}
                 type="checkbox"
               />
               Use model producer（会调用已配置 provider；需要显式 context files）
@@ -2411,22 +2422,41 @@ export function TasksPage({
                   selectedCodeAgentSourceContextTitles.length
                     ? `${selectedCodeAgentSourceContextTitles.length} selected / ${selectedCodeAgentSourceContextTitles.join('、')}`
                     : 'none selected'
-                } / content is not sent to the model in this slice
+                } / content={
+                  codeAgentIncludeSourceContextContent && selectedCodeAgentSourceContextTitles.length
+                    ? 'will be sent as bounded read-only evidence'
+                    : 'manifest only'
+                }
               </p>
               {detail.sourceContexts.map((item) => (
                 <label key={item.id}>
                   <input
                     checked={codeAgentSourceContextIds.includes(item.id)}
                     onChange={(event) => {
-                      setCodeAgentSourceContextIds((current) => event.target.checked
-                        ? [...current, item.id].filter((id, index, ids) => ids.indexOf(id) === index)
-                        : current.filter((id) => id !== item.id));
+                      setCodeAgentSourceContextIds((current) => {
+                        const next = event.target.checked
+                          ? [...current, item.id].filter((id, index, ids) => ids.indexOf(id) === index)
+                          : current.filter((id) => id !== item.id);
+                        if (!next.length) {
+                          setCodeAgentIncludeSourceContextContent(false);
+                        }
+                        return next;
+                      });
                     }}
                     type="checkbox"
                   />
                   {item.title}
                 </label>
               ))}
+              <label>
+                <input
+                  checked={codeAgentIncludeSourceContextContent}
+                  disabled={!codeAgentSourceContextIds.length}
+                  onChange={(event) => setCodeAgentIncludeSourceContextContent(event.target.checked)}
+                  type="checkbox"
+                />
+                Include selected source content（bounded local snapshot only）
+              </label>
             </div>
           ) : null}
           <fieldset className="inline-fieldset">

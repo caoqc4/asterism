@@ -26,6 +26,7 @@ import {
 } from './code-agent-staged-file-plan.js';
 import { prepareCodeAgentModelProducerRuntime } from './code-agent-model-producer-runtime.js';
 import { collectCodeAgentWorkspaceContext } from './code-agent-workspace-context.js';
+import { collectCodeAgentSourceContext } from './code-agent-source-context.js';
 import type { LocalContainerSandboxPatchReviewPreparation } from './local-container-sandbox-backend.js';
 import { LocalContainerSandboxedCodingProducerExecutionService } from './local-container-sandboxed-coding-producer-execution-service.js';
 import type { LocalContainerSandboxedCodingProducerLoop } from './local-container-sandboxed-coding-producer-runner.js';
@@ -35,6 +36,7 @@ import type {
   SandboxedCodingProducerEvent,
 } from './sandboxed-coding-producer.js';
 import type { TaskService } from '../task/task-service.js';
+import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 
 const DEFAULT_CODE_AGENT_PREVIEW_FILE = '.taskplane/code-agent-preview.md';
 const ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV = 'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER';
@@ -170,9 +172,38 @@ export class CodeAgentRunService {
       );
     }
 
+    if (input.includeSourceContextContent === true && !modelProducerOptIn) {
+      return this.runRepository.updateResult(
+        run.id,
+        'failed',
+        'Code Agent source context content blocked: model producer opt-in is required.',
+        'system',
+        'Code Agent source context content requires Use model producer and enabled model producer capability.',
+      );
+    }
+
+    const sourceContextContent = collectCodeAgentSourceContext({
+      includeContent: modelProducerOptIn && input.includeSourceContextContent === true,
+      sourceContexts: selectedSourceContexts.items,
+    });
+
+    if (modelProducerOptIn && sourceContextContent.status === 'blocked') {
+      return this.runRepository.updateResult(
+        run.id,
+        'failed',
+        sourceContextContent.summary,
+        'system',
+        sourceContextContent.blockedReasons.join(' '),
+      );
+    }
+
     if (modelProducerOptIn) {
       const contextManifest = buildCodeAgentProviderVisibleContextManifest({
-        sourceContexts: selectedSourceContexts.items,
+        sourceContexts: selectedSourceContexts.items.map((item) => ({
+          contentIncluded: input.includeSourceContextContent === true,
+          id: item.id,
+          title: item.title,
+        })),
         workspaceFiles: selectedContextFiles,
       });
 
@@ -221,6 +252,9 @@ export class CodeAgentRunService {
 
     const producerLoop = modelRuntime.status === 'ready'
       ? modelRuntime.createLoop({
+          sourceContext: sourceContextContent.status === 'collected'
+            ? sourceContextContent.snapshot
+            : null,
           workspaceContext: workspaceContext?.snapshot ?? null,
         })
       : createManualCodeAgentPreviewLoop({
@@ -388,17 +422,17 @@ function readSelectedCodeAgentContextFiles(input?: CreateCodeAgentRunInput): str
 
 function selectCodeAgentSourceContexts(
   input: CreateCodeAgentRunInput | undefined,
-  sourceContexts: Array<{ id: string; title: string }>,
+  sourceContexts: SourceContextRecord[],
 ): {
   blockedReasons: string[];
-  items: Array<{ id: string; title: string }>;
+  items: SourceContextRecord[];
   status: 'blocked' | 'selected';
   summary: string;
 } {
   const selectedIds = Array.from(new Set((input?.sourceContextIds ?? [])
     .map((id) => id.trim())
     .filter(Boolean)));
-  const items: Array<{ id: string; title: string }> = [];
+  const items: SourceContextRecord[] = [];
   const blockedReasons: string[] = [];
 
   for (const selectedId of selectedIds) {
@@ -408,10 +442,7 @@ function selectCodeAgentSourceContexts(
       continue;
     }
 
-    items.push({
-      id: sourceContext.id,
-      title: sourceContext.title,
-    });
+    items.push(sourceContext);
   }
 
   if (blockedReasons.length) {

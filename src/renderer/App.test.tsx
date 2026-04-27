@@ -2947,7 +2947,7 @@ describe('App UI flow', () => {
       'Context selection：none selected / 3 suggestions available / files are not read until the run starts',
     )).toBeTruthy();
     expect(intent.queryByText(
-      'Source context manifest：none selected / content is not sent to the model in this slice',
+      'Source context manifest：none selected / content=manifest only',
     )).toBeNull();
 
     const startButton = intent.getByRole('button', { name: '启动 sandbox preview run' });
@@ -2964,7 +2964,7 @@ describe('App UI flow', () => {
       name: 'Use model producer（会调用已配置 provider；需要显式 context files）',
     }));
     expect(intent.getByText(
-      'Source context manifest：none selected / content is not sent to the model in this slice',
+      'Source context manifest：none selected / content=manifest only',
     )).toBeTruthy();
     await user.click(intent.getByRole('checkbox', {
       name: '我确认后续执行可能启动 Docker 容器，但工作区只会收到 Decision 批准后的变更',
@@ -2986,7 +2986,13 @@ describe('App UI flow', () => {
     )).toBeTruthy();
     await user.click(intent.getByRole('checkbox', { name: 'Reference doc' }));
     expect(intent.getByText(
-      'Source context manifest：1 selected / Reference doc / content is not sent to the model in this slice',
+      'Source context manifest：1 selected / Reference doc / content=manifest only',
+    )).toBeTruthy();
+    await user.click(intent.getByRole('checkbox', {
+      name: 'Include selected source content（bounded local snapshot only）',
+    }));
+    expect(intent.getByText(
+      'Source context manifest：1 selected / Reference doc / content=will be sent as bounded read-only evidence',
     )).toBeTruthy();
     expect(intent.getByText(
       'Code Agent preflight：ready / runtime=ready / checks=test,lint / producer=model-backed; context=2 / promotion=Decision required / next=start sandbox preview',
@@ -2999,6 +3005,7 @@ describe('App UI flow', () => {
     expect(intentApi.probeSandboxBackend).not.toHaveBeenCalled();
     expect(intentApi.triggerCodeAgentRun).toHaveBeenCalledWith({
       contextFiles: ['docs/notes.md', 'src/app.ts'],
+      includeSourceContextContent: true,
       operatorConfirmed: true,
       patchIntent: 'Create a staged patch for the notes file',
       requestedChecks: ['test', 'lint'],

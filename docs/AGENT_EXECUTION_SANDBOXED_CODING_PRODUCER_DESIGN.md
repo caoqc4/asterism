@@ -375,19 +375,20 @@ Next slice:
     Skills/MCP observations, browser evidence, Taskplane source context, and
     artifacts remain out of the sandboxed model loop until explicit selection
     and connector-specific policy slices are accepted.
-33. Source-context ids/titles are accepted only as manifest audit entries for
-    the current model-backed Code Agent path. Source-context content requires a
-    separate operator opt-in, task-attached validation, byte limits, no external
-    URL fetching, no raw-content RunStep dump, and a separate read-only prompt
-    section before it can become provider-visible.
+33. Source-context ids/titles are accepted as manifest audit entries, and
+    stored local source-context snapshots are accepted only behind a separate
+    operator opt-in. The content path uses task-attached validation, byte
+    limits, no external URL fetching, no raw-content RunStep dump, and a
+    separate read-only prompt section before becoming provider-visible.
 
 ## Acceptance
 
 - no producer path can write directly to the selected workspace
 - no producer path exposes raw shell or host process commands
-- source-context content remains provider-invisible unless a dedicated
-  content-inclusion slice implements the explicit opt-in and bounds in
+- source-context content remains provider-invisible unless the dedicated
+  content-inclusion opt-in and bounds in
   [CODE_AGENT_MODEL_CONTEXT_DECISION.md](CODE_AGENT_MODEL_CONTEXT_DECISION.md)
+  are satisfied for the current run
 - every source-ready result includes source id, run id, task id, workspace root,
   changed files, diff, evidence, requested checks, and Decision promotion
   policy

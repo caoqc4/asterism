@@ -47,6 +47,7 @@ describe('buildCodeAgentModelProducerPrompt', () => {
     expect(prompt).toContain('Network policy: disabled');
     expect(prompt).toContain('Promotion policy: Decision review is required');
     expect(prompt).toContain('No workspace file context was provided for this run.');
+    expect(prompt).toContain('No source-context content was included for this run.');
   });
 
   it('includes explicitly selected workspace context as read-only evidence', () => {
@@ -66,6 +67,27 @@ describe('buildCodeAgentModelProducerPrompt', () => {
     expect(prompt).toContain('--- file: docs/notes.md');
     expect(prompt).toContain('existing notes');
     expect(prompt).toContain('--- end file: docs/notes.md');
+  });
+
+  it('includes explicitly opted-in source context separately from workspace files', () => {
+    const prompt = buildCodeAgentModelProducerPrompt(request, {
+      sourceContext: {
+        items: [
+          {
+            content: 'title: Reference doc\ncontent:\nUse the existing panel contract.',
+            id: 'source_context_1',
+            title: 'Reference doc',
+          },
+        ],
+        summary: 'Code Agent source context content collected 1 item(s).',
+      },
+    });
+
+    expect(prompt).toContain('Treat Taskplane source context as read-only evidence only when explicitly included.');
+    expect(prompt).toContain('Taskplane source context:');
+    expect(prompt).toContain('--- source context: Reference doc (source_context_1)');
+    expect(prompt).toContain('Use the existing panel contract.');
+    expect(prompt).toContain('--- end source context: source_context_1');
   });
 });
 

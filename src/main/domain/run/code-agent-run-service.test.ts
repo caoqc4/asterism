@@ -36,6 +36,24 @@ function buildTask() {
   };
 }
 
+function buildSourceContext(overrides = {}) {
+  return {
+    archivedAt: null,
+    content: 'Use the source note as implementation context.',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    id: 'source_context_1',
+    isKey: false,
+    kind: 'note',
+    note: 'Selected by operator.',
+    status: 'active',
+    taskId: 'task_1',
+    title: 'Reference doc',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    uri: null,
+    ...overrides,
+  };
+}
+
 function buildAiStatus() {
   return {
     configured: true,
@@ -303,6 +321,87 @@ describe('CodeAgentRunService', () => {
       'Code Agent source context selection blocked: Code Agent source context selection was not found on this task: source_context_missing.',
       'system',
       'Code Agent source context selection was not found on this task: source_context_missing.',
+    );
+    expect(result).toBe(failedRun);
+  });
+
+  it('marks explicitly included source context content in the provider-visible manifest', async () => {
+    process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
+    taskService.getDetail.mockResolvedValue({
+      ...buildTask(),
+      sourceContexts: [buildSourceContext()],
+    });
+    const failedRun = buildFailedRun(
+      'Code Agent model producer runtime blocked: test runtime missing',
+      'test runtime missing',
+    );
+    aiConfigService.resolveRuntimeConfig.mockRejectedValue(new Error('test runtime missing'));
+    runRepository.updateResult.mockResolvedValue(failedRun);
+
+    const result = await createService().trigger({
+      contextFiles: ['docs/notes.md'],
+      includeSourceContextContent: true,
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      sourceContextIds: ['source_context_1'],
+      taskId: 'task_1',
+      useModelProducer: true,
+    });
+
+    expect(runStepRepository.create).toHaveBeenCalledWith({
+      input: [
+        'Provider-visible context manifest / items=2 / workspace_files=docs/notes.md / source_context=Reference doc / artifacts=0 / content=partial',
+        'providerPromptContent=partial',
+        'workspace_file:docs/notes.md:docs/notes.md:content=yes',
+        'source_context:source_context_1:Reference doc:content=yes',
+      ].join('\n'),
+      kind: 'plan',
+      output: 'Provider-visible context manifest / items=2 / workspace_files=docs/notes.md / source_context=Reference doc / artifacts=0 / content=partial',
+      runId: 'run_code_agent_1',
+      status: 'completed',
+      title: 'Code Agent provider-visible context manifest',
+    });
+    expect(aiConfigService.resolveRuntimeConfig).toHaveBeenCalledTimes(1);
+    expect(executionService.run).not.toHaveBeenCalled();
+    expect(result).toBe(failedRun);
+  });
+
+  it('blocks oversized source context content before resolving AI config', async () => {
+    process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
+    taskService.getDetail.mockResolvedValue({
+      ...buildTask(),
+      sourceContexts: [
+        buildSourceContext({
+          content: 'x'.repeat(8_100),
+        }),
+      ],
+    });
+    const failedRun = buildFailedRun(
+      'Code Agent source context content blocked: Code Agent source context content exceeds per-item size limit: source_context_1.',
+      'Code Agent source context content exceeds per-item size limit: source_context_1.',
+    );
+    runRepository.updateResult.mockResolvedValue(failedRun);
+
+    const result = await createService().trigger({
+      contextFiles: ['docs/notes.md'],
+      includeSourceContextContent: true,
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      sourceContextIds: ['source_context_1'],
+      taskId: 'task_1',
+      useModelProducer: true,
+    });
+
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(executionService.run).not.toHaveBeenCalled();
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_code_agent_1',
+      'failed',
+      'Code Agent source context content blocked: Code Agent source context content exceeds per-item size limit: source_context_1.',
+      'system',
+      'Code Agent source context content exceeds per-item size limit: source_context_1.',
     );
     expect(result).toBe(failedRun);
   });

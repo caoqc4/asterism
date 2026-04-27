@@ -4,12 +4,14 @@ import {
   createCodeAgentModelProducerLoop,
   type CodeAgentPlanTextGenerator,
 } from './code-agent-model-producer-loop.js';
+import type { CodeAgentSourceContextSnapshot } from './code-agent-source-context.js';
 import type { CodeAgentWorkspaceContextSnapshot } from './code-agent-workspace-context.js';
 import type {
   LocalContainerSandboxedCodingProducerLoop,
 } from './local-container-sandboxed-coding-producer-runner.js';
 
 type CreateCodeAgentModelProducerLoopOptions = {
+  sourceContext?: CodeAgentSourceContextSnapshot | null;
   workspaceContext?: CodeAgentWorkspaceContextSnapshot | null;
 };
 
@@ -33,6 +35,7 @@ export async function prepareCodeAgentModelProducerRuntime(params: {
   };
   allowProviderCalls?: boolean;
   generateText?: (config: RuntimeAiConfig, prompt: string) => Promise<string>;
+  sourceContext?: CodeAgentSourceContextSnapshot | null;
   workspaceContext?: CodeAgentWorkspaceContextSnapshot | null;
 }): Promise<CodeAgentModelProducerRuntime> {
   if (!params.allowProviderCalls) {
@@ -63,6 +66,7 @@ export async function prepareCodeAgentModelProducerRuntime(params: {
   return {
     createLoop: (options = {}) => createCodeAgentModelProducerLoop({
       generatePlanText,
+      sourceContext: options.sourceContext ?? params.sourceContext,
       workspaceContext: options.workspaceContext ?? params.workspaceContext,
     }),
     model: runtimeConfig.model,
