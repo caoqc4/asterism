@@ -185,10 +185,48 @@ function formatCodeAgentContextManifestStepSummary(step: RunStepRecord): string 
     return null;
   }
 
+  const inputLines = (step.input ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const providerPromptContent = inputLines
+    .find((line) => line.startsWith('providerPromptContent='))
+    ?.replace('providerPromptContent=', '');
+  const items = inputLines
+    .map(parseCodeAgentContextManifestItemLine)
+    .filter((item): item is CodeAgentContextManifestItemSummary => Boolean(item));
+
   return [
     step.output,
+    providerPromptContent ? `provider prompt content=${providerPromptContent}` : null,
+    items.length
+      ? `items=${items.map((item) =>
+          `${item.kind} ${item.label} content=${item.contentIncluded ? 'yes' : 'no'}`).join('；')}`
+      : null,
     'manifest only; selected content is not expanded here',
-  ].join('；');
+  ].filter(Boolean).join('；');
+}
+
+type CodeAgentContextManifestItemSummary = {
+  contentIncluded: boolean;
+  kind: string;
+  label: string;
+};
+
+function parseCodeAgentContextManifestItemLine(line: string): CodeAgentContextManifestItemSummary | null {
+  const match = line.match(/^([^:]+):([^:]+):(.+):content=(yes|no)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, kind, , label, content] = match;
+
+  return {
+    contentIncluded: content === 'yes',
+    kind,
+    label,
+  };
 }
 
 function parseRunStepInput(input?: string | null): Map<string, string> {

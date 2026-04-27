@@ -4096,7 +4096,7 @@ describe('App UI flow', () => {
     expect(screen.getByText('workspace unchanged until Decision approval')).toBeTruthy();
     expect(
       screen.getByText(
-        'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0 / content=partial；manifest only; selected content is not expanded here',
+        'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0 / content=partial；provider prompt content=partial；items=workspace_file docs/notes.md content=yes；manifest only; selected content is not expanded here',
       ),
     ).toBeTruthy();
     expect(

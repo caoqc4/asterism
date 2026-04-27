@@ -207,6 +207,9 @@ The project is past initial architecture assembly. Current work should favor pro
   provider-invisible until kind-specific policy can separate prior generated
   output, rejected or stale patches, browser evidence, failed logs, and
   accepted facts.
+- Runs detail now expands Code Agent context manifests into readable audit
+  summaries with provider-prompt content state and per-item `content=yes/no`
+  labels, while still avoiding raw prompt or source-content dumps.
 - A default-closed Code Agent model producer runtime factory now backs that
   manual gate: it blocks before resolving AI config unless provider calls are
   explicitly allowed for the current run, requires

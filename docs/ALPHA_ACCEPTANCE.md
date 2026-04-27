@@ -170,7 +170,8 @@ files.
 - Confirm the Runs context manifest marks selected workspace files as
   `content=yes`, selected manifest-only source context as `content=no`, and
   explicitly included source context as `content=yes`. It must not show raw
-  source-context content in the RunStep body.
+  source-context content in the RunStep body. Runs detail should show
+  `provider prompt content=partial` and per-item `content=yes/no` labels.
 - Confirm artifact selection appears only as model-context manifest metadata.
   Selected artifact entries should stay at `content=no`; artifact and run-output
   content must not be sent to the model.

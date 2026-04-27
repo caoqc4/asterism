@@ -57,7 +57,8 @@ operator's intent clear: "use these files as context for this patch."
 
 ### Taskplane Source Context
 
-Manifest-only selection is accepted now. Content inclusion is not accepted yet.
+Manifest-only selection is accepted now. Content inclusion is accepted only
+through the separate explicit opt-in below.
 
 Source context can contain pasted docs, links, notes, decisions, credentials by
 mistake, or private strategy. It must not be auto-included merely because it is
