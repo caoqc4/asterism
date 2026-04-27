@@ -9,6 +9,7 @@ import {
   buildCodeAgentProviderVisibleContextManifest,
   formatCodeAgentProviderVisibleContextManifestForStep,
 } from '../../../shared/code-agent-model-context.js';
+import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { CreateCodeAgentRunInput, CodeAgentAllowedCheck, RunRecord } from '../../../shared/types/run.js';
 import type { AiConfigStatus } from '../../../shared/types/settings.js';
 import type { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
@@ -140,6 +141,7 @@ export class CodeAgentRunService {
     });
 
     const selectedContextFiles = readSelectedCodeAgentContextFiles(input);
+    const selectedArtifacts = selectCodeAgentArtifacts(input, task.artifacts);
     const selectedSourceContexts = selectCodeAgentSourceContexts(input, task.sourceContexts);
 
     if (modelProducerRequested && !modelProducerAvailable) {
@@ -172,6 +174,16 @@ export class CodeAgentRunService {
       );
     }
 
+    if (modelProducerOptIn && selectedArtifacts.status === 'blocked') {
+      return this.runRepository.updateResult(
+        run.id,
+        'failed',
+        selectedArtifacts.summary,
+        'system',
+        selectedArtifacts.blockedReasons.join(' '),
+      );
+    }
+
     if (input.includeSourceContextContent === true && !modelProducerOptIn) {
       return this.runRepository.updateResult(
         run.id,
@@ -199,6 +211,7 @@ export class CodeAgentRunService {
 
     if (modelProducerOptIn) {
       const contextManifest = buildCodeAgentProviderVisibleContextManifest({
+        artifacts: selectedArtifacts.items,
         sourceContexts: selectedSourceContexts.items.map((item) => ({
           contentIncluded: input.includeSourceContextContent === true,
           id: item.id,
@@ -418,6 +431,50 @@ function readSelectedCodeAgentContextFiles(input?: CreateCodeAgentRunInput): str
     .split(',')
     .map((file) => file.trim())
     .filter(Boolean);
+}
+
+function selectCodeAgentArtifacts(
+  input: CreateCodeAgentRunInput | undefined,
+  artifacts: ArtifactRecord[],
+): {
+  blockedReasons: string[];
+  items: ArtifactRecord[];
+  status: 'blocked' | 'selected';
+  summary: string;
+} {
+  const selectedIds = Array.from(new Set((input?.artifactIds ?? [])
+    .map((id) => id.trim())
+    .filter(Boolean)));
+  const items: ArtifactRecord[] = [];
+  const blockedReasons: string[] = [];
+
+  for (const selectedId of selectedIds) {
+    const artifact = artifacts.find((item) => item.id === selectedId);
+    if (!artifact) {
+      blockedReasons.push(`Code Agent artifact selection was not found on this task: ${selectedId}.`);
+      continue;
+    }
+
+    items.push(artifact);
+  }
+
+  if (blockedReasons.length) {
+    return {
+      blockedReasons,
+      items: [],
+      status: 'blocked',
+      summary: `Code Agent artifact selection blocked: ${blockedReasons.join(' ')}`,
+    };
+  }
+
+  return {
+    blockedReasons: [],
+    items,
+    status: 'selected',
+    summary: items.length
+      ? `Code Agent artifact selection / items=${items.length}`
+      : 'Code Agent artifact selection / items=0',
+  };
 }
 
 function selectCodeAgentSourceContexts(

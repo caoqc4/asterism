@@ -171,9 +171,9 @@ files.
   `content=yes`, selected manifest-only source context as `content=no`, and
   explicitly included source context as `content=yes`. It must not show raw
   source-context content in the RunStep body.
-- Confirm artifacts and run outputs are not selectable as model-visible content
-  yet. If artifact selection is later added, the first alpha pass should show
-  artifact manifest entries only and keep artifact content at `content=no`.
+- Confirm artifact selection appears only as model-context manifest metadata.
+  Selected artifact entries should stay at `content=no`; artifact and run-output
+  content must not be sent to the model.
 - Return to Task detail and confirm the Code Agent Review card is anchored on
   the pending `workspace.staged_patch` Decision even if the lightweight run list
   lacks Code Agent output text. `查看 Code Agent Run` should locate the Run from

@@ -68,6 +68,7 @@ export type CodeAgentAllowedCheck = 'test' | 'lint';
 export type CreateCodeAgentRunInput = {
   taskId: string;
   patchIntent: string;
+  artifactIds?: string[];
   contextFiles?: string[];
   sourceContextIds?: string[];
   includeSourceContextContent?: boolean;

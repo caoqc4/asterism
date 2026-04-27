@@ -54,6 +54,21 @@ function buildSourceContext(overrides = {}) {
   };
 }
 
+function buildArtifact(overrides = {}) {
+  return {
+    content: 'Prior generated output stays out of the prompt.',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    id: 'artifact_1',
+    kind: 'run_output',
+    sourceId: 'run_prior',
+    sourceType: 'run',
+    taskId: 'task_1',
+    title: 'Prior run output',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
 function buildAiStatus() {
   return {
     configured: true,
@@ -329,6 +344,7 @@ describe('CodeAgentRunService', () => {
     process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
     taskService.getDetail.mockResolvedValue({
       ...buildTask(),
+      artifacts: [buildArtifact()],
       sourceContexts: [buildSourceContext()],
     });
     const failedRun = buildFailedRun(
@@ -339,6 +355,7 @@ describe('CodeAgentRunService', () => {
     runRepository.updateResult.mockResolvedValue(failedRun);
 
     const result = await createService().trigger({
+      artifactIds: ['artifact_1'],
       contextFiles: ['docs/notes.md'],
       includeSourceContextContent: true,
       operatorConfirmed: true,
@@ -351,19 +368,50 @@ describe('CodeAgentRunService', () => {
 
     expect(runStepRepository.create).toHaveBeenCalledWith({
       input: [
-        'Provider-visible context manifest / items=2 / workspace_files=docs/notes.md / source_context=Reference doc / artifacts=0 / content=partial',
+        'Provider-visible context manifest / items=3 / workspace_files=docs/notes.md / source_context=Reference doc / artifacts=1 / content=partial',
         'providerPromptContent=partial',
         'workspace_file:docs/notes.md:docs/notes.md:content=yes',
         'source_context:source_context_1:Reference doc:content=yes',
+        'artifact:artifact_1:Prior run output:content=no',
       ].join('\n'),
       kind: 'plan',
-      output: 'Provider-visible context manifest / items=2 / workspace_files=docs/notes.md / source_context=Reference doc / artifacts=0 / content=partial',
+      output: 'Provider-visible context manifest / items=3 / workspace_files=docs/notes.md / source_context=Reference doc / artifacts=1 / content=partial',
       runId: 'run_code_agent_1',
       status: 'completed',
       title: 'Code Agent provider-visible context manifest',
     });
     expect(aiConfigService.resolveRuntimeConfig).toHaveBeenCalledTimes(1);
     expect(executionService.run).not.toHaveBeenCalled();
+    expect(result).toBe(failedRun);
+  });
+
+  it('blocks model-backed artifact selections that are not attached to the task', async () => {
+    process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
+    const failedRun = buildFailedRun(
+      'Code Agent artifact selection blocked: Code Agent artifact selection was not found on this task: artifact_missing.',
+      'Code Agent artifact selection was not found on this task: artifact_missing.',
+    );
+    runRepository.updateResult.mockResolvedValue(failedRun);
+
+    const result = await createService().trigger({
+      artifactIds: ['artifact_missing'],
+      contextFiles: ['docs/notes.md'],
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      taskId: 'task_1',
+      useModelProducer: true,
+    });
+
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(executionService.run).not.toHaveBeenCalled();
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_code_agent_1',
+      'failed',
+      'Code Agent artifact selection blocked: Code Agent artifact selection was not found on this task: artifact_missing.',
+      'system',
+      'Code Agent artifact selection was not found on this task: artifact_missing.',
+    );
     expect(result).toBe(failedRun);
   });
 

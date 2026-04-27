@@ -870,6 +870,7 @@ export function TasksPage({
   const [quickRunAllowTaskMutationTools, setQuickRunAllowTaskMutationTools] = useState(false);
   const [codeAgentPatchIntent, setCodeAgentPatchIntent] = useState('');
   const [codeAgentContextFiles, setCodeAgentContextFiles] = useState('');
+  const [codeAgentArtifactIds, setCodeAgentArtifactIds] = useState<string[]>([]);
   const [codeAgentSourceContextIds, setCodeAgentSourceContextIds] = useState<string[]>([]);
   const [codeAgentIncludeSourceContextContent, setCodeAgentIncludeSourceContextContent] = useState(false);
   const [codeAgentRunTestCheck, setCodeAgentRunTestCheck] = useState(true);
@@ -1198,6 +1199,7 @@ export function TasksPage({
         setSourceContextContent('');
         setSourceContextNote('');
         setSourceContextError(null);
+        setCodeAgentArtifactIds([]);
         setCodeAgentSourceContextIds([]);
         setCodeAgentIncludeSourceContextContent(false);
         setProcessTemplateEditingId(null);
@@ -1355,6 +1357,9 @@ export function TasksPage({
       ].filter((check): check is 'test' | 'lint' => Boolean(check));
       const contextFiles = parseCodeAgentContextFileInput(codeAgentContextFiles);
       const created = await onTriggerCodeAgentRun({
+        ...(codeAgentEffectiveUseModelProducer && codeAgentArtifactIds.length
+          ? { artifactIds: codeAgentArtifactIds }
+          : {}),
         ...(contextFiles.length ? { contextFiles } : {}),
         ...(codeAgentEffectiveUseModelProducer && codeAgentSourceContextIds.length
           ? { sourceContextIds: codeAgentSourceContextIds }
@@ -2189,6 +2194,9 @@ export function TasksPage({
   const selectedCodeAgentSourceContextTitles = detail?.sourceContexts
     .filter((item) => codeAgentSourceContextIds.includes(item.id))
     .map((item) => item.title) ?? [];
+  const selectedCodeAgentArtifactTitles = detail?.artifacts
+    .filter((item) => codeAgentArtifactIds.includes(item.id))
+    .map((item) => item.title) ?? [];
   const automationReadiness = detail
     ? evaluateSkillInformedAutomationReadiness({
         snapshot: orchestrationSnapshot,
@@ -2457,6 +2465,31 @@ export function TasksPage({
                 />
                 Include selected source content（bounded local snapshot only）
               </label>
+            </div>
+          ) : null}
+          {detail?.artifacts.length && codeAgentEffectiveUseModelProducer ? (
+            <div className="stack" aria-label="Artifact selections">
+              <p className="meta">
+                Artifact manifest：{
+                  selectedCodeAgentArtifactTitles.length
+                    ? `${selectedCodeAgentArtifactTitles.length} selected / ${selectedCodeAgentArtifactTitles.join('、')}`
+                    : 'none selected'
+                } / content=manifest only
+              </p>
+              {detail.artifacts.map((item) => (
+                <label key={item.id}>
+                  <input
+                    checked={codeAgentArtifactIds.includes(item.id)}
+                    onChange={(event) => {
+                      setCodeAgentArtifactIds((current) => event.target.checked
+                        ? [...current, item.id].filter((id, index, ids) => ids.indexOf(id) === index)
+                        : current.filter((id) => id !== item.id));
+                    }}
+                    type="checkbox"
+                  />
+                  {item.title}
+                </label>
+              ))}
             </div>
           ) : null}
           <fieldset className="inline-fieldset">

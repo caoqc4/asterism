@@ -201,10 +201,12 @@ The project is past initial architecture assembly. Current work should favor pro
   fetching, no raw-content RunStep dump, and a separate read-only prompt
   evidence section. Without that opt-in, selected source context remains
   manifest-only.
-- The next model-context boundary is documented as artifact/run-output
-  manifest-only selection first. Artifact content remains provider-invisible
-  until kind-specific policy can separate prior generated output, rejected or
-  stale patches, browser evidence, failed logs, and accepted facts.
+- The artifact/run-output model-context boundary now starts as manifest-only
+  selection: task-attached artifact ids/titles can be recorded in the
+  provider-visible context manifest with `content=no`. Artifact content remains
+  provider-invisible until kind-specific policy can separate prior generated
+  output, rejected or stale patches, browser evidence, failed logs, and
+  accepted facts.
 - A default-closed Code Agent model producer runtime factory now backs that
   manual gate: it blocks before resolving AI config unless provider calls are
   explicitly allowed for the current run, requires
@@ -1397,8 +1399,7 @@ dedicated signed/notarized release pass.
 6. For Code Agent model context, keep source-context content limited to the
    explicit opt-in stored-snapshot path; keep artifact, browser, MCP, Skills,
    retrieval, and external URL fetching out of that slice.
-7. Treat task-attached artifact selection as the next Code Agent context slice,
-   but start with manifest-only audit entries; do not send artifact or
+7. Keep task-attached artifact selection manifest-only; do not send artifact or
    run-output content to the model until a later kind-specific policy is
    accepted.
 

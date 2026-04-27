@@ -2966,6 +2966,9 @@ describe('App UI flow', () => {
     expect(intent.getByText(
       'Source context manifest：none selected / content=manifest only',
     )).toBeTruthy();
+    expect(intent.getByText(
+      'Artifact manifest：none selected / content=manifest only',
+    )).toBeTruthy();
     await user.click(intent.getByRole('checkbox', {
       name: '我确认后续执行可能启动 Docker 容器，但工作区只会收到 Decision 批准后的变更',
     }));
@@ -2988,6 +2991,10 @@ describe('App UI flow', () => {
     expect(intent.getByText(
       'Source context manifest：1 selected / Reference doc / content=manifest only',
     )).toBeTruthy();
+    await user.click(intent.getByRole('checkbox', { name: 'Patch notes' }));
+    expect(intent.getByText(
+      'Artifact manifest：1 selected / Patch notes / content=manifest only',
+    )).toBeTruthy();
     await user.click(intent.getByRole('checkbox', {
       name: 'Include selected source content（bounded local snapshot only）',
     }));
@@ -3004,6 +3011,7 @@ describe('App UI flow', () => {
     expect(intentApi.triggerRun).not.toHaveBeenCalled();
     expect(intentApi.probeSandboxBackend).not.toHaveBeenCalled();
     expect(intentApi.triggerCodeAgentRun).toHaveBeenCalledWith({
+      artifactIds: ['artifact_1'],
       contextFiles: ['docs/notes.md', 'src/app.ts'],
       includeSourceContextContent: true,
       operatorConfirmed: true,
