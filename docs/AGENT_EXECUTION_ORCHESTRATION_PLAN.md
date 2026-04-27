@@ -225,22 +225,19 @@ Only after O1-O4 are locally accepted:
 - MCP lane: safe-read adapters after descriptor/policy review
 - computer-use lane: separate high-risk decision
 
-Current coding-lane implementation has started by moving recovery predicates,
-recovery summaries, and rerun intent formatting into shared renderer helpers.
-Task detail and Runs staged-patch review now generate bounded rerun prompts
-from persisted task/run/Decision evidence, without queue workers, workspace
-mutation, host shell access, or automatic starts.
+Current coding-lane implementation has moved recovery predicates, recovery
+summaries, rerun intent formatting, and staged-patch review guidance into
+shared renderer helpers. Task detail and Runs staged-patch review now generate
+bounded rerun prompts and review guidance from persisted task/run/Decision
+evidence, without queue workers, workspace mutation, host shell access, or
+automatic starts.
 
-Recommended next lane: coding. It already has the strongest Taskplane evidence
-chain: manual Code Agent preview, sandboxed staged patch output, targeted
-checks, promotion Decision, Run recovery, and orchestration diagnostics. The
-next coding slice should improve adapter/recovery fidelity without exposing
-host shell, queue workers, or automatic starts.
-
-Status: started. Code Agent recovery summary formatting is now shared for
-task-side staged patch review, keeping Run/Decision recovery wording reusable
-before richer sandbox adapter work. Code Agent sandbox-run and
-promotion-Decision detection are also shared and tested.
+Status: locally accepted for the current O5 recovery-helper layer. Browser /
+Playwright Tier 1 evidence is also locally accepted through the manual smoke
+and Runs review path, so the next execution slice should be a connector-specific
+Tier 2 browser controlled-interaction acceptance plan. That plan should keep
+model exposure hidden until action RunStep evidence, checkpoint boundaries,
+allowlisted non-sensitive flows, and local QA smoke are explicitly accepted.
 
 ## Non-Goals
 

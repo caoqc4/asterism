@@ -106,9 +106,10 @@ The project is past initial architecture assembly. Current work should favor pro
   runtime readiness, risk, and completion boundaries are present, and the
   evaluator still returns `automaticStartAllowed=false`. Task detail now
   surfaces the evaluator summary in the Code Agent area as diagnostics only.
-- O5 coding lane has started with shared Code Agent recovery summary formatting
-  for task-side staged patch review; this keeps Run/Decision recovery wording
-  reusable without exposing host shell, queue workers, or automatic starts.
+- O5 coding lane recovery is locally accepted at the UI/review-helper layer:
+  Code Agent recovery summary formatting is shared for task-side staged patch
+  review, keeping Run/Decision recovery wording reusable without exposing host
+  shell, queue workers, or automatic starts.
 - Code Agent sandbox-run and promotion-Decision detection also moved into the
   shared renderer capability helpers, so task-side recovery uses tested coding
   lane predicates instead of page-local heuristics.
@@ -1259,14 +1260,14 @@ dedicated signed/notarized release pass.
    Code Agent UI layout pass, Code Agent lifecycle recovery/evidence slice, and
    manual Browser / Playwright Tier 1 smoke plus its operator-started Runs UI
    entrypoint as locally accepted for the alpha path. The T8 operator-started
-   Code Agent boundary and the shared connector policy/evidence records are now
-   implemented locally. The read-only orchestration O1-O4 sequence from
-   [AGENT_EXECUTION_ORCHESTRATION_PLAN.md](AGENT_EXECUTION_ORCHESTRATION_PLAN.md)
-   is now locally accepted; the next execution task should choose the first O5
-   lane-specific expansion, with coding recommended before browser/MCP/creator;
-   do not expose browser, MCP, computer-use, skills, or creator connector tools
-   to the model until a connector-specific acceptance slice is explicitly
-   accepted.
+   Code Agent boundary, shared connector policy/evidence records, read-only
+   orchestration O1-O4 sequence, Code Agent O5 recovery helper layer, and
+   Browser Evidence Tier 1 review helpers are now implemented locally. The next
+   execution task should be a connector-specific acceptance slice for Tier 2
+   browser controlled interaction planning, not broad browser/MCP/computer-use
+   model exposure; do not expose browser, MCP, computer-use, skills, or creator
+   connector tools to the model until that connector-specific slice is
+   explicitly accepted.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.
