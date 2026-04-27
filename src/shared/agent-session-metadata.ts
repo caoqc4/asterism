@@ -181,9 +181,9 @@ export function formatAgentSessionRestartHint(session: AgentSessionRecord): stri
     case 'completed':
       return 'restart=not_needed / replay=run_steps_and_artifacts';
     case 'needs_confirmation':
-      return 'restart=checkpoint_required / replay=resume_after_decision';
+      return 'restart=checkpoint_expected / replay=verify_decision_checkpoint';
     case 'paused':
-      return 'restart=checkpoint_required / replay=resume_after_checkpoint';
+      return 'restart=checkpoint_expected / replay=verify_resume_checkpoint';
     case 'failed':
       return 'restart=new_run_required / replay=inspect_failed_steps';
     case 'cancelled':

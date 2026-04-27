@@ -477,7 +477,7 @@ describe('agent capability formatting', () => {
       'workspace=staged_patch_review / task=not_exposed / provider_tools=not_exposed / coding=sandboxed_producer / browser=not_exposed / computer_use=not_exposed / mcp=not_exposed / creator=not_exposed / restart=long_running_session_recorded',
     );
     expect(formatAgentSessionRestartSummary(session)).toBe(
-      'restart=checkpoint_required / replay=resume_after_checkpoint',
+      'restart=checkpoint_expected / replay=verify_resume_checkpoint',
     );
     expect(formatAgentSessionReplayReviewSummary(session, [
       {

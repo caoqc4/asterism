@@ -211,7 +211,7 @@ describe('agent session metadata formatting', () => {
     expect(formatAgentSessionRestartHint({
       ...baseSession,
       status: 'needs_confirmation',
-    })).toBe('restart=checkpoint_required / replay=resume_after_decision');
+    })).toBe('restart=checkpoint_expected / replay=verify_decision_checkpoint');
     expect(formatAgentSessionRestartHint({
       ...baseSession,
       status: 'failed',

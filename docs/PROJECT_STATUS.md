@@ -662,6 +662,9 @@ The project is past initial architecture assembly. Current work should favor pro
   checkpoint as `checkpoint_missing` / inspect-only rather than
   checkpoint-gated, so restart guidance does not imply a resumable path after
   the checkpoint has already been resolved, cancelled, or lost.
+- The coarse session restart hint now says checkpoint `expected` for paused or
+  confirmation sessions and leaves actual resumability to the checkpoint-aware
+  replay review, avoiding a false promise when the checkpoint is missing.
 - Task detail Paused Run Recovery now routes users to the Run evidence first
   instead of directly executing continuation from a list-only Run summary. The
   actual continuation affordance lives on Runs detail, where checkpoint evidence
