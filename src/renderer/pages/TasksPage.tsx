@@ -79,6 +79,7 @@ import {
 import {
   formatCodeAgentAutomaticStartPolicySummary,
   formatCodeAgentPreflightSummary,
+  formatCodeAgentReviewRecoverySummary,
   formatCodeAgentStartBlockedReason,
   formatCodeAgentModelProducerOptInSummary,
   formatExecutionRuntimeReadinessSummary,
@@ -243,30 +244,6 @@ function isCodeAgentSandboxRun(run: RunRecord): boolean {
 function isCodeAgentPromotionDecision(decision: DecisionRecord): boolean {
   return decision.sourceLabel === 'workspace.staged_patch'
     || decision.title.startsWith('Review Code Agent preview');
-}
-
-function formatLatestCodeAgentReviewSummary(run: RunRecord | null, decision: DecisionRecord | null): string {
-  if (!run && decision) {
-    return '已有待处理的 Code Agent staged patch promotion Decision；先复核 Run 证据、staged patch 和 promotion Decision。';
-  }
-
-  if (!run) {
-    return '当前没有可恢复的 Code Agent staged patch review。';
-  }
-
-  if (run.status === 'completed') {
-    return '最近一次 Code Agent sandbox preview 已完成，先复核 Run 证据、staged patch 和 promotion Decision。';
-  }
-
-  if (run.status === 'failed') {
-    return `最近一次 Code Agent sandbox preview 失败：${run.failureReason || run.output || '未记录失败原因'}`;
-  }
-
-  if (run.status === 'paused' || run.status === 'needs_confirmation') {
-    return '最近一次 Code Agent sandbox preview 正在等待确认或恢复处理。';
-  }
-
-  return '最近一次 Code Agent sandbox preview 仍在进行，先查看 Run 证据再决定下一步。';
 }
 
 function isEarlyTask(task: Pick<TaskListItemRecord, 'state'>): boolean {
@@ -3343,7 +3320,7 @@ export function TasksPage({
                   {shouldShowCodeAgentReview ? (
                     <div className="timeline-item timeline-item-waiting">
                       <strong>Code Agent Review</strong>
-                      <p className="meta">{formatLatestCodeAgentReviewSummary(latestCodeAgentRun, latestCodeAgentPromotionDecision)}</p>
+                      <p className="meta">{formatCodeAgentReviewRecoverySummary(latestCodeAgentRun, latestCodeAgentPromotionDecision)}</p>
                       {latestCodeAgentRun ? (
                         <p className="meta">
                           Run：{latestCodeAgentRun.status} / {latestCodeAgentRun.updatedAt}

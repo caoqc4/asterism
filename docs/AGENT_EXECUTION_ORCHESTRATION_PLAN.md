@@ -231,6 +231,10 @@ checks, promotion Decision, Run recovery, and orchestration diagnostics. The
 next coding slice should improve adapter/recovery fidelity without exposing
 host shell, queue workers, or automatic starts.
 
+Status: started. Code Agent recovery summary formatting is now shared for
+task-side staged patch review, keeping Run/Decision recovery wording reusable
+before richer sandbox adapter work.
+
 ## Non-Goals
 
 - no autonomous scheduler in this plan

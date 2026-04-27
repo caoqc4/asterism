@@ -11,6 +11,7 @@ import {
   formatCodeAgentAutomaticStartPolicySummary,
   formatCodeAgentModelProducerOptInSummary,
   formatCodeAgentPreflightSummary,
+  formatCodeAgentReviewRecoverySummary,
   formatCodeAgentStartBlockedReason,
   formatExecutionRuntimeReadinessSummary,
   formatPreRunAgentCapabilitySummary,
@@ -557,5 +558,35 @@ describe('agent capability formatting', () => {
     expect(formatSandboxProducerLifecycleSummary(session)).toBe(
       'AgentRunLifecycle：source-ready / source=source_1 / files=src/notes.md / checks=test,lint / policy=network=disabled, promotion=decision_required, workspace mutation requires approved Decision / next=review patch-promotion Decision; workspace changes only after approval',
     );
+  });
+
+  it('formats Code Agent recovery summaries from run and Decision state', () => {
+    expect(formatCodeAgentReviewRecoverySummary(null, {
+      id: 'decision_1',
+      status: 'pending',
+      title: 'Review Code Agent preview',
+    })).toBe(
+      '已有待处理的 Code Agent staged patch promotion Decision；先复核 Run 证据、staged patch 和 promotion Decision。',
+    );
+
+    expect(formatCodeAgentReviewRecoverySummary({
+      failureReason: null,
+      output: 'Patch source ready',
+      status: 'completed',
+    }, null)).toBe(
+      '最近一次 Code Agent sandbox preview 已完成，但当前任务没有待处理 promotion Decision；请先从 Run 证据判断是否需要重跑。',
+    );
+
+    expect(formatCodeAgentReviewRecoverySummary({
+      failureReason: 'lint failed',
+      output: 'Check failed',
+      status: 'failed',
+    }, null)).toBe('最近一次 Code Agent sandbox preview 失败：lint failed');
+
+    expect(formatCodeAgentReviewRecoverySummary({
+      failureReason: null,
+      output: null,
+      status: 'needs_confirmation',
+    }, null)).toBe('最近一次 Code Agent sandbox preview 正在等待确认或恢复处理。');
   });
 });

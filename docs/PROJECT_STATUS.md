@@ -106,6 +106,9 @@ The project is past initial architecture assembly. Current work should favor pro
   runtime readiness, risk, and completion boundaries are present, and the
   evaluator still returns `automaticStartAllowed=false`. Task detail now
   surfaces the evaluator summary in the Code Agent area as diagnostics only.
+- O5 coding lane has started with shared Code Agent recovery summary formatting
+  for task-side staged patch review; this keeps Run/Decision recovery wording
+  reusable without exposing host shell, queue workers, or automatic starts.
 - [CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md)
   is accepted for the first visible code-agent product surface: Task detail /
   Action Desk entrypoint, manual runtime readiness action, default available

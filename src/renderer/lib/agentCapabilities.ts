@@ -1,5 +1,6 @@
 import type { AgentSessionRecord } from '@shared/types/agent-execution';
-import type { RunCheckpointRecord, RunStepRecord } from '@shared/types/run';
+import type { RunCheckpointRecord, RunRecord, RunStepRecord } from '@shared/types/run';
+import type { DecisionRecord } from '@shared/types/decision';
 import type { AiConfigStatus } from '@shared/types/settings';
 import { getProviderExecutionCapabilities } from '@shared/agent-provider-capabilities';
 import { buildAgentSessionReplayReview } from '@shared/agent-session-replay';
@@ -446,6 +447,35 @@ export function formatCodeAgentPreflightSummary(input: CodeAgentStartGateInput):
 
 export function formatCodeAgentAutomaticStartPolicySummary(): string {
   return CODE_AGENT_AUTOMATIC_START_POLICY_SUMMARY;
+}
+
+export function formatCodeAgentReviewRecoverySummary(
+  run: Pick<RunRecord, 'failureReason' | 'output' | 'status'> | null,
+  decision: Pick<DecisionRecord, 'id' | 'status' | 'title'> | null,
+): string {
+  if (!run && decision) {
+    return '已有待处理的 Code Agent staged patch promotion Decision；先复核 Run 证据、staged patch 和 promotion Decision。';
+  }
+
+  if (!run) {
+    return '当前没有可恢复的 Code Agent staged patch review。';
+  }
+
+  if (run.status === 'completed') {
+    return decision
+      ? '最近一次 Code Agent sandbox preview 已完成，先复核 Run 证据、staged patch 和 promotion Decision。'
+      : '最近一次 Code Agent sandbox preview 已完成，但当前任务没有待处理 promotion Decision；请先从 Run 证据判断是否需要重跑。';
+  }
+
+  if (run.status === 'failed') {
+    return `最近一次 Code Agent sandbox preview 失败：${run.failureReason || run.output || '未记录失败原因'}`;
+  }
+
+  if (run.status === 'paused' || run.status === 'needs_confirmation') {
+    return '最近一次 Code Agent sandbox preview 正在等待确认或恢复处理。';
+  }
+
+  return '最近一次 Code Agent sandbox preview 仍在进行，先查看 Run 证据再决定下一步。';
 }
 
 export function formatCodeAgentModelProducerOptInSummary(aiStatus: AiConfigStatus | null): string {
