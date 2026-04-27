@@ -1217,9 +1217,9 @@ Latest local baseline:
   model-context gates, checkpoint-backed session settlement, stale
   resume-payload UI/backend gating, supported resume-input validation,
   scheduler checkpoint-state exclusion, and browser controlled Decision
-  consequence wording, and Code Agent checkpoint recovery guidance, and updating
-  approved checkpoint evidence wording, and updating the local acceptance
-  status: 119 test files / 830 tests
+  consequence wording, Code Agent checkpoint recovery guidance, and approved
+  checkpoint evidence wording. Current local acceptance status: 119 test files
+  / 830 tests
 - `npm run smoke:release:mac` passed locally on 2026-04-27 for the combined
   unsigned macOS package path after the Code Agent context-gate and
   restart/replay safety updates
@@ -1228,6 +1228,10 @@ Latest local baseline:
   `notarytool`, app id, product name, and mac targets are present, while
   Developer ID signing and Apple notarization credentials remain missing; no
   signing, notarization, upload, or Apple network request was performed
+- `npm run accept:release:mac-preflight` was re-run locally on 2026-04-27 after
+  the checkpoint evidence wording pass with the same expected read-only result:
+  status remains `not-ready` until Developer ID signing and Apple notarization
+  credentials are configured.
 - `npm run accept:agent-local` passed locally after adding the sandbox-coding
   acceptance gate
 - `npm run accept:provider-native-live:preflight` reports the current local
