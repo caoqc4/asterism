@@ -630,8 +630,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Tier 2 browser controlled interaction now has schema-only shared coverage:
   action names, operator-started policy, step drafts, checkpoint payload shape,
   and validation are drafted in `browser-controlled-interaction`. The descriptor
-  is intentionally not registered in the scaffold, so no model-visible browser
-  tool, IPC route, scheduler path, or UI control is enabled.
+  is now registered only as hidden/reserved scaffold metadata, so no
+  model-visible browser tool, generic IPC route, scheduler path, arbitrary URL
+  runner, or provider schema is enabled.
 - The Tier 2 local-dev QA fixture plan can now be materialized with
   `npm run manual:browser-controlled-fixture`. It writes HTML, request JSON, and
   plan JSON to a temporary directory while recording `browserStart=no`,
@@ -685,6 +686,13 @@ The project is past initial architecture assembly. Current work should favor pro
   existing local QA fixture, and a Runs-page local QA button. It remains limited
   to localhost fixture QA and still does not expose generic URLs, scheduler
   starts, provider schemas, authenticated profiles, or model-visible tools.
+- [AGENT_EXECUTION_BROWSER_CONTROLLED_RESUME_ACCEPTANCE_PLAN.md](AGENT_EXECUTION_BROWSER_CONTROLLED_RESUME_ACCEPTANCE_PLAN.md)
+  now defines the next browser slice: checkpoint approval may resume exactly one
+  previously recorded `browser.controlled_interaction` action after validation,
+  not a general browser session. The first recommended slice is BCR1 review
+  contract only; Playwright resume, arbitrary URLs, authenticated profiles,
+  scheduler starts, provider schemas, and model-visible browser tools remain
+  deferred.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
@@ -1297,13 +1305,14 @@ dedicated signed/notarized release pass.
    entrypoint as locally accepted for the alpha path. The T8 operator-started
    Code Agent boundary, shared connector policy/evidence records, read-only
    orchestration O1-O4 sequence, Code Agent O5 recovery helper layer, and
-   Browser Evidence Tier 1 review helpers are now implemented locally. The next
-   execution task should be a connector-specific acceptance slice for Tier 2
-   browser controlled interaction planning, not broad browser/MCP/computer-use
-   model exposure; do not expose browser, MCP, computer-use, skills, or creator
-   connector tools to the model until that connector-specific slice is
-   explicitly accepted.
+   Browser Evidence Tier 1 review helpers are now implemented locally.
+   Browser Controlled Interaction BCI1-BCI6 are locally accepted for the
+   local-QA path. The next execution task should be BCR1 from the browser
+   controlled resume plan, not broad browser/MCP/computer-use model exposure;
+   do not expose browser, MCP, computer-use, skills, or creator connector tools
+   to the model until that connector-specific slice is explicitly accepted.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.
 See [AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md](AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md) for the browser evidence lane boundary.
+See [AGENT_EXECUTION_BROWSER_CONTROLLED_RESUME_ACCEPTANCE_PLAN.md](AGENT_EXECUTION_BROWSER_CONTROLLED_RESUME_ACCEPTANCE_PLAN.md) for the next checkpoint-approved browser resume boundary.

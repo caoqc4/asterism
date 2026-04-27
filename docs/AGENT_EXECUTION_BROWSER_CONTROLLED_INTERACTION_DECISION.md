@@ -22,9 +22,10 @@ Current implementation note:
   any browser action.
 - The fixture also writes expected RunStep drafts for each planned action. These
   drafts are comparison targets for a future runner; they are not persisted.
-- `browser.controlled_interaction` is intentionally not registered in
-  `agent-tool-scaffold`, so it remains unavailable to text prompts,
-  provider-native schemas, IPC, scheduler runs, and product UI.
+- `browser.controlled_interaction` is registered only as hidden/reserved
+  `agent-tool-scaffold` metadata, so it remains unavailable to text prompts,
+  provider-native schemas, generic IPC, scheduler runs, arbitrary URL runners,
+  and product UI beyond the accepted local QA entrypoint.
 
 Read with:
 

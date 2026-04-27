@@ -61,13 +61,15 @@ Implement shared helpers that:
 - format a validated action step draft for Runs review
 - summarize checkpoint-required actions
 - classify why an action is blocked before execution
-- keep `browser.controlled_interaction` unregistered in the tool scaffold
+- keep `browser.controlled_interaction` hidden/reserved in the tool scaffold
+  and unavailable to prompts or provider schemas
 
 Acceptance:
 
 - unit tests cover safe actions, checkpoint-required actions, blocked origins,
   sensitive-field blocks, and max-action/timeout policy failures
-- no IPC, UI button, browser launch, provider schema, or scheduler path is added
+- no IPC, UI button, browser launch, provider schema, scheduler path, or
+  model-visible exposure is added
 
 ### BCI2: Runner Dry-Run Plan
 
@@ -203,8 +205,8 @@ Acceptance:
 ## Recommended Next Task
 
 BCI1-BCI6 are locally accepted for the Tier 2 local-QA path. The next browser
-work should pause broad capability expansion and either harden the local-QA
-review loop with manual acceptance notes or draft the later resume slice for
-checkpoint-approved actions. Do not add arbitrary URLs, authenticated profiles,
-scheduler starts, provider schemas, or model-visible browser tools without a
-new acceptance plan.
+work should pause broad capability expansion and follow
+[AGENT_EXECUTION_BROWSER_CONTROLLED_RESUME_ACCEPTANCE_PLAN.md](AGENT_EXECUTION_BROWSER_CONTROLLED_RESUME_ACCEPTANCE_PLAN.md)
+for checkpoint-approved actions. Do not add arbitrary URLs, authenticated
+profiles, scheduler starts, provider schemas, or model-visible browser tools
+without a new acceptance plan.
