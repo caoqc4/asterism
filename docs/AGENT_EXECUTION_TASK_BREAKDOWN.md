@@ -14,6 +14,7 @@ Read first:
 - [AGENT_EXECUTION_FUTURE_DESIGN.md](AGENT_EXECUTION_FUTURE_DESIGN.md)
 - [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md)
 - [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md)
+- [AGENT_EXECUTION_ORCHESTRATION_PLAN.md](AGENT_EXECUTION_ORCHESTRATION_PLAN.md)
 - [AGENT_EXECUTION_OPERATOR_STARTED_RUN_DECISION.md](AGENT_EXECUTION_OPERATOR_STARTED_RUN_DECISION.md)
 - [AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md](AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md)
 - [AGENT_EXECUTION_BROWSER_TIER1_ACCEPTANCE_CHECKLIST.md](AGENT_EXECUTION_BROWSER_TIER1_ACCEPTANCE_CHECKLIST.md)
@@ -168,6 +169,9 @@ Still incomplete:
 - the next execution-layer phase should continue the sandboxed coding lane from
   the accepted producer/source/preview/backend-readiness/model-backed UI work,
   not direct host shell/file access
+- the next orchestration phase should start with read-only
+  `ExecutionRuntime`, `AgentProfile`, `OrchestrationRequest`, and
+  `AgentRunLifecycle` snapshots before queue/claim or automatic-start behavior
 
 ## Task Sequence
 

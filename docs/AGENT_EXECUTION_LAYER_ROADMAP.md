@@ -96,6 +96,9 @@ Future execution design:
 Tool scaffold plan:
 [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md).
 
+Orchestration plan:
+[AGENT_EXECUTION_ORCHESTRATION_PLAN.md](AGENT_EXECUTION_ORCHESTRATION_PLAN.md).
+
 Goal: make the local agent runtime more durable before making it more
 powerful. The next implementation pass should introduce a typed runtime event
 spine, restart-safe resume contract, and explicit tool exposure matrix while
@@ -117,6 +120,31 @@ Acceptance:
 - provider-native workspace write/command proposals still fall back without side
   effects
 - `npm run accept:agent-local` and `npm run verify` pass
+
+### Orchestration Layer
+
+Status: drafted as the next implementation plan after evidence UX polish.
+
+Decision doc:
+[AGENT_EXECUTION_ORCHESTRATION_PLAN.md](AGENT_EXECUTION_ORCHESTRATION_PLAN.md).
+
+Goal: introduce runtime/profile/request/lifecycle objects before Taskplane adds
+queue/claim behavior, automatic starts, or broader connector lanes.
+
+Acceptance:
+
+- `ExecutionRuntime` starts as a read-only snapshot over existing sandbox and
+  connector readiness
+- `AgentProfile` starts with the current manual Code Agent profile and does not
+  grant tool authority
+- `OrchestrationRequest` can wrap existing manual Code Agent and operator
+  browser evidence starts without behavior change
+- `AgentRunLifecycle` vocabulary explains operator-started, queued, claimed,
+  running, paused, completed, failed, and cancelled attempts
+- skill-informed automation readiness is diagnostic-only until a separate
+  policy decision accepts automatic start
+- hidden browser, MCP, computer-use, skills, and creator connectors stay hidden
+  from model-visible channels
 
 ### Automatic Start Boundary
 

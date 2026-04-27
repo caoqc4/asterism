@@ -82,6 +82,11 @@ The project is past initial architecture assembly. Current work should favor pro
   wrapping, and skill-informed automation readiness. It keeps automatic start
   as a future policy outcome for mature workflows, not as a blanket assignment
   side effect.
+- [AGENT_EXECUTION_ORCHESTRATION_PLAN.md](AGENT_EXECUTION_ORCHESTRATION_PLAN.md)
+  now drafts the next orchestration layer sequence: start with read-only
+  `ExecutionRuntime`, `AgentProfile`, `OrchestrationRequest`, and
+  `AgentRunLifecycle` snapshots, then add request contracts and lifecycle
+  vocabulary before any queue/claim worker or automatic-start policy.
 - [CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md)
   is accepted for the first visible code-agent product surface: Task detail /
   Action Desk entrypoint, manual runtime readiness action, default available
@@ -1219,10 +1224,11 @@ dedicated signed/notarized release pass.
    manual Browser / Playwright Tier 1 smoke plus its operator-started Runs UI
    entrypoint as locally accepted for the alpha path. The T8 operator-started
    Code Agent boundary and the shared connector policy/evidence records are now
-   implemented locally. The next execution task should either polish existing
-   evidence review UX or return to the broader execution-layer orchestration
-   plan; do not expose browser, MCP, computer-use, skills, or creator connector
-   tools to the model until a connector-specific acceptance slice is explicitly
+   implemented locally. The next execution task should start the read-only
+   orchestration snapshot from
+   [AGENT_EXECUTION_ORCHESTRATION_PLAN.md](AGENT_EXECUTION_ORCHESTRATION_PLAN.md);
+   do not expose browser, MCP, computer-use, skills, or creator connector tools
+   to the model until a connector-specific acceptance slice is explicitly
    accepted.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
