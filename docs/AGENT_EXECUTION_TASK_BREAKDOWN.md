@@ -387,6 +387,8 @@ Non-goals until explicitly accepted:
 
 ### T8: Operator-Started Orchestration Boundary
 
+Status: first service extraction accepted locally.
+
 Goal: unify manually started runtime lanes without flattening their different
 provider, sandbox, and confirmation policies.
 
@@ -427,6 +429,18 @@ Acceptance:
 - Browser Evidence operator-started UI remains unchanged
 - `npm run accept:sandbox-coding:code-agent-ui` and `npm run verify` pass
 
+Implementation note:
+
+- `src/main/domain/run/code-agent-run-service.ts` owns manual Code Agent launch
+  orchestration.
+- `run:triggerCodeAgent` now delegates to `codeAgentRunService.trigger()`.
+- Dedicated service tests cover the key policy split: local diagnostic preview
+  does not resolve provider runtime by default, disabled model-producer env
+  blocks before execution, and invalid selected context blocks before producer
+  execution.
+- `npm run accept:sandbox-coding:code-agent-ui` and `npm run verify` passed
+  after extraction.
+
 ## Recommended Next Implementation Task
 
 Start by making the operator-started orchestration boundary explicit before
@@ -442,11 +456,9 @@ review, and pending promotion Decision creation.
 
 The next implementation slice is:
 
-- implement T8 by extracting manual Code Agent launch orchestration into a
-  domain service while preserving the existing UI/IPC contract
-- keep the provider-call distinction explicit: local diagnostic previews can
-  share the strict no-provider operator-started shape; model-backed previews
-  remain an explicit spend-aware branch
+- return to broader execution-layer orchestration: define the next shared
+  run/session boundary before adding MCP, skills, computer-use, creator
+  connectors, or broader browser interaction
 - keep Tier 2 controlled browser interaction deferred until the draft decision
   is accepted and Tier 1 Run artifact review exists
 

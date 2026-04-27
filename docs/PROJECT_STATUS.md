@@ -542,6 +542,13 @@ The project is past initial architecture assembly. Current work should favor pro
   construction out of the IPC handler while preserving the existing
   `run:triggerCodeAgent` UI contract. The key policy distinction is local
   no-provider diagnostic preview vs explicit provider-spending model producer.
+- T8's first service extraction is locally accepted: `CodeAgentRunService` now owns
+  manual Code Agent launch orchestration, while `run:triggerCodeAgent` only
+  delegates and emits app events. Service tests now cover the no-provider local
+  diagnostic default, disabled model-producer env blocking, and invalid selected
+  context blocking before producer execution. `npm run
+  accept:sandbox-coding:code-agent-ui` and `npm run verify` passed after the
+  extraction.
 - The Browser / Playwright boundary has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references. The accepted direction is tiered capability:

@@ -20,6 +20,7 @@ import { DecisionService } from '../domain/decision/decision-service.js';
 import { AgentToolRegistry } from '../domain/run/agent-tool-registry.js';
 import { BrowserEvidencePersister } from '../domain/run/browser-evidence-persister.js';
 import { runBrowserEvidenceSmokeForOperatorStartedRun } from '../domain/run/browser-evidence-smoke-executor.js';
+import { CodeAgentRunService } from '../domain/run/code-agent-run-service.js';
 import { OperatorStartedRunService } from '../domain/run/operator-started-run-service.js';
 import { RunService } from '../domain/run/run-service.js';
 import { SandboxPatchPromotionApplyService } from '../domain/run/sandbox-patch-promotion-apply-service.js';
@@ -138,6 +139,16 @@ const operatorStartedRunService = new OperatorStartedRunService(
   browserEvidencePersister,
   runBrowserEvidenceSmokeForOperatorStartedRun,
 );
+const codeAgentRunService = new CodeAgentRunService(
+  taskService,
+  aiConfigService,
+  runRepository,
+  runStepRepository,
+  artifactRepository,
+  runCheckpointRepository,
+  decisionRepository,
+  sandboxPatchPromotionRepository,
+);
 
 const services = {
   taskRepository,
@@ -165,6 +176,7 @@ const services = {
   decisionService,
   runService,
   operatorStartedRunService,
+  codeAgentRunService,
   browserEvidencePersister,
   homeBriefService,
   aiConfigService,
