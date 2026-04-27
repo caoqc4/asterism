@@ -15,6 +15,7 @@ Read first:
 - [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md)
 - [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md)
 - [AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md](AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md)
+- [AGENT_EXECUTION_BROWSER_CONTROLLED_INTERACTION_DECISION.md](AGENT_EXECUTION_BROWSER_CONTROLLED_INTERACTION_DECISION.md)
 
 ## First-Principles Rule
 
@@ -118,6 +119,10 @@ Completed:
   forever", but a tiered web capability ladder starting with isolated
   read-only evidence and reserving controlled interaction for a separate
   policy decision
+- the Tier 2 Browser Controlled Interaction draft decision now defines the
+  future click/type/select policy, allowed local-dev and creator-preparation
+  flows, side-effect checkpoint rules, and the explicit non-goal of broad
+  authenticated real-world browser action
 
 Pi reference boundary:
 
@@ -377,10 +382,8 @@ The next implementation slice is:
 - surface Browser / Playwright Tier 1 smoke output as reviewable Run artifacts
   only, keeping `browser.readonly_evidence` hidden from model-visible tools and
   keeping browser execution manual/operator-started
-- in parallel, draft the Tier 2 controlled browser interaction policy:
-  click/type/select only for allowlisted, non-sensitive flows, RunStep evidence
-  for every action, and Decision checkpoints before final submit/post/publish/
-  purchase/delete effects
+- keep Tier 2 controlled browser interaction deferred until the draft decision
+  is accepted and Tier 1 Run artifact review exists
 
 Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer control,
 external posting, or social/media publishing as model-visible tools until the

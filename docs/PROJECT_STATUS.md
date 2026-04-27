@@ -514,6 +514,11 @@ The project is past initial architecture assembly. Current work should favor pro
   start with isolated read-only evidence, but explicitly reserve controlled
   click/type/select interaction for allowlisted non-sensitive flows after a
   separate policy decision.
+- [AGENT_EXECUTION_BROWSER_CONTROLLED_INTERACTION_DECISION.md](AGENT_EXECUTION_BROWSER_CONTROLLED_INTERACTION_DECISION.md)
+  now drafts the Tier 2 policy for future browser click/type/select actions:
+  allowlisted non-sensitive interaction only, RunStep evidence for every
+  action, and Decision checkpoints before submit/post/publish/purchase/delete
+  side effects.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
@@ -1125,9 +1130,9 @@ dedicated signed/notarized release pass.
    manual Browser / Playwright Tier 1 smoke as locally accepted for the alpha
    path. The next execution task should surface Tier 1 browser evidence as
    reviewable Run artifacts only, while keeping browser execution manual,
-   hidden from model-visible tools, credential-free, and mutation-free. In
-   parallel, draft the Tier 2 controlled interaction policy for later
-   click/type/select on allowlisted non-sensitive flows.
+   hidden from model-visible tools, credential-free, and mutation-free. Keep
+   Tier 2 controlled interaction deferred until its draft decision is accepted
+   and Tier 1 Run artifact review exists.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.
