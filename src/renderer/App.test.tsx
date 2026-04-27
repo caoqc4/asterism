@@ -3712,6 +3712,11 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
+        'AgentRunLifecycleProjection / stage=completed / runStatus=completed / start=manual / queue=no / claim=no / autoStart=no',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
         'Tool families：workspace=read_only / task=update_tools / provider_tools=not_exposed / coding=not_exposed / browser=not_exposed / computer_use=not_exposed / mcp=not_exposed / creator=not_exposed / restart=single_session_recorded',
       ),
     ).toBeTruthy();

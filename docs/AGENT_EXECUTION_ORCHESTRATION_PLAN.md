@@ -174,7 +174,8 @@ Goal: make future dispatch explicit while keeping alpha starts operator-driven.
 
 Status: started. A shared lifecycle projection helper now maps current Run
 statuses into the orchestration vocabulary while explicitly keeping queue,
-claim, and automatic-start behavior disabled.
+claim, and automatic-start behavior disabled. Runs detail surfaces that
+projection as read-only diagnostics.
 
 Work:
 

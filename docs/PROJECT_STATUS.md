@@ -99,8 +99,8 @@ The project is past initial architecture assembly. Current work should favor pro
   existing Code Agent and Browser Evidence services now record that envelope in
   their accepted RunSteps as diagnostics without changing execution behavior.
 - O3 has started with a shared lifecycle projection helper that maps current
-  Run statuses into orchestration vocabulary, while keeping queue, claim, and
-  automatic-start behavior disabled.
+  Run statuses into orchestration vocabulary. Runs detail now surfaces that
+  projection while keeping queue, claim, and automatic-start behavior disabled.
 - [CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md)
   is accepted for the first visible code-agent product surface: Task detail /
   Action Desk entrypoint, manual runtime readiness action, default available

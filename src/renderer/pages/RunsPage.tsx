@@ -3,6 +3,7 @@ import { Fragment, useEffect, useState } from 'react';
 import type { ArtifactRecord } from '@shared/types/artifact';
 import { parseRunCheckpointPayload } from '@shared/types/run-checkpoint-payload';
 import { evaluateSandboxPatchPromotionReadiness } from '@shared/sandbox-patch-promotion-readiness';
+import { projectAgentRunLifecycle } from '@shared/agent-orchestration';
 import type { RecommendedActionIntent } from '@shared/types/brief';
 import {
   buildDefaultOperatorStartedRunRequest,
@@ -73,6 +74,12 @@ type BrowserEvidenceReviewSummary = {
 
 function formatRelatedTimelineSummary(event: TimelineEventRecord): string {
   return formatTaskTimelineEventSummary(event);
+}
+
+function getRunLifecycleStartMode(run: Pick<RunRecord, 'instructions'>): 'manual' | 'operator_started' {
+  return run.instructions?.startsWith('Operator-started')
+    ? 'operator_started'
+    : 'manual';
 }
 
 function getRelatedTimelineActionLabel(event: TimelineEventRecord): string | null {
@@ -791,6 +798,12 @@ export function RunsPage({
     ? getStagedPatchEvidenceChecklist(stagedPatchReview)
     : [];
   const browserEvidenceReview = getBrowserEvidenceReviewSummary(detail);
+  const runLifecycleProjection = detail
+    ? projectAgentRunLifecycle({
+        runStatus: detail.status,
+        startMode: getRunLifecycleStartMode(detail),
+      })
+    : null;
   const focusNextStepDraft = detail
     ? latestAgentSession
       ? formatAgentSessionReplayNextStepDraft({
@@ -835,6 +848,11 @@ export function RunsPage({
               <p className="meta">关联任务：{detail.taskId}</p>
               <p className="meta">创建时间：{detail.createdAt}</p>
               <p className="meta">结果来源：{detail.outputSource || '尚未产生'}</p>
+              {runLifecycleProjection ? (
+                <p className="meta">
+                  {runLifecycleProjection.summary}
+                </p>
+              ) : null}
               {latestAgentSession ? (
                 <>
                   <p className="meta">
