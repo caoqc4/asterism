@@ -84,6 +84,8 @@ import {
   formatCodeAgentModelProducerOptInSummary,
   formatExecutionRuntimeReadinessSummary,
   formatPreRunAgentCapabilitySummary,
+  isCodeAgentPromotionDecision,
+  isCodeAgentSandboxRun,
 } from '../lib/agentCapabilities';
 
 const riskOptions: TaskRiskLevel[] = ['none', 'low', 'medium', 'high'];
@@ -222,28 +224,6 @@ function getCodeAgentContextFileCandidates(detail: TaskDetail | null): string[] 
       item.content,
     ]),
   );
-}
-
-function isCodeAgentSandboxRun(run: RunRecord): boolean {
-  if (run.type !== 'agent') {
-    return false;
-  }
-
-  const evidence = [
-    run.instructions,
-    run.output,
-    run.failureReason,
-  ].filter(Boolean).join('\n');
-
-  return evidence.includes('Code Agent manual sandbox producer preview')
-    || evidence.includes('sandboxed coding producer')
-    || evidence.includes('staged patch')
-    || evidence.includes('patch review Decision');
-}
-
-function isCodeAgentPromotionDecision(decision: DecisionRecord): boolean {
-  return decision.sourceLabel === 'workspace.staged_patch'
-    || decision.title.startsWith('Review Code Agent preview');
 }
 
 function isEarlyTask(task: Pick<TaskListItemRecord, 'state'>): boolean {

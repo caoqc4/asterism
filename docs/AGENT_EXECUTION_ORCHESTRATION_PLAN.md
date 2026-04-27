@@ -233,7 +233,8 @@ host shell, queue workers, or automatic starts.
 
 Status: started. Code Agent recovery summary formatting is now shared for
 task-side staged patch review, keeping Run/Decision recovery wording reusable
-before richer sandbox adapter work.
+before richer sandbox adapter work. Code Agent sandbox-run and
+promotion-Decision detection are also shared and tested.
 
 ## Non-Goals
 

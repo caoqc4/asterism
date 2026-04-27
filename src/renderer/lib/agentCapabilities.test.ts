@@ -16,6 +16,8 @@ import {
   formatExecutionRuntimeReadinessSummary,
   formatPreRunAgentCapabilitySummary,
   formatSandboxProducerLifecycleSummary,
+  isCodeAgentPromotionDecision,
+  isCodeAgentSandboxRun,
 } from './agentCapabilities';
 
 function buildAiStatus(provider: AiConfigStatus['provider']): AiConfigStatus {
@@ -588,5 +590,45 @@ describe('agent capability formatting', () => {
       output: null,
       status: 'needs_confirmation',
     }, null)).toBe('最近一次 Code Agent sandbox preview 正在等待确认或恢复处理。');
+  });
+
+  it('detects Code Agent sandbox runs and promotion Decisions', () => {
+    expect(isCodeAgentSandboxRun({
+      failureReason: null,
+      instructions: 'Code Agent manual sandbox producer preview.',
+      output: null,
+      type: 'agent',
+    })).toBe(true);
+    expect(isCodeAgentSandboxRun({
+      failureReason: null,
+      instructions: 'Regular agent run.',
+      output: 'staged patch source ready',
+      type: 'agent',
+    })).toBe(true);
+    expect(isCodeAgentSandboxRun({
+      failureReason: 'sandboxed coding producer failed',
+      instructions: null,
+      output: null,
+      type: 'agent',
+    })).toBe(true);
+    expect(isCodeAgentSandboxRun({
+      failureReason: null,
+      instructions: 'Regular summarize run.',
+      output: 'staged patch source ready',
+      type: 'summarize',
+    })).toBe(false);
+
+    expect(isCodeAgentPromotionDecision({
+      sourceLabel: 'workspace.staged_patch',
+      title: 'Manual title',
+    })).toBe(true);
+    expect(isCodeAgentPromotionDecision({
+      sourceLabel: null,
+      title: 'Review Code Agent preview for task',
+    })).toBe(true);
+    expect(isCodeAgentPromotionDecision({
+      sourceLabel: 'workspace.write_patch',
+      title: 'Confirm direct patch',
+    })).toBe(false);
   });
 });

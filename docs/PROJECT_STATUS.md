@@ -109,6 +109,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - O5 coding lane has started with shared Code Agent recovery summary formatting
   for task-side staged patch review; this keeps Run/Decision recovery wording
   reusable without exposing host shell, queue workers, or automatic starts.
+- Code Agent sandbox-run and promotion-Decision detection also moved into the
+  shared renderer capability helpers, so task-side recovery uses tested coding
+  lane predicates instead of page-local heuristics.
 - [CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md)
   is accepted for the first visible code-agent product surface: Task detail /
   Action Desk entrypoint, manual runtime readiness action, default available
