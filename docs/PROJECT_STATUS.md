@@ -666,7 +666,7 @@ The project is past initial architecture assembly. Current work should favor pro
   persists validated action plans as RunStep evidence while explicitly recording
   `browserStart=no`, `networkCall=no`, `pageMutation=no`, scheduler=no,
   providerCall=no, and `modelExposure=hidden`. It is not wired to IPC or UI.
-- Browser controlled interaction BCI3 has started with a local QA runner and
+- Browser controlled interaction BCI3 is locally accepted with a local QA runner and
   manual smoke command for the existing localhost fixture. The runner validates
   every request before launch, blocks invalid or checkpoint-required actions
   before browser start, uses an isolated Playwright context, and remains

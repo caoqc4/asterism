@@ -94,6 +94,13 @@ Acceptance:
 
 ### BCI3: Local QA Runner Smoke
 
+Status: locally accepted for the localhost fixture path. The runner validates
+every request before launch, blocks invalid or checkpoint-required actions
+before browser start, runs the fixture in an isolated Playwright Chromium
+context, and captures page-summary, visible-text, and screenshot artifacts.
+It is still not wired to IPC, product UI, scheduler starts, provider schemas, or
+model-visible browser tools.
+
 Goal: execute harmless local dev-server browser actions in an isolated context.
 
 Implement only the local QA fixture path:
@@ -180,7 +187,7 @@ Acceptance:
 
 ## Recommended Next Task
 
-Start with BCI3 only after reviewing the local QA fixture boundary. It should
-execute harmless localhost fixture actions in an isolated browser context, keep
-authenticated profiles and external origins unavailable, and still avoid IPC,
-product UI, scheduler starts, provider schema, and model-visible browser tools.
+Start with BCI4. The next slice should formalize the checkpoint boundary for
+possible side effects, including current URL, origin, target label/ref,
+screenshot artifact id, visible-text summary, policy snapshot, and exact resume
+action. Approval should not auto-resume until a later resume slice is accepted.
