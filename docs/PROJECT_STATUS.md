@@ -653,15 +653,15 @@ The project is past initial architecture assembly. Current work should favor pro
 - [AGENT_EXECUTION_BROWSER_CONTROLLED_INTERACTION_ACCEPTANCE_PLAN.md](AGENT_EXECUTION_BROWSER_CONTROLLED_INTERACTION_ACCEPTANCE_PLAN.md)
   now breaks Tier 2 into BCI1-BCI6: review helpers, dry-run runner plan, local
   QA smoke, checkpoint boundary, Runs review surface, and a final
-  operator-started entrypoint. BCI1 and BCI2 are locally accepted; the next task
-  is BCI3 local QA smoke only. No
-  browser runtime, IPC, scheduler, provider schema, or model-visible browser
-  tool should be enabled outside that local fixture slice.
+  operator-started entrypoint. BCI1-BCI6 are locally accepted for the local-QA
+  path; broad browser capability expansion should pause unless a new acceptance
+  plan covers arbitrary URLs, authenticated profiles, scheduler starts,
+  provider schemas, or model-visible browser tools.
 - Browser controlled interaction BCI1 is locally accepted with renderer review helpers
   that turn validated schema drafts into ready/checkpoint-required/blocked
-  review summaries and planned RunStep titles. The descriptor remains
-  unregistered, and no browser runtime, IPC, scheduler, provider schema, or
-  model-visible browser tool is enabled.
+  review summaries and planned RunStep titles. The descriptor is now
+  hidden/reserved for operator-started policy validation, with no prompt or
+  provider schema exposure.
 - Browser controlled interaction BCI2 is locally accepted with a dry-run recorder that
   persists validated action plans as RunStep evidence while explicitly recording
   `browserStart=no`, `networkCall=no`, `pageMutation=no`, scheduler=no,
