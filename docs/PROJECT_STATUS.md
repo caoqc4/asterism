@@ -499,6 +499,9 @@ The project is past initial architecture assembly. Current work should favor pro
   local read-only HTML fixture, allowlisted origin, expected screenshot/text/page
   summary artifacts, and a valid request while still reporting no browser start,
   no network call, no mutation action, and no model exposure.
+- `npm run manual:browser-evidence-fixture` materializes that B3 fixture into a
+  temp directory as local HTML, request JSON, and preflight JSON, still without
+  starting a browser, making network calls, or exposing tools to the model.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
@@ -1109,9 +1112,9 @@ dedicated signed/notarized release pass.
    Code Agent UI layout pass, and Code Agent lifecycle recovery/evidence slice
    as locally accepted for the alpha path. The next execution task should start
    the Browser / Playwright read-only lane pre-runtime: decide whether to add a
-   manual fixture script or a real isolated Playwright smoke. Browser execution,
-   credentials, model exposure, and external mutation remain deferred until
-   that decision is accepted.
+   real isolated Playwright smoke. Browser execution, credentials, model
+   exposure, and external mutation remain deferred until that decision is
+   accepted.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.

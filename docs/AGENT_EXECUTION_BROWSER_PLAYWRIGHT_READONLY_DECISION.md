@@ -162,6 +162,8 @@ Do not implement browser automation as an agent tool yet. B1 shared Browser
 Evidence Contract types, B2 preflight summary helpers, and the B3 runner-smoke
 fixture contract are in place, with the existing scaffold descriptor still
 hidden. Settings surfaces the preflight as read-only diagnostics without
-starting a browser or calling the network. The next code slice should decide
-whether to add a manual fixture script or a real isolated Playwright smoke; both
-remain outside model-visible tools.
+starting a browser or calling the network. `npm run
+manual:browser-evidence-fixture` now writes the local HTML fixture, request
+JSON, and preflight JSON without starting a browser or making network calls.
+The next code slice should decide whether to add a real isolated Playwright
+smoke; it remains outside model-visible tools.

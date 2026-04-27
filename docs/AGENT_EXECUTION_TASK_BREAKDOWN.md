@@ -105,6 +105,9 @@ Completed:
 - B3 runner-smoke fixture contract is implemented without starting browser or
   network activity; it prepares local HTML, an allowlisted origin, expected
   read-only artifacts, and a validated request
+- `npm run manual:browser-evidence-fixture` materializes the B3 fixture files
+  for future runner smoke validation without starting a browser or making
+  network calls
 
 Pi reference boundary:
 
@@ -362,8 +365,9 @@ review, and pending promotion Decision creation.
 The next implementation slice is:
 
 - keep Browser / Playwright read-only lane pre-runtime: decide whether the next
-  slice is a manual fixture script or a real isolated Playwright smoke, with
-  browser execution, credentials, model exposure, and mutation still deferred
+  slice is a real isolated Playwright smoke, with browser execution,
+  credentials, model exposure, and mutation still deferred until that decision
+  is accepted
 
 Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer control,
 external posting, or social/media publishing as model-visible tools until the

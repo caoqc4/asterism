@@ -37,6 +37,7 @@
     "accept:sandbox-coding:producer-preview-smoke": "npm run build:main && node scripts/sandbox-coding-producer-preview-smoke.mjs",
     "accept:sandbox-coding:patch-promotion-apply-smoke": "npm run build:main && node scripts/sandbox-patch-promotion-apply-smoke.mjs",
     "manual:code-agent-ui-fixture": "node scripts/code-agent-ui-manual-fixture.mjs",
+    "manual:browser-evidence-fixture": "npm run build:main && node scripts/browser-evidence-manual-fixture.mjs",
     "accept:provider-native-live:preflight": "node scripts/provider-native-live-preflight.mjs",
     "accept:provider-native-live": "node scripts/provider-native-live-validate.mjs",
     "accept:provider-native-live:run": "vitest run --config vitest.live.config.ts scripts/provider-native-run-live.test.ts",
