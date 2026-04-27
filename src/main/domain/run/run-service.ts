@@ -1,8 +1,9 @@
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
 import {
+  isSupportedResumeCheckpointPayload,
   validateResumeCheckpointPayload,
-  type ResumeCheckpointPayloadValidation,
+  type ValidResumeCheckpointPayload,
 } from '../../../shared/types/run-checkpoint-payload.js';
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type {
@@ -176,7 +177,7 @@ export class RunService {
     }
 
     let checkpoint = null as NonNullable<RunDetailRecord['checkpoints']>[number] | null;
-    let payload = null as Extract<ResumeCheckpointPayloadValidation, { status: 'valid' }>['payload'] | null;
+    let payload: ValidResumeCheckpointPayload | null = null;
     let firstInvalidReason: string | null = null;
     let firstUnsupportedTool: string | null = null;
 
@@ -191,7 +192,7 @@ export class RunService {
         continue;
       }
 
-      if (validation.payload.nextTool !== 'artifact.create_note') {
+      if (!isSupportedResumeCheckpointPayload(validation.payload)) {
         firstUnsupportedTool ??= validation.payload.nextTool;
         continue;
       }

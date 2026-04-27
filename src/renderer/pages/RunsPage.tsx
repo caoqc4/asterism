@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 
 import {
+  isSupportedResumeCheckpointPayload,
   parseRunCheckpointPayload,
   validateResumeCheckpointPayload,
 } from '@shared/types/run-checkpoint-payload';
@@ -85,7 +86,7 @@ function hasValidOpenResumeCheckpoint(run: Pick<RunDetailRecord, 'checkpoints' |
     });
 
     return validation.status === 'valid'
-      && validation.payload.nextTool === 'artifact.create_note';
+      && isSupportedResumeCheckpointPayload(validation.payload);
   }));
 }
 

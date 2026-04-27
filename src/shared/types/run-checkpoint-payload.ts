@@ -81,6 +81,11 @@ export type ResumeCheckpointPayloadValidation =
       reason: string;
     };
 
+export type ValidResumeCheckpointPayload = Extract<
+  ResumeCheckpointPayloadValidation,
+  { status: 'valid' }
+>['payload'];
+
 export function createToolPermissionCheckpointPayload(
   input: Omit<ToolPermissionCheckpointPayloadV1, 'version' | 'kind'>,
 ): ToolPermissionCheckpointPayloadV1 {
@@ -221,6 +226,12 @@ export function validateResumeCheckpointPayload(
       taskId: typeof parsed.taskId === 'string' ? parsed.taskId : expected.taskId,
     },
   };
+}
+
+export function isSupportedResumeCheckpointPayload(
+  payload: ValidResumeCheckpointPayload,
+): boolean {
+  return payload.nextTool === 'artifact.create_note';
 }
 
 function validateArtifactCreateNoteResumeInput(input: object): string | null {

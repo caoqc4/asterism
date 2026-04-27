@@ -677,6 +677,9 @@ The project is past initial architecture assembly. Current work should favor pro
   `artifact.create_note` resume input shape before UI continuation or backend
   tool execution, so empty title/content payloads are treated as stale
   checkpoint data rather than failed resumed work.
+- Supported resume-payload detection is now a shared helper used by both Runs UI
+  gating and backend paused-run continuation, so future resume tools have one
+  place to update before becoming clickable or executable.
 - Replay review now also treats paused or confirmation sessions with no open
   checkpoint as `checkpoint_missing` / inspect-only rather than
   checkpoint-gated, so restart guidance does not imply a resumable path after

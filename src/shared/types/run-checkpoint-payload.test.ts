@@ -4,6 +4,7 @@ import {
   createPatchPromotionCheckpointPayload,
   createResumeCheckpointPayload,
   createToolPermissionCheckpointPayload,
+  isSupportedResumeCheckpointPayload,
   parseRunCheckpointPayload,
   validateResumeCheckpointPayload,
 } from './run-checkpoint-payload.js';
@@ -175,6 +176,7 @@ describe('run checkpoint payload helpers', () => {
         version: 1,
       }),
     });
+    expect(validation.status === 'valid' && isSupportedResumeCheckpointPayload(validation.payload)).toBe(true);
   });
 
   it.each([
