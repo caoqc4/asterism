@@ -131,6 +131,8 @@ Acceptance:
 
 ### B3: Isolated Runner Smoke
 
+Status: fixture contract implemented; runtime still deferred.
+
 Only after B1/B2, add a manually invoked local smoke against a disposable local
 HTML page or explicitly provided local dev URL.
 
@@ -141,6 +143,8 @@ Acceptance:
 - screenshot/text artifacts only
 - no remote mutation APIs
 - no model-visible tool exposure
+- fixture preparation does not start a browser, call a network, expose tools,
+  or make mutation actions representable
 
 ### B4: Task / Run Review Surface
 
@@ -155,8 +159,9 @@ Acceptance:
 ## Current Decision
 
 Do not implement browser automation as an agent tool yet. B1 shared Browser
-Evidence Contract types and B2 preflight summary helpers are in place, with the
-existing scaffold descriptor still hidden. Settings now surfaces the preflight
-as read-only diagnostics without starting a browser or calling the network. The
-next code slice should remain pre-runtime: define B3 runner-smoke fixtures
-before adding Playwright.
+Evidence Contract types, B2 preflight summary helpers, and the B3 runner-smoke
+fixture contract are in place, with the existing scaffold descriptor still
+hidden. Settings surfaces the preflight as read-only diagnostics without
+starting a browser or calling the network. The next code slice should decide
+whether to add a manual fixture script or a real isolated Playwright smoke; both
+remain outside model-visible tools.

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BROWSER_EVIDENCE_ACTIONS,
   buildBrowserEvidencePreflight,
+  buildBrowserEvidenceRunnerSmokeFixture,
   buildDefaultBrowserSessionPolicy,
   isBrowserEvidenceAction,
   isBrowserEvidenceKind,
@@ -77,6 +78,35 @@ describe('browser evidence contract', () => {
       networkWillBeCalled: false,
       status: 'reserved',
     });
+  });
+
+  it('prepares an isolated runner smoke fixture without starting browser or network activity', () => {
+    const fixture = buildBrowserEvidenceRunnerSmokeFixture({
+      origin: 'http://127.0.0.1:4173',
+    });
+
+    expect(fixture).toMatchObject({
+      allowedOrigin: 'http://127.0.0.1:4173',
+      expectedArtifactKinds: ['screenshot', 'visible_text', 'page_summary'],
+      name: 'browser-evidence-readonly-smoke',
+      request: {
+        action: 'capture_screenshot',
+        allowedEvidenceKinds: ['screenshot', 'visible_text', 'page_summary'],
+        policy: expect.objectContaining({
+          allowCredentials: false,
+          allowedOrigins: ['http://127.0.0.1:4173'],
+          isolatedProfile: true,
+          networkPolicy: 'allowlisted',
+        }),
+        purpose: 'Capture isolated local browser evidence smoke output.',
+        url: 'http://127.0.0.1:4173/browser-evidence-smoke.html',
+      },
+      smokeWillCallNetwork: false,
+      smokeWillStartBrowser: false,
+      summary: 'Browser evidence runner smoke fixture prepared / origin=http://127.0.0.1:4173 / path=/browser-evidence-smoke.html / browserStart=no / networkCall=no / mutation=not representable',
+    });
+    expect(fixture.html).toContain('data-taskplane-evidence="readonly-smoke"');
+    expect(validateBrowserEvidenceRequest(fixture.request)).toMatchObject({ valid: true });
   });
 
   it('accepts bounded read-only evidence requests', () => {

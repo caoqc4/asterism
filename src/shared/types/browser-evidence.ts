@@ -88,6 +88,17 @@ export type BrowserEvidencePreflight = {
   summary: string;
 };
 
+export type BrowserEvidenceRunnerSmokeFixture = {
+  allowedOrigin: string;
+  expectedArtifactKinds: BrowserEvidenceKind[];
+  html: string;
+  name: string;
+  request: BrowserEvidenceRequest;
+  smokeWillStartBrowser: false;
+  smokeWillCallNetwork: false;
+  summary: string;
+};
+
 const MAX_BROWSER_EVIDENCE_TIMEOUT_MS = 120_000;
 const MAX_BROWSER_EVIDENCE_OUTPUT_LIMIT_BYTES = 256_000;
 
@@ -146,6 +157,58 @@ export function buildBrowserEvidencePreflight(params: {
       'browserStart=no',
       'networkCall=no',
       'next=implement isolated runner smoke only after B2 is accepted',
+    ].join(' / '),
+  };
+}
+
+export function buildBrowserEvidenceRunnerSmokeFixture(params: {
+  html?: string;
+  name?: string;
+  origin?: string;
+  path?: string;
+} = {}): BrowserEvidenceRunnerSmokeFixture {
+  const origin = params.origin ?? 'http://127.0.0.1:0';
+  const path = params.path ?? '/browser-evidence-smoke.html';
+  const url = new URL(path, origin);
+  const html = params.html ?? [
+    '<!doctype html>',
+    '<html lang="en">',
+    '<head><meta charset="utf-8"><title>Taskplane Browser Evidence Smoke</title></head>',
+    '<body>',
+    '<main data-taskplane-evidence="readonly-smoke">',
+    '<h1>Browser Evidence Smoke</h1>',
+    '<p>This fixture is local, credential-free, and read-only.</p>',
+    '</main>',
+    '</body>',
+    '</html>',
+  ].join('');
+  const request: BrowserEvidenceRequest = {
+    action: 'capture_screenshot',
+    allowedEvidenceKinds: ['screenshot', 'visible_text', 'page_summary'],
+    policy: buildDefaultBrowserSessionPolicy({
+      allowedOrigins: [url.origin],
+      outputLimitBytes: 128_000,
+      timeoutMs: 30_000,
+    }),
+    purpose: 'Capture isolated local browser evidence smoke output.',
+    url: url.toString(),
+  };
+
+  return {
+    allowedOrigin: url.origin,
+    expectedArtifactKinds: ['screenshot', 'visible_text', 'page_summary'],
+    html,
+    name: params.name ?? 'browser-evidence-readonly-smoke',
+    request,
+    smokeWillCallNetwork: false,
+    smokeWillStartBrowser: false,
+    summary: [
+      'Browser evidence runner smoke fixture prepared',
+      `origin=${url.origin}`,
+      `path=${url.pathname}`,
+      'browserStart=no',
+      'networkCall=no',
+      'mutation=not representable',
     ].join(' / '),
   };
 }

@@ -102,6 +102,9 @@ Completed:
   network call
 - Settings surfaces the B2 preflight as read-only diagnostics without adding a
   run control or starting browser/network activity
+- B3 runner-smoke fixture contract is implemented without starting browser or
+  network activity; it prepares local HTML, an allowlisted origin, expected
+  read-only artifacts, and a validated request
 
 Pi reference boundary:
 
@@ -358,8 +361,9 @@ review, and pending promotion Decision creation.
 
 The next implementation slice is:
 
-- keep Browser / Playwright read-only lane pre-runtime: define B3 isolated
-  runner-smoke fixtures before adding Playwright runtime code
+- keep Browser / Playwright read-only lane pre-runtime: decide whether the next
+  slice is a manual fixture script or a real isolated Playwright smoke, with
+  browser execution, credentials, model exposure, and mutation still deferred
 
 Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer control,
 external posting, or social/media publishing as model-visible tools until the
