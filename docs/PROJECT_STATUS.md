@@ -1370,6 +1370,12 @@ Latest local baseline:
   mac targets are present, while Developer ID signing and Apple notarization
   credentials remain missing. It performed no signing, notarization, upload, or
   Apple network request.
+- `npm run smoke:release:mac` passed locally on 2026-04-27 after the Code
+  Agent context-gate and restart/replay safety updates: Electron native modules
+  were rebuilt, the unsigned/ad-hoc `release/mac-arm64/Taskplane.app` was
+  generated, package smoke/code-sign verification passed, and runtime smoke
+  launched the packaged app with isolated user data and initialized config plus
+  SQLite schema.
 - `npm run smoke:build` and `npm run smoke:release:mac` passed locally on
   2026-04-26 after the Code Agent preflight/check-availability UI slice: the
   unsigned/ad-hoc macOS package was generated, code-sign verified, launched with
