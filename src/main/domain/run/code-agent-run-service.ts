@@ -111,6 +111,20 @@ export class CodeAgentRunService {
       taskId: task.id,
       workspaceRoot: workspaceRoot ?? '',
     };
+
+    await this.runStepRepository.create({
+      runId: run.id,
+      kind: 'plan',
+      status: 'completed',
+      title: 'operator-started code-agent run accepted',
+      input: patchIntent,
+      output: [
+        'descriptor=workspace.staged_patch',
+        `producer=${modelProducerRequested ? 'model_backed_requested' : 'local_diagnostic'}`,
+        `providerCall=${modelProducerRequested ? 'explicit_user_opt_in_required' : 'disabled'}`,
+        `checks=${requestedChecks.join(',')}`,
+      ].join(' / '),
+    });
     const modelRuntime = await prepareCodeAgentModelProducerRuntime({
       aiConfigService: this.aiConfigService,
       allowProviderCalls: modelProducerOptIn,

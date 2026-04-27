@@ -159,6 +159,14 @@ describe('CodeAgentRunService', () => {
     });
 
     expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(runStepRepository.create).toHaveBeenCalledWith({
+      input: 'Prepare a staged notes patch.',
+      kind: 'plan',
+      output: 'descriptor=workspace.staged_patch / producer=local_diagnostic / providerCall=disabled / checks=test',
+      runId: 'run_code_agent_1',
+      status: 'completed',
+      title: 'operator-started code-agent run accepted',
+    });
     expect(executionService.run).toHaveBeenCalledWith(expect.objectContaining({
       operatorConfirmed: true,
       patchSummary: 'Prepare a staged notes patch.',
@@ -199,6 +207,10 @@ describe('CodeAgentRunService', () => {
     });
 
     expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      output: 'descriptor=workspace.staged_patch / producer=model_backed_requested / providerCall=explicit_user_opt_in_required / checks=test',
+      title: 'operator-started code-agent run accepted',
+    }));
     expect(executionService.run).not.toHaveBeenCalled();
     expect(runRepository.updateResult).toHaveBeenCalledWith(
       'run_code_agent_1',
@@ -238,6 +250,10 @@ describe('CodeAgentRunService', () => {
     });
 
     expect(aiConfigService.resolveRuntimeConfig).toHaveBeenCalledTimes(1);
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      output: 'descriptor=workspace.staged_patch / producer=model_backed_requested / providerCall=explicit_user_opt_in_required / checks=test',
+      title: 'operator-started code-agent run accepted',
+    }));
     expect(executionService.run).not.toHaveBeenCalled();
     expect(runRepository.updateResult).toHaveBeenCalledWith(
       'run_code_agent_1',

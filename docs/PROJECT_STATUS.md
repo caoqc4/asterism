@@ -548,7 +548,9 @@ The project is past initial architecture assembly. Current work should favor pro
   diagnostic default, disabled model-producer env blocking, and invalid selected
   context blocking before producer execution. `npm run
   accept:sandbox-coding:code-agent-ui` and `npm run verify` passed after the
-  extraction.
+  extraction. Code Agent manual launches now also record an operator-started
+  acceptance RunStep with descriptor, producer branch, provider-call policy, and
+  selected checks.
 - The Browser / Playwright boundary has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references. The accepted direction is tiered capability:

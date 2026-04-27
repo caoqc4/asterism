@@ -434,6 +434,9 @@ Implementation note:
 - `src/main/domain/run/code-agent-run-service.ts` owns manual Code Agent launch
   orchestration.
 - `run:triggerCodeAgent` now delegates to `codeAgentRunService.trigger()`.
+- Code Agent manual launches now write an `operator-started code-agent run
+  accepted` RunStep that records `workspace.staged_patch`, producer branch,
+  provider-call policy, and selected checks before producer execution.
 - Dedicated service tests cover the key policy split: local diagnostic preview
   does not resolve provider runtime by default, disabled model-producer env
   blocks before execution, and invalid selected context blocks before producer
