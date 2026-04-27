@@ -108,6 +108,10 @@ Completed:
 - `npm run manual:browser-evidence-fixture` materializes the B3 fixture files
   for future runner smoke validation without starting a browser or making
   network calls
+- `npm run manual:browser-evidence-smoke` now performs the first real Tier 1
+  Playwright smoke: a disposable local HTTP fixture, isolated Chromium context,
+  browser-level allowlist routing, page-summary/visible-text/screenshot
+  artifacts, no credentials, no mutation, and no model-visible tool exposure
 - the Browser / Playwright decision has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references; the chosen boundary is no longer "read-only
@@ -370,10 +374,9 @@ review, and pending promotion Decision creation.
 
 The next implementation slice is:
 
-- implement the first real Browser / Playwright Tier 1 smoke behind the hidden
-  `browser.readonly_evidence` descriptor: isolated browser context, local
-  fixture or explicitly allowlisted local dev URL, screenshot/text artifacts,
-  no credentials, no mutation, and no model-visible tool exposure
+- surface Browser / Playwright Tier 1 smoke output as reviewable Run artifacts
+  only, keeping `browser.readonly_evidence` hidden from model-visible tools and
+  keeping browser execution manual/operator-started
 - in parallel, draft the Tier 2 controlled browser interaction policy:
   click/type/select only for allowlisted, non-sensitive flows, RunStep evidence
   for every action, and Decision checkpoints before final submit/post/publish/

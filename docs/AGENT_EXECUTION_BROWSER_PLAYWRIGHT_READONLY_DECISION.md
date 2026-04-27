@@ -246,18 +246,25 @@ Acceptance:
 
 ### B3: Isolated Runner Smoke
 
-Status: fixture contract implemented; runtime still deferred.
+Status: implemented as a manual local Playwright smoke; product runtime and
+model exposure still deferred.
 
 Only after B1/B2, add a manually invoked local smoke against a disposable local
 HTML page or explicitly provided local dev URL.
 
 Acceptance:
 
-- isolated browser context
-- no persistent profile
-- screenshot/text artifacts only
-- no remote mutation APIs
-- no model-visible tool exposure
+- isolated browser context: implemented through Playwright Chromium launched by
+  the manual smoke
+- no persistent profile: implemented with an ephemeral browser context and no
+  credential-bearing storage
+- screenshot/text artifacts only: implemented as page summary, visible text,
+  and screenshot artifacts
+- no remote mutation APIs: mutation actions remain unrepresentable in the v1
+  request type
+- no model-visible tool exposure: the descriptor remains hidden
+- network guardrail: the runner routes browser requests and aborts requests
+  whose origin is outside the request allowlist
 - fixture preparation does not start a browser, call a network, expose tools,
   or make mutation actions representable
 
@@ -278,15 +285,18 @@ yet. B1 shared Browser Evidence Contract types, B2 preflight summary helpers,
 and the B3 runner-smoke fixture contract are in place, with the existing
 scaffold descriptor still hidden. Settings surfaces the preflight as read-only
 diagnostics without starting a browser or calling the network. `npm run
-manual:browser-evidence-fixture` now writes the local HTML fixture, request
-JSON, and preflight JSON without starting a browser or making network calls.
+manual:browser-evidence-fixture` writes the local HTML fixture, request JSON,
+and preflight JSON without starting a browser or making network calls.
 
-The next code slice should be a real isolated Playwright smoke for Tier 1
-evidence only: local fixture/dev-server URL, isolated profile, screenshot/text
-artifacts, no credentials, no mutation, no model-visible tool exposure.
+B3 now also has a real manual Playwright smoke behind `npm run
+manual:browser-evidence-smoke`. It starts a disposable local HTTP fixture,
+launches an isolated Chromium context, enforces the origin allowlist in browser
+routing, and captures page-summary, visible-text, and screenshot artifacts
+without credentials, mutation actions, or model-visible tool exposure.
 
-The next design slice should define Tier 2 controlled interaction policy in
-parallel. Taskplane should support click/type/select on allowlisted,
-non-sensitive flows once the policy is accepted; it should not remain
-read-only forever, because AI programming QA and creator workflows both need
-bounded interaction to be genuinely useful.
+The next code slice should surface this Tier 1 result as Run artifacts only
+after a separate Task/Run review-surface decision. The next design slice should
+define Tier 2 controlled interaction policy in parallel. Taskplane should
+support click/type/select on allowlisted, non-sensitive flows once the policy is
+accepted; it should not remain read-only forever, because AI programming QA and
+creator workflows both need bounded interaction to be genuinely useful.

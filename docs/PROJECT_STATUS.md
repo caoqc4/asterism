@@ -502,6 +502,12 @@ The project is past initial architecture assembly. Current work should favor pro
 - `npm run manual:browser-evidence-fixture` materializes that B3 fixture into a
   temp directory as local HTML, request JSON, and preflight JSON, still without
   starting a browser, making network calls, or exposing tools to the model.
+- The first real Browser Evidence Tier 1 smoke is implemented behind
+  `npm run manual:browser-evidence-smoke`: it starts a disposable local HTTP
+  fixture, launches an isolated Playwright Chromium context, aborts browser
+  requests outside the allowed origin, and writes page-summary/visible-text/
+  screenshot artifacts while keeping credentials, mutation, and model exposure
+  unavailable.
 - The Browser / Playwright boundary has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references. The accepted direction is tiered capability:
@@ -1115,14 +1121,13 @@ dedicated signed/notarized release pass.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
 5. Treat the execution-layer Slice 0, hidden tool-scaffold baseline,
    provider-backed disposable-workspace Code Agent preview, real Task detail
-   Code Agent UI layout pass, and Code Agent lifecycle recovery/evidence slice
-   as locally accepted for the alpha path. The next execution task should add
-   the first real Browser / Playwright Tier 1 smoke behind the hidden
-   `browser.readonly_evidence` descriptor: isolated local fixture/dev-server
-   evidence, screenshot/text artifacts, no credentials, no mutation, and no
-   model-visible tool exposure. In parallel, draft the Tier 2 controlled
-   interaction policy for later click/type/select on allowlisted non-sensitive
-   flows.
+   Code Agent UI layout pass, Code Agent lifecycle recovery/evidence slice, and
+   manual Browser / Playwright Tier 1 smoke as locally accepted for the alpha
+   path. The next execution task should surface Tier 1 browser evidence as
+   reviewable Run artifacts only, while keeping browser execution manual,
+   hidden from model-visible tools, credential-free, and mutation-free. In
+   parallel, draft the Tier 2 controlled interaction policy for later
+   click/type/select on allowlisted non-sensitive flows.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.

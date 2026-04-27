@@ -62,7 +62,7 @@ describe('browser evidence contract', () => {
         'modelExposure=hidden',
         'browserStart=no',
         'networkCall=no',
-        'next=implement isolated runner smoke only after B2 is accepted',
+        'next=manual isolated runner smoke available while runtime stays hidden',
       ].join(' / '),
     });
   });
