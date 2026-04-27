@@ -8,6 +8,7 @@ export type AgentSessionReplayReview = {
   openCheckpointCount: number;
   restartSafety:
     | 'checkpoint_gated'
+    | 'checkpoint_missing'
     | 'interrupted_or_stale'
     | 'live_status_unknown'
     | 'new_run_required'
@@ -26,9 +27,9 @@ export function buildAgentSessionReplayReview(params: {
   const latestStep = [...params.steps].sort(compareRunStepsForReplay).at(-1) ?? null;
   const openCheckpointCount = (params.checkpoints ?? []).filter((checkpoint) =>
     checkpoint.status === 'open').length;
-  const mode = getReplayReviewMode(params.session.status);
-  const action = getReplayReviewAction(params.session.status);
-  const restartSafety = getRestartSafety(params.session.status, latestStep?.status ?? null);
+  const mode = getReplayReviewMode(params.session.status, openCheckpointCount);
+  const action = getReplayReviewAction(params.session.status, openCheckpointCount);
+  const restartSafety = getRestartSafety(params.session.status, latestStep?.status ?? null, openCheckpointCount);
 
   return {
     latestStepStatus: latestStep?.status ?? null,
@@ -53,11 +54,14 @@ export function buildAgentSessionReplayReview(params: {
   };
 }
 
-function getReplayReviewMode(status: AgentSessionRecord['status']): AgentSessionReplayReview['mode'] {
+function getReplayReviewMode(
+  status: AgentSessionRecord['status'],
+  openCheckpointCount: number,
+): AgentSessionReplayReview['mode'] {
   switch (status) {
     case 'needs_confirmation':
     case 'paused':
-      return 'manual_resume';
+      return openCheckpointCount > 0 ? 'manual_resume' : 'inspect_only';
     case 'failed':
     case 'cancelled':
       return 'new_run';
@@ -67,16 +71,20 @@ function getReplayReviewMode(status: AgentSessionRecord['status']): AgentSession
   }
 }
 
-function getReplayReviewAction(status: AgentSessionRecord['status']): string {
+function getReplayReviewAction(status: AgentSessionRecord['status'], openCheckpointCount: number): string {
   switch (status) {
     case 'completed':
       return 'inspect completed evidence';
     case 'failed':
       return 'inspect failed steps before starting a new run';
     case 'needs_confirmation':
-      return 'resume only after Decision approval';
+      return openCheckpointCount > 0
+        ? 'resume only after Decision approval'
+        : 'inspect confirmation evidence; no open checkpoint';
     case 'paused':
-      return 'resume only through the open checkpoint';
+      return openCheckpointCount > 0
+        ? 'resume only through the open checkpoint'
+        : 'inspect paused evidence; no open checkpoint';
     case 'cancelled':
       return 'not resumable; inspect decision history';
     case 'running':
@@ -87,6 +95,7 @@ function getReplayReviewAction(status: AgentSessionRecord['status']): string {
 function getRestartSafety(
   status: AgentSessionRecord['status'],
   latestStepStatus: string | null,
+  openCheckpointCount: number,
 ): AgentSessionReplayReview['restartSafety'] {
   switch (status) {
     case 'completed':
@@ -96,7 +105,7 @@ function getRestartSafety(
       return 'new_run_required';
     case 'needs_confirmation':
     case 'paused':
-      return 'checkpoint_gated';
+      return openCheckpointCount > 0 ? 'checkpoint_gated' : 'checkpoint_missing';
     case 'running':
       return latestStepStatus === 'running' || latestStepStatus === 'pending'
         ? 'live_status_unknown'

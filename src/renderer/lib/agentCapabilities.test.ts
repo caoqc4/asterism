@@ -522,6 +522,13 @@ describe('agent capability formatting', () => {
     })).toBe('处理最近一次 agent run 的 1 个 open checkpoint / Decision，再决定是否继续执行。');
 
     expect(formatAgentSessionReplayNextStepDraft({
+      checkpoints: [{ status: 'resolved' }],
+      runType: 'agent',
+      session,
+      steps: [],
+    })).toBe('复核最近一次 agent run 的暂停或确认原因；没有 open checkpoint 时，先查看执行证据再决定是否重跑。');
+
+    expect(formatAgentSessionReplayNextStepDraft({
       runType: 'agent',
       session: {
         ...session,

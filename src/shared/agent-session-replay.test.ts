@@ -81,10 +81,23 @@ describe('agent session replay review', () => {
     })).toMatchObject({
       latestStepStatus: null,
       latestStepTitle: null,
-      mode: 'manual_resume',
+      mode: 'inspect_only',
       openCheckpointCount: 0,
-      restartSafety: 'checkpoint_gated',
-      summary: 'Replay review：resume only through the open checkpoint / mode=manual_resume / session=agent_session_1 / status=paused / restartSafety=checkpoint_gated / steps=0 / openCheckpoints=0 / latest=none / autoReplay=no',
+      restartSafety: 'checkpoint_missing',
+      summary: 'Replay review：inspect paused evidence; no open checkpoint / mode=inspect_only / session=agent_session_1 / status=paused / restartSafety=checkpoint_missing / steps=0 / openCheckpoints=0 / latest=none / autoReplay=no',
+    });
+
+    expect(buildAgentSessionReplayReview({
+      checkpoints: [{ status: 'resolved' }],
+      session: buildSession('needs_confirmation'),
+      steps: [
+        buildStep({ index: 1, kind: 'checkpoint', status: 'completed', title: 'Resolved checkpoint' }),
+      ],
+    })).toMatchObject({
+      mode: 'inspect_only',
+      openCheckpointCount: 0,
+      restartSafety: 'checkpoint_missing',
+      summary: 'Replay review：inspect confirmation evidence; no open checkpoint / mode=inspect_only / session=agent_session_1 / status=needs_confirmation / restartSafety=checkpoint_missing / steps=1 / openCheckpoints=0 / latest=checkpoint:completed:Resolved checkpoint / autoReplay=no',
     });
   });
 

@@ -658,6 +658,10 @@ The project is past initial architecture assembly. Current work should favor pro
   open `resume` checkpoint payload. Paused Runs without a resumable checkpoint
   show review-first guidance instead of letting the user click into a known
   backend rejection path.
+- Replay review now also treats paused or confirmation sessions with no open
+  checkpoint as `checkpoint_missing` / inspect-only rather than
+  checkpoint-gated, so restart guidance does not imply a resumable path after
+  the checkpoint has already been resolved, cancelled, or lost.
 - Task detail Paused Run Recovery now routes users to the Run evidence first
   instead of directly executing continuation from a list-only Run summary. The
   actual continuation affordance lives on Runs detail, where checkpoint evidence
