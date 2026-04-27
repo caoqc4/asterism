@@ -240,6 +240,45 @@ describe('SchedulerService', () => {
     expect(service.getStatus().running).toBe(false);
   });
 
+  it('does not mark runs failed when repository stale recovery returns no eligible runs', async () => {
+    const runRepository = {
+      listIncompleteOlderThan: vi.fn().mockResolvedValue([]),
+      updateResult: vi.fn(),
+    };
+    const { SchedulerService } = await import('./scheduler-service.js');
+    const service = new SchedulerService(
+      {
+        read: vi.fn().mockReturnValue({
+          featureFlags: {
+            enableScheduler: true,
+          },
+        }),
+      } as never,
+      {
+        getHomeData: vi.fn().mockResolvedValue(buildHomeData()),
+      } as never,
+      {
+        create: vi.fn(),
+      } as never,
+      runRepository as never,
+      {
+        resolveRuntimeConfig: vi.fn().mockRejectedValue(new Error('skip AI brief')),
+      } as never,
+      {
+        execute: vi.fn(),
+      } as never,
+      {
+        select: vi.fn(),
+      } as never,
+    );
+
+    await service.start();
+
+    expect(runRepository.listIncompleteOlderThan).toHaveBeenCalledTimes(1);
+    expect(runRepository.updateResult).not.toHaveBeenCalled();
+    expect(service.getStatus().lastRunSweepAt).not.toBeNull();
+  });
+
   it('falls back to a local brief when AI brief generation fails', async () => {
     const briefSnapshotRepository = {
       create: vi.fn().mockResolvedValue(undefined),

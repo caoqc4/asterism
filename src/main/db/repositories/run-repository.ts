@@ -121,7 +121,7 @@ export class RunRepository {
       .from(runs)
       .where(
         and(
-          inArray(runs.status, ['pending', 'running', 'needs_confirmation']),
+          inArray(runs.status, ['pending', 'running']),
           lt(runs.updatedAt, olderThanIso),
         ),
       )

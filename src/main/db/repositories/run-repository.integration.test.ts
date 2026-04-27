@@ -108,6 +108,36 @@ describe('RunRepository integration', () => {
     expect(staleRuns.map((run) => run.id)).not.toContain(created.id);
   });
 
+  it('keeps confirmation-gated runs out of scheduler stale recovery', async () => {
+    const task = await taskRepository.create({
+      title: 'Confirm checkpointed agent run',
+    });
+    const created = await runRepository.create({
+      taskId: task.id,
+      type: 'agent',
+    });
+
+    const updated = await runRepository.updateResult(
+      created.id,
+      'needs_confirmation',
+      '等待 Decision 审批后继续。',
+      'system',
+    );
+
+    expect(updated.status).toBe('needs_confirmation');
+
+    const db = initDatabase();
+    await db
+      .update(runs)
+      .set({
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      })
+      .where(eq(runs.id, created.id));
+
+    const staleRuns = await runRepository.listIncompleteOlderThan('2026-01-02T00:00:00.000Z');
+    expect(staleRuns.map((run) => run.id)).not.toContain(created.id);
+  });
+
   it('returns only incomplete runs older than the provided timestamp', async () => {
     const task = await taskRepository.create({
       title: 'Check stale run recovery',

@@ -680,6 +680,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Supported resume-payload detection is now a shared helper used by both Runs UI
   gating and backend paused-run continuation, so future resume tools have one
   place to update before becoming clickable or executable.
+- Scheduler stale-run recovery now only sweeps truly in-flight `pending` /
+  `running` Runs. `paused` and `needs_confirmation` Runs remain checkpoint /
+  Decision-owned and are not auto-failed by the local scheduler timeout.
 - Replay review now also treats paused or confirmation sessions with no open
   checkpoint as `checkpoint_missing` / inspect-only rather than
   checkpoint-gated, so restart guidance does not imply a resumable path after
@@ -1180,7 +1183,7 @@ npm run verify
 Latest local baseline:
 
 - 119 test files
-- 825 tests
+- 827 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -1189,7 +1192,8 @@ Latest local baseline:
 - `npm run verify` passed locally on 2026-04-27 after tightening Code Agent
   model-context gates, checkpoint-backed session settlement, stale
   resume-payload UI/backend gating, supported resume-input validation, and
-  updating the local acceptance status: 119 test files / 825 tests
+  scheduler checkpoint-state exclusion, and updating the local acceptance
+  status: 119 test files / 827 tests
 - `npm run smoke:release:mac` passed locally on 2026-04-27 for the combined
   unsigned macOS package path after the Code Agent context-gate and
   restart/replay safety updates
