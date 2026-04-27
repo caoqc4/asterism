@@ -4,6 +4,7 @@ import type { AiConfigStatus } from '@shared/types/settings';
 import {
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
+  formatAgentSessionReplayNextStepDraft,
   formatAgentSessionReplayReviewSummary,
   formatAgentSessionRestartSummary,
   formatAgentSessionToolFamiliesSummary,
@@ -488,6 +489,42 @@ describe('agent capability formatting', () => {
     expect(formatSandboxProducerLifecycleSummary(session)).toBe(
       'AgentRunLifecycle：blocked / source=source_1 / checks=test,lint / policy=network=disabled, promotion=decision_required, workspace mutation requires approved Decision / blocked=docker is unavailable / next=fix runtime readiness, then start a new manual run',
     );
+  });
+
+  it('formats task next-step drafts from replay review mode', () => {
+    const session = {
+      id: 'agent_session_1',
+      runId: 'run_1',
+      mode: 'agent',
+      status: 'needs_confirmation',
+      capabilities: {
+        structuredToolCalls: false,
+        textOnlyPlanning: true,
+        streaming: false,
+        fileContext: true,
+        taskMutationTools: false,
+        longRunningSessions: true,
+      },
+      metadata: 'executor=local_agent',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    } as const;
+
+    expect(formatAgentSessionReplayNextStepDraft({
+      checkpoints: [{ status: 'open' }],
+      runType: 'agent',
+      session,
+      steps: [],
+    })).toBe('处理最近一次 agent run 的 1 个 open checkpoint / Decision，再决定是否继续执行。');
+
+    expect(formatAgentSessionReplayNextStepDraft({
+      runType: 'agent',
+      session: {
+        ...session,
+        status: 'failed',
+      },
+      steps: [],
+    })).toBe('检查最近一次 agent run 的失败或取消证据，整理重试输入后再启动新的 run。');
   });
 
   it('formats source-ready sandbox producer lifecycle with Decision-only promotion', () => {

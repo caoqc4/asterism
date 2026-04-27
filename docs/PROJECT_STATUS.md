@@ -563,6 +563,9 @@ The project is past initial architecture assembly. Current work should favor pro
   latest agent session plus RunSteps. It is an evidence/recovery hint only:
   inspect-only, manual-resume, or new-run recovery, always with
   `openCheckpoints` and `autoReplay=no`.
+- The Runs `回到任务推进` action now uses the replay review mode to prefill the
+  task next-step draft, so manual-resume sessions point users back to open
+  checkpoint / Decision review before continuing.
 - Connector policy/evidence records are now generated from
   `agent-tool-scaffold`: each descriptor records model visibility, network,
   credential, checkpoint, and verification requirements. Settings diagnostics

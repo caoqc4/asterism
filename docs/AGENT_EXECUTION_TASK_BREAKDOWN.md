@@ -473,6 +473,9 @@ The latest implementation slice:
 - shared replay review summaries now show Runs detail whether the latest agent
   session is inspect-only, manual-resume-only, or new-run recovery, while
   keeping automatic replay disabled and surfacing open checkpoint count
+- Runs `回到任务推进` now uses that replay review mode to prefill the task
+  next-step draft, keeping manual-resume work anchored on checkpoint / Decision
+  review instead of automatic replay
 - `agent-tool-scaffold` now builds connector policy records and local
   verification evidence requirements for every descriptor; Settings diagnostics
   show the verification-required count, and reserved connector families remain

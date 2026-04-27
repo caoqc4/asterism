@@ -104,6 +104,33 @@ export function formatAgentSessionReplayReviewSummary(
   return buildAgentSessionReplayReview({ checkpoints, session, steps }).summary;
 }
 
+export function formatAgentSessionReplayNextStepDraft(params: {
+  runType: string;
+  session: AgentSessionRecord;
+  steps: Pick<RunStepRecord, 'createdAt' | 'index' | 'kind' | 'status' | 'title'>[];
+  checkpoints?: Pick<RunCheckpointRecord, 'status'>[];
+}): string {
+  const review = buildAgentSessionReplayReview({
+    checkpoints: params.checkpoints ?? [],
+    session: params.session,
+    steps: params.steps,
+  });
+
+  if (review.mode === 'manual_resume') {
+    return review.openCheckpointCount > 0
+      ? `处理最近一次 ${params.runType} run 的 ${review.openCheckpointCount} 个 open checkpoint / Decision，再决定是否继续执行。`
+      : `复核最近一次 ${params.runType} run 的暂停或确认原因；没有 open checkpoint 时，先查看执行证据再决定是否重跑。`;
+  }
+
+  if (review.mode === 'new_run') {
+    return `检查最近一次 ${params.runType} run 的失败或取消证据，整理重试输入后再启动新的 run。`;
+  }
+
+  return review.status === 'running'
+    ? `检查最近一次 ${params.runType} run 的最新步骤，确认是否仍在执行或需要人工介入。`
+    : `审阅最近一次 ${params.runType} run 的证据和输出，再决定是否继续推进任务。`;
+}
+
 export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): string | null {
   if (!session.metadata?.trim()) {
     return null;
