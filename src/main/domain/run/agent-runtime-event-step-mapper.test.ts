@@ -88,6 +88,17 @@ describe('mapAgentRuntimeEventToRunStep', () => {
 
   it('maps terminal session events into checkpoint or final steps', () => {
     expect(mapAgentRuntimeEventToRunStep({
+      type: 'session.heartbeat',
+      runId: 'run_1',
+      summary: 'Executor still active.',
+    })).toMatchObject({
+      kind: 'plan',
+      status: 'running',
+      title: 'Agent session heartbeat',
+      output: 'Executor still active.',
+    });
+
+    expect(mapAgentRuntimeEventToRunStep({
       type: 'session.paused',
       runId: 'run_1',
       checkpointId: 'run_checkpoint_1',
@@ -117,6 +128,28 @@ describe('mapAgentRuntimeEventToRunStep', () => {
       kind: 'final',
       status: 'failed',
       error: 'Tool failed.',
+    });
+
+    expect(mapAgentRuntimeEventToRunStep({
+      type: 'session.interrupted',
+      runId: 'run_1',
+      reason: 'Executor process exited.',
+    })).toMatchObject({
+      kind: 'final',
+      status: 'failed',
+      title: 'Agent session interrupted',
+      error: 'Executor process exited.',
+    });
+
+    expect(mapAgentRuntimeEventToRunStep({
+      type: 'session.cancelled',
+      runId: 'run_1',
+      reason: 'User cancelled.',
+    })).toMatchObject({
+      kind: 'final',
+      status: 'failed',
+      title: 'Agent session cancelled',
+      error: 'User cancelled.',
     });
   });
 });

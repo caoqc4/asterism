@@ -177,6 +177,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - RunService and DecisionService now pass checkpoint-backed session updates
   through a shared settlement projection, so `running` sessions are treated as
   requiring executor liveness rather than being checkpoint-settled.
+- The runtime event spine now has explicit executor liveness/interruption
+  events. Heartbeats remain non-terminal running evidence, while interrupted
+  and cancelled sessions write terminal RunSteps for inspect-first recovery.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend

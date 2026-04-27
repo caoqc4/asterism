@@ -138,9 +138,12 @@ export type AgentSessionEvent =
       decisionId?: string | null;
       tool?: AgentToolName | null;
     })
+  | (AgentRuntimeEventBase & { type: 'session.heartbeat'; summary: string })
   | (AgentRuntimeEventBase & { type: 'session.paused'; checkpointId: string; message: string })
   | (AgentRuntimeEventBase & { type: 'session.completed'; output: string })
-  | (AgentRuntimeEventBase & { type: 'session.failed'; failureKind: string; message: string });
+  | (AgentRuntimeEventBase & { type: 'session.failed'; failureKind: string; message: string })
+  | (AgentRuntimeEventBase & { type: 'session.interrupted'; reason: string })
+  | (AgentRuntimeEventBase & { type: 'session.cancelled'; reason: string });
 
 export type AgentSessionResult =
   | { status: 'completed'; output: string }

@@ -141,6 +141,65 @@ describe('AgentSessionEventRecorder', () => {
     expect(recorder.hasTerminalEvent()).toBe(true);
   });
 
+  it('records heartbeat, interrupted, and cancelled session liveness events without replaying', async () => {
+    const runStepRepository = {
+      create: vi.fn().mockImplementation(async (input: {
+        runId: string;
+        kind: RunStepKind;
+        status?: RunStepStatus;
+        title: string;
+      }) => ({
+        id: `run_step_${runStepRepository.create.mock.calls.length}`,
+        ...input,
+      })),
+      update: vi.fn(),
+    };
+    const recorder = new AgentSessionEventRecorder(runStepRepository as never);
+
+    await recorder.record({
+      type: 'session.heartbeat',
+      runId: 'run_1',
+      summary: 'Executor still active.',
+    });
+
+    expect(recorder.hasTerminalEvent()).toBe(false);
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'plan',
+      status: 'running',
+      title: 'Agent session 心跳',
+      output: 'Executor still active.',
+    }));
+
+    await recorder.record({
+      type: 'session.interrupted',
+      runId: 'run_1',
+      reason: 'Executor process exited.',
+    });
+
+    expect(recorder.hasTerminalEvent()).toBe(true);
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(expect.objectContaining({
+      kind: 'final',
+      status: 'failed',
+      title: 'Agent session 已中断',
+      error: 'Executor process exited.',
+    }));
+
+    const cancelledRecorder = new AgentSessionEventRecorder(runStepRepository as never);
+    await cancelledRecorder.record({
+      type: 'session.cancelled',
+      runId: 'run_2',
+      reason: 'User cancelled.',
+    });
+
+    expect(cancelledRecorder.hasTerminalEvent()).toBe(true);
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(expect.objectContaining({
+      kind: 'final',
+      status: 'failed',
+      title: 'Agent session 已取消',
+      error: 'User cancelled.',
+    }));
+  });
+
   it('marks a started tool step failed before recording the failed result event', async () => {
     const runStepRepository = {
       create: vi.fn().mockImplementation(async (input: {

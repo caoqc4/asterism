@@ -99,6 +99,14 @@ export function mapAgentRuntimeEventToRunStep(
         input: checkpointInput(event),
         output: event.reason,
       };
+    case 'session.heartbeat':
+      return {
+        runId: event.runId,
+        kind: 'plan',
+        status: 'running',
+        title: 'Agent session heartbeat',
+        output: event.summary,
+      };
     case 'session.paused':
       return {
         runId: event.runId,
@@ -123,6 +131,22 @@ export function mapAgentRuntimeEventToRunStep(
         status: 'failed',
         title: 'Agent session failed',
         error: event.message,
+      };
+    case 'session.interrupted':
+      return {
+        runId: event.runId,
+        kind: 'final',
+        status: 'failed',
+        title: 'Agent session interrupted',
+        error: event.reason,
+      };
+    case 'session.cancelled':
+      return {
+        runId: event.runId,
+        kind: 'final',
+        status: 'failed',
+        title: 'Agent session cancelled',
+        error: event.reason,
       };
   }
 }

@@ -499,6 +499,9 @@ The latest implementation slice:
 - Main-process session settlement now projects checkpoint-backed versus
   liveness-required sessions before updating `AgentSession` status, keeping
   stale `running` sessions out of checkpoint settlement paths.
+- Runtime events now include `session.heartbeat`, `session.interrupted`, and
+  `session.cancelled`; recorder and RunStep mapper tests keep heartbeat as
+  running evidence and interruption/cancel as terminal evidence only.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation

@@ -17,9 +17,12 @@ describe('agent runtime events', () => {
       'tool.completed',
       'tool.failed',
       'checkpoint.created',
+      'session.heartbeat',
       'session.paused',
       'session.completed',
       'session.failed',
+      'session.interrupted',
+      'session.cancelled',
     ]);
   });
 
@@ -57,7 +60,23 @@ describe('agent runtime events', () => {
       failureKind: 'tool',
       message: 'Tool failed.',
     } satisfies AgentSessionEvent;
+    const interrupted = {
+      type: 'session.interrupted',
+      runId: 'run_1',
+      reason: 'Executor process exited before final output.',
+    } satisfies AgentSessionEvent;
+    const cancelled = {
+      type: 'session.cancelled',
+      runId: 'run_1',
+      reason: 'User cancelled the executor.',
+    } satisfies AgentSessionEvent;
+    const heartbeat = {
+      type: 'session.heartbeat',
+      runId: 'run_1',
+      summary: 'Executor still active.',
+    } satisfies AgentSessionEvent;
 
-    expect([paused, completed, failed].every(isTerminalAgentRuntimeEvent)).toBe(true);
+    expect([paused, completed, failed, interrupted, cancelled].every(isTerminalAgentRuntimeEvent)).toBe(true);
+    expect(isTerminalAgentRuntimeEvent(heartbeat)).toBe(false);
   });
 });

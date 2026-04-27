@@ -14,9 +14,12 @@ type RecordableAgentSessionEvent = Extract<
   | { type: 'tool.completed' }
   | { type: 'tool.failed' }
   | { type: 'checkpoint.created' }
+  | { type: 'session.heartbeat' }
   | { type: 'session.paused' }
   | { type: 'session.completed' }
   | { type: 'session.failed' }
+  | { type: 'session.interrupted' }
+  | { type: 'session.cancelled' }
 >;
 
 function isRecordableEvent(event: AgentSessionEvent): event is RecordableAgentSessionEvent {
@@ -27,9 +30,12 @@ function isRecordableEvent(event: AgentSessionEvent): event is RecordableAgentSe
     event.type === 'tool.completed' ||
     event.type === 'tool.failed' ||
     event.type === 'checkpoint.created' ||
+    event.type === 'session.heartbeat' ||
     event.type === 'session.paused' ||
     event.type === 'session.completed' ||
-    event.type === 'session.failed'
+    event.type === 'session.failed' ||
+    event.type === 'session.interrupted' ||
+    event.type === 'session.cancelled'
   );
 }
 
@@ -37,7 +43,9 @@ function isTerminalEvent(event: AgentSessionEvent): boolean {
   return (
     event.type === 'session.paused' ||
     event.type === 'session.completed' ||
-    event.type === 'session.failed'
+    event.type === 'session.failed' ||
+    event.type === 'session.interrupted' ||
+    event.type === 'session.cancelled'
   );
 }
 
@@ -69,6 +77,10 @@ function titleOverrides(event: RecordableAgentSessionEvent): Partial<Omit<AgentR
       return {
         title: `创建 Agent checkpoint：${event.checkpointKind}`,
       };
+    case 'session.heartbeat':
+      return {
+        title: 'Agent session 心跳',
+      };
     case 'session.paused':
       return {
         title: 'Agent session 已暂停',
@@ -80,6 +92,14 @@ function titleOverrides(event: RecordableAgentSessionEvent): Partial<Omit<AgentR
     case 'session.failed':
       return {
         title: 'Agent session 执行失败',
+      };
+    case 'session.interrupted':
+      return {
+        title: 'Agent session 已中断',
+      };
+    case 'session.cancelled':
+      return {
+        title: 'Agent session 已取消',
       };
   }
 }

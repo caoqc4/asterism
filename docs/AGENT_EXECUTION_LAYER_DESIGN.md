@@ -516,6 +516,10 @@ Current implementation note:
   projection: paused / confirmation sessions may be checkpoint-settled, terminal
   sessions stay evidence-only, and `running` sessions require executor liveness
   before any settlement path can update their status.
+- The runtime event spine now includes executor liveness and interruption
+  events: `session.heartbeat`, `session.interrupted`, and `session.cancelled`.
+  Heartbeats write running evidence only, while interrupted/cancelled events
+  become terminal RunSteps without granting replay authority.
 - `agent-tool-scaffold` now emits connector policy records and local
   verification evidence requirements for every reserved or implemented tool
   family. Settings diagnostics include the verification-required count, while
