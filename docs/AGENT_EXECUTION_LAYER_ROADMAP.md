@@ -450,14 +450,22 @@ Current guardrail state:
   audit, idempotency keys, session manifest summaries, and persisted patch
   artifact review metadata
 
+Accepted backend connection state:
+
+The first real sandbox provider backend is now connected for the manual
+producer path. The local-container backend supports targeted `test` / `lint`
+checks against an internal merged work tree, keeps the selected workspace and
+staging root read-only from the container, emits patch artifacts inside the
+sandbox boundary, and still routes workspace promotion through the validated
+source and Decision-linked `patch_promotion` path.
+
 Next implementation target:
 
-Review and connect the first real sandbox provider backend for the producer
-path. The backend must safely support targeted `test` / `lint` checks and patch
-artifacts inside the sandbox boundary, and it must continue using the validated
-source and Decision-linked `patch_promotion` path. Do not expose a UI run option
-until that provider passes the shared eligibility gate and the producer path has
-manual local validation.
+Decide the next non-file context source for model producer runs before adding
+retrieval snippets, Skills/MCP observations, browser evidence, or Taskplane
+source/artifact content to provider prompts. The key product question is not
+whether the data is locally available, but whether the user has explicitly
+selected it for provider-visible model context.
 
 Backend review gate:
 [AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md](AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md).

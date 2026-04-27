@@ -80,10 +80,9 @@ The real runner may start only from a validated launch envelope:
 If any item fails, the preflight stays blocked and may persist a bounded
 diagnostic session. It must not create a runner.
 
-## Implementation Consequence
+## Implementation State
 
-The next implementation slice may connect a local-container runner only behind
-the existing chain:
+The local-container runner is connected only behind the accepted chain:
 
 ```text
 request validation
@@ -95,9 +94,12 @@ request validation
   -> explicit runner construction
 ```
 
-The first runner should be injected and testable in the same style as the
-existing local-container command runner. Docker must remain a runtime dependency
-detected by preflight, not a requirement for the normal test suite.
+The runner is injected and testable in the same style as the existing
+local-container command runner. Docker remains a runtime dependency detected by
+preflight, not a requirement for the normal test suite. Targeted checks run
+against a container-internal merged work tree: the selected workspace and
+staging root are mounted read-only, staged files are overlaid inside the
+container workdir, and only allowlisted `test` / `lint` scripts can run.
 
 ## Acceptance
 
@@ -108,3 +110,11 @@ detected by preflight, not a requirement for the normal test suite.
 - normal `npm run verify` does not require Docker
 - live Docker smoke remains manual through `npm run
   accept:sandbox-coding:backend-preflight`
+
+## Next Review
+
+Do not broaden sandbox backend authority next. The next producer-context review
+should decide how non-file context becomes provider-visible: retrieval snippets,
+Taskplane source/artifact content, Skills/MCP observations, and browser
+evidence all need explicit selection and connector-specific policy before they
+enter a model-backed producer prompt.
