@@ -167,6 +167,10 @@ The project is past initial architecture assembly. Current work should favor pro
   review, and next safe move into a `Run recovery safety` strip before the
   operator returns to task focus. This keeps the existing open-checkpoint gate
   for `继续 paused run` while making inspect-first recovery easier to scan.
+- The recovery strip now includes a shared `Recovery intent` projection, so
+  interrupted/stale or failed sessions are explicitly marked as
+  `prepare new manual run`, checkpoint-backed sessions remain manual-resume
+  only, and all paths keep `autoReplay=no`.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend

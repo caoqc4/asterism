@@ -490,6 +490,9 @@ The latest implementation slice:
 - Failed agent sessions now also have Runs-page recovery coverage that routes
   back to task work as new-run preparation from evidence rather than replay or
   continuation.
+- Shared replay review now also projects a `Recovery intent` summary, separating
+  inspect-only evidence review, manual checkpoint resume, and prepare-new-manual
+  run paths while keeping `autoReplay=no`.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation

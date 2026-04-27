@@ -19,6 +19,14 @@ export type AgentSessionReplayReview = {
   summary: string;
 };
 
+export type AgentSessionRecoveryIntent = {
+  action: 'inspect_evidence' | 'manual_checkpoint_resume' | 'prepare_new_manual_run';
+  automaticReplayAllowed: false;
+  manualRunRequired: boolean;
+  resumeCheckpointRequired: boolean;
+  summary: string;
+};
+
 export function buildAgentSessionReplayReview(params: {
   checkpoints?: Pick<RunCheckpointRecord, 'status'>[];
   session: AgentSessionRecord;
@@ -49,6 +57,65 @@ export function buildAgentSessionReplayReview(params: {
       `steps=${params.steps.length}`,
       `openCheckpoints=${openCheckpointCount}`,
       latestStep ? `latest=${latestStep.kind}:${latestStep.status}:${latestStep.title}` : 'latest=none',
+      'autoReplay=no',
+    ].join(' / '),
+  };
+}
+
+export function buildAgentSessionRecoveryIntent(
+  review: Pick<
+    AgentSessionReplayReview,
+    'mode' | 'openCheckpointCount' | 'restartSafety' | 'sessionId' | 'status'
+  >,
+): AgentSessionRecoveryIntent {
+  if (review.mode === 'manual_resume' && review.openCheckpointCount > 0) {
+    return {
+      action: 'manual_checkpoint_resume',
+      automaticReplayAllowed: false,
+      manualRunRequired: false,
+      resumeCheckpointRequired: true,
+      summary: [
+        'Recovery intent：manual checkpoint resume',
+        `session=${review.sessionId}`,
+        `status=${review.status}`,
+        `restartSafety=${review.restartSafety}`,
+        `openCheckpoints=${review.openCheckpointCount}`,
+        'manualRunRequired=no',
+        'autoReplay=no',
+      ].join(' / '),
+    };
+  }
+
+  if (review.mode === 'new_run' || review.restartSafety === 'interrupted_or_stale') {
+    return {
+      action: 'prepare_new_manual_run',
+      automaticReplayAllowed: false,
+      manualRunRequired: true,
+      resumeCheckpointRequired: false,
+      summary: [
+        'Recovery intent：prepare new manual run',
+        `session=${review.sessionId}`,
+        `status=${review.status}`,
+        `restartSafety=${review.restartSafety}`,
+        `openCheckpoints=${review.openCheckpointCount}`,
+        'manualRunRequired=yes',
+        'autoReplay=no',
+      ].join(' / '),
+    };
+  }
+
+  return {
+    action: 'inspect_evidence',
+    automaticReplayAllowed: false,
+    manualRunRequired: false,
+    resumeCheckpointRequired: false,
+    summary: [
+      'Recovery intent：inspect evidence',
+      `session=${review.sessionId}`,
+      `status=${review.status}`,
+      `restartSafety=${review.restartSafety}`,
+      `openCheckpoints=${review.openCheckpointCount}`,
+      'manualRunRequired=no',
       'autoReplay=no',
     ].join(' / '),
   };

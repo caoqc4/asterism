@@ -505,6 +505,10 @@ Current implementation note:
   `autoReplay=no`. If a paused or confirmation session has no open checkpoint,
   the restart safety is `checkpoint_missing` and the recovery mode is
   inspect-only.
+- Shared recovery intent summaries now project those replay reviews into
+  `inspect_evidence`, `manual_checkpoint_resume`, or
+  `prepare_new_manual_run`, keeping manual new-run preparation explicit without
+  granting replay authority.
 - `agent-tool-scaffold` now emits connector policy records and local
   verification evidence requirements for every reserved or implemented tool
   family. Settings diagnostics include the verification-required count, while

@@ -52,6 +52,7 @@ import {
 import {
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
+  formatAgentSessionRecoveryIntentSummary,
   formatAgentSessionReplayNextStepDraft,
   formatAgentSessionRestartSummary,
   formatAgentSessionReplayReviewSummary,
@@ -757,6 +758,9 @@ export function RunsPage({
   const latestAgentSessionReplayReview = latestAgentSession
     ? formatAgentSessionReplayReviewSummary(latestAgentSession, detailSteps, detailCheckpoints)
     : null;
+  const latestAgentSessionRecoveryIntent = latestAgentSession
+    ? formatAgentSessionRecoveryIntentSummary(latestAgentSession, detailSteps, detailCheckpoints)
+    : null;
   const sandboxProducerSource = latestAgentSession
     ? formatSandboxProducerSourceSummary(latestAgentSession)
     : null;
@@ -838,6 +842,11 @@ export function RunsPage({
                   {latestAgentSessionReplayReview ? (
                     <p className="meta">
                       {latestAgentSessionReplayReview}
+                    </p>
+                  ) : null}
+                  {latestAgentSessionRecoveryIntent ? (
+                    <p className="meta">
+                      {latestAgentSessionRecoveryIntent}
                     </p>
                   ) : null}
                   <p className="meta">

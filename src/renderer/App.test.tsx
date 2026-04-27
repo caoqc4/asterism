@@ -3995,6 +3995,11 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(
       recoverySafety.getByText(
+        'Recovery intent：prepare new manual run / session=agent_session_1 / status=running / restartSafety=interrupted_or_stale / openCheckpoints=0 / manualRunRequired=yes / autoReplay=no',
+      ),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText(
         'Next safe move：确认最近一次 agent run 是否已中断；若没有活动执行器，先基于证据整理输入，再启动新的 run，不自动重放。',
       ),
     ).toBeTruthy();
@@ -4228,9 +4233,15 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /runs/i }));
 
     expect(await screen.findByRole('heading', { name: 'agent / failed' })).toBeTruthy();
+    const recoverySafety = within(screen.getByLabelText('Run recovery safety'));
     expect(
       screen.getByText(
         'Replay review：inspect failed steps before starting a new run / mode=new_run / session=agent_session_failed / status=failed / restartSafety=new_run_required / steps=1 / openCheckpoints=0 / latest=tool_result:failed:工具失败：workspace.read_file / autoReplay=no',
+      ),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText(
+        'Recovery intent：prepare new manual run / session=agent_session_failed / status=failed / restartSafety=new_run_required / openCheckpoints=0 / manualRunRequired=yes / autoReplay=no',
       ),
     ).toBeTruthy();
 

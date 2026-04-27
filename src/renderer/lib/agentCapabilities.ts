@@ -3,7 +3,10 @@ import type { RunCheckpointRecord, RunRecord, RunStepRecord } from '@shared/type
 import type { DecisionRecord } from '@shared/types/decision';
 import type { AiConfigStatus } from '@shared/types/settings';
 import { getProviderExecutionCapabilities } from '@shared/agent-provider-capabilities';
-import { buildAgentSessionReplayReview } from '@shared/agent-session-replay';
+import {
+  buildAgentSessionRecoveryIntent,
+  buildAgentSessionReplayReview,
+} from '@shared/agent-session-replay';
 import {
   formatAgentSessionRestartHint,
   formatAgentSessionToolFamilySummary,
@@ -105,6 +108,15 @@ export function formatAgentSessionReplayReviewSummary(
   return buildAgentSessionReplayReview({ checkpoints, session, steps }).summary;
 }
 
+export function formatAgentSessionRecoveryIntentSummary(
+  session: AgentSessionRecord,
+  steps: Pick<RunStepRecord, 'createdAt' | 'index' | 'kind' | 'status' | 'title'>[],
+  checkpoints: Pick<RunCheckpointRecord, 'status'>[] = [],
+): string {
+  const review = buildAgentSessionReplayReview({ checkpoints, session, steps });
+  return buildAgentSessionRecoveryIntent(review).summary;
+}
+
 export function formatAgentSessionReplayNextStepDraft(params: {
   runType: string;
   session: AgentSessionRecord;
@@ -116,6 +128,7 @@ export function formatAgentSessionReplayNextStepDraft(params: {
     session: params.session,
     steps: params.steps,
   });
+  const recoveryIntent = buildAgentSessionRecoveryIntent(review);
 
   if (review.mode === 'manual_resume') {
     return review.openCheckpointCount > 0
@@ -123,7 +136,7 @@ export function formatAgentSessionReplayNextStepDraft(params: {
       : `复核最近一次 ${params.runType} run 的暂停或确认原因；没有 open checkpoint 时，先查看执行证据再决定是否重跑。`;
   }
 
-  if (review.mode === 'new_run') {
+  if (recoveryIntent.action === 'prepare_new_manual_run' && review.mode === 'new_run') {
     return `检查最近一次 ${params.runType} run 的失败或取消证据，整理重试输入后再启动新的 run。`;
   }
 

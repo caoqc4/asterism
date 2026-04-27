@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import type { AgentSessionRecord } from './types/agent-execution.js';
 import type { RunStepRecord } from './types/run.js';
-import { buildAgentSessionReplayReview } from './agent-session-replay.js';
+import {
+  buildAgentSessionRecoveryIntent,
+  buildAgentSessionReplayReview,
+} from './agent-session-replay.js';
 
 function buildSession(status: AgentSessionRecord['status']): AgentSessionRecord {
   return {
@@ -102,16 +105,25 @@ describe('agent session replay review', () => {
   });
 
   it('routes failed and cancelled sessions away from auto replay', () => {
-    expect(buildAgentSessionReplayReview({
+    const review = buildAgentSessionReplayReview({
       session: buildSession('failed'),
       steps: [
         buildStep({ index: 2, kind: 'tool_result', status: 'failed', title: 'Tool failed' }),
       ],
-    })).toMatchObject({
+    });
+
+    expect(review).toMatchObject({
       latestStepStatus: 'failed',
       mode: 'new_run',
       restartSafety: 'new_run_required',
       summary: 'Replay review：inspect failed steps before starting a new run / mode=new_run / session=agent_session_1 / status=failed / restartSafety=new_run_required / steps=1 / openCheckpoints=0 / latest=tool_result:failed:Tool failed / autoReplay=no',
+    });
+    expect(buildAgentSessionRecoveryIntent(review)).toEqual({
+      action: 'prepare_new_manual_run',
+      automaticReplayAllowed: false,
+      manualRunRequired: true,
+      resumeCheckpointRequired: false,
+      summary: 'Recovery intent：prepare new manual run / session=agent_session_1 / status=failed / restartSafety=new_run_required / openCheckpoints=0 / manualRunRequired=yes / autoReplay=no',
     });
   });
 
@@ -134,6 +146,49 @@ describe('agent session replay review', () => {
       ],
     })).toMatchObject({
       restartSafety: 'live_status_unknown',
+    });
+  });
+
+  it('projects replay review into explicit recovery intent without replay authority', () => {
+    const manualResumeReview = buildAgentSessionReplayReview({
+      checkpoints: [{ status: 'open' }],
+      session: buildSession('paused'),
+      steps: [
+        buildStep({ index: 1, kind: 'checkpoint', status: 'pending', title: 'Resume checkpoint' }),
+      ],
+    });
+    expect(buildAgentSessionRecoveryIntent(manualResumeReview)).toEqual({
+      action: 'manual_checkpoint_resume',
+      automaticReplayAllowed: false,
+      manualRunRequired: false,
+      resumeCheckpointRequired: true,
+      summary: 'Recovery intent：manual checkpoint resume / session=agent_session_1 / status=paused / restartSafety=checkpoint_gated / openCheckpoints=1 / manualRunRequired=no / autoReplay=no',
+    });
+
+    const interruptedReview = buildAgentSessionReplayReview({
+      session: buildSession('running'),
+      steps: [
+        buildStep({ index: 1, kind: 'plan', status: 'completed', title: 'Plan accepted' }),
+      ],
+    });
+    expect(buildAgentSessionRecoveryIntent(interruptedReview)).toMatchObject({
+      action: 'prepare_new_manual_run',
+      automaticReplayAllowed: false,
+      manualRunRequired: true,
+      resumeCheckpointRequired: false,
+    });
+
+    const activeReview = buildAgentSessionReplayReview({
+      session: buildSession('running'),
+      steps: [
+        buildStep({ index: 1, kind: 'tool_call', status: 'running', title: 'Tool running' }),
+      ],
+    });
+    expect(buildAgentSessionRecoveryIntent(activeReview)).toMatchObject({
+      action: 'inspect_evidence',
+      automaticReplayAllowed: false,
+      manualRunRequired: false,
+      resumeCheckpointRequired: false,
     });
   });
 });
