@@ -3867,7 +3867,7 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        'Agent session：text-only planning / read-only workspace context enabled / task update/evidence tools enabled / structured tool calls unavailable / sandbox coding lane disabled; workspace patch/commands unavailable / single local session',
+        'Agent session：text-only planning / read-only workspace context enabled / task update/evidence tools enabled / structured tool calls unavailable / sandbox coding lane disabled; workspace patch/commands unavailable / single-session record',
       ),
     ).toBeTruthy();
     expect(

@@ -678,6 +678,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Running-session restart hints no longer claim a single local session is
   currently in progress without a live executor/heartbeat fact; they now record
   the session and route recovery through latest-step inspection.
+- Runs detail capability copy now uses `single-session record` for non-long-
+  running sessions, keeping the visible session summary aligned with the
+  inspect-first restart/replay boundary.
 - Task detail Paused Run Recovery now routes users to the Run evidence first
   instead of directly executing continuation from a list-only Run summary. The
   actual continuation affordance lives on Runs detail, where checkpoint evidence

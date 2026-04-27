@@ -83,7 +83,7 @@ export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord)
       ? 'structured tool calls'
       : 'structured tool calls unavailable',
     SANDBOX_CODING_DISABLED_SUMMARY,
-    capabilities.longRunningSessions ? 'long-running session' : 'single local session',
+    capabilities.longRunningSessions ? 'long-running session' : 'single-session record',
   ];
 
   return parts.join(' / ');
