@@ -13,6 +13,9 @@ Strong automated coverage already exists for the main control-plane semantics, r
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
+- on 2026-04-27, `npm run verify` passed locally with 119 test files / 820
+  tests after tightening Code Agent model-context gates and updating the
+  local acceptance status.
 - on 2026-04-25, `npm run verify` passed locally with 66 test files / 484 tests
   after the Home recovery and execution-layer status cleanup.
 - on 2026-04-25, `npm run verify` passed again after the runtime schema smoke
@@ -106,12 +109,27 @@ Manual result / need:
   `lint`, operator confirmation, sandbox preview, and Decision-gated promotion
 - Runs detail now makes that gate auditable by labeling sandbox producer source
   as local diagnostic/no-provider-call or model-backed/provider-credit-spent
+- Code Agent model context is now separately gated by context type: selected
+  workspace files can enter the provider prompt as bounded read-only evidence;
+  selected source-context content can enter only through explicit per-run
+  stored-snapshot opt-in; selected artifacts are manifest-only with
+  `content=no`; hidden `includeArtifactContent=true` requests and source-content
+  opt-ins without selected source contexts fail before provider config is
+  resolved
+- Runs detail renders the provider-visible context manifest as readable audit
+  evidence with provider-prompt content state and per-item `content=yes/no`
+  labels, while still avoiding raw prompt/source/artifact dumps
+- Restart/replay review now avoids false resumability: paused or confirmation
+  sessions without an open checkpoint are `checkpoint_missing` inspect-only,
+  and the coarse restart hint says checkpoint `expected` while leaving actual
+  resumability to checkpoint-aware review
 
 Manual need:
 
 - run a deliberate packaged/manual pass for the model producer gate only when
   provider credit is intentionally being spent; until then, keep using
-  preflight, default-skipped smokes, and local renderer/IPC coverage
+  preflight, default-skipped smokes, local renderer/IPC coverage, and
+  manifest/context gate tests
 
 ## Completion Loop
 
@@ -200,7 +218,10 @@ Finish the remaining alpha work in this order:
 2. Keep live provider-native validation opt-in because it spends configured
    provider credit, even though the local preflight is ready.
 3. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
-4. Treat the current execution-layer v2 slice as locally accepted for the alpha path; next execution work should be acceptance/documentation cleanup, release-readiness hardening, or explicitly deferred design work, not new model-visible power.
+4. Treat the current execution-layer v2 and Code Agent context-gate slices as
+   locally accepted for the alpha path; next execution work should be
+   acceptance/documentation cleanup, release-readiness hardening, or explicitly
+   deferred design work, not new model-visible power.
 
 Do not expand the domain model until signed/notarized release work is explicitly
 in scope.
