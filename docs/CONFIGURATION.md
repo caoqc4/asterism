@@ -237,11 +237,11 @@ APPLE_API_ISSUER=
 ```
 
 Use either a local keychain `Developer ID Application` certificate, `CSC_NAME`,
-or `CSC_LINK` for signing certificate selection. For Apple notarization,
-electron-builder accepts either the Apple ID app-specific password group
-(`APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`) or the App Store
-Connect API key group (`APPLE_API_KEY`, `APPLE_API_KEY_ID`,
-`APPLE_API_ISSUER`).
+or `CSC_LINK` for signing certificate selection. When `CSC_LINK` is used,
+`CSC_KEY_PASSWORD` is required. For Apple notarization, electron-builder accepts
+either the Apple ID app-specific password group (`APPLE_ID`,
+`APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`) or the App Store Connect API key
+group (`APPLE_API_KEY`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER`).
 
 Before attempting actual signing or notarization, run:
 
