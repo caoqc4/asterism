@@ -12,7 +12,7 @@ Use this file when running the manual alpha path. Keep entries short and actiona
 - Local verification run: targeted main/preload tests, `npm run lint`,
   `npm run build`, `npm run verify`, `npm run accept:agent-local`,
   `npm run accept:provider-native-live:preflight`, and 2026-04-27
-  `npm run verify` with 119 test files / 832 tests
+  `npm run verify` with 119 test files / 833 tests
 - Smoke check run: `npm run dev` manual launch, isolated
   `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-20260424-fresh npm run dev`,
   `npm run smoke:build`, `npm run smoke:package:mac`,

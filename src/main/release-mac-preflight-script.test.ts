@@ -18,7 +18,7 @@ const secretEnvKeys = [
   'TASKPLANE_ENV_FILE',
 ];
 
-function sanitizedEnv(envFilePath: string) {
+function sanitizedEnv(envFilePath: string, overrides: NodeJS.ProcessEnv = {}) {
   const env = { ...process.env };
 
   for (const key of secretEnvKeys) {
@@ -28,10 +28,11 @@ function sanitizedEnv(envFilePath: string) {
   return {
     ...env,
     TASKPLANE_ENV_FILE: envFilePath,
+    ...overrides,
   };
 }
 
-function runPreflight(envContents: string, args: string[] = []) {
+function runPreflight(envContents: string, args: string[] = [], envOverrides: NodeJS.ProcessEnv = {}) {
   const envFilePath = path.join(
     fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-release-preflight-test-')),
     '.env',
@@ -46,7 +47,7 @@ function runPreflight(envContents: string, args: string[] = []) {
       {
         cwd: process.cwd(),
         encoding: 'utf8',
-        env: sanitizedEnv(envFilePath),
+        env: sanitizedEnv(envFilePath, envOverrides),
       },
     );
 
@@ -140,5 +141,26 @@ describe('release-mac-preflight script', () => {
     expect(result.output).not.toContain('certificate-password-secret');
     expect(result.output).not.toContain('test-secret@example.com');
     expect(result.output).not.toContain('app-password-secret');
+  });
+
+  it('lets shell environment override .env values without printing either secret', () => {
+    const result = runPreflight([
+      'CSC_LINK=/tmp/env-file-cert-secret.p12',
+      'CSC_KEY_PASSWORD=env-file-password-secret',
+      'APPLE_ID=env-file-secret@example.com',
+      'APPLE_APP_SPECIFIC_PASSWORD=env-file-app-password-secret',
+      'APPLE_TEAM_ID=ENVFILETEAM',
+    ].join('\n'), [], {
+      CSC_LINK: '/tmp/shell-cert-secret.p12',
+      CSC_KEY_PASSWORD: 'shell-certificate-password-secret',
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('[OK] electron-builder signing certificate source: CSC_LINK is set.');
+    expect(result.output).toContain('[OK] CSC_KEY_PASSWORD for CSC_LINK: <set>');
+    expect(result.output).not.toContain('env-file-cert-secret');
+    expect(result.output).not.toContain('env-file-password-secret');
+    expect(result.output).not.toContain('shell-cert-secret');
+    expect(result.output).not.toContain('shell-certificate-password-secret');
   });
 });
