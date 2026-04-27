@@ -174,6 +174,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - When that intent requires a new manual run, `回到任务推进` now preloads the
   Task quick-run instructions with the latest evidence and recovery judgment,
   but still leaves run creation as an explicit user action.
+- RunService and DecisionService now pass checkpoint-backed session updates
+  through a shared settlement projection, so `running` sessions are treated as
+  requiring executor liveness rather than being checkpoint-settled.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend

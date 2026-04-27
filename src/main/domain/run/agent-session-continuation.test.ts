@@ -4,6 +4,7 @@ import type { AgentSessionRecord } from '../../../shared/types/agent-execution.j
 import {
   findLatestCheckpointBackedAgentSession,
   findLatestContinuableAgentSession,
+  projectAgentSessionSettlement,
 } from './agent-session-continuation.js';
 
 function buildSession(partial: Partial<AgentSessionRecord>): AgentSessionRecord {
@@ -80,5 +81,35 @@ describe('agent session continuation helper', () => {
       buildSession({ status: 'running' }),
       buildSession({ status: 'completed' }),
     ])).toBeNull();
+  });
+
+  it('projects settlement boundaries without treating running sessions as resumable checkpoints', () => {
+    expect(projectAgentSessionSettlement(buildSession({
+      id: 'agent_session_paused',
+      status: 'paused',
+    }))).toEqual({
+      action: 'checkpoint_backed_settlement',
+      sessionId: 'agent_session_paused',
+      status: 'paused',
+      summary: 'Agent session settlement / session=agent_session_paused / status=paused / action=checkpoint_backed_settlement / requiresOpenCheckpoint=yes / autoReplay=no',
+    });
+
+    expect(projectAgentSessionSettlement(buildSession({
+      id: 'agent_session_running',
+      status: 'running',
+    }))).toEqual({
+      action: 'requires_executor_liveness',
+      sessionId: 'agent_session_running',
+      status: 'running',
+      summary: 'Agent session settlement / session=agent_session_running / status=running / action=requires_executor_liveness / requiresOpenCheckpoint=no / autoReplay=no',
+    });
+
+    expect(projectAgentSessionSettlement(buildSession({
+      id: 'agent_session_failed',
+      status: 'failed',
+    }))).toMatchObject({
+      action: 'inspect_terminal_evidence',
+      status: 'failed',
+    });
   });
 });

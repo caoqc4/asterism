@@ -512,6 +512,10 @@ Current implementation note:
 - Runs-to-Task recovery can now carry that new-run preparation into the Task
   quick-run instruction draft, preserving evidence and intent while keeping the
   actual Run trigger manual.
+- Main-process checkpoint settlement now has an explicit session-settlement
+  projection: paused / confirmation sessions may be checkpoint-settled, terminal
+  sessions stay evidence-only, and `running` sessions require executor liveness
+  before any settlement path can update their status.
 - `agent-tool-scaffold` now emits connector policy records and local
   verification evidence requirements for every reserved or implemented tool
   family. Settings diagnostics include the verification-required count, while

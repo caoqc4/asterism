@@ -17,7 +17,10 @@ import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-re
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { TaskService } from '../task/task-service.js';
 import { AgentSessionStore } from './agent-session-store.js';
-import { findLatestCheckpointBackedAgentSession } from './agent-session-continuation.js';
+import {
+  findLatestCheckpointBackedAgentSession,
+  projectAgentSessionSettlement,
+} from './agent-session-continuation.js';
 import { AgentToolRegistry } from './agent-tool-registry.js';
 import { ProcessTemplateSelector } from './process-template-selector.js';
 import { RunOrchestrator, type RunOrchestrationResult } from './run-orchestrator.js';
@@ -297,6 +300,11 @@ export class RunService {
     const latestSession = findLatestCheckpointBackedAgentSession(run.agentSessions ?? []);
 
     if (!latestSession) {
+      return;
+    }
+
+    const settlement = projectAgentSessionSettlement(latestSession);
+    if (settlement.action !== 'checkpoint_backed_settlement') {
       return;
     }
 
