@@ -13,6 +13,7 @@ import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-re
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { TaskService } from '../task/task-service.js';
 import { AgentSessionStore } from './agent-session-store.js';
+import { findLatestContinuableAgentSession } from './agent-session-continuation.js';
 import { AgentToolRegistry } from './agent-tool-registry.js';
 import { ProcessTemplateSelector } from './process-template-selector.js';
 import { RunOrchestrator, type RunOrchestrationResult } from './run-orchestrator.js';
@@ -270,13 +271,7 @@ export class RunService {
     run: RunDetailRecord,
     status: AgentSessionRecord['status'],
   ): Promise<void> {
-    const latestSession = [...(run.agentSessions ?? [])]
-      .filter((session) =>
-        session.status === 'paused'
-        || session.status === 'needs_confirmation'
-        || session.status === 'running')
-      .sort(compareAgentSessionsByRecency)
-      .at(-1);
+    const latestSession = findLatestContinuableAgentSession(run.agentSessions ?? []);
 
     if (!latestSession) {
       return;
@@ -284,17 +279,4 @@ export class RunService {
 
     await this.agentSessionStore.updateStatus(latestSession.id, status);
   }
-}
-
-function compareAgentSessionsByRecency(
-  left: Pick<AgentSessionRecord, 'createdAt' | 'updatedAt'>,
-  right: Pick<AgentSessionRecord, 'createdAt' | 'updatedAt'>,
-): number {
-  const updated = left.updatedAt.localeCompare(right.updatedAt);
-
-  if (updated !== 0) {
-    return updated;
-  }
-
-  return left.createdAt.localeCompare(right.createdAt);
 }

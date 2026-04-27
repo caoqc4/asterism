@@ -28,6 +28,7 @@ import type { BrowserControlledInteractionResult } from '../../../shared/types/b
 import { parseBrowserControlledInteractionCheckpointPayload } from '../../../shared/types/browser-controlled-interaction.js';
 import { parseRunCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import { AgentSessionStore } from '../run/agent-session-store.js';
+import { findLatestContinuableAgentSession } from '../run/agent-session-continuation.js';
 import {
   DecisionProcessTemplateSelector,
   type DecisionProcessTemplateSelectionResult,
@@ -619,13 +620,9 @@ export class DecisionService {
       return;
     }
 
-    const latestSession = (await this.agentSessionStore.listForRun(runId))
-      .filter((session) =>
-        session.status === 'paused'
-        || session.status === 'needs_confirmation'
-        || session.status === 'running')
-      .sort(compareAgentSessionsByRecency)
-      .at(-1);
+    const latestSession = findLatestContinuableAgentSession(
+      await this.agentSessionStore.listForRun(runId),
+    );
 
     if (!latestSession) {
       return;
@@ -633,17 +630,4 @@ export class DecisionService {
 
     await this.agentSessionStore.updateStatus(latestSession.id, status);
   }
-}
-
-function compareAgentSessionsByRecency(
-  left: Pick<AgentSessionRecord, 'createdAt' | 'updatedAt'>,
-  right: Pick<AgentSessionRecord, 'createdAt' | 'updatedAt'>,
-): number {
-  const updated = left.updatedAt.localeCompare(right.updatedAt);
-
-  if (updated !== 0) {
-    return updated;
-  }
-
-  return left.createdAt.localeCompare(right.createdAt);
 }
