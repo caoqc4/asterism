@@ -699,6 +699,10 @@ export function RunsPage({
         startMode: getRunLifecycleStartMode(detail),
       })
     : null;
+  const canContinuePausedRun = Boolean(detail?.checkpoints?.some((checkpoint) =>
+    checkpoint.kind === 'resume'
+    && checkpoint.status === 'open'
+    && checkpoint.payload));
   const focusNextStepDraft = detail
     ? latestAgentSession
       ? formatAgentSessionReplayNextStepDraft({
@@ -806,7 +810,7 @@ export function RunsPage({
                 >
                   回到任务推进
                 </button>
-                {detail.status === 'paused' ? (
+                {detail.status === 'paused' && canContinuePausedRun ? (
                   <button
                     className="ghost-button"
                     onClick={() => void continuePausedRun(detail)}
@@ -816,6 +820,11 @@ export function RunsPage({
                   </button>
                 ) : null}
               </div>
+              {detail.status === 'paused' && !canContinuePausedRun ? (
+                <p className="meta">
+                  当前 paused run 没有可续跑的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。
+                </p>
+              ) : null}
               {runActionError ? <p className="meta">{runActionError}</p> : null}
             </div>
             <div className="task-card detail-card-group detail-card-wide">

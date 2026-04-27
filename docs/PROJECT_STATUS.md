@@ -619,6 +619,10 @@ The project is past initial architecture assembly. Current work should favor pro
   resume completion marks the latest continuable session `completed`, failed or
   blocked resume marks it `failed`, and deferred/cancelled Decisions mark it
   `cancelled`, while unsupported/no-op approvals remain review-only.
+- Runs detail now only exposes `继续 paused run` when the paused Run has an
+  open `resume` checkpoint payload. Paused Runs without a resumable checkpoint
+  show review-first guidance instead of letting the user click into a known
+  backend rejection path.
 - The Runs `回到任务推进` action now uses the replay review mode to prefill the
   task next-step draft, so manual-resume sessions point users back to open
   checkpoint / Decision review before continuing.

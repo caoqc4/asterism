@@ -3717,12 +3717,27 @@ describe('App UI flow', () => {
       outputSource: 'system',
     });
     let currentRuns: RunRecord[] = [pausedRun];
+    const resumeCheckpoint = buildRunCheckpoint({
+      id: 'run_checkpoint_resume',
+      runId: pausedRun.id,
+      kind: 'resume',
+      status: 'open',
+      payload: JSON.stringify({
+        version: 1,
+        kind: 'resume',
+        runId: pausedRun.id,
+        taskId: riskTask.id,
+        nextTool: 'artifact.create_note',
+        nextInput: { title: 'Recovered note', content: 'Recovered note' },
+      }),
+    });
     const runPausedRetryApi: ElectronApi = {
       ...mockApi,
       listRuns: vi.fn(async () => currentRuns),
-      getRunDetail: vi.fn(async (runId: string) =>
-        currentRuns.find((run) => run.id === runId) ?? null,
-      ),
+      getRunDetail: vi.fn(async (runId: string) => {
+        const run = currentRuns.find((item) => item.id === runId);
+        return run ? { ...run, checkpoints: run.status === 'paused' ? [resumeCheckpoint] : [] } : null;
+      }),
       continuePausedRun: vi.fn(async (runId) => {
         currentRuns = currentRuns.map((run) => (run.id === runId ? continuedRun : run));
         return continuedRun;
@@ -3745,7 +3760,7 @@ describe('App UI flow', () => {
     expect(await screen.findByRole('heading', { name: 'agent / completed' })).toBeTruthy();
   });
 
-  it('shows paused run continuation errors on the runs page', async () => {
+  it('blocks paused run continuation on the runs page when no resume checkpoint is open', async () => {
     const user = userEvent.setup();
     const pausedRun = buildRunRecord({
       id: 'run_paused_continue_error',
@@ -3759,7 +3774,7 @@ describe('App UI flow', () => {
       ...mockApi,
       listRuns: vi.fn(async () => [pausedRun]),
       getRunDetail: vi.fn(async (runId: string) =>
-        runId === pausedRun.id ? pausedRun : null,
+        runId === pausedRun.id ? { ...pausedRun, checkpoints: [] } : null,
       ),
       continuePausedRun: vi.fn(async () => {
         throw new Error('Open resume checkpoint not found for run: run_paused_continue_error');
@@ -3773,13 +3788,13 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /runs/i }));
     expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: '继续 paused run' }));
-
     expect(
       await screen.findByText(
-        '继续 paused run 失败：Open resume checkpoint not found for run: run_paused_continue_error',
+        '当前 paused run 没有可续跑的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。',
       ),
     ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();
+    expect(runPausedErrorApi.continuePausedRun).not.toHaveBeenCalled();
     expect(runPausedErrorApi.triggerRun).not.toHaveBeenCalled();
   });
 
