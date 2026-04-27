@@ -100,8 +100,8 @@ Orchestration plan:
 [AGENT_EXECUTION_ORCHESTRATION_PLAN.md](AGENT_EXECUTION_ORCHESTRATION_PLAN.md).
 
 Goal: make the local agent runtime more durable before making it more
-powerful. The next implementation pass should introduce a typed runtime event
-spine, restart-safe resume contract, and explicit tool exposure matrix while
+powerful. The current implementation now has a typed runtime event spine,
+checkpoint-validated restart/replay review, and explicit tool exposure matrix while
 keeping workspace write/command, browser/computer control, external posting,
 and autonomous scheduling deferred.
 
@@ -110,6 +110,8 @@ Acceptance:
 - current text-only and provider-native paths still settle the same way
 - run steps can be written from typed runtime events
 - checkpoint events map to persisted checkpoints and pending Decisions
+- paused/confirmation sessions are resumable only when an open checkpoint is
+  loaded and validated; otherwise replay review stays inspect-only
 - runtime readiness has a named domain concept before the code-agent UI
   expands beyond the sandboxed producer lane
 - external frameworks remain references rather than runtime dependencies until

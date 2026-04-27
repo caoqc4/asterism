@@ -496,11 +496,15 @@ Current implementation note:
   tool-family exposure for Run review surfaces. Current summaries keep browser,
   computer-use, MCP, and creator connectors explicitly `not_exposed`.
 - Shared restart hints now describe whether a session should be inspected,
-  resumed through checkpoint/Decision review, or restarted as a new Run. They
-  do not enable automatic replay.
+  checked for checkpoint evidence, or restarted as a new Run. They do not
+  enable automatic replay, and paused/confirmation sessions are only resumable
+  after an open checkpoint is loaded and validated.
 - Shared replay review summaries now derive an inspect/manual-resume/new-run
   hint from the latest agent session plus RunSteps. This is review guidance only
-  and explicitly records `openCheckpoints` plus `autoReplay=no`.
+  and explicitly records `openCheckpoints`, `restartSafety`, and
+  `autoReplay=no`. If a paused or confirmation session has no open checkpoint,
+  the restart safety is `checkpoint_missing` and the recovery mode is
+  inspect-only.
 - `agent-tool-scaffold` now emits connector policy records and local
   verification evidence requirements for every reserved or implemented tool
   family. Settings diagnostics include the verification-required count, while

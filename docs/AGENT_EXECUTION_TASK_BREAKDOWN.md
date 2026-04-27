@@ -473,10 +473,12 @@ The latest implementation slice:
   tool-family exposure summary for Runs detail; browser, computer-use, MCP, and
   creator connectors remain explicitly `not_exposed`
 - shared restart hints now tell Runs detail whether to inspect completed/failed
-  evidence, resume through checkpoint/Decision review, or start a new Run
+  evidence, verify checkpoint evidence, or start a new Run
 - shared replay review summaries now show Runs detail whether the latest agent
   session is inspect-only, manual-resume-only, or new-run recovery, while
-  keeping automatic replay disabled and surfacing open checkpoint count
+  keeping automatic replay disabled and surfacing open checkpoint count;
+  paused/confirmation sessions without an open checkpoint are treated as
+  `checkpoint_missing` inspect-only recovery
 - Runs `回到任务推进` now uses that replay review mode to prefill the task
   next-step draft, keeping manual-resume work anchored on checkpoint / Decision
   review instead of automatic replay
