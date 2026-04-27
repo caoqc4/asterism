@@ -1206,8 +1206,8 @@ npm run verify
 
 Latest local baseline:
 
-- 120 test files
-- 834 tests
+- 121 test files
+- 837 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -1219,8 +1219,9 @@ Latest local baseline:
   scheduler checkpoint-state exclusion, and browser controlled Decision
   consequence wording, Code Agent checkpoint recovery guidance, and approved
   checkpoint evidence wording, plus release-preflight and Code Agent
-  model-producer preflight secret-redaction / shell-env override coverage.
-  Current local acceptance status: 120 test files / 834 tests
+  model-producer preflight secret-redaction / shell-env override coverage and
+  default local-smoke skip-boundary coverage. Current local acceptance status:
+  121 test files / 837 tests
 - `npm run smoke:release:mac` passed locally on 2026-04-27 for the combined
   unsigned macOS package path after the Code Agent context-gate and
   restart/replay safety updates
@@ -1257,6 +1258,10 @@ Latest local baseline:
   values override `.env`, readiness output keeps API keys redacted, stale
   secret-like `.env` values do not leak, and no provider request, Docker probe,
   or workspace mutation is performed.
+- Local smoke command boundary coverage now verifies sandbox producer preview,
+  Code Agent model-producer live smoke, and Code Agent model-producer preview
+  smoke stay skipped by default and report provider/Docker/workspace boundaries
+  before any explicit env-gated local validation is run.
 - `npm run verify` passed locally on 2026-04-26 after adding the sandbox
   patch-review request builder, audit persistence coverage, and non-executing
   run-plan/planning-service layer plus the explicit blocked local-note

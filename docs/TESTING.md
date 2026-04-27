@@ -19,6 +19,7 @@ Current test files:
 - `src/main/config/app-config-service.test.ts`
 - `src/main/db/client.test.ts`
 - `src/main/keychain/ai-config-service.test.ts`
+- `src/main/local-smoke-boundaries-script.test.ts`
 - `src/main/domain/task/task-service.test.ts`
 - `src/main/domain/decision/decision-service.test.ts`
 - `src/main/domain/decision/decision-service.integration.test.ts`
@@ -158,6 +159,11 @@ Covered today:
   it sends one provider request, feeds the model-backed loop through the
   sandbox producer preview service on a disposable workspace, uses an injected
   check runner, and still avoids Docker and selected-workspace mutation.
+- `Local smoke command boundaries`
+  script coverage locks the default skip paths for sandbox producer preview,
+  Code Agent model-producer live smoke, and Code Agent model-producer preview
+  smoke so they do not call providers, start Docker, or mutate workspaces
+  unless their explicit env gates are enabled.
 - `Provider-native live validation`
   `npm run accept:provider-native-live:preflight` checks local readiness without
   spending provider credit, and `npm run accept:provider-native-live` performs a
