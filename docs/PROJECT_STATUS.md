@@ -699,8 +699,13 @@ The project is past initial architecture assembly. Current work should favor pro
   that persists checkpoint review, validation result, planned one-action
   resume, and expected post-action evidence RunSteps while recording
   `browserStart=no`, `pageMutation=no`, `providerCall=no`, `scheduler=no`, and
-  `modelExposure=hidden`. The next recommended slice is BCR4 local QA resume
-  smoke; arbitrary URLs, authenticated profiles, scheduler starts, provider
+  `modelExposure=hidden`. BCR4 is locally accepted with a local QA resume
+  runner and manual smoke command: the runner validates immediately before
+  browser launch, opens only the disposable localhost fixture in an isolated
+  Playwright context, executes exactly one resumed action, captures
+  page-summary / visible-text / screenshot artifacts, and blocks invalid resume
+  contexts before browser start. The next recommended slice is BCR5 review
+  surfacing; arbitrary URLs, authenticated profiles, scheduler starts, provider
   schemas, and model-visible browser tools remain deferred.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
@@ -1316,8 +1321,8 @@ dedicated signed/notarized release pass.
    orchestration O1-O4 sequence, Code Agent O5 recovery helper layer, and
    Browser Evidence Tier 1 review helpers are now implemented locally.
    Browser Controlled Interaction BCI1-BCI6 are locally accepted for the
-   local-QA path, and BCR1-BCR3 are locally accepted for checkpoint resume
-   review/validation/dry-run recording. The next execution task should be BCR4
+   local-QA path, and BCR1-BCR4 are locally accepted for checkpoint resume
+   review/validation/dry-run/local-QA smoke. The next execution task should be BCR5
    from the browser controlled resume
    plan, not broad browser/MCP/computer-use model exposure;
    do not expose browser, MCP, computer-use, skills, or creator connector tools

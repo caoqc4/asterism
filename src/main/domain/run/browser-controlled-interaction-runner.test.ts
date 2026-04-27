@@ -8,7 +8,10 @@ import {
   buildBrowserControlledInteractionLocalQaFixture,
   buildDefaultBrowserControlledInteractionPolicy,
 } from '../../../shared/types/browser-controlled-interaction.js';
-import { runBrowserControlledInteractionLocalQa } from './browser-controlled-interaction-runner.js';
+import {
+  runBrowserControlledInteractionLocalQa,
+  runBrowserControlledInteractionResumeLocalQa,
+} from './browser-controlled-interaction-runner.js';
 
 describe('browser controlled interaction runner', () => {
   let outputDir = '';
@@ -119,7 +122,98 @@ describe('browser controlled interaction runner', () => {
     });
     expect(browserType.calls).toEqual([]);
   });
+
+  it('executes one approved checkpoint resume action in local QA and captures evidence', async () => {
+    const browserType = createFakeBrowserType();
+
+    const result = await runBrowserControlledInteractionResumeLocalQa({
+      browserType,
+      context: buildResumeContext(),
+      outputDir,
+      payload: buildResumePayload(),
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      summary: 'Browser controlled resume local QA completed / url=http://localhost:5173/draft / resumedAction=click / origin=http://localhost:5173 / artifacts=page_summary,visible_text,screenshot / oneAction=yes / credentials=no / externalOrigin=no / modelExposure=hidden',
+    });
+    expect(result.status === 'completed' ? result.artifacts.map((artifact) => artifact.kind) : []).toEqual([
+      'page_summary',
+      'visible_text',
+      'screenshot',
+    ]);
+    expect(await fs.readFile(path.join(outputDir, 'browser-controlled-resume-local-qa-screenshot.png'), 'utf8')).toBe('png');
+    expect(browserType.calls).toEqual([
+      'launch',
+      'newContext',
+      'newPage',
+      'route:**/*',
+      'goto:http://localhost:5173/draft:domcontentloaded',
+      'click:text=Publish post',
+      'innerText:body',
+      'screenshot:browser-controlled-resume-local-qa-screenshot.png',
+      'contextClose',
+      'browserClose',
+    ]);
+  });
+
+  it('blocks invalid checkpoint resume requests before launching a browser', async () => {
+    const browserType = createFakeBrowserType();
+
+    const result = await runBrowserControlledInteractionResumeLocalQa({
+      browserType,
+      context: {
+        ...buildResumeContext(),
+        decisionStatus: 'pending',
+      },
+      outputDir,
+      payload: buildResumePayload(),
+    });
+
+    expect(result).toMatchObject({
+      blockedReasons: ['Browser controlled resume requires an approved Decision; current status is pending.'],
+      status: 'blocked',
+    });
+    expect(browserType.calls).toEqual([]);
+  });
 });
+
+function buildResumeContext() {
+  return {
+    checkpointStatus: 'open' as const,
+    decisionStatus: 'approved' as const,
+    descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+    modelExposure: 'hidden' as const,
+    providerCallAllowed: false,
+    requestedAction: 'click' as const,
+    requestedOrigin: 'http://localhost:5173',
+    schedulerAllowed: false,
+  };
+}
+
+function buildResumePayload() {
+  return {
+    version: 1,
+    kind: 'browser_controlled_interaction',
+    descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+    action: {
+      action: 'click',
+      currentUrl: 'http://localhost:5173/draft',
+      targetLabel: 'Publish post',
+    },
+    currentUrl: 'http://localhost:5173/draft',
+    decisionId: 'decision_browser_1',
+    decisionTitle: 'Approve browser publish click',
+    origin: 'http://localhost:5173',
+    policySnapshot: buildDefaultBrowserControlledInteractionPolicy({
+      allowedActions: ['click'],
+      allowedOrigins: ['http://localhost:5173'],
+    }),
+    screenshotArtifactId: 'artifact_screenshot_1',
+    sideEffectClassification: 'possible_external_side_effect',
+    visibleTextSummary: 'Draft publish page is visible.',
+  };
+}
 
 function createFakeBrowserType() {
   const calls: string[] = [];

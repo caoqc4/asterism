@@ -4,7 +4,10 @@ import path from 'node:path';
 import type { BrowserEvidenceArtifact } from '../../../shared/types/browser-evidence.js';
 import {
   type BrowserControlledInteractionRequest,
+  type BrowserControlledInteractionResumeContext,
   type BrowserControlledInteractionResult,
+  parseBrowserControlledInteractionCheckpointPayload,
+  validateBrowserControlledInteractionResume,
   validateBrowserControlledInteractionRequest,
 } from '../../../shared/types/browser-controlled-interaction.js';
 
@@ -68,6 +71,13 @@ export type BrowserControlledInteractionRunnerInput = {
   browserType: BrowserControlledBrowserType;
   outputDir: string;
   requests: BrowserControlledInteractionRequest[];
+};
+
+export type BrowserControlledInteractionResumeRunnerInput = {
+  browserType: BrowserControlledBrowserType;
+  context: BrowserControlledInteractionResumeContext;
+  outputDir: string;
+  payload: unknown;
 };
 
 export async function runBrowserControlledInteractionLocalQa(
@@ -136,44 +146,21 @@ export async function runBrowserControlledInteractionLocalQa(
 
     const artifacts: BrowserEvidenceArtifact[] = [];
     for (const step of steps) {
-      const action = step.action;
-
-      if (action.action === 'navigate' && action.url) {
-        await page.goto(action.url, {
-          timeout: policy.timeoutMs,
-          waitUntil: 'domcontentloaded',
-        });
-        continue;
-      }
-
-      if (action.action === 'click') {
-        await getActionLocator(page, action.targetRef, action.targetLabel).click({
-          timeout: Math.min(policy.timeoutMs, 5_000),
-        });
-        continue;
-      }
-
-      if (action.action === 'type_text' && action.text) {
-        await getActionLocator(page, action.targetRef, action.targetLabel).fill(action.text, {
-          timeout: Math.min(policy.timeoutMs, 5_000),
-        });
-        continue;
-      }
-
-      if (action.action === 'select_option' && action.value) {
-        await getActionLocator(page, action.targetRef, action.targetLabel).selectOption(action.value, {
-          timeout: Math.min(policy.timeoutMs, 5_000),
-        });
-        continue;
-      }
-
-      if (action.action === 'capture_evidence') {
+      if (step.action.action === 'capture_evidence') {
         artifacts.push(...await captureBrowserControlledArtifacts({
           outputDir: input.outputDir,
           page,
+          screenshotFileName: 'browser-controlled-local-qa-screenshot.png',
           outputLimitBytes: policy.outputLimitBytes,
         }));
+        continue;
       }
+
+      await executeBrowserControlledAction({
+        action: step.action,
+        page,
+        timeoutMs: policy.timeoutMs,
+      });
     }
 
     return {
@@ -201,6 +188,117 @@ export async function runBrowserControlledInteractionLocalQa(
   }
 }
 
+export async function runBrowserControlledInteractionResumeLocalQa(
+  input: BrowserControlledInteractionResumeRunnerInput,
+): Promise<BrowserControlledInteractionResult> {
+  const validation = validateBrowserControlledInteractionResume({
+    context: input.context,
+    payload: input.payload,
+  });
+
+  if (!validation.valid) {
+    return {
+      blockedReasons: validation.blockedReasons,
+      status: 'blocked',
+      summary: validation.summary,
+    };
+  }
+
+  const parsed = parseBrowserControlledInteractionCheckpointPayload(input.payload);
+  if (!parsed.valid) {
+    return {
+      blockedReasons: parsed.blockedReasons,
+      status: 'blocked',
+      summary: `Browser controlled resume local QA blocked: ${parsed.blockedReasons.join(' ')}`,
+    };
+  }
+
+  const payload = parsed.payload;
+  const policy = input.context.currentPolicy ?? payload.policySnapshot;
+  const allowedOrigins = new Set(policy.allowedOrigins);
+  await fs.mkdir(input.outputDir, { recursive: true });
+
+  let browser: BrowserControlledBrowser | null = null;
+  let context: BrowserControlledContext | null = null;
+
+  try {
+    browser = await input.browserType.launch({
+      headless: true,
+      timeout: policy.timeoutMs,
+    });
+    context = await browser.newContext({
+      acceptDownloads: false,
+      ignoreHTTPSErrors: false,
+      javaScriptEnabled: true,
+      viewport: {
+        height: 720,
+        width: 1280,
+      },
+    });
+    const page = await context.newPage();
+
+    await page.route('**/*', async (route) => {
+      const targetOrigin = parseOrigin(route.request().url());
+      if (targetOrigin && allowedOrigins.has(targetOrigin)) {
+        await route.continue();
+        return;
+      }
+
+      await route.abort('blockedbyclient');
+    });
+
+    await page.goto(payload.currentUrl, {
+      timeout: policy.timeoutMs,
+      waitUntil: 'domcontentloaded',
+    });
+    if (parseOrigin(page.url()) !== payload.origin) {
+      return {
+        blockedReasons: ['Browser controlled resume page origin drifted before action execution.'],
+        status: 'blocked',
+        summary: 'Browser controlled resume local QA blocked before action: origin drift.',
+      };
+    }
+
+    await executeBrowserControlledAction({
+      action: payload.action,
+      page,
+      timeoutMs: policy.timeoutMs,
+    });
+
+    const artifacts = await captureBrowserControlledArtifacts({
+      outputDir: input.outputDir,
+      page,
+      outputLimitBytes: policy.outputLimitBytes,
+      screenshotFileName: 'browser-controlled-resume-local-qa-screenshot.png',
+    });
+
+    return {
+      artifacts,
+      status: 'completed',
+      summary: [
+        'Browser controlled resume local QA completed',
+        `url=${page.url()}`,
+        `resumedAction=${payload.action.action}`,
+        `origin=${payload.origin}`,
+        `artifacts=${artifacts.map((artifact) => artifact.kind).join(',') || 'none'}`,
+        'oneAction=yes',
+        'credentials=no',
+        'externalOrigin=no',
+        'modelExposure=hidden',
+      ].join(' / '),
+    };
+  } catch (error) {
+    return {
+      blockedReasons: [error instanceof Error ? error.message : String(error)],
+      status: 'blocked',
+      summary: 'Browser controlled resume local QA blocked before completion.',
+    };
+  } finally {
+    await context?.close().catch(() => undefined);
+    await browser?.close().catch(() => undefined);
+  }
+}
+
 export async function createPlaywrightBrowserControlledInteractionRunner(): Promise<BrowserControlledBrowserType> {
   const playwright = await import('playwright');
   return playwright.chromium;
@@ -210,13 +308,14 @@ async function captureBrowserControlledArtifacts(params: {
   outputDir: string;
   outputLimitBytes: number;
   page: BrowserControlledPage;
+  screenshotFileName: string;
 }): Promise<BrowserEvidenceArtifact[]> {
   const title = await params.page.title();
   const visibleText = await boundedText(
     params.page.locator('body').innerText({ timeout: 5_000 }),
     params.outputLimitBytes,
   );
-  const screenshotPath = path.join(params.outputDir, 'browser-controlled-local-qa-screenshot.png');
+  const screenshotPath = path.join(params.outputDir, params.screenshotFileName);
   await params.page.screenshot({
     fullPage: false,
     path: screenshotPath,
@@ -246,6 +345,42 @@ async function captureBrowserControlledArtifacts(params: {
       title: 'Browser screenshot',
     },
   ];
+}
+
+async function executeBrowserControlledAction(params: {
+  action: BrowserControlledInteractionRequest['action'];
+  page: BrowserControlledPage;
+  timeoutMs: number;
+}): Promise<void> {
+  const { action, page, timeoutMs } = params;
+
+  if (action.action === 'navigate' && action.url) {
+    await page.goto(action.url, {
+      timeout: timeoutMs,
+      waitUntil: 'domcontentloaded',
+    });
+    return;
+  }
+
+  if (action.action === 'click') {
+    await getActionLocator(page, action.targetRef, action.targetLabel).click({
+      timeout: Math.min(timeoutMs, 5_000),
+    });
+    return;
+  }
+
+  if (action.action === 'type_text' && action.text) {
+    await getActionLocator(page, action.targetRef, action.targetLabel).fill(action.text, {
+      timeout: Math.min(timeoutMs, 5_000),
+    });
+    return;
+  }
+
+  if (action.action === 'select_option' && action.value) {
+    await getActionLocator(page, action.targetRef, action.targetLabel).selectOption(action.value, {
+      timeout: Math.min(timeoutMs, 5_000),
+    });
+  }
 }
 
 function getActionLocator(

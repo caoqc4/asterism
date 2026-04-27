@@ -197,6 +197,13 @@ Acceptance:
 
 ### BCR4: Local QA Resume Smoke
 
+Status: locally accepted. The local QA resume runner validates the approved
+checkpoint payload immediately before browser launch, opens only the
+disposable localhost fixture URL in an isolated Playwright context, executes
+exactly one resumed action, captures page-summary / visible-text / screenshot
+artifacts after the action, and blocks invalid resume contexts before browser
+start.
+
 Goal: execute one approved checkpoint action against the existing local QA
 fixture.
 
@@ -268,10 +275,10 @@ Acceptance:
 
 ## Recommended Next Task
 
-BCR1-BCR3 are locally accepted. Next, implement BCR4 only.
+BCR1-BCR4 are locally accepted. Next, implement BCR5 only.
 
-BCR4 should execute one approved checkpoint action against the existing
-disposable localhost QA fixture, using the shared validator immediately before
-launch and capturing post-action screenshot/text/page-summary evidence. Do not
-add arbitrary URLs, authenticated profiles, scheduler starts, provider schemas,
-model-visible tools, or Decision auto-resume while implementing BCR4.
+BCR5 should surface approved-ready, resumed, blocked-drift, and consumed
+checkpoint resume states on the existing Runs / Decisions review surfaces
+without adding a generic browser prompt, arbitrary URL input, Playwright launch
+from UI, scheduler start, provider schema, model-visible tool, or Decision
+auto-resume.
