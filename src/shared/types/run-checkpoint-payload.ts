@@ -197,6 +197,14 @@ export function validateResumeCheckpointPayload(
     return invalidResumeCheckpointPayload('Resume checkpoint payload is missing nextInput.');
   }
 
+  if (parsed.nextTool === 'artifact.create_note') {
+    const artifactNoteInputError = validateArtifactCreateNoteResumeInput(parsed.nextInput);
+
+    if (artifactNoteInputError) {
+      return invalidResumeCheckpointPayload(artifactNoteInputError);
+    }
+  }
+
   return {
     status: 'valid',
     payload: {
@@ -213,6 +221,25 @@ export function validateResumeCheckpointPayload(
       taskId: typeof parsed.taskId === 'string' ? parsed.taskId : expected.taskId,
     },
   };
+}
+
+function validateArtifactCreateNoteResumeInput(input: object): string | null {
+  const candidate = input as {
+    content?: unknown;
+    title?: unknown;
+  };
+  const title = typeof candidate.title === 'string' ? candidate.title.trim() : '';
+  const content = typeof candidate.content === 'string' ? candidate.content.trim() : '';
+
+  if (!title) {
+    return 'artifact.create_note requires a title.';
+  }
+
+  if (!content) {
+    return 'artifact.create_note requires content.';
+  }
+
+  return null;
 }
 
 function invalidResumeCheckpointPayload(reason: string): ResumeCheckpointPayloadValidation {

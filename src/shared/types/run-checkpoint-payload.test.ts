@@ -210,6 +210,19 @@ describe('run checkpoint payload helpers', () => {
       payload: JSON.stringify({ version: 1, kind: 'resume', nextTool: 'artifact.create_note' }),
       reason: 'Resume checkpoint payload is missing nextInput.',
     },
+    {
+      payload: JSON.stringify({ version: 1, kind: 'resume', nextTool: 'artifact.create_note', nextInput: {} }),
+      reason: 'artifact.create_note requires a title.',
+    },
+    {
+      payload: JSON.stringify({
+        version: 1,
+        kind: 'resume',
+        nextTool: 'artifact.create_note',
+        nextInput: { title: 'Recovered note', content: '' },
+      }),
+      reason: 'artifact.create_note requires content.',
+    },
   ])('rejects invalid resume checkpoint payloads: $reason', ({ payload, reason }) => {
     expect(validateResumeCheckpointPayload(payload, {
       runId: 'run_1',

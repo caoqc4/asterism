@@ -673,6 +673,10 @@ The project is past initial architecture assembly. Current work should favor pro
   open resume checkpoints exist, stale/incompatible payloads are skipped until a
   valid supported payload for the current run/task is found; execution still
   fails closed when none is available.
+- Shared resume checkpoint validation now also checks the currently supported
+  `artifact.create_note` resume input shape before UI continuation or backend
+  tool execution, so empty title/content payloads are treated as stale
+  checkpoint data rather than failed resumed work.
 - Replay review now also treats paused or confirmation sessions with no open
   checkpoint as `checkpoint_missing` / inspect-only rather than
   checkpoint-gated, so restart guidance does not imply a resumable path after
@@ -1173,7 +1177,7 @@ npm run verify
 Latest local baseline:
 
 - 119 test files
-- 823 tests
+- 825 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -1181,8 +1185,8 @@ Latest local baseline:
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
 - `npm run verify` passed locally on 2026-04-27 after tightening Code Agent
   model-context gates, checkpoint-backed session settlement, stale
-  resume-payload UI gating, and updating the local acceptance status: 119 test
-  files / 823 tests
+  resume-payload UI/backend gating, supported resume-input validation, and
+  updating the local acceptance status: 119 test files / 825 tests
 - `npm run smoke:release:mac` passed locally on 2026-04-27 for the combined
   unsigned macOS package path after the Code Agent context-gate and
   restart/replay safety updates
