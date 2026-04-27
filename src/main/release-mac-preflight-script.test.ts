@@ -107,4 +107,20 @@ describe('release-mac-preflight script', () => {
     expect(result.output).toContain('status=not-ready');
     expect(result.output).toContain('No signing, notarization, upload, or Apple network request was performed.');
   });
+
+  it('requires CSC_KEY_PASSWORD when CSC_LINK is used', () => {
+    const result = runPreflight([
+      'CSC_LINK=/tmp/cert-secret.p12',
+      'APPLE_ID=test-secret@example.com',
+      'APPLE_APP_SPECIFIC_PASSWORD=app-password-secret',
+      'APPLE_TEAM_ID=TEAMIDSECRET',
+    ].join('\n'), ['--strict']);
+
+    expect(result.status).toBe(1);
+    expect(result.output).toContain('[OK] electron-builder signing certificate source: CSC_LINK is set.');
+    expect(result.output).toContain('[MISSING] CSC_KEY_PASSWORD for CSC_LINK: <empty>');
+    expect(result.output).toContain('status=not-ready');
+    expect(result.output).not.toContain('cert-secret.p12');
+    expect(result.output).not.toContain('app-password-secret');
+  });
 });

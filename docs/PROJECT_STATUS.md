@@ -1207,7 +1207,7 @@ npm run verify
 Latest local baseline:
 
 - 119 test files
-- 830 tests
+- 831 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -1218,8 +1218,8 @@ Latest local baseline:
   resume-payload UI/backend gating, supported resume-input validation,
   scheduler checkpoint-state exclusion, and browser controlled Decision
   consequence wording, Code Agent checkpoint recovery guidance, and approved
-  checkpoint evidence wording. Current local acceptance status: 119 test files
-  / 830 tests
+  checkpoint evidence wording, plus release-preflight strict-mode coverage.
+  Current local acceptance status: 119 test files / 831 tests
 - `npm run smoke:release:mac` passed locally on 2026-04-27 for the combined
   unsigned macOS package path after the Code Agent context-gate and
   restart/replay safety updates
@@ -1232,6 +1232,10 @@ Latest local baseline:
   the checkpoint evidence wording pass with the same expected read-only result:
   status remains `not-ready` until Developer ID signing and Apple notarization
   credentials are configured.
+- Release preflight script coverage now also locks the `CSC_LINK` path: strict
+  mode fails closed when a certificate link is configured without
+  `CSC_KEY_PASSWORD`, and the test asserts secret-like certificate/password
+  values are not printed.
 - `npm run accept:agent-local` passed locally after adding the sandbox-coding
   acceptance gate
 - `npm run accept:provider-native-live:preflight` reports the current local
