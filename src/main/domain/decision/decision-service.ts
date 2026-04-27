@@ -23,9 +23,11 @@ import type {
 import type {
   SandboxPatchPromotionApplyService,
 } from '../run/sandbox-patch-promotion-apply-service.js';
+import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type { BrowserControlledInteractionResult } from '../../../shared/types/browser-controlled-interaction.js';
 import { parseBrowserControlledInteractionCheckpointPayload } from '../../../shared/types/browser-controlled-interaction.js';
 import { parseRunCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
+import { AgentSessionStore } from '../run/agent-session-store.js';
 import {
   DecisionProcessTemplateSelector,
   type DecisionProcessTemplateSelectionResult,
@@ -136,6 +138,7 @@ export class DecisionService {
     private readonly sandboxPatchPromotionApplyService: Pick<SandboxPatchPromotionApplyService, 'apply'> | null = null,
     private readonly sandboxPatchPromotionApplyEnabled: () => boolean = () => false,
     private readonly browserControlledResumeExecutor: BrowserControlledResumeExecutor | null = null,
+    private readonly agentSessionStore: Pick<AgentSessionStore, 'listForRun' | 'updateStatus'> | null = null,
   ) {}
 
   list(): Promise<DecisionRecord[]> {
@@ -343,6 +346,7 @@ export class DecisionService {
     );
 
     if (!result.success) {
+      await this.updateLatestContinuableAgentSession(checkpoint.runId, 'failed');
       await this.runStepRepository.create({
         runId: checkpoint.runId,
         kind: 'checkpoint',
@@ -362,6 +366,7 @@ export class DecisionService {
 
     const run = await this.runRepository.getDetail(checkpoint.runId);
     await this.runCheckpointRepository.updateStatus(checkpoint.id, 'resolved');
+    await this.updateLatestContinuableAgentSession(checkpoint.runId, 'completed');
     await this.runStepRepository.create({
       runId: checkpoint.runId,
       kind: 'checkpoint',
@@ -598,4 +603,40 @@ export class DecisionService {
       runId,
     );
   }
+
+  private async updateLatestContinuableAgentSession(
+    runId: string,
+    status: AgentSessionRecord['status'],
+  ): Promise<void> {
+    if (!this.agentSessionStore) {
+      return;
+    }
+
+    const latestSession = (await this.agentSessionStore.listForRun(runId))
+      .filter((session) =>
+        session.status === 'paused'
+        || session.status === 'needs_confirmation'
+        || session.status === 'running')
+      .sort(compareAgentSessionsByRecency)
+      .at(-1);
+
+    if (!latestSession) {
+      return;
+    }
+
+    await this.agentSessionStore.updateStatus(latestSession.id, status);
+  }
+}
+
+function compareAgentSessionsByRecency(
+  left: Pick<AgentSessionRecord, 'createdAt' | 'updatedAt'>,
+  right: Pick<AgentSessionRecord, 'createdAt' | 'updatedAt'>,
+): number {
+  const updated = left.updatedAt.localeCompare(right.updatedAt);
+
+  if (updated !== 0) {
+    return updated;
+  }
+
+  return left.createdAt.localeCompare(right.createdAt);
 }

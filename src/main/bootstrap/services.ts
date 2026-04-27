@@ -17,6 +17,7 @@ import { TaskProcessBindingRepository } from '../db/repositories/task-process-bi
 import { WaitingItemRepository } from '../db/repositories/waiting-item-repository.js';
 import { HomeBriefService } from '../domain/brief/home-brief-service.js';
 import { DecisionService } from '../domain/decision/decision-service.js';
+import { AgentSessionStore } from '../domain/run/agent-session-store.js';
 import { AgentToolRegistry } from '../domain/run/agent-tool-registry.js';
 import { BrowserEvidencePersister } from '../domain/run/browser-evidence-persister.js';
 import { runBrowserControlledLocalQaForOperatorStartedRun } from '../domain/run/browser-controlled-interaction-smoke-executor.js';
@@ -68,6 +69,7 @@ const homeBriefService = new HomeBriefService(
 const textExecutor = new TextExecutor();
 const briefExecutor = new BriefExecutor();
 const aiConfigService = new AiConfigService(appConfigService);
+const agentSessionStore = new AgentSessionStore();
 const taskService = new TaskService(
   taskRepository,
   waitingItemRepository,
@@ -118,6 +120,7 @@ const decisionService = new DecisionService(
   sandboxPatchPromotionApplyService,
   () => Boolean(appConfigService.read().featureFlags.enableSandboxPatchPromotionApply),
   runBrowserControlledResumeForApprovedDecision,
+  agentSessionStore,
 );
 agentToolRegistry.setDecisionDraftService(decisionService);
 const runService = new RunService(
@@ -130,6 +133,7 @@ const runService = new RunService(
   runStepRepository,
   agentToolRegistry,
   runCheckpointRepository,
+  agentSessionStore,
 );
 const browserEvidencePersister = new BrowserEvidencePersister(
   artifactRepository,

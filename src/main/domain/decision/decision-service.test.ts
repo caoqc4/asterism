@@ -480,6 +480,28 @@ describe('DecisionService', () => {
         artifactId: 'artifact_1',
       }),
     };
+    const agentSessionStore = {
+      listForRun: vi.fn().mockResolvedValue([
+        {
+          id: 'agent_session_confirmation',
+          runId: 'run_1',
+          mode: 'agent',
+          status: 'needs_confirmation',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: true,
+            streaming: false,
+            fileContext: false,
+            taskMutationTools: false,
+            longRunningSessions: false,
+          },
+          metadata: 'executor=local_agent',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]),
+      updateStatus: vi.fn(),
+    };
     const service = new DecisionService(
       decisionRepository as never,
       taskService as never,
@@ -489,6 +511,11 @@ describe('DecisionService', () => {
       runStepRepository as never,
       runRepository as never,
       agentToolRegistry as never,
+      null,
+      null,
+      undefined,
+      null,
+      agentSessionStore as never,
     );
 
     await service.act({
@@ -503,6 +530,10 @@ describe('DecisionService', () => {
       expect.objectContaining({ confirmationRequiredRisks: [] }),
     );
     expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith('run_checkpoint_1', 'resolved');
+    expect(agentSessionStore.updateStatus).toHaveBeenCalledWith(
+      'agent_session_confirmation',
+      'completed',
+    );
     expect(runRepository.updateResult).toHaveBeenCalledWith(
       'run_1',
       'completed',
