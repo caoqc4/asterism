@@ -29,6 +29,10 @@ import {
   parseTimelinePayload,
 } from '@shared/working-context/timeline';
 import {
+  buildBrowserControlledInteractionRunReview,
+  formatBrowserControlledRunEvidenceStatusLabel,
+} from '../lib/browserControlledInteractionReview';
+import {
   buildBrowserEvidenceReviewSummary,
   formatBrowserEvidenceReviewMeta,
   formatBrowserEvidenceReviewNextMove,
@@ -650,6 +654,7 @@ export function RunsPage({
     ? buildStagedPatchEvidenceChecklist(stagedPatchReview)
     : [];
   const browserEvidenceReview = buildBrowserEvidenceReviewSummary(detail);
+  const browserControlledReview = buildBrowserControlledInteractionRunReview(detail);
   const runLifecycleProjection = detail
     ? projectAgentRunLifecycle({
         runStatus: detail.status,
@@ -875,6 +880,26 @@ export function RunsPage({
                   <p className="meta">Screenshot：{browserEvidenceReview.screenshotPath}</p>
                 ) : null}
                 <p className="meta">Next review move：{formatBrowserEvidenceReviewNextMove()}</p>
+              </div>
+            ) : null}
+            {browserControlledReview ? (
+              <div className="task-card detail-card-group detail-card-wide">
+                <p className="eyebrow">Browser Controlled Interaction</p>
+                <strong>审阅这次受控浏览器交互证据</strong>
+                <p className="meta">Browser controlled：{browserControlledReview.summary}</p>
+                <p className="meta">Policy：{browserControlledReview.policySummary}</p>
+                <p className="meta">Next review move：{browserControlledReview.nextMove}</p>
+                <div className="timeline-list">
+                  {browserControlledReview.evidence.map((item) => (
+                    <div className={`timeline-item timeline-item-${item.status}`} key={item.label}>
+                      <div className="task-row">
+                        <strong>{item.label}</strong>
+                        <span className="status">{formatBrowserControlledRunEvidenceStatusLabel(item.status)}</span>
+                      </div>
+                      <p className="meta">{item.summary}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : null}
             <div className="task-card detail-card-group detail-card-wide">

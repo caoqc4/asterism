@@ -8,6 +8,8 @@ import {
 } from '@shared/types/browser-controlled-interaction';
 import {
   buildBrowserControlledInteractionReview,
+  buildBrowserControlledInteractionRunReview,
+  formatBrowserControlledRunEvidenceStatusLabel,
   formatBrowserControlledActionSummary,
 } from './browserControlledInteractionReview';
 
@@ -126,4 +128,170 @@ describe('browser controlled interaction review helpers', () => {
       'action=select_option / url=http://localhost:5173/tasks / targetRef=mode-select / targetLabel=Mode / value=Review / checkpoint=no / sideEffect=none',
     );
   });
+
+  it('builds Runs review for dry-run evidence steps', () => {
+    const review = buildBrowserControlledInteractionRunReview({
+      output: null,
+      checkpoints: [],
+      steps: [
+        buildStep({
+          title: 'browser controlled dry-run accepted',
+          kind: 'plan',
+          output: 'browserStart=no / networkCall=no / pageMutation=no / modelExposure=hidden / scheduler=no / providerCall=no',
+        }),
+        buildStep({
+          title: 'Browser action planned: click',
+          kind: 'tool_call',
+          status: 'running',
+        }),
+        buildStep({
+          title: 'Browser action evidence pending: click',
+          kind: 'tool_result',
+          status: 'skipped',
+        }),
+      ],
+    });
+
+    expect(review).toMatchObject({
+      actionCount: 1,
+      blockedCount: 0,
+      checkpointCount: 0,
+      nextMove: 'next=review dry-run plan before enabling local QA runner',
+      policySummary: 'modelExposure=hidden / scheduler=no / providerCall=no / genericPrompt=no',
+      status: 'planned',
+      summary: 'Browser controlled interaction review / status=planned / actions=1 / blocked=0 / checkpoints=0',
+    });
+    expect(review?.evidence).toEqual([
+      {
+        label: 'Runtime boundary',
+        status: 'ready',
+        summary: 'browserStart=no / networkCall=no / pageMutation=no / modelExposure=hidden / scheduler=no / providerCall=no',
+      },
+      {
+        label: 'Action plan',
+        status: 'ready',
+        summary: 'click',
+      },
+    ]);
+  });
+
+  it('builds Runs review for completed local QA evidence', () => {
+    const review = buildBrowserControlledInteractionRunReview({
+      output: 'Browser controlled local QA completed / url=http://127.0.0.1:53578/browser-controlled-local-qa.html / actions=navigate,click,type_text,select_option,capture_evidence / artifacts=page_summary,visible_text,screenshot / credentials=no / externalOrigin=no / modelExposure=hidden',
+      checkpoints: [],
+      steps: [
+        buildStep({ title: 'browser controlled dry-run accepted', kind: 'plan' }),
+        buildStep({ title: 'Browser action planned: navigate', kind: 'tool_call' }),
+        buildStep({ title: 'Browser action planned: capture_evidence', kind: 'tool_call' }),
+      ],
+    });
+
+    expect(review).toMatchObject({
+      actionCount: 2,
+      nextMove: 'next=review captured local QA evidence before considering product UI exposure',
+      status: 'completed',
+    });
+    expect(review?.evidence.at(-1)).toEqual({
+      label: 'Local QA result',
+      status: 'ready',
+      summary: 'Browser controlled local QA completed / url=http://127.0.0.1:53578/browser-controlled-local-qa.html / actions=navigate,click,type_text,select_option,capture_evidence / artifacts=page_summary,visible_text,screenshot / credentials=no / externalOrigin=no / modelExposure=hidden',
+    });
+  });
+
+  it('builds Runs review for blocked validation and checkpoint payloads', () => {
+    const blocked = buildBrowserControlledInteractionRunReview({
+      output: null,
+      checkpoints: [],
+      steps: [
+        buildStep({
+          error: 'Browser controlled interaction action URL must match an allowed origin.',
+          kind: 'tool_result',
+          status: 'failed',
+          title: 'browser controlled interaction blocked',
+        }),
+      ],
+    });
+    expect(blocked).toMatchObject({
+      blockedCount: 1,
+      nextMove: 'next=fix blocked request or policy before any browser runtime can start',
+      status: 'blocked',
+    });
+
+    const checkpoint = buildBrowserControlledInteractionRunReview({
+      output: null,
+      steps: [
+        buildStep({
+          title: 'Browser action planned: click',
+          kind: 'tool_call',
+          status: 'pending',
+        }),
+      ],
+      checkpoints: [
+        {
+          createdAt: '2026-01-01T00:00:00.000Z',
+          id: 'run_checkpoint_browser',
+          kind: 'external_wait',
+          payload: JSON.stringify({
+            version: 1,
+            kind: 'browser_controlled_interaction',
+            descriptorId: 'browser.controlled_interaction',
+            action: {
+              action: 'click',
+              currentUrl: 'http://localhost:5173/draft',
+              targetLabel: 'Publish post',
+            },
+            currentUrl: 'http://localhost:5173/draft',
+            decisionId: 'decision_browser_1',
+            decisionTitle: 'Approve browser publish click',
+            origin: 'http://localhost:5173',
+            policySnapshot: buildDefaultBrowserControlledInteractionPolicy({
+              allowedActions: ['click'],
+              allowedOrigins: ['http://localhost:5173'],
+            }),
+            screenshotArtifactId: 'artifact_screenshot_1',
+            sideEffectClassification: 'possible_external_side_effect',
+            visibleTextSummary: 'Draft publish page is visible.',
+          }),
+          resolvedAt: null,
+          runId: 'run_browser',
+          status: 'open',
+          stepId: 'run_step_browser_checkpoint',
+        },
+      ],
+    });
+
+    expect(checkpoint).toMatchObject({
+      checkpointCount: 1,
+      nextMove: 'next=review checkpoint payload; approval does not auto-resume browser actions yet',
+      status: 'checkpoint_required',
+    });
+    expect(checkpoint?.evidence.at(-1)).toEqual({
+      label: 'Checkpoint boundary',
+      status: 'pending',
+      summary: 'action=click / origin=http://localhost:5173 / targetLabel=Publish post / screenshot=artifact_screenshot_1 / visibleText=Draft publish page is visible. / resume=deferred',
+    });
+    expect(formatBrowserControlledRunEvidenceStatusLabel('pending')).toBe('pending');
+  });
 });
+
+function buildStep(overrides: {
+  error?: string | null;
+  kind: 'plan' | 'tool_call' | 'tool_result' | 'checkpoint';
+  output?: string | null;
+  status?: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+  title: string;
+}) {
+  return {
+    createdAt: '2026-01-01T00:00:00.000Z',
+    error: overrides.error ?? null,
+    id: 'run_step_browser',
+    index: 1,
+    input: null,
+    kind: overrides.kind,
+    output: overrides.output ?? null,
+    runId: 'run_browser',
+    status: overrides.status ?? 'completed',
+    title: overrides.title,
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+}

@@ -3300,6 +3300,118 @@ describe('App UI flow', () => {
     expect(screen.getByText('Screenshot：/tmp/browser-evidence-screenshot.png')).toBeTruthy();
   });
 
+  it('shows browser controlled interaction review evidence on the runs page', async () => {
+    const user = userEvent.setup();
+    const browserControlledRun = buildRunRecord({
+      id: 'run_browser_controlled',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'completed',
+      output: 'Browser controlled local QA completed / url=http://127.0.0.1:53578/browser-controlled-local-qa.html / actions=navigate,click,type_text,select_option,capture_evidence / artifacts=page_summary,visible_text,screenshot / credentials=no / externalOrigin=no / modelExposure=hidden',
+      outputSource: 'system',
+    });
+    const browserControlledDetail: RunDetailRecord = {
+      ...browserControlledRun,
+      checkpoints: [
+        buildRunCheckpoint({
+          id: 'run_checkpoint_browser_controlled',
+          kind: 'external_wait',
+          payload: JSON.stringify({
+            version: 1,
+            kind: 'browser_controlled_interaction',
+            descriptorId: 'browser.controlled_interaction',
+            action: {
+              action: 'click',
+              currentUrl: 'http://localhost:5173/draft',
+              targetLabel: 'Publish post',
+            },
+            currentUrl: 'http://localhost:5173/draft',
+            decisionId: 'decision_browser_1',
+            decisionTitle: 'Approve browser publish click',
+            origin: 'http://localhost:5173',
+            policySnapshot: {
+              allowCredentials: false,
+              allowedActions: ['click'],
+              allowedEvidenceKinds: ['screenshot', 'visible_text', 'page_summary'],
+              allowedOrigins: ['http://localhost:5173'],
+              isolatedProfile: true,
+              maxActions: 8,
+              networkPolicy: 'allowlisted',
+              operatorStarted: true,
+              outputLimitBytes: 128000,
+              sensitiveFieldPolicy: 'block',
+              sideEffectPolicy: 'checkpoint_required',
+              timeoutMs: 60000,
+            },
+            screenshotArtifactId: 'artifact_screenshot_1',
+            sideEffectClassification: 'possible_external_side_effect',
+            visibleTextSummary: 'Draft publish page is visible.',
+          }),
+        }),
+      ],
+      steps: [
+        buildRunStep({
+          id: 'run_step_browser_controlled_plan',
+          index: 1,
+          kind: 'plan',
+          runId: browserControlledRun.id,
+          status: 'completed',
+          title: 'browser controlled dry-run accepted',
+          output: 'browserStart=no / networkCall=no / pageMutation=no / modelExposure=hidden / scheduler=no / providerCall=no',
+        }),
+        buildRunStep({
+          id: 'run_step_browser_controlled_action',
+          index: 2,
+          kind: 'tool_call',
+          runId: browserControlledRun.id,
+          status: 'pending',
+          title: 'Browser action planned: click',
+        }),
+        buildRunStep({
+          id: 'run_step_browser_controlled_checkpoint',
+          index: 3,
+          kind: 'checkpoint',
+          runId: browserControlledRun.id,
+          status: 'pending',
+          title: 'Browser action requires checkpoint',
+          output: 'action=click / checkpoint=required / origin=http://localhost:5173',
+        }),
+      ],
+    };
+    const browserControlledApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [browserControlledRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === browserControlledRun.id ? browserControlledDetail : null,
+      ),
+    };
+
+    window.api = browserControlledApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    await screen.findByRole('heading', { name: 'agent / completed' });
+
+    expect(screen.getByText('Browser Controlled Interaction')).toBeTruthy();
+    expect(screen.getByText('审阅这次受控浏览器交互证据')).toBeTruthy();
+    expect(screen.getByText(
+      'Browser controlled：Browser controlled interaction review / status=checkpoint_required / actions=1 / blocked=0 / checkpoints=1',
+    )).toBeTruthy();
+    expect(screen.getByText(
+      'Policy：modelExposure=hidden / scheduler=no / providerCall=no / genericPrompt=no',
+    )).toBeTruthy();
+    expect(screen.getByText(
+      'Next review move：next=review checkpoint payload; approval does not auto-resume browser actions yet',
+    )).toBeTruthy();
+    expect(screen.getByText('Runtime boundary')).toBeTruthy();
+    expect(screen.getByText('Action plan')).toBeTruthy();
+    expect(screen.getByText('Checkpoint boundary')).toBeTruthy();
+    expect(screen.getByText(
+      'action=click / origin=http://localhost:5173 / targetLabel=Publish post / screenshot=artifact_screenshot_1 / visibleText=Draft publish page is visible. / resume=deferred',
+    )).toBeTruthy();
+  });
+
   it('shows run checkpoints on the runs page', async () => {
     const user = userEvent.setup();
     const checkpointRun = buildRunRecord({
