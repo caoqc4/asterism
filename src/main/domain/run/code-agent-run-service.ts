@@ -184,6 +184,16 @@ export class CodeAgentRunService {
       );
     }
 
+    if (input.includeArtifactContent === true) {
+      return this.runRepository.updateResult(
+        run.id,
+        'failed',
+        'Code Agent artifact content blocked: artifact content is not accepted as provider-visible context.',
+        'system',
+        'Artifact content requires kind-specific policy, source-run status checks, stale-patch handling, and generated-output truth labeling before provider use.',
+      );
+    }
+
     if (input.includeSourceContextContent === true && !modelProducerOptIn) {
       return this.runRepository.updateResult(
         run.id,

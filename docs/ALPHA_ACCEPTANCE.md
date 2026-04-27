@@ -174,7 +174,9 @@ files.
   `provider prompt content=partial` and per-item `content=yes/no` labels.
 - Confirm artifact selection appears only as model-context manifest metadata.
   Selected artifact entries should stay at `content=no`; artifact and run-output
-  content must not be sent to the model.
+  content must not be sent to the model. Any attempted
+  `includeArtifactContent=true` request should fail before provider config is
+  resolved.
 - Return to Task detail and confirm the Code Agent Review card is anchored on
   the pending `workspace.staged_patch` Decision even if the lightweight run list
   lacks Code Agent output text. `查看 Code Agent Run` should locate the Run from

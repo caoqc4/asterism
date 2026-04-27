@@ -70,6 +70,7 @@ export type CreateCodeAgentRunInput = {
   patchIntent: string;
   artifactIds?: string[];
   contextFiles?: string[];
+  includeArtifactContent?: boolean;
   sourceContextIds?: string[];
   includeSourceContextContent?: boolean;
   requestedChecks: CodeAgentAllowedCheck[];

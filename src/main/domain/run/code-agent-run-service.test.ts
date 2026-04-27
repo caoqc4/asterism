@@ -415,6 +415,41 @@ describe('CodeAgentRunService', () => {
     expect(result).toBe(failedRun);
   });
 
+  it('blocks artifact content inclusion before resolving AI config', async () => {
+    process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
+    taskService.getDetail.mockResolvedValue({
+      ...buildTask(),
+      artifacts: [buildArtifact()],
+    });
+    const failedRun = buildFailedRun(
+      'Code Agent artifact content blocked: artifact content is not accepted as provider-visible context.',
+      'Artifact content requires kind-specific policy, source-run status checks, stale-patch handling, and generated-output truth labeling before provider use.',
+    );
+    runRepository.updateResult.mockResolvedValue(failedRun);
+
+    const result = await createService().trigger({
+      artifactIds: ['artifact_1'],
+      contextFiles: ['docs/notes.md'],
+      includeArtifactContent: true,
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      taskId: 'task_1',
+      useModelProducer: true,
+    });
+
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(executionService.run).not.toHaveBeenCalled();
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_code_agent_1',
+      'failed',
+      'Code Agent artifact content blocked: artifact content is not accepted as provider-visible context.',
+      'system',
+      'Artifact content requires kind-specific policy, source-run status checks, stale-patch handling, and generated-output truth labeling before provider use.',
+    );
+    expect(result).toBe(failedRun);
+  });
+
   it('blocks oversized source context content before resolving AI config', async () => {
     process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
     taskService.getDetail.mockResolvedValue({

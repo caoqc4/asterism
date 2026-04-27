@@ -207,6 +207,10 @@ The project is past initial architecture assembly. Current work should favor pro
   provider-invisible until kind-specific policy can separate prior generated
   output, rejected or stale patches, browser evidence, failed logs, and
   accepted facts.
+- Code Agent run creation now also rejects any hidden
+  `includeArtifactContent=true` request before resolving provider runtime
+  config, so artifact content cannot become provider-visible through IPC or
+  future UI drift before a dedicated policy slice is accepted.
 - Runs detail now expands Code Agent context manifests into readable audit
   summaries with provider-prompt content state and per-item `content=yes/no`
   labels, while still avoiding raw prompt or source-content dumps.

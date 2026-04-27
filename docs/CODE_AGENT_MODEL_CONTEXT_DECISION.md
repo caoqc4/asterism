@@ -124,7 +124,9 @@ Manifest-only selection is accepted now:
 Artifact or run-output content remains unaccepted. Any future content path
 needs kind-specific policy, byte limits, source-run status checks, stale-patch
 handling, and a prompt section that labels generated material as prior output
-rather than accepted truth.
+rather than accepted truth. The backend rejects any attempted
+`includeArtifactContent=true` request before provider runtime config is
+resolved.
 
 ### Retrieval Snippets
 
