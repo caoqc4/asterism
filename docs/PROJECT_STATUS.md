@@ -551,6 +551,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Runs detail now surfaces persisted Browser Evidence artifacts as a dedicated
   review card with URL, artifact kinds, artifact id, summary, screenshot path,
   and a review reminder before any controlled browser interaction is enabled.
+- Browser Evidence Runs review parsing, metadata formatting, and next-review
+  guidance now live in tested renderer helpers, so Tier 2 controlled-interaction
+  planning can reuse persisted evidence review without widening browser access.
 - [AGENT_EXECUTION_OPERATOR_STARTED_RUN_DECISION.md](AGENT_EXECUTION_OPERATOR_STARTED_RUN_DECISION.md)
   is accepted for manually started internal runs. The shared
   `OperatorStartedRunRequest` contract now covers `browser_evidence_smoke`,

@@ -1,6 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
 
-import type { ArtifactRecord } from '@shared/types/artifact';
 import { parseRunCheckpointPayload } from '@shared/types/run-checkpoint-payload';
 import { evaluateSandboxPatchPromotionReadiness } from '@shared/sandbox-patch-promotion-readiness';
 import { projectAgentRunLifecycle } from '@shared/agent-orchestration';
@@ -29,6 +28,11 @@ import {
   groupTaskTimelineEventsByPriority,
   parseTimelinePayload,
 } from '@shared/working-context/timeline';
+import {
+  buildBrowserEvidenceReviewSummary,
+  formatBrowserEvidenceReviewMeta,
+  formatBrowserEvidenceReviewNextMove,
+} from '../lib/browserEvidenceReview';
 import {
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
@@ -62,15 +66,6 @@ type StagedPatchEvidenceItem = {
   label: string;
   status: 'ready' | 'blocked' | 'pending';
   summary: string;
-};
-
-type BrowserEvidenceReviewSummary = {
-  artifactId: string;
-  artifactTitle: string;
-  evidenceKinds: string[];
-  screenshotPath: string | null;
-  summary: string;
-  url: string | null;
 };
 
 function formatRelatedTimelineSummary(event: TimelineEventRecord): string {
@@ -143,45 +138,6 @@ function formatAgentToolStatus(status: string): string {
 
 function formatActionError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
-}
-
-function getBrowserEvidenceReviewSummary(detail: RunDetailRecord | null): BrowserEvidenceReviewSummary | null {
-  const artifact = detail?.artifacts?.find((item) => item.kind === 'browser_evidence');
-  if (!artifact) {
-    return null;
-  }
-
-  const payload = parseBrowserEvidenceArtifactPayload(artifact);
-  const evidenceKinds = Array.isArray(payload?.artifacts)
-    ? payload.artifacts
-      .map((item) => typeof item?.kind === 'string' ? item.kind : null)
-      .filter((item): item is string => Boolean(item))
-    : [];
-  const screenshotPath = Array.isArray(payload?.artifacts)
-    ? payload.artifacts
-      .map((item) => typeof item?.path === 'string' && item.kind === 'screenshot' ? item.path : null)
-      .find((item): item is string => Boolean(item)) ?? null
-    : null;
-
-  return {
-    artifactId: artifact.id,
-    artifactTitle: artifact.title,
-    evidenceKinds,
-    screenshotPath,
-    summary: typeof payload?.result?.summary === 'string'
-      ? payload.result.summary
-      : artifact.content.slice(0, 240),
-    url: typeof payload?.request?.url === 'string' ? payload.request.url : null,
-  };
-}
-
-function parseBrowserEvidenceArtifactPayload(artifact: ArtifactRecord): Record<string, any> | null {
-  try {
-    const parsed = JSON.parse(artifact.content);
-    return parsed && typeof parsed === 'object' ? parsed : null;
-  } catch {
-    return null;
-  }
 }
 
 function formatAgentPlanStepSummary(step: RunStepRecord): string | null {
@@ -786,7 +742,7 @@ export function RunsPage({
   const stagedPatchEvidenceChecklist = stagedPatchReview
     ? getStagedPatchEvidenceChecklist(stagedPatchReview)
     : [];
-  const browserEvidenceReview = getBrowserEvidenceReviewSummary(detail);
+  const browserEvidenceReview = buildBrowserEvidenceReviewSummary(detail);
   const runLifecycleProjection = detail
     ? projectAgentRunLifecycle({
         runStatus: detail.status,
@@ -1005,21 +961,13 @@ export function RunsPage({
                 <p className="eyebrow">Browser Evidence</p>
                 <strong>审阅这次浏览器证据采集</strong>
                 <p className="meta">
-                  Browser evidence：{
-                    [
-                      browserEvidenceReview.url ? `url=${browserEvidenceReview.url}` : null,
-                      browserEvidenceReview.evidenceKinds.length
-                        ? `artifacts=${browserEvidenceReview.evidenceKinds.join(', ')}`
-                        : null,
-                      `artifact=${browserEvidenceReview.artifactId}`,
-                    ].filter(Boolean).join(' / ')
-                  }
+                  Browser evidence：{formatBrowserEvidenceReviewMeta(browserEvidenceReview)}
                 </p>
                 <p className="meta">{browserEvidenceReview.summary}</p>
                 {browserEvidenceReview.screenshotPath ? (
                   <p className="meta">Screenshot：{browserEvidenceReview.screenshotPath}</p>
                 ) : null}
-                <p className="meta">Next review move：review captured evidence before enabling any controlled browser interaction.</p>
+                <p className="meta">Next review move：{formatBrowserEvidenceReviewNextMove()}</p>
               </div>
             ) : null}
             <div className="task-card detail-card-group detail-card-wide">
