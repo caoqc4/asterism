@@ -657,7 +657,26 @@ describe('RunService', () => {
       }),
     };
     const agentSessionRepository = {
-      listForRun: vi.fn().mockResolvedValue([]),
+      listForRun: vi.fn().mockResolvedValue([
+        {
+          id: 'agent_session_paused',
+          runId: 'run_1',
+          mode: 'agent',
+          status: 'paused',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: true,
+            streaming: false,
+            fileContext: false,
+            taskMutationTools: false,
+            longRunningSessions: false,
+          },
+          metadata: 'executor=local_agent',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]),
+      updateStatus: vi.fn(),
     };
     const service = new RunService(
       runRepository as never,
@@ -693,6 +712,10 @@ describe('RunService', () => {
       'run_checkpoint_resume',
       'resolved',
     );
+    expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
+      'agent_session_paused',
+      'completed',
+    );
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         runId: 'run_1',
@@ -715,6 +738,137 @@ describe('RunService', () => {
     );
     expect(artifactRepository.createFromRun).not.toHaveBeenCalled();
     expect(result.status).toBe('completed');
+  });
+
+  it('marks the paused agent session failed when resume execution fails', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildRunRecord('paused'),
+        type: 'agent',
+        output: '等待先解除阻塞。',
+        outputSource: 'system',
+      }),
+      create: vi.fn(),
+      updateResult: vi.fn().mockResolvedValue({
+        ...buildRunRecord('failed'),
+        type: 'agent',
+        output: 'Resume failed',
+        outputSource: 'system',
+        failureReason: 'Resume failed',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      transitionIfAllowed: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+      annotateRunFailed: vi.fn(),
+      annotateRunPaused: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
+    };
+    const artifactRepository = buildArtifactRepositoryMock();
+    const runStepRepository = {
+      ...buildRunStepRepositoryMock(),
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
+    const runCheckpointRepository = {
+      listForRun: vi.fn().mockResolvedValue([
+        {
+          id: 'run_checkpoint_resume',
+          runId: 'run_1',
+          stepId: 'run_step_resume',
+          kind: 'resume',
+          status: 'open',
+          payload: JSON.stringify({
+            version: 1,
+            kind: 'resume',
+            reason: '等待先解除阻塞。',
+            runId: 'run_1',
+            nextTool: 'artifact.create_note',
+            nextInput: {
+              title: 'Recovered note',
+              content: 'Recovered note',
+            },
+            policySnapshot: {
+              maxSteps: 8,
+              maxWallTimeMs: 120_000,
+              allowNetwork: false,
+              allowLocalWorkspaceRead: false,
+              allowLocalFileWrite: false,
+              confirmationRequiredRisks: ['external_write', 'sensitive'],
+            },
+            taskId: 'task_1',
+          }),
+          createdAt: '2026-01-01T00:00:00.000Z',
+          resolvedAt: null,
+        },
+      ]),
+      updateStatus: vi.fn(),
+    };
+    const agentToolRegistry = {
+      execute: vi.fn().mockResolvedValue({
+        success: false,
+        status: 'failed',
+        summary: 'Resume failed',
+        error: 'Resume failed',
+      }),
+    };
+    const agentSessionRepository = {
+      listForRun: vi.fn().mockResolvedValue([
+        {
+          id: 'agent_session_paused',
+          runId: 'run_1',
+          mode: 'agent',
+          status: 'paused',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: true,
+            streaming: false,
+            fileContext: false,
+            taskMutationTools: false,
+            longRunningSessions: false,
+          },
+          metadata: 'executor=local_agent',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]),
+      updateStatus: vi.fn(),
+    };
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      artifactRepository as never,
+      {} as never,
+      {} as never,
+      undefined,
+      runStepRepository as never,
+      agentToolRegistry as never,
+      runCheckpointRepository as never,
+      agentSessionRepository as never,
+    );
+
+    const result = await service.continuePausedRun('run_1');
+
+    expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
+      'agent_session_paused',
+      'failed',
+    );
+    expect(runCheckpointRepository.updateStatus).not.toHaveBeenCalled();
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_1',
+      'failed',
+      'Resume failed',
+      'system',
+      'Resume failed',
+    );
+    expect(taskService.annotateRunFailed).toHaveBeenCalledWith(
+      'task_1',
+      'Resume failed',
+      'run_1',
+    );
+    expect(result.status).toBe('failed');
   });
 
   it.each([

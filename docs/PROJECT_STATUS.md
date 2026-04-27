@@ -609,6 +609,11 @@ The project is past initial architecture assembly. Current work should favor pro
   treated as `interrupted_or_stale`, so task recovery copy asks the user to
   inspect evidence and start a new Run if no executor is active instead of
   implying automatic replay.
+- Paused-run continuation now synchronizes the latest continuable AgentSession
+  terminal status: successful resume marks it `completed`, failed resume marks
+  it `failed`, and invalid/stale checkpoint payloads still stop before any
+  tool execution or session mutation. This keeps restart/recovery summaries
+  aligned with the actual Run outcome after a manual resume.
 - The Runs `回到任务推进` action now uses the replay review mode to prefill the
   task next-step draft, so manual-resume sessions point users back to open
   checkpoint / Decision review before continuing.

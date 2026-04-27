@@ -1,6 +1,7 @@
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
 import { validateResumeCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
+import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type {
   CreateRunInput,
   RunDetailRecord,
@@ -196,6 +197,7 @@ export class RunService {
     );
 
     if (!result.success) {
+      await this.updateLatestContinuableAgentSession(run, 'failed');
       const failed = await this.runRepository.updateResult(
         runId,
         'failed',
@@ -208,6 +210,7 @@ export class RunService {
     }
 
     await this.runCheckpointRepository.updateStatus(checkpoint.id, 'resolved');
+    await this.updateLatestContinuableAgentSession(run, 'completed');
     await this.runStepRepository.create({
       runId,
       kind: 'final',
@@ -262,4 +265,36 @@ export class RunService {
       taskForExecution.processTemplates.length,
     );
   }
+
+  private async updateLatestContinuableAgentSession(
+    run: RunDetailRecord,
+    status: AgentSessionRecord['status'],
+  ): Promise<void> {
+    const latestSession = [...(run.agentSessions ?? [])]
+      .filter((session) =>
+        session.status === 'paused'
+        || session.status === 'needs_confirmation'
+        || session.status === 'running')
+      .sort(compareAgentSessionsByRecency)
+      .at(-1);
+
+    if (!latestSession) {
+      return;
+    }
+
+    await this.agentSessionStore.updateStatus(latestSession.id, status);
+  }
+}
+
+function compareAgentSessionsByRecency(
+  left: Pick<AgentSessionRecord, 'createdAt' | 'updatedAt'>,
+  right: Pick<AgentSessionRecord, 'createdAt' | 'updatedAt'>,
+): number {
+  const updated = left.updatedAt.localeCompare(right.updatedAt);
+
+  if (updated !== 0) {
+    return updated;
+  }
+
+  return left.createdAt.localeCompare(right.createdAt);
 }
