@@ -130,7 +130,7 @@ function getCheckpointDecisionGuidance(
         : `来源：Agent checkpoint（${sourceLabel}）。该 promotion 已批准并记录，但当前版本不会自动写入工作区文件。`;
     }
 
-    return `来源：Agent checkpoint（${sourceLabel}）。该确认已批准，系统会尝试恢复等待中的${actionLabel}。`;
+    return `来源：Agent checkpoint（${sourceLabel}）。该确认已批准；等待中的${actionLabel}恢复结果以 Run 证据为准。`;
   }
 
   return `来源：Agent checkpoint（${sourceLabel}）。该确认未批准，本次 run 会作为不可续跑的执行记录收束。`;

@@ -834,6 +834,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Task detail Code Agent Review also avoids treating a `running` sandbox
   preview record as proof of a live executor; it now asks users to inspect Run
   evidence and the latest step before waiting, rerunning, or starting a new run.
+- Approved checkpoint Decisions now say recovery results should be read from
+  Run evidence instead of implying a future automatic restore promise from the
+  Decision page alone.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
@@ -1201,7 +1204,7 @@ npm run verify
 Latest local baseline:
 
 - 119 test files
-- 829 tests
+- 830 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -1212,7 +1215,8 @@ Latest local baseline:
   resume-payload UI/backend gating, supported resume-input validation,
   scheduler checkpoint-state exclusion, and browser controlled Decision
   consequence wording, and Code Agent checkpoint recovery guidance, and updating
-  the local acceptance status: 119 test files / 829 tests
+  approved checkpoint evidence wording, and updating the local acceptance
+  status: 119 test files / 830 tests
 - `npm run smoke:release:mac` passed locally on 2026-04-27 for the combined
   unsigned macOS package path after the Code Agent context-gate and
   restart/replay safety updates

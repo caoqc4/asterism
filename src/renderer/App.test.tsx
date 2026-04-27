@@ -5073,6 +5073,38 @@ describe('App UI flow', () => {
     expect(screen.getByRole('button', { name: '批准' })).toBeTruthy();
   });
 
+  it('explains approved checkpoint recovery results come from run evidence', async () => {
+    const user = userEvent.setup();
+    const checkpointDecisionApi: ElectronApi = {
+      ...mockApi,
+      listDecisions: vi.fn(async () => [
+        {
+          id: 'decision_checkpoint_approved',
+          taskId: riskTask.id,
+          title: '确认本地写入：artifact.create_note',
+          status: 'approved' as const,
+          sourceType: 'agent_checkpoint' as const,
+          sourceId: 'run_checkpoint_approved',
+          sourceLabel: 'artifact.create_note',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]),
+    };
+
+    window.api = checkpointDecisionApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /decisions/i }));
+
+    expect(await screen.findByRole('heading', { name: '确认本地写入：artifact.create_note' })).toBeTruthy();
+    expect(
+      screen.getByText('来源：Agent checkpoint（artifact.create_note）。该确认已批准；等待中的本地 note 产物写入恢复结果以 Run 证据为准。'),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '批准' })).toBeNull();
+  });
+
   it('prefills task next step from a pending checkpoint decision', async () => {
     const user = userEvent.setup();
     const checkpointDecisionApi: ElectronApi = {
