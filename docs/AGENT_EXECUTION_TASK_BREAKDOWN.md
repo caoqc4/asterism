@@ -482,6 +482,10 @@ The latest implementation slice:
 - Runs `回到任务推进` now uses that replay review mode to prefill the task
   next-step draft, keeping manual-resume work anchored on checkpoint / Decision
   review instead of automatic replay
+- Runs recovery now also has UI coverage for running sessions whose latest step
+  is still active (`live_status_unknown`) and paused sessions with no open
+  checkpoint (`checkpoint_missing`), so both routes stay inspect-first and
+  no-auto-replay from Run evidence back into Task next-step recovery.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation
