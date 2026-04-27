@@ -561,7 +561,8 @@ The project is past initial architecture assembly. Current work should favor pro
   No automatic replay is enabled by this slice.
 - Runs detail now also shows a shared replay review summary derived from the
   latest agent session plus RunSteps. It is an evidence/recovery hint only:
-  inspect-only, manual-resume, or new-run recovery, always with `autoReplay=no`.
+  inspect-only, manual-resume, or new-run recovery, always with
+  `openCheckpoints` and `autoReplay=no`.
 - Connector policy/evidence records are now generated from
   `agent-tool-scaffold`: each descriptor records model visibility, network,
   credential, checkpoint, and verification requirements. Settings diagnostics

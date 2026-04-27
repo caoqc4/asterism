@@ -482,8 +482,8 @@ describe('agent capability formatting', () => {
         status: 'completed',
         title: 'Sandbox producer source ready',
       },
-    ])).toBe(
-      'Replay review：resume only through the open checkpoint / mode=manual_resume / session=agent_session_1 / status=paused / steps=1 / latest=artifact:completed:Sandbox producer source ready / autoReplay=no',
+    ], [{ status: 'open' }])).toBe(
+      'Replay review：resume only through the open checkpoint / mode=manual_resume / session=agent_session_1 / status=paused / steps=1 / openCheckpoints=1 / latest=artifact:completed:Sandbox producer source ready / autoReplay=no',
     );
     expect(formatSandboxProducerLifecycleSummary(session)).toBe(
       'AgentRunLifecycle：blocked / source=source_1 / checks=test,lint / policy=network=disabled, promotion=decision_required, workspace mutation requires approved Decision / blocked=docker is unavailable / next=fix runtime readiness, then start a new manual run',

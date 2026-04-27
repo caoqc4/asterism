@@ -1,10 +1,11 @@
 import type { AgentSessionRecord } from './types/agent-execution.js';
-import type { RunStepRecord } from './types/run.js';
+import type { RunCheckpointRecord, RunStepRecord } from './types/run.js';
 
 export type AgentSessionReplayReview = {
   latestStepTitle: string | null;
   latestStepStatus: string | null;
   mode: 'inspect_only' | 'manual_resume' | 'new_run';
+  openCheckpointCount: number;
   runStepCount: number;
   sessionId: string;
   status: AgentSessionRecord['status'];
@@ -12,10 +13,13 @@ export type AgentSessionReplayReview = {
 };
 
 export function buildAgentSessionReplayReview(params: {
+  checkpoints?: Pick<RunCheckpointRecord, 'status'>[];
   session: AgentSessionRecord;
   steps: Pick<RunStepRecord, 'createdAt' | 'index' | 'kind' | 'status' | 'title'>[];
 }): AgentSessionReplayReview {
   const latestStep = [...params.steps].sort(compareRunStepsForReplay).at(-1) ?? null;
+  const openCheckpointCount = (params.checkpoints ?? []).filter((checkpoint) =>
+    checkpoint.status === 'open').length;
   const mode = getReplayReviewMode(params.session.status);
   const action = getReplayReviewAction(params.session.status);
 
@@ -23,6 +27,7 @@ export function buildAgentSessionReplayReview(params: {
     latestStepStatus: latestStep?.status ?? null,
     latestStepTitle: latestStep?.title ?? null,
     mode,
+    openCheckpointCount,
     runStepCount: params.steps.length,
     sessionId: params.session.id,
     status: params.session.status,
@@ -32,6 +37,7 @@ export function buildAgentSessionReplayReview(params: {
       `session=${params.session.id}`,
       `status=${params.session.status}`,
       `steps=${params.steps.length}`,
+      `openCheckpoints=${openCheckpointCount}`,
       latestStep ? `latest=${latestStep.kind}:${latestStep.status}:${latestStep.title}` : 'latest=none',
       'autoReplay=no',
     ].join(' / '),

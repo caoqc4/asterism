@@ -472,7 +472,7 @@ The latest implementation slice:
   evidence, resume through checkpoint/Decision review, or start a new Run
 - shared replay review summaries now show Runs detail whether the latest agent
   session is inspect-only, manual-resume-only, or new-run recovery, while
-  keeping automatic replay disabled
+  keeping automatic replay disabled and surfacing open checkpoint count
 - `agent-tool-scaffold` now builds connector policy records and local
   verification evidence requirements for every descriptor; Settings diagnostics
   show the verification-required count, and reserved connector families remain

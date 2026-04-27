@@ -1,5 +1,5 @@
 import type { AgentSessionRecord } from '@shared/types/agent-execution';
-import type { RunStepRecord } from '@shared/types/run';
+import type { RunCheckpointRecord, RunStepRecord } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
 import { getProviderExecutionCapabilities } from '@shared/agent-provider-capabilities';
 import { buildAgentSessionReplayReview } from '@shared/agent-session-replay';
@@ -99,8 +99,9 @@ export function formatAgentSessionRestartSummary(session: AgentSessionRecord): s
 export function formatAgentSessionReplayReviewSummary(
   session: AgentSessionRecord,
   steps: Pick<RunStepRecord, 'createdAt' | 'index' | 'kind' | 'status' | 'title'>[],
+  checkpoints: Pick<RunCheckpointRecord, 'status'>[] = [],
 ): string {
-  return buildAgentSessionReplayReview({ session, steps }).summary;
+  return buildAgentSessionReplayReview({ checkpoints, session, steps }).summary;
 }
 
 export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): string | null {

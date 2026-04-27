@@ -779,7 +779,7 @@ export function RunsPage({
     ? formatAgentSessionRestartSummary(latestAgentSession)
     : null;
   const latestAgentSessionReplayReview = latestAgentSession
-    ? formatAgentSessionReplayReviewSummary(latestAgentSession, detailSteps)
+    ? formatAgentSessionReplayReviewSummary(latestAgentSession, detailSteps, detailCheckpoints)
     : null;
   const sandboxProducerSource = latestAgentSession
     ? formatSandboxProducerSourceSummary(latestAgentSession)

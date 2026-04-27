@@ -52,21 +52,26 @@ describe('agent session replay review', () => {
       latestStepStatus: 'completed',
       latestStepTitle: 'Final output',
       mode: 'inspect_only',
+      openCheckpointCount: 0,
       runStepCount: 2,
       sessionId: 'agent_session_1',
       status: 'completed',
-      summary: 'Replay review：inspect completed evidence / mode=inspect_only / session=agent_session_1 / status=completed / steps=2 / latest=final:completed:Final output / autoReplay=no',
+      summary: 'Replay review：inspect completed evidence / mode=inspect_only / session=agent_session_1 / status=completed / steps=2 / openCheckpoints=0 / latest=final:completed:Final output / autoReplay=no',
     });
   });
 
   it('routes confirmation and paused sessions to manual resume only', () => {
     expect(buildAgentSessionReplayReview({
+      checkpoints: [
+        { status: 'open' },
+        { status: 'resolved' },
+      ],
       session: buildSession('needs_confirmation'),
       steps: [
         buildStep({ index: 1, kind: 'checkpoint', status: 'pending', title: 'Tool permission checkpoint' }),
       ],
     }).summary).toBe(
-      'Replay review：resume only after Decision approval / mode=manual_resume / session=agent_session_1 / status=needs_confirmation / steps=1 / latest=checkpoint:pending:Tool permission checkpoint / autoReplay=no',
+      'Replay review：resume only after Decision approval / mode=manual_resume / session=agent_session_1 / status=needs_confirmation / steps=1 / openCheckpoints=1 / latest=checkpoint:pending:Tool permission checkpoint / autoReplay=no',
     );
 
     expect(buildAgentSessionReplayReview({
@@ -76,7 +81,8 @@ describe('agent session replay review', () => {
       latestStepStatus: null,
       latestStepTitle: null,
       mode: 'manual_resume',
-      summary: 'Replay review：resume only through the open checkpoint / mode=manual_resume / session=agent_session_1 / status=paused / steps=0 / latest=none / autoReplay=no',
+      openCheckpointCount: 0,
+      summary: 'Replay review：resume only through the open checkpoint / mode=manual_resume / session=agent_session_1 / status=paused / steps=0 / openCheckpoints=0 / latest=none / autoReplay=no',
     });
   });
 
@@ -89,7 +95,7 @@ describe('agent session replay review', () => {
     })).toMatchObject({
       latestStepStatus: 'failed',
       mode: 'new_run',
-      summary: 'Replay review：inspect failed steps before starting a new run / mode=new_run / session=agent_session_1 / status=failed / steps=1 / latest=tool_result:failed:Tool failed / autoReplay=no',
+      summary: 'Replay review：inspect failed steps before starting a new run / mode=new_run / session=agent_session_1 / status=failed / steps=1 / openCheckpoints=0 / latest=tool_result:failed:Tool failed / autoReplay=no',
     });
   });
 });

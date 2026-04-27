@@ -500,7 +500,7 @@ Current implementation note:
   do not enable automatic replay.
 - Shared replay review summaries now derive an inspect/manual-resume/new-run
   hint from the latest agent session plus RunSteps. This is review guidance only
-  and explicitly records `autoReplay=no`.
+  and explicitly records `openCheckpoints` plus `autoReplay=no`.
 - `agent-tool-scaffold` now emits connector policy records and local
   verification evidence requirements for every reserved or implemented tool
   family. Settings diagnostics include the verification-required count, while

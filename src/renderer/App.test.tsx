@@ -3719,7 +3719,7 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        'Replay review：inspect latest step before any recovery / mode=inspect_only / session=agent_session_1 / status=running / steps=1 / latest=plan:completed:采用模型提出的 agent 步骤计划 / autoReplay=no',
+        'Replay review：inspect latest step before any recovery / mode=inspect_only / session=agent_session_1 / status=running / steps=1 / openCheckpoints=0 / latest=plan:completed:采用模型提出的 agent 步骤计划 / autoReplay=no',
       ),
     ).toBeTruthy();
     expect(screen.getByText('Session metadata：executor=local_agent / loop=local_note')).toBeTruthy();
