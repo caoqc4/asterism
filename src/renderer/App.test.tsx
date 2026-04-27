@@ -6717,6 +6717,9 @@ describe('App UI flow', () => {
     expect(screen.getByText(
       'Browser Evidence：Browser evidence preflight: reserved / configuredOrigins=0 / modelExposure=hidden / browserStart=no / networkCall=no / next=manual isolated runner smoke available while runtime stays hidden',
     )).toBeTruthy();
+    expect(screen.getByText(
+      'Orchestration：Orchestration snapshot / runtime=not_checked / profile=manual_sandbox_producer / lifecycle=drafted / queue=no / autoStart=no / hidden=browser_playwright,mcp,skill,computer_use,creator_connector',
+    )).toBeTruthy();
     expect(screen.getByText('Workspace Coding')).toBeTruthy();
     expect(screen.getByText('4 implemented / 1 reserved / 0 text / 0 native / 3 approval / 0 credential / 3 verification')).toBeTruthy();
     const toolScaffoldDiagnostics = screen.getByLabelText('Tool scaffold diagnostics');

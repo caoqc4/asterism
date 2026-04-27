@@ -87,6 +87,10 @@ The project is past initial architecture assembly. Current work should favor pro
   `ExecutionRuntime`, `AgentProfile`, `OrchestrationRequest`, and
   `AgentRunLifecycle` snapshots, then add request contracts and lifecycle
   vocabulary before any queue/claim worker or automatic-start policy.
+- The first read-only orchestration snapshot helper is in place: Settings can
+  summarize the local sandbox runtime, manual Code Agent profile,
+  manual/operator-started lifecycle, and hidden connector families without
+  enabling queue/claim, scheduler starts, provider calls, or automatic starts.
 - [CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md)
   is accepted for the first visible code-agent product surface: Task detail /
   Action Desk entrypoint, manual runtime readiness action, default available

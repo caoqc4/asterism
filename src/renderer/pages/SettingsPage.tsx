@@ -1,5 +1,6 @@
 import type { AiConfigInput, AiConfigStatus } from '@shared/types/settings';
 import type { AgentToolScaffoldFamilySummary } from '@shared/agent-tool-scaffold';
+import { buildAgentExecutionOrchestrationSnapshot } from '@shared/agent-orchestration';
 import { buildDefaultAgentToolExecutionPolicy } from '@shared/agent-tool-scaffold';
 import {
   buildDefaultAgentSandboxCommandPolicy,
@@ -77,6 +78,10 @@ function formatSandboxProducerBackendReadiness(aiStatus: AiConfigStatus | null):
 
 function formatBrowserEvidencePreflightState(): string {
   return buildBrowserEvidencePreflight().summary;
+}
+
+function formatOrchestrationSnapshotState(aiStatus: AiConfigStatus | null): string {
+  return buildAgentExecutionOrchestrationSnapshot(aiStatus).summary;
 }
 
 function formatToolScaffoldFamilyLabel(family: AgentToolScaffoldFamilySummary['family']): string {
@@ -161,6 +166,7 @@ export function SettingsPage({
         <p className="meta">Sandbox Coding Lane：{formatSandboxCodingLaneReadiness(aiStatus)}</p>
         <p className="meta">Producer Backend：{formatSandboxProducerBackendReadiness(aiStatus)}</p>
         <p className="meta">Browser Evidence：{formatBrowserEvidencePreflightState()}</p>
+        <p className="meta">Orchestration：{formatOrchestrationSnapshotState(aiStatus)}</p>
         <div className="tool-scaffold-summary" aria-label="Tool scaffold diagnostics">
           {(aiStatus?.toolScaffoldSummaries?.length ? aiStatus.toolScaffoldSummaries : []).map((summary) => (
             <div className="tool-scaffold-row" key={summary.family}>

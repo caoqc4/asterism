@@ -122,6 +122,11 @@ vocabulary becomes the orchestration contract.
 
 Goal: surface runtime/profile/lifecycle facts without changing execution.
 
+Status: started. Shared snapshot helpers now build the first local-sandbox
+runtime, manual Code Agent profile, manual/operator-started lifecycle, and
+hidden connector family summary without enabling queue, claim, scheduler, or
+automatic-start behavior.
+
 Work:
 
 - add shared snapshot helpers for current runtime readiness, static Code Agent
