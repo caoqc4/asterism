@@ -461,11 +461,12 @@ source and Decision-linked `patch_promotion` path.
 
 Next implementation target:
 
-Decide the next non-file context source for model producer runs before adding
-retrieval snippets, Skills/MCP observations, browser evidence, or Taskplane
-source/artifact content to provider prompts. The key product question is not
-whether the data is locally available, but whether the user has explicitly
-selected it for provider-visible model context.
+[CODE_AGENT_MODEL_CONTEXT_DECISION.md](CODE_AGENT_MODEL_CONTEXT_DECISION.md)
+now defines the next non-file context boundary before retrieval snippets,
+Skills/MCP observations, browser evidence, or Taskplane source/artifact content
+can enter provider prompts. The key product question is not whether the data is
+locally available, but whether the user has explicitly selected it for
+provider-visible model context.
 
 Backend review gate:
 [AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md](AGENT_EXECUTION_SANDBOX_BACKEND_REVIEW.md).

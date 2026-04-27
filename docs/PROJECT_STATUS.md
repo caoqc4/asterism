@@ -182,6 +182,12 @@ The project is past initial architecture assembly. Current work should favor pro
   backend blocks model-backed runs with absent, escaping, sensitive, binary,
   missing, or oversized context before producer execution. Provider config is
   not resolved for model-backed starts that have no bounded context files.
+- [CODE_AGENT_MODEL_CONTEXT_DECISION.md](CODE_AGENT_MODEL_CONTEXT_DECISION.md)
+  records the next model-context boundary: locally available task/source/run
+  data is not automatically provider-visible. Selected workspace files remain
+  the only accepted context today; source context, artifacts, retrieval
+  snippets, Skills/MCP observations, and browser evidence require explicit
+  selection and connector-specific policy before entering provider prompts.
 - A default-closed Code Agent model producer runtime factory now backs that
   manual gate: it blocks before resolving AI config unless provider calls are
   explicitly allowed for the current run, requires

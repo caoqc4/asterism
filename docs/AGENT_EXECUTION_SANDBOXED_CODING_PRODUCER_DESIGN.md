@@ -370,10 +370,11 @@ Accepted follow-up:
 
 Next slice:
 
-32. Decide the next non-file context source for model producer runs. Retrieval
-    snippets, Skills/MCP observations, and browser evidence remain out of the
-    sandboxed model loop until their connector-specific policy slices are
-    accepted.
+32. [CODE_AGENT_MODEL_CONTEXT_DECISION.md](CODE_AGENT_MODEL_CONTEXT_DECISION.md)
+    now defines the next non-file context boundary. Retrieval snippets,
+    Skills/MCP observations, browser evidence, Taskplane source context, and
+    artifacts remain out of the sandboxed model loop until explicit selection
+    and connector-specific policy slices are accepted.
 
 ## Acceptance
 
