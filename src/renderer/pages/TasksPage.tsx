@@ -1353,7 +1353,9 @@ export function TasksPage({
       const contextFiles = parseCodeAgentContextFileInput(codeAgentContextFiles);
       const created = await onTriggerCodeAgentRun({
         ...(contextFiles.length ? { contextFiles } : {}),
-        ...(codeAgentSourceContextIds.length ? { sourceContextIds: codeAgentSourceContextIds } : {}),
+        ...(codeAgentEffectiveUseModelProducer && codeAgentSourceContextIds.length
+          ? { sourceContextIds: codeAgentSourceContextIds }
+          : {}),
         operatorConfirmed: codeAgentOperatorConfirmed,
         patchIntent: codeAgentPatchIntent,
         requestedChecks,
@@ -2402,7 +2404,7 @@ export function TasksPage({
               ))}
             </div>
           ) : null}
-          {detail?.sourceContexts.length ? (
+          {detail?.sourceContexts.length && codeAgentEffectiveUseModelProducer ? (
             <div className="stack" aria-label="Source context selections">
               <p className="meta">
                 Source context manifest：{
