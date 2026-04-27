@@ -53,10 +53,11 @@ describe('agent session replay review', () => {
       latestStepTitle: 'Final output',
       mode: 'inspect_only',
       openCheckpointCount: 0,
+      restartSafety: 'terminal_evidence',
       runStepCount: 2,
       sessionId: 'agent_session_1',
       status: 'completed',
-      summary: 'Replay review：inspect completed evidence / mode=inspect_only / session=agent_session_1 / status=completed / steps=2 / openCheckpoints=0 / latest=final:completed:Final output / autoReplay=no',
+      summary: 'Replay review：inspect completed evidence / mode=inspect_only / session=agent_session_1 / status=completed / restartSafety=terminal_evidence / steps=2 / openCheckpoints=0 / latest=final:completed:Final output / autoReplay=no',
     });
   });
 
@@ -71,7 +72,7 @@ describe('agent session replay review', () => {
         buildStep({ index: 1, kind: 'checkpoint', status: 'pending', title: 'Tool permission checkpoint' }),
       ],
     }).summary).toBe(
-      'Replay review：resume only after Decision approval / mode=manual_resume / session=agent_session_1 / status=needs_confirmation / steps=1 / openCheckpoints=1 / latest=checkpoint:pending:Tool permission checkpoint / autoReplay=no',
+      'Replay review：resume only after Decision approval / mode=manual_resume / session=agent_session_1 / status=needs_confirmation / restartSafety=checkpoint_gated / steps=1 / openCheckpoints=1 / latest=checkpoint:pending:Tool permission checkpoint / autoReplay=no',
     );
 
     expect(buildAgentSessionReplayReview({
@@ -82,7 +83,8 @@ describe('agent session replay review', () => {
       latestStepTitle: null,
       mode: 'manual_resume',
       openCheckpointCount: 0,
-      summary: 'Replay review：resume only through the open checkpoint / mode=manual_resume / session=agent_session_1 / status=paused / steps=0 / openCheckpoints=0 / latest=none / autoReplay=no',
+      restartSafety: 'checkpoint_gated',
+      summary: 'Replay review：resume only through the open checkpoint / mode=manual_resume / session=agent_session_1 / status=paused / restartSafety=checkpoint_gated / steps=0 / openCheckpoints=0 / latest=none / autoReplay=no',
     });
   });
 
@@ -95,7 +97,30 @@ describe('agent session replay review', () => {
     })).toMatchObject({
       latestStepStatus: 'failed',
       mode: 'new_run',
-      summary: 'Replay review：inspect failed steps before starting a new run / mode=new_run / session=agent_session_1 / status=failed / steps=1 / openCheckpoints=0 / latest=tool_result:failed:Tool failed / autoReplay=no',
+      restartSafety: 'new_run_required',
+      summary: 'Replay review：inspect failed steps before starting a new run / mode=new_run / session=agent_session_1 / status=failed / restartSafety=new_run_required / steps=1 / openCheckpoints=0 / latest=tool_result:failed:Tool failed / autoReplay=no',
+    });
+  });
+
+  it('marks running sessions without an active latest step as interrupted or stale', () => {
+    expect(buildAgentSessionReplayReview({
+      session: buildSession('running'),
+      steps: [
+        buildStep({ index: 1, kind: 'plan', status: 'completed', title: 'Plan accepted' }),
+      ],
+    })).toMatchObject({
+      mode: 'inspect_only',
+      restartSafety: 'interrupted_or_stale',
+      summary: 'Replay review：inspect latest step before any recovery / mode=inspect_only / session=agent_session_1 / status=running / restartSafety=interrupted_or_stale / steps=1 / openCheckpoints=0 / latest=plan:completed:Plan accepted / autoReplay=no',
+    });
+
+    expect(buildAgentSessionReplayReview({
+      session: buildSession('running'),
+      steps: [
+        buildStep({ index: 1, kind: 'tool_call', status: 'running', title: 'Tool running' }),
+      ],
+    })).toMatchObject({
+      restartSafety: 'live_status_unknown',
     });
   });
 });

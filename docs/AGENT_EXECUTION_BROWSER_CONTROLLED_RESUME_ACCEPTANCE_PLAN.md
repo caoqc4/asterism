@@ -233,7 +233,9 @@ checkpoint payloads using linked Decision status, checkpoint state, resume
 evidence, reviewed payload evidence, consequence, policy, and next-review
 wording. It adds no generic browser prompt, arbitrary URL input, Playwright
 launch from UI, scheduler start, provider schema, model-visible tool, or
-Decision auto-resume.
+Decision auto-resume. A dev-app fixture pass on 2026-04-27 confirmed the
+approved-ready, resumed, blocked, stale-payload, and non-browser checkpoint
+surfaces; the non-browser fixture remains in generic Checkpoints only.
 
 Goal: make approval and resume outcomes inspectable from existing surfaces.
 
@@ -292,11 +294,12 @@ Acceptance:
 
 ## Recommended Next Task
 
-BCR1-BCR6 are locally accepted for the checkpoint-approved local-QA resume path.
+BCR1-BCR6 and the dev-app review fixture are locally accepted for the
+checkpoint-approved local-QA resume path.
 
-The next browser work should pause broad capability expansion. Candidate next
-steps are manual packaged-app review of the BCR1-BCR6 resume surface, or a new
-acceptance plan for the next connector lane. Do not add arbitrary URLs,
+The next browser work should pause broad capability expansion. Return to the
+executor/session interruption and restart-safety spine unless a later packaged
+visual pass specifically finds BCR review friction. Do not add arbitrary URLs,
 authenticated profiles, scheduler starts, provider schemas, model-visible tools,
 remote CDP, file transfer, credential entry, or broad multi-action continuation
 without a new acceptance plan.

@@ -3867,7 +3867,7 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        'Replay review：inspect latest step before any recovery / mode=inspect_only / session=agent_session_1 / status=running / steps=1 / openCheckpoints=0 / latest=plan:completed:采用模型提出的 agent 步骤计划 / autoReplay=no',
+        'Replay review：inspect latest step before any recovery / mode=inspect_only / session=agent_session_1 / status=running / restartSafety=interrupted_or_stale / steps=1 / openCheckpoints=0 / latest=plan:completed:采用模型提出的 agent 步骤计划 / autoReplay=no',
       ),
     ).toBeTruthy();
     expect(screen.getByText('Session metadata：executor=local_agent / loop=local_note')).toBeTruthy();
@@ -3878,7 +3878,7 @@ describe('App UI flow', () => {
       expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
     });
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
-      '检查最近一次 agent run 的最新步骤，确认是否仍在执行或需要人工介入。',
+      '确认最近一次 agent run 是否已中断；若没有活动执行器，先基于证据整理输入，再启动新的 run，不自动重放。',
     );
   });
 

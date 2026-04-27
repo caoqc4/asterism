@@ -233,11 +233,13 @@ evidence, without queue workers, workspace mutation, host shell access, or
 automatic starts.
 
 Status: locally accepted for the current O5 recovery-helper layer. Browser /
-Playwright Tier 1 evidence is also locally accepted through the manual smoke
-and Runs review path, so the next execution slice should be a connector-specific
-Tier 2 browser controlled-interaction acceptance plan. That plan should keep
-model exposure hidden until action RunStep evidence, checkpoint boundaries,
-allowlisted non-sensitive flows, and local QA smoke are explicitly accepted.
+Playwright Tier 1 evidence, Tier 2 controlled local QA, and checkpoint-approved
+one-action local QA resume are now locally accepted behind hidden/no-provider
+boundaries. The next execution slice should pause broad connector expansion and
+return to executor/session interruption and restart safety: persisted
+`running` sessions must be treated as review evidence unless a live executor is
+known, and recovery should route through checkpoint/Decision review or a new
+manual Run, never automatic replay.
 
 ## Non-Goals
 

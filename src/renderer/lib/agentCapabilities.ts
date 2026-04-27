@@ -127,6 +127,10 @@ export function formatAgentSessionReplayNextStepDraft(params: {
     return `检查最近一次 ${params.runType} run 的失败或取消证据，整理重试输入后再启动新的 run。`;
   }
 
+  if (review.restartSafety === 'interrupted_or_stale') {
+    return `确认最近一次 ${params.runType} run 是否已中断；若没有活动执行器，先基于证据整理输入，再启动新的 run，不自动重放。`;
+  }
+
   return review.status === 'running'
     ? `检查最近一次 ${params.runType} run 的最新步骤，确认是否仍在执行或需要人工介入。`
     : `审阅最近一次 ${params.runType} run 的证据和输出，再决定是否继续推进任务。`;

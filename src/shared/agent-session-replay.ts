@@ -6,6 +6,12 @@ export type AgentSessionReplayReview = {
   latestStepStatus: string | null;
   mode: 'inspect_only' | 'manual_resume' | 'new_run';
   openCheckpointCount: number;
+  restartSafety:
+    | 'checkpoint_gated'
+    | 'interrupted_or_stale'
+    | 'live_status_unknown'
+    | 'new_run_required'
+    | 'terminal_evidence';
   runStepCount: number;
   sessionId: string;
   status: AgentSessionRecord['status'];
@@ -22,12 +28,14 @@ export function buildAgentSessionReplayReview(params: {
     checkpoint.status === 'open').length;
   const mode = getReplayReviewMode(params.session.status);
   const action = getReplayReviewAction(params.session.status);
+  const restartSafety = getRestartSafety(params.session.status, latestStep?.status ?? null);
 
   return {
     latestStepStatus: latestStep?.status ?? null,
     latestStepTitle: latestStep?.title ?? null,
     mode,
     openCheckpointCount,
+    restartSafety,
     runStepCount: params.steps.length,
     sessionId: params.session.id,
     status: params.session.status,
@@ -36,6 +44,7 @@ export function buildAgentSessionReplayReview(params: {
       `mode=${mode}`,
       `session=${params.session.id}`,
       `status=${params.session.status}`,
+      `restartSafety=${restartSafety}`,
       `steps=${params.steps.length}`,
       `openCheckpoints=${openCheckpointCount}`,
       latestStep ? `latest=${latestStep.kind}:${latestStep.status}:${latestStep.title}` : 'latest=none',
@@ -72,6 +81,26 @@ function getReplayReviewAction(status: AgentSessionRecord['status']): string {
       return 'not resumable; inspect decision history';
     case 'running':
       return 'inspect latest step before any recovery';
+  }
+}
+
+function getRestartSafety(
+  status: AgentSessionRecord['status'],
+  latestStepStatus: string | null,
+): AgentSessionReplayReview['restartSafety'] {
+  switch (status) {
+    case 'completed':
+      return 'terminal_evidence';
+    case 'failed':
+    case 'cancelled':
+      return 'new_run_required';
+    case 'needs_confirmation':
+    case 'paused':
+      return 'checkpoint_gated';
+    case 'running':
+      return latestStepStatus === 'running' || latestStepStatus === 'pending'
+        ? 'live_status_unknown'
+        : 'interrupted_or_stale';
   }
 }
 

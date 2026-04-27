@@ -604,7 +604,11 @@ The project is past initial architecture assembly. Current work should favor pro
 - Runs detail now also shows a shared replay review summary derived from the
   latest agent session plus RunSteps. It is an evidence/recovery hint only:
   inspect-only, manual-resume, or new-run recovery, always with
-  `openCheckpoints` and `autoReplay=no`.
+  `openCheckpoints`, `restartSafety`, and `autoReplay=no`. A persisted
+  `running` session whose latest RunStep is no longer pending/running is now
+  treated as `interrupted_or_stale`, so task recovery copy asks the user to
+  inspect evidence and start a new Run if no executor is active instead of
+  implying automatic replay.
 - The Runs `回到任务推进` action now uses the replay review mode to prefill the
   task next-step draft, so manual-resume sessions point users back to open
   checkpoint / Decision review before continuing.
@@ -716,7 +720,11 @@ The project is past initial architecture assembly. Current work should favor pro
   and update the Run, and blocked/failed attempts write failed checkpoint
   RunSteps and cancel the checkpoint. Arbitrary URLs, authenticated profiles,
   scheduler starts, provider schemas, and model-visible browser tools remain
-  deferred.
+  deferred. A dev-app visual fixture pass on 2026-04-27 confirmed the
+  approved-ready, resumed, blocked, stale-payload, and non-browser checkpoint
+  review surfaces; the non-browser case also tightened the BCI review helper so
+  an isolated `Browser action planned:*` step no longer misclassifies a generic
+  checkpoint as browser-controlled evidence.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
@@ -1331,11 +1339,11 @@ dedicated signed/notarized release pass.
    orchestration O1-O4 sequence, Code Agent O5 recovery helper layer, and
    Browser Evidence Tier 1 review helpers are now implemented locally.
    Browser Controlled Interaction BCI1-BCI6 are locally accepted for the
-   local-QA path, and BCR1-BCR6 are locally accepted for checkpoint-approved
-   local-QA resume. The next execution task should pause broad browser
-   expansion and either manually review the packaged resume surface or start a
-   new connector-specific acceptance plan, not broad browser/MCP/computer-use
-   model exposure;
+   local-QA path, and BCR1-BCR6 plus the dev-app resume review fixture are
+   locally accepted for checkpoint-approved local-QA resume. The next execution
+   task should pause broad browser expansion and return to executor/session
+   interruption and restart safety, not broad browser/MCP/computer-use model
+   exposure;
    do not expose browser, MCP, computer-use, skills, or creator connector tools
    to the model until that connector-specific slice is explicitly accepted.
 

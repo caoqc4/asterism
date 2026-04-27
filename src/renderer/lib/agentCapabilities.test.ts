@@ -488,7 +488,7 @@ describe('agent capability formatting', () => {
         title: 'Sandbox producer source ready',
       },
     ], [{ status: 'open' }])).toBe(
-      'Replay review：resume only through the open checkpoint / mode=manual_resume / session=agent_session_1 / status=paused / steps=1 / openCheckpoints=1 / latest=artifact:completed:Sandbox producer source ready / autoReplay=no',
+      'Replay review：resume only through the open checkpoint / mode=manual_resume / session=agent_session_1 / status=paused / restartSafety=checkpoint_gated / steps=1 / openCheckpoints=1 / latest=artifact:completed:Sandbox producer source ready / autoReplay=no',
     );
     expect(formatSandboxProducerLifecycleSummary(session)).toBe(
       'AgentRunLifecycle：blocked / source=source_1 / checks=test,lint / policy=network=disabled, promotion=decision_required, workspace mutation requires approved Decision / blocked=docker is unavailable / next=fix runtime readiness, then start a new manual run',
@@ -529,6 +529,23 @@ describe('agent capability formatting', () => {
       },
       steps: [],
     })).toBe('检查最近一次 agent run 的失败或取消证据，整理重试输入后再启动新的 run。');
+
+    expect(formatAgentSessionReplayNextStepDraft({
+      runType: 'agent',
+      session: {
+        ...session,
+        status: 'running',
+      },
+      steps: [
+        {
+          createdAt: '2026-01-01T00:00:00.000Z',
+          index: 1,
+          kind: 'plan',
+          status: 'completed',
+          title: 'Plan accepted',
+        },
+      ],
+    })).toBe('确认最近一次 agent run 是否已中断；若没有活动执行器，先基于证据整理输入，再启动新的 run，不自动重放。');
   });
 
   it('formats source-ready sandbox producer lifecycle with Decision-only promotion', () => {
