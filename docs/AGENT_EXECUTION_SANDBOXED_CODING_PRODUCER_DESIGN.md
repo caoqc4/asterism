@@ -380,6 +380,11 @@ Next slice:
     operator opt-in. The content path uses task-attached validation, byte
     limits, no external URL fetching, no raw-content RunStep dump, and a
     separate read-only prompt section before becoming provider-visible.
+34. Artifact/run-output context is the next evaluation target, but starts as
+    manifest-only task-attached artifact selection. Artifact content remains
+    provider-invisible until kind-specific policy handles patch artifacts,
+    browser evidence, failed outputs, stale source runs, and generated-content
+    truth labeling.
 
 ## Acceptance
 
@@ -389,6 +394,8 @@ Next slice:
   content-inclusion opt-in and bounds in
   [CODE_AGENT_MODEL_CONTEXT_DECISION.md](CODE_AGENT_MODEL_CONTEXT_DECISION.md)
   are satisfied for the current run
+- artifact and run-output content remain provider-invisible; only a future
+  manifest-only artifact selection slice can be accepted next
 - every source-ready result includes source id, run id, task id, workspace root,
   changed files, diff, evidence, requested checks, and Decision promotion
   policy

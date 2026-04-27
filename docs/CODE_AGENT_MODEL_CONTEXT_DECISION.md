@@ -100,13 +100,30 @@ audit-only and remains `contentIncluded=false`.
 
 ### Recent Artifacts And Run Outputs
 
-Potentially acceptable after source context.
+Potentially acceptable next, but not yet accepted as model-visible content.
 
 Artifacts and run outputs may include generated drafts, browser extracts,
 provider outputs, stack traces, paths, and local state. They need the same
 explicit selection and bounded rendering rule. Patch artifacts should be
 handled carefully to avoid feeding an already rejected or stale patch back into
 the model as if it were accepted truth.
+
+The first acceptable shape should be manifest-only selection:
+
+- the operator can select task-attached artifact ids for audit
+- Taskplane records artifact id, title, kind, source run id, and whether content
+  was included
+- artifact content defaults to `contentIncluded=false`
+- patch artifacts, browser evidence, and failed run outputs remain
+  content-ineligible in this slice
+- selected artifact ids must belong to the current task
+- invalid or detached artifact ids fail closed before provider runtime config
+  is resolved
+
+Artifact or run-output content should be evaluated only after manifest-only
+selection is stable. Any future content path needs kind-specific policy, byte
+limits, source-run status checks, stale-patch handling, and a prompt section
+that labels generated material as prior output rather than accepted truth.
 
 ### Retrieval Snippets
 
@@ -148,6 +165,8 @@ Agent context.
    source-context content conditions above. Accepted for stored local
    source-context snapshots only; this does not include artifact, browser, MCP,
    Skills, retrieval, or external URL-fetching behavior.
+8. Evaluate task-attached artifact selection as manifest-only audit data before
+   any artifact or run-output content enters the model prompt.
 
 ## Non-Goals
 
