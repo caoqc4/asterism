@@ -187,7 +187,7 @@ function formatCodeAgentContextManifestStepSummary(step: RunStepRecord): string 
 
   return [
     step.output,
-    'provider prompt content is not shown in this manifest',
+    'manifest only; selected content is not expanded here',
   ].join('；');
 }
 

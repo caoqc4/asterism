@@ -3937,11 +3937,11 @@ describe('App UI flow', () => {
           status: 'completed',
           title: 'Code Agent provider-visible context manifest',
           input: [
-            'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0',
-            'providerPromptContent=no',
-            'workspace_file:docs/notes.md:docs/notes.md',
+            'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0 / content=partial',
+            'providerPromptContent=partial',
+            'workspace_file:docs/notes.md:docs/notes.md:content=yes',
           ].join('\n'),
-          output: 'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0',
+          output: 'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0 / content=partial',
         }),
         buildRunStep({
           id: 'run_step_sandbox_check',
@@ -4078,7 +4078,7 @@ describe('App UI flow', () => {
     expect(screen.getByText('workspace unchanged until Decision approval')).toBeTruthy();
     expect(
       screen.getByText(
-        'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0；provider prompt content is not shown in this manifest',
+        'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0 / content=partial；manifest only; selected content is not expanded here',
       ),
     ).toBeTruthy();
     expect(

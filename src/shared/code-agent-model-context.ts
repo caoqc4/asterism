@@ -4,6 +4,7 @@ export type CodeAgentProviderVisibleContextKind =
   | 'workspace_file';
 
 export type CodeAgentProviderVisibleContextItem = {
+  contentIncluded: boolean;
   id: string;
   kind: CodeAgentProviderVisibleContextKind;
   label: string;
@@ -11,7 +12,7 @@ export type CodeAgentProviderVisibleContextItem = {
 
 export type CodeAgentProviderVisibleContextManifest = {
   items: CodeAgentProviderVisibleContextItem[];
-  providerPromptContentIncluded: false;
+  providerPromptContentIncluded: boolean;
   summary: string;
 };
 
@@ -29,11 +30,13 @@ export function buildCodeAgentProviderVisibleContextManifest(params: {
       item.id && items.findIndex((candidate) => candidate.id === item.id) === index);
   const items: CodeAgentProviderVisibleContextItem[] = [
     ...workspaceFiles.map((file) => ({
+      contentIncluded: true,
       id: file,
       kind: 'workspace_file' as const,
       label: file,
     })),
     ...sourceContexts.map((item) => ({
+      contentIncluded: false,
       id: item.id,
       kind: 'source_context' as const,
       label: item.title || item.id,
@@ -42,7 +45,7 @@ export function buildCodeAgentProviderVisibleContextManifest(params: {
 
   return {
     items,
-    providerPromptContentIncluded: false,
+    providerPromptContentIncluded: items.some((item) => item.contentIncluded),
     summary: formatCodeAgentProviderVisibleContextManifestSummary(items),
   };
 }
@@ -52,8 +55,9 @@ export function formatCodeAgentProviderVisibleContextManifestForStep(
 ): string {
   return [
     manifest.summary,
-    'providerPromptContent=no',
-    ...manifest.items.map((item) => `${item.kind}:${item.id}:${item.label}`),
+    `providerPromptContent=${manifest.providerPromptContentIncluded ? 'partial' : 'no'}`,
+    ...manifest.items.map((item) =>
+      `${item.kind}:${item.id}:${item.label}:content=${item.contentIncluded ? 'yes' : 'no'}`),
   ].join('\n');
 }
 
@@ -74,6 +78,7 @@ export function formatCodeAgentProviderVisibleContextManifestSummary(
       ? `source_context=${sourceContexts.map((item) => item.label).join(',')}`
       : 'source_context=0',
     `artifacts=${artifacts.length}`,
+    `content=${items.some((item) => item.contentIncluded) ? 'partial' : 'none'}`,
   ].join(' / ');
 }
 

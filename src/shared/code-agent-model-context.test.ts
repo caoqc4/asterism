@@ -16,20 +16,20 @@ describe('code agent model context manifest', () => {
     });
 
     expect(manifest).toMatchObject({
-      providerPromptContentIncluded: false,
-      summary: 'Provider-visible context manifest / items=3 / workspace_files=docs/notes.md,src/app.ts / source_context=Design note / artifacts=0',
+      providerPromptContentIncluded: true,
+      summary: 'Provider-visible context manifest / items=3 / workspace_files=docs/notes.md,src/app.ts / source_context=Design note / artifacts=0 / content=partial',
     });
     expect(manifest.items).toEqual([
-      { id: 'docs/notes.md', kind: 'workspace_file', label: 'docs/notes.md' },
-      { id: 'src/app.ts', kind: 'workspace_file', label: 'src/app.ts' },
-      { id: 'source_context_1', kind: 'source_context', label: 'Design note' },
+      { contentIncluded: true, id: 'docs/notes.md', kind: 'workspace_file', label: 'docs/notes.md' },
+      { contentIncluded: true, id: 'src/app.ts', kind: 'workspace_file', label: 'src/app.ts' },
+      { contentIncluded: false, id: 'source_context_1', kind: 'source_context', label: 'Design note' },
     ]);
     expect(formatCodeAgentProviderVisibleContextManifestForStep(manifest)).toBe([
-      'Provider-visible context manifest / items=3 / workspace_files=docs/notes.md,src/app.ts / source_context=Design note / artifacts=0',
-      'providerPromptContent=no',
-      'workspace_file:docs/notes.md:docs/notes.md',
-      'workspace_file:src/app.ts:src/app.ts',
-      'source_context:source_context_1:Design note',
+      'Provider-visible context manifest / items=3 / workspace_files=docs/notes.md,src/app.ts / source_context=Design note / artifacts=0 / content=partial',
+      'providerPromptContent=partial',
+      'workspace_file:docs/notes.md:docs/notes.md:content=yes',
+      'workspace_file:src/app.ts:src/app.ts:content=yes',
+      'source_context:source_context_1:Design note:content=no',
     ].join('\n'));
   });
 });

@@ -104,7 +104,9 @@ Agent context.
    be recorded for audit, but source-context content is not yet sent to the
    model.
 4. Persist the selected context manifest as a RunStep before provider runtime
-   config is resolved. Accepted for selected workspace files.
+   config is resolved. Accepted with per-item content visibility: selected
+   workspace files can be prompt evidence, selected source context remains
+   manifest-only.
 5. Render the selected context manifest on Runs detail without dumping full
    provider prompt contents.
 6. Only after that, evaluate artifact/run-output selection.

@@ -256,12 +256,12 @@ describe('CodeAgentRunService', () => {
     }));
     expect(runStepRepository.create).toHaveBeenCalledWith({
       input: [
-        'Provider-visible context manifest / items=1 / workspace_files=../escape.md / source_context=0 / artifacts=0',
-        'providerPromptContent=no',
-        'workspace_file:../escape.md:../escape.md',
+        'Provider-visible context manifest / items=1 / workspace_files=../escape.md / source_context=0 / artifacts=0 / content=partial',
+        'providerPromptContent=partial',
+        'workspace_file:../escape.md:../escape.md:content=yes',
       ].join('\n'),
       kind: 'plan',
-      output: 'Provider-visible context manifest / items=1 / workspace_files=../escape.md / source_context=0 / artifacts=0',
+      output: 'Provider-visible context manifest / items=1 / workspace_files=../escape.md / source_context=0 / artifacts=0 / content=partial',
       runId: 'run_code_agent_1',
       status: 'completed',
       title: 'Code Agent provider-visible context manifest',
