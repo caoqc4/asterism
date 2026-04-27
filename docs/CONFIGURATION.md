@@ -89,8 +89,14 @@ TASKPLANE_WORKSPACE_ROOT=/absolute/path/to/your/workspace
 TASKPLANE_ENABLE_SCHEDULER=false
 TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS=false
 TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=false
+TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=false
 TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=false
 ```
+
+Set `TASKPLANE_ENV_FILE=/absolute/path/to/.env` to load a different file.
+Existing shell environment variables win over values from `.env`; this applies
+to the app and to local preflight scripts. Preflight output prints `<set>` for
+API keys instead of the key value.
 
 Keep `TASKPLANE_ENABLE_SCHEDULER=false` for local AI/provider validation unless
 you specifically want hourly brief snapshots and stale-run checks running in the
@@ -98,6 +104,10 @@ background. It is independent from provider-native tool-call validation.
 Keep `TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=false` unless you are deliberately
 working on the disabled-by-default sandbox coding-agent lane; the flag is a
 rollout gate and does not by itself expose broad code execution.
+Keep `TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER=false` unless you are
+deliberately validating the model-backed Code Agent producer. Even when this
+flag is true, provider spend still requires the operator to select `Use model
+producer` in a Code Agent run and confirm the run notice.
 Keep `TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY=false` unless you are
 deliberately validating approved sandbox patch promotion against a disposable
 workspace. When enabled, approving a ready `workspace.staged_patch` Decision can
@@ -213,9 +223,6 @@ TASKPLANE_ENABLE_SCHEDULER=false
 TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS=true
 TASKPLANE_ENABLE_SANDBOX_CODING_AGENT=false
 ```
-
-Set `TASKPLANE_ENV_FILE=/absolute/path/to/.env` to load a different file. Existing shell
-environment variables win over values from `.env`.
 
 ## macOS Release Signing Variables
 
