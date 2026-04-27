@@ -524,13 +524,14 @@ The latest implementation slice:
 
 The next implementation slice is:
 
-- move from lane-specific smoke expansion back to the broader execution-layer
-  orchestration/UI design: runtime/profile/lifecycle visibility, manual
-  dispatch intent, and restart/recovery review before any queue worker or
-  automatic-start policy
-- start with the OUI1 shared presentation model from
-  [AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md](AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md),
-  then apply it to the Task detail read-only orchestration card
+- continue from the completed first read-only orchestration UI pass:
+  runtime/profile/lifecycle visibility, manual dispatch intent,
+  restart/recovery review, and Settings diagnostics are now visible without any
+  queue worker or automatic-start policy
+- use the shared presentation model from
+  [AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md](AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md)
+  as the stable wording source before adding new execution orchestration
+  behavior
 - tighten executor/session interruption and restart-safety gaps with
   inspect-first recovery wording, checkpoint/Decision routing, and new manual
   Run creation rather than automatic replay

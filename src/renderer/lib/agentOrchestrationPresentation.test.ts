@@ -180,8 +180,12 @@ describe('agent orchestration presentation', () => {
     const presentation = buildReadOnlyOrchestrationPresentation({ snapshot });
 
     expect(presentation.runtime).toContain('ExecutionRuntime：local_sandbox / status=ready');
-    expect(presentation.profile).toContain('AgentProfile：manual_sandbox_producer');
-    expect(presentation.lifecycle).toContain('queue=no / claim=no / scheduler=no / autoStart=no');
+    expect(presentation.profile).toBe(
+      'AgentProfile：manual_sandbox_producer / role=code_agent_preview / tools=workspace_coding,task_domain / automation=disabled',
+    );
+    expect(presentation.lifecycle).toBe(
+      'AgentRunLifecycle：drafted / start=manual_or_operator_started / queue=no / claim=no / scheduler=no / autoStart=no',
+    );
     expect(presentation.hiddenToolFamilies).toBe(
       'Hidden tool families / families=browser_playwright,mcp,skill,computer_use,creator_connector / modelVisible=no',
     );

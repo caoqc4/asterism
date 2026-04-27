@@ -171,6 +171,9 @@ The project is past initial architecture assembly. Current work should favor pro
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend
   detection as the only runtime action.
+- The shared orchestration presentation model now keeps profile and lifecycle
+  copy single-pass, so Task detail and Settings do not repeat the same
+  queue/claim/scheduler/auto-start facts inside one card.
 - The manual Code Agent intent surface now also shows automatic start as
   disabled, with the future maturity/input/tool/risk/evidence/runtime policy
   signals listed explicitly and no scheduler or auto-run flag persisted.

@@ -2933,7 +2933,7 @@ describe('App UI flow', () => {
     expect(readiness.getByText(/Task：High risk task/)).toBeTruthy();
     expect(readiness.getByText(/Skill readiness：deferred until policy exists/)).toBeTruthy();
     expect(readiness.getByText(
-      'AgentRunLifecycle：drafted / start=manual_or_operator_started / queue=no / claim=no / scheduler=no / autoStart=no / lifecycle=drafted / start=manual_or_operator_started / queue=no / claim=no / scheduler=no / autoStart=no',
+      'AgentRunLifecycle：drafted / start=manual_or_operator_started / queue=no / claim=no / scheduler=no / autoStart=no',
     )).toBeTruthy();
     expect(readiness.getByText(
       'Hidden tool families / families=browser_playwright,mcp,skill,computer_use,creator_connector / modelVisible=no',
@@ -7406,7 +7406,7 @@ describe('App UI flow', () => {
       'Summary：runtime=not_checked / profile=manual_sandbox_producer / lifecycle=drafted / hidden=browser_playwright,mcp,skill,computer_use,creator_connector / modelVisibleHiddenTools=no / automation=disabled / autoStart=no',
     )).toBeTruthy();
     expect(orchestrationDiagnostics.getByText(
-      'AgentRunLifecycle：drafted / start=manual_or_operator_started / queue=no / claim=no / scheduler=no / autoStart=no / lifecycle=drafted / start=manual_or_operator_started / queue=no / claim=no / scheduler=no / autoStart=no',
+      'AgentRunLifecycle：drafted / start=manual_or_operator_started / queue=no / claim=no / scheduler=no / autoStart=no',
     )).toBeTruthy();
     expect(orchestrationDiagnostics.getByText(
       'Hidden tool families / families=browser_playwright,mcp,skill,computer_use,creator_connector / modelVisible=no',

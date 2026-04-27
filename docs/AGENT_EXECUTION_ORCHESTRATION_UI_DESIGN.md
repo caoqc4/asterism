@@ -213,8 +213,9 @@ Acceptance:
 ## Recommended Next Implementation Task
 
 The first orchestration UI pass has landed across Task detail, Runs detail, and
-Settings. The next implementation slice should tighten visual polish and reduce
-duplicated wording between the three cards, then move into the next execution
+Settings. The shared presentation model has also been tightened so profile and
+lifecycle facts are shown once instead of repeating snapshot summaries inside
+the cards. The next implementation slice should move into the next execution
 orchestration step only after these read-only surfaces stay stable.
 
 ## Verification

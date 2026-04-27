@@ -35,7 +35,6 @@ export function buildReadOnlyOrchestrationPresentation(params: {
       `role=${snapshot.profile.role}`,
       `tools=${snapshot.profile.allowedToolFamilies.join(',') || 'none'}`,
       `automation=${snapshot.profile.automationReadiness}`,
-      snapshot.profile.summary,
     ].join(' / '),
     lifecycle: [
       `AgentRunLifecycle：${snapshot.lifecycle.currentStage}`,
@@ -44,7 +43,6 @@ export function buildReadOnlyOrchestrationPresentation(params: {
       `claim=${snapshot.lifecycle.claimEnabled ? 'yes' : 'no'}`,
       `scheduler=${snapshot.lifecycle.schedulerEnabled ? 'yes' : 'no'}`,
       `autoStart=${snapshot.lifecycle.automaticStartEnabled ? 'yes' : 'no'}`,
-      snapshot.lifecycle.summary,
     ].join(' / '),
     hiddenToolFamilies: [
       'Hidden tool families',
