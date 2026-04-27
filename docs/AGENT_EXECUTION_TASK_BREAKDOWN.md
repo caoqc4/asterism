@@ -108,6 +108,12 @@ Completed:
 - `npm run manual:browser-evidence-fixture` materializes the B3 fixture files
   for future runner smoke validation without starting a browser or making
   network calls
+- the Browser / Playwright decision has been rechecked against public Codex,
+  OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
+  Foundry, and Pause references; the chosen boundary is no longer "read-only
+  forever", but a tiered web capability ladder starting with isolated
+  read-only evidence and reserving controlled interaction for a separate
+  policy decision
 
 Pi reference boundary:
 
@@ -364,10 +370,14 @@ review, and pending promotion Decision creation.
 
 The next implementation slice is:
 
-- keep Browser / Playwright read-only lane pre-runtime: decide whether the next
-  slice is a real isolated Playwright smoke, with browser execution,
-  credentials, model exposure, and mutation still deferred until that decision
-  is accepted
+- implement the first real Browser / Playwright Tier 1 smoke behind the hidden
+  `browser.readonly_evidence` descriptor: isolated browser context, local
+  fixture or explicitly allowlisted local dev URL, screenshot/text artifacts,
+  no credentials, no mutation, and no model-visible tool exposure
+- in parallel, draft the Tier 2 controlled browser interaction policy:
+  click/type/select only for allowlisted, non-sensitive flows, RunStep evidence
+  for every action, and Decision checkpoints before final submit/post/publish/
+  purchase/delete effects
 
 Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer control,
 external posting, or social/media publishing as model-visible tools until the
