@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 import { generateText, jsonSchema, tool } from 'ai';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -29,6 +31,51 @@ import { makeTempDir } from '../src/main/test-utils.js';
 import { TaskService } from '../src/main/domain/task/task-service.js';
 import { AgentToolRegistry } from '../src/main/domain/run/agent-tool-registry.js';
 import { RunService } from '../src/main/domain/run/run-service.js';
+
+const preflightEnvKeys = [
+  'TASKPLANE_AI_PROVIDER',
+  'TASKPLANE_AI_MODEL',
+  'TASKPLANE_AI_BASE_URL',
+  'TASKPLANE_AI_API_KEY',
+  'TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS',
+  'TASKPLANE_ENV_FILE',
+];
+
+function withPreflightEnv<T>(
+  envContents: string,
+  envOverrides: NodeJS.ProcessEnv,
+  callback: () => T,
+): T {
+  const originalValues = new Map<string, string | undefined>();
+  const envFilePath = path.join(
+    fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-provider-native-preflight-test-')),
+    '.env',
+  );
+
+  fs.writeFileSync(envFilePath, envContents);
+
+  for (const key of preflightEnvKeys) {
+    originalValues.set(key, process.env[key]);
+    delete process.env[key];
+  }
+
+  process.env.TASKPLANE_ENV_FILE = envFilePath;
+  Object.assign(process.env, envOverrides);
+
+  try {
+    return callback();
+  } finally {
+    for (const [key, value] of originalValues) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+
+    fs.rmSync(path.dirname(envFilePath), { recursive: true, force: true });
+  }
+}
 
 function buildProviderToolPayload(params: {
   finishReason: string | undefined;
@@ -255,5 +302,37 @@ describe('provider-native live RunService acceptance', () => {
       step.kind === 'tool_result' &&
       step.title === '工具结果：task.inspect_context'
     )).toBe(true);
+  });
+});
+
+describe('provider-native live preflight', () => {
+  it('lets shell environment override .env values without printing the API key', () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    try {
+      const preflight = withPreflightEnv([
+        'TASKPLANE_AI_PROVIDER=anthropic',
+        'TASKPLANE_AI_MODEL=claude-env-file',
+        'TASKPLANE_AI_API_KEY=env-file-provider-key-secret',
+        'TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS=true',
+      ].join('\n'), {
+        TASKPLANE_AI_MODEL: 'claude-shell',
+        TASKPLANE_AI_API_KEY: 'shell-provider-key-secret',
+      }, () => getProviderNativeLivePreflight());
+
+      printProviderNativeLivePreflight(preflight);
+
+      const output = logSpy.mock.calls.map((call) => call.join(' ')).join('\n');
+
+      expect(preflight.ready).toBe(true);
+      expect(preflight.model).toBe('claude-shell');
+      expect(preflight.apiKey).toBe('shell-provider-key-secret');
+      expect(output).toContain('model=claude-shell');
+      expect(output).toContain('apiKey=<set>');
+      expect(output).not.toContain('env-file-provider-key-secret');
+      expect(output).not.toContain('shell-provider-key-secret');
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 });

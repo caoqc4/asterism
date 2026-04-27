@@ -1247,7 +1247,12 @@ Latest local baseline:
   acceptance gate
 - `npm run accept:provider-native-live:preflight` reports the current local
   provider-native setup is ready; live provider validation remains opt-in
-  because it spends configured provider credit
+  because it spends configured provider credit.
+- Provider-native live acceptance coverage now also has a no-credit preflight
+  unit path under the live Vitest config: shell environment values override
+  `.env`, printed readiness stays redacted, and the actual provider call test
+  remains opt-in/skipped unless the preflight is ready and the acceptance
+  command is run deliberately.
 - `npm run verify` passed locally on 2026-04-26 after adding the sandbox
   patch-review request builder, audit persistence coverage, and non-executing
   run-plan/planning-service layer plus the explicit blocked local-note
