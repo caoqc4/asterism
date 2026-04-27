@@ -675,7 +675,7 @@ The project is past initial architecture assembly. Current work should favor pro
   payload builder for possible side-effect actions. It requires a validated
   checkpoint-required request, captures URL/origin/action/policy/screenshot/text
   review fields, and explicitly leaves resume deferred.
-- Browser controlled interaction BCI5 has started with a Runs review helper and
+- Browser controlled interaction BCI5 is locally accepted with a Runs review helper and
   read-only Runs detail card for dry-run, local-QA, blocked, and
   checkpoint-required evidence. It adds no generic browser prompt, IPC trigger,
   scheduler start, provider schema, or model-visible browser tool.

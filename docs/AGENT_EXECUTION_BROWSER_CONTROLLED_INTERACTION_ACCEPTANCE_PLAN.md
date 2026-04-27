@@ -147,6 +147,11 @@ Acceptance:
 
 ### BCI5: Runs Review Surface
 
+Status: locally accepted. Runs detail now has a read-only Browser Controlled
+Interaction review card for persisted dry-run, local-QA, blocked, and
+checkpoint-required evidence. It does not add a generic browser prompt box,
+IPC trigger, scheduler start, provider schema, or model-visible browser tool.
+
 Goal: make controlled browser evidence inspectable before adding broader UI.
 
 Extend Runs detail to show:
@@ -193,7 +198,7 @@ Acceptance:
 
 ## Recommended Next Task
 
-Start with BCI5. The next slice should make persisted controlled-browser
-dry-run, local-QA, blocked, and checkpoint-required evidence reviewable from
-Runs without adding a generic browser prompt box, IPC trigger, scheduler start,
-provider schema, or model-visible browser tool.
+Start with BCI6 only as a local-QA operator-started entrypoint. It should reuse
+the operator-started request boundary, remain limited to the existing localhost
+fixture path, and still avoid arbitrary URLs, authenticated profiles, scheduler
+starts, provider schemas, and model-visible browser tools.
