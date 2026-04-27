@@ -763,8 +763,11 @@ The project is past initial architecture assembly. Current work should favor pro
   provider schema exposure.
 - Browser controlled interaction BCI2 is locally accepted with a dry-run recorder that
   persists validated action plans as RunStep evidence while explicitly recording
-  `browserStart=no`, `networkCall=no`, `pageMutation=no`, scheduler=no,
-  providerCall=no, and `modelExposure=hidden`. It is not wired to IPC or UI.
+  `browserStart=no`, `networkCall=no`, `pageMutation=no`, `modelExposure=hidden`,
+  `scheduler=no`, and `providerCall=no`. It is not wired to IPC or UI.
+- Runs manual Browser QA entrypoints now show that same operator-started boundary
+  beside the buttons, keeping Browser Evidence and Controlled Local QA visibly
+  local-review-only rather than model-visible browser control.
 - Browser controlled interaction BCI3 is locally accepted with a local QA runner and
   manual smoke command for the existing localhost fixture. The runner validates
   every request before launch, blocks invalid or checkpoint-required actions

@@ -1303,6 +1303,10 @@ export function RunsPage({
                 运行 Browser Controlled Local QA
               </button>
             </div>
+            <p className="meta">
+              Browser QA 入口仅限 operator-started 本地验收：modelExposure=hidden / providerCall=no / scheduler=no；
+              controlled interaction 仍是 allowlisted local QA，不开放通用浏览器控制。
+            </p>
           </form>
         </div>
       </article>

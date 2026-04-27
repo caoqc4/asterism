@@ -4631,6 +4631,9 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /runs/i }));
     await screen.findByRole('heading', { name: '执行记录' });
 
+    expect(screen.getByText(
+      'Browser QA 入口仅限 operator-started 本地验收：modelExposure=hidden / providerCall=no / scheduler=no； controlled interaction 仍是 allowlisted local QA，不开放通用浏览器控制。',
+    )).toBeTruthy();
     await user.selectOptions(screen.getByLabelText('关联任务'), riskTask.id);
     await user.click(screen.getByRole('button', { name: '运行 Browser Evidence Smoke' }));
 
@@ -4714,6 +4717,9 @@ describe('App UI flow', () => {
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /runs/i }));
+    expect(screen.getByText(
+      'Browser QA 入口仅限 operator-started 本地验收：modelExposure=hidden / providerCall=no / scheduler=no； controlled interaction 仍是 allowlisted local QA，不开放通用浏览器控制。',
+    )).toBeTruthy();
     await user.selectOptions(await screen.findByLabelText('关联任务'), operatorTask.id);
     await user.click(screen.getByRole('button', { name: '运行 Browser Controlled Local QA' }));
 
