@@ -88,10 +88,10 @@ The project is past initial architecture assembly. Current work should favor pro
   `AgentRunLifecycle` snapshots, then add request contracts and lifecycle
   vocabulary before any queue/claim worker or automatic-start policy.
 - [AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md](AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md)
-  now defines the next read-only orchestration UI slice: centralize
-  runtime/profile/lifecycle/recovery presentation helpers, then apply them to
-  Task detail, Runs detail, and Settings without adding queue workers,
-  automatic starts, or new tool authority.
+  now records the first read-only orchestration UI pass: shared
+  runtime/profile/lifecycle/recovery presentation helpers are applied to Task
+  detail, Runs detail, and Settings without adding queue workers, automatic
+  starts, or new tool authority.
 - The first read-only orchestration snapshot helper is in place: Settings can
   summarize the local sandbox runtime, manual Code Agent profile,
   manual/operator-started lifecycle, and hidden connector families. The Task
@@ -1549,8 +1549,9 @@ dedicated signed/notarized release pass.
    local-QA path, and BCR1-BCR6 plus the dev-app resume review fixture are
    locally accepted for checkpoint-approved local-QA resume. Default local-smoke
    skip boundaries are now covered for provider/Docker/workspace safety, so the
-   next execution task should move to orchestration/UI design and any remaining
-   executor/session interruption and restart-safety gaps, not broad
+   next execution task should keep the completed read-only orchestration UI
+   stable and move into any remaining executor/session interruption,
+   inspect-first recovery, and manual new-run preparation gaps, not broad
    browser/MCP/computer-use model exposure;
    do not expose browser, MCP, computer-use, skills, or creator connector tools
    to the model until that connector-specific slice is explicitly accepted.
@@ -1563,7 +1564,7 @@ dedicated signed/notarized release pass.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.
-See [AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md](AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md) for the next read-only orchestration UI slice.
+See [AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md](AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md) for the completed first read-only orchestration UI slice and the next stability boundary.
 See [AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md](AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md) for the browser evidence lane boundary.
 See [AGENT_EXECUTION_BROWSER_CONTROLLED_RESUME_ACCEPTANCE_PLAN.md](AGENT_EXECUTION_BROWSER_CONTROLLED_RESUME_ACCEPTANCE_PLAN.md) for the next checkpoint-approved browser resume boundary.
 See [AGENT_EXECUTION_BROWSER_CONTROLLED_RESUME_MANUAL_REVIEW.md](AGENT_EXECUTION_BROWSER_CONTROLLED_RESUME_MANUAL_REVIEW.md) for the packaged/manual review checklist before any broader browser connector work.
