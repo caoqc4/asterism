@@ -3717,6 +3717,11 @@ describe('App UI flow', () => {
         'Restart hint：restart=single_session_in_progress / replay=inspect_latest_run_step',
       ),
     ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Replay review：inspect latest step before any recovery / mode=inspect_only / session=agent_session_1 / status=running / steps=1 / latest=plan:completed:采用模型提出的 agent 步骤计划 / autoReplay=no',
+      ),
+    ).toBeTruthy();
     expect(screen.getByText('Session metadata：executor=local_agent / loop=local_note')).toBeTruthy();
   });
 

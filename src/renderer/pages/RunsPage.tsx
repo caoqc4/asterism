@@ -32,6 +32,7 @@ import {
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
   formatAgentSessionRestartSummary,
+  formatAgentSessionReplayReviewSummary,
   formatAgentSessionToolFamiliesSummary,
   formatPreRunAgentCapabilitySummary,
   formatSandboxProducerSourceSummary,
@@ -777,6 +778,9 @@ export function RunsPage({
   const latestAgentSessionRestart = latestAgentSession
     ? formatAgentSessionRestartSummary(latestAgentSession)
     : null;
+  const latestAgentSessionReplayReview = latestAgentSession
+    ? formatAgentSessionReplayReviewSummary(latestAgentSession, detailSteps)
+    : null;
   const sandboxProducerSource = latestAgentSession
     ? formatSandboxProducerSourceSummary(latestAgentSession)
     : null;
@@ -829,6 +833,11 @@ export function RunsPage({
                   {latestAgentSessionRestart ? (
                     <p className="meta">
                       Restart hint：{latestAgentSessionRestart}
+                    </p>
+                  ) : null}
+                  {latestAgentSessionReplayReview ? (
+                    <p className="meta">
+                      {latestAgentSessionReplayReview}
                     </p>
                   ) : null}
                   {latestAgentSessionMetadata ? (

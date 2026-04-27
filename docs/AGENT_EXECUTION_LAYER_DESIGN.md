@@ -498,6 +498,9 @@ Current implementation note:
 - Shared restart hints now describe whether a session should be inspected,
   resumed through checkpoint/Decision review, or restarted as a new Run. They
   do not enable automatic replay.
+- Shared replay review summaries now derive an inspect/manual-resume/new-run
+  hint from the latest agent session plus RunSteps. This is review guidance only
+  and explicitly records `autoReplay=no`.
 - `agent-tool-scaffold` now emits connector policy records and local
   verification evidence requirements for every reserved or implemented tool
   family. Settings diagnostics include the verification-required count, while

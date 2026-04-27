@@ -559,6 +559,9 @@ The project is past initial architecture assembly. Current work should favor pro
   completed/failed sessions route users to evidence inspection or a new Run,
   while paused/confirmation sessions point back to checkpoint/Decision review.
   No automatic replay is enabled by this slice.
+- Runs detail now also shows a shared replay review summary derived from the
+  latest agent session plus RunSteps. It is an evidence/recovery hint only:
+  inspect-only, manual-resume, or new-run recovery, always with `autoReplay=no`.
 - Connector policy/evidence records are now generated from
   `agent-tool-scaffold`: each descriptor records model visibility, network,
   credential, checkpoint, and verification requirements. Settings diagnostics

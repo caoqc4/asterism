@@ -1,6 +1,8 @@
 import type { AgentSessionRecord } from '@shared/types/agent-execution';
+import type { RunStepRecord } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
 import { getProviderExecutionCapabilities } from '@shared/agent-provider-capabilities';
+import { buildAgentSessionReplayReview } from '@shared/agent-session-replay';
 import {
   formatAgentSessionRestartHint,
   formatAgentSessionToolFamilySummary,
@@ -92,6 +94,13 @@ export function formatAgentSessionToolFamiliesSummary(session: AgentSessionRecor
 
 export function formatAgentSessionRestartSummary(session: AgentSessionRecord): string {
   return formatAgentSessionRestartHint(session);
+}
+
+export function formatAgentSessionReplayReviewSummary(
+  session: AgentSessionRecord,
+  steps: Pick<RunStepRecord, 'createdAt' | 'index' | 'kind' | 'status' | 'title'>[],
+): string {
+  return buildAgentSessionReplayReview({ session, steps }).summary;
 }
 
 export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): string | null {

@@ -4,6 +4,7 @@ import type { AiConfigStatus } from '@shared/types/settings';
 import {
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
+  formatAgentSessionReplayReviewSummary,
   formatAgentSessionRestartSummary,
   formatAgentSessionToolFamiliesSummary,
   formatCodeAgentAutomaticStartPolicySummary,
@@ -472,6 +473,17 @@ describe('agent capability formatting', () => {
     );
     expect(formatAgentSessionRestartSummary(session)).toBe(
       'restart=checkpoint_required / replay=resume_after_checkpoint',
+    );
+    expect(formatAgentSessionReplayReviewSummary(session, [
+      {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        index: 2,
+        kind: 'artifact',
+        status: 'completed',
+        title: 'Sandbox producer source ready',
+      },
+    ])).toBe(
+      'Replay review：resume only through the open checkpoint / mode=manual_resume / session=agent_session_1 / status=paused / steps=1 / latest=artifact:completed:Sandbox producer source ready / autoReplay=no',
     );
     expect(formatSandboxProducerLifecycleSummary(session)).toBe(
       'AgentRunLifecycle：blocked / source=source_1 / checks=test,lint / policy=network=disabled, promotion=decision_required, workspace mutation requires approved Decision / blocked=docker is unavailable / next=fix runtime readiness, then start a new manual run',
