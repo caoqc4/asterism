@@ -3207,6 +3207,92 @@ describe('App UI flow', () => {
     expect(screen.getByText('结果来源：system')).toBeTruthy();
   });
 
+  it('shows browser evidence artifacts on the runs page', async () => {
+    const user = userEvent.setup();
+    const browserRun = buildRunRecord({
+      id: 'run_browser_evidence',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'completed',
+      output: 'Browser evidence captured.',
+      outputSource: 'system',
+    });
+    const browserRunDetail: RunDetailRecord = {
+      ...browserRun,
+      artifacts: [
+        buildArtifact({
+          id: 'artifact_browser_evidence',
+          kind: 'browser_evidence',
+          sourceId: browserRun.id,
+          taskId: riskTask.id,
+          title: 'Browser evidence',
+          content: JSON.stringify({
+            artifacts: [
+              {
+                kind: 'page_summary',
+                summary: 'Title: Taskplane Browser Evidence Smoke',
+                title: 'Browser page summary',
+              },
+              {
+                kind: 'visible_text',
+                summary: '72 visible text characters captured.',
+                title: 'Browser visible text',
+              },
+              {
+                kind: 'screenshot',
+                path: '/tmp/browser-evidence-screenshot.png',
+                summary: 'Viewport screenshot captured from an isolated browser context.',
+                title: 'Browser screenshot',
+              },
+            ],
+            request: {
+              url: 'http://127.0.0.1:4173/browser-evidence-smoke.html',
+            },
+            result: {
+              status: 'captured',
+              summary: 'Browser evidence captured / artifacts=page_summary,visible_text,screenshot / credentials=no / mutation=no',
+            },
+          }),
+        }),
+      ],
+      steps: [
+        buildRunStep({
+          id: 'run_step_browser_capture',
+          index: 1,
+          kind: 'tool_result',
+          runId: browserRun.id,
+          status: 'completed',
+          title: 'browser evidence captured',
+          output: 'Browser evidence captured / artifacts=page_summary,visible_text,screenshot / credentials=no / mutation=no',
+        }),
+      ],
+    };
+    const browserEvidenceApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [browserRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === browserRun.id ? browserRunDetail : null,
+      ),
+    };
+
+    window.api = browserEvidenceApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    await screen.findByRole('heading', { name: 'agent / completed' });
+
+    expect(screen.getByText('Browser Evidence')).toBeTruthy();
+    expect(screen.getByText('审阅这次浏览器证据采集')).toBeTruthy();
+    expect(screen.getByText(
+      /Browser evidence：url=http:\/\/127\.0\.0\.1:4173\/browser-evidence-smoke\.html \/ artifacts=page_summary, visible_text, screenshot \/ artifact=artifact_browser_evidence/,
+    )).toBeTruthy();
+    expect(screen.getAllByText(
+      'Browser evidence captured / artifacts=page_summary,visible_text,screenshot / credentials=no / mutation=no',
+    ).length).toBeGreaterThan(0);
+    expect(screen.getByText('Screenshot：/tmp/browser-evidence-screenshot.png')).toBeTruthy();
+  });
+
   it('shows run checkpoints on the runs page', async () => {
     const user = userEvent.setup();
     const checkpointRun = buildRunRecord({

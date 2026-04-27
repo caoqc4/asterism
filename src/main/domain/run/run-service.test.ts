@@ -109,6 +109,16 @@ function buildArtifactRecord(): ArtifactRecord {
   };
 }
 
+function buildArtifactRepositoryMock(params: {
+  createFromRun?: ReturnType<typeof vi.fn>;
+  listForRun?: ReturnType<typeof vi.fn>;
+} = {}) {
+  return {
+    createFromRun: params.createFromRun ?? vi.fn(),
+    listForRun: params.listForRun ?? vi.fn().mockResolvedValue([]),
+  };
+}
+
 function buildAppliedTemplate(
   partial: Partial<AppliedProcessTemplateRecord> = {},
 ): AppliedProcessTemplateRecord {
@@ -203,9 +213,7 @@ function buildPausedRunServiceWithPayload(payload: unknown) {
     annotateProcessTemplateSelected: vi.fn(),
     annotateProcessTemplateSkipped: vi.fn(),
   };
-  const artifactRepository = {
-    createFromRun: vi.fn(),
-  };
+  const artifactRepository = buildArtifactRepositoryMock();
   const runStepRepository = buildRunStepRepositoryMock();
   const runCheckpointRepository = {
     listForRun: vi.fn().mockResolvedValue([
@@ -265,10 +273,13 @@ describe('RunService', () => {
     const agentSessionRepository = {
       listForRun: vi.fn().mockResolvedValue([{ id: 'agent_session_1' }]),
     };
+    const artifactRepository = buildArtifactRepositoryMock({
+      listForRun: vi.fn().mockResolvedValue([{ id: 'artifact_1' }]),
+    });
     const service = new RunService(
       runRepository as never,
       {} as never,
-      {} as never,
+      artifactRepository as never,
       {} as never,
       {} as never,
       undefined,
@@ -284,6 +295,8 @@ describe('RunService', () => {
     expect(runStepRepository.listForRun).toHaveBeenCalledWith('run_1');
     expect(runCheckpointRepository.listForRun).toHaveBeenCalledWith('run_1');
     expect(agentSessionRepository.listForRun).toHaveBeenCalledWith('run_1');
+    expect(artifactRepository.listForRun).toHaveBeenCalledWith('run_1');
+    expect(result?.artifacts).toEqual([{ id: 'artifact_1' }]);
     expect(result?.agentSessions).toEqual([{ id: 'agent_session_1' }]);
   });
 
@@ -309,9 +322,9 @@ describe('RunService', () => {
       annotateProcessTemplateSelected: vi.fn(),
       annotateProcessTemplateSkipped: vi.fn(),
     };
-    const artifactRepository = {
+    const artifactRepository = buildArtifactRepositoryMock({
       createFromRun: vi.fn().mockResolvedValue(buildArtifactRecord()),
-    };
+    });
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'anthropic',
@@ -436,9 +449,7 @@ describe('RunService', () => {
       annotateProcessTemplateSelected: vi.fn(),
       annotateProcessTemplateSkipped: vi.fn(),
     };
-    const artifactRepository = {
-      createFromRun: vi.fn(),
-    };
+    const artifactRepository = buildArtifactRepositoryMock();
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'openai',
@@ -525,9 +536,7 @@ describe('RunService', () => {
       annotateProcessTemplateSelected: vi.fn(),
       annotateProcessTemplateSkipped: vi.fn(),
     };
-    const artifactRepository = {
-      createFromRun: vi.fn(),
-    };
+    const artifactRepository = buildArtifactRepositoryMock();
     const runOrchestrator = {
       executeAgentRun: vi.fn().mockResolvedValue({
         status: 'paused',
@@ -597,9 +606,7 @@ describe('RunService', () => {
       annotateProcessTemplateSelected: vi.fn(),
       annotateProcessTemplateSkipped: vi.fn(),
     };
-    const artifactRepository = {
-      createFromRun: vi.fn(),
-    };
+    const artifactRepository = buildArtifactRepositoryMock();
     const runStepRepository = {
       ...buildRunStepRepositoryMock(),
       listForRun: vi.fn().mockResolvedValue([]),
@@ -795,9 +802,7 @@ describe('RunService', () => {
       annotateProcessTemplateSelected: vi.fn(),
       annotateProcessTemplateSkipped: vi.fn(),
     };
-    const artifactRepository = {
-      createFromRun: vi.fn(),
-    };
+    const artifactRepository = buildArtifactRepositoryMock();
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn(),
     };
@@ -849,9 +854,9 @@ describe('RunService', () => {
       annotateProcessTemplateSelected: vi.fn(),
       annotateProcessTemplateSkipped: vi.fn(),
     };
-    const artifactRepository = {
+    const artifactRepository = buildArtifactRepositoryMock({
       createFromRun: vi.fn().mockResolvedValue(buildArtifactRecord()),
-    };
+    });
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'anthropic',

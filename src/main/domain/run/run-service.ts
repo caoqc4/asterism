@@ -52,6 +52,7 @@ export class RunService {
 
     return {
       ...run,
+      artifacts: await this.artifactRepository.listForRun(runId),
       steps: await this.runStepRepository.listForRun(runId),
       checkpoints: await this.runCheckpointRepository.listForRun(runId),
       agentSessions: await this.agentSessionRepository.listForRun(runId),

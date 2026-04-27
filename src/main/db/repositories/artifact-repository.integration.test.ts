@@ -100,12 +100,14 @@ describe('ArtifactRepository integration', () => {
     });
 
     const recentArtifacts = await artifactRepository.listRecentForTask(task.id);
+    const runArtifacts = await artifactRepository.listForRun('run_1');
     const detail = await taskRepository.getDetail(task.id);
 
     expect(artifact.kind).toBe('browser_evidence');
     expect(artifact.sourceType).toBe('run');
     expect(recentArtifacts[0]?.title).toBe('Browser evidence');
     expect(recentArtifacts[0]?.content).toBe('{"status":"captured"}');
+    expect(runArtifacts.map((item) => item.id)).toEqual([artifact.id]);
     expect(detail?.timeline.map((event) => event.type)).toContain('artifact.created');
   });
 });

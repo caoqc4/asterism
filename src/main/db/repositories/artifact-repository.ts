@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 
 import type { ArtifactKind, ArtifactRecord } from '../../../shared/types/artifact.js';
 import { artifacts, timelineEvents } from '../schema.js';
@@ -39,6 +39,17 @@ export class ArtifactRepository {
       .where(eq(artifacts.taskId, taskId))
       .orderBy(desc(artifacts.updatedAt))
       .limit(limit);
+
+    return rows.map(toRecord);
+  }
+
+  async listForRun(runId: string): Promise<ArtifactRecord[]> {
+    const db = initDatabase();
+    const rows = await db
+      .select()
+      .from(artifacts)
+      .where(and(eq(artifacts.sourceType, 'run'), eq(artifacts.sourceId, runId)))
+      .orderBy(desc(artifacts.updatedAt));
 
     return rows.map(toRecord);
   }

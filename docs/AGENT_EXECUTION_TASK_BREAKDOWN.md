@@ -117,6 +117,10 @@ Completed:
   `browser_evidence` artifacts can be created from Runs, and
   `BrowserEvidencePersister` records capture plus artifact RunSteps without
   exposing browser control to the model
+- Runs detail now shows a Browser Evidence review card for persisted
+  `browser_evidence` artifacts, including URL, artifact kinds, artifact id,
+  summary, screenshot path, and a reminder to review evidence before enabling
+  controlled interaction
 - the Browser / Playwright decision has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references; the chosen boundary is no longer "read-only
@@ -383,9 +387,9 @@ review, and pending promotion Decision creation.
 
 The next implementation slice is:
 
-- surface Browser / Playwright Tier 1 smoke output as reviewable Run artifacts
-  in the existing Runs UI, keeping `browser.readonly_evidence` hidden from
-  model-visible tools and keeping browser execution manual/operator-started
+- decide whether the next Browser / Playwright slice should wire a manual
+  operator-started smoke into a real Run, or pause browser work and return to
+  broader execution-layer orchestration
 - keep Tier 2 controlled browser interaction deferred until the draft decision
   is accepted and Tier 1 Run artifact review exists
 
