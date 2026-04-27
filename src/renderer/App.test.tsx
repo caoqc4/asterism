@@ -4069,6 +4069,90 @@ describe('App UI flow', () => {
     );
   });
 
+  it('routes paused agent sessions without open checkpoints to evidence review', async () => {
+    const user = userEvent.setup();
+    const pausedAgentRun = buildRunRecord({
+      id: 'run_agent_paused_missing_checkpoint',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'paused',
+      output: 'Paused but checkpoint is missing.',
+      outputSource: 'system',
+    });
+    const pausedAgentDetail: RunDetailRecord = {
+      ...pausedAgentRun,
+      agentSessions: [
+        {
+          id: 'agent_session_paused_missing_checkpoint',
+          runId: pausedAgentRun.id,
+          mode: 'agent',
+          status: 'paused',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: true,
+            streaming: false,
+            fileContext: true,
+            taskMutationTools: false,
+            longRunningSessions: true,
+          },
+          metadata: 'executor=local_agent\nloop=local_note',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      steps: [
+        buildRunStep({
+          id: 'run_step_missing_checkpoint',
+          runId: pausedAgentRun.id,
+          index: 3,
+          kind: 'checkpoint',
+          status: 'completed',
+          title: 'Resolved checkpoint no longer open',
+        }),
+      ],
+      checkpoints: [
+        buildRunCheckpoint({
+          id: 'run_checkpoint_resolved_only',
+          runId: pausedAgentRun.id,
+          kind: 'resume',
+          status: 'resolved',
+        }),
+      ],
+    };
+    const pausedAgentApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [pausedAgentRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === pausedAgentRun.id ? pausedAgentDetail : null,
+      ),
+      continuePausedRun: vi.fn(),
+    };
+
+    window.api = pausedAgentApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+
+    expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Replay review：inspect paused evidence; no open checkpoint / mode=inspect_only / session=agent_session_paused_missing_checkpoint / status=paused / restartSafety=checkpoint_missing / steps=1 / openCheckpoints=0 / latest=checkpoint:completed:Resolved checkpoint no longer open / autoReplay=no',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '回到任务推进' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '复核最近一次 agent run 的暂停或确认原因；没有 open checkpoint 时，先查看执行证据再决定是否重跑。',
+    );
+    expect(pausedAgentApi.continuePausedRun).not.toHaveBeenCalled();
+  });
+
   it('shows sandbox producer session policy and staged source steps on the runs page', async () => {
     const user = userEvent.setup();
     const sandboxProducerRun = buildRunRecord({
