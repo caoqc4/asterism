@@ -837,6 +837,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Approved checkpoint Decisions now say recovery results should be read from
   Run evidence instead of implying a future automatic restore promise from the
   Decision page alone.
+- Pending generic checkpoint Decisions now use the same evidence-first language:
+  approval enters a recovery path, while actual recovery results remain anchored
+  in Run evidence.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx

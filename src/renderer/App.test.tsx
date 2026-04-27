@@ -5068,7 +5068,7 @@ describe('App UI flow', () => {
 
     expect(await screen.findByRole('heading', { name: '确认本地写入：artifact.create_note' })).toBeTruthy();
     expect(
-      screen.getByText('来源：Agent checkpoint（artifact.create_note）。批准后会恢复等待中的本地 note 产物写入；延后或取消会终止本次 run。'),
+      screen.getByText('来源：Agent checkpoint（artifact.create_note）。批准后会进入等待中的本地 note 产物写入恢复路径，恢复结果以 Run 证据为准；延后或取消会终止本次 run。'),
     ).toBeTruthy();
     expect(screen.getByRole('button', { name: '批准' })).toBeTruthy();
   });

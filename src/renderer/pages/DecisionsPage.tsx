@@ -116,7 +116,7 @@ function getCheckpointDecisionGuidance(
         : `来源：Agent checkpoint（${sourceLabel}）。这是 sandbox staged patch 的提升审查；请先查看 Run 证据与 promotion readiness；当前版本批准后只会确认并关闭 promotion checkpoint，不会自动写入工作区文件。`;
     }
 
-    return `来源：Agent checkpoint（${sourceLabel}）。批准后会恢复等待中的${actionLabel}；延后或取消会终止本次 run。`;
+    return `来源：Agent checkpoint（${sourceLabel}）。批准后会进入等待中的${actionLabel}恢复路径，恢复结果以 Run 证据为准；延后或取消会终止本次 run。`;
   }
 
   if (decision.status === 'approved') {
