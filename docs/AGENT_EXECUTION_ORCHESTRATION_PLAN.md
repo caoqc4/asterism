@@ -239,7 +239,9 @@ boundaries. The next execution slice should pause broad connector expansion and
 return to executor/session interruption and restart safety: persisted
 `running` sessions must be treated as review evidence unless a live executor is
 known, and recovery should route through checkpoint/Decision review or a new
-manual Run, never automatic replay.
+manual Run, never automatic replay. Runs-page recovery now covers both
+`live_status_unknown` active-step sessions and `checkpoint_missing` paused
+sessions as inspect-first / no-auto-replay UI paths.
 
 ## Non-Goals
 

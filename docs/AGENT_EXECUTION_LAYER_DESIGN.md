@@ -663,11 +663,16 @@ Next code/design slice:
 
 1. Keep broad browser/computer/social/coding execution deferred until the
    executor/session boundary can survive interruption and restart.
-2. Use the Browser Tier 1 checklist to decide whether the next browser work is
-   evidence-review polish or a separate Tier 2 local-dev QA design.
+2. Treat Browser Tier 1 evidence, controlled local-QA, and one-action
+   checkpoint-approved resume as locally accepted behind hidden/no-provider
+   boundaries; do not broaden browser depth by default.
 3. If manual alpha use shows repeated friction around checkpoint review,
    revisit a dedicated workspace manual-request surface before any prompt-level
    workspace write/command exposure.
+4. Continue tightening executor/session restart recovery so running,
+   checkpoint-missing, failed, and terminal sessions route through evidence
+   review, checkpoint/Decision review, or a new manual Run rather than
+   automatic replay.
 
 For the shorter implementation sequence after the alpha task-management pass,
 see [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md).
