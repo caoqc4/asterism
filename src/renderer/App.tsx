@@ -854,7 +854,6 @@ export function App() {
             onCreateTask={handleCreateTask}
             onCreateSourceContext={handleCreateSourceContext}
             onArchiveSourceContext={handleArchiveSourceContext}
-            onContinuePausedRun={handleContinuePausedRun}
             onOpenDecision={handleOpenDecision}
             onOpenRun={handleOpenRun}
             onOpenRunForCheckpoint={handleOpenRunForCheckpoint}

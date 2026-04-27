@@ -623,6 +623,10 @@ The project is past initial architecture assembly. Current work should favor pro
   open `resume` checkpoint payload. Paused Runs without a resumable checkpoint
   show review-first guidance instead of letting the user click into a known
   backend rejection path.
+- Task detail Paused Run Recovery now routes users to the Run evidence first
+  instead of directly executing continuation from a list-only Run summary. The
+  actual continuation affordance lives on Runs detail, where checkpoint evidence
+  is loaded and can be checked before execution.
 - The Runs `回到任务推进` action now uses the replay review mode to prefill the
   task next-step draft, so manual-resume sessions point users back to open
   checkpoint / Decision review before continuing.

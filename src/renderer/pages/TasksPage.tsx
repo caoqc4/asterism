@@ -782,7 +782,6 @@ type TasksPageProps = {
   onCreateProcessTemplate: (input: CreateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
   onCreateSourceContext: (input: CreateSourceContextInput) => Promise<SourceContextRecord>;
   onArchiveSourceContext: (id: string) => Promise<SourceContextRecord>;
-  onContinuePausedRun: (runId: string) => Promise<RunRecord>;
   onOpenDecision: (decisionId: string) => void;
   onOpenRun: (runId: string) => void;
   onOpenRunForCheckpoint: (checkpointId: string) => Promise<boolean>;
@@ -830,7 +829,6 @@ export function TasksPage({
   onCreateProcessTemplate,
   onCreateSourceContext,
   onArchiveSourceContext,
-  onContinuePausedRun,
   onOpenDecision,
   onOpenRun,
   onOpenRunForCheckpoint,
@@ -913,7 +911,6 @@ export function TasksPage({
   const [processTemplateTags, setProcessTemplateTags] = useState('');
   const [processTemplateContent, setProcessTemplateContent] = useState('');
   const [processTemplateError, setProcessTemplateError] = useState<string | null>(null);
-  const [pausedRunError, setPausedRunError] = useState<string | null>(null);
   const [codeAgentReviewError, setCodeAgentReviewError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [transitionError, setTransitionError] = useState<string | null>(null);
@@ -1092,10 +1089,6 @@ export function TasksPage({
       setSelectedTaskId(tasks[0].id);
     }
   }, [selectedTaskId, tasks]);
-
-  useEffect(() => {
-    setPausedRunError(null);
-  }, [selectedTaskId]);
 
   useEffect(() => {
     if (!focusedTaskRequest) {
@@ -2116,17 +2109,6 @@ export function TasksPage({
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null
     : null;
   const shouldShowCodeAgentReview = Boolean(latestCodeAgentRun || latestCodeAgentPromotionDecision);
-
-  async function continuePausedRun(run: RunRecord): Promise<void> {
-    setPausedRunError(null);
-
-    try {
-      await onContinuePausedRun(run.id);
-      await onRefresh();
-    } catch (error) {
-      setPausedRunError(`继续 paused run 失败：${formatActionError(error)}`);
-    }
-  }
 
   async function openLatestCodeAgentRun(): Promise<void> {
     setCodeAgentReviewError(null);
@@ -3345,19 +3327,14 @@ export function TasksPage({
                       </p>
                       <button
                         className="ghost-button"
-                        onClick={() => void continuePausedRun(latestPausedRun)}
-                        type="button"
-                      >
-                        继续 paused run
-                      </button>
-                      <button
-                        className="ghost-button"
                         onClick={() => onOpenRun(latestPausedRun.id)}
                         type="button"
                       >
                         查看恢复 checkpoint
                       </button>
-                      {pausedRunError ? <p className="meta">{pausedRunError}</p> : null}
+                      <p className="meta">
+                        续跑前先打开 Run 证据；只有存在 open resume checkpoint 时，Runs 页才会显示继续入口。
+                      </p>
                     </div>
                   ) : null}
                   <div className="quick-actions-grid" ref={quickActionsRef}>

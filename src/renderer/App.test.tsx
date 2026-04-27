@@ -3127,7 +3127,7 @@ describe('App UI flow', () => {
     });
   });
 
-  it('continues a paused agent run from task detail', async () => {
+  it('routes paused run recovery from task detail to run evidence first', async () => {
     const user = userEvent.setup();
     const pausedRun = buildRunRecord({
       id: 'run_paused',
@@ -3138,22 +3138,10 @@ describe('App UI flow', () => {
       outputSource: 'system',
       updatedAt: '2026-01-02T00:00:00.000Z',
     });
-    const continuedRun = buildRunRecord({
-      id: pausedRun.id,
-      taskId: riskTask.id,
-      type: 'agent',
-      status: 'completed',
-      output: 'Recovered note',
-      outputSource: 'system',
-    });
-    let currentRuns: RunRecord[] = [pausedRun, ...runs];
     const pausedRunApi: ElectronApi = {
       ...mockApi,
-      listRuns: vi.fn(async () => currentRuns),
-      continuePausedRun: vi.fn(async (runId) => {
-        currentRuns = currentRuns.map((run) => (run.id === runId ? continuedRun : run));
-        return continuedRun;
-      }),
+      listRuns: vi.fn(async () => [pausedRun, ...runs]),
+      continuePausedRun: vi.fn(),
     };
 
     window.api = pausedRunApi;
@@ -3165,25 +3153,16 @@ describe('App UI flow', () => {
     await screen.findByRole('heading', { name: 'High risk task' });
 
     expect(screen.getByText(/最近一次 agent run 暂停待复核/)).toBeTruthy();
+    expect(screen.getByText('续跑前先打开 Run 证据；只有存在 open resume checkpoint 时，Runs 页才会显示继续入口。')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();
     await user.click(screen.getByRole('button', { name: '查看恢复 checkpoint' }));
 
     await waitFor(() => {
       expect(window.location.hash).toBe('#runs');
     });
 
-    await user.click(screen.getByRole('button', { name: /tasks/i }));
-    await user.click(await screen.findByRole('button', { name: /High risk task/i }));
-    await screen.findByRole('heading', { name: 'High risk task' });
-
-    await user.click(screen.getByRole('button', { name: '继续 paused run' }));
-
-    await waitFor(() => {
-      expect(pausedRunApi.continuePausedRun).toHaveBeenCalledWith(pausedRun.id);
-    });
+    expect(pausedRunApi.continuePausedRun).not.toHaveBeenCalled();
     expect(pausedRunApi.triggerRun).not.toHaveBeenCalled();
-    await waitFor(() => {
-      expect(screen.queryByText(/最近一次 agent run 暂停待复核/)).toBeNull();
-    });
   });
 
   it('shows failed run detail on the runs page', async () => {
