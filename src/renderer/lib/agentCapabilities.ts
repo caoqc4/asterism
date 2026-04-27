@@ -131,6 +131,10 @@ export function formatAgentSessionReplayNextStepDraft(params: {
     return `确认最近一次 ${params.runType} run 是否已中断；若没有活动执行器，先基于证据整理输入，再启动新的 run，不自动重放。`;
   }
 
+  if (review.restartSafety === 'live_status_unknown') {
+    return `确认最近一次 ${params.runType} run 是否仍有活动执行器；若无法确认，先查看最新步骤和证据，不自动重放。`;
+  }
+
   if (review.restartSafety === 'checkpoint_missing') {
     return `复核最近一次 ${params.runType} run 的暂停或确认原因；没有 open checkpoint 时，先查看执行证据再决定是否重跑。`;
   }

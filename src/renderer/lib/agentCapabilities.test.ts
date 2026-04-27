@@ -553,6 +553,23 @@ describe('agent capability formatting', () => {
         },
       ],
     })).toBe('确认最近一次 agent run 是否已中断；若没有活动执行器，先基于证据整理输入，再启动新的 run，不自动重放。');
+
+    expect(formatAgentSessionReplayNextStepDraft({
+      runType: 'agent',
+      session: {
+        ...session,
+        status: 'running',
+      },
+      steps: [
+        {
+          createdAt: '2026-01-01T00:00:00.000Z',
+          index: 1,
+          kind: 'tool_call',
+          status: 'running',
+          title: 'Tool still running',
+        },
+      ],
+    })).toBe('确认最近一次 agent run 是否仍有活动执行器；若无法确认，先查看最新步骤和证据，不自动重放。');
   });
 
   it('formats source-ready sandbox producer lifecycle with Decision-only promotion', () => {
