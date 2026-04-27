@@ -3723,6 +3723,15 @@ describe('App UI flow', () => {
       ),
     ).toBeTruthy();
     expect(screen.getByText('Session metadata：executor=local_agent / loop=local_note')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '回到任务推进' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '检查最近一次 agent run 的最新步骤，确认是否仍在执行或需要人工介入。',
+    );
   });
 
   it('shows sandbox producer session policy and staged source steps on the runs page', async () => {
