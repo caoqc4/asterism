@@ -172,6 +172,11 @@ Acceptance:
 
 ### BCR3: Dry-Run Resume Recorder
 
+Status: locally accepted. The dry-run recorder persists checkpoint review,
+validator outcome, planned one-action resume, and expected post-action evidence
+RunSteps while recording `browserStart=no`, `pageMutation=no`,
+`providerCall=no`, `scheduler=no`, and `modelExposure=hidden`.
+
 Goal: prove resume can be audited without controlling a browser.
 
 Implement a dry-run path that records:
@@ -263,10 +268,10 @@ Acceptance:
 
 ## Recommended Next Task
 
-BCR1-BCR2 are locally accepted. Next, implement BCR3 only.
+BCR1-BCR3 are locally accepted. Next, implement BCR4 only.
 
-BCR3 should persist a dry-run resume audit trail using the shared validator:
-checkpoint reviewed, validation accepted or blocked, planned one-action resume,
-and expected post-action evidence requirements. Do not implement Playwright
-resume, Decision auto-resume, or UI approval controls until the dry-run recorder
-is locally accepted.
+BCR4 should execute one approved checkpoint action against the existing
+disposable localhost QA fixture, using the shared validator immediately before
+launch and capturing post-action screenshot/text/page-summary evidence. Do not
+add arbitrary URLs, authenticated profiles, scheduler starts, provider schemas,
+model-visible tools, or Decision auto-resume while implementing BCR4.
