@@ -650,6 +650,12 @@ The project is past initial architecture assembly. Current work should favor pro
   allowlisted non-sensitive interaction only, RunStep evidence for every
   action, and Decision checkpoints before submit/post/publish/purchase/delete
   side effects.
+- [AGENT_EXECUTION_BROWSER_CONTROLLED_INTERACTION_ACCEPTANCE_PLAN.md](AGENT_EXECUTION_BROWSER_CONTROLLED_INTERACTION_ACCEPTANCE_PLAN.md)
+  now breaks Tier 2 into BCI1-BCI6: review helpers, dry-run runner plan, local
+  QA smoke, checkpoint boundary, Runs review surface, and a final
+  operator-started entrypoint. The recommended next task is BCI1 only; no
+  browser runtime, IPC, scheduler, provider schema, or model-visible browser
+  tool should be enabled by that slice.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
