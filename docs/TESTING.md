@@ -162,7 +162,9 @@ Covered today:
   guarded one-call safe-read tool probe when explicitly configured.
   `npm run accept:provider-native-live:run` feeds a real provider tool-call
   payload through an isolated RunService database and verifies the gated
-  provider-native session settlement path.
+  provider-native session settlement path. The live Vitest config also keeps a
+  no-credit preflight regression path for shell-environment overrides and
+  redacted readiness output; the provider call itself stays opt-in.
 - `AgentWorkingContext`
   task-detail compression into typed agent run context, default policy, and plan-step request summaries
 - `AgentToolRegistry`
@@ -463,6 +465,16 @@ Current verification:
 - `npm run accept:sandbox-coding:code-agent-ui` when you only need the Code Agent
   preflight summary, package-script availability gates, renderer payload
   filtering, and IPC recheck
+- `npm run accept:provider-native-live:preflight` before spending provider
+  credit on live provider-native validation; this is read-only and prints
+  redacted readiness only
+- `npm run accept:provider-native-live` only when a deliberate one-call provider
+  tool-call probe is acceptable
+- `npm run accept:provider-native-live:run` only when a deliberate one-call
+  provider-backed RunService settlement probe is acceptable
+- `npm run accept:release:mac-preflight` before signed/notarized macOS release
+  readiness checks; it is read-only and does not sign, notarize, upload, or call
+  Apple services
 
 When GitHub Actions is unavailable or disabled because of monthly quota, local verification is the temporary source of truth:
 
@@ -471,6 +483,11 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 - run `npm run smoke:package:mac` after `npm run dist:mac:dir`
 - run `npm run smoke:runtime:mac` after `npm run dist:mac:dir`
 - or run `npm run smoke:release:mac` to cover the unsigned macOS package path in one command
+- run `npm run accept:provider-native-live:preflight` for no-credit
+  provider-native readiness checks, but avoid the live provider-native commands
+  unless spending test credit is intentional
+- run `npm run accept:release:mac-preflight` for no-upload macOS release
+  readiness checks when signing/notarization inputs change
 - avoid manually dispatching or watching remote workflow runs until Actions capacity is restored
 
 ## Suggested Next Test Targets
