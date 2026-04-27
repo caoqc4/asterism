@@ -831,6 +831,9 @@ The project is past initial architecture assembly. Current work should favor pro
   sandbox previews as checkpoint-owned recovery: users are routed to Run
   evidence and staged patch / checkpoint review before deciding whether to
   continue or rerun, without starting a replacement run from the task surface.
+- Task detail Code Agent Review also avoids treating a `running` sandbox
+  preview record as proof of a live executor; it now asks users to inspect Run
+  evidence and the latest step before waiting, rerunning, or starting a new run.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx

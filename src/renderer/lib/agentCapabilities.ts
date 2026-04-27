@@ -509,7 +509,7 @@ export function formatCodeAgentReviewRecoverySummary(
     return '最近一次 Code Agent sandbox preview 正在等待 checkpoint / Decision 确认；先打开 Run 证据审查 staged patch / checkpoint，再决定是否续跑或重跑。';
   }
 
-  return '最近一次 Code Agent sandbox preview 仍在进行，先查看 Run 证据再决定下一步。';
+  return '最近一次 Code Agent sandbox preview 记录显示 running；先查看 Run 证据和最新步骤，再判断是否等待、重跑或新建 run。';
 }
 
 export function formatCodeAgentRerunIntent(params: {
