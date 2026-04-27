@@ -570,6 +570,11 @@ The project is past initial architecture assembly. Current work should favor pro
   It accepts only read-only evidence review readiness and keeps model-visible
   browser tools, controlled interaction, authenticated browsing, and scheduled
   browser runs deferred.
+- Tier 2 browser controlled interaction now has schema-only shared coverage:
+  action names, operator-started policy, step drafts, checkpoint payload shape,
+  and validation are drafted in `browser-controlled-interaction`. The descriptor
+  is intentionally not registered in the scaffold, so no model-visible browser
+  tool, IPC route, scheduler path, or UI control is enabled.
 - The Browser / Playwright boundary has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references. The accepted direction is tiered capability:

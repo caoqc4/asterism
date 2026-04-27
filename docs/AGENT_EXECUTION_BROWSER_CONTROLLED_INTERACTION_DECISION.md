@@ -8,6 +8,15 @@ This document does not enable browser interaction in prompts, provider-native
 schemas, IPC, scheduler runs, or product UI. It defines the policy that must be
 accepted before Taskplane adds Tier 2 click/type/select browser actions.
 
+Current implementation note:
+
+- `src/shared/types/browser-controlled-interaction.ts` drafts the Tier 2 schema
+  only: allowed action names, operator-started policy, action step draft,
+  checkpoint payload shape, and validation.
+- `browser.controlled_interaction` is intentionally not registered in
+  `agent-tool-scaffold`, so it remains unavailable to text prompts,
+  provider-native schemas, IPC, scheduler runs, and product UI.
+
 Read with:
 
 - [AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md](AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md)
@@ -166,3 +175,10 @@ accepted as the intended next browser capability family only after:
 - checkpoint payload shape is drafted
 - local dev-server QA smoke is designed separately from authenticated real-world
   browser actions
+
+Current progress:
+
+- The browser action step draft and checkpoint payload shape are drafted in
+  shared types with validation coverage.
+- The local dev-server QA smoke remains design-only and must not start a browser
+  or expose a model-visible tool until separately accepted.

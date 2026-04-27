@@ -477,12 +477,18 @@ The latest implementation slice:
 - Browser / Playwright Tier 1 now has an acceptance checklist drafted from
   those records:
   [AGENT_EXECUTION_BROWSER_TIER1_ACCEPTANCE_CHECKLIST.md](AGENT_EXECUTION_BROWSER_TIER1_ACCEPTANCE_CHECKLIST.md)
+- Tier 2 controlled browser interaction now has shared schema-only coverage:
+  allowed action names, policy, step draft, checkpoint payload shape, and
+  validation live in `src/shared/types/browser-controlled-interaction.ts`.
+  `browser.controlled_interaction` is still not registered in the tool scaffold
+  and remains unavailable to prompts, provider-native tools, IPC, scheduler, and
+  UI.
 
 The next implementation slice is:
 
 - use the Browser Tier 1 checklist to decide whether the next browser work is
-  UX evidence polish or a separate Tier 2 local-dev QA design; do not expose
-  browser tools to the model
+  UX evidence polish or a separate Tier 2 local-dev QA smoke design; do not
+  expose browser tools to the model
 - keep Tier 2 controlled browser interaction deferred until the draft decision
   is accepted and Tier 1 Run artifact review exists
 
