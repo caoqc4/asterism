@@ -3995,6 +3995,80 @@ describe('App UI flow', () => {
     );
   });
 
+  it('routes running agent sessions with active steps to inspect-first recovery', async () => {
+    const user = userEvent.setup();
+    const activeAgentRun = buildRunRecord({
+      id: 'run_agent_active_step',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'running',
+      output: null,
+      outputSource: null,
+    });
+    const activeAgentDetail: RunDetailRecord = {
+      ...activeAgentRun,
+      agentSessions: [
+        {
+          id: 'agent_session_active',
+          runId: activeAgentRun.id,
+          mode: 'agent',
+          status: 'running',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: true,
+            streaming: false,
+            fileContext: true,
+            taskMutationTools: false,
+            longRunningSessions: true,
+          },
+          metadata: 'executor=local_agent\nloop=local_note',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      steps: [
+        buildRunStep({
+          id: 'run_step_agent_active',
+          runId: activeAgentRun.id,
+          index: 5,
+          kind: 'tool_call',
+          status: 'running',
+          title: '执行工具：workspace.read_file',
+        }),
+      ],
+      checkpoints: [],
+    };
+    const activeAgentApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [activeAgentRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === activeAgentRun.id ? activeAgentDetail : null,
+      ),
+    };
+
+    window.api = activeAgentApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+
+    expect(await screen.findByRole('heading', { name: 'agent / running' })).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Replay review：inspect latest step before any recovery / mode=inspect_only / session=agent_session_active / status=running / restartSafety=live_status_unknown / steps=1 / openCheckpoints=0 / latest=tool_call:running:执行工具：workspace.read_file / autoReplay=no',
+      ),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '回到任务推进' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '确认最近一次 agent run 是否仍有活动执行器；若无法确认，先查看最新步骤和证据，不自动重放。',
+    );
+  });
+
   it('shows sandbox producer session policy and staged source steps on the runs page', async () => {
     const user = userEvent.setup();
     const sandboxProducerRun = buildRunRecord({

@@ -410,6 +410,8 @@ Covered today:
   OpenAI-compatible, fal/OpenRouter, and Replicate
 - `Runs` page readable agent plan-source summaries
 - `Runs` page readable agent tool observation summaries
+- `Runs` page replay recovery for running agent sessions with active latest
+  steps, preserving inspect-first / no-auto-replay task recovery wording
 - `Runs` page trigger form refresh and newly-created run selection, including repeated triggers
 - shared timeline summaries across `Tasks / Decisions / Runs`
 - `Settings save flow`
