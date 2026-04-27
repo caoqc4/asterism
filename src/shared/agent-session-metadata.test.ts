@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  formatAgentSessionToolFamilySummary,
   formatLocalAgentSessionMetadata,
   formatProviderNativeAgentSessionMetadata,
   formatSandboxedCodingProducerSessionMetadata,
+  getAgentSessionSourceMetadata,
+  parseAgentSessionMetadata,
 } from './agent-session-metadata.js';
 
 describe('agent session metadata formatting', () => {
@@ -120,5 +123,69 @@ describe('agent session metadata formatting', () => {
       'blockedReasons=docker is unavailable; workspace missing should not split',
       'summary=Backend probe blocked without leaking raw logs',
     ].join('\n'));
+  });
+
+  it('parses session source metadata for shared run/session evidence', () => {
+    const metadata = [
+      'executor=sandboxed_coding_producer',
+      'loop=sandboxed_coding',
+      'sessionId=sandboxed_producer:source_1',
+      'sourceId=source_1',
+      'provider=openai-compatible',
+      'backend=local-container',
+      'summary=Patch ready',
+    ].join('\n');
+
+    expect(parseAgentSessionMetadata(metadata).get('summary')).toBe('Patch ready');
+    expect(getAgentSessionSourceMetadata({ metadata })).toEqual({
+      backend: 'local-container',
+      executor: 'sandboxed_coding_producer',
+      loop: 'sandboxed_coding',
+      model: null,
+      producerSource: null,
+      provider: 'openai-compatible',
+      sessionId: 'sandboxed_producer:source_1',
+      sourceId: 'source_1',
+    });
+  });
+
+  it('summarizes tool-family exposure without enabling future connectors', () => {
+    expect(formatAgentSessionToolFamilySummary({
+      id: 'agent_session_1',
+      runId: 'run_1',
+      mode: 'agent',
+      status: 'completed',
+      capabilities: {
+        fileContext: true,
+        longRunningSessions: false,
+        streaming: false,
+        structuredToolCalls: true,
+        taskMutationTools: true,
+        textOnlyPlanning: true,
+      },
+      metadata: 'executor=local_agent\nloop=local_note',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    })).toBe(
+      'workspace=read_only / task=update_tools / provider_tools=structured / coding=not_exposed / browser=not_exposed / computer_use=not_exposed / mcp=not_exposed / creator=not_exposed / restart=single_session_recorded',
+    );
+
+    expect(formatAgentSessionToolFamilySummary({
+      id: 'agent_session_2',
+      runId: 'run_2',
+      mode: 'agent',
+      status: 'completed',
+      capabilities: {
+        fileContext: true,
+        longRunningSessions: true,
+        streaming: false,
+        structuredToolCalls: false,
+        taskMutationTools: false,
+        textOnlyPlanning: false,
+      },
+      metadata: 'executor=sandboxed_coding_producer\nloop=sandboxed_coding',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    })).toContain('workspace=staged_patch_review / task=not_exposed');
   });
 });

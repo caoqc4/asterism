@@ -464,12 +464,15 @@ The latest implementation slice:
 - `RunService`, `RunOrchestrator`, sandboxed coding injected-producer preview,
   and sandboxed coding backend preflight now depend on the store boundary rather
   than direct repository construction.
+- shared session metadata helpers now parse source metadata and provide a
+  tool-family exposure summary for Runs detail; browser, computer-use, MCP, and
+  creator connectors remain explicitly `not_exposed`
 
 The next implementation slice is:
 
 - extend the shared run/session contract only where needed for the next
-  execution-layer orchestration step: source metadata, tool-family capability
-  summaries, and restart/replay hints
+  execution-layer orchestration step: restart/replay hints and
+  connector-specific policy records
 - keep Tier 2 controlled browser interaction deferred until the draft decision
   is accepted and Tier 1 Run artifact review exists
 

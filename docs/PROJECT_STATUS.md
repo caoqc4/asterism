@@ -549,10 +549,12 @@ The project is past initial architecture assembly. Current work should favor pro
   layer: `AgentSessionStore` wraps `AgentSessionRepository`, and `RunService`,
   `RunOrchestrator`, sandboxed coding injected-producer preview, and sandboxed
   coding backend preflight now depend on the store instead of direct repository
-  construction. The next slice should extend the session contract only for
-  source metadata, tool-family capability summaries, and restart/replay hints
-  before adding MCP, skills, computer-use, creator connectors, or broader
-  browser interaction.
+  construction.
+- The first source/tool-family summary slice is implemented in shared helpers:
+  session metadata parsing and tool-family exposure summaries now feed Runs
+  detail. Current summaries make the boundary visible: workspace/task/coding
+  capabilities are described from the session record, while browser,
+  computer-use, MCP, and creator connectors remain `not_exposed`.
 - The Browser / Playwright boundary has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references. The accepted direction is tiered capability:

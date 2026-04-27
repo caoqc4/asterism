@@ -1,6 +1,10 @@
 import type { AgentSessionRecord } from '@shared/types/agent-execution';
 import type { AiConfigStatus } from '@shared/types/settings';
 import { getProviderExecutionCapabilities } from '@shared/agent-provider-capabilities';
+import {
+  formatAgentSessionToolFamilySummary,
+  parseAgentSessionMetadata,
+} from '@shared/agent-session-metadata';
 
 const SANDBOX_CODING_DISABLED_SUMMARY = 'sandbox coding lane disabled; workspace patch/commands unavailable';
 const SANDBOX_CODING_GATED_SUMMARY = 'sandbox coding lane gate enabled; waiting for provider eligibility';
@@ -79,6 +83,10 @@ export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord)
   ];
 
   return parts.join(' / ');
+}
+
+export function formatAgentSessionToolFamiliesSummary(session: AgentSessionRecord): string {
+  return formatAgentSessionToolFamilySummary(session);
 }
 
 export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): string | null {
@@ -256,21 +264,6 @@ function getSandboxProducerLifecycleNextMove(status: string): string | null {
   };
 
   return nextMoves[status] ?? null;
-}
-
-function parseAgentSessionMetadata(metadata?: string | null): Map<string, string> {
-  return new Map(
-    (metadata ?? '')
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const separatorIndex = line.indexOf('=');
-        return separatorIndex > 0
-          ? [line.slice(0, separatorIndex), line.slice(separatorIndex + 1)] as const
-          : [line, ''] as const;
-      }),
-  );
 }
 
 export function formatPreRunAgentCapabilitySummary(

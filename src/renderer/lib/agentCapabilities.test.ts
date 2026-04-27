@@ -4,6 +4,7 @@ import type { AiConfigStatus } from '@shared/types/settings';
 import {
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
+  formatAgentSessionToolFamiliesSummary,
   formatCodeAgentAutomaticStartPolicySummary,
   formatCodeAgentModelProducerOptInSummary,
   formatCodeAgentPreflightSummary,
@@ -464,6 +465,9 @@ describe('agent capability formatting', () => {
     );
     expect(formatAgentSessionCapabilitySummary(session)).toBe(
       'sandboxed coding producer / status=blocked / backend=local-container / checks=test,lint / network=disabled / promotion=decision_required / read-only workspace input / staged patch output / Decision review required',
+    );
+    expect(formatAgentSessionToolFamiliesSummary(session)).toBe(
+      'workspace=staged_patch_review / task=not_exposed / provider_tools=not_exposed / coding=sandboxed_producer / browser=not_exposed / computer_use=not_exposed / mcp=not_exposed / creator=not_exposed / restart=long_running_session_recorded',
     );
     expect(formatSandboxProducerLifecycleSummary(session)).toBe(
       'AgentRunLifecycle：blocked / source=source_1 / checks=test,lint / policy=network=disabled, promotion=decision_required, workspace mutation requires approved Decision / blocked=docker is unavailable / next=fix runtime readiness, then start a new manual run',

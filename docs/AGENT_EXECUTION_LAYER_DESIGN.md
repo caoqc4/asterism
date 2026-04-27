@@ -492,6 +492,9 @@ Current implementation note:
   `create`, `updateStatus`, and `listForRun`.
 - `RunService`, `RunOrchestrator`, and sandboxed coding producer persistence use
   the store instead of depending on the repository directly.
+- Shared session metadata helpers now parse source metadata and summarize
+  tool-family exposure for Run review surfaces. Current summaries keep browser,
+  computer-use, MCP, and creator connectors explicitly `not_exposed`.
 
 ### First Concrete Next Task
 
@@ -643,8 +646,7 @@ Next code/design slice:
 1. Keep broad browser/computer/social/coding execution deferred until the
    executor/session boundary can survive interruption and restart.
 2. Extend the session contract only where the next orchestration step requires
-   it: source metadata, tool-family capability summaries, and restart/replay
-   hints.
+   it: restart/replay hints and connector-specific policy records.
 3. If manual alpha use shows repeated friction around checkpoint review,
    revisit a dedicated workspace manual-request surface before any prompt-level
    workspace write/command exposure.
