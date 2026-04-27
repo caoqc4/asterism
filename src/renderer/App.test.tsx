@@ -3191,6 +3191,46 @@ describe('App UI flow', () => {
     expect(pausedRunApi.triggerRun).not.toHaveBeenCalled();
   });
 
+  it('routes confirmation-needed Code Agent review through run evidence first', async () => {
+    const user = userEvent.setup();
+    const confirmationRun = buildRunRecord({
+      id: 'run_code_agent_confirmation',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'needs_confirmation',
+      output: 'Code Agent manual sandbox producer preview is waiting for staged patch checkpoint review.',
+      outputSource: 'system',
+      updatedAt: '2026-01-04T00:00:00.000Z',
+    });
+    const codeAgentRecoveryApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [confirmationRun, ...runs]),
+      triggerRun: vi.fn(),
+    };
+
+    window.api = codeAgentRecoveryApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /High risk task/i }));
+    await screen.findByRole('heading', { name: 'High risk task' });
+
+    expect(screen.getByText('Code Agent Review')).toBeTruthy();
+    expect(screen.getByText(
+      '最近一次 Code Agent sandbox preview 正在等待 checkpoint / Decision 确认；先打开 Run 证据审查 staged patch / checkpoint，再决定是否续跑或重跑。',
+    )).toBeTruthy();
+    expect(screen.getByText('当前没有待处理的 promotion Decision；如检查失败，请先从 Run 证据判断是否需要重跑。')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '查看 Code Agent Run' }));
+
+    await waitFor(() => {
+      expect(window.location.hash).toBe('#runs');
+    });
+
+    expect(codeAgentRecoveryApi.triggerRun).not.toHaveBeenCalled();
+  });
+
   it('shows failed run detail on the runs page', async () => {
     const user = userEvent.setup();
 

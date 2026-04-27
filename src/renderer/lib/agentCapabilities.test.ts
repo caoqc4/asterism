@@ -614,7 +614,9 @@ describe('agent capability formatting', () => {
       failureReason: null,
       output: null,
       status: 'needs_confirmation',
-    }, null)).toBe('最近一次 Code Agent sandbox preview 正在等待确认或恢复处理。');
+    }, null)).toBe(
+      '最近一次 Code Agent sandbox preview 正在等待 checkpoint / Decision 确认；先打开 Run 证据审查 staged patch / checkpoint，再决定是否续跑或重跑。',
+    );
   });
 
   it('formats Code Agent rerun intent for task and run recovery surfaces', () => {

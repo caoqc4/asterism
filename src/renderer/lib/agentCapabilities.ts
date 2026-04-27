@@ -506,7 +506,7 @@ export function formatCodeAgentReviewRecoverySummary(
   }
 
   if (run.status === 'paused' || run.status === 'needs_confirmation') {
-    return '最近一次 Code Agent sandbox preview 正在等待确认或恢复处理。';
+    return '最近一次 Code Agent sandbox preview 正在等待 checkpoint / Decision 确认；先打开 Run 证据审查 staged patch / checkpoint，再决定是否续跑或重跑。';
   }
 
   return '最近一次 Code Agent sandbox preview 仍在进行，先查看 Run 证据再决定下一步。';

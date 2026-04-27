@@ -827,6 +827,10 @@ The project is past initial architecture assembly. Current work should favor pro
   browser action, does not grant a general browser session, does not enable
   scheduler/provider/model-visible browser tools, and routes task follow-up
   back through checkpoint evidence review.
+- Task detail Code Agent Review now treats `needs_confirmation` / `paused`
+  sandbox previews as checkpoint-owned recovery: users are routed to Run
+  evidence and staged patch / checkpoint review before deciding whether to
+  continue or rerun, without starting a replacement run from the task surface.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
@@ -1194,7 +1198,7 @@ npm run verify
 Latest local baseline:
 
 - 119 test files
-- 828 tests
+- 829 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -1204,8 +1208,8 @@ Latest local baseline:
   model-context gates, checkpoint-backed session settlement, stale
   resume-payload UI/backend gating, supported resume-input validation,
   scheduler checkpoint-state exclusion, and browser controlled Decision
-  consequence wording, and updating the local acceptance status: 119 test files
-  / 828 tests
+  consequence wording, and Code Agent checkpoint recovery guidance, and updating
+  the local acceptance status: 119 test files / 829 tests
 - `npm run smoke:release:mac` passed locally on 2026-04-27 for the combined
   unsigned macOS package path after the Code Agent context-gate and
   restart/replay safety updates
