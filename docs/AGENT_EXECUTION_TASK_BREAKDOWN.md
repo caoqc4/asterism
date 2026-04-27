@@ -15,6 +15,7 @@ Read first:
 - [AGENT_EXECUTION_LAYER_ROADMAP.md](AGENT_EXECUTION_LAYER_ROADMAP.md)
 - [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md)
 - [AGENT_EXECUTION_ORCHESTRATION_PLAN.md](AGENT_EXECUTION_ORCHESTRATION_PLAN.md)
+- [AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md](AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md)
 - [AGENT_EXECUTION_OPERATOR_STARTED_RUN_DECISION.md](AGENT_EXECUTION_OPERATOR_STARTED_RUN_DECISION.md)
 - [AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md](AGENT_EXECUTION_BROWSER_PLAYWRIGHT_READONLY_DECISION.md)
 - [AGENT_EXECUTION_BROWSER_TIER1_ACCEPTANCE_CHECKLIST.md](AGENT_EXECUTION_BROWSER_TIER1_ACCEPTANCE_CHECKLIST.md)
@@ -527,6 +528,9 @@ The next implementation slice is:
   orchestration/UI design: runtime/profile/lifecycle visibility, manual
   dispatch intent, and restart/recovery review before any queue worker or
   automatic-start policy
+- start with the OUI1 shared presentation model from
+  [AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md](AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md),
+  then apply it to the Task detail read-only orchestration card
 - tighten executor/session interruption and restart-safety gaps with
   inspect-first recovery wording, checkpoint/Decision routing, and new manual
   Run creation rather than automatic replay

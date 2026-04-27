@@ -12,6 +12,7 @@ Read with:
 - [AGENT_EXECUTION_FUTURE_DESIGN.md](AGENT_EXECUTION_FUTURE_DESIGN.md)
 - [AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md](AGENT_EXECUTION_TOOL_SCAFFOLD_PLAN.md)
 - [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md)
+- [AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md](AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md)
 
 ## First-Principles Decision
 
@@ -242,6 +243,13 @@ known, and recovery should route through checkpoint/Decision review or a new
 manual Run, never automatic replay. Runs-page recovery now covers both
 `live_status_unknown` active-step sessions and `checkpoint_missing` paused
 sessions as inspect-first / no-auto-replay UI paths.
+
+The next UI slice is documented in
+[AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md](AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md):
+start by centralizing read-only orchestration presentation helpers, then make
+Task detail and Runs detail show runtime/profile/lifecycle/recovery facts more
+coherently without adding queue workers, automatic starts, or new tool
+authority.
 
 ## Non-Goals
 

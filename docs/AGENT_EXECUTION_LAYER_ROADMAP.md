@@ -99,6 +99,9 @@ Tool scaffold plan:
 Orchestration plan:
 [AGENT_EXECUTION_ORCHESTRATION_PLAN.md](AGENT_EXECUTION_ORCHESTRATION_PLAN.md).
 
+Orchestration UI design:
+[AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md](AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md).
+
 Goal: make the local agent runtime more durable before making it more
 powerful. The current implementation now has a typed runtime event spine,
 checkpoint-validated restart/replay review, and explicit tool exposure matrix while
@@ -130,6 +133,9 @@ Status: drafted as the next implementation plan after evidence UX polish.
 Decision doc:
 [AGENT_EXECUTION_ORCHESTRATION_PLAN.md](AGENT_EXECUTION_ORCHESTRATION_PLAN.md).
 
+UI design:
+[AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md](AGENT_EXECUTION_ORCHESTRATION_UI_DESIGN.md).
+
 Goal: introduce runtime/profile/request/lifecycle objects before Taskplane adds
 queue/claim behavior, automatic starts, or broader connector lanes.
 
@@ -147,6 +153,8 @@ Acceptance:
   policy decision accepts automatic start
 - hidden browser, MCP, computer-use, skills, and creator connectors stay hidden
   from model-visible channels
+- Tasks, Runs, and Settings use shared read-only orchestration presentation
+  helpers before any queue worker or automatic-start UI is introduced
 
 ### Automatic Start Boundary
 
