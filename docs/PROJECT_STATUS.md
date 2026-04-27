@@ -683,6 +683,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Scheduler stale-run recovery now only sweeps truly in-flight `pending` /
   `running` Runs. `paused` and `needs_confirmation` Runs remain checkpoint /
   Decision-owned and are not auto-failed by the local scheduler timeout.
+- Runs Focus Moves now gives `needs_confirmation` Runs explicit checkpoint /
+  Decision review guidance without adding a direct resume button or scheduler
+  path.
 - Replay review now also treats paused or confirmation sessions with no open
   checkpoint as `checkpoint_missing` / inspect-only rather than
   checkpoint-gated, so restart guidance does not imply a resumable path after

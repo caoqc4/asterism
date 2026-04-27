@@ -3494,6 +3494,11 @@ describe('App UI flow', () => {
     await screen.findByRole('heading', { name: '执行记录' });
 
     expect(await screen.findByRole('heading', { name: 'agent / needs_confirmation' })).toBeTruthy();
+    expect(
+      screen.getByText(
+        '当前 run 正在等待 checkpoint / Decision 确认；先审阅下方 Checkpoints 和关联 Decision，批准后才会恢复执行。',
+      ),
+    ).toBeTruthy();
     expect(screen.getByText('Checkpoints')).toBeTruthy();
     expect(screen.getByText('tool_permission')).toBeTruthy();
     expect(screen.getByText('open')).toBeTruthy();

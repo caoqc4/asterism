@@ -897,6 +897,11 @@ export function RunsPage({
                   当前 paused run 没有可续跑的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。
                 </p>
               ) : null}
+              {detail.status === 'needs_confirmation' ? (
+                <p className="meta">
+                  当前 run 正在等待 checkpoint / Decision 确认；先审阅下方 Checkpoints 和关联 Decision，批准后才会恢复执行。
+                </p>
+              ) : null}
               {runActionError ? <p className="meta">{runActionError}</p> : null}
             </div>
             <div className="task-card detail-card-group detail-card-wide">
