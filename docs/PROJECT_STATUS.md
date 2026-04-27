@@ -508,6 +508,11 @@ The project is past initial architecture assembly. Current work should favor pro
   requests outside the allowed origin, and writes page-summary/visible-text/
   screenshot artifacts while keeping credentials, mutation, and model exposure
   unavailable.
+- Browser Evidence B4 has started at the persistence layer:
+  `browser_evidence` artifacts can now be created from Runs, and
+  `BrowserEvidencePersister` records capture plus artifact RunSteps without
+  exposing browser control to prompts, provider-native schemas, IPC, or the
+  scheduler.
 - The Browser / Playwright boundary has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references. The accepted direction is tiered capability:
@@ -1128,8 +1133,8 @@ dedicated signed/notarized release pass.
    provider-backed disposable-workspace Code Agent preview, real Task detail
    Code Agent UI layout pass, Code Agent lifecycle recovery/evidence slice, and
    manual Browser / Playwright Tier 1 smoke as locally accepted for the alpha
-   path. The next execution task should surface Tier 1 browser evidence as
-   reviewable Run artifacts only, while keeping browser execution manual,
+   path. The next execution task should show persisted Tier 1 browser evidence
+   on the existing Run review surface, while keeping browser execution manual,
    hidden from model-visible tools, credential-free, and mutation-free. Keep
    Tier 2 controlled interaction deferred until its draft decision is accepted
    and Tier 1 Run artifact review exists.

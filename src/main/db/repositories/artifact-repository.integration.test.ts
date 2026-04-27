@@ -88,4 +88,24 @@ describe('ArtifactRepository integration', () => {
     expect(recentArtifacts[0]?.content).toBe('--- a/notes.md\n+++ b/notes.md');
     expect(detail?.timeline.map((event) => event.type)).toContain('artifact.created');
   });
+
+  it('creates a browser evidence artifact from a run', async () => {
+    const task = await taskRepository.create({ title: 'Review browser evidence' });
+
+    const artifact = await artifactRepository.createBrowserEvidenceFromRun({
+      taskId: task.id,
+      runId: 'run_1',
+      title: 'Browser evidence',
+      content: '{"status":"captured"}',
+    });
+
+    const recentArtifacts = await artifactRepository.listRecentForTask(task.id);
+    const detail = await taskRepository.getDetail(task.id);
+
+    expect(artifact.kind).toBe('browser_evidence');
+    expect(artifact.sourceType).toBe('run');
+    expect(recentArtifacts[0]?.title).toBe('Browser evidence');
+    expect(recentArtifacts[0]?.content).toBe('{"status":"captured"}');
+    expect(detail?.timeline.map((event) => event.type)).toContain('artifact.created');
+  });
 });

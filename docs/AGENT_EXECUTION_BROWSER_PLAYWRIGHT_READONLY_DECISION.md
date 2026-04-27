@@ -270,11 +270,16 @@ Acceptance:
 
 ### B4: Task / Run Review Surface
 
+Status: persistence building block implemented; UI review surface still
+deferred.
+
 Surface browser evidence as Run artifacts and Task timeline evidence.
 
 Acceptance:
 
-- evidence is reviewable from Run and Task
+- evidence can be persisted as `browser_evidence` artifacts linked to a Run
+- capture and artifact recording are represented as RunSteps
+- evidence is reviewable from Run and Task after the UI slice
 - failed page load or timeout creates readable recovery text
 - rerun is manual and explicit
 
@@ -294,9 +299,9 @@ launches an isolated Chromium context, enforces the origin allowlist in browser
 routing, and captures page-summary, visible-text, and screenshot artifacts
 without credentials, mutation actions, or model-visible tool exposure.
 
-The next code slice should surface this Tier 1 result as Run artifacts only
-after a separate Task/Run review-surface decision. The next design slice should
-define Tier 2 controlled interaction policy in parallel. Taskplane should
-support click/type/select on allowlisted, non-sensitive flows once the policy is
-accepted; it should not remain read-only forever, because AI programming QA and
-creator workflows both need bounded interaction to be genuinely useful.
+The first B4 persistence slice now stores captured browser evidence as a
+`browser_evidence` artifact and records capture/artifact RunSteps through
+`BrowserEvidencePersister`. The next code slice should expose those persisted
+artifacts on the Run review surface without adding model-visible browser tools.
+The Tier 2 controlled interaction policy is drafted separately; it remains
+deferred until Tier 1 review is visible and accepted.
