@@ -162,6 +162,13 @@ files.
   workspace unchanged before any later promotion approval. For a model-backed
   run, Runs detail should show `Producer source：model-backed / provider call
   already spent for this run / Decision promotion still required`.
+- If the task has source context, confirm source-context selection appears only
+  after `Use model producer` is selected. Selecting source context should be
+  recorded as a manifest-only audit entry for this slice; source-context
+  content, notes, and linked page bodies must not be sent to the model.
+- Confirm the Runs context manifest marks selected workspace files as
+  `content=yes`, selected source context as `content=no`, and does not show raw
+  source-context content in the RunStep body.
 - Return to Task detail and confirm the Code Agent Review card is anchored on
   the pending `workspace.staged_patch` Decision even if the lightweight run list
   lacks Code Agent output text. `查看 Code Agent Run` should locate the Run from

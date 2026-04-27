@@ -57,13 +57,46 @@ operator's intent clear: "use these files as context for this patch."
 
 ### Taskplane Source Context
 
-Potentially acceptable next, but only by explicit selection.
+Manifest-only selection is accepted now. Content inclusion is not accepted yet.
 
 Source context can contain pasted docs, links, notes, decisions, credentials by
 mistake, or private strategy. It must not be auto-included merely because it is
 attached to the task. The first safe shape is a checkbox or picker that selects
 specific source-context items for the run, with a count/preview summary before
 provider calls.
+
+The current Code Agent surface may record selected source-context ids and
+titles in the provider-visible context manifest for audit. That manifest does
+not send source-context content, notes, or URI page bodies to the provider.
+
+### Taskplane Source Context Content
+
+Candidate next implementation slice.
+
+Source-context content can become model-visible only after all of these
+conditions are true:
+
+- the run is already explicitly using the model producer
+- at least one bounded workspace context file is still selected
+- the operator separately opts in to include selected source-context content,
+  distinct from selecting source-context ids for the manifest
+- only source-context records attached to the current task can be included
+- only the stored local snapshot fields can be included: title, kind, uri,
+  note, and content
+- Taskplane must not fetch linked URLs, browser pages, MCP resources, or
+  external documents as part of this slice
+- each item and the total source-context payload must have byte limits before
+  provider runtime config is resolved
+- the RunStep manifest must record item count, item ids/titles, and whether
+  content was included, without dumping raw source-context content into the
+  RunStep
+- the model prompt must render source-context content in a separate read-only
+  evidence section from workspace files
+- invalid, duplicate, or detached source-context ids must fail closed before
+  provider runtime config is resolved
+
+Until those conditions are implemented and tested, selecting source context is
+audit-only and remains `contentIncluded=false`.
 
 ### Recent Artifacts And Run Outputs
 
@@ -110,6 +143,12 @@ Agent context.
 5. Render the selected context manifest on Runs detail without dumping full
    provider prompt contents.
 6. Only after that, evaluate artifact/run-output selection.
+
+Next accepted evaluation target:
+
+7. Define and implement explicit source-context content opt-in using the
+   source-context content conditions above. Do not combine this with artifact,
+   browser, MCP, Skills, retrieval, or external URL-fetching behavior.
 
 ## Non-Goals
 
