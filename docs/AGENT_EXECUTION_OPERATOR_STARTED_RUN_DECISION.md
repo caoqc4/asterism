@@ -2,12 +2,13 @@
 
 ## Status
 
-Accepted as the next execution-layer control contract after Browser Evidence
-B4 review surfacing.
+Accepted as the execution-layer control contract for the first manual Browser
+Evidence Run entrypoint.
 
-This document does not add a UI button, IPC channel, scheduler path, provider
-call, or model-visible tool. It defines the shared contract for manually
-started internal runs.
+This document defines the shared contract for manually started internal runs.
+The first concrete Browser Evidence smoke entrypoint is now wired through IPC
+and the Runs page. It still does not add a scheduler path, provider call, or
+model-visible tool.
 
 Read with:
 
@@ -74,13 +75,12 @@ shared validator.
 
 ## Current Decision
 
-Do not expose a new generic UI yet.
+Do not expose a new generic operator-started UI yet.
 
-The next implementation slice should use this contract from one concrete path,
-preferably Browser Evidence Tier 1, because it is the smallest runtime lane:
-manual start, isolated local fixture or allowlisted dev URL, screenshot/text
-artifacts, no provider calls, no scheduler, no model-visible browser tool, and
-no mutation.
+The first concrete path is Browser Evidence Tier 1 because it is the smallest
+runtime lane: manual start, isolated local fixture, screenshot/text artifacts,
+no provider calls, no scheduler, no model-visible browser tool, and no
+mutation.
 
 ## Implementation Status
 
@@ -98,11 +98,12 @@ Current behavior:
 - marks the Run completed on capture
 - writes a failed tool-result RunStep and marks the Run failed on blocked or
   failed browser evidence
+- is exposed through `run:triggerOperatorStarted`
+- is available from Runs / Action Desk as `运行 Browser Evidence Smoke`
 
 Still deferred:
 
-- IPC exposure
-- renderer button
+- generic operator-started UI
 - scheduler starts
 - provider/model calls
 - Code Agent / sandbox patch review migration onto this service

@@ -22,6 +22,7 @@ import type {
 } from '../../shared/types/process-template.js';
 import type { CodeAgentAllowedCheck, CreateCodeAgentRunInput, CreateRunInput, RunRecord } from '../../shared/types/run.js';
 import type { AiConfigInput, AiConfigStatus } from '../../shared/types/settings.js';
+import type { OperatorStartedRunRequest } from '../../shared/types/operator-started-run.js';
 import type { CreateSourceContextInput, UpdateSourceContextInput } from '../../shared/types/source-context.js';
 import type {
   CreateTaskInput,
@@ -298,6 +299,14 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('run:triggerCodeAgent', async (_event, input: CreateCodeAgentRunInput) => {
     const created = await triggerManualCodeAgentRun(input);
+    emitAppEvent('run.changed', created.id);
+    emitAppEvent('task.changed', created.taskId);
+    emitAppEvent('brief.changed');
+    return created;
+  });
+
+  ipcMain.handle('run:triggerOperatorStarted', async (_event, input: OperatorStartedRunRequest) => {
+    const created = await getServices().operatorStartedRunService.trigger(input);
     emitAppEvent('run.changed', created.id);
     emitAppEvent('task.changed', created.taskId);
     emitAppEvent('brief.changed');

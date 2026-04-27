@@ -798,6 +798,7 @@ describe('App UI flow', () => {
     listRuns: vi.fn().mockResolvedValue(runs),
     getRunDetail: vi.fn(async (runId: string) => runs.find((run) => run.id === runId) ?? null),
     triggerRun: vi.fn().mockResolvedValue(createdRun),
+    triggerOperatorStartedRun: vi.fn(),
     continuePausedRun: vi.fn(),
     subscribeToEvents: vi.fn().mockImplementation(() => () => {}),
   };
@@ -4315,6 +4316,74 @@ describe('App UI flow', () => {
     expect(await screen.findByText('Fresh summary 2')).toBeTruthy();
     expect(screen.queryByText('Fresh summary 1')).toBeNull();
     expect(runsRefreshApi.getRunDetail).toHaveBeenCalledWith('run_runs_refresh_2');
+  });
+
+  it('triggers operator-started browser evidence smoke from the runs page', async () => {
+    const user = userEvent.setup();
+    const operatorRun = buildRunRecord({
+      id: 'run_operator_browser',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'completed',
+      output: 'Browser evidence smoke captured.',
+      outputSource: 'system',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+    let currentRuns: RunRecord[] = [...runs];
+    const operatorRunApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => currentRuns),
+      getRunDetail: vi.fn(async (runId: string) =>
+        currentRuns.find((run) => run.id === runId) ?? null,
+      ),
+      getHomeBrief: vi.fn(async () => ({
+        ...briefData,
+        recentRunCount: currentRuns.length,
+      })),
+      triggerOperatorStartedRun: vi.fn(async (input) => {
+        currentRuns = [{
+          ...operatorRun,
+          taskId: input.taskId,
+        }, ...currentRuns];
+
+        return currentRuns[0]!;
+      }),
+    };
+
+    window.api = operatorRunApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    await screen.findByRole('heading', { name: '执行记录' });
+
+    await user.selectOptions(screen.getByLabelText('关联任务'), riskTask.id);
+    await user.click(screen.getByRole('button', { name: '运行 Browser Evidence Smoke' }));
+
+    await waitFor(() => {
+      expect(operatorRunApi.triggerOperatorStartedRun).toHaveBeenCalledWith(expect.objectContaining({
+        descriptorId: 'browser.readonly_evidence',
+        kind: 'browser_evidence_smoke',
+        modelExposure: 'hidden',
+        operatorConfirmed: true,
+        providerCallAllowed: false,
+        schedulerAllowed: false,
+        taskId: riskTask.id,
+      }));
+    });
+    expect(operatorRunApi.triggerOperatorStartedRun).toHaveBeenCalledWith(expect.objectContaining({
+      policy: expect.objectContaining({
+        descriptorId: 'browser.readonly_evidence',
+      }),
+      reason: 'Capture isolated Browser Evidence smoke output for Run review.',
+    }));
+    await waitFor(() => {
+      expect(operatorRunApi.listRuns).toHaveBeenCalledTimes(2);
+    });
+
+    expect(await screen.findByRole('heading', { name: 'agent / completed' })).toBeTruthy();
+    expect(screen.getByText('Browser evidence smoke captured.')).toBeTruthy();
+    expect(operatorRunApi.getRunDetail).toHaveBeenCalledWith('run_operator_browser');
   });
 
   it('previews agent capabilities before triggering a run from the runs page', async () => {

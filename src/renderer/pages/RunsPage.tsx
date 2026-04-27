@@ -4,6 +4,10 @@ import type { ArtifactRecord } from '@shared/types/artifact';
 import { parseRunCheckpointPayload } from '@shared/types/run-checkpoint-payload';
 import { evaluateSandboxPatchPromotionReadiness } from '@shared/sandbox-patch-promotion-readiness';
 import type { RecommendedActionIntent } from '@shared/types/brief';
+import {
+  buildDefaultOperatorStartedRunRequest,
+  type OperatorStartedRunRequest,
+} from '@shared/types/operator-started-run';
 import type {
   CreateRunInput,
   RunCheckpointRecord,
@@ -619,6 +623,7 @@ type RunsPageProps = {
   onContinuePausedRun: (runId: string) => Promise<RunRecord>;
   onRefresh: () => Promise<void>;
   onRunFocusConsumed: () => void;
+  onTriggerOperatorStartedRun?: (input: OperatorStartedRunRequest) => Promise<RunRecord>;
   onTriggerRun: (input: CreateRunInput) => Promise<RunRecord>;
 };
 
@@ -632,6 +637,7 @@ export function RunsPage({
   onContinuePausedRun,
   onRefresh,
   onRunFocusConsumed,
+  onTriggerOperatorStartedRun,
   onTriggerRun,
 }: RunsPageProps) {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(runs[0]?.id ?? null);
@@ -729,6 +735,27 @@ export function RunsPage({
       await onRefresh();
     } catch (error) {
       setRunActionError(`继续 paused run 失败：${formatActionError(error)}`);
+    }
+  }
+
+  async function triggerBrowserEvidenceSmoke(): Promise<void> {
+    if (!form.taskId || !onTriggerOperatorStartedRun) {
+      return;
+    }
+
+    setRunActionError(null);
+
+    try {
+      const created = await onTriggerOperatorStartedRun(buildDefaultOperatorStartedRunRequest({
+        kind: 'browser_evidence_smoke',
+        reason: 'Capture isolated Browser Evidence smoke output for Run review.',
+        taskId: form.taskId,
+      }));
+
+      setSelectedRunId(created.id);
+      await onRefresh();
+    } catch (error) {
+      setRunActionError(`Browser Evidence smoke 失败：${formatActionError(error)}`);
     }
   }
 
@@ -1174,7 +1201,17 @@ export function RunsPage({
                 </p>
               </>
             ) : null}
-            <button type="submit">触发 Run</button>
+            <div className="chip-row">
+              <button type="submit">触发 Run</button>
+              <button
+                className="ghost-button"
+                disabled={!form.taskId || !onTriggerOperatorStartedRun}
+                onClick={() => void triggerBrowserEvidenceSmoke()}
+                type="button"
+              >
+                运行 Browser Evidence Smoke
+              </button>
+            </div>
           </form>
         </div>
       </article>

@@ -526,7 +526,11 @@ The project is past initial architecture assembly. Current work should favor pro
   `browser_evidence_smoke`: it validates the shared request, creates an agent
   Run, records an accepted RunStep, calls an injectable browser-evidence
   executor, persists captured evidence, and marks the Run completed or failed.
-  IPC/UI exposure remains deferred.
+- Runs / Action Desk now exposes the first manual operator-started Browser
+  Evidence smoke through `run:triggerOperatorStarted`. The UI constructs the
+  shared request with `modelExposure=hidden`, `schedulerAllowed=false`, and
+  `providerCallAllowed=false`, then opens the completed/failed Run for evidence
+  review.
 - The Browser / Playwright boundary has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references. The accepted direction is tiered capability:
@@ -1146,12 +1150,12 @@ dedicated signed/notarized release pass.
 5. Treat the execution-layer Slice 0, hidden tool-scaffold baseline,
    provider-backed disposable-workspace Code Agent preview, real Task detail
    Code Agent UI layout pass, Code Agent lifecycle recovery/evidence slice, and
-   manual Browser / Playwright Tier 1 smoke as locally accepted for the alpha
-   path. The next execution task should decide whether to expose the
-   operator-started Browser Evidence service through IPC/UI, or pause browser
-   work and return to broader execution-layer orchestration. Keep Tier 2
-   controlled interaction deferred until its draft decision is accepted and the
-   Tier 1 Run review path is accepted.
+   manual Browser / Playwright Tier 1 smoke plus its operator-started Runs UI
+   entrypoint as locally accepted for the alpha path. The next execution task
+   should run an isolated manual UI pass for Browser Evidence smoke, then return
+   to broader execution-layer orchestration if no review issues appear. Keep
+   Tier 2 controlled interaction deferred until its draft decision is accepted
+   and the Tier 1 Run review path is accepted.
 
 See [ALPHA_ACCEPTANCE.md](ALPHA_ACCEPTANCE.md) for the manual checklist and [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md) for the current coverage assessment.
 See [AGENT_EXECUTION_LAYER_DESIGN.md](AGENT_EXECUTION_LAYER_DESIGN.md) for the next execution-layer design spine.

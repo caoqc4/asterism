@@ -60,6 +60,7 @@ function getExposedApi() {
     listRuns: () => Promise<unknown>;
     getRunDetail: (runId: string) => Promise<unknown>;
     triggerRun: (input: unknown) => Promise<unknown>;
+    triggerOperatorStartedRun?: (input: unknown) => Promise<unknown>;
     continuePausedRun: (runId: string) => Promise<unknown>;
     subscribeToEvents: (listener: (event: unknown) => void) => () => void;
   };
@@ -137,6 +138,24 @@ describe('preload bridge', () => {
     const draftDecisionInput = { taskId: 'task_1', note: 'Need stakeholder sign-off' };
     const decisionActionInput = { id: 'decision_1', action: 'approve' };
     const createRunInput = { taskId: 'task_1', type: 'summarize', instructions: 'Summarize blockers' };
+    const operatorStartedRunInput = {
+      descriptorId: 'browser.readonly_evidence',
+      kind: 'browser_evidence_smoke',
+      modelExposure: 'hidden',
+      operatorConfirmed: true,
+      policy: {
+        credentialPolicy: 'explicit_config',
+        descriptorId: 'browser.readonly_evidence',
+        networkPolicy: 'allowlisted',
+        outputLimitBytes: 64_000,
+        sessionKind: 'browser',
+        timeoutMs: 120_000,
+      },
+      providerCallAllowed: false,
+      reason: 'Capture browser evidence.',
+      schedulerAllowed: false,
+      taskId: 'task_1',
+    };
     const createCodeAgentRunInput = {
       operatorConfirmed: true,
       patchIntent: 'Prepare a staged notes patch.',
@@ -177,6 +196,7 @@ describe('preload bridge', () => {
     await api.getRunDetail('run_1');
     await api.triggerRun(createRunInput);
     await api.triggerCodeAgentRun?.(createCodeAgentRunInput);
+    await api.triggerOperatorStartedRun?.(operatorStartedRunInput);
     await api.continuePausedRun('run_1');
 
     expect(invokeMock.mock.calls).toEqual([
@@ -213,6 +233,7 @@ describe('preload bridge', () => {
       ['run:getDetail', 'run_1'],
       ['run:trigger', createRunInput],
       ['run:triggerCodeAgent', createCodeAgentRunInput],
+      ['run:triggerOperatorStarted', operatorStartedRunInput],
       ['run:continuePaused', 'run_1'],
     ]);
   });

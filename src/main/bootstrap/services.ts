@@ -18,6 +18,9 @@ import { WaitingItemRepository } from '../db/repositories/waiting-item-repositor
 import { HomeBriefService } from '../domain/brief/home-brief-service.js';
 import { DecisionService } from '../domain/decision/decision-service.js';
 import { AgentToolRegistry } from '../domain/run/agent-tool-registry.js';
+import { BrowserEvidencePersister } from '../domain/run/browser-evidence-persister.js';
+import { runBrowserEvidenceSmokeForOperatorStartedRun } from '../domain/run/browser-evidence-smoke-executor.js';
+import { OperatorStartedRunService } from '../domain/run/operator-started-run-service.js';
 import { RunService } from '../domain/run/run-service.js';
 import { SandboxPatchPromotionApplyService } from '../domain/run/sandbox-patch-promotion-apply-service.js';
 import { SandboxPatchPromotionPreflightService } from '../domain/run/sandbox-patch-promotion-preflight-service.js';
@@ -124,6 +127,17 @@ const runService = new RunService(
   agentToolRegistry,
   runCheckpointRepository,
 );
+const browserEvidencePersister = new BrowserEvidencePersister(
+  artifactRepository,
+  runStepRepository,
+);
+const operatorStartedRunService = new OperatorStartedRunService(
+  runRepository,
+  taskService,
+  runStepRepository,
+  browserEvidencePersister,
+  runBrowserEvidenceSmokeForOperatorStartedRun,
+);
 
 const services = {
   taskRepository,
@@ -150,6 +164,8 @@ const services = {
   taskService,
   decisionService,
   runService,
+  operatorStartedRunService,
+  browserEvidencePersister,
   homeBriefService,
   aiConfigService,
   schedulerService,

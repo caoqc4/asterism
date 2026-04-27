@@ -64,6 +64,9 @@ const {
       trigger: vi.fn(),
       continuePausedRun: vi.fn(),
     },
+    operatorStartedRunService: {
+      trigger: vi.fn(),
+    },
     runRepository: {
       create: vi.fn(),
       updateResult: vi.fn(),
@@ -575,6 +578,52 @@ describe('registerIpcHandlers', () => {
     expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
     expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'brief.changed');
     expect(result.failureReason).toBe('Missing API key');
+  });
+
+  it('emits run, task, and brief events after an operator-started run trigger', async () => {
+    servicesMock.operatorStartedRunService.trigger.mockResolvedValue({
+      id: 'run_operator_1',
+      taskId: 'task_1',
+      type: 'agent',
+      status: 'completed',
+      instructions: 'Operator-started browser_evidence_smoke.',
+      output: 'Browser evidence captured.',
+      outputSource: 'system',
+      failureReason: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+    const input = {
+      descriptorId: 'browser.readonly_evidence',
+      kind: 'browser_evidence_smoke',
+      modelExposure: 'hidden',
+      operatorConfirmed: true,
+      policy: {
+        credentialPolicy: 'explicit_config',
+        descriptorId: 'browser.readonly_evidence',
+        networkPolicy: 'allowlisted',
+        outputLimitBytes: 64_000,
+        sessionKind: 'browser',
+        timeoutMs: 120_000,
+      },
+      providerCallAllowed: false,
+      reason: 'Capture browser evidence.',
+      schedulerAllowed: false,
+      taskId: 'task_1',
+    };
+
+    const handler = getRegisteredHandler<
+      [typeof input],
+      Awaited<ReturnType<typeof servicesMock.operatorStartedRunService.trigger>>
+    >('run:triggerOperatorStarted');
+
+    const result = await handler({}, input);
+
+    expect(servicesMock.operatorStartedRunService.trigger).toHaveBeenCalledWith(input);
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(1, 'run.changed', 'run_operator_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(2, 'task.changed', 'task_1');
+    expect(emitAppEventMock).toHaveBeenNthCalledWith(3, 'brief.changed');
+    expect(result.id).toBe('run_operator_1');
   });
 
   it('keeps env-available model producer disabled until the run requests it', async () => {

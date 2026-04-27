@@ -30,6 +30,7 @@ import type {
   UpdateProcessTemplateInput,
 } from '@shared/types/process-template';
 import type { CreateCodeAgentRunInput, CreateRunInput, RunRecord } from '@shared/types/run';
+import type { OperatorStartedRunRequest } from '@shared/types/operator-started-run';
 import type { AiConfigInput, AiConfigStatus } from '@shared/types/settings';
 import type {
   CreateSourceContextInput,
@@ -545,6 +546,17 @@ export function App() {
     return created;
   }
 
+  async function handleTriggerOperatorStartedRun(input: OperatorStartedRunRequest) {
+    if (!window.api.triggerOperatorStartedRun) {
+      throw new Error('Operator-started run IPC is not available.');
+    }
+
+    const created = await window.api.triggerOperatorStartedRun(input);
+    setRuns((current) => [created, ...current.filter((run) => run.id !== created.id)]);
+    setBriefData(await window.api.getHomeBrief());
+    return created;
+  }
+
   async function handleContinuePausedRun(runId: string) {
     const updated = await window.api.continuePausedRun(runId);
     setRuns((current) => current.map((run) => (run.id === updated.id ? updated : run)));
@@ -891,6 +903,7 @@ export function App() {
             onRefresh={loadShellData}
             onRunFocusConsumed={() => setFocusedRunId(null)}
             onContinuePausedRun={handleContinuePausedRun}
+            onTriggerOperatorStartedRun={handleTriggerOperatorStartedRun}
             onTriggerRun={handleTriggerRun}
           />
         ) : null}
