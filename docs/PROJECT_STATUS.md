@@ -559,6 +559,12 @@ The project is past initial architecture assembly. Current work should favor pro
   completed/failed sessions route users to evidence inspection or a new Run,
   while paused/confirmation sessions point back to checkpoint/Decision review.
   No automatic replay is enabled by this slice.
+- Connector policy/evidence records are now generated from
+  `agent-tool-scaffold`: each descriptor records model visibility, network,
+  credential, checkpoint, and verification requirements. Settings diagnostics
+  include verification-required counts, but reserved browser, MCP,
+  computer-use, skill, and creator descriptors remain hidden from text prompts
+  and provider-native tool exposure.
 - The Browser / Playwright boundary has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references. The accepted direction is tiered capability:

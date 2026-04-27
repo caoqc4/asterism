@@ -101,6 +101,7 @@ function formatToolScaffoldFamilySummary(summary: AgentToolScaffoldFamilySummary
     `${summary.providerNativeExposedIds.length} native`,
     `${summary.checkpointRequiredIds.length} approval`,
     `${summary.credentialGatedIds.length} credential`,
+    `${summary.localVerificationRequiredIds.length} verification`,
   ].join(' / ');
 }
 

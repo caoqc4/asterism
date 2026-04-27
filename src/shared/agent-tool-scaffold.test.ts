@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   AGENT_TOOL_SCAFFOLD_IDS,
   AGENT_TOOL_SCAFFOLD_DESCRIPTORS,
+  buildAgentToolConnectorPolicyRecord,
   buildDefaultAgentToolExecutionPolicy,
+  buildAgentToolLocalVerificationEvidence,
   getAgentToolScaffoldDescriptor,
   getAgentToolScaffoldDescriptorsByFamily,
   getReservedAgentToolScaffoldDescriptors,
@@ -258,6 +260,8 @@ describe('agent tool scaffold descriptors', () => {
       checkpointRequiredIds: ['workspace.run_command', 'workspace.write_patch', 'workspace.staged_patch'],
       credentialGatedIds: [],
       implementedCount: 4,
+      localVerificationRequiredIds: ['workspace.run_command', 'workspace.write_patch', 'workspace.staged_patch'],
+      modelVisibleIds: ['workspace.search', 'workspace.read_file'],
       providerNativeExposedIds: ['workspace.search', 'workspace.read_file'],
       reservedCount: 1,
       textPromptExposedIds: ['workspace.search', 'workspace.read_file'],
@@ -265,9 +269,87 @@ describe('agent tool scaffold descriptors', () => {
     expect(summaries.find((summary) => summary.family === 'browser_playwright')).toMatchObject({
       credentialGatedIds: ['browser.readonly_evidence'],
       implementedCount: 0,
+      localVerificationRequiredIds: ['browser.readonly_evidence'],
+      modelVisibleIds: [],
       providerNativeExposedIds: [],
       reservedCount: 1,
       textPromptExposedIds: [],
+    });
+    expect(summaries.find((summary) => summary.family === 'browser_playwright')?.connectorPolicyRecords[0]).toMatchObject({
+      descriptorId: 'browser.readonly_evidence',
+      modelVisible: false,
+      requiresLocalVerification: true,
+    });
+    expect(summaries.find((summary) => summary.family === 'browser_playwright')?.localVerificationEvidence[0]).toMatchObject({
+      descriptorId: 'browser.readonly_evidence',
+      requiredEvidenceKinds: ['screenshot', 'browser_trace', 'browser_extract'],
+    });
+  });
+
+  it('builds connector policy records without exposing reserved tool families', () => {
+    expect(buildAgentToolConnectorPolicyRecord({
+      descriptorId: 'browser.readonly_evidence',
+      policy: buildPolicy({ allowLocalWorkspaceRead: true, allowTaskMutationTools: true }),
+    })).toMatchObject({
+      checkpointKind: 'none',
+      credentialPolicy: 'explicit_config',
+      descriptorId: 'browser.readonly_evidence',
+      family: 'browser_playwright',
+      lifecycle: 'reserved',
+      modelVisible: false,
+      networkPolicy: 'allowlisted',
+      requiresLocalVerification: true,
+      sessionKind: 'browser',
+    });
+
+    expect(buildAgentToolConnectorPolicyRecord({
+      descriptorId: 'workspace.search',
+      policy: buildPolicy({ allowLocalWorkspaceRead: true }),
+    })).toMatchObject({
+      credentialPolicy: 'none',
+      descriptorId: 'workspace.search',
+      lifecycle: 'implemented',
+      modelVisible: true,
+      networkPolicy: 'disabled',
+      requiresLocalVerification: false,
+      sessionKind: 'none',
+    });
+
+    expect(buildAgentToolConnectorPolicyRecord({
+      descriptorId: 'creator.publish_preview',
+      policy: buildPolicy({ allowLocalWorkspaceRead: true, allowTaskMutationTools: true }),
+    }).summary).toBe(
+      'descriptor=creator.publish_preview / family=creator_connector / lifecycle=reserved / modelVisible=no / network=allowlisted / credential=connector_decision / checkpoint=external_action / verification=required',
+    );
+  });
+
+  it('describes local verification evidence required before future connector exposure', () => {
+    expect(buildAgentToolLocalVerificationEvidence('browser.readonly_evidence')).toEqual({
+      descriptorId: 'browser.readonly_evidence',
+      required: true,
+      requiredEvidenceKinds: ['screenshot', 'browser_trace', 'browser_extract'],
+      requiredRunStepKinds: ['session', 'tool_result', 'artifact'],
+      requiresCheckpointReview: false,
+      requiresCredentialReview: true,
+      summary: 'descriptor=browser.readonly_evidence / evidence=required / artifacts=screenshot,browser_trace,browser_extract / runSteps=session,tool_result,artifact / checkpoint=none / credential=explicit_config',
+    });
+
+    expect(buildAgentToolLocalVerificationEvidence('computer.inspect_only')).toMatchObject({
+      descriptorId: 'computer.inspect_only',
+      required: true,
+      requiredEvidenceKinds: ['screenshot'],
+      requiredRunStepKinds: ['session', 'tool_call', 'artifact'],
+      requiresCheckpointReview: true,
+      requiresCredentialReview: true,
+    });
+
+    expect(buildAgentToolLocalVerificationEvidence('task.inspect_context')).toMatchObject({
+      descriptorId: 'task.inspect_context',
+      required: false,
+      requiredEvidenceKinds: [],
+      requiredRunStepKinds: ['tool_result'],
+      requiresCheckpointReview: false,
+      requiresCredentialReview: false,
     });
   });
 });

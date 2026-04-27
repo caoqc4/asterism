@@ -498,6 +498,11 @@ Current implementation note:
 - Shared restart hints now describe whether a session should be inspected,
   resumed through checkpoint/Decision review, or restarted as a new Run. They
   do not enable automatic replay.
+- `agent-tool-scaffold` now emits connector policy records and local
+  verification evidence requirements for every reserved or implemented tool
+  family. Settings diagnostics include the verification-required count, while
+  reserved browser, MCP, computer-use, skill, and creator descriptors remain
+  hidden from model prompts and provider-native tools.
 
 ### First Concrete Next Task
 
@@ -648,8 +653,8 @@ Next code/design slice:
 
 1. Keep broad browser/computer/social/coding execution deferred until the
    executor/session boundary can survive interruption and restart.
-2. Extend the session contract only where the next orchestration step requires
-   it: connector-specific policy records and local verification evidence.
+2. Use the connector policy/evidence records to draft the first connector
+   family acceptance checklist before enabling any new model-visible tool.
 3. If manual alpha use shows repeated friction around checkpoint review,
    revisit a dedicated workspace manual-request surface before any prompt-level
    workspace write/command exposure.

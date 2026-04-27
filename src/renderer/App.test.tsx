@@ -6627,11 +6627,11 @@ describe('App UI flow', () => {
       'Browser Evidence：Browser evidence preflight: reserved / configuredOrigins=0 / modelExposure=hidden / browserStart=no / networkCall=no / next=manual isolated runner smoke available while runtime stays hidden',
     )).toBeTruthy();
     expect(screen.getByText('Workspace Coding')).toBeTruthy();
-    expect(screen.getByText('4 implemented / 1 reserved / 0 text / 0 native / 3 approval / 0 credential')).toBeTruthy();
+    expect(screen.getByText('4 implemented / 1 reserved / 0 text / 0 native / 3 approval / 0 credential / 3 verification')).toBeTruthy();
     const toolScaffoldDiagnostics = screen.getByLabelText('Tool scaffold diagnostics');
     expect(within(toolScaffoldDiagnostics).getByText('Browser / Playwright')).toBeTruthy();
     expect(within(toolScaffoldDiagnostics).getAllByText(
-      '0 implemented / 1 reserved / 0 text / 0 native / 0 approval / 1 credential',
+      '0 implemented / 1 reserved / 0 text / 0 native / 0 approval / 1 credential / 1 verification',
     ).length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: '检测 Sandbox Backend' }));
     await screen.findByText(/Sandbox Backend：可用：Sandbox backend ready: local-container\./);

@@ -469,12 +469,15 @@ The latest implementation slice:
   creator connectors remain explicitly `not_exposed`
 - shared restart hints now tell Runs detail whether to inspect completed/failed
   evidence, resume through checkpoint/Decision review, or start a new Run
+- `agent-tool-scaffold` now builds connector policy records and local
+  verification evidence requirements for every descriptor; Settings diagnostics
+  show the verification-required count, and reserved connector families remain
+  hidden from all model-visible channels
 
 The next implementation slice is:
 
-- extend the shared run/session contract only where needed for the next
-  execution-layer orchestration step: connector-specific policy records and
-  local verification evidence
+- use the connector policy/evidence records to draft the first connector family
+  acceptance checklist before enabling any new model-visible tool
 - keep Tier 2 controlled browser interaction deferred until the draft decision
   is accepted and Tier 1 Run artifact review exists
 

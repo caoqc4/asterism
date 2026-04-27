@@ -77,6 +77,30 @@ export type AgentToolExecutionPolicyValidation =
       valid: false;
     };
 
+export type AgentToolConnectorPolicyRecord = {
+  descriptorId: string;
+  family: AgentToolScaffoldFamily;
+  lifecycle: AgentToolScaffoldLifecycle;
+  exposure: AgentToolScaffoldExposure;
+  sessionKind: AgentToolSessionKind;
+  networkPolicy: AgentToolNetworkPolicy;
+  credentialPolicy: AgentToolScaffoldCredentialPolicy;
+  checkpointKind: AgentToolCheckpointKind;
+  modelVisible: boolean;
+  requiresLocalVerification: boolean;
+  summary: string;
+};
+
+export type AgentToolLocalVerificationEvidence = {
+  descriptorId: string;
+  required: boolean;
+  requiredEvidenceKinds: AgentToolArtifactKind[];
+  requiredRunStepKinds: string[];
+  requiresCheckpointReview: boolean;
+  requiresCredentialReview: boolean;
+  summary: string;
+};
+
 export type AgentToolSessionRecord = {
   id: string;
   kind: AgentToolSessionKind;
@@ -123,10 +147,14 @@ export type AgentToolScaffoldFamilySummary = {
   descriptorIds: string[];
   implementedCount: number;
   reservedCount: number;
+  connectorPolicyRecords: AgentToolConnectorPolicyRecord[];
+  localVerificationEvidence: AgentToolLocalVerificationEvidence[];
   textPromptExposedIds: string[];
   providerNativeExposedIds: string[];
   checkpointRequiredIds: string[];
   credentialGatedIds: string[];
+  localVerificationRequiredIds: string[];
+  modelVisibleIds: string[];
   summary: string;
 };
 
@@ -520,6 +548,86 @@ export function validateAgentToolExecutionPolicy(policy: unknown): AgentToolExec
   };
 }
 
+export function buildAgentToolConnectorPolicyRecord(params: {
+  descriptorId: string;
+  policy: Pick<AgentPolicy, 'allowLocalWorkspaceRead' | 'allowTaskMutationTools'>;
+}): AgentToolConnectorPolicyRecord {
+  const descriptor = getAgentToolScaffoldDescriptor(params.descriptorId);
+  const executionPolicy = buildDefaultAgentToolExecutionPolicy({ descriptorId: descriptor.id });
+  const modelVisible = shouldExposeAgentToolScaffold({
+    channel: 'text_prompt',
+    id: descriptor.id,
+    policy: params.policy,
+  }) || shouldExposeAgentToolScaffold({
+    channel: 'provider_native',
+    id: descriptor.id,
+    policy: params.policy,
+  });
+  const requiresLocalVerification = descriptor.lifecycle === 'reserved'
+    || descriptor.sessionKind !== 'none'
+    || descriptor.artifactKinds.some((kind) => kind !== 'none')
+    || descriptor.checkpointKind !== 'none'
+    || descriptor.credentialPolicy !== 'none';
+
+  return {
+    checkpointKind: descriptor.checkpointKind,
+    credentialPolicy: descriptor.credentialPolicy,
+    descriptorId: descriptor.id,
+    exposure: descriptor.defaultExposure,
+    family: descriptor.family,
+    lifecycle: descriptor.lifecycle,
+    modelVisible,
+    networkPolicy: executionPolicy.networkPolicy,
+    requiresLocalVerification,
+    sessionKind: descriptor.sessionKind,
+    summary: [
+      `descriptor=${descriptor.id}`,
+      `family=${descriptor.family}`,
+      `lifecycle=${descriptor.lifecycle}`,
+      `modelVisible=${modelVisible ? 'yes' : 'no'}`,
+      `network=${executionPolicy.networkPolicy}`,
+      `credential=${descriptor.credentialPolicy}`,
+      `checkpoint=${descriptor.checkpointKind}`,
+      `verification=${requiresLocalVerification ? 'required' : 'optional'}`,
+    ].join(' / '),
+  };
+}
+
+export function buildAgentToolLocalVerificationEvidence(
+  descriptorId: string,
+): AgentToolLocalVerificationEvidence {
+  const descriptor = getAgentToolScaffoldDescriptor(descriptorId);
+  const artifactKinds = descriptor.artifactKinds.filter((kind) => kind !== 'none');
+  const requiredRunStepKinds = [
+    descriptor.sessionKind !== 'none' ? 'session' : null,
+    descriptor.risk === 'safe_read' || descriptor.risk === 'external_read' ? 'tool_result' : null,
+    descriptor.risk === 'local_write' || descriptor.risk === 'external_write' ? 'tool_call' : null,
+    descriptor.risk === 'local_command' ? 'command' : null,
+    descriptor.risk === 'sensitive' ? 'tool_call' : null,
+    artifactKinds.length ? 'artifact' : null,
+  ].filter((kind): kind is string => Boolean(kind));
+  const required = descriptor.lifecycle === 'reserved'
+    || descriptor.checkpointKind !== 'none'
+    || descriptor.credentialPolicy !== 'none';
+
+  return {
+    descriptorId: descriptor.id,
+    required,
+    requiredEvidenceKinds: artifactKinds,
+    requiredRunStepKinds: Array.from(new Set(requiredRunStepKinds)),
+    requiresCheckpointReview: descriptor.checkpointKind !== 'none',
+    requiresCredentialReview: descriptor.credentialPolicy !== 'none',
+    summary: [
+      `descriptor=${descriptor.id}`,
+      `evidence=${required ? 'required' : 'optional'}`,
+      `artifacts=${artifactKinds.join(',') || 'none'}`,
+      `runSteps=${Array.from(new Set(requiredRunStepKinds)).join(',') || 'none'}`,
+      `checkpoint=${descriptor.checkpointKind}`,
+      `credential=${descriptor.credentialPolicy}`,
+    ].join(' / '),
+  };
+}
+
 export function requiresAgentToolCheckpoint(descriptorId: string): boolean {
   return getAgentToolScaffoldDescriptor(descriptorId).checkpointKind !== 'none';
 }
@@ -573,13 +681,29 @@ export function summarizeAgentToolScaffoldFamilies(params: {
     const credentialGatedIds = descriptors
       .filter((descriptor) => descriptor.credentialPolicy !== 'none')
       .map((descriptor) => descriptor.id);
+    const connectorPolicyRecords = descriptors.map((descriptor) => buildAgentToolConnectorPolicyRecord({
+      descriptorId: descriptor.id,
+      policy: params.policy,
+    }));
+    const localVerificationEvidence = descriptors.map((descriptor) =>
+      buildAgentToolLocalVerificationEvidence(descriptor.id));
+    const localVerificationRequiredIds = localVerificationEvidence
+      .filter((evidence) => evidence.required)
+      .map((evidence) => evidence.descriptorId);
+    const modelVisibleIds = connectorPolicyRecords
+      .filter((record) => record.modelVisible)
+      .map((record) => record.descriptorId);
 
     return {
       checkpointRequiredIds,
       credentialGatedIds,
+      connectorPolicyRecords,
       descriptorIds: descriptors.map((descriptor) => descriptor.id),
       family,
       implementedCount,
+      localVerificationEvidence,
+      localVerificationRequiredIds,
+      modelVisibleIds,
       providerNativeExposedIds,
       reservedCount,
       summary: [
@@ -590,6 +714,7 @@ export function summarizeAgentToolScaffoldFamilies(params: {
         `providerNativeExposed=${providerNativeExposedIds.length}`,
         `checkpoints=${checkpointRequiredIds.length}`,
         `credentialGated=${credentialGatedIds.length}`,
+        `verificationRequired=${localVerificationRequiredIds.length}`,
       ].join(' / '),
       textPromptExposedIds,
     };
