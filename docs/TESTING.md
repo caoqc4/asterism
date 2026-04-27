@@ -140,6 +140,10 @@ Covered today:
   `npm run accept:sandbox-coding:code-agent-ui` exercises the Code Agent
   preflight summary, package-script availability detection, renderer payload
   filtering, and IPC recheck without Docker or provider calls.
+- `Browser controlled local QA fixture`
+  `npm run manual:browser-controlled-fixture` materializes the Tier 2
+  controlled-interaction fixture plan without starting a browser, calling the
+  network, mutating a page, or exposing a model-visible browser tool.
 - `Code Agent model producer live smoke`
   `npm run accept:sandbox-coding:model-producer-live` is skipped by default.
   With `TASKPLANE_RUN_CODE_AGENT_MODEL_PRODUCER_LIVE=true`, it sends one

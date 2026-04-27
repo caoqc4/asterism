@@ -575,6 +575,10 @@ The project is past initial architecture assembly. Current work should favor pro
   and validation are drafted in `browser-controlled-interaction`. The descriptor
   is intentionally not registered in the scaffold, so no model-visible browser
   tool, IPC route, scheduler path, or UI control is enabled.
+- The Tier 2 local-dev QA fixture plan can now be materialized with
+  `npm run manual:browser-controlled-fixture`. It writes HTML, request JSON, and
+  plan JSON to a temporary directory while recording `browserStart=no`,
+  `networkCall=no`, `pageMutation=no`, and `modelExposure=hidden`.
 - The Browser / Playwright boundary has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references. The accepted direction is tiered capability:

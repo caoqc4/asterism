@@ -4,6 +4,7 @@ import { isAgentToolScaffoldId } from '../agent-tool-scaffold.js';
 import {
   BROWSER_CONTROLLED_ACTIONS,
   BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+  buildBrowserControlledInteractionLocalQaFixture,
   buildDefaultBrowserControlledInteractionPolicy,
   isBrowserControlledAction,
   validateBrowserControlledInteractionRequest,
@@ -44,6 +45,50 @@ describe('browser controlled interaction schema draft', () => {
       sideEffectPolicy: 'checkpoint_required',
       timeoutMs: 60_000,
     });
+  });
+
+  it('prepares a non-executing local-dev QA fixture plan', () => {
+    const fixture = buildBrowserControlledInteractionLocalQaFixture({
+      origin: 'http://127.0.0.1:5173',
+    });
+
+    expect(fixture).toMatchObject({
+      allowedOrigin: 'http://127.0.0.1:5173',
+      expectedArtifactKinds: ['screenshot', 'visible_text', 'page_summary'],
+      name: 'browser-controlled-local-qa-fixture',
+      path: '/browser-controlled-local-qa.html',
+      smokeWillCallNetwork: false,
+      smokeWillMutatePage: false,
+      smokeWillStartBrowser: false,
+      summary: 'Browser controlled interaction local QA fixture prepared / origin=http://127.0.0.1:5173 / path=/browser-controlled-local-qa.html / actions=navigate,click,type_text,select_option,capture_evidence / browserStart=no / networkCall=no / pageMutation=no / modelExposure=hidden',
+    });
+    expect(fixture.html).toContain('data-taskplane-controlled-qa="fixture"');
+    expect(fixture.requests.map((request) => request.action.action)).toEqual([
+      'navigate',
+      'click',
+      'type_text',
+      'select_option',
+      'capture_evidence',
+    ]);
+    expect(fixture.requests.every((request) =>
+      validateBrowserControlledInteractionRequest(request).valid)).toBe(true);
+  });
+
+  it('keeps local QA fixture actions checkpoint-free until side-effect targets appear', () => {
+    const fixture = buildBrowserControlledInteractionLocalQaFixture({
+      origin: 'http://127.0.0.1:5173',
+    });
+    const validations = fixture.requests.map((request) =>
+      validateBrowserControlledInteractionRequest(request));
+
+    expect(validations.map((validation) =>
+      validation.valid ? validation.step.checkpointRequired : true)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
   });
 
   it('accepts bounded local controlled-interaction requests as schema only', () => {

@@ -483,11 +483,14 @@ The latest implementation slice:
   `browser.controlled_interaction` is still not registered in the tool scaffold
   and remains unavailable to prompts, provider-native tools, IPC, scheduler, and
   UI.
+- `npm run manual:browser-controlled-fixture` now materializes the Tier 2
+  local-dev QA fixture plan without starting a browser, opening a network
+  connection, mutating a page, or exposing any model-visible browser tool.
 
 The next implementation slice is:
 
 - use the Browser Tier 1 checklist to decide whether the next browser work is
-  UX evidence polish or a separate Tier 2 local-dev QA smoke design; do not
+  UX evidence polish or a separately accepted Tier 2 local-dev QA smoke; do not
   expose browser tools to the model
 - keep Tier 2 controlled browser interaction deferred until the draft decision
   is accepted and Tier 1 Run artifact review exists
@@ -506,6 +509,7 @@ npm test -- src/main/domain/run/agent-run-loop.test.ts
 npm run accept:workspace-patch
 npm run accept:domain-agent-tools
 npm run accept:provider-native-tools
+npm run manual:browser-controlled-fixture
 npm run verify
 ```
 

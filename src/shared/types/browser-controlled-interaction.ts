@@ -106,6 +106,19 @@ export type BrowserControlledInteractionRequestValidation =
       valid: false;
     };
 
+export type BrowserControlledInteractionLocalQaFixture = {
+  allowedOrigin: string;
+  expectedArtifactKinds: BrowserEvidenceKind[];
+  html: string;
+  name: string;
+  path: string;
+  requests: BrowserControlledInteractionRequest[];
+  smokeWillCallNetwork: false;
+  smokeWillMutatePage: false;
+  smokeWillStartBrowser: false;
+  summary: string;
+};
+
 const BROWSER_CONTROLLED_ACTION_SET = new Set<string>(BROWSER_CONTROLLED_ACTIONS);
 const MAX_BROWSER_CONTROLLED_ACTIONS = 20;
 const MAX_BROWSER_CONTROLLED_TIMEOUT_MS = 120_000;
@@ -137,6 +150,115 @@ export function buildDefaultBrowserControlledInteractionPolicy(params: {
     sensitiveFieldPolicy: 'block',
     sideEffectPolicy: 'checkpoint_required',
     timeoutMs: params.timeoutMs ?? 60_000,
+  };
+}
+
+export function buildBrowserControlledInteractionLocalQaFixture(params: {
+  name?: string;
+  origin?: string;
+  path?: string;
+} = {}): BrowserControlledInteractionLocalQaFixture {
+  const origin = params.origin ?? 'http://127.0.0.1:0';
+  const path = params.path ?? '/browser-controlled-local-qa.html';
+  const url = new URL(path, origin);
+  const policy = buildDefaultBrowserControlledInteractionPolicy({
+    allowedActions: ['navigate', 'click', 'type_text', 'select_option', 'capture_evidence'],
+    allowedOrigins: [url.origin],
+    maxActions: 6,
+  });
+  const html = [
+    '<!doctype html>',
+    '<html lang="en">',
+    '<head><meta charset="utf-8"><title>Taskplane Browser Controlled Local QA</title></head>',
+    '<body>',
+    '<main data-taskplane-controlled-qa="fixture">',
+    '<h1>Controlled Interaction Local QA</h1>',
+    '<button data-ref="open-filter">Open filter</button>',
+    '<label>Search note <input data-ref="search-note" type="text" autocomplete="off"></label>',
+    '<label>Mode <select data-ref="mode-select"><option>Preview</option><option>Review</option></select></label>',
+    '<section data-ref="result-panel">Ready for bounded local QA.</section>',
+    '</main>',
+    '</body>',
+    '</html>',
+  ].join('');
+  const requests: BrowserControlledInteractionRequest[] = [
+    {
+      descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+      action: {
+        action: 'navigate',
+        url: url.toString(),
+      },
+      policy,
+      purpose: 'Open the local dev-server QA fixture.',
+    },
+    {
+      descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+      action: {
+        action: 'click',
+        currentUrl: url.toString(),
+        targetLabel: 'Open filter',
+        targetRef: 'open-filter',
+      },
+      policy,
+      purpose: 'Exercise a harmless local button before capturing evidence.',
+    },
+    {
+      descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+      action: {
+        action: 'type_text',
+        currentUrl: url.toString(),
+        targetLabel: 'Search note',
+        targetRef: 'search-note',
+        text: 'local qa',
+      },
+      policy,
+      purpose: 'Exercise bounded non-sensitive local text input.',
+    },
+    {
+      descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+      action: {
+        action: 'select_option',
+        currentUrl: url.toString(),
+        targetLabel: 'Mode',
+        targetRef: 'mode-select',
+        value: 'Review',
+      },
+      policy,
+      purpose: 'Exercise a bounded local select control.',
+    },
+    {
+      descriptorId: BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID,
+      action: {
+        action: 'capture_evidence',
+        currentUrl: url.toString(),
+        targetLabel: 'Result panel',
+        targetRef: 'result-panel',
+      },
+      policy,
+      purpose: 'Capture post-action local QA evidence.',
+    },
+  ];
+
+  return {
+    allowedOrigin: url.origin,
+    expectedArtifactKinds: ['screenshot', 'visible_text', 'page_summary'],
+    html,
+    name: params.name ?? 'browser-controlled-local-qa-fixture',
+    path: url.pathname,
+    requests,
+    smokeWillCallNetwork: false,
+    smokeWillMutatePage: false,
+    smokeWillStartBrowser: false,
+    summary: [
+      'Browser controlled interaction local QA fixture prepared',
+      `origin=${url.origin}`,
+      `path=${url.pathname}`,
+      `actions=${requests.map((request) => request.action.action).join(',')}`,
+      'browserStart=no',
+      'networkCall=no',
+      'pageMutation=no',
+      'modelExposure=hidden',
+    ].join(' / '),
   };
 }
 

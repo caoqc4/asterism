@@ -13,6 +13,13 @@ Current implementation note:
 - `src/shared/types/browser-controlled-interaction.ts` drafts the Tier 2 schema
   only: allowed action names, operator-started policy, action step draft,
   checkpoint payload shape, and validation.
+- `buildBrowserControlledInteractionLocalQaFixture()` prepares a non-executing
+  local-dev QA fixture plan with HTML, allowed origin, planned actions, and
+  expected evidence. The fixture explicitly records `browserStart=no`,
+  `networkCall=no`, `pageMutation=no`, and `modelExposure=hidden`.
+- `npm run manual:browser-controlled-fixture` materializes that fixture to a
+  temporary directory for review without starting an HTTP server, Playwright, or
+  any browser action.
 - `browser.controlled_interaction` is intentionally not registered in
   `agent-tool-scaffold`, so it remains unavailable to text prompts,
   provider-native schemas, IPC, scheduler runs, and product UI.
@@ -180,5 +187,6 @@ Current progress:
 
 - The browser action step draft and checkpoint payload shape are drafted in
   shared types with validation coverage.
-- The local dev-server QA smoke remains design-only and must not start a browser
-  or expose a model-visible tool until separately accepted.
+- The local dev-server QA fixture plan is design-only and can be materialized
+  locally. It must not start a browser or expose a model-visible tool until
+  separately accepted.
