@@ -653,15 +653,16 @@ The project is past initial architecture assembly. Current work should favor pro
 - [AGENT_EXECUTION_BROWSER_CONTROLLED_INTERACTION_ACCEPTANCE_PLAN.md](AGENT_EXECUTION_BROWSER_CONTROLLED_INTERACTION_ACCEPTANCE_PLAN.md)
   now breaks Tier 2 into BCI1-BCI6: review helpers, dry-run runner plan, local
   QA smoke, checkpoint boundary, Runs review surface, and a final
-  operator-started entrypoint. The recommended next task is BCI1 only; no
+  operator-started entrypoint. BCI1 and BCI2 are locally accepted; the next task
+  is BCI3 local QA smoke only. No
   browser runtime, IPC, scheduler, provider schema, or model-visible browser
-  tool should be enabled by that slice.
-- Browser controlled interaction BCI1 has started with renderer review helpers
+  tool should be enabled outside that local fixture slice.
+- Browser controlled interaction BCI1 is locally accepted with renderer review helpers
   that turn validated schema drafts into ready/checkpoint-required/blocked
   review summaries and planned RunStep titles. The descriptor remains
   unregistered, and no browser runtime, IPC, scheduler, provider schema, or
   model-visible browser tool is enabled.
-- Browser controlled interaction BCI2 has started with a dry-run recorder that
+- Browser controlled interaction BCI2 is locally accepted with a dry-run recorder that
   persists validated action plans as RunStep evidence while explicitly recording
   `browserStart=no`, `networkCall=no`, `pageMutation=no`, scheduler=no,
   providerCall=no, and `modelExposure=hidden`. It is not wired to IPC or UI.

@@ -48,6 +48,11 @@ capability is an operator-started runtime lane first, not a general model tool.
 
 ### BCI1: Review Contract Helper
 
+Status: locally accepted. Renderer review helpers now format validated safe,
+checkpoint-required, and blocked controlled-interaction drafts without adding
+IPC, UI, browser launch, provider schema, scheduler, or model-visible tool
+exposure.
+
 Goal: make controlled-interaction review data reusable before any runtime is
 wired.
 
@@ -65,6 +70,11 @@ Acceptance:
 - no IPC, UI button, browser launch, provider schema, or scheduler path is added
 
 ### BCI2: Runner Dry-Run Plan
+
+Status: locally accepted. The dry-run recorder persists validated action plans
+as RunStep evidence in isolated DB tests while recording `browserStart=no`,
+`networkCall=no`, `pageMutation=no`, scheduler=no, providerCall=no, and
+`modelExposure=hidden`.
 
 Goal: prove the runner can convert validated action plans into auditable steps
 without controlling a browser.
@@ -170,6 +180,7 @@ Acceptance:
 
 ## Recommended Next Task
 
-Start with BCI1. It is the smallest reversible slice: shared review helpers and
-tests only. It improves the future Run review loop without launching a browser,
-adding IPC, or widening model/tool exposure.
+Start with BCI3 only after reviewing the local QA fixture boundary. It should
+execute harmless localhost fixture actions in an isolated browser context, keep
+authenticated profiles and external origins unavailable, and still avoid IPC,
+product UI, scheduler starts, provider schema, and model-visible browser tools.
