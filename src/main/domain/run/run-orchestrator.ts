@@ -6,7 +6,6 @@ import type {
   AgentSessionResult,
   ProviderToolCallNormalizationResult,
 } from '../../../shared/types/agent-execution.js';
-import { AgentSessionRepository } from '../../db/repositories/agent-session-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { TextExecutor } from '../../executors/text-executor.js';
 import type { RuntimeTextResult } from '../../executors/text-generation.js';
@@ -39,6 +38,7 @@ import { AgentSessionEventRecorder } from './agent-session-event-recorder.js';
 import { evaluateTempWorkspaceSandboxCodingLane } from './temp-workspace-sandbox-provider.js';
 import { SandboxPatchReviewPlanningService } from './sandbox-patch-review-planning-service.js';
 import { evaluateSandboxPatchReviewAdapterAvailability } from './sandbox-patch-review-service-factory.js';
+import { AgentSessionStore } from './agent-session-store.js';
 
 export type RunOrchestrationResult =
   | {
@@ -76,8 +76,8 @@ export class RunOrchestrator {
     private readonly agentExecutor: AgentExecutor | null = agentToolRegistry
       ? new LocalAgentExecutor(new AgentRunLoop(agentToolRegistry, runStepRepository))
       : null,
-    private readonly agentSessionRepository: AgentSessionRepository | null = agentToolRegistry
-      ? new AgentSessionRepository()
+    private readonly agentSessionStore: AgentSessionStore | null = agentToolRegistry
+      ? new AgentSessionStore()
       : null,
     private readonly sandboxPatchReviewPlanningService: SandboxPatchReviewPlanningService =
       new SandboxPatchReviewPlanningService(),
@@ -210,7 +210,7 @@ export class RunOrchestrator {
     if (
       result.status !== 'completed' ||
       !this.agentExecutor ||
-      !this.agentSessionRepository ||
+      !this.agentSessionStore ||
       (!result.output.trim() && !result.textResult?.providerPayload)
     ) {
       return result;
@@ -249,7 +249,7 @@ export class RunOrchestrator {
       return result;
     }
 
-    const agentSession = await this.agentSessionRepository.create({
+    const agentSession = await this.agentSessionStore.create({
       runId: params.run.id,
       mode: 'agent',
       capabilities: getLocalAgentRuntimeCapabilities({
@@ -294,11 +294,11 @@ export class RunOrchestrator {
         taskTitle: params.task.title,
       });
     } catch (error) {
-      await this.agentSessionRepository.updateStatus(agentSession.id, 'failed');
+      await this.agentSessionStore.updateStatus(agentSession.id, 'failed');
       throw error;
     }
 
-    await this.agentSessionRepository.updateStatus(agentSession.id, sessionResult.status);
+    await this.agentSessionStore.updateStatus(agentSession.id, sessionResult.status);
 
     if (!eventRecorder.hasTerminalEvent()) {
       await this.recordAgentSessionResultEvent(params.run.id, sessionResult);
@@ -345,7 +345,7 @@ export class RunOrchestrator {
     selection: ProcessTemplateSelectionResult;
     taskTitle: string;
   }): Promise<RunOrchestrationResult | null> {
-    if (!this.agentExecutor || !this.agentSessionRepository || !params.runtimeConfig) {
+    if (!this.agentExecutor || !this.agentSessionStore || !params.runtimeConfig) {
       return null;
     }
 
@@ -387,7 +387,7 @@ export class RunOrchestrator {
       return null;
     }
 
-    const agentSession = await this.agentSessionRepository.create({
+    const agentSession = await this.agentSessionStore.create({
       runId: params.run.id,
       mode: 'agent',
       capabilities: getProviderNativeAgentRuntimeCapabilities({
@@ -415,11 +415,11 @@ export class RunOrchestrator {
         taskTitle: params.taskTitle,
       });
     } catch (error) {
-      await this.agentSessionRepository.updateStatus(agentSession.id, 'failed');
+      await this.agentSessionStore.updateStatus(agentSession.id, 'failed');
       throw error;
     }
 
-    await this.agentSessionRepository.updateStatus(agentSession.id, sessionResult.status);
+    await this.agentSessionStore.updateStatus(agentSession.id, sessionResult.status);
 
     if (!eventRecorder.hasTerminalEvent()) {
       await this.recordAgentSessionResultEvent(params.run.id, sessionResult);

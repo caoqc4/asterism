@@ -1,5 +1,5 @@
-import { AgentSessionRepository } from '../../db/repositories/agent-session-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import { AgentSessionStore } from './agent-session-store.js';
 import {
   previewSandboxedCodingInjectedProducerRun,
   type PreviewSandboxedCodingInjectedProducerRunResult,
@@ -22,7 +22,7 @@ export type RunSandboxedCodingInjectedProducerPreviewResult = {
 export class SandboxedCodingInjectedProducerPreviewService {
   constructor(
     private readonly persister: SandboxedCodingProducerPreviewPersister = new SandboxedCodingProducerPreviewPersister(
-      new AgentSessionRepository(),
+      new AgentSessionStore(),
       new RunStepRepository(),
     ),
   ) {}

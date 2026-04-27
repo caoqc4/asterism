@@ -446,8 +446,8 @@ Implementation note:
 
 ## Recommended Next Implementation Task
 
-Start by making the operator-started orchestration boundary explicit before
-adding more visible runtime power.
+Continue the executor/session boundary before adding more visible runtime
+power.
 
 T1 through T7 now have Slice 0 implementation or design coverage, the shared
 tool scaffold exists, the sandbox patch draft source boundary is implemented,
@@ -457,11 +457,19 @@ empty-diff outcomes, and the first real model-backed Task detail UI pass has
 validated bounded context, staged-file output, targeted checks, patch artifact
 review, and pending promotion Decision creation.
 
+The latest implementation slice:
+
+- `AgentSessionStore` now exists as the domain-facing session persistence
+  boundary, wrapping `AgentSessionRepository`.
+- `RunService`, `RunOrchestrator`, sandboxed coding injected-producer preview,
+  and sandboxed coding backend preflight now depend on the store boundary rather
+  than direct repository construction.
+
 The next implementation slice is:
 
-- return to broader execution-layer orchestration: define the next shared
-  run/session boundary before adding MCP, skills, computer-use, creator
-  connectors, or broader browser interaction
+- extend the shared run/session contract only where needed for the next
+  execution-layer orchestration step: source metadata, tool-family capability
+  summaries, and restart/replay hints
 - keep Tier 2 controlled browser interaction deferred until the draft decision
   is accepted and Tier 1 Run artifact review exists
 

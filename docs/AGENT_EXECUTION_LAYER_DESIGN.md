@@ -485,6 +485,14 @@ and persists artifacts.
 - `RunOrchestrator`: adapts session events into `run_steps`, checkpoints, and
   final settlement.
 
+Current implementation note:
+
+- `AgentSessionStore` is now the domain-facing session persistence boundary.
+  It wraps `AgentSessionRepository` and exposes the current minimal contract:
+  `create`, `updateStatus`, and `listForRun`.
+- `RunService`, `RunOrchestrator`, and sandboxed coding producer persistence use
+  the store instead of depending on the repository directly.
+
 ### First Concrete Next Task
 
 Continue the executor/session boundary without adding new external tools.
@@ -634,7 +642,10 @@ Next code/design slice:
 
 1. Keep broad browser/computer/social/coding execution deferred until the
    executor/session boundary can survive interruption and restart.
-2. If manual alpha use shows repeated friction around checkpoint review,
+2. Extend the session contract only where the next orchestration step requires
+   it: source metadata, tool-family capability summaries, and restart/replay
+   hints.
+3. If manual alpha use shows repeated friction around checkpoint review,
    revisit a dedicated workspace manual-request surface before any prompt-level
    workspace write/command exposure.
 

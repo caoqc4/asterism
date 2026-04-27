@@ -8,10 +8,10 @@ import type {
 } from '../../../shared/types/run.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { RunRepository } from '../../db/repositories/run-repository.js';
-import { AgentSessionRepository } from '../../db/repositories/agent-session-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { TaskService } from '../task/task-service.js';
+import { AgentSessionStore } from './agent-session-store.js';
 import { AgentToolRegistry } from './agent-tool-registry.js';
 import { ProcessTemplateSelector } from './process-template-selector.js';
 import { RunOrchestrator, type RunOrchestrationResult } from './run-orchestrator.js';
@@ -27,7 +27,7 @@ export class RunService {
     private readonly runStepRepository: RunStepRepository = new RunStepRepository(),
     private readonly agentToolRegistry: AgentToolRegistry | null = null,
     private readonly runCheckpointRepository: RunCheckpointRepository = new RunCheckpointRepository(),
-    private readonly agentSessionRepository: AgentSessionRepository = new AgentSessionRepository(),
+    private readonly agentSessionStore: AgentSessionStore = new AgentSessionStore(),
     private readonly runOrchestrator: RunOrchestrator = new RunOrchestrator(
       aiConfigService,
       textExecutor,
@@ -35,7 +35,7 @@ export class RunService {
       runStepRepository,
       agentToolRegistry,
       undefined,
-      agentSessionRepository,
+      agentSessionStore,
     ),
   ) {}
 
@@ -55,7 +55,7 @@ export class RunService {
       artifacts: await this.artifactRepository.listForRun(runId),
       steps: await this.runStepRepository.listForRun(runId),
       checkpoints: await this.runCheckpointRepository.listForRun(runId),
-      agentSessions: await this.agentSessionRepository.listForRun(runId),
+      agentSessions: await this.agentSessionStore.listForRun(runId),
     };
   }
 

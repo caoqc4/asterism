@@ -1,7 +1,7 @@
 import type { AgentSandboxBackendProbe } from '../../../shared/agent-sandbox-provider.js';
 import type { FeatureFlags } from '../../../shared/types/settings.js';
-import { AgentSessionRepository } from '../../db/repositories/agent-session-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import { AgentSessionStore } from './agent-session-store.js';
 import {
   buildSandboxedCodingProducerBackendBlockedPreviewResult,
   buildSandboxedCodingProducerBackendConnectionPlan,
@@ -42,7 +42,7 @@ export type RunSandboxedCodingProducerBackendPreflightResult =
 export class SandboxedCodingProducerBackendPreflightService {
   constructor(
     private readonly persister: SandboxedCodingProducerPreviewPersister = new SandboxedCodingProducerPreviewPersister(
-      new AgentSessionRepository(),
+      new AgentSessionStore(),
       new RunStepRepository(),
     ),
   ) {}

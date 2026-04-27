@@ -536,12 +536,6 @@ The project is past initial architecture assembly. Current work should favor pro
   manual button created a completed agent Run, persisted a `browser_evidence`
   artifact, showed the Browser Evidence review card, and SQLite confirmed the
   accepted/captured/artifact RunSteps plus timeline events.
-- The next execution-layer slice is T8 in
-  [AGENT_EXECUTION_TASK_BREAKDOWN.md](AGENT_EXECUTION_TASK_BREAKDOWN.md): make
-  operator-started orchestration explicit by extracting manual Code Agent launch
-  construction out of the IPC handler while preserving the existing
-  `run:triggerCodeAgent` UI contract. The key policy distinction is local
-  no-provider diagnostic preview vs explicit provider-spending model producer.
 - T8's first service extraction is locally accepted: `CodeAgentRunService` now owns
   manual Code Agent launch orchestration, while `run:triggerCodeAgent` only
   delegates and emits app events. Service tests now cover the no-provider local
@@ -551,6 +545,14 @@ The project is past initial architecture assembly. Current work should favor pro
   extraction. Code Agent manual launches now also record an operator-started
   acceptance RunStep with descriptor, producer branch, provider-call policy, and
   selected checks.
+- The shared executor/session boundary has its first domain-facing persistence
+  layer: `AgentSessionStore` wraps `AgentSessionRepository`, and `RunService`,
+  `RunOrchestrator`, sandboxed coding injected-producer preview, and sandboxed
+  coding backend preflight now depend on the store instead of direct repository
+  construction. The next slice should extend the session contract only for
+  source metadata, tool-family capability summaries, and restart/replay hints
+  before adding MCP, skills, computer-use, creator connectors, or broader
+  browser interaction.
 - The Browser / Playwright boundary has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references. The accepted direction is tiered capability:

@@ -1,7 +1,7 @@
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type { RunStepRecord, RunStepStatus } from '../../../shared/types/run.js';
-import type { AgentSessionRepository } from '../../db/repositories/agent-session-repository.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import type { AgentSessionStore } from './agent-session-store.js';
 import type {
   PreviewSandboxedCodingInjectedProducerRunResult,
   SandboxedCodingProducerRunStepDraft,
@@ -14,7 +14,7 @@ export type PersistSandboxedCodingProducerPreviewResult = {
 
 export class SandboxedCodingProducerPreviewPersister {
   constructor(
-    private readonly agentSessionRepository: Pick<AgentSessionRepository, 'create' | 'updateStatus'>,
+    private readonly agentSessionStore: Pick<AgentSessionStore, 'create' | 'updateStatus'>,
     private readonly runStepRepository: Pick<RunStepRepository, 'create'>,
   ) {}
 
@@ -22,7 +22,7 @@ export class SandboxedCodingProducerPreviewPersister {
     result: PreviewSandboxedCodingInjectedProducerRunResult;
     runId: string;
   }): Promise<PersistSandboxedCodingProducerPreviewResult> {
-    const session = await this.agentSessionRepository.create({
+    const session = await this.agentSessionStore.create({
       runId: params.runId,
       mode: 'agent',
       capabilities: {
@@ -41,7 +41,7 @@ export class SandboxedCodingProducerPreviewPersister {
       steps.push(await this.persistStep(step));
     }
 
-    const updatedSession = await this.agentSessionRepository.updateStatus(
+    const updatedSession = await this.agentSessionStore.updateStatus(
       session.id,
       mapProducerPreviewStatusToAgentSessionStatus(params.result.status),
     );
