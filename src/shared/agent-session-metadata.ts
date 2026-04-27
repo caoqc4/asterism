@@ -191,7 +191,7 @@ export function formatAgentSessionRestartHint(session: AgentSessionRecord): stri
     case 'running':
       return session.capabilities.longRunningSessions
         ? 'restart=session_recorded / replay=inspect_latest_run_step'
-        : 'restart=single_session_in_progress / replay=inspect_latest_run_step';
+        : 'restart=single_session_recorded / replay=inspect_latest_run_step';
   }
 }
 

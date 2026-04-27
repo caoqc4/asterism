@@ -220,5 +220,13 @@ describe('agent session metadata formatting', () => {
       ...baseSession,
       status: 'running',
     })).toBe('restart=session_recorded / replay=inspect_latest_run_step');
+    expect(formatAgentSessionRestartHint({
+      ...baseSession,
+      capabilities: {
+        ...baseSession.capabilities,
+        longRunningSessions: false,
+      },
+      status: 'running',
+    })).toBe('restart=single_session_recorded / replay=inspect_latest_run_step');
   });
 });

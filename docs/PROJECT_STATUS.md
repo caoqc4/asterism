@@ -675,6 +675,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - The coarse session restart hint now says checkpoint `expected` for paused or
   confirmation sessions and leaves actual resumability to the checkpoint-aware
   replay review, avoiding a false promise when the checkpoint is missing.
+- Running-session restart hints no longer claim a single local session is
+  currently in progress without a live executor/heartbeat fact; they now record
+  the session and route recovery through latest-step inspection.
 - Task detail Paused Run Recovery now routes users to the Run evidence first
   instead of directly executing continuation from a list-only Run summary. The
   actual continuation affordance lives on Runs detail, where checkpoint evidence

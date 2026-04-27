@@ -3882,7 +3882,7 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        'Restart hint：restart=single_session_in_progress / replay=inspect_latest_run_step',
+        'Restart hint：restart=single_session_recorded / replay=inspect_latest_run_step',
       ),
     ).toBeTruthy();
     expect(
