@@ -69,6 +69,7 @@ export type CreateCodeAgentRunInput = {
   taskId: string;
   patchIntent: string;
   contextFiles?: string[];
+  sourceContextIds?: string[];
   requestedChecks: CodeAgentAllowedCheck[];
   operatorConfirmed: boolean;
   useModelProducer?: boolean;

@@ -100,6 +100,9 @@ Agent context.
    represent selected files and future selected Taskplane objects. Accepted for
    selected workspace files.
 3. Add explicit source-context selection in the Code Agent surface.
+   Accepted as manifest-only selection: selected source context ids/titles can
+   be recorded for audit, but source-context content is not yet sent to the
+   model.
 4. Persist the selected context manifest as a RunStep before provider runtime
    config is resolved. Accepted for selected workspace files.
 5. Render the selected context manifest on Runs detail without dumping full

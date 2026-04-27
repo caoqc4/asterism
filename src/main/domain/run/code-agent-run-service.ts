@@ -138,6 +138,7 @@ export class CodeAgentRunService {
     });
 
     const selectedContextFiles = readSelectedCodeAgentContextFiles(input);
+    const selectedSourceContexts = selectCodeAgentSourceContexts(input, task.sourceContexts);
 
     if (modelProducerRequested && !modelProducerAvailable) {
       return this.runRepository.updateResult(
@@ -159,8 +160,19 @@ export class CodeAgentRunService {
       );
     }
 
+    if (modelProducerOptIn && selectedSourceContexts.status === 'blocked') {
+      return this.runRepository.updateResult(
+        run.id,
+        'failed',
+        selectedSourceContexts.summary,
+        'system',
+        selectedSourceContexts.blockedReasons.join(' '),
+      );
+    }
+
     if (modelProducerOptIn) {
       const contextManifest = buildCodeAgentProviderVisibleContextManifest({
+        sourceContexts: selectedSourceContexts.items,
         workspaceFiles: selectedContextFiles,
       });
 
@@ -372,6 +384,53 @@ function readSelectedCodeAgentContextFiles(input?: CreateCodeAgentRunInput): str
     .split(',')
     .map((file) => file.trim())
     .filter(Boolean);
+}
+
+function selectCodeAgentSourceContexts(
+  input: CreateCodeAgentRunInput | undefined,
+  sourceContexts: Array<{ id: string; title: string }>,
+): {
+  blockedReasons: string[];
+  items: Array<{ id: string; title: string }>;
+  status: 'blocked' | 'selected';
+  summary: string;
+} {
+  const selectedIds = Array.from(new Set((input?.sourceContextIds ?? [])
+    .map((id) => id.trim())
+    .filter(Boolean)));
+  const items: Array<{ id: string; title: string }> = [];
+  const blockedReasons: string[] = [];
+
+  for (const selectedId of selectedIds) {
+    const sourceContext = sourceContexts.find((item) => item.id === selectedId);
+    if (!sourceContext) {
+      blockedReasons.push(`Code Agent source context selection was not found on this task: ${selectedId}.`);
+      continue;
+    }
+
+    items.push({
+      id: sourceContext.id,
+      title: sourceContext.title,
+    });
+  }
+
+  if (blockedReasons.length) {
+    return {
+      blockedReasons,
+      items: [],
+      status: 'blocked',
+      summary: `Code Agent source context selection blocked: ${blockedReasons.join(' ')}`,
+    };
+  }
+
+  return {
+    blockedReasons: [],
+    items,
+    status: 'selected',
+    summary: items.length
+      ? `Code Agent source context selection / items=${items.length}`
+      : 'Code Agent source context selection / items=0',
+  };
 }
 
 function getProducerCheckResults(

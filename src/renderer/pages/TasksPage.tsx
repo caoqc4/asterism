@@ -870,6 +870,7 @@ export function TasksPage({
   const [quickRunAllowTaskMutationTools, setQuickRunAllowTaskMutationTools] = useState(false);
   const [codeAgentPatchIntent, setCodeAgentPatchIntent] = useState('');
   const [codeAgentContextFiles, setCodeAgentContextFiles] = useState('');
+  const [codeAgentSourceContextIds, setCodeAgentSourceContextIds] = useState<string[]>([]);
   const [codeAgentRunTestCheck, setCodeAgentRunTestCheck] = useState(true);
   const [codeAgentRunLintCheck, setCodeAgentRunLintCheck] = useState(true);
   const [codeAgentOperatorConfirmed, setCodeAgentOperatorConfirmed] = useState(false);
@@ -1352,6 +1353,7 @@ export function TasksPage({
       const contextFiles = parseCodeAgentContextFileInput(codeAgentContextFiles);
       const created = await onTriggerCodeAgentRun({
         ...(contextFiles.length ? { contextFiles } : {}),
+        ...(codeAgentSourceContextIds.length ? { sourceContextIds: codeAgentSourceContextIds } : {}),
         operatorConfirmed: codeAgentOperatorConfirmed,
         patchIntent: codeAgentPatchIntent,
         requestedChecks,
@@ -2176,6 +2178,9 @@ export function TasksPage({
   const codeAgentStartBlockedReason = formatCodeAgentStartBlockedReason(codeAgentStartGateInput);
   const codeAgentPreflightSummary = formatCodeAgentPreflightSummary(codeAgentStartGateInput);
   const orchestrationSnapshot = buildAgentExecutionOrchestrationSnapshot(aiStatus);
+  const selectedCodeAgentSourceContextTitles = detail?.sourceContexts
+    .filter((item) => codeAgentSourceContextIds.includes(item.id))
+    .map((item) => item.title) ?? [];
   const automationReadiness = detail
     ? evaluateSkillInformedAutomationReadiness({
         snapshot: orchestrationSnapshot,
@@ -2394,6 +2399,31 @@ export function TasksPage({
                 >
                   {candidate}
                 </button>
+              ))}
+            </div>
+          ) : null}
+          {detail?.sourceContexts.length ? (
+            <div className="stack" aria-label="Source context selections">
+              <p className="meta">
+                Source context manifest：{
+                  selectedCodeAgentSourceContextTitles.length
+                    ? `${selectedCodeAgentSourceContextTitles.length} selected / ${selectedCodeAgentSourceContextTitles.join('、')}`
+                    : 'none selected'
+                } / content is not sent to the model in this slice
+              </p>
+              {detail.sourceContexts.map((item) => (
+                <label key={item.id}>
+                  <input
+                    checked={codeAgentSourceContextIds.includes(item.id)}
+                    onChange={(event) => {
+                      setCodeAgentSourceContextIds((current) => event.target.checked
+                        ? [...current, item.id].filter((id, index, ids) => ids.indexOf(id) === index)
+                        : current.filter((id) => id !== item.id));
+                    }}
+                    type="checkbox"
+                  />
+                  {item.title}
+                </label>
               ))}
             </div>
           ) : null}

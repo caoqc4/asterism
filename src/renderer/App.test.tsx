@@ -2946,6 +2946,9 @@ describe('App UI flow', () => {
     expect(intent.getByText(
       'Context selection：none selected / 3 suggestions available / files are not read until the run starts',
     )).toBeTruthy();
+    expect(intent.getByText(
+      'Source context manifest：none selected / content is not sent to the model in this slice',
+    )).toBeTruthy();
 
     const startButton = intent.getByRole('button', { name: '启动 sandbox preview run' });
     expect(startButton.hasAttribute('disabled')).toBe(true);
@@ -2978,6 +2981,10 @@ describe('App UI flow', () => {
     expect(intent.getByText(
       'Context selection：2 selected / docs/notes.md、src/app.ts / files are not read until the run starts',
     )).toBeTruthy();
+    await user.click(intent.getByRole('checkbox', { name: 'Reference doc' }));
+    expect(intent.getByText(
+      'Source context manifest：1 selected / Reference doc / content is not sent to the model in this slice',
+    )).toBeTruthy();
     expect(intent.getByText(
       'Code Agent preflight：ready / runtime=ready / checks=test,lint / producer=model-backed; context=2 / promotion=Decision required / next=start sandbox preview',
     )).toBeTruthy();
@@ -2992,6 +2999,7 @@ describe('App UI flow', () => {
       operatorConfirmed: true,
       patchIntent: 'Create a staged patch for the notes file',
       requestedChecks: ['test', 'lint'],
+      sourceContextIds: ['source_context_1'],
       taskId: riskTask.id,
       useModelProducer: true,
     });
@@ -3931,7 +3939,7 @@ describe('App UI flow', () => {
           input: [
             'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0',
             'providerPromptContent=no',
-            'workspace_file:docs/notes.md',
+            'workspace_file:docs/notes.md:docs/notes.md',
           ].join('\n'),
           output: 'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0',
         }),

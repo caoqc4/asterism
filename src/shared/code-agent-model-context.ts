@@ -16,14 +16,29 @@ export type CodeAgentProviderVisibleContextManifest = {
 };
 
 export function buildCodeAgentProviderVisibleContextManifest(params: {
+  sourceContexts?: Array<{ id: string; title: string }>;
   workspaceFiles?: string[];
 }): CodeAgentProviderVisibleContextManifest {
   const workspaceFiles = normalizeSelectedValues(params.workspaceFiles ?? []);
-  const items: CodeAgentProviderVisibleContextItem[] = workspaceFiles.map((file) => ({
-    id: file,
-    kind: 'workspace_file',
-    label: file,
-  }));
+  const sourceContexts = (params.sourceContexts ?? [])
+    .map((item) => ({
+      id: item.id.trim(),
+      title: item.title.trim(),
+    }))
+    .filter((item, index, items) =>
+      item.id && items.findIndex((candidate) => candidate.id === item.id) === index);
+  const items: CodeAgentProviderVisibleContextItem[] = [
+    ...workspaceFiles.map((file) => ({
+      id: file,
+      kind: 'workspace_file' as const,
+      label: file,
+    })),
+    ...sourceContexts.map((item) => ({
+      id: item.id,
+      kind: 'source_context' as const,
+      label: item.title || item.id,
+    })),
+  ];
 
   return {
     items,
@@ -38,7 +53,7 @@ export function formatCodeAgentProviderVisibleContextManifestForStep(
   return [
     manifest.summary,
     'providerPromptContent=no',
-    ...manifest.items.map((item) => `${item.kind}:${item.id}`),
+    ...manifest.items.map((item) => `${item.kind}:${item.id}:${item.label}`),
   ].join('\n');
 }
 
@@ -55,7 +70,9 @@ export function formatCodeAgentProviderVisibleContextManifestSummary(
     'Provider-visible context manifest',
     `items=${items.length}`,
     workspaceFiles.length ? `workspace_files=${workspaceFiles.join(',')}` : 'workspace_files=0',
-    `source_context=${sourceContexts.length}`,
+    sourceContexts.length
+      ? `source_context=${sourceContexts.map((item) => item.label).join(',')}`
+      : 'source_context=0',
     `artifacts=${artifacts.length}`,
   ].join(' / ');
 }

@@ -8,22 +8,28 @@ import {
 describe('code agent model context manifest', () => {
   it('summarizes selected workspace files without including prompt content', () => {
     const manifest = buildCodeAgentProviderVisibleContextManifest({
+      sourceContexts: [
+        { id: 'source_context_1', title: 'Design note' },
+        { id: 'source_context_1', title: 'Duplicate note' },
+      ],
       workspaceFiles: ['docs/notes.md', ' docs/notes.md ', 'src/app.ts'],
     });
 
     expect(manifest).toMatchObject({
       providerPromptContentIncluded: false,
-      summary: 'Provider-visible context manifest / items=2 / workspace_files=docs/notes.md,src/app.ts / source_context=0 / artifacts=0',
+      summary: 'Provider-visible context manifest / items=3 / workspace_files=docs/notes.md,src/app.ts / source_context=Design note / artifacts=0',
     });
     expect(manifest.items).toEqual([
       { id: 'docs/notes.md', kind: 'workspace_file', label: 'docs/notes.md' },
       { id: 'src/app.ts', kind: 'workspace_file', label: 'src/app.ts' },
+      { id: 'source_context_1', kind: 'source_context', label: 'Design note' },
     ]);
     expect(formatCodeAgentProviderVisibleContextManifestForStep(manifest)).toBe([
-      'Provider-visible context manifest / items=2 / workspace_files=docs/notes.md,src/app.ts / source_context=0 / artifacts=0',
+      'Provider-visible context manifest / items=3 / workspace_files=docs/notes.md,src/app.ts / source_context=Design note / artifacts=0',
       'providerPromptContent=no',
-      'workspace_file:docs/notes.md',
-      'workspace_file:src/app.ts',
+      'workspace_file:docs/notes.md:docs/notes.md',
+      'workspace_file:src/app.ts:src/app.ts',
+      'source_context:source_context_1:Design note',
     ].join('\n'));
   });
 });

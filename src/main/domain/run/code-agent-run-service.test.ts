@@ -258,7 +258,7 @@ describe('CodeAgentRunService', () => {
       input: [
         'Provider-visible context manifest / items=1 / workspace_files=../escape.md / source_context=0 / artifacts=0',
         'providerPromptContent=no',
-        'workspace_file:../escape.md',
+        'workspace_file:../escape.md:../escape.md',
       ].join('\n'),
       kind: 'plan',
       output: 'Provider-visible context manifest / items=1 / workspace_files=../escape.md / source_context=0 / artifacts=0',
@@ -273,6 +273,36 @@ describe('CodeAgentRunService', () => {
       'Code Agent workspace context blocked: Code Agent workspace context path is not allowed: ../escape.md.',
       'system',
       'Code Agent workspace context path is not allowed: ../escape.md.',
+    );
+    expect(result).toBe(failedRun);
+  });
+
+  it('blocks model-backed source context selections that are not attached to the task', async () => {
+    process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
+    const failedRun = buildFailedRun(
+      'Code Agent source context selection blocked: Code Agent source context selection was not found on this task: source_context_missing.',
+      'Code Agent source context selection was not found on this task: source_context_missing.',
+    );
+    runRepository.updateResult.mockResolvedValue(failedRun);
+
+    const result = await createService().trigger({
+      contextFiles: ['docs/notes.md'],
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      sourceContextIds: ['source_context_missing'],
+      taskId: 'task_1',
+      useModelProducer: true,
+    });
+
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(executionService.run).not.toHaveBeenCalled();
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_code_agent_1',
+      'failed',
+      'Code Agent source context selection blocked: Code Agent source context selection was not found on this task: source_context_missing.',
+      'system',
+      'Code Agent source context selection was not found on this task: source_context_missing.',
     );
     expect(result).toBe(failedRun);
   });
