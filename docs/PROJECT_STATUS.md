@@ -1158,15 +1158,24 @@ npm run verify
 
 Latest local baseline:
 
-- 86 test files
-- 618 tests
+- 119 test files
+- 820 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
-- `npm run smoke:release:mac` passed locally on 2026-04-25 for the combined
-  unsigned macOS package path
+- `npm run verify` passed locally on 2026-04-27 after tightening Code Agent
+  model-context gates and updating the local acceptance status: 119 test files
+  / 820 tests
+- `npm run smoke:release:mac` passed locally on 2026-04-27 for the combined
+  unsigned macOS package path after the Code Agent context-gate and
+  restart/replay safety updates
+- `npm run accept:release:mac-preflight` passed locally on 2026-04-27 and
+  confirmed the read-only signed/notarized release prerequisite state:
+  `notarytool`, app id, product name, and mac targets are present, while
+  Developer ID signing and Apple notarization credentials remain missing; no
+  signing, notarization, upload, or Apple network request was performed
 - `npm run accept:agent-local` passed locally after adding the sandbox-coding
   acceptance gate
 - `npm run accept:provider-native-live:preflight` reports the current local

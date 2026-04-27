@@ -4,16 +4,29 @@ Use this file when running the manual alpha path. Keep entries short and actiona
 
 ## Run Metadata
 
-- Date: 2026-04-25
-- Build / commit: pushed `main` on 2026-04-25 after the runtime schema smoke coverage updates
+- First full manual pass: 2026-04-25
+- Latest update: 2026-04-27
+- Build / commit: pushed `main` through the 2026-04-27 unsigned release smoke
+  and local verification updates
 - Tester: Codex
-- Local verification run: targeted main/preload tests, `npm run lint`, `npm run build`, `npm run verify`, `npm run accept:agent-local`, `npm run accept:provider-native-live:preflight`
-- Smoke check run: `npm run dev` manual launch, isolated `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-20260424-fresh npm run dev`, `npm run smoke:build`, `npm run smoke:package:mac`, `npm run smoke:runtime:mac`, `npm run smoke:release:mac`, `npm run release:mac:preflight`
+- Local verification run: targeted main/preload tests, `npm run lint`,
+  `npm run build`, `npm run verify`, `npm run accept:agent-local`,
+  `npm run accept:provider-native-live:preflight`, and 2026-04-27
+  `npm run verify` with 119 test files / 820 tests
+- Smoke check run: `npm run dev` manual launch, isolated
+  `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-20260424-fresh npm run dev`,
+  `npm run smoke:build`, `npm run smoke:package:mac`,
+  `npm run smoke:runtime:mac`, `npm run smoke:release:mac`,
+  `npm run release:mac:preflight`, and 2026-04-27
+  `npm run accept:release:mac-preflight`
 
 ## Result Summary
 
 - Overall result: `pass with issues`
 - Highest severity issue: dev launch path was blocked until Electron startup, native-module ABI, dev URL, and preload format issues were fixed.
+- Current release note: local unsigned macOS packaging and packaged runtime
+  smoke pass; signed/notarized release remains deferred until Developer ID and
+  Apple notarization credentials are configured.
 - Follow-up owner: project maintainers
 
 ## Findings
@@ -55,7 +68,7 @@ Use this file when running the manual alpha path. Keep entries short and actiona
 | Home Recovery Loop | Open items from Home | Pass | Home opened the created task from resume preview and exposed key source, current method, active blocker, and blocker source actions. After the unique-task headline fix, a packaged app fixture under `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-home-open-items-20260424` showed one blocked task in the Home headline, surfaced key source/recent activity/key signal/resume preview entries, and routed those entries back to the expected task detail, source context, and blocker recovery targets. A later renderer pass added a dedicated `重新评估决策` action for cancelled Decision recent activity, prefilled with an alternative-path next step instead of falling through to a generic task open. | Low | Re-check Home-to-detail recovery together with the new section jump bar. |
 | Home Recovery Loop | Inspect priority ordering | Pass with issue | With one source-linked active blocker, Home headline incorrectly said `2 条任务` because blocker follow-up and source re-evaluation were both counted as tasks. Resume preview also showed `查看 Run` for a blocker-resolved activity. Later, a run failure re-sorted a captured task as a fresh task activity because captured-task activity used task `updatedAt`. After the fixes, Home showed failed run activity above the original captured event, surfaced closeout progress as `1 / 2`, and then prioritized a closeout-ready task with approved-decision evidence. A later Replicate-backed successful draft run provided real completed-run timeline/artifact evidence. | Medium | Keep remaining Home follow-ups focused on navigation and wording friction. |
 | Settings And Local Config | Save settings and inspect status | Pass | Settings saved non-sensitive config with an empty API key into `/tmp/taskplane-alpha-decision-20260424/config.json`; UI emitted `settings.changed`, retained `API Key 尚未存入系统 Keychain`, and left scheduler disabled. Later, the dev app loaded deliberate local `.env` Replicate settings and Home showed the configured provider/model before the successful AI-backed run. | Low | Keep secret-bearing validation in ignored local env files or OS keychain only. |
-| Release Readiness | Build/smoke/package readiness | Pass with issues fixed | `npm run build`, `npm run smoke:build`, `npm run dist:mac:dir`, `npm run smoke:package:mac`, `npm run smoke:runtime:mac`, and `npm run smoke:release:mac` pass locally. The unpacked app exists at `release/mac-arm64/Taskplane.app` (301M), includes `app.asar`, unpacked native modules for `better-sqlite3` and `keytar`, valid `Info.plist` metadata, and passes local code-sign verification. Package smoke now checks bundle structure, required ASAR entries, native module unpacking, executable bit, code signature, and absence of compiled app test files. Runtime smoke launches the packaged executable with isolated `TASKPLANE_USER_DATA_DIR`, clears shell-level `ELECTRON_RUN_AS_NODE`, and confirms `config.json` plus `taskplane.db` are created with the core SQLite schema initialized. Earlier packaged runtime blockers were fixed: isolated user data, production renderer asset paths under `file://`, native-module ABI rebuilds, packaged Electron entrypoint startup, and stale compiled test files in `dist-electron`. On 2026-04-25, `npm run release:mac:preflight` reported `notarytool` and package metadata available, but signed/notarized release remains not ready because Developer ID and Apple notarization credentials are not configured. | Medium | Keep actual signed/notarized release execution deferred; use `npm run smoke:release:mac` as the local unsigned macOS release gate and `npm run release:mac:preflight` as the read-only prerequisite check until signing is configured. |
+| Release Readiness | Build/smoke/package readiness | Pass with issues fixed | `npm run build`, `npm run smoke:build`, `npm run dist:mac:dir`, `npm run smoke:package:mac`, `npm run smoke:runtime:mac`, and `npm run smoke:release:mac` pass locally. The unpacked app exists at `release/mac-arm64/Taskplane.app` (301M), includes `app.asar`, unpacked native modules for `better-sqlite3` and `keytar`, valid `Info.plist` metadata, and passes local code-sign verification. Package smoke now checks bundle structure, required ASAR entries, native module unpacking, executable bit, code signature, and absence of compiled app test files. Runtime smoke launches the packaged executable with isolated `TASKPLANE_USER_DATA_DIR`, clears shell-level `ELECTRON_RUN_AS_NODE`, and confirms `config.json` plus `taskplane.db` are created with the core SQLite schema initialized. Earlier packaged runtime blockers were fixed: isolated user data, production renderer asset paths under `file://`, native-module ABI rebuilds, packaged Electron entrypoint startup, and stale compiled test files in `dist-electron`. On 2026-04-27, `npm run smoke:release:mac` passed again after the Code Agent context-gate and restart/replay safety updates, and `npm run accept:release:mac-preflight` passed the read-only wrapper while reporting `status=not-ready` because Developer ID signing and Apple notarization credentials are not configured. | Medium | Keep actual signed/notarized release execution deferred; use `npm run smoke:release:mac` as the local unsigned macOS release gate and `npm run accept:release:mac-preflight` as the read-only prerequisite/regression check until signing is configured. |
 
 ## Notes
 
