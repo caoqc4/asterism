@@ -3803,6 +3803,54 @@ describe('App UI flow', () => {
     expect(runPausedErrorApi.triggerRun).not.toHaveBeenCalled();
   });
 
+  it('blocks paused run continuation when the open resume checkpoint payload is stale', async () => {
+    const user = userEvent.setup();
+    const pausedRun = buildRunRecord({
+      id: 'run_paused_stale_payload',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'paused',
+      output: '等待先解除阻塞。',
+      outputSource: 'system',
+    });
+    const staleResumeCheckpoint = buildRunCheckpoint({
+      id: 'run_checkpoint_resume_stale',
+      runId: pausedRun.id,
+      kind: 'resume',
+      status: 'open',
+      payload: JSON.stringify({
+        version: 1,
+        kind: 'resume',
+        runId: 'run_other',
+        taskId: riskTask.id,
+        nextTool: 'artifact.create_note',
+        nextInput: { title: 'Recovered note', content: 'Recovered note' },
+      }),
+    });
+    const runPausedStaleApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [pausedRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === pausedRun.id ? { ...pausedRun, checkpoints: [staleResumeCheckpoint] } : null,
+      ),
+      continuePausedRun: vi.fn(),
+    };
+
+    window.api = runPausedStaleApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
+    expect(
+      await screen.findByText(
+        '当前 paused run 没有可续跑的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();
+    expect(runPausedStaleApi.continuePausedRun).not.toHaveBeenCalled();
+  });
+
   it('shows readable agent plan source summaries on the runs page', async () => {
     const user = userEvent.setup();
     const agentPlanRun = buildRunRecord({

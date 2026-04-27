@@ -665,9 +665,10 @@ The project is past initial architecture assembly. Current work should favor pro
   `failed`, and deferred/cancelled Decisions mark it `cancelled`, while
   unsupported/no-op approvals remain review-only.
 - Runs detail now only exposes `继续 paused run` when the paused Run has an
-  open `resume` checkpoint payload. Paused Runs without a resumable checkpoint
-  show review-first guidance instead of letting the user click into a known
-  backend rejection path.
+  open and locally valid `resume` checkpoint payload for the current run/task.
+  Paused Runs without a resumable checkpoint, or with a stale/incompatible
+  payload, show review-first guidance instead of letting the user click into a
+  known backend rejection path.
 - Replay review now also treats paused or confirmation sessions with no open
   checkpoint as `checkpoint_missing` / inspect-only rather than
   checkpoint-gated, so restart guidance does not imply a resumable path after
@@ -1168,15 +1169,16 @@ npm run verify
 Latest local baseline:
 
 - 119 test files
-- 822 tests
+- 823 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
 - `npm run verify` passed locally on 2026-04-27 after tightening Code Agent
-  model-context gates, checkpoint-backed session settlement, and updating the
-  local acceptance status: 119 test files / 822 tests
+  model-context gates, checkpoint-backed session settlement, stale
+  resume-payload UI gating, and updating the local acceptance status: 119 test
+  files / 823 tests
 - `npm run smoke:release:mac` passed locally on 2026-04-27 for the combined
   unsigned macOS package path after the Code Agent context-gate and
   restart/replay safety updates

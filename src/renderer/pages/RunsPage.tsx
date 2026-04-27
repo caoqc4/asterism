@@ -1,6 +1,9 @@
 import { Fragment, useEffect, useState } from 'react';
 
-import { parseRunCheckpointPayload } from '@shared/types/run-checkpoint-payload';
+import {
+  parseRunCheckpointPayload,
+  validateResumeCheckpointPayload,
+} from '@shared/types/run-checkpoint-payload';
 import { evaluateSandboxPatchPromotionReadiness } from '@shared/sandbox-patch-promotion-readiness';
 import { projectAgentRunLifecycle } from '@shared/agent-orchestration';
 import type { RecommendedActionIntent } from '@shared/types/brief';
@@ -68,6 +71,19 @@ function getRunLifecycleStartMode(run: Pick<RunRecord, 'instructions'>): 'manual
   return run.instructions?.startsWith('Operator-started')
     ? 'operator_started'
     : 'manual';
+}
+
+function hasValidOpenResumeCheckpoint(run: Pick<RunDetailRecord, 'checkpoints' | 'id' | 'taskId'>): boolean {
+  return Boolean(run.checkpoints?.some((checkpoint) => {
+    if (checkpoint.kind !== 'resume' || checkpoint.status !== 'open') {
+      return false;
+    }
+
+    return validateResumeCheckpointPayload(checkpoint.payload, {
+      runId: run.id,
+      taskId: run.taskId,
+    }).status === 'valid';
+  }));
 }
 
 function getRelatedTimelineActionLabel(event: TimelineEventRecord): string | null {
@@ -754,10 +770,7 @@ export function RunsPage({
         startMode: getRunLifecycleStartMode(detail),
       })
     : null;
-  const canContinuePausedRun = Boolean(detail?.checkpoints?.some((checkpoint) =>
-    checkpoint.kind === 'resume'
-    && checkpoint.status === 'open'
-    && checkpoint.payload));
+  const canContinuePausedRun = detail ? hasValidOpenResumeCheckpoint(detail) : false;
   const focusNextStepDraft = detail
     ? latestAgentSession
       ? formatAgentSessionReplayNextStepDraft({
