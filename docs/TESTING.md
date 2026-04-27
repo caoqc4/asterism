@@ -467,6 +467,24 @@ Current verification:
 - `npm run accept:sandbox-coding:code-agent-ui` when you only need the Code Agent
   preflight summary, package-script availability gates, renderer payload
   filtering, and IPC recheck
+- `npm run accept:sandbox-coding:producer-preview-smoke` when you need the
+  sandbox producer preview smoke. It skips by default; with
+  `TASKPLANE_RUN_SANDBOX_PRODUCER_PREVIEW_SMOKE=true`, it exercises the non-live
+  preview service without Docker, provider calls, or selected-workspace
+  mutation. Add `TASKPLANE_RUN_SANDBOX_PRODUCER_DOCKER_CHECKS=true` only for a
+  deliberate Docker-backed local check smoke.
+- `npm run accept:sandbox-coding:patch-promotion-apply-smoke` when you need the
+  disposable-workspace patch-promotion apply smoke. It does not start Docker or
+  call AI providers.
+- `npm run manual:browser-evidence-smoke` when validating Tier 1 browser
+  evidence against a disposable local fixture. It starts local browser
+  automation, but does not call providers, use authenticated profiles, or expose
+  a model-visible browser tool.
+- `npm run manual:browser-controlled-smoke` and
+  `npm run manual:browser-controlled-resume-smoke` when validating the local-QA
+  controlled browser path. These run against disposable localhost fixtures and
+  keep arbitrary URLs, authenticated profiles, scheduler auto-start, and
+  provider calls out of scope.
 - `npm run accept:provider-native-live:preflight` before spending provider
   credit on live provider-native validation; this is read-only and prints
   redacted readiness only
@@ -488,6 +506,10 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 - run `npm run accept:provider-native-live:preflight` for no-credit
   provider-native readiness checks, but avoid the live provider-native commands
   unless spending test credit is intentional
+- run browser and sandbox manual smoke commands only from a deliberate local
+  validation pass; they do not require GitHub Actions, but some of them may
+  start local browser automation, Docker-backed checks, or disposable-workspace
+  apply paths when their explicit env gates are enabled
 - run `npm run accept:release:mac-preflight` for no-upload macOS release
   readiness checks when signing/notarization inputs change
 - avoid manually dispatching or watching remote workflow runs until Actions capacity is restored
