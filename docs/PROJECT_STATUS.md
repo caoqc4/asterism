@@ -188,6 +188,11 @@ The project is past initial architecture assembly. Current work should favor pro
   the only accepted context today; source context, artifacts, retrieval
   snippets, Skills/MCP observations, and browser evidence require explicit
   selection and connector-specific policy before entering provider prompts.
+- The first provider-visible context manifest helper is in place for
+  model-backed Code Agent runs. It records selected workspace-file context as a
+  bounded RunStep manifest before provider runtime config is resolved, without
+  dumping prompt contents or allowing source context/artifact/browser/MCP/Skill
+  data into provider prompts.
 - A default-closed Code Agent model producer runtime factory now backs that
   manual gate: it blocks before resolving AI config unless provider calls are
   explicitly allowed for the current run, requires

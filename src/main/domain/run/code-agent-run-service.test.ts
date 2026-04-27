@@ -254,6 +254,18 @@ describe('CodeAgentRunService', () => {
       output: 'descriptor=workspace.staged_patch / producer=model_backed_requested / providerCall=explicit_user_opt_in_required / checks=test / Orchestration request / lane=coding / source=code_agent_preview / profile=manual_sandbox_producer / runtime=local_sandbox / start=manual / providerCall=explicit_opt_in / queue=no / autoStart=no',
       title: 'operator-started code-agent run accepted',
     }));
+    expect(runStepRepository.create).toHaveBeenCalledWith({
+      input: [
+        'Provider-visible context manifest / items=1 / workspace_files=../escape.md / source_context=0 / artifacts=0',
+        'providerPromptContent=no',
+        'workspace_file:../escape.md',
+      ].join('\n'),
+      kind: 'plan',
+      output: 'Provider-visible context manifest / items=1 / workspace_files=../escape.md / source_context=0 / artifacts=0',
+      runId: 'run_code_agent_1',
+      status: 'completed',
+      title: 'Code Agent provider-visible context manifest',
+    });
     expect(executionService.run).not.toHaveBeenCalled();
     expect(runRepository.updateResult).toHaveBeenCalledWith(
       'run_code_agent_1',

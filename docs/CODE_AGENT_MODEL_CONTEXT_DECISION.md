@@ -97,10 +97,11 @@ Agent context.
 
 1. Keep selected workspace files as the only model-backed Code Agent context.
 2. Add a non-executing "provider-visible context selection" abstraction that can
-   represent selected files and future selected Taskplane objects.
+   represent selected files and future selected Taskplane objects. Accepted for
+   selected workspace files.
 3. Add explicit source-context selection in the Code Agent surface.
 4. Persist the selected context manifest as a RunStep before provider runtime
-   config is resolved.
+   config is resolved. Accepted for selected workspace files.
 5. Render the selected context manifest on Runs detail without dumping full
    provider prompt contents.
 6. Only after that, evaluate artifact/run-output selection.
@@ -114,4 +115,3 @@ Agent context.
 - no credential-bearing context
 - no broad retrieval without a visible source manifest
 - no workspace mutation without Decision promotion
-

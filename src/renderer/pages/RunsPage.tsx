@@ -180,6 +180,17 @@ function formatAgentObservationSummary(step: RunStepRecord): string | null {
   return `工具观察：${summaries.join('；')}`;
 }
 
+function formatCodeAgentContextManifestStepSummary(step: RunStepRecord): string | null {
+  if (step.title !== 'Code Agent provider-visible context manifest' || !step.output) {
+    return null;
+  }
+
+  return [
+    step.output,
+    'provider prompt content is not shown in this manifest',
+  ].join('；');
+}
+
 function parseRunStepInput(input?: string | null): Map<string, string> {
   return new Map(
     (input ?? '')
@@ -278,6 +289,12 @@ function formatRunStepSummary(step: RunStepRecord): string {
 
   if (agentObservationSummary) {
     return agentObservationSummary;
+  }
+
+  const codeAgentContextManifestSummary = formatCodeAgentContextManifestStepSummary(step);
+
+  if (codeAgentContextManifestSummary) {
+    return codeAgentContextManifestSummary;
   }
 
   const sandboxProducerStepSummary = formatSandboxProducerStepSummary(step);

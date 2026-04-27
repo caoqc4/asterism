@@ -5,6 +5,10 @@ import {
   buildAgentSandboxPatchPromotionCheckpoint,
   summarizeAgentSandboxCheckResults,
 } from '../../../shared/agent-sandbox-provider.js';
+import {
+  buildCodeAgentProviderVisibleContextManifest,
+  formatCodeAgentProviderVisibleContextManifestForStep,
+} from '../../../shared/code-agent-model-context.js';
 import type { CreateCodeAgentRunInput, CodeAgentAllowedCheck, RunRecord } from '../../../shared/types/run.js';
 import type { AiConfigStatus } from '../../../shared/types/settings.js';
 import type { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
@@ -153,6 +157,21 @@ export class CodeAgentRunService {
         'system',
         'Model-backed Code Agent preview requires at least one selected context file.',
       );
+    }
+
+    if (modelProducerOptIn) {
+      const contextManifest = buildCodeAgentProviderVisibleContextManifest({
+        workspaceFiles: selectedContextFiles,
+      });
+
+      await this.runStepRepository.create({
+        input: formatCodeAgentProviderVisibleContextManifestForStep(contextManifest),
+        kind: 'plan',
+        output: contextManifest.summary,
+        runId: run.id,
+        status: 'completed',
+        title: 'Code Agent provider-visible context manifest',
+      });
     }
 
     const modelRuntime = await prepareCodeAgentModelProducerRuntime({
