@@ -433,6 +433,16 @@ button {
   background: rgba(17, 24, 39, 0.035);
 }
 
+.run-recovery-strip {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 247, 237, 0.58);
+}
+
 .orchestration-readiness-header {
   display: flex;
   align-items: center;
@@ -440,13 +450,15 @@ button {
   gap: 8px;
 }
 
-.orchestration-readiness .meta {
+.orchestration-readiness .meta,
+.run-recovery-strip .meta {
   margin-bottom: 0;
 }
 
 .runtime-readiness *,
 .code-agent-intent *,
-.orchestration-readiness * {
+.orchestration-readiness *,
+.run-recovery-strip * {
   min-width: 0;
 }
 

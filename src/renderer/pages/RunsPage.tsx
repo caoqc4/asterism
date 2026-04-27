@@ -819,19 +819,15 @@ export function RunsPage({
               <p className="meta">关联任务：{detail.taskId}</p>
               <p className="meta">创建时间：{detail.createdAt}</p>
               <p className="meta">结果来源：{detail.outputSource || '尚未产生'}</p>
-              {runLifecycleProjection ? (
-                <p className="meta">
-                  {runLifecycleProjection.summary}
-                </p>
-              ) : null}
-              {latestAgentSession ? (
-                <>
-                  <p className="meta">
-                    Agent session：{formatAgentSessionCapabilitySummary(latestAgentSession)}
-                  </p>
-                  {latestAgentSessionToolFamilies ? (
+              {runLifecycleProjection || latestAgentSessionRestart || latestAgentSessionReplayReview ? (
+                <div className="run-recovery-strip" aria-label="Run recovery safety">
+                  <div className="orchestration-readiness-header">
+                    <strong>Recovery safety</strong>
+                    <span className="status lane-status lane-status-steady">inspect first</span>
+                  </div>
+                  {runLifecycleProjection ? (
                     <p className="meta">
-                      Tool families：{latestAgentSessionToolFamilies}
+                      {runLifecycleProjection.summary}
                     </p>
                   ) : null}
                   {latestAgentSessionRestart ? (
@@ -842,6 +838,21 @@ export function RunsPage({
                   {latestAgentSessionReplayReview ? (
                     <p className="meta">
                       {latestAgentSessionReplayReview}
+                    </p>
+                  ) : null}
+                  <p className="meta">
+                    Next safe move：{focusNextStepDraft}
+                  </p>
+                </div>
+              ) : null}
+              {latestAgentSession ? (
+                <>
+                  <p className="meta">
+                    Agent session：{formatAgentSessionCapabilitySummary(latestAgentSession)}
+                  </p>
+                  {latestAgentSessionToolFamilies ? (
+                    <p className="meta">
+                      Tool families：{latestAgentSessionToolFamilies}
                     </p>
                   ) : null}
                   {latestAgentSessionMetadata ? (

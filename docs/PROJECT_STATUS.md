@@ -163,6 +163,10 @@ The project is past initial architecture assembly. Current work should favor pro
   producer steps now show readable check evidence, staged patch source
   readiness, and blocked/failed/paused diagnostics while preserving
   Decision-only workspace mutation.
+- Runs detail now also groups lifecycle projection, restart hint, replay
+  review, and next safe move into a `Run recovery safety` strip before the
+  operator returns to task focus. This keeps the existing open-checkpoint gate
+  for `继续 paused run` while making inspect-first recovery easier to scan.
 - The manual Code Agent intent surface now also shows automatic start as
   disabled, with the future maturity/input/tool/risk/evidence/runtime policy
   signals listed explicitly and no scheduler or auto-run flag persisted.

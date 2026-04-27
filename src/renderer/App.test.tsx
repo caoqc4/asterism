@@ -3963,6 +3963,8 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /runs/i }));
 
     expect(await screen.findByRole('heading', { name: 'agent / completed' })).toBeTruthy();
+    const recoverySafety = within(screen.getByLabelText('Run recovery safety'));
+    expect(recoverySafety.getByText('inspect first')).toBeTruthy();
     expect(
       screen.getByText('模型提出的步骤计划：读取任务上下文 -> 读取最近时间线 -> 写入本地 note'),
     ).toBeTruthy();
@@ -3989,6 +3991,11 @@ describe('App UI flow', () => {
     expect(
       screen.getByText(
         'Replay review：inspect latest step before any recovery / mode=inspect_only / session=agent_session_1 / status=running / restartSafety=interrupted_or_stale / steps=1 / openCheckpoints=0 / latest=plan:completed:采用模型提出的 agent 步骤计划 / autoReplay=no',
+      ),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText(
+        'Next safe move：确认最近一次 agent run 是否已中断；若没有活动执行器，先基于证据整理输入，再启动新的 run，不自动重放。',
       ),
     ).toBeTruthy();
     expect(screen.getByText('Session metadata：executor=local_agent / loop=local_note')).toBeTruthy();

@@ -164,6 +164,11 @@ Acceptance:
 
 ### OUI3: Runs Detail Recovery Strip
 
+Implementation status: started. Runs detail now renders a `Run recovery safety`
+strip in the Run Snapshot card. It groups lifecycle projection, restart hint,
+replay review, and the next safe move while preserving the existing paused-run
+resume gate.
+
 Goal: make restart/replay state easy to scan before the operator returns to the
 task.
 
