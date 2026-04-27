@@ -491,11 +491,13 @@ The latest implementation slice:
 
 The next implementation slice is:
 
-- use the Browser Tier 1 checklist to decide whether the next browser work is
-  UX evidence polish or a separately accepted Tier 2 local-dev QA smoke; do not
-  expose browser tools to the model
-- keep Tier 2 controlled browser interaction deferred until the draft decision
-  is accepted and Tier 1 Run artifact review exists
+- return to the broader execution-layer orchestration plan or polish existing
+  evidence review UX; do not keep expanding browser runtime depth by default
+- keep Tier 2 controlled browser interaction schema-only until a separate
+  connector acceptance slice explicitly accepts a real local-dev QA runner
+- keep browser, MCP, computer-use, skills, and creator connector tools hidden
+  from model-visible channels until their connector-specific acceptance slices
+  are explicitly accepted
 
 Do not expose Pi-style Read/Write/Edit/Bash powers, browser/computer control,
 external posting, or social/media publishing as model-visible tools until the
