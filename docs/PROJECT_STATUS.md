@@ -656,6 +656,11 @@ The project is past initial architecture assembly. Current work should favor pro
   operator-started entrypoint. The recommended next task is BCI1 only; no
   browser runtime, IPC, scheduler, provider schema, or model-visible browser
   tool should be enabled by that slice.
+- Browser controlled interaction BCI1 has started with renderer review helpers
+  that turn validated schema drafts into ready/checkpoint-required/blocked
+  review summaries and planned RunStep titles. The descriptor remains
+  unregistered, and no browser runtime, IPC, scheduler, provider schema, or
+  model-visible browser tool is enabled.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
