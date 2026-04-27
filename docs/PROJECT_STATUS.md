@@ -1250,16 +1250,20 @@ npm run verify
 Latest local baseline:
 
 - 122 test files
-- 846 tests
+- 847 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-28 after adding shared runtime
+  event to `AgentSession.status` projection for heartbeat, paused, completed,
+  failed, interrupted, and cancelled events. Current local acceptance status:
+  122 test files / 847 tests
 - `npm run verify` passed locally on 2026-04-28 after adding executor liveness
   and interruption session events (`session.heartbeat`,
   `session.interrupted`, `session.cancelled`) to the event spine, recorder, and
-  RunStep mapper. Current local acceptance status: 122 test files / 846 tests
+  RunStep mapper.
 - `npm run verify` passed locally on 2026-04-28 after adding the main-process
   agent-session settlement projection for checkpoint-backed versus
   liveness-required sessions. Current local acceptance status: 122 test files /
