@@ -502,6 +502,9 @@ The latest implementation slice:
 - Runtime events now include `session.heartbeat`, `session.interrupted`, and
   `session.cancelled`; recorder and RunStep mapper tests keep heartbeat as
   running evidence and interruption/cancel as terminal evidence only.
+- Shared event-status projection now maps terminal runtime events into
+  `AgentSession.status` while leaving heartbeat non-mutating, giving future
+  executor integration one settlement path.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation

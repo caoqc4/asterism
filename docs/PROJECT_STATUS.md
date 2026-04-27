@@ -180,6 +180,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - The runtime event spine now has explicit executor liveness/interruption
   events. Heartbeats remain non-terminal running evidence, while interrupted
   and cancelled sessions write terminal RunSteps for inspect-first recovery.
+- Runtime events now also have a shared session-status projection:
+  interruption settles as `failed`, cancellation settles as `cancelled`,
+  completion/pause keep matching statuses, and heartbeat does not mutate
+  session status.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend

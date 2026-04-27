@@ -163,6 +163,7 @@ describe('AgentSessionEventRecorder', () => {
     });
 
     expect(recorder.hasTerminalEvent()).toBe(false);
+    expect(recorder.getTerminalSessionStatus()).toBeNull();
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'plan',
       status: 'running',
@@ -177,6 +178,7 @@ describe('AgentSessionEventRecorder', () => {
     });
 
     expect(recorder.hasTerminalEvent()).toBe(true);
+    expect(recorder.getTerminalSessionStatus()).toBe('failed');
     expect(runStepRepository.create).toHaveBeenLastCalledWith(expect.objectContaining({
       kind: 'final',
       status: 'failed',
@@ -192,6 +194,7 @@ describe('AgentSessionEventRecorder', () => {
     });
 
     expect(cancelledRecorder.hasTerminalEvent()).toBe(true);
+    expect(cancelledRecorder.getTerminalSessionStatus()).toBe('cancelled');
     expect(runStepRepository.create).toHaveBeenLastCalledWith(expect.objectContaining({
       kind: 'final',
       status: 'failed',

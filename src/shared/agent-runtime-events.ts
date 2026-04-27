@@ -1,4 +1,5 @@
 import type { AgentSessionEvent } from './types/agent-execution.js';
+import type { AgentSessionRecord } from './types/agent-execution.js';
 
 export const AGENT_RUNTIME_EVENT_TYPES = [
   'session.started',
@@ -41,4 +42,22 @@ export function isCheckpointAgentRuntimeEvent(
   event: AgentSessionEvent,
 ): event is Extract<AgentSessionEvent, { type: 'checkpoint.created' }> {
   return event.type === 'checkpoint.created';
+}
+
+export function projectAgentRuntimeEventSessionStatus(
+  event: AgentSessionEvent,
+): AgentSessionRecord['status'] | null {
+  switch (event.type) {
+    case 'session.paused':
+      return 'paused';
+    case 'session.completed':
+      return 'completed';
+    case 'session.failed':
+    case 'session.interrupted':
+      return 'failed';
+    case 'session.cancelled':
+      return 'cancelled';
+    default:
+      return null;
+  }
 }

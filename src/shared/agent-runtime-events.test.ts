@@ -4,6 +4,7 @@ import {
   AGENT_RUNTIME_EVENT_TYPES,
   isCheckpointAgentRuntimeEvent,
   isTerminalAgentRuntimeEvent,
+  projectAgentRuntimeEventSessionStatus,
 } from './agent-runtime-events.js';
 import type { AgentSessionEvent } from './types/agent-execution.js';
 
@@ -78,5 +79,34 @@ describe('agent runtime events', () => {
 
     expect([paused, completed, failed, interrupted, cancelled].every(isTerminalAgentRuntimeEvent)).toBe(true);
     expect(isTerminalAgentRuntimeEvent(heartbeat)).toBe(false);
+  });
+
+  it('projects terminal runtime events into agent session statuses', () => {
+    expect(projectAgentRuntimeEventSessionStatus({
+      type: 'session.heartbeat',
+      runId: 'run_1',
+      summary: 'Executor still active.',
+    })).toBeNull();
+    expect(projectAgentRuntimeEventSessionStatus({
+      type: 'session.paused',
+      runId: 'run_1',
+      checkpointId: 'run_checkpoint_1',
+      message: 'Waiting for confirmation.',
+    })).toBe('paused');
+    expect(projectAgentRuntimeEventSessionStatus({
+      type: 'session.completed',
+      runId: 'run_1',
+      output: 'Done.',
+    })).toBe('completed');
+    expect(projectAgentRuntimeEventSessionStatus({
+      type: 'session.interrupted',
+      runId: 'run_1',
+      reason: 'Executor process exited.',
+    })).toBe('failed');
+    expect(projectAgentRuntimeEventSessionStatus({
+      type: 'session.cancelled',
+      runId: 'run_1',
+      reason: 'User cancelled.',
+    })).toBe('cancelled');
   });
 });

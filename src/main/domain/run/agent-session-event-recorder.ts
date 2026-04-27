@@ -1,6 +1,8 @@
 import type { AgentSessionEvent } from '../../../shared/types/agent-execution.js';
+import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type { RunStepRecord } from '../../../shared/types/run.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import { projectAgentRuntimeEventSessionStatus } from '../../../shared/agent-runtime-events.js';
 import {
   mapAgentRuntimeEventToRunStep,
   type AgentRuntimeRunStepDraft,
@@ -106,6 +108,7 @@ function titleOverrides(event: RecordableAgentSessionEvent): Partial<Omit<AgentR
 
 export class AgentSessionEventRecorder {
   private terminalEventRecorded = false;
+  private terminalSessionStatus: AgentSessionRecord['status'] | null = null;
   private readonly pendingToolStepIds = new Map<string, string[]>();
 
   constructor(private readonly runStepRepository: RunStepRepository) {}
@@ -114,9 +117,15 @@ export class AgentSessionEventRecorder {
     return this.terminalEventRecorded;
   }
 
+  getTerminalSessionStatus(): AgentSessionRecord['status'] | null {
+    return this.terminalSessionStatus;
+  }
+
   async record(event: AgentSessionEvent): Promise<RunStepRecord | null> {
+    const projectedStatus = projectAgentRuntimeEventSessionStatus(event);
     if (isTerminalEvent(event)) {
       this.terminalEventRecorded = true;
+      this.terminalSessionStatus = projectedStatus;
     }
 
     if (!isRecordableEvent(event)) {

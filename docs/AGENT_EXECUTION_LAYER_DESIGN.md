@@ -520,6 +520,10 @@ Current implementation note:
   events: `session.heartbeat`, `session.interrupted`, and `session.cancelled`.
   Heartbeats write running evidence only, while interrupted/cancelled events
   become terminal RunSteps without granting replay authority.
+- Runtime events now also project into session status updates:
+  `interrupted -> failed`, `cancelled -> cancelled`, terminal completion /
+  pause keep their matching statuses, and heartbeat leaves the session status
+  unchanged.
 - `agent-tool-scaffold` now emits connector policy records and local
   verification evidence requirements for every reserved or implemented tool
   family. Settings diagnostics include the verification-required count, while
