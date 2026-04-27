@@ -4153,6 +4153,82 @@ describe('App UI flow', () => {
     expect(pausedAgentApi.continuePausedRun).not.toHaveBeenCalled();
   });
 
+  it('routes failed agent sessions to new-run recovery instead of replay', async () => {
+    const user = userEvent.setup();
+    const failedAgentRun = buildRunRecord({
+      id: 'run_agent_failed_session',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'failed',
+      output: 'Tool execution failed.',
+      outputSource: 'system',
+      failureReason: 'workspace.read_file failed',
+    });
+    const failedAgentDetail: RunDetailRecord = {
+      ...failedAgentRun,
+      agentSessions: [
+        {
+          id: 'agent_session_failed',
+          runId: failedAgentRun.id,
+          mode: 'agent',
+          status: 'failed',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: true,
+            streaming: false,
+            fileContext: true,
+            taskMutationTools: false,
+            longRunningSessions: true,
+          },
+          metadata: 'executor=local_agent\nloop=local_note',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      steps: [
+        buildRunStep({
+          id: 'run_step_agent_failed',
+          runId: failedAgentRun.id,
+          index: 6,
+          kind: 'tool_result',
+          status: 'failed',
+          title: '工具失败：workspace.read_file',
+          error: 'File not found',
+        }),
+      ],
+      checkpoints: [],
+    };
+    const failedAgentApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [failedAgentRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === failedAgentRun.id ? failedAgentDetail : null,
+      ),
+    };
+
+    window.api = failedAgentApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+
+    expect(await screen.findByRole('heading', { name: 'agent / failed' })).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Replay review：inspect failed steps before starting a new run / mode=new_run / session=agent_session_failed / status=failed / restartSafety=new_run_required / steps=1 / openCheckpoints=0 / latest=tool_result:failed:工具失败：workspace.read_file / autoReplay=no',
+      ),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '回到任务推进' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '检查最近一次 agent run 的失败或取消证据，整理重试输入后再启动新的 run。',
+    );
+  });
+
   it('shows sandbox producer session policy and staged source steps on the runs page', async () => {
     const user = userEvent.setup();
     const sandboxProducerRun = buildRunRecord({

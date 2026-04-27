@@ -414,6 +414,8 @@ Covered today:
   steps, preserving inspect-first / no-auto-replay task recovery wording
 - `Runs` page replay recovery for paused agent sessions without open
   checkpoints, keeping recovery evidence-review first and hiding direct resume
+- `Runs` page replay recovery for failed agent sessions, routing back to task
+  work as new-run preparation instead of replay or continuation
 - `Runs` page trigger form refresh and newly-created run selection, including repeated triggers
 - shared timeline summaries across `Tasks / Decisions / Runs`
 - `Settings save flow`

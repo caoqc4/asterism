@@ -486,6 +486,9 @@ The latest implementation slice:
   is still active (`live_status_unknown`) and paused sessions with no open
   checkpoint (`checkpoint_missing`), so both routes stay inspect-first and
   no-auto-replay from Run evidence back into Task next-step recovery.
+- Failed agent sessions now also have Runs-page recovery coverage that routes
+  back to task work as new-run preparation from evidence rather than replay or
+  continuation.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation

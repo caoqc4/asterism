@@ -13,7 +13,7 @@ Strong automated coverage already exists for the main control-plane semantics, r
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
-- on 2026-04-27, `npm run verify` passed locally with 121 test files / 839
+- on 2026-04-27, `npm run verify` passed locally with 121 test files / 840
   tests after tightening Code Agent model-context gates, checkpoint-backed
   session settlement, stale resume-payload UI/backend gating, supported
   resume-input validation, scheduler checkpoint-state exclusion, browser
@@ -21,7 +21,8 @@ Status: mostly covered.
   guidance, approved checkpoint evidence wording, and updating the local
   release-preflight / Code Agent model-producer preflight secret-redaction and
   shell-env override coverage, default local-smoke skip boundaries, and
-  inspect-first recovery for active or checkpoint-missing agent sessions.
+  inspect-first/new-run recovery for active, checkpoint-missing, or failed
+  agent sessions.
 - on 2026-04-25, `npm run verify` passed locally with 66 test files / 484 tests
   after the Home recovery and execution-layer status cleanup.
 - on 2026-04-25, `npm run verify` passed again after the runtime schema smoke
