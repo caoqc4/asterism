@@ -614,6 +614,27 @@ describe('RunService', () => {
     const runCheckpointRepository = {
       listForRun: vi.fn().mockResolvedValue([
         {
+          id: 'run_checkpoint_resume_stale',
+          runId: 'run_1',
+          stepId: 'run_step_resume_stale',
+          kind: 'resume',
+          status: 'open',
+          payload: JSON.stringify({
+            version: 1,
+            kind: 'resume',
+            reason: 'stale payload',
+            runId: 'run_other',
+            nextTool: 'artifact.create_note',
+            nextInput: {
+              title: 'Stale note',
+              content: 'Stale note',
+            },
+            taskId: 'task_1',
+          }),
+          createdAt: '2026-01-01T00:00:00.000Z',
+          resolvedAt: null,
+        },
+        {
           id: 'run_checkpoint_resume',
           runId: 'run_1',
           stepId: 'run_step_resume',

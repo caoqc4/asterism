@@ -1,6 +1,9 @@
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
-import { validateResumeCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
+import {
+  validateResumeCheckpointPayload,
+  type ResumeCheckpointPayloadValidation,
+} from '../../../shared/types/run-checkpoint-payload.js';
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type {
   CreateRunInput,
@@ -164,27 +167,46 @@ export class RunService {
       throw new Error('Agent tool registry is required to continue paused runs.');
     }
 
-    const checkpoint = run.checkpoints?.find((item) =>
+    const resumeCheckpoints = run.checkpoints?.filter((item) =>
       item.status === 'open' && item.kind === 'resume'
-    );
+    ) ?? [];
 
-    if (!checkpoint?.payload) {
+    if (resumeCheckpoints.length === 0) {
       throw new Error(`Open resume checkpoint not found for run: ${runId}`);
     }
 
-    const validation = validateResumeCheckpointPayload(checkpoint.payload, {
-      runId,
-      taskId: run.taskId,
-    });
+    let checkpoint = null as NonNullable<RunDetailRecord['checkpoints']>[number] | null;
+    let payload = null as Extract<ResumeCheckpointPayloadValidation, { status: 'valid' }>['payload'] | null;
+    let firstInvalidReason: string | null = null;
+    let firstUnsupportedTool: string | null = null;
 
-    if (validation.status === 'invalid') {
-      throw new Error(validation.reason);
+    for (const candidate of resumeCheckpoints) {
+      const validation = validateResumeCheckpointPayload(candidate.payload, {
+        runId,
+        taskId: run.taskId,
+      });
+
+      if (validation.status === 'invalid') {
+        firstInvalidReason ??= validation.reason;
+        continue;
+      }
+
+      if (validation.payload.nextTool !== 'artifact.create_note') {
+        firstUnsupportedTool ??= validation.payload.nextTool;
+        continue;
+      }
+
+      checkpoint = candidate;
+      payload = validation.payload;
+      break;
     }
 
-    const { payload } = validation;
+    if (!checkpoint || !payload) {
+      if (firstUnsupportedTool) {
+        throw new Error(`Unsupported resume tool: ${firstUnsupportedTool}`);
+      }
 
-    if (payload.nextTool !== 'artifact.create_note') {
-      throw new Error(`Unsupported resume tool: ${payload.nextTool}`);
+      throw new Error(firstInvalidReason ?? `Open resume checkpoint not found for run: ${runId}`);
     }
 
     const result = await this.agentToolRegistry.execute(

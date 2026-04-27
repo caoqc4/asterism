@@ -669,6 +669,10 @@ The project is past initial architecture assembly. Current work should favor pro
   Paused Runs without a resumable checkpoint, or with a stale/incompatible
   payload, show review-first guidance instead of letting the user click into a
   known backend rejection path.
+- Backend paused-run continuation now mirrors that selection rule: if multiple
+  open resume checkpoints exist, stale/incompatible payloads are skipped until a
+  valid supported payload for the current run/task is found; execution still
+  fails closed when none is available.
 - Replay review now also treats paused or confirmation sessions with no open
   checkpoint as `checkpoint_missing` / inspect-only rather than
   checkpoint-gated, so restart guidance does not imply a resumable path after

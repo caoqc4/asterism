@@ -79,10 +79,13 @@ function hasValidOpenResumeCheckpoint(run: Pick<RunDetailRecord, 'checkpoints' |
       return false;
     }
 
-    return validateResumeCheckpointPayload(checkpoint.payload, {
+    const validation = validateResumeCheckpointPayload(checkpoint.payload, {
       runId: run.id,
       taskId: run.taskId,
-    }).status === 'valid';
+    });
+
+    return validation.status === 'valid'
+      && validation.payload.nextTool === 'artifact.create_note';
   }));
 }
 
