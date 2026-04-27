@@ -39,6 +39,7 @@
     "manual:code-agent-ui-fixture": "node scripts/code-agent-ui-manual-fixture.mjs",
     "manual:browser-evidence-fixture": "npm run build:main && node scripts/browser-evidence-manual-fixture.mjs",
     "manual:browser-controlled-fixture": "npm run build:main && node scripts/browser-controlled-local-qa-fixture.mjs",
+    "manual:browser-controlled-smoke": "npm run build:main && node scripts/browser-controlled-local-qa-smoke.mjs",
     "manual:browser-evidence-smoke": "npm run build:main && node scripts/browser-evidence-smoke.mjs",
     "accept:provider-native-live:preflight": "node scripts/provider-native-live-preflight.mjs",
     "accept:provider-native-live": "node scripts/provider-native-live-validate.mjs",
