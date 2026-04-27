@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 
 import type { RecommendedActionIntent } from '@shared/types/brief';
+import { buildAgentExecutionOrchestrationSnapshot } from '@shared/agent-orchestration';
 import type {
   BlockerKind,
   BlockerRecord,
@@ -2231,6 +2232,7 @@ export function TasksPage({
   };
   const codeAgentStartBlockedReason = formatCodeAgentStartBlockedReason(codeAgentStartGateInput);
   const codeAgentPreflightSummary = formatCodeAgentPreflightSummary(codeAgentStartGateInput);
+  const orchestrationSnapshot = buildAgentExecutionOrchestrationSnapshot(aiStatus);
   const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
   const orderedLaneLabels = tasks.reduce<string[]>((labels, task) => {
     const laneLabel = getPriorityLaneLabel(taskPriorityLanes.get(task.id));
@@ -2367,6 +2369,9 @@ export function TasksPage({
           <strong>AgentProfile：manual sandbox producer</strong>
           <p className="meta">
             Task：{detail?.title ?? '未选择任务'} / Skill readiness：deferred until policy exists
+          </p>
+          <p className="meta">
+            Orchestration：{orchestrationSnapshot.summary}
           </p>
           <p className="meta">
             {formatCodeAgentAutomaticStartPolicySummary()}

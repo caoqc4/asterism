@@ -124,8 +124,9 @@ Goal: surface runtime/profile/lifecycle facts without changing execution.
 
 Status: started. Shared snapshot helpers now build the first local-sandbox
 runtime, manual Code Agent profile, manual/operator-started lifecycle, and
-hidden connector family summary without enabling queue, claim, scheduler, or
-automatic-start behavior.
+hidden connector family summary. Settings and the Task detail Code Agent
+surface can display the same read-only orchestration summary without enabling
+queue, claim, scheduler, or automatic-start behavior.
 
 Work:
 

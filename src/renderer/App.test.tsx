@@ -2931,6 +2931,9 @@ describe('App UI flow', () => {
     expect(intent.getByText(/Task：High risk task/)).toBeTruthy();
     expect(intent.getByText(/Skill readiness：deferred until policy exists/)).toBeTruthy();
     expect(intent.getByText(
+      'Orchestration：Orchestration snapshot / runtime=ready / profile=manual_sandbox_producer / lifecycle=drafted / queue=no / autoStart=no / hidden=browser_playwright,mcp,skill,computer_use,creator_connector',
+    )).toBeTruthy();
+    expect(intent.getByText(
       'Automatic start：disabled / requires mature skill or process, complete inputs, allowed tools, risk policy, accepted evidence or explicit enablement, and runtime readiness / no scheduler or auto-run flag is persisted',
     )).toBeTruthy();
     expect(intent.getByText(
