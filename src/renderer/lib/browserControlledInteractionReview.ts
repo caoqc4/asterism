@@ -247,8 +247,13 @@ export function buildBrowserControlledInteractionRunReview(
   const controlledCheckpoints = checkpoints
     .map(readBrowserControlledCheckpointPayload)
     .filter((item): item is BrowserControlledInteractionCheckpointPayloadV1 => Boolean(item));
+  const completed = typeof detail?.output === 'string'
+    && detail.output.includes('Browser controlled local QA completed');
+  const hasControlledBoundary = completed
+    || controlledCheckpoints.length > 0
+    || controlledSteps.some(isBrowserControlledBoundaryStep);
 
-  if (!controlledSteps.length && !controlledCheckpoints.length) {
+  if (!hasControlledBoundary) {
     return null;
   }
 
@@ -256,8 +261,6 @@ export function buildBrowserControlledInteractionRunReview(
   const plannedActionSteps = controlledSteps.filter((step) => step.title.startsWith('Browser action planned:'));
   const blockedSteps = controlledSteps.filter((step) => step.title === 'browser controlled interaction blocked');
   const checkpointSteps = controlledSteps.filter((step) => step.title === 'Browser action requires checkpoint');
-  const completed = typeof detail?.output === 'string'
-    && detail.output.includes('Browser controlled local QA completed');
   const checkpointCount = Math.max(checkpointSteps.length, controlledCheckpoints.length);
   const status: BrowserControlledInteractionRunReview['status'] = blockedSteps.length
     ? 'blocked'
@@ -350,6 +353,13 @@ function isBrowserControlledStep(step: RunStepRecord): boolean {
   return step.title === 'browser controlled dry-run accepted'
     || step.title === 'browser controlled interaction blocked'
     || step.title.startsWith('Browser action planned:')
+    || step.title.startsWith('Browser action evidence pending:')
+    || step.title === 'Browser action requires checkpoint';
+}
+
+function isBrowserControlledBoundaryStep(step: RunStepRecord): boolean {
+  return step.title === 'browser controlled dry-run accepted'
+    || step.title === 'browser controlled interaction blocked'
     || step.title.startsWith('Browser action evidence pending:')
     || step.title === 'Browser action requires checkpoint';
 }

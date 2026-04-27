@@ -178,6 +178,38 @@ describe('browser controlled interaction review helpers', () => {
     ]);
   });
 
+  it('does not classify an isolated planned step as browser controlled evidence', () => {
+    const review = buildBrowserControlledInteractionRunReview({
+      output: 'Non-browser checkpoint should remain in generic checkpoint review only.',
+      checkpoints: [
+        {
+          createdAt: '2026-01-01T00:00:00.000Z',
+          id: 'run_checkpoint_permission',
+          kind: 'external_wait',
+          payload: JSON.stringify({
+            version: 1,
+            kind: 'tool_permission',
+            tool: 'artifact.create_note',
+            risk: 'write',
+          }),
+          resolvedAt: null,
+          runId: 'run_non_browser',
+          status: 'open',
+          stepId: 'run_step_non_browser',
+        },
+      ],
+      steps: [
+        buildStep({
+          title: 'Browser action planned: click',
+          kind: 'tool_call',
+          status: 'pending',
+        }),
+      ],
+    });
+
+    expect(review).toBeNull();
+  });
+
   it('builds Runs review for completed local QA evidence', () => {
     const review = buildBrowserControlledInteractionRunReview({
       output: 'Browser controlled local QA completed / url=http://127.0.0.1:53578/browser-controlled-local-qa.html / actions=navigate,click,type_text,select_option,capture_evidence / artifacts=page_summary,visible_text,screenshot / credentials=no / externalOrigin=no / modelExposure=hidden',
