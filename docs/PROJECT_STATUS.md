@@ -147,6 +147,11 @@ The project is past initial architecture assembly. Current work should favor pro
   context-file requirement, Decision promotion, and the next required action.
   It initially recorded only a local diagnostic; the dedicated manual sandbox
   preview IPC path is now wired for this surface.
+- The orchestration UI work has started with a shared read-only presentation
+  helper for `ExecutionRuntime`, `AgentProfile`, `AgentRunLifecycle`, hidden
+  tool families, and automation readiness. It centralizes the no-queue,
+  no-auto-start, and hidden-tool-family wording before Task detail / Runs
+  detail / Settings are regrouped into fuller orchestration cards.
 - Runs detail now projects sandbox producer sessions into an
   `AgentRunLifecycle` summary with source id, check policy, network/promotion
   constraints, blocked reasons, and next recovery/review moves. Sandbox
@@ -1211,13 +1216,18 @@ npm run verify
 
 Latest local baseline:
 
-- 121 test files
-- 840 tests
+- 122 test files
+- 843 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-28 after adding the shared
+  read-only orchestration presentation helper and coverage for hidden tool
+  families, automation readiness without automatic start, and the manual
+  sandbox producer view. Current local acceptance status: 122 test files / 843
+  tests
 - `npm run verify` passed locally on 2026-04-27 after tightening Code Agent
   model-context gates, checkpoint-backed session settlement, stale
   resume-payload UI/backend gating, supported resume-input validation,
@@ -1226,8 +1236,7 @@ Latest local baseline:
   checkpoint evidence wording, plus release-preflight and Code Agent
   model-producer preflight secret-redaction / shell-env override coverage,
   default local-smoke skip-boundary coverage, and inspect-first/new-run
-  recovery for active, checkpoint-missing, or failed agent sessions. Current
-  local acceptance status: 121 test files / 840 tests
+  recovery for active, checkpoint-missing, or failed agent sessions.
 - `npm run smoke:release:mac` passed locally on 2026-04-27 for the combined
   unsigned macOS package path after the Code Agent context-gate and
   restart/replay safety updates

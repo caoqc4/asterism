@@ -61,6 +61,7 @@ Current test files:
 - `src/main/preload.test.ts`
 - `src/renderer/App.test.tsx`
 - `src/renderer/lib/agentCapabilities.test.ts`
+- `src/renderer/lib/agentOrchestrationPresentation.test.ts`
 - `src/shared/agent-runtime-events.test.ts`
 - `src/shared/agent-tool-exposure.test.ts`
 - `src/shared/working-context/priority-lanes.test.ts`

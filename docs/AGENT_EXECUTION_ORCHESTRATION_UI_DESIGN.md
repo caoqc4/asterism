@@ -133,6 +133,11 @@ Acceptance:
 
 ### OUI2: Task Detail Read-Only Orchestration Card
 
+Prerequisite status: OUI1 has started. `src/renderer/lib/agentOrchestrationPresentation.ts`
+now provides a shared read-only presentation model for runtime, profile,
+lifecycle, hidden tool families, and automation readiness; renderer tests lock
+the no-auto-start and hidden-family wording before the card is regrouped.
+
 Goal: make the current Code Agent Runtime / AgentProfile / readiness block read
 like one coherent execution preparation surface.
 

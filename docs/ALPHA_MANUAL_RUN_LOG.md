@@ -5,14 +5,14 @@ Use this file when running the manual alpha path. Keep entries short and actiona
 ## Run Metadata
 
 - First full manual pass: 2026-04-25
-- Latest update: 2026-04-27
+- Latest update: 2026-04-28
 - Build / commit: pushed `main` through the 2026-04-27 unsigned release smoke
   and local verification updates
 - Tester: Codex
 - Local verification run: targeted main/preload tests, `npm run lint`,
   `npm run build`, `npm run verify`, `npm run accept:agent-local`,
-  `npm run accept:provider-native-live:preflight`, and 2026-04-27
-  `npm run verify` with 121 test files / 840 tests
+  `npm run accept:provider-native-live:preflight`, and 2026-04-28
+  `npm run verify` with 122 test files / 843 tests
 - Smoke check run: `npm run dev` manual launch, isolated
   `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-20260424-fresh npm run dev`,
   `npm run smoke:build`, `npm run smoke:package:mac`,
