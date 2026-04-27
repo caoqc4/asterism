@@ -489,6 +489,36 @@ describe('CodeAgentRunService', () => {
     expect(result).toBe(failedRun);
   });
 
+  it('blocks source context content opt-in without a selected source context before resolving AI config', async () => {
+    process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
+    const failedRun = buildFailedRun(
+      'Code Agent source context content blocked: Code Agent source context content requires at least one selected source context.',
+      'Code Agent source context content requires at least one selected source context.',
+    );
+    runRepository.updateResult.mockResolvedValue(failedRun);
+
+    const result = await createService().trigger({
+      contextFiles: ['docs/notes.md'],
+      includeSourceContextContent: true,
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      taskId: 'task_1',
+      useModelProducer: true,
+    });
+
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(executionService.run).not.toHaveBeenCalled();
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_code_agent_1',
+      'failed',
+      'Code Agent source context content blocked: Code Agent source context content requires at least one selected source context.',
+      'system',
+      'Code Agent source context content requires at least one selected source context.',
+    );
+    expect(result).toBe(failedRun);
+  });
+
   it('blocks model-backed runs without bounded context before resolving AI config', async () => {
     process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
     const failedRun = buildFailedRun(

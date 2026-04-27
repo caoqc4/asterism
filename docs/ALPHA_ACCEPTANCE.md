@@ -167,6 +167,8 @@ files.
   recorded as a manifest-only audit entry unless the separate
   `Include selected source content` checkbox is selected. Linked page bodies
   must not be fetched or sent to the model.
+- Confirm source-context content opt-in without a selected source context fails
+  before provider config is resolved.
 - Confirm the Runs context manifest marks selected workspace files as
   `content=yes`, selected manifest-only source context as `content=no`, and
   explicitly included source context as `content=yes`. It must not show raw

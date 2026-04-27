@@ -184,17 +184,20 @@ The project is past initial architecture assembly. Current work should favor pro
   not resolved for model-backed starts that have no bounded context files.
 - [CODE_AGENT_MODEL_CONTEXT_DECISION.md](CODE_AGENT_MODEL_CONTEXT_DECISION.md)
   records the next model-context boundary: locally available task/source/run
-  data is not automatically provider-visible. Selected workspace files remain
-  the only accepted context today; source context, artifacts, retrieval
-  snippets, Skills/MCP observations, and browser evidence require explicit
-  selection and connector-specific policy before entering provider prompts.
+  data is not automatically provider-visible. Selected workspace files are
+  accepted prompt evidence, selected source-context content is accepted only
+  through explicit per-run stored-snapshot opt-in, and selected artifacts remain
+  manifest-only. Retrieval snippets, Skills/MCP observations, browser evidence,
+  and artifact/run-output content still require explicit future policy before
+  entering provider prompts.
 - The first provider-visible context manifest helper is in place for
   model-backed Code Agent runs. It records selected workspace-file context as a
   bounded RunStep manifest before provider runtime config is resolved and marks
   content inclusion per item: selected workspace files can be provider-visible
   prompt evidence, while selected source-context ids/titles are manifest-only
-  audit entries. Source-context content, artifacts, browser, MCP, and Skill data
-  remain outside provider prompts.
+  by default and selected artifacts are manifest-only audit entries. Browser,
+  MCP, Skill, retrieval, and artifact/run-output content remain outside
+  provider prompts.
 - The source-context content gate is now wired separately from manifest
   selection: content becomes provider-visible only through explicit per-run
   opt-in, task-attached validation, per-item/total size bounds, no external URL
