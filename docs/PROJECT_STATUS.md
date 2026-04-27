@@ -661,6 +661,10 @@ The project is past initial architecture assembly. Current work should favor pro
   review summaries and planned RunStep titles. The descriptor remains
   unregistered, and no browser runtime, IPC, scheduler, provider schema, or
   model-visible browser tool is enabled.
+- Browser controlled interaction BCI2 has started with a dry-run recorder that
+  persists validated action plans as RunStep evidence while explicitly recording
+  `browserStart=no`, `networkCall=no`, `pageMutation=no`, scheduler=no,
+  providerCall=no, and `modelExposure=hidden`. It is not wired to IPC or UI.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
