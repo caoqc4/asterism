@@ -66,6 +66,12 @@ authenticated profile, arbitrary URL input, or more than one browser action.
 In an isolated app fixture, inspect a Run with a
 `browser_controlled_interaction` checkpoint payload and linked Decision.
 
+Fixture command:
+
+```text
+npm run manual:browser-controlled-resume-review-fixture
+```
+
 Accept when Runs detail shows:
 
 - Browser Controlled Interaction evidence
@@ -115,6 +121,9 @@ generic browser session.
 ### MBR5: Already Consumed / Drifted Review
 
 Inspect resolved, cancelled, stale, and malformed checkpoint payload states.
+
+The review fixture above seeds approved-ready, resumed/consumed,
+non-local-blocked, stale, and non-browser checkpoint cases.
 
 Accept when:
 
