@@ -150,7 +150,9 @@ Goal: formalize the payload that turns task intent into a run attempt.
 Status: started. Shared `AgentExecutionOrchestrationRequest` helpers can wrap
 manual Code Agent preview input and operator-started Browser Evidence requests
 into the same runtime/profile/policy/idempotency envelope. The contract still
-blocks `policy_auto`, scheduler starts, and automatic starts.
+blocks `policy_auto`, scheduler starts, and automatic starts. Existing Code
+Agent and Browser Evidence service acceptance RunSteps now record that
+orchestration envelope as diagnostics without changing the execution branch.
 
 Work:
 

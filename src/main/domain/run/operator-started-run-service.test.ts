@@ -56,7 +56,7 @@ describe('OperatorStartedRunService', () => {
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'plan',
-      output: 'descriptor=browser.readonly_evidence',
+      output: 'descriptor=browser.readonly_evidence / Orchestration request / lane=browser_evidence / source=browser_evidence_smoke / start=operator_started / providerCall=no / queue=no / autoStart=no',
       runId: 'run_operator_1',
       status: 'completed',
       title: 'operator-started run accepted',

@@ -1,4 +1,5 @@
 import type { AgentSandboxCheckResult } from '../../../shared/agent-sandbox-provider.js';
+import { buildCodeAgentOrchestrationRequest } from '../../../shared/agent-orchestration.js';
 import {
   buildAgentSandboxPatchArtifactFromCheckResults,
   buildAgentSandboxPatchPromotionCheckpoint,
@@ -73,6 +74,11 @@ export class CodeAgentRunService {
     const modelProducerAvailable = readEnvBoolean(ENABLE_CODE_AGENT_MODEL_PRODUCER_ENV) === true;
     const modelProducerRequested = input.useModelProducer === true;
     const modelProducerOptIn = modelProducerAvailable && modelProducerRequested;
+    const orchestrationRequest = buildCodeAgentOrchestrationRequest({
+      ...input,
+      patchIntent,
+      requestedChecks,
+    });
     const run = await this.runRepository.create({
       taskId: task.id,
       type: 'agent',
@@ -123,6 +129,7 @@ export class CodeAgentRunService {
         `producer=${modelProducerRequested ? 'model_backed_requested' : 'local_diagnostic'}`,
         `providerCall=${modelProducerRequested ? 'explicit_user_opt_in_required' : 'disabled'}`,
         `checks=${requestedChecks.join(',')}`,
+        orchestrationRequest.summary,
       ].join(' / '),
     });
     const modelRuntime = await prepareCodeAgentModelProducerRuntime({

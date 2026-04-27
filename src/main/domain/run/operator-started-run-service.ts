@@ -1,6 +1,7 @@
 import type {
   OperatorStartedRunRequest,
 } from '../../../shared/types/operator-started-run.js';
+import { buildOperatorStartedOrchestrationRequest } from '../../../shared/agent-orchestration.js';
 import { validateOperatorStartedRunRequest } from '../../../shared/types/operator-started-run.js';
 import type {
   BrowserEvidenceRequest,
@@ -44,6 +45,11 @@ export class OperatorStartedRunService {
     }
 
     const request = validation.request;
+    const orchestrationValidation = buildOperatorStartedOrchestrationRequest(request);
+    if (!orchestrationValidation.valid) {
+      throw new Error(orchestrationValidation.summary);
+    }
+
     if (request.kind !== 'browser_evidence_smoke') {
       throw new Error(`Operator-started run kind is not implemented: ${request.kind}.`);
     }
@@ -66,7 +72,7 @@ export class OperatorStartedRunService {
       status: 'completed',
       title: 'operator-started run accepted',
       input: validation.summary,
-      output: `descriptor=${request.descriptorId}`,
+      output: `descriptor=${request.descriptorId} / ${orchestrationValidation.summary}`,
     });
 
     const execution = await this.browserEvidenceSmokeExecutor({

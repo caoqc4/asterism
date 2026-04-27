@@ -162,7 +162,7 @@ describe('CodeAgentRunService', () => {
     expect(runStepRepository.create).toHaveBeenCalledWith({
       input: 'Prepare a staged notes patch.',
       kind: 'plan',
-      output: 'descriptor=workspace.staged_patch / producer=local_diagnostic / providerCall=disabled / checks=test',
+      output: 'descriptor=workspace.staged_patch / producer=local_diagnostic / providerCall=disabled / checks=test / Orchestration request / lane=coding / source=code_agent_preview / profile=manual_sandbox_producer / runtime=local_sandbox / start=manual / providerCall=no / queue=no / autoStart=no',
       runId: 'run_code_agent_1',
       status: 'completed',
       title: 'operator-started code-agent run accepted',
@@ -208,7 +208,7 @@ describe('CodeAgentRunService', () => {
 
     expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-      output: 'descriptor=workspace.staged_patch / producer=model_backed_requested / providerCall=explicit_user_opt_in_required / checks=test',
+      output: 'descriptor=workspace.staged_patch / producer=model_backed_requested / providerCall=explicit_user_opt_in_required / checks=test / Orchestration request / lane=coding / source=code_agent_preview / profile=manual_sandbox_producer / runtime=local_sandbox / start=manual / providerCall=explicit_opt_in / queue=no / autoStart=no',
       title: 'operator-started code-agent run accepted',
     }));
     expect(executionService.run).not.toHaveBeenCalled();
@@ -251,7 +251,7 @@ describe('CodeAgentRunService', () => {
 
     expect(aiConfigService.resolveRuntimeConfig).toHaveBeenCalledTimes(1);
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-      output: 'descriptor=workspace.staged_patch / producer=model_backed_requested / providerCall=explicit_user_opt_in_required / checks=test',
+      output: 'descriptor=workspace.staged_patch / producer=model_backed_requested / providerCall=explicit_user_opt_in_required / checks=test / Orchestration request / lane=coding / source=code_agent_preview / profile=manual_sandbox_producer / runtime=local_sandbox / start=manual / providerCall=explicit_opt_in / queue=no / autoStart=no',
       title: 'operator-started code-agent run accepted',
     }));
     expect(executionService.run).not.toHaveBeenCalled();
