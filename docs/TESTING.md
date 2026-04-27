@@ -15,6 +15,7 @@ Taskplane currently uses a layered testing strategy:
 Current test files:
 
 - `src/main/bootstrap/runtime-paths.test.ts`
+- `src/main/code-agent-model-producer-preflight-script.test.ts`
 - `src/main/config/app-config-service.test.ts`
 - `src/main/db/client.test.ts`
 - `src/main/keychain/ai-config-service.test.ts`
@@ -135,7 +136,8 @@ Covered today:
   workspace-relative files for bounded prompt context; invalid selected files
   block the model producer run before sandbox execution starts. The preflight
   also validates configured context files locally without spending provider
-  credit.
+  credit. Script coverage verifies shell environment values override `.env`
+  values while API keys and stale secret-like `.env` values stay redacted.
 - `Code Agent UI/config/IPС acceptance`
   `npm run accept:sandbox-coding:code-agent-ui` exercises the Code Agent
   preflight summary, package-script availability detection, renderer payload
