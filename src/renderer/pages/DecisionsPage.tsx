@@ -121,6 +121,61 @@ function getCheckpointDecisionGuidance(
   return `来源：Agent checkpoint（${sourceLabel}）。该确认未批准，本次 run 会作为不可续跑的执行记录收束。`;
 }
 
+function getDecisionTaskFollowUpIntent(
+  decision: DecisionRecord,
+  sandboxPatchPromotionApplyEnabled: boolean,
+): RecommendedActionIntent {
+  return {
+    type:
+      decision.status === 'deferred'
+        ? 'focus_waiting_follow_up'
+        : decision.status === 'cancelled'
+          ? 'focus_risk_review'
+          : 'focus_next_step',
+    focusArea: 'detail',
+    prefillNextStep: getDecisionTaskFollowUpNextStep(decision, sandboxPatchPromotionApplyEnabled),
+  };
+}
+
+function getDecisionTaskFollowUpNextStep(
+  decision: DecisionRecord,
+  sandboxPatchPromotionApplyEnabled: boolean,
+): string {
+  if (decision.status === 'approved') {
+    return `已获批准，继续推进：${decision.title}`;
+  }
+
+  if (decision.status === 'deferred') {
+    return `跟进该决策是否可以恢复拍板：${decision.title}`;
+  }
+
+  if (decision.status === 'cancelled') {
+    return `重新评估该决策并确定替代推进路径：${decision.title}`;
+  }
+
+  if (decision.sourceType === 'agent_checkpoint') {
+    const sourceLabel = decision.sourceLabel ?? '等待中的 agent 工具调用';
+
+    if (sourceLabel === 'workspace.write_patch') {
+      return '先审查 workspace.write_patch checkpoint 的 diff 和受影响文件；批准后再回到任务确认 patch 是否已应用。';
+    }
+
+    if (sourceLabel === 'workspace.run_command') {
+      return '先审查 workspace.run_command checkpoint 的脚本、参数、超时和工作目录；批准后再回到任务确认命令结果。';
+    }
+
+    if (sourceLabel === 'workspace.staged_patch') {
+      return sandboxPatchPromotionApplyEnabled
+        ? '先查看 Run 证据与 promotion readiness；批准后再确认 sandbox staged patch 是否通过预检并写入。'
+        : '先查看 Run 证据与 promotion readiness；当前版本批准后只会关闭 checkpoint，不会自动写入工作区文件。';
+    }
+
+    return `先处理 ${sourceLabel} checkpoint / Decision，再决定是否继续执行任务。`;
+  }
+
+  return `先处理该待拍板事项，再回到任务推进：${decision.title}`;
+}
+
 type DecisionsPageProps = {
   aiStatus: AiConfigStatus | null;
   decisions: DecisionRecord[];
@@ -274,21 +329,13 @@ export function DecisionsPage({
                   <button
                     className="ghost-button"
                     onClick={() =>
-                      onOpenTask(detail.taskId, {
-                        type:
-                          detail.status === 'deferred'
-                            ? 'focus_waiting_follow_up'
-                            : detail.status === 'cancelled'
-                              ? 'focus_risk_review'
-                              : 'focus_next_step',
-                        focusArea: 'detail',
-                        prefillNextStep:
-                          detail.status === 'approved'
-                            ? `已获批准，继续推进：${detail.title}`
-                            : detail.status === 'deferred'
-                              ? `跟进该决策是否可以恢复拍板：${detail.title}`
-                              : `重新评估该决策并确定替代推进路径：${detail.title}`,
-                      })
+                      onOpenTask(
+                        detail.taskId,
+                        getDecisionTaskFollowUpIntent(
+                          detail,
+                          Boolean(aiStatus?.featureFlags.enableSandboxPatchPromotionApply),
+                        ),
+                      )
                     }
                     type="button"
                   >

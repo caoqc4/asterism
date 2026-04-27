@@ -4712,6 +4712,44 @@ describe('App UI flow', () => {
     expect(screen.getByRole('button', { name: '批准' })).toBeTruthy();
   });
 
+  it('prefills task next step from a pending checkpoint decision', async () => {
+    const user = userEvent.setup();
+    const checkpointDecisionApi: ElectronApi = {
+      ...mockApi,
+      listDecisions: vi.fn(async () => [
+        {
+          id: 'decision_checkpoint_patch',
+          taskId: riskTask.id,
+          title: '确认本地写入：workspace.write_patch',
+          status: 'pending' as const,
+          sourceType: 'agent_checkpoint' as const,
+          sourceId: 'run_checkpoint_patch',
+          sourceLabel: 'workspace.write_patch',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]),
+    };
+
+    window.api = checkpointDecisionApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /decisions/i }));
+    await screen.findByRole('heading', { name: '确认本地写入：workspace.write_patch' });
+
+    await user.click(screen.getByRole('button', { name: '回到任务推进' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect(window.location.hash).toBe('#tasks');
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '先审查 workspace.write_patch checkpoint 的 diff 和受影响文件；批准后再回到任务确认 patch 是否已应用。',
+    );
+  });
+
   it('explains workspace patch checkpoint consequences on the decisions page', async () => {
     const user = userEvent.setup();
     const checkpointDecisionApi: ElectronApi = {

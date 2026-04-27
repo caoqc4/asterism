@@ -566,6 +566,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - The Runs `回到任务推进` action now uses the replay review mode to prefill the
   task next-step draft, so manual-resume sessions point users back to open
   checkpoint / Decision review before continuing.
+- The Decisions `回到任务推进` action now also carries pending agent-checkpoint
+  context into the task next-step draft, so workspace patch, command, staged
+  patch, and note confirmations route users through evidence review before task
+  continuation.
 - Connector policy/evidence records are now generated from
   `agent-tool-scaffold`: each descriptor records model visibility, network,
   credential, checkpoint, and verification requirements. Settings diagnostics

@@ -476,6 +476,9 @@ The latest implementation slice:
 - Runs `回到任务推进` now uses that replay review mode to prefill the task
   next-step draft, keeping manual-resume work anchored on checkpoint / Decision
   review instead of automatic replay
+- Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
+  task next-step draft, keeping workspace patch / command / staged patch / note
+  confirmations anchored on evidence review before continuation
 - `agent-tool-scaffold` now builds connector policy records and local
   verification evidence requirements for every descriptor; Settings diagnostics
   show the verification-required count, and reserved connector families remain
