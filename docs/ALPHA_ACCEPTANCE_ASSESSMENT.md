@@ -241,8 +241,8 @@ Finish the remaining alpha work in this order:
 3. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
 4. Treat the current execution-layer v2 and Code Agent context-gate slices as
    locally accepted for the alpha path; next execution work should be
-   acceptance/documentation cleanup, release-readiness hardening, or explicitly
-   deferred design work, not new model-visible power.
+   orchestration/UI design, acceptance documentation cleanup, release-readiness
+   hardening, or explicitly deferred design work, not new model-visible power.
 
 Do not expand the domain model until signed/notarized release work is explicitly
 in scope.

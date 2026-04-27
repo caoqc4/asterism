@@ -1508,10 +1508,11 @@ dedicated signed/notarized release pass.
    Browser Evidence Tier 1 review helpers are now implemented locally.
    Browser Controlled Interaction BCI1-BCI6 are locally accepted for the
    local-QA path, and BCR1-BCR6 plus the dev-app resume review fixture are
-   locally accepted for checkpoint-approved local-QA resume. The next execution
-   task should pause broad browser expansion and return to executor/session
-   interruption and restart safety, not broad browser/MCP/computer-use model
-   exposure;
+   locally accepted for checkpoint-approved local-QA resume. Default local-smoke
+   skip boundaries are now covered for provider/Docker/workspace safety, so the
+   next execution task should move to orchestration/UI design and any remaining
+   executor/session interruption and restart-safety gaps, not broad
+   browser/MCP/computer-use model exposure;
    do not expose browser, MCP, computer-use, skills, or creator connector tools
    to the model until that connector-specific slice is explicitly accepted.
 6. For Code Agent model context, keep source-context content limited to the
