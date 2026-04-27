@@ -7400,8 +7400,16 @@ describe('App UI flow', () => {
     expect(screen.getByText(
       'Browser Evidence：Browser evidence preflight: reserved / configuredOrigins=0 / modelExposure=hidden / browserStart=no / networkCall=no / next=manual isolated runner smoke available while runtime stays hidden',
     )).toBeTruthy();
-    expect(screen.getByText(
-      'Orchestration：Orchestration snapshot / runtime=not_checked / profile=manual_sandbox_producer / lifecycle=drafted / queue=no / autoStart=no / hidden=browser_playwright,mcp,skill,computer_use,creator_connector',
+    const orchestrationDiagnostics = within(screen.getByLabelText('Orchestration diagnostics'));
+    expect(orchestrationDiagnostics.getByText('Orchestration Diagnostics')).toBeTruthy();
+    expect(orchestrationDiagnostics.getByText(
+      'Summary：runtime=not_checked / profile=manual_sandbox_producer / lifecycle=drafted / hidden=browser_playwright,mcp,skill,computer_use,creator_connector / modelVisibleHiddenTools=no / automation=disabled / autoStart=no',
+    )).toBeTruthy();
+    expect(orchestrationDiagnostics.getByText(
+      'AgentRunLifecycle：drafted / start=manual_or_operator_started / queue=no / claim=no / scheduler=no / autoStart=no / lifecycle=drafted / start=manual_or_operator_started / queue=no / claim=no / scheduler=no / autoStart=no',
+    )).toBeTruthy();
+    expect(orchestrationDiagnostics.getByText(
+      'Hidden tool families / families=browser_playwright,mcp,skill,computer_use,creator_connector / modelVisible=no',
     )).toBeTruthy();
     expect(screen.getByText('Workspace Coding')).toBeTruthy();
     expect(screen.getByText('4 implemented / 1 reserved / 0 text / 0 native / 3 approval / 0 credential / 3 verification')).toBeTruthy();

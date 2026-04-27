@@ -167,6 +167,10 @@ The project is past initial architecture assembly. Current work should favor pro
   review, and next safe move into a `Run recovery safety` strip before the
   operator returns to task focus. This keeps the existing open-checkpoint gate
   for `继续 paused run` while making inspect-first recovery easier to scan.
+- Settings now presents orchestration as diagnostics, not execution: a compact
+  `Orchestration Diagnostics` block shows the shared read-only summary,
+  lifecycle, and hidden-tool-family facts while keeping Sandbox Backend
+  detection as the only runtime action.
 - The manual Code Agent intent surface now also shows automatic start as
   disabled, with the future maturity/input/tool/risk/evidence/runtime policy
   signals listed explicitly and no scheduler or auto-run flag persisted.

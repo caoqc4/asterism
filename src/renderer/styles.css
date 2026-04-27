@@ -183,6 +183,21 @@ ul {
   margin-top: 14px;
 }
 
+.settings-diagnostic-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.035);
+}
+
+.settings-diagnostic-card .meta {
+  margin-bottom: 0;
+}
+
 .tool-scaffold-row {
   display: grid;
   grid-template-columns: minmax(132px, 0.8fr) minmax(0, 1.4fr);

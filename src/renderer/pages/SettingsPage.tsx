@@ -7,6 +7,7 @@ import {
   evaluateAgentSandboxCodingLaneEligibilityFromBackendStatus,
 } from '@shared/agent-sandbox-provider';
 import { buildBrowserEvidencePreflight } from '@shared/types/browser-evidence';
+import { buildReadOnlyOrchestrationPresentation } from '../lib/agentOrchestrationPresentation';
 
 type SettingsPageProps = {
   aiStatus: AiConfigStatus | null;
@@ -80,10 +81,6 @@ function formatBrowserEvidencePreflightState(): string {
   return buildBrowserEvidencePreflight().summary;
 }
 
-function formatOrchestrationSnapshotState(aiStatus: AiConfigStatus | null): string {
-  return buildAgentExecutionOrchestrationSnapshot(aiStatus).summary;
-}
-
 function formatToolScaffoldFamilyLabel(family: AgentToolScaffoldFamilySummary['family']): string {
   const labels: Record<AgentToolScaffoldFamilySummary['family'], string> = {
     browser_playwright: 'Browser / Playwright',
@@ -118,6 +115,10 @@ export function SettingsPage({
   onSubmit,
   sandboxBackendProbePending,
 }: SettingsPageProps) {
+  const orchestrationDiagnostics = buildReadOnlyOrchestrationPresentation({
+    snapshot: buildAgentExecutionOrchestrationSnapshot(aiStatus),
+  });
+
   return (
     <section className="page-grid">
       <article className="panel page-hero">
@@ -166,7 +167,12 @@ export function SettingsPage({
         <p className="meta">Sandbox Coding Lane：{formatSandboxCodingLaneReadiness(aiStatus)}</p>
         <p className="meta">Producer Backend：{formatSandboxProducerBackendReadiness(aiStatus)}</p>
         <p className="meta">Browser Evidence：{formatBrowserEvidencePreflightState()}</p>
-        <p className="meta">Orchestration：{formatOrchestrationSnapshotState(aiStatus)}</p>
+        <div className="settings-diagnostic-card" aria-label="Orchestration diagnostics">
+          <strong>Orchestration Diagnostics</strong>
+          <p className="meta">Summary：{orchestrationDiagnostics.summary}</p>
+          <p className="meta">{orchestrationDiagnostics.lifecycle}</p>
+          <p className="meta">{orchestrationDiagnostics.hiddenToolFamilies}</p>
+        </div>
         <div className="tool-scaffold-summary" aria-label="Tool scaffold diagnostics">
           {(aiStatus?.toolScaffoldSummaries?.length ? aiStatus.toolScaffoldSummaries : []).map((summary) => (
             <div className="tool-scaffold-row" key={summary.family}>

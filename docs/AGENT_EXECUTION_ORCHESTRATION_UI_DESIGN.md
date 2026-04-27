@@ -190,6 +190,11 @@ Acceptance:
 
 ### OUI4: Settings Runtime Diagnostics Cleanup
 
+Implementation status: started. Settings now renders an `Orchestration
+Diagnostics` block with the shared read-only orchestration summary, lifecycle,
+and hidden-tool-family facts. It remains a readiness console; no run trigger or
+execution action is exposed from Settings.
+
 Goal: make Settings a runtime readiness console, not an execution surface.
 
 Work:
@@ -207,10 +212,10 @@ Acceptance:
 
 ## Recommended Next Implementation Task
 
-Start with `OUI1`, because it reduces wording drift without changing behavior.
-Then implement `OUI2` on Task detail. Defer `OUI3` visual grouping until the
-presentation helpers are stable, because Runs already has good behavioral
-coverage for replay safety.
+The first orchestration UI pass has landed across Task detail, Runs detail, and
+Settings. The next implementation slice should tighten visual polish and reduce
+duplicated wording between the three cards, then move into the next execution
+orchestration step only after these read-only surfaces stay stable.
 
 ## Verification
 
