@@ -20,6 +20,7 @@ import { DecisionService } from '../domain/decision/decision-service.js';
 import { AgentToolRegistry } from '../domain/run/agent-tool-registry.js';
 import { BrowserEvidencePersister } from '../domain/run/browser-evidence-persister.js';
 import { runBrowserControlledLocalQaForOperatorStartedRun } from '../domain/run/browser-controlled-interaction-smoke-executor.js';
+import { runBrowserControlledResumeForApprovedDecision } from '../domain/run/browser-controlled-interaction-resume-executor.js';
 import { runBrowserEvidenceSmokeForOperatorStartedRun } from '../domain/run/browser-evidence-smoke-executor.js';
 import { CodeAgentRunService } from '../domain/run/code-agent-run-service.js';
 import { OperatorStartedRunService } from '../domain/run/operator-started-run-service.js';
@@ -116,6 +117,7 @@ const decisionService = new DecisionService(
   sandboxPatchPromotionPreflightService,
   sandboxPatchPromotionApplyService,
   () => Boolean(appConfigService.read().featureFlags.enableSandboxPatchPromotionApply),
+  runBrowserControlledResumeForApprovedDecision,
 );
 agentToolRegistry.setDecisionDraftService(decisionService);
 const runService = new RunService(

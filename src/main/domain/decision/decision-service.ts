@@ -23,6 +23,8 @@ import type {
 import type {
   SandboxPatchPromotionApplyService,
 } from '../run/sandbox-patch-promotion-apply-service.js';
+import type { BrowserControlledInteractionResult } from '../../../shared/types/browser-controlled-interaction.js';
+import { parseBrowserControlledInteractionCheckpointPayload } from '../../../shared/types/browser-controlled-interaction.js';
 import { parseRunCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import {
   DecisionProcessTemplateSelector,
@@ -34,6 +36,13 @@ const decisionDraftSchema = z.object({
   title: z.string().min(1),
   rationale: z.string().min(1),
 });
+
+export type BrowserControlledResumeExecutor = (params: {
+  checkpointId: string;
+  decision: DecisionRecord;
+  payload: string;
+  runId: string;
+}) => Promise<BrowserControlledInteractionResult>;
 
 function buildFallbackDraftTitle(taskTitle: string, note?: string | null): string {
   if (note?.trim()) {
@@ -52,6 +61,16 @@ function stripResponsibilityPrefix(summary: string | null | undefined): string |
     .trim();
 
   return trimmed || null;
+}
+
+function isLocalBrowserControlledOrigin(origin: string): boolean {
+  try {
+    const parsed = new URL(origin);
+    return (parsed.protocol === 'http:' || parsed.protocol === 'https:')
+      && ['localhost', '127.0.0.1', '::1', '[::1]'].includes(parsed.hostname);
+  } catch {
+    return false;
+  }
 }
 
 function buildDraftPrompt(
@@ -116,6 +135,7 @@ export class DecisionService {
     private readonly sandboxPatchPromotionPreflightService: Pick<SandboxPatchPromotionPreflightService, 'preflight'> | null = null,
     private readonly sandboxPatchPromotionApplyService: Pick<SandboxPatchPromotionApplyService, 'apply'> | null = null,
     private readonly sandboxPatchPromotionApplyEnabled: () => boolean = () => false,
+    private readonly browserControlledResumeExecutor: BrowserControlledResumeExecutor | null = null,
   ) {}
 
   list(): Promise<DecisionRecord[]> {
@@ -279,6 +299,13 @@ export class DecisionService {
       await this.settlePatchPromotionCheckpoint(decision, checkpoint.id, checkpoint.runId);
       return;
     }
+
+    const browserPayload = parseBrowserControlledInteractionCheckpointPayload(checkpoint.payload);
+    if (browserPayload.valid) {
+      await this.settleBrowserControlledResumeCheckpoint(decision, checkpoint.id, checkpoint.runId, checkpoint.payload);
+      return;
+    }
+
     if (
       (
         tool !== 'artifact.create_note' &&
@@ -354,6 +381,93 @@ export class DecisionService {
       Boolean((result.output ?? result.summary).trim()),
       checkpoint.runId,
     );
+  }
+
+  private async settleBrowserControlledResumeCheckpoint(
+    decision: DecisionRecord,
+    checkpointId: string,
+    runId: string,
+    payload: string | null,
+  ): Promise<void> {
+    if (!this.runCheckpointRepository || !this.runStepRepository || !this.runRepository || !payload) {
+      return;
+    }
+
+    const parsed = parseBrowserControlledInteractionCheckpointPayload(payload);
+    if (!parsed.valid || !isLocalBrowserControlledOrigin(parsed.payload.origin)) {
+      const summary = parsed.valid
+        ? `Browser controlled resume blocked: origin ${parsed.payload.origin} is not a local QA origin.`
+        : `Browser controlled resume blocked: ${parsed.blockedReasons.join(' ')}`;
+      await this.runCheckpointRepository.updateStatus(checkpointId, 'cancelled');
+      await this.runStepRepository.create({
+        runId,
+        kind: 'checkpoint',
+        status: 'failed',
+        title: `Browser resume blocked：${decision.title}`,
+        error: summary,
+        output: [
+          summary,
+          'No browser action was executed.',
+        ].join('\n'),
+      });
+      await this.runRepository.updateResult(runId, 'failed', summary, 'system', summary);
+      return;
+    }
+
+    if (!this.browserControlledResumeExecutor) {
+      await this.runCheckpointRepository.updateStatus(checkpointId, 'resolved');
+      await this.runStepRepository.create({
+        runId,
+        kind: 'checkpoint',
+        status: 'completed',
+        title: `确认已通过：${decision.title}`,
+        output: '关联 Decision 已批准，但当前浏览器 resume executor 未启用。',
+      });
+      return;
+    }
+
+    const result = await this.browserControlledResumeExecutor({
+      checkpointId,
+      decision,
+      payload,
+      runId,
+    });
+
+    if (result.status !== 'completed') {
+      const summary = result.summary;
+      const blockedReasons = result.status === 'blocked'
+        ? result.blockedReasons.join(' / ') || 'none'
+        : 'resume produced a second confirmation request';
+      await this.runCheckpointRepository.updateStatus(checkpointId, 'cancelled');
+      await this.runStepRepository.create({
+        runId,
+        kind: 'checkpoint',
+        status: 'failed',
+        title: `Browser resume failed：${decision.title}`,
+        error: summary,
+        output: [
+          summary,
+          `Blocked reasons: ${blockedReasons}`,
+        ].join('\n'),
+      });
+      await this.runRepository.updateResult(runId, 'failed', summary, 'system', summary);
+      return;
+    }
+
+    const run = await this.runRepository.getDetail(runId);
+    await this.runCheckpointRepository.updateStatus(checkpointId, 'resolved');
+    await this.runStepRepository.create({
+      runId,
+      kind: 'checkpoint',
+      status: 'completed',
+      title: `Browser resume completed：${decision.title}`,
+      output: [
+        result.summary,
+        `Artifacts: ${result.artifacts.map((artifact) => artifact.kind).join(',') || 'none'}`,
+      ].join('\n'),
+    });
+    await this.runRepository.updateResult(runId, 'completed', result.summary, 'system');
+    await this.taskService.annotateRunCompleted(decision.taskId, run?.type ?? 'agent', true, runId);
   }
 
   private async settlePatchPromotionCheckpoint(

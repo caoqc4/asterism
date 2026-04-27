@@ -708,9 +708,15 @@ The project is past initial architecture assembly. Current work should favor pro
   detail Browser Controlled Resume review card for approved-ready, resumed,
   blocked/stale, and consumed checkpoint payload states using linked Decision
   status, checkpoint state, resume evidence, reviewed payload evidence,
-  consequence, policy, and next-review wording. The next recommended slice is
-  BCR6 service integration; arbitrary URLs, authenticated profiles, scheduler
-  starts, provider schemas, and model-visible browser tools remain deferred.
+  consequence, policy, and next-review wording. BCR6 is locally accepted with
+  Decision approval service integration: accepted
+  `browser_controlled_interaction` payloads are recognized, non-local origins
+  are blocked before executor launch, localhost-style payloads invoke the
+  injected local-QA resume executor, successful resumes resolve the checkpoint
+  and update the Run, and blocked/failed attempts write failed checkpoint
+  RunSteps and cancel the checkpoint. Arbitrary URLs, authenticated profiles,
+  scheduler starts, provider schemas, and model-visible browser tools remain
+  deferred.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
@@ -1325,10 +1331,11 @@ dedicated signed/notarized release pass.
    orchestration O1-O4 sequence, Code Agent O5 recovery helper layer, and
    Browser Evidence Tier 1 review helpers are now implemented locally.
    Browser Controlled Interaction BCI1-BCI6 are locally accepted for the
-   local-QA path, and BCR1-BCR5 are locally accepted for checkpoint resume
-   review/validation/dry-run/local-QA smoke/review surfacing. The next execution task should be BCR6
-   from the browser controlled resume
-   plan, not broad browser/MCP/computer-use model exposure;
+   local-QA path, and BCR1-BCR6 are locally accepted for checkpoint-approved
+   local-QA resume. The next execution task should pause broad browser
+   expansion and either manually review the packaged resume surface or start a
+   new connector-specific acceptance plan, not broad browser/MCP/computer-use
+   model exposure;
    do not expose browser, MCP, computer-use, skills, or creator connector tools
    to the model until that connector-specific slice is explicitly accepted.
 

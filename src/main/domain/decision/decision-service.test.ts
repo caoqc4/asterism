@@ -123,6 +123,40 @@ function buildTaskRecord(state: TaskRecord['state']): TaskRecord {
   };
 }
 
+function buildBrowserControlledCheckpointPayload() {
+  return {
+    version: 1,
+    kind: 'browser_controlled_interaction',
+    descriptorId: 'browser.controlled_interaction',
+    action: {
+      action: 'click',
+      currentUrl: 'http://localhost:5173/draft',
+      targetLabel: 'Publish post',
+    },
+    currentUrl: 'http://localhost:5173/draft',
+    decisionId: 'decision_1',
+    decisionTitle: 'Need approval',
+    origin: 'http://localhost:5173',
+    policySnapshot: {
+      allowCredentials: false,
+      allowedActions: ['click'],
+      allowedEvidenceKinds: ['screenshot', 'visible_text', 'page_summary'],
+      allowedOrigins: ['http://localhost:5173'],
+      isolatedProfile: true,
+      maxActions: 8,
+      networkPolicy: 'allowlisted',
+      operatorStarted: true,
+      outputLimitBytes: 128000,
+      sensitiveFieldPolicy: 'block',
+      sideEffectPolicy: 'checkpoint_required',
+      timeoutMs: 60000,
+    },
+    screenshotArtifactId: 'artifact_screenshot_1',
+    sideEffectClassification: 'possible_external_side_effect',
+    visibleTextSummary: 'Draft publish page is visible.',
+  };
+}
+
 function buildPatchPromotionCheckpoint(
   partial: Partial<RunCheckpointRecord> = {},
 ): RunCheckpointRecord {
@@ -767,6 +801,186 @@ describe('DecisionService', () => {
       'completed',
       'command-ok',
       'system',
+    );
+  });
+
+  it('resumes an approved browser controlled checkpoint through the local QA executor', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord(),
+        status: 'approved',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+    };
+    const payload = buildBrowserControlledCheckpointPayload();
+    const runCheckpointRepository = {
+      findOpenByDecisionId: vi.fn().mockResolvedValue({
+        id: 'run_checkpoint_1',
+        runId: 'run_1',
+        stepId: 'run_step_1',
+        kind: 'external_wait',
+        status: 'open',
+        payload: JSON.stringify(payload),
+        createdAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      }),
+      updateStatus: vi.fn(),
+    };
+    const runStepRepository = {
+      create: vi.fn(),
+    };
+    const runRepository = {
+      getDetail: vi.fn().mockResolvedValue({
+        id: 'run_1',
+        taskId: 'task_1',
+        type: 'agent',
+      }),
+      updateResult: vi.fn(),
+    };
+    const browserControlledResumeExecutor = vi.fn().mockResolvedValue({
+      artifacts: [
+        {
+          kind: 'screenshot',
+          path: '/tmp/browser-controlled-resume.png',
+          summary: 'Screenshot captured.',
+          title: 'Browser screenshot',
+        },
+      ],
+      status: 'completed',
+      summary: 'Browser controlled resume local QA completed / oneAction=yes / modelExposure=hidden',
+    });
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+      undefined,
+      runCheckpointRepository as never,
+      runStepRepository as never,
+      runRepository as never,
+      null,
+      null,
+      null,
+      () => false,
+      browserControlledResumeExecutor,
+    );
+
+    await service.act({
+      id: 'decision_1',
+      action: 'approve',
+    });
+
+    expect(browserControlledResumeExecutor).toHaveBeenCalledWith({
+      checkpointId: 'run_checkpoint_1',
+      decision: expect.objectContaining({ id: 'decision_1', status: 'approved' }),
+      payload: JSON.stringify(payload),
+      runId: 'run_1',
+    });
+    expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith('run_checkpoint_1', 'resolved');
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'checkpoint',
+      status: 'completed',
+      title: 'Browser resume completed：Need approval',
+      output: [
+        'Browser controlled resume local QA completed / oneAction=yes / modelExposure=hidden',
+        'Artifacts: screenshot',
+      ].join('\n'),
+    }));
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_1',
+      'completed',
+      'Browser controlled resume local QA completed / oneAction=yes / modelExposure=hidden',
+      'system',
+    );
+    expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'agent', true, 'run_1');
+  });
+
+  it('blocks approved browser controlled checkpoints for non-local origins', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord(),
+        status: 'approved',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+    };
+    const payload = {
+      ...buildBrowserControlledCheckpointPayload(),
+      currentUrl: 'https://publisher.example.com/draft',
+      origin: 'https://publisher.example.com',
+      policySnapshot: {
+        ...buildBrowserControlledCheckpointPayload().policySnapshot,
+        allowedOrigins: ['https://publisher.example.com'],
+      },
+    };
+    const runCheckpointRepository = {
+      findOpenByDecisionId: vi.fn().mockResolvedValue({
+        id: 'run_checkpoint_1',
+        runId: 'run_1',
+        stepId: 'run_step_1',
+        kind: 'external_wait',
+        status: 'open',
+        payload: JSON.stringify(payload),
+        createdAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      }),
+      updateStatus: vi.fn(),
+    };
+    const runStepRepository = {
+      create: vi.fn(),
+    };
+    const runRepository = {
+      getDetail: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const browserControlledResumeExecutor = vi.fn();
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+      undefined,
+      runCheckpointRepository as never,
+      runStepRepository as never,
+      runRepository as never,
+      null,
+      null,
+      null,
+      () => false,
+      browserControlledResumeExecutor,
+    );
+
+    await service.act({
+      id: 'decision_1',
+      action: 'approve',
+    });
+
+    expect(browserControlledResumeExecutor).not.toHaveBeenCalled();
+    expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith('run_checkpoint_1', 'cancelled');
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'checkpoint',
+      status: 'failed',
+      title: 'Browser resume blocked：Need approval',
+    }));
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_1',
+      'failed',
+      'Browser controlled resume blocked: origin https://publisher.example.com is not a local QA origin.',
+      'system',
+      'Browser controlled resume blocked: origin https://publisher.example.com is not a local QA origin.',
     );
   });
 

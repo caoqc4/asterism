@@ -253,6 +253,15 @@ Acceptance:
 
 ### BCR6: Operator/Decision Service Integration
 
+Status: locally accepted. Decision approval now recognizes accepted
+`browser_controlled_interaction` checkpoint payloads, blocks non-local origins
+before executor launch, invokes an injected local-QA resume executor only for
+localhost-style payloads, writes completed/failed checkpoint RunSteps, resolves
+successful checkpoints, cancels blocked/failed resume attempts, and updates Run
+outcome through the existing service path. It adds no generic browser prompt,
+arbitrary URL runner, authenticated profile, scheduler start, provider schema,
+or model-visible browser tool.
+
 Goal: connect the accepted local QA resume path through the existing Run and
 Decision services.
 
@@ -283,10 +292,11 @@ Acceptance:
 
 ## Recommended Next Task
 
-BCR1-BCR5 are locally accepted. Next, implement BCR6 only.
+BCR1-BCR6 are locally accepted for the checkpoint-approved local-QA resume path.
 
-BCR6 should connect the accepted local-QA resume path through the existing
-Run/Decision services in an idempotent, restart-safe way. Keep the implementation
-limited to accepted `browser_controlled_interaction` payloads and localhost QA
-resume; do not add arbitrary URLs, authenticated profiles, scheduler starts,
-provider schemas, model-visible tools, or broad multi-action continuation.
+The next browser work should pause broad capability expansion. Candidate next
+steps are manual packaged-app review of the BCR1-BCR6 resume surface, or a new
+acceptance plan for the next connector lane. Do not add arbitrary URLs,
+authenticated profiles, scheduler starts, provider schemas, model-visible tools,
+remote CDP, file transfer, credential entry, or broad multi-action continuation
+without a new acceptance plan.
