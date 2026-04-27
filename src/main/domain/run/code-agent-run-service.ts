@@ -132,10 +132,8 @@ export class CodeAgentRunService {
         orchestrationRequest.summary,
       ].join(' / '),
     });
-    const modelRuntime = await prepareCodeAgentModelProducerRuntime({
-      aiConfigService: this.aiConfigService,
-      allowProviderCalls: modelProducerOptIn,
-    });
+
+    const selectedContextFiles = readSelectedCodeAgentContextFiles(input);
 
     if (modelProducerRequested && !modelProducerAvailable) {
       return this.runRepository.updateResult(
@@ -146,6 +144,21 @@ export class CodeAgentRunService {
         'TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER is not enabled.',
       );
     }
+
+    if (modelProducerOptIn && !selectedContextFiles.length) {
+      return this.runRepository.updateResult(
+        run.id,
+        'failed',
+        'Code Agent model producer runtime blocked: bounded workspace context files are required.',
+        'system',
+        'Model-backed Code Agent preview requires at least one selected context file.',
+      );
+    }
+
+    const modelRuntime = await prepareCodeAgentModelProducerRuntime({
+      aiConfigService: this.aiConfigService,
+      allowProviderCalls: modelProducerOptIn,
+    });
 
     if (modelProducerOptIn && modelRuntime.status === 'blocked') {
       return this.runRepository.updateResult(
@@ -159,7 +172,7 @@ export class CodeAgentRunService {
 
     const workspaceContext = modelRuntime.status === 'ready'
       ? await this.collectSelectedWorkspaceContext({
-          files: readSelectedCodeAgentContextFiles(input),
+          files: selectedContextFiles,
           runId: run.id,
           workspaceRoot: workspaceRoot ?? '',
         })

@@ -175,6 +175,13 @@ The project is past initial architecture assembly. Current work should favor pro
   validates generated JSON through the same staged-file contract, writes only
   accepted files to staging, and blocks malformed output before any staged
   write.
+- Model-backed Code Agent previews now have a bounded workspace-context input
+  path: the Task detail UI collects explicit workspace-relative context files,
+  the main service reads only those selected text files from the configured
+  workspace root, the prompt includes them as read-only evidence, and the
+  backend blocks model-backed runs with absent, escaping, sensitive, binary,
+  missing, or oversized context before producer execution. Provider config is
+  not resolved for model-backed starts that have no bounded context files.
 - A default-closed Code Agent model producer runtime factory now backs that
   manual gate: it blocks before resolving AI config unless provider calls are
   explicitly allowed for the current run, requires

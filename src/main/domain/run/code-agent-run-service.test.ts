@@ -264,4 +264,32 @@ describe('CodeAgentRunService', () => {
     );
     expect(result).toBe(failedRun);
   });
+
+  it('blocks model-backed runs without bounded context before resolving AI config', async () => {
+    process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
+    const failedRun = buildFailedRun(
+      'Code Agent model producer runtime blocked: bounded workspace context files are required.',
+      'Model-backed Code Agent preview requires at least one selected context file.',
+    );
+    runRepository.updateResult.mockResolvedValue(failedRun);
+
+    const result = await createService().trigger({
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      taskId: 'task_1',
+      useModelProducer: true,
+    });
+
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(executionService.run).not.toHaveBeenCalled();
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_code_agent_1',
+      'failed',
+      'Code Agent model producer runtime blocked: bounded workspace context files are required.',
+      'system',
+      'Model-backed Code Agent preview requires at least one selected context file.',
+    );
+    expect(result).toBe(failedRun);
+  });
 });

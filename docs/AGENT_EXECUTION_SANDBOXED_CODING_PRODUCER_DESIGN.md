@@ -358,12 +358,22 @@ Completed non-live slices:
     This keeps checks from mutating the host workspace or staging root while
     validating the candidate patch rather than the unmodified workspace.
 
+Accepted follow-up:
+
+31. The first workspace-context input path for model producer runs is now
+    explicit selected-file context. The Task detail UI accepts
+    workspace-relative context files, the main service reads only bounded text
+    files from the configured workspace root, blocks missing/path-escaping/
+    sensitive/binary/oversized inputs, and injects the collected content into
+    the sandboxed model prompt as read-only evidence. Model-backed starts with
+    no bounded context files fail before resolving provider runtime config.
+
 Next slice:
 
-31. Decide the first workspace-context input path for model producer runs. The
-    current producer prompt has task intent and completion criteria but does not
-    yet feed selected file context, retrieval snippets, or Skills/MCP/browser
-    observations into the sandboxed model loop.
+32. Decide the next non-file context source for model producer runs. Retrieval
+    snippets, Skills/MCP observations, and browser evidence remain out of the
+    sandboxed model loop until their connector-specific policy slices are
+    accepted.
 
 ## Acceptance
 
