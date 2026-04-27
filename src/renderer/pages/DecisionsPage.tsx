@@ -17,6 +17,10 @@ import {
 } from '@shared/working-context/timeline';
 
 const RELATED_TIMELINE_PREVIEW_COUNT = 4;
+const BROWSER_CONTROLLED_CHECKPOINT_LABELS = new Set([
+  'browser.controlled_interaction',
+  'Browser controlled checkpoint',
+]);
 
 function formatRelatedTimelineSummary(event: TimelineEventRecord): string {
   return formatTaskTimelineEventSummary(event);
@@ -80,17 +84,24 @@ function getCheckpointDecisionGuidance(
   }
 
   const sourceLabel = decision.sourceLabel ?? '等待中的 agent 工具调用';
+  const isBrowserControlledCheckpoint = BROWSER_CONTROLLED_CHECKPOINT_LABELS.has(sourceLabel);
   const actionLabel = sourceLabel === 'workspace.write_patch'
     ? '工作区 patch 应用'
     : sourceLabel === 'workspace.run_command'
       ? '工作区命令运行'
     : sourceLabel === 'workspace.staged_patch'
       ? 'sandbox patch promotion'
+    : isBrowserControlledCheckpoint
+      ? '受控浏览器单动作恢复'
     : sourceLabel === 'artifact.create_note'
       ? '本地 note 产物写入'
       : '本地工具调用';
 
   if (decision.status === 'pending') {
+    if (isBrowserControlledCheckpoint) {
+      return `来源：Agent checkpoint（${sourceLabel}）。批准后只会恢复 checkpoint 中记录的一个受控浏览器动作；不会授予通用浏览器会话、调度器启动、provider 调用或模型可见浏览器工具。延后或取消会终止本次 run 的该动作恢复。`;
+    }
+
     if (sourceLabel === 'workspace.write_patch') {
       return `来源：Agent checkpoint（${sourceLabel}）。批准后会恢复等待中的${actionLabel}并写入受影响文件；延后或取消会终止本次 run，不会继续应用该 patch。`;
     }
@@ -109,6 +120,10 @@ function getCheckpointDecisionGuidance(
   }
 
   if (decision.status === 'approved') {
+    if (isBrowserControlledCheckpoint) {
+      return `来源：Agent checkpoint（${sourceLabel}）。该确认已批准，系统只会尝试恢复 checkpoint 中记录的一个浏览器动作；Run 证据会记录恢复结果，不会开启通用浏览器会话。`;
+    }
+
     if (sourceLabel === 'workspace.staged_patch') {
       return sandboxPatchPromotionApplyEnabled
         ? `来源：Agent checkpoint（${sourceLabel}）。该 promotion 已批准；若 apply service 通过预检，Run 证据会记录已写入或已应用状态。`
@@ -155,6 +170,11 @@ function getDecisionTaskFollowUpNextStep(
 
   if (decision.sourceType === 'agent_checkpoint') {
     const sourceLabel = decision.sourceLabel ?? '等待中的 agent 工具调用';
+    const isBrowserControlledCheckpoint = BROWSER_CONTROLLED_CHECKPOINT_LABELS.has(sourceLabel);
+
+    if (isBrowserControlledCheckpoint) {
+      return '先审查 browser.controlled_interaction checkpoint 的 URL、origin、目标元素和截图/文本证据；批准后只恢复一个记录动作，不开放浏览器会话。';
+    }
 
     if (sourceLabel === 'workspace.write_patch') {
       return '先审查 workspace.write_patch checkpoint 的 diff 和受影响文件；批准后再回到任务确认 patch 是否已应用。';

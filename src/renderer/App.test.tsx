@@ -5172,6 +5172,47 @@ describe('App UI flow', () => {
     ).toBeTruthy();
   });
 
+  it('explains browser controlled checkpoint consequences on the decisions page', async () => {
+    const user = userEvent.setup();
+    const checkpointDecisionApi: ElectronApi = {
+      ...mockApi,
+      listDecisions: vi.fn(async () => [
+        {
+          id: 'decision_checkpoint_browser_controlled',
+          taskId: riskTask.id,
+          title: '确认浏览器动作：browser.controlled_interaction',
+          status: 'pending' as const,
+          sourceType: 'agent_checkpoint' as const,
+          sourceId: 'run_checkpoint_browser_controlled',
+          sourceLabel: 'browser.controlled_interaction',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]),
+    };
+
+    window.api = checkpointDecisionApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /decisions/i }));
+
+    expect(await screen.findByRole('heading', { name: '确认浏览器动作：browser.controlled_interaction' })).toBeTruthy();
+    expect(
+      screen.getByText('来源：Agent checkpoint（browser.controlled_interaction）。批准后只会恢复 checkpoint 中记录的一个受控浏览器动作；不会授予通用浏览器会话、调度器启动、provider 调用或模型可见浏览器工具。延后或取消会终止本次 run 的该动作恢复。'),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '回到任务推进' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '先审查 browser.controlled_interaction checkpoint 的 URL、origin、目标元素和截图/文本证据；批准后只恢复一个记录动作，不开放浏览器会话。',
+    );
+  });
+
   it('explains sandbox patch promotion checkpoints do not auto-apply workspace files', async () => {
     const user = userEvent.setup();
     const stagedPatchRun = buildRunRecord({

@@ -822,6 +822,11 @@ The project is past initial architecture assembly. Current work should favor pro
   review surfaces; the non-browser case also tightened the BCI review helper so
   an isolated `Browser action planned:*` step no longer misclassifies a generic
   checkpoint as browser-controlled evidence.
+- Pending `browser.controlled_interaction` Decisions now use dedicated
+  consequence and task-follow-up wording: approval resumes exactly one recorded
+  browser action, does not grant a general browser session, does not enable
+  scheduler/provider/model-visible browser tools, and routes task follow-up
+  back through checkpoint evidence review.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx
@@ -1189,7 +1194,7 @@ npm run verify
 Latest local baseline:
 
 - 119 test files
-- 827 tests
+- 828 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
@@ -1197,9 +1202,10 @@ Latest local baseline:
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
 - `npm run verify` passed locally on 2026-04-27 after tightening Code Agent
   model-context gates, checkpoint-backed session settlement, stale
-  resume-payload UI/backend gating, supported resume-input validation, and
-  scheduler checkpoint-state exclusion, and updating the local acceptance
-  status: 119 test files / 827 tests
+  resume-payload UI/backend gating, supported resume-input validation,
+  scheduler checkpoint-state exclusion, and browser controlled Decision
+  consequence wording, and updating the local acceptance status: 119 test files
+  / 828 tests
 - `npm run smoke:release:mac` passed locally on 2026-04-27 for the combined
   unsigned macOS package path after the Code Agent context-gate and
   restart/replay safety updates
