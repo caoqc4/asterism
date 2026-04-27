@@ -123,4 +123,22 @@ describe('release-mac-preflight script', () => {
     expect(result.output).not.toContain('cert-secret.p12');
     expect(result.output).not.toContain('app-password-secret');
   });
+
+  it('redacts CSC_LINK and CSC_KEY_PASSWORD values when certificate-link signing is configured', () => {
+    const result = runPreflight([
+      'CSC_LINK=/tmp/cert-secret.p12',
+      'CSC_KEY_PASSWORD=certificate-password-secret',
+      'APPLE_ID=test-secret@example.com',
+      'APPLE_APP_SPECIFIC_PASSWORD=app-password-secret',
+      'APPLE_TEAM_ID=TEAMIDSECRET',
+    ].join('\n'));
+
+    expect(result.status).toBe(0);
+    expect(result.output).toContain('[OK] electron-builder signing certificate source: CSC_LINK is set.');
+    expect(result.output).toContain('[OK] CSC_KEY_PASSWORD for CSC_LINK: <set>');
+    expect(result.output).not.toContain('cert-secret.p12');
+    expect(result.output).not.toContain('certificate-password-secret');
+    expect(result.output).not.toContain('test-secret@example.com');
+    expect(result.output).not.toContain('app-password-secret');
+  });
 });
