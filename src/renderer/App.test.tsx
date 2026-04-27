@@ -3922,9 +3922,23 @@ describe('App UI flow', () => {
       ],
       steps: [
         buildRunStep({
-          id: 'run_step_sandbox_check',
+          id: 'run_step_context_manifest',
           runId: sandboxProducerRun.id,
           index: 1,
+          kind: 'plan',
+          status: 'completed',
+          title: 'Code Agent provider-visible context manifest',
+          input: [
+            'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0',
+            'providerPromptContent=no',
+            'workspace_file:docs/notes.md',
+          ].join('\n'),
+          output: 'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0',
+        }),
+        buildRunStep({
+          id: 'run_step_sandbox_check',
+          runId: sandboxProducerRun.id,
+          index: 2,
           kind: 'tool_result',
           status: 'completed',
           title: 'Sandbox producer check passed: lint',
@@ -3933,7 +3947,7 @@ describe('App UI flow', () => {
         buildRunStep({
           id: 'run_step_sandbox_source',
           runId: sandboxProducerRun.id,
-          index: 2,
+          index: 3,
           kind: 'artifact',
           status: 'completed',
           title: 'Sandbox producer source ready',
@@ -4054,6 +4068,11 @@ describe('App UI flow', () => {
     expect(screen.getByText('open; 确认提升 sandbox patch')).toBeTruthy();
     expect(screen.getByText('Workspace mutation')).toBeTruthy();
     expect(screen.getByText('workspace unchanged until Decision approval')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0；provider prompt content is not shown in this manifest',
+      ),
+    ).toBeTruthy();
     expect(
       screen.getByText('Check evidence：lint passed；lint: passed'),
     ).toBeTruthy();
