@@ -98,10 +98,10 @@ The project is past initial architecture assembly. Current work should favor pro
   `policy_auto`, scheduler starts, and automatic starts remain blocked. The
   existing Code Agent and Browser Evidence services now record that envelope in
   their accepted RunSteps as diagnostics without changing execution behavior.
-- O3 has started with a shared lifecycle projection helper that maps current
+- O3 is locally accepted with a shared lifecycle projection helper that maps current
   Run statuses into orchestration vocabulary. Runs detail now surfaces that
   projection while keeping queue, claim, and automatic-start behavior disabled.
-- O4 has started with a shared skill-informed automation readiness evaluator:
+- O4 is locally accepted with a shared skill-informed automation readiness evaluator:
   mature low-risk tasks can be marked `eligible` only when procedure, inputs,
   runtime readiness, risk, and completion boundaries are present, and the
   evaluator still returns `automaticStartAllowed=false`. Task detail now
@@ -1243,9 +1243,10 @@ dedicated signed/notarized release pass.
    manual Browser / Playwright Tier 1 smoke plus its operator-started Runs UI
    entrypoint as locally accepted for the alpha path. The T8 operator-started
    Code Agent boundary and the shared connector policy/evidence records are now
-   implemented locally. The next execution task should start the read-only
-   orchestration snapshot from
-   [AGENT_EXECUTION_ORCHESTRATION_PLAN.md](AGENT_EXECUTION_ORCHESTRATION_PLAN.md);
+   implemented locally. The read-only orchestration O1-O4 sequence from
+   [AGENT_EXECUTION_ORCHESTRATION_PLAN.md](AGENT_EXECUTION_ORCHESTRATION_PLAN.md)
+   is now locally accepted; the next execution task should choose the first O5
+   lane-specific expansion, with coding recommended before browser/MCP/creator;
    do not expose browser, MCP, computer-use, skills, or creator connector tools
    to the model until a connector-specific acceptance slice is explicitly
    accepted.

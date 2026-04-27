@@ -122,7 +122,7 @@ vocabulary becomes the orchestration contract.
 
 Goal: surface runtime/profile/lifecycle facts without changing execution.
 
-Status: started. Shared snapshot helpers now build the first local-sandbox
+Status: locally accepted. Shared snapshot helpers now build the first local-sandbox
 runtime, manual Code Agent profile, manual/operator-started lifecycle, and
 hidden connector family summary. Settings and the Task detail Code Agent
 surface can display the same read-only orchestration summary without enabling
@@ -147,7 +147,7 @@ Acceptance:
 
 Goal: formalize the payload that turns task intent into a run attempt.
 
-Status: started. Shared `AgentExecutionOrchestrationRequest` helpers can wrap
+Status: locally accepted. Shared `AgentExecutionOrchestrationRequest` helpers can wrap
 manual Code Agent preview input and operator-started Browser Evidence requests
 into the same runtime/profile/policy/idempotency envelope. The contract still
 blocks `policy_auto`, scheduler starts, and automatic starts. Existing Code
@@ -172,7 +172,7 @@ Acceptance:
 
 Goal: make future dispatch explicit while keeping alpha starts operator-driven.
 
-Status: started. A shared lifecycle projection helper now maps current Run
+Status: locally accepted. A shared lifecycle projection helper now maps current Run
 statuses into the orchestration vocabulary while explicitly keeping queue,
 claim, and automatic-start behavior disabled. Runs detail surfaces that
 projection as read-only diagnostics.
@@ -195,7 +195,7 @@ Acceptance:
 Goal: compute whether a task could be auto-started later, without auto-starting
 now.
 
-Status: started. A shared read-only evaluator can mark mature low-risk tasks as
+Status: locally accepted. A shared read-only evaluator can mark mature low-risk tasks as
 `eligible` when procedure, inputs, runtime readiness, risk, and completion
 boundaries are present. It still returns `automaticStartAllowed=false`, and Task
 detail surfaces the summary as diagnostics only.
@@ -224,6 +224,12 @@ Only after O1-O4 are locally accepted:
 - creator lane: draft artifacts and publication previews, no posting
 - MCP lane: safe-read adapters after descriptor/policy review
 - computer-use lane: separate high-risk decision
+
+Recommended next lane: coding. It already has the strongest Taskplane evidence
+chain: manual Code Agent preview, sandboxed staged patch output, targeted
+checks, promotion Decision, Run recovery, and orchestration diagnostics. The
+next coding slice should improve adapter/recovery fidelity without exposing
+host shell, queue workers, or automatic starts.
 
 ## Non-Goals
 
