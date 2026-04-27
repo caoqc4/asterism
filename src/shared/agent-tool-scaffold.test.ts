@@ -56,6 +56,7 @@ describe('agent tool scaffold descriptors', () => {
       expect.arrayContaining([
         expect.objectContaining({ id: 'workspace.staged_patch' }),
         expect.objectContaining({ id: 'browser.readonly_evidence' }),
+        expect.objectContaining({ id: 'browser.controlled_interaction' }),
         expect.objectContaining({ id: 'mcp.safe_read' }),
         expect.objectContaining({ id: 'skill.prompt_shape' }),
         expect.objectContaining({ id: 'computer.inspect_only' }),
@@ -89,6 +90,13 @@ describe('agent tool scaffold descriptors', () => {
       sessionKind: 'browser',
       artifactKinds: ['screenshot', 'browser_trace', 'browser_extract'],
       credentialPolicy: 'explicit_config',
+    });
+    expect(getAgentToolScaffoldDescriptor('browser.controlled_interaction')).toMatchObject({
+      family: 'browser_playwright',
+      sessionKind: 'browser',
+      checkpointKind: 'external_action',
+      credentialPolicy: 'explicit_config',
+      defaultExposure: 'hidden',
     });
 
     expect(getAgentToolScaffoldDescriptor('creator.publish_preview')).toMatchObject({
@@ -268,12 +276,12 @@ describe('agent tool scaffold descriptors', () => {
       textPromptExposedIds: ['workspace.search', 'workspace.read_file'],
     });
     expect(summaries.find((summary) => summary.family === 'browser_playwright')).toMatchObject({
-      credentialGatedIds: ['browser.readonly_evidence'],
+      credentialGatedIds: ['browser.readonly_evidence', 'browser.controlled_interaction'],
       implementedCount: 0,
-      localVerificationRequiredIds: ['browser.readonly_evidence'],
+      localVerificationRequiredIds: ['browser.readonly_evidence', 'browser.controlled_interaction'],
       modelVisibleIds: [],
       providerNativeExposedIds: [],
-      reservedCount: 1,
+      reservedCount: 2,
       textPromptExposedIds: [],
     });
     expect(summaries.find((summary) => summary.family === 'browser_playwright')?.connectorPolicyRecords[0]).toMatchObject({
@@ -361,10 +369,10 @@ describe('agent tool scaffold descriptors', () => {
     });
 
     expect(browserChecklist).toMatchObject({
-      descriptorIds: ['browser.readonly_evidence'],
+      descriptorIds: ['browser.readonly_evidence', 'browser.controlled_interaction'],
       family: 'browser_playwright',
       modelVisibleIds: [],
-      summary: 'family=browser_playwright / descriptors=1 / modelVisible=none / required=4 / optional=1',
+      summary: 'family=browser_playwright / descriptors=2 / modelVisible=none / required=9 / optional=1',
     });
     expect(browserChecklist.items.map((item) => item.id)).toEqual([
       'browser.readonly_evidence:policy',
@@ -372,12 +380,22 @@ describe('agent tool scaffold descriptors', () => {
       'browser.readonly_evidence:verification',
       'browser.readonly_evidence:checkpoint',
       'browser.readonly_evidence:credentials',
+      'browser.controlled_interaction:policy',
+      'browser.controlled_interaction:model_visibility',
+      'browser.controlled_interaction:verification',
+      'browser.controlled_interaction:checkpoint',
+      'browser.controlled_interaction:credentials',
     ]);
     expect(browserChecklist.items.filter((item) => item.status === 'required').map((item) => item.id)).toEqual([
       'browser.readonly_evidence:policy',
       'browser.readonly_evidence:model_visibility',
       'browser.readonly_evidence:verification',
       'browser.readonly_evidence:credentials',
+      'browser.controlled_interaction:policy',
+      'browser.controlled_interaction:model_visibility',
+      'browser.controlled_interaction:verification',
+      'browser.controlled_interaction:checkpoint',
+      'browser.controlled_interaction:credentials',
     ]);
 
     const workspaceChecklist = buildAgentToolFamilyAcceptanceChecklist({

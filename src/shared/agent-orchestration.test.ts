@@ -202,6 +202,36 @@ describe('agent orchestration snapshot', () => {
     });
   });
 
+  it('wraps operator-started browser controlled local QA without enabling queue or auto-start', () => {
+    const validation = buildOperatorStartedOrchestrationRequest(
+      buildDefaultOperatorStartedRunRequest({
+        kind: 'browser_controlled_local_qa',
+        reason: 'Run controlled local QA.',
+        taskId: 'task_1',
+      }),
+    );
+
+    expect(validation).toMatchObject({
+      request: {
+        automaticStartAllowed: false,
+        lane: 'browser_evidence',
+        profileId: 'operator_browser_evidence',
+        providerCallAllowed: false,
+        runtimeId: 'browser_session',
+        schedulerAllowed: false,
+        source: {
+          descriptorId: 'browser.controlled_interaction',
+          kind: 'operator_started_run',
+          operatorKind: 'browser_controlled_local_qa',
+        },
+        startMode: 'operator_started',
+      },
+      summary:
+        'Orchestration request / lane=browser_evidence / source=browser_controlled_local_qa / start=operator_started / providerCall=no / queue=no / autoStart=no',
+      valid: true,
+    });
+  });
+
   it('rejects policy-auto orchestration until automation readiness is accepted', () => {
     const request = buildCodeAgentOrchestrationRequest({
       operatorConfirmed: true,

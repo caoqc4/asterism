@@ -679,6 +679,12 @@ The project is past initial architecture assembly. Current work should favor pro
   read-only Runs detail card for dry-run, local-QA, blocked, and
   checkpoint-required evidence. It adds no generic browser prompt, IPC trigger,
   scheduler start, provider schema, or model-visible browser tool.
+- Browser controlled interaction BCI6 is locally accepted with a hidden/reserved
+  `browser.controlled_interaction` scaffold descriptor, an operator-started
+  `browser_controlled_local_qa` request kind, service execution through the
+  existing local QA fixture, and a Runs-page local QA button. It remains limited
+  to localhost fixture QA and still does not expose generic URLs, scheduler
+  starts, provider schemas, authenticated profiles, or model-visible tools.
 - `npm test -- src/main/keychain/ai-config-service.test.ts
   src/renderer/lib/agentCapabilities.test.ts`, `npm test --
   src/main/ipc/handlers.test.ts src/renderer/App.test.tsx

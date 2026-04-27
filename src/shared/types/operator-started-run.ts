@@ -6,6 +6,7 @@ import {
 
 export const OPERATOR_STARTED_RUN_KINDS = [
   'browser_evidence_smoke',
+  'browser_controlled_local_qa',
   'code_agent_preview',
   'sandbox_patch_review',
 ] as const;
@@ -38,6 +39,7 @@ export type OperatorStartedRunValidation =
     };
 
 const KIND_DESCRIPTOR: Record<OperatorStartedRunKind, string> = {
+  browser_controlled_local_qa: 'browser.controlled_interaction',
   browser_evidence_smoke: 'browser.readonly_evidence',
   code_agent_preview: 'workspace.staged_patch',
   sandbox_patch_review: 'workspace.staged_patch',

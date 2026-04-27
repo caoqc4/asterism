@@ -4543,6 +4543,81 @@ describe('App UI flow', () => {
     expect(operatorRunApi.getRunDetail).toHaveBeenCalledWith('run_operator_browser');
   });
 
+  it('triggers operator-started browser controlled local QA from the runs page', async () => {
+    const user = userEvent.setup();
+    const operatorTask = buildTaskRecord({
+      id: 'task_operator_browser_controlled',
+      title: 'Operator browser controlled task',
+    });
+    const createdRun = buildRunRecord({
+      id: 'run_operator_browser_controlled',
+      taskId: operatorTask.id,
+      type: 'agent',
+      status: 'completed',
+      output: 'Browser controlled local QA completed / artifacts=screenshot / credentials=no / externalOrigin=no / modelExposure=hidden',
+      outputSource: 'system',
+    });
+    let currentRuns: RunRecord[] = [];
+    const operatorRunApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn(async () => [operatorTask]),
+      getTaskDetail: vi.fn(async (taskId: string) =>
+        taskId === operatorTask.id ? buildTaskDetail(operatorTask) : null,
+      ),
+      listRuns: vi.fn(async () => currentRuns),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === createdRun.id ? {
+          ...createdRun,
+          steps: [
+            buildRunStep({
+              id: 'run_step_browser_controlled_dry',
+              kind: 'plan',
+              output: 'browserStart=no / networkCall=no / pageMutation=no / modelExposure=hidden / scheduler=no / providerCall=no',
+              runId: createdRun.id,
+              title: 'browser controlled dry-run accepted',
+            }),
+            buildRunStep({
+              id: 'run_step_browser_controlled_action',
+              index: 2,
+              kind: 'tool_call',
+              runId: createdRun.id,
+              title: 'Browser action planned: capture_evidence',
+            }),
+          ],
+        } : null,
+      ),
+      triggerOperatorStartedRun: vi.fn(async () => {
+        currentRuns = [createdRun];
+        return createdRun;
+      }),
+    };
+
+    window.api = operatorRunApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    await user.selectOptions(await screen.findByLabelText('关联任务'), operatorTask.id);
+    await user.click(screen.getByRole('button', { name: '运行 Browser Controlled Local QA' }));
+
+    expect(operatorRunApi.triggerOperatorStartedRun).toHaveBeenCalledWith(expect.objectContaining({
+      descriptorId: 'browser.controlled_interaction',
+      kind: 'browser_controlled_local_qa',
+      modelExposure: 'hidden',
+      operatorConfirmed: true,
+      providerCallAllowed: false,
+      reason: 'Run controlled Browser local QA fixture for Run review.',
+      schedulerAllowed: false,
+      taskId: operatorTask.id,
+      policy: expect.objectContaining({
+        descriptorId: 'browser.controlled_interaction',
+        sessionKind: 'browser',
+      }),
+    }));
+    expect(operatorRunApi.getRunDetail).toHaveBeenCalledWith('run_operator_browser_controlled');
+    expect(await screen.findByText('Browser Controlled Interaction')).toBeTruthy();
+  });
+
   it('previews agent capabilities before triggering a run from the runs page', async () => {
     const user = userEvent.setup();
 

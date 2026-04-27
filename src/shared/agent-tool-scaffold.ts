@@ -356,6 +356,18 @@ export const AGENT_TOOL_SCAFFOLD_DESCRIPTORS = [
     summary: 'Capture read-only browser or Playwright evidence in an isolated session.',
   },
   {
+    id: 'browser.controlled_interaction',
+    family: 'browser_playwright',
+    lifecycle: 'reserved',
+    risk: 'external_write',
+    defaultExposure: 'hidden',
+    sessionKind: 'browser',
+    artifactKinds: ['screenshot', 'browser_trace', 'browser_extract'],
+    checkpointKind: 'external_action',
+    credentialPolicy: 'explicit_config',
+    summary: 'Run allowlisted controlled browser actions in an isolated session with checkpoint boundaries.',
+  },
+  {
     id: 'mcp.safe_read',
     family: 'mcp',
     lifecycle: 'reserved',

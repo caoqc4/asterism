@@ -43,7 +43,7 @@ describe('browser controlled interaction review helpers', () => {
       status: 'ready',
       summary: 'Browser controlled interaction ready for dry-run review: action=click / checkpoint=no / origin=http://localhost:5173',
     });
-    expect(isAgentToolScaffoldId(review.descriptorId)).toBe(false);
+    expect(isAgentToolScaffoldId(review.descriptorId)).toBe(true);
   });
 
   it('formats possible side effects as checkpoint-required review', () => {

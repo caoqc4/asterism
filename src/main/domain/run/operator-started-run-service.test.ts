@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { buildBrowserControlledInteractionLocalQaFixture } from '../../../shared/types/browser-controlled-interaction.js';
 import { buildBrowserEvidenceRunnerSmokeFixture } from '../../../shared/types/browser-evidence.js';
 import { buildDefaultOperatorStartedRunRequest } from '../../../shared/types/operator-started-run.js';
 import type { RunRecord } from '../../../shared/types/run.js';
@@ -41,6 +42,7 @@ describe('OperatorStartedRunService', () => {
       runStepRepository,
       browserEvidencePersister,
       executor,
+      vi.fn(),
     );
 
     const completed = await service.trigger(buildDefaultOperatorStartedRunRequest({
@@ -107,6 +109,7 @@ describe('OperatorStartedRunService', () => {
           summary: 'Browser evidence request blocked.',
         },
       }),
+      vi.fn(),
     );
 
     const failed = await service.trigger(buildDefaultOperatorStartedRunRequest({
@@ -145,6 +148,7 @@ describe('OperatorStartedRunService', () => {
         persistCaptured: vi.fn(),
       },
       vi.fn(),
+      vi.fn(),
     );
 
     await expect(service.trigger({
@@ -161,6 +165,71 @@ describe('OperatorStartedRunService', () => {
     }))).rejects.toThrow('Operator-started run kind is not implemented: code_agent_preview.');
 
     expect(runRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('runs controlled browser local QA through RunSteps without model exposure', async () => {
+    const fixture = buildBrowserControlledInteractionLocalQaFixture({
+      origin: 'http://127.0.0.1:5173',
+    });
+    const runRepository = buildRunRepositoryMock();
+    const taskService = buildTaskServiceMock();
+    const runStepRepository = buildRunStepRepositoryMock();
+    const service = new OperatorStartedRunService(
+      runRepository,
+      taskService,
+      runStepRepository,
+      {
+        persistCaptured: vi.fn(),
+      },
+      vi.fn(),
+      vi.fn().mockResolvedValue({
+        requests: fixture.requests,
+        result: {
+          artifacts: [
+            {
+              kind: 'screenshot',
+              path: '/tmp/browser-controlled-local-qa-screenshot.png',
+              summary: 'Viewport screenshot captured from an isolated browser context.',
+              title: 'Browser screenshot',
+            },
+          ],
+          status: 'completed',
+          summary: 'Browser controlled local QA completed / artifacts=screenshot / credentials=no / externalOrigin=no / modelExposure=hidden',
+        },
+      }),
+    );
+
+    const completed = await service.trigger(buildDefaultOperatorStartedRunRequest({
+      kind: 'browser_controlled_local_qa',
+      reason: 'Run local browser QA.',
+      taskId: 'task_1',
+    }));
+
+    expect(runRepository.create).toHaveBeenCalledWith({
+      instructions: 'Operator-started browser_controlled_local_qa: Run local browser QA.',
+      taskId: 'task_1',
+      type: 'agent',
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'plan',
+      output: 'descriptor=browser.controlled_interaction / Orchestration request / lane=browser_evidence / source=browser_controlled_local_qa / start=operator_started / providerCall=no / queue=no / autoStart=no',
+      runId: 'run_operator_1',
+      status: 'completed',
+      title: 'operator-started run accepted',
+    }));
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'plan',
+      output: 'browserStart=no / networkCall=no / pageMutation=no / modelExposure=hidden / scheduler=no / providerCall=no',
+      title: 'browser controlled dry-run accepted',
+    }));
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_operator_1',
+      'completed',
+      'Browser controlled local QA completed / artifacts=screenshot / credentials=no / externalOrigin=no / modelExposure=hidden',
+      'system',
+    );
+    expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'agent', true, 'run_operator_1');
+    expect(completed.status).toBe('completed');
   });
 });
 

@@ -171,6 +171,10 @@ Acceptance:
 
 ### BCI6: Operator-Started Entry Point
 
+Status: locally accepted. The entrypoint is limited to the existing local QA fixture and
+uses a hidden/reserved scaffold descriptor plus an operator-started request
+kind. It is not a generic browser prompt or arbitrary URL runner.
+
 Goal: add the first visible control only after BCI1-BCI5 are locally accepted.
 
 The first UI entry should be a local QA smoke control, not arbitrary URL
@@ -198,7 +202,9 @@ Acceptance:
 
 ## Recommended Next Task
 
-Start with BCI6 only as a local-QA operator-started entrypoint. It should reuse
-the operator-started request boundary, remain limited to the existing localhost
-fixture path, and still avoid arbitrary URLs, authenticated profiles, scheduler
-starts, provider schemas, and model-visible browser tools.
+BCI1-BCI6 are locally accepted for the Tier 2 local-QA path. The next browser
+work should pause broad capability expansion and either harden the local-QA
+review loop with manual acceptance notes or draft the later resume slice for
+checkpoint-approved actions. Do not add arbitrary URLs, authenticated profiles,
+scheduler starts, provider schemas, or model-visible browser tools without a
+new acceptance plan.

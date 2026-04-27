@@ -626,6 +626,27 @@ export function RunsPage({
     }
   }
 
+  async function triggerBrowserControlledLocalQa(): Promise<void> {
+    if (!form.taskId || !onTriggerOperatorStartedRun) {
+      return;
+    }
+
+    setRunActionError(null);
+
+    try {
+      const created = await onTriggerOperatorStartedRun(buildDefaultOperatorStartedRunRequest({
+        kind: 'browser_controlled_local_qa',
+        reason: 'Run controlled Browser local QA fixture for Run review.',
+        taskId: form.taskId,
+      }));
+
+      setSelectedRunId(created.id);
+      await onRefresh();
+    } catch (error) {
+      setRunActionError(`Browser Controlled local QA 失败：${formatActionError(error)}`);
+    }
+  }
+
   const relatedTimeline = detail
     ? getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.id)
     : [];
@@ -1139,6 +1160,14 @@ export function RunsPage({
                 type="button"
               >
                 运行 Browser Evidence Smoke
+              </button>
+              <button
+                className="ghost-button"
+                disabled={!form.taskId || !onTriggerOperatorStartedRun}
+                onClick={() => void triggerBrowserControlledLocalQa()}
+                type="button"
+              >
+                运行 Browser Controlled Local QA
               </button>
             </div>
           </form>

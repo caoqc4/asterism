@@ -8,6 +8,10 @@ import type {
   BrowserEvidenceResult,
 } from '../../../shared/types/browser-evidence.js';
 import type {
+  BrowserControlledInteractionRequest,
+  BrowserControlledInteractionResult,
+} from '../../../shared/types/browser-controlled-interaction.js';
+import type {
   CreateRunInput,
   RunRecord,
 } from '../../../shared/types/run.js';
@@ -15,6 +19,7 @@ import type { RunRepository } from '../../db/repositories/run-repository.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import type { TaskService } from '../task/task-service.js';
 import type { BrowserEvidencePersister } from './browser-evidence-persister.js';
+import { runBrowserControlledInteractionDryRun } from './browser-controlled-interaction-dry-runner.js';
 
 export type OperatorStartedBrowserEvidenceSmokeExecution = {
   browserRequest: BrowserEvidenceRequest;
@@ -26,6 +31,16 @@ export type OperatorStartedBrowserEvidenceSmokeExecutor = (params: {
   run: RunRecord;
 }) => Promise<OperatorStartedBrowserEvidenceSmokeExecution>;
 
+export type OperatorStartedBrowserControlledLocalQaExecution = {
+  requests: BrowserControlledInteractionRequest[];
+  result: BrowserControlledInteractionResult;
+};
+
+export type OperatorStartedBrowserControlledLocalQaExecutor = (params: {
+  request: OperatorStartedRunRequest;
+  run: RunRecord;
+}) => Promise<OperatorStartedBrowserControlledLocalQaExecution>;
+
 export class OperatorStartedRunService {
   constructor(
     private readonly runRepository: Pick<RunRepository, 'create' | 'updateResult'>,
@@ -36,6 +51,7 @@ export class OperatorStartedRunService {
     private readonly runStepRepository: Pick<RunStepRepository, 'create'>,
     private readonly browserEvidencePersister: Pick<BrowserEvidencePersister, 'persistCaptured'>,
     private readonly browserEvidenceSmokeExecutor: OperatorStartedBrowserEvidenceSmokeExecutor,
+    private readonly browserControlledLocalQaExecutor: OperatorStartedBrowserControlledLocalQaExecutor,
   ) {}
 
   async trigger(input: unknown): Promise<RunRecord> {
@@ -50,7 +66,7 @@ export class OperatorStartedRunService {
       throw new Error(orchestrationValidation.summary);
     }
 
-    if (request.kind !== 'browser_evidence_smoke') {
+    if (request.kind !== 'browser_evidence_smoke' && request.kind !== 'browser_controlled_local_qa') {
       throw new Error(`Operator-started run kind is not implemented: ${request.kind}.`);
     }
 
@@ -75,10 +91,14 @@ export class OperatorStartedRunService {
       output: `descriptor=${request.descriptorId} / ${orchestrationValidation.summary}`,
     });
 
-    const execution = await this.browserEvidenceSmokeExecutor({
-      request,
-      run,
-    });
+    if (request.kind === 'browser_controlled_local_qa') {
+      return this.runBrowserControlledLocalQa({
+        request,
+        run,
+      });
+    }
+
+    const execution = await this.browserEvidenceSmokeExecutor({ request, run });
 
     if (execution.result.status === 'captured') {
       await this.browserEvidencePersister.persistCaptured({
@@ -120,6 +140,50 @@ export class OperatorStartedRunService {
       failureSummary,
     );
     await this.taskService.annotateRunFailed(request.taskId, failureSummary, failed.id);
+    return failed;
+  }
+
+  private async runBrowserControlledLocalQa(params: {
+    request: OperatorStartedRunRequest;
+    run: RunRecord;
+  }): Promise<RunRecord> {
+    const execution = await this.browserControlledLocalQaExecutor(params);
+    await runBrowserControlledInteractionDryRun({
+      requests: execution.requests,
+      runId: params.run.id,
+      runStepRepository: this.runStepRepository,
+    });
+
+    if (execution.result.status === 'completed') {
+      const completed = await this.runRepository.updateResult(
+        params.run.id,
+        'completed',
+        execution.result.summary,
+        'system',
+      );
+      await this.taskService.annotateRunCompleted(params.request.taskId, 'agent', true, completed.id);
+      return completed;
+    }
+
+    const failureSummary = execution.result.summary;
+
+    await this.runStepRepository.create({
+      runId: params.run.id,
+      kind: 'tool_result',
+      status: 'failed',
+      title: 'browser controlled local QA blocked',
+      input: execution.requests.map((request) => request.action.action).join(','),
+      output: execution.result.summary,
+      error: failureSummary,
+    });
+    const failed = await this.runRepository.updateResult(
+      params.run.id,
+      'failed',
+      failureSummary,
+      'system',
+      failureSummary,
+    );
+    await this.taskService.annotateRunFailed(params.request.taskId, failureSummary, failed.id);
     return failed;
   }
 }

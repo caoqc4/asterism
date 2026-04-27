@@ -338,6 +338,7 @@ export function buildOperatorStartedOrchestrationRequest(
 
   const request = validation.request;
   const lane: AgentExecutionOrchestrationLane = request.kind === 'browser_evidence_smoke'
+    || request.kind === 'browser_controlled_local_qa'
     ? 'browser_evidence'
     : 'coding';
 
@@ -346,6 +347,7 @@ export function buildOperatorStartedOrchestrationRequest(
     taskId: request.taskId,
     lane,
     profileId: request.kind === 'browser_evidence_smoke'
+      || request.kind === 'browser_controlled_local_qa'
       ? 'operator_browser_evidence'
       : 'manual_sandbox_producer',
     runtimeId: request.policy.sessionKind === 'browser' ? 'browser_session' : 'local_sandbox',

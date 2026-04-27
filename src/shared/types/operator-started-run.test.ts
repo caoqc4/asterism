@@ -36,6 +36,35 @@ describe('operator-started run contract', () => {
     });
   });
 
+  it('builds a default hidden manual browser controlled local QA request', () => {
+    const request = buildDefaultOperatorStartedRunRequest({
+      kind: 'browser_controlled_local_qa',
+      reason: 'Run controlled local browser QA.',
+      taskId: 'task_1',
+    });
+
+    expect(request).toMatchObject({
+      descriptorId: 'browser.controlled_interaction',
+      kind: 'browser_controlled_local_qa',
+      modelExposure: 'hidden',
+      operatorConfirmed: true,
+      providerCallAllowed: false,
+      reason: 'Run controlled local browser QA.',
+      schedulerAllowed: false,
+      taskId: 'task_1',
+      policy: expect.objectContaining({
+        credentialPolicy: 'explicit_config',
+        descriptorId: 'browser.controlled_interaction',
+        networkPolicy: 'allowlisted',
+        sessionKind: 'browser',
+      }),
+    });
+    expect(validateOperatorStartedRunRequest(request)).toMatchObject({
+      summary: 'Operator-started run request valid / kind=browser_controlled_local_qa / descriptor=browser.controlled_interaction / modelExposure=hidden / scheduler=no / providerCall=no',
+      valid: true,
+    });
+  });
+
   it('maps code-agent and sandbox patch review requests to staged-patch policy', () => {
     expect(buildDefaultOperatorStartedRunRequest({
       kind: 'code_agent_preview',
@@ -101,6 +130,7 @@ describe('operator-started run contract', () => {
 
   it('exposes a narrow kind guard', () => {
     expect(isOperatorStartedRunKind('browser_evidence_smoke')).toBe(true);
+    expect(isOperatorStartedRunKind('browser_controlled_local_qa')).toBe(true);
     expect(isOperatorStartedRunKind('browser.controlled_interaction')).toBe(false);
     expect(isOperatorStartedRunKind('scheduled_agent_run')).toBe(false);
   });

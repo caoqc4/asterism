@@ -13,7 +13,7 @@ import {
 } from './browser-controlled-interaction.js';
 
 describe('browser controlled interaction schema draft', () => {
-  it('drafts controlled browser actions without registering a model-visible scaffold descriptor', () => {
+  it('drafts controlled browser actions behind a hidden scaffold descriptor', () => {
     expect(BROWSER_CONTROLLED_ACTIONS).toEqual([
       'navigate',
       'click',
@@ -27,7 +27,7 @@ describe('browser controlled interaction schema draft', () => {
     ]);
     expect(isBrowserControlledAction('click')).toBe(true);
     expect(isBrowserControlledAction('submit_form')).toBe(false);
-    expect(isAgentToolScaffoldId(BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID)).toBe(false);
+    expect(isAgentToolScaffoldId(BROWSER_CONTROLLED_INTERACTION_DESCRIPTOR_ID)).toBe(true);
   });
 
   it('builds an operator-started allowlisted policy for local-dev QA drafts', () => {
