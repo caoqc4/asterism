@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   formatAgentSessionToolFamilySummary,
+  formatAgentSessionRestartHint,
   formatLocalAgentSessionMetadata,
   formatProviderNativeAgentSessionMetadata,
   formatSandboxedCodingProducerSessionMetadata,
@@ -187,5 +188,37 @@ describe('agent session metadata formatting', () => {
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z',
     })).toContain('workspace=staged_patch_review / task=not_exposed');
+  });
+
+  it('summarizes restart and replay hints without auto-resuming sessions', () => {
+    const baseSession = {
+      id: 'agent_session_1',
+      runId: 'run_1',
+      mode: 'agent',
+      capabilities: {
+        fileContext: true,
+        longRunningSessions: true,
+        streaming: false,
+        structuredToolCalls: false,
+        taskMutationTools: false,
+        textOnlyPlanning: false,
+      },
+      metadata: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    } as const;
+
+    expect(formatAgentSessionRestartHint({
+      ...baseSession,
+      status: 'needs_confirmation',
+    })).toBe('restart=checkpoint_required / replay=resume_after_decision');
+    expect(formatAgentSessionRestartHint({
+      ...baseSession,
+      status: 'failed',
+    })).toBe('restart=new_run_required / replay=inspect_failed_steps');
+    expect(formatAgentSessionRestartHint({
+      ...baseSession,
+      status: 'running',
+    })).toBe('restart=session_recorded / replay=inspect_latest_run_step');
   });
 });

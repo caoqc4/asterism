@@ -176,6 +176,25 @@ export function formatAgentSessionToolFamilySummary(session: AgentSessionRecord)
   ].join(' / ');
 }
 
+export function formatAgentSessionRestartHint(session: AgentSessionRecord): string {
+  switch (session.status) {
+    case 'completed':
+      return 'restart=not_needed / replay=run_steps_and_artifacts';
+    case 'needs_confirmation':
+      return 'restart=checkpoint_required / replay=resume_after_decision';
+    case 'paused':
+      return 'restart=checkpoint_required / replay=resume_after_checkpoint';
+    case 'failed':
+      return 'restart=new_run_required / replay=inspect_failed_steps';
+    case 'cancelled':
+      return 'restart=not_resumable / replay=inspect_decision_history';
+    case 'running':
+      return session.capabilities.longRunningSessions
+        ? 'restart=session_recorded / replay=inspect_latest_run_step'
+        : 'restart=single_session_in_progress / replay=inspect_latest_run_step';
+  }
+}
+
 function sanitizeMetadataValue(value: string): string {
   return value.replace(/\s+/g, ' ').trim();
 }

@@ -467,12 +467,14 @@ The latest implementation slice:
 - shared session metadata helpers now parse source metadata and provide a
   tool-family exposure summary for Runs detail; browser, computer-use, MCP, and
   creator connectors remain explicitly `not_exposed`
+- shared restart hints now tell Runs detail whether to inspect completed/failed
+  evidence, resume through checkpoint/Decision review, or start a new Run
 
 The next implementation slice is:
 
 - extend the shared run/session contract only where needed for the next
-  execution-layer orchestration step: restart/replay hints and
-  connector-specific policy records
+  execution-layer orchestration step: connector-specific policy records and
+  local verification evidence
 - keep Tier 2 controlled browser interaction deferred until the draft decision
   is accepted and Tier 1 Run artifact review exists
 

@@ -555,6 +555,10 @@ The project is past initial architecture assembly. Current work should favor pro
   detail. Current summaries make the boundary visible: workspace/task/coding
   capabilities are described from the session record, while browser,
   computer-use, MCP, and creator connectors remain `not_exposed`.
+- Runs detail also shows shared restart hints for the latest agent session:
+  completed/failed sessions route users to evidence inspection or a new Run,
+  while paused/confirmation sessions point back to checkpoint/Decision review.
+  No automatic replay is enabled by this slice.
 - The Browser / Playwright boundary has been rechecked against public Codex,
   OpenClaw, Multica, CoWork OS, Hermes, Vercel `agent-browser`, Microsoft
   Foundry, and Pause references. The accepted direction is tiered capability:

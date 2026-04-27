@@ -2,6 +2,7 @@ import type { AgentSessionRecord } from '@shared/types/agent-execution';
 import type { AiConfigStatus } from '@shared/types/settings';
 import { getProviderExecutionCapabilities } from '@shared/agent-provider-capabilities';
 import {
+  formatAgentSessionRestartHint,
   formatAgentSessionToolFamilySummary,
   parseAgentSessionMetadata,
 } from '@shared/agent-session-metadata';
@@ -87,6 +88,10 @@ export function formatAgentSessionCapabilitySummary(session: AgentSessionRecord)
 
 export function formatAgentSessionToolFamiliesSummary(session: AgentSessionRecord): string {
   return formatAgentSessionToolFamilySummary(session);
+}
+
+export function formatAgentSessionRestartSummary(session: AgentSessionRecord): string {
+  return formatAgentSessionRestartHint(session);
 }
 
 export function formatAgentSessionMetadataSummary(session: AgentSessionRecord): string | null {

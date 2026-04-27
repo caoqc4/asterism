@@ -495,6 +495,9 @@ Current implementation note:
 - Shared session metadata helpers now parse source metadata and summarize
   tool-family exposure for Run review surfaces. Current summaries keep browser,
   computer-use, MCP, and creator connectors explicitly `not_exposed`.
+- Shared restart hints now describe whether a session should be inspected,
+  resumed through checkpoint/Decision review, or restarted as a new Run. They
+  do not enable automatic replay.
 
 ### First Concrete Next Task
 
@@ -646,7 +649,7 @@ Next code/design slice:
 1. Keep broad browser/computer/social/coding execution deferred until the
    executor/session boundary can survive interruption and restart.
 2. Extend the session contract only where the next orchestration step requires
-   it: restart/replay hints and connector-specific policy records.
+   it: connector-specific policy records and local verification evidence.
 3. If manual alpha use shows repeated friction around checkpoint review,
    revisit a dedicated workspace manual-request surface before any prompt-level
    workspace write/command exposure.
