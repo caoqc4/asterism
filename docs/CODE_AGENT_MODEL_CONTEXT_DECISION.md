@@ -150,17 +150,16 @@ Agent context.
    represent selected files and future selected Taskplane objects. Accepted for
    selected workspace files.
 3. Add explicit source-context selection in the Code Agent surface.
-   Accepted as manifest-only selection: selected source context ids/titles can
-   be recorded for audit, but source-context content is not yet sent to the
-   model.
+   Accepted as manifest-only selection by default: selected source context
+   ids/titles can be recorded for audit without content entering the model.
 4. Persist the selected context manifest as a RunStep before provider runtime
    config is resolved. Accepted with per-item content visibility: selected
    workspace files can be prompt evidence, selected source context remains
-   manifest-only.
+   manifest-only unless the separate source-context content opt-in is enabled.
 5. Render the selected context manifest on Runs detail without dumping full
    provider prompt contents.
-6. Only after that, evaluate artifact/run-output selection.
-
+6. Evaluate artifact/run-output selection after source-context manifest
+   selection is visible.
 7. Define and implement explicit source-context content opt-in using the
    source-context content conditions above. Accepted for stored local
    source-context snapshots only; this does not include artifact, browser, MCP,
