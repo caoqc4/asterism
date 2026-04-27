@@ -514,6 +514,9 @@ The project is past initial architecture assembly. Current work should favor pro
   failed checks, missing promotion Decisions, open Decisions, applied patches,
   or deferred/no-write workspace state, keeping rerun/apply guidance local to
   persisted evidence.
+- Staged Patch Review checklist and next-move formatting now live in tested
+  renderer helpers, keeping patch evidence review reusable as the Code Agent
+  recovery loop grows.
 - The next execution-lane decision is now drafted for Browser / Playwright
   read-only evidence. It keeps `browser.readonly_evidence` reserved and hidden,
   forbids login/post/publish/credential-bearing actions in the first lane, and
