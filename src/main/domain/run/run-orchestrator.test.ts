@@ -1407,6 +1407,112 @@ describe('RunOrchestrator', () => {
     expect(agentExecutor.executeLocalNoteSession).not.toHaveBeenCalled();
   });
 
+  it('settles provider-native sessions from terminal runtime events when present', async () => {
+    const selection = {
+      shouldUse: false,
+      selectedTemplates: [],
+      reason: 'No template needed.',
+    };
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'openai-compatible',
+        model: 'relay-model',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: false,
+          enableProviderNativeToolCalls: true,
+        },
+      }),
+    };
+    const textExecutor = {
+      executeWithResult: vi.fn().mockResolvedValue({
+        text: 'Fallback text output',
+        providerPayload: {
+          source: 'provider_response_body',
+          provider: 'openai-compatible',
+          model: 'relay-model',
+          rawSummary: 'choices=1; tool_calls=1',
+          payload: {
+            choices: [
+              {
+                message: {
+                  tool_calls: [
+                    {
+                      id: 'call_1',
+                      type: 'function',
+                      function: {
+                        name: 'artifact.create_note',
+                        arguments: JSON.stringify({
+                          content: 'Provider native output',
+                          title: 'Provider native note',
+                        }),
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      }),
+      execute: vi.fn(),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue(selection),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const agentExecutor = {
+      executeLocalNoteSession: vi.fn(),
+      executeProviderNativeSession: vi.fn().mockImplementation(async ({ onEvent }) => {
+        await onEvent({
+          type: 'session.cancelled',
+          runId: 'run_1',
+          reason: 'User cancelled provider executor.',
+        });
+
+        return {
+          status: 'failed',
+          message: 'Executor returned after cancellation.',
+        };
+      }),
+    };
+    const agentSessionRepository = {
+      create: vi.fn().mockResolvedValue({ id: 'agent_session_native' }),
+      updateStatus: vi.fn().mockResolvedValue({ id: 'agent_session_native', status: 'cancelled' }),
+    };
+    const orchestrator = new RunOrchestrator(
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+      { execute: vi.fn() } as never,
+      agentExecutor as never,
+      agentSessionRepository as never,
+    );
+
+    const result = await orchestrator.executeAgentRun({
+      run: buildRun(),
+      task: buildTaskDetail(),
+      input: { ...buildInput(), type: 'agent' },
+    });
+
+    expect(result).toEqual({
+      status: 'failed',
+      message: 'Executor returned after cancellation.',
+      selection,
+    });
+    expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
+      'agent_session_native',
+      'cancelled',
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'final',
+      status: 'failed',
+      title: 'Agent session 已取消',
+      error: 'User cancelled provider executor.',
+    }));
+  });
+
   it('returns paused when the agent loop stops before a local write', async () => {
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({

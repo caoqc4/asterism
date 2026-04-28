@@ -298,7 +298,10 @@ export class RunOrchestrator {
       throw error;
     }
 
-    await this.agentSessionStore.updateStatus(agentSession.id, sessionResult.status);
+    await this.agentSessionStore.updateStatus(
+      agentSession.id,
+      eventRecorder.getTerminalSessionStatus() ?? sessionResult.status,
+    );
 
     if (!eventRecorder.hasTerminalEvent()) {
       await this.recordAgentSessionResultEvent(params.run.id, sessionResult);
@@ -419,7 +422,10 @@ export class RunOrchestrator {
       throw error;
     }
 
-    await this.agentSessionStore.updateStatus(agentSession.id, sessionResult.status);
+    await this.agentSessionStore.updateStatus(
+      agentSession.id,
+      eventRecorder.getTerminalSessionStatus() ?? sessionResult.status,
+    );
 
     if (!eventRecorder.hasTerminalEvent()) {
       await this.recordAgentSessionResultEvent(params.run.id, sessionResult);

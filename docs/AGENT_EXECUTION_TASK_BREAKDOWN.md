@@ -505,6 +505,9 @@ The latest implementation slice:
 - Shared event-status projection now maps terminal runtime events into
   `AgentSession.status` while leaving heartbeat non-mutating, giving future
   executor integration one settlement path.
+- `RunOrchestrator` now consumes that terminal event projection when settling
+  provider-native agent sessions, so emitted cancellation/interruption evidence
+  can own the stored `AgentSession.status`.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation

@@ -184,6 +184,10 @@ The project is past initial architecture assembly. Current work should favor pro
   interruption settles as `failed`, cancellation settles as `cancelled`,
   completion/pause keep matching statuses, and heartbeat does not mutate
   session status.
+- `RunOrchestrator` now consumes recorder terminal-status projection during
+  agent session settlement, so a terminal cancellation/interruption event can
+  settle persisted session status even if the executor later returns a generic
+  failed result.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend
