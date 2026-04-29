@@ -27,6 +27,21 @@ export type AgentExecutorLifecycleSettlementPlan =
       summary: string;
     };
 
+export type AgentExecutorLifecycleStatusUpdater = {
+  updateStatus(id: string, status: AgentSessionRecord['status']): Promise<AgentSessionRecord>;
+};
+
+export type AgentExecutorLifecycleSettlementApplyResult =
+  | {
+      applied: false;
+      summary: string;
+    }
+  | {
+      applied: true;
+      session: AgentSessionRecord;
+      summary: string;
+    };
+
 export function planAgentExecutorLifecycleSettlement(params: {
   sessionId: string;
   observation: Pick<AgentExecutorLifecycleObservation, 'projectedStatus' | 'terminalEventRecorded'>;
@@ -56,6 +71,32 @@ export function planAgentExecutorLifecycleSettlement(params: {
       `terminalEvent=${params.observation.terminalEventRecorded ? 'yes' : 'no'}`,
       'action=update_session_status',
       'autoReplay=no',
+    ].join(' / '),
+  };
+}
+
+export async function applyAgentExecutorLifecycleSettlementPlan(params: {
+  plan: AgentExecutorLifecycleSettlementPlan;
+  statusUpdater: AgentExecutorLifecycleStatusUpdater;
+}): Promise<AgentExecutorLifecycleSettlementApplyResult> {
+  if (params.plan.action === 'no_status_change') {
+    return {
+      applied: false,
+      summary: [
+        params.plan.summary,
+        'applied=no',
+      ].join(' / '),
+    };
+  }
+
+  const session = await params.statusUpdater.updateStatus(params.plan.sessionId, params.plan.status);
+
+  return {
+    applied: true,
+    session,
+    summary: [
+      params.plan.summary,
+      'applied=yes',
     ].join(' / '),
   };
 }

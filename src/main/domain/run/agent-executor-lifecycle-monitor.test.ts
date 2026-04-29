@@ -4,6 +4,7 @@ import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
 import { DryRunAgentExecutorLifecycleAdapter } from './agent-executor.js';
 import {
   AgentExecutorLifecycleMonitor,
+  applyAgentExecutorLifecycleSettlementPlan,
   planAgentExecutorLifecycleSettlement,
 } from './agent-executor-lifecycle-monitor.js';
 import { AgentSessionEventRecorder } from './agent-session-event-recorder.js';
@@ -148,5 +149,51 @@ describe('AgentExecutorLifecycleMonitor', () => {
         'autoReplay=no',
       ].join(' / '),
     });
+  });
+
+  it('applies settlement plans only when a status update is explicit', async () => {
+    const statusUpdater = {
+      updateStatus: vi.fn().mockResolvedValue({
+        id: 'agent_session_1',
+        runId: 'run_1',
+        mode: 'agent',
+        status: 'cancelled',
+        capabilities: buildCapabilities(),
+        metadata: null,
+        createdAt: '2026-04-29T00:00:00.000Z',
+        updatedAt: '2026-04-29T00:01:00.000Z',
+      }),
+    };
+
+    await expect(applyAgentExecutorLifecycleSettlementPlan({
+      statusUpdater,
+      plan: {
+        action: 'no_status_change',
+        sessionId: 'agent_session_1',
+        summary: 'Executor lifecycle settlement / action=no_status_change',
+      },
+    })).resolves.toEqual({
+      applied: false,
+      summary: 'Executor lifecycle settlement / action=no_status_change / applied=no',
+    });
+    expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
+
+    await expect(applyAgentExecutorLifecycleSettlementPlan({
+      statusUpdater,
+      plan: {
+        action: 'update_session_status',
+        sessionId: 'agent_session_1',
+        status: 'cancelled',
+        summary: 'Executor lifecycle settlement / action=update_session_status',
+      },
+    })).resolves.toMatchObject({
+      applied: true,
+      session: {
+        id: 'agent_session_1',
+        status: 'cancelled',
+      },
+      summary: 'Executor lifecycle settlement / action=update_session_status / applied=yes',
+    });
+    expect(statusUpdater.updateStatus).toHaveBeenCalledWith('agent_session_1', 'cancelled');
   });
 });

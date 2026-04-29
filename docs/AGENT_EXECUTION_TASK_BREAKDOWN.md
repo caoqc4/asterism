@@ -528,6 +528,9 @@ The latest implementation slice:
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any
   actual `AgentSession` write.
+- Settlement plans now have an explicit apply helper that leaves
+  `no_status_change` untouched and updates `AgentSession.status` only when the
+  service layer deliberately applies an `update_session_status` plan.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation

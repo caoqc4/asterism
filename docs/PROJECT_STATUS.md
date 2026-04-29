@@ -213,6 +213,10 @@ The project is past initial architecture assembly. Current work should favor pro
   observations produce `update_session_status` recommendations for the service
   layer to apply deliberately. The plan keeps `autoReplay=no` and still does
   not write `AgentSession` directly.
+- Lifecycle settlement plans now also have an explicit apply helper: it leaves
+  `no_status_change` plans untouched and calls `AgentSessionStore.updateStatus`
+  only for `update_session_status` plans. This keeps session writes opt-in at
+  the service layer instead of hidden inside observation.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend
@@ -1279,12 +1283,15 @@ npm run verify
 Latest local baseline:
 
 - 124 test files
-- 858 tests
+- 859 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-29 after adding explicit
+  lifecycle settlement-plan application coverage. Current local acceptance
+  status: 124 test files / 859 tests
 - `npm run verify` passed locally on 2026-04-29 after adding explicit
   lifecycle settlement planning to the dry-run monitor. Current local
   acceptance status: 124 test files / 858 tests
