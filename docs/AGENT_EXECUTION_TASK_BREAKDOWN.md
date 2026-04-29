@@ -537,6 +537,9 @@ The latest implementation slice:
 - A small `AgentExecutorLifecycleService` now wraps the monitor and status
   updater so future callers can observe/plan and apply settlement in two
   explicit service-layer steps.
+- A default service factory now assembles the dry-run lifecycle service from
+  repository/store dependencies as an injection point only; it is not wired into
+  bootstrap, IPC, scheduler, queue, or model-visible execution.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation
