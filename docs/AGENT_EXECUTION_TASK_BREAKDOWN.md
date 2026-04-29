@@ -520,6 +520,10 @@ The latest implementation slice:
   the adapter-facing interface testable before a real runtime is connected; it
   still does not launch a process, queue work, or grant additional tool
   authority.
+- A dry-run lifecycle monitor now records those observed signals through
+  `AgentSessionEventRecorder`, so the future adapter path already produces
+  heartbeat/cancellation RunStep evidence and projected session status without
+  directly settling `AgentSession` or launching a real runtime.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation

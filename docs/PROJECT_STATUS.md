@@ -204,6 +204,10 @@ The project is past initial architecture assembly. Current work should favor pro
   through that same runtime event spine. It is adapter-facing test coverage
   only; the current local/provide-native execution paths still run exactly as
   before, and no real long-running process is started.
+- The dry-run lifecycle path now has a small monitor boundary that records
+  observed lifecycle events through `AgentSessionEventRecorder`, producing
+  heartbeat and cancellation RunStep evidence plus projected session status
+  without directly settling `AgentSession` or launching a real runtime.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend
@@ -1269,13 +1273,16 @@ npm run verify
 
 Latest local baseline:
 
-- 123 test files
-- 856 tests
+- 124 test files
+- 858 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-29 after adding the dry-run
+  executor lifecycle monitor and folding it into `accept:agent-runtime`.
+  Current local acceptance status: 124 test files / 858 tests
 - `npm run verify` passed locally on 2026-04-29 after adding the dry-run
   executor lifecycle adapter and folding `agent-executor` coverage into
   `accept:agent-runtime`. Current local acceptance status: 123 test files /
