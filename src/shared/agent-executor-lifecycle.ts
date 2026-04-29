@@ -1,0 +1,121 @@
+import type {
+  AgentRuntimeCapabilities,
+  AgentSessionEvent,
+  AgentSessionRecord,
+} from './types/agent-execution.js';
+import { projectAgentRuntimeEventSessionStatus } from './agent-runtime-events.js';
+
+export type AgentExecutorSessionHandle = {
+  executorSessionId: string;
+  runId: string;
+  agentSessionId: string;
+  runtimeId: string;
+  profileId: string;
+  startedAt: string;
+  capabilities: AgentRuntimeCapabilities;
+  control: {
+    heartbeat: boolean;
+    interrupt: boolean;
+    cancel: boolean;
+  };
+};
+
+export type AgentExecutorLifecycleSignal =
+  | {
+      type: 'heartbeat';
+      summary: string;
+      observedAt?: string | null;
+    }
+  | {
+      type: 'interrupted';
+      reason: string;
+      observedAt?: string | null;
+    }
+  | {
+      type: 'cancelled';
+      reason: string;
+      observedAt?: string | null;
+    }
+  | {
+      type: 'settled';
+      status: 'completed';
+      output: string;
+      observedAt?: string | null;
+    }
+  | {
+      type: 'settled';
+      status: 'failed';
+      failureKind: string;
+      message: string;
+      observedAt?: string | null;
+    }
+  | {
+      type: 'settled';
+      status: 'paused';
+      checkpointId: string;
+      message: string;
+      observedAt?: string | null;
+    };
+
+export function mapExecutorLifecycleSignalToRuntimeEvent(params: {
+  handle: AgentExecutorSessionHandle;
+  signal: AgentExecutorLifecycleSignal;
+}): AgentSessionEvent {
+  const base = {
+    runId: params.handle.runId,
+    sessionId: params.handle.agentSessionId,
+    createdAt: params.signal.observedAt ?? null,
+  };
+
+  switch (params.signal.type) {
+    case 'heartbeat':
+      return {
+        ...base,
+        type: 'session.heartbeat',
+        summary: params.signal.summary,
+      };
+    case 'interrupted':
+      return {
+        ...base,
+        type: 'session.interrupted',
+        reason: params.signal.reason,
+      };
+    case 'cancelled':
+      return {
+        ...base,
+        type: 'session.cancelled',
+        reason: params.signal.reason,
+      };
+    case 'settled':
+      if (params.signal.status === 'completed') {
+        return {
+          ...base,
+          type: 'session.completed',
+          output: params.signal.output,
+        };
+      }
+
+      if (params.signal.status === 'failed') {
+        return {
+          ...base,
+          type: 'session.failed',
+          failureKind: params.signal.failureKind,
+          message: params.signal.message,
+        };
+      }
+
+      return {
+        ...base,
+        type: 'session.paused',
+        checkpointId: params.signal.checkpointId,
+        message: params.signal.message,
+      };
+  }
+}
+
+export function projectExecutorLifecycleSignalSessionStatus(params: {
+  handle: AgentExecutorSessionHandle;
+  signal: AgentExecutorLifecycleSignal;
+}): AgentSessionRecord['status'] | null {
+  return projectAgentRuntimeEventSessionStatus(mapExecutorLifecycleSignalToRuntimeEvent(params));
+}

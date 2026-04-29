@@ -192,6 +192,13 @@ The project is past initial architecture assembly. Current work should favor pro
   terminal-event settlement boundary, so a cancellation event persists the
   session as `cancelled` even when the local executor later returns a generic
   failed result.
+- The first executor lifecycle adapter contract is now shared and locally
+  tested: `AgentExecutorSessionHandle` identifies a future real executor
+  session, lifecycle signals map heartbeat, interruption, cancellation, and
+  completed/failed/paused settlement into the existing runtime event spine, and
+  heartbeat still does not mutate `AgentSession.status`. This is type/test
+  coverage only; no long-running process, queue worker, automatic start, or new
+  model-visible tool authority is enabled.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend
@@ -1257,13 +1264,17 @@ npm run verify
 
 Latest local baseline:
 
-- 122 test files
-- 849 tests
+- 123 test files
+- 854 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-29 after adding the shared
+  executor lifecycle adapter contract and folding it into
+  `accept:agent-runtime`. Current local acceptance status: 123 test files /
+  854 tests
 - `npm run verify` passed locally on 2026-04-29 after adding local-note
   terminal-event settlement coverage and fixing a date-sensitive dependency
   recovery test baseline. Current local acceptance status: 122 test files /

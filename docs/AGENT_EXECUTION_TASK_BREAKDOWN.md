@@ -508,6 +508,13 @@ The latest implementation slice:
 - `RunOrchestrator` now consumes that terminal event projection when settling
   provider-native agent sessions, so emitted cancellation/interruption evidence
   can own the stored `AgentSession.status`.
+- The first shared executor lifecycle adapter contract now exists for future
+  real runtimes: `AgentExecutorSessionHandle` carries executor/session/runtime
+  identity and supported control signals, lifecycle signals map heartbeat,
+  interruption, cancellation, and completed/failed/paused settlement into the
+  existing runtime event spine, and `accept:agent-runtime` covers the mapping.
+  This is deliberately type/test only; no long-running process, queue worker,
+  automatic start, or new model-visible tool exposure is enabled.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation
@@ -546,9 +553,10 @@ The next implementation slice is:
   stable: runtime/profile/lifecycle visibility, manual dispatch intent,
   restart/recovery review, Settings diagnostics, and manual recovery run
   prefill are now covered without any queue worker or automatic-start policy
-- define the next executor/session boundary before adding more runtime power:
-  how a real executor reports liveness, interruption, cancellation, and
-  terminal settlement back into RunSteps / AgentSession status
+- continue the executor/session boundary before adding more runtime power:
+  next connect the shared lifecycle contract to an adapter-facing interface or
+  dry-run fake executor, still without starting a real long-running runtime or
+  exposing new tool authority
 - keep recovery routed through inspect-first evidence review, checkpoint /
   Decision review, or explicit manual Run preparation rather than automatic
   replay

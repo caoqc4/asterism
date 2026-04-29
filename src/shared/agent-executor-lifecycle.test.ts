@@ -1,0 +1,167 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  mapExecutorLifecycleSignalToRuntimeEvent,
+  projectExecutorLifecycleSignalSessionStatus,
+  type AgentExecutorSessionHandle,
+} from './agent-executor-lifecycle.js';
+
+function buildHandle(): AgentExecutorSessionHandle {
+  return {
+    executorSessionId: 'executor_session_1',
+    runId: 'run_1',
+    agentSessionId: 'agent_session_1',
+    runtimeId: 'local_sandbox',
+    profileId: 'manual_code_agent',
+    startedAt: '2026-04-29T00:00:00.000Z',
+    capabilities: {
+      structuredToolCalls: false,
+      textOnlyPlanning: true,
+      streaming: false,
+      fileContext: true,
+      taskMutationTools: false,
+      longRunningSessions: true,
+    },
+    control: {
+      heartbeat: true,
+      interrupt: true,
+      cancel: true,
+    },
+  };
+}
+
+describe('agent executor lifecycle', () => {
+  it('maps heartbeat signals into non-terminal runtime evidence', () => {
+    const handle = buildHandle();
+
+    const event = mapExecutorLifecycleSignalToRuntimeEvent({
+      handle,
+      signal: {
+        type: 'heartbeat',
+        summary: 'Executor is still applying the bounded plan.',
+        observedAt: '2026-04-29T00:01:00.000Z',
+      },
+    });
+
+    expect(event).toEqual({
+      type: 'session.heartbeat',
+      runId: 'run_1',
+      sessionId: 'agent_session_1',
+      createdAt: '2026-04-29T00:01:00.000Z',
+      summary: 'Executor is still applying the bounded plan.',
+    });
+    expect(projectExecutorLifecycleSignalSessionStatus({
+      handle,
+      signal: {
+        type: 'heartbeat',
+        summary: 'Executor is still applying the bounded plan.',
+      },
+    })).toBeNull();
+  });
+
+  it('maps interrupt and cancel control outcomes into terminal session statuses', () => {
+    const handle = buildHandle();
+
+    expect(mapExecutorLifecycleSignalToRuntimeEvent({
+      handle,
+      signal: {
+        type: 'interrupted',
+        reason: 'Executor process exited before final output.',
+      },
+    })).toMatchObject({
+      type: 'session.interrupted',
+      runId: 'run_1',
+      sessionId: 'agent_session_1',
+      reason: 'Executor process exited before final output.',
+    });
+    expect(projectExecutorLifecycleSignalSessionStatus({
+      handle,
+      signal: {
+        type: 'interrupted',
+        reason: 'Executor process exited before final output.',
+      },
+    })).toBe('failed');
+
+    expect(mapExecutorLifecycleSignalToRuntimeEvent({
+      handle,
+      signal: {
+        type: 'cancelled',
+        reason: 'User cancelled the executor.',
+      },
+    })).toMatchObject({
+      type: 'session.cancelled',
+      runId: 'run_1',
+      sessionId: 'agent_session_1',
+      reason: 'User cancelled the executor.',
+    });
+    expect(projectExecutorLifecycleSignalSessionStatus({
+      handle,
+      signal: {
+        type: 'cancelled',
+        reason: 'User cancelled the executor.',
+      },
+    })).toBe('cancelled');
+  });
+
+  it.each([
+    {
+      signal: {
+        type: 'settled' as const,
+        status: 'completed' as const,
+        output: 'Final output.',
+      },
+      event: {
+        type: 'session.completed',
+        output: 'Final output.',
+      },
+      status: 'completed',
+    },
+    {
+      signal: {
+        type: 'settled' as const,
+        status: 'failed' as const,
+        failureKind: 'executor',
+        message: 'Executor failed.',
+      },
+      event: {
+        type: 'session.failed',
+        failureKind: 'executor',
+        message: 'Executor failed.',
+      },
+      status: 'failed',
+    },
+    {
+      signal: {
+        type: 'settled' as const,
+        status: 'paused' as const,
+        checkpointId: 'run_checkpoint_1',
+        message: 'Waiting for operator review.',
+      },
+      event: {
+        type: 'session.paused',
+        checkpointId: 'run_checkpoint_1',
+        message: 'Waiting for operator review.',
+      },
+      status: 'paused',
+    },
+  ])('maps settled $signal.status signals through the runtime event spine', ({
+    signal,
+    event,
+    status,
+  }) => {
+    const handle = buildHandle();
+
+    expect(mapExecutorLifecycleSignalToRuntimeEvent({
+      handle,
+      signal,
+    })).toMatchObject({
+      ...event,
+      runId: 'run_1',
+      sessionId: 'agent_session_1',
+    });
+    expect(projectExecutorLifecycleSignalSessionStatus({
+      handle,
+      signal,
+    })).toBe(status);
+  });
+});
