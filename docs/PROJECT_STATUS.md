@@ -188,6 +188,10 @@ The project is past initial architecture assembly. Current work should favor pro
   agent session settlement, so a terminal cancellation/interruption event can
   settle persisted session status even if the executor later returns a generic
   failed result.
+- Local-note agent sessions now have dedicated coverage for the same
+  terminal-event settlement boundary, so a cancellation event persists the
+  session as `cancelled` even when the local executor later returns a generic
+  failed result.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend
@@ -1254,12 +1258,16 @@ npm run verify
 Latest local baseline:
 
 - 122 test files
-- 848 tests
+- 849 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-29 after adding local-note
+  terminal-event settlement coverage and fixing a date-sensitive dependency
+  recovery test baseline. Current local acceptance status: 122 test files /
+  849 tests
 - `npm run verify` passed locally on 2026-04-28 after wiring
   `RunOrchestrator` to settle `AgentSession.status` from recorder terminal
   event projection when cancellation/interruption evidence is emitted. Current

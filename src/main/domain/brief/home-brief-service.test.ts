@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { BlockerRecord } from '../../../shared/types/blocker.js';
@@ -11,6 +11,10 @@ import type { TaskListItemRecord } from '../../../shared/types/task.js';
 import type { WaitingItemRecord } from '../../../shared/types/waiting-item.js';
 import type { CompletionCriteriaRecord } from '../../../shared/types/completion-criteria.js';
 import { HomeBriefService } from './home-brief-service.js';
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 function buildTask(partial: Partial<TaskListItemRecord>): TaskListItemRecord {
   return {
@@ -465,6 +469,9 @@ describe('HomeBriefService', () => {
   });
 
   it('uses dependency-recovery summary wording when upstream work has just reopened a downstream task', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-26T00:00:00.000Z'));
+
     const upstreamTask = buildTask({
       id: 'task_upstream_done',
       title: 'Publish partner list',
