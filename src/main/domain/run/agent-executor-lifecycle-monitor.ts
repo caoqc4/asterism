@@ -42,6 +42,10 @@ export type AgentExecutorLifecycleSettlementApplyResult =
       summary: string;
     };
 
+export type AgentExecutorLifecyclePlannedObservation = AgentExecutorLifecycleObservation & {
+  settlementPlan: AgentExecutorLifecycleSettlementPlan;
+};
+
 export function planAgentExecutorLifecycleSettlement(params: {
   sessionId: string;
   observation: Pick<AgentExecutorLifecycleObservation, 'projectedStatus' | 'terminalEventRecorded'>;
@@ -125,6 +129,20 @@ export class AgentExecutorLifecycleMonitor {
       recordedStep,
       terminalEventRecorded: this.recorder.hasTerminalEvent(),
       terminalSessionStatus: this.recorder.getTerminalSessionStatus(),
+    };
+  }
+
+  async observeAndPlan(
+    input: Omit<AgentExecutorLifecycleObserveInput, 'onEvent'>,
+  ): Promise<AgentExecutorLifecyclePlannedObservation> {
+    const observation = await this.observe(input);
+
+    return {
+      ...observation,
+      settlementPlan: planAgentExecutorLifecycleSettlement({
+        sessionId: input.handle.agentSessionId,
+        observation,
+      }),
     };
   }
 }

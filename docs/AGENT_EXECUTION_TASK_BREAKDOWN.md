@@ -531,6 +531,9 @@ The latest implementation slice:
 - Settlement plans now have an explicit apply helper that leaves
   `no_status_change` untouched and updates `AgentSession.status` only when the
   service layer deliberately applies an `update_session_status` plan.
+- The monitor can also return a planned observation in one call, keeping
+  RunStep evidence, projected status, terminal marker, and settlement plan
+  together while leaving settlement application explicit.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation

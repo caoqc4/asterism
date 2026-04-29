@@ -14,6 +14,8 @@ Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
 - on 2026-04-29, `npm run verify` passed locally with 124 test files / 859
+  tests after adding the dry-run lifecycle planned-observation helper.
+- on 2026-04-29, `npm run verify` passed locally with 124 test files / 859
   tests after adding explicit lifecycle settlement-plan application coverage.
 - on 2026-04-29, `npm run verify` passed locally with 124 test files / 858
   tests after adding explicit lifecycle settlement planning to the dry-run

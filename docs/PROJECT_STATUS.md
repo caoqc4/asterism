@@ -217,6 +217,9 @@ The project is past initial architecture assembly. Current work should favor pro
   `no_status_change` plans untouched and calls `AgentSessionStore.updateStatus`
   only for `update_session_status` plans. This keeps session writes opt-in at
   the service layer instead of hidden inside observation.
+- The monitor can now return a planned observation in one call: RunStep
+  evidence, projected status, terminal marker, and settlement plan travel
+  together, while settlement application remains a separate explicit step.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend
@@ -1289,6 +1292,9 @@ Latest local baseline:
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-29 after adding the dry-run
+  lifecycle planned-observation helper. Current local acceptance status: 124
+  test files / 859 tests
 - `npm run verify` passed locally on 2026-04-29 after adding explicit
   lifecycle settlement-plan application coverage. Current local acceptance
   status: 124 test files / 859 tests

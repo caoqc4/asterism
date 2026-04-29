@@ -5,7 +5,6 @@ import { DryRunAgentExecutorLifecycleAdapter } from './agent-executor.js';
 import {
   AgentExecutorLifecycleMonitor,
   applyAgentExecutorLifecycleSettlementPlan,
-  planAgentExecutorLifecycleSettlement,
 } from './agent-executor-lifecycle-monitor.js';
 import { AgentSessionEventRecorder } from './agent-session-event-recorder.js';
 
@@ -53,7 +52,7 @@ describe('AgentExecutorLifecycleMonitor', () => {
       capabilities: buildCapabilities(),
     });
 
-    const observation = await monitor.observe({
+    const observation = await monitor.observeAndPlan({
       handle,
       signal: {
         type: 'heartbeat',
@@ -71,26 +70,23 @@ describe('AgentExecutorLifecycleMonitor', () => {
         title: 'Agent session 心跳',
         output: 'Dry-run executor is still alive.',
       },
+      settlementPlan: {
+        action: 'no_status_change',
+        sessionId: 'agent_session_1',
+        summary: [
+          'Executor lifecycle settlement',
+          'session=agent_session_1',
+          'action=no_status_change',
+          'reason=no_projected_status',
+          'autoReplay=no',
+        ].join(' / '),
+      },
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'plan',
       status: 'running',
       title: 'Agent session 心跳',
     }));
-    expect(planAgentExecutorLifecycleSettlement({
-      sessionId: handle.agentSessionId,
-      observation,
-    })).toEqual({
-      action: 'no_status_change',
-      sessionId: 'agent_session_1',
-      summary: [
-        'Executor lifecycle settlement',
-        'session=agent_session_1',
-        'action=no_status_change',
-        'reason=no_projected_status',
-        'autoReplay=no',
-      ].join(' / '),
-    });
   });
 
   it('records cancellation observations as terminal evidence without settling the session directly', async () => {
@@ -108,7 +104,7 @@ describe('AgentExecutorLifecycleMonitor', () => {
       capabilities: buildCapabilities(),
     });
 
-    const observation = await monitor.observe({
+    const observation = await monitor.observeAndPlan({
       handle,
       signal: {
         type: 'cancelled',
@@ -126,6 +122,19 @@ describe('AgentExecutorLifecycleMonitor', () => {
         title: 'Agent session 已取消',
         error: 'Operator cancelled the dry-run executor.',
       },
+      settlementPlan: {
+        action: 'update_session_status',
+        sessionId: 'agent_session_1',
+        status: 'cancelled',
+        summary: [
+          'Executor lifecycle settlement',
+          'session=agent_session_1',
+          'status=cancelled',
+          'terminalEvent=yes',
+          'action=update_session_status',
+          'autoReplay=no',
+        ].join(' / '),
+      },
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'final',
@@ -133,22 +142,6 @@ describe('AgentExecutorLifecycleMonitor', () => {
       title: 'Agent session 已取消',
       error: 'Operator cancelled the dry-run executor.',
     }));
-    expect(planAgentExecutorLifecycleSettlement({
-      sessionId: handle.agentSessionId,
-      observation,
-    })).toEqual({
-      action: 'update_session_status',
-      sessionId: 'agent_session_1',
-      status: 'cancelled',
-      summary: [
-        'Executor lifecycle settlement',
-        'session=agent_session_1',
-        'status=cancelled',
-        'terminalEvent=yes',
-        'action=update_session_status',
-        'autoReplay=no',
-      ].join(' / '),
-    });
   });
 
   it('applies settlement plans only when a status update is explicit', async () => {
