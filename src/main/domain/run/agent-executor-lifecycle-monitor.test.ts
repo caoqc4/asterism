@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
 import { DryRunAgentExecutorLifecycleAdapter } from './agent-executor.js';
-import { AgentExecutorLifecycleMonitor } from './agent-executor-lifecycle-monitor.js';
+import {
+  AgentExecutorLifecycleMonitor,
+  planAgentExecutorLifecycleSettlement,
+} from './agent-executor-lifecycle-monitor.js';
 import { AgentSessionEventRecorder } from './agent-session-event-recorder.js';
 
 function buildRunStepRepositoryMock() {
@@ -73,6 +76,20 @@ describe('AgentExecutorLifecycleMonitor', () => {
       status: 'running',
       title: 'Agent session 心跳',
     }));
+    expect(planAgentExecutorLifecycleSettlement({
+      sessionId: handle.agentSessionId,
+      observation,
+    })).toEqual({
+      action: 'no_status_change',
+      sessionId: 'agent_session_1',
+      summary: [
+        'Executor lifecycle settlement',
+        'session=agent_session_1',
+        'action=no_status_change',
+        'reason=no_projected_status',
+        'autoReplay=no',
+      ].join(' / '),
+    });
   });
 
   it('records cancellation observations as terminal evidence without settling the session directly', async () => {
@@ -115,5 +132,21 @@ describe('AgentExecutorLifecycleMonitor', () => {
       title: 'Agent session 已取消',
       error: 'Operator cancelled the dry-run executor.',
     }));
+    expect(planAgentExecutorLifecycleSettlement({
+      sessionId: handle.agentSessionId,
+      observation,
+    })).toEqual({
+      action: 'update_session_status',
+      sessionId: 'agent_session_1',
+      status: 'cancelled',
+      summary: [
+        'Executor lifecycle settlement',
+        'session=agent_session_1',
+        'status=cancelled',
+        'terminalEvent=yes',
+        'action=update_session_status',
+        'autoReplay=no',
+      ].join(' / '),
+    });
   });
 });

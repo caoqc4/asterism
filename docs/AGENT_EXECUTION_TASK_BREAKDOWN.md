@@ -524,6 +524,10 @@ The latest implementation slice:
   `AgentSessionEventRecorder`, so the future adapter path already produces
   heartbeat/cancellation RunStep evidence and projected session status without
   directly settling `AgentSession` or launching a real runtime.
+- The same monitor now returns an explicit settlement plan: heartbeat remains
+  `no_status_change`, terminal lifecycle observations recommend
+  `update_session_status`, and the service layer remains responsible for any
+  actual `AgentSession` write.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation
