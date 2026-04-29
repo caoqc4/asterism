@@ -199,6 +199,11 @@ The project is past initial architecture assembly. Current work should favor pro
   heartbeat still does not mutate `AgentSession.status`. This is type/test
   coverage only; no long-running process, queue worker, automatic start, or new
   model-visible tool authority is enabled.
+- The main-process executor boundary now has a dry-run lifecycle adapter that
+  can create a controllable executor handle and observe lifecycle signals
+  through that same runtime event spine. It is adapter-facing test coverage
+  only; the current local/provide-native execution paths still run exactly as
+  before, and no real long-running process is started.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend
@@ -1265,12 +1270,16 @@ npm run verify
 Latest local baseline:
 
 - 123 test files
-- 854 tests
+- 856 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-29 after adding the dry-run
+  executor lifecycle adapter and folding `agent-executor` coverage into
+  `accept:agent-runtime`. Current local acceptance status: 123 test files /
+  856 tests
 - `npm run verify` passed locally on 2026-04-29 after adding the shared
   executor lifecycle adapter contract and folding it into
   `accept:agent-runtime`. Current local acceptance status: 123 test files /

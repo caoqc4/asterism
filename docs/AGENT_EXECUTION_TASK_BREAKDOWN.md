@@ -515,6 +515,11 @@ The latest implementation slice:
   existing runtime event spine, and `accept:agent-runtime` covers the mapping.
   This is deliberately type/test only; no long-running process, queue worker,
   automatic start, or new model-visible tool exposure is enabled.
+- A dry-run main-process lifecycle adapter now starts a controllable executor
+  handle and observes lifecycle signals through that shared mapping. This keeps
+  the adapter-facing interface testable before a real runtime is connected; it
+  still does not launch a process, queue work, or grant additional tool
+  authority.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation

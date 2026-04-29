@@ -1,8 +1,17 @@
 import type {
+  AgentRuntimeCapabilities,
   AgentRunRequest,
+  AgentSessionEvent,
+  AgentSessionRecord,
   AgentSessionResult,
   ProviderToolCallPlan,
 } from '../../../shared/types/agent-execution.js';
+import {
+  mapExecutorLifecycleSignalToRuntimeEvent,
+  projectExecutorLifecycleSignalSessionStatus,
+  type AgentExecutorLifecycleSignal,
+  type AgentExecutorSessionHandle,
+} from '../../../shared/agent-executor-lifecycle.js';
 import type { AgentRunLoopEventSink, AgentRunLoopResult } from './agent-run-loop.js';
 import type { AgentRunLoop } from './agent-run-loop.js';
 
@@ -21,6 +30,29 @@ export type AgentProviderNativeSessionInput = AgentLocalNoteSessionInput & {
 export interface AgentExecutor {
   executeLocalNoteSession(input: AgentLocalNoteSessionInput): Promise<AgentSessionResult>;
   executeProviderNativeSession(input: AgentProviderNativeSessionInput): Promise<AgentSessionResult>;
+}
+
+export type AgentExecutorLifecycleStartInput = {
+  runId: string;
+  agentSessionId: string;
+  runtimeId: string;
+  profileId: string;
+  capabilities: AgentRuntimeCapabilities;
+  nowIso?: string | null;
+};
+
+export type AgentExecutorLifecycleObserveInput = {
+  handle: AgentExecutorSessionHandle;
+  signal: AgentExecutorLifecycleSignal;
+  onEvent?: ((event: AgentSessionEvent) => Promise<void> | void) | null;
+};
+
+export interface AgentExecutorLifecycleAdapter {
+  startSession(input: AgentExecutorLifecycleStartInput): Promise<AgentExecutorSessionHandle>;
+  observe(input: AgentExecutorLifecycleObserveInput): Promise<{
+    event: AgentSessionEvent;
+    projectedStatus: AgentSessionRecord['status'] | null;
+  }>;
 }
 
 export class LocalAgentExecutor implements AgentExecutor {
@@ -43,6 +75,45 @@ export class LocalAgentExecutor implements AgentExecutor {
     });
 
     return toAgentSessionResult(result);
+  }
+}
+
+export class DryRunAgentExecutorLifecycleAdapter implements AgentExecutorLifecycleAdapter {
+  async startSession(input: AgentExecutorLifecycleStartInput): Promise<AgentExecutorSessionHandle> {
+    return {
+      executorSessionId: `dry-run:${input.agentSessionId}`,
+      runId: input.runId,
+      agentSessionId: input.agentSessionId,
+      runtimeId: input.runtimeId,
+      profileId: input.profileId,
+      startedAt: input.nowIso ?? new Date().toISOString(),
+      capabilities: input.capabilities,
+      control: {
+        heartbeat: true,
+        interrupt: true,
+        cancel: true,
+      },
+    };
+  }
+
+  async observe(input: AgentExecutorLifecycleObserveInput): Promise<{
+    event: AgentSessionEvent;
+    projectedStatus: AgentSessionRecord['status'] | null;
+  }> {
+    const event = mapExecutorLifecycleSignalToRuntimeEvent({
+      handle: input.handle,
+      signal: input.signal,
+    });
+
+    await input.onEvent?.(event);
+
+    return {
+      event,
+      projectedStatus: projectExecutorLifecycleSignalSessionStatus({
+        handle: input.handle,
+        signal: input.signal,
+      }),
+    };
   }
 }
 

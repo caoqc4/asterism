@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { LocalAgentExecutor } from './agent-executor.js';
+import { DryRunAgentExecutorLifecycleAdapter, LocalAgentExecutor } from './agent-executor.js';
 
 function buildInput() {
   return {
@@ -177,5 +177,104 @@ describe('LocalAgentExecutor', () => {
         },
       },
     } as never)).resolves.toEqual(sessionResult);
+  });
+});
+
+describe('DryRunAgentExecutorLifecycleAdapter', () => {
+  it('starts a controllable dry-run handle without launching a real executor', async () => {
+    const adapter = new DryRunAgentExecutorLifecycleAdapter();
+
+    const handle = await adapter.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-29T00:00:00.000Z',
+      capabilities: {
+        structuredToolCalls: false,
+        textOnlyPlanning: true,
+        streaming: false,
+        fileContext: true,
+        taskMutationTools: false,
+        longRunningSessions: true,
+      },
+    });
+
+    expect(handle).toEqual({
+      executorSessionId: 'dry-run:agent_session_1',
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      startedAt: '2026-04-29T00:00:00.000Z',
+      capabilities: {
+        structuredToolCalls: false,
+        textOnlyPlanning: true,
+        streaming: false,
+        fileContext: true,
+        taskMutationTools: false,
+        longRunningSessions: true,
+      },
+      control: {
+        heartbeat: true,
+        interrupt: true,
+        cancel: true,
+      },
+    });
+  });
+
+  it('observes lifecycle signals through the runtime event spine', async () => {
+    const adapter = new DryRunAgentExecutorLifecycleAdapter();
+    const onEvent = vi.fn();
+    const handle = await adapter.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-29T00:00:00.000Z',
+      capabilities: {
+        structuredToolCalls: false,
+        textOnlyPlanning: true,
+        streaming: false,
+        fileContext: true,
+        taskMutationTools: false,
+        longRunningSessions: true,
+      },
+    });
+
+    await expect(adapter.observe({
+      handle,
+      onEvent,
+      signal: {
+        type: 'heartbeat',
+        summary: 'Dry-run executor is still alive.',
+      },
+    })).resolves.toMatchObject({
+      event: {
+        type: 'session.heartbeat',
+        runId: 'run_1',
+        sessionId: 'agent_session_1',
+        summary: 'Dry-run executor is still alive.',
+      },
+      projectedStatus: null,
+    });
+
+    await expect(adapter.observe({
+      handle,
+      onEvent,
+      signal: {
+        type: 'cancelled',
+        reason: 'Operator cancelled the dry-run executor.',
+      },
+    })).resolves.toMatchObject({
+      event: {
+        type: 'session.cancelled',
+        runId: 'run_1',
+        sessionId: 'agent_session_1',
+        reason: 'Operator cancelled the dry-run executor.',
+      },
+      projectedStatus: 'cancelled',
+    });
+    expect(onEvent).toHaveBeenCalledTimes(2);
   });
 });
