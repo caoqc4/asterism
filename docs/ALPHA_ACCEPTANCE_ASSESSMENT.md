@@ -13,6 +13,8 @@ Strong automated coverage already exists for the main control-plane semantics, r
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
+- on 2026-04-29, `npm run verify` passed locally with 125 test files / 861
+  tests after adding the explicit executor lifecycle service boundary.
 - on 2026-04-29, `npm run verify` passed locally with 124 test files / 859
   tests after adding the dry-run lifecycle planned-observation helper.
 - on 2026-04-29, `npm run verify` passed locally with 124 test files / 859

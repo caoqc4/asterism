@@ -220,6 +220,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - The monitor can now return a planned observation in one call: RunStep
   evidence, projected status, terminal marker, and settlement plan travel
   together, while settlement application remains a separate explicit step.
+- A small `AgentExecutorLifecycleService` now wraps the monitor and status
+  updater as the future service-facing boundary: `observeAndPlan` records
+  evidence and returns a plan without writing status, while
+  `applySettlementPlan` performs the explicit status update only when called.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend
@@ -1285,13 +1289,16 @@ npm run verify
 
 Latest local baseline:
 
-- 124 test files
-- 859 tests
+- 125 test files
+- 861 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-29 after adding the explicit
+  executor lifecycle service boundary. Current local acceptance status: 125
+  test files / 861 tests
 - `npm run verify` passed locally on 2026-04-29 after adding the dry-run
   lifecycle planned-observation helper. Current local acceptance status: 124
   test files / 859 tests
