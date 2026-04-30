@@ -57,6 +57,48 @@ export type AgentExecutorLifecycleSignal =
       observedAt?: string | null;
     };
 
+export type AgentExecutorLifecycleControlRequest =
+  | {
+      type: 'heartbeat';
+      summary: string;
+      observedAt?: string | null;
+    }
+  | {
+      type: 'interrupt';
+      reason: string;
+      observedAt?: string | null;
+    }
+  | {
+      type: 'cancel';
+      reason: string;
+      observedAt?: string | null;
+    };
+
+export function mapExecutorLifecycleControlRequestToSignal(
+  request: AgentExecutorLifecycleControlRequest,
+): AgentExecutorLifecycleSignal {
+  switch (request.type) {
+    case 'heartbeat':
+      return {
+        type: 'heartbeat',
+        summary: request.summary,
+        observedAt: request.observedAt,
+      };
+    case 'interrupt':
+      return {
+        type: 'interrupted',
+        reason: request.reason,
+        observedAt: request.observedAt,
+      };
+    case 'cancel':
+      return {
+        type: 'cancelled',
+        reason: request.reason,
+        observedAt: request.observedAt,
+      };
+  }
+}
+
 export function mapExecutorLifecycleSignalToRuntimeEvent(params: {
   handle: AgentExecutorSessionHandle;
   signal: AgentExecutorLifecycleSignal;

@@ -199,11 +199,18 @@ The project is past initial architecture assembly. Current work should favor pro
   heartbeat still does not mutate `AgentSession.status`. This is type/test
   coverage only; no long-running process, queue worker, automatic start, or new
   model-visible tool authority is enabled.
+- Executor lifecycle control requests are now typed for heartbeat, interrupt,
+  and cancel commands, then mapped into the same lifecycle signal/event spine.
+  This gives future real adapters a clearer control API while remaining
+  dry-run/test-only.
 - The main-process executor boundary now has a dry-run lifecycle adapter that
   can create a controllable executor handle and observe lifecycle signals
   through that same runtime event spine. It is adapter-facing test coverage
   only; the current local/provide-native execution paths still run exactly as
   before, and no real long-running process is started.
+- The dry-run lifecycle adapter now also accepts typed control requests and
+  routes them through observation, so interrupt/cancel projections are covered
+  without connecting a live executor.
 - The dry-run lifecycle path now has a small monitor boundary that records
   observed lifecycle events through `AgentSessionEventRecorder`, producing
   heartbeat and cancellation RunStep evidence plus projected session status
@@ -1318,12 +1325,16 @@ npm run verify
 Latest local baseline:
 
 - 127 test files
-- 867 tests
+- 869 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-30 after adding typed executor
+  lifecycle control requests for heartbeat, interrupt, and cancel on the
+  dry-run adapter boundary. Current local acceptance status: 127 test files /
+  869 tests
 - `npm run verify` passed locally on 2026-04-30 after centralizing renderer
   executor lifecycle diagnostic lines across Settings, Task detail, and Runs
   recovery surfaces. Current local acceptance status: 127 test files / 867

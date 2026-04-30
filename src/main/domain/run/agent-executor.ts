@@ -7,8 +7,10 @@ import type {
   ProviderToolCallPlan,
 } from '../../../shared/types/agent-execution.js';
 import {
+  mapExecutorLifecycleControlRequestToSignal,
   mapExecutorLifecycleSignalToRuntimeEvent,
   projectExecutorLifecycleSignalSessionStatus,
+  type AgentExecutorLifecycleControlRequest,
   type AgentExecutorLifecycleSignal,
   type AgentExecutorSessionHandle,
 } from '../../../shared/agent-executor-lifecycle.js';
@@ -47,8 +49,18 @@ export type AgentExecutorLifecycleObserveInput = {
   onEvent?: ((event: AgentSessionEvent) => Promise<void> | void) | null;
 };
 
+export type AgentExecutorLifecycleControlInput = {
+  handle: AgentExecutorSessionHandle;
+  request: AgentExecutorLifecycleControlRequest;
+  onEvent?: ((event: AgentSessionEvent) => Promise<void> | void) | null;
+};
+
 export interface AgentExecutorLifecycleAdapter {
   startSession(input: AgentExecutorLifecycleStartInput): Promise<AgentExecutorSessionHandle>;
+  control(input: AgentExecutorLifecycleControlInput): Promise<{
+    event: AgentSessionEvent;
+    projectedStatus: AgentSessionRecord['status'] | null;
+  }>;
   observe(input: AgentExecutorLifecycleObserveInput): Promise<{
     event: AgentSessionEvent;
     projectedStatus: AgentSessionRecord['status'] | null;
@@ -114,6 +126,17 @@ export class DryRunAgentExecutorLifecycleAdapter implements AgentExecutorLifecyc
         signal: input.signal,
       }),
     };
+  }
+
+  async control(input: AgentExecutorLifecycleControlInput): Promise<{
+    event: AgentSessionEvent;
+    projectedStatus: AgentSessionRecord['status'] | null;
+  }> {
+    return this.observe({
+      handle: input.handle,
+      onEvent: input.onEvent,
+      signal: mapExecutorLifecycleControlRequestToSignal(input.request),
+    });
   }
 }
 

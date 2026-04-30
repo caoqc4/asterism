@@ -277,4 +277,58 @@ describe('DryRunAgentExecutorLifecycleAdapter', () => {
     });
     expect(onEvent).toHaveBeenCalledTimes(2);
   });
+
+  it('maps typed control requests through the dry-run lifecycle spine', async () => {
+    const adapter = new DryRunAgentExecutorLifecycleAdapter();
+    const onEvent = vi.fn();
+    const handle = await adapter.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-30T00:00:00.000Z',
+      capabilities: {
+        structuredToolCalls: false,
+        textOnlyPlanning: true,
+        streaming: false,
+        fileContext: true,
+        taskMutationTools: false,
+        longRunningSessions: true,
+      },
+    });
+
+    await expect(adapter.control({
+      handle,
+      onEvent,
+      request: {
+        type: 'interrupt',
+        reason: 'Dry-run executor stopped responding.',
+      },
+    })).resolves.toMatchObject({
+      event: {
+        type: 'session.interrupted',
+        runId: 'run_1',
+        sessionId: 'agent_session_1',
+        reason: 'Dry-run executor stopped responding.',
+      },
+      projectedStatus: 'failed',
+    });
+    await expect(adapter.control({
+      handle,
+      onEvent,
+      request: {
+        type: 'cancel',
+        reason: 'Operator cancelled dry-run executor control.',
+      },
+    })).resolves.toMatchObject({
+      event: {
+        type: 'session.cancelled',
+        runId: 'run_1',
+        sessionId: 'agent_session_1',
+        reason: 'Operator cancelled dry-run executor control.',
+      },
+      projectedStatus: 'cancelled',
+    });
+    expect(onEvent).toHaveBeenCalledTimes(2);
+  });
 });

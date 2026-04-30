@@ -515,11 +515,17 @@ The latest implementation slice:
   existing runtime event spine, and `accept:agent-runtime` covers the mapping.
   This is deliberately type/test only; no long-running process, queue worker,
   automatic start, or new model-visible tool exposure is enabled.
+- Typed executor lifecycle control requests now cover heartbeat, interrupt,
+  and cancel commands and map them into the same lifecycle signals, giving
+  future adapters a clearer API without adding any live runtime wiring.
 - A dry-run main-process lifecycle adapter now starts a controllable executor
   handle and observes lifecycle signals through that shared mapping. This keeps
   the adapter-facing interface testable before a real runtime is connected; it
   still does not launch a process, queue work, or grant additional tool
   authority.
+- The dry-run adapter also exposes that typed control API and routes it through
+  the existing runtime event spine, so interrupt/cancel behavior is covered
+  before a real executor process exists.
 - A dry-run lifecycle monitor now records those observed signals through
   `AgentSessionEventRecorder`, so the future adapter path already produces
   heartbeat/cancellation RunStep evidence and projected session status without
