@@ -642,6 +642,8 @@ The latest implementation slice:
 - Planned lifecycle observations now carry that structured settlement
   diagnostic alongside the settlement plan, keeping monitor/service consumers
   from recomputing it.
+- Lifecycle service coverage now asserts those planned settlement diagnostics
+  are available at the service boundary for future callers.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

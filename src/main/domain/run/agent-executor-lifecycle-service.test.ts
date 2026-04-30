@@ -95,6 +95,20 @@ describe('AgentExecutorLifecycleService', () => {
         sessionId: 'agent_session_1',
         status: 'cancelled',
       },
+      settlementDiagnostic: {
+        action: 'update_session_status',
+        autoReplay: false,
+        sessionId: 'agent_session_1',
+        status: 'cancelled',
+        summary: [
+          'Executor lifecycle settlement',
+          'session=agent_session_1',
+          'status=cancelled',
+          'terminalEvent=yes',
+          'action=update_session_status',
+          'autoReplay=no',
+        ].join(' / '),
+      },
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'final',
