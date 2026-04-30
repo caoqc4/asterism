@@ -2,6 +2,7 @@ import type { AgentSessionRecord } from './types/agent-execution.js';
 import type { RunCheckpointRecord, RunStepRecord } from './types/run.js';
 
 export type AgentSessionReplayReview = {
+  automaticReplayAllowed: false;
   latestStepTitle: string | null;
   latestStepStatus: string | null;
   mode: 'inspect_only' | 'manual_resume' | 'new_run';
@@ -40,6 +41,7 @@ export function buildAgentSessionReplayReview(params: {
   const restartSafety = getRestartSafety(params.session.status, latestStep?.status ?? null, openCheckpointCount);
 
   return {
+    automaticReplayAllowed: false,
     latestStepStatus: latestStep?.status ?? null,
     latestStepTitle: latestStep?.title ?? null,
     mode,

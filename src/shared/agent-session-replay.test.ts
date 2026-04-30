@@ -52,6 +52,7 @@ describe('agent session replay review', () => {
         buildStep({ index: 2, kind: 'final', title: 'Final output' }),
       ],
     })).toEqual({
+      automaticReplayAllowed: false,
       latestStepStatus: 'completed',
       latestStepTitle: 'Final output',
       mode: 'inspect_only',

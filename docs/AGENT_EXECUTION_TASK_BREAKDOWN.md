@@ -657,6 +657,8 @@ The latest implementation slice:
 - Lifecycle service coverage now also asserts that explicitly applying a
   `no_status_change` plan returns `applied=false` with structured fields and no
   session status write.
+- Replay reviews now expose `automaticReplayAllowed=false` as a structured
+  field instead of leaving replay prohibition only in summary text.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

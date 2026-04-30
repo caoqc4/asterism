@@ -14,6 +14,9 @@ Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 892
+  tests after adding structured `automaticReplayAllowed=false` to agent session
+  replay reviews.
+- on 2026-04-30, `npm run verify` passed locally with 127 test files / 892
   tests after covering no-status settlement apply results at the lifecycle
   service boundary.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 892
