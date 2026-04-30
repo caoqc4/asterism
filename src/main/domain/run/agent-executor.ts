@@ -42,6 +42,7 @@ export type AgentExecutorLifecycleStartInput = {
   runtimeId: string;
   profileId: string;
   capabilities: AgentRuntimeCapabilities;
+  controlSupport?: Partial<AgentExecutorSessionHandle['control']>;
   nowIso?: string | null;
 };
 
@@ -102,7 +103,7 @@ export class DryRunAgentExecutorLifecycleAdapter implements AgentExecutorLifecyc
       profileId: input.profileId,
       startedAt: input.nowIso ?? new Date().toISOString(),
       capabilities: input.capabilities,
-      control: buildExecutorLifecycleControlSupport(),
+      control: buildExecutorLifecycleControlSupport(input.controlSupport),
     };
   }
 

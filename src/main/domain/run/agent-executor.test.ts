@@ -223,6 +223,36 @@ describe('DryRunAgentExecutorLifecycleAdapter', () => {
     });
   });
 
+  it('can start a dry-run handle with explicit limited control support', async () => {
+    const adapter = new DryRunAgentExecutorLifecycleAdapter();
+
+    const handle = await adapter.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-30T00:00:00.000Z',
+      capabilities: {
+        structuredToolCalls: false,
+        textOnlyPlanning: true,
+        streaming: false,
+        fileContext: true,
+        taskMutationTools: false,
+        longRunningSessions: true,
+      },
+      controlSupport: {
+        cancel: false,
+        interrupt: false,
+      },
+    });
+
+    expect(handle.control).toEqual({
+      heartbeat: true,
+      interrupt: false,
+      cancel: false,
+    });
+  });
+
   it('observes lifecycle signals through the runtime event spine', async () => {
     const adapter = new DryRunAgentExecutorLifecycleAdapter();
     const onEvent = vi.fn();

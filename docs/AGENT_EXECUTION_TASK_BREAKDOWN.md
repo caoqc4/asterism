@@ -526,6 +526,9 @@ The latest implementation slice:
   the adapter-facing interface testable before a real runtime is connected; it
   still does not launch a process, queue work, or grant additional tool
   authority.
+- The dry-run adapter start input can now override advertised control support,
+  keeping partial-support executor handles testable before any live runtime is
+  connected.
 - The dry-run adapter also exposes that typed control API and routes it through
   the existing runtime event spine, so interrupt/cancel behavior is covered
   before a real executor process exists.

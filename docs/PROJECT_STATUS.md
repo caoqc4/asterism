@@ -211,6 +211,9 @@ The project is past initial architecture assembly. Current work should favor pro
   through that same runtime event spine. It is adapter-facing test coverage
   only; the current local/provide-native execution paths still run exactly as
   before, and no real long-running process is started.
+- The dry-run lifecycle adapter start input can now override advertised
+  control support, so partial heartbeat/interrupt/cancel handles can be tested
+  without mutating returned handles or connecting a live runtime.
 - The dry-run lifecycle adapter now also accepts typed control requests and
   routes them through observation, so interrupt/cancel projections are covered
   without connecting a live executor.
@@ -1350,12 +1353,15 @@ npm run verify
 Latest local baseline:
 
 - 127 test files
-- 879 tests
+- 880 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-30 after allowing dry-run
+  lifecycle handles to advertise partial control support from start input.
+  Current local acceptance status: 127 test files / 880 tests
 - `npm run verify` passed locally on 2026-04-30 after centralizing executor
   lifecycle control support listing for handles and diagnostics. Current local
   acceptance status: 127 test files / 879 tests
