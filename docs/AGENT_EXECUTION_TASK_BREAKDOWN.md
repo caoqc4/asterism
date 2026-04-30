@@ -594,6 +594,9 @@ The latest implementation slice:
 - AI config status now obtains executor lifecycle availability through the
   main-process lifecycle service factory projection instead of calling the
   shared dry-run diagnostic builder directly.
+- Dry-run adapter coverage now includes handles that advertise no lifecycle
+  controls, tying start-time handle capabilities to the downstream fail-closed
+  guard tests.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any
