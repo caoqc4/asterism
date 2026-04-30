@@ -190,4 +190,33 @@ describe('AgentExecutorLifecycleService', () => {
     expect(runStepRepository.create).not.toHaveBeenCalled();
     expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
   });
+
+  it('rejects heartbeat controls when a handle advertises no lifecycle controls', async () => {
+    const { runStepRepository, service, statusUpdater } = buildService();
+    const handle = await service.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-30T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+      controlSupport: {
+        heartbeat: false,
+        interrupt: false,
+        cancel: false,
+      },
+    });
+
+    await expect(service.controlAndPlan({
+      handle,
+      request: {
+        type: 'heartbeat',
+        summary: 'Operator attempted unsupported heartbeat.',
+      },
+    })).rejects.toThrow(
+      'Executor lifecycle control request heartbeat is not supported by this handle.',
+    );
+    expect(runStepRepository.create).not.toHaveBeenCalled();
+    expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
+  });
 });

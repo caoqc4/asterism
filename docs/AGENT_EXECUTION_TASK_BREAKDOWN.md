@@ -576,6 +576,9 @@ The latest implementation slice:
   contradictory summary evidence when a control is unavailable.
 - Shared diagnostics now also cover the no-supported-controls case, preserving
   explicit `controlRequests=none` copy without implying runtime readiness.
+- Lifecycle service coverage now proves even heartbeat control requests fail
+  closed when a handle advertises no lifecycle controls, with no RunStep
+  evidence or session status update.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any
