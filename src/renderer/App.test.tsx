@@ -4016,6 +4016,25 @@ describe('App UI flow', () => {
       ),
     ).toBeTruthy();
     expect(
+      recoverySafety.getByText('Executor lifecycle：Executor lifecycle / status=dry_run_available'),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText('runtimeReady=no / queueWorker=no / automaticStart=no'),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText('modelExposure=hidden / modelVisibleTools=no'),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText(
+        'blocked=No real executor runtime is connected.; Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.; Model-visible tool exposure remains hidden.',
+      ),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText(
+        'next=Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.',
+      ),
+    ).toBeTruthy();
+    expect(
       recoverySafety.getByText(
         'Next safe move：确认最近一次 agent run 是否已中断；若没有活动执行器，先基于证据整理输入，再启动新的 run，不自动重放。',
       ),

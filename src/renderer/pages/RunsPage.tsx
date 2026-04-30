@@ -7,6 +7,7 @@ import {
 } from '@shared/types/run-checkpoint-payload';
 import { evaluateSandboxPatchPromotionReadiness } from '@shared/sandbox-patch-promotion-readiness';
 import { projectAgentRunLifecycle } from '@shared/agent-orchestration';
+import { buildAgentExecutorLifecycleAvailabilityPresentation } from '@shared/agent-executor-lifecycle-diagnostics';
 import type { RecommendedActionIntent } from '@shared/types/brief';
 import type { DecisionRecord } from '@shared/types/decision';
 import {
@@ -779,6 +780,9 @@ export function RunsPage({
         startMode: getRunLifecycleStartMode(detail),
       })
     : null;
+  const executorLifecyclePresentation = aiStatus?.executorLifecycleAvailability
+    ? buildAgentExecutorLifecycleAvailabilityPresentation(aiStatus.executorLifecycleAvailability)
+    : null;
   const canContinuePausedRun = detail ? hasValidOpenResumeCheckpoint(detail) : false;
   const focusNextStepDraft = detail
     ? latestAgentSession
@@ -857,6 +861,25 @@ export function RunsPage({
                     <p className="meta">
                       {latestAgentSessionRecoveryIntent}
                     </p>
+                  ) : null}
+                  {executorLifecyclePresentation ? (
+                    <>
+                      <p className="meta">
+                        Executor lifecycle：{executorLifecyclePresentation.status}
+                      </p>
+                      <p className="meta">
+                        {executorLifecyclePresentation.runtime}
+                      </p>
+                      <p className="meta">
+                        {executorLifecyclePresentation.exposure}
+                      </p>
+                      <p className="meta">
+                        {executorLifecyclePresentation.blocked}
+                      </p>
+                      <p className="meta">
+                        {executorLifecyclePresentation.nextAction}
+                      </p>
+                    </>
                   ) : null}
                   <p className="meta">
                     Next safe move：{focusNextStepDraft}

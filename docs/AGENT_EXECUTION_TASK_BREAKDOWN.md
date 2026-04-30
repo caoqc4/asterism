@@ -557,6 +557,9 @@ The latest implementation slice:
 - Task detail `Orchestration readiness` now consumes the same status-sourced
   executor lifecycle diagnostic, aligning the manual Code Agent intent surface
   with Settings without adding runtime authority.
+- Runs detail `Run recovery safety` now consumes that same diagnostic during
+  inspect-first recovery review, keeping replay/new-run decisions visibly
+  separate from dry-run executor availability.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation
