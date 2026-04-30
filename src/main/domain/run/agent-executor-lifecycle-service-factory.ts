@@ -1,3 +1,4 @@
+import type { AgentExecutorLifecycleServiceAvailability } from '../../../shared/agent-executor-lifecycle-diagnostics.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { AgentSessionEventRecorder } from './agent-session-event-recorder.js';
 import { AgentSessionStore } from './agent-session-store.js';
@@ -9,18 +10,6 @@ export type AgentExecutorLifecycleServiceFactoryDependencies = {
   adapter?: AgentExecutorLifecycleAdapter;
   agentSessionStore?: AgentSessionStore;
   runStepRepository?: RunStepRepository;
-};
-
-export type AgentExecutorLifecycleServiceAvailability = {
-  status: 'dry_run_available';
-  runtimeReady: false;
-  modelExposure: 'hidden';
-  automaticStartAllowed: false;
-  queueWorkerAllowed: false;
-  blockedReasons: string[];
-  nextAction: string;
-  reason: string;
-  summary: string;
 };
 
 export function evaluateAgentExecutorLifecycleServiceAvailability(): AgentExecutorLifecycleServiceAvailability {

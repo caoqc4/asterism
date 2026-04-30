@@ -546,6 +546,9 @@ The latest implementation slice:
 - The availability summary now includes structured blocked reasons and a next
   action, keeping future diagnostics explainable without implying real executor
   readiness.
+- Shared executor lifecycle diagnostics now format that availability as
+  read-only presentation copy for future Settings/orchestration surfaces,
+  without wiring the helper into UI or runtime entrypoints yet.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation

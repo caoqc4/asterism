@@ -235,6 +235,9 @@ The project is past initial architecture assembly. Current work should favor pro
   next-action hint, so future diagnostics can explain that no real executor is
   connected, the service is not wired into runtime entrypoints, and
   model-visible exposure remains hidden.
+- Shared executor lifecycle diagnostics can now turn that dry-run availability
+  into read-only presentation copy for future Settings or orchestration
+  diagnostics, while staying outside current UI/bootstrap wiring.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend
@@ -1300,13 +1303,16 @@ npm run verify
 
 Latest local baseline:
 
-- 126 test files
-- 863 tests
+- 127 test files
+- 864 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-30 after adding shared read-only
+  presentation helpers for executor lifecycle dry-run diagnostics. Current
+  local acceptance status: 127 test files / 864 tests
 - `npm run verify` passed locally on 2026-04-30 after adding structured
   blocked reasons and next-action guidance to the dry-run executor lifecycle
   availability summary. Current local acceptance status: 126 test files / 863
