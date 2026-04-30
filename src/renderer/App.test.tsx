@@ -839,6 +839,9 @@ describe('App UI flow', () => {
     expect(orchestrationDiagnostics.getByText(
       'controlRequests=heartbeat,interrupt / controlMode=dry_run_planned',
     )).toBeTruthy();
+    expect(orchestrationDiagnostics.getByText(
+      'settleResults=completed,failed,paused / settleMode=dry_run_planned',
+    )).toBeTruthy();
     expect(orchestrationDiagnostics.queryByText(
       'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
     )).toBeNull();
@@ -2983,6 +2986,9 @@ describe('App UI flow', () => {
       'controlRequests=heartbeat,interrupt / controlMode=dry_run_planned',
     )).toBeTruthy();
     expect(readiness.getByText(
+      'settleResults=completed,failed,paused / settleMode=dry_run_planned',
+    )).toBeTruthy();
+    expect(readiness.getByText(
       'modelExposure=hidden / modelVisibleTools=no',
     )).toBeTruthy();
     expect(readiness.getByText(
@@ -4067,6 +4073,9 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(
       recoverySafety.getByText('controlRequests=heartbeat,interrupt / controlMode=dry_run_planned'),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText('settleResults=completed,failed,paused / settleMode=dry_run_planned'),
     ).toBeTruthy();
     expect(
       recoverySafety.getByText('modelExposure=hidden / modelVisibleTools=no'),
@@ -7517,6 +7526,9 @@ describe('App UI flow', () => {
     )).toBeTruthy();
     expect(orchestrationDiagnostics.getByText(
       'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
+    )).toBeTruthy();
+    expect(orchestrationDiagnostics.getByText(
+      'settleResults=completed,failed,paused / settleMode=dry_run_planned',
     )).toBeTruthy();
     expect(orchestrationDiagnostics.getByText(
       'modelExposure=hidden / modelVisibleTools=no',

@@ -607,6 +607,9 @@ The latest implementation slice:
   (`completed,failed,paused`) separately from control requests, keeping
   renderer diagnostics aligned with the adapter contract while
   `runtimeReady=no` remains explicit.
+- App-level Settings, Task, and Runs coverage now locks the visible
+  `settleResults=completed,failed,paused` diagnostics line so presentation
+  surfaces cannot drop the adapter contract evidence silently.
 - The lifecycle service factory availability projection now accepts control
   support overrides, letting dry-run diagnostics describe partial or absent
   controls without implying runtime readiness.

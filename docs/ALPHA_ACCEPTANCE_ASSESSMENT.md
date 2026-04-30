@@ -14,6 +14,9 @@ Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 897
+  tests after locking visible Settings/Task/Runs settle diagnostics at the App
+  level.
+- on 2026-04-30, `npm run verify` passed locally with 127 test files / 897
   tests after surfacing dry-run executor settle result support in lifecycle
   diagnostics without changing runtime readiness.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 897
