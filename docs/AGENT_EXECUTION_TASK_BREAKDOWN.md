@@ -717,9 +717,9 @@ The next implementation slice is:
   restart/recovery review, Settings diagnostics, and manual recovery run
   prefill are now covered without any queue worker or automatic-start policy
 - continue the executor/session boundary before adding more runtime power:
-  next connect the shared lifecycle contract to an adapter-facing interface or
-  dry-run fake executor, still without starting a real long-running runtime or
-  exposing new tool authority
+  next stabilize adapter-facing diagnostics, settlement evidence, and recovery
+  selection around the dry-run lifecycle service, still without starting a real
+  long-running runtime or exposing new tool authority
 - keep recovery routed through inspect-first evidence review, checkpoint /
   Decision review, or explicit manual Run preparation rather than automatic
   replay
