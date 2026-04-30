@@ -559,6 +559,9 @@ The latest implementation slice:
 - Factory coverage now also proves unsupported dry-run control requests are
   rejected before evidence recording or status updates in the assembled
   service.
+- Renderer diagnostic-line coverage now checks partial control support, so
+  Settings/Task/Runs shared presentation does not invent unavailable control
+  requests.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

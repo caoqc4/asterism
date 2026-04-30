@@ -235,6 +235,25 @@ describe('agent orchestration presentation', () => {
     expect(buildExecutorLifecycleDiagnosticLines(null)).toEqual([]);
   });
 
+  it('formats partial executor lifecycle control support without inventing missing controls', () => {
+    const snapshot = buildAgentExecutionOrchestrationSnapshot(buildReadyAiStatus());
+    const presentation = buildReadOnlyOrchestrationPresentation({
+      executorLifecycleAvailability: buildDryRunAgentExecutorLifecycleAvailability({
+        controlSupport: {
+          cancel: false,
+        },
+      }),
+      snapshot,
+    });
+
+    expect(buildExecutorLifecycleDiagnosticLines(presentation.executorLifecycle)).toContain(
+      'controlRequests=heartbeat,interrupt / controlMode=dry_run_planned',
+    );
+    expect(buildExecutorLifecycleDiagnosticLines(presentation.executorLifecycle)).not.toContain(
+      'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
+    );
+  });
+
   it('surfaces automation readiness without granting automatic start', () => {
     const snapshot = buildAgentExecutionOrchestrationSnapshot(buildReadyAiStatus());
     const automationReadiness = evaluateSkillInformedAutomationReadiness({
