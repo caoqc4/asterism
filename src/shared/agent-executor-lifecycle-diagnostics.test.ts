@@ -57,6 +57,23 @@ describe('agent executor lifecycle diagnostics', () => {
     });
   });
 
+  it('describes absent dry-run control support explicitly', () => {
+    const availability = buildDryRunAgentExecutorLifecycleAvailability({
+      controlSupport: {
+        heartbeat: false,
+        interrupt: false,
+        cancel: false,
+      },
+    });
+
+    expect(availability.supportedControlRequests).toEqual([]);
+    expect(availability.summary).toContain('controlRequests=none');
+    expect(buildAgentExecutorLifecycleAvailabilityPresentation(availability)).toMatchObject({
+      controlRequests: 'controlRequests=none / controlMode=dry_run_planned',
+      summary: expect.stringContaining('controlRequests=none'),
+    });
+  });
+
   it('builds read-only presentation copy without implying runtime readiness', () => {
     expect(buildAgentExecutorLifecycleAvailabilityPresentation(buildAvailability())).toEqual({
       status: 'Executor lifecycle / status=dry_run_available',

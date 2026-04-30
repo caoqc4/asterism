@@ -574,6 +574,8 @@ The latest implementation slice:
 - Dry-run availability summaries now derive the displayed lifecycle control
   requests from the same supported-control list as presentation, avoiding
   contradictory summary evidence when a control is unavailable.
+- Shared diagnostics now also cover the no-supported-controls case, preserving
+  explicit `controlRequests=none` copy without implying runtime readiness.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any
