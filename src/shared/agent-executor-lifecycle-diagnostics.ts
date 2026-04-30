@@ -2,6 +2,7 @@ import {
   buildExecutorLifecycleControlSupport,
   listSupportedExecutorLifecycleControlRequests,
   type AgentExecutorLifecycleControlRequestType,
+  type AgentExecutorSessionHandle,
 } from './agent-executor-lifecycle.js';
 
 export type AgentExecutorLifecycleServiceAvailability = {
@@ -27,7 +28,9 @@ export type AgentExecutorLifecycleAvailabilityPresentation = {
   summary: string;
 };
 
-export function buildDryRunAgentExecutorLifecycleAvailability(): AgentExecutorLifecycleServiceAvailability {
+export function buildDryRunAgentExecutorLifecycleAvailability(params: {
+  controlSupport?: Partial<AgentExecutorSessionHandle['control']>;
+} = {}): AgentExecutorLifecycleServiceAvailability {
   const blockedReasons = [
     'No real executor runtime is connected.',
     'Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.',
@@ -42,7 +45,7 @@ export function buildDryRunAgentExecutorLifecycleAvailability(): AgentExecutorLi
     automaticStartAllowed: false,
     queueWorkerAllowed: false,
     supportedControlRequests: listSupportedExecutorLifecycleControlRequests(
-      buildExecutorLifecycleControlSupport(),
+      buildExecutorLifecycleControlSupport(params.controlSupport),
     ),
     blockedReasons,
     nextAction,

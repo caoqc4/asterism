@@ -41,6 +41,21 @@ describe('agent executor lifecycle diagnostics', () => {
     expect(buildDryRunAgentExecutorLifecycleAvailability()).toEqual(buildAvailability());
   });
 
+  it('can describe partial dry-run control support without implying runtime readiness', () => {
+    const availability = buildDryRunAgentExecutorLifecycleAvailability({
+      controlSupport: {
+        cancel: false,
+      },
+    });
+
+    expect(availability.supportedControlRequests).toEqual(['heartbeat', 'interrupt']);
+    expect(availability.summary).toContain('controlRequests=heartbeat,interrupt');
+    expect(buildAgentExecutorLifecycleAvailabilityPresentation(availability)).toMatchObject({
+      controlRequests: 'controlRequests=heartbeat,interrupt / controlMode=dry_run_planned',
+      runtime: 'runtimeReady=no / queueWorker=no / automaticStart=no',
+    });
+  });
+
   it('builds read-only presentation copy without implying runtime readiness', () => {
     expect(buildAgentExecutorLifecycleAvailabilityPresentation(buildAvailability())).toEqual({
       status: 'Executor lifecycle / status=dry_run_available',

@@ -206,6 +206,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Shared lifecycle helpers now build and list supported control requests, so
   dry-run handles and availability diagnostics use the same source for
   `heartbeat`, `interrupt`, and `cancel` support.
+- Dry-run availability diagnostics can now be built with partial control
+  support, allowing future status surfaces to report reduced control support
+  without implying runtime readiness.
 - The main-process executor boundary now has a dry-run lifecycle adapter that
   can create a controllable executor handle and observe lifecycle signals
   through that same runtime event spine. It is adapter-facing test coverage
@@ -1356,12 +1359,15 @@ npm run verify
 Latest local baseline:
 
 - 127 test files
-- 880 tests
+- 881 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-30 after allowing dry-run
+  executor lifecycle availability diagnostics to describe partial control
+  support. Current local acceptance status: 127 test files / 881 tests
 - `npm run verify` passed locally on 2026-04-30 after moving unsupported
   lifecycle control guard tests to start-input partial support. Current local
   acceptance status: 127 test files / 880 tests

@@ -521,6 +521,9 @@ The latest implementation slice:
 - Shared lifecycle helpers now build and list supported control requests, so
   dry-run handles and availability diagnostics derive from the same control
   support contract.
+- Dry-run availability diagnostics can now accept partial control support too,
+  so future diagnostics can accurately show heartbeat-only or no-cancel
+  executor handles while still reporting `runtimeReady=no`.
 - A dry-run main-process lifecycle adapter now starts a controllable executor
   handle and observes lifecycle signals through that shared mapping. This keeps
   the adapter-facing interface testable before a real runtime is connected; it
