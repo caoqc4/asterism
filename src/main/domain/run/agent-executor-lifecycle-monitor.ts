@@ -52,6 +52,7 @@ export type AgentExecutorLifecycleSettlementDiagnostic = {
 };
 
 export type AgentExecutorLifecyclePlannedObservation = AgentExecutorLifecycleObservation & {
+  settlementDiagnostic: AgentExecutorLifecycleSettlementDiagnostic;
   settlementPlan: AgentExecutorLifecycleSettlementPlan;
 };
 
@@ -140,12 +141,15 @@ export class AgentExecutorLifecycleMonitor {
     handle: AgentExecutorLifecycleObserveInput['handle'];
     observation: AgentExecutorLifecycleObservation;
   }): AgentExecutorLifecyclePlannedObservation {
+    const settlementPlan = planAgentExecutorLifecycleSettlement({
+      sessionId: params.handle.agentSessionId,
+      observation: params.observation,
+    });
+
     return {
       ...params.observation,
-      settlementPlan: planAgentExecutorLifecycleSettlement({
-        sessionId: params.handle.agentSessionId,
-        observation: params.observation,
-      }),
+      settlementDiagnostic: buildAgentExecutorLifecycleSettlementDiagnostic(settlementPlan),
+      settlementPlan,
     };
   }
 

@@ -639,6 +639,9 @@ The latest implementation slice:
 - Executor lifecycle settlement plans now expose a structured diagnostic shape
   with action, session id, optional status, `autoReplay=false`, and summary, so
   future IPC/renderer diagnostics do not need to parse summary text.
+- Planned lifecycle observations now carry that structured settlement
+  diagnostic alongside the settlement plan, keeping monitor/service consumers
+  from recomputing it.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

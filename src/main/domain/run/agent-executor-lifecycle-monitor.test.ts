@@ -82,6 +82,12 @@ describe('AgentExecutorLifecycleMonitor', () => {
           'autoReplay=no',
         ].join(' / '),
       },
+      settlementDiagnostic: {
+        action: 'no_status_change',
+        autoReplay: false,
+        sessionId: 'agent_session_1',
+        status: null,
+      },
     });
     expect(buildAgentExecutorLifecycleSettlementDiagnostic(observation.settlementPlan)).toEqual({
       action: 'no_status_change',
@@ -149,6 +155,12 @@ describe('AgentExecutorLifecycleMonitor', () => {
           'autoReplay=no',
         ].join(' / '),
       },
+      settlementDiagnostic: {
+        action: 'update_session_status',
+        autoReplay: false,
+        sessionId: 'agent_session_1',
+        status: 'cancelled',
+      },
     });
     expect(buildAgentExecutorLifecycleSettlementDiagnostic(observation.settlementPlan)).toEqual({
       action: 'update_session_status',
@@ -207,6 +219,12 @@ describe('AgentExecutorLifecycleMonitor', () => {
       },
       settlementPlan: {
         action: 'update_session_status',
+        sessionId: 'agent_session_1',
+        status: 'failed',
+      },
+      settlementDiagnostic: {
+        action: 'update_session_status',
+        autoReplay: false,
         sessionId: 'agent_session_1',
         status: 'failed',
       },
