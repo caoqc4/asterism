@@ -242,7 +242,8 @@ The project is past initial architecture assembly. Current work should favor pro
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, hidden-tool-family facts, and dry-run executor lifecycle status
-  while keeping Sandbox Backend detection as the only runtime action.
+  with blocked reasons and next action while keeping Sandbox Backend detection
+  as the only runtime action.
 - The shared orchestration presentation model now keeps profile and lifecycle
   copy single-pass, so Task detail and Settings do not repeat the same
   queue/claim/scheduler/auto-start facts inside one card.
@@ -1311,6 +1312,10 @@ Latest local baseline:
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-30 after adding blocked-reason and
+  next-action executor lifecycle copy to the read-only Settings orchestration
+  diagnostics card. Current local acceptance status: 127 test files / 866
+  tests
 - `npm run verify` passed locally on 2026-04-30 after surfacing dry-run
   executor lifecycle diagnostics inside the read-only Settings orchestration
   diagnostics card. Current local acceptance status: 127 test files / 866

@@ -179,6 +179,8 @@ export function SettingsPage({
               <p className="meta">Executor lifecycle：{orchestrationDiagnostics.executorLifecycle.status}</p>
               <p className="meta">{orchestrationDiagnostics.executorLifecycle.runtime}</p>
               <p className="meta">{orchestrationDiagnostics.executorLifecycle.exposure}</p>
+              <p className="meta">{orchestrationDiagnostics.executorLifecycle.blocked}</p>
+              <p className="meta">{orchestrationDiagnostics.executorLifecycle.nextAction}</p>
             </>
           ) : null}
         </div>

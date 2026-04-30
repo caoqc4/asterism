@@ -7434,6 +7434,12 @@ describe('App UI flow', () => {
     expect(orchestrationDiagnostics.getByText(
       'modelExposure=hidden / modelVisibleTools=no',
     )).toBeTruthy();
+    expect(orchestrationDiagnostics.getByText(
+      'blocked=No real executor runtime is connected.; Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.; Model-visible tool exposure remains hidden.',
+    )).toBeTruthy();
+    expect(orchestrationDiagnostics.getByText(
+      'next=Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.',
+    )).toBeTruthy();
     expect(screen.getByText('Workspace Coding')).toBeTruthy();
     expect(screen.getByText('4 implemented / 1 reserved / 0 text / 0 native / 3 approval / 0 credential / 3 verification')).toBeTruthy();
     const toolScaffoldDiagnostics = screen.getByLabelText('Tool scaffold diagnostics');
