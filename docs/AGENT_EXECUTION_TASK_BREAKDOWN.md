@@ -624,6 +624,9 @@ The latest implementation slice:
 - Continuable agent session selection now has coverage for created-time
   tie-breaking when sessions share the same update time, keeping recovery
   routing deterministic.
+- Checkpoint-backed session selection now has the same created-time tie-break
+  coverage while still excluding newer running sessions from checkpoint
+  settlement.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

@@ -13,6 +13,9 @@ Strong automated coverage already exists for the main control-plane semantics, r
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
+- on 2026-04-30, `npm run verify` passed locally with 127 test files / 890
+  tests after covering created-time tie-breaking for checkpoint-backed agent
+  session recovery selection.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 889
   tests after covering created-time tie-breaking for continuable agent session
   recovery selection.

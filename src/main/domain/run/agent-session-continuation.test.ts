@@ -93,6 +93,29 @@ describe('agent session continuation helper', () => {
     ])?.id).toBe('agent_session_paused');
   });
 
+  it('uses created time as the recency tie-breaker for checkpoint-backed sessions', () => {
+    expect(findLatestCheckpointBackedAgentSession([
+      buildSession({
+        id: 'agent_session_paused_old_created',
+        status: 'paused',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-03T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_confirmation_new_created',
+        status: 'needs_confirmation',
+        createdAt: '2026-01-02T00:00:00.000Z',
+        updatedAt: '2026-01-03T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_running_newer',
+        status: 'running',
+        createdAt: '2026-01-04T00:00:00.000Z',
+        updatedAt: '2026-01-04T00:00:00.000Z',
+      }),
+    ])?.id).toBe('agent_session_confirmation_new_created');
+  });
+
   it('returns null for checkpoint-backed settlement when only running sessions remain', () => {
     expect(findLatestCheckpointBackedAgentSession([
       buildSession({ status: 'running' }),
