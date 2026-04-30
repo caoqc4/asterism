@@ -11,6 +11,36 @@ export type AgentExecutorLifecycleServiceFactoryDependencies = {
   runStepRepository?: RunStepRepository;
 };
 
+export type AgentExecutorLifecycleServiceAvailability = {
+  status: 'dry_run_available';
+  runtimeReady: false;
+  modelExposure: 'hidden';
+  automaticStartAllowed: false;
+  queueWorkerAllowed: false;
+  reason: string;
+  summary: string;
+};
+
+export function evaluateAgentExecutorLifecycleServiceAvailability(): AgentExecutorLifecycleServiceAvailability {
+  return {
+    status: 'dry_run_available',
+    runtimeReady: false,
+    modelExposure: 'hidden',
+    automaticStartAllowed: false,
+    queueWorkerAllowed: false,
+    reason:
+      'Executor lifecycle service is available as a dry-run adapter boundary only; no real runtime is launched.',
+    summary: [
+      'Executor lifecycle service availability',
+      'status=dry_run_available',
+      'runtimeReady=no',
+      'modelExposure=hidden',
+      'automaticStart=no',
+      'queueWorker=no',
+    ].join(' / '),
+  };
+}
+
 export function createAgentExecutorLifecycleService(
   dependencies: AgentExecutorLifecycleServiceFactoryDependencies = {},
 ): AgentExecutorLifecycleService {

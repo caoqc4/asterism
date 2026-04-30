@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
-import { createAgentExecutorLifecycleService } from './agent-executor-lifecycle-service-factory.js';
+import {
+  createAgentExecutorLifecycleService,
+  evaluateAgentExecutorLifecycleServiceAvailability,
+} from './agent-executor-lifecycle-service-factory.js';
 
 function buildCapabilities() {
   return {
@@ -32,6 +35,26 @@ function buildRunStepRepositoryMock() {
 }
 
 describe('createAgentExecutorLifecycleService', () => {
+  it('describes the default lifecycle service as dry-run only', () => {
+    expect(evaluateAgentExecutorLifecycleServiceAvailability()).toEqual({
+      status: 'dry_run_available',
+      runtimeReady: false,
+      modelExposure: 'hidden',
+      automaticStartAllowed: false,
+      queueWorkerAllowed: false,
+      reason:
+        'Executor lifecycle service is available as a dry-run adapter boundary only; no real runtime is launched.',
+      summary: [
+        'Executor lifecycle service availability',
+        'status=dry_run_available',
+        'runtimeReady=no',
+        'modelExposure=hidden',
+        'automaticStart=no',
+        'queueWorker=no',
+      ].join(' / '),
+    });
+  });
+
   it('builds a dry-run lifecycle service from explicit dependencies without exposing a runtime', async () => {
     const runStepRepository = buildRunStepRepositoryMock();
     const agentSessionStore = {

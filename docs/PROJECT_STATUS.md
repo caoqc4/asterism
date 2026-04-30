@@ -228,6 +228,9 @@ The project is past initial architecture assembly. Current work should favor pro
   adapter, `AgentSessionEventRecorder`, `RunStepRepository`, and
   `AgentSessionStore`. The factory is tested as an injection point only; it is
   not wired into bootstrap, IPC, scheduler, queue, or model-visible execution.
+- The factory now also exposes a dry-run-only availability summary for future
+  diagnostics: `runtimeReady=no`, `modelExposure=hidden`,
+  `automaticStart=no`, and `queueWorker=no`.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend
@@ -1294,12 +1297,16 @@ npm run verify
 Latest local baseline:
 
 - 126 test files
-- 862 tests
+- 863 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-30 after adding the dry-run
+  executor lifecycle availability summary and fixing a date-sensitive
+  blocker-source activity test baseline. Current local acceptance status: 126
+  test files / 863 tests
 - `npm run verify` passed locally on 2026-04-30 after adding the dry-run
   executor lifecycle service factory. Current local acceptance status: 126
   test files / 862 tests

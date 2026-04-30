@@ -540,6 +540,9 @@ The latest implementation slice:
 - A default service factory now assembles the dry-run lifecycle service from
   repository/store dependencies as an injection point only; it is not wired into
   bootstrap, IPC, scheduler, queue, or model-visible execution.
+- The factory now also reports a dry-run-only availability summary for future
+  diagnostics, explicitly keeping runtime readiness, model exposure, automatic
+  start, and queue worker authority disabled.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation

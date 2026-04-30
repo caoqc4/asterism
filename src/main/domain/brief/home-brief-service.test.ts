@@ -1008,6 +1008,9 @@ describe('HomeBriefService', () => {
   });
 
   it('surfaces blocker-linked source updates as recent blocker activity', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-26T00:00:00.000Z'));
+
     const service = new HomeBriefService(
       {
         list: vi.fn().mockResolvedValue([
