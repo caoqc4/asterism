@@ -524,6 +524,12 @@ Current implementation note:
   `interrupted -> failed`, `cancelled -> cancelled`, terminal completion /
   pause keep their matching statuses, and heartbeat leaves the session status
   unchanged.
+- Executor lifecycle controls now have an adapter-facing fail-closed contract:
+  handles advertise heartbeat / interrupt / cancel support, unsupported control
+  requests throw a typed shared error with a stable code and request type, and
+  a formatter exposes a diagnostic summary without parsing free-form messages.
+  This remains a dry-run boundary only; unsupported controls do not record
+  events, RunStep evidence, settlement plans, or session status updates.
 - `RunOrchestrator` now uses the recorder's terminal session-status projection
   when a terminal runtime event is emitted, so executor cancellation or
   interruption can settle `AgentSession.status` without trusting a later generic
