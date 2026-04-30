@@ -3,6 +3,7 @@ import type { RunStepRecord } from '../../../shared/types/run.js';
 import type {
   AgentExecutorLifecycleControlInput,
   AgentExecutorLifecycleObserveInput,
+  AgentExecutorLifecycleSettleInput,
   AgentExecutorLifecycleStartInput,
   AgentExecutorLifecycleAdapter,
 } from './agent-executor.js';
@@ -191,6 +192,29 @@ export class AgentExecutorLifecycleMonitor {
   ): Promise<AgentExecutorLifecyclePlannedObservation> {
     let recordedStep: RunStepRecord | null = null;
     const observed = await this.adapter.control({
+      ...input,
+      onEvent: async (event) => {
+        recordedStep = await this.recorder.record(event);
+      },
+    });
+    const observation = {
+      projectedStatus: observed.projectedStatus,
+      recordedStep,
+      terminalEventRecorded: this.recorder.hasTerminalEvent(),
+      terminalSessionStatus: this.recorder.getTerminalSessionStatus(),
+    };
+
+    return this.buildPlannedObservation({
+      handle: input.handle,
+      observation,
+    });
+  }
+
+  async settleAndPlan(
+    input: Omit<AgentExecutorLifecycleSettleInput, 'onEvent'>,
+  ): Promise<AgentExecutorLifecyclePlannedObservation> {
+    let recordedStep: RunStepRecord | null = null;
+    const observed = await this.adapter.settle({
       ...input,
       onEvent: async (event) => {
         recordedStep = await this.recorder.record(event);

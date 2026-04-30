@@ -184,6 +184,59 @@ describe('AgentExecutorLifecycleMonitor', () => {
     }));
   });
 
+  it('records settle results as planned terminal observations without applying status updates', async () => {
+    const runStepRepository = buildRunStepRepositoryMock();
+    const monitor = new AgentExecutorLifecycleMonitor(
+      new DryRunAgentExecutorLifecycleAdapter(),
+      new AgentSessionEventRecorder(runStepRepository as never),
+    );
+    const handle = await monitor.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-29T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+    });
+
+    const observation = await monitor.settleAndPlan({
+      handle,
+      result: {
+        status: 'completed',
+        output: 'Dry-run executor completed.',
+      },
+    });
+
+    expect(observation).toMatchObject({
+      projectedStatus: 'completed',
+      terminalEventRecorded: true,
+      terminalSessionStatus: 'completed',
+      recordedStep: {
+        kind: 'final',
+        status: 'completed',
+        title: '完成 Agent session',
+        output: 'Dry-run executor completed.',
+      },
+      settlementPlan: {
+        action: 'update_session_status',
+        sessionId: 'agent_session_1',
+        status: 'completed',
+      },
+      settlementDiagnostic: {
+        action: 'update_session_status',
+        autoReplay: false,
+        sessionId: 'agent_session_1',
+        status: 'completed',
+      },
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'final',
+      status: 'completed',
+      title: '完成 Agent session',
+      output: 'Dry-run executor completed.',
+    }));
+  });
+
   it('records typed control requests and returns settlement plans', async () => {
     const runStepRepository = buildRunStepRepositoryMock();
     const monitor = new AgentExecutorLifecycleMonitor(

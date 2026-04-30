@@ -217,6 +217,49 @@ describe('AgentExecutorLifecycleService', () => {
     expect(statusUpdater.updateStatus).toHaveBeenCalledWith('agent_session_1', 'cancelled');
   });
 
+  it('plans settle results without applying session status updates', async () => {
+    const { runStepRepository, service, statusUpdater } = buildService();
+    const handle = await service.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-29T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+    });
+
+    const planned = await service.settleAndPlan({
+      handle,
+      result: {
+        status: 'failed',
+        failureKind: 'executor',
+        message: 'Dry-run executor failed.',
+      },
+    });
+
+    expect(planned).toMatchObject({
+      projectedStatus: 'failed',
+      terminalEventRecorded: true,
+      settlementPlan: {
+        action: 'update_session_status',
+        sessionId: 'agent_session_1',
+        status: 'failed',
+      },
+      settlementDiagnostic: {
+        action: 'update_session_status',
+        autoReplay: false,
+        sessionId: 'agent_session_1',
+        status: 'failed',
+      },
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'final',
+      title: 'Agent session 执行失败',
+      error: 'Dry-run executor failed.',
+    }));
+    expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
+  });
+
   it('plans typed lifecycle control requests without applying session status updates', async () => {
     const { runStepRepository, service, statusUpdater } = buildService();
     const handle = await service.startSession({

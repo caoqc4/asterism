@@ -594,6 +594,9 @@ The latest implementation slice:
 - The dry-run lifecycle adapter now exposes a typed `settle` API that routes
   completed and paused outcomes through the same runtime event spine, still
   without launching any real executor process.
+- Monitor and service boundaries now expose `settleAndPlan`, recording
+  completed/failed/paused executor outcomes as evidence and settlement plans
+  without implicitly writing `AgentSession.status`.
 - The lifecycle service factory availability projection now accepts control
   support overrides, letting dry-run diagnostics describe partial or absent
   controls without implying runtime readiness.
