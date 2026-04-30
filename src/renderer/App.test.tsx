@@ -20,6 +20,7 @@ import type { TaskDependencyRecord } from '@shared/types/task-dependency';
 import type { TaskDetail, TaskListItemRecord, TaskRecord } from '@shared/types/task';
 import type { ArtifactRecord } from '@shared/types/artifact';
 import type { WaitingItemRecord } from '@shared/types/waiting-item';
+import { buildDryRunAgentExecutorLifecycleAvailability } from '@shared/agent-executor-lifecycle-diagnostics';
 import { summarizeAgentToolScaffoldFamilies } from '@shared/agent-tool-scaffold';
 import { formatDependencyAgeLabel, getDependencyAgeReason } from '@shared/working-context/dependency';
 import { App } from './App';
@@ -352,6 +353,7 @@ describe('App UI flow', () => {
     featureFlags: {
       enableScheduler: false,
     },
+    executorLifecycleAvailability: buildDryRunAgentExecutorLifecycleAvailability(),
     toolScaffoldSummaries: summarizeAgentToolScaffoldFamilies({
       policy: {
         allowLocalWorkspaceRead: false,
@@ -7368,6 +7370,7 @@ describe('App UI flow', () => {
           featureFlags: {
             enableScheduler: input.featureFlags.enableScheduler,
           },
+          executorLifecycleAvailability: buildDryRunAgentExecutorLifecycleAvailability(),
           toolScaffoldSummaries: summarizeAgentToolScaffoldFamilies({
             policy: {
               allowLocalWorkspaceRead: false,

@@ -1,4 +1,5 @@
 import type { AgentSandboxBackendStatus } from '../agent-sandbox-provider.js';
+import type { AgentExecutorLifecycleServiceAvailability } from '../agent-executor-lifecycle-diagnostics.js';
 import type { AgentToolScaffoldFamilySummary } from '../agent-tool-scaffold.js';
 
 export type AiProvider = 'anthropic' | 'openai' | 'openai-compatible' | 'fal-openrouter' | 'replicate';
@@ -51,5 +52,6 @@ export type AiConfigStatus = {
   configPath: string | null;
   featureFlags: FeatureFlags;
   sandboxBackendStatus?: AgentSandboxBackendStatus | null;
+  executorLifecycleAvailability?: AgentExecutorLifecycleServiceAvailability | null;
   toolScaffoldSummaries?: AgentToolScaffoldFamilySummary[];
 };

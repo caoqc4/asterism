@@ -1,7 +1,6 @@
 import type { AiConfigInput, AiConfigStatus } from '@shared/types/settings';
 import type { AgentToolScaffoldFamilySummary } from '@shared/agent-tool-scaffold';
 import { buildAgentExecutionOrchestrationSnapshot } from '@shared/agent-orchestration';
-import { buildDryRunAgentExecutorLifecycleAvailability } from '@shared/agent-executor-lifecycle-diagnostics';
 import { buildDefaultAgentToolExecutionPolicy } from '@shared/agent-tool-scaffold';
 import {
   buildDefaultAgentSandboxCommandPolicy,
@@ -117,7 +116,7 @@ export function SettingsPage({
   sandboxBackendProbePending,
 }: SettingsPageProps) {
   const orchestrationDiagnostics = buildReadOnlyOrchestrationPresentation({
-    executorLifecycleAvailability: buildDryRunAgentExecutorLifecycleAvailability(),
+    executorLifecycleAvailability: aiStatus?.executorLifecycleAvailability,
     snapshot: buildAgentExecutionOrchestrationSnapshot(aiStatus),
   });
 

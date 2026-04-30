@@ -551,6 +551,9 @@ The latest implementation slice:
   `Orchestration Diagnostics` card, including blocked reasons and next action,
   without adding runtime entrypoints, automatic start, queue workers, or
   model-visible tools.
+- Main-process AI config status now includes that executor lifecycle
+  availability as passive diagnostics, keeping the Settings display sourced
+  from status data rather than renderer-local assumptions.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation

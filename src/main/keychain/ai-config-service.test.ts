@@ -46,6 +46,13 @@ describe('AiConfigService', () => {
     expect(status.provider).toBe('anthropic');
     expect(status.apiKeyStored).toBe(false);
     expect(status.codeAgentModelProducerEnabled).toBe(false);
+    expect(status.executorLifecycleAvailability).toMatchObject({
+      automaticStartAllowed: false,
+      modelExposure: 'hidden',
+      queueWorkerAllowed: false,
+      runtimeReady: false,
+      status: 'dry_run_available',
+    });
     expect(status.toolScaffoldSummaries?.find((summary) => summary.family === 'workspace_coding')).toMatchObject({
       implementedCount: 4,
       providerNativeExposedIds: [],
@@ -113,6 +120,7 @@ describe('AiConfigService', () => {
         reason: 'package.json exposes npm run test.',
       },
     });
+    expect(status.executorLifecycleAvailability?.summary).toContain('status=dry_run_available');
     expect(status.toolScaffoldSummaries?.map((summary) => summary.family)).toEqual([
       'task_domain',
       'workspace_coding',
