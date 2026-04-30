@@ -5,6 +5,7 @@ import { DryRunAgentExecutorLifecycleAdapter } from './agent-executor.js';
 import {
   AgentExecutorLifecycleMonitor,
   applyAgentExecutorLifecycleSettlementPlan,
+  buildAgentExecutorLifecycleSettlementDiagnostic,
 } from './agent-executor-lifecycle-monitor.js';
 import { AgentSessionEventRecorder } from './agent-session-event-recorder.js';
 
@@ -82,6 +83,19 @@ describe('AgentExecutorLifecycleMonitor', () => {
         ].join(' / '),
       },
     });
+    expect(buildAgentExecutorLifecycleSettlementDiagnostic(observation.settlementPlan)).toEqual({
+      action: 'no_status_change',
+      autoReplay: false,
+      sessionId: 'agent_session_1',
+      status: null,
+      summary: [
+        'Executor lifecycle settlement',
+        'session=agent_session_1',
+        'action=no_status_change',
+        'reason=no_projected_status',
+        'autoReplay=no',
+      ].join(' / '),
+    });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'plan',
       status: 'running',
@@ -135,6 +149,20 @@ describe('AgentExecutorLifecycleMonitor', () => {
           'autoReplay=no',
         ].join(' / '),
       },
+    });
+    expect(buildAgentExecutorLifecycleSettlementDiagnostic(observation.settlementPlan)).toEqual({
+      action: 'update_session_status',
+      autoReplay: false,
+      sessionId: 'agent_session_1',
+      status: 'cancelled',
+      summary: [
+        'Executor lifecycle settlement',
+        'session=agent_session_1',
+        'status=cancelled',
+        'terminalEvent=yes',
+        'action=update_session_status',
+        'autoReplay=no',
+      ].join(' / '),
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'final',

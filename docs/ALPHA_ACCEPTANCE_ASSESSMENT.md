@@ -14,6 +14,9 @@ Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 890
+  tests after adding structured executor lifecycle settlement diagnostics for
+  no-status and status-update plans.
+- on 2026-04-30, `npm run verify` passed locally with 127 test files / 890
   tests after renaming service settlement helpers to make the
   checkpoint-backed session boundary explicit.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 890

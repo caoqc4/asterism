@@ -43,6 +43,14 @@ export type AgentExecutorLifecycleSettlementApplyResult =
       summary: string;
     };
 
+export type AgentExecutorLifecycleSettlementDiagnostic = {
+  action: AgentExecutorLifecycleSettlementPlan['action'];
+  autoReplay: false;
+  sessionId: string;
+  status: AgentSessionRecord['status'] | null;
+  summary: string;
+};
+
 export type AgentExecutorLifecyclePlannedObservation = AgentExecutorLifecycleObservation & {
   settlementPlan: AgentExecutorLifecycleSettlementPlan;
 };
@@ -77,6 +85,18 @@ export function planAgentExecutorLifecycleSettlement(params: {
       'action=update_session_status',
       'autoReplay=no',
     ].join(' / '),
+  };
+}
+
+export function buildAgentExecutorLifecycleSettlementDiagnostic(
+  plan: AgentExecutorLifecycleSettlementPlan,
+): AgentExecutorLifecycleSettlementDiagnostic {
+  return {
+    action: plan.action,
+    autoReplay: false,
+    sessionId: plan.sessionId,
+    status: plan.action === 'update_session_status' ? plan.status : null,
+    summary: plan.summary,
   };
 }
 
