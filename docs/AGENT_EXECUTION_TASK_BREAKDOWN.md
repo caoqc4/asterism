@@ -633,6 +633,9 @@ The latest implementation slice:
 - DecisionService approval-resume coverage now exercises the same
   checkpoint-backed tie-break, keeping Decision-driven recovery aligned with
   RunService recovery.
+- RunService and DecisionService now name their private settlement updater after
+  checkpoint-backed sessions, matching the helper semantics and avoiding
+  confusion with running continuable sessions.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

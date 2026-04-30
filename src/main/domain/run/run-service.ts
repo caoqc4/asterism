@@ -224,7 +224,7 @@ export class RunService {
     );
 
     if (!result.success) {
-      await this.updateLatestContinuableAgentSession(run, 'failed');
+      await this.updateLatestCheckpointBackedAgentSession(run, 'failed');
       const failed = await this.runRepository.updateResult(
         runId,
         'failed',
@@ -237,7 +237,7 @@ export class RunService {
     }
 
     await this.runCheckpointRepository.updateStatus(checkpoint.id, 'resolved');
-    await this.updateLatestContinuableAgentSession(run, 'completed');
+    await this.updateLatestCheckpointBackedAgentSession(run, 'completed');
     await this.runStepRepository.create({
       runId,
       kind: 'final',
@@ -293,7 +293,7 @@ export class RunService {
     );
   }
 
-  private async updateLatestContinuableAgentSession(
+  private async updateLatestCheckpointBackedAgentSession(
     run: RunDetailRecord,
     status: AgentSessionRecord['status'],
   ): Promise<void> {

@@ -278,7 +278,7 @@ export class DecisionService {
 
     if (action !== 'approve') {
       await this.runCheckpointRepository.updateStatus(checkpoint.id, 'cancelled');
-      await this.updateLatestContinuableAgentSession(checkpoint.runId, 'cancelled');
+      await this.updateLatestCheckpointBackedAgentSession(checkpoint.runId, 'cancelled');
       await this.runStepRepository.create({
         runId: checkpoint.runId,
         kind: 'checkpoint',
@@ -351,7 +351,7 @@ export class DecisionService {
     );
 
     if (!result.success) {
-      await this.updateLatestContinuableAgentSession(checkpoint.runId, 'failed');
+      await this.updateLatestCheckpointBackedAgentSession(checkpoint.runId, 'failed');
       await this.runStepRepository.create({
         runId: checkpoint.runId,
         kind: 'checkpoint',
@@ -371,7 +371,7 @@ export class DecisionService {
 
     const run = await this.runRepository.getDetail(checkpoint.runId);
     await this.runCheckpointRepository.updateStatus(checkpoint.id, 'resolved');
-    await this.updateLatestContinuableAgentSession(checkpoint.runId, 'completed');
+    await this.updateLatestCheckpointBackedAgentSession(checkpoint.runId, 'completed');
     await this.runStepRepository.create({
       runId: checkpoint.runId,
       kind: 'checkpoint',
@@ -409,7 +409,7 @@ export class DecisionService {
         ? `Browser controlled resume blocked: origin ${parsed.payload.origin} is not a local QA origin.`
         : `Browser controlled resume blocked: ${parsed.blockedReasons.join(' ')}`;
       await this.runCheckpointRepository.updateStatus(checkpointId, 'cancelled');
-      await this.updateLatestContinuableAgentSession(runId, 'failed');
+      await this.updateLatestCheckpointBackedAgentSession(runId, 'failed');
       await this.runStepRepository.create({
         runId,
         kind: 'checkpoint',
@@ -450,7 +450,7 @@ export class DecisionService {
         ? result.blockedReasons.join(' / ') || 'none'
         : 'resume produced a second confirmation request';
       await this.runCheckpointRepository.updateStatus(checkpointId, 'cancelled');
-      await this.updateLatestContinuableAgentSession(runId, 'failed');
+      await this.updateLatestCheckpointBackedAgentSession(runId, 'failed');
       await this.runStepRepository.create({
         runId,
         kind: 'checkpoint',
@@ -468,7 +468,7 @@ export class DecisionService {
 
     const run = await this.runRepository.getDetail(runId);
     await this.runCheckpointRepository.updateStatus(checkpointId, 'resolved');
-    await this.updateLatestContinuableAgentSession(runId, 'completed');
+    await this.updateLatestCheckpointBackedAgentSession(runId, 'completed');
     await this.runStepRepository.create({
       runId,
       kind: 'checkpoint',
@@ -513,7 +513,7 @@ export class DecisionService {
 
     if (preflight.status === 'blocked') {
       await this.runCheckpointRepository.updateStatus(checkpointId, 'cancelled');
-      await this.updateLatestContinuableAgentSession(runId, 'failed');
+      await this.updateLatestCheckpointBackedAgentSession(runId, 'failed');
       await this.runStepRepository.create({
         runId,
         kind: 'checkpoint',
@@ -566,7 +566,7 @@ export class DecisionService {
 
     if (result.status === 'blocked') {
       await this.runCheckpointRepository.updateStatus(checkpointId, 'cancelled');
-      await this.updateLatestContinuableAgentSession(runId, 'failed');
+      await this.updateLatestCheckpointBackedAgentSession(runId, 'failed');
       await this.runStepRepository.create({
         runId,
         kind: 'checkpoint',
@@ -590,7 +590,7 @@ export class DecisionService {
 
     const run = await this.runRepository.getDetail(runId);
     await this.runCheckpointRepository.updateStatus(checkpointId, 'resolved');
-    await this.updateLatestContinuableAgentSession(runId, 'completed');
+    await this.updateLatestCheckpointBackedAgentSession(runId, 'completed');
     await this.runStepRepository.create({
       runId,
       kind: 'checkpoint',
@@ -615,7 +615,7 @@ export class DecisionService {
     );
   }
 
-  private async updateLatestContinuableAgentSession(
+  private async updateLatestCheckpointBackedAgentSession(
     runId: string,
     status: AgentSessionRecord['status'],
   ): Promise<void> {
