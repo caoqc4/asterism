@@ -524,6 +524,9 @@ Current implementation note:
   a structured diagnostic with action, session id, optional status, summary,
   and `autoReplay=false`, so future IPC or renderer review surfaces can display
   settlement evidence without parsing summary strings.
+- Settlement application results preserve the same structured action, session,
+  status, and `autoReplay=false` fields while adding `applied=yes/no`, keeping
+  observe/plan and explicit-apply steps auditable as separate phases.
 - The runtime event spine now includes executor liveness and interruption
   events: `session.heartbeat`, `session.interrupted`, and `session.cancelled`.
   Heartbeats write running evidence only, while interrupted/cancelled events
