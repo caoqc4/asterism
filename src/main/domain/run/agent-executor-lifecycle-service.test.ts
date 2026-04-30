@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { UnsupportedExecutorLifecycleControlRequestError } from '../../../shared/agent-executor-lifecycle.js';
+import {
+  UnsupportedExecutorLifecycleControlRequestError,
+  formatExecutorLifecycleControlError,
+} from '../../../shared/agent-executor-lifecycle.js';
 import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
 import { DryRunAgentExecutorLifecycleAdapter } from './agent-executor.js';
 import { AgentExecutorLifecycleMonitor } from './agent-executor-lifecycle-monitor.js';
@@ -198,6 +201,9 @@ describe('AgentExecutorLifecycleService', () => {
       requestType: 'interrupt',
       message: 'Executor lifecycle control request interrupt is not supported by this handle.',
     });
+    expect(formatExecutorLifecycleControlError(thrown)).toBe(
+      'code=unsupported_executor_lifecycle_control_request / request=interrupt / message=Executor lifecycle control request interrupt is not supported by this handle.',
+    );
     await expect(service.controlAndPlan({
       handle,
       request: {
