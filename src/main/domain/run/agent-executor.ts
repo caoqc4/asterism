@@ -10,9 +10,11 @@ import {
   assertExecutorLifecycleControlSupported,
   buildExecutorLifecycleControlSupport,
   mapExecutorLifecycleControlRequestToSignal,
+  mapExecutorLifecycleSettleResultToSignal,
   mapExecutorLifecycleSignalToRuntimeEvent,
   projectExecutorLifecycleSignalSessionStatus,
   type AgentExecutorLifecycleControlRequest,
+  type AgentExecutorLifecycleSettleResult,
   type AgentExecutorLifecycleSignal,
   type AgentExecutorSessionHandle,
 } from '../../../shared/agent-executor-lifecycle.js';
@@ -58,9 +60,19 @@ export type AgentExecutorLifecycleControlInput = {
   onEvent?: ((event: AgentSessionEvent) => Promise<void> | void) | null;
 };
 
+export type AgentExecutorLifecycleSettleInput = {
+  handle: AgentExecutorSessionHandle;
+  result: AgentExecutorLifecycleSettleResult;
+  onEvent?: ((event: AgentSessionEvent) => Promise<void> | void) | null;
+};
+
 export interface AgentExecutorLifecycleAdapter {
   startSession(input: AgentExecutorLifecycleStartInput): Promise<AgentExecutorSessionHandle>;
   control(input: AgentExecutorLifecycleControlInput): Promise<{
+    event: AgentSessionEvent;
+    projectedStatus: AgentSessionRecord['status'] | null;
+  }>;
+  settle(input: AgentExecutorLifecycleSettleInput): Promise<{
     event: AgentSessionEvent;
     projectedStatus: AgentSessionRecord['status'] | null;
   }>;
@@ -137,6 +149,17 @@ export class DryRunAgentExecutorLifecycleAdapter implements AgentExecutorLifecyc
       handle: input.handle,
       onEvent: input.onEvent,
       signal: mapExecutorLifecycleControlRequestToSignal(input.request),
+    });
+  }
+
+  async settle(input: AgentExecutorLifecycleSettleInput): Promise<{
+    event: AgentSessionEvent;
+    projectedStatus: AgentSessionRecord['status'] | null;
+  }> {
+    return this.observe({
+      handle: input.handle,
+      onEvent: input.onEvent,
+      signal: mapExecutorLifecycleSettleResultToSignal(input.result),
     });
   }
 }

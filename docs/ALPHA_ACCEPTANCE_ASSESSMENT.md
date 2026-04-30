@@ -13,6 +13,9 @@ Strong automated coverage already exists for the main control-plane semantics, r
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
+- on 2026-04-30, `npm run verify` passed locally with 127 test files / 894
+  tests after adding a dry-run adapter `settle` API that maps completed/paused
+  outcomes through the runtime event spine.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 893
   tests after adding an explicit executor lifecycle settle-result contract for
   completed/failed/paused adapter outcomes.

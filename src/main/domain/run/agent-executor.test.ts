@@ -394,6 +394,64 @@ describe('DryRunAgentExecutorLifecycleAdapter', () => {
     expect(onEvent).toHaveBeenCalledTimes(2);
   });
 
+  it('maps settle results through the dry-run lifecycle spine', async () => {
+    const adapter = new DryRunAgentExecutorLifecycleAdapter();
+    const onEvent = vi.fn();
+    const handle = await adapter.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-30T00:00:00.000Z',
+      capabilities: {
+        structuredToolCalls: false,
+        textOnlyPlanning: true,
+        streaming: false,
+        fileContext: true,
+        taskMutationTools: false,
+        longRunningSessions: true,
+      },
+    });
+
+    await expect(adapter.settle({
+      handle,
+      onEvent,
+      result: {
+        status: 'completed',
+        output: 'Dry-run executor completed.',
+      },
+    })).resolves.toMatchObject({
+      event: {
+        type: 'session.completed',
+        runId: 'run_1',
+        sessionId: 'agent_session_1',
+        output: 'Dry-run executor completed.',
+      },
+      projectedStatus: 'completed',
+    });
+
+    await expect(adapter.settle({
+      handle,
+      onEvent,
+      result: {
+        status: 'paused',
+        checkpointId: 'run_checkpoint_1',
+        message: 'Waiting for operator review.',
+      },
+    })).resolves.toMatchObject({
+      event: {
+        type: 'session.paused',
+        runId: 'run_1',
+        sessionId: 'agent_session_1',
+        checkpointId: 'run_checkpoint_1',
+        message: 'Waiting for operator review.',
+      },
+      projectedStatus: 'paused',
+    });
+
+    expect(onEvent).toHaveBeenCalledTimes(2);
+  });
+
   it('rejects unsupported lifecycle control requests without recording an event', async () => {
     const adapter = new DryRunAgentExecutorLifecycleAdapter();
     const onEvent = vi.fn();

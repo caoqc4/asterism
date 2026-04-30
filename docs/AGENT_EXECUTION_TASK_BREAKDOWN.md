@@ -591,6 +591,9 @@ The latest implementation slice:
 - Executor lifecycle settle results now have an explicit shared contract for
   completed, failed, and paused adapter outcomes, with a pure mapper into the
   existing `settled` lifecycle signal.
+- The dry-run lifecycle adapter now exposes a typed `settle` API that routes
+  completed and paused outcomes through the same runtime event spine, still
+  without launching any real executor process.
 - The lifecycle service factory availability projection now accepts control
   support overrides, letting dry-run diagnostics describe partial or absent
   controls without implying runtime readiness.
