@@ -568,6 +568,9 @@ The latest implementation slice:
 - Task detail readiness coverage now uses the same partial control availability
   input, keeping manual sandbox producer diagnostics honest when cancel support
   is absent.
+- Runs recovery safety coverage now uses partial control availability too, so
+  replay/recovery review surfaces do not advertise unavailable lifecycle
+  controls.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

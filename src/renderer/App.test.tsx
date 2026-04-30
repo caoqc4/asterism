@@ -4003,6 +4003,14 @@ describe('App UI flow', () => {
     };
     const runAgentPlanApi: ElectronApi = {
       ...mockApi,
+      getAiConfigStatus: vi.fn(async () => ({
+        ...aiStatus,
+        executorLifecycleAvailability: buildDryRunAgentExecutorLifecycleAvailability({
+          controlSupport: {
+            cancel: false,
+          },
+        }),
+      })),
       listRuns: vi.fn(async () => [agentPlanRun]),
       getRunDetail: vi.fn(async (runId: string) =>
         runId === agentPlanRun.id ? agentPlanDetail : null,
@@ -4058,7 +4066,7 @@ describe('App UI flow', () => {
       recoverySafety.getByText('runtimeReady=no / queueWorker=no / automaticStart=no'),
     ).toBeTruthy();
     expect(
-      recoverySafety.getByText('controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned'),
+      recoverySafety.getByText('controlRequests=heartbeat,interrupt / controlMode=dry_run_planned'),
     ).toBeTruthy();
     expect(
       recoverySafety.getByText('modelExposure=hidden / modelVisibleTools=no'),
