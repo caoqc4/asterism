@@ -115,11 +115,33 @@ describe('agent session continuation helper', () => {
     });
 
     expect(projectAgentSessionSettlement(buildSession({
+      id: 'agent_session_completed',
+      status: 'completed',
+    }))).toEqual({
+      action: 'inspect_terminal_evidence',
+      sessionId: 'agent_session_completed',
+      status: 'completed',
+      summary: 'Agent session settlement / session=agent_session_completed / status=completed / action=inspect_terminal_evidence / requiresOpenCheckpoint=no / autoReplay=no',
+    });
+
+    expect(projectAgentSessionSettlement(buildSession({
       id: 'agent_session_failed',
       status: 'failed',
-    }))).toMatchObject({
+    }))).toEqual({
       action: 'inspect_terminal_evidence',
+      sessionId: 'agent_session_failed',
       status: 'failed',
+      summary: 'Agent session settlement / session=agent_session_failed / status=failed / action=inspect_terminal_evidence / requiresOpenCheckpoint=no / autoReplay=no',
+    });
+
+    expect(projectAgentSessionSettlement(buildSession({
+      id: 'agent_session_cancelled',
+      status: 'cancelled',
+    }))).toEqual({
+      action: 'inspect_terminal_evidence',
+      sessionId: 'agent_session_cancelled',
+      status: 'cancelled',
+      summary: 'Agent session settlement / session=agent_session_cancelled / status=cancelled / action=inspect_terminal_evidence / requiresOpenCheckpoint=no / autoReplay=no',
     });
   });
 });

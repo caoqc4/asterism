@@ -14,6 +14,9 @@ Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 888
+  tests after covering completed, failed, and cancelled agent sessions as
+  terminal evidence review only.
+- on 2026-04-30, `npm run verify` passed locally with 127 test files / 888
   tests after explicitly covering needs-confirmation agent sessions as
   checkpoint-backed settlement only, with autoReplay disabled.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 888

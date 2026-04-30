@@ -618,6 +618,9 @@ The latest implementation slice:
 - Agent session settlement coverage now explicitly includes
   `needs_confirmation` as checkpoint-backed only, preserving `autoReplay=no`
   alongside paused sessions.
+- Terminal session settlement coverage now fully covers completed, failed, and
+  cancelled sessions as evidence-review only, with no checkpoint settlement or
+  replay authority.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any
