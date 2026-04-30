@@ -17,17 +17,28 @@ export type AgentExecutorLifecycleServiceAvailability = {
   modelExposure: 'hidden';
   automaticStartAllowed: false;
   queueWorkerAllowed: false;
+  blockedReasons: string[];
+  nextAction: string;
   reason: string;
   summary: string;
 };
 
 export function evaluateAgentExecutorLifecycleServiceAvailability(): AgentExecutorLifecycleServiceAvailability {
+  const blockedReasons = [
+    'No real executor runtime is connected.',
+    'Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.',
+    'Model-visible tool exposure remains hidden.',
+  ];
+  const nextAction = 'Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.';
+
   return {
     status: 'dry_run_available',
     runtimeReady: false,
     modelExposure: 'hidden',
     automaticStartAllowed: false,
     queueWorkerAllowed: false,
+    blockedReasons,
+    nextAction,
     reason:
       'Executor lifecycle service is available as a dry-run adapter boundary only; no real runtime is launched.',
     summary: [
@@ -37,6 +48,8 @@ export function evaluateAgentExecutorLifecycleServiceAvailability(): AgentExecut
       'modelExposure=hidden',
       'automaticStart=no',
       'queueWorker=no',
+      `blocked=${blockedReasons.join('; ')}`,
+      `next=${nextAction}`,
     ].join(' / '),
   };
 }

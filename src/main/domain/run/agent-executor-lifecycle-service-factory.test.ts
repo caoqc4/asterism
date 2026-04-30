@@ -42,6 +42,12 @@ describe('createAgentExecutorLifecycleService', () => {
       modelExposure: 'hidden',
       automaticStartAllowed: false,
       queueWorkerAllowed: false,
+      blockedReasons: [
+        'No real executor runtime is connected.',
+        'Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.',
+        'Model-visible tool exposure remains hidden.',
+      ],
+      nextAction: 'Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.',
       reason:
         'Executor lifecycle service is available as a dry-run adapter boundary only; no real runtime is launched.',
       summary: [
@@ -51,6 +57,8 @@ describe('createAgentExecutorLifecycleService', () => {
         'modelExposure=hidden',
         'automaticStart=no',
         'queueWorker=no',
+        'blocked=No real executor runtime is connected.; Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.; Model-visible tool exposure remains hidden.',
+        'next=Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.',
       ].join(' / '),
     });
   });

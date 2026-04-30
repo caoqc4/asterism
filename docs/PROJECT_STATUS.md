@@ -231,6 +231,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - The factory now also exposes a dry-run-only availability summary for future
   diagnostics: `runtimeReady=no`, `modelExposure=hidden`,
   `automaticStart=no`, and `queueWorker=no`.
+- That availability summary now also carries structured blocked reasons and a
+  next-action hint, so future diagnostics can explain that no real executor is
+  connected, the service is not wired into runtime entrypoints, and
+  model-visible exposure remains hidden.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, and hidden-tool-family facts while keeping Sandbox Backend
@@ -1303,6 +1307,10 @@ Latest local baseline:
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-30 after adding structured
+  blocked reasons and next-action guidance to the dry-run executor lifecycle
+  availability summary. Current local acceptance status: 126 test files / 863
+  tests
 - `npm run verify` passed locally on 2026-04-30 after adding the dry-run
   executor lifecycle availability summary and fixing a date-sensitive
   blocker-source activity test baseline. Current local acceptance status: 126

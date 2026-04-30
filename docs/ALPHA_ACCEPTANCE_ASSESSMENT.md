@@ -14,6 +14,9 @@ Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
 - on 2026-04-30, `npm run verify` passed locally with 126 test files / 863
+  tests after adding structured blocked reasons and next-action guidance to the
+  dry-run executor lifecycle availability summary.
+- on 2026-04-30, `npm run verify` passed locally with 126 test files / 863
   tests after adding the dry-run executor lifecycle availability summary and
   fixing a date-sensitive blocker-source activity test baseline.
 - on 2026-04-30, `npm run verify` passed locally with 126 test files / 862
