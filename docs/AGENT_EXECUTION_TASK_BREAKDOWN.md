@@ -654,6 +654,9 @@ The latest implementation slice:
   `no_status_change` settlement diagnostics with no session status update.
 - Default lifecycle service factory coverage now locks the same heartbeat
   no-status-change diagnostics through the assembled dry-run service.
+- Lifecycle service coverage now also asserts that explicitly applying a
+  `no_status_change` plan returns `applied=false` with structured fields and no
+  session status write.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

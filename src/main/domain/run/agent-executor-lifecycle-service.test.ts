@@ -165,6 +165,23 @@ describe('AgentExecutorLifecycleService', () => {
       output: 'Dry-run executor is still alive.',
     }));
     expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
+
+    await expect(service.applySettlementPlan(planned.settlementPlan)).resolves.toEqual({
+      action: 'no_status_change',
+      applied: false,
+      autoReplay: false,
+      sessionId: 'agent_session_1',
+      status: null,
+      summary: [
+        'Executor lifecycle settlement',
+        'session=agent_session_1',
+        'action=no_status_change',
+        'reason=no_projected_status',
+        'autoReplay=no',
+        'applied=no',
+      ].join(' / '),
+    });
+    expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
   });
 
   it('applies a planned settlement only when explicitly requested', async () => {
