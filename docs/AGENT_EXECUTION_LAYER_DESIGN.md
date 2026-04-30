@@ -524,6 +524,9 @@ Current implementation note:
   a structured diagnostic with action, session id, optional status, summary,
   and `autoReplay=false`, so future IPC or renderer review surfaces can display
   settlement evidence without parsing summary strings.
+- Heartbeat observations produce running evidence and a `no_status_change`
+  settlement diagnostic; they never apply `AgentSession.status` updates on
+  their own.
 - Settlement application results preserve the same structured action, session,
   status, and `autoReplay=false` fields while adding `applied=yes/no`, keeping
   observe/plan and explicit-apply steps auditable as separate phases.
