@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { AiConfigStatus } from '@shared/types/settings';
 import {
+  buildAgentSessionReplayReviewPresentation,
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
   formatAgentSessionRecoveryIntentSummary,
@@ -492,6 +493,22 @@ describe('agent capability formatting', () => {
     ], [{ status: 'open' }])).toBe(
       'Replay review：resume only through the open checkpoint / mode=manual_resume / session=agent_session_1 / status=paused / restartSafety=checkpoint_gated / steps=1 / openCheckpoints=1 / latest=artifact:completed:Sandbox producer source ready / autoReplay=no',
     );
+    expect(buildAgentSessionReplayReviewPresentation(session, [
+      {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        index: 2,
+        kind: 'artifact',
+        status: 'completed',
+        title: 'Sandbox producer source ready',
+      },
+    ], [{ status: 'open' }])).toMatchObject({
+      automaticReplayAllowed: false,
+      mode: 'manual_resume',
+      openCheckpointCount: 1,
+      restartSafety: 'checkpoint_gated',
+      sessionId: 'agent_session_1',
+      status: 'paused',
+    });
     expect(formatAgentSessionRecoveryIntentSummary(session, [
       {
         createdAt: '2026-01-01T00:00:00.000Z',

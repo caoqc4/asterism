@@ -52,13 +52,13 @@ import {
 } from '../lib/stagedPatchReview';
 import { buildExecutorLifecycleDiagnosticLines } from '../lib/agentOrchestrationPresentation';
 import {
+  buildAgentSessionReplayReviewPresentation,
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
   formatAgentSessionRecoveryIntentSummary,
   formatAgentSessionRecoveryRunInstructions,
   formatAgentSessionReplayNextStepDraft,
   formatAgentSessionRestartSummary,
-  formatAgentSessionReplayReviewSummary,
   formatAgentSessionToolFamiliesSummary,
   formatCodeAgentRerunIntent,
   formatPreRunAgentCapabilitySummary,
@@ -759,7 +759,7 @@ export function RunsPage({
     ? formatAgentSessionRestartSummary(latestAgentSession)
     : null;
   const latestAgentSessionReplayReview = latestAgentSession
-    ? formatAgentSessionReplayReviewSummary(latestAgentSession, detailSteps, detailCheckpoints)
+    ? buildAgentSessionReplayReviewPresentation(latestAgentSession, detailSteps, detailCheckpoints)
     : null;
   const latestAgentSessionRecoveryIntent = latestAgentSession
     ? formatAgentSessionRecoveryIntentSummary(latestAgentSession, detailSteps, detailCheckpoints)
@@ -842,7 +842,9 @@ export function RunsPage({
                 <div className="run-recovery-strip" aria-label="Run recovery safety">
                   <div className="orchestration-readiness-header">
                     <strong>Recovery safety</strong>
-                    <span className="status lane-status lane-status-steady">inspect first</span>
+                    <span className="status lane-status lane-status-steady">
+                      {latestAgentSessionReplayReview?.automaticReplayAllowed ? 'auto replay ready' : 'inspect first'}
+                    </span>
                   </div>
                   {runLifecycleProjection ? (
                     <p className="meta">
@@ -856,7 +858,7 @@ export function RunsPage({
                   ) : null}
                   {latestAgentSessionReplayReview ? (
                     <p className="meta">
-                      {latestAgentSessionReplayReview}
+                      {latestAgentSessionReplayReview.summary}
                     </p>
                   ) : null}
                   {latestAgentSessionRecoveryIntent ? (

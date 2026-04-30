@@ -6,6 +6,7 @@ import { getProviderExecutionCapabilities } from '@shared/agent-provider-capabil
 import {
   buildAgentSessionRecoveryIntent,
   buildAgentSessionReplayReview,
+  type AgentSessionReplayReview,
 } from '@shared/agent-session-replay';
 import {
   formatAgentSessionRestartHint,
@@ -106,6 +107,14 @@ export function formatAgentSessionReplayReviewSummary(
   checkpoints: Pick<RunCheckpointRecord, 'status'>[] = [],
 ): string {
   return buildAgentSessionReplayReview({ checkpoints, session, steps }).summary;
+}
+
+export function buildAgentSessionReplayReviewPresentation(
+  session: AgentSessionRecord,
+  steps: Pick<RunStepRecord, 'createdAt' | 'index' | 'kind' | 'status' | 'title'>[],
+  checkpoints: Pick<RunCheckpointRecord, 'status'>[] = [],
+): AgentSessionReplayReview {
+  return buildAgentSessionReplayReview({ checkpoints, session, steps });
 }
 
 export function formatAgentSessionRecoveryIntentSummary(
