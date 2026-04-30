@@ -48,6 +48,23 @@ describe('agent session continuation helper', () => {
     ])?.id).toBe('agent_session_confirmation_new');
   });
 
+  it('uses created time as the recency tie-breaker for continuable sessions', () => {
+    expect(findLatestContinuableAgentSession([
+      buildSession({
+        id: 'agent_session_paused_old_created',
+        status: 'paused',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-03T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_running_new_created',
+        status: 'running',
+        createdAt: '2026-01-02T00:00:00.000Z',
+        updatedAt: '2026-01-03T00:00:00.000Z',
+      }),
+    ])?.id).toBe('agent_session_running_new_created');
+  });
+
   it('returns null when every session is terminal', () => {
     expect(findLatestContinuableAgentSession([
       buildSession({ status: 'completed' }),
