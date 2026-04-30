@@ -597,6 +597,9 @@ The latest implementation slice:
 - Monitor and service boundaries now expose `settleAndPlan`, recording
   completed/failed/paused executor outcomes as evidence and settlement plans
   without implicitly writing `AgentSession.status`.
+- Default lifecycle service factory coverage now proves the assembled dry-run
+  service preserves that `settleAndPlan` boundary before any explicit status
+  apply step.
 - The lifecycle service factory availability projection now accepts control
   support overrides, letting dry-run diagnostics describe partial or absent
   controls without implying runtime readiness.
