@@ -526,6 +526,9 @@ The latest implementation slice:
 - The dry-run adapter also exposes that typed control API and routes it through
   the existing runtime event spine, so interrupt/cancel behavior is covered
   before a real executor process exists.
+- Lifecycle control requests now fail closed against the handle's advertised
+  control capabilities; unsupported requests are rejected before any runtime
+  event is recorded.
 - A dry-run lifecycle monitor now records those observed signals through
   `AgentSessionEventRecorder`, so the future adapter path already produces
   heartbeat/cancellation RunStep evidence and projected session status without

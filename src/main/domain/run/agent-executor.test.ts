@@ -331,4 +331,42 @@ describe('DryRunAgentExecutorLifecycleAdapter', () => {
     });
     expect(onEvent).toHaveBeenCalledTimes(2);
   });
+
+  it('rejects unsupported lifecycle control requests without recording an event', async () => {
+    const adapter = new DryRunAgentExecutorLifecycleAdapter();
+    const onEvent = vi.fn();
+    const handle = await adapter.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-30T00:00:00.000Z',
+      capabilities: {
+        structuredToolCalls: false,
+        textOnlyPlanning: true,
+        streaming: false,
+        fileContext: true,
+        taskMutationTools: false,
+        longRunningSessions: true,
+      },
+    });
+
+    await expect(adapter.control({
+      handle: {
+        ...handle,
+        control: {
+          ...handle.control,
+          cancel: false,
+        },
+      },
+      onEvent,
+      request: {
+        type: 'cancel',
+        reason: 'Operator attempted unsupported cancel.',
+      },
+    })).rejects.toThrow(
+      'Executor lifecycle control request cancel is not supported by this handle.',
+    );
+    expect(onEvent).not.toHaveBeenCalled();
+  });
 });

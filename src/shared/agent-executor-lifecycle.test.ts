@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  getExecutorLifecycleControlKey,
   mapExecutorLifecycleControlRequestToSignal,
   mapExecutorLifecycleSignalToRuntimeEvent,
   projectExecutorLifecycleSignalSessionStatus,
@@ -32,6 +33,21 @@ function buildHandle(): AgentExecutorSessionHandle {
 }
 
 describe('agent executor lifecycle', () => {
+  it('maps control requests to handle control keys', () => {
+    expect(getExecutorLifecycleControlKey({
+      type: 'heartbeat',
+      summary: 'Executor reports liveness.',
+    })).toBe('heartbeat');
+    expect(getExecutorLifecycleControlKey({
+      type: 'interrupt',
+      reason: 'Executor process stopped responding.',
+    })).toBe('interrupt');
+    expect(getExecutorLifecycleControlKey({
+      type: 'cancel',
+      reason: 'Operator cancelled the executor.',
+    })).toBe('cancel');
+  });
+
   it('maps control requests into lifecycle signals without granting runtime execution', () => {
     expect(mapExecutorLifecycleControlRequestToSignal({
       type: 'heartbeat',

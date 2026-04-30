@@ -74,6 +74,19 @@ export type AgentExecutorLifecycleControlRequest =
       observedAt?: string | null;
     };
 
+export function getExecutorLifecycleControlKey(
+  request: AgentExecutorLifecycleControlRequest,
+): keyof AgentExecutorSessionHandle['control'] {
+  switch (request.type) {
+    case 'heartbeat':
+      return 'heartbeat';
+    case 'interrupt':
+      return 'interrupt';
+    case 'cancel':
+      return 'cancel';
+  }
+}
+
 export function mapExecutorLifecycleControlRequestToSignal(
   request: AgentExecutorLifecycleControlRequest,
 ): AgentExecutorLifecycleSignal {
