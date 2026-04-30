@@ -591,6 +591,9 @@ The latest implementation slice:
 - The lifecycle service factory availability projection now accepts control
   support overrides, letting dry-run diagnostics describe partial or absent
   controls without implying runtime readiness.
+- AI config status now obtains executor lifecycle availability through the
+  main-process lifecycle service factory projection instead of calling the
+  shared dry-run diagnostic builder directly.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any
