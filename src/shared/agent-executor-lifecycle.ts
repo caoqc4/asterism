@@ -100,10 +100,16 @@ export type ExecutorLifecycleControlErrorDiagnostic = {
   summary: string;
 };
 
+export function isUnsupportedExecutorLifecycleControlRequestError(
+  error: unknown,
+): error is UnsupportedExecutorLifecycleControlRequestError {
+  return error instanceof UnsupportedExecutorLifecycleControlRequestError;
+}
+
 export function buildExecutorLifecycleControlErrorDiagnostic(
   error: unknown,
 ): ExecutorLifecycleControlErrorDiagnostic | null {
-  if (!(error instanceof UnsupportedExecutorLifecycleControlRequestError)) {
+  if (!isUnsupportedExecutorLifecycleControlRequestError(error)) {
     return null;
   }
 

@@ -8,6 +8,7 @@ import {
   buildExecutorLifecycleControlSupport,
   formatExecutorLifecycleControlError,
   getExecutorLifecycleControlKey,
+  isUnsupportedExecutorLifecycleControlRequestError,
   isExecutorLifecycleControlSupported,
   listSupportedExecutorLifecycleControlRequests,
   mapExecutorLifecycleControlRequestToSignal,
@@ -127,6 +128,8 @@ describe('agent executor lifecycle', () => {
     }
 
     expect(thrown).toBeInstanceOf(UnsupportedExecutorLifecycleControlRequestError);
+    expect(isUnsupportedExecutorLifecycleControlRequestError(thrown)).toBe(true);
+    expect(isUnsupportedExecutorLifecycleControlRequestError(new Error('Other failure'))).toBe(false);
     expect(thrown).toMatchObject({
       code: 'unsupported_executor_lifecycle_control_request',
       requestType: 'interrupt',

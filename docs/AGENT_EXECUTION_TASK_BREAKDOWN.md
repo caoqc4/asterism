@@ -612,6 +612,9 @@ The latest implementation slice:
 - Unsupported-control diagnostics now also have a structured shared object
   shape with code, request type, message, and summary fields for future IPC or
   renderer consumers.
+- The shared lifecycle contract now includes a type guard for unsupported
+  control errors, so future service/IPC code can classify them without
+  open-coded `instanceof` checks.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any
