@@ -4025,6 +4025,9 @@ describe('App UI flow', () => {
       recoverySafety.getByText('runtimeReady=no / queueWorker=no / automaticStart=no'),
     ).toBeTruthy();
     expect(
+      recoverySafety.getByText('controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned'),
+    ).toBeTruthy();
+    expect(
       recoverySafety.getByText('modelExposure=hidden / modelVisibleTools=no'),
     ).toBeTruthy();
     expect(
@@ -7470,6 +7473,9 @@ describe('App UI flow', () => {
     )).toBeTruthy();
     expect(orchestrationDiagnostics.getByText(
       'runtimeReady=no / queueWorker=no / automaticStart=no',
+    )).toBeTruthy();
+    expect(orchestrationDiagnostics.getByText(
+      'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
     )).toBeTruthy();
     expect(orchestrationDiagnostics.getByText(
       'modelExposure=hidden / modelVisibleTools=no',
