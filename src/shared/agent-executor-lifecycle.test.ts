@@ -12,6 +12,7 @@ import {
   isExecutorLifecycleControlSupported,
   listSupportedExecutorLifecycleControlRequests,
   mapExecutorLifecycleControlRequestToSignal,
+  mapExecutorLifecycleSettleResultToSignal,
   mapExecutorLifecycleSignalToRuntimeEvent,
   projectExecutorLifecycleSignalSessionStatus,
   type AgentExecutorSessionHandle,
@@ -315,5 +316,40 @@ describe('agent executor lifecycle', () => {
       handle,
       signal,
     })).toBe(status);
+  });
+
+  it('maps explicit settle results into settled lifecycle signals', () => {
+    expect(mapExecutorLifecycleSettleResultToSignal({
+      status: 'completed',
+      output: 'Final output.',
+      observedAt: '2026-01-01T00:00:00.000Z',
+    })).toEqual({
+      type: 'settled',
+      status: 'completed',
+      output: 'Final output.',
+      observedAt: '2026-01-01T00:00:00.000Z',
+    });
+
+    expect(mapExecutorLifecycleSettleResultToSignal({
+      status: 'failed',
+      failureKind: 'executor',
+      message: 'Executor failed.',
+    })).toEqual({
+      type: 'settled',
+      status: 'failed',
+      failureKind: 'executor',
+      message: 'Executor failed.',
+    });
+
+    expect(mapExecutorLifecycleSettleResultToSignal({
+      status: 'paused',
+      checkpointId: 'run_checkpoint_1',
+      message: 'Waiting for operator review.',
+    })).toEqual({
+      type: 'settled',
+      status: 'paused',
+      checkpointId: 'run_checkpoint_1',
+      message: 'Waiting for operator review.',
+    });
   });
 });

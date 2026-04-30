@@ -57,6 +57,25 @@ export type AgentExecutorLifecycleSignal =
       observedAt?: string | null;
     };
 
+export type AgentExecutorLifecycleSettleResult =
+  | {
+      status: 'completed';
+      output: string;
+      observedAt?: string | null;
+    }
+  | {
+      status: 'failed';
+      failureKind: string;
+      message: string;
+      observedAt?: string | null;
+    }
+  | {
+      status: 'paused';
+      checkpointId: string;
+      message: string;
+      observedAt?: string | null;
+    };
+
 export type AgentExecutorLifecycleControlRequest =
   | {
       type: 'heartbeat';
@@ -201,6 +220,15 @@ export function mapExecutorLifecycleControlRequestToSignal(
         observedAt: request.observedAt,
       };
   }
+}
+
+export function mapExecutorLifecycleSettleResultToSignal(
+  result: AgentExecutorLifecycleSettleResult,
+): AgentExecutorLifecycleSignal {
+  return {
+    type: 'settled',
+    ...result,
+  };
 }
 
 export function mapExecutorLifecycleSignalToRuntimeEvent(params: {

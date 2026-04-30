@@ -588,6 +588,9 @@ The latest implementation slice:
 - Executor lifecycle control request ordering is now centralized in a shared
   contract constant so adapters, diagnostics, and tests can reuse the same
   heartbeat/interrupt/cancel order.
+- Executor lifecycle settle results now have an explicit shared contract for
+  completed, failed, and paused adapter outcomes, with a pure mapper into the
+  existing `settled` lifecycle signal.
 - The lifecycle service factory availability projection now accepts control
   support overrides, letting dry-run diagnostics describe partial or absent
   controls without implying runtime readiness.
