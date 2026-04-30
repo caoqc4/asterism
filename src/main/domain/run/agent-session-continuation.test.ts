@@ -95,6 +95,16 @@ describe('agent session continuation helper', () => {
     });
 
     expect(projectAgentSessionSettlement(buildSession({
+      id: 'agent_session_confirmation',
+      status: 'needs_confirmation',
+    }))).toEqual({
+      action: 'checkpoint_backed_settlement',
+      sessionId: 'agent_session_confirmation',
+      status: 'needs_confirmation',
+      summary: 'Agent session settlement / session=agent_session_confirmation / status=needs_confirmation / action=checkpoint_backed_settlement / requiresOpenCheckpoint=yes / autoReplay=no',
+    });
+
+    expect(projectAgentSessionSettlement(buildSession({
       id: 'agent_session_running',
       status: 'running',
     }))).toEqual({

@@ -1365,6 +1365,10 @@ Latest local baseline:
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-30 after explicitly covering
+  needs-confirmation agent sessions as checkpoint-backed settlement only, with
+  autoReplay disabled. Current local acceptance status: 127 test files / 888
+  tests
 - `npm run verify` passed locally on 2026-04-30 after adding a shared type
   guard for unsupported lifecycle control errors. Current local acceptance
   status: 127 test files / 888 tests
