@@ -118,6 +118,55 @@ describe('AgentExecutorLifecycleService', () => {
     expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
   });
 
+  it('plans heartbeat observations as no-status-change diagnostics', async () => {
+    const { runStepRepository, service, statusUpdater } = buildService();
+    const handle = await service.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-29T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+    });
+
+    const planned = await service.observeAndPlan({
+      handle,
+      signal: {
+        type: 'heartbeat',
+        summary: 'Dry-run executor is still alive.',
+      },
+    });
+
+    expect(planned).toMatchObject({
+      projectedStatus: null,
+      terminalEventRecorded: false,
+      settlementPlan: {
+        action: 'no_status_change',
+        sessionId: 'agent_session_1',
+      },
+      settlementDiagnostic: {
+        action: 'no_status_change',
+        autoReplay: false,
+        sessionId: 'agent_session_1',
+        status: null,
+        summary: [
+          'Executor lifecycle settlement',
+          'session=agent_session_1',
+          'action=no_status_change',
+          'reason=no_projected_status',
+          'autoReplay=no',
+        ].join(' / '),
+      },
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'plan',
+      status: 'running',
+      title: 'Agent session 心跳',
+      output: 'Dry-run executor is still alive.',
+    }));
+    expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
+  });
+
   it('applies a planned settlement only when explicitly requested', async () => {
     const { service, statusUpdater } = buildService();
     const handle = await service.startSession({
