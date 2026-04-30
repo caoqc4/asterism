@@ -14,6 +14,9 @@ Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 892
+  tests after wiring renderer recovery intent presentation to structured
+  manual-run/checkpoint/no-auto-replay fields.
+- on 2026-04-30, `npm run verify` passed locally with 127 test files / 892
   tests after wiring renderer recovery safety presentation to structured
   `automaticReplayAllowed=false` replay reviews.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 892

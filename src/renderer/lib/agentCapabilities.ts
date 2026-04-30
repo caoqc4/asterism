@@ -6,6 +6,7 @@ import { getProviderExecutionCapabilities } from '@shared/agent-provider-capabil
 import {
   buildAgentSessionRecoveryIntent,
   buildAgentSessionReplayReview,
+  type AgentSessionRecoveryIntent,
   type AgentSessionReplayReview,
 } from '@shared/agent-session-replay';
 import {
@@ -124,6 +125,15 @@ export function formatAgentSessionRecoveryIntentSummary(
 ): string {
   const review = buildAgentSessionReplayReview({ checkpoints, session, steps });
   return buildAgentSessionRecoveryIntent(review).summary;
+}
+
+export function buildAgentSessionRecoveryIntentPresentation(
+  session: AgentSessionRecord,
+  steps: Pick<RunStepRecord, 'createdAt' | 'index' | 'kind' | 'status' | 'title'>[],
+  checkpoints: Pick<RunCheckpointRecord, 'status'>[] = [],
+): AgentSessionRecoveryIntent {
+  const review = buildAgentSessionReplayReview({ checkpoints, session, steps });
+  return buildAgentSessionRecoveryIntent(review);
 }
 
 export function formatAgentSessionReplayNextStepDraft(params: {

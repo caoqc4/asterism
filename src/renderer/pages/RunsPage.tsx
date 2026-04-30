@@ -52,10 +52,10 @@ import {
 } from '../lib/stagedPatchReview';
 import { buildExecutorLifecycleDiagnosticLines } from '../lib/agentOrchestrationPresentation';
 import {
+  buildAgentSessionRecoveryIntentPresentation,
   buildAgentSessionReplayReviewPresentation,
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
-  formatAgentSessionRecoveryIntentSummary,
   formatAgentSessionRecoveryRunInstructions,
   formatAgentSessionReplayNextStepDraft,
   formatAgentSessionRestartSummary,
@@ -762,7 +762,7 @@ export function RunsPage({
     ? buildAgentSessionReplayReviewPresentation(latestAgentSession, detailSteps, detailCheckpoints)
     : null;
   const latestAgentSessionRecoveryIntent = latestAgentSession
-    ? formatAgentSessionRecoveryIntentSummary(latestAgentSession, detailSteps, detailCheckpoints)
+    ? buildAgentSessionRecoveryIntentPresentation(latestAgentSession, detailSteps, detailCheckpoints)
     : null;
   const sandboxProducerSource = latestAgentSession
     ? formatSandboxProducerSourceSummary(latestAgentSession)
@@ -863,7 +863,7 @@ export function RunsPage({
                   ) : null}
                   {latestAgentSessionRecoveryIntent ? (
                     <p className="meta">
-                      {latestAgentSessionRecoveryIntent}
+                      {latestAgentSessionRecoveryIntent.summary}
                     </p>
                   ) : null}
                   {executorLifecycleLines.map((line) => (

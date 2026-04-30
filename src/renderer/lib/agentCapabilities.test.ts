@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { AiConfigStatus } from '@shared/types/settings';
 import {
+  buildAgentSessionRecoveryIntentPresentation,
   buildAgentSessionReplayReviewPresentation,
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
@@ -520,6 +521,20 @@ describe('agent capability formatting', () => {
     ], [{ status: 'open' }])).toBe(
       'Recovery intent：manual checkpoint resume / session=agent_session_1 / status=paused / restartSafety=checkpoint_gated / openCheckpoints=1 / manualRunRequired=no / autoReplay=no',
     );
+    expect(buildAgentSessionRecoveryIntentPresentation(session, [
+      {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        index: 2,
+        kind: 'artifact',
+        status: 'completed',
+        title: 'Sandbox producer source ready',
+      },
+    ], [{ status: 'open' }])).toMatchObject({
+      action: 'manual_checkpoint_resume',
+      automaticReplayAllowed: false,
+      manualRunRequired: false,
+      resumeCheckpointRequired: true,
+    });
     expect(formatSandboxProducerLifecycleSummary(session)).toBe(
       'AgentRunLifecycle：blocked / source=source_1 / checks=test,lint / policy=network=disabled, promotion=decision_required, workspace mutation requires approved Decision / blocked=docker is unavailable / next=fix runtime readiness, then start a new manual run',
     );

@@ -662,6 +662,9 @@ The latest implementation slice:
 - Runs recovery safety presentation now consumes the structured replay review
   object, so the visible `inspect first` lane is derived from
   `automaticReplayAllowed=false` instead of summary text.
+- Runs recovery intent presentation now also consumes the structured recovery
+  intent object, keeping manual-run, checkpoint, and no-auto-replay signals
+  available to the UI boundary.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any
