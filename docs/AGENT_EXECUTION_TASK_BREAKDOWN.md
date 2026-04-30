@@ -562,6 +562,9 @@ The latest implementation slice:
 - Renderer diagnostic-line coverage now checks partial control support, so
   Settings/Task/Runs shared presentation does not invent unavailable control
   requests.
+- App-level Settings coverage now verifies that partial executor lifecycle
+  controls from `AiConfigStatus` are rendered without reintroducing unavailable
+  cancel support.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

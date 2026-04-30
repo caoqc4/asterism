@@ -816,6 +816,34 @@ describe('App UI flow', () => {
     window.location.hash = '';
   });
 
+  it('shows partial executor lifecycle controls in settings diagnostics', async () => {
+    const user = userEvent.setup();
+    window.api = {
+      ...mockApi,
+      getAiConfigStatus: vi.fn().mockResolvedValue({
+        ...aiStatus,
+        executorLifecycleAvailability: buildDryRunAgentExecutorLifecycleAvailability({
+          controlSupport: {
+            cancel: false,
+          },
+        }),
+      }),
+    };
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /settings/i }));
+    await screen.findByRole('heading', { name: 'AI Provider 与本地密钥存储' });
+
+    const orchestrationDiagnostics = within(screen.getByLabelText('Orchestration diagnostics'));
+    expect(orchestrationDiagnostics.getByText(
+      'controlRequests=heartbeat,interrupt / controlMode=dry_run_planned',
+    )).toBeTruthy();
+    expect(orchestrationDiagnostics.queryByText(
+      'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
+    )).toBeNull();
+  });
+
   it('opens the related task and prefills detail guidance when a risk action is clicked', async () => {
     const user = userEvent.setup();
 
