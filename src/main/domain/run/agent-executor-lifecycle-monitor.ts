@@ -34,12 +34,20 @@ export type AgentExecutorLifecycleStatusUpdater = {
 
 export type AgentExecutorLifecycleSettlementApplyResult =
   | {
+      action: 'no_status_change';
       applied: false;
+      autoReplay: false;
+      sessionId: string;
+      status: null;
       summary: string;
     }
   | {
+      action: 'update_session_status';
       applied: true;
+      autoReplay: false;
       session: AgentSessionRecord;
+      sessionId: string;
+      status: AgentSessionRecord['status'];
       summary: string;
     };
 
@@ -107,7 +115,11 @@ export async function applyAgentExecutorLifecycleSettlementPlan(params: {
 }): Promise<AgentExecutorLifecycleSettlementApplyResult> {
   if (params.plan.action === 'no_status_change') {
     return {
+      action: 'no_status_change',
       applied: false,
+      autoReplay: false,
+      sessionId: params.plan.sessionId,
+      status: null,
       summary: [
         params.plan.summary,
         'applied=no',
@@ -118,8 +130,12 @@ export async function applyAgentExecutorLifecycleSettlementPlan(params: {
   const session = await params.statusUpdater.updateStatus(params.plan.sessionId, params.plan.status);
 
   return {
+    action: 'update_session_status',
     applied: true,
+    autoReplay: false,
     session,
+    sessionId: params.plan.sessionId,
+    status: params.plan.status,
     summary: [
       params.plan.summary,
       'applied=yes',

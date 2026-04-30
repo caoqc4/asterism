@@ -646,6 +646,8 @@ The latest implementation slice:
   are available at the service boundary for future callers.
 - Default lifecycle service factory coverage now asserts the assembled service
   also exposes planned settlement diagnostics.
+- Executor lifecycle settlement apply results now include structured action,
+  session id, status, and `autoReplay=false` fields in addition to the summary.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

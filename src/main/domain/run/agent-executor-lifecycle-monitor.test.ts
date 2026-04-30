@@ -289,7 +289,11 @@ describe('AgentExecutorLifecycleMonitor', () => {
         summary: 'Executor lifecycle settlement / action=no_status_change',
       },
     })).resolves.toEqual({
+      action: 'no_status_change',
       applied: false,
+      autoReplay: false,
+      sessionId: 'agent_session_1',
+      status: null,
       summary: 'Executor lifecycle settlement / action=no_status_change / applied=no',
     });
     expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
@@ -303,11 +307,15 @@ describe('AgentExecutorLifecycleMonitor', () => {
         summary: 'Executor lifecycle settlement / action=update_session_status',
       },
     })).resolves.toMatchObject({
+      action: 'update_session_status',
       applied: true,
+      autoReplay: false,
       session: {
         id: 'agent_session_1',
         status: 'cancelled',
       },
+      sessionId: 'agent_session_1',
+      status: 'cancelled',
       summary: 'Executor lifecycle settlement / action=update_session_status / applied=yes',
     });
     expect(statusUpdater.updateStatus).toHaveBeenCalledWith('agent_session_1', 'cancelled');
