@@ -8,6 +8,7 @@ import type {
 } from '../../../shared/types/agent-execution.js';
 import {
   assertExecutorLifecycleControlSupported,
+  buildExecutorLifecycleControlSupport,
   mapExecutorLifecycleControlRequestToSignal,
   mapExecutorLifecycleSignalToRuntimeEvent,
   projectExecutorLifecycleSignalSessionStatus,
@@ -101,11 +102,7 @@ export class DryRunAgentExecutorLifecycleAdapter implements AgentExecutorLifecyc
       profileId: input.profileId,
       startedAt: input.nowIso ?? new Date().toISOString(),
       capabilities: input.capabilities,
-      control: {
-        heartbeat: true,
-        interrupt: true,
-        cancel: true,
-      },
+      control: buildExecutorLifecycleControlSupport(),
     };
   }
 

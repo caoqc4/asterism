@@ -1,10 +1,16 @@
+import {
+  buildExecutorLifecycleControlSupport,
+  listSupportedExecutorLifecycleControlRequests,
+  type AgentExecutorLifecycleControlRequestType,
+} from './agent-executor-lifecycle.js';
+
 export type AgentExecutorLifecycleServiceAvailability = {
   status: 'dry_run_available';
   runtimeReady: false;
   modelExposure: 'hidden';
   automaticStartAllowed: false;
   queueWorkerAllowed: false;
-  supportedControlRequests: Array<'heartbeat' | 'interrupt' | 'cancel'>;
+  supportedControlRequests: AgentExecutorLifecycleControlRequestType[];
   blockedReasons: string[];
   nextAction: string;
   reason: string;
@@ -35,7 +41,9 @@ export function buildDryRunAgentExecutorLifecycleAvailability(): AgentExecutorLi
     modelExposure: 'hidden',
     automaticStartAllowed: false,
     queueWorkerAllowed: false,
-    supportedControlRequests: ['heartbeat', 'interrupt', 'cancel'],
+    supportedControlRequests: listSupportedExecutorLifecycleControlRequests(
+      buildExecutorLifecycleControlSupport(),
+    ),
     blockedReasons,
     nextAction,
     reason:

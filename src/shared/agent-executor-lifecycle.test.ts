@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   assertExecutorLifecycleControlSupported,
+  buildExecutorLifecycleControlSupport,
   getExecutorLifecycleControlKey,
+  listSupportedExecutorLifecycleControlRequests,
   mapExecutorLifecycleControlRequestToSignal,
   mapExecutorLifecycleSignalToRuntimeEvent,
   projectExecutorLifecycleSignalSessionStatus,
@@ -34,6 +36,25 @@ function buildHandle(): AgentExecutorSessionHandle {
 }
 
 describe('agent executor lifecycle', () => {
+  it('builds and lists executor lifecycle control support consistently', () => {
+    expect(buildExecutorLifecycleControlSupport()).toEqual({
+      heartbeat: true,
+      interrupt: true,
+      cancel: true,
+    });
+    expect(buildExecutorLifecycleControlSupport({
+      cancel: false,
+      interrupt: false,
+    })).toEqual({
+      heartbeat: true,
+      interrupt: false,
+      cancel: false,
+    });
+    expect(listSupportedExecutorLifecycleControlRequests(buildExecutorLifecycleControlSupport({
+      cancel: false,
+    }))).toEqual(['heartbeat', 'interrupt']);
+  });
+
   it('maps control requests to handle control keys', () => {
     expect(getExecutorLifecycleControlKey({
       type: 'heartbeat',

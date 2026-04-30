@@ -518,6 +518,9 @@ The latest implementation slice:
 - Typed executor lifecycle control requests now cover heartbeat, interrupt,
   and cancel commands and map them into the same lifecycle signals, giving
   future adapters a clearer API without adding any live runtime wiring.
+- Shared lifecycle helpers now build and list supported control requests, so
+  dry-run handles and availability diagnostics derive from the same control
+  support contract.
 - A dry-run main-process lifecycle adapter now starts a controllable executor
   handle and observes lifecycle signals through that shared mapping. This keeps
   the adapter-facing interface testable before a real runtime is connected; it

@@ -74,6 +74,24 @@ export type AgentExecutorLifecycleControlRequest =
       observedAt?: string | null;
     };
 
+export type AgentExecutorLifecycleControlRequestType = AgentExecutorLifecycleControlRequest['type'];
+
+export function buildExecutorLifecycleControlSupport(
+  supported: Partial<Record<AgentExecutorLifecycleControlRequestType, boolean>> = {},
+): AgentExecutorSessionHandle['control'] {
+  return {
+    heartbeat: supported.heartbeat ?? true,
+    interrupt: supported.interrupt ?? true,
+    cancel: supported.cancel ?? true,
+  };
+}
+
+export function listSupportedExecutorLifecycleControlRequests(
+  control: AgentExecutorSessionHandle['control'],
+): AgentExecutorLifecycleControlRequestType[] {
+  return (['heartbeat', 'interrupt', 'cancel'] as const).filter((request) => control[request]);
+}
+
 export function getExecutorLifecycleControlKey(
   request: AgentExecutorLifecycleControlRequest,
 ): keyof AgentExecutorSessionHandle['control'] {
