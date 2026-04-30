@@ -7,7 +7,7 @@ import type {
   ProviderToolCallPlan,
 } from '../../../shared/types/agent-execution.js';
 import {
-  getExecutorLifecycleControlKey,
+  assertExecutorLifecycleControlSupported,
   mapExecutorLifecycleControlRequestToSignal,
   mapExecutorLifecycleSignalToRuntimeEvent,
   projectExecutorLifecycleSignalSessionStatus,
@@ -133,10 +133,7 @@ export class DryRunAgentExecutorLifecycleAdapter implements AgentExecutorLifecyc
     event: AgentSessionEvent;
     projectedStatus: AgentSessionRecord['status'] | null;
   }> {
-    const controlKey = getExecutorLifecycleControlKey(input.request);
-    if (!input.handle.control[controlKey]) {
-      throw new Error(`Executor lifecycle control request ${controlKey} is not supported by this handle.`);
-    }
+    assertExecutorLifecycleControlSupported(input);
 
     return this.observe({
       handle: input.handle,

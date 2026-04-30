@@ -87,6 +87,17 @@ export function getExecutorLifecycleControlKey(
   }
 }
 
+export function assertExecutorLifecycleControlSupported(params: {
+  handle: AgentExecutorSessionHandle;
+  request: AgentExecutorLifecycleControlRequest;
+}): void {
+  const controlKey = getExecutorLifecycleControlKey(params.request);
+
+  if (!params.handle.control[controlKey]) {
+    throw new Error(`Executor lifecycle control request ${controlKey} is not supported by this handle.`);
+  }
+}
+
 export function mapExecutorLifecycleControlRequestToSignal(
   request: AgentExecutorLifecycleControlRequest,
 ): AgentExecutorLifecycleSignal {

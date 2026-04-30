@@ -529,6 +529,8 @@ The latest implementation slice:
 - Lifecycle control requests now fail closed against the handle's advertised
   control capabilities; unsupported requests are rejected before any runtime
   event is recorded.
+- The fail-closed support check is now a shared lifecycle helper, so future
+  real adapters can reuse the same guard and error semantics.
 - A dry-run lifecycle monitor now records those observed signals through
   `AgentSessionEventRecorder`, so the future adapter path already produces
   heartbeat/cancellation RunStep evidence and projected session status without

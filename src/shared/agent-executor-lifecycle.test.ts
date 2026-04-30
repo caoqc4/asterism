@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  assertExecutorLifecycleControlSupported,
   getExecutorLifecycleControlKey,
   mapExecutorLifecycleControlRequestToSignal,
   mapExecutorLifecycleSignalToRuntimeEvent,
@@ -46,6 +47,32 @@ describe('agent executor lifecycle', () => {
       type: 'cancel',
       reason: 'Operator cancelled the executor.',
     })).toBe('cancel');
+  });
+
+  it('fails closed when a handle does not support a control request', () => {
+    const handle = buildHandle();
+
+    expect(() => assertExecutorLifecycleControlSupported({
+      handle,
+      request: {
+        type: 'interrupt',
+        reason: 'Executor process stopped responding.',
+      },
+    })).not.toThrow();
+
+    expect(() => assertExecutorLifecycleControlSupported({
+      handle: {
+        ...handle,
+        control: {
+          ...handle.control,
+          interrupt: false,
+        },
+      },
+      request: {
+        type: 'interrupt',
+        reason: 'Executor process stopped responding.',
+      },
+    })).toThrow('Executor lifecycle control request interrupt is not supported by this handle.');
   });
 
   it('maps control requests into lifecycle signals without granting runtime execution', () => {

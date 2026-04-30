@@ -214,6 +214,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Lifecycle control requests now check the executor handle's advertised control
   support first; unsupported requests reject before any runtime event or
   RunStep evidence is recorded.
+- That control-support guard is now shared by the lifecycle contract, so future
+  real executor adapters can reuse the same fail-closed behavior instead of
+  reimplementing page- or adapter-local checks.
 - The dry-run lifecycle path now has a small monitor boundary that records
   observed lifecycle events through `AgentSessionEventRecorder`, producing
   heartbeat and cancellation RunStep evidence plus projected session status
@@ -1344,12 +1347,15 @@ npm run verify
 Latest local baseline:
 
 - 127 test files
-- 877 tests
+- 878 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-30 after centralizing executor
+  lifecycle control support guards in the shared lifecycle contract. Current
+  local acceptance status: 127 test files / 878 tests
 - `npm run verify` passed locally on 2026-04-30 after covering unsupported
   executor lifecycle control requests through the default dry-run service
   factory. Current local acceptance status: 127 test files / 877 tests
