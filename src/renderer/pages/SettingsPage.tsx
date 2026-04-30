@@ -7,7 +7,10 @@ import {
   evaluateAgentSandboxCodingLaneEligibilityFromBackendStatus,
 } from '@shared/agent-sandbox-provider';
 import { buildBrowserEvidencePreflight } from '@shared/types/browser-evidence';
-import { buildReadOnlyOrchestrationPresentation } from '../lib/agentOrchestrationPresentation';
+import {
+  buildExecutorLifecycleDiagnosticLines,
+  buildReadOnlyOrchestrationPresentation,
+} from '../lib/agentOrchestrationPresentation';
 
 type SettingsPageProps = {
   aiStatus: AiConfigStatus | null;
@@ -119,6 +122,9 @@ export function SettingsPage({
     executorLifecycleAvailability: aiStatus?.executorLifecycleAvailability,
     snapshot: buildAgentExecutionOrchestrationSnapshot(aiStatus),
   });
+  const executorLifecycleLines = buildExecutorLifecycleDiagnosticLines(
+    orchestrationDiagnostics.executorLifecycle,
+  );
 
   return (
     <section className="page-grid">
@@ -173,15 +179,9 @@ export function SettingsPage({
           <p className="meta">Summary：{orchestrationDiagnostics.summary}</p>
           <p className="meta">{orchestrationDiagnostics.lifecycle}</p>
           <p className="meta">{orchestrationDiagnostics.hiddenToolFamilies}</p>
-          {orchestrationDiagnostics.executorLifecycle ? (
-            <>
-              <p className="meta">Executor lifecycle：{orchestrationDiagnostics.executorLifecycle.status}</p>
-              <p className="meta">{orchestrationDiagnostics.executorLifecycle.runtime}</p>
-              <p className="meta">{orchestrationDiagnostics.executorLifecycle.exposure}</p>
-              <p className="meta">{orchestrationDiagnostics.executorLifecycle.blocked}</p>
-              <p className="meta">{orchestrationDiagnostics.executorLifecycle.nextAction}</p>
-            </>
-          ) : null}
+          {executorLifecycleLines.map((line) => (
+            <p className="meta" key={line}>{line}</p>
+          ))}
         </div>
         <div className="tool-scaffold-summary" aria-label="Tool scaffold diagnostics">
           {(aiStatus?.toolScaffoldSummaries?.length ? aiStatus.toolScaffoldSummaries : []).map((summary) => (

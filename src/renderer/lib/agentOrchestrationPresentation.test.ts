@@ -7,7 +7,10 @@ import {
 import { buildDryRunAgentExecutorLifecycleAvailability } from '@shared/agent-executor-lifecycle-diagnostics';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { TaskDetail } from '@shared/types/task';
-import { buildReadOnlyOrchestrationPresentation } from './agentOrchestrationPresentation';
+import {
+  buildExecutorLifecycleDiagnosticLines,
+  buildReadOnlyOrchestrationPresentation,
+} from './agentOrchestrationPresentation';
 
 function buildReadyAiStatus(): AiConfigStatus {
   return {
@@ -211,6 +214,23 @@ describe('agent orchestration presentation', () => {
     expect(presentation.summary).toBe(
       'runtime=ready / profile=manual_sandbox_producer / lifecycle=drafted / hidden=browser_playwright,mcp,skill,computer_use,creator_connector / modelVisibleHiddenTools=no / automation=disabled / autoStart=no',
     );
+  });
+
+  it('formats executor lifecycle diagnostics as stable renderer lines', () => {
+    const snapshot = buildAgentExecutionOrchestrationSnapshot(buildReadyAiStatus());
+    const presentation = buildReadOnlyOrchestrationPresentation({
+      executorLifecycleAvailability: buildDryRunAgentExecutorLifecycleAvailability(),
+      snapshot,
+    });
+
+    expect(buildExecutorLifecycleDiagnosticLines(presentation.executorLifecycle)).toEqual([
+      'Executor lifecycle：Executor lifecycle / status=dry_run_available',
+      'runtimeReady=no / queueWorker=no / automaticStart=no',
+      'modelExposure=hidden / modelVisibleTools=no',
+      'blocked=No real executor runtime is connected.; Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.; Model-visible tool exposure remains hidden.',
+      'next=Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.',
+    ]);
+    expect(buildExecutorLifecycleDiagnosticLines(null)).toEqual([]);
   });
 
   it('surfaces automation readiness without granting automatic start', () => {

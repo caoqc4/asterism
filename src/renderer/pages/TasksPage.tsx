@@ -88,7 +88,10 @@ import {
   isCodeAgentPromotionDecision,
   isCodeAgentSandboxRun,
 } from '../lib/agentCapabilities';
-import { buildReadOnlyOrchestrationPresentation } from '../lib/agentOrchestrationPresentation';
+import {
+  buildExecutorLifecycleDiagnosticLines,
+  buildReadOnlyOrchestrationPresentation,
+} from '../lib/agentOrchestrationPresentation';
 
 const riskOptions: TaskRiskLevel[] = ['none', 'low', 'medium', 'high'];
 const sourceContextKindOptions: SourceContextKind[] = [
@@ -2209,6 +2212,9 @@ export function TasksPage({
     executorLifecycleAvailability: aiStatus?.executorLifecycleAvailability,
     snapshot: orchestrationSnapshot,
   });
+  const executorLifecycleLines = buildExecutorLifecycleDiagnosticLines(
+    orchestrationPresentation.executorLifecycle,
+  );
   const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
   const orderedLaneLabels = tasks.reduce<string[]>((labels, task) => {
     const laneLabel = getPriorityLaneLabel(taskPriorityLanes.get(task.id));
@@ -2362,25 +2368,9 @@ export function TasksPage({
             <p className="meta">
               {orchestrationPresentation.hiddenToolFamilies}
             </p>
-            {orchestrationPresentation.executorLifecycle ? (
-              <>
-                <p className="meta">
-                  Executor lifecycle：{orchestrationPresentation.executorLifecycle.status}
-                </p>
-                <p className="meta">
-                  {orchestrationPresentation.executorLifecycle.runtime}
-                </p>
-                <p className="meta">
-                  {orchestrationPresentation.executorLifecycle.exposure}
-                </p>
-                <p className="meta">
-                  {orchestrationPresentation.executorLifecycle.blocked}
-                </p>
-                <p className="meta">
-                  {orchestrationPresentation.executorLifecycle.nextAction}
-                </p>
-              </>
-            ) : null}
+            {executorLifecycleLines.map((line) => (
+              <p className="meta" key={line}>{line}</p>
+            ))}
             {orchestrationPresentation.automationReadiness ? (
               <p className="meta">
                 {orchestrationPresentation.automationReadiness}

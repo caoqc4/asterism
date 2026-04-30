@@ -50,6 +50,7 @@ import {
   formatStagedPatchReviewNextMove,
   type StagedPatchReviewSummary,
 } from '../lib/stagedPatchReview';
+import { buildExecutorLifecycleDiagnosticLines } from '../lib/agentOrchestrationPresentation';
 import {
   formatAgentSessionCapabilitySummary,
   formatAgentSessionMetadataSummary,
@@ -783,6 +784,7 @@ export function RunsPage({
   const executorLifecyclePresentation = aiStatus?.executorLifecycleAvailability
     ? buildAgentExecutorLifecycleAvailabilityPresentation(aiStatus.executorLifecycleAvailability)
     : null;
+  const executorLifecycleLines = buildExecutorLifecycleDiagnosticLines(executorLifecyclePresentation);
   const canContinuePausedRun = detail ? hasValidOpenResumeCheckpoint(detail) : false;
   const focusNextStepDraft = detail
     ? latestAgentSession
@@ -862,25 +864,9 @@ export function RunsPage({
                       {latestAgentSessionRecoveryIntent}
                     </p>
                   ) : null}
-                  {executorLifecyclePresentation ? (
-                    <>
-                      <p className="meta">
-                        Executor lifecycle：{executorLifecyclePresentation.status}
-                      </p>
-                      <p className="meta">
-                        {executorLifecyclePresentation.runtime}
-                      </p>
-                      <p className="meta">
-                        {executorLifecyclePresentation.exposure}
-                      </p>
-                      <p className="meta">
-                        {executorLifecyclePresentation.blocked}
-                      </p>
-                      <p className="meta">
-                        {executorLifecyclePresentation.nextAction}
-                      </p>
-                    </>
-                  ) : null}
+                  {executorLifecycleLines.map((line) => (
+                    <p className="meta" key={line}>{line}</p>
+                  ))}
                   <p className="meta">
                     Next safe move：{focusNextStepDraft}
                   </p>

@@ -18,6 +18,22 @@ export type ReadOnlyOrchestrationPresentation = {
   summary: string;
 };
 
+export function buildExecutorLifecycleDiagnosticLines(
+  executorLifecycle: AgentExecutorLifecycleAvailabilityPresentation | null,
+): string[] {
+  if (!executorLifecycle) {
+    return [];
+  }
+
+  return [
+    `Executor lifecycle：${executorLifecycle.status}`,
+    executorLifecycle.runtime,
+    executorLifecycle.exposure,
+    executorLifecycle.blocked,
+    executorLifecycle.nextAction,
+  ];
+}
+
 export function buildReadOnlyOrchestrationPresentation(params: {
   automationReadiness?: AgentAutomationReadinessEvaluation | null;
   executorLifecycleAvailability?: AgentExecutorLifecycleServiceAvailability | null;

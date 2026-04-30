@@ -560,6 +560,9 @@ The latest implementation slice:
 - Runs detail `Run recovery safety` now consumes that same diagnostic during
   inspect-first recovery review, keeping replay/new-run decisions visibly
   separate from dry-run executor availability.
+- Renderer orchestration presentation now has a shared line formatter for the
+  executor lifecycle diagnostic, keeping Settings, Task detail, and Runs
+  recovery copy aligned without adding authority.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation
