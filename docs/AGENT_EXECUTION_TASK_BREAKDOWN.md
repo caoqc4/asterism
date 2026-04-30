@@ -579,6 +579,9 @@ The latest implementation slice:
 - Lifecycle service coverage now proves even heartbeat control requests fail
   closed when a handle advertises no lifecycle controls, with no RunStep
   evidence or session status update.
+- Default service factory coverage now proves the assembled lifecycle service
+  preserves that no-controls heartbeat guard before evidence recording or
+  session status updates.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

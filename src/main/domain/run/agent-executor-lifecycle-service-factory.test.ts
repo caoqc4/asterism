@@ -219,4 +219,49 @@ describe('createAgentExecutorLifecycleService', () => {
     expect(runStepRepository.create).not.toHaveBeenCalled();
     expect(agentSessionStore.updateStatus).not.toHaveBeenCalled();
   });
+
+  it('builds a service that rejects heartbeat when no lifecycle controls are supported', async () => {
+    const runStepRepository = buildRunStepRepositoryMock();
+    const agentSessionStore = {
+      updateStatus: vi.fn().mockImplementation(async (id: string, status: string) => ({
+        id,
+        runId: 'run_1',
+        mode: 'agent',
+        status,
+        capabilities: buildCapabilities(),
+        metadata: null,
+        createdAt: '2026-04-30T00:00:00.000Z',
+        updatedAt: '2026-04-30T00:01:00.000Z',
+      })),
+    };
+    const service = createAgentExecutorLifecycleService({
+      agentSessionStore: agentSessionStore as never,
+      runStepRepository: runStepRepository as never,
+    });
+    const handle = await service.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-30T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+      controlSupport: {
+        heartbeat: false,
+        interrupt: false,
+        cancel: false,
+      },
+    });
+
+    await expect(service.controlAndPlan({
+      handle,
+      request: {
+        type: 'heartbeat',
+        summary: 'Operator attempted unsupported factory heartbeat.',
+      },
+    })).rejects.toThrow(
+      'Executor lifecycle control request heartbeat is not supported by this handle.',
+    );
+    expect(runStepRepository.create).not.toHaveBeenCalled();
+    expect(agentSessionStore.updateStatus).not.toHaveBeenCalled();
+  });
 });
