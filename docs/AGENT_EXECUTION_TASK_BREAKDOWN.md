@@ -603,6 +603,9 @@ The latest implementation slice:
 - Dry-run adapter and lifecycle service coverage now verify that typed
   unsupported-control errors propagate upward before any event, RunStep
   evidence, or session status update is recorded.
+- The shared lifecycle contract now has a formatter for typed unsupported
+  control errors, giving future IPC/diagnostic layers a stable summary without
+  parsing free-form messages.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

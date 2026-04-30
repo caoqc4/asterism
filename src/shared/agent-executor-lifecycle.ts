@@ -93,6 +93,18 @@ export class UnsupportedExecutorLifecycleControlRequestError extends Error {
   }
 }
 
+export function formatExecutorLifecycleControlError(error: unknown): string | null {
+  if (!(error instanceof UnsupportedExecutorLifecycleControlRequestError)) {
+    return null;
+  }
+
+  return [
+    `code=${error.code}`,
+    `request=${error.requestType}`,
+    `message=${error.message}`,
+  ].join(' / ');
+}
+
 export function buildExecutorLifecycleControlSupport(
   supported: Partial<Record<AgentExecutorLifecycleControlRequestType, boolean>> = {},
 ): AgentExecutorSessionHandle['control'] {
