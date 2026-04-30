@@ -887,6 +887,83 @@ describe('RunOrchestrator', () => {
     expect(agentExecutor.executeProviderNativeSession).not.toHaveBeenCalled();
   });
 
+  it('does not duplicate local-note completed result steps after terminal completion events', async () => {
+    const selection = {
+      shouldUse: false,
+      selectedTemplates: [],
+      reason: 'No template needed.',
+    };
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn().mockResolvedValue('Agent local note output'),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue(selection),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const agentExecutor = {
+      executeLocalNoteSession: vi.fn().mockImplementation(async ({ onEvent }) => {
+        await onEvent({
+          type: 'session.completed',
+          runId: 'run_1',
+          output: 'Terminal event output.',
+        });
+
+        return {
+          status: 'completed',
+          output: 'Returned result output.',
+        };
+      }),
+      executeProviderNativeSession: vi.fn(),
+    };
+    const agentSessionRepository = {
+      create: vi.fn().mockResolvedValue({ id: 'agent_session_1' }),
+      updateStatus: vi.fn().mockResolvedValue({ id: 'agent_session_1', status: 'completed' }),
+    };
+    const orchestrator = new RunOrchestrator(
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+      { execute: vi.fn() } as never,
+      agentExecutor as never,
+      agentSessionRepository as never,
+    );
+
+    const result = await orchestrator.executeAgentRun({
+      run: buildRun(),
+      task: buildTaskDetail(),
+      input: { ...buildInput(), type: 'agent' },
+    });
+
+    expect(result).toMatchObject({
+      status: 'completed',
+      output: 'Returned result output.',
+      selection,
+    });
+    expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
+      'agent_session_1',
+      'completed',
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'final',
+      status: 'completed',
+      title: '完成 Agent session',
+      output: 'Terminal event output.',
+    }));
+    expect(runStepRepository.create).not.toHaveBeenCalledWith(expect.objectContaining({
+      output: 'Returned result output.',
+      title: '完成 Agent session',
+    }));
+    expect(agentExecutor.executeProviderNativeSession).not.toHaveBeenCalled();
+  });
+
   it('stores file-context capability when an agent run opts into workspace reads', async () => {
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({

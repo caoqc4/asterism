@@ -620,6 +620,9 @@ The latest implementation slice:
 - Provider-native `RunOrchestrator` coverage now locks the same
   `session.interrupted` terminal-event priority, keeping provider-native
   session settlement symmetric with local-note execution.
+- Local-note `RunOrchestrator` coverage now also proves `session.completed`
+  terminal evidence suppresses duplicate result-final RunSteps while the
+  returned output still drives the run result.
 - The lifecycle service factory availability projection now accepts control
   support overrides, letting dry-run diagnostics describe partial or absent
   controls without implying runtime readiness.
