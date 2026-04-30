@@ -82,6 +82,17 @@ export const AGENT_EXECUTOR_LIFECYCLE_CONTROL_REQUEST_TYPES: readonly AgentExecu
   'cancel',
 ];
 
+export class UnsupportedExecutorLifecycleControlRequestError extends Error {
+  readonly code = 'unsupported_executor_lifecycle_control_request';
+  readonly requestType: AgentExecutorLifecycleControlRequestType;
+
+  constructor(requestType: AgentExecutorLifecycleControlRequestType) {
+    super(`Executor lifecycle control request ${requestType} is not supported by this handle.`);
+    this.name = 'UnsupportedExecutorLifecycleControlRequestError';
+    this.requestType = requestType;
+  }
+}
+
 export function buildExecutorLifecycleControlSupport(
   supported: Partial<Record<AgentExecutorLifecycleControlRequestType, boolean>> = {},
 ): AgentExecutorSessionHandle['control'] {
@@ -125,7 +136,7 @@ export function assertExecutorLifecycleControlSupported(params: {
   const controlKey = getExecutorLifecycleControlKey(params.request);
 
   if (!isExecutorLifecycleControlSupported(params)) {
-    throw new Error(`Executor lifecycle control request ${controlKey} is not supported by this handle.`);
+    throw new UnsupportedExecutorLifecycleControlRequestError(controlKey);
   }
 }
 

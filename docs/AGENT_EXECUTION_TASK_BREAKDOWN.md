@@ -597,6 +597,9 @@ The latest implementation slice:
 - Dry-run adapter coverage now includes handles that advertise no lifecycle
   controls, tying start-time handle capabilities to the downstream fail-closed
   guard tests.
+- Unsupported lifecycle control requests now throw a typed shared error with a
+  stable code and request type while preserving the existing fail-closed
+  message.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

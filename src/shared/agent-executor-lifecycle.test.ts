@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   AGENT_EXECUTOR_LIFECYCLE_CONTROL_REQUEST_TYPES,
+  UnsupportedExecutorLifecycleControlRequestError,
   assertExecutorLifecycleControlSupported,
   buildExecutorLifecycleControlSupport,
   getExecutorLifecycleControlKey,
@@ -110,6 +111,25 @@ describe('agent executor lifecycle', () => {
         reason: 'Executor process stopped responding.',
       },
     })).toBe(false);
+    let thrown: unknown;
+    try {
+      assertExecutorLifecycleControlSupported({
+        handle: handleWithoutInterrupt,
+        request: {
+          type: 'interrupt',
+          reason: 'Executor process stopped responding.',
+        },
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(UnsupportedExecutorLifecycleControlRequestError);
+    expect(thrown).toMatchObject({
+      code: 'unsupported_executor_lifecycle_control_request',
+      requestType: 'interrupt',
+      message: 'Executor lifecycle control request interrupt is not supported by this handle.',
+    });
     expect(() => assertExecutorLifecycleControlSupported({
       handle: handleWithoutInterrupt,
       request: {
