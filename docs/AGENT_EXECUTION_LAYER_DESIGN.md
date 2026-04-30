@@ -516,6 +516,10 @@ Current implementation note:
   projection: paused / confirmation sessions may be checkpoint-settled, terminal
   sessions stay evidence-only, and `running` sessions require executor liveness
   before any settlement path can update their status.
+- Checkpoint-backed recovery selection is deterministic: paused and
+  confirmation sessions are ordered by `updatedAt` and then `createdAt`, while
+  newer `running` sessions remain excluded from checkpoint settlement so they
+  cannot bypass the executor-liveness requirement.
 - The runtime event spine now includes executor liveness and interruption
   events: `session.heartbeat`, `session.interrupted`, and `session.cancelled`.
   Heartbeats write running evidence only, while interrupted/cancelled events
