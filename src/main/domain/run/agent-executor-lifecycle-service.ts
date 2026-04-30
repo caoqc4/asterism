@@ -1,4 +1,5 @@
 import type {
+  AgentExecutorLifecycleControlInput,
   AgentExecutorLifecycleObserveInput,
   AgentExecutorLifecycleStartInput,
 } from './agent-executor.js';
@@ -21,6 +22,10 @@ export class AgentExecutorLifecycleService {
 
   observeAndPlan(input: Omit<AgentExecutorLifecycleObserveInput, 'onEvent'>) {
     return this.monitor.observeAndPlan(input);
+  }
+
+  controlAndPlan(input: Omit<AgentExecutorLifecycleControlInput, 'onEvent'>) {
+    return this.monitor.controlAndPlan(input);
   }
 
   applySettlementPlan(plan: AgentExecutorLifecycleSettlementPlan) {

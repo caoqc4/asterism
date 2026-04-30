@@ -530,6 +530,10 @@ The latest implementation slice:
   `AgentSessionEventRecorder`, so the future adapter path already produces
   heartbeat/cancellation RunStep evidence and projected session status without
   directly settling `AgentSession` or launching a real runtime.
+- The monitor/service boundary now also accepts typed lifecycle control
+  requests and returns the same planned observation/settlement-plan shape,
+  keeping control commands inspectable without applying status updates
+  implicitly.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

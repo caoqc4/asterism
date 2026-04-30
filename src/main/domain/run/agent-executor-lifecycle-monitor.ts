@@ -1,6 +1,7 @@
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type { RunStepRecord } from '../../../shared/types/run.js';
 import type {
+  AgentExecutorLifecycleControlInput,
   AgentExecutorLifecycleObserveInput,
   AgentExecutorLifecycleStartInput,
   AgentExecutorLifecycleAdapter,
@@ -115,6 +116,19 @@ export class AgentExecutorLifecycleMonitor {
     return this.adapter.startSession(input);
   }
 
+  private buildPlannedObservation(params: {
+    handle: AgentExecutorLifecycleObserveInput['handle'];
+    observation: AgentExecutorLifecycleObservation;
+  }): AgentExecutorLifecyclePlannedObservation {
+    return {
+      ...params.observation,
+      settlementPlan: planAgentExecutorLifecycleSettlement({
+        sessionId: params.handle.agentSessionId,
+        observation: params.observation,
+      }),
+    };
+  }
+
   async observe(input: Omit<AgentExecutorLifecycleObserveInput, 'onEvent'>): Promise<AgentExecutorLifecycleObservation> {
     let recordedStep: RunStepRecord | null = null;
     const observed = await this.adapter.observe({
@@ -132,17 +146,37 @@ export class AgentExecutorLifecycleMonitor {
     };
   }
 
+  async controlAndPlan(
+    input: Omit<AgentExecutorLifecycleControlInput, 'onEvent'>,
+  ): Promise<AgentExecutorLifecyclePlannedObservation> {
+    let recordedStep: RunStepRecord | null = null;
+    const observed = await this.adapter.control({
+      ...input,
+      onEvent: async (event) => {
+        recordedStep = await this.recorder.record(event);
+      },
+    });
+    const observation = {
+      projectedStatus: observed.projectedStatus,
+      recordedStep,
+      terminalEventRecorded: this.recorder.hasTerminalEvent(),
+      terminalSessionStatus: this.recorder.getTerminalSessionStatus(),
+    };
+
+    return this.buildPlannedObservation({
+      handle: input.handle,
+      observation,
+    });
+  }
+
   async observeAndPlan(
     input: Omit<AgentExecutorLifecycleObserveInput, 'onEvent'>,
   ): Promise<AgentExecutorLifecyclePlannedObservation> {
     const observation = await this.observe(input);
 
-    return {
-      ...observation,
-      settlementPlan: planAgentExecutorLifecycleSettlement({
-        sessionId: input.handle.agentSessionId,
-        observation,
-      }),
-    };
+    return this.buildPlannedObservation({
+      handle: input.handle,
+      observation,
+    });
   }
 }

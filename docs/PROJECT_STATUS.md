@@ -215,6 +215,10 @@ The project is past initial architecture assembly. Current work should favor pro
   observed lifecycle events through `AgentSessionEventRecorder`, producing
   heartbeat and cancellation RunStep evidence plus projected session status
   without directly settling `AgentSession` or launching a real runtime.
+- The monitor/service boundary now exposes typed `controlAndPlan` handling for
+  heartbeat, interrupt, and cancel requests, returning the same RunStep
+  evidence and settlement-plan shape while still requiring explicit
+  `applySettlementPlan` for any `AgentSession` write.
 - That monitor now also produces an explicit settlement plan:
   heartbeat observations remain `no_status_change`, while terminal lifecycle
   observations produce `update_session_status` recommendations for the service
@@ -1325,12 +1329,15 @@ npm run verify
 Latest local baseline:
 
 - 127 test files
-- 869 tests
+- 871 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-30 after threading typed executor
+  lifecycle control requests through the monitor/service planned-observation
+  boundary. Current local acceptance status: 127 test files / 871 tests
 - `npm run verify` passed locally on 2026-04-30 after adding typed executor
   lifecycle control requests for heartbeat, interrupt, and cancel on the
   dry-run adapter boundary. Current local acceptance status: 127 test files /
