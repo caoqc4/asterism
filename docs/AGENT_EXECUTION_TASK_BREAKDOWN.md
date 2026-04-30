@@ -600,6 +600,9 @@ The latest implementation slice:
 - Unsupported lifecycle control requests now throw a typed shared error with a
   stable code and request type while preserving the existing fail-closed
   message.
+- Dry-run adapter and lifecycle service coverage now verify that typed
+  unsupported-control errors propagate upward before any event, RunStep
+  evidence, or session status update is recorded.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

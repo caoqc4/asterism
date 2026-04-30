@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { UnsupportedExecutorLifecycleControlRequestError } from '../../../shared/agent-executor-lifecycle.js';
 import { DryRunAgentExecutorLifecycleAdapter, LocalAgentExecutor } from './agent-executor.js';
 
 function buildInput() {
@@ -412,6 +413,32 @@ describe('DryRunAgentExecutorLifecycleAdapter', () => {
       },
     });
 
+    let thrown: unknown;
+    try {
+      await adapter.control({
+        handle: {
+          ...handle,
+          control: {
+            ...handle.control,
+            cancel: false,
+          },
+        },
+        onEvent,
+        request: {
+          type: 'cancel',
+          reason: 'Operator attempted unsupported cancel.',
+        },
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(UnsupportedExecutorLifecycleControlRequestError);
+    expect(thrown).toMatchObject({
+      code: 'unsupported_executor_lifecycle_control_request',
+      requestType: 'cancel',
+      message: 'Executor lifecycle control request cancel is not supported by this handle.',
+    });
     await expect(adapter.control({
       handle: {
         ...handle,
