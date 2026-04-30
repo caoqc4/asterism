@@ -483,7 +483,24 @@ describe('DecisionService', () => {
     const agentSessionStore = {
       listForRun: vi.fn().mockResolvedValue([
         {
-          id: 'agent_session_confirmation',
+          id: 'agent_session_paused_old_created',
+          runId: 'run_1',
+          mode: 'agent',
+          status: 'paused',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: true,
+            streaming: false,
+            fileContext: false,
+            taskMutationTools: false,
+            longRunningSessions: false,
+          },
+          metadata: 'executor=local_agent',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+        {
+          id: 'agent_session_confirmation_new_created',
           runId: 'run_1',
           mode: 'agent',
           status: 'needs_confirmation',
@@ -496,8 +513,25 @@ describe('DecisionService', () => {
             longRunningSessions: false,
           },
           metadata: 'executor=local_agent',
-          createdAt: '2026-01-01T00:00:00.000Z',
+          createdAt: '2026-01-01T12:00:00.000Z',
           updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+        {
+          id: 'agent_session_running_newer',
+          runId: 'run_1',
+          mode: 'agent',
+          status: 'running',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: true,
+            streaming: false,
+            fileContext: false,
+            taskMutationTools: false,
+            longRunningSessions: false,
+          },
+          metadata: 'executor=local_agent',
+          createdAt: '2026-01-02T00:00:00.000Z',
+          updatedAt: '2026-01-02T00:00:00.000Z',
         },
       ]),
       updateStatus: vi.fn(),
@@ -531,7 +565,7 @@ describe('DecisionService', () => {
     );
     expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith('run_checkpoint_1', 'resolved');
     expect(agentSessionStore.updateStatus).toHaveBeenCalledWith(
-      'agent_session_confirmation',
+      'agent_session_confirmation_new_created',
       'completed',
     );
     expect(runRepository.updateResult).toHaveBeenCalledWith(

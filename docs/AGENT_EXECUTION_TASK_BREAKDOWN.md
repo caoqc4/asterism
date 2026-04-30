@@ -630,6 +630,9 @@ The latest implementation slice:
 - RunService resume coverage now exercises that checkpoint-backed tie-break at
   the service boundary, updating the selected confirmation session while still
   ignoring newer running sessions.
+- DecisionService approval-resume coverage now exercises the same
+  checkpoint-backed tie-break, keeping Decision-driven recovery aligned with
+  RunService recovery.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any
