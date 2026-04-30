@@ -810,6 +810,83 @@ describe('RunOrchestrator', () => {
     expect(agentExecutor.executeProviderNativeSession).not.toHaveBeenCalled();
   });
 
+  it('settles local-note interrupted events before generic failed results', async () => {
+    const selection = {
+      shouldUse: false,
+      selectedTemplates: [],
+      reason: 'No template needed.',
+    };
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn().mockResolvedValue('Agent local note output'),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue(selection),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const agentExecutor = {
+      executeLocalNoteSession: vi.fn().mockImplementation(async ({ onEvent }) => {
+        await onEvent({
+          type: 'session.interrupted',
+          runId: 'run_1',
+          reason: 'Local note executor lost liveness.',
+        });
+
+        return {
+          status: 'failed',
+          message: 'Executor returned a generic failure after interruption.',
+        };
+      }),
+      executeProviderNativeSession: vi.fn(),
+    };
+    const agentSessionRepository = {
+      create: vi.fn().mockResolvedValue({ id: 'agent_session_1' }),
+      updateStatus: vi.fn().mockResolvedValue({ id: 'agent_session_1', status: 'failed' }),
+    };
+    const orchestrator = new RunOrchestrator(
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+      { execute: vi.fn() } as never,
+      agentExecutor as never,
+      agentSessionRepository as never,
+    );
+
+    const result = await orchestrator.executeAgentRun({
+      run: buildRun(),
+      task: buildTaskDetail(),
+      input: { ...buildInput(), type: 'agent' },
+    });
+
+    expect(result).toEqual({
+      status: 'failed',
+      message: 'Executor returned a generic failure after interruption.',
+      selection,
+    });
+    expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
+      'agent_session_1',
+      'failed',
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'final',
+      status: 'failed',
+      title: 'Agent session 已中断',
+      error: 'Local note executor lost liveness.',
+    }));
+    expect(runStepRepository.create).not.toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Agent session 失败',
+      error: 'Executor returned a generic failure after interruption.',
+    }));
+    expect(agentExecutor.executeProviderNativeSession).not.toHaveBeenCalled();
+  });
+
   it('stores file-context capability when an agent run opts into workspace reads', async () => {
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
