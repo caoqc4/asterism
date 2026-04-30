@@ -50,6 +50,7 @@ describe('agent executor lifecycle diagnostics', () => {
 
     expect(availability.supportedControlRequests).toEqual(['heartbeat', 'interrupt']);
     expect(availability.summary).toContain('controlRequests=heartbeat,interrupt');
+    expect(availability.summary).not.toContain('controlRequests=heartbeat,interrupt,cancel');
     expect(buildAgentExecutorLifecycleAvailabilityPresentation(availability)).toMatchObject({
       controlRequests: 'controlRequests=heartbeat,interrupt / controlMode=dry_run_planned',
       runtime: 'runtimeReady=no / queueWorker=no / automaticStart=no',

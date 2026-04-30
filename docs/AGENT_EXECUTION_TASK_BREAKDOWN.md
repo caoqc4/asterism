@@ -571,6 +571,9 @@ The latest implementation slice:
 - Runs recovery safety coverage now uses partial control availability too, so
   replay/recovery review surfaces do not advertise unavailable lifecycle
   controls.
+- Dry-run availability summaries now derive the displayed lifecycle control
+  requests from the same supported-control list as presentation, avoiding
+  contradictory summary evidence when a control is unavailable.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

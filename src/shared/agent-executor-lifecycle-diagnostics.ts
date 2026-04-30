@@ -37,6 +37,9 @@ export function buildDryRunAgentExecutorLifecycleAvailability(params: {
     'Model-visible tool exposure remains hidden.',
   ];
   const nextAction = 'Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.';
+  const supportedControlRequests = listSupportedExecutorLifecycleControlRequests(
+    buildExecutorLifecycleControlSupport(params.controlSupport),
+  );
 
   return {
     status: 'dry_run_available',
@@ -44,9 +47,7 @@ export function buildDryRunAgentExecutorLifecycleAvailability(params: {
     modelExposure: 'hidden',
     automaticStartAllowed: false,
     queueWorkerAllowed: false,
-    supportedControlRequests: listSupportedExecutorLifecycleControlRequests(
-      buildExecutorLifecycleControlSupport(params.controlSupport),
-    ),
+    supportedControlRequests,
     blockedReasons,
     nextAction,
     reason:
@@ -58,7 +59,7 @@ export function buildDryRunAgentExecutorLifecycleAvailability(params: {
       'modelExposure=hidden',
       'automaticStart=no',
       'queueWorker=no',
-      'controlRequests=heartbeat,interrupt,cancel',
+      `controlRequests=${supportedControlRequests.join(',') || 'none'}`,
       `blocked=${blockedReasons.join('; ')}`,
       `next=${nextAction}`,
     ].join(' / '),

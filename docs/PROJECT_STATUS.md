@@ -1366,6 +1366,9 @@ Latest local baseline:
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
 - `npm run verify` passed locally on 2026-04-30 after covering partial
+  executor lifecycle control support in dry-run availability summaries.
+  Current local acceptance status: 127 test files / 883 tests
+- `npm run verify` passed locally on 2026-04-30 after covering partial
   executor lifecycle control support in Runs recovery safety diagnostics.
   Current local acceptance status: 127 test files / 883 tests
 - `npm run verify` passed locally on 2026-04-30 after covering partial
