@@ -191,6 +191,39 @@ describe('AgentExecutorLifecycleMonitor', () => {
     }));
   });
 
+  it('does not record events or settlement plans for unsupported control requests', async () => {
+    const runStepRepository = buildRunStepRepositoryMock();
+    const monitor = new AgentExecutorLifecycleMonitor(
+      new DryRunAgentExecutorLifecycleAdapter(),
+      new AgentSessionEventRecorder(runStepRepository as never),
+    );
+    const handle = await monitor.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-30T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+    });
+
+    await expect(monitor.controlAndPlan({
+      handle: {
+        ...handle,
+        control: {
+          ...handle.control,
+          cancel: false,
+        },
+      },
+      request: {
+        type: 'cancel',
+        reason: 'Operator attempted unsupported cancel.',
+      },
+    })).rejects.toThrow(
+      'Executor lifecycle control request cancel is not supported by this handle.',
+    );
+    expect(runStepRepository.create).not.toHaveBeenCalled();
+  });
+
   it('applies settlement plans only when a status update is explicit', async () => {
     const statusUpdater = {
       updateStatus: vi.fn().mockResolvedValue({

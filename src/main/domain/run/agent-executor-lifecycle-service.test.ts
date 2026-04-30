@@ -163,4 +163,34 @@ describe('AgentExecutorLifecycleService', () => {
     }));
     expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
   });
+
+  it('propagates unsupported control requests without recording or updating status', async () => {
+    const { runStepRepository, service, statusUpdater } = buildService();
+    const handle = await service.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-30T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+    });
+
+    await expect(service.controlAndPlan({
+      handle: {
+        ...handle,
+        control: {
+          ...handle.control,
+          interrupt: false,
+        },
+      },
+      request: {
+        type: 'interrupt',
+        reason: 'Operator attempted unsupported interrupt.',
+      },
+    })).rejects.toThrow(
+      'Executor lifecycle control request interrupt is not supported by this handle.',
+    );
+    expect(runStepRepository.create).not.toHaveBeenCalled();
+    expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
+  });
 });

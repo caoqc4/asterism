@@ -537,6 +537,8 @@ The latest implementation slice:
   requests and returns the same planned observation/settlement-plan shape,
   keeping control commands inspectable without applying status updates
   implicitly.
+- Monitor and service tests now cover unsupported control requests bubbling out
+  without RunStep evidence, settlement plans, or session status updates.
 - The default lifecycle service factory now has coverage for that typed control
   planning path, proving the assembled dry-run service can inspect interrupt
   requests without applying the recommended session status update.
