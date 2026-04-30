@@ -600,6 +600,9 @@ The latest implementation slice:
 - Default lifecycle service factory coverage now proves the assembled dry-run
   service preserves that `settleAndPlan` boundary before any explicit status
   apply step.
+- Lifecycle service coverage now also applies a `settleAndPlan` terminal plan
+  explicitly, proving the status write remains opt-in and still returns
+  `autoReplay=false`.
 - The lifecycle service factory availability projection now accepts control
   support overrides, letting dry-run diagnostics describe partial or absent
   controls without implying runtime readiness.

@@ -14,6 +14,9 @@ Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 897
+  tests after extending service coverage for explicit application of
+  `settleAndPlan` status updates.
+- on 2026-04-30, `npm run verify` passed locally with 127 test files / 897
   tests after covering assembled dry-run lifecycle service `settleAndPlan`
   planning without implicit session status writes.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 896

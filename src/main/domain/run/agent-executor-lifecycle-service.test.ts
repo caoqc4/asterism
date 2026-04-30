@@ -258,6 +258,20 @@ describe('AgentExecutorLifecycleService', () => {
       error: 'Dry-run executor failed.',
     }));
     expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
+
+    await expect(service.applySettlementPlan(planned.settlementPlan)).resolves.toMatchObject({
+      action: 'update_session_status',
+      applied: true,
+      autoReplay: false,
+      session: {
+        id: 'agent_session_1',
+        status: 'failed',
+      },
+      sessionId: 'agent_session_1',
+      status: 'failed',
+      summary: expect.stringContaining('applied=yes'),
+    });
+    expect(statusUpdater.updateStatus).toHaveBeenCalledWith('agent_session_1', 'failed');
   });
 
   it('plans typed lifecycle control requests without applying session status updates', async () => {
