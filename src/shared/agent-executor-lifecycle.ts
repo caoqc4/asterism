@@ -76,6 +76,12 @@ export type AgentExecutorLifecycleControlRequest =
 
 export type AgentExecutorLifecycleControlRequestType = AgentExecutorLifecycleControlRequest['type'];
 
+export const AGENT_EXECUTOR_LIFECYCLE_CONTROL_REQUEST_TYPES: readonly AgentExecutorLifecycleControlRequestType[] = [
+  'heartbeat',
+  'interrupt',
+  'cancel',
+];
+
 export function buildExecutorLifecycleControlSupport(
   supported: Partial<Record<AgentExecutorLifecycleControlRequestType, boolean>> = {},
 ): AgentExecutorSessionHandle['control'] {
@@ -89,7 +95,7 @@ export function buildExecutorLifecycleControlSupport(
 export function listSupportedExecutorLifecycleControlRequests(
   control: AgentExecutorSessionHandle['control'],
 ): AgentExecutorLifecycleControlRequestType[] {
-  return (['heartbeat', 'interrupt', 'cancel'] as const).filter((request) => control[request]);
+  return AGENT_EXECUTOR_LIFECYCLE_CONTROL_REQUEST_TYPES.filter((request) => control[request]);
 }
 
 export function getExecutorLifecycleControlKey(

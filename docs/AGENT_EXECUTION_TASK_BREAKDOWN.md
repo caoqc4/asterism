@@ -585,6 +585,9 @@ The latest implementation slice:
 - The shared lifecycle contract now exposes a non-throwing control support
   predicate, while the existing assert helper reuses it to preserve fail-closed
   adapter semantics.
+- Executor lifecycle control request ordering is now centralized in a shared
+  contract constant so adapters, diagnostics, and tests can reuse the same
+  heartbeat/interrupt/cancel order.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

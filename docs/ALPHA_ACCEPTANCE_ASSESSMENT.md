@@ -14,6 +14,9 @@ Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 886
+  tests after centralizing executor lifecycle control request ordering in a
+  shared contract constant.
+- on 2026-04-30, `npm run verify` passed locally with 127 test files / 886
   tests after adding a shared executor lifecycle control support predicate for
   adapter preflight checks.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 886
