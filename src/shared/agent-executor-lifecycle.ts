@@ -93,16 +93,36 @@ export class UnsupportedExecutorLifecycleControlRequestError extends Error {
   }
 }
 
-export function formatExecutorLifecycleControlError(error: unknown): string | null {
+export type ExecutorLifecycleControlErrorDiagnostic = {
+  code: UnsupportedExecutorLifecycleControlRequestError['code'];
+  requestType: AgentExecutorLifecycleControlRequestType;
+  message: string;
+  summary: string;
+};
+
+export function buildExecutorLifecycleControlErrorDiagnostic(
+  error: unknown,
+): ExecutorLifecycleControlErrorDiagnostic | null {
   if (!(error instanceof UnsupportedExecutorLifecycleControlRequestError)) {
     return null;
   }
 
-  return [
+  const summary = [
     `code=${error.code}`,
     `request=${error.requestType}`,
     `message=${error.message}`,
   ].join(' / ');
+
+  return {
+    code: error.code,
+    requestType: error.requestType,
+    message: error.message,
+    summary,
+  };
+}
+
+export function formatExecutorLifecycleControlError(error: unknown): string | null {
+  return buildExecutorLifecycleControlErrorDiagnostic(error)?.summary ?? null;
 }
 
 export function buildExecutorLifecycleControlSupport(

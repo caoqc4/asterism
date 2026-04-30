@@ -609,6 +609,9 @@ The latest implementation slice:
 - Lifecycle service tests now verify that unsupported-control summaries remain
   available at the service boundary while event evidence and session updates
   stay untouched.
+- Unsupported-control diagnostics now also have a structured shared object
+  shape with code, request type, message, and summary fields for future IPC or
+  renderer consumers.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

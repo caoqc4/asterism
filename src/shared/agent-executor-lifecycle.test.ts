@@ -4,6 +4,7 @@ import {
   AGENT_EXECUTOR_LIFECYCLE_CONTROL_REQUEST_TYPES,
   UnsupportedExecutorLifecycleControlRequestError,
   assertExecutorLifecycleControlSupported,
+  buildExecutorLifecycleControlErrorDiagnostic,
   buildExecutorLifecycleControlSupport,
   formatExecutorLifecycleControlError,
   getExecutorLifecycleControlKey,
@@ -131,6 +132,13 @@ describe('agent executor lifecycle', () => {
       requestType: 'interrupt',
       message: 'Executor lifecycle control request interrupt is not supported by this handle.',
     });
+    expect(buildExecutorLifecycleControlErrorDiagnostic(thrown)).toEqual({
+      code: 'unsupported_executor_lifecycle_control_request',
+      requestType: 'interrupt',
+      message: 'Executor lifecycle control request interrupt is not supported by this handle.',
+      summary: 'code=unsupported_executor_lifecycle_control_request / request=interrupt / message=Executor lifecycle control request interrupt is not supported by this handle.',
+    });
+    expect(buildExecutorLifecycleControlErrorDiagnostic(new Error('Other failure'))).toBeNull();
     expect(formatExecutorLifecycleControlError(thrown)).toBe(
       'code=unsupported_executor_lifecycle_control_request / request=interrupt / message=Executor lifecycle control request interrupt is not supported by this handle.',
     );
