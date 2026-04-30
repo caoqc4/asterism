@@ -652,6 +652,8 @@ The latest implementation slice:
   results are visible at the service boundary.
 - Lifecycle service coverage now also locks heartbeat observations to
   `no_status_change` settlement diagnostics with no session status update.
+- Default lifecycle service factory coverage now locks the same heartbeat
+  no-status-change diagnostics through the assembled dry-run service.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

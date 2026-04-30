@@ -149,6 +149,55 @@ describe('createAgentExecutorLifecycleService', () => {
     expect(agentSessionStore.updateStatus).toHaveBeenCalledWith('agent_session_1', 'cancelled');
   });
 
+  it('builds a service that plans heartbeat observations without status updates', async () => {
+    const runStepRepository = buildRunStepRepositoryMock();
+    const agentSessionStore = {
+      updateStatus: vi.fn(),
+    };
+    const service = createAgentExecutorLifecycleService({
+      agentSessionStore: agentSessionStore as never,
+      runStepRepository: runStepRepository as never,
+    });
+    const handle = await service.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-30T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+    });
+
+    const planned = await service.observeAndPlan({
+      handle,
+      signal: {
+        type: 'heartbeat',
+        summary: 'Assembled dry-run lifecycle service is alive.',
+      },
+    });
+
+    expect(planned).toMatchObject({
+      projectedStatus: null,
+      terminalEventRecorded: false,
+      settlementDiagnostic: {
+        action: 'no_status_change',
+        autoReplay: false,
+        sessionId: 'agent_session_1',
+        status: null,
+      },
+      settlementPlan: {
+        action: 'no_status_change',
+        sessionId: 'agent_session_1',
+      },
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'plan',
+      status: 'running',
+      title: 'Agent session 心跳',
+      output: 'Assembled dry-run lifecycle service is alive.',
+    }));
+    expect(agentSessionStore.updateStatus).not.toHaveBeenCalled();
+  });
+
   it('builds a service that plans typed control requests without applying status updates', async () => {
     const runStepRepository = buildRunStepRepositoryMock();
     const agentSessionStore = {
