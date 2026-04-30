@@ -173,16 +173,13 @@ describe('AgentExecutorLifecycleService', () => {
       profileId: 'manual_code_agent',
       nowIso: '2026-04-30T00:00:00.000Z',
       capabilities: buildCapabilities(),
+      controlSupport: {
+        interrupt: false,
+      },
     });
 
     await expect(service.controlAndPlan({
-      handle: {
-        ...handle,
-        control: {
-          ...handle.control,
-          interrupt: false,
-        },
-      },
+      handle,
       request: {
         type: 'interrupt',
         reason: 'Operator attempted unsupported interrupt.',

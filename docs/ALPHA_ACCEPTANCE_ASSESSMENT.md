@@ -14,6 +14,9 @@ Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 880
+  tests after moving unsupported lifecycle control guard tests to start-input
+  partial support.
+- on 2026-04-30, `npm run verify` passed locally with 127 test files / 880
   tests after allowing dry-run lifecycle handles to advertise partial control
   support from start input.
 - on 2026-04-30, `npm run verify` passed locally with 127 test files / 879

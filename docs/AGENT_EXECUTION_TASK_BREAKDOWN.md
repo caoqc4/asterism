@@ -529,6 +529,9 @@ The latest implementation slice:
 - The dry-run adapter start input can now override advertised control support,
   keeping partial-support executor handles testable before any live runtime is
   connected.
+- Monitor, service, and factory guard tests now use that start-input control
+  support instead of mutating returned handles, keeping partial-support
+  coverage closer to the adapter contract.
 - The dry-run adapter also exposes that typed control API and routes it through
   the existing runtime event spine, so interrupt/cancel behavior is covered
   before a real executor process exists.

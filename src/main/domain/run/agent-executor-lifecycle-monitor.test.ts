@@ -204,16 +204,13 @@ describe('AgentExecutorLifecycleMonitor', () => {
       profileId: 'manual_code_agent',
       nowIso: '2026-04-30T00:00:00.000Z',
       capabilities: buildCapabilities(),
+      controlSupport: {
+        cancel: false,
+      },
     });
 
     await expect(monitor.controlAndPlan({
-      handle: {
-        ...handle,
-        control: {
-          ...handle.control,
-          cancel: false,
-        },
-      },
+      handle,
       request: {
         type: 'cancel',
         reason: 'Operator attempted unsupported cancel.',
