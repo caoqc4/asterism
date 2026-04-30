@@ -219,6 +219,9 @@ The project is past initial architecture assembly. Current work should favor pro
   heartbeat, interrupt, and cancel requests, returning the same RunStep
   evidence and settlement-plan shape while still requiring explicit
   `applySettlementPlan` for any `AgentSession` write.
+- The default lifecycle service factory now covers that typed control planning
+  path, so the assembled dry-run service can inspect interrupt requests without
+  applying status updates implicitly.
 - That monitor now also produces an explicit settlement plan:
   heartbeat observations remain `no_status_change`, while terminal lifecycle
   observations produce `update_session_status` recommendations for the service
@@ -1329,12 +1332,15 @@ npm run verify
 Latest local baseline:
 
 - 127 test files
-- 871 tests
+- 872 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-30 after covering typed executor
+  lifecycle control planning through the default dry-run service factory.
+  Current local acceptance status: 127 test files / 872 tests
 - `npm run verify` passed locally on 2026-04-30 after threading typed executor
   lifecycle control requests through the monitor/service planned-observation
   boundary. Current local acceptance status: 127 test files / 871 tests

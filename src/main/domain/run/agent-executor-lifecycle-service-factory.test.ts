@@ -121,4 +121,57 @@ describe('createAgentExecutorLifecycleService', () => {
     });
     expect(agentSessionStore.updateStatus).toHaveBeenCalledWith('agent_session_1', 'cancelled');
   });
+
+  it('builds a service that plans typed control requests without applying status updates', async () => {
+    const runStepRepository = buildRunStepRepositoryMock();
+    const agentSessionStore = {
+      updateStatus: vi.fn().mockImplementation(async (id: string, status: string) => ({
+        id,
+        runId: 'run_1',
+        mode: 'agent',
+        status,
+        capabilities: buildCapabilities(),
+        metadata: null,
+        createdAt: '2026-04-30T00:00:00.000Z',
+        updatedAt: '2026-04-30T00:01:00.000Z',
+      })),
+    };
+    const service = createAgentExecutorLifecycleService({
+      agentSessionStore: agentSessionStore as never,
+      runStepRepository: runStepRepository as never,
+    });
+    const handle = await service.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-30T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+    });
+
+    const planned = await service.controlAndPlan({
+      handle,
+      request: {
+        type: 'interrupt',
+        reason: 'Dry-run executor control interrupted.',
+      },
+    });
+
+    expect(planned).toMatchObject({
+      projectedStatus: 'failed',
+      terminalEventRecorded: true,
+      settlementPlan: {
+        action: 'update_session_status',
+        sessionId: 'agent_session_1',
+        status: 'failed',
+      },
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'final',
+      status: 'failed',
+      title: 'Agent session 已中断',
+      error: 'Dry-run executor control interrupted.',
+    }));
+    expect(agentSessionStore.updateStatus).not.toHaveBeenCalled();
+  });
 });
