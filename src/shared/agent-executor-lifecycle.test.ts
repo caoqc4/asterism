@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   AGENT_EXECUTOR_LIFECYCLE_CONTROL_REQUEST_TYPES,
+  AGENT_EXECUTOR_LIFECYCLE_SETTLE_STATUSES,
   UnsupportedExecutorLifecycleControlRequestError,
   assertExecutorLifecycleControlSupported,
   buildExecutorLifecycleControlErrorDiagnostic,
@@ -65,6 +66,14 @@ describe('agent executor lifecycle', () => {
     expect(listSupportedExecutorLifecycleControlRequests(buildExecutorLifecycleControlSupport({
       cancel: false,
     }))).toEqual(['heartbeat', 'interrupt']);
+  });
+
+  it('keeps executor lifecycle settle statuses ordered for diagnostics', () => {
+    expect(AGENT_EXECUTOR_LIFECYCLE_SETTLE_STATUSES).toEqual([
+      'completed',
+      'failed',
+      'paused',
+    ]);
   });
 
   it('maps control requests to handle control keys', () => {

@@ -610,6 +610,9 @@ The latest implementation slice:
 - App-level Settings, Task, and Runs coverage now locks the visible
   `settleResults=completed,failed,paused` diagnostics line so presentation
   surfaces cannot drop the adapter contract evidence silently.
+- Shared lifecycle tests now lock settle status ordering
+  (`completed,failed,paused`) beside control request ordering, keeping
+  diagnostics stable as future adapter work arrives.
 - The lifecycle service factory availability projection now accepts control
   support overrides, letting dry-run diagnostics describe partial or absent
   controls without implying runtime readiness.
