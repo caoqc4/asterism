@@ -1,7 +1,9 @@
 import {
+  AGENT_EXECUTOR_LIFECYCLE_SETTLE_STATUSES,
   buildExecutorLifecycleControlSupport,
   listSupportedExecutorLifecycleControlRequests,
   type AgentExecutorLifecycleControlRequestType,
+  type AgentExecutorLifecycleSettleStatus,
   type AgentExecutorSessionHandle,
 } from './agent-executor-lifecycle.js';
 
@@ -12,6 +14,7 @@ export type AgentExecutorLifecycleServiceAvailability = {
   automaticStartAllowed: false;
   queueWorkerAllowed: false;
   supportedControlRequests: AgentExecutorLifecycleControlRequestType[];
+  supportedSettleStatuses: AgentExecutorLifecycleSettleStatus[];
   blockedReasons: string[];
   nextAction: string;
   reason: string;
@@ -22,6 +25,7 @@ export type AgentExecutorLifecycleAvailabilityPresentation = {
   status: string;
   runtime: string;
   controlRequests: string;
+  settleResults: string;
   exposure: string;
   blocked: string;
   nextAction: string;
@@ -40,6 +44,7 @@ export function buildDryRunAgentExecutorLifecycleAvailability(params: {
   const supportedControlRequests = listSupportedExecutorLifecycleControlRequests(
     buildExecutorLifecycleControlSupport(params.controlSupport),
   );
+  const supportedSettleStatuses = [...AGENT_EXECUTOR_LIFECYCLE_SETTLE_STATUSES];
 
   return {
     status: 'dry_run_available',
@@ -48,6 +53,7 @@ export function buildDryRunAgentExecutorLifecycleAvailability(params: {
     automaticStartAllowed: false,
     queueWorkerAllowed: false,
     supportedControlRequests,
+    supportedSettleStatuses,
     blockedReasons,
     nextAction,
     reason:
@@ -60,6 +66,7 @@ export function buildDryRunAgentExecutorLifecycleAvailability(params: {
       'automaticStart=no',
       'queueWorker=no',
       `controlRequests=${supportedControlRequests.join(',') || 'none'}`,
+      `settleResults=${supportedSettleStatuses.join(',')}`,
       `blocked=${blockedReasons.join('; ')}`,
       `next=${nextAction}`,
     ].join(' / '),
@@ -83,6 +90,10 @@ export function buildAgentExecutorLifecycleAvailabilityPresentation(
       `controlRequests=${availability.supportedControlRequests.join(',') || 'none'}`,
       'controlMode=dry_run_planned',
     ].join(' / '),
+    settleResults: [
+      `settleResults=${availability.supportedSettleStatuses.join(',') || 'none'}`,
+      'settleMode=dry_run_planned',
+    ].join(' / '),
     exposure: [
       `modelExposure=${availability.modelExposure}`,
       'modelVisibleTools=no',
@@ -99,6 +110,7 @@ export function buildAgentExecutorLifecycleAvailabilityPresentation(
       `automaticStart=${availability.automaticStartAllowed ? 'yes' : 'no'}`,
       `queueWorker=${availability.queueWorkerAllowed ? 'yes' : 'no'}`,
       `controlRequests=${availability.supportedControlRequests.join(',') || 'none'}`,
+      `settleResults=${availability.supportedSettleStatuses.join(',') || 'none'}`,
       `blocked=${availability.blockedReasons.length ? availability.blockedReasons.join('; ') : 'none'}`,
       `next=${availability.nextAction}`,
     ].join(' / '),

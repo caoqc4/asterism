@@ -43,6 +43,7 @@ describe('createAgentExecutorLifecycleService', () => {
       automaticStartAllowed: false,
       queueWorkerAllowed: false,
       supportedControlRequests: ['heartbeat', 'interrupt', 'cancel'],
+      supportedSettleStatuses: ['completed', 'failed', 'paused'],
       blockedReasons: [
         'No real executor runtime is connected.',
         'Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.',
@@ -59,6 +60,7 @@ describe('createAgentExecutorLifecycleService', () => {
         'automaticStart=no',
         'queueWorker=no',
         'controlRequests=heartbeat,interrupt,cancel',
+        'settleResults=completed,failed,paused',
         'blocked=No real executor runtime is connected.; Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.; Model-visible tool exposure remains hidden.',
         'next=Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.',
       ].join(' / '),
@@ -75,6 +77,7 @@ describe('createAgentExecutorLifecycleService', () => {
       automaticStartAllowed: false,
       queueWorkerAllowed: false,
       supportedControlRequests: ['heartbeat', 'interrupt'],
+      supportedSettleStatuses: ['completed', 'failed', 'paused'],
       summary: expect.stringContaining('controlRequests=heartbeat,interrupt'),
     });
     expect(evaluateAgentExecutorLifecycleServiceAvailability({

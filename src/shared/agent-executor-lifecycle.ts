@@ -76,6 +76,8 @@ export type AgentExecutorLifecycleSettleResult =
       observedAt?: string | null;
     };
 
+export type AgentExecutorLifecycleSettleStatus = AgentExecutorLifecycleSettleResult['status'];
+
 export type AgentExecutorLifecycleControlRequest =
   | {
       type: 'heartbeat';
@@ -99,6 +101,12 @@ export const AGENT_EXECUTOR_LIFECYCLE_CONTROL_REQUEST_TYPES: readonly AgentExecu
   'heartbeat',
   'interrupt',
   'cancel',
+];
+
+export const AGENT_EXECUTOR_LIFECYCLE_SETTLE_STATUSES: readonly AgentExecutorLifecycleSettleStatus[] = [
+  'completed',
+  'failed',
+  'paused',
 ];
 
 export class UnsupportedExecutorLifecycleControlRequestError extends Error {

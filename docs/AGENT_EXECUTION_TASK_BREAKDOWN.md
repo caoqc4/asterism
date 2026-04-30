@@ -603,6 +603,10 @@ The latest implementation slice:
 - Lifecycle service coverage now also applies a `settleAndPlan` terminal plan
   explicitly, proving the status write remains opt-in and still returns
   `autoReplay=false`.
+- Dry-run lifecycle diagnostics now surface supported settle results
+  (`completed,failed,paused`) separately from control requests, keeping
+  renderer diagnostics aligned with the adapter contract while
+  `runtimeReady=no` remains explicit.
 - The lifecycle service factory availability projection now accepts control
   support overrides, letting dry-run diagnostics describe partial or absent
   controls without implying runtime readiness.

@@ -210,6 +210,7 @@ describe('agent orchestration presentation', () => {
       controlRequests: 'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
       exposure: 'modelExposure=hidden / modelVisibleTools=no',
       runtime: 'runtimeReady=no / queueWorker=no / automaticStart=no',
+      settleResults: 'settleResults=completed,failed,paused / settleMode=dry_run_planned',
       status: 'Executor lifecycle / status=dry_run_available',
     }));
     expect(presentation.summary).toBe(
@@ -228,6 +229,7 @@ describe('agent orchestration presentation', () => {
       'Executor lifecycle：Executor lifecycle / status=dry_run_available',
       'runtimeReady=no / queueWorker=no / automaticStart=no',
       'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
+      'settleResults=completed,failed,paused / settleMode=dry_run_planned',
       'modelExposure=hidden / modelVisibleTools=no',
       'blocked=No real executor runtime is connected.; Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.; Model-visible tool exposure remains hidden.',
       'next=Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.',
@@ -248,6 +250,9 @@ describe('agent orchestration presentation', () => {
 
     expect(buildExecutorLifecycleDiagnosticLines(presentation.executorLifecycle)).toContain(
       'controlRequests=heartbeat,interrupt / controlMode=dry_run_planned',
+    );
+    expect(buildExecutorLifecycleDiagnosticLines(presentation.executorLifecycle)).toContain(
+      'settleResults=completed,failed,paused / settleMode=dry_run_planned',
     );
     expect(buildExecutorLifecycleDiagnosticLines(presentation.executorLifecycle)).not.toContain(
       'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',

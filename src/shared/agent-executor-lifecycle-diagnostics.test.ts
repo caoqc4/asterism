@@ -14,6 +14,7 @@ function buildAvailability(): AgentExecutorLifecycleServiceAvailability {
     automaticStartAllowed: false,
     queueWorkerAllowed: false,
     supportedControlRequests: ['heartbeat', 'interrupt', 'cancel'],
+    supportedSettleStatuses: ['completed', 'failed', 'paused'],
     blockedReasons: [
       'No real executor runtime is connected.',
       'Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.',
@@ -30,6 +31,7 @@ function buildAvailability(): AgentExecutorLifecycleServiceAvailability {
       'automaticStart=no',
       'queueWorker=no',
       'controlRequests=heartbeat,interrupt,cancel',
+      'settleResults=completed,failed,paused',
       'blocked=No real executor runtime is connected.; Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.; Model-visible tool exposure remains hidden.',
       'next=Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.',
     ].join(' / '),
@@ -54,6 +56,7 @@ describe('agent executor lifecycle diagnostics', () => {
     expect(buildAgentExecutorLifecycleAvailabilityPresentation(availability)).toMatchObject({
       controlRequests: 'controlRequests=heartbeat,interrupt / controlMode=dry_run_planned',
       runtime: 'runtimeReady=no / queueWorker=no / automaticStart=no',
+      settleResults: 'settleResults=completed,failed,paused / settleMode=dry_run_planned',
     });
   });
 
@@ -67,9 +70,12 @@ describe('agent executor lifecycle diagnostics', () => {
     });
 
     expect(availability.supportedControlRequests).toEqual([]);
+    expect(availability.supportedSettleStatuses).toEqual(['completed', 'failed', 'paused']);
     expect(availability.summary).toContain('controlRequests=none');
+    expect(availability.summary).toContain('settleResults=completed,failed,paused');
     expect(buildAgentExecutorLifecycleAvailabilityPresentation(availability)).toMatchObject({
       controlRequests: 'controlRequests=none / controlMode=dry_run_planned',
+      settleResults: 'settleResults=completed,failed,paused / settleMode=dry_run_planned',
       summary: expect.stringContaining('controlRequests=none'),
     });
   });
@@ -79,6 +85,7 @@ describe('agent executor lifecycle diagnostics', () => {
       status: 'Executor lifecycle / status=dry_run_available',
       runtime: 'runtimeReady=no / queueWorker=no / automaticStart=no',
       controlRequests: 'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
+      settleResults: 'settleResults=completed,failed,paused / settleMode=dry_run_planned',
       exposure: 'modelExposure=hidden / modelVisibleTools=no',
       blocked: [
         'blocked=No real executor runtime is connected.',
@@ -95,6 +102,7 @@ describe('agent executor lifecycle diagnostics', () => {
         'automaticStart=no',
         'queueWorker=no',
         'controlRequests=heartbeat,interrupt,cancel',
+        'settleResults=completed,failed,paused',
         'blocked=No real executor runtime is connected.; Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.; Model-visible tool exposure remains hidden.',
         'next=Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.',
       ].join(' / '),
