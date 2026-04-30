@@ -648,6 +648,8 @@ The latest implementation slice:
   also exposes planned settlement diagnostics.
 - Executor lifecycle settlement apply results now include structured action,
   session id, status, and `autoReplay=false` fields in addition to the summary.
+- Lifecycle service coverage now asserts those structured settlement apply
+  results are visible at the service boundary.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

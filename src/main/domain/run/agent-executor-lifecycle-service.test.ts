@@ -137,11 +137,16 @@ describe('AgentExecutorLifecycleService', () => {
     });
 
     await expect(service.applySettlementPlan(planned.settlementPlan)).resolves.toMatchObject({
+      action: 'update_session_status',
       applied: true,
+      autoReplay: false,
       session: {
         id: 'agent_session_1',
         status: 'cancelled',
       },
+      sessionId: 'agent_session_1',
+      status: 'cancelled',
+      summary: expect.stringContaining('applied=yes'),
     });
     expect(statusUpdater.updateStatus).toHaveBeenCalledWith('agent_session_1', 'cancelled');
   });
