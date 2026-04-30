@@ -245,6 +245,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - The factory now also exposes a dry-run-only availability summary for future
   diagnostics: `runtimeReady=no`, `modelExposure=hidden`,
   `automaticStart=no`, and `queueWorker=no`.
+- The availability summary now also exposes supported dry-run control requests
+  (`heartbeat`, `interrupt`, `cancel`) with `controlMode=dry_run_planned`, so
+  UI diagnostics can show the typed control API without implying runtime
+  readiness.
 - That availability summary now also carries structured blocked reasons and a
   next-action hint, so future diagnostics can explain that no real executor is
   connected, the service is not wired into runtime entrypoints, and
@@ -1338,6 +1342,9 @@ Latest local baseline:
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-30 after adding dry-run control
+  request support to executor lifecycle availability diagnostics. Current
+  local acceptance status: 127 test files / 872 tests
 - `npm run verify` passed locally on 2026-04-30 after covering typed executor
   lifecycle control planning through the default dry-run service factory.
   Current local acceptance status: 127 test files / 872 tests

@@ -207,6 +207,7 @@ describe('agent orchestration presentation', () => {
     });
 
     expect(presentation.executorLifecycle).toEqual(expect.objectContaining({
+      controlRequests: 'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
       exposure: 'modelExposure=hidden / modelVisibleTools=no',
       runtime: 'runtimeReady=no / queueWorker=no / automaticStart=no',
       status: 'Executor lifecycle / status=dry_run_available',
@@ -226,6 +227,7 @@ describe('agent orchestration presentation', () => {
     expect(buildExecutorLifecycleDiagnosticLines(presentation.executorLifecycle)).toEqual([
       'Executor lifecycle：Executor lifecycle / status=dry_run_available',
       'runtimeReady=no / queueWorker=no / automaticStart=no',
+      'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
       'modelExposure=hidden / modelVisibleTools=no',
       'blocked=No real executor runtime is connected.; Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.; Model-visible tool exposure remains hidden.',
       'next=Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.',

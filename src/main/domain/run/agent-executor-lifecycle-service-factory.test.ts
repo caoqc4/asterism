@@ -42,6 +42,7 @@ describe('createAgentExecutorLifecycleService', () => {
       modelExposure: 'hidden',
       automaticStartAllowed: false,
       queueWorkerAllowed: false,
+      supportedControlRequests: ['heartbeat', 'interrupt', 'cancel'],
       blockedReasons: [
         'No real executor runtime is connected.',
         'Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.',
@@ -57,6 +58,7 @@ describe('createAgentExecutorLifecycleService', () => {
         'modelExposure=hidden',
         'automaticStart=no',
         'queueWorker=no',
+        'controlRequests=heartbeat,interrupt,cancel',
         'blocked=No real executor runtime is connected.; Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.; Model-visible tool exposure remains hidden.',
         'next=Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.',
       ].join(' / '),

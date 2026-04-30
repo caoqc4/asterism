@@ -559,6 +559,9 @@ The latest implementation slice:
 - The availability summary now includes structured blocked reasons and a next
   action, keeping future diagnostics explainable without implying real executor
   readiness.
+- The availability summary now also reports supported dry-run control requests
+  (`heartbeat`, `interrupt`, `cancel`) as `controlMode=dry_run_planned`, making
+  control API readiness visible without implying a live executor.
 - Shared executor lifecycle diagnostics now format that availability as
   read-only presentation copy and Settings surfaces it inside the existing
   `Orchestration Diagnostics` card, including blocked reasons and next action,

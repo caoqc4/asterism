@@ -2947,6 +2947,9 @@ describe('App UI flow', () => {
       'runtimeReady=no / queueWorker=no / automaticStart=no',
     )).toBeTruthy();
     expect(readiness.getByText(
+      'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
+    )).toBeTruthy();
+    expect(readiness.getByText(
       'modelExposure=hidden / modelVisibleTools=no',
     )).toBeTruthy();
     expect(readiness.getByText(

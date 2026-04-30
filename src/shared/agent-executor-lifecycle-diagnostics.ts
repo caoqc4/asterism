@@ -4,6 +4,7 @@ export type AgentExecutorLifecycleServiceAvailability = {
   modelExposure: 'hidden';
   automaticStartAllowed: false;
   queueWorkerAllowed: false;
+  supportedControlRequests: Array<'heartbeat' | 'interrupt' | 'cancel'>;
   blockedReasons: string[];
   nextAction: string;
   reason: string;
@@ -13,6 +14,7 @@ export type AgentExecutorLifecycleServiceAvailability = {
 export type AgentExecutorLifecycleAvailabilityPresentation = {
   status: string;
   runtime: string;
+  controlRequests: string;
   exposure: string;
   blocked: string;
   nextAction: string;
@@ -33,6 +35,7 @@ export function buildDryRunAgentExecutorLifecycleAvailability(): AgentExecutorLi
     modelExposure: 'hidden',
     automaticStartAllowed: false,
     queueWorkerAllowed: false,
+    supportedControlRequests: ['heartbeat', 'interrupt', 'cancel'],
     blockedReasons,
     nextAction,
     reason:
@@ -44,6 +47,7 @@ export function buildDryRunAgentExecutorLifecycleAvailability(): AgentExecutorLi
       'modelExposure=hidden',
       'automaticStart=no',
       'queueWorker=no',
+      'controlRequests=heartbeat,interrupt,cancel',
       `blocked=${blockedReasons.join('; ')}`,
       `next=${nextAction}`,
     ].join(' / '),
@@ -63,6 +67,10 @@ export function buildAgentExecutorLifecycleAvailabilityPresentation(
       `queueWorker=${availability.queueWorkerAllowed ? 'yes' : 'no'}`,
       `automaticStart=${availability.automaticStartAllowed ? 'yes' : 'no'}`,
     ].join(' / '),
+    controlRequests: [
+      `controlRequests=${availability.supportedControlRequests.join(',') || 'none'}`,
+      'controlMode=dry_run_planned',
+    ].join(' / '),
     exposure: [
       `modelExposure=${availability.modelExposure}`,
       'modelVisibleTools=no',
@@ -78,6 +86,7 @@ export function buildAgentExecutorLifecycleAvailabilityPresentation(
       `modelExposure=${availability.modelExposure}`,
       `automaticStart=${availability.automaticStartAllowed ? 'yes' : 'no'}`,
       `queueWorker=${availability.queueWorkerAllowed ? 'yes' : 'no'}`,
+      `controlRequests=${availability.supportedControlRequests.join(',') || 'none'}`,
       `blocked=${availability.blockedReasons.length ? availability.blockedReasons.join('; ') : 'none'}`,
       `next=${availability.nextAction}`,
     ].join(' / '),
