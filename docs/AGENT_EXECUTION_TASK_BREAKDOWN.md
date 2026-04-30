@@ -542,6 +542,9 @@ The latest implementation slice:
 - The default lifecycle service factory now has coverage for that typed control
   planning path, proving the assembled dry-run service can inspect interrupt
   requests without applying the recommended session status update.
+- Factory coverage now also proves unsupported dry-run control requests are
+  rejected before evidence recording or status updates in the assembled
+  service.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any
