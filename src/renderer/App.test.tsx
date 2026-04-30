@@ -2941,6 +2941,21 @@ describe('App UI flow', () => {
       'Hidden tool families / families=browser_playwright,mcp,skill,computer_use,creator_connector / modelVisible=no',
     )).toBeTruthy();
     expect(readiness.getByText(
+      'Executor lifecycle：Executor lifecycle / status=dry_run_available',
+    )).toBeTruthy();
+    expect(readiness.getByText(
+      'runtimeReady=no / queueWorker=no / automaticStart=no',
+    )).toBeTruthy();
+    expect(readiness.getByText(
+      'modelExposure=hidden / modelVisibleTools=no',
+    )).toBeTruthy();
+    expect(readiness.getByText(
+      'blocked=No real executor runtime is connected.; Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.; Model-visible tool exposure remains hidden.',
+    )).toBeTruthy();
+    expect(readiness.getByText(
+      'next=Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.',
+    )).toBeTruthy();
+    expect(readiness.getByText(
       'Automation readiness：diagnostic_only / evidence=inputs=present,runtime=ready / blocked=No applied skill or process template is attached to this task.; High-risk tasks require manual Decision or operator-started review before execution.; Task needs at least one open completion criterion to bound execution. / autoStart=no',
     )).toBeTruthy();
     expect(readiness.getByText(

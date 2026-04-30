@@ -242,6 +242,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Main-process AI config status now passively carries the same executor
   lifecycle availability fact, so Settings displays the runtime-boundary
   diagnostic from status data instead of constructing it locally.
+- Task detail `Orchestration readiness` now also consumes that status-sourced
+  executor lifecycle diagnostic, keeping the Code Agent intent surface aligned
+  with Settings while preserving manual-only execution.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, hidden-tool-family facts, and dry-run executor lifecycle status
@@ -1315,6 +1318,9 @@ Latest local baseline:
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-30 after surfacing the
+  status-sourced executor lifecycle diagnostic in Task detail orchestration
+  readiness. Current local acceptance status: 127 test files / 866 tests
 - `npm run verify` passed locally on 2026-04-30 after carrying executor
   lifecycle availability through Main AI config status into Settings
   diagnostics. Current local acceptance status: 127 test files / 866 tests

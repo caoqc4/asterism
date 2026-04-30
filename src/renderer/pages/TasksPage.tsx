@@ -2206,6 +2206,7 @@ export function TasksPage({
     : null;
   const orchestrationPresentation = buildReadOnlyOrchestrationPresentation({
     automationReadiness,
+    executorLifecycleAvailability: aiStatus?.executorLifecycleAvailability,
     snapshot: orchestrationSnapshot,
   });
   const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
@@ -2361,6 +2362,25 @@ export function TasksPage({
             <p className="meta">
               {orchestrationPresentation.hiddenToolFamilies}
             </p>
+            {orchestrationPresentation.executorLifecycle ? (
+              <>
+                <p className="meta">
+                  Executor lifecycle：{orchestrationPresentation.executorLifecycle.status}
+                </p>
+                <p className="meta">
+                  {orchestrationPresentation.executorLifecycle.runtime}
+                </p>
+                <p className="meta">
+                  {orchestrationPresentation.executorLifecycle.exposure}
+                </p>
+                <p className="meta">
+                  {orchestrationPresentation.executorLifecycle.blocked}
+                </p>
+                <p className="meta">
+                  {orchestrationPresentation.executorLifecycle.nextAction}
+                </p>
+              </>
+            ) : null}
             {orchestrationPresentation.automationReadiness ? (
               <p className="meta">
                 {orchestrationPresentation.automationReadiness}

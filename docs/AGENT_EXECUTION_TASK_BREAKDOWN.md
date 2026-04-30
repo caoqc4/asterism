@@ -554,6 +554,9 @@ The latest implementation slice:
 - Main-process AI config status now includes that executor lifecycle
   availability as passive diagnostics, keeping the Settings display sourced
   from status data rather than renderer-local assumptions.
+- Task detail `Orchestration readiness` now consumes the same status-sourced
+  executor lifecycle diagnostic, aligning the manual Code Agent intent surface
+  with Settings without adding runtime authority.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation
