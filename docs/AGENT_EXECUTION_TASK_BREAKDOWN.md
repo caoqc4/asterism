@@ -582,6 +582,9 @@ The latest implementation slice:
 - Default service factory coverage now proves the assembled lifecycle service
   preserves that no-controls heartbeat guard before evidence recording or
   session status updates.
+- The shared lifecycle contract now exposes a non-throwing control support
+  predicate, while the existing assert helper reuses it to preserve fail-closed
+  adapter semantics.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

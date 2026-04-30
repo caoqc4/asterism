@@ -105,13 +105,20 @@ export function getExecutorLifecycleControlKey(
   }
 }
 
+export function isExecutorLifecycleControlSupported(params: {
+  handle: AgentExecutorSessionHandle;
+  request: AgentExecutorLifecycleControlRequest;
+}): boolean {
+  return params.handle.control[getExecutorLifecycleControlKey(params.request)];
+}
+
 export function assertExecutorLifecycleControlSupported(params: {
   handle: AgentExecutorSessionHandle;
   request: AgentExecutorLifecycleControlRequest;
 }): void {
   const controlKey = getExecutorLifecycleControlKey(params.request);
 
-  if (!params.handle.control[controlKey]) {
+  if (!isExecutorLifecycleControlSupported(params)) {
     throw new Error(`Executor lifecycle control request ${controlKey} is not supported by this handle.`);
   }
 }

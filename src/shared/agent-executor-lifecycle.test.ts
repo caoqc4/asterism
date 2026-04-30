@@ -4,6 +4,7 @@ import {
   assertExecutorLifecycleControlSupported,
   buildExecutorLifecycleControlSupport,
   getExecutorLifecycleControlKey,
+  isExecutorLifecycleControlSupported,
   listSupportedExecutorLifecycleControlRequests,
   mapExecutorLifecycleControlRequestToSignal,
   mapExecutorLifecycleSignalToRuntimeEvent,
@@ -73,6 +74,13 @@ describe('agent executor lifecycle', () => {
   it('fails closed when a handle does not support a control request', () => {
     const handle = buildHandle();
 
+    expect(isExecutorLifecycleControlSupported({
+      handle,
+      request: {
+        type: 'interrupt',
+        reason: 'Executor process stopped responding.',
+      },
+    })).toBe(true);
     expect(() => assertExecutorLifecycleControlSupported({
       handle,
       request: {
@@ -81,14 +89,23 @@ describe('agent executor lifecycle', () => {
       },
     })).not.toThrow();
 
-    expect(() => assertExecutorLifecycleControlSupported({
-      handle: {
-        ...handle,
-        control: {
-          ...handle.control,
-          interrupt: false,
-        },
+    const handleWithoutInterrupt = {
+      ...handle,
+      control: {
+        ...handle.control,
+        interrupt: false,
       },
+    };
+
+    expect(isExecutorLifecycleControlSupported({
+      handle: handleWithoutInterrupt,
+      request: {
+        type: 'interrupt',
+        reason: 'Executor process stopped responding.',
+      },
+    })).toBe(false);
+    expect(() => assertExecutorLifecycleControlSupported({
+      handle: handleWithoutInterrupt,
       request: {
         type: 'interrupt',
         reason: 'Executor process stopped responding.',
