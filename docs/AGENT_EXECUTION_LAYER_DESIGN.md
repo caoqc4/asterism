@@ -520,6 +520,10 @@ Current implementation note:
   confirmation sessions are ordered by `updatedAt` and then `createdAt`, while
   newer `running` sessions remain excluded from checkpoint settlement so they
   cannot bypass the executor-liveness requirement.
+- Executor lifecycle settlement planning now produces both an explicit plan and
+  a structured diagnostic with action, session id, optional status, summary,
+  and `autoReplay=false`, so future IPC or renderer review surfaces can display
+  settlement evidence without parsing summary strings.
 - The runtime event spine now includes executor liveness and interruption
   events: `session.heartbeat`, `session.interrupted`, and `session.cancelled`.
   Heartbeats write running evidence only, while interrupted/cancelled events
