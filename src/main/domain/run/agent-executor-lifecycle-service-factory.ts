@@ -2,6 +2,7 @@ import {
   buildDryRunAgentExecutorLifecycleAvailability,
   type AgentExecutorLifecycleServiceAvailability,
 } from '../../../shared/agent-executor-lifecycle-diagnostics.js';
+import type { AgentExecutorSessionHandle } from '../../../shared/agent-executor-lifecycle.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { AgentSessionEventRecorder } from './agent-session-event-recorder.js';
 import { AgentSessionStore } from './agent-session-store.js';
@@ -15,8 +16,16 @@ export type AgentExecutorLifecycleServiceFactoryDependencies = {
   runStepRepository?: RunStepRepository;
 };
 
-export function evaluateAgentExecutorLifecycleServiceAvailability(): AgentExecutorLifecycleServiceAvailability {
-  return buildDryRunAgentExecutorLifecycleAvailability();
+export type AgentExecutorLifecycleServiceAvailabilityParams = {
+  controlSupport?: Partial<AgentExecutorSessionHandle['control']>;
+};
+
+export function evaluateAgentExecutorLifecycleServiceAvailability(
+  params: AgentExecutorLifecycleServiceAvailabilityParams = {},
+): AgentExecutorLifecycleServiceAvailability {
+  return buildDryRunAgentExecutorLifecycleAvailability({
+    controlSupport: params.controlSupport,
+  });
 }
 
 export function createAgentExecutorLifecycleService(

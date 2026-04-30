@@ -1359,12 +1359,15 @@ npm run verify
 Latest local baseline:
 
 - 127 test files
-- 886 tests
+- 887 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run verify` passed locally on 2026-04-30 after allowing the lifecycle
+  service factory availability projection to describe partial or absent control
+  support. Current local acceptance status: 127 test files / 887 tests
 - `npm run verify` passed locally on 2026-04-30 after centralizing executor
   lifecycle control request ordering in a shared contract constant. Current
   local acceptance status: 127 test files / 886 tests

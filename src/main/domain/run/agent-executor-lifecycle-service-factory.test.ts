@@ -65,6 +65,31 @@ describe('createAgentExecutorLifecycleService', () => {
     });
   });
 
+  it('describes partial lifecycle service control support without enabling a runtime', () => {
+    expect(evaluateAgentExecutorLifecycleServiceAvailability({
+      controlSupport: {
+        cancel: false,
+      },
+    })).toMatchObject({
+      runtimeReady: false,
+      automaticStartAllowed: false,
+      queueWorkerAllowed: false,
+      supportedControlRequests: ['heartbeat', 'interrupt'],
+      summary: expect.stringContaining('controlRequests=heartbeat,interrupt'),
+    });
+    expect(evaluateAgentExecutorLifecycleServiceAvailability({
+      controlSupport: {
+        heartbeat: false,
+        interrupt: false,
+        cancel: false,
+      },
+    })).toMatchObject({
+      runtimeReady: false,
+      supportedControlRequests: [],
+      summary: expect.stringContaining('controlRequests=none'),
+    });
+  });
+
   it('builds a dry-run lifecycle service from explicit dependencies without exposing a runtime', async () => {
     const runStepRepository = buildRunStepRepositoryMock();
     const agentSessionStore = {
