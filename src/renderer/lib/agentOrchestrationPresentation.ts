@@ -2,24 +2,34 @@ import type {
   AgentAutomationReadinessEvaluation,
   AgentExecutionOrchestrationSnapshot,
 } from '@shared/agent-orchestration';
+import {
+  buildAgentExecutorLifecycleAvailabilityPresentation,
+  type AgentExecutorLifecycleAvailabilityPresentation,
+  type AgentExecutorLifecycleServiceAvailability,
+} from '@shared/agent-executor-lifecycle-diagnostics';
 
 export type ReadOnlyOrchestrationPresentation = {
   runtime: string;
   profile: string;
   lifecycle: string;
   hiddenToolFamilies: string;
+  executorLifecycle: AgentExecutorLifecycleAvailabilityPresentation | null;
   automationReadiness: string | null;
   summary: string;
 };
 
 export function buildReadOnlyOrchestrationPresentation(params: {
   automationReadiness?: AgentAutomationReadinessEvaluation | null;
+  executorLifecycleAvailability?: AgentExecutorLifecycleServiceAvailability | null;
   snapshot: AgentExecutionOrchestrationSnapshot;
 }): ReadOnlyOrchestrationPresentation {
-  const { automationReadiness = null, snapshot } = params;
+  const { automationReadiness = null, executorLifecycleAvailability = null, snapshot } = params;
   const hiddenFamilies = snapshot.hiddenFamilies.length
     ? snapshot.hiddenFamilies.join(',')
     : 'none';
+  const executorLifecycle = executorLifecycleAvailability
+    ? buildAgentExecutorLifecycleAvailabilityPresentation(executorLifecycleAvailability)
+    : null;
 
   return {
     runtime: [
@@ -49,6 +59,7 @@ export function buildReadOnlyOrchestrationPresentation(params: {
       `families=${hiddenFamilies}`,
       'modelVisible=no',
     ].join(' / '),
+    executorLifecycle,
     automationReadiness: automationReadiness
       ? [
           `Automation readiness：${automationReadiness.state}`,

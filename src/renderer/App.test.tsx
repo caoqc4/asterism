@@ -7425,6 +7425,15 @@ describe('App UI flow', () => {
     expect(orchestrationDiagnostics.getByText(
       'Hidden tool families / families=browser_playwright,mcp,skill,computer_use,creator_connector / modelVisible=no',
     )).toBeTruthy();
+    expect(orchestrationDiagnostics.getByText(
+      'Executor lifecycle：Executor lifecycle / status=dry_run_available',
+    )).toBeTruthy();
+    expect(orchestrationDiagnostics.getByText(
+      'runtimeReady=no / queueWorker=no / automaticStart=no',
+    )).toBeTruthy();
+    expect(orchestrationDiagnostics.getByText(
+      'modelExposure=hidden / modelVisibleTools=no',
+    )).toBeTruthy();
     expect(screen.getByText('Workspace Coding')).toBeTruthy();
     expect(screen.getByText('4 implemented / 1 reserved / 0 text / 0 native / 3 approval / 0 credential / 3 verification')).toBeTruthy();
     const toolScaffoldDiagnostics = screen.getByLabelText('Tool scaffold diagnostics');

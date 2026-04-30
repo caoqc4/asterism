@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildAgentExecutorLifecycleAvailabilityPresentation,
+  buildDryRunAgentExecutorLifecycleAvailability,
   type AgentExecutorLifecycleServiceAvailability,
 } from './agent-executor-lifecycle-diagnostics.js';
 
@@ -20,11 +21,24 @@ function buildAvailability(): AgentExecutorLifecycleServiceAvailability {
     nextAction: 'Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.',
     reason:
       'Executor lifecycle service is available as a dry-run adapter boundary only; no real runtime is launched.',
-    summary: 'Executor lifecycle service availability / status=dry_run_available',
+    summary: [
+      'Executor lifecycle service availability',
+      'status=dry_run_available',
+      'runtimeReady=no',
+      'modelExposure=hidden',
+      'automaticStart=no',
+      'queueWorker=no',
+      'blocked=No real executor runtime is connected.; Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.; Model-visible tool exposure remains hidden.',
+      'next=Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.',
+    ].join(' / '),
   };
 }
 
 describe('agent executor lifecycle diagnostics', () => {
+  it('builds the shared dry-run availability baseline', () => {
+    expect(buildDryRunAgentExecutorLifecycleAvailability()).toEqual(buildAvailability());
+  });
+
   it('builds read-only presentation copy without implying runtime readiness', () => {
     expect(buildAgentExecutorLifecycleAvailabilityPresentation(buildAvailability())).toEqual({
       status: 'Executor lifecycle / status=dry_run_available',

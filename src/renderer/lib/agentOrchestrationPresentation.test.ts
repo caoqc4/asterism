@@ -4,6 +4,7 @@ import {
   buildAgentExecutionOrchestrationSnapshot,
   evaluateSkillInformedAutomationReadiness,
 } from '@shared/agent-orchestration';
+import { buildDryRunAgentExecutorLifecycleAvailability } from '@shared/agent-executor-lifecycle-diagnostics';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { TaskDetail } from '@shared/types/task';
 import { buildReadOnlyOrchestrationPresentation } from './agentOrchestrationPresentation';
@@ -189,6 +190,24 @@ describe('agent orchestration presentation', () => {
     expect(presentation.hiddenToolFamilies).toBe(
       'Hidden tool families / families=browser_playwright,mcp,skill,computer_use,creator_connector / modelVisible=no',
     );
+    expect(presentation.executorLifecycle).toBeNull();
+    expect(presentation.summary).toBe(
+      'runtime=ready / profile=manual_sandbox_producer / lifecycle=drafted / hidden=browser_playwright,mcp,skill,computer_use,creator_connector / modelVisibleHiddenTools=no / automation=disabled / autoStart=no',
+    );
+  });
+
+  it('can include executor lifecycle diagnostics without changing orchestration summary', () => {
+    const snapshot = buildAgentExecutionOrchestrationSnapshot(buildReadyAiStatus());
+    const presentation = buildReadOnlyOrchestrationPresentation({
+      executorLifecycleAvailability: buildDryRunAgentExecutorLifecycleAvailability(),
+      snapshot,
+    });
+
+    expect(presentation.executorLifecycle).toEqual(expect.objectContaining({
+      exposure: 'modelExposure=hidden / modelVisibleTools=no',
+      runtime: 'runtimeReady=no / queueWorker=no / automaticStart=no',
+      status: 'Executor lifecycle / status=dry_run_available',
+    }));
     expect(presentation.summary).toBe(
       'runtime=ready / profile=manual_sandbox_producer / lifecycle=drafted / hidden=browser_playwright,mcp,skill,computer_use,creator_connector / modelVisibleHiddenTools=no / automation=disabled / autoStart=no',
     );

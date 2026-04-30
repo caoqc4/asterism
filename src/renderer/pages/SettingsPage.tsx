@@ -1,6 +1,7 @@
 import type { AiConfigInput, AiConfigStatus } from '@shared/types/settings';
 import type { AgentToolScaffoldFamilySummary } from '@shared/agent-tool-scaffold';
 import { buildAgentExecutionOrchestrationSnapshot } from '@shared/agent-orchestration';
+import { buildDryRunAgentExecutorLifecycleAvailability } from '@shared/agent-executor-lifecycle-diagnostics';
 import { buildDefaultAgentToolExecutionPolicy } from '@shared/agent-tool-scaffold';
 import {
   buildDefaultAgentSandboxCommandPolicy,
@@ -116,6 +117,7 @@ export function SettingsPage({
   sandboxBackendProbePending,
 }: SettingsPageProps) {
   const orchestrationDiagnostics = buildReadOnlyOrchestrationPresentation({
+    executorLifecycleAvailability: buildDryRunAgentExecutorLifecycleAvailability(),
     snapshot: buildAgentExecutionOrchestrationSnapshot(aiStatus),
   });
 
@@ -172,6 +174,13 @@ export function SettingsPage({
           <p className="meta">Summary：{orchestrationDiagnostics.summary}</p>
           <p className="meta">{orchestrationDiagnostics.lifecycle}</p>
           <p className="meta">{orchestrationDiagnostics.hiddenToolFamilies}</p>
+          {orchestrationDiagnostics.executorLifecycle ? (
+            <>
+              <p className="meta">Executor lifecycle：{orchestrationDiagnostics.executorLifecycle.status}</p>
+              <p className="meta">{orchestrationDiagnostics.executorLifecycle.runtime}</p>
+              <p className="meta">{orchestrationDiagnostics.executorLifecycle.exposure}</p>
+            </>
+          ) : null}
         </div>
         <div className="tool-scaffold-summary" aria-label="Tool scaffold diagnostics">
           {(aiStatus?.toolScaffoldSummaries?.length ? aiStatus.toolScaffoldSummaries : []).map((summary) => (

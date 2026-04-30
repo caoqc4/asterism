@@ -547,8 +547,9 @@ The latest implementation slice:
   action, keeping future diagnostics explainable without implying real executor
   readiness.
 - Shared executor lifecycle diagnostics now format that availability as
-  read-only presentation copy for future Settings/orchestration surfaces,
-  without wiring the helper into UI or runtime entrypoints yet.
+  read-only presentation copy and Settings surfaces it inside the existing
+  `Orchestration Diagnostics` card without adding runtime entrypoints,
+  automatic start, queue workers, or model-visible tools.
 - Decisions `回到任务推进` now preserves pending agent-checkpoint context in the
   task next-step draft, keeping workspace patch / command / staged patch / note
   confirmations anchored on evidence review before continuation
