@@ -2926,6 +2926,11 @@ describe('App UI flow', () => {
           },
         },
         sandboxBackendStatus: readySandboxBackendStatus,
+        executorLifecycleAvailability: buildDryRunAgentExecutorLifecycleAvailability({
+          controlSupport: {
+            cancel: false,
+          },
+        }),
       })),
       getRunDetail: vi.fn(async (runId: string) => (runId === codeAgentRun.id ? codeAgentRun : null)),
       listRuns: vi.fn(async () => [codeAgentRun]),
@@ -2975,7 +2980,7 @@ describe('App UI flow', () => {
       'runtimeReady=no / queueWorker=no / automaticStart=no',
     )).toBeTruthy();
     expect(readiness.getByText(
-      'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
+      'controlRequests=heartbeat,interrupt / controlMode=dry_run_planned',
     )).toBeTruthy();
     expect(readiness.getByText(
       'modelExposure=hidden / modelVisibleTools=no',

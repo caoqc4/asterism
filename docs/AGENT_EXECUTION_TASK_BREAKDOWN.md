@@ -565,6 +565,9 @@ The latest implementation slice:
 - App-level Settings coverage now verifies that partial executor lifecycle
   controls from `AiConfigStatus` are rendered without reintroducing unavailable
   cancel support.
+- Task detail readiness coverage now uses the same partial control availability
+  input, keeping manual sandbox producer diagnostics honest when cancel support
+  is absent.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any
