@@ -627,6 +627,9 @@ The latest implementation slice:
 - Checkpoint-backed session selection now has the same created-time tie-break
   coverage while still excluding newer running sessions from checkpoint
   settlement.
+- RunService resume coverage now exercises that checkpoint-backed tie-break at
+  the service boundary, updating the selected confirmation session while still
+  ignoring newer running sessions.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

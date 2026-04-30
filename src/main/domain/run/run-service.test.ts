@@ -680,7 +680,7 @@ describe('RunService', () => {
     const agentSessionRepository = {
       listForRun: vi.fn().mockResolvedValue([
         {
-          id: 'agent_session_paused',
+          id: 'agent_session_paused_old_created',
           runId: 'run_1',
           mode: 'agent',
           status: 'paused',
@@ -694,6 +694,23 @@ describe('RunService', () => {
           },
           metadata: 'executor=local_agent',
           createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+        {
+          id: 'agent_session_confirmation_new_created',
+          runId: 'run_1',
+          mode: 'agent',
+          status: 'needs_confirmation',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: true,
+            streaming: false,
+            fileContext: false,
+            taskMutationTools: false,
+            longRunningSessions: false,
+          },
+          metadata: 'executor=local_agent',
+          createdAt: '2026-01-01T12:00:00.000Z',
           updatedAt: '2026-01-01T00:00:00.000Z',
         },
         {
@@ -751,7 +768,7 @@ describe('RunService', () => {
       'resolved',
     );
     expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
-      'agent_session_paused',
+      'agent_session_confirmation_new_created',
       'completed',
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(
