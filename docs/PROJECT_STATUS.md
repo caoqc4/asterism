@@ -226,7 +226,9 @@ The project is past initial architecture assembly. Current work should favor pro
   verifies the packaged renderer shows the grouped Timeline preview and
   expanded trace events, then checks the Runs and Decisions related Timeline
   surfaces that reuse the same grouping helpers and the Task Timeline object
-  actions for opening the seeded Run, Decision, and source material.
+  actions for opening the seeded Run, Decision, and source material; it also
+  clicks seeded Timeline follow-up suggestions and verifies they prefill the
+  Task detail recovery input.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.

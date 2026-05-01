@@ -258,6 +258,39 @@ async function assertTimelineUi(page) {
   await page.getByText('留痕事件').first().waitFor();
 }
 
+async function assertTaskTimelineFollowUpActions(page) {
+  await page
+    .locator('.timeline-item', { hasText: '决策已获批准：Approve packaged Timeline UI smoke。' })
+    .getByRole('button', { name: '继续推进' })
+    .click();
+  await page.getByLabel('Next Step').waitFor();
+
+  let nextStep = await page.getByLabel('Next Step').inputValue();
+  if (nextStep !== '已获批准，继续推进：Approve packaged Timeline UI smoke') {
+    throw new Error(`Packaged Timeline decision follow-up filled the wrong next step: ${nextStep}`);
+  }
+
+  await page
+    .locator('.timeline-item', { hasText: '等待原因从“未填写”调整为“等待 packaged Timeline UI smoke 复核。”' })
+    .getByRole('button', { name: '补清等待条件' })
+    .click();
+
+  nextStep = await page.getByLabel('Next Step').inputValue();
+  if (nextStep !== '跟进并确认是否解除等待：等待 packaged Timeline UI smoke 复核。') {
+    throw new Error(`Packaged Timeline waiting follow-up filled the wrong next step: ${nextStep}`);
+  }
+
+  await page
+    .locator('.timeline-item', { hasText: '生成产物：Packaged Timeline smoke report。' })
+    .getByRole('button', { name: '基于产物继续推进' })
+    .click();
+
+  nextStep = await page.getByLabel('Next Step').inputValue();
+  if (nextStep !== '基于产物继续推进：Packaged Timeline smoke report') {
+    throw new Error(`Packaged Timeline artifact follow-up filled the wrong next step: ${nextStep}`);
+  }
+}
+
 async function assertTaskTimelineObjectActions(page) {
   await page.getByRole('button', { name: '查看 Run' }).first().click();
   await page.getByRole('heading', { name: 'summarize / completed' }).waitFor();
@@ -345,6 +378,7 @@ try {
 
   const page = await app.firstWindow({ timeout: timeoutMs });
   await assertTimelineUi(page);
+  await assertTaskTimelineFollowUpActions(page);
   await assertTaskTimelineObjectActions(page);
   await assertRelatedRunTimelineUi(page);
   await assertRelatedDecisionTimelineUi(page);
