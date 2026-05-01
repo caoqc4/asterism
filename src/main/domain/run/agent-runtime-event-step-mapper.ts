@@ -26,6 +26,7 @@ function stringifyInput(value: unknown): string | null {
 function checkpointInput(event: Extract<AgentSessionEvent, { type: 'checkpoint.created' }>): string {
   return [
     `kind=${event.checkpointKind}`,
+    event.sessionId ? `session=${event.sessionId}` : null,
     event.tool ? `tool=${event.tool}` : null,
     event.decisionId ? `decision=${event.decisionId}` : null,
     `checkpoint=${event.checkpointId}`,

@@ -327,6 +327,10 @@ The project is past initial architecture assembly. Current work should favor pro
   prefers that binding before falling back to legacy latest-session selection,
   preventing newer unrelated checkpoint-backed sessions from being settled by
   an older checkpoint action.
+- Runtime-event checkpoint RunSteps now include the scoped agent `session=` in
+  their review input when the event carries one, aligning readable Run evidence
+  with the session-bound checkpoint payloads while keeping legacy sessionless
+  events unchanged.
 - Agent session replay reviews now carry latest-step kind/status/title as
   structured fields alongside the existing summary text, keeping inspect-first
   recovery evidence available without parsing the `latest=` segment.

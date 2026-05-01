@@ -69,6 +69,7 @@ describe('mapAgentRuntimeEventToRunStep', () => {
     const event = {
       type: 'checkpoint.created',
       runId: 'run_1',
+      sessionId: 'agent_session_1',
       checkpointId: 'run_checkpoint_1',
       checkpointKind: 'tool_permission',
       reason: 'Confirm workspace command before continuing.',
@@ -81,7 +82,7 @@ describe('mapAgentRuntimeEventToRunStep', () => {
       kind: 'checkpoint',
       status: 'pending',
       title: 'Checkpoint created: tool_permission',
-      input: 'kind=tool_permission\ntool=workspace.run_command\ndecision=decision_1\ncheckpoint=run_checkpoint_1',
+      input: 'kind=tool_permission\nsession=agent_session_1\ntool=workspace.run_command\ndecision=decision_1\ncheckpoint=run_checkpoint_1',
       output: 'Confirm workspace command before continuing.',
     });
   });
