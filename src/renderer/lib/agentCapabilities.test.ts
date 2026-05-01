@@ -666,6 +666,24 @@ describe('agent capability formatting', () => {
         },
       ],
     })).toBe('确认最近一次 agent run 是否已中断；若没有活动执行器，先基于证据整理输入，再启动新的 run，不自动重放。');
+    expect(formatAgentSessionRecoveryRunInstructions({
+      runType: 'agent',
+      session: {
+        ...session,
+        status: 'running',
+      },
+      steps: [
+        {
+          createdAt: '2026-01-01T00:00:00.000Z',
+          index: 1,
+          kind: 'plan',
+          status: 'completed',
+          title: 'Plan accepted',
+        },
+      ],
+    })).toBe(
+      '基于最近一次 agent run 的证据准备新的手动 run。 最近步骤：Plan accepted（completed）。 恢复判断：Recovery intent：prepare new manual run / session=agent_session_1 / status=running / restartSafety=interrupted_or_stale / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=yes / autoReplay=no 不要自动重放旧 session；先复核失败/取消/中断证据、补齐输入，再由用户手动启动。',
+    );
 
     expect(formatAgentSessionReplayNextStepDraft({
       runType: 'agent',

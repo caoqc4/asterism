@@ -1462,6 +1462,16 @@ Latest local baseline:
 - Runs recovery coverage now also asserts interrupted/stale agent sessions
   prefill the task quick-run instructions with latest-step evidence and the
   structured recovery intent, keeping manual new-run preparation inspect-first.
+- Agent recovery helper coverage now mirrors that interrupted/stale manual-run
+  prefill contract below the App flow, so helper and renderer behavior both
+  preserve inspect-first new-run preparation.
+- `npm run accept:agent-local` passed locally on 2026-05-01 after splitting the
+  Code Agent model-producer sandbox-coding batch into smaller Vitest calls,
+  covering agent runtime, workspace patch, domain tools, provider-native tools,
+  sandbox-coding, and Code Agent UI gates without external providers.
+- `npm run verify` passed locally on 2026-05-01 after the interrupted/stale
+  recovery prefill coverage and acceptance-script split. Current local
+  acceptance status: 127 test files / 910 tests
 - `npm run accept:sandbox-coding` passed locally on 2026-05-01 after enforcing
   duplicate source-context selection as a fail-closed model-context boundary
   before provider runtime config resolution.
