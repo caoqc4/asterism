@@ -511,6 +511,8 @@ Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 936
+  tests after surfacing paused-run resume blocker reasons in Runs detail.
+- on 2026-05-01, `npm run verify` passed locally with 128 test files / 936
   tests after adding checkpoint-id-bearing blockers for invalid or unsupported
   paused-run resume payloads.
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 936

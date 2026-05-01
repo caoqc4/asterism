@@ -94,6 +94,14 @@ function formatRecoveryAnchorLine(intent: AgentSessionRecoveryIntent | null): st
   ].join(' / ');
 }
 
+function formatPausedRunResumeBlockedMessage(reason: string | null): string {
+  const fallback = '没有唯一、有效、会话绑定可恢复的 open resume checkpoint';
+  const trimmedReason = reason?.trim() || fallback;
+  const punctuation = /[.。！？!?]$/.test(trimmedReason) ? '' : '。';
+
+  return `当前 paused run 暂不能续跑：${trimmedReason}${punctuation}先检查执行证据或关联 Decision，再决定是否启动新的 run。`;
+}
+
 function getRelatedTimelineActionLabel(event: TimelineEventRecord): string | null {
   return getTaskTimelineFollowUpActionLabel(event.type);
 }
@@ -851,6 +859,9 @@ export function RunsPage({
       })
     : null;
   const canContinuePausedRun = pausedRunResumeEligibility?.status === 'eligible';
+  const pausedRunResumeBlockedReason = pausedRunResumeEligibility?.status === 'blocked'
+    ? pausedRunResumeEligibility.reason
+    : null;
   const focusNextStepDraft = detail
     ? latestAgentSession
       ? formatAgentSessionReplayNextStepDraft({
@@ -1005,7 +1016,7 @@ export function RunsPage({
               </div>
               {detail.status === 'paused' && !canContinuePausedRun ? (
                 <p className="meta">
-                  当前 paused run 没有唯一、有效、会话绑定可恢复的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。
+                  {formatPausedRunResumeBlockedMessage(pausedRunResumeBlockedReason)}
                 </p>
               ) : null}
               {detail.status === 'needs_confirmation' ? (

@@ -351,6 +351,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Paused-run resume eligibility now includes the offending checkpoint id in
   invalid or unsupported resume-payload blockers, keeping RunService errors
   traceable back to the exact checkpoint evidence before any tool executes.
+- Runs detail now surfaces that paused-run resume blocker reason beside the
+  disabled continuation path, so missing, stale, ambiguous, or session-detached
+  resume checkpoints are visible before the user decides whether to rerun.
 - Renderer orchestration presentation now has one helper for executor
   lifecycle diagnostic lines, so Settings, Task detail, and Runs recovery
   surfaces share the same read-only copy without repeating page-local strings.
