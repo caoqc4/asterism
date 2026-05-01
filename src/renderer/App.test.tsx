@@ -4105,6 +4105,9 @@ describe('App UI flow', () => {
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
       '确认最近一次 agent run 是否已中断；若没有活动执行器，先基于证据整理输入，再启动新的 run，不自动重放。',
     );
+    expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toBe(
+      '基于最近一次 agent run 的证据准备新的手动 run。 最近步骤：采用模型提出的 agent 步骤计划（completed）。 恢复判断：Recovery intent：prepare new manual run / session=agent_session_1 / status=running / restartSafety=interrupted_or_stale / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=yes / autoReplay=no 不要自动重放旧 session；先复核失败/取消/中断证据、补齐输入，再由用户手动启动。',
+    );
   });
 
   it('routes running agent sessions with active steps to inspect-first recovery', async () => {

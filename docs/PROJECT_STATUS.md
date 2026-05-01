@@ -1459,6 +1459,9 @@ Latest local baseline:
 - Renderer coverage now keeps Code Agent context-manifest display stable when
   selected artifact titles contain colon punctuation, while still rendering
   artifact metadata as audit-only `content=no`.
+- Runs recovery coverage now also asserts interrupted/stale agent sessions
+  prefill the task quick-run instructions with latest-step evidence and the
+  structured recovery intent, keeping manual new-run preparation inspect-first.
 - `npm run accept:sandbox-coding` passed locally on 2026-05-01 after enforcing
   duplicate source-context selection as a fail-closed model-context boundary
   before provider runtime config resolution.
