@@ -1453,6 +1453,10 @@ The project is past initial architecture assembly. Current work should favor pro
   `notarytool`, Apple ID or App Store Connect API key notarization env vars,
   and package metadata. It does not sign, notarize, upload, or call Apple
   services.
+- `npm run accept:release:mac-preflight` passed locally on 2026-05-01. Current
+  readiness remains `not-ready`: macOS host, `notarytool`, app id, product name,
+  and mac targets are present; Developer ID signing source and Apple
+  notarization credentials are still missing.
 
 ## Verification Baseline
 
@@ -1465,7 +1469,7 @@ npm run verify
 Latest local baseline:
 
 - 127 test files
-- 909 tests
+- 915 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build

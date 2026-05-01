@@ -120,7 +120,11 @@ As of the current alpha path:
 - `npm run smoke:runtime:mac` passes locally for isolated packaged startup and
   core SQLite schema initialization
 - `npm run smoke:release:mac` passes locally for the combined unsigned macOS path
-- `npm run release:mac:preflight` reports local signing/notarization readiness without performing signing or Apple network calls
+- `npm run accept:release:mac-preflight` passed on 2026-05-01 without signing,
+  notarizing, uploading, or calling Apple services. Current readiness is
+  `not-ready`: macOS host, `notarytool`, app id, product name, and mac targets
+  are present; Developer ID signing source and Apple notarization credentials
+  are missing.
 - notarization submission is skipped because the dedicated signed/notarized release pass has not been executed
 
 ## Why macOS first
