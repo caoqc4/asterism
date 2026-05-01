@@ -575,6 +575,12 @@ Current verification:
   src/main/local-smoke-boundaries-script.test.ts` passed locally after adding a
   lightweight regression check that keeps `smoke:release:mac` wired through
   package, runtime, and Timeline UI smoke scripts.
+- on 2026-05-02, `npm run smoke:code-agent-ui:mac` passed locally after adding
+  a targeted packaged Code Agent preflight UI smoke. It launches the packaged
+  app with isolated user data and a disposable workspace, verifies test/lint
+  availability, Code Agent preflight visibility, model-producer opt-in
+  manifest controls, and context-file candidate filling, without probing Docker
+  or starting a provider-backed run.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.
@@ -635,6 +641,7 @@ Current verification:
 - `npm run smoke:package:mac` after producing `release/mac-arm64/Taskplane.app`, including ASAR content checks
 - `npm run smoke:runtime:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged startup and SQLite schema initialization
 - `npm run smoke:timeline-ui:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged Task detail Timeline grouping/expansion coverage, Timeline follow-up/object-action navigation across task/risk/blocker/dependency context, dependency return/resolution paths, and related Timeline grouping on Runs and Decisions
+- `npm run smoke:code-agent-ui:mac` after producing `release/mac-arm64/Taskplane.app`, for targeted packaged Code Agent preflight visibility without Docker or provider execution
 - `npm run smoke:release:mac` for the combined unsigned macOS build/package/runtime/Timeline UI path
 - `npm run accept:agent-local` for the local agent stack, including the non-live
   sandbox/code-agent domain boundary and the Code Agent preflight UI/config/IPC
@@ -681,6 +688,10 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 - run `npm run smoke:package:mac` after `npm run dist:mac:dir`
 - run `npm run smoke:runtime:mac` after `npm run dist:mac:dir`
 - run `npm run smoke:timeline-ui:mac` after `npm run dist:mac:dir` when packaged renderer behavior, Timeline suggestions, or Timeline navigation changed, or when a real UI smoke is needed
+- run `npm run smoke:code-agent-ui:mac` after `npm run dist:mac:dir` when Code
+  Agent preflight visibility, workspace check availability, or model-producer
+  manifest controls change; this targeted smoke does not probe Docker or call a
+  provider
 - or run `npm run smoke:release:mac` to cover the unsigned macOS package,
   runtime, and packaged Timeline UI paths in one command
 - run `npm run accept:provider-native-live:preflight` for no-credit
@@ -698,7 +709,8 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. decide the next functional packaged-app smoke boundary outside closeout,
-   likely source/process context editing or Code Agent preflight visibility
+1. decide whether source/process context editing needs an automated packaged
+   smoke, or whether the existing renderer tests plus manual packaged SQLite
+   evidence are enough for alpha
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

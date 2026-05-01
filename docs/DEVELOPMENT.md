@@ -79,6 +79,7 @@ Use this when package/build entrypoints change. It runs the production build and
 ```bash
 npm run smoke:package:mac
 npm run smoke:runtime:mac
+npm run smoke:code-agent-ui:mac
 npm run smoke:release:mac
 npm run release:mac:preflight
 npm run accept:release:mac-preflight
@@ -93,7 +94,9 @@ isolated user data and confirms startup creates `config.json` and
 clears `ELECTRON_RUN_AS_NODE` so shell tooling environment does not accidentally
 force the packaged app into Node mode. Use `npm run smoke:release:mac` when you
 want to build the unpacked macOS app and run package, runtime, and packaged
-Timeline UI smoke checks in one command. Use
+Timeline UI smoke checks in one command. Use `npm run smoke:code-agent-ui:mac`
+as a targeted packaged UI check for visible Code Agent preflight boundaries
+without probing Docker or calling a provider. Use
 `npm run release:mac:preflight` before a dedicated signed/notarized release pass;
 it only checks local prerequisites and does not sign, notarize, upload, or call
 Apple services. Use `npm run accept:release:mac-preflight` when you want the

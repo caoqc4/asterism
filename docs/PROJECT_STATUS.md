@@ -250,6 +250,11 @@ The project is past initial architecture assembly. Current work should favor pro
   the expanded combined release smoke passed locally on 2026-05-02. A
   lightweight local-smoke-boundaries regression now keeps that npm script wired
   through package, runtime, and Timeline UI smoke checks.
+- `npm run smoke:code-agent-ui:mac` now launches the packaged app with isolated
+  user data and a disposable workspace to verify visible Code Agent preflight
+  boundaries: workspace `test`/`lint` detection, model-producer opt-in,
+  source/artifact manifest controls, and context-file candidate filling. It
+  deliberately does not probe Docker or start a provider-backed run.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.
