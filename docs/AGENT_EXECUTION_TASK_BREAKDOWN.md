@@ -766,6 +766,9 @@ The latest implementation slice:
   for current callers that still use the older name. The recovery intent
   summary also carries `recoveryCheckpointRequired=yes/no` so visible Run
   review copy stays aligned with the structured field.
+- Manual recovery-run instructions now include the source run id and agent
+  session id before latest-step evidence, so task-side retry preparation stays
+  anchored to the inspected Run and does not imply automatic replay.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

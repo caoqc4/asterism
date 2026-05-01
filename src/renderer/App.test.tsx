@@ -4122,7 +4122,7 @@ describe('App UI flow', () => {
       '确认最近一次 agent run 是否已中断；若没有活动执行器，先基于证据整理输入，再启动新的 run，不自动重放。',
     );
     expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toBe(
-      '基于最近一次 agent run 的证据准备新的手动 run。 最近步骤：采用模型提出的 agent 步骤计划（completed）。 恢复判断：Recovery intent：prepare new manual run / session=agent_session_1 / status=running / restartSafety=interrupted_or_stale / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=yes / autoReplay=no 不要自动重放旧 session；先复核失败/取消/中断证据、补齐输入，再由用户手动启动。',
+      '基于最近一次 agent run 的证据准备新的手动 run。 来源：run=run_agent_plan / session=agent_session_1。 最近步骤：采用模型提出的 agent 步骤计划（completed）。 恢复判断：Recovery intent：prepare new manual run / session=agent_session_1 / status=running / restartSafety=interrupted_or_stale / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=yes / autoReplay=no 不要自动重放旧 session；先复核失败/取消/中断证据、补齐输入，再由用户手动启动。',
     );
   });
 
@@ -4365,7 +4365,7 @@ describe('App UI flow', () => {
       '检查最近一次 agent run 的失败或取消证据，整理重试输入后再启动新的 run。',
     );
     expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toBe(
-      '基于最近一次 agent run 的证据准备新的手动 run。 最近步骤：工具失败：workspace.read_file（failed）。 恢复判断：Recovery intent：prepare new manual run / session=agent_session_failed / status=failed / restartSafety=new_run_required / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=yes / autoReplay=no 不要自动重放旧 session；先复核失败/取消/中断证据、补齐输入，再由用户手动启动。',
+      '基于最近一次 agent run 的证据准备新的手动 run。 来源：run=run_agent_failed_session / session=agent_session_failed。 最近步骤：工具失败：workspace.read_file（failed）。 恢复判断：Recovery intent：prepare new manual run / session=agent_session_failed / status=failed / restartSafety=new_run_required / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=yes / autoReplay=no 不要自动重放旧 session；先复核失败/取消/中断证据、补齐输入，再由用户手动启动。',
     );
   });
 
