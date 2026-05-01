@@ -218,6 +218,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - Supported and unsupported executor lifecycle control request lists now share
   the same helper source, keeping dry-run availability diagnostics aligned with
   adapter-facing control support.
+- Executor lifecycle availability now carries explicit
+  `runtimeAuthority=diagnostic_only` / `executionAuthority=no` presentation,
+  keeping Task, Runs, and Settings diagnostics clear that dry-run lifecycle
+  support is observable but not executable runtime authority.
 - The main-process executor boundary now has a dry-run lifecycle adapter that
   can create a controllable executor handle and observe lifecycle signals
   through that same runtime event spine. It is adapter-facing test coverage

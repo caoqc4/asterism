@@ -28,6 +28,7 @@ export function buildExecutorLifecycleDiagnosticLines(
   return [
     `Executor lifecycle：${executorLifecycle.status}`,
     executorLifecycle.runtime,
+    executorLifecycle.authority,
     executorLifecycle.controlRequests,
     executorLifecycle.unsupportedControlRequests,
     executorLifecycle.settleResults,

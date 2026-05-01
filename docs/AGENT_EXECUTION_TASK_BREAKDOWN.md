@@ -670,6 +670,10 @@ The latest implementation slice:
 - Supported and unsupported executor lifecycle control request lists now share
   one helper source, so dry-run diagnostics and future lifecycle surfaces do not
   duplicate control-support filtering.
+- Executor lifecycle availability now exposes explicit diagnostic-only runtime
+  authority (`runtimeAuthority=diagnostic_only`, `executionAuthority=no`) in
+  shared presentation lines, keeping visible orchestration diagnostics from
+  implying a real executor can be started or controlled.
 - Terminal session settlement coverage now fully covers completed, failed, and
   cancelled sessions as evidence-review only, with no checkpoint settlement or
   replay authority.

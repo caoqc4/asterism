@@ -51,6 +51,7 @@ describe('AiConfigService', () => {
       controlMode: 'dry_run_planned',
       modelExposure: 'hidden',
       queueWorkerAllowed: false,
+      runtimeAuthority: 'diagnostic_only',
       runtimeReady: false,
       settleMode: 'dry_run_planned',
       status: 'dry_run_available',
@@ -125,6 +126,7 @@ describe('AiConfigService', () => {
       },
     });
     expect(status.executorLifecycleAvailability?.summary).toContain('status=dry_run_available');
+    expect(status.executorLifecycleAvailability?.summary).toContain('runtimeAuthority=diagnostic_only');
     expect(status.toolScaffoldSummaries?.map((summary) => summary.family)).toEqual([
       'task_domain',
       'workspace_coding',

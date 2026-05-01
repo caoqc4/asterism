@@ -11,6 +11,7 @@ import {
 export type AgentExecutorLifecycleServiceAvailability = {
   status: 'dry_run_available';
   runtimeReady: false;
+  runtimeAuthority: 'diagnostic_only';
   modelExposure: 'hidden';
   automaticStartAllowed: false;
   queueWorkerAllowed: false;
@@ -28,6 +29,7 @@ export type AgentExecutorLifecycleServiceAvailability = {
 export type AgentExecutorLifecycleAvailabilityPresentation = {
   status: string;
   runtime: string;
+  authority: string;
   controlRequests: string;
   unsupportedControlRequests: string;
   settleResults: string;
@@ -54,6 +56,7 @@ export function buildDryRunAgentExecutorLifecycleAvailability(params: {
   return {
     status: 'dry_run_available',
     runtimeReady: false,
+    runtimeAuthority: 'diagnostic_only',
     modelExposure: 'hidden',
     automaticStartAllowed: false,
     queueWorkerAllowed: false,
@@ -70,6 +73,7 @@ export function buildDryRunAgentExecutorLifecycleAvailability(params: {
       'Executor lifecycle service availability',
       'status=dry_run_available',
       'runtimeReady=no',
+      'runtimeAuthority=diagnostic_only',
       'modelExposure=hidden',
       'automaticStart=no',
       'queueWorker=no',
@@ -97,6 +101,10 @@ export function buildAgentExecutorLifecycleAvailabilityPresentation(
       `queueWorker=${availability.queueWorkerAllowed ? 'yes' : 'no'}`,
       `automaticStart=${availability.automaticStartAllowed ? 'yes' : 'no'}`,
     ].join(' / '),
+    authority: [
+      `runtimeAuthority=${availability.runtimeAuthority}`,
+      'executionAuthority=no',
+    ].join(' / '),
     controlRequests: [
       `controlRequests=${availability.supportedControlRequests.join(',') || 'none'}`,
       `controlMode=${availability.controlMode}`,
@@ -118,6 +126,7 @@ export function buildAgentExecutorLifecycleAvailabilityPresentation(
       'Executor lifecycle diagnostics',
       `status=${availability.status}`,
       `runtimeReady=${availability.runtimeReady ? 'yes' : 'no'}`,
+      `runtimeAuthority=${availability.runtimeAuthority}`,
       `modelExposure=${availability.modelExposure}`,
       `automaticStart=${availability.automaticStartAllowed ? 'yes' : 'no'}`,
       `queueWorker=${availability.queueWorkerAllowed ? 'yes' : 'no'}`,

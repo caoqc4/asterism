@@ -10,6 +10,7 @@ function buildAvailability(): AgentExecutorLifecycleServiceAvailability {
   return {
     status: 'dry_run_available',
     runtimeReady: false,
+    runtimeAuthority: 'diagnostic_only',
     modelExposure: 'hidden',
     automaticStartAllowed: false,
     queueWorkerAllowed: false,
@@ -30,6 +31,7 @@ function buildAvailability(): AgentExecutorLifecycleServiceAvailability {
       'Executor lifecycle service availability',
       'status=dry_run_available',
       'runtimeReady=no',
+      'runtimeAuthority=diagnostic_only',
       'modelExposure=hidden',
       'automaticStart=no',
       'queueWorker=no',
@@ -96,6 +98,7 @@ describe('agent executor lifecycle diagnostics', () => {
     expect(buildAgentExecutorLifecycleAvailabilityPresentation(buildAvailability())).toEqual({
       status: 'Executor lifecycle / status=dry_run_available',
       runtime: 'runtimeReady=no / queueWorker=no / automaticStart=no',
+      authority: 'runtimeAuthority=diagnostic_only / executionAuthority=no',
       controlRequests: 'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
       unsupportedControlRequests: 'unsupportedControlRequests=none',
       settleResults: 'settleResults=completed,failed,paused / settleMode=dry_run_planned',
@@ -111,6 +114,7 @@ describe('agent executor lifecycle diagnostics', () => {
         'Executor lifecycle diagnostics',
         'status=dry_run_available',
         'runtimeReady=no',
+        'runtimeAuthority=diagnostic_only',
         'modelExposure=hidden',
         'automaticStart=no',
         'queueWorker=no',

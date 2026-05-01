@@ -39,6 +39,7 @@ describe('createAgentExecutorLifecycleService', () => {
     expect(evaluateAgentExecutorLifecycleServiceAvailability()).toEqual({
       status: 'dry_run_available',
       runtimeReady: false,
+      runtimeAuthority: 'diagnostic_only',
       modelExposure: 'hidden',
       automaticStartAllowed: false,
       queueWorkerAllowed: false,
@@ -59,6 +60,7 @@ describe('createAgentExecutorLifecycleService', () => {
         'Executor lifecycle service availability',
         'status=dry_run_available',
         'runtimeReady=no',
+        'runtimeAuthority=diagnostic_only',
         'modelExposure=hidden',
         'automaticStart=no',
         'queueWorker=no',

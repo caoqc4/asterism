@@ -839,6 +839,9 @@ describe('App UI flow', () => {
     expect(orchestrationDiagnostics.getByText(
       'controlRequests=heartbeat,interrupt / controlMode=dry_run_planned',
     )).toBeTruthy();
+    expect(orchestrationDiagnostics.getByText(
+      'runtimeAuthority=diagnostic_only / executionAuthority=no',
+    )).toBeTruthy();
     expect(orchestrationDiagnostics.getByText('unsupportedControlRequests=cancel')).toBeTruthy();
     expect(orchestrationDiagnostics.getByText(
       'settleResults=completed,failed,paused / settleMode=dry_run_planned',
@@ -2984,6 +2987,9 @@ describe('App UI flow', () => {
       'runtimeReady=no / queueWorker=no / automaticStart=no',
     )).toBeTruthy();
     expect(readiness.getByText(
+      'runtimeAuthority=diagnostic_only / executionAuthority=no',
+    )).toBeTruthy();
+    expect(readiness.getByText(
       'controlRequests=heartbeat,interrupt / controlMode=dry_run_planned',
     )).toBeTruthy();
     expect(readiness.getByText('unsupportedControlRequests=cancel')).toBeTruthy();
@@ -4076,6 +4082,9 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(
       recoverySafety.getByText('runtimeReady=no / queueWorker=no / automaticStart=no'),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText('runtimeAuthority=diagnostic_only / executionAuthority=no'),
     ).toBeTruthy();
     expect(
       recoverySafety.getByText('controlRequests=heartbeat,interrupt / controlMode=dry_run_planned'),
@@ -7687,6 +7696,9 @@ describe('App UI flow', () => {
     )).toBeTruthy();
     expect(orchestrationDiagnostics.getByText(
       'runtimeReady=no / queueWorker=no / automaticStart=no',
+    )).toBeTruthy();
+    expect(orchestrationDiagnostics.getByText(
+      'runtimeAuthority=diagnostic_only / executionAuthority=no',
     )).toBeTruthy();
     expect(orchestrationDiagnostics.getByText(
       'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',

@@ -207,6 +207,7 @@ describe('agent orchestration presentation', () => {
     });
 
     expect(presentation.executorLifecycle).toEqual(expect.objectContaining({
+      authority: 'runtimeAuthority=diagnostic_only / executionAuthority=no',
       controlRequests: 'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
       exposure: 'modelExposure=hidden / modelVisibleTools=no',
       runtime: 'runtimeReady=no / queueWorker=no / automaticStart=no',
@@ -229,6 +230,7 @@ describe('agent orchestration presentation', () => {
     expect(buildExecutorLifecycleDiagnosticLines(presentation.executorLifecycle)).toEqual([
       'Executor lifecycle：Executor lifecycle / status=dry_run_available',
       'runtimeReady=no / queueWorker=no / automaticStart=no',
+      'runtimeAuthority=diagnostic_only / executionAuthority=no',
       'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
       'unsupportedControlRequests=none',
       'settleResults=completed,failed,paused / settleMode=dry_run_planned',
