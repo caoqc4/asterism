@@ -212,6 +212,9 @@ The project is past initial architecture assembly. Current work should favor pro
   / key-explain-trace scan path in `task.inspect_timeline` and completion
   evidence review output, keeping model-facing history inspection aligned with
   the renderer Timeline grouping without adding tool authority.
+- `npm run smoke:package:mac` now also requires the packaged ASAR to include the
+  main task service and shared Timeline helper, adding a lightweight packaged
+  dependency check for the Task detail Timeline scan path.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.

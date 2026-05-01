@@ -510,6 +510,9 @@ npm run verify
 Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
+- on 2026-05-01, `npm run smoke:package:mac` passed locally after adding
+  packaged ASAR coverage for the Task detail Timeline scan path dependencies
+  (`task-service` plus shared Timeline helpers).
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 936
   tests after aligning browser-controlled local-QA checkpoint-required blocker
   copy with the Browser Controlled Resume path.
@@ -624,6 +627,7 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. targeted packaged-app smoke coverage for the Task detail Timeline scan path
+1. targeted packaged-app runtime smoke coverage for a seeded Task detail
+   Timeline scan fixture
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

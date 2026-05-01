@@ -79,7 +79,9 @@ const requiredAsarFiles = [
   '/dist/index.html',
   '/dist-electron/main/index.js',
   '/dist-electron/main/bootstrap/runtime-paths.js',
+  '/dist-electron/main/domain/task/task-service.js',
   '/dist-electron/main/preload.cjs',
+  '/dist-electron/shared/working-context/timeline.js',
   '/package.json',
 ];
 const missingAsarFiles = requiredAsarFiles.filter((filePath) => !asarFiles.includes(filePath));
