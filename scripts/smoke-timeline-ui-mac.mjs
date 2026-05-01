@@ -118,6 +118,29 @@ function seedTimelineFixture() {
           '2026-05-01T11:30:00.000Z',
         );
 
+      database
+        .prepare(`
+          INSERT INTO source_contexts (
+            id, task_id, title, kind, is_key, uri, content, note,
+            status, created_at, updated_at, archived_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'source_packaged_ui_1',
+          taskId,
+          'Packaged Timeline notes',
+          'note',
+          'true',
+          null,
+          'Source context seeded by packaged Timeline UI smoke.',
+          'Verify Timeline object action focuses this material.',
+          'active',
+          '2026-05-01T10:55:00.000Z',
+          '2026-05-01T11:00:00.000Z',
+          null,
+        );
+
       insertTimeline.run(
         'timeline_packaged_ui_run',
         taskId,
@@ -235,6 +258,35 @@ async function assertTimelineUi(page) {
   await page.getByText('留痕事件').first().waitFor();
 }
 
+async function assertTaskTimelineObjectActions(page) {
+  await page.getByRole('button', { name: '查看 Run' }).first().click();
+  await page.getByRole('heading', { name: 'summarize / completed' }).waitFor();
+  await page.getByText('Packaged Timeline UI smoke completed.').waitFor();
+
+  await page.getByRole('button', { name: /tasks/i }).click();
+  await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
+  await page.getByRole('button', { name: '展开全部 (9)' }).click();
+
+  await page.getByRole('button', { name: '查看 Decision' }).first().click();
+  await page.getByRole('heading', { name: '待拍板事项' }).waitFor();
+  await page.getByRole('heading', { name: 'Approve packaged Timeline UI smoke' }).waitFor();
+
+  await page.getByRole('button', { name: /tasks/i }).click();
+  await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
+  await page.getByRole('button', { name: '展开全部 (9)' }).click();
+
+  await page.getByRole('button', { name: '查看来源' }).first().click();
+  await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
+  await page.getByRole('heading', { name: 'Source Context' }).waitFor();
+  await page.getByText('Edit Material').waitFor();
+  await page.locator('label', { hasText: '来源标题' }).locator('input').waitFor();
+  const sourceTitle = await page.locator('label', { hasText: '来源标题' }).locator('input').inputValue();
+
+  if (sourceTitle !== 'Packaged Timeline notes') {
+    throw new Error(`Packaged Timeline source action focused the wrong material: ${sourceTitle}`);
+  }
+}
+
 async function assertRelatedRunTimelineUi(page) {
   await page.getByRole('button', { name: /runs/i }).click();
   await page.getByRole('heading', { name: '执行记录' }).waitFor();
@@ -293,6 +345,7 @@ try {
 
   const page = await app.firstWindow({ timeout: timeoutMs });
   await assertTimelineUi(page);
+  await assertTaskTimelineObjectActions(page);
   await assertRelatedRunTimelineUi(page);
   await assertRelatedDecisionTimelineUi(page);
 

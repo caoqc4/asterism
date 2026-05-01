@@ -519,6 +519,9 @@ Current verification:
   the real macOS app, seeds an isolated Task detail Timeline fixture in
   SQLite, and verifies Task detail grouping plus expansion and the related
   Timeline grouping on the Runs and Decisions packaged renderer surfaces.
+- on 2026-05-02, `npm run smoke:timeline-ui:mac` passed locally after
+  extending that packaged Timeline UI smoke to verify seeded `查看 Run`,
+  `查看 Decision`, and `查看来源` object-action navigation from Task detail.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.
@@ -578,7 +581,7 @@ Current verification:
 - `npm run smoke:build` when package/build entrypoints change
 - `npm run smoke:package:mac` after producing `release/mac-arm64/Taskplane.app`, including ASAR content checks
 - `npm run smoke:runtime:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged startup and SQLite schema initialization
-- `npm run smoke:timeline-ui:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged Task detail Timeline grouping/expansion coverage plus related Timeline grouping on Runs and Decisions
+- `npm run smoke:timeline-ui:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged Task detail Timeline grouping/expansion coverage, Timeline object-action navigation, and related Timeline grouping on Runs and Decisions
 - `npm run smoke:release:mac` for the combined unsigned macOS build/package/runtime path
 - `npm run accept:agent-local` for the local agent stack, including the non-live
   sandbox/code-agent domain boundary and the Code Agent preflight UI/config/IPC
@@ -624,7 +627,7 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 - run `npm run smoke:build` when package/build entrypoints change
 - run `npm run smoke:package:mac` after `npm run dist:mac:dir`
 - run `npm run smoke:runtime:mac` after `npm run dist:mac:dir`
-- run `npm run smoke:timeline-ui:mac` after `npm run dist:mac:dir` when packaged renderer behavior changed or a real UI smoke is needed
+- run `npm run smoke:timeline-ui:mac` after `npm run dist:mac:dir` when packaged renderer behavior or Timeline navigation changed, or when a real UI smoke is needed
 - or run `npm run smoke:release:mac` to cover the unsigned macOS package path in one command
 - run `npm run accept:provider-native-live:preflight` for no-credit
   provider-native readiness checks, but avoid the live provider-native commands
@@ -641,7 +644,7 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. targeted packaged-app Timeline object-action navigation smoke for seeded
-   Run / Decision / source-context actions
+1. targeted packaged-app follow-up action smoke for seeded Timeline suggestions
+   that prefill task recovery inputs
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.
