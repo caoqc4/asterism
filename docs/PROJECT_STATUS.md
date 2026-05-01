@@ -243,7 +243,9 @@ The project is past initial architecture assembly. Current work should favor pro
   reopens the closeout-ready task for final completion. After that packaged
   closeout-ready task transitions to `completed`, the smoke verifies Home drops
   it from Closeout Tasks and hands off to the remaining near-closeout task with
-  the expected next-step prefill.
+  the expected next-step prefill. The same smoke now completes that remaining
+  near-closeout task too, then checks the packaged Home Closeout Tasks empty
+  state has no task cards left.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.

@@ -702,6 +702,26 @@ async function assertHomeCloseoutAfterCompletion(page) {
   }
 }
 
+async function assertHomeCloseoutEmptyAfterCompletingRemainingTask(page) {
+  await page
+    .locator('.timeline-item', { hasText: 'Packaged Home closeout approved' })
+    .getByRole('button', { name: '标记已满足' })
+    .click();
+  await page.getByRole('button', { name: '转到 completed（完成标准已满足）' }).waitFor();
+  await page.getByRole('button', { name: '转到 completed（完成标准已满足）' }).click();
+  await page.getByText('状态：completed').waitFor();
+
+  await page.getByRole('button', { name: 'Home 局势概览与系统状态' }).click();
+
+  const closeoutSection = page.locator('section.timeline-list').filter({ hasText: 'Closeout Tasks' });
+  await closeoutSection.getByText('当前没有接近完成或已满足完成标准的任务。').waitFor();
+
+  const closeoutCardCount = await closeoutSection.locator('.task-card').count();
+  if (closeoutCardCount !== 0) {
+    throw new Error('Home Closeout Tasks still showed task cards after all closeout candidates were completed.');
+  }
+}
+
 if (process.platform !== 'darwin') {
   fail('macOS packaged Timeline UI smoke requires macOS.');
 }
@@ -740,6 +760,7 @@ try {
   await assertHomeCloseoutEvidenceReturn(page);
   await assertCloseoutTransition(page);
   await assertHomeCloseoutAfterCompletion(page);
+  await assertHomeCloseoutEmptyAfterCompletingRemainingTask(page);
 
   await app.close();
   cleanup();
