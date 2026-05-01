@@ -127,8 +127,9 @@ Acceptance:
 Status: locally accepted at the shared payload-builder layer. Possible
 side-effect actions can now produce a versioned checkpoint payload with current
 URL, origin, action, policy snapshot, optional screenshot/text review fields,
-and `resume=deferred`. It does not create Decisions or auto-resume browser
-actions.
+and `resume=decision_gated_single_action`. It does not create generic browser
+sessions; later Browser Controlled Resume work gates exactly one recorded
+action behind Decision approval.
 
 Goal: stop before possible external side effects with a Decision payload that
 can resume later.

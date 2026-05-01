@@ -1113,8 +1113,8 @@ The project is past initial architecture assembly. Current work should favor pro
 - Browser controlled interaction BCI4 is locally accepted with a shared checkpoint
   payload builder for possible side-effect actions. It requires a validated
   checkpoint-required request, captures URL/origin/action/policy/screenshot/text
-  review fields, and left resume to the later Browser Controlled Resume slice
-  described below.
+  review fields, and now labels the resume boundary as Decision-gated
+  single-action recovery rather than a generic deferred browser session.
 - Browser controlled interaction BCI5 is locally accepted with a Runs review helper and
   read-only Runs detail card for dry-run, local-QA, blocked, and
   checkpoint-required evidence. It adds no generic browser prompt, IPC trigger,
@@ -1156,8 +1156,10 @@ The project is past initial architecture assembly. Current work should favor pro
   RunSteps and cancel the checkpoint. Runs browser-controlled review copy now
   points operators to the Browser Controlled Resume state for the approved
   single-action path, avoiding stale "no auto-resume" guidance while still
-  saying approval does not grant a browser session. Current local acceptance
-  status: 128 test files / 931 tests. Arbitrary URLs, authenticated profiles,
+  saying approval does not grant a browser session; checkpoint payload/evidence
+  summaries now use `resume=decision_gated_single_action` to match that
+  boundary. Current local acceptance status: 128 test files / 936 tests.
+  Arbitrary URLs, authenticated profiles,
   scheduler starts, provider schemas, and model-visible browser tools remain
   deferred. A dev-app visual fixture pass on 2026-04-27 confirmed the
   approved-ready, resumed, blocked, stale-payload, and non-browser checkpoint

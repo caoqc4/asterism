@@ -499,7 +499,7 @@ export function buildBrowserControlledInteractionCheckpointPayload(params: {
       'Browser controlled interaction checkpoint payload ready',
       `action=${payload.action.action}`,
       `origin=${payload.origin}`,
-      'resume=deferred',
+      'resume=decision_gated_single_action',
     ].join(' / '),
     valid: true,
   };

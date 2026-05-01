@@ -393,7 +393,7 @@ function formatBrowserControlledCheckpointPayloadSummary(
     payload.action.targetLabel ? `targetLabel=${payload.action.targetLabel}` : null,
     payload.screenshotArtifactId ? `screenshot=${payload.screenshotArtifactId}` : null,
     payload.visibleTextSummary ? `visibleText=${payload.visibleTextSummary}` : null,
-    'resume=deferred',
+    'resume=decision_gated_single_action',
   ].filter(Boolean).join(' / ');
 }
 

@@ -3541,7 +3541,7 @@ describe('App UI flow', () => {
     expect(screen.getByText('Action plan')).toBeTruthy();
     expect(screen.getByText('Checkpoint boundary')).toBeTruthy();
     expect(screen.getByText(
-      'action=click / origin=http://localhost:5173 / targetLabel=Publish post / screenshot=artifact_screenshot_1 / visibleText=Draft publish page is visible. / resume=deferred',
+      'action=click / origin=http://localhost:5173 / targetLabel=Publish post / screenshot=artifact_screenshot_1 / visibleText=Draft publish page is visible. / resume=decision_gated_single_action',
     )).toBeTruthy();
     expect(screen.getByText('Browser Controlled Resume')).toBeTruthy();
     expect(screen.getByText('审阅 checkpoint 批准后的单动作恢复状态')).toBeTruthy();

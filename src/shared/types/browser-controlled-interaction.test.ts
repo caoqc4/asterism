@@ -236,7 +236,7 @@ describe('browser controlled interaction schema draft', () => {
         version: 1,
         visibleTextSummary: 'Draft publish page is visible.',
       },
-      summary: 'Browser controlled interaction checkpoint payload ready / action=click / origin=http://localhost:5173 / resume=deferred',
+      summary: 'Browser controlled interaction checkpoint payload ready / action=click / origin=http://localhost:5173 / resume=decision_gated_single_action',
       valid: true,
     });
   });

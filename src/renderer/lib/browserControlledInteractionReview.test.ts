@@ -303,7 +303,7 @@ describe('browser controlled interaction review helpers', () => {
     expect(checkpoint?.evidence.at(-1)).toEqual({
       label: 'Checkpoint boundary',
       status: 'pending',
-      summary: 'action=click / origin=http://localhost:5173 / targetLabel=Publish post / screenshot=artifact_screenshot_1 / visibleText=Draft publish page is visible. / resume=deferred',
+      summary: 'action=click / origin=http://localhost:5173 / targetLabel=Publish post / screenshot=artifact_screenshot_1 / visibleText=Draft publish page is visible. / resume=decision_gated_single_action',
     });
     expect(formatBrowserControlledRunEvidenceStatusLabel('pending')).toBe('pending');
   });
