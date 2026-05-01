@@ -698,6 +698,9 @@ The latest implementation slice:
   falling back to legacy latest checkpoint-backed session selection. This keeps
   a newer unrelated paused or confirmation session from being settled by an
   older checkpoint action.
+- Runs checkpoint summaries now show the payload-bound session id for
+  tool-permission, resume, and patch-promotion checkpoints, keeping visible
+  review evidence aligned with the session-bound settlement path.
 - Executor lifecycle settlement plans now expose a structured diagnostic shape
   with action, session id, optional status, `autoReplay=false`, and summary, so
   future IPC/renderer diagnostics do not need to parse summary text.

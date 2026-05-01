@@ -334,6 +334,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Runtime-event paused-session RunSteps now do the same for `session.paused`
   evidence, keeping pause review tied to the agent session before any manual
   checkpoint resume.
+- Runs checkpoint summaries now surface the payload-bound agent session id for
+  tool-permission, resume, and patch-promotion checkpoints, so readable
+  checkpoint review shows the same session binding used by recovery settlement.
 - Agent session replay reviews now carry latest-step kind/status/title as
   structured fields alongside the existing summary text, keeping inspect-first
   recovery evidence available without parsing the `latest=` segment.
