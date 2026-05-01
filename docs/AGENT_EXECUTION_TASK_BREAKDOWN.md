@@ -775,6 +775,9 @@ The latest implementation slice:
 - Replay review and recovery intent objects now also carry structured
   `recoveryCheckpointIds`, so manual-resume guidance can name the concrete
   checkpoint anchors when those ids are available.
+- Runs detail `Run recovery safety` now renders a separate structured
+  `Recovery anchors` line with run id, session id, checkpoint ids, and recovery
+  action for inspect-first review.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

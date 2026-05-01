@@ -22,6 +22,7 @@ import type {
   RunStepRecord,
 } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
+import type { AgentSessionRecoveryIntent } from '@shared/agent-session-replay';
 import type { TaskDetail, TaskListItemRecord, TimelineEventRecord } from '@shared/types/task';
 import {
   formatTaskTimelineEventSummary,
@@ -76,6 +77,21 @@ function getRunLifecycleStartMode(run: Pick<RunRecord, 'instructions'>): 'manual
   return run.instructions?.startsWith('Operator-started')
     ? 'operator_started'
     : 'manual';
+}
+
+function formatRecoveryAnchorLine(intent: AgentSessionRecoveryIntent | null): string | null {
+  if (!intent) {
+    return null;
+  }
+
+  return [
+    `run=${intent.runId}`,
+    `session=${intent.sessionId}`,
+    intent.recoveryCheckpointIds.length
+      ? `checkpoints=${intent.recoveryCheckpointIds.join(',')}`
+      : 'checkpoints=none',
+    `action=${intent.action}`,
+  ].join(' / ');
 }
 
 function hasValidOpenResumeCheckpoint(run: Pick<RunDetailRecord, 'checkpoints' | 'id' | 'taskId'>): boolean {
@@ -802,6 +818,7 @@ export function RunsPage({
   const latestAgentSessionRecoveryIntent = latestAgentSession
     ? buildAgentSessionRecoveryIntentPresentation(latestAgentSession, detailSteps, detailCheckpoints)
     : null;
+  const latestAgentSessionRecoveryAnchors = formatRecoveryAnchorLine(latestAgentSessionRecoveryIntent);
   const sandboxProducerSource = latestAgentSession
     ? formatSandboxProducerSourceSummary(latestAgentSession)
     : null;
@@ -902,6 +919,11 @@ export function RunsPage({
                   {latestAgentSessionRecoveryIntent ? (
                     <p className="meta">
                       {latestAgentSessionRecoveryIntent.summary}
+                    </p>
+                  ) : null}
+                  {latestAgentSessionRecoveryAnchors ? (
+                    <p className="meta">
+                      Recovery anchors：{latestAgentSessionRecoveryAnchors}
                     </p>
                   ) : null}
                   {executorLifecycleLines.map((line) => (

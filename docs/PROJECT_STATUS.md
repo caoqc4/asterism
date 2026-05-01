@@ -189,6 +189,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Recovery checkpoint ids are now preserved as structured
   `recoveryCheckpointIds`, and manual-resume next-step copy names those
   checkpoint anchors when available instead of only showing a count.
+- Runs detail now renders a separate `Recovery anchors` line from structured
+  recovery intent fields, showing source run, session, recovery checkpoint ids,
+  and recovery action without requiring users to parse the long summary.
 - RunService and DecisionService now pass checkpoint-backed session updates
   through a shared settlement projection, so `running` sessions are treated as
   requiring executor liveness rather than being checkpoint-settled.

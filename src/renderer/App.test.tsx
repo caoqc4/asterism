@@ -3782,6 +3782,25 @@ describe('App UI flow', () => {
     });
     const pausedRunDetail: RunDetailRecord = {
       ...pausedRun,
+      agentSessions: [
+        {
+          id: 'agent_session_resume',
+          runId: pausedRun.id,
+          mode: 'agent',
+          status: 'paused',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: true,
+            streaming: false,
+            fileContext: true,
+            taskMutationTools: false,
+            longRunningSessions: true,
+          },
+          metadata: 'executor=local_agent\nloop=local_note',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
       steps: [
         buildRunStep({
           id: 'run_step_resume_checkpoint',
@@ -3825,6 +3844,9 @@ describe('App UI flow', () => {
     expect(screen.getByText('resume')).toBeTruthy();
     expect(screen.getByText('open')).toBeTruthy();
     expect(screen.getByText('会话：agent_session_resume；下一工具：artifact.create_note；原因：等待先解除阻塞。')).toBeTruthy();
+    expect(screen.getByText(
+      'Recovery anchors：run=run_paused_checkpoint / session=agent_session_resume / checkpoints=run_checkpoint_resume / action=manual_checkpoint_resume',
+    )).toBeTruthy();
   });
 
   it('continues a paused agent run from the runs page', async () => {
@@ -4078,6 +4100,11 @@ describe('App UI flow', () => {
       ),
     ).toBeTruthy();
     expect(
+      recoverySafety.getByText(
+        'Recovery anchors：run=run_agent_plan / session=agent_session_1 / checkpoints=none / action=prepare_new_manual_run',
+      ),
+    ).toBeTruthy();
+    expect(
       recoverySafety.getByText('Executor lifecycle：Executor lifecycle / status=dry_run_available'),
     ).toBeTruthy();
     expect(
@@ -4271,6 +4298,9 @@ describe('App UI flow', () => {
         'Replay review：inspect paused evidence; no recovery checkpoint / mode=inspect_only / session=agent_session_paused_missing_checkpoint / status=paused / restartSafety=checkpoint_missing / steps=1 / openCheckpoints=0 / recoveryCheckpoints=0 / latest=checkpoint:completed:Resolved checkpoint no longer open / autoReplay=no',
       ),
     ).toBeTruthy();
+    expect(screen.getByText(
+      'Recovery anchors：run=run_agent_paused_missing_checkpoint / session=agent_session_paused_missing_checkpoint / checkpoints=none / action=inspect_evidence',
+    )).toBeTruthy();
     expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: '回到任务推进' }));
@@ -4353,6 +4383,11 @@ describe('App UI flow', () => {
     expect(
       recoverySafety.getByText(
         'Recovery intent：prepare new manual run / session=agent_session_failed / status=failed / restartSafety=new_run_required / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=yes / autoReplay=no',
+      ),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText(
+        'Recovery anchors：run=run_agent_failed_session / session=agent_session_failed / checkpoints=none / action=prepare_new_manual_run',
       ),
     ).toBeTruthy();
 
