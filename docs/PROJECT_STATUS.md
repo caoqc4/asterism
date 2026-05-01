@@ -215,6 +215,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Dry-run availability diagnostics can now be built with partial control
   support, allowing future status surfaces to report reduced control support
   without implying runtime readiness.
+- Supported and unsupported executor lifecycle control request lists now share
+  the same helper source, keeping dry-run availability diagnostics aligned with
+  adapter-facing control support.
 - The main-process executor boundary now has a dry-run lifecycle adapter that
   can create a controllable executor handle and observe lifecycle signals
   through that same runtime event spine. It is adapter-facing test coverage

@@ -667,6 +667,9 @@ The latest implementation slice:
 - Agent session settlement coverage now explicitly includes
   `needs_confirmation` as checkpoint-backed only, preserving `autoReplay=no`
   alongside paused sessions.
+- Supported and unsupported executor lifecycle control request lists now share
+  one helper source, so dry-run diagnostics and future lifecycle surfaces do not
+  duplicate control-support filtering.
 - Terminal session settlement coverage now fully covers completed, failed, and
   cancelled sessions as evidence-review only, with no checkpoint settlement or
   replay authority.
