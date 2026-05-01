@@ -452,6 +452,9 @@ Covered today:
 - Runs page paused-run continuation gating now mirrors those backend recovery
   boundaries by hiding the continue button for multiple valid resume
   checkpoints or missing payload-bound agent-session bindings
+- Runs page recovery-strip replay review now mirrors payload-bound
+  agent-session filtering, keeping missing-bound-session resume checkpoints in
+  `checkpoint_missing` inspect-first recovery
 - `Settings save flow`
 - `Settings save flow` now also asserts Home scheduler enabled/running state and scheduler timestamps refresh from Home brief data
 - `Settings save flow` now also covers read-only workspace root persistence
@@ -505,8 +508,8 @@ Current verification:
   Timeline surface alignment, agent read-only timeline observation alignment,
   duplicate Code Agent artifact selection boundary coverage, ambiguous paused
   resume checkpoint blocking, payload-bound resume session validation, Runs
-  recovery anchor/gating alignment, completed-session terminal evidence, and
-  cancelled-session new-run routing coverage.
+  recovery anchor/gating/replay alignment, completed-session terminal evidence,
+  and cancelled-session new-run routing coverage.
 - GitHub Actions runs `npm run verify` on pushes to `main` and pull requests when Actions capacity is available
 - `npm run smoke:build` when package/build entrypoints change
 - `npm run smoke:package:mac` after producing `release/mac-arm64/Taskplane.app`, including ASAR content checks

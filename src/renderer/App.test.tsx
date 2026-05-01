@@ -4083,7 +4083,39 @@ describe('App UI flow', () => {
       listRuns: vi.fn(async () => [pausedRun]),
       getRunDetail: vi.fn(async (runId: string) =>
         runId === pausedRun.id
-          ? { ...pausedRun, agentSessions: [], checkpoints: [boundResumeCheckpoint] }
+          ? {
+              ...pausedRun,
+              agentSessions: [
+                {
+                  id: 'agent_session_paused_current',
+                  runId: pausedRun.id,
+                  mode: 'agent' as const,
+                  status: 'paused' as const,
+                  capabilities: {
+                    structuredToolCalls: false,
+                    textOnlyPlanning: true,
+                    streaming: false,
+                    fileContext: true,
+                    taskMutationTools: false,
+                    longRunningSessions: true,
+                  },
+                  metadata: 'executor=local_agent\nloop=local_note',
+                  createdAt: '2026-01-01T00:00:00.000Z',
+                  updatedAt: '2026-01-01T00:00:00.000Z',
+                },
+              ],
+              steps: [
+                buildRunStep({
+                  id: 'run_step_missing_session_resume_checkpoint',
+                  runId: pausedRun.id,
+                  index: 3,
+                  kind: 'checkpoint',
+                  status: 'pending',
+                  title: 'Resume checkpoint bound to missing session',
+                }),
+              ],
+              checkpoints: [boundResumeCheckpoint],
+            }
           : null,
       ),
       continuePausedRun: vi.fn(),
@@ -4098,6 +4130,17 @@ describe('App UI flow', () => {
     expect(
       await screen.findByText(
         '当前 paused run 没有可续跑的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。',
+      ),
+    ).toBeTruthy();
+    const recoverySafety = within(screen.getByLabelText('Run recovery safety'));
+    expect(
+      recoverySafety.getByText(
+        'Replay review：inspect paused evidence; no recovery checkpoint / mode=inspect_only / session=agent_session_paused_current / status=paused / restartSafety=checkpoint_missing / steps=1 / openCheckpoints=0 / recoveryCheckpoints=0 / latest=checkpoint:pending:Resume checkpoint bound to missing session / autoReplay=no',
+      ),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText(
+        'Recovery anchors：run=run_paused_missing_resume_session / session=agent_session_paused_current / checkpoints=none / action=inspect_evidence',
       ),
     ).toBeTruthy();
     expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();

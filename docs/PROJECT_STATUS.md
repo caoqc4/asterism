@@ -953,10 +953,14 @@ The project is past initial architecture assembly. Current work should favor pro
   stale/incompatible payload, with multiple valid resume checkpoints, or with a
   missing session binding show review-first guidance instead of letting the
   user click into a known backend rejection path.
-- Backend paused-run continuation now mirrors that selection rule: if multiple
-  open resume checkpoints exist, stale/incompatible payloads are skipped until a
-  valid supported payload for the current run/task is found; execution still
-  fails closed when none is available.
+- Runs detail recovery strip now uses the same payload-bound session filtering
+  for replay/recovery review, so a resume checkpoint bound to a missing or
+  different session is shown as `checkpoint_missing` inspect-first recovery for
+  the current latest session instead of manual-resume guidance.
+- Backend paused-run continuation mirrors that selection rule: stale or
+  incompatible payloads are skipped, exactly one valid supported payload may
+  execute, and multiple valid resume checkpoints fail closed before any local
+  tool, checkpoint resolution, or run settlement.
 - Shared resume checkpoint validation now also checks the currently supported
   `artifact.create_note` resume input shape before UI continuation or backend
   tool execution, so empty title/content payloads are treated as stale

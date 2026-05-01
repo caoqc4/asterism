@@ -127,6 +127,26 @@ function hasValidOpenResumeCheckpoint(
   return validCheckpoints.length === 1;
 }
 
+function getSessionScopedReplayCheckpoints(
+  checkpoints: RunCheckpointRecord[],
+  sessionId: string | null,
+): RunCheckpointRecord[] {
+  if (!sessionId) {
+    return checkpoints;
+  }
+
+  return checkpoints.filter((checkpoint) => {
+    const payload = parseRunCheckpointPayload(checkpoint.payload);
+    const payloadSessionId = typeof payload?.agentSessionId === 'string'
+      ? payload.agentSessionId
+      : typeof payload?.sessionId === 'string'
+        ? payload.sessionId
+        : null;
+
+    return !payloadSessionId || payloadSessionId === sessionId;
+  });
+}
+
 function getRelatedTimelineActionLabel(event: TimelineEventRecord): string | null {
   return getTaskTimelineFollowUpActionLabel(event.type);
 }
@@ -820,6 +840,10 @@ export function RunsPage({
   const detailSteps = detail?.steps ?? [];
   const detailCheckpoints = detail?.checkpoints ?? [];
   const latestAgentSession = detail?.agentSessions?.at(-1) ?? null;
+  const latestAgentSessionReplayCheckpoints = getSessionScopedReplayCheckpoints(
+    detailCheckpoints,
+    latestAgentSession?.id ?? null,
+  );
   const latestAgentSessionMetadata = latestAgentSession
     ? formatAgentSessionMetadataSummary(latestAgentSession)
     : null;
@@ -830,10 +854,10 @@ export function RunsPage({
     ? formatAgentSessionRestartSummary(latestAgentSession)
     : null;
   const latestAgentSessionReplayReview = latestAgentSession
-    ? buildAgentSessionReplayReviewPresentation(latestAgentSession, detailSteps, detailCheckpoints)
+    ? buildAgentSessionReplayReviewPresentation(latestAgentSession, detailSteps, latestAgentSessionReplayCheckpoints)
     : null;
   const latestAgentSessionRecoveryIntent = latestAgentSession
-    ? buildAgentSessionRecoveryIntentPresentation(latestAgentSession, detailSteps, detailCheckpoints)
+    ? buildAgentSessionRecoveryIntentPresentation(latestAgentSession, detailSteps, latestAgentSessionReplayCheckpoints)
     : null;
   const latestAgentSessionRecoveryAnchors = formatRecoveryAnchorLine(latestAgentSessionRecoveryIntent);
   const sandboxProducerSource = latestAgentSession
