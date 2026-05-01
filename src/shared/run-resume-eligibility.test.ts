@@ -91,7 +91,49 @@ describe('run resume eligibility', () => {
       taskId: 'task_1',
     })).toEqual({
       status: 'blocked',
-      reason: 'Resume checkpoint payload runId does not match run: run_1.',
+      reason: 'Resume checkpoint run_checkpoint_resume is not valid: Resume checkpoint payload runId does not match run: run_1.',
+    });
+
+    expect(evaluatePausedRunResumeEligibility({
+      checkpoints: [
+        buildCheckpoint({
+          id: 'run_checkpoint_unsupported_tool',
+          payload: JSON.stringify({
+            version: 1,
+            kind: 'resume',
+            runId: 'run_1',
+            taskId: 'task_1',
+            nextTool: 'unknown.execute',
+            nextInput: {},
+          }),
+        }),
+      ],
+      runId: 'run_1',
+      taskId: 'task_1',
+    })).toEqual({
+      status: 'blocked',
+      reason: 'Resume checkpoint run_checkpoint_unsupported_tool is not valid: Unsupported resume tool: unknown.execute',
+    });
+
+    expect(evaluatePausedRunResumeEligibility({
+      checkpoints: [
+        buildCheckpoint({
+          id: 'run_checkpoint_valid_but_not_resumable',
+          payload: JSON.stringify({
+            version: 1,
+            kind: 'resume',
+            runId: 'run_1',
+            taskId: 'task_1',
+            nextTool: 'workspace.search',
+            nextInput: { query: 'launch notes' },
+          }),
+        }),
+      ],
+      runId: 'run_1',
+      taskId: 'task_1',
+    })).toEqual({
+      status: 'blocked',
+      reason: 'Resume checkpoint run_checkpoint_valid_but_not_resumable uses unsupported tool: workspace.search',
     });
 
     expect(evaluatePausedRunResumeEligibility({

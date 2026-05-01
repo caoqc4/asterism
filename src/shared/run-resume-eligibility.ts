@@ -48,12 +48,12 @@ export function evaluatePausedRunResumeEligibility(params: {
     });
 
     if (validation.status === 'invalid') {
-      firstInvalidReason ??= validation.reason;
+      firstInvalidReason ??= `Resume checkpoint ${checkpoint.id} is not valid: ${validation.reason}`;
       continue;
     }
 
     if (!isSupportedResumeCheckpointPayload(validation.payload)) {
-      firstUnsupportedTool ??= validation.payload.nextTool;
+      firstUnsupportedTool ??= `Resume checkpoint ${checkpoint.id} uses unsupported tool: ${validation.payload.nextTool}`;
       continue;
     }
 
@@ -65,7 +65,7 @@ export function evaluatePausedRunResumeEligibility(params: {
 
   if (supportedCandidates.length === 0) {
     if (firstUnsupportedTool) {
-      return blocked(`Unsupported resume tool: ${firstUnsupportedTool}`);
+      return blocked(firstUnsupportedTool);
     }
 
     return blocked(firstInvalidReason ?? `Open resume checkpoint not found for run: ${params.runId}`);

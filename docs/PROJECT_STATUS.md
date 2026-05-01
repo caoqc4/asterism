@@ -348,6 +348,9 @@ The project is past initial architecture assembly. Current work should favor pro
   applicable to the current agent session, so paused/confirmation evidence can
   distinguish non-recovery checkpoints such as `patch_promotion` or
   `external_wait` without changing resume eligibility.
+- Paused-run resume eligibility now includes the offending checkpoint id in
+  invalid or unsupported resume-payload blockers, keeping RunService errors
+  traceable back to the exact checkpoint evidence before any tool executes.
 - Renderer orchestration presentation now has one helper for executor
   lifecycle diagnostic lines, so Settings, Task detail, and Runs recovery
   surfaces share the same read-only copy without repeating page-local strings.

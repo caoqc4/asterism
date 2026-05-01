@@ -1050,7 +1050,7 @@ describe('RunService', () => {
         nextTool: 'artifact.create_note',
         nextInput: {},
       },
-      message: 'Unsupported resume checkpoint payload version: 2.',
+      message: 'Resume checkpoint run_checkpoint_resume is not valid: Unsupported resume checkpoint payload version: 2.',
     },
     {
       payload: {
@@ -1061,7 +1061,7 @@ describe('RunService', () => {
         nextTool: 'artifact.create_note',
         nextInput: {},
       },
-      message: 'Resume checkpoint payload kind is not resume: tool_permission.',
+      message: 'Resume checkpoint run_checkpoint_resume is not valid: Resume checkpoint payload kind is not resume: tool_permission.',
     },
     {
       payload: {
@@ -1072,7 +1072,7 @@ describe('RunService', () => {
         nextTool: 'artifact.create_note',
         nextInput: {},
       },
-      message: 'Resume checkpoint payload runId does not match run: run_1.',
+      message: 'Resume checkpoint run_checkpoint_resume is not valid: Resume checkpoint payload runId does not match run: run_1.',
     },
     {
       payload: {
@@ -1083,7 +1083,7 @@ describe('RunService', () => {
         nextTool: 'artifact.create_note',
         nextInput: {},
       },
-      message: 'Resume checkpoint payload taskId does not match task: task_1.',
+      message: 'Resume checkpoint run_checkpoint_resume is not valid: Resume checkpoint payload taskId does not match task: task_1.',
     },
     {
       payload: {
@@ -1095,7 +1095,7 @@ describe('RunService', () => {
         nextInput: {},
         policySnapshot: { allowLocalWorkspaceRead: false },
       },
-      message: 'Resume checkpoint payload policySnapshot is invalid.',
+      message: 'Resume checkpoint run_checkpoint_resume is not valid: Resume checkpoint payload policySnapshot is invalid.',
     },
   ])('rejects stale or incompatible resume payloads: $message', async ({ message, payload }) => {
     const {
