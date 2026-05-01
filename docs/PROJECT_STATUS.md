@@ -983,6 +983,10 @@ The project is past initial architecture assembly. Current work should favor pro
   helper, so confirmation policies can checkpoint and resume draft generation
   instead of treating it as safe-read/no-op. Current local acceptance status:
   128 test files / 933 tests.
+- Runs checkpoint summaries now surface task-domain tool inputs for review,
+  including task next-step updates, completion criteria, source context
+  metadata, local note titles, and Decision draft notes before approval.
+  Current local acceptance status: 128 test files / 934 tests.
 - Backend paused-run continuation mirrors that selection rule: stale or
   incompatible payloads are skipped, exactly one valid supported payload may
   execute, and multiple valid resume checkpoints fail closed before any local

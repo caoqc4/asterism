@@ -3627,6 +3627,65 @@ describe('App UI flow', () => {
     expect(runCheckpointApi.getRunDetail).toHaveBeenCalledWith('run_checkpointed');
   });
 
+  it('shows task-domain checkpoint input summaries on the runs page', async () => {
+    const user = userEvent.setup();
+    const checkpointRun = buildRunRecord({
+      id: 'run_task_checkpointed',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'needs_confirmation',
+      output: '需要确认 task.update_next_step 后才能继续。',
+      outputSource: 'system',
+    });
+    const checkpointDetail: RunDetailRecord = {
+      ...checkpointRun,
+      steps: [
+        buildRunStep({
+          id: 'run_step_task_update',
+          runId: checkpointRun.id,
+          index: 2,
+          kind: 'checkpoint',
+          title: 'Await task update permission',
+        }),
+      ],
+      checkpoints: [
+        buildRunCheckpoint({
+          id: 'run_checkpoint_task_update',
+          runId: checkpointRun.id,
+          stepId: 'run_step_task_update',
+          payload: JSON.stringify({
+            tool: 'task.update_next_step',
+            risk: 'local_write',
+            input: {
+              nextStep: 'Review launch evidence',
+            },
+            decisionTitle: '确认本地写入：task.update_next_step',
+          }),
+        }),
+      ],
+    };
+    const runCheckpointApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [checkpointRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === checkpointRun.id ? checkpointDetail : null,
+      ),
+    };
+
+    window.api = runCheckpointApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    await screen.findByRole('heading', { name: 'agent / needs_confirmation' });
+
+    expect(
+      screen.getByText(
+        '工具：task.update_next_step；风险：local_write；下一步：Review launch evidence；Decision：确认本地写入：task.update_next_step',
+      ),
+    ).toBeTruthy();
+  });
+
   it('shows workspace patch checkpoint files and diff preview on the runs page', async () => {
     const user = userEvent.setup();
     const checkpointRun = buildRunRecord({

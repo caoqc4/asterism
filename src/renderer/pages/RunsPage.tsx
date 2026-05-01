@@ -470,6 +470,13 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
       ? truncateSummary(rawCommandPreview.replace(/\s+/g, ' '))
       : null;
     const script = typeof input?.script === 'string' ? input.script : null;
+    const noteTitle = typeof input?.title === 'string' ? input.title.trim() : null;
+    const draftNote = typeof input?.note === 'string' ? input.note.trim() : null;
+    const nextStep = typeof input?.nextStep === 'string' ? input.nextStep.trim() : null;
+    const criterionText = typeof input?.text === 'string' ? input.text.trim() : null;
+    const sourceTitle = typeof input?.title === 'string' ? input.title.trim() : null;
+    const sourceKind = typeof input?.kind === 'string' ? input.kind.trim() : null;
+    const sourceUri = typeof input?.uri === 'string' ? input.uri.trim() : null;
     const commandArgs = Array.isArray(input?.args)
       ? input.args.filter((item): item is string => typeof item === 'string')
       : [];
@@ -488,6 +495,13 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
       typeof payload.nextTool === 'string' ? `下一工具：${payload.nextTool}` : null,
       typeof payload.risk === 'string' ? `风险：${payload.risk}` : null,
       typeof payload.reason === 'string' ? `原因：${payload.reason}` : null,
+      payload.tool === 'artifact.create_note' && noteTitle ? `标题：${noteTitle}` : null,
+      payload.tool === 'decision.draft' && draftNote ? `草稿说明：${draftNote}` : null,
+      payload.tool === 'task.update_next_step' && nextStep ? `下一步：${nextStep}` : null,
+      payload.tool === 'task.create_completion_criterion' && criterionText ? `完成标准：${criterionText}` : null,
+      payload.tool === 'source_context.create' && sourceTitle ? `来源：${sourceTitle}` : null,
+      payload.tool === 'source_context.create' && sourceKind ? `类型：${sourceKind}` : null,
+      payload.tool === 'source_context.create' && sourceUri ? `URI：${sourceUri}` : null,
       patchSummary ? `摘要：${patchSummary}` : null,
       expectedFiles.length ? `文件：${expectedFiles.join(', ')}` : previewFiles ? `文件：${previewFiles}` : null,
       script ? `脚本：npm run ${script}` : null,
