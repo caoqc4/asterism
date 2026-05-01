@@ -477,7 +477,13 @@ function formatRunCheckpointSummary(checkpoint: RunCheckpointRecord): string {
       ? `${input.timeoutMs}ms`
       : extractPreviewLine(rawCommandPreview, 'Timeout');
     const cwd = extractPreviewLine(rawCommandPreview, 'Cwd');
+    const sessionId = typeof payload.agentSessionId === 'string'
+      ? payload.agentSessionId
+      : typeof payload.sessionId === 'string'
+        ? payload.sessionId
+        : null;
     const summaryParts = [
+      sessionId ? `会话：${sessionId}` : null,
       typeof payload.tool === 'string' ? `工具：${payload.tool}` : null,
       typeof payload.nextTool === 'string' ? `下一工具：${payload.nextTool}` : null,
       typeof payload.risk === 'string' ? `风险：${payload.risk}` : null,

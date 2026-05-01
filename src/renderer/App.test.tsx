@@ -3578,6 +3578,7 @@ describe('App UI flow', () => {
           runId: checkpointRun.id,
           stepId: 'run_step_tool_call',
           payload: JSON.stringify({
+            agentSessionId: 'agent_session_1',
             tool: 'artifact.create_note',
             risk: 'write',
             reason: '需要确认后再写入本地 note artifact。',
@@ -3614,7 +3615,7 @@ describe('App UI flow', () => {
     expect(screen.getByText('run_step_tool_call')).toBeTruthy();
     expect(
       screen.getByText(
-        '工具：artifact.create_note；风险：write；原因：需要确认后再写入本地 note artifact。；Decision：确认本地写入：artifact.create_note',
+        '会话：agent_session_1；工具：artifact.create_note；风险：write；原因：需要确认后再写入本地 note artifact。；Decision：确认本地写入：artifact.create_note',
       ),
     ).toBeTruthy();
     expect(runCheckpointApi.getRunDetail).toHaveBeenCalledWith('run_checkpointed');
@@ -3649,6 +3650,7 @@ describe('App UI flow', () => {
           payload: JSON.stringify({
             version: 1,
             kind: 'tool_permission',
+            agentSessionId: 'agent_session_patch',
             tool: 'workspace.write_patch',
             risk: 'local_write',
             input: {
@@ -3689,7 +3691,7 @@ describe('App UI flow', () => {
 
     expect(await screen.findByRole('heading', { name: 'agent / needs_confirmation' })).toBeTruthy();
     expect(
-      screen.getByText(/工具：workspace\.write_patch；风险：local_write；摘要：Update notes；文件：notes\.md；预览：\*\*\* Begin Patch \*\*\* Update File: notes\.md/),
+      screen.getByText(/会话：agent_session_patch；工具：workspace\.write_patch；风险：local_write；摘要：Update notes；文件：notes\.md；预览：\*\*\* Begin Patch \*\*\* Update File: notes\.md/),
     ).toBeTruthy();
   });
 
@@ -3722,6 +3724,7 @@ describe('App UI flow', () => {
           payload: JSON.stringify({
             version: 1,
             kind: 'tool_permission',
+            agentSessionId: 'agent_session_command',
             tool: 'workspace.run_command',
             risk: 'local_command',
             input: {
@@ -3757,7 +3760,7 @@ describe('App UI flow', () => {
 
     expect(await screen.findByRole('heading', { name: 'agent / needs_confirmation' })).toBeTruthy();
     expect(
-      screen.getByText(/工具：workspace\.run_command；风险：local_command；脚本：npm run test；限制：仅允许 package\.json 中的 test \/ lint 脚本；参数：--watch=false；超时：120000ms；工作目录：\/tmp\/taskplane-workspace；预览：Summary: Run tests Command: npm run test -- --watch=false/),
+      screen.getByText(/会话：agent_session_command；工具：workspace\.run_command；风险：local_command；脚本：npm run test；限制：仅允许 package\.json 中的 test \/ lint 脚本；参数：--watch=false；超时：120000ms；工作目录：\/tmp\/taskplane-workspace；预览：Summary: Run tests Command: npm run test -- --watch=false/),
     ).toBeTruthy();
   });
 
@@ -3791,6 +3794,7 @@ describe('App UI flow', () => {
           stepId: 'run_step_resume_checkpoint',
           kind: 'resume',
           payload: JSON.stringify({
+            agentSessionId: 'agent_session_resume',
             reason: '等待先解除阻塞。',
             nextTool: 'artifact.create_note',
           }),
@@ -3814,7 +3818,7 @@ describe('App UI flow', () => {
     expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
     expect(screen.getByText('resume')).toBeTruthy();
     expect(screen.getByText('open')).toBeTruthy();
-    expect(screen.getByText('下一工具：artifact.create_note；原因：等待先解除阻塞。')).toBeTruthy();
+    expect(screen.getByText('会话：agent_session_resume；下一工具：artifact.create_note；原因：等待先解除阻塞。')).toBeTruthy();
   });
 
   it('continues a paused agent run from the runs page', async () => {
