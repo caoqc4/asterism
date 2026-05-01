@@ -255,6 +255,9 @@ The project is past initial architecture assembly. Current work should favor pro
   boundaries: workspace `test`/`lint` detection, model-producer opt-in,
   source/artifact manifest controls, and context-file candidate filling. It
   deliberately does not probe Docker or start a provider-backed run.
+- Source/process context editing remains covered by repository and renderer
+  tests plus existing packaged manual SQLite evidence; it is intentionally not
+  duplicated as an automated packaged smoke unless that area changes again.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.

@@ -581,6 +581,12 @@ Current verification:
   availability, Code Agent preflight visibility, model-producer opt-in
   manifest controls, and context-file candidate filling, without probing Docker
   or starting a provider-backed run.
+- on 2026-05-02, source/process context editing was kept out of automated
+  packaged smoke for now. Repository and renderer tests already cover
+  source-context create/edit/key-source behavior and process-template
+  create/apply/remove behavior, while alpha has packaged manual SQLite evidence
+  for create/edit/archive. The next automated packaged smoke should target a
+  higher-risk recovery boundary instead of duplicating those stable UI forms.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.
@@ -709,8 +715,8 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. decide whether source/process context editing needs an automated packaged
-   smoke, or whether the existing renderer tests plus manual packaged SQLite
-   evidence are enough for alpha
+1. identify the next higher-risk packaged recovery boundary outside Timeline
+   and Code Agent preflight, likely Run/Decision recovery after terminal or
+   checkpointed agent sessions
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.
