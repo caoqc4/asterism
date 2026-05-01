@@ -555,6 +555,10 @@ Current verification:
   packaged Home closeout evidence return path: a near-closeout task with
   completed-run evidence opens `查看收尾证据` from Closeout Tasks, lands on the
   Runs detail evidence, returns to Home, and reopens the closeout-ready task.
+- on 2026-05-02, `npm run smoke:timeline-ui:mac` passed locally after extending
+  the packaged Home closeout handoff: once the closeout-ready fixture
+  transitions to `completed`, Home Closeout Tasks drops that completed task and
+  opens the remaining near-closeout task with the expected next-step prefill.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.
@@ -677,7 +681,7 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. targeted packaged-app smoke for Home-to-Task closeout handoff after a
-   completed transition removes the task from Closeout Tasks
+1. targeted packaged-app smoke for the empty Closeout Tasks state after all
+   closeout candidates are completed or archived
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

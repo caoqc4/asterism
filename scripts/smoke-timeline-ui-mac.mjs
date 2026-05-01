@@ -675,6 +675,33 @@ async function assertHomeCloseoutEvidenceReturn(page) {
   await page.getByRole('button', { name: '转到 completed（完成标准已满足）' }).waitFor();
 }
 
+async function assertHomeCloseoutAfterCompletion(page) {
+  await page.getByRole('button', { name: 'Home 局势概览与系统状态' }).click();
+
+  const closeoutSection = page.locator('section.timeline-list').filter({ hasText: 'Closeout Tasks' });
+  await closeoutSection
+    .locator('.task-card', { hasText: 'Packaged Home closeout evidence fixture' })
+    .waitFor();
+
+  const completedTaskCardCount = await closeoutSection
+    .locator('.task-card', { hasText: 'Timeline packaged UI fixture' })
+    .count();
+  if (completedTaskCardCount !== 0) {
+    throw new Error('Completed packaged closeout task remained in Home Closeout Tasks.');
+  }
+
+  await closeoutSection
+    .locator('.task-card', { hasText: 'Packaged Home closeout evidence fixture' })
+    .getByRole('button', { name: /Packaged Home closeout evidence fixture/i })
+    .click();
+  await page.getByRole('heading', { name: 'Packaged Home closeout evidence fixture' }).waitFor();
+
+  const nextStep = await page.getByLabel('Next Step').inputValue();
+  if (nextStep !== '优先补齐最后一条完成标准，并判断“Packaged Home closeout evidence fixture”是否可以收尾。') {
+    throw new Error(`Home closeout handoff filled the wrong near-closeout next step: ${nextStep}`);
+  }
+}
+
 if (process.platform !== 'darwin') {
   fail('macOS packaged Timeline UI smoke requires macOS.');
 }
@@ -712,6 +739,7 @@ try {
   await assertDependencyReturnAndResolution(page);
   await assertHomeCloseoutEvidenceReturn(page);
   await assertCloseoutTransition(page);
+  await assertHomeCloseoutAfterCompletion(page);
 
   await app.close();
   cleanup();

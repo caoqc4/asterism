@@ -654,6 +654,7 @@ Automated/local coverage:
 - `npm run smoke:runtime:mac` launches the packaged executable with isolated user data, clears `ELECTRON_RUN_AS_NODE`, confirms `config.json` plus `taskplane.db` are created with the core SQLite schema, and seeds/reads back a Task Timeline scan fixture
 - `npm run smoke:timeline-ui:mac` launches the packaged macOS app with isolated user data, seeds a Task detail Timeline fixture in SQLite, and verifies the real packaged renderer shows grouped Timeline preview/expansion behavior, Task Timeline follow-up/object-action navigation across task/risk/blocker/dependency context, dependency return/resolution paths with Timeline and recovery-wording refresh, completion-ready closeout wording and completed transition evidence after blocker/dependency removal, plus related Timeline grouping on Runs and Decisions
 - the same packaged Timeline UI smoke now also seeds a Home near-closeout fixture with completed-run evidence, opens `查看收尾证据` from Closeout Tasks into Runs detail, returns to Home, and reopens the closeout-ready task for final completion
+- after the packaged closeout-ready task transitions to `completed`, that smoke verifies Home Closeout Tasks removes it and hands off to the remaining near-closeout task with the expected next-step prefill
 - `npm run smoke:release:mac` combines the unsigned macOS package build and both package/runtime smoke checks
 - on 2026-04-27, `npm run smoke:release:mac` passed locally after the Code
   Agent context-gate and restart/replay safety updates. It rebuilt Electron

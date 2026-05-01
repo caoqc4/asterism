@@ -240,7 +240,10 @@ The project is past initial architecture assembly. Current work should favor pro
   transition and checks the refreshed state plus Timeline transition evidence.
   Home closeout smoke also covers completed-run evidence: a near-closeout task
   opens `查看收尾证据` into Runs detail, returns to Home Closeout Tasks, and
-  reopens the closeout-ready task for final completion.
+  reopens the closeout-ready task for final completion. After that packaged
+  closeout-ready task transitions to `completed`, the smoke verifies Home drops
+  it from Closeout Tasks and hands off to the remaining near-closeout task with
+  the expected next-step prefill.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.
