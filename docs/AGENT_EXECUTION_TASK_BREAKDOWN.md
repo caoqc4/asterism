@@ -693,6 +693,11 @@ The latest implementation slice:
 - RunService and DecisionService now name their private settlement updater after
   checkpoint-backed sessions, matching the helper semantics and avoiding
   confusion with running continuable sessions.
+- New tool-permission and resume checkpoint payloads now include
+  `agentSessionId`, and RunService / DecisionService prefer that binding before
+  falling back to legacy latest checkpoint-backed session selection. This keeps
+  a newer unrelated paused or confirmation session from being settled by an
+  older checkpoint action.
 - Executor lifecycle settlement plans now expose a structured diagnostic shape
   with action, session id, optional status, `autoReplay=false`, and summary, so
   future IPC/renderer diagnostics do not need to parse summary text.
@@ -837,9 +842,11 @@ The next implementation slice is:
   restart/recovery review, Settings diagnostics, and manual recovery run
   prefill are now covered without any queue worker or automatic-start policy
 - continue the executor/session boundary before adding more runtime power:
-  next stabilize adapter-facing diagnostics, settlement evidence, and recovery
-  selection around the dry-run lifecycle service, still without starting a real
-  long-running runtime or exposing new tool authority
+  adapter-facing unsupported-control diagnostics, session-bound checkpoint
+  settlement, and recovery-intent prefill are now covered; next continue only
+  with similarly bounded evidence/recovery stability work around the dry-run
+  lifecycle service, still without starting a real long-running runtime or
+  exposing new tool authority
 - keep recovery routed through inspect-first evidence review, checkpoint /
   Decision review, or explicit manual Run preparation rather than automatic
   replay
