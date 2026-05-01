@@ -130,6 +130,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Paused agent-run continuation now fails closed when a run has multiple valid
   open resume checkpoints, avoiding ambiguous recovery target selection before
   any local tool is executed or checkpoint is resolved.
+- Resume checkpoints with a payload-bound `agentSessionId` now also fail closed
+  when that session is missing or no longer checkpoint-backed, preserving the
+  explicit session binding before local tool execution.
 - [CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md)
   is accepted for the first visible code-agent product surface: Task detail /
   Action Desk entrypoint, manual runtime readiness action, default available

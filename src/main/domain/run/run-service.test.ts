@@ -1013,6 +1013,33 @@ describe('RunService', () => {
     expect(taskService.annotateRunFailed).not.toHaveBeenCalled();
   });
 
+  it('blocks resume checkpoints bound to a missing agent session before executing tools', async () => {
+    const {
+      agentToolRegistry,
+      runCheckpointRepository,
+      service,
+    } = buildPausedRunServiceWithPayload({
+      version: 1,
+      kind: 'resume',
+      agentSessionId: 'agent_session_missing',
+      reason: '等待先解除阻塞。',
+      runId: 'run_1',
+      nextTool: 'artifact.create_note',
+      nextInput: {
+        title: 'Recovered note',
+        content: 'Recovered note',
+      },
+      taskId: 'task_1',
+    });
+
+    await expect(service.continuePausedRun('run_1')).rejects.toThrow(
+      'Resume checkpoint agent session is not resumable for run: run_1 (agent_session_missing).',
+    );
+
+    expect(agentToolRegistry.execute).not.toHaveBeenCalled();
+    expect(runCheckpointRepository.updateStatus).not.toHaveBeenCalled();
+  });
+
   it.each([
     {
       payload: {

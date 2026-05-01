@@ -18,6 +18,9 @@ signed/notarized release work until the unsigned package path stays stable.
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
+- on 2026-05-01, `npm run verify` passed locally with 127 test files / 921
+  tests after enforcing resume-checkpoint `agentSessionId` bindings before
+  paused run continuation executes local tools.
 - on 2026-05-01, `npm run verify` passed locally with 127 test files / 920
   tests after making paused agent-run continuation fail closed when multiple
   valid open resume checkpoints exist, preserving restart-safe manual recovery

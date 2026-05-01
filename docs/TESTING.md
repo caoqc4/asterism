@@ -446,6 +446,9 @@ Covered today:
 - paused agent-run continuation now blocks multiple valid open resume
   checkpoints before executing a local tool, resolving a checkpoint, or
   settling the run
+- paused agent-run continuation now also blocks payload-bound
+  `agentSessionId` values that do not resolve to a checkpoint-backed session
+  before executing tools
 - `Settings save flow`
 - `Settings save flow` now also asserts Home scheduler enabled/running state and scheduler timestamps refresh from Home brief data
 - `Settings save flow` now also covers read-only workspace root persistence
@@ -494,12 +497,13 @@ npm run verify
 Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
-- on 2026-05-01, `npm run verify` passed locally with 127 test files / 920
+- on 2026-05-01, `npm run verify` passed locally with 127 test files / 921
   tests after Task detail Timeline date/object-family grouping, related
   Timeline surface alignment, agent read-only timeline observation alignment,
   duplicate Code Agent artifact selection boundary coverage, ambiguous paused
-  resume checkpoint blocking, Runs recovery anchor, completed-session terminal
-  evidence, and cancelled-session new-run routing coverage.
+  resume checkpoint blocking, payload-bound resume session validation, Runs
+  recovery anchor, completed-session terminal evidence, and cancelled-session
+  new-run routing coverage.
 - GitHub Actions runs `npm run verify` on pushes to `main` and pull requests when Actions capacity is available
 - `npm run smoke:build` when package/build entrypoints change
 - `npm run smoke:package:mac` after producing `release/mac-arm64/Taskplane.app`, including ASAR content checks

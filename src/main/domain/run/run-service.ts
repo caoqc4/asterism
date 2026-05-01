@@ -226,6 +226,18 @@ export class RunService {
 
     const { checkpoint, payload } = supportedResumeCandidates[0];
 
+    if (
+      payload.agentSessionId &&
+      !findCheckpointBackedAgentSessionForSettlement({
+        agentSessionId: payload.agentSessionId,
+        sessions: run.agentSessions ?? [],
+      })
+    ) {
+      throw new Error(
+        `Resume checkpoint agent session is not resumable for run: ${runId} (${payload.agentSessionId}).`,
+      );
+    }
+
     const result = await this.agentToolRegistry.execute(
       payload.nextTool,
       payload.nextInput,
