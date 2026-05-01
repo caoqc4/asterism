@@ -4491,6 +4491,96 @@ describe('App UI flow', () => {
     );
   });
 
+  it('routes cancelled agent sessions to new-run recovery instead of replay', async () => {
+    const user = userEvent.setup();
+    const cancelledAgentRun = buildRunRecord({
+      id: 'run_agent_cancelled_session',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'failed',
+      output: 'Agent session cancelled by operator.',
+      outputSource: 'system',
+      failureReason: 'cancelled by operator',
+    });
+    const cancelledAgentDetail: RunDetailRecord = {
+      ...cancelledAgentRun,
+      agentSessions: [
+        {
+          id: 'agent_session_cancelled',
+          runId: cancelledAgentRun.id,
+          mode: 'agent',
+          status: 'cancelled',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: true,
+            streaming: false,
+            fileContext: true,
+            taskMutationTools: false,
+            longRunningSessions: true,
+          },
+          metadata: 'executor=local_agent\nloop=local_note',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      steps: [
+        buildRunStep({
+          id: 'run_step_agent_cancelled',
+          runId: cancelledAgentRun.id,
+          index: 7,
+          kind: 'final',
+          status: 'failed',
+          title: 'Agent session 已取消',
+          output: 'Cancelled by operator.',
+        }),
+      ],
+      checkpoints: [],
+    };
+    const cancelledAgentApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [cancelledAgentRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === cancelledAgentRun.id ? cancelledAgentDetail : null,
+      ),
+    };
+
+    window.api = cancelledAgentApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+
+    expect(await screen.findByRole('heading', { name: 'agent / failed' })).toBeTruthy();
+    const recoverySafety = within(screen.getByLabelText('Run recovery safety'));
+    expect(
+      recoverySafety.getByText(
+        'Replay review：inspect cancellation evidence before starting a new run / mode=new_run / session=agent_session_cancelled / status=cancelled / restartSafety=new_run_required / steps=1 / openCheckpoints=0 / recoveryCheckpoints=0 / latest=final:failed:Agent session 已取消 / autoReplay=no',
+      ),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText(
+        'Recovery intent：prepare new manual run / session=agent_session_cancelled / status=cancelled / restartSafety=new_run_required / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=yes / autoReplay=no',
+      ),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText(
+        'Recovery anchors：run=run_agent_cancelled_session / session=agent_session_cancelled / checkpoints=none / action=prepare_new_manual_run',
+      ),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '回到任务推进' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '检查最近一次 agent run 的失败或取消证据，整理重试输入后再启动新的 run。',
+    );
+    expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toBe(
+      '基于最近一次 agent run 的证据准备新的手动 run。 来源：run=run_agent_cancelled_session / session=agent_session_cancelled。 最近步骤：Agent session 已取消（failed）。 恢复判断：Recovery intent：prepare new manual run / session=agent_session_cancelled / status=cancelled / restartSafety=new_run_required / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=yes / autoReplay=no 不要自动重放旧 session；先复核失败/取消/中断证据、补齐输入，再由用户手动启动。',
+    );
+  });
+
   it('shows sandbox producer session policy and staged source steps on the runs page', async () => {
     const user = userEvent.setup();
     const sandboxProducerRun = buildRunRecord({
