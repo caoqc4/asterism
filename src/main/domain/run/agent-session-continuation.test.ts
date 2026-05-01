@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import {
@@ -6,6 +6,7 @@ import {
   findLatestCheckpointBackedAgentSession,
   findLatestContinuableAgentSession,
   projectAgentSessionSettlement,
+  updateCheckpointBackedAgentSessionStatus,
 } from './agent-session-continuation.js';
 
 function buildSession(partial: Partial<AgentSessionRecord>): AgentSessionRecord {
@@ -228,5 +229,41 @@ describe('agent session continuation helper', () => {
       status: 'cancelled',
       summary: 'Agent session settlement / session=agent_session_cancelled / status=cancelled / action=inspect_terminal_evidence / requiresOpenCheckpoint=no / autoReplay=no',
     });
+  });
+
+  it('updates only checkpoint-backed agent sessions through the settlement store', async () => {
+    const sessions = [
+      buildSession({
+        id: 'agent_session_paused',
+        status: 'paused',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_running',
+        status: 'running',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+    ];
+    const updateStatus = vi.fn();
+    const store = {
+      listForRun: vi.fn(async () => sessions),
+      updateStatus,
+    };
+
+    await expect(updateCheckpointBackedAgentSessionStatus({
+      agentSessionId: 'agent_session_running',
+      runId: 'run_1',
+      status: 'failed',
+      store,
+    })).resolves.toBeNull();
+    expect(updateStatus).not.toHaveBeenCalled();
+
+    await expect(updateCheckpointBackedAgentSessionStatus({
+      runId: 'run_1',
+      status: 'completed',
+      store,
+    })).resolves.toMatchObject({ id: 'agent_session_paused' });
+    expect(updateStatus).toHaveBeenCalledTimes(1);
+    expect(updateStatus).toHaveBeenCalledWith('agent_session_paused', 'completed');
   });
 });

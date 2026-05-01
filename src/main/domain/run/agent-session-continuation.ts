@@ -1,5 +1,10 @@
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 
+export type AgentSessionSettlementStore = {
+  listForRun(runId: string): Promise<AgentSessionRecord[]>;
+  updateStatus(id: string, status: AgentSessionRecord['status']): Promise<unknown>;
+};
+
 export type AgentSessionSettlementProjection = {
   action:
     | 'checkpoint_backed_settlement'
@@ -103,6 +108,35 @@ export function projectAgentSessionSettlement(
   }
 
   return assertNeverAgentSessionStatus(session.status);
+}
+
+export async function updateCheckpointBackedAgentSessionStatus(params: {
+  agentSessionId?: string | null;
+  runId: string;
+  status: AgentSessionRecord['status'];
+  store: AgentSessionSettlementStore | null;
+}): Promise<AgentSessionRecord | null> {
+  if (!params.store) {
+    return null;
+  }
+
+  const session = findCheckpointBackedAgentSessionForSettlement({
+    agentSessionId: params.agentSessionId,
+    sessions: await params.store.listForRun(params.runId),
+  });
+
+  if (!session) {
+    return null;
+  }
+
+  const settlement = projectAgentSessionSettlement(session);
+  if (settlement.action !== 'checkpoint_backed_settlement') {
+    return null;
+  }
+
+  await params.store.updateStatus(session.id, params.status);
+
+  return session;
 }
 
 function isContinuableAgentSession(session: AgentSessionRecord): boolean {

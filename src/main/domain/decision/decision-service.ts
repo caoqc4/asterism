@@ -30,7 +30,7 @@ import { parseRunCheckpointPayload } from '../../../shared/types/run-checkpoint-
 import { AgentSessionStore } from '../run/agent-session-store.js';
 import {
   findCheckpointBackedAgentSessionForSettlement,
-  projectAgentSessionSettlement,
+  updateCheckpointBackedAgentSessionStatus,
 } from '../run/agent-session-continuation.js';
 import {
   DecisionProcessTemplateSelector,
@@ -663,18 +663,12 @@ export class DecisionService {
     status: AgentSessionRecord['status'],
     agentSessionId?: string | null,
   ): Promise<void> {
-    const latestSession = await this.findCheckpointBackedAgentSession(runId, agentSessionId);
-
-    if (!latestSession) {
-      return;
-    }
-
-    const settlement = projectAgentSessionSettlement(latestSession);
-    if (settlement.action !== 'checkpoint_backed_settlement') {
-      return;
-    }
-
-    await this.agentSessionStore?.updateStatus(latestSession.id, status);
+    await updateCheckpointBackedAgentSessionStatus({
+      agentSessionId,
+      runId,
+      status,
+      store: this.agentSessionStore,
+    });
   }
 
   private async findCheckpointBackedAgentSession(

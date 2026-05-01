@@ -220,9 +220,11 @@ The project is past initial architecture assembly. Current work should favor pro
   agent read-only timeline observation alignment plus duplicate artifact
   selection boundary coverage. Current local acceptance status: 127 test files
   / 919 tests.
-- RunService and DecisionService now pass checkpoint-backed session updates
-  through a shared settlement projection, so `running` sessions are treated as
-  requiring executor liveness rather than being checkpoint-settled.
+- RunService and DecisionService now pass checkpoint-backed session status
+  writes through a shared settlement helper/projection, so `running` sessions
+  are treated as requiring executor liveness rather than being
+  checkpoint-settled, and the checkpoint-backed write boundary has direct
+  helper coverage. Current local acceptance status: 128 test files / 929 tests.
 - The runtime event spine now has explicit executor liveness/interruption
   events. Heartbeats remain non-terminal running evidence, while interrupted
   and cancelled sessions write terminal RunSteps for inspect-first recovery.

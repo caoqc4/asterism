@@ -18,6 +18,9 @@ signed/notarized release work until the unsigned package path stays stable.
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
+- on 2026-05-01, `npm run verify` passed locally with 128 test files / 929
+  tests after extracting checkpoint-backed agent-session status writes into a
+  shared settlement helper used by RunService and DecisionService.
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 928
   tests after making approved checkpoint Decisions fail closed before local
   tool resumption when the payload-bound agent session is missing or no longer

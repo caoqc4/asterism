@@ -14,8 +14,7 @@ import { RunStepRepository } from '../../db/repositories/run-step-repository.js'
 import { TaskService } from '../task/task-service.js';
 import { AgentSessionStore } from './agent-session-store.js';
 import {
-  findCheckpointBackedAgentSessionForSettlement,
-  projectAgentSessionSettlement,
+  updateCheckpointBackedAgentSessionStatus,
 } from './agent-session-continuation.js';
 import { AgentToolRegistry } from './agent-tool-registry.js';
 import { ProcessTemplateSelector } from './process-template-selector.js';
@@ -265,20 +264,14 @@ export class RunService {
     status: AgentSessionRecord['status'],
     agentSessionId?: string | null,
   ): Promise<void> {
-    const latestSession = findCheckpointBackedAgentSessionForSettlement({
+    await updateCheckpointBackedAgentSessionStatus({
       agentSessionId,
-      sessions: run.agentSessions ?? [],
+      runId: run.id,
+      status,
+      store: {
+        listForRun: async () => run.agentSessions ?? [],
+        updateStatus: (id, nextStatus) => this.agentSessionStore.updateStatus(id, nextStatus),
+      },
     });
-
-    if (!latestSession) {
-      return;
-    }
-
-    const settlement = projectAgentSessionSettlement(latestSession);
-    if (settlement.action !== 'checkpoint_backed_settlement') {
-      return;
-    }
-
-    await this.agentSessionStore.updateStatus(latestSession.id, status);
   }
 }

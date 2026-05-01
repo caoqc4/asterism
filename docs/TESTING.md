@@ -510,6 +510,10 @@ npm run verify
 Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
+- on 2026-05-01, `npm run verify` passed locally with 128 test files / 929
+  tests after extracting checkpoint-backed agent-session status writes into a
+  shared settlement helper used by RunService and DecisionService, with helper
+  coverage proving running sessions are not checkpoint-settled.
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 928
   tests after Task detail Timeline date/object-family grouping, related
   Timeline surface alignment, agent read-only timeline observation alignment,
