@@ -18,6 +18,10 @@ signed/notarized release work until the unsigned package path stays stable.
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
+- on 2026-05-01, `npm run verify` passed locally with 127 test files / 920
+  tests after making paused agent-run continuation fail closed when multiple
+  valid open resume checkpoints exist, preserving restart-safe manual recovery
+  before local tool execution or checkpoint resolution.
 - on 2026-05-01, `npm run verify` passed locally with 127 test files / 919
   tests after adding Task detail Timeline date/object-family grouping above the
   existing key/explain/trace priority groups and aligning Runs / Decisions

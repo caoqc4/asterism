@@ -127,6 +127,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Code Agent rerun intent formatting is now shared between Task detail and Runs
   staged-patch review, preserving bounded prefilled rerun prompts without
   starting a run or spending provider credit.
+- Paused agent-run continuation now fails closed when a run has multiple valid
+  open resume checkpoints, avoiding ambiguous recovery target selection before
+  any local tool is executed or checkpoint is resolved.
 - [CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md](CODE_AGENT_MODE_PRODUCT_SURFACE_DECISION.md)
   is accepted for the first visible code-agent product surface: Task detail /
   Action Desk entrypoint, manual runtime readiness action, default available

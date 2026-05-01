@@ -179,8 +179,10 @@ export class RunService {
       throw new Error(`Open resume checkpoint not found for run: ${runId}`);
     }
 
-    let checkpoint = null as NonNullable<RunDetailRecord['checkpoints']>[number] | null;
-    let payload: ValidResumeCheckpointPayload | null = null;
+    const supportedResumeCandidates: {
+      checkpoint: NonNullable<RunDetailRecord['checkpoints']>[number];
+      payload: ValidResumeCheckpointPayload;
+    }[] = [];
     let firstInvalidReason: string | null = null;
     let firstUnsupportedTool: string | null = null;
 
@@ -200,18 +202,29 @@ export class RunService {
         continue;
       }
 
-      checkpoint = candidate;
-      payload = validation.payload;
-      break;
+      supportedResumeCandidates.push({
+        checkpoint: candidate,
+        payload: validation.payload,
+      });
     }
 
-    if (!checkpoint || !payload) {
+    if (supportedResumeCandidates.length === 0) {
       if (firstUnsupportedTool) {
         throw new Error(`Unsupported resume tool: ${firstUnsupportedTool}`);
       }
 
       throw new Error(firstInvalidReason ?? `Open resume checkpoint not found for run: ${runId}`);
     }
+
+    if (supportedResumeCandidates.length > 1) {
+      throw new Error(
+        `Multiple open resume checkpoints found for run: ${runId}: ${
+          supportedResumeCandidates.map((item) => item.checkpoint.id).join(', ')
+        }.`,
+      );
+    }
+
+    const { checkpoint, payload } = supportedResumeCandidates[0];
 
     const result = await this.agentToolRegistry.execute(
       payload.nextTool,

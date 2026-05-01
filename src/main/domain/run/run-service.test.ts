@@ -927,6 +927,92 @@ describe('RunService', () => {
     expect(result.status).toBe('failed');
   });
 
+  it('blocks ambiguous paused run continuation when multiple supported resume checkpoints are open', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildRunRecord('paused'),
+        type: 'agent',
+        output: '等待先解除阻塞。',
+        outputSource: 'system',
+      }),
+      create: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      transitionIfAllowed: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+      annotateRunFailed: vi.fn(),
+      annotateRunPaused: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
+    };
+    const artifactRepository = buildArtifactRepositoryMock();
+    const runStepRepository = {
+      ...buildRunStepRepositoryMock(),
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
+    const buildResumeCheckpoint = (id: string, title: string) => ({
+      id,
+      runId: 'run_1',
+      stepId: `run_step_${id}`,
+      kind: 'resume',
+      status: 'open',
+      payload: JSON.stringify({
+        version: 1,
+        kind: 'resume',
+        reason: '等待先解除阻塞。',
+        runId: 'run_1',
+        nextTool: 'artifact.create_note',
+        nextInput: {
+          title,
+          content: `${title} content`,
+        },
+        taskId: 'task_1',
+      }),
+      createdAt: '2026-01-01T00:00:00.000Z',
+      resolvedAt: null,
+    });
+    const runCheckpointRepository = {
+      listForRun: vi.fn().mockResolvedValue([
+        buildResumeCheckpoint('run_checkpoint_resume_a', 'Recovered note A'),
+        buildResumeCheckpoint('run_checkpoint_resume_b', 'Recovered note B'),
+      ]),
+      updateStatus: vi.fn(),
+    };
+    const agentToolRegistry = {
+      execute: vi.fn(),
+    };
+    const agentSessionRepository = {
+      listForRun: vi.fn().mockResolvedValue([]),
+      updateStatus: vi.fn(),
+    };
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      artifactRepository as never,
+      {} as never,
+      {} as never,
+      undefined,
+      runStepRepository as never,
+      agentToolRegistry as never,
+      runCheckpointRepository as never,
+      agentSessionRepository as never,
+    );
+
+    await expect(service.continuePausedRun('run_1')).rejects.toThrow(
+      'Multiple open resume checkpoints found for run: run_1: run_checkpoint_resume_a, run_checkpoint_resume_b.',
+    );
+
+    expect(agentToolRegistry.execute).not.toHaveBeenCalled();
+    expect(runCheckpointRepository.updateStatus).not.toHaveBeenCalled();
+    expect(agentSessionRepository.updateStatus).not.toHaveBeenCalled();
+    expect(runRepository.updateResult).not.toHaveBeenCalled();
+    expect(taskService.annotateRunCompleted).not.toHaveBeenCalled();
+    expect(taskService.annotateRunFailed).not.toHaveBeenCalled();
+  });
+
   it.each([
     {
       payload: {
