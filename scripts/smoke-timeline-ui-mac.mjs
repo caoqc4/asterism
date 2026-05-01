@@ -93,6 +93,27 @@ function seedTimelineFixture() {
           '2026-05-01T10:20:00.000Z',
         );
 
+      database
+        .prepare(`
+          INSERT INTO tasks (
+            id, title, summary, state, next_step, waiting_reason,
+            risk_level, risk_note, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'task_packaged_home_closeout_evidence',
+          'Packaged Home closeout evidence fixture',
+          'Near-closeout task for packaged Home closeout evidence return smoke.',
+          'running',
+          'Review completed run evidence before final closeout.',
+          null,
+          'none',
+          null,
+          '2026-04-30T06:00:00.000Z',
+          '2026-05-01T09:20:00.000Z',
+        );
+
       const insertTimeline = database.prepare(`
         INSERT INTO timeline_events (id, task_id, type, payload, created_at)
         VALUES (?, ?, ?, ?, ?)
@@ -117,6 +138,27 @@ function seedTimelineFixture() {
           null,
           '2026-05-01T11:50:00.000Z',
           '2026-05-01T12:00:00.000Z',
+        );
+
+      database
+        .prepare(`
+          INSERT INTO runs (
+            id, task_id, type, status, instructions, output, output_source,
+            failure_reason, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'run_packaged_home_closeout_evidence',
+          'task_packaged_home_closeout_evidence',
+          'summarize',
+          'completed',
+          'Packaged Home closeout evidence smoke run.',
+          'Packaged Home closeout evidence completed.',
+          'system',
+          null,
+          '2026-05-01T09:05:00.000Z',
+          '2026-05-01T09:15:00.000Z',
         );
 
       database
@@ -226,6 +268,39 @@ function seedTimelineFixture() {
           '2026-05-01T09:45:00.000Z',
           '2026-05-01T09:45:00.000Z',
         );
+
+      const insertCriteria = database.prepare(`
+        INSERT INTO completion_criteria (
+          id, task_id, text, verification_responsibility,
+          verification_responsibility_label, status, created_at, updated_at,
+          satisfied_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      insertCriteria.run(
+        'criteria_packaged_home_closeout_done',
+        'task_packaged_home_closeout_evidence',
+        'Packaged Home evidence reviewed',
+        'self',
+        'Owner reviewed packaged Home evidence',
+        'satisfied',
+        '2026-05-01T08:45:00.000Z',
+        '2026-05-01T09:10:00.000Z',
+        '2026-05-01T09:10:00.000Z',
+      );
+
+      insertCriteria.run(
+        'criteria_packaged_home_closeout_open',
+        'task_packaged_home_closeout_evidence',
+        'Packaged Home closeout approved',
+        'external',
+        'Release owner approval',
+        'open',
+        '2026-05-01T08:50:00.000Z',
+        '2026-05-01T08:50:00.000Z',
+        null,
+      );
 
       insertTimeline.run(
         'timeline_packaged_ui_run',
@@ -354,8 +429,7 @@ function seedTimelineFixture() {
 }
 
 async function assertTimelineUi(page) {
-  await page.getByRole('button', { name: /tasks/i }).click();
-  await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
+  await openTaskFromTaskList(page, 'Timeline packaged UI fixture');
   await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
 
   await page.getByRole('button', { name: '展开全部 (13)' }).waitFor();
@@ -388,6 +462,14 @@ async function assertTimelineUi(page) {
   await page.getByText('生成产物：Packaged Timeline smoke report。').waitFor();
   await page.getByText('完成标准已满足：Packaged Timeline fixture accepted。').waitFor();
   await page.getByText('留痕事件').first().waitFor();
+}
+
+async function openTaskFromTaskList(page, title) {
+  await page.getByRole('button', { name: 'Tasks 任务列表、详情与状态流转' }).click();
+  await page
+    .locator('.task-list-item', { hasText: title })
+    .getByRole('button')
+    .click();
 }
 
 async function assertTaskTimelineFollowUpActions(page) {
@@ -469,16 +551,14 @@ async function assertTaskTimelineObjectActions(page) {
   await page.getByRole('heading', { name: 'summarize / completed' }).waitFor();
   await page.getByText('Packaged Timeline UI smoke completed.').waitFor();
 
-  await page.getByRole('button', { name: /tasks/i }).click();
-  await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
+  await openTaskFromTaskList(page, 'Timeline packaged UI fixture');
   await page.getByRole('button', { name: '展开全部 (13)' }).click();
 
   await page.getByRole('button', { name: '查看 Decision' }).first().click();
   await page.getByRole('heading', { name: '待拍板事项' }).waitFor();
   await page.getByRole('heading', { name: 'Approve packaged Timeline UI smoke' }).waitFor();
 
-  await page.getByRole('button', { name: /tasks/i }).click();
-  await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
+  await openTaskFromTaskList(page, 'Timeline packaged UI fixture');
   await page.getByRole('button', { name: '展开全部 (13)' }).click();
 
   await page.getByRole('button', { name: '查看来源' }).first().click();
@@ -524,8 +604,7 @@ async function assertRelatedDecisionTimelineUi(page) {
 }
 
 async function assertDependencyReturnAndResolution(page) {
-  await page.getByRole('button', { name: /tasks/i }).click();
-  await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
+  await openTaskFromTaskList(page, 'Timeline packaged UI fixture');
   await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
 
   await page
@@ -535,8 +614,7 @@ async function assertDependencyReturnAndResolution(page) {
     .click();
   await page.getByRole('heading', { name: 'Packaged Timeline upstream fixture' }).waitFor();
 
-  await page.getByRole('button', { name: /tasks/i }).click();
-  await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
+  await openTaskFromTaskList(page, 'Timeline packaged UI fixture');
   await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
 
   await page
@@ -561,6 +639,40 @@ async function assertCloseoutTransition(page) {
   await page.getByRole('button', { name: '转到 completed（完成标准已满足）' }).click();
   await page.getByText('状态：completed').waitFor();
   await page.getByText('最近状态从 running 变更为 completed。', { exact: true }).waitFor();
+}
+
+async function assertHomeCloseoutEvidenceReturn(page) {
+  await page.getByRole('button', { name: 'Home 局势概览与系统状态' }).click();
+
+  const closeoutSection = page.locator('section.timeline-list').filter({ hasText: 'Closeout Tasks' });
+  await closeoutSection
+    .locator('.task-card', { hasText: 'Timeline packaged UI fixture' })
+    .waitFor();
+  await closeoutSection
+    .locator('.task-card', { hasText: 'Packaged Home closeout evidence fixture' })
+    .waitFor();
+  await closeoutSection
+    .getByText('当前收尾证据：执行完成 · summarize')
+    .waitFor();
+
+  await closeoutSection
+    .locator('.task-card', { hasText: 'Packaged Home closeout evidence fixture' })
+    .getByRole('button', { name: '查看收尾证据' })
+    .click();
+  await page.getByRole('heading', { name: 'summarize / completed' }).waitFor();
+  await page.getByText('Packaged Home closeout evidence completed.').waitFor();
+
+  await page.getByRole('button', { name: 'Home 局势概览与系统状态' }).click();
+  await closeoutSection
+    .locator('.task-card', { hasText: 'Packaged Home closeout evidence fixture' })
+    .waitFor();
+
+  await closeoutSection
+    .locator('.task-card', { hasText: 'Timeline packaged UI fixture' })
+    .getByRole('button', { name: /Timeline packaged UI fixture/i })
+    .click();
+  await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
+  await page.getByRole('button', { name: '转到 completed（完成标准已满足）' }).waitFor();
 }
 
 if (process.platform !== 'darwin') {
@@ -598,6 +710,7 @@ try {
   await assertRelatedRunTimelineUi(page);
   await assertRelatedDecisionTimelineUi(page);
   await assertDependencyReturnAndResolution(page);
+  await assertHomeCloseoutEvidenceReturn(page);
   await assertCloseoutTransition(page);
 
   await app.close();

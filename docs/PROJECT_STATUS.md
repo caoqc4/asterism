@@ -238,6 +238,9 @@ The project is past initial architecture assembly. Current work should favor pro
   blocker/dependency work, and that `最终收尾判断` appears after those blockers are
   removed. The closeout path now continues through the packaged `completed`
   transition and checks the refreshed state plus Timeline transition evidence.
+  Home closeout smoke also covers completed-run evidence: a near-closeout task
+  opens `查看收尾证据` into Runs detail, returns to Home Closeout Tasks, and
+  reopens the closeout-ready task for final completion.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.
