@@ -1,10 +1,6 @@
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
-import {
-  isSupportedResumeCheckpointPayload,
-  validateResumeCheckpointPayload,
-  type ValidResumeCheckpointPayload,
-} from '../../../shared/types/run-checkpoint-payload.js';
+import { evaluatePausedRunResumeEligibility } from '../../../shared/run-resume-eligibility.js';
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type {
   CreateRunInput,
@@ -171,72 +167,18 @@ export class RunService {
       throw new Error('Agent tool registry is required to continue paused runs.');
     }
 
-    const resumeCheckpoints = run.checkpoints?.filter((item) =>
-      item.status === 'open' && item.kind === 'resume'
-    ) ?? [];
+    const eligibility = evaluatePausedRunResumeEligibility({
+      agentSessions: run.agentSessions,
+      checkpoints: run.checkpoints,
+      runId,
+      taskId: run.taskId,
+    });
 
-    if (resumeCheckpoints.length === 0) {
-      throw new Error(`Open resume checkpoint not found for run: ${runId}`);
+    if (eligibility.status === 'blocked') {
+      throw new Error(eligibility.reason);
     }
 
-    const supportedResumeCandidates: {
-      checkpoint: NonNullable<RunDetailRecord['checkpoints']>[number];
-      payload: ValidResumeCheckpointPayload;
-    }[] = [];
-    let firstInvalidReason: string | null = null;
-    let firstUnsupportedTool: string | null = null;
-
-    for (const candidate of resumeCheckpoints) {
-      const validation = validateResumeCheckpointPayload(candidate.payload, {
-        runId,
-        taskId: run.taskId,
-      });
-
-      if (validation.status === 'invalid') {
-        firstInvalidReason ??= validation.reason;
-        continue;
-      }
-
-      if (!isSupportedResumeCheckpointPayload(validation.payload)) {
-        firstUnsupportedTool ??= validation.payload.nextTool;
-        continue;
-      }
-
-      supportedResumeCandidates.push({
-        checkpoint: candidate,
-        payload: validation.payload,
-      });
-    }
-
-    if (supportedResumeCandidates.length === 0) {
-      if (firstUnsupportedTool) {
-        throw new Error(`Unsupported resume tool: ${firstUnsupportedTool}`);
-      }
-
-      throw new Error(firstInvalidReason ?? `Open resume checkpoint not found for run: ${runId}`);
-    }
-
-    if (supportedResumeCandidates.length > 1) {
-      throw new Error(
-        `Multiple open resume checkpoints found for run: ${runId}: ${
-          supportedResumeCandidates.map((item) => item.checkpoint.id).join(', ')
-        }.`,
-      );
-    }
-
-    const { checkpoint, payload } = supportedResumeCandidates[0];
-
-    if (
-      payload.agentSessionId &&
-      !findCheckpointBackedAgentSessionForSettlement({
-        agentSessionId: payload.agentSessionId,
-        sessions: run.agentSessions ?? [],
-      })
-    ) {
-      throw new Error(
-        `Resume checkpoint agent session is not resumable for run: ${runId} (${payload.agentSessionId}).`,
-      );
-    }
+    const { checkpoint, payload } = eligibility;
 
     const result = await this.agentToolRegistry.execute(
       payload.nextTool,

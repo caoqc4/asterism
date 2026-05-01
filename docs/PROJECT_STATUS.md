@@ -960,6 +960,9 @@ The project is past initial architecture assembly. Current work should favor pro
   filtered checkpoint set now feeds `Next safe move` and recovery-run
   instruction drafts, so visible guidance and task prefill do not imply a
   resume path that the backend will reject.
+- Paused resume eligibility is now a shared pure helper consumed by both
+  `RunService.continuePausedRun()` and Runs detail, keeping the unique valid
+  checkpoint, supported payload, and payload-bound session rules in one place.
 - Backend paused-run continuation mirrors that selection rule: stale or
   incompatible payloads are skipped, exactly one valid supported payload may
   execute, and multiple valid resume checkpoints fail closed before any local

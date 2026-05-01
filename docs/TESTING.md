@@ -456,6 +456,9 @@ Covered today:
   instruction drafts now mirror payload-bound agent-session filtering, keeping
   missing-bound-session resume checkpoints in `checkpoint_missing`
   inspect-first recovery
+- shared paused-run resume eligibility now covers unique valid resume
+  checkpoint selection, supported payload checks, payload-bound session checks,
+  and session-scoped replay checkpoint filtering for both backend and Runs UI
 - `Settings save flow`
 - `Settings save flow` now also asserts Home scheduler enabled/running state and scheduler timestamps refresh from Home brief data
 - `Settings save flow` now also covers read-only workspace root persistence
@@ -504,13 +507,14 @@ npm run verify
 Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
-- on 2026-05-01, `npm run verify` passed locally with 127 test files / 923
+- on 2026-05-01, `npm run verify` passed locally with 128 test files / 927
   tests after Task detail Timeline date/object-family grouping, related
   Timeline surface alignment, agent read-only timeline observation alignment,
   duplicate Code Agent artifact selection boundary coverage, ambiguous paused
   resume checkpoint blocking, payload-bound resume session validation, Runs
-  recovery anchor/gating/replay alignment, completed-session terminal evidence,
-  and cancelled-session new-run routing coverage.
+  recovery anchor/gating/replay alignment, shared resume eligibility helper
+  extraction, completed-session terminal evidence, and cancelled-session
+  new-run routing coverage.
 - GitHub Actions runs `npm run verify` on pushes to `main` and pull requests when Actions capacity is available
 - `npm run smoke:build` when package/build entrypoints change
 - `npm run smoke:package:mac` after producing `release/mac-arm64/Taskplane.app`, including ASAR content checks

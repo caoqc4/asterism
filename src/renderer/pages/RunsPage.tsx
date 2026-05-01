@@ -1,10 +1,10 @@
 import { Fragment, useEffect, useState } from 'react';
 
+import { parseRunCheckpointPayload } from '@shared/types/run-checkpoint-payload';
 import {
-  isSupportedResumeCheckpointPayload,
-  parseRunCheckpointPayload,
-  validateResumeCheckpointPayload,
-} from '@shared/types/run-checkpoint-payload';
+  evaluatePausedRunResumeEligibility,
+  getSessionScopedReplayCheckpoints,
+} from '@shared/run-resume-eligibility';
 import { evaluateSandboxPatchPromotionReadiness } from '@shared/sandbox-patch-promotion-readiness';
 import { projectAgentRunLifecycle } from '@shared/agent-orchestration';
 import { buildAgentExecutorLifecycleAvailabilityPresentation } from '@shared/agent-executor-lifecycle-diagnostics';
@@ -92,59 +92,6 @@ function formatRecoveryAnchorLine(intent: AgentSessionRecoveryIntent | null): st
       : 'checkpoints=none',
     `action=${intent.action}`,
   ].join(' / ');
-}
-
-function hasValidOpenResumeCheckpoint(
-  run: Pick<RunDetailRecord, 'agentSessions' | 'checkpoints' | 'id' | 'taskId'>,
-): boolean {
-  const validCheckpoints = (run.checkpoints ?? []).filter((checkpoint) => {
-    if (checkpoint.kind !== 'resume' || checkpoint.status !== 'open') {
-      return false;
-    }
-
-    const validation = validateResumeCheckpointPayload(checkpoint.payload, {
-      runId: run.id,
-      taskId: run.taskId,
-    });
-
-    if (
-      validation.status !== 'valid'
-      || !isSupportedResumeCheckpointPayload(validation.payload)
-    ) {
-      return false;
-    }
-
-    if (!validation.payload.agentSessionId) {
-      return true;
-    }
-
-    return Boolean(run.agentSessions?.some((session) =>
-      session.id === validation.payload.agentSessionId
-      && (session.status === 'paused' || session.status === 'needs_confirmation')
-    ));
-  });
-
-  return validCheckpoints.length === 1;
-}
-
-function getSessionScopedReplayCheckpoints(
-  checkpoints: RunCheckpointRecord[],
-  sessionId: string | null,
-): RunCheckpointRecord[] {
-  if (!sessionId) {
-    return checkpoints;
-  }
-
-  return checkpoints.filter((checkpoint) => {
-    const payload = parseRunCheckpointPayload(checkpoint.payload);
-    const payloadSessionId = typeof payload?.agentSessionId === 'string'
-      ? payload.agentSessionId
-      : typeof payload?.sessionId === 'string'
-        ? payload.sessionId
-        : null;
-
-    return !payloadSessionId || payloadSessionId === sessionId;
-  });
 }
 
 function getRelatedTimelineActionLabel(event: TimelineEventRecord): string | null {
@@ -881,7 +828,15 @@ export function RunsPage({
     ? buildAgentExecutorLifecycleAvailabilityPresentation(aiStatus.executorLifecycleAvailability)
     : null;
   const executorLifecycleLines = buildExecutorLifecycleDiagnosticLines(executorLifecyclePresentation);
-  const canContinuePausedRun = detail ? hasValidOpenResumeCheckpoint(detail) : false;
+  const pausedRunResumeEligibility = detail
+    ? evaluatePausedRunResumeEligibility({
+        agentSessions: detail.agentSessions,
+        checkpoints: detail.checkpoints,
+        runId: detail.id,
+        taskId: detail.taskId,
+      })
+    : null;
+  const canContinuePausedRun = pausedRunResumeEligibility?.status === 'eligible';
   const focusNextStepDraft = detail
     ? latestAgentSession
       ? formatAgentSessionReplayNextStepDraft({

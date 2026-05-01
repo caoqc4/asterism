@@ -18,6 +18,10 @@ signed/notarized release work until the unsigned package path stays stable.
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
+- on 2026-05-01, `npm run verify` passed locally with 128 test files / 927
+  tests after extracting paused resume eligibility and session-scoped replay
+  checkpoint filtering into a shared pure helper used by both RunService and
+  Runs detail.
 - on 2026-05-01, `npm run verify` passed locally with 127 test files / 923
   tests after aligning Runs recovery-strip replay review, next-safe-move copy,
   and recovery instruction drafts with payload-bound resume session filtering,
