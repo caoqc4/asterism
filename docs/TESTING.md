@@ -517,7 +517,8 @@ Current verification:
 - on 2026-05-01, `npm run dist:mac:dir` and `npm run smoke:timeline-ui:mac`
   passed locally after adding a packaged-app Timeline UI smoke that launches
   the real macOS app, seeds an isolated Task detail Timeline fixture in
-  SQLite, and verifies grouping plus expansion in the packaged renderer.
+  SQLite, and verifies Task detail grouping plus expansion and the related
+  Timeline grouping on the Runs and Decisions packaged renderer surfaces.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.
@@ -577,7 +578,7 @@ Current verification:
 - `npm run smoke:build` when package/build entrypoints change
 - `npm run smoke:package:mac` after producing `release/mac-arm64/Taskplane.app`, including ASAR content checks
 - `npm run smoke:runtime:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged startup and SQLite schema initialization
-- `npm run smoke:timeline-ui:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged Task detail Timeline grouping and expansion coverage
+- `npm run smoke:timeline-ui:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged Task detail Timeline grouping/expansion coverage plus related Timeline grouping on Runs and Decisions
 - `npm run smoke:release:mac` for the combined unsigned macOS build/package/runtime path
 - `npm run accept:agent-local` for the local agent stack, including the non-live
   sandbox/code-agent domain boundary and the Code Agent preflight UI/config/IPC
@@ -640,7 +641,7 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. targeted packaged-app related Timeline UI smoke coverage for the Runs and
-   Decisions surfaces that reuse the Task detail grouping helpers
+1. targeted packaged-app Timeline object-action navigation smoke for seeded
+   Run / Decision / source-context actions
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

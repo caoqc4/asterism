@@ -77,6 +77,47 @@ function seedTimelineFixture() {
         VALUES (?, ?, ?, ?, ?)
       `);
 
+      database
+        .prepare(`
+          INSERT INTO runs (
+            id, task_id, type, status, instructions, output, output_source,
+            failure_reason, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'run_packaged_ui_1',
+          taskId,
+          'summarize',
+          'completed',
+          'Packaged Timeline UI smoke run.',
+          'Packaged Timeline UI smoke completed.',
+          'system',
+          null,
+          '2026-05-01T11:50:00.000Z',
+          '2026-05-01T12:00:00.000Z',
+        );
+
+      database
+        .prepare(`
+          INSERT INTO decision_requests (
+            id, task_id, title, status, source_type, source_id,
+            source_label, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'decision_packaged_ui_1',
+          taskId,
+          'Approve packaged Timeline UI smoke',
+          'approved',
+          'run',
+          'run_packaged_ui_1',
+          'Packaged Timeline UI smoke',
+          '2026-05-01T11:20:00.000Z',
+          '2026-05-01T11:30:00.000Z',
+        );
+
       insertTimeline.run(
         'timeline_packaged_ui_run',
         taskId,
@@ -103,6 +144,26 @@ function seedTimelineFixture() {
           title: 'Packaged Timeline notes',
         }),
         '2026-05-01T11:00:00.000Z',
+      );
+      insertTimeline.run(
+        'timeline_packaged_ui_next_step',
+        taskId,
+        'task.next_step_changed',
+        JSON.stringify({
+          from: null,
+          to: '审阅 packaged Timeline UI smoke 结果。',
+        }),
+        '2026-05-01T10:45:00.000Z',
+      );
+      insertTimeline.run(
+        'timeline_packaged_ui_waiting',
+        taskId,
+        'task.waiting_changed',
+        JSON.stringify({
+          from: null,
+          to: '等待 packaged Timeline UI smoke 复核。',
+        }),
+        '2026-05-01T10:40:00.000Z',
       );
       insertTimeline.run(
         'timeline_packaged_ui_task_update',
@@ -147,7 +208,7 @@ async function assertTimelineUi(page) {
   await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
   await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
 
-  await page.getByRole('button', { name: '展开全部 (7)' }).waitFor();
+  await page.getByRole('button', { name: '展开全部 (9)' }).waitFor();
   await page.locator('.timeline-date-heading', { hasText: '2026-05-01' }).waitFor();
   await page.locator('.timeline-date-heading', { hasText: '2026-04-30' }).waitFor();
   await page.getByText('执行记录').first().waitFor();
@@ -162,7 +223,7 @@ async function assertTimelineUi(page) {
     throw new Error('Packaged Timeline preview included trace task updates before expansion.');
   }
 
-  await page.getByRole('button', { name: '展开全部 (7)' }).click();
+  await page.getByRole('button', { name: '展开全部 (9)' }).click();
 
   await page.getByText('任务字段已更新').waitFor();
   await page.getByText('创建任务：Timeline packaged UI fixture').waitFor();
@@ -172,6 +233,36 @@ async function assertTimelineUi(page) {
   await page.getByText('生成产物：Packaged Timeline smoke report。').waitFor();
   await page.getByText('完成标准已满足：Packaged Timeline fixture accepted。').waitFor();
   await page.getByText('留痕事件').first().waitFor();
+}
+
+async function assertRelatedRunTimelineUi(page) {
+  await page.getByRole('button', { name: /runs/i }).click();
+  await page.getByRole('heading', { name: '执行记录' }).waitFor();
+  await page.getByText('Related Task Timeline').waitFor();
+  await page.locator('.timeline-date-heading', { hasText: '2026-05-01' }).first().waitFor();
+  await page.getByText('执行记录').first().waitFor();
+  await page.getByText('产物').first().waitFor();
+  await page.getByText('任务字段').first().waitFor();
+  await page.getByText('关键事件').first().waitFor();
+  await page.getByText('解释事件').first().waitFor();
+  await page.getByText('执行完成，任务恢复到 planned。').waitFor();
+  await page.getByText('生成产物：Packaged Timeline smoke report。').waitFor();
+  await page.getByText('下一步从“未填写”调整为“审阅 packaged Timeline UI smoke 结果。”').waitFor();
+}
+
+async function assertRelatedDecisionTimelineUi(page) {
+  await page.getByRole('button', { name: /decisions/i }).click();
+  await page.getByRole('heading', { name: '待拍板事项' }).waitFor();
+  await page.getByText('Related Task Timeline').waitFor();
+  await page.locator('.timeline-date-heading', { hasText: '2026-05-01' }).first().waitFor();
+  await page.getByText('决策').first().waitFor();
+  await page.getByText('等待项').first().waitFor();
+  await page.getByText('任务字段').first().waitFor();
+  await page.getByText('关键事件').first().waitFor();
+  await page.getByText('解释事件').first().waitFor();
+  await page.getByText('决策已获批准：Approve packaged Timeline UI smoke。').waitFor();
+  await page.getByText('等待原因从“未填写”调整为“等待 packaged Timeline UI smoke 复核。”').waitFor();
+  await page.getByText('下一步从“未填写”调整为“审阅 packaged Timeline UI smoke 结果。”').waitFor();
 }
 
 if (process.platform !== 'darwin') {
@@ -202,6 +293,8 @@ try {
 
   const page = await app.firstWindow({ timeout: timeoutMs });
   await assertTimelineUi(page);
+  await assertRelatedRunTimelineUi(page);
+  await assertRelatedDecisionTimelineUi(page);
 
   await app.close();
   cleanup();

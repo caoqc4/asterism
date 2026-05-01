@@ -224,7 +224,8 @@ The project is past initial architecture assembly. Current work should favor pro
 - `npm run smoke:timeline-ui:mac` now launches the real packaged macOS app with
   isolated user data, seeds the Task detail Timeline fixture into SQLite, and
   verifies the packaged renderer shows the grouped Timeline preview and
-  expanded trace events.
+  expanded trace events, then checks the Runs and Decisions related Timeline
+  surfaces that reuse the same grouping helpers.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.
