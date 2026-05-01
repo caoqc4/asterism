@@ -28,6 +28,7 @@ export type AgentToolDefinition = {
 type ToolExecutionContext = {
   runId: string;
   taskId: string;
+  sessionId?: string | null;
   workingContext?: AgentWorkingContext;
 };
 
@@ -884,6 +885,7 @@ export class AgentToolRegistry {
           const checkpoint = await this.checkpointRecorder.createToolPermissionCheckpoint({
             runId: context.runId,
             taskId: context.taskId,
+            agentSessionId: context.sessionId,
             stepId: callStep.id,
             tool: name,
             risk: definition.risk,
@@ -927,6 +929,7 @@ export class AgentToolRegistry {
           const checkpoint = await this.checkpointRecorder.createToolPermissionCheckpoint({
             runId: context.runId,
             taskId: context.taskId,
+            agentSessionId: context.sessionId,
             stepId: callStep.id,
             tool: name,
             risk: definition.risk,
@@ -953,6 +956,7 @@ export class AgentToolRegistry {
         const checkpoint = await this.checkpointRecorder.createToolPermissionCheckpoint({
           runId: context.runId,
           taskId: context.taskId,
+          agentSessionId: context.sessionId,
           stepId: callStep.id,
           tool: name,
           risk: definition.risk,

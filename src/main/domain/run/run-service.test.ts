@@ -643,6 +643,7 @@ describe('RunService', () => {
           payload: JSON.stringify({
             version: 1,
             kind: 'resume',
+            agentSessionId: 'agent_session_paused_old_created',
             reason: '等待先解除阻塞。',
             runId: 'run_1',
             nextTool: 'artifact.create_note',
@@ -768,7 +769,7 @@ describe('RunService', () => {
       'resolved',
     );
     expect(agentSessionRepository.updateStatus).toHaveBeenCalledWith(
-      'agent_session_confirmation_new_created',
+      'agent_session_paused_old_created',
       'completed',
     );
     expect(runStepRepository.create).toHaveBeenCalledWith(

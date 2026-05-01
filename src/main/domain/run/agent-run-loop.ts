@@ -691,6 +691,7 @@ export class AgentRunLoop {
     return this.checkpointRecorder.createResumeCheckpoint({
       runId: params.request.runId,
       taskId: params.request.taskId,
+      agentSessionId: params.request.sessionId,
       reason: params.reason,
       nextTool: params.nextTool,
       nextInput: params.nextInput,
@@ -828,6 +829,7 @@ export class AgentRunLoop {
         {
           runId: request.runId,
           taskId: request.taskId,
+          sessionId: request.sessionId,
           workingContext: step.kind === 'inspect_context' || step.kind === 'inspect_timeline'
             || step.kind === 'review_completion_evidence'
             ? request.context

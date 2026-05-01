@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import {
+  findCheckpointBackedAgentSessionForSettlement,
   findLatestCheckpointBackedAgentSession,
   findLatestContinuableAgentSession,
   projectAgentSessionSettlement,
@@ -121,6 +122,38 @@ describe('agent session continuation helper', () => {
       buildSession({ status: 'running' }),
       buildSession({ status: 'completed' }),
     ])).toBeNull();
+  });
+
+  it('uses checkpoint agent-session binding before falling back to latest checkpoint-backed session', () => {
+    const sessions = [
+      buildSession({
+        id: 'agent_session_paused_old',
+        status: 'paused',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_confirmation_new',
+        status: 'needs_confirmation',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
+      buildSession({
+        id: 'agent_session_running_latest',
+        status: 'running',
+        updatedAt: '2026-01-03T00:00:00.000Z',
+      }),
+    ];
+
+    expect(findCheckpointBackedAgentSessionForSettlement({
+      agentSessionId: 'agent_session_paused_old',
+      sessions,
+    })?.id).toBe('agent_session_paused_old');
+    expect(findCheckpointBackedAgentSessionForSettlement({
+      agentSessionId: 'agent_session_running_latest',
+      sessions,
+    })).toBeNull();
+    expect(findCheckpointBackedAgentSessionForSettlement({
+      sessions,
+    })?.id).toBe('agent_session_confirmation_new');
   });
 
   it('projects settlement boundaries without treating running sessions as resumable checkpoints', () => {

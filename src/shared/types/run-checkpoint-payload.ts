@@ -7,6 +7,7 @@ export const RUN_CHECKPOINT_PAYLOAD_VERSION = 1;
 export type ToolPermissionCheckpointPayloadV1 = {
   version: 1;
   kind: 'tool_permission';
+  agentSessionId?: string;
   tool: AgentToolName;
   risk: AgentToolRisk;
   input: unknown;
@@ -18,6 +19,7 @@ export type ResumeCheckpointPayloadV1 = {
   version: 1;
   kind: 'resume';
   runId: string;
+  agentSessionId?: string;
   reason: string;
   nextTool: AgentToolName;
   nextInput: unknown;
@@ -49,6 +51,7 @@ export type RunCheckpointPayloadV1 =
 export type ParsedRunCheckpointPayload = Record<string, unknown> & {
   version?: unknown;
   kind?: unknown;
+  agentSessionId?: unknown;
   tool?: unknown;
   nextTool?: unknown;
   risk?: unknown;
@@ -217,6 +220,7 @@ export function validateResumeCheckpointPayload(
       kind: 'resume',
       reason: typeof parsed.reason === 'string' ? parsed.reason : '',
       runId: typeof parsed.runId === 'string' ? parsed.runId : expected.runId,
+      ...(typeof parsed.agentSessionId === 'string' ? { agentSessionId: parsed.agentSessionId } : {}),
       nextTool: parsed.nextTool,
       nextInput: parsed.nextInput,
       policySnapshot: isAgentPolicy(parsed.policySnapshot)

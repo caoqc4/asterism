@@ -18,7 +18,7 @@ import { RunStepRepository } from '../../db/repositories/run-step-repository.js'
 import { TaskService } from '../task/task-service.js';
 import { AgentSessionStore } from './agent-session-store.js';
 import {
-  findLatestCheckpointBackedAgentSession,
+  findCheckpointBackedAgentSessionForSettlement,
   projectAgentSessionSettlement,
 } from './agent-session-continuation.js';
 import { AgentToolRegistry } from './agent-tool-registry.js';
@@ -224,7 +224,7 @@ export class RunService {
     );
 
     if (!result.success) {
-      await this.updateLatestCheckpointBackedAgentSession(run, 'failed');
+      await this.updateLatestCheckpointBackedAgentSession(run, 'failed', payload.agentSessionId);
       const failed = await this.runRepository.updateResult(
         runId,
         'failed',
@@ -237,7 +237,7 @@ export class RunService {
     }
 
     await this.runCheckpointRepository.updateStatus(checkpoint.id, 'resolved');
-    await this.updateLatestCheckpointBackedAgentSession(run, 'completed');
+    await this.updateLatestCheckpointBackedAgentSession(run, 'completed', payload.agentSessionId);
     await this.runStepRepository.create({
       runId,
       kind: 'final',
@@ -296,8 +296,12 @@ export class RunService {
   private async updateLatestCheckpointBackedAgentSession(
     run: RunDetailRecord,
     status: AgentSessionRecord['status'],
+    agentSessionId?: string | null,
   ): Promise<void> {
-    const latestSession = findLatestCheckpointBackedAgentSession(run.agentSessions ?? []);
+    const latestSession = findCheckpointBackedAgentSessionForSettlement({
+      agentSessionId,
+      sessions: run.agentSessions ?? [],
+    });
 
     if (!latestSession) {
       return;

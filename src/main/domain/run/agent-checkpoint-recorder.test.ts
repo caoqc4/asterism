@@ -78,6 +78,7 @@ describe('AgentCheckpointRecorder', () => {
     const result = await recorder.createToolPermissionCheckpoint({
       runId: 'run_1',
       taskId: 'task_1',
+      agentSessionId: 'agent_session_1',
       stepId: 'run_step_1',
       tool: 'workspace.write_patch',
       risk: 'local_write',
@@ -95,6 +96,11 @@ describe('AgentCheckpointRecorder', () => {
         stepId: 'run_step_1',
         kind: 'tool_permission',
         payload: expect.stringContaining('"decisionId":null'),
+      }),
+    );
+    expect(runCheckpointRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.stringContaining('"agentSessionId":"agent_session_1"'),
       }),
     );
     expect(decisionRepository.create).toHaveBeenCalledWith({
@@ -151,6 +157,7 @@ describe('AgentCheckpointRecorder', () => {
     const result = await recorder.createResumeCheckpoint({
       runId: 'run_1',
       taskId: 'task_1',
+      agentSessionId: 'agent_session_1',
       reason: '等待先解除阻塞。',
       nextTool: 'artifact.create_note',
       nextInput: {
@@ -191,6 +198,11 @@ describe('AgentCheckpointRecorder', () => {
     expect(runCheckpointRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         payload: expect.stringContaining('"runId":"run_1"'),
+      }),
+    );
+    expect(runCheckpointRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.stringContaining('"agentSessionId":"agent_session_1"'),
       }),
     );
     expect(result).toEqual({

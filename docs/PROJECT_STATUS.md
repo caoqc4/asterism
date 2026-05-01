@@ -322,6 +322,11 @@ The project is past initial architecture assembly. Current work should favor pro
   instead of an unreachable fallback action, so future session-status additions
   must define checkpoint, liveness, or terminal-evidence semantics at compile
   time.
+- Newly created tool-permission and resume checkpoints now carry
+  `agentSessionId` in their payloads, and Run / Decision recovery settlement
+  prefers that binding before falling back to legacy latest-session selection,
+  preventing newer unrelated checkpoint-backed sessions from being settled by
+  an older checkpoint action.
 - Agent session replay reviews now carry latest-step kind/status/title as
   structured fields alongside the existing summary text, keeping inspect-first
   recovery evidence available without parsing the `latest=` segment.
@@ -1479,6 +1484,13 @@ Latest local baseline:
 - `npm run verify` passed locally on 2026-05-01 after the interrupted/stale
   recovery prefill coverage and acceptance-script split. Current local
   acceptance status: 127 test files / 912 tests
+- `npm run accept:agent-local` passed locally on 2026-05-01 after binding new
+  tool-permission/resume checkpoint payloads to their `agentSessionId` and
+  further splitting the sandbox-coding Code Agent run-service/source-context
+  batch for stable local acceptance.
+- `npm run verify` passed locally on 2026-05-01 after the same
+  checkpoint-to-session settlement binding update. Current local acceptance
+  status: 127 test files / 913 tests
 - `npm run accept:sandbox-coding` passed locally on 2026-05-01 after enforcing
   duplicate source-context selection as a fail-closed model-context boundary
   before provider runtime config resolution.

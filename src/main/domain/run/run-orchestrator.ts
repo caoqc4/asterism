@@ -288,7 +288,10 @@ export class RunOrchestrator {
             sessionId: agentSession.id,
           });
         },
-        request,
+        request: {
+          ...request,
+          sessionId: agentSession.id,
+        },
         modelOutput: result.output,
         recordPlanRunStep: false,
         taskTitle: params.task.title,
@@ -411,7 +414,10 @@ export class RunOrchestrator {
             sessionId: agentSession.id,
           });
         },
-        request: params.request,
+        request: {
+          ...params.request,
+          sessionId: agentSession.id,
+        },
         modelOutput: params.result.output,
         providerPlan: normalization.plan,
         recordPlanRunStep: false,

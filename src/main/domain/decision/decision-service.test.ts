@@ -452,6 +452,7 @@ describe('DecisionService', () => {
         kind: 'tool_permission',
         status: 'open',
         payload: JSON.stringify({
+          agentSessionId: 'agent_session_paused_old_created',
           tool: 'artifact.create_note',
           input: { title: 'Agent note', content: 'Captured note' },
           decisionId: 'decision_1',
@@ -560,12 +561,16 @@ describe('DecisionService', () => {
     expect(agentToolRegistry.execute).toHaveBeenCalledWith(
       'artifact.create_note',
       { title: 'Agent note', content: 'Captured note' },
-      { runId: 'run_1', taskId: 'task_1' },
+      expect.objectContaining({
+        runId: 'run_1',
+        sessionId: 'agent_session_paused_old_created',
+        taskId: 'task_1',
+      }),
       expect.objectContaining({ confirmationRequiredRisks: [] }),
     );
     expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith('run_checkpoint_1', 'resolved');
     expect(agentSessionStore.updateStatus).toHaveBeenCalledWith(
-      'agent_session_confirmation_new_created',
+      'agent_session_paused_old_created',
       'completed',
     );
     expect(runRepository.updateResult).toHaveBeenCalledWith(
@@ -654,7 +659,7 @@ describe('DecisionService', () => {
     expect(agentToolRegistry.execute).toHaveBeenCalledWith(
       'task.create_completion_criterion',
       { text: 'Owner must approve the launch claim' },
-      { runId: 'run_1', taskId: 'task_1' },
+      expect.objectContaining({ runId: 'run_1', taskId: 'task_1' }),
       expect.objectContaining({
         allowTaskMutationTools: true,
         confirmationRequiredRisks: [],
@@ -757,7 +762,7 @@ describe('DecisionService', () => {
     expect(agentToolRegistry.execute).toHaveBeenCalledWith(
       'workspace.write_patch',
       patchInput,
-      { runId: 'run_1', taskId: 'task_1' },
+      expect.objectContaining({ runId: 'run_1', taskId: 'task_1' }),
       expect.objectContaining({
         allowLocalFileWrite: true,
         confirmationRequiredRisks: [],
@@ -854,7 +859,7 @@ describe('DecisionService', () => {
     expect(agentToolRegistry.execute).toHaveBeenCalledWith(
       'workspace.run_command',
       commandInput,
-      { runId: 'run_1', taskId: 'task_1' },
+      expect.objectContaining({ runId: 'run_1', taskId: 'task_1' }),
       expect.objectContaining({
         allowLocalCommandRun: true,
         confirmationRequiredRisks: [],

@@ -87,6 +87,7 @@ export type AgentWorkingContext = {
 export type AgentRunRequest = {
   runId: string;
   taskId: string;
+  sessionId?: string | null;
   goal: string;
   instructions?: string | null;
   mode: AgentRunMode;

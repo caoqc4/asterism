@@ -29,7 +29,7 @@ import { parseBrowserControlledInteractionCheckpointPayload } from '../../../sha
 import { parseRunCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
 import { AgentSessionStore } from '../run/agent-session-store.js';
 import {
-  findLatestCheckpointBackedAgentSession,
+  findCheckpointBackedAgentSessionForSettlement,
   projectAgentSessionSettlement,
 } from '../run/agent-session-continuation.js';
 import {
@@ -275,10 +275,17 @@ export class DecisionService {
     const payload = parseRunCheckpointPayload(checkpoint.payload);
     const tool = payload?.tool;
     const toolInput = payload?.input;
+    const checkpointAgentSessionId = typeof payload?.agentSessionId === 'string'
+      ? payload.agentSessionId
+      : null;
 
     if (action !== 'approve') {
       await this.runCheckpointRepository.updateStatus(checkpoint.id, 'cancelled');
-      await this.updateLatestCheckpointBackedAgentSession(checkpoint.runId, 'cancelled');
+      await this.updateLatestCheckpointBackedAgentSession(
+        checkpoint.runId,
+        'cancelled',
+        checkpointAgentSessionId,
+      );
       await this.runStepRepository.create({
         runId: checkpoint.runId,
         kind: 'checkpoint',
@@ -340,6 +347,7 @@ export class DecisionService {
       {
         runId: checkpoint.runId,
         taskId: decision.taskId,
+        sessionId: checkpointAgentSessionId,
       },
       {
         ...DEFAULT_AGENT_POLICY,
@@ -351,7 +359,11 @@ export class DecisionService {
     );
 
     if (!result.success) {
-      await this.updateLatestCheckpointBackedAgentSession(checkpoint.runId, 'failed');
+      await this.updateLatestCheckpointBackedAgentSession(
+        checkpoint.runId,
+        'failed',
+        checkpointAgentSessionId,
+      );
       await this.runStepRepository.create({
         runId: checkpoint.runId,
         kind: 'checkpoint',
@@ -371,7 +383,11 @@ export class DecisionService {
 
     const run = await this.runRepository.getDetail(checkpoint.runId);
     await this.runCheckpointRepository.updateStatus(checkpoint.id, 'resolved');
-    await this.updateLatestCheckpointBackedAgentSession(checkpoint.runId, 'completed');
+    await this.updateLatestCheckpointBackedAgentSession(
+      checkpoint.runId,
+      'completed',
+      checkpointAgentSessionId,
+    );
     await this.runStepRepository.create({
       runId: checkpoint.runId,
       kind: 'checkpoint',
@@ -618,14 +634,16 @@ export class DecisionService {
   private async updateLatestCheckpointBackedAgentSession(
     runId: string,
     status: AgentSessionRecord['status'],
+    agentSessionId?: string | null,
   ): Promise<void> {
     if (!this.agentSessionStore) {
       return;
     }
 
-    const latestSession = findLatestCheckpointBackedAgentSession(
-      await this.agentSessionStore.listForRun(runId),
-    );
+    const latestSession = findCheckpointBackedAgentSessionForSettlement({
+      agentSessionId,
+      sessions: await this.agentSessionStore.listForRun(runId),
+    });
 
     if (!latestSession) {
       return;

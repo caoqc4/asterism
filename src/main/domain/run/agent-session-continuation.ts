@@ -30,6 +30,19 @@ export function findLatestCheckpointBackedAgentSession(
     .at(-1) ?? null;
 }
 
+export function findCheckpointBackedAgentSessionForSettlement(params: {
+  sessions: AgentSessionRecord[];
+  agentSessionId?: string | null;
+}): AgentSessionRecord | null {
+  if (params.agentSessionId) {
+    return params.sessions.find((session) =>
+      session.id === params.agentSessionId && isCheckpointBackedAgentSession(session)
+    ) ?? null;
+  }
+
+  return findLatestCheckpointBackedAgentSession(params.sessions);
+}
+
 export function projectAgentSessionSettlement(
   session: AgentSessionRecord,
 ): AgentSessionSettlementProjection {

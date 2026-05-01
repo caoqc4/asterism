@@ -12,6 +12,7 @@ import {
 describe('run checkpoint payload helpers', () => {
   it('creates versioned tool-permission checkpoint payloads', () => {
     const payload = createToolPermissionCheckpointPayload({
+      agentSessionId: 'agent_session_1',
       tool: 'artifact.create_note',
       risk: 'local_write',
       input: { title: 'Note', content: 'Body' },
@@ -22,6 +23,7 @@ describe('run checkpoint payload helpers', () => {
     expect(payload).toEqual({
       version: 1,
       kind: 'tool_permission',
+      agentSessionId: 'agent_session_1',
       tool: 'artifact.create_note',
       risk: 'local_write',
       input: { title: 'Note', content: 'Body' },
@@ -34,6 +36,7 @@ describe('run checkpoint payload helpers', () => {
     const payload = createResumeCheckpointPayload({
       reason: '等待先解除阻塞。',
       runId: 'run_1',
+      agentSessionId: 'agent_session_1',
       nextTool: 'artifact.create_note',
       nextInput: { title: 'Recovered note', content: 'Recovered note' },
       policySnapshot: {
@@ -51,6 +54,7 @@ describe('run checkpoint payload helpers', () => {
       version: 1,
       kind: 'resume',
       runId: 'run_1',
+      agentSessionId: 'agent_session_1',
       reason: '等待先解除阻塞。',
       nextTool: 'artifact.create_note',
       policySnapshot: expect.objectContaining({
@@ -147,6 +151,7 @@ describe('run checkpoint payload helpers', () => {
       reason: '等待先解除阻塞。',
       runId: 'run_1',
       taskId: 'task_1',
+      agentSessionId: 'agent_session_1',
       nextTool: 'artifact.create_note',
       nextInput: { title: 'Recovered note', content: 'Recovered note' },
       policySnapshot: {
@@ -173,6 +178,7 @@ describe('run checkpoint payload helpers', () => {
         }),
         runId: 'run_1',
         taskId: 'task_1',
+        agentSessionId: 'agent_session_1',
         version: 1,
       }),
     });

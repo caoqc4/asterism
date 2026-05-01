@@ -45,6 +45,7 @@ export class AgentCheckpointRecorder {
   async createToolPermissionCheckpoint(params: {
     runId: string;
     taskId: string;
+    agentSessionId?: string | null;
     stepId: string;
     tool: AgentToolName;
     risk: AgentToolRisk;
@@ -57,6 +58,7 @@ export class AgentCheckpointRecorder {
       stepId: params.stepId,
       kind: 'tool_permission',
       payload: JSON.stringify(createToolPermissionCheckpointPayload({
+        ...(params.agentSessionId ? { agentSessionId: params.agentSessionId } : {}),
         tool: params.tool,
         risk: params.risk,
         input: params.input,
@@ -77,6 +79,7 @@ export class AgentCheckpointRecorder {
       ? await this.runCheckpointRepository.updatePayload(
           checkpoint.id,
           JSON.stringify(createToolPermissionCheckpointPayload({
+            ...(params.agentSessionId ? { agentSessionId: params.agentSessionId } : {}),
             tool: params.tool,
             risk: params.risk,
             input: params.input,
@@ -123,6 +126,7 @@ export class AgentCheckpointRecorder {
   async createResumeCheckpoint(params: {
     runId: string;
     taskId: string;
+    agentSessionId?: string | null;
     reason: string;
     nextTool: AgentToolName;
     nextInput: unknown;
@@ -148,6 +152,7 @@ export class AgentCheckpointRecorder {
       payload: JSON.stringify(createResumeCheckpointPayload({
         reason: params.reason,
         runId: params.runId,
+        ...(params.agentSessionId ? { agentSessionId: params.agentSessionId } : {}),
         nextTool: params.nextTool,
         nextInput: params.nextInput,
         policySnapshot: params.policySnapshot,
