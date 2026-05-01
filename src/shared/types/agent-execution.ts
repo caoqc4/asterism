@@ -81,6 +81,9 @@ export type AgentWorkingContext = {
     type: string;
     summary: string;
     createdAt: string;
+    dateGroup?: string;
+    objectFamily?: string;
+    priorityGroup?: string;
   }>;
 };
 

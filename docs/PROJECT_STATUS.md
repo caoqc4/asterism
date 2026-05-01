@@ -202,9 +202,14 @@ The project is past initial architecture assembly. Current work should favor pro
 - Runs and Decisions related-task timelines now reuse that same date /
   object-family / key-explain-trace grouping, so task history scans read
   consistently from the task, run, or decision surface.
+- Agent read-only timeline observations now carry the same date / object-family
+  / key-explain-trace scan path in `task.inspect_timeline` and completion
+  evidence review output, keeping model-facing history inspection aligned with
+  the renderer Timeline grouping without adding tool authority.
 - `npm run verify` passed locally on 2026-05-01 after the Task detail Timeline
-  date/object-family grouping slice and related Timeline surface alignment.
-  Current local acceptance status: 127 test files / 918 tests.
+  date/object-family grouping slice, related Timeline surface alignment, and
+  agent read-only timeline observation alignment. Current local acceptance
+  status: 127 test files / 918 tests.
 - RunService and DecisionService now pass checkpoint-backed session updates
   through a shared settlement projection, so `running` sessions are treated as
   requiring executor liveness rather than being checkpoint-settled.

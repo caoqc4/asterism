@@ -51,6 +51,9 @@ function buildWorkingContext(): AgentWorkingContext {
         type: 'task.next_step_changed',
         summary: '下一步调整为 Review the context',
         createdAt: '2026-01-01T01:00:00.000Z',
+        dateGroup: '2026-01-01',
+        objectFamily: '任务字段',
+        priorityGroup: '解释事件',
       },
     ],
   };
@@ -259,6 +262,7 @@ describe('AgentToolRegistry', () => {
       summary: '已读取当前任务最近时间线。',
     });
     expect(result.output).toContain('task.next_step_changed');
+    expect(result.output).toContain('2026-01-01 / 任务字段 / 解释事件');
     expect(result.output).toContain('下一步调整为 Review the context');
     expect(runStepRepository.update).toHaveBeenCalledWith(
       'run_step_1',
@@ -285,11 +289,17 @@ describe('AgentToolRegistry', () => {
               type: 'task.decision_approved',
               summary: '已批准最终收尾依据。',
               createdAt: '2026-01-01T02:00:00.000Z',
+              dateGroup: '2026-01-01',
+              objectFamily: '决策',
+              priorityGroup: '关键事件',
             },
             {
               type: 'task.next_step_changed',
               summary: '下一步调整为 Review the context',
               createdAt: '2026-01-01T01:00:00.000Z',
+              dateGroup: '2026-01-01',
+              objectFamily: '任务字段',
+              priorityGroup: '解释事件',
             },
           ],
         },
@@ -304,6 +314,7 @@ describe('AgentToolRegistry', () => {
     expect(result.output).toContain('完成证据审查：只读结果，不会满足完成标准或完成任务。');
     expect(result.output).toContain('仍需补证据或人工确认：Confirm output quality');
     expect(result.output).toContain('task.decision_approved');
+    expect(result.output).toContain('2026-01-01 / 决策 / 关键事件');
     expect(runStepRepository.update).toHaveBeenCalledWith(
       'run_step_1',
       expect.objectContaining({

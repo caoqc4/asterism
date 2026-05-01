@@ -132,7 +132,12 @@ describe('agent working context', () => {
     expect(context.blockers[0]).toMatchObject({ title: 'Legal review', owner: 'Legal' });
     expect(context.sources[0]).toMatchObject({ title: 'Launch source', isKey: true });
     expect(context.processTemplates[0]).toMatchObject({ title: 'Launch writing skill' });
-    expect(context.recentTimeline[0]).toMatchObject({ type: 'task.created' });
+    expect(context.recentTimeline[0]).toMatchObject({
+      type: 'task.created',
+      dateGroup: '2026-01-01',
+      objectFamily: '任务字段',
+      priorityGroup: '留痕事件',
+    });
   });
 
   it('formats a compact plan-step summary from an agent run request', () => {

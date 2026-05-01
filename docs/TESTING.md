@@ -438,6 +438,9 @@ Covered today:
   key/explain/trace priority groups
 - `Runs` and `Decisions` related-task timelines now share the same date /
   object-family / key-explain-trace grouping semantics as Task detail
+- agent read-only timeline observations now include the same date /
+  object-family / key-explain-trace scan path for `task.inspect_timeline` and
+  completion evidence review
 - `Settings save flow`
 - `Settings save flow` now also asserts Home scheduler enabled/running state and scheduler timestamps refresh from Home brief data
 - `Settings save flow` now also covers read-only workspace root persistence
@@ -487,9 +490,10 @@ Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
 - on 2026-05-01, `npm run verify` passed locally with 127 test files / 918
-  tests after Task detail Timeline date/object-family grouping, Runs recovery
-  anchor, completed-session terminal evidence, and cancelled-session new-run
-  routing coverage.
+  tests after Task detail Timeline date/object-family grouping, related
+  Timeline surface alignment, agent read-only timeline observation alignment,
+  Runs recovery anchor, completed-session terminal evidence, and
+  cancelled-session new-run routing coverage.
 - GitHub Actions runs `npm run verify` on pushes to `main` and pull requests when Actions capacity is available
 - `npm run smoke:build` when package/build entrypoints change
 - `npm run smoke:package:mac` after producing `release/mac-arm64/Taskplane.app`, including ASAR content checks

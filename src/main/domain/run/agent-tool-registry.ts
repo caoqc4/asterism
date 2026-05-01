@@ -572,8 +572,22 @@ function formatTimelineSummary(context: AgentWorkingContext): string {
   }
 
   return context.recentTimeline
-    .map((event, index) => `${index + 1}. ${event.createdAt} · ${event.type} · ${event.summary}`)
+    .map((event, index) => formatTimelineEventObservation(event, index))
     .join('\n');
+}
+
+function formatTimelineEventObservation(
+  event: AgentWorkingContext['recentTimeline'][number],
+  index: number,
+): string {
+  const scanPath = [
+    event.dateGroup,
+    event.objectFamily,
+    event.priorityGroup,
+  ].filter(Boolean).join(' / ');
+  const prefix = scanPath ? `${event.createdAt} · ${scanPath}` : event.createdAt;
+
+  return `${index + 1}. ${prefix} · ${event.type} · ${event.summary}`;
 }
 
 function isPotentialCompletionEvidence(event: AgentWorkingContext['recentTimeline'][number]): boolean {
@@ -610,7 +624,7 @@ function formatCompletionEvidenceReview(context: AgentWorkingContext): string {
     evidence.length
       ? [
           '可能支持收尾的近期证据：',
-          ...evidence.map((event, index) => `${index + 1}. ${event.createdAt} · ${event.type} · ${event.summary}`),
+          ...evidence.map((event, index) => formatTimelineEventObservation(event, index)),
         ].join('\n')
       : '可能支持收尾的近期证据：暂无。',
     context.task.riskLevel === 'none'

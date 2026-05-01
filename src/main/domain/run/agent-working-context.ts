@@ -6,7 +6,14 @@ import type {
 import type { CreateRunInput, RunRecord } from '../../../shared/types/run.js';
 import type { TaskDetail, TimelineEventRecord } from '../../../shared/types/task.js';
 import { deriveTaskDetailPriorityLane } from '../../../shared/working-context/priority-lanes.js';
-import { formatTaskTimelineEventSummary } from '../../../shared/working-context/timeline.js';
+import {
+  formatTaskTimelineEventSummary,
+  getTaskTimelineDateGroupTitle,
+  getTaskTimelineObjectFamily,
+  getTaskTimelineObjectFamilyTitle,
+  getTaskTimelinePriority,
+  getTaskTimelinePriorityGroupTitle,
+} from '../../../shared/working-context/timeline.js';
 
 const RECENT_TIMELINE_LIMIT = 6;
 const SOURCE_PREVIEW_LIMIT = 240;
@@ -45,6 +52,9 @@ function recentTimeline(events: TimelineEventRecord[]): AgentWorkingContext['rec
       type: event.type,
       summary: formatTaskTimelineEventSummary(event),
       createdAt: event.createdAt,
+      dateGroup: getTaskTimelineDateGroupTitle(event.createdAt),
+      objectFamily: getTaskTimelineObjectFamilyTitle(getTaskTimelineObjectFamily(event.type)),
+      priorityGroup: getTaskTimelinePriorityGroupTitle(getTaskTimelinePriority(event.type)),
     }));
 }
 
