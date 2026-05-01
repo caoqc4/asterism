@@ -3,6 +3,18 @@ import type { PriorityLane } from '../types/brief.js';
 import { comparePriorityLanes, getPriorityLaneLabel } from './priority-lanes.js';
 
 export type TaskTimelinePriority = 'p1' | 'p2' | 'p3';
+export type TaskTimelineObjectFamily =
+  | 'run'
+  | 'decision'
+  | 'artifact'
+  | 'source_context'
+  | 'blocker'
+  | 'dependency'
+  | 'completion'
+  | 'waiting'
+  | 'process'
+  | 'task'
+  | 'other';
 
 export type TaskTimelinePriorityGroup<T> = {
   id: TaskTimelinePriority;
@@ -15,6 +27,20 @@ export type TaskTimelineDateGroup<T> = {
   title: string;
   eventCount: number;
   priorityGroups: Array<TaskTimelinePriorityGroup<T>>;
+};
+
+export type TaskTimelineObjectFamilyGroup<T> = {
+  id: TaskTimelineObjectFamily;
+  title: string;
+  eventCount: number;
+  priorityGroups: Array<TaskTimelinePriorityGroup<T>>;
+};
+
+export type TaskTimelineDateObjectGroup<T> = {
+  id: string;
+  title: string;
+  eventCount: number;
+  objectGroups: Array<TaskTimelineObjectFamilyGroup<T>>;
 };
 
 export type WorkingContextRecentChange =
@@ -823,6 +849,139 @@ export function groupTaskTimelineEventsByDateAndPriority<
       eventCount: dateEvents.length,
       priorityGroups: groupTaskTimelineEventsByPriority(dateEvents),
     }));
+}
+
+export function getTaskTimelineObjectFamily(type: string): TaskTimelineObjectFamily {
+  switch (type) {
+    case 'task.run_failed':
+    case 'task.run_paused':
+    case 'task.run_completed':
+      return 'run';
+    case 'task.decision_approved':
+    case 'task.decision_deferred':
+    case 'task.decision_cancelled':
+      return 'decision';
+    case 'artifact.created':
+      return 'artifact';
+    case 'source_context.created':
+    case 'source_context.updated':
+    case 'source_context.archived':
+      return 'source_context';
+    case 'blocker.created':
+    case 'blocker.updated':
+    case 'blocker.resolved':
+      return 'blocker';
+    case 'task_dependency.created':
+    case 'task_dependency.updated':
+    case 'task_dependency.resolved':
+      return 'dependency';
+    case 'completion_criteria.created':
+    case 'completion_criteria.updated':
+    case 'completion_criteria.satisfied':
+    case 'completion_criteria.reopened':
+      return 'completion';
+    case 'waiting_item.created':
+    case 'waiting_item.updated':
+    case 'waiting_item.resolved':
+    case 'task.waiting_changed':
+      return 'waiting';
+    case 'process_template.applied':
+    case 'process_template.removed':
+    case 'process_template.selected':
+    case 'process_template.skipped':
+      return 'process';
+    case 'task.created':
+    case 'task.updated':
+    case 'task.risk_changed':
+    case 'task.next_step_changed':
+    case 'task.transitioned':
+      return 'task';
+    default:
+      return 'other';
+  }
+}
+
+export function getTaskTimelineObjectFamilyTitle(family: TaskTimelineObjectFamily): string {
+  switch (family) {
+    case 'run':
+      return '执行记录';
+    case 'decision':
+      return '决策';
+    case 'artifact':
+      return '产物';
+    case 'source_context':
+      return '来源材料';
+    case 'blocker':
+      return '阻塞项';
+    case 'dependency':
+      return '任务依赖';
+    case 'completion':
+      return '完成标准';
+    case 'waiting':
+      return '等待项';
+    case 'process':
+      return '方法模板';
+    case 'task':
+      return '任务字段';
+    default:
+      return '其他事件';
+  }
+}
+
+function compareTimelineEventPriority(left: string, right: string): number {
+  const priorityOrder = { p1: 0, p2: 1, p3: 2 } as const;
+  return priorityOrder[getTaskTimelinePriority(left)] - priorityOrder[getTaskTimelinePriority(right)];
+}
+
+function getStrongestTimelineEventType<T extends Pick<TimelineEventRecord, 'type'>>(events: T[]): string {
+  return [...events].sort((left, right) => compareTimelineEventPriority(left.type, right.type))[0]?.type ?? '';
+}
+
+export function groupTaskTimelineEventsByObjectFamilyAndPriority<
+  T extends Pick<TimelineEventRecord, 'type'>,
+>(events: T[]): Array<TaskTimelineObjectFamilyGroup<T>> {
+  const groupsByFamily = new Map<TaskTimelineObjectFamily, { events: T[]; firstIndex: number }>();
+
+  events.forEach((event, index) => {
+    const family = getTaskTimelineObjectFamily(event.type);
+    const familyGroup = groupsByFamily.get(family);
+
+    if (familyGroup) {
+      familyGroup.events.push(event);
+    } else {
+      groupsByFamily.set(family, { events: [event], firstIndex: index });
+    }
+  });
+
+  return [...groupsByFamily.entries()]
+    .sort(([, left], [, right]) => {
+      const priorityDiff = compareTimelineEventPriority(
+        getStrongestTimelineEventType(left.events),
+        getStrongestTimelineEventType(right.events),
+      );
+      return priorityDiff || left.firstIndex - right.firstIndex;
+    })
+    .map(([family, familyGroup]) => ({
+      id: family,
+      title: getTaskTimelineObjectFamilyTitle(family),
+      eventCount: familyGroup.events.length,
+      priorityGroups: groupTaskTimelineEventsByPriority(familyGroup.events),
+    }));
+}
+
+export function groupTaskTimelineEventsByDateObjectAndPriority<
+  T extends Pick<TimelineEventRecord, 'createdAt' | 'type'>,
+>(events: T[]): Array<TaskTimelineDateObjectGroup<T>> {
+  return groupTaskTimelineEventsByDateAndPriority(events).map((dateGroup) => {
+    const dateEvents = dateGroup.priorityGroups.flatMap((priorityGroup) => priorityGroup.events);
+
+    return {
+      id: dateGroup.id,
+      title: dateGroup.title,
+      eventCount: dateGroup.eventCount,
+      objectGroups: groupTaskTimelineEventsByObjectFamilyAndPriority(dateEvents),
+    };
+  });
 }
 
 export function getTaskTimelinePreviewEvents<T extends Pick<TimelineEventRecord, 'type' | 'createdAt'>>(

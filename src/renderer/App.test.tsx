@@ -6489,6 +6489,7 @@ describe('App UI flow', () => {
       screen.getByText('解除等待项：Waiting for vendor confirmation，任务恢复到 planned'),
     ).toBeTruthy();
     expect(screen.getByText('2026-01-01')).toBeTruthy();
+    expect(screen.getAllByText('任务字段').length).toBeGreaterThan(0);
     expect(screen.getByText('风险')).toBeTruthy();
     expect(screen.getByText('下一步')).toBeTruthy();
     expect(screen.getAllByText('等待项').length).toBeGreaterThan(0);
@@ -6583,8 +6584,12 @@ describe('App UI flow', () => {
     expect(screen.getByRole('button', { name: '展开全部 (18)' })).toBeTruthy();
     expect(screen.getByText('2026-01-01')).toBeTruthy();
     expect(screen.queryByText('2026-01-02')).toBeNull();
-    expect(screen.getByText('关键事件')).toBeTruthy();
-    expect(screen.getByText('解释事件')).toBeTruthy();
+    expect(screen.getAllByText('关键事件').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('解释事件').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('执行记录').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('任务依赖').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('来源材料').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('完成标准').length).toBeGreaterThan(0);
     expect(screen.queryByText('留痕事件')).toBeNull();
     expect(screen.queryByText('任务字段已更新')).toBeNull();
     expect(screen.getByText('任务依赖更新：Upstream design。')).toBeTruthy();
@@ -6597,6 +6602,7 @@ describe('App UI flow', () => {
 
     expect(screen.getByText('执行失败：Model overloaded。')).toBeTruthy();
     expect(screen.getByText('2026-01-02')).toBeTruthy();
+    expect(screen.getAllByText('任务字段').length).toBeGreaterThan(0);
     expect(screen.getAllByText('留痕事件').length).toBeGreaterThan(0);
     expect(screen.getAllByText('任务字段已更新').length).toBeGreaterThan(0);
     expect(screen.getAllByText('留痕').length).toBeGreaterThan(0);

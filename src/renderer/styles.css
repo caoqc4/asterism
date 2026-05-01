@@ -667,6 +667,17 @@ button {
   letter-spacing: 0;
 }
 
+.timeline-object-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 0;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
 .timeline-group-heading {
   display: flex;
   align-items: center;

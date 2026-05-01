@@ -9,6 +9,8 @@ import {
   getTaskTimelineFollowUpActionLabel,
   getTaskTimelineObjectAction,
   groupTaskTimelineEventsByDateAndPriority,
+  groupTaskTimelineEventsByDateObjectAndPriority,
+  groupTaskTimelineEventsByObjectFamilyAndPriority,
   getTaskTimelinePreviewEvents,
   getTaskTimelinePriority,
   getTaskTimelineResponsibilitySummary,
@@ -281,6 +283,74 @@ describe('getTaskTimelinePreviewEvents', () => {
           ['解释事件', ['old_source_updated']],
         ],
       ],
+    ]);
+  });
+
+  it('groups timeline events by object family before priority inside each date', () => {
+    const groups = groupTaskTimelineEventsByDateObjectAndPriority([
+      {
+        id: 'old_run_failed',
+        type: 'task.run_failed',
+        createdAt: '2026-01-01T05:00:00.000Z',
+      },
+      {
+        id: 'old_source_updated',
+        type: 'source_context.updated',
+        createdAt: '2026-01-01T04:00:00.000Z',
+      },
+      {
+        id: 'old_source_archived',
+        type: 'source_context.archived',
+        createdAt: '2026-01-01T03:00:00.000Z',
+      },
+      {
+        id: 'old_task_updated',
+        type: 'task.updated',
+        createdAt: '2026-01-01T02:00:00.000Z',
+      },
+    ]);
+
+    expect(groups.map((dateGroup) => [
+      dateGroup.title,
+      dateGroup.objectGroups.map((objectGroup) => [
+        objectGroup.title,
+        objectGroup.eventCount,
+        objectGroup.priorityGroups.map((priorityGroup) => [
+          priorityGroup.title,
+          priorityGroup.events.map((event) => event.id),
+        ]),
+      ]),
+    ])).toEqual([
+      [
+        '2026-01-01',
+        [
+          ['执行记录', 1, [['关键事件', ['old_run_failed']]]],
+          [
+            '来源材料',
+            2,
+            [
+              ['解释事件', ['old_source_updated']],
+              ['留痕事件', ['old_source_archived']],
+            ],
+          ],
+          ['任务字段', 1, [['留痕事件', ['old_task_updated']]]],
+        ],
+      ],
+    ]);
+  });
+
+  it('orders object-family groups by their strongest event priority', () => {
+    const groups = groupTaskTimelineEventsByObjectFamilyAndPriority([
+      { id: 'source_updated', type: 'source_context.updated' },
+      { id: 'blocker_updated', type: 'blocker.updated' },
+      { id: 'blocker_created', type: 'blocker.created' },
+      { id: 'task_updated', type: 'task.updated' },
+    ]);
+
+    expect(groups.map((group) => [group.title, group.eventCount])).toEqual([
+      ['阻塞项', 2],
+      ['来源材料', 1],
+      ['任务字段', 1],
     ]);
   });
 
