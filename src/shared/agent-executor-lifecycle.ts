@@ -174,6 +174,12 @@ export function listSupportedExecutorLifecycleControlRequests(
   return AGENT_EXECUTOR_LIFECYCLE_CONTROL_REQUEST_TYPES.filter((request) => control[request]);
 }
 
+export function listUnsupportedExecutorLifecycleControlRequests(
+  control: AgentExecutorSessionHandle['control'],
+): AgentExecutorLifecycleControlRequestType[] {
+  return AGENT_EXECUTOR_LIFECYCLE_CONTROL_REQUEST_TYPES.filter((request) => !control[request]);
+}
+
 export function getExecutorLifecycleControlKey(
   request: AgentExecutorLifecycleControlRequest,
 ): keyof AgentExecutorSessionHandle['control'] {

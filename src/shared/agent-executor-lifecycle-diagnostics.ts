@@ -1,8 +1,8 @@
 import {
-  AGENT_EXECUTOR_LIFECYCLE_CONTROL_REQUEST_TYPES,
   AGENT_EXECUTOR_LIFECYCLE_SETTLE_STATUSES,
   buildExecutorLifecycleControlSupport,
   listSupportedExecutorLifecycleControlRequests,
+  listUnsupportedExecutorLifecycleControlRequests,
   type AgentExecutorLifecycleControlRequestType,
   type AgentExecutorLifecycleSettleStatus,
   type AgentExecutorSessionHandle,
@@ -46,12 +46,9 @@ export function buildDryRunAgentExecutorLifecycleAvailability(params: {
     'Model-visible tool exposure remains hidden.',
   ];
   const nextAction = 'Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.';
-  const supportedControlRequests = listSupportedExecutorLifecycleControlRequests(
-    buildExecutorLifecycleControlSupport(params.controlSupport),
-  );
-  const unsupportedControlRequests = AGENT_EXECUTOR_LIFECYCLE_CONTROL_REQUEST_TYPES.filter(
-    (request) => !supportedControlRequests.includes(request),
-  );
+  const control = buildExecutorLifecycleControlSupport(params.controlSupport);
+  const supportedControlRequests = listSupportedExecutorLifecycleControlRequests(control);
+  const unsupportedControlRequests = listUnsupportedExecutorLifecycleControlRequests(control);
   const supportedSettleStatuses = [...AGENT_EXECUTOR_LIFECYCLE_SETTLE_STATUSES];
 
   return {

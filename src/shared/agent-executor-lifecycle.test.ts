@@ -12,6 +12,7 @@ import {
   isUnsupportedExecutorLifecycleControlRequestError,
   isExecutorLifecycleControlSupported,
   listSupportedExecutorLifecycleControlRequests,
+  listUnsupportedExecutorLifecycleControlRequests,
   mapExecutorLifecycleControlRequestToSignal,
   mapExecutorLifecycleSettleResultToSignal,
   mapExecutorLifecycleSignalToRuntimeEvent,
@@ -66,6 +67,14 @@ describe('agent executor lifecycle', () => {
     expect(listSupportedExecutorLifecycleControlRequests(buildExecutorLifecycleControlSupport({
       cancel: false,
     }))).toEqual(['heartbeat', 'interrupt']);
+    expect(listUnsupportedExecutorLifecycleControlRequests(buildExecutorLifecycleControlSupport({
+      cancel: false,
+    }))).toEqual(['cancel']);
+    expect(listUnsupportedExecutorLifecycleControlRequests(buildExecutorLifecycleControlSupport({
+      heartbeat: false,
+      interrupt: false,
+      cancel: false,
+    }))).toEqual(['heartbeat', 'interrupt', 'cancel']);
   });
 
   it('keeps executor lifecycle settle statuses ordered for diagnostics', () => {
