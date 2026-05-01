@@ -206,6 +206,27 @@ function seedTimelineFixture() {
           null,
         );
 
+      database
+        .prepare(`
+          INSERT INTO completion_criteria (
+            id, task_id, text, verification_responsibility,
+            verification_responsibility_label, status, created_at, updated_at,
+            satisfied_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'criteria_packaged_ui_1',
+          taskId,
+          'Packaged Timeline closeout accepted',
+          'self',
+          'Owner confirmed packaged Timeline closeout',
+          'satisfied',
+          '2026-05-01T09:30:00.000Z',
+          '2026-05-01T09:45:00.000Z',
+          '2026-05-01T09:45:00.000Z',
+        );
+
       insertTimeline.run(
         'timeline_packaged_ui_run',
         taskId,
@@ -295,6 +316,13 @@ function seedTimelineFixture() {
         '2026-05-01T10:20:00.000Z',
       );
       insertTimeline.run(
+        'timeline_packaged_ui_completion_ready',
+        taskId,
+        'completion_criteria.satisfied',
+        JSON.stringify({ text: 'Packaged Timeline closeout accepted' }),
+        '2026-05-01T09:45:00.000Z',
+      );
+      insertTimeline.run(
         'timeline_packaged_ui_artifact',
         taskId,
         'artifact.created',
@@ -330,7 +358,7 @@ async function assertTimelineUi(page) {
   await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
   await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
 
-  await page.getByRole('button', { name: '展开全部 (12)' }).waitFor();
+  await page.getByRole('button', { name: '展开全部 (13)' }).waitFor();
   await page.locator('.timeline-date-heading', { hasText: '2026-05-01' }).waitFor();
   await page.locator('.timeline-date-heading', { hasText: '2026-04-30' }).waitFor();
   await page.getByText('执行记录').first().waitFor();
@@ -340,12 +368,13 @@ async function assertTimelineUi(page) {
   await page.getByText('完成标准').first().waitFor();
   await page.getByText('关键事件').first().waitFor();
   await page.getByText('解释事件').first().waitFor();
+  await page.getByText('已满足 1/1 条完成标准').first().waitFor();
 
   if (await page.getByText('任务字段已更新').count() > 0) {
     throw new Error('Packaged Timeline preview included trace task updates before expansion.');
   }
 
-  await page.getByRole('button', { name: '展开全部 (12)' }).click();
+  await page.getByRole('button', { name: '展开全部 (13)' }).click();
 
   await page.getByText('任务字段已更新').waitFor();
   await page.getByText('创建任务：Timeline packaged UI fixture').waitFor();
@@ -355,6 +384,7 @@ async function assertTimelineUi(page) {
   await page.getByText('风险从 medium（Timeline smoke risk under review）调整为 high（Packaged Timeline smoke risk）').waitFor();
   await page.getByText('阻塞项更新：Packaged Timeline launch blocker。').waitFor();
   await page.getByText('任务依赖更新：Packaged Timeline upstream fixture。').waitFor();
+  await page.getByText('完成标准已满足：Packaged Timeline closeout accepted。').waitFor();
   await page.getByText('生成产物：Packaged Timeline smoke report。').waitFor();
   await page.getByText('完成标准已满足：Packaged Timeline fixture accepted。').waitFor();
   await page.getByText('留痕事件').first().waitFor();
@@ -441,7 +471,7 @@ async function assertTaskTimelineObjectActions(page) {
 
   await page.getByRole('button', { name: /tasks/i }).click();
   await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
-  await page.getByRole('button', { name: '展开全部 (12)' }).click();
+  await page.getByRole('button', { name: '展开全部 (13)' }).click();
 
   await page.getByRole('button', { name: '查看 Decision' }).first().click();
   await page.getByRole('heading', { name: '待拍板事项' }).waitFor();
@@ -449,7 +479,7 @@ async function assertTaskTimelineObjectActions(page) {
 
   await page.getByRole('button', { name: /tasks/i }).click();
   await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
-  await page.getByRole('button', { name: '展开全部 (12)' }).click();
+  await page.getByRole('button', { name: '展开全部 (13)' }).click();
 
   await page.getByRole('button', { name: '查看来源' }).first().click();
   await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
@@ -517,6 +547,14 @@ async function assertDependencyReturnAndResolution(page) {
   await page.getByText('当前任务还没有 active dependency。').waitFor();
   await page.getByText('暂无任务依赖').waitFor();
   await page.getByText('任务依赖解除：Packaged Timeline upstream fixture。').waitFor();
+
+  await page
+    .locator('.timeline-item', { hasText: 'Packaged Timeline launch blocker' })
+    .getByRole('button', { name: '解除阻塞' })
+    .first()
+    .click();
+  await page.getByText('暂无当前阻塞项').waitFor();
+  await page.getByRole('button', { name: '最终收尾判断' }).waitFor();
 }
 
 if (process.platform !== 'darwin') {

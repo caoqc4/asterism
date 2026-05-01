@@ -543,6 +543,10 @@ Current verification:
 - on 2026-05-02, `npm run smoke:timeline-ui:mac` passed locally after adding a
   packaged assertion that dependency removal refreshes the Task detail recovery
   wording back to `暂无任务依赖`.
+- on 2026-05-02, `npm run smoke:timeline-ui:mac` passed locally after adding a
+  completion-ready packaged assertion: the task shows satisfied completion
+  wording while blocked, then surfaces `最终收尾判断` only after dependency and
+  blocker removal.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.
@@ -665,7 +669,7 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. targeted packaged-app smoke for completion-ready closeout wording after
-   Timeline-backed evidence changes
+1. targeted packaged-app smoke for completing a closeout-ready task after the
+   final closeout prompt appears
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

@@ -233,7 +233,10 @@ The project is past initial architecture assembly. Current work should favor pro
   form instead of exposing an inert follow-up button. The same packaged smoke
   now checks opening the seeded upstream task and resolving the active
   dependency from Task detail, including the post-resolution Timeline refresh
-  and the refreshed `暂无任务依赖` recovery wording.
+  and the refreshed `暂无任务依赖` recovery wording. Completion-ready smoke now
+  also verifies that satisfied completion criteria do not override active
+  blocker/dependency work, and that `最终收尾判断` appears after those blockers are
+  removed.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.
