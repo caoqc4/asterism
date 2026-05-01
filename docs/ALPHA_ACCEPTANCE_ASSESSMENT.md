@@ -455,7 +455,11 @@ Manual result / need:
 
 ## Decision And Run Loop
 
-Status: validated manually for no-key failure, successful AI-backed draft run, and packaged read-only workspace agent execution. The first write-capable slice is covered at code/integration level but is not yet exposed in agent prompts or the task UI.
+Status: validated manually for no-key failure, successful AI-backed draft run,
+packaged read-only workspace agent execution, and the visible Code Agent
+preflight UI. Write-capable workspace patch / command slices remain covered at
+code and integration level but are still gated behind checkpoints and Decisions;
+they are not exposed as normal prompt-level or model-visible workspace power.
 
 Automated coverage:
 
@@ -477,6 +481,10 @@ Manual result / need:
 - `workspace.write_patch` now requires explicit local file-write policy, creates a confirmation checkpoint with expected files and diff preview, applies only after the linked Decision is approved, rejects path escapes or files outside `expectedFiles`, and falls back instead of accepting model-proposed patch steps in normal runs; `workspace.run_command` now follows the accepted `test` / `lint` allowlist decision as a registry-only confirmed package-script runner with Decision approval resume, while still staying out of model prompts and normal agent plans
 - on 2026-04-25, `npm run accept:agent-local` passed locally, covering workspace patch approval, domain task tools, and provider-native tool-call boundaries without external provider calls; renderer coverage also confirms Runs and Decisions expose checkpoint review wording for patch and command tools without adding prompt exposure
 - on 2026-04-25, `npm run accept:agent-local` passed again after the execution-layer v2 slices, covering workspace patch approval, domain task tools, provider-native tool-call boundaries, checkpoint recorder refactoring, and restart-safe resume payload validation without external provider calls
+- the visible Code Agent Task detail preflight UI is locally covered by the
+  `accept:sandbox-coding:code-agent-ui` gate; it exposes readiness, context, and
+  sandbox preview start checks without exposing host write/command tools as
+  model-visible prompt power
 - on 2026-04-25, `npm run accept:agent-local` passed again after the runtime
   schema smoke coverage and alpha gate documentation refresh
 - `npm run accept:provider-native-live:preflight` reports the current local
