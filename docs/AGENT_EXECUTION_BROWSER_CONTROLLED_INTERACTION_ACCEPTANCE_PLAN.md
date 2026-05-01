@@ -145,7 +145,8 @@ Acceptance:
 
 - checkpoint payload includes current URL, origin, target label/ref, screenshot
   artifact id, visible-text summary, policy snapshot, and exact resume action
-- approval does not auto-resume until a separate resume slice is accepted
+- approval resumes only through the accepted Browser Controlled Resume path,
+  which validates and executes exactly one recorded action
 - cancellation/defer settles the run without browser mutation
 
 ### BCI5: Runs Review Surface
