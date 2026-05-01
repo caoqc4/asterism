@@ -7267,6 +7267,78 @@ describe('App UI flow', () => {
     );
   });
 
+  it('prefills dependency recovery fields from dependency timeline suggestions', async () => {
+    const user = userEvent.setup();
+
+    const upstreamTask = buildTaskRecord({
+      id: 'task_timeline_dependency_upstream',
+      title: 'Upstream dependency task',
+      state: 'running',
+    });
+    const dependencyActionTask = buildTaskRecord({
+      id: 'task_timeline_dependency_action',
+      title: 'Timeline dependency task',
+      state: 'planned',
+      activeDependency: {
+        id: 'dependency_timeline_action',
+        taskId: 'task_timeline_dependency_action',
+        blockedByTaskId: upstreamTask.id,
+        blockedByTaskTitle: upstreamTask.title,
+        reason: 'Need upstream task before continuing',
+        status: 'active',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T01:00:00.000Z',
+        resolvedAt: null,
+      },
+    });
+
+    const dependencyActionApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([dependencyActionTask, upstreamTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== dependencyActionTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(dependencyActionTask),
+          timeline: [
+            {
+              id: 'timeline_dependency_action',
+              taskId: dependencyActionTask.id,
+              type: 'task_dependency.updated',
+              payload: JSON.stringify({
+                dependencyId: 'dependency_timeline_action',
+                blockedByTaskId: upstreamTask.id,
+                blockedByTaskTitle: upstreamTask.title,
+                reason: 'Need upstream task before continuing',
+              }),
+              createdAt: '2026-01-01T01:00:00.000Z',
+            },
+          ],
+        };
+      }),
+    };
+
+    window.api = dependencyActionApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /timeline dependency task/i }));
+    await screen.findByRole('heading', { name: 'Timeline dependency task' });
+
+    await user.click(screen.getByRole('button', { name: '先解阻塞' }));
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '优先推动上游任务“Upstream dependency task”，并确认是否解除依赖。',
+    );
+    expect((screen.getByLabelText('上游任务') as HTMLSelectElement).value).toBe(upstreamTask.id);
+    expect((screen.getByLabelText('依赖说明') as HTMLTextAreaElement).value).toBe(
+      'Need upstream task before continuing',
+    );
+  });
+
   it('surfaces context creation shortcuts from the first task detail slices', async () => {
     const user = userEvent.setup();
 

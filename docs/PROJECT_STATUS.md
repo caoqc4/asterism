@@ -228,7 +228,9 @@ The project is past initial architecture assembly. Current work should favor pro
   surfaces that reuse the same grouping helpers and the Task Timeline object
   actions for opening the seeded Run, Decision, and source material; it also
   clicks seeded Timeline follow-up suggestions and verifies they prefill the
-  Task detail recovery input.
+  Task detail recovery input plus risk, blocker, and dependency recovery
+  forms. Dependency Timeline suggestions now also populate the Task dependency
+  form instead of exposing an inert follow-up button.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.

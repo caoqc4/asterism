@@ -2038,6 +2038,21 @@ export function TasksPage({
       }
     }
 
+    if (event.type === 'task_dependency.created' || event.type === 'task_dependency.updated') {
+      const upstreamTitle = formatValue(payload?.blockedByTaskTitle);
+      setDraftNextStep(`优先推动上游任务“${upstreamTitle}”，并确认是否解除依赖。`);
+      if (detail.activeDependency) {
+        populateDependencyForm(detail.activeDependency);
+      }
+    }
+
+    if (event.type === 'task_dependency.resolved') {
+      setDraftNextStep(`依赖已解除，确认是否恢复推进：${formatValue(payload?.blockedByTaskTitle)}`);
+      if (detail.activeDependency) {
+        populateDependencyForm(detail.activeDependency);
+      }
+    }
+
     if (event.type === 'task.risk_changed') {
       const nextRisk = (payload?.to as Record<string, unknown> | undefined) ?? {};
       const nextRiskLevel = nextRisk.level;
@@ -2071,12 +2086,16 @@ export function TasksPage({
       event.type === 'task.decision_approved' ||
       event.type === 'task.decision_deferred' ||
       event.type === 'task.waiting_changed' ||
-      event.type === 'blocker.created' ||
-      event.type === 'blocker.updated' ||
       event.type === 'task.risk_changed' ||
       event.type === 'artifact.created'
         ? detailFormRef.current
-        : quickActionsRef.current;
+        : event.type === 'blocker.created' || event.type === 'blocker.updated'
+          ? blockerSectionRef.current
+          : event.type === 'task_dependency.created' ||
+              event.type === 'task_dependency.updated' ||
+              event.type === 'task_dependency.resolved'
+            ? dependencySectionRef.current
+            : quickActionsRef.current;
 
     if (typeof focusTarget?.scrollIntoView === 'function') {
       focusTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });

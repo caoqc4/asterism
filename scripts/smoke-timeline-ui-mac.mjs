@@ -72,6 +72,27 @@ function seedTimelineFixture() {
           '2026-05-01T12:00:00.000Z',
         );
 
+      database
+        .prepare(`
+          INSERT INTO tasks (
+            id, title, summary, state, next_step, waiting_reason,
+            risk_level, risk_note, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'task_packaged_timeline_upstream',
+          'Packaged Timeline upstream fixture',
+          'Upstream task for packaged Timeline dependency smoke.',
+          'running',
+          'Finish upstream Timeline input.',
+          null,
+          'none',
+          null,
+          '2026-04-30T07:00:00.000Z',
+          '2026-05-01T10:20:00.000Z',
+        );
+
       const insertTimeline = database.prepare(`
         INSERT INTO timeline_events (id, task_id, type, payload, created_at)
         VALUES (?, ?, ?, ?, ?)
@@ -141,6 +162,50 @@ function seedTimelineFixture() {
           null,
         );
 
+      database
+        .prepare(`
+          INSERT INTO blockers (
+            id, task_id, title, kind, detail, owner, responsibility,
+            responsibility_label, source_context_id, status, created_at,
+            updated_at, resolved_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'blocker_packaged_ui_1',
+          taskId,
+          'Packaged Timeline launch blocker',
+          'approval',
+          'Need release owner approval before continuing.',
+          'Release owner',
+          'external',
+          'Release owner signs off',
+          'source_packaged_ui_1',
+          'active',
+          '2026-05-01T10:25:00.000Z',
+          '2026-05-01T10:35:00.000Z',
+          null,
+        );
+
+      database
+        .prepare(`
+          INSERT INTO task_dependencies (
+            id, task_id, blocked_by_task_id, reason, status,
+            created_at, updated_at, resolved_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'dependency_packaged_ui_1',
+          taskId,
+          'task_packaged_timeline_upstream',
+          'Need upstream Timeline fixture to finish first.',
+          'active',
+          '2026-05-01T10:10:00.000Z',
+          '2026-05-01T10:20:00.000Z',
+          null,
+        );
+
       insertTimeline.run(
         'timeline_packaged_ui_run',
         taskId,
@@ -189,11 +254,45 @@ function seedTimelineFixture() {
         '2026-05-01T10:40:00.000Z',
       );
       insertTimeline.run(
+        'timeline_packaged_ui_risk',
+        taskId,
+        'task.risk_changed',
+        JSON.stringify({
+          from: { level: 'medium', note: 'Timeline smoke risk under review' },
+          to: { level: 'high', note: 'Packaged Timeline smoke risk' },
+        }),
+        '2026-05-01T10:38:00.000Z',
+      );
+      insertTimeline.run(
+        'timeline_packaged_ui_blocker',
+        taskId,
+        'blocker.updated',
+        JSON.stringify({
+          blockerId: 'blocker_packaged_ui_1',
+          title: 'Packaged Timeline launch blocker',
+          owner: 'Release owner',
+          sourceContextId: 'source_packaged_ui_1',
+        }),
+        '2026-05-01T10:35:00.000Z',
+      );
+      insertTimeline.run(
         'timeline_packaged_ui_task_update',
         taskId,
         'task.updated',
         JSON.stringify({ summary: 'Lower priority packaged field update' }),
         '2026-05-01T10:30:00.000Z',
+      );
+      insertTimeline.run(
+        'timeline_packaged_ui_dependency',
+        taskId,
+        'task_dependency.updated',
+        JSON.stringify({
+          dependencyId: 'dependency_packaged_ui_1',
+          blockedByTaskId: 'task_packaged_timeline_upstream',
+          blockedByTaskTitle: 'Packaged Timeline upstream fixture',
+          reason: 'Need upstream Timeline fixture to finish first.',
+        }),
+        '2026-05-01T10:20:00.000Z',
       );
       insertTimeline.run(
         'timeline_packaged_ui_artifact',
@@ -231,7 +330,7 @@ async function assertTimelineUi(page) {
   await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
   await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
 
-  await page.getByRole('button', { name: '展开全部 (9)' }).waitFor();
+  await page.getByRole('button', { name: '展开全部 (12)' }).waitFor();
   await page.locator('.timeline-date-heading', { hasText: '2026-05-01' }).waitFor();
   await page.locator('.timeline-date-heading', { hasText: '2026-04-30' }).waitFor();
   await page.getByText('执行记录').first().waitFor();
@@ -246,13 +345,16 @@ async function assertTimelineUi(page) {
     throw new Error('Packaged Timeline preview included trace task updates before expansion.');
   }
 
-  await page.getByRole('button', { name: '展开全部 (9)' }).click();
+  await page.getByRole('button', { name: '展开全部 (12)' }).click();
 
   await page.getByText('任务字段已更新').waitFor();
   await page.getByText('创建任务：Timeline packaged UI fixture').waitFor();
   await page.getByText('执行完成，任务恢复到 planned。').waitFor();
   await page.getByText('决策已获批准：Approve packaged Timeline UI smoke。').waitFor();
   await page.getByText('来源材料更新：Packaged Timeline notes。').waitFor();
+  await page.getByText('风险从 medium（Timeline smoke risk under review）调整为 high（Packaged Timeline smoke risk）').waitFor();
+  await page.getByText('阻塞项更新：Packaged Timeline launch blocker。').waitFor();
+  await page.getByText('任务依赖更新：Packaged Timeline upstream fixture。').waitFor();
   await page.getByText('生成产物：Packaged Timeline smoke report。').waitFor();
   await page.getByText('完成标准已满足：Packaged Timeline fixture accepted。').waitFor();
   await page.getByText('留痕事件').first().waitFor();
@@ -291,6 +393,47 @@ async function assertTaskTimelineFollowUpActions(page) {
   }
 }
 
+async function assertTaskTimelineContextFollowUpActions(page) {
+  await page
+    .locator('.timeline-item', { hasText: '风险从 medium（Timeline smoke risk under review）调整为 high（Packaged Timeline smoke risk）' })
+    .getByRole('button', { name: '优先处理风险' })
+    .click();
+
+  await page.getByLabel('Risk Note').waitFor();
+  let riskNote = await page.getByLabel('Risk Note').inputValue();
+  if (riskNote !== 'Packaged Timeline smoke risk') {
+    throw new Error(`Packaged Timeline risk follow-up filled the wrong risk note: ${riskNote}`);
+  }
+
+  await page
+    .locator('.timeline-item', { hasText: '阻塞项更新：Packaged Timeline launch blocker。' })
+    .getByRole('button', { name: '先解阻塞' })
+    .click();
+
+  await page.getByText('Edit Blocker').waitFor();
+  await page.locator('label', { hasText: '阻塞项标题' }).locator('input').waitFor();
+  const blockerTitle = await page.locator('label', { hasText: '阻塞项标题' }).locator('input').inputValue();
+  if (blockerTitle !== 'Packaged Timeline launch blocker') {
+    throw new Error(`Packaged Timeline blocker follow-up focused the wrong blocker: ${blockerTitle}`);
+  }
+
+  await page
+    .locator('.timeline-item', { hasText: '任务依赖更新：Packaged Timeline upstream fixture。' })
+    .getByRole('button', { name: '先解阻塞' })
+    .click();
+
+  await page.getByText('Edit Dependency').waitFor();
+  const dependencyReason = await page.locator('label', { hasText: '依赖说明' }).locator('textarea').inputValue();
+  if (dependencyReason !== 'Need upstream Timeline fixture to finish first.') {
+    throw new Error(`Packaged Timeline dependency follow-up focused the wrong dependency: ${dependencyReason}`);
+  }
+
+  const nextStep = await page.getByLabel('Next Step').inputValue();
+  if (nextStep !== '优先推动上游任务“Packaged Timeline upstream fixture”，并确认是否解除依赖。') {
+    throw new Error(`Packaged Timeline dependency follow-up filled the wrong next step: ${nextStep}`);
+  }
+}
+
 async function assertTaskTimelineObjectActions(page) {
   await page.getByRole('button', { name: '查看 Run' }).first().click();
   await page.getByRole('heading', { name: 'summarize / completed' }).waitFor();
@@ -298,7 +441,7 @@ async function assertTaskTimelineObjectActions(page) {
 
   await page.getByRole('button', { name: /tasks/i }).click();
   await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
-  await page.getByRole('button', { name: '展开全部 (9)' }).click();
+  await page.getByRole('button', { name: '展开全部 (12)' }).click();
 
   await page.getByRole('button', { name: '查看 Decision' }).first().click();
   await page.getByRole('heading', { name: '待拍板事项' }).waitFor();
@@ -306,7 +449,7 @@ async function assertTaskTimelineObjectActions(page) {
 
   await page.getByRole('button', { name: /tasks/i }).click();
   await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
-  await page.getByRole('button', { name: '展开全部 (9)' }).click();
+  await page.getByRole('button', { name: '展开全部 (12)' }).click();
 
   await page.getByRole('button', { name: '查看来源' }).first().click();
   await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
@@ -377,8 +520,10 @@ try {
   seedTimelineFixture();
 
   const page = await app.firstWindow({ timeout: timeoutMs });
+  await page.reload({ waitUntil: 'domcontentloaded' });
   await assertTimelineUi(page);
   await assertTaskTimelineFollowUpActions(page);
+  await assertTaskTimelineContextFollowUpActions(page);
   await assertTaskTimelineObjectActions(page);
   await assertRelatedRunTimelineUi(page);
   await assertRelatedDecisionTimelineUi(page);

@@ -526,6 +526,14 @@ Current verification:
   extending the same packaged Timeline UI smoke to click seeded Timeline
   follow-up suggestions and verify they prefill the Task detail `Next Step`
   recovery input.
+- on 2026-05-02, `npm test -- --run src/renderer/App.test.tsx -t "dependency
+  timeline suggestions"` and `npm run smoke:timeline-ui:mac` passed locally
+  after wiring dependency Timeline suggestions into the Task dependency
+  recovery form and extending the packaged smoke across risk, blocker, and
+  dependency follow-up actions.
+- on 2026-05-02, `npm run verify` passed locally with 128 test files / 938
+  tests after the dependency Timeline follow-up handler and packaged
+  risk/blocker/dependency Timeline action smoke updates.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.
@@ -585,7 +593,7 @@ Current verification:
 - `npm run smoke:build` when package/build entrypoints change
 - `npm run smoke:package:mac` after producing `release/mac-arm64/Taskplane.app`, including ASAR content checks
 - `npm run smoke:runtime:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged startup and SQLite schema initialization
-- `npm run smoke:timeline-ui:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged Task detail Timeline grouping/expansion coverage, Timeline follow-up/object-action navigation, and related Timeline grouping on Runs and Decisions
+- `npm run smoke:timeline-ui:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged Task detail Timeline grouping/expansion coverage, Timeline follow-up/object-action navigation across task/risk/blocker/dependency context, and related Timeline grouping on Runs and Decisions
 - `npm run smoke:release:mac` for the combined unsigned macOS build/package/runtime path
 - `npm run accept:agent-local` for the local agent stack, including the non-live
   sandbox/code-agent domain boundary and the Code Agent preflight UI/config/IPC
@@ -648,7 +656,7 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. targeted packaged-app Timeline action smoke for seeded risk/blocker/dependency
-   suggestions that touch the risk and context-object recovery forms
+1. targeted packaged-app Timeline action smoke for dependency resolution /
+   upstream-task return paths
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.
