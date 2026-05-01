@@ -956,7 +956,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - Runs detail recovery strip now uses the same payload-bound session filtering
   for replay/recovery review, so a resume checkpoint bound to a missing or
   different session is shown as `checkpoint_missing` inspect-first recovery for
-  the current latest session instead of manual-resume guidance.
+  the current latest session instead of manual-resume guidance. The same
+  filtered checkpoint set now feeds `Next safe move` and recovery-run
+  instruction drafts, so visible guidance and task prefill do not imply a
+  resume path that the backend will reject.
 - Backend paused-run continuation mirrors that selection rule: stale or
   incompatible payloads are skipped, exactly one valid supported payload may
   execute, and multiple valid resume checkpoints fail closed before any local

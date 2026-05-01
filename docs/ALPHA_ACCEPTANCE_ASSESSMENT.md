@@ -19,9 +19,10 @@ Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
 - on 2026-05-01, `npm run verify` passed locally with 127 test files / 923
-  tests after aligning Runs recovery-strip replay review with payload-bound
-  resume session filtering, so checkpoints bound to missing sessions remain
-  inspect-first instead of manual-resume guidance.
+  tests after aligning Runs recovery-strip replay review, next-safe-move copy,
+  and recovery instruction drafts with payload-bound resume session filtering,
+  so checkpoints bound to missing sessions remain inspect-first instead of
+  manual-resume guidance.
 - on 2026-05-01, `npm run verify` passed locally with 127 test files / 923
   tests after aligning Runs-page paused-run continuation gating with backend
   recovery safety: multiple valid resume checkpoints and missing

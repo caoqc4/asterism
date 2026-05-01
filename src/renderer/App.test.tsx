@@ -4143,6 +4143,11 @@ describe('App UI flow', () => {
         'Recovery anchors：run=run_paused_missing_resume_session / session=agent_session_paused_current / checkpoints=none / action=inspect_evidence',
       ),
     ).toBeTruthy();
+    expect(
+      recoverySafety.getByText(
+        'Next safe move：复核最近一次 agent run 的暂停或确认原因；没有 recovery checkpoint 时，先查看执行证据再决定是否重跑。',
+      ),
+    ).toBeTruthy();
     expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();
     expect(runPausedMissingSessionApi.continuePausedRun).not.toHaveBeenCalled();
   });

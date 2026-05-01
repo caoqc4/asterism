@@ -452,9 +452,10 @@ Covered today:
 - Runs page paused-run continuation gating now mirrors those backend recovery
   boundaries by hiding the continue button for multiple valid resume
   checkpoints or missing payload-bound agent-session bindings
-- Runs page recovery-strip replay review now mirrors payload-bound
-  agent-session filtering, keeping missing-bound-session resume checkpoints in
-  `checkpoint_missing` inspect-first recovery
+- Runs page recovery-strip replay review, next-safe-move copy, and recovery
+  instruction drafts now mirror payload-bound agent-session filtering, keeping
+  missing-bound-session resume checkpoints in `checkpoint_missing`
+  inspect-first recovery
 - `Settings save flow`
 - `Settings save flow` now also asserts Home scheduler enabled/running state and scheduler timestamps refresh from Home brief data
 - `Settings save flow` now also covers read-only workspace root persistence

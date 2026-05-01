@@ -885,7 +885,7 @@ export function RunsPage({
   const focusNextStepDraft = detail
     ? latestAgentSession
       ? formatAgentSessionReplayNextStepDraft({
-          checkpoints: detailCheckpoints,
+          checkpoints: latestAgentSessionReplayCheckpoints,
           runType: detail.type,
           session: latestAgentSession,
           steps: detailSteps,
@@ -898,7 +898,7 @@ export function RunsPage({
     : '';
   const focusRunInstructionsDraft = detail && latestAgentSession
     ? formatAgentSessionRecoveryRunInstructions({
-        checkpoints: detailCheckpoints,
+        checkpoints: latestAgentSessionReplayCheckpoints,
         runType: detail.type,
         session: latestAgentSession,
         steps: detailSteps,
