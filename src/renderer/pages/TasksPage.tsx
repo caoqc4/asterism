@@ -3460,7 +3460,7 @@ export function TasksPage({
                         查看恢复 checkpoint
                       </button>
                       <p className="meta">
-                        续跑前先打开 Run 证据；只有存在 open resume checkpoint 时，Runs 页才会显示继续入口。
+                        续跑前先打开 Run 证据；只有存在唯一、有效、会话绑定可恢复的 open resume checkpoint 时，Runs 页才会显示继续入口。
                       </p>
                     </div>
                   ) : null}

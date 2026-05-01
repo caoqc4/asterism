@@ -1036,7 +1036,7 @@ export function RunsPage({
               </div>
               {detail.status === 'paused' && !canContinuePausedRun ? (
                 <p className="meta">
-                  当前 paused run 没有可续跑的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。
+                  当前 paused run 没有唯一、有效、会话绑定可恢复的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。
                 </p>
               ) : null}
               {detail.status === 'needs_confirmation' ? (

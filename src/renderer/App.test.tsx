@@ -3254,7 +3254,7 @@ describe('App UI flow', () => {
     await screen.findByRole('heading', { name: 'High risk task' });
 
     expect(screen.getByText(/最近一次 agent run 暂停待复核/)).toBeTruthy();
-    expect(screen.getByText('续跑前先打开 Run 证据；只有存在 open resume checkpoint 时，Runs 页才会显示继续入口。')).toBeTruthy();
+    expect(screen.getByText('续跑前先打开 Run 证据；只有存在唯一、有效、会话绑定可恢复的 open resume checkpoint 时，Runs 页才会显示继续入口。')).toBeTruthy();
     expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();
     await user.click(screen.getByRole('button', { name: '查看恢复 checkpoint' }));
 
@@ -3941,7 +3941,7 @@ describe('App UI flow', () => {
 
     expect(
       await screen.findByText(
-        '当前 paused run 没有可续跑的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。',
+        '当前 paused run 没有唯一、有效、会话绑定可恢复的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。',
       ),
     ).toBeTruthy();
     expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();
@@ -3990,7 +3990,7 @@ describe('App UI flow', () => {
     expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
     expect(
       await screen.findByText(
-        '当前 paused run 没有可续跑的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。',
+        '当前 paused run 没有唯一、有效、会话绑定可恢复的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。',
       ),
     ).toBeTruthy();
     expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();
@@ -4046,7 +4046,7 @@ describe('App UI flow', () => {
     expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
     expect(
       await screen.findByText(
-        '当前 paused run 没有可续跑的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。',
+        '当前 paused run 没有唯一、有效、会话绑定可恢复的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。',
       ),
     ).toBeTruthy();
     expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();
@@ -4129,7 +4129,7 @@ describe('App UI flow', () => {
     expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
     expect(
       await screen.findByText(
-        '当前 paused run 没有可续跑的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。',
+        '当前 paused run 没有唯一、有效、会话绑定可恢复的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。',
       ),
     ).toBeTruthy();
     const recoverySafety = within(screen.getByLabelText('Run recovery safety'));
