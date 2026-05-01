@@ -1103,7 +1103,8 @@ The project is past initial architecture assembly. Current work should favor pro
 - Browser controlled interaction BCI4 is locally accepted with a shared checkpoint
   payload builder for possible side-effect actions. It requires a validated
   checkpoint-required request, captures URL/origin/action/policy/screenshot/text
-  review fields, and explicitly leaves resume deferred.
+  review fields, and left resume to the later Browser Controlled Resume slice
+  described below.
 - Browser controlled interaction BCI5 is locally accepted with a Runs review helper and
   read-only Runs detail card for dry-run, local-QA, blocked, and
   checkpoint-required evidence. It adds no generic browser prompt, IPC trigger,
