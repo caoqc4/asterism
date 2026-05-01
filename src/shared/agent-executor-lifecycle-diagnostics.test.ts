@@ -16,6 +16,7 @@ function buildAvailability(): AgentExecutorLifecycleServiceAvailability {
     controlMode: 'dry_run_planned',
     settleMode: 'dry_run_planned',
     supportedControlRequests: ['heartbeat', 'interrupt', 'cancel'],
+    unsupportedControlRequests: [],
     supportedSettleStatuses: ['completed', 'failed', 'paused'],
     blockedReasons: [
       'No real executor runtime is connected.',
@@ -33,6 +34,7 @@ function buildAvailability(): AgentExecutorLifecycleServiceAvailability {
       'automaticStart=no',
       'queueWorker=no',
       'controlRequests=heartbeat,interrupt,cancel',
+      'unsupportedControlRequests=none',
       'controlMode=dry_run_planned',
       'settleResults=completed,failed,paused',
       'settleMode=dry_run_planned',
@@ -55,10 +57,13 @@ describe('agent executor lifecycle diagnostics', () => {
     });
 
     expect(availability.supportedControlRequests).toEqual(['heartbeat', 'interrupt']);
+    expect(availability.unsupportedControlRequests).toEqual(['cancel']);
     expect(availability.summary).toContain('controlRequests=heartbeat,interrupt');
+    expect(availability.summary).toContain('unsupportedControlRequests=cancel');
     expect(availability.summary).not.toContain('controlRequests=heartbeat,interrupt,cancel');
     expect(buildAgentExecutorLifecycleAvailabilityPresentation(availability)).toMatchObject({
       controlRequests: 'controlRequests=heartbeat,interrupt / controlMode=dry_run_planned',
+      unsupportedControlRequests: 'unsupportedControlRequests=cancel',
       runtime: 'runtimeReady=no / queueWorker=no / automaticStart=no',
       settleResults: 'settleResults=completed,failed,paused / settleMode=dry_run_planned',
     });
@@ -74,11 +79,14 @@ describe('agent executor lifecycle diagnostics', () => {
     });
 
     expect(availability.supportedControlRequests).toEqual([]);
+    expect(availability.unsupportedControlRequests).toEqual(['heartbeat', 'interrupt', 'cancel']);
     expect(availability.supportedSettleStatuses).toEqual(['completed', 'failed', 'paused']);
     expect(availability.summary).toContain('controlRequests=none');
+    expect(availability.summary).toContain('unsupportedControlRequests=heartbeat,interrupt,cancel');
     expect(availability.summary).toContain('settleResults=completed,failed,paused');
     expect(buildAgentExecutorLifecycleAvailabilityPresentation(availability)).toMatchObject({
       controlRequests: 'controlRequests=none / controlMode=dry_run_planned',
+      unsupportedControlRequests: 'unsupportedControlRequests=heartbeat,interrupt,cancel',
       settleResults: 'settleResults=completed,failed,paused / settleMode=dry_run_planned',
       summary: expect.stringContaining('controlRequests=none'),
     });
@@ -89,6 +97,7 @@ describe('agent executor lifecycle diagnostics', () => {
       status: 'Executor lifecycle / status=dry_run_available',
       runtime: 'runtimeReady=no / queueWorker=no / automaticStart=no',
       controlRequests: 'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
+      unsupportedControlRequests: 'unsupportedControlRequests=none',
       settleResults: 'settleResults=completed,failed,paused / settleMode=dry_run_planned',
       exposure: 'modelExposure=hidden / modelVisibleTools=no',
       blocked: [
@@ -106,6 +115,7 @@ describe('agent executor lifecycle diagnostics', () => {
         'automaticStart=no',
         'queueWorker=no',
         'controlRequests=heartbeat,interrupt,cancel',
+        'unsupportedControlRequests=none',
         'controlMode=dry_run_planned',
         'settleResults=completed,failed,paused',
         'settleMode=dry_run_planned',

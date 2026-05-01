@@ -45,6 +45,7 @@ describe('createAgentExecutorLifecycleService', () => {
       controlMode: 'dry_run_planned',
       settleMode: 'dry_run_planned',
       supportedControlRequests: ['heartbeat', 'interrupt', 'cancel'],
+      unsupportedControlRequests: [],
       supportedSettleStatuses: ['completed', 'failed', 'paused'],
       blockedReasons: [
         'No real executor runtime is connected.',
@@ -62,6 +63,7 @@ describe('createAgentExecutorLifecycleService', () => {
         'automaticStart=no',
         'queueWorker=no',
         'controlRequests=heartbeat,interrupt,cancel',
+        'unsupportedControlRequests=none',
         'controlMode=dry_run_planned',
         'settleResults=completed,failed,paused',
         'settleMode=dry_run_planned',
@@ -81,6 +83,7 @@ describe('createAgentExecutorLifecycleService', () => {
       automaticStartAllowed: false,
       queueWorkerAllowed: false,
       supportedControlRequests: ['heartbeat', 'interrupt'],
+      unsupportedControlRequests: ['cancel'],
       supportedSettleStatuses: ['completed', 'failed', 'paused'],
       summary: expect.stringContaining('controlRequests=heartbeat,interrupt'),
     });
@@ -93,6 +96,7 @@ describe('createAgentExecutorLifecycleService', () => {
     })).toMatchObject({
       runtimeReady: false,
       supportedControlRequests: [],
+      unsupportedControlRequests: ['heartbeat', 'interrupt', 'cancel'],
       summary: expect.stringContaining('controlRequests=none'),
     });
   });

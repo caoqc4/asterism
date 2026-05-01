@@ -1,4 +1,5 @@
 import {
+  AGENT_EXECUTOR_LIFECYCLE_CONTROL_REQUEST_TYPES,
   AGENT_EXECUTOR_LIFECYCLE_SETTLE_STATUSES,
   buildExecutorLifecycleControlSupport,
   listSupportedExecutorLifecycleControlRequests,
@@ -16,6 +17,7 @@ export type AgentExecutorLifecycleServiceAvailability = {
   controlMode: 'dry_run_planned';
   settleMode: 'dry_run_planned';
   supportedControlRequests: AgentExecutorLifecycleControlRequestType[];
+  unsupportedControlRequests: AgentExecutorLifecycleControlRequestType[];
   supportedSettleStatuses: AgentExecutorLifecycleSettleStatus[];
   blockedReasons: string[];
   nextAction: string;
@@ -27,6 +29,7 @@ export type AgentExecutorLifecycleAvailabilityPresentation = {
   status: string;
   runtime: string;
   controlRequests: string;
+  unsupportedControlRequests: string;
   settleResults: string;
   exposure: string;
   blocked: string;
@@ -46,6 +49,9 @@ export function buildDryRunAgentExecutorLifecycleAvailability(params: {
   const supportedControlRequests = listSupportedExecutorLifecycleControlRequests(
     buildExecutorLifecycleControlSupport(params.controlSupport),
   );
+  const unsupportedControlRequests = AGENT_EXECUTOR_LIFECYCLE_CONTROL_REQUEST_TYPES.filter(
+    (request) => !supportedControlRequests.includes(request),
+  );
   const supportedSettleStatuses = [...AGENT_EXECUTOR_LIFECYCLE_SETTLE_STATUSES];
 
   return {
@@ -57,6 +63,7 @@ export function buildDryRunAgentExecutorLifecycleAvailability(params: {
     controlMode: 'dry_run_planned',
     settleMode: 'dry_run_planned',
     supportedControlRequests,
+    unsupportedControlRequests,
     supportedSettleStatuses,
     blockedReasons,
     nextAction,
@@ -70,6 +77,7 @@ export function buildDryRunAgentExecutorLifecycleAvailability(params: {
       'automaticStart=no',
       'queueWorker=no',
       `controlRequests=${supportedControlRequests.join(',') || 'none'}`,
+      `unsupportedControlRequests=${unsupportedControlRequests.join(',') || 'none'}`,
       'controlMode=dry_run_planned',
       `settleResults=${supportedSettleStatuses.join(',')}`,
       'settleMode=dry_run_planned',
@@ -96,6 +104,7 @@ export function buildAgentExecutorLifecycleAvailabilityPresentation(
       `controlRequests=${availability.supportedControlRequests.join(',') || 'none'}`,
       `controlMode=${availability.controlMode}`,
     ].join(' / '),
+    unsupportedControlRequests: `unsupportedControlRequests=${availability.unsupportedControlRequests.join(',') || 'none'}`,
     settleResults: [
       `settleResults=${availability.supportedSettleStatuses.join(',') || 'none'}`,
       `settleMode=${availability.settleMode}`,
@@ -116,6 +125,7 @@ export function buildAgentExecutorLifecycleAvailabilityPresentation(
       `automaticStart=${availability.automaticStartAllowed ? 'yes' : 'no'}`,
       `queueWorker=${availability.queueWorkerAllowed ? 'yes' : 'no'}`,
       `controlRequests=${availability.supportedControlRequests.join(',') || 'none'}`,
+      `unsupportedControlRequests=${availability.unsupportedControlRequests.join(',') || 'none'}`,
       `controlMode=${availability.controlMode}`,
       `settleResults=${availability.supportedSettleStatuses.join(',') || 'none'}`,
       `settleMode=${availability.settleMode}`,

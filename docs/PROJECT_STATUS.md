@@ -353,6 +353,10 @@ The project is past initial architecture assembly. Current work should favor pro
   available before renderer presentation formatting; AI config status coverage
   now locks those mode fields plus supported control and settle lists at the
   status boundary.
+- Executor lifecycle availability now also carries structured
+  `unsupportedControlRequests`, and Task detail, Runs recovery, Settings, and
+  shared presentation coverage render that fail-closed adapter fact explicitly
+  without implying runtime readiness.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, hidden-tool-family facts, and dry-run executor lifecycle status

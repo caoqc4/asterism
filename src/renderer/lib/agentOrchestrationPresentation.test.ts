@@ -212,6 +212,7 @@ describe('agent orchestration presentation', () => {
       runtime: 'runtimeReady=no / queueWorker=no / automaticStart=no',
       settleResults: 'settleResults=completed,failed,paused / settleMode=dry_run_planned',
       status: 'Executor lifecycle / status=dry_run_available',
+      unsupportedControlRequests: 'unsupportedControlRequests=none',
     }));
     expect(presentation.summary).toBe(
       'runtime=ready / profile=manual_sandbox_producer / lifecycle=drafted / hidden=browser_playwright,mcp,skill,computer_use,creator_connector / modelVisibleHiddenTools=no / automation=disabled / autoStart=no',
@@ -229,6 +230,7 @@ describe('agent orchestration presentation', () => {
       'Executor lifecycle：Executor lifecycle / status=dry_run_available',
       'runtimeReady=no / queueWorker=no / automaticStart=no',
       'controlRequests=heartbeat,interrupt,cancel / controlMode=dry_run_planned',
+      'unsupportedControlRequests=none',
       'settleResults=completed,failed,paused / settleMode=dry_run_planned',
       'modelExposure=hidden / modelVisibleTools=no',
       'blocked=No real executor runtime is connected.; Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.; Model-visible tool exposure remains hidden.',
@@ -250,6 +252,9 @@ describe('agent orchestration presentation', () => {
 
     expect(buildExecutorLifecycleDiagnosticLines(presentation.executorLifecycle)).toContain(
       'controlRequests=heartbeat,interrupt / controlMode=dry_run_planned',
+    );
+    expect(buildExecutorLifecycleDiagnosticLines(presentation.executorLifecycle)).toContain(
+      'unsupportedControlRequests=cancel',
     );
     expect(buildExecutorLifecycleDiagnosticLines(presentation.executorLifecycle)).toContain(
       'settleResults=completed,failed,paused / settleMode=dry_run_planned',
