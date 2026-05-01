@@ -59,7 +59,7 @@ import {
   getTaskTimelinePriority,
   getTaskTimelinePriorityLabel,
   getTaskTimelineResponsibilitySummary,
-  groupTaskTimelineEventsByPriority,
+  groupTaskTimelineEventsByDateAndPriority,
   interpretTaskTimelineEvent,
   parseTimelinePayload,
 } from '@shared/working-context/timeline';
@@ -2167,7 +2167,7 @@ export function TasksPage({
       ? detail.timeline
       : getTaskTimelinePreviewEvents(detail.timeline, TIMELINE_PREVIEW_COUNT)
     : [];
-  const visibleTimelineGroups = groupTaskTimelineEventsByPriority(visibleTimeline);
+  const visibleTimelineDateGroups = groupTaskTimelineEventsByDateAndPriority(visibleTimeline);
   const primaryMoves = getPrimaryMoveConfig(detail, resumeLane);
   const actionSetupOrder = getActionSetupOrder(detail, resumeLane);
   const snapshotArtifact = detail?.artifacts[0] ?? null;
@@ -3591,7 +3591,7 @@ export function TasksPage({
                 <div className="task-row">
                   <div>
                     <h3>Timeline</h3>
-                    <p className="meta">预览优先展示关键事件与解释事件，较弱的留痕事件默认后退。</p>
+                    <p className="meta">预览优先展示关键事件与解释事件；Timeline 先按日期分段，再按事件强度分组。</p>
                   </div>
                   {detail.timeline.length > TIMELINE_PREVIEW_COUNT ? (
                     <button
@@ -3604,61 +3604,69 @@ export function TasksPage({
                   ) : null}
                 </div>
                 <div className="timeline-list">
-                  {visibleTimelineGroups.map((group) => (
-                    <Fragment key={group.id}>
-                      <div className="timeline-group-heading">
-                        <span>{group.title}</span>
-                        <span>{group.events.length}</span>
+                  {visibleTimelineDateGroups.map((dateGroup) => (
+                    <Fragment key={dateGroup.id}>
+                      <div className="timeline-date-heading">
+                        <span>{dateGroup.title}</span>
+                        <span>{dateGroup.eventCount}</span>
                       </div>
-                      {group.events.map((event) => (
-                        <div className={`timeline-item ${getTimelineToneClass(event.type)}`} key={event.id}>
-                          <div className="task-row">
-                            <strong>{formatTimelineSummary(event)}</strong>
-                            <div className="timeline-badge-row">
-                              <span
-                                className={`signal-pill timeline-badge ${getTimelineToneClass(event.type)}`}
-                              >
-                                {getTaskTimelineEventLabel(event.type)}
-                              </span>
-                              <span className="signal-pill timeline-priority-pill">
-                                {getTaskTimelinePriorityLabel(event.type)}
-                              </span>
-                              {getTaskTimelineLaneLabel(event.type) ? (
-                                <span
-                                  className={`signal-pill lane-status lane-status-${getTaskTimelineLane(event.type)}`}
-                                >
-                                  {getTaskTimelineLaneLabel(event.type)}
-                                </span>
-                              ) : null}
-                            </div>
+                      {dateGroup.priorityGroups.map((group) => (
+                        <Fragment key={`${dateGroup.id}:${group.id}`}>
+                          <div className="timeline-group-heading">
+                            <span>{group.title}</span>
+                            <span>{group.events.length}</span>
                           </div>
-                          <p className="meta">{event.createdAt}</p>
-                          {getTaskTimelineResponsibilitySummary(event) ? (
-                            <p className="meta">{getTaskTimelineResponsibilitySummary(event)}</p>
-                          ) : null}
-                          {getTimelineActionLabel(event.type) || getTimelineObjectLabel(event) ? (
-                            <div className="timeline-actions">
-                              {getTimelineActionLabel(event.type) ? (
-                                <button
-                                  className="ghost-button timeline-action"
-                                  onClick={() => handleTimelineAction(event)}
-                                  type="button"
-                                >
-                                  {getTimelineActionLabel(event.type)}
-                                </button>
+                          {group.events.map((event) => (
+                            <div className={`timeline-item ${getTimelineToneClass(event.type)}`} key={event.id}>
+                              <div className="task-row">
+                                <strong>{formatTimelineSummary(event)}</strong>
+                                <div className="timeline-badge-row">
+                                  <span
+                                    className={`signal-pill timeline-badge ${getTimelineToneClass(event.type)}`}
+                                  >
+                                    {getTaskTimelineEventLabel(event.type)}
+                                  </span>
+                                  <span className="signal-pill timeline-priority-pill">
+                                    {getTaskTimelinePriorityLabel(event.type)}
+                                  </span>
+                                  {getTaskTimelineLaneLabel(event.type) ? (
+                                    <span
+                                      className={`signal-pill lane-status lane-status-${getTaskTimelineLane(event.type)}`}
+                                    >
+                                      {getTaskTimelineLaneLabel(event.type)}
+                                    </span>
+                                  ) : null}
+                                </div>
+                              </div>
+                              <p className="meta">{event.createdAt}</p>
+                              {getTaskTimelineResponsibilitySummary(event) ? (
+                                <p className="meta">{getTaskTimelineResponsibilitySummary(event)}</p>
                               ) : null}
-                              {getTimelineObjectLabel(event) ? (
-                                <button
-                                  className="ghost-button timeline-action"
-                                  onClick={() => handleTimelineObjectOpen(event)}
-                                  type="button"
-                                >
-                                  {getTimelineObjectLabel(event)}
-                                </button>
+                              {getTimelineActionLabel(event.type) || getTimelineObjectLabel(event) ? (
+                                <div className="timeline-actions">
+                                  {getTimelineActionLabel(event.type) ? (
+                                    <button
+                                      className="ghost-button timeline-action"
+                                      onClick={() => handleTimelineAction(event)}
+                                      type="button"
+                                    >
+                                      {getTimelineActionLabel(event.type)}
+                                    </button>
+                                  ) : null}
+                                  {getTimelineObjectLabel(event) ? (
+                                    <button
+                                      className="ghost-button timeline-action"
+                                      onClick={() => handleTimelineObjectOpen(event)}
+                                      type="button"
+                                    >
+                                      {getTimelineObjectLabel(event)}
+                                    </button>
+                                  ) : null}
+                                </div>
                               ) : null}
                             </div>
-                          ) : null}
-                        </div>
+                          ))}
+                        </Fragment>
                       ))}
                     </Fragment>
                   ))}

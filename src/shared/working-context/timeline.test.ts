@@ -8,6 +8,7 @@ import {
   isResumeLatestChangeMetaEvent,
   getTaskTimelineFollowUpActionLabel,
   getTaskTimelineObjectAction,
+  groupTaskTimelineEventsByDateAndPriority,
   getTaskTimelinePreviewEvents,
   getTaskTimelinePriority,
   getTaskTimelineResponsibilitySummary,
@@ -235,6 +236,51 @@ describe('getTaskTimelinePreviewEvents', () => {
       ['关键事件', ['run_failed']],
       ['解释事件', ['source_updated']],
       ['留痕事件', ['task_updated']],
+    ]);
+  });
+
+  it('groups timeline events by date before priority for scan-friendly history', () => {
+    const groups = groupTaskTimelineEventsByDateAndPriority([
+      {
+        id: 'old_run_failed',
+        type: 'task.run_failed',
+        createdAt: '2026-01-01T05:00:00.000Z',
+      },
+      {
+        id: 'new_trace',
+        type: 'task.updated',
+        createdAt: '2026-01-02T09:00:00.000Z',
+      },
+      {
+        id: 'old_source_updated',
+        type: 'source_context.updated',
+        createdAt: '2026-01-01T04:00:00.000Z',
+      },
+    ]);
+
+    expect(groups.map((group) => [
+      group.title,
+      group.eventCount,
+      group.priorityGroups.map((priorityGroup) => [
+        priorityGroup.title,
+        priorityGroup.events.map((event) => event.id),
+      ]),
+    ])).toEqual([
+      [
+        '2026-01-02',
+        1,
+        [
+          ['留痕事件', ['new_trace']],
+        ],
+      ],
+      [
+        '2026-01-01',
+        2,
+        [
+          ['关键事件', ['old_run_failed']],
+          ['解释事件', ['old_source_updated']],
+        ],
+      ],
     ]);
   });
 

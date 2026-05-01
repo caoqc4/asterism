@@ -10,6 +10,13 @@ export type TaskTimelinePriorityGroup<T> = {
   events: T[];
 };
 
+export type TaskTimelineDateGroup<T> = {
+  id: string;
+  title: string;
+  eventCount: number;
+  priorityGroups: Array<TaskTimelinePriorityGroup<T>>;
+};
+
 export type WorkingContextRecentChange =
   | {
       kind: 'run_failed';
@@ -775,6 +782,47 @@ export function groupTaskTimelineEventsByPriority<T extends Pick<TimelineEventRe
   }
 
   return groups.filter((group) => group.events.length > 0);
+}
+
+export function getTaskTimelineDateGroupTitle(createdAt: string): string {
+  const date = createdAt.split('T')[0]?.trim();
+  return date || '日期未知';
+}
+
+export function groupTaskTimelineEventsByDateAndPriority<
+  T extends Pick<TimelineEventRecord, 'createdAt' | 'type'>,
+>(events: T[]): Array<TaskTimelineDateGroup<T>> {
+  const groupsByDate = new Map<string, T[]>();
+
+  for (const event of events) {
+    const date = getTaskTimelineDateGroupTitle(event.createdAt);
+    const dateEvents = groupsByDate.get(date);
+
+    if (dateEvents) {
+      dateEvents.push(event);
+    } else {
+      groupsByDate.set(date, [event]);
+    }
+  }
+
+  return [...groupsByDate.entries()]
+    .sort(([left], [right]) => {
+      if (left === '日期未知') {
+        return 1;
+      }
+
+      if (right === '日期未知') {
+        return -1;
+      }
+
+      return right.localeCompare(left);
+    })
+    .map(([date, dateEvents]) => ({
+      id: date,
+      title: date,
+      eventCount: dateEvents.length,
+      priorityGroups: groupTaskTimelineEventsByPriority(dateEvents),
+    }));
 }
 
 export function getTaskTimelinePreviewEvents<T extends Pick<TimelineEventRecord, 'type' | 'createdAt'>>(

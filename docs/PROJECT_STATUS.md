@@ -195,6 +195,12 @@ The project is past initial architecture assembly. Current work should favor pro
 - Completed agent sessions now route task-side recovery copy to terminal
   evidence review, explicitly saying the old session should not be restored or
   replayed.
+- Task detail Timeline now groups visible events by date before applying the
+  existing key/explain/trace priority groups, making longer histories easier to
+  scan without changing timeline storage or recovery semantics.
+- `npm run verify` passed locally on 2026-05-01 after the Task detail Timeline
+  date-grouping slice. Current local acceptance status: 127 test files / 916
+  tests.
 - RunService and DecisionService now pass checkpoint-backed session updates
   through a shared settlement projection, so `running` sessions are treated as
   requiring executor liveness rather than being checkpoint-settled.
@@ -1469,7 +1475,7 @@ npm run verify
 Latest local baseline:
 
 - 127 test files
-- 915 tests
+- 916 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build

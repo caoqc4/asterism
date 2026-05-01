@@ -656,6 +656,17 @@ button {
   border: 1px solid transparent;
 }
 
+.timeline-date-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
 .timeline-group-heading {
   display: flex;
   align-items: center;

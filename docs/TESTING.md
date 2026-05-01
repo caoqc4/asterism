@@ -432,6 +432,8 @@ Covered today:
   evidence review with no restore/replay prompt
 - `Runs` page trigger form refresh and newly-created run selection, including repeated triggers
 - shared timeline summaries across `Tasks / Decisions / Runs`
+- `Tasks` timeline date grouping layered above existing key/explain/trace
+  priority groups
 - `Settings save flow`
 - `Settings save flow` now also asserts Home scheduler enabled/running state and scheduler timestamps refresh from Home brief data
 - `Settings save flow` now also covers read-only workspace root persistence
@@ -479,9 +481,10 @@ npm run verify
 Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
-- on 2026-05-01, `npm run verify` passed locally with 127 test files / 915
-  tests after Runs recovery anchor, completed-session terminal evidence, and
-  cancelled-session new-run routing coverage.
+- on 2026-05-01, `npm run verify` passed locally with 127 test files / 916
+  tests after Task detail Timeline date grouping, Runs recovery anchor,
+  completed-session terminal evidence, and cancelled-session new-run routing
+  coverage.
 - GitHub Actions runs `npm run verify` on pushes to `main` and pull requests when Actions capacity is available
 - `npm run smoke:build` when package/build entrypoints change
 - `npm run smoke:package:mac` after producing `release/mac-arm64/Taskplane.app`, including ASAR content checks
@@ -547,6 +550,6 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. renderer coverage for date or object-family timeline grouping if that UI is added
+1. renderer coverage for object-family timeline grouping if that UI is added
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.
