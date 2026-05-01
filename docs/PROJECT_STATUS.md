@@ -1474,7 +1474,9 @@ Latest local baseline:
 - production renderer build
 - Electron main-process build
 - build smoke check (`npm run smoke:build` passed locally on 2026-05-01)
-- macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- macOS package and runtime smoke checks for the unpacked app
+  (`npm run smoke:release:mac` passed locally on 2026-05-01), including ASAR
+  contents, isolated startup, and packaged SQLite schema initialization
 - `npm run accept:sandbox-coding` and `npm run verify` passed locally on
   2026-05-01 after moving Code Agent selected workspace-context validation
   ahead of provider runtime config resolution. Invalid selected context now

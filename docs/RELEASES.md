@@ -120,7 +120,9 @@ As of the current alpha path:
 - `npm run smoke:package:mac` passes locally for the unpacked app
 - `npm run smoke:runtime:mac` passes locally for isolated packaged startup and
   core SQLite schema initialization
-- `npm run smoke:release:mac` passes locally for the combined unsigned macOS path
+- `npm run smoke:release:mac` passed on 2026-05-01 for the combined unsigned
+  macOS path, including Electron native-module rebuild, unsigned/ad-hoc app
+  packaging, package smoke, and isolated runtime smoke
 - `npm run accept:release:mac-preflight` passed on 2026-05-01 without signing,
   notarizing, uploading, or calling Apple services. Current readiness is
   `not-ready`: macOS host, `notarytool`, app id, product name, and mac targets
