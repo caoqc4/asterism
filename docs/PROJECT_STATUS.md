@@ -986,7 +986,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Runs checkpoint summaries now surface task-domain tool inputs for review,
   including task next-step updates, completion criteria, source context
   metadata, local note titles, and Decision draft notes before approval.
-  Current local acceptance status: 128 test files / 934 tests.
+  Source-context checkpoint coverage now locks the title/kind/URI summary while
+  keeping long source content out of inline checkpoint rows. Current local
+  acceptance status: 128 test files / 934 tests.
 - Backend paused-run continuation mirrors that selection rule: stale or
   incompatible payloads are skipped, exactly one valid supported payload may
   execute, and multiple valid resume checkpoints fail closed before any local

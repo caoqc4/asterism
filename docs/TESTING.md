@@ -511,6 +511,9 @@ Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 934
+  tests after covering source-context metadata in Runs checkpoint summaries
+  while keeping long source content out of the inline checkpoint summary.
+- on 2026-05-01, `npm run verify` passed locally with 128 test files / 934
   tests after surfacing task-domain tool inputs in Runs checkpoint summaries.
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 933
   tests after classifying `decision.draft` as a local-write/task-mutation tool

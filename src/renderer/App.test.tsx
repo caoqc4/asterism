@@ -3662,6 +3662,22 @@ describe('App UI flow', () => {
             decisionTitle: '确认本地写入：task.update_next_step',
           }),
         }),
+        buildRunCheckpoint({
+          id: 'run_checkpoint_source_context',
+          runId: checkpointRun.id,
+          stepId: 'run_step_task_update',
+          payload: JSON.stringify({
+            tool: 'source_context.create',
+            risk: 'local_write',
+            input: {
+              title: 'Launch readiness notes',
+              kind: 'artifact',
+              uri: 'taskplane://artifact/launch-readiness',
+              content: 'Long evidence body should not be duplicated in the checkpoint summary.',
+            },
+            decisionTitle: '确认本地写入：source_context.create',
+          }),
+        }),
       ],
     };
     const runCheckpointApi: ElectronApi = {
@@ -3684,6 +3700,12 @@ describe('App UI flow', () => {
         '工具：task.update_next_step；风险：local_write；下一步：Review launch evidence；Decision：确认本地写入：task.update_next_step',
       ),
     ).toBeTruthy();
+    expect(
+      screen.getByText(
+        '工具：source_context.create；风险：local_write；来源：Launch readiness notes；类型：artifact；URI：taskplane://artifact/launch-readiness；Decision：确认本地写入：source_context.create',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText(/Long evidence body should not be duplicated/)).toBeNull();
   });
 
   it('shows workspace patch checkpoint files and diff preview on the runs page', async () => {
