@@ -947,7 +947,8 @@ The project is past initial architecture assembly. Current work should favor pro
   wiring: approved tool/browser/patch resume completion marks the latest
   checkpoint-backed session `completed`, failed or blocked resume marks it
   `failed`, and deferred/cancelled Decisions mark it `cancelled`, while
-  unsupported/no-op approvals remain review-only.
+  unsupported/no-op approvals remain review-only with run evidence that names
+  the checkpoint tool, checkpoint kind, and manual next step.
 - Runs detail now only exposes `继续 paused run` when the paused Run has exactly
   one open and locally valid `resume` checkpoint payload for the current
   run/task, and any payload-bound `agentSessionId` resolves to a
@@ -989,6 +990,11 @@ The project is past initial architecture assembly. Current work should favor pro
   Source-context checkpoint coverage now locks the title/kind/URI summary while
   keeping long source content out of inline checkpoint rows. Current local
   acceptance status: 128 test files / 934 tests.
+- Unsupported approved checkpoint resume paths now write actionable Run evidence
+  instead of a generic no-op message, including the tool, checkpoint kind,
+  reason, and manual next step for unsupported tool-permission checkpoints and
+  patch-promotion checkpoints without a preflight service. Current local
+  acceptance status: 128 test files / 936 tests.
 - Backend paused-run continuation mirrors that selection rule: stale or
   incompatible payloads are skipped, exactly one valid supported payload may
   execute, and multiple valid resume checkpoints fail closed before any local

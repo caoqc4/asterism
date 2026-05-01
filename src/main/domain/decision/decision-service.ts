@@ -83,6 +83,20 @@ function isLocalBrowserControlledOrigin(origin: string): boolean {
   }
 }
 
+function buildUnsupportedCheckpointResumeOutput(params: {
+  checkpointKind: string;
+  reason: string;
+  tool: string | null | undefined;
+}): string {
+  return [
+    '关联 Decision 已批准，但当前 checkpoint 无法自动续跑。',
+    `工具：${params.tool?.trim() || '未知'}`,
+    `Checkpoint 类型：${params.checkpointKind}`,
+    `原因：${params.reason}`,
+    '下一步：回到 Run 证据审查输入与结果，然后手动推进或重新运行。',
+  ].join('\n');
+}
+
 function buildDraftPrompt(
   task: TaskDetail,
   input: DraftDecisionInput,
@@ -329,13 +343,20 @@ export class DecisionService {
       !isToolPermissionCheckpointResumeTool(tool) ||
       !this.agentToolRegistry
     ) {
+      const unsupportedReason = !this.agentToolRegistry
+        ? '本地工具执行器未接入。'
+        : '该工具不在当前自动续跑清单内。';
       await this.runCheckpointRepository.updateStatus(checkpoint.id, 'resolved');
       await this.runStepRepository.create({
         runId: checkpoint.runId,
         kind: 'checkpoint',
         status: 'completed',
         title: `确认已通过：${decision.title}`,
-        output: '关联 Decision 已批准，但当前工具暂不支持自动续跑。',
+        output: buildUnsupportedCheckpointResumeOutput({
+          checkpointKind: checkpoint.kind,
+          reason: unsupportedReason,
+          tool: typeof tool === 'string' ? tool : null,
+        }),
       });
       return;
     }
@@ -546,7 +567,11 @@ export class DecisionService {
         kind: 'checkpoint',
         status: 'completed',
         title: `确认已通过：${decision.title}`,
-        output: '关联 Decision 已批准，但当前工具暂不支持自动续跑。',
+        output: buildUnsupportedCheckpointResumeOutput({
+          checkpointKind: 'patch_promotion',
+          reason: 'sandbox patch promotion 预检服务未接入。',
+          tool: 'workspace.staged_patch',
+        }),
       });
       return;
     }

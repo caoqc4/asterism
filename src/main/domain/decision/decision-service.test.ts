@@ -582,6 +582,82 @@ describe('DecisionService', () => {
     expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'agent', true, 'run_1');
   });
 
+  it('records actionable evidence when an approved checkpoint tool cannot resume', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord(),
+        status: 'approved',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+    };
+    const runCheckpointRepository = {
+      findOpenByDecisionId: vi.fn().mockResolvedValue({
+        id: 'run_checkpoint_1',
+        runId: 'run_1',
+        stepId: 'run_step_1',
+        kind: 'tool_permission',
+        status: 'open',
+        payload: JSON.stringify({
+          tool: 'workspace.experimental_tool',
+          input: { note: 'Needs manual review' },
+          decisionId: 'decision_1',
+        }),
+        createdAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      }),
+      updateStatus: vi.fn(),
+    };
+    const runStepRepository = {
+      create: vi.fn(),
+    };
+    const runRepository = {
+      getDetail: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const agentToolRegistry = {
+      execute: vi.fn(),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+      undefined,
+      runCheckpointRepository as never,
+      runStepRepository as never,
+      runRepository as never,
+      agentToolRegistry as never,
+    );
+
+    await service.act({
+      id: 'decision_1',
+      action: 'approve',
+    });
+
+    expect(agentToolRegistry.execute).not.toHaveBeenCalled();
+    expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith('run_checkpoint_1', 'resolved');
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_1',
+      kind: 'checkpoint',
+      status: 'completed',
+      title: '确认已通过：Need approval',
+      output: [
+        '关联 Decision 已批准，但当前 checkpoint 无法自动续跑。',
+        '工具：workspace.experimental_tool',
+        'Checkpoint 类型：tool_permission',
+        '原因：该工具不在当前自动续跑清单内。',
+        '下一步：回到 Run 证据审查输入与结果，然后手动推进或重新运行。',
+      ].join('\n'),
+    }));
+  });
+
   it('resumes approved task update checkpoints instead of treating them as unsupported', async () => {
     const decisionRepository = {
       list: vi.fn(),
@@ -1407,6 +1483,68 @@ describe('DecisionService', () => {
       }),
     );
     expect(runRepository.updateResult).not.toHaveBeenCalled();
+  });
+
+  it('records actionable evidence when patch-promotion preflight is unavailable', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord(),
+        status: 'approved',
+        title: '确认提升 sandbox patch',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+    };
+    const runCheckpointRepository = {
+      findOpenByDecisionId: vi.fn().mockResolvedValue(buildPatchPromotionCheckpoint()),
+      updateStatus: vi.fn(),
+    };
+    const runStepRepository = {
+      create: vi.fn(),
+    };
+    const runRepository = {
+      getDetail: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+      undefined,
+      runCheckpointRepository as never,
+      runStepRepository as never,
+      runRepository as never,
+    );
+
+    await service.act({
+      id: 'decision_1',
+      action: 'approve',
+    });
+
+    expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith(
+      'run_checkpoint_patch_1',
+      'resolved',
+    );
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_1',
+      kind: 'checkpoint',
+      status: 'completed',
+      title: '确认已通过：确认提升 sandbox patch',
+      output: [
+        '关联 Decision 已批准，但当前 checkpoint 无法自动续跑。',
+        '工具：workspace.staged_patch',
+        'Checkpoint 类型：patch_promotion',
+        '原因：sandbox patch promotion 预检服务未接入。',
+        '下一步：回到 Run 证据审查输入与结果，然后手动推进或重新运行。',
+      ].join('\n'),
+    }));
   });
 
   it('applies approved patch-promotion checkpoints only when the apply flag is enabled', async () => {

@@ -510,6 +510,10 @@ npm run verify
 Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
+- on 2026-05-01, `npm run verify` passed locally with 128 test files / 936
+  tests after making unsupported approved checkpoint resume evidence
+  actionable for unknown tool-permission checkpoints and patch-promotion
+  checkpoints without a preflight service.
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 934
   tests after covering source-context metadata in Runs checkpoint summaries
   while keeping long source content out of the inline checkpoint summary.
