@@ -97,7 +97,7 @@ export async function runBrowserControlledInteractionLocalQa(
   const checkpointStep = steps.find((step) => step.checkpointRequired);
   if (checkpointStep) {
     return {
-      blockedReasons: ['Browser controlled interaction checkpoint execution is deferred until BCI4.'],
+      blockedReasons: ['Browser controlled interaction requires a Decision checkpoint; approved actions resume through Browser Controlled Resume.'],
       status: 'blocked',
       summary: `Browser controlled interaction blocked before browser start: ${checkpointStep.summary}`,
     };

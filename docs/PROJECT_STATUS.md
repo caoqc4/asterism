@@ -1166,6 +1166,9 @@ The project is past initial architecture assembly. Current work should favor pro
   review surfaces; the non-browser case also tightened the BCI review helper so
   an isolated `Browser action planned:*` step no longer misclassifies a generic
   checkpoint as browser-controlled evidence.
+- Browser controlled local-QA execution now reports checkpoint-required actions
+  as Decision-checkpoint gated and points approved actions to Browser
+  Controlled Resume, instead of naming the completed BCI4 slice as deferred.
 - Pending `browser.controlled_interaction` Decisions now use dedicated
   consequence and task-follow-up wording: approval resumes exactly one recorded
   browser action, does not grant a general browser session, does not enable

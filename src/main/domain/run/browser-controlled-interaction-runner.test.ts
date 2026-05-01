@@ -116,7 +116,7 @@ describe('browser controlled interaction runner', () => {
     });
 
     expect(result).toMatchObject({
-      blockedReasons: ['Browser controlled interaction checkpoint execution is deferred until BCI4.'],
+      blockedReasons: ['Browser controlled interaction requires a Decision checkpoint; approved actions resume through Browser Controlled Resume.'],
       status: 'blocked',
       summary: 'Browser controlled interaction blocked before browser start: action=click / checkpoint=required / origin=http://localhost:5173',
     });

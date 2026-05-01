@@ -511,6 +511,9 @@ Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 936
+  tests after aligning browser-controlled local-QA checkpoint-required blocker
+  copy with the Browser Controlled Resume path.
+- on 2026-05-01, `npm run verify` passed locally with 128 test files / 936
   tests after aligning browser-controlled checkpoint payload/evidence resume
   summaries with the Decision-gated single-action resume boundary.
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 936
