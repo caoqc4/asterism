@@ -5619,8 +5619,12 @@ describe('App UI flow', () => {
     await screen.findByRole('heading', { name: '执行记录' });
 
     await screen.findByText('Related Task Timeline');
-    expect(screen.getByText('关键事件')).toBeTruthy();
-    expect(screen.getByText('解释事件')).toBeTruthy();
+    expect(screen.getByText('2026-01-01')).toBeTruthy();
+    expect(screen.getAllByText('关键事件').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('解释事件').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('执行记录').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('产物').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('任务字段').length).toBeGreaterThan(0);
     expect(screen.getByText('执行失败：Executor exploded。')).toBeTruthy();
     expect(screen.getByText('生成产物：draft output。')).toBeTruthy();
     expect(screen.getByText('下一步从“未填写”调整为“检查失败原因并决定是否重试”')).toBeTruthy();
@@ -6202,8 +6206,12 @@ describe('App UI flow', () => {
 
     await screen.findByRole('heading', { name: '待拍板事项' });
     await screen.findByText('Related Task Timeline');
-    expect(screen.getByText('关键事件')).toBeTruthy();
-    expect(screen.getByText('解释事件')).toBeTruthy();
+    expect(screen.getByText('2026-01-01')).toBeTruthy();
+    expect(screen.getAllByText('关键事件').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('解释事件').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('决策').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('等待项').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('任务字段').length).toBeGreaterThan(0);
     expect(screen.getByText('决策已获批准：Approve escalation path。')).toBeTruthy();
     expect(screen.getByText('等待原因从“未填写”调整为“等待重新拍板：Approve escalation path”')).toBeTruthy();
     expect(screen.getByText('下一步从“未填写”调整为“已获批准，继续推进：Approve escalation path”')).toBeTruthy();

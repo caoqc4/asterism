@@ -12,7 +12,7 @@ import {
   getTaskTimelineObjectAction,
   getTaskTimelinePreviewEvents,
   getTaskTimelineResponsibilitySummary,
-  groupTaskTimelineEventsByPriority,
+  groupTaskTimelineEventsByDateObjectAndPriority,
   parseTimelinePayload,
 } from '@shared/working-context/timeline';
 
@@ -302,7 +302,7 @@ export function DecisionsPage({
   const relatedTimeline = detail
     ? getRelatedTimeline(relatedTaskDetail?.timeline ?? [], detail.title)
     : [];
-  const relatedTimelineGroups = groupTaskTimelineEventsByPriority(relatedTimeline);
+  const relatedTimelineDateGroups = groupTaskTimelineEventsByDateObjectAndPriority(relatedTimeline);
   const checkpointGuidance = detail
     ? getCheckpointDecisionGuidance(detail, Boolean(aiStatus?.featureFlags.enableSandboxPatchPromotionApply))
     : null;
@@ -403,69 +403,85 @@ export function DecisionsPage({
                 <strong>这条拍板如何改变了任务</strong>
                 <p className="meta">这里只截取最能解释当前 decision 的最近任务变化，帮助你判断处理完后该如何回流到主任务。</p>
                 <div className="timeline-list">
-                  {relatedTimelineGroups.length ? (
-                    relatedTimelineGroups.map((group) => (
-                      <Fragment key={group.id}>
-                        <div className="timeline-group-heading">
-                          <span>{group.title}</span>
-                          <span>{group.events.length}</span>
+                  {relatedTimelineDateGroups.length ? (
+                    relatedTimelineDateGroups.map((dateGroup) => (
+                      <Fragment key={dateGroup.id}>
+                        <div className="timeline-date-heading">
+                          <span>{dateGroup.title}</span>
+                          <span>{dateGroup.eventCount}</span>
                         </div>
-                        {group.events.map((event) => (
-                          <div className="timeline-item" key={event.id}>
-                            <div className="task-row">
-                              <strong>{formatRelatedTimelineSummary(event)}</strong>
-                              <div className="task-row-compact">
-                                {getTaskTimelineLaneLabel(event.type) ? (
-                                  <span className={`status lane-status lane-status-${getTaskTimelineLane(event.type)}`}>
-                                    {getTaskTimelineLaneLabel(event.type)}
-                                  </span>
-                                ) : null}
-                                <span className="status">{event.createdAt}</span>
-                              </div>
+                        {dateGroup.objectGroups.map((objectGroup) => (
+                          <Fragment key={`${dateGroup.id}:${objectGroup.id}`}>
+                            <div className="timeline-object-heading">
+                              <span>{objectGroup.title}</span>
+                              <span>{objectGroup.eventCount}</span>
                             </div>
-                            <p className="meta">{event.type}</p>
-                            {getTaskTimelineResponsibilitySummary(event) ? (
-                              <p className="meta">{getTaskTimelineResponsibilitySummary(event)}</p>
-                            ) : null}
-                            {getRelatedTimelineActionLabel(event) || getRelatedTimelineObjectLabel(event) ? (
-                              <div className="chip-row">
-                                {getRelatedTimelineActionLabel(event) ? (
-                                  <button
-                                    className="ghost-button"
-                                    onClick={() =>
-                                      onOpenTask(detail.taskId, {
-                                        type:
-                                          event.type === 'task.decision_deferred'
-                                            ? 'focus_waiting_follow_up'
-                                            : event.type === 'task.decision_cancelled'
-                                              ? 'focus_risk_review'
-                                              : 'focus_next_step',
-                                        focusArea: 'detail',
-                                        prefillNextStep:
-                                          event.type === 'task.decision_approved'
-                                            ? `已获批准，继续推进：${detail.title}`
-                                            : event.type === 'task.decision_deferred'
-                                              ? `跟进该决策是否可以恢复拍板：${detail.title}`
-                                              : `重新评估该决策并确定替代推进路径：${detail.title}`,
-                                      })
-                                    }
-                                    type="button"
-                                  >
-                                    {getRelatedTimelineActionLabel(event)}
-                                  </button>
-                                ) : null}
-                                {getRelatedTimelineObjectLabel(event) ? (
-                                  <button
-                                    className="ghost-button"
-                                    onClick={() => handleRelatedTimelineObjectOpen(event)}
-                                    type="button"
-                                  >
-                                    {getRelatedTimelineObjectLabel(event)}
-                                  </button>
-                                ) : null}
-                              </div>
-                            ) : null}
-                          </div>
+                            {objectGroup.priorityGroups.map((group) => (
+                              <Fragment key={`${dateGroup.id}:${objectGroup.id}:${group.id}`}>
+                                <div className="timeline-group-heading">
+                                  <span>{group.title}</span>
+                                  <span>{group.events.length}</span>
+                                </div>
+                                {group.events.map((event) => (
+                                  <div className="timeline-item" key={event.id}>
+                                    <div className="task-row">
+                                      <strong>{formatRelatedTimelineSummary(event)}</strong>
+                                      <div className="task-row-compact">
+                                        {getTaskTimelineLaneLabel(event.type) ? (
+                                          <span className={`status lane-status lane-status-${getTaskTimelineLane(event.type)}`}>
+                                            {getTaskTimelineLaneLabel(event.type)}
+                                          </span>
+                                        ) : null}
+                                        <span className="status">{event.createdAt}</span>
+                                      </div>
+                                    </div>
+                                    <p className="meta">{event.type}</p>
+                                    {getTaskTimelineResponsibilitySummary(event) ? (
+                                      <p className="meta">{getTaskTimelineResponsibilitySummary(event)}</p>
+                                    ) : null}
+                                    {getRelatedTimelineActionLabel(event) || getRelatedTimelineObjectLabel(event) ? (
+                                      <div className="chip-row">
+                                        {getRelatedTimelineActionLabel(event) ? (
+                                          <button
+                                            className="ghost-button"
+                                            onClick={() =>
+                                              onOpenTask(detail.taskId, {
+                                                type:
+                                                  event.type === 'task.decision_deferred'
+                                                    ? 'focus_waiting_follow_up'
+                                                    : event.type === 'task.decision_cancelled'
+                                                      ? 'focus_risk_review'
+                                                      : 'focus_next_step',
+                                                focusArea: 'detail',
+                                                prefillNextStep:
+                                                  event.type === 'task.decision_approved'
+                                                    ? `已获批准，继续推进：${detail.title}`
+                                                    : event.type === 'task.decision_deferred'
+                                                      ? `跟进该决策是否可以恢复拍板：${detail.title}`
+                                                      : `重新评估该决策并确定替代推进路径：${detail.title}`,
+                                              })
+                                            }
+                                            type="button"
+                                          >
+                                            {getRelatedTimelineActionLabel(event)}
+                                          </button>
+                                        ) : null}
+                                        {getRelatedTimelineObjectLabel(event) ? (
+                                          <button
+                                            className="ghost-button"
+                                            onClick={() => handleRelatedTimelineObjectOpen(event)}
+                                            type="button"
+                                          >
+                                            {getRelatedTimelineObjectLabel(event)}
+                                          </button>
+                                        ) : null}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ))}
+                              </Fragment>
+                            ))}
+                          </Fragment>
                         ))}
                       </Fragment>
                     ))

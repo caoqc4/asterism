@@ -436,6 +436,8 @@ Covered today:
   priority groups
 - `Tasks` timeline object-family grouping layered between date groups and
   key/explain/trace priority groups
+- `Runs` and `Decisions` related-task timelines now share the same date /
+  object-family / key-explain-trace grouping semantics as Task detail
 - `Settings save flow`
 - `Settings save flow` now also asserts Home scheduler enabled/running state and scheduler timestamps refresh from Home brief data
 - `Settings save flow` now also covers read-only workspace root persistence

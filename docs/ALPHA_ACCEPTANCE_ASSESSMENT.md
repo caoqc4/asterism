@@ -20,7 +20,8 @@ Status: mostly covered.
 - `npm run verify` has passed locally with tests, type-checking, and production build.
 - on 2026-05-01, `npm run verify` passed locally with 127 test files / 918
   tests after adding Task detail Timeline date/object-family grouping above the
-  existing key/explain/trace priority groups.
+  existing key/explain/trace priority groups and aligning Runs / Decisions
+  related-task timeline scans to the same grouping model.
 - on 2026-05-01, `npm run smoke:build` passed locally, covering renderer/main
   build outputs and electron-builder file mapping.
 - on 2026-05-01, `npm run smoke:release:mac` passed locally for the combined

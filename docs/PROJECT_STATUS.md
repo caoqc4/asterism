@@ -199,9 +199,12 @@ The project is past initial architecture assembly. Current work should favor pro
   before applying the existing key/explain/trace priority groups, making longer
   histories easier to scan without changing timeline storage or recovery
   semantics.
+- Runs and Decisions related-task timelines now reuse that same date /
+  object-family / key-explain-trace grouping, so task history scans read
+  consistently from the task, run, or decision surface.
 - `npm run verify` passed locally on 2026-05-01 after the Task detail Timeline
-  date/object-family grouping slice. Current local acceptance status: 127 test
-  files / 918 tests.
+  date/object-family grouping slice and related Timeline surface alignment.
+  Current local acceptance status: 127 test files / 918 tests.
 - RunService and DecisionService now pass checkpoint-backed session updates
   through a shared settlement projection, so `running` sessions are treated as
   requiring executor liveness rather than being checkpoint-settled.
