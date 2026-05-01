@@ -1523,6 +1523,10 @@ Latest local baseline:
 - `npm run verify` passed locally on 2026-05-01 after the same
   checkpoint-to-session settlement binding update. Current local acceptance
   status: 127 test files / 913 tests
+- `npm run verify` passed locally on 2026-05-01 after tightening Runs recovery
+  coverage for structured recovery anchors, terminal completed-session evidence
+  review, and cancelled-session new-run preparation. Current local acceptance
+  status: 127 test files / 915 tests
 - `npm run accept:sandbox-coding` passed locally on 2026-05-01 after enforcing
   duplicate source-context selection as a fail-closed model-context boundary
   before provider runtime config resolution.

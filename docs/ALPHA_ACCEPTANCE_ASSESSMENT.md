@@ -13,6 +13,10 @@ Strong automated coverage already exists for the main control-plane semantics, r
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
+- on 2026-05-01, `npm run verify` passed locally with 127 test files / 915
+  tests after tightening Runs recovery coverage for structured anchors,
+  terminal completed-session evidence review, and cancelled-session new-run
+  preparation without adding replay authority.
 - on 2026-05-01, `npm run accept:sandbox-coding` and `npm run verify` passed
   locally after moving Code Agent selected workspace-context validation ahead
   of provider runtime config resolution, keeping invalid selected context from
