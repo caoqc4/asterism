@@ -565,11 +565,11 @@ describe('agent capability formatting', () => {
     } as const;
 
     expect(formatAgentSessionReplayNextStepDraft({
-      checkpoints: [{ kind: 'tool_permission', status: 'open' }],
+      checkpoints: [{ id: 'run_checkpoint_tool_permission', kind: 'tool_permission', status: 'open' }],
       runType: 'agent',
       session,
       steps: [],
-    })).toBe('处理最近一次 agent run 的 1 个 recovery checkpoint / Decision，再决定是否继续执行。');
+    })).toBe('处理最近一次 agent run 的 1 个（run_checkpoint_tool_permission） recovery checkpoint / Decision，再决定是否继续执行。');
 
     expect(formatAgentSessionReplayNextStepDraft({
       checkpoints: [{ kind: 'tool_permission', status: 'resolved' }],

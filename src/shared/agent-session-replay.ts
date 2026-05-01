@@ -3,7 +3,7 @@ import type { RunCheckpointRecord, RunStepRecord } from './types/run.js';
 
 export type AgentSessionReplayCheckpointEvidence =
   Pick<RunCheckpointRecord, 'status'> &
-  Partial<Pick<RunCheckpointRecord, 'kind'>>;
+  Partial<Pick<RunCheckpointRecord, 'id' | 'kind'>>;
 
 export type AgentSessionReplayReview = {
   automaticReplayAllowed: false;
@@ -21,6 +21,7 @@ export type AgentSessionReplayReview = {
     | 'terminal_evidence';
   runStepCount: number;
   recoveryCheckpointCount: number;
+  recoveryCheckpointIds: string[];
   runId: string;
   sessionId: string;
   status: AgentSessionRecord['status'];
@@ -33,6 +34,7 @@ export type AgentSessionRecoveryIntent = {
   manualRunRequired: boolean;
   openCheckpointCount: number;
   recoveryCheckpointCount: number;
+  recoveryCheckpointIds: string[];
   recoveryCheckpointRequired: boolean;
   restartSafety: AgentSessionReplayReview['restartSafety'];
   resumeCheckpointRequired: boolean;
@@ -50,8 +52,12 @@ export function buildAgentSessionReplayReview(params: {
   const latestStep = [...params.steps].sort(compareRunStepsForReplay).at(-1) ?? null;
   const openCheckpoints = (params.checkpoints ?? []).filter((checkpoint) => checkpoint.status === 'open');
   const openCheckpointCount = openCheckpoints.length;
-  const recoveryCheckpointCount = openCheckpoints.filter((checkpoint) =>
-    isRecoveryCheckpointForSessionStatus(params.session.status, checkpoint.kind)).length;
+  const recoveryCheckpoints = openCheckpoints.filter((checkpoint) =>
+    isRecoveryCheckpointForSessionStatus(params.session.status, checkpoint.kind));
+  const recoveryCheckpointCount = recoveryCheckpoints.length;
+  const recoveryCheckpointIds = recoveryCheckpoints
+    .map((checkpoint) => checkpoint.id)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0);
   const mode = getReplayReviewMode(params.session.status, recoveryCheckpointCount);
   const action = getReplayReviewAction(params.session.status, recoveryCheckpointCount);
   const restartSafety = getRestartSafety(
@@ -70,6 +76,7 @@ export function buildAgentSessionReplayReview(params: {
     restartSafety,
     runStepCount: params.steps.length,
     recoveryCheckpointCount,
+    recoveryCheckpointIds,
     runId: params.session.runId,
     sessionId: params.session.id,
     status: params.session.status,
@@ -91,7 +98,14 @@ export function buildAgentSessionReplayReview(params: {
 export function buildAgentSessionRecoveryIntent(
   review: Pick<
     AgentSessionReplayReview,
-    'mode' | 'openCheckpointCount' | 'recoveryCheckpointCount' | 'restartSafety' | 'runId' | 'sessionId' | 'status'
+    | 'mode'
+    | 'openCheckpointCount'
+    | 'recoveryCheckpointCount'
+    | 'recoveryCheckpointIds'
+    | 'restartSafety'
+    | 'runId'
+    | 'sessionId'
+    | 'status'
   >,
 ): AgentSessionRecoveryIntent {
   if (review.mode === 'manual_resume' && review.recoveryCheckpointCount > 0) {
@@ -101,6 +115,7 @@ export function buildAgentSessionRecoveryIntent(
       manualRunRequired: false,
       openCheckpointCount: review.openCheckpointCount,
       recoveryCheckpointCount: review.recoveryCheckpointCount,
+      recoveryCheckpointIds: review.recoveryCheckpointIds,
       recoveryCheckpointRequired: true,
       restartSafety: review.restartSafety,
       resumeCheckpointRequired: true,
@@ -128,6 +143,7 @@ export function buildAgentSessionRecoveryIntent(
       manualRunRequired: true,
       openCheckpointCount: review.openCheckpointCount,
       recoveryCheckpointCount: review.recoveryCheckpointCount,
+      recoveryCheckpointIds: review.recoveryCheckpointIds,
       recoveryCheckpointRequired: false,
       restartSafety: review.restartSafety,
       resumeCheckpointRequired: false,
@@ -154,6 +170,7 @@ export function buildAgentSessionRecoveryIntent(
     manualRunRequired: false,
     openCheckpointCount: review.openCheckpointCount,
     recoveryCheckpointCount: review.recoveryCheckpointCount,
+    recoveryCheckpointIds: review.recoveryCheckpointIds,
     recoveryCheckpointRequired: false,
     restartSafety: review.restartSafety,
     resumeCheckpointRequired: false,

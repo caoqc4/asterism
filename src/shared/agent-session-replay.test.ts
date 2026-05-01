@@ -59,6 +59,7 @@ describe('agent session replay review', () => {
       mode: 'inspect_only',
       openCheckpointCount: 0,
       recoveryCheckpointCount: 0,
+      recoveryCheckpointIds: [],
       restartSafety: 'terminal_evidence',
       runId: 'run_1',
       runStepCount: 2,
@@ -71,7 +72,7 @@ describe('agent session replay review', () => {
   it('routes confirmation and paused sessions to manual resume only', () => {
     expect(buildAgentSessionReplayReview({
       checkpoints: [
-        { kind: 'tool_permission', status: 'open' },
+        { id: 'run_checkpoint_tool_permission', kind: 'tool_permission', status: 'open' },
         { kind: 'tool_permission', status: 'resolved' },
       ],
       session: buildSession('needs_confirmation'),
@@ -83,6 +84,7 @@ describe('agent session replay review', () => {
       latestStepStatus: 'pending',
       latestStepTitle: 'Tool permission checkpoint',
       recoveryCheckpointCount: 1,
+      recoveryCheckpointIds: ['run_checkpoint_tool_permission'],
       summary: 'Replay review：resume only after Decision approval / mode=manual_resume / session=agent_session_1 / status=needs_confirmation / restartSafety=checkpoint_gated / steps=1 / openCheckpoints=1 / recoveryCheckpoints=1 / latest=checkpoint:pending:Tool permission checkpoint / autoReplay=no',
     });
 
@@ -96,6 +98,7 @@ describe('agent session replay review', () => {
       mode: 'inspect_only',
       openCheckpointCount: 0,
       recoveryCheckpointCount: 0,
+      recoveryCheckpointIds: [],
       restartSafety: 'checkpoint_missing',
       summary: 'Replay review：inspect paused evidence; no recovery checkpoint / mode=inspect_only / session=agent_session_1 / status=paused / restartSafety=checkpoint_missing / steps=0 / openCheckpoints=0 / recoveryCheckpoints=0 / latest=none / autoReplay=no',
     });
@@ -110,6 +113,7 @@ describe('agent session replay review', () => {
       mode: 'inspect_only',
       openCheckpointCount: 1,
       recoveryCheckpointCount: 0,
+      recoveryCheckpointIds: [],
       restartSafety: 'checkpoint_missing',
       summary: 'Replay review：inspect paused evidence; no recovery checkpoint / mode=inspect_only / session=agent_session_1 / status=paused / restartSafety=checkpoint_missing / steps=1 / openCheckpoints=1 / recoveryCheckpoints=0 / latest=checkpoint:pending:Unrelated patch promotion / autoReplay=no',
     });
@@ -195,6 +199,7 @@ describe('agent session replay review', () => {
       manualRunRequired: true,
       openCheckpointCount: 0,
       recoveryCheckpointCount: 0,
+      recoveryCheckpointIds: [],
       recoveryCheckpointRequired: false,
       restartSafety: 'new_run_required',
       resumeCheckpointRequired: false,
@@ -223,6 +228,7 @@ describe('agent session replay review', () => {
       manualRunRequired: true,
       openCheckpointCount: 0,
       recoveryCheckpointCount: 0,
+      recoveryCheckpointIds: [],
       recoveryCheckpointRequired: false,
       restartSafety: 'new_run_required',
       resumeCheckpointRequired: false,
@@ -287,7 +293,7 @@ describe('agent session replay review', () => {
 
   it('projects replay review into explicit recovery intent without replay authority', () => {
     const manualResumeReview = buildAgentSessionReplayReview({
-      checkpoints: [{ kind: 'resume', status: 'open' }],
+      checkpoints: [{ id: 'run_checkpoint_resume', kind: 'resume', status: 'open' }],
       session: buildSession('paused'),
       steps: [
         buildStep({ index: 1, kind: 'checkpoint', status: 'pending', title: 'Resume checkpoint' }),
@@ -299,6 +305,7 @@ describe('agent session replay review', () => {
       manualRunRequired: false,
       openCheckpointCount: 1,
       recoveryCheckpointCount: 1,
+      recoveryCheckpointIds: ['run_checkpoint_resume'],
       recoveryCheckpointRequired: true,
       restartSafety: 'checkpoint_gated',
       resumeCheckpointRequired: true,
@@ -320,6 +327,7 @@ describe('agent session replay review', () => {
       manualRunRequired: true,
       openCheckpointCount: 0,
       recoveryCheckpointCount: 0,
+      recoveryCheckpointIds: [],
       recoveryCheckpointRequired: false,
       restartSafety: 'interrupted_or_stale',
       resumeCheckpointRequired: false,
@@ -340,6 +348,7 @@ describe('agent session replay review', () => {
       manualRunRequired: false,
       openCheckpointCount: 0,
       recoveryCheckpointCount: 0,
+      recoveryCheckpointIds: [],
       recoveryCheckpointRequired: false,
       restartSafety: 'live_status_unknown',
       resumeCheckpointRequired: false,

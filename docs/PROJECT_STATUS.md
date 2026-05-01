@@ -186,6 +186,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Agent session replay reviews and recovery intents now also carry structured
   `runId` alongside `sessionId`, so renderer recovery helpers can preserve the
   source Run without parsing summary copy.
+- Recovery checkpoint ids are now preserved as structured
+  `recoveryCheckpointIds`, and manual-resume next-step copy names those
+  checkpoint anchors when available instead of only showing a count.
 - RunService and DecisionService now pass checkpoint-backed session updates
   through a shared settlement projection, so `running` sessions are treated as
   requiring executor liveness rather than being checkpoint-settled.

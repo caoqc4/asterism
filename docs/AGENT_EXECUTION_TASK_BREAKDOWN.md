@@ -772,6 +772,9 @@ The latest implementation slice:
 - Agent session replay review and recovery intent objects now carry structured
   `runId` alongside `sessionId`, keeping renderer recovery helpers anchored to
   the source Run without parsing summary text.
+- Replay review and recovery intent objects now also carry structured
+  `recoveryCheckpointIds`, so manual-resume guidance can name the concrete
+  checkpoint anchors when those ids are available.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

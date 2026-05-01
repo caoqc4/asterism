@@ -152,7 +152,7 @@ export function formatAgentSessionReplayNextStepDraft(params: {
 
   if (review.mode === 'manual_resume') {
     return review.recoveryCheckpointCount > 0
-      ? `处理最近一次 ${params.runType} run 的 ${review.recoveryCheckpointCount} 个 recovery checkpoint / Decision，再决定是否继续执行。`
+      ? `处理最近一次 ${params.runType} run 的 ${formatRecoveryCheckpointReference(review)} recovery checkpoint / Decision，再决定是否继续执行。`
       : `复核最近一次 ${params.runType} run 的暂停或确认原因；没有 recovery checkpoint 时，先查看执行证据再决定是否重跑。`;
   }
 
@@ -177,6 +177,16 @@ export function formatAgentSessionReplayNextStepDraft(params: {
   return review.status === 'running'
     ? `检查最近一次 ${params.runType} run 的最新步骤，确认是否仍在执行或需要人工介入。`
     : `审阅最近一次 ${params.runType} run 的证据和输出，再决定是否继续推进任务。`;
+}
+
+function formatRecoveryCheckpointReference(
+  review: Pick<AgentSessionReplayReview, 'recoveryCheckpointCount' | 'recoveryCheckpointIds'>,
+): string {
+  if (!review.recoveryCheckpointIds.length) {
+    return `${review.recoveryCheckpointCount} 个`;
+  }
+
+  return `${review.recoveryCheckpointCount} 个（${review.recoveryCheckpointIds.join(', ')}）`;
 }
 
 export function formatAgentSessionRecoveryRunInstructions(params: {
