@@ -245,7 +245,11 @@ The project is past initial architecture assembly. Current work should favor pro
   it from Closeout Tasks and hands off to the remaining near-closeout task with
   the expected next-step prefill. The same smoke now completes that remaining
   near-closeout task too, then checks the packaged Home Closeout Tasks empty
-  state has no task cards left.
+  state has no task cards left. `npm run smoke:release:mac` now includes this
+  packaged Timeline UI smoke after the package and runtime smoke checks, and
+  the expanded combined release smoke passed locally on 2026-05-02. A
+  lightweight local-smoke-boundaries regression now keeps that npm script wired
+  through package, runtime, and Timeline UI smoke checks.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.

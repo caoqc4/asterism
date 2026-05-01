@@ -564,6 +564,17 @@ Current verification:
   near-closeout task marks its final completion criterion satisfied, transitions
   to `completed`, and Home Closeout Tasks shows the no-candidates wording with
   no task cards left.
+- on 2026-05-02, `npm run smoke:release:mac` was updated to include
+  `npm run smoke:timeline-ui:mac` after package/runtime checks, keeping the
+  standalone Timeline UI smoke available for targeted packaged renderer
+  iteration while making the unsigned macOS release gate cover that UI path.
+- on 2026-05-02, expanded `npm run smoke:release:mac` passed locally end to
+  end: it rebuilt the unsigned macOS app, passed package smoke, passed isolated
+  runtime smoke, and passed packaged Timeline UI smoke.
+- on 2026-05-02, `npm test -- --run
+  src/main/local-smoke-boundaries-script.test.ts` passed locally after adding a
+  lightweight regression check that keeps `smoke:release:mac` wired through
+  package, runtime, and Timeline UI smoke scripts.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.
@@ -624,7 +635,7 @@ Current verification:
 - `npm run smoke:package:mac` after producing `release/mac-arm64/Taskplane.app`, including ASAR content checks
 - `npm run smoke:runtime:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged startup and SQLite schema initialization
 - `npm run smoke:timeline-ui:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged Task detail Timeline grouping/expansion coverage, Timeline follow-up/object-action navigation across task/risk/blocker/dependency context, dependency return/resolution paths, and related Timeline grouping on Runs and Decisions
-- `npm run smoke:release:mac` for the combined unsigned macOS build/package/runtime path
+- `npm run smoke:release:mac` for the combined unsigned macOS build/package/runtime/Timeline UI path
 - `npm run accept:agent-local` for the local agent stack, including the non-live
   sandbox/code-agent domain boundary and the Code Agent preflight UI/config/IPC
   gate
@@ -670,7 +681,8 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 - run `npm run smoke:package:mac` after `npm run dist:mac:dir`
 - run `npm run smoke:runtime:mac` after `npm run dist:mac:dir`
 - run `npm run smoke:timeline-ui:mac` after `npm run dist:mac:dir` when packaged renderer behavior, Timeline suggestions, or Timeline navigation changed, or when a real UI smoke is needed
-- or run `npm run smoke:release:mac` to cover the unsigned macOS package path in one command
+- or run `npm run smoke:release:mac` to cover the unsigned macOS package,
+  runtime, and packaged Timeline UI paths in one command
 - run `npm run accept:provider-native-live:preflight` for no-credit
   provider-native readiness checks, but avoid the live provider-native commands
   unless spending test credit is intentional
@@ -686,7 +698,7 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. decide whether `smoke:timeline-ui:mac` should stay as an explicit targeted
-   packaged UI smoke or be folded into a release/preflight command
+1. decide the next functional packaged-app smoke boundary outside closeout,
+   likely source/process context editing or Code Agent preflight visibility
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

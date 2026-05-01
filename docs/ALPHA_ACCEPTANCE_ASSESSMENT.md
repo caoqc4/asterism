@@ -656,7 +656,8 @@ Automated/local coverage:
 - the same packaged Timeline UI smoke now also seeds a Home near-closeout fixture with completed-run evidence, opens `查看收尾证据` from Closeout Tasks into Runs detail, returns to Home, and reopens the closeout-ready task for final completion
 - after the packaged closeout-ready task transitions to `completed`, that smoke verifies Home Closeout Tasks removes it and hands off to the remaining near-closeout task with the expected next-step prefill
 - the packaged closeout path also completes the remaining near-closeout task and verifies the Home Closeout Tasks empty state has no task cards left
-- `npm run smoke:release:mac` combines the unsigned macOS package build and both package/runtime smoke checks
+- `npm run smoke:release:mac` combines the unsigned macOS package build plus package, runtime, and packaged Timeline UI smoke checks
+- expanded `npm run smoke:release:mac` passed locally on 2026-05-02 after the packaged Timeline UI smoke was folded into the combined release gate
 - on 2026-04-27, `npm run smoke:release:mac` passed locally after the Code
   Agent context-gate and restart/replay safety updates. It rebuilt Electron
   native modules, generated the unsigned/ad-hoc

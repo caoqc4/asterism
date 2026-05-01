@@ -57,6 +57,16 @@ function runScript(scriptPath: string, envContents = '') {
 }
 
 describe('local smoke script default boundaries', () => {
+  it('keeps the macOS release smoke wired through package, runtime, and Timeline UI checks', () => {
+    const packageJson = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'),
+    ) as { scripts?: Record<string, string> };
+
+    expect(packageJson.scripts?.['smoke:release:mac']).toBe(
+      'npm run dist:mac:dir && npm run smoke:package:mac && npm run smoke:runtime:mac && npm run smoke:timeline-ui:mac',
+    );
+  });
+
   it('keeps sandbox producer preview smoke skipped without Docker or AI by default', () => {
     const result = runScript('scripts/sandbox-coding-producer-preview-smoke.mjs');
 

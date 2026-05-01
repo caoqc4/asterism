@@ -62,7 +62,8 @@ native module unpacking, ASAR integrity metadata, required ASAR entries, absence
 of compiled test files, executable bit, and the local code signature. The
 runtime smoke check launches the packaged executable with isolated user data and
 confirms it creates `config.json`, initializes the core `taskplane.db` SQLite
-schema, and clears `ELECTRON_RUN_AS_NODE`.
+schema, and clears `ELECTRON_RUN_AS_NODE`. The combined release smoke also runs
+the packaged Timeline UI smoke against the freshly built app.
 
 ### Check signed/notarized release readiness
 
@@ -120,9 +121,12 @@ As of the current alpha path:
 - `npm run smoke:package:mac` passes locally for the unpacked app
 - `npm run smoke:runtime:mac` passes locally for isolated packaged startup and
   core SQLite schema initialization
-- `npm run smoke:release:mac` passed on 2026-05-01 for the combined unsigned
-  macOS path, including Electron native-module rebuild, unsigned/ad-hoc app
-  packaging, package smoke, and isolated runtime smoke
+- `npm run smoke:release:mac` now combines the unsigned macOS package build,
+  package smoke, isolated runtime smoke, and packaged Timeline UI smoke
+- expanded `npm run smoke:release:mac` passed locally on 2026-05-02 with the
+  packaged Timeline UI smoke included in the combined gate
+- `npm run smoke:release:mac` passed on 2026-05-01 before the packaged Timeline
+  UI smoke was folded into the combined release gate
 - `npm run accept:release:mac-preflight` passed on 2026-05-01 without signing,
   notarizing, uploading, or calling Apple services. Current readiness is
   `not-ready`: macOS host, `notarytool`, app id, product name, and mac targets
