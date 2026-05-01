@@ -341,6 +341,33 @@ export class DecisionService {
       return;
     }
 
+    if (
+      checkpointAgentSessionId &&
+      !(await this.findCheckpointBackedAgentSession(checkpoint.runId, checkpointAgentSessionId))
+    ) {
+      const summary = `Checkpoint agent session is not resumable for run: ${checkpoint.runId} (${checkpointAgentSessionId}).`;
+      await this.runCheckpointRepository.updateStatus(checkpoint.id, 'cancelled');
+      await this.runStepRepository.create({
+        runId: checkpoint.runId,
+        kind: 'checkpoint',
+        status: 'failed',
+        title: `确认后续跑阻塞：${decision.title}`,
+        error: summary,
+        output: [
+          summary,
+          'No checkpoint tool was executed.',
+        ].join('\n'),
+      });
+      await this.runRepository.updateResult(
+        checkpoint.runId,
+        'failed',
+        summary,
+        'system',
+        summary,
+      );
+      return;
+    }
+
     const result = await this.agentToolRegistry.execute(
       tool,
       toolInput,
@@ -636,14 +663,7 @@ export class DecisionService {
     status: AgentSessionRecord['status'],
     agentSessionId?: string | null,
   ): Promise<void> {
-    if (!this.agentSessionStore) {
-      return;
-    }
-
-    const latestSession = findCheckpointBackedAgentSessionForSettlement({
-      agentSessionId,
-      sessions: await this.agentSessionStore.listForRun(runId),
-    });
+    const latestSession = await this.findCheckpointBackedAgentSession(runId, agentSessionId);
 
     if (!latestSession) {
       return;
@@ -654,6 +674,20 @@ export class DecisionService {
       return;
     }
 
-    await this.agentSessionStore.updateStatus(latestSession.id, status);
+    await this.agentSessionStore?.updateStatus(latestSession.id, status);
+  }
+
+  private async findCheckpointBackedAgentSession(
+    runId: string,
+    agentSessionId?: string | null,
+  ): Promise<AgentSessionRecord | null> {
+    if (!this.agentSessionStore) {
+      return null;
+    }
+
+    return findCheckpointBackedAgentSessionForSettlement({
+      agentSessionId,
+      sessions: await this.agentSessionStore.listForRun(runId),
+    });
   }
 }

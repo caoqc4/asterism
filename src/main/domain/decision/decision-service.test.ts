@@ -582,6 +582,97 @@ describe('DecisionService', () => {
     expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'agent', true, 'run_1');
   });
 
+  it('blocks approved checkpoint decisions bound to a missing agent session before executing tools', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord(),
+        status: 'approved',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+    };
+    const runCheckpointRepository = {
+      findOpenByDecisionId: vi.fn().mockResolvedValue({
+        id: 'run_checkpoint_1',
+        runId: 'run_1',
+        stepId: 'run_step_1',
+        kind: 'tool_permission',
+        status: 'open',
+        payload: JSON.stringify({
+          agentSessionId: 'agent_session_missing',
+          tool: 'artifact.create_note',
+          input: { title: 'Agent note', content: 'Captured note' },
+          decisionId: 'decision_1',
+        }),
+        createdAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      }),
+      updateStatus: vi.fn(),
+    };
+    const runStepRepository = {
+      create: vi.fn(),
+    };
+    const runRepository = {
+      getDetail: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const agentToolRegistry = {
+      execute: vi.fn(),
+    };
+    const agentSessionStore = {
+      listForRun: vi.fn().mockResolvedValue([]),
+      updateStatus: vi.fn(),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+      undefined,
+      runCheckpointRepository as never,
+      runStepRepository as never,
+      runRepository as never,
+      agentToolRegistry as never,
+      null,
+      null,
+      undefined,
+      null,
+      agentSessionStore as never,
+    );
+
+    await service.act({
+      id: 'decision_1',
+      action: 'approve',
+    });
+
+    expect(agentToolRegistry.execute).not.toHaveBeenCalled();
+    expect(runCheckpointRepository.updateStatus).toHaveBeenCalledWith('run_checkpoint_1', 'cancelled');
+    expect(runStepRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run_1',
+        kind: 'checkpoint',
+        status: 'failed',
+        title: '确认后续跑阻塞：Need approval',
+        error: 'Checkpoint agent session is not resumable for run: run_1 (agent_session_missing).',
+      }),
+    );
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_1',
+      'failed',
+      'Checkpoint agent session is not resumable for run: run_1 (agent_session_missing).',
+      'system',
+      'Checkpoint agent session is not resumable for run: run_1 (agent_session_missing).',
+    );
+    expect(agentSessionStore.updateStatus).not.toHaveBeenCalled();
+    expect(taskService.annotateRunCompleted).not.toHaveBeenCalled();
+  });
+
   it('resumes an approved high-risk completion criterion checkpoint', async () => {
     const decisionRepository = {
       list: vi.fn(),

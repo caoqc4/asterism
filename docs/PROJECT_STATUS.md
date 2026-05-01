@@ -963,6 +963,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - Paused resume eligibility is now a shared pure helper consumed by both
   `RunService.continuePausedRun()` and Runs detail, keeping the unique valid
   checkpoint, supported payload, and payload-bound session rules in one place.
+- Approved checkpoint Decisions for local tool resumption now also fail closed
+  before executing the tool when the checkpoint payload is bound to a missing or
+  non-checkpoint-backed agent session, keeping Decision-driven recovery aligned
+  with paused-run continuation.
 - Backend paused-run continuation mirrors that selection rule: stale or
   incompatible payloads are skipped, exactly one valid supported payload may
   execute, and multiple valid resume checkpoints fail closed before any local
