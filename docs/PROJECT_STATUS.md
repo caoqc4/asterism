@@ -218,6 +218,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - `npm run smoke:runtime:mac` now seeds the isolated packaged SQLite database
   with a task plus ordered timeline events after startup, then reads them back
   to protect the packaged runtime side of the Task detail Timeline scan path.
+- `src/renderer/App.test.tsx` now includes a seeded Task detail Timeline UI
+  fixture that asserts the date / object-family / key-explain-trace grouping
+  and the compact preview expansion behavior on the rendered task surface.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.

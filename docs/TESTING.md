@@ -510,6 +510,10 @@ npm run verify
 Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
+- on 2026-05-01, `npm test -- --run src/renderer/App.test.tsx -t "groups a
+  seeded task detail timeline"` passed locally after adding a seeded Task
+  detail Timeline UI fixture that covers date, object-family, and
+  key/explain/trace grouping plus preview expansion.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.
@@ -630,7 +634,7 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. targeted packaged-app UI fixture coverage for seeded Task detail Timeline
-   grouping and scan behavior
+1. targeted packaged-app visual/UI smoke coverage that drives the seeded Task
+   detail Timeline fixture through the real packaged renderer
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

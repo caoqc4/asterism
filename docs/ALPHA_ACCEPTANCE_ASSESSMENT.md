@@ -490,7 +490,7 @@ Automated coverage:
 
 - repository tests cover task creation, updates, transitions, and timeline writes
 - service tests cover task transition validity, signal updates, and task-resume derivation
-- renderer tests cover task creation, task detail recovery surfaces, transition guidance, timeline summaries, and follow-up flows
+- renderer tests cover task creation, task detail recovery surfaces, transition guidance, timeline summaries, date/object-family Timeline grouping, compact Timeline preview expansion, and follow-up flows
 
 Manual result / need:
 

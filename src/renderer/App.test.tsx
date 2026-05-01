@@ -6899,6 +6899,124 @@ describe('App UI flow', () => {
     });
   });
 
+  it('groups a seeded task detail timeline by date, object family, and priority', async () => {
+    const user = userEvent.setup();
+
+    const timelineTask = buildTaskRecord({
+      id: 'task_timeline_grouped_fixture',
+      title: 'Timeline grouped fixture task',
+      state: 'running',
+    });
+
+    const timelineApi: ElectronApi = {
+      ...mockApi,
+      listTasks: vi.fn().mockResolvedValue([timelineTask]),
+      getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => {
+        if (taskId !== timelineTask.id) {
+          return null;
+        }
+
+        return {
+          ...buildTaskDetail(timelineTask),
+          timeline: [
+            {
+              id: 'timeline_grouped_run',
+              taskId: timelineTask.id,
+              type: 'task.run_completed',
+              payload: JSON.stringify({ runId: 'run_grouped_1', nextState: 'planned' }),
+              createdAt: '2026-05-01T12:00:00.000Z',
+            },
+            {
+              id: 'timeline_grouped_decision',
+              taskId: timelineTask.id,
+              type: 'task.decision_approved',
+              payload: JSON.stringify({
+                decisionId: 'decision_grouped_1',
+                decisionTitle: 'Approve grouped rollout',
+              }),
+              createdAt: '2026-05-01T11:30:00.000Z',
+            },
+            {
+              id: 'timeline_grouped_source',
+              taskId: timelineTask.id,
+              type: 'source_context.updated',
+              payload: JSON.stringify({
+                sourceContextId: 'source_grouped_1',
+                title: 'Launch scan notes',
+              }),
+              createdAt: '2026-05-01T11:00:00.000Z',
+            },
+            {
+              id: 'timeline_grouped_task_update',
+              taskId: timelineTask.id,
+              type: 'task.updated',
+              payload: JSON.stringify({ summary: 'Lower priority field update' }),
+              createdAt: '2026-05-01T10:30:00.000Z',
+            },
+            {
+              id: 'timeline_grouped_artifact',
+              taskId: timelineTask.id,
+              type: 'artifact.created',
+              payload: JSON.stringify({
+                sourceType: 'run',
+                sourceId: 'run_grouped_1',
+                title: 'Grouped smoke report',
+              }),
+              createdAt: '2026-04-30T09:00:00.000Z',
+            },
+            {
+              id: 'timeline_grouped_completion',
+              taskId: timelineTask.id,
+              type: 'completion_criteria.satisfied',
+              payload: JSON.stringify({ text: 'Grouped fixture accepted' }),
+              createdAt: '2026-04-30T08:30:00.000Z',
+            },
+            {
+              id: 'timeline_grouped_created',
+              taskId: timelineTask.id,
+              type: 'task.created',
+              payload: JSON.stringify({ title: timelineTask.title }),
+              createdAt: '2026-04-30T08:00:00.000Z',
+            },
+          ],
+        };
+      }),
+    };
+
+    window.api = timelineApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    await user.click(await screen.findByRole('button', { name: /timeline grouped fixture task/i }));
+    await screen.findByRole('heading', { name: 'Timeline grouped fixture task' });
+
+    expect(screen.getByRole('button', { name: '展开全部 (7)' })).toBeTruthy();
+    expect(screen.getByText('2026-05-01')).toBeTruthy();
+    expect(screen.getByText('2026-04-30')).toBeTruthy();
+    expect(screen.getAllByText('执行记录').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('决策').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('来源材料').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('产物').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('完成标准').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('关键事件').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('解释事件').length).toBeGreaterThan(0);
+    expect(screen.queryByText('任务字段已更新')).toBeNull();
+    expect(screen.queryByText('创建任务：Timeline grouped fixture task')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '展开全部 (7)' }));
+
+    expect(screen.getAllByText('任务字段').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('留痕事件').length).toBeGreaterThan(0);
+    expect(screen.getByText('任务字段已更新')).toBeTruthy();
+    expect(screen.getByText('创建任务：Timeline grouped fixture task')).toBeTruthy();
+    expect(screen.getByText('执行完成，任务恢复到 planned。')).toBeTruthy();
+    expect(screen.getByText('决策已获批准：Approve grouped rollout。')).toBeTruthy();
+    expect(screen.getByText('来源材料更新：Launch scan notes。')).toBeTruthy();
+    expect(screen.getByText('生成产物：Grouped smoke report。')).toBeTruthy();
+    expect(screen.getByText('完成标准已满足：Grouped fixture accepted。')).toBeTruthy();
+  });
+
   it('prefills quick actions from failure timeline suggestions', async () => {
     const user = userEvent.setup();
 
