@@ -48,10 +48,14 @@ describe('AiConfigService', () => {
     expect(status.codeAgentModelProducerEnabled).toBe(false);
     expect(status.executorLifecycleAvailability).toMatchObject({
       automaticStartAllowed: false,
+      controlMode: 'dry_run_planned',
       modelExposure: 'hidden',
       queueWorkerAllowed: false,
       runtimeReady: false,
+      settleMode: 'dry_run_planned',
       status: 'dry_run_available',
+      supportedControlRequests: ['heartbeat', 'interrupt', 'cancel'],
+      supportedSettleStatuses: ['completed', 'failed', 'paused'],
     });
     expect(status.toolScaffoldSummaries?.find((summary) => summary.family === 'workspace_coding')).toMatchObject({
       implementedCount: 4,

@@ -4057,12 +4057,12 @@ describe('App UI flow', () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        'Replay review：inspect latest step before any recovery / mode=inspect_only / session=agent_session_1 / status=running / restartSafety=interrupted_or_stale / steps=1 / openCheckpoints=0 / latest=plan:completed:采用模型提出的 agent 步骤计划 / autoReplay=no',
+        'Replay review：inspect latest step before any recovery / mode=inspect_only / session=agent_session_1 / status=running / restartSafety=interrupted_or_stale / steps=1 / openCheckpoints=0 / recoveryCheckpoints=0 / latest=plan:completed:采用模型提出的 agent 步骤计划 / autoReplay=no',
       ),
     ).toBeTruthy();
     expect(
       recoverySafety.getByText(
-        'Recovery intent：prepare new manual run / session=agent_session_1 / status=running / restartSafety=interrupted_or_stale / openCheckpoints=0 / manualRunRequired=yes / autoReplay=no',
+        'Recovery intent：prepare new manual run / session=agent_session_1 / status=running / restartSafety=interrupted_or_stale / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=yes / autoReplay=no',
       ),
     ).toBeTruthy();
     expect(
@@ -4167,7 +4167,7 @@ describe('App UI flow', () => {
     expect(await screen.findByRole('heading', { name: 'agent / running' })).toBeTruthy();
     expect(
       screen.getByText(
-        'Replay review：inspect latest step before any recovery / mode=inspect_only / session=agent_session_active / status=running / restartSafety=live_status_unknown / steps=1 / openCheckpoints=0 / latest=tool_call:running:执行工具：workspace.read_file / autoReplay=no',
+        'Replay review：inspect latest step before any recovery / mode=inspect_only / session=agent_session_active / status=running / restartSafety=live_status_unknown / steps=1 / openCheckpoints=0 / recoveryCheckpoints=0 / latest=tool_call:running:执行工具：workspace.read_file / autoReplay=no',
       ),
     ).toBeTruthy();
 
@@ -4181,7 +4181,7 @@ describe('App UI flow', () => {
     );
   });
 
-  it('routes paused agent sessions without open checkpoints to evidence review', async () => {
+  it('routes paused agent sessions without recovery checkpoints to evidence review', async () => {
     const user = userEvent.setup();
     const pausedAgentRun = buildRunRecord({
       id: 'run_agent_paused_missing_checkpoint',
@@ -4249,7 +4249,7 @@ describe('App UI flow', () => {
     expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
     expect(
       screen.getByText(
-        'Replay review：inspect paused evidence; no open checkpoint / mode=inspect_only / session=agent_session_paused_missing_checkpoint / status=paused / restartSafety=checkpoint_missing / steps=1 / openCheckpoints=0 / latest=checkpoint:completed:Resolved checkpoint no longer open / autoReplay=no',
+        'Replay review：inspect paused evidence; no recovery checkpoint / mode=inspect_only / session=agent_session_paused_missing_checkpoint / status=paused / restartSafety=checkpoint_missing / steps=1 / openCheckpoints=0 / recoveryCheckpoints=0 / latest=checkpoint:completed:Resolved checkpoint no longer open / autoReplay=no',
       ),
     ).toBeTruthy();
     expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();
@@ -4260,7 +4260,7 @@ describe('App UI flow', () => {
       expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
     });
     expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
-      '复核最近一次 agent run 的暂停或确认原因；没有 open checkpoint 时，先查看执行证据再决定是否重跑。',
+      '复核最近一次 agent run 的暂停或确认原因；没有 recovery checkpoint 时，先查看执行证据再决定是否重跑。',
     );
     expect(pausedAgentApi.continuePausedRun).not.toHaveBeenCalled();
   });
@@ -4328,12 +4328,12 @@ describe('App UI flow', () => {
     const recoverySafety = within(screen.getByLabelText('Run recovery safety'));
     expect(
       screen.getByText(
-        'Replay review：inspect failed steps before starting a new run / mode=new_run / session=agent_session_failed / status=failed / restartSafety=new_run_required / steps=1 / openCheckpoints=0 / latest=tool_result:failed:工具失败：workspace.read_file / autoReplay=no',
+        'Replay review：inspect failed steps before starting a new run / mode=new_run / session=agent_session_failed / status=failed / restartSafety=new_run_required / steps=1 / openCheckpoints=0 / recoveryCheckpoints=0 / latest=tool_result:failed:工具失败：workspace.read_file / autoReplay=no',
       ),
     ).toBeTruthy();
     expect(
       recoverySafety.getByText(
-        'Recovery intent：prepare new manual run / session=agent_session_failed / status=failed / restartSafety=new_run_required / openCheckpoints=0 / manualRunRequired=yes / autoReplay=no',
+        'Recovery intent：prepare new manual run / session=agent_session_failed / status=failed / restartSafety=new_run_required / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=yes / autoReplay=no',
       ),
     ).toBeTruthy();
 
@@ -4346,7 +4346,7 @@ describe('App UI flow', () => {
       '检查最近一次 agent run 的失败或取消证据，整理重试输入后再启动新的 run。',
     );
     expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toBe(
-      '基于最近一次 agent run 的证据准备新的手动 run。 最近步骤：工具失败：workspace.read_file（failed）。 恢复判断：Recovery intent：prepare new manual run / session=agent_session_failed / status=failed / restartSafety=new_run_required / openCheckpoints=0 / manualRunRequired=yes / autoReplay=no 不要自动重放旧 session；先复核失败/中断证据、补齐输入，再由用户手动启动。',
+      '基于最近一次 agent run 的证据准备新的手动 run。 最近步骤：工具失败：workspace.read_file（failed）。 恢复判断：Recovery intent：prepare new manual run / session=agent_session_failed / status=failed / restartSafety=new_run_required / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=yes / autoReplay=no 不要自动重放旧 session；先复核失败/取消/中断证据、补齐输入，再由用户手动启动。',
     );
   });
 
@@ -4403,11 +4403,12 @@ describe('App UI flow', () => {
           status: 'completed',
           title: 'Code Agent provider-visible context manifest',
           input: [
-            'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0 / content=partial',
+            'Provider-visible context manifest / items=2 / workspace_files=docs/notes.md / source_context=0 / artifacts=1 / content=partial',
             'providerPromptContent=partial',
             'workspace_file:docs/notes.md:docs/notes.md:content=yes',
+            'artifact:artifact_prior_1:Prior: run output:content=no:artifactKind=run_output:sourceType=run:sourceId=run_prior_1',
           ].join('\n'),
-          output: 'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0 / content=partial',
+          output: 'Provider-visible context manifest / items=2 / workspace_files=docs/notes.md / source_context=0 / artifacts=1 / content=partial',
         }),
         buildRunStep({
           id: 'run_step_sandbox_check',
@@ -4544,7 +4545,7 @@ describe('App UI flow', () => {
     expect(screen.getByText('workspace unchanged until Decision approval')).toBeTruthy();
     expect(
       screen.getByText(
-        'Provider-visible context manifest / items=1 / workspace_files=docs/notes.md / source_context=0 / artifacts=0 / content=partial；provider prompt content=partial；items=workspace_file docs/notes.md content=yes；manifest only; selected content is not expanded here',
+        'Provider-visible context manifest / items=2 / workspace_files=docs/notes.md / source_context=0 / artifacts=1 / content=partial；provider prompt content=partial；items=workspace_file docs/notes.md content=yes；artifact Prior: run output (kind=run_output source=run:run_prior_1) content=no；manifest only; selected content is not expanded here',
       ),
     ).toBeTruthy();
     expect(

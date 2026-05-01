@@ -129,6 +129,8 @@ describe('agent session continuation helper', () => {
       status: 'paused',
     }))).toEqual({
       action: 'checkpoint_backed_settlement',
+      autoReplayAllowed: false,
+      requiresOpenCheckpoint: true,
       sessionId: 'agent_session_paused',
       status: 'paused',
       summary: 'Agent session settlement / session=agent_session_paused / status=paused / action=checkpoint_backed_settlement / requiresOpenCheckpoint=yes / autoReplay=no',
@@ -139,6 +141,8 @@ describe('agent session continuation helper', () => {
       status: 'needs_confirmation',
     }))).toEqual({
       action: 'checkpoint_backed_settlement',
+      autoReplayAllowed: false,
+      requiresOpenCheckpoint: true,
       sessionId: 'agent_session_confirmation',
       status: 'needs_confirmation',
       summary: 'Agent session settlement / session=agent_session_confirmation / status=needs_confirmation / action=checkpoint_backed_settlement / requiresOpenCheckpoint=yes / autoReplay=no',
@@ -149,6 +153,8 @@ describe('agent session continuation helper', () => {
       status: 'running',
     }))).toEqual({
       action: 'requires_executor_liveness',
+      autoReplayAllowed: false,
+      requiresOpenCheckpoint: false,
       sessionId: 'agent_session_running',
       status: 'running',
       summary: 'Agent session settlement / session=agent_session_running / status=running / action=requires_executor_liveness / requiresOpenCheckpoint=no / autoReplay=no',
@@ -159,6 +165,8 @@ describe('agent session continuation helper', () => {
       status: 'completed',
     }))).toEqual({
       action: 'inspect_terminal_evidence',
+      autoReplayAllowed: false,
+      requiresOpenCheckpoint: false,
       sessionId: 'agent_session_completed',
       status: 'completed',
       summary: 'Agent session settlement / session=agent_session_completed / status=completed / action=inspect_terminal_evidence / requiresOpenCheckpoint=no / autoReplay=no',
@@ -169,6 +177,8 @@ describe('agent session continuation helper', () => {
       status: 'failed',
     }))).toEqual({
       action: 'inspect_terminal_evidence',
+      autoReplayAllowed: false,
+      requiresOpenCheckpoint: false,
       sessionId: 'agent_session_failed',
       status: 'failed',
       summary: 'Agent session settlement / session=agent_session_failed / status=failed / action=inspect_terminal_evidence / requiresOpenCheckpoint=no / autoReplay=no',
@@ -179,6 +189,8 @@ describe('agent session continuation helper', () => {
       status: 'cancelled',
     }))).toEqual({
       action: 'inspect_terminal_evidence',
+      autoReplayAllowed: false,
+      requiresOpenCheckpoint: false,
       sessionId: 'agent_session_cancelled',
       status: 'cancelled',
       summary: 'Agent session settlement / session=agent_session_cancelled / status=cancelled / action=inspect_terminal_evidence / requiresOpenCheckpoint=no / autoReplay=no',

@@ -114,13 +114,18 @@ Covered today:
 - `Agent local acceptance`
   `npm run accept:agent-local` combines the non-live workspace patch, domain
   tool, provider-native, and sandbox-coding acceptance scripts into one local
-  gate
+  gate. The agent-runtime portion keeps the same coverage split across
+  sequential Vitest calls so the local gate exits cleanly after lifecycle and
+  recorder-heavy tests.
 - `Sandbox coding acceptance`
   `npm run accept:sandbox-coding` exercises the disabled-by-default sandbox
   provider contracts, temp/local-container sandbox boundaries, targeted-check
-  helpers, patch-review persistence, run adapter, service factory, and session
-  metadata/readiness summaries without calling Docker, external providers, or
-  live services
+  helpers, Code Agent model-context boundaries, patch-review persistence, run
+  adapter, service factory, and session metadata/readiness summaries without
+  calling Docker, external providers, or live services. The script runs 40
+  Vitest files / 260 tests in ten sequential batches so the focused
+  sandbox-coding gate exits cleanly inside
+  `accept:agent-local`.
 - `Sandbox backend preflight`
   `npm run accept:sandbox-coding:backend-preflight` performs a read-only Docker
   server probe for the future real local-container backend path. It reports
@@ -143,7 +148,10 @@ Covered today:
 - `Code Agent UI/config/IPС acceptance`
   `npm run accept:sandbox-coding:code-agent-ui` exercises the Code Agent
   preflight summary, package-script availability detection, renderer payload
-  filtering, and IPC recheck without Docker or provider calls.
+  filtering, and IPC recheck without Docker or provider calls. The script keeps
+  main-process config and IPC checks in separate Vitest calls, then runs the
+  renderer capability and App coverage together so the focused UI/config/IPC
+  gate exits cleanly in the combined local agent acceptance path.
 - `Browser controlled local QA fixture`
   `npm run manual:browser-controlled-fixture` materializes the Tier 2
   controlled-interaction fixture plan without starting a browser, calling the

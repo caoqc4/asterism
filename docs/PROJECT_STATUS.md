@@ -30,11 +30,17 @@ The project is past initial architecture assembly. Current work should favor pro
 - `npm run accept:agent-local` now combines the non-live agent acceptance checks
   for workspace patch approval, domain task tools, provider-native tool-call
   boundaries, sandbox-coding guardrails, and the visible Code Agent
-  UI/config/IPC preflight gate without calling external providers.
+  UI/config/IPC preflight gate without calling external providers. The
+  agent-runtime gate preserves the same coverage through sequential Vitest
+  calls so lifecycle/recorder-heavy tests do not hold the combined local gate
+  open after passing.
 - `npm run accept:sandbox-coding` now provides a focused non-live gate for the
   disabled sandbox provider contracts, local-container command planning,
-  sandbox patch-review persistence/adapter/factory, and session metadata
-  readiness summaries without calling Docker.
+  Code Agent model-context boundaries, sandbox patch-review
+  persistence/adapter/factory, and session metadata readiness summaries without
+  calling Docker. The script runs 40 Vitest files / 260 tests in ten
+  sequential batches so the focused sandbox-coding gate exits cleanly in the
+  combined local agent acceptance path.
 - Agent run forms now preview provider/session capability before execution, including text-only planning, read-only workspace context opt-in, task update/evidence tool opt-in, structured tool-call deferral in the local executor, patch/command unavailability, and provider-specific wording for Replicate versus the local text-only executor path.
 - Provider-native structured tool calls remain deliberately deferred behind a decision gate: provider responses must be normalized into the existing `AgentStepProposal` / `AgentToolRegistry` path before any run can persist `structuredToolCalls=true`.
 - A shared provider capability descriptor gives renderer and adapter work a single descriptive source for unconfigured, local text-executor, fal/OpenRouter, OpenAI-compatible, and Replicate native text paths while keeping structured execution behind the explicit provider-native rollout gate.
@@ -292,6 +298,61 @@ The project is past initial architecture assembly. Current work should favor pro
 - Renderer orchestration presentation now has one helper for executor
   lifecycle diagnostic lines, so Settings, Task detail, and Runs recovery
   surfaces share the same read-only copy without repeating page-local strings.
+- Executor lifecycle terminal observation state is now scoped by agent session
+  id inside the recorder/monitor boundary, so a reused lifecycle service cannot
+  let one terminal session pollute another session's heartbeat or inspect-first
+  settlement diagnostics; the monitor also binds adapter lifecycle events to
+  the current handle's session id before recording, so adapter events that omit
+  `sessionId` still settle against the correct scoped session.
+- Executor lifecycle settlement plans, diagnostics, and explicit apply results
+  now carry structured `terminalEventRecorded` and `terminalSessionStatus`
+  evidence fields alongside the summary text, so future IPC/renderer recovery
+  callers can verify terminal evidence without parsing settlement copy.
+- Recorder pending tool state is also scoped by agent session id, including a
+  sessionless legacy bucket, so a scoped tool result cannot close an older
+  sessionless tool start for the same run/tool name.
+- `RunOrchestrator` now consumes those recorder terminal checks by current
+  agent session id in both local-note and provider-native execution paths,
+  keeping terminal-event de-duplication aligned with session-scoped recording.
+- Agent session settlement projections now carry structured
+  `requiresOpenCheckpoint` and `autoReplayAllowed=false` fields alongside their
+  existing summary text, so checkpoint-backed settlement and terminal evidence
+  review can be consumed without parsing copy.
+- Agent session settlement projection now uses an exhaustive status switch
+  instead of an unreachable fallback action, so future session-status additions
+  must define checkpoint, liveness, or terminal-evidence semantics at compile
+  time.
+- Agent session replay reviews now carry latest-step kind/status/title as
+  structured fields alongside the existing summary text, keeping inspect-first
+  recovery evidence available without parsing the `latest=` segment.
+- Agent session replay reviews now distinguish total open checkpoints from
+  recovery-relevant checkpoints: paused sessions only treat open `resume`
+  checkpoints as resumable, while confirmation sessions only treat
+  `confirmation`, `tool_permission`, and `patch_promotion` checkpoints as
+  recovery-relevant and ignore unrelated `resume` or `external_wait`
+  checkpoints. The structured `recoveryCheckpointCount` keeps recovery routing
+  from treating an unrelated open checkpoint as manual-resume authority.
+- Replay review checkpoint evidence now has a shared
+  `AgentSessionReplayCheckpointEvidence` input type, keeping future renderer,
+  IPC, or service callers aligned on the `status` plus optional checkpoint
+  `kind` fields used for recovery selection.
+- Replay review coverage now locks created-time tie-breaking when run-step
+  indexes match, keeping latest-step recovery evidence deterministic for
+  imported or repaired traces with duplicate indexes.
+- Agent session recovery intents now carry structured session id, status,
+  restart-safety, open-checkpoint count, and recovery-checkpoint count fields
+  alongside the summary text, keeping manual-run and checkpoint routing
+  available without parsing copy.
+- Recovery intent objects now also expose `recoveryCheckpointRequired` as the
+  status-neutral checkpoint gate, while the older `resumeCheckpointRequired`
+  field remains for current callers that still use the legacy name. The
+  recovery intent summary also carries `recoveryCheckpointRequired=yes/no` so
+  Run review copy and structured fields stay aligned.
+- Executor lifecycle availability now carries structured `controlMode` and
+  `settleMode` fields, so dry-run-planned control/settle diagnostics are
+  available before renderer presentation formatting; AI config status coverage
+  now locks those mode fields plus supported control and settle lists at the
+  status boundary.
 - Settings now presents orchestration as diagnostics, not execution: a compact
   `Orchestration Diagnostics` block shows the shared read-only summary,
   lifecycle, hidden-tool-family facts, and dry-run executor lifecycle status
@@ -333,7 +394,8 @@ The project is past initial architecture assembly. Current work should favor pro
   workspace root, the prompt includes them as read-only evidence, and the
   backend blocks model-backed runs with absent, escaping, sensitive, binary,
   missing, or oversized context before producer execution. Provider config is
-  not resolved for model-backed starts that have no bounded context files.
+  not resolved for model-backed starts that have no bounded context files or
+  have invalid selected workspace context.
 - [CODE_AGENT_MODEL_CONTEXT_DECISION.md](CODE_AGENT_MODEL_CONTEXT_DECISION.md)
   records the next model-context boundary: locally available task/source/run
   data is not automatically provider-visible. Selected workspace files are
@@ -344,24 +406,26 @@ The project is past initial architecture assembly. Current work should favor pro
   entering provider prompts.
 - The first provider-visible context manifest helper is in place for
   model-backed Code Agent runs. It records selected workspace-file context as a
-  bounded RunStep manifest before provider runtime config is resolved and marks
+  bounded RunStep manifest after the selected files pass local workspace
+  boundary checks and before provider runtime config is resolved. It marks
   content inclusion per item: selected workspace files can be provider-visible
-  prompt evidence, while selected source-context ids/titles are manifest-only
-  by default and selected artifacts are manifest-only audit entries. Browser,
-  MCP, Skill, retrieval, and artifact/run-output content remain outside
-  provider prompts.
+  prompt evidence, while selected source-context ids/titles are manifest-only by
+  default and selected artifacts are manifest-only audit entries. Browser, MCP,
+  Skill, retrieval, and artifact/run-output content remain outside provider
+  prompts.
 - The source-context content gate is now wired separately from manifest
   selection: content becomes provider-visible only through explicit per-run
   opt-in, task-attached validation, per-item/total size bounds, no external URL
   fetching, no raw-content RunStep dump, and a separate read-only prompt
   evidence section. Without that opt-in, selected source context remains
-  manifest-only.
+  manifest-only. Duplicate or detached selected source-context ids fail closed
+  before provider runtime config is resolved.
 - The artifact/run-output model-context boundary now starts as manifest-only
-  selection: task-attached artifact ids/titles can be recorded in the
-  provider-visible context manifest with `content=no`. Artifact content remains
-  provider-invisible until kind-specific policy can separate prior generated
-  output, rejected or stale patches, browser evidence, failed logs, and
-  accepted facts.
+  selection: task-attached artifact ids/titles/kinds/source-run metadata can be
+  recorded in the provider-visible context manifest and Runs audit summary with
+  `content=no`. Artifact content remains provider-invisible until kind-specific
+  policy can separate prior generated output, rejected or stale patches,
+  browser evidence, failed logs, and accepted facts.
 - Code Agent run creation now also rejects any hidden
   `includeArtifactContent=true` request before resolving provider runtime
   config, so artifact content cannot become provider-visible through IPC or
@@ -838,10 +902,11 @@ The project is past initial architecture assembly. Current work should favor pro
 - Runs Focus Moves now gives `needs_confirmation` Runs explicit checkpoint /
   Decision review guidance without adding a direct resume button or scheduler
   path.
-- Replay review now also treats paused or confirmation sessions with no open
-  checkpoint as `checkpoint_missing` / inspect-only rather than
-  checkpoint-gated, so restart guidance does not imply a resumable path after
-  the checkpoint has already been resolved, cancelled, or lost.
+- Replay review now also treats paused or confirmation sessions with no
+  recovery-relevant open checkpoint as `checkpoint_missing` / inspect-only
+  rather than checkpoint-gated, so restart guidance does not imply a resumable
+  path after the checkpoint has already been resolved, cancelled, lost, or shown
+  to belong to a different recovery lane.
 - The coarse session restart hint now says checkpoint `expected` for paused or
   confirmation sessions and leaves actual resumability to the checkpoint-aware
   replay review, avoiding a false promise when the checkpoint is missing.
@@ -1359,12 +1424,133 @@ npm run verify
 Latest local baseline:
 
 - 127 test files
-- 902 tests
+- 909 tests
 - TypeScript checks
 - production renderer build
 - Electron main-process build
 - build smoke check
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
+- `npm run accept:sandbox-coding` and `npm run verify` passed locally on
+  2026-05-01 after moving Code Agent selected workspace-context validation
+  ahead of provider runtime config resolution. Invalid selected context now
+  fails before provider config is resolved, while valid selected files still
+  produce the provider-visible context manifest before provider calls.
+  Current local acceptance status: 127 test files / 909 tests
+- `npm run accept:agent-local` passed locally on 2026-05-01 after the same
+  Code Agent model-context validation ordering change, covering agent runtime,
+  workspace patch, domain tools, provider-native tools, sandbox-coding, and
+  Code Agent UI gates without external providers.
+- `npm run accept:sandbox-coding` and `npm run accept:agent-local` passed
+  locally on 2026-05-01 after expanding the focused sandbox-coding gate to
+  include Code Agent model-context manifest, source-context, and run-service
+  boundary tests. The sandbox-coding segment now runs 40 Vitest files / 260
+  tests in ten sequential batches to keep the combined local agent acceptance
+  path stable.
+- `npm run verify` passed locally on 2026-05-01 after the same expanded
+  sandbox-coding acceptance coverage and documentation update. Current local
+  acceptance status: 127 test files / 909 tests
+- `npm run accept:sandbox-coding` and `npm run accept:agent-local` passed
+  locally on 2026-05-01 after extending Code Agent artifact context manifests
+  with artifact kind/source-run metadata while keeping artifact content
+  provider-invisible as `content=no`.
+- `npm run verify` passed locally on 2026-05-01 after the same artifact
+  manifest metadata update. Current local acceptance status: 127 test files /
+  909 tests
+- Renderer coverage now keeps Code Agent context-manifest display stable when
+  selected artifact titles contain colon punctuation, while still rendering
+  artifact metadata as audit-only `content=no`.
+- `npm run accept:sandbox-coding` passed locally on 2026-05-01 after enforcing
+  duplicate source-context selection as a fail-closed model-context boundary
+  before provider runtime config resolution.
+- `npm run accept:agent-local` passed locally on 2026-05-01 after the same
+  duplicate source-context selection boundary change, covering agent runtime,
+  workspace patch, domain tools, provider-native tools, sandbox-coding, and
+  Code Agent UI gates without external providers.
+- `npm run verify` passed locally on 2026-05-01 after the same duplicate
+  source-context selection boundary update. Current local acceptance status:
+  127 test files / 910 tests
+- `npm run verify` passed locally on 2026-05-01 after stabilizing the
+  acceptance scripts: `accept:agent-runtime` now runs lifecycle/recorder-heavy
+  coverage in sequential Vitest calls, and `accept:sandbox-coding` now splits
+  its producer batch while preserving the same focused coverage. Current local
+  acceptance status: 127 test files / 909 tests
+- `npm run accept:agent-local` passed locally on 2026-05-01 after the same
+  acceptance-script stabilization, covering agent runtime, workspace patch,
+  domain tools, provider-native tools, sandbox-coding, and Code Agent UI gates
+  without external providers.
+- `npm run verify` passed locally on 2026-05-01 after locking lifecycle mode
+  fields at the AI config status boundary, making settlement projection
+  exhaustive, and aligning recorder terminal detection with the shared
+  runtime-event helper. Current local acceptance status: 127 test files / 909
+  tests
+- `npm run verify` passed locally on 2026-05-01 after changing agent-session
+  settlement projection to an exhaustive status switch instead of an
+  unreachable fallback action. Current local acceptance status: 127 test files
+  / 909 tests
+- `npm run verify` passed locally on 2026-05-01 after locking replay-review
+  latest-step created-time tie-breaking when run-step indexes match. Current
+  local acceptance status: 127 test files / 909 tests
+- `npm run verify` passed locally on 2026-05-01 after adding a recorder
+  regression that keeps sessionless pending tool starts separate from scoped
+  tool results for the same run/tool name. Current local acceptance status:
+  127 test files / 908 tests
+- `npm run verify` passed locally on 2026-05-01 after binding lifecycle
+  monitor adapter events to the current handle's agent session id before
+  recording, keeping scoped terminal observations correct even when an adapter
+  event omits `sessionId`. Current local acceptance status: 127 test files /
+  907 tests
+- `npm run verify` passed locally on 2026-05-01 after adding a recorder
+  regression that keeps sessionless terminal events out of scoped
+  agent-session terminal queries. Current local acceptance status: 127 test
+  files / 906 tests
+- `npm run accept:agent-local` passed locally on 2026-05-01 after the same
+  recorder regression and after changing `accept:sandbox-coding:code-agent-ui`
+  to split main-process config/IPC checks from renderer coverage, avoiding a
+  combined-worker exit hang while preserving the same Code Agent UI gate
+  coverage.
+- `npm run accept:sandbox-coding` passed locally on 2026-05-01 after changing
+  the sandbox-coding acceptance script to run its focused Vitest files in
+  sequential batches, avoiding the combined-worker exit hang while preserving
+  the focused gate coverage.
+- `npm run accept:agent-runtime`, `npm run accept:sandbox-coding:code-agent-ui`,
+  and `npm run verify` passed locally on 2026-05-01 after adding structured
+  terminal-evidence fields to executor lifecycle settlement plan/diagnostic/apply
+  results and separating replay-review `recoveryCheckpointCount` from total
+  open checkpoint count. Current local acceptance status: 127 test files / 909
+  tests
+- `npm run accept:agent-local` passed locally on 2026-05-01 after the same
+  settlement-evidence and recovery-checkpoint routing changes, covering the
+  non-live agent runtime, workspace patch, domain tools, provider-native tools,
+  sandbox-coding, and Code Agent UI gates.
+- `npm run verify` and `npm run accept:agent-local` passed locally on
+  2026-05-01 after tightening recovery copy from "open checkpoint" to
+  "recovery checkpoint", adding symmetric confirmation/resume mismatch
+  coverage, and introducing shared replay checkpoint evidence typing. Current
+  local acceptance status: 127 test files / 909 tests
+- `npm run verify` passed locally on 2026-05-01 after aligning the remaining
+  agent replay/recovery docs and App test naming with recovery-relevant
+  checkpoint semantics. Current local acceptance status: 127 test files / 909
+  tests
+- `npm run accept:agent-local` passed locally on 2026-05-01 after the same
+  recovery-relevant checkpoint terminology alignment across docs, renderer
+  tests, and shared replay review typing.
+- `npm run verify` passed locally on 2026-05-01 after narrowing
+  needs-confirmation recovery checkpoints to `confirmation`, `tool_permission`,
+  and `patch_promotion`, excluding unrelated `resume` and `external_wait`
+  checkpoints, and after adding the status-neutral
+  `recoveryCheckpointRequired` recovery-intent field. Current local acceptance
+  status: 127 test files / 909 tests
+- `npm run accept:agent-local` passed locally on 2026-05-01 after the same
+  recovery checkpoint whitelist and `recoveryCheckpointRequired` field changes.
+- `npm run accept:sandbox-coding:code-agent-ui` passed locally on 2026-05-01
+  after changing the Code Agent UI gate to keep main-process config/IPC checks
+  separate while running renderer capability and App coverage together.
+- `npm run accept:agent-local` passed locally on 2026-05-01 after binding
+  lifecycle monitor adapter events to the current handle session id and keeping
+  the sequential Code Agent UI acceptance script stable.
+- `npm run accept:agent-local` passed locally on 2026-05-01 after the latest
+  recorder pending-tool, runtime failed-status, and replay latest-step
+  regression checks.
 - `npm run verify` passed locally on 2026-04-30 after covering
   provider-native completed terminal events without duplicate result final
   steps. Current local acceptance status: 127 test files / 902 tests
@@ -1699,8 +1885,8 @@ Latest local baseline:
   sessions with an active latest step route back to Tasks with inspect-first,
   no-auto-replay next-step wording.
 - Runs page recovery coverage now also asserts paused agent sessions with no
-  open checkpoint are treated as `checkpoint_missing`: no paused-run continuation
-  button is shown, and task recovery is evidence-review first.
+  recovery checkpoint are treated as `checkpoint_missing`: no paused-run
+  continuation button is shown, and task recovery is evidence-review first.
 - Runs page recovery coverage now also asserts failed agent sessions route to
   new-run recovery wording from Run evidence, not replay or continuation.
 - `npm run verify` passed locally on 2026-04-26 after adding the sandbox

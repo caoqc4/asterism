@@ -113,8 +113,8 @@ Acceptance:
 - current text-only and provider-native paths still settle the same way
 - run steps can be written from typed runtime events
 - checkpoint events map to persisted checkpoints and pending Decisions
-- paused/confirmation sessions are resumable only when an open checkpoint is
-  loaded and validated; otherwise replay review stays inspect-only
+- paused/confirmation sessions are resumable only when a recovery-relevant open
+  checkpoint is loaded and validated; otherwise replay review stays inspect-only
 - runtime readiness has a named domain concept before the code-agent UI
   expands beyond the sandboxed producer lane
 - external frameworks remain references rather than runtime dependencies until

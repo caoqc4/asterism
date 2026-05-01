@@ -180,6 +180,8 @@ describe('AgentExecutorLifecycleService', () => {
         'autoReplay=no',
         'applied=no',
       ].join(' / '),
+      terminalEventRecorded: false,
+      terminalSessionStatus: null,
     });
     expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
   });

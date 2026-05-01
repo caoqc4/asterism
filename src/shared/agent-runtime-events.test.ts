@@ -99,6 +99,12 @@ describe('agent runtime events', () => {
       output: 'Done.',
     })).toBe('completed');
     expect(projectAgentRuntimeEventSessionStatus({
+      type: 'session.failed',
+      runId: 'run_1',
+      failureKind: 'tool',
+      message: 'Tool failed.',
+    })).toBe('failed');
+    expect(projectAgentRuntimeEventSessionStatus({
       type: 'session.interrupted',
       runId: 'run_1',
       reason: 'Executor process exited.',

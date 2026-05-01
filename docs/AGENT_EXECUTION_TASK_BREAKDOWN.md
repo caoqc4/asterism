@@ -477,14 +477,14 @@ The latest implementation slice:
   evidence, verify checkpoint evidence, or start a new Run
 - shared replay review summaries now show Runs detail whether the latest agent
   session is inspect-only, manual-resume-only, or new-run recovery, while
-  keeping automatic replay disabled and surfacing open checkpoint count;
-  paused/confirmation sessions without an open checkpoint are treated as
-  `checkpoint_missing` inspect-only recovery
+  keeping automatic replay disabled and surfacing open and recovery checkpoint
+  counts; paused/confirmation sessions without a recovery-relevant open
+  checkpoint are treated as `checkpoint_missing` inspect-only recovery
 - Runs `回到任务推进` now uses that replay review mode to prefill the task
   next-step draft, keeping manual-resume work anchored on checkpoint / Decision
   review instead of automatic replay
 - Runs recovery now also has UI coverage for running sessions whose latest step
-  is still active (`live_status_unknown`) and paused sessions with no open
+  is still active (`live_status_unknown`) and paused sessions with no recovery
   checkpoint (`checkpoint_missing`), so both routes stay inspect-first and
   no-auto-replay from Run evidence back into Task next-step recovery.
 - Failed agent sessions now also have Runs-page recovery coverage that routes
@@ -547,6 +547,14 @@ The latest implementation slice:
   `AgentSessionEventRecorder`, so the future adapter path already produces
   heartbeat/cancellation RunStep evidence and projected session status without
   directly settling `AgentSession` or launching a real runtime.
+- The lifecycle monitor binds adapter events to the current handle's agent
+  session id before recording, so adapter events that omit `sessionId` still
+  produce correctly scoped terminal observations and settlement plans.
+- Recorder pending tool state now keeps a distinct sessionless bucket alongside
+  scoped session buckets, so legacy sessionless tool starts cannot be closed by
+  scoped tool results from the same run/tool name.
+- The recorder now reuses the shared runtime terminal-event helper, keeping
+  terminal detection aligned with the shared event spine and status projector.
 - The monitor/service boundary now also accepts typed lifecycle control
   requests and returns the same planned observation/settlement-plan shape,
   keeping control commands inspectable without applying status updates
@@ -626,6 +634,9 @@ The latest implementation slice:
 - Provider-native `RunOrchestrator` coverage now locks the same
   `session.completed` terminal-evidence de-duplication, keeping final RunStep
   recording symmetric across both agent execution branches.
+- `RunOrchestrator` now reads recorder terminal status by current agent session
+  id for both local-note and provider-native paths, keeping terminal-event
+  de-duplication aligned with session-scoped recording.
 - The lifecycle service factory availability projection now accepts control
   support overrides, letting dry-run diagnostics describe partial or absent
   controls without implying runtime readiness.
@@ -659,6 +670,14 @@ The latest implementation slice:
 - Terminal session settlement coverage now fully covers completed, failed, and
   cancelled sessions as evidence-review only, with no checkpoint settlement or
   replay authority.
+- Agent session settlement projections now expose structured
+  `requiresOpenCheckpoint` and `autoReplayAllowed=false` fields, so callers can
+  distinguish checkpoint-backed settlement from terminal evidence review without
+  parsing summary text.
+- Agent session settlement projection now uses an exhaustive status switch
+  instead of an unreachable fallback action, so future session-status additions
+  must define checkpoint, liveness, or terminal-evidence semantics at compile
+  time.
 - Continuable agent session selection now has coverage for created-time
   tie-breaking when sessions share the same update time, keeping recovery
   routing deterministic.
@@ -695,14 +714,43 @@ The latest implementation slice:
 - Lifecycle service coverage now also asserts that explicitly applying a
   `no_status_change` plan returns `applied=false` with structured fields and no
   session status write.
+- Executor lifecycle settlement plans, diagnostics, and explicit apply results
+  now also expose structured terminal evidence fields
+  (`terminalEventRecorded`, `terminalSessionStatus`), so future IPC/renderer
+  recovery callers can compare planned status changes with recorded terminal
+  evidence without parsing settlement summaries.
 - Replay reviews now expose `automaticReplayAllowed=false` as a structured
   field instead of leaving replay prohibition only in summary text.
+- Replay reviews now also expose latest-step kind/status/title as structured
+  fields, so recovery UI can inspect the evidence shape without parsing the
+  `latest=kind:status:title` summary segment.
+- Replay reviews now also expose `recoveryCheckpointCount` separately from
+  total `openCheckpointCount`, so paused sessions require an open `resume`
+  checkpoint before manual resume is suggested, and confirmation sessions only
+  count `confirmation`, `tool_permission`, or `patch_promotion` checkpoints as
+  recovery-relevant instead of inheriting unrelated `resume` or `external_wait`
+  authority.
+- Replay review checkpoint evidence now has a shared
+  `AgentSessionReplayCheckpointEvidence` input type, keeping future renderer,
+  IPC, or service callers aligned on the `status` plus optional checkpoint
+  `kind` fields used for recovery selection.
+- Replay review coverage now locks created-time tie-breaking when run-step
+  indexes match, so latest-step recovery evidence remains deterministic for
+  imported or repaired traces with duplicate indexes.
 - Runs recovery safety presentation now consumes the structured replay review
   object, so the visible `inspect first` lane is derived from
   `automaticReplayAllowed=false` instead of summary text.
 - Runs recovery intent presentation now also consumes the structured recovery
   intent object, keeping manual-run, checkpoint, and no-auto-replay signals
   available to the UI boundary.
+- Recovery intent objects now carry structured session id, status, restart
+  safety, open-checkpoint count, and recovery-checkpoint count fields, so
+  manual-run and checkpoint decisions do not need to parse the intent summary.
+- Recovery intent objects now also expose `recoveryCheckpointRequired` as the
+  status-neutral checkpoint gate, while retaining `resumeCheckpointRequired`
+  for current callers that still use the older name. The recovery intent
+  summary also carries `recoveryCheckpointRequired=yes/no` so visible Run
+  review copy stays aligned with the structured field.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any
@@ -728,6 +776,11 @@ The latest implementation slice:
 - The availability summary now also reports supported dry-run control requests
   (`heartbeat`, `interrupt`, `cancel`) as `controlMode=dry_run_planned`, making
   control API readiness visible without implying a live executor.
+- Executor lifecycle availability now carries structured `controlMode` and
+  `settleMode` fields, keeping dry-run-planned adapter diagnostics available
+  without parsing presentation copy.
+- AI config status coverage now locks those lifecycle mode fields plus
+  supported control request and settle-status lists at the status boundary.
 - Shared executor lifecycle diagnostics now format that availability as
   read-only presentation copy and Settings surfaces it inside the existing
   `Orchestration Diagnostics` card, including blocked reasons and next action,
@@ -808,9 +861,14 @@ npm test -- src/main/domain/run/agent-run-loop.test.ts
 npm run accept:workspace-patch
 npm run accept:domain-agent-tools
 npm run accept:provider-native-tools
+npm run accept:agent-local
 npm run manual:browser-controlled-fixture
 npm run verify
 ```
 
-If the combined `npm run accept:agent-local` script hangs in Vitest child
-processes, run the three acceptance subcommands separately.
+`npm run accept:agent-local` is the preferred non-live agent gate. Its Code
+Agent UI segment keeps main-process config and IPC checks in separate Vitest
+calls, then runs the renderer capability and App coverage together; its
+sandbox-coding segment runs 40 Vitest files / 260 tests in ten sequential
+batches, including Code Agent model-context boundary coverage, so the combined
+gate exits cleanly after preserving focused coverage.

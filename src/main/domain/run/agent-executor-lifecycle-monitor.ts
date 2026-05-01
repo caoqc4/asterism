@@ -1,4 +1,4 @@
-import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
+import type { AgentSessionEvent, AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type { RunStepRecord } from '../../../shared/types/run.js';
 import type {
   AgentExecutorLifecycleControlInput,
@@ -21,12 +21,16 @@ export type AgentExecutorLifecycleSettlementPlan =
       action: 'no_status_change';
       sessionId: string;
       summary: string;
+      terminalEventRecorded: boolean;
+      terminalSessionStatus: AgentSessionRecord['status'] | null;
     }
   | {
       action: 'update_session_status';
       sessionId: string;
       status: AgentSessionRecord['status'];
       summary: string;
+      terminalEventRecorded: boolean;
+      terminalSessionStatus: AgentSessionRecord['status'] | null;
     };
 
 export type AgentExecutorLifecycleStatusUpdater = {
@@ -41,6 +45,8 @@ export type AgentExecutorLifecycleSettlementApplyResult =
       sessionId: string;
       status: null;
       summary: string;
+      terminalEventRecorded: boolean;
+      terminalSessionStatus: AgentSessionRecord['status'] | null;
     }
   | {
       action: 'update_session_status';
@@ -50,6 +56,8 @@ export type AgentExecutorLifecycleSettlementApplyResult =
       sessionId: string;
       status: AgentSessionRecord['status'];
       summary: string;
+      terminalEventRecorded: boolean;
+      terminalSessionStatus: AgentSessionRecord['status'] | null;
     };
 
 export type AgentExecutorLifecycleSettlementDiagnostic = {
@@ -58,6 +66,8 @@ export type AgentExecutorLifecycleSettlementDiagnostic = {
   sessionId: string;
   status: AgentSessionRecord['status'] | null;
   summary: string;
+  terminalEventRecorded: boolean;
+  terminalSessionStatus: AgentSessionRecord['status'] | null;
 };
 
 export type AgentExecutorLifecyclePlannedObservation = AgentExecutorLifecycleObservation & {
@@ -67,7 +77,10 @@ export type AgentExecutorLifecyclePlannedObservation = AgentExecutorLifecycleObs
 
 export function planAgentExecutorLifecycleSettlement(params: {
   sessionId: string;
-  observation: Pick<AgentExecutorLifecycleObservation, 'projectedStatus' | 'terminalEventRecorded'>;
+  observation: Pick<
+    AgentExecutorLifecycleObservation,
+    'projectedStatus' | 'terminalEventRecorded' | 'terminalSessionStatus'
+  >;
 }): AgentExecutorLifecycleSettlementPlan {
   if (!params.observation.projectedStatus) {
     return {
@@ -80,6 +93,8 @@ export function planAgentExecutorLifecycleSettlement(params: {
         'reason=no_projected_status',
         'autoReplay=no',
       ].join(' / '),
+      terminalEventRecorded: params.observation.terminalEventRecorded,
+      terminalSessionStatus: params.observation.terminalSessionStatus,
     };
   }
 
@@ -95,6 +110,8 @@ export function planAgentExecutorLifecycleSettlement(params: {
       'action=update_session_status',
       'autoReplay=no',
     ].join(' / '),
+    terminalEventRecorded: params.observation.terminalEventRecorded,
+    terminalSessionStatus: params.observation.terminalSessionStatus,
   };
 }
 
@@ -107,6 +124,8 @@ export function buildAgentExecutorLifecycleSettlementDiagnostic(
     sessionId: plan.sessionId,
     status: plan.action === 'update_session_status' ? plan.status : null,
     summary: plan.summary,
+    terminalEventRecorded: plan.terminalEventRecorded,
+    terminalSessionStatus: plan.terminalSessionStatus,
   };
 }
 
@@ -125,6 +144,8 @@ export async function applyAgentExecutorLifecycleSettlementPlan(params: {
         params.plan.summary,
         'applied=no',
       ].join(' / '),
+      terminalEventRecorded: params.plan.terminalEventRecorded,
+      terminalSessionStatus: params.plan.terminalSessionStatus,
     };
   }
 
@@ -141,6 +162,8 @@ export async function applyAgentExecutorLifecycleSettlementPlan(params: {
       params.plan.summary,
       'applied=yes',
     ].join(' / '),
+    terminalEventRecorded: params.plan.terminalEventRecorded,
+    terminalSessionStatus: params.plan.terminalSessionStatus,
   };
 }
 
@@ -170,20 +193,30 @@ export class AgentExecutorLifecycleMonitor {
     };
   }
 
+  private async recordScopedEvent(
+    event: AgentSessionEvent,
+    handle: AgentExecutorLifecycleObserveInput['handle'],
+  ): Promise<RunStepRecord | null> {
+    return this.recorder.record({
+      ...event,
+      sessionId: handle.agentSessionId,
+    });
+  }
+
   async observe(input: Omit<AgentExecutorLifecycleObserveInput, 'onEvent'>): Promise<AgentExecutorLifecycleObservation> {
     let recordedStep: RunStepRecord | null = null;
     const observed = await this.adapter.observe({
       ...input,
       onEvent: async (event) => {
-        recordedStep = await this.recorder.record(event);
+        recordedStep = await this.recordScopedEvent(event, input.handle);
       },
     });
 
     return {
       projectedStatus: observed.projectedStatus,
       recordedStep,
-      terminalEventRecorded: this.recorder.hasTerminalEvent(),
-      terminalSessionStatus: this.recorder.getTerminalSessionStatus(),
+      terminalEventRecorded: this.recorder.hasTerminalEvent(input.handle.agentSessionId),
+      terminalSessionStatus: this.recorder.getTerminalSessionStatus(input.handle.agentSessionId),
     };
   }
 
@@ -194,14 +227,14 @@ export class AgentExecutorLifecycleMonitor {
     const observed = await this.adapter.control({
       ...input,
       onEvent: async (event) => {
-        recordedStep = await this.recorder.record(event);
+        recordedStep = await this.recordScopedEvent(event, input.handle);
       },
     });
     const observation = {
       projectedStatus: observed.projectedStatus,
       recordedStep,
-      terminalEventRecorded: this.recorder.hasTerminalEvent(),
-      terminalSessionStatus: this.recorder.getTerminalSessionStatus(),
+      terminalEventRecorded: this.recorder.hasTerminalEvent(input.handle.agentSessionId),
+      terminalSessionStatus: this.recorder.getTerminalSessionStatus(input.handle.agentSessionId),
     };
 
     return this.buildPlannedObservation({
@@ -217,14 +250,14 @@ export class AgentExecutorLifecycleMonitor {
     const observed = await this.adapter.settle({
       ...input,
       onEvent: async (event) => {
-        recordedStep = await this.recorder.record(event);
+        recordedStep = await this.recordScopedEvent(event, input.handle);
       },
     });
     const observation = {
       projectedStatus: observed.projectedStatus,
       recordedStep,
-      terminalEventRecorded: this.recorder.hasTerminalEvent(),
-      terminalSessionStatus: this.recorder.getTerminalSessionStatus(),
+      terminalEventRecorded: this.recorder.hasTerminalEvent(input.handle.agentSessionId),
+      terminalSessionStatus: this.recorder.getTerminalSessionStatus(input.handle.agentSessionId),
     };
 
     return this.buildPlannedObservation({

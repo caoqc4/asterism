@@ -300,10 +300,10 @@ export class RunOrchestrator {
 
     await this.agentSessionStore.updateStatus(
       agentSession.id,
-      eventRecorder.getTerminalSessionStatus() ?? sessionResult.status,
+      eventRecorder.getTerminalSessionStatus(agentSession.id) ?? sessionResult.status,
     );
 
-    if (!eventRecorder.hasTerminalEvent()) {
+    if (!eventRecorder.hasTerminalEvent(agentSession.id)) {
       await this.recordAgentSessionResultEvent(params.run.id, sessionResult);
     }
 
@@ -424,10 +424,10 @@ export class RunOrchestrator {
 
     await this.agentSessionStore.updateStatus(
       agentSession.id,
-      eventRecorder.getTerminalSessionStatus() ?? sessionResult.status,
+      eventRecorder.getTerminalSessionStatus(agentSession.id) ?? sessionResult.status,
     );
 
-    if (!eventRecorder.hasTerminalEvent()) {
+    if (!eventRecorder.hasTerminalEvent(agentSession.id)) {
       await this.recordAgentSessionResultEvent(params.run.id, sessionResult);
     }
 

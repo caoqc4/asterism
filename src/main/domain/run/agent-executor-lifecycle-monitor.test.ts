@@ -8,6 +8,11 @@ import {
   buildAgentExecutorLifecycleSettlementDiagnostic,
 } from './agent-executor-lifecycle-monitor.js';
 import { AgentSessionEventRecorder } from './agent-session-event-recorder.js';
+import type {
+  AgentExecutorLifecycleAdapter,
+  AgentExecutorLifecycleObserveInput,
+  AgentExecutorLifecycleStartInput,
+} from './agent-executor.js';
 
 function buildRunStepRepositoryMock() {
   let stepCount = 1;
@@ -81,12 +86,16 @@ describe('AgentExecutorLifecycleMonitor', () => {
           'reason=no_projected_status',
           'autoReplay=no',
         ].join(' / '),
+        terminalEventRecorded: false,
+        terminalSessionStatus: null,
       },
       settlementDiagnostic: {
         action: 'no_status_change',
         autoReplay: false,
         sessionId: 'agent_session_1',
         status: null,
+        terminalEventRecorded: false,
+        terminalSessionStatus: null,
       },
     });
     expect(buildAgentExecutorLifecycleSettlementDiagnostic(observation.settlementPlan)).toEqual({
@@ -101,6 +110,8 @@ describe('AgentExecutorLifecycleMonitor', () => {
         'reason=no_projected_status',
         'autoReplay=no',
       ].join(' / '),
+      terminalEventRecorded: false,
+      terminalSessionStatus: null,
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'plan',
@@ -154,12 +165,16 @@ describe('AgentExecutorLifecycleMonitor', () => {
           'action=update_session_status',
           'autoReplay=no',
         ].join(' / '),
+        terminalEventRecorded: true,
+        terminalSessionStatus: 'cancelled',
       },
       settlementDiagnostic: {
         action: 'update_session_status',
         autoReplay: false,
         sessionId: 'agent_session_1',
         status: 'cancelled',
+        terminalEventRecorded: true,
+        terminalSessionStatus: 'cancelled',
       },
     });
     expect(buildAgentExecutorLifecycleSettlementDiagnostic(observation.settlementPlan)).toEqual({
@@ -175,12 +190,140 @@ describe('AgentExecutorLifecycleMonitor', () => {
         'action=update_session_status',
         'autoReplay=no',
       ].join(' / '),
+      terminalEventRecorded: true,
+      terminalSessionStatus: 'cancelled',
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'final',
       status: 'failed',
       title: 'Agent session 已取消',
       error: 'Operator cancelled the dry-run executor.',
+    }));
+  });
+
+  it('keeps terminal observations scoped when one monitor handles multiple sessions', async () => {
+    const runStepRepository = buildRunStepRepositoryMock();
+    const monitor = new AgentExecutorLifecycleMonitor(
+      new DryRunAgentExecutorLifecycleAdapter(),
+      new AgentSessionEventRecorder(runStepRepository as never),
+    );
+    const cancelledHandle = await monitor.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-29T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+    });
+    const heartbeatHandle = await monitor.startSession({
+      runId: 'run_2',
+      agentSessionId: 'agent_session_2',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-29T00:01:00.000Z',
+      capabilities: buildCapabilities(),
+    });
+
+    await monitor.observeAndPlan({
+      handle: cancelledHandle,
+      signal: {
+        type: 'cancelled',
+        reason: 'First dry-run session was cancelled.',
+      },
+    });
+    const heartbeatObservation = await monitor.observeAndPlan({
+      handle: heartbeatHandle,
+      signal: {
+        type: 'heartbeat',
+        summary: 'Second dry-run session is alive.',
+      },
+    });
+
+    expect(heartbeatObservation).toMatchObject({
+      projectedStatus: null,
+      terminalEventRecorded: false,
+      terminalSessionStatus: null,
+      settlementPlan: {
+        action: 'no_status_change',
+        sessionId: 'agent_session_2',
+      },
+      settlementDiagnostic: {
+        action: 'no_status_change',
+        sessionId: 'agent_session_2',
+        status: null,
+      },
+    });
+  });
+
+  it('scopes lifecycle adapter events to the current handle when events omit session id', async () => {
+    const runStepRepository = buildRunStepRepositoryMock();
+    const adapter: AgentExecutorLifecycleAdapter = {
+      startSession: vi.fn().mockImplementation(async (input: AgentExecutorLifecycleStartInput) => ({
+        executorSessionId: `adapter:${input.agentSessionId}`,
+        runId: input.runId,
+        agentSessionId: input.agentSessionId,
+        runtimeId: input.runtimeId,
+        profileId: input.profileId,
+        startedAt: input.nowIso ?? '2026-04-29T00:00:00.000Z',
+        capabilities: input.capabilities,
+        control: {
+          cancel: true,
+          heartbeat: true,
+          interrupt: true,
+        },
+      })),
+      observe: vi.fn().mockImplementation(async (input: AgentExecutorLifecycleObserveInput) => {
+        const event = {
+          type: 'session.cancelled' as const,
+          runId: input.handle.runId,
+          reason: 'Adapter omitted session id.',
+        };
+        await input.onEvent?.(event);
+
+        return {
+          event,
+          projectedStatus: 'cancelled' as const,
+        };
+      }),
+      control: vi.fn(),
+      settle: vi.fn(),
+    };
+    const monitor = new AgentExecutorLifecycleMonitor(
+      adapter,
+      new AgentSessionEventRecorder(runStepRepository as never),
+    );
+    const handle = await monitor.startSession({
+      runId: 'run_1',
+      agentSessionId: 'agent_session_1',
+      runtimeId: 'local_sandbox',
+      profileId: 'manual_code_agent',
+      nowIso: '2026-04-29T00:00:00.000Z',
+      capabilities: buildCapabilities(),
+    });
+
+    const observation = await monitor.observeAndPlan({
+      handle,
+      signal: {
+        type: 'cancelled',
+        reason: 'Adapter omitted session id.',
+      },
+    });
+
+    expect(observation).toMatchObject({
+      projectedStatus: 'cancelled',
+      terminalEventRecorded: true,
+      terminalSessionStatus: 'cancelled',
+      settlementPlan: {
+        action: 'update_session_status',
+        sessionId: 'agent_session_1',
+        status: 'cancelled',
+      },
+    });
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'final',
+      status: 'failed',
+      title: 'Agent session 已取消',
+      error: 'Adapter omitted session id.',
     }));
   });
 
@@ -340,6 +483,8 @@ describe('AgentExecutorLifecycleMonitor', () => {
         action: 'no_status_change',
         sessionId: 'agent_session_1',
         summary: 'Executor lifecycle settlement / action=no_status_change',
+        terminalEventRecorded: false,
+        terminalSessionStatus: null,
       },
     })).resolves.toEqual({
       action: 'no_status_change',
@@ -348,6 +493,8 @@ describe('AgentExecutorLifecycleMonitor', () => {
       sessionId: 'agent_session_1',
       status: null,
       summary: 'Executor lifecycle settlement / action=no_status_change / applied=no',
+      terminalEventRecorded: false,
+      terminalSessionStatus: null,
     });
     expect(statusUpdater.updateStatus).not.toHaveBeenCalled();
 
@@ -358,6 +505,8 @@ describe('AgentExecutorLifecycleMonitor', () => {
         sessionId: 'agent_session_1',
         status: 'cancelled',
         summary: 'Executor lifecycle settlement / action=update_session_status',
+        terminalEventRecorded: true,
+        terminalSessionStatus: 'cancelled',
       },
     })).resolves.toMatchObject({
       action: 'update_session_status',
@@ -370,6 +519,8 @@ describe('AgentExecutorLifecycleMonitor', () => {
       sessionId: 'agent_session_1',
       status: 'cancelled',
       summary: 'Executor lifecycle settlement / action=update_session_status / applied=yes',
+      terminalEventRecorded: true,
+      terminalSessionStatus: 'cancelled',
     });
     expect(statusUpdater.updateStatus).toHaveBeenCalledWith('agent_session_1', 'cancelled');
   });

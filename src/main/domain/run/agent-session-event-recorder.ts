@@ -2,7 +2,10 @@ import type { AgentSessionEvent } from '../../../shared/types/agent-execution.js
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type { RunStepRecord } from '../../../shared/types/run.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
-import { projectAgentRuntimeEventSessionStatus } from '../../../shared/agent-runtime-events.js';
+import {
+  isTerminalAgentRuntimeEvent,
+  projectAgentRuntimeEventSessionStatus,
+} from '../../../shared/agent-runtime-events.js';
 import {
   mapAgentRuntimeEventToRunStep,
   type AgentRuntimeRunStepDraft,
@@ -33,16 +36,6 @@ function isRecordableEvent(event: AgentSessionEvent): event is RecordableAgentSe
     event.type === 'tool.failed' ||
     event.type === 'checkpoint.created' ||
     event.type === 'session.heartbeat' ||
-    event.type === 'session.paused' ||
-    event.type === 'session.completed' ||
-    event.type === 'session.failed' ||
-    event.type === 'session.interrupted' ||
-    event.type === 'session.cancelled'
-  );
-}
-
-function isTerminalEvent(event: AgentSessionEvent): boolean {
-  return (
     event.type === 'session.paused' ||
     event.type === 'session.completed' ||
     event.type === 'session.failed' ||
@@ -109,23 +102,37 @@ function titleOverrides(event: RecordableAgentSessionEvent): Partial<Omit<AgentR
 export class AgentSessionEventRecorder {
   private terminalEventRecorded = false;
   private terminalSessionStatus: AgentSessionRecord['status'] | null = null;
+  private readonly terminalEventRecordedBySessionId = new Map<string, boolean>();
+  private readonly terminalSessionStatusBySessionId = new Map<string, AgentSessionRecord['status']>();
   private readonly pendingToolStepIds = new Map<string, string[]>();
 
   constructor(private readonly runStepRepository: RunStepRepository) {}
 
-  hasTerminalEvent(): boolean {
+  hasTerminalEvent(sessionId?: string | null): boolean {
+    if (sessionId) {
+      return this.terminalEventRecordedBySessionId.get(sessionId) ?? false;
+    }
+
     return this.terminalEventRecorded;
   }
 
-  getTerminalSessionStatus(): AgentSessionRecord['status'] | null {
+  getTerminalSessionStatus(sessionId?: string | null): AgentSessionRecord['status'] | null {
+    if (sessionId) {
+      return this.terminalSessionStatusBySessionId.get(sessionId) ?? null;
+    }
+
     return this.terminalSessionStatus;
   }
 
   async record(event: AgentSessionEvent): Promise<RunStepRecord | null> {
     const projectedStatus = projectAgentRuntimeEventSessionStatus(event);
-    if (isTerminalEvent(event)) {
+    if (isTerminalAgentRuntimeEvent(event)) {
       this.terminalEventRecorded = true;
       this.terminalSessionStatus = projectedStatus;
+      if (event.sessionId && projectedStatus) {
+        this.terminalEventRecordedBySessionId.set(event.sessionId, true);
+        this.terminalSessionStatusBySessionId.set(event.sessionId, projectedStatus);
+      }
     }
 
     if (!isRecordableEvent(event)) {
@@ -145,7 +152,7 @@ export class AgentSessionEventRecorder {
     });
 
     if (event.type === 'tool.started') {
-      const key = pendingToolKey(event.runId, event.tool);
+      const key = pendingToolKey(event);
       this.pendingToolStepIds.set(key, [
         ...(this.pendingToolStepIds.get(key) ?? []),
         record.id,
@@ -158,7 +165,7 @@ export class AgentSessionEventRecorder {
   private async finishPendingToolStep(
     event: Extract<AgentSessionEvent, { type: 'tool.completed' | 'tool.failed' }>,
   ): Promise<void> {
-    const key = pendingToolKey(event.runId, event.tool);
+    const key = pendingToolKey(event);
     const pending = this.pendingToolStepIds.get(key);
     const stepId = pending?.shift();
 
@@ -186,6 +193,6 @@ export class AgentSessionEventRecorder {
   }
 }
 
-function pendingToolKey(runId: string, tool: string): string {
-  return `${runId}:${tool}`;
+function pendingToolKey(event: Pick<AgentSessionEvent, 'runId' | 'sessionId'> & { tool: string }): string {
+  return `${event.runId}:${event.sessionId ?? 'sessionless'}:${event.tool}`;
 }

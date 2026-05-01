@@ -491,8 +491,8 @@ describe('agent capability formatting', () => {
         status: 'completed',
         title: 'Sandbox producer source ready',
       },
-    ], [{ status: 'open' }])).toBe(
-      'Replay review：resume only through the open checkpoint / mode=manual_resume / session=agent_session_1 / status=paused / restartSafety=checkpoint_gated / steps=1 / openCheckpoints=1 / latest=artifact:completed:Sandbox producer source ready / autoReplay=no',
+    ], [{ kind: 'resume', status: 'open' }])).toBe(
+      'Replay review：resume only through the recovery checkpoint / mode=manual_resume / session=agent_session_1 / status=paused / restartSafety=checkpoint_gated / steps=1 / openCheckpoints=1 / recoveryCheckpoints=1 / latest=artifact:completed:Sandbox producer source ready / autoReplay=no',
     );
     expect(buildAgentSessionReplayReviewPresentation(session, [
       {
@@ -502,10 +502,11 @@ describe('agent capability formatting', () => {
         status: 'completed',
         title: 'Sandbox producer source ready',
       },
-    ], [{ status: 'open' }])).toMatchObject({
+    ], [{ kind: 'resume', status: 'open' }])).toMatchObject({
       automaticReplayAllowed: false,
       mode: 'manual_resume',
       openCheckpointCount: 1,
+      recoveryCheckpointCount: 1,
       restartSafety: 'checkpoint_gated',
       sessionId: 'agent_session_1',
       status: 'paused',
@@ -518,8 +519,8 @@ describe('agent capability formatting', () => {
         status: 'completed',
         title: 'Sandbox producer source ready',
       },
-    ], [{ status: 'open' }])).toBe(
-      'Recovery intent：manual checkpoint resume / session=agent_session_1 / status=paused / restartSafety=checkpoint_gated / openCheckpoints=1 / manualRunRequired=no / autoReplay=no',
+    ], [{ kind: 'resume', status: 'open' }])).toBe(
+      'Recovery intent：manual checkpoint resume / session=agent_session_1 / status=paused / restartSafety=checkpoint_gated / openCheckpoints=1 / recoveryCheckpoints=1 / recoveryCheckpointRequired=yes / manualRunRequired=no / autoReplay=no',
     );
     expect(buildAgentSessionRecoveryIntentPresentation(session, [
       {
@@ -529,10 +530,12 @@ describe('agent capability formatting', () => {
         status: 'completed',
         title: 'Sandbox producer source ready',
       },
-    ], [{ status: 'open' }])).toMatchObject({
+    ], [{ kind: 'resume', status: 'open' }])).toMatchObject({
       action: 'manual_checkpoint_resume',
       automaticReplayAllowed: false,
       manualRunRequired: false,
+      recoveryCheckpointCount: 1,
+      recoveryCheckpointRequired: true,
       resumeCheckpointRequired: true,
     });
     expect(formatSandboxProducerLifecycleSummary(session)).toBe(
@@ -560,18 +563,47 @@ describe('agent capability formatting', () => {
     } as const;
 
     expect(formatAgentSessionReplayNextStepDraft({
-      checkpoints: [{ status: 'open' }],
+      checkpoints: [{ kind: 'tool_permission', status: 'open' }],
       runType: 'agent',
       session,
       steps: [],
-    })).toBe('处理最近一次 agent run 的 1 个 open checkpoint / Decision，再决定是否继续执行。');
+    })).toBe('处理最近一次 agent run 的 1 个 recovery checkpoint / Decision，再决定是否继续执行。');
 
     expect(formatAgentSessionReplayNextStepDraft({
-      checkpoints: [{ status: 'resolved' }],
+      checkpoints: [{ kind: 'tool_permission', status: 'resolved' }],
       runType: 'agent',
       session,
       steps: [],
-    })).toBe('复核最近一次 agent run 的暂停或确认原因；没有 open checkpoint 时，先查看执行证据再决定是否重跑。');
+    })).toBe('复核最近一次 agent run 的暂停或确认原因；没有 recovery checkpoint 时，先查看执行证据再决定是否重跑。');
+    expect(formatAgentSessionReplayNextStepDraft({
+      checkpoints: [{ kind: 'patch_promotion', status: 'open' }],
+      runType: 'agent',
+      session: {
+        ...session,
+        status: 'paused',
+      },
+      steps: [],
+    })).toBe('复核最近一次 agent run 的暂停或确认原因；当前有 1 个 open checkpoint，但没有适用于该 session 的 recovery checkpoint。');
+    expect(formatAgentSessionReplayNextStepDraft({
+      checkpoints: [{ kind: 'external_wait', status: 'open' }],
+      runType: 'agent',
+      session,
+      steps: [],
+    })).toBe('复核最近一次 agent run 的暂停或确认原因；当前有 1 个 open checkpoint，但没有适用于该 session 的 recovery checkpoint。');
+    expect(formatAgentSessionRecoveryRunInstructions({
+      checkpoints: [{ kind: 'tool_permission', status: 'resolved' }],
+      runType: 'agent',
+      session,
+      steps: [
+        {
+          createdAt: '2026-01-01T00:00:00.000Z',
+          index: 1,
+          kind: 'checkpoint',
+          status: 'completed',
+          title: 'Resolved checkpoint',
+        },
+      ],
+    })).toBeNull();
 
     expect(formatAgentSessionReplayNextStepDraft({
       runType: 'agent',
@@ -597,7 +629,25 @@ describe('agent capability formatting', () => {
         },
       ],
     })).toBe(
-      '基于最近一次 agent run 的证据准备新的手动 run。 最近步骤：工具失败：workspace.read_file（failed）。 恢复判断：Recovery intent：prepare new manual run / session=agent_session_1 / status=failed / restartSafety=new_run_required / openCheckpoints=0 / manualRunRequired=yes / autoReplay=no 不要自动重放旧 session；先复核失败/中断证据、补齐输入，再由用户手动启动。',
+      '基于最近一次 agent run 的证据准备新的手动 run。 最近步骤：工具失败：workspace.read_file（failed）。 恢复判断：Recovery intent：prepare new manual run / session=agent_session_1 / status=failed / restartSafety=new_run_required / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=yes / autoReplay=no 不要自动重放旧 session；先复核失败/取消/中断证据、补齐输入，再由用户手动启动。',
+    );
+    expect(formatAgentSessionRecoveryRunInstructions({
+      runType: 'agent',
+      session: {
+        ...session,
+        status: 'cancelled',
+      },
+      steps: [
+        {
+          createdAt: '2026-01-01T00:00:00.000Z',
+          index: 1,
+          kind: 'final',
+          status: 'failed',
+          title: 'Agent session 已取消',
+        },
+      ],
+    })).toBe(
+      '基于最近一次 agent run 的证据准备新的手动 run。 最近步骤：Agent session 已取消（failed）。 恢复判断：Recovery intent：prepare new manual run / session=agent_session_1 / status=cancelled / restartSafety=new_run_required / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=yes / autoReplay=no 不要自动重放旧 session；先复核失败/取消/中断证据、补齐输入，再由用户手动启动。',
     );
 
     expect(formatAgentSessionReplayNextStepDraft({

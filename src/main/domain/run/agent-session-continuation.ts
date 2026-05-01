@@ -4,8 +4,9 @@ export type AgentSessionSettlementProjection = {
   action:
     | 'checkpoint_backed_settlement'
     | 'inspect_terminal_evidence'
-    | 'requires_executor_liveness'
-    | 'not_settleable';
+    | 'requires_executor_liveness';
+  autoReplayAllowed: false;
+  requiresOpenCheckpoint: boolean;
   sessionId: string;
   status: AgentSessionRecord['status'];
   summary: string;
@@ -32,67 +33,63 @@ export function findLatestCheckpointBackedAgentSession(
 export function projectAgentSessionSettlement(
   session: AgentSessionRecord,
 ): AgentSessionSettlementProjection {
-  if (isCheckpointBackedAgentSession(session)) {
-    return {
-      action: 'checkpoint_backed_settlement',
-      sessionId: session.id,
-      status: session.status,
-      summary: [
-        'Agent session settlement',
-        `session=${session.id}`,
-        `status=${session.status}`,
-        'action=checkpoint_backed_settlement',
-        'requiresOpenCheckpoint=yes',
-        'autoReplay=no',
-      ].join(' / '),
-    };
+  switch (session.status) {
+    case 'needs_confirmation':
+    case 'paused':
+      return {
+        action: 'checkpoint_backed_settlement',
+        autoReplayAllowed: false,
+        requiresOpenCheckpoint: true,
+        sessionId: session.id,
+        status: session.status,
+        summary: [
+          'Agent session settlement',
+          `session=${session.id}`,
+          `status=${session.status}`,
+          'action=checkpoint_backed_settlement',
+          'requiresOpenCheckpoint=yes',
+          'autoReplay=no',
+        ].join(' / '),
+      };
+
+    case 'running':
+      return {
+        action: 'requires_executor_liveness',
+        autoReplayAllowed: false,
+        requiresOpenCheckpoint: false,
+        sessionId: session.id,
+        status: session.status,
+        summary: [
+          'Agent session settlement',
+          `session=${session.id}`,
+          'status=running',
+          'action=requires_executor_liveness',
+          'requiresOpenCheckpoint=no',
+          'autoReplay=no',
+        ].join(' / '),
+      };
+
+    case 'completed':
+    case 'failed':
+    case 'cancelled':
+      return {
+        action: 'inspect_terminal_evidence',
+        autoReplayAllowed: false,
+        requiresOpenCheckpoint: false,
+        sessionId: session.id,
+        status: session.status,
+        summary: [
+          'Agent session settlement',
+          `session=${session.id}`,
+          `status=${session.status}`,
+          'action=inspect_terminal_evidence',
+          'requiresOpenCheckpoint=no',
+          'autoReplay=no',
+        ].join(' / '),
+      };
   }
 
-  if (session.status === 'running') {
-    return {
-      action: 'requires_executor_liveness',
-      sessionId: session.id,
-      status: session.status,
-      summary: [
-        'Agent session settlement',
-        `session=${session.id}`,
-        'status=running',
-        'action=requires_executor_liveness',
-        'requiresOpenCheckpoint=no',
-        'autoReplay=no',
-      ].join(' / '),
-    };
-  }
-
-  if (session.status === 'completed' || session.status === 'failed' || session.status === 'cancelled') {
-    return {
-      action: 'inspect_terminal_evidence',
-      sessionId: session.id,
-      status: session.status,
-      summary: [
-        'Agent session settlement',
-        `session=${session.id}`,
-        `status=${session.status}`,
-        'action=inspect_terminal_evidence',
-        'requiresOpenCheckpoint=no',
-        'autoReplay=no',
-      ].join(' / '),
-    };
-  }
-
-  return {
-    action: 'not_settleable',
-    sessionId: session.id,
-    status: session.status,
-    summary: [
-      'Agent session settlement',
-      `session=${session.id}`,
-      `status=${session.status}`,
-      'action=not_settleable',
-      'requiresOpenCheckpoint=no',
-      'autoReplay=no',
-    ].join(' / '),
-  };
+  return assertNeverAgentSessionStatus(session.status);
 }
 
 function isContinuableAgentSession(session: AgentSessionRecord): boolean {
@@ -101,7 +98,9 @@ function isContinuableAgentSession(session: AgentSessionRecord): boolean {
     || session.status === 'running';
 }
 
-function isCheckpointBackedAgentSession(session: AgentSessionRecord): boolean {
+function isCheckpointBackedAgentSession(
+  session: AgentSessionRecord,
+): session is AgentSessionRecord & { status: 'needs_confirmation' | 'paused' } {
   return session.status === 'paused'
     || session.status === 'needs_confirmation';
 }
@@ -117,4 +116,8 @@ function compareAgentSessionsByRecency(
   }
 
   return left.createdAt.localeCompare(right.createdAt);
+}
+
+function assertNeverAgentSessionStatus(status: never): never {
+  throw new Error(`Unhandled agent session status: ${status}`);
 }

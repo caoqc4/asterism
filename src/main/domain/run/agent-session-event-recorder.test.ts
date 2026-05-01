@@ -186,6 +186,23 @@ describe('AgentSessionEventRecorder', () => {
       error: 'Executor process exited.',
     }));
 
+    const failedRecorder = new AgentSessionEventRecorder(runStepRepository as never);
+    await failedRecorder.record({
+      type: 'session.failed',
+      runId: 'run_2',
+      failureKind: 'tool',
+      message: 'Tool execution failed.',
+    });
+
+    expect(failedRecorder.hasTerminalEvent()).toBe(true);
+    expect(failedRecorder.getTerminalSessionStatus()).toBe('failed');
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(expect.objectContaining({
+      kind: 'final',
+      status: 'failed',
+      title: 'Agent session 执行失败',
+      error: 'Tool execution failed.',
+    }));
+
     const cancelledRecorder = new AgentSessionEventRecorder(runStepRepository as never);
     await cancelledRecorder.record({
       type: 'session.cancelled',
@@ -201,6 +218,63 @@ describe('AgentSessionEventRecorder', () => {
       title: 'Agent session 已取消',
       error: 'User cancelled.',
     }));
+  });
+
+  it('keeps terminal status scoped by agent session id', async () => {
+    const runStepRepository = {
+      create: vi.fn().mockImplementation(async (input: {
+        runId: string;
+        kind: RunStepKind;
+        status?: RunStepStatus;
+        title: string;
+      }) => ({
+        id: `run_step_${runStepRepository.create.mock.calls.length}`,
+        ...input,
+      })),
+      update: vi.fn(),
+    };
+    const recorder = new AgentSessionEventRecorder(runStepRepository as never);
+
+    await recorder.record({
+      type: 'session.cancelled',
+      runId: 'run_1',
+      sessionId: 'agent_session_1',
+      reason: 'First session was cancelled.',
+    });
+
+    expect(recorder.hasTerminalEvent()).toBe(true);
+    expect(recorder.getTerminalSessionStatus()).toBe('cancelled');
+    expect(recorder.hasTerminalEvent('agent_session_1')).toBe(true);
+    expect(recorder.getTerminalSessionStatus('agent_session_1')).toBe('cancelled');
+    expect(recorder.hasTerminalEvent('agent_session_2')).toBe(false);
+    expect(recorder.getTerminalSessionStatus('agent_session_2')).toBeNull();
+  });
+
+  it('does not treat sessionless terminal events as terminal for a scoped session', async () => {
+    const runStepRepository = {
+      create: vi.fn().mockImplementation(async (input: {
+        runId: string;
+        kind: RunStepKind;
+        status?: RunStepStatus;
+        title: string;
+      }) => ({
+        id: `run_step_${runStepRepository.create.mock.calls.length}`,
+        ...input,
+      })),
+      update: vi.fn(),
+    };
+    const recorder = new AgentSessionEventRecorder(runStepRepository as never);
+
+    await recorder.record({
+      type: 'session.completed',
+      runId: 'run_1',
+      output: 'Legacy executor completed without a session id.',
+    });
+
+    expect(recorder.hasTerminalEvent()).toBe(true);
+    expect(recorder.getTerminalSessionStatus()).toBe('completed');
+    expect(recorder.hasTerminalEvent('agent_session_1')).toBe(false);
+    expect(recorder.getTerminalSessionStatus('agent_session_1')).toBeNull();
   });
 
   it('marks a started tool step failed before recording the failed result event', async () => {
@@ -259,6 +333,124 @@ describe('AgentSessionEventRecorder', () => {
         title: 'Agent 工具失败：workspace.search',
         error: 'Workspace search failed.',
       }),
+    );
+  });
+
+  it('keeps pending tool steps scoped by agent session id', async () => {
+    const runStepRepository = {
+      create: vi.fn().mockImplementation(async (input: {
+        runId: string;
+        kind: RunStepKind;
+        status?: RunStepStatus;
+        title: string;
+      }) => ({
+        id: `run_step_${runStepRepository.create.mock.calls.length}`,
+        ...input,
+      })),
+      update: vi.fn().mockImplementation(async (id: string, input: {
+        status: RunStepStatus;
+        output?: string | null;
+        error?: string | null;
+      }) => ({
+        id,
+        ...input,
+      })),
+    };
+    const recorder = new AgentSessionEventRecorder(runStepRepository as never);
+
+    await recorder.record({
+      type: 'tool.started',
+      runId: 'run_1',
+      sessionId: 'agent_session_1',
+      tool: 'workspace.search',
+      input: { query: 'first' },
+    });
+    await recorder.record({
+      type: 'tool.started',
+      runId: 'run_1',
+      sessionId: 'agent_session_2',
+      tool: 'workspace.search',
+      input: { query: 'second' },
+    });
+    await recorder.record({
+      type: 'tool.completed',
+      runId: 'run_1',
+      sessionId: 'agent_session_2',
+      tool: 'workspace.search',
+      result: {
+        success: true,
+        summary: 'Second search completed',
+      },
+    });
+
+    expect(runStepRepository.update).toHaveBeenCalledTimes(1);
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_2',
+      {
+        output: 'Second search completed',
+        status: 'completed',
+      },
+    );
+  });
+
+  it('does not close sessionless pending tool steps from scoped tool results', async () => {
+    const runStepRepository = {
+      create: vi.fn().mockImplementation(async (input: {
+        runId: string;
+        kind: RunStepKind;
+        status?: RunStepStatus;
+        title: string;
+      }) => ({
+        id: `run_step_${runStepRepository.create.mock.calls.length}`,
+        ...input,
+      })),
+      update: vi.fn().mockImplementation(async (id: string, input: {
+        status: RunStepStatus;
+        output?: string | null;
+        error?: string | null;
+      }) => ({
+        id,
+        ...input,
+      })),
+    };
+    const recorder = new AgentSessionEventRecorder(runStepRepository as never);
+
+    await recorder.record({
+      type: 'tool.started',
+      runId: 'run_1',
+      tool: 'workspace.search',
+      input: { query: 'legacy sessionless start' },
+    });
+    await recorder.record({
+      type: 'tool.completed',
+      runId: 'run_1',
+      sessionId: 'agent_session_1',
+      tool: 'workspace.search',
+      result: {
+        success: true,
+        summary: 'Scoped result should not close the sessionless start',
+      },
+    });
+
+    expect(runStepRepository.update).not.toHaveBeenCalled();
+
+    await recorder.record({
+      type: 'tool.completed',
+      runId: 'run_1',
+      tool: 'workspace.search',
+      result: {
+        success: true,
+        summary: 'Sessionless result closes the sessionless start',
+      },
+    });
+
+    expect(runStepRepository.update).toHaveBeenCalledTimes(1);
+    expect(runStepRepository.update).toHaveBeenCalledWith(
+      'run_step_1',
+      {
+        output: 'Sessionless result closes the sessionless start',
+        status: 'completed',
+      },
     );
   });
 });

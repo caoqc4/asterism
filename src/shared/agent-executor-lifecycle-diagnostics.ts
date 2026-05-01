@@ -13,6 +13,8 @@ export type AgentExecutorLifecycleServiceAvailability = {
   modelExposure: 'hidden';
   automaticStartAllowed: false;
   queueWorkerAllowed: false;
+  controlMode: 'dry_run_planned';
+  settleMode: 'dry_run_planned';
   supportedControlRequests: AgentExecutorLifecycleControlRequestType[];
   supportedSettleStatuses: AgentExecutorLifecycleSettleStatus[];
   blockedReasons: string[];
@@ -52,6 +54,8 @@ export function buildDryRunAgentExecutorLifecycleAvailability(params: {
     modelExposure: 'hidden',
     automaticStartAllowed: false,
     queueWorkerAllowed: false,
+    controlMode: 'dry_run_planned',
+    settleMode: 'dry_run_planned',
     supportedControlRequests,
     supportedSettleStatuses,
     blockedReasons,
@@ -66,7 +70,9 @@ export function buildDryRunAgentExecutorLifecycleAvailability(params: {
       'automaticStart=no',
       'queueWorker=no',
       `controlRequests=${supportedControlRequests.join(',') || 'none'}`,
+      'controlMode=dry_run_planned',
       `settleResults=${supportedSettleStatuses.join(',')}`,
+      'settleMode=dry_run_planned',
       `blocked=${blockedReasons.join('; ')}`,
       `next=${nextAction}`,
     ].join(' / '),
@@ -88,11 +94,11 @@ export function buildAgentExecutorLifecycleAvailabilityPresentation(
     ].join(' / '),
     controlRequests: [
       `controlRequests=${availability.supportedControlRequests.join(',') || 'none'}`,
-      'controlMode=dry_run_planned',
+      `controlMode=${availability.controlMode}`,
     ].join(' / '),
     settleResults: [
       `settleResults=${availability.supportedSettleStatuses.join(',') || 'none'}`,
-      'settleMode=dry_run_planned',
+      `settleMode=${availability.settleMode}`,
     ].join(' / '),
     exposure: [
       `modelExposure=${availability.modelExposure}`,
@@ -110,7 +116,9 @@ export function buildAgentExecutorLifecycleAvailabilityPresentation(
       `automaticStart=${availability.automaticStartAllowed ? 'yes' : 'no'}`,
       `queueWorker=${availability.queueWorkerAllowed ? 'yes' : 'no'}`,
       `controlRequests=${availability.supportedControlRequests.join(',') || 'none'}`,
+      `controlMode=${availability.controlMode}`,
       `settleResults=${availability.supportedSettleStatuses.join(',') || 'none'}`,
+      `settleMode=${availability.settleMode}`,
       `blocked=${availability.blockedReasons.length ? availability.blockedReasons.join('; ') : 'none'}`,
       `next=${availability.nextAction}`,
     ].join(' / '),

@@ -1,11 +1,12 @@
 import type { AgentSessionRecord } from '@shared/types/agent-execution';
-import type { RunCheckpointRecord, RunRecord, RunStepRecord } from '@shared/types/run';
+import type { RunRecord, RunStepRecord } from '@shared/types/run';
 import type { DecisionRecord } from '@shared/types/decision';
 import type { AiConfigStatus } from '@shared/types/settings';
 import { getProviderExecutionCapabilities } from '@shared/agent-provider-capabilities';
 import {
   buildAgentSessionRecoveryIntent,
   buildAgentSessionReplayReview,
+  type AgentSessionReplayCheckpointEvidence,
   type AgentSessionRecoveryIntent,
   type AgentSessionReplayReview,
 } from '@shared/agent-session-replay';
@@ -105,7 +106,7 @@ export function formatAgentSessionRestartSummary(session: AgentSessionRecord): s
 export function formatAgentSessionReplayReviewSummary(
   session: AgentSessionRecord,
   steps: Pick<RunStepRecord, 'createdAt' | 'index' | 'kind' | 'status' | 'title'>[],
-  checkpoints: Pick<RunCheckpointRecord, 'status'>[] = [],
+  checkpoints: AgentSessionReplayCheckpointEvidence[] = [],
 ): string {
   return buildAgentSessionReplayReview({ checkpoints, session, steps }).summary;
 }
@@ -113,7 +114,7 @@ export function formatAgentSessionReplayReviewSummary(
 export function buildAgentSessionReplayReviewPresentation(
   session: AgentSessionRecord,
   steps: Pick<RunStepRecord, 'createdAt' | 'index' | 'kind' | 'status' | 'title'>[],
-  checkpoints: Pick<RunCheckpointRecord, 'status'>[] = [],
+  checkpoints: AgentSessionReplayCheckpointEvidence[] = [],
 ): AgentSessionReplayReview {
   return buildAgentSessionReplayReview({ checkpoints, session, steps });
 }
@@ -121,7 +122,7 @@ export function buildAgentSessionReplayReviewPresentation(
 export function formatAgentSessionRecoveryIntentSummary(
   session: AgentSessionRecord,
   steps: Pick<RunStepRecord, 'createdAt' | 'index' | 'kind' | 'status' | 'title'>[],
-  checkpoints: Pick<RunCheckpointRecord, 'status'>[] = [],
+  checkpoints: AgentSessionReplayCheckpointEvidence[] = [],
 ): string {
   const review = buildAgentSessionReplayReview({ checkpoints, session, steps });
   return buildAgentSessionRecoveryIntent(review).summary;
@@ -130,7 +131,7 @@ export function formatAgentSessionRecoveryIntentSummary(
 export function buildAgentSessionRecoveryIntentPresentation(
   session: AgentSessionRecord,
   steps: Pick<RunStepRecord, 'createdAt' | 'index' | 'kind' | 'status' | 'title'>[],
-  checkpoints: Pick<RunCheckpointRecord, 'status'>[] = [],
+  checkpoints: AgentSessionReplayCheckpointEvidence[] = [],
 ): AgentSessionRecoveryIntent {
   const review = buildAgentSessionReplayReview({ checkpoints, session, steps });
   return buildAgentSessionRecoveryIntent(review);
@@ -140,7 +141,7 @@ export function formatAgentSessionReplayNextStepDraft(params: {
   runType: string;
   session: AgentSessionRecord;
   steps: Pick<RunStepRecord, 'createdAt' | 'index' | 'kind' | 'status' | 'title'>[];
-  checkpoints?: Pick<RunCheckpointRecord, 'status'>[];
+  checkpoints?: AgentSessionReplayCheckpointEvidence[];
 }): string {
   const review = buildAgentSessionReplayReview({
     checkpoints: params.checkpoints ?? [],
@@ -150,9 +151,9 @@ export function formatAgentSessionReplayNextStepDraft(params: {
   const recoveryIntent = buildAgentSessionRecoveryIntent(review);
 
   if (review.mode === 'manual_resume') {
-    return review.openCheckpointCount > 0
-      ? `处理最近一次 ${params.runType} run 的 ${review.openCheckpointCount} 个 open checkpoint / Decision，再决定是否继续执行。`
-      : `复核最近一次 ${params.runType} run 的暂停或确认原因；没有 open checkpoint 时，先查看执行证据再决定是否重跑。`;
+    return review.recoveryCheckpointCount > 0
+      ? `处理最近一次 ${params.runType} run 的 ${review.recoveryCheckpointCount} 个 recovery checkpoint / Decision，再决定是否继续执行。`
+      : `复核最近一次 ${params.runType} run 的暂停或确认原因；没有 recovery checkpoint 时，先查看执行证据再决定是否重跑。`;
   }
 
   if (recoveryIntent.action === 'prepare_new_manual_run' && review.mode === 'new_run') {
@@ -168,7 +169,9 @@ export function formatAgentSessionReplayNextStepDraft(params: {
   }
 
   if (review.restartSafety === 'checkpoint_missing') {
-    return `复核最近一次 ${params.runType} run 的暂停或确认原因；没有 open checkpoint 时，先查看执行证据再决定是否重跑。`;
+    return review.openCheckpointCount > 0
+      ? `复核最近一次 ${params.runType} run 的暂停或确认原因；当前有 ${review.openCheckpointCount} 个 open checkpoint，但没有适用于该 session 的 recovery checkpoint。`
+      : `复核最近一次 ${params.runType} run 的暂停或确认原因；没有 recovery checkpoint 时，先查看执行证据再决定是否重跑。`;
   }
 
   return review.status === 'running'
@@ -180,7 +183,7 @@ export function formatAgentSessionRecoveryRunInstructions(params: {
   runType: string;
   session: AgentSessionRecord;
   steps: Pick<RunStepRecord, 'createdAt' | 'index' | 'kind' | 'status' | 'title'>[];
-  checkpoints?: Pick<RunCheckpointRecord, 'status'>[];
+  checkpoints?: AgentSessionReplayCheckpointEvidence[];
 }): string | null {
   const review = buildAgentSessionReplayReview({
     checkpoints: params.checkpoints ?? [],
@@ -201,7 +204,7 @@ export function formatAgentSessionRecoveryRunInstructions(params: {
     `基于最近一次 ${params.runType} run 的证据准备新的手动 run。`,
     latest,
     `恢复判断：${recoveryIntent.summary}`,
-    '不要自动重放旧 session；先复核失败/中断证据、补齐输入，再由用户手动启动。',
+    '不要自动重放旧 session；先复核失败/取消/中断证据、补齐输入，再由用户手动启动。',
   ].join(' ');
 }
 

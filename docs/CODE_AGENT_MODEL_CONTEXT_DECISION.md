@@ -156,7 +156,8 @@ Agent context.
    Accepted as manifest-only selection by default: selected source context
    ids/titles can be recorded for audit without content entering the model.
 4. Persist the selected context manifest as a RunStep before provider runtime
-   config is resolved. Accepted with per-item content visibility: selected
+   config is resolved, after selected workspace files pass local path/content
+   boundary checks. Accepted with per-item content visibility: selected
    workspace files can be prompt evidence, selected source context remains
    manifest-only unless the separate source-context content opt-in is enabled.
 5. Render the selected context manifest on Runs detail without dumping full

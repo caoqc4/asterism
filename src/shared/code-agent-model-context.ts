@@ -4,10 +4,13 @@ export type CodeAgentProviderVisibleContextKind =
   | 'workspace_file';
 
 export type CodeAgentProviderVisibleContextItem = {
+  artifactKind?: string | null;
   contentIncluded: boolean;
   id: string;
   kind: CodeAgentProviderVisibleContextKind;
   label: string;
+  sourceId?: string | null;
+  sourceType?: string | null;
 };
 
 export type CodeAgentProviderVisibleContextManifest = {
@@ -17,14 +20,17 @@ export type CodeAgentProviderVisibleContextManifest = {
 };
 
 export function buildCodeAgentProviderVisibleContextManifest(params: {
-  artifacts?: Array<{ id: string; title: string }>;
+  artifacts?: Array<{ id: string; kind?: string | null; sourceId?: string | null; sourceType?: string | null; title: string }>;
   sourceContexts?: Array<{ contentIncluded?: boolean; id: string; title: string }>;
   workspaceFiles?: string[];
 }): CodeAgentProviderVisibleContextManifest {
   const workspaceFiles = normalizeSelectedValues(params.workspaceFiles ?? []);
   const artifacts = (params.artifacts ?? [])
     .map((item) => ({
+      kind: item.kind?.trim() || null,
       id: item.id.trim(),
+      sourceId: item.sourceId?.trim() || null,
+      sourceType: item.sourceType?.trim() || null,
       title: item.title.trim(),
     }))
     .filter((item, index, items) =>
@@ -51,10 +57,13 @@ export function buildCodeAgentProviderVisibleContextManifest(params: {
       label: item.title || item.id,
     })),
     ...artifacts.map((item) => ({
+      artifactKind: item.kind,
       contentIncluded: false,
       id: item.id,
       kind: 'artifact' as const,
       label: item.title || item.id,
+      sourceId: item.sourceId,
+      sourceType: item.sourceType,
     })),
   ];
 
@@ -71,9 +80,25 @@ export function formatCodeAgentProviderVisibleContextManifestForStep(
   return [
     manifest.summary,
     `providerPromptContent=${manifest.providerPromptContentIncluded ? 'partial' : 'no'}`,
-    ...manifest.items.map((item) =>
-      `${item.kind}:${item.id}:${item.label}:content=${item.contentIncluded ? 'yes' : 'no'}`),
+    ...manifest.items.map(formatCodeAgentProviderVisibleContextItemForStep),
   ].join('\n');
+}
+
+function formatCodeAgentProviderVisibleContextItemForStep(
+  item: CodeAgentProviderVisibleContextItem,
+): string {
+  const metadata = item.kind === 'artifact'
+    ? [
+        item.artifactKind ? `artifactKind=${item.artifactKind}` : null,
+        item.sourceType ? `sourceType=${item.sourceType}` : null,
+        item.sourceId ? `sourceId=${item.sourceId}` : null,
+      ].filter((field): field is string => Boolean(field))
+    : [];
+
+  return [
+    `${item.kind}:${item.id}:${item.label}:content=${item.contentIncluded ? 'yes' : 'no'}`,
+    ...metadata,
+  ].join(':');
 }
 
 export function formatCodeAgentProviderVisibleContextManifestSummary(

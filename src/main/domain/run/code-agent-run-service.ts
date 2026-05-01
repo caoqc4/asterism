@@ -219,6 +219,24 @@ export class CodeAgentRunService {
       );
     }
 
+    const workspaceContext = modelProducerOptIn
+      ? await this.collectSelectedWorkspaceContext({
+          files: selectedContextFiles,
+          runId: run.id,
+          workspaceRoot: workspaceRoot ?? '',
+        })
+      : null;
+
+    if (workspaceContext?.status === 'blocked') {
+      return this.runRepository.updateResult(
+        run.id,
+        'failed',
+        workspaceContext.summary,
+        'system',
+        workspaceContext.blockedReasons.join(' '),
+      );
+    }
+
     if (modelProducerOptIn) {
       const contextManifest = buildCodeAgentProviderVisibleContextManifest({
         artifacts: selectedArtifacts.items,
@@ -252,24 +270,6 @@ export class CodeAgentRunService {
         modelRuntime.summary,
         'system',
         modelRuntime.reason,
-      );
-    }
-
-    const workspaceContext = modelRuntime.status === 'ready'
-      ? await this.collectSelectedWorkspaceContext({
-          files: selectedContextFiles,
-          runId: run.id,
-          workspaceRoot: workspaceRoot ?? '',
-        })
-      : null;
-
-    if (workspaceContext?.status === 'blocked') {
-      return this.runRepository.updateResult(
-        run.id,
-        'failed',
-        workspaceContext.summary,
-        'system',
-        workspaceContext.blockedReasons.join(' '),
       );
     }
 
@@ -496,11 +496,14 @@ function selectCodeAgentSourceContexts(
   status: 'blocked' | 'selected';
   summary: string;
 } {
-  const selectedIds = Array.from(new Set((input?.sourceContextIds ?? [])
+  const rawSelectedIds = (input?.sourceContextIds ?? [])
     .map((id) => id.trim())
-    .filter(Boolean)));
+    .filter(Boolean);
+  const duplicateIds = rawSelectedIds.filter((id, index, ids) => ids.indexOf(id) !== index);
+  const selectedIds = Array.from(new Set(rawSelectedIds));
   const items: SourceContextRecord[] = [];
-  const blockedReasons: string[] = [];
+  const blockedReasons = Array.from(new Set(duplicateIds))
+    .map((id) => `Code Agent source context selection was duplicated: ${id}.`);
 
   for (const selectedId of selectedIds) {
     const sourceContext = sourceContexts.find((item) => item.id === selectedId);

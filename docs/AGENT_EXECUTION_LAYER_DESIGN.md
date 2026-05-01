@@ -498,13 +498,14 @@ Current implementation note:
 - Shared restart hints now describe whether a session should be inspected,
   checked for checkpoint evidence, or restarted as a new Run. They do not
   enable automatic replay, and paused/confirmation sessions are only resumable
-  after an open checkpoint is loaded and validated.
+  after a recovery-relevant open checkpoint is loaded and validated.
 - Shared replay review summaries now derive an inspect/manual-resume/new-run
   hint from the latest agent session plus RunSteps. This is review guidance only
-  and explicitly records `openCheckpoints`, `restartSafety`, and
-  `autoReplay=no`. If a paused or confirmation session has no open checkpoint,
-  the restart safety is `checkpoint_missing` and the recovery mode is
-  inspect-only.
+  and explicitly records `openCheckpoints`, `recoveryCheckpoints`,
+  `restartSafety`, and `autoReplay=no`. If a paused or confirmation session has
+  no recovery-relevant checkpoint for that session status, the restart safety is
+  `checkpoint_missing` and the recovery mode is inspect-only, even if another
+  unrelated checkpoint is still open on the Run.
 - Shared recovery intent summaries now project those replay reviews into
   `inspect_evidence`, `manual_checkpoint_resume`, or
   `prepare_new_manual_run`, keeping manual new-run preparation explicit without
@@ -545,9 +546,10 @@ Current implementation note:
   This remains a dry-run boundary only; unsupported controls do not record
   events, RunStep evidence, settlement plans, or session status updates.
 - `RunOrchestrator` now uses the recorder's terminal session-status projection
-  when a terminal runtime event is emitted, so executor cancellation or
-  interruption can settle `AgentSession.status` without trusting a later generic
-  executor return value.
+  scoped to the current agent session id when a terminal runtime event is
+  emitted, so executor cancellation or interruption can settle the matching
+  `AgentSession.status` without trusting a later generic executor return value
+  or another session's terminal event.
 - `agent-tool-scaffold` now emits connector policy records and local
   verification evidence requirements for every reserved or implemented tool
   family. Settings diagnostics include the verification-required count, while

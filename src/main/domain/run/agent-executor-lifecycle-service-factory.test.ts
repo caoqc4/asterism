@@ -42,6 +42,8 @@ describe('createAgentExecutorLifecycleService', () => {
       modelExposure: 'hidden',
       automaticStartAllowed: false,
       queueWorkerAllowed: false,
+      controlMode: 'dry_run_planned',
+      settleMode: 'dry_run_planned',
       supportedControlRequests: ['heartbeat', 'interrupt', 'cancel'],
       supportedSettleStatuses: ['completed', 'failed', 'paused'],
       blockedReasons: [
@@ -60,7 +62,9 @@ describe('createAgentExecutorLifecycleService', () => {
         'automaticStart=no',
         'queueWorker=no',
         'controlRequests=heartbeat,interrupt,cancel',
+        'controlMode=dry_run_planned',
         'settleResults=completed,failed,paused',
+        'settleMode=dry_run_planned',
         'blocked=No real executor runtime is connected.; Lifecycle service is not wired into bootstrap, IPC, scheduler, or queue workers.; Model-visible tool exposure remains hidden.',
         'next=Keep lifecycle service in dry-run diagnostics until a real executor adapter decision is accepted.',
       ].join(' / '),
@@ -133,6 +137,8 @@ describe('createAgentExecutorLifecycleService', () => {
         action: 'update_session_status',
         sessionId: 'agent_session_1',
         status: 'cancelled',
+        terminalEventRecorded: true,
+        terminalSessionStatus: 'cancelled',
       },
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
@@ -148,6 +154,8 @@ describe('createAgentExecutorLifecycleService', () => {
         id: 'agent_session_1',
         status: 'cancelled',
       },
+      terminalEventRecorded: true,
+      terminalSessionStatus: 'cancelled',
     });
     expect(agentSessionStore.updateStatus).toHaveBeenCalledWith('agent_session_1', 'cancelled');
   });
@@ -186,10 +194,14 @@ describe('createAgentExecutorLifecycleService', () => {
         autoReplay: false,
         sessionId: 'agent_session_1',
         status: null,
+        terminalEventRecorded: false,
+        terminalSessionStatus: null,
       },
       settlementPlan: {
         action: 'no_status_change',
         sessionId: 'agent_session_1',
+        terminalEventRecorded: false,
+        terminalSessionStatus: null,
       },
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
@@ -243,6 +255,8 @@ describe('createAgentExecutorLifecycleService', () => {
         action: 'update_session_status',
         sessionId: 'agent_session_1',
         status: 'failed',
+        terminalEventRecorded: true,
+        terminalSessionStatus: 'failed',
       },
       settlementDiagnostic: {
         action: 'update_session_status',
@@ -257,6 +271,8 @@ describe('createAgentExecutorLifecycleService', () => {
           'action=update_session_status',
           'autoReplay=no',
         ].join(' / '),
+        terminalEventRecorded: true,
+        terminalSessionStatus: 'failed',
       },
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
@@ -312,6 +328,8 @@ describe('createAgentExecutorLifecycleService', () => {
         action: 'update_session_status',
         sessionId: 'agent_session_1',
         status: 'paused',
+        terminalEventRecorded: true,
+        terminalSessionStatus: 'paused',
       },
       settlementDiagnostic: {
         action: 'update_session_status',
@@ -326,6 +344,8 @@ describe('createAgentExecutorLifecycleService', () => {
           'action=update_session_status',
           'autoReplay=no',
         ].join(' / '),
+        terminalEventRecorded: true,
+        terminalSessionStatus: 'paused',
       },
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({

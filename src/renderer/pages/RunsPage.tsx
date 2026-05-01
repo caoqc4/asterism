@@ -225,32 +225,64 @@ function formatCodeAgentContextManifestStepSummary(step: RunStepRecord): string 
     providerPromptContent ? `provider prompt content=${providerPromptContent}` : null,
     items.length
       ? `items=${items.map((item) =>
-          `${item.kind} ${item.label} content=${item.contentIncluded ? 'yes' : 'no'}`).join('；')}`
+          formatCodeAgentContextManifestItemSummary(item)).join('；')}`
       : null,
     'manifest only; selected content is not expanded here',
   ].filter(Boolean).join('；');
 }
 
 type CodeAgentContextManifestItemSummary = {
+  artifactKind?: string | null;
   contentIncluded: boolean;
   kind: string;
   label: string;
+  sourceId?: string | null;
+  sourceType?: string | null;
 };
 
 function parseCodeAgentContextManifestItemLine(line: string): CodeAgentContextManifestItemSummary | null {
-  const match = line.match(/^([^:]+):([^:]+):(.+):content=(yes|no)$/);
+  const match = line.match(/^([^:]+):([^:]+):(.+?):content=(yes|no)(?::(.+))?$/);
 
   if (!match) {
     return null;
   }
 
-  const [, kind, , label, content] = match;
+  const [, kind, , label, content, metadataText] = match;
+  const metadata = parseCodeAgentContextManifestItemMetadata(metadataText);
 
   return {
+    artifactKind: metadata.get('artifactKind') ?? null,
     contentIncluded: content === 'yes',
     kind,
     label,
+    sourceId: metadata.get('sourceId') ?? null,
+    sourceType: metadata.get('sourceType') ?? null,
   };
+}
+
+function parseCodeAgentContextManifestItemMetadata(metadataText?: string): Map<string, string> {
+  return new Map((metadataText ?? '')
+    .split(':')
+    .map((field) => {
+      const [key, ...valueParts] = field.split('=');
+      return [key, valueParts.join('=')] as const;
+    })
+    .filter(([key, value]) => Boolean(key && value)));
+}
+
+function formatCodeAgentContextManifestItemSummary(item: CodeAgentContextManifestItemSummary): string {
+  const metadata = item.kind === 'artifact'
+    ? [
+        item.artifactKind ? `kind=${item.artifactKind}` : null,
+        item.sourceType && item.sourceId ? `source=${item.sourceType}:${item.sourceId}` : null,
+      ].filter(Boolean).join(' ')
+    : '';
+
+  return [
+    `${item.kind} ${item.label}`,
+    metadata ? `(${metadata})` : null,
+    `content=${item.contentIncluded ? 'yes' : 'no'}`,
+  ].filter(Boolean).join(' ');
 }
 
 function parseRunStepInput(input?: string | null): Map<string, string> {
