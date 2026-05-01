@@ -89,7 +89,6 @@ const requiredTables = [
 function assertDatabaseSchema() {
   const database = new Database(dbPath, {
     fileMustExist: true,
-    readonly: true,
   });
 
   try {
@@ -101,6 +100,95 @@ function assertDatabaseSchema() {
 
     if (missingTables.length > 0) {
       throw new Error(`Packaged runtime database is missing tables: ${missingTables.join(', ')}`);
+    }
+  } finally {
+    database.close();
+  }
+}
+
+function assertSeededTimelineScanPath() {
+  const database = new Database(dbPath, {
+    fileMustExist: true,
+  });
+
+  try {
+    const taskId = 'task_runtime_timeline_smoke';
+    const now = '2026-05-01T00:00:00.000Z';
+    const later = '2026-05-01T00:01:00.000Z';
+    const latest = '2026-05-01T00:02:00.000Z';
+
+    database.transaction(() => {
+      database
+        .prepare(`
+          INSERT INTO tasks (
+            id, title, summary, state, next_step, waiting_reason,
+            risk_level, risk_note, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          taskId,
+          'Runtime Timeline smoke task',
+          'Seeded by packaged runtime smoke.',
+          'planned',
+          'Review seeded timeline scan.',
+          null,
+          'none',
+          null,
+          now,
+          latest,
+        );
+
+      const insertTimeline = database.prepare(`
+        INSERT INTO timeline_events (id, task_id, type, payload, created_at)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+
+      insertTimeline.run(
+        'timeline_runtime_task_created',
+        taskId,
+        'task.created',
+        JSON.stringify({ title: 'Runtime Timeline smoke task' }),
+        now,
+      );
+      insertTimeline.run(
+        'timeline_runtime_decision_approved',
+        taskId,
+        'task.decision_approved',
+        JSON.stringify({ title: 'Runtime smoke decision' }),
+        later,
+      );
+      insertTimeline.run(
+        'timeline_runtime_run_completed',
+        taskId,
+        'task.run_completed',
+        JSON.stringify({ title: 'Runtime smoke run', nextState: 'planned' }),
+        latest,
+      );
+    })();
+
+    const task = database
+      .prepare('SELECT id, title, next_step AS nextStep FROM tasks WHERE id = ?')
+      .get(taskId);
+
+    if (!task || task.title !== 'Runtime Timeline smoke task' || task.nextStep !== 'Review seeded timeline scan.') {
+      throw new Error('Packaged runtime could not read the seeded Timeline smoke task.');
+    }
+
+    const timeline = database
+      .prepare('SELECT type, payload, created_at AS createdAt FROM timeline_events WHERE task_id = ? ORDER BY created_at DESC')
+      .all(taskId);
+
+    const eventTypes = timeline.map((event) => event.type);
+    const expectedTypes = ['task.run_completed', 'task.decision_approved', 'task.created'];
+
+    if (JSON.stringify(eventTypes) !== JSON.stringify(expectedTypes)) {
+      throw new Error(`Packaged runtime Timeline scan order mismatch: ${eventTypes.join(', ')}`);
+    }
+
+    const latestPayload = JSON.parse(timeline[0]?.payload ?? '{}');
+    if (latestPayload.title !== 'Runtime smoke run') {
+      throw new Error('Packaged runtime Timeline scan payload did not round-trip.');
     }
   } finally {
     database.close();
@@ -125,17 +213,19 @@ while (Date.now() - startedAt < timeoutMs) {
       fail('Packaged app wrote an invalid config.json.', child, output);
     }
 
+    await waitForExit(child);
+
     try {
       assertDatabaseSchema();
+      assertSeededTimelineScanPath();
     } catch (error) {
       fail(
         error instanceof Error ? error.message : 'Packaged app wrote an invalid taskplane.db.',
-        child,
+        null,
         output,
       );
     }
 
-    await waitForExit(child);
     fs.rmSync(userDataPath, { recursive: true, force: true });
     console.log('macOS runtime smoke check passed.');
     process.exit(0);

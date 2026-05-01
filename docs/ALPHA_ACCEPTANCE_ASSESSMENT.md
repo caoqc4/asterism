@@ -651,7 +651,7 @@ Automated/local coverage:
 - `npm run smoke:build` passes
 - `npm run dist:mac:dir` passes and produces `release/mac-arm64/Taskplane.app`
 - `npm run smoke:package:mac` verifies unpacked app structure, `Info.plist`, native module unpacking, ASAR integrity metadata, required ASAR entries, absence of compiled test files, executable bit, and the ad-hoc code signature locally
-- `npm run smoke:runtime:mac` launches the packaged executable with isolated user data, clears `ELECTRON_RUN_AS_NODE`, and confirms `config.json` plus `taskplane.db` are created with the core SQLite schema
+- `npm run smoke:runtime:mac` launches the packaged executable with isolated user data, clears `ELECTRON_RUN_AS_NODE`, confirms `config.json` plus `taskplane.db` are created with the core SQLite schema, and seeds/reads back a Task Timeline scan fixture
 - `npm run smoke:release:mac` combines the unsigned macOS package build and both package/runtime smoke checks
 - on 2026-04-27, `npm run smoke:release:mac` passed locally after the Code
   Agent context-gate and restart/replay safety updates. It rebuilt Electron

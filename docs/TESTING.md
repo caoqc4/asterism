@@ -510,6 +510,9 @@ npm run verify
 Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
+- on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
+  seeded packaged-runtime Timeline scan fixture that writes and reads a task
+  plus ordered timeline events from the isolated SQLite database.
 - on 2026-05-01, `npm run smoke:package:mac` passed locally after adding
   packaged ASAR coverage for the Task detail Timeline scan path dependencies
   (`task-service` plus shared Timeline helpers).
@@ -627,7 +630,7 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. targeted packaged-app runtime smoke coverage for a seeded Task detail
-   Timeline scan fixture
+1. targeted packaged-app UI fixture coverage for seeded Task detail Timeline
+   grouping and scan behavior
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

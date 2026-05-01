@@ -215,6 +215,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - `npm run smoke:package:mac` now also requires the packaged ASAR to include the
   main task service and shared Timeline helper, adding a lightweight packaged
   dependency check for the Task detail Timeline scan path.
+- `npm run smoke:runtime:mac` now seeds the isolated packaged SQLite database
+  with a task plus ordered timeline events after startup, then reads them back
+  to protect the packaged runtime side of the Task detail Timeline scan path.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.
