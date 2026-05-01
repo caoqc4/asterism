@@ -118,8 +118,8 @@ Manifest-only selection is accepted now:
 - patch artifacts, browser evidence, and failed run outputs remain
   content-ineligible in this slice
 - selected artifact ids must belong to the current task
-- invalid or detached artifact ids fail closed before provider runtime config
-  is resolved
+- duplicate, invalid, or detached artifact ids fail closed before provider
+  runtime config is resolved
 
 Artifact or run-output content remains unaccepted. Any future content path
 needs kind-specific policy, byte limits, source-run status checks, stale-patch

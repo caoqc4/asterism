@@ -18,11 +18,12 @@ signed/notarized release work until the unsigned package path stays stable.
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
-- on 2026-05-01, `npm run verify` passed locally with 127 test files / 918
+- on 2026-05-01, `npm run verify` passed locally with 127 test files / 919
   tests after adding Task detail Timeline date/object-family grouping above the
   existing key/explain/trace priority groups and aligning Runs / Decisions
   related-task timeline scans plus agent read-only timeline observations to the
-  same grouping model.
+  same grouping model, then adding duplicate artifact-selection fail-closed
+  coverage for Code Agent provider-visible context.
 - on 2026-05-01, `npm run smoke:build` passed locally, covering renderer/main
   build outputs and electron-builder file mapping.
 - on 2026-05-01, `npm run smoke:release:mac` passed locally for the combined

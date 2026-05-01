@@ -452,11 +452,14 @@ function selectCodeAgentArtifacts(
   status: 'blocked' | 'selected';
   summary: string;
 } {
-  const selectedIds = Array.from(new Set((input?.artifactIds ?? [])
+  const rawSelectedIds = (input?.artifactIds ?? [])
     .map((id) => id.trim())
-    .filter(Boolean)));
+    .filter(Boolean);
+  const duplicateIds = rawSelectedIds.filter((id, index, ids) => ids.indexOf(id) !== index);
+  const selectedIds = Array.from(new Set(rawSelectedIds));
   const items: ArtifactRecord[] = [];
-  const blockedReasons: string[] = [];
+  const blockedReasons = Array.from(new Set(duplicateIds))
+    .map((id) => `Code Agent artifact selection was duplicated: ${id}.`);
 
   for (const selectedId of selectedIds) {
     const artifact = artifacts.find((item) => item.id === selectedId);
