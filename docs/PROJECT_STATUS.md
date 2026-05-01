@@ -236,7 +236,8 @@ The project is past initial architecture assembly. Current work should favor pro
   and the refreshed `暂无任务依赖` recovery wording. Completion-ready smoke now
   also verifies that satisfied completion criteria do not override active
   blocker/dependency work, and that `最终收尾判断` appears after those blockers are
-  removed.
+  removed. The closeout path now continues through the packaged `completed`
+  transition and checks the refreshed state plus Timeline transition evidence.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.

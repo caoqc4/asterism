@@ -557,6 +557,12 @@ async function assertDependencyReturnAndResolution(page) {
   await page.getByRole('button', { name: '最终收尾判断' }).waitFor();
 }
 
+async function assertCloseoutTransition(page) {
+  await page.getByRole('button', { name: '转到 completed（完成标准已满足）' }).click();
+  await page.getByText('状态：completed').waitFor();
+  await page.getByText('最近状态从 running 变更为 completed。', { exact: true }).waitFor();
+}
+
 if (process.platform !== 'darwin') {
   fail('macOS packaged Timeline UI smoke requires macOS.');
 }
@@ -592,6 +598,7 @@ try {
   await assertRelatedRunTimelineUi(page);
   await assertRelatedDecisionTimelineUi(page);
   await assertDependencyReturnAndResolution(page);
+  await assertCloseoutTransition(page);
 
   await app.close();
   cleanup();
