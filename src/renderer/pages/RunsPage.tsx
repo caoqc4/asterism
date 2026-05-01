@@ -97,9 +97,13 @@ function formatRecoveryAnchorLine(intent: AgentSessionRecoveryIntent | null): st
 function formatPausedRunResumeBlockedMessage(reason: string | null): string {
   const fallback = '没有唯一、有效、会话绑定可恢复的 open resume checkpoint';
   const trimmedReason = reason?.trim() || fallback;
-  const punctuation = /[.。！？!?]$/.test(trimmedReason) ? '' : '。';
+  const separator = /[.!?]$/.test(trimmedReason)
+    ? ' '
+    : /[。！？]$/.test(trimmedReason)
+      ? ''
+      : '。';
 
-  return `当前 paused run 暂不能续跑：${trimmedReason}${punctuation}先检查执行证据或关联 Decision，再决定是否启动新的 run。`;
+  return `当前 paused run 暂不能续跑：${trimmedReason}${separator}先检查执行证据或关联 Decision，再决定是否启动新的 run。`;
 }
 
 function getRelatedTimelineActionLabel(event: TimelineEventRecord): string | null {

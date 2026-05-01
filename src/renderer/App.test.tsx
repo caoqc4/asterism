@@ -4071,7 +4071,7 @@ describe('App UI flow', () => {
     expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
     expect(
       await screen.findByText(
-        '当前 paused run 暂不能续跑：Resume checkpoint run_checkpoint_resume_stale is not valid: Resume checkpoint payload runId does not match run: run_paused_stale_payload.先检查执行证据或关联 Decision，再决定是否启动新的 run。',
+        '当前 paused run 暂不能续跑：Resume checkpoint run_checkpoint_resume_stale is not valid: Resume checkpoint payload runId does not match run: run_paused_stale_payload. 先检查执行证据或关联 Decision，再决定是否启动新的 run。',
       ),
     ).toBeTruthy();
     expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();
@@ -4127,7 +4127,7 @@ describe('App UI flow', () => {
     expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
     expect(
       await screen.findByText(
-        '当前 paused run 暂不能续跑：Multiple open resume checkpoints found for run: run_paused_multiple_resume: run_checkpoint_resume_a, run_checkpoint_resume_b.先检查执行证据或关联 Decision，再决定是否启动新的 run。',
+        '当前 paused run 暂不能续跑：Multiple open resume checkpoints found for run: run_paused_multiple_resume: run_checkpoint_resume_a, run_checkpoint_resume_b. 先检查执行证据或关联 Decision，再决定是否启动新的 run。',
       ),
     ).toBeTruthy();
     expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();
@@ -4210,7 +4210,7 @@ describe('App UI flow', () => {
     expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
     expect(
       await screen.findByText(
-        '当前 paused run 暂不能续跑：Resume checkpoint agent session is not resumable for run: run_paused_missing_resume_session (agent_session_missing).先检查执行证据或关联 Decision，再决定是否启动新的 run。',
+        '当前 paused run 暂不能续跑：Resume checkpoint agent session is not resumable for run: run_paused_missing_resume_session (agent_session_missing). 先检查执行证据或关联 Decision，再决定是否启动新的 run。',
       ),
     ).toBeTruthy();
     const recoverySafety = within(screen.getByLabelText('Run recovery safety'));
