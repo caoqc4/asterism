@@ -51,6 +51,7 @@
     "smoke:build": "npm run build && node scripts/smoke-build.mjs",
     "smoke:package:mac": "node scripts/smoke-package-mac.mjs",
     "smoke:runtime:mac": "node scripts/smoke-runtime-mac.mjs",
+    "smoke:timeline-ui:mac": "node scripts/smoke-timeline-ui-mac.mjs",
     "smoke:release:mac": "npm run dist:mac:dir && npm run smoke:package:mac && npm run smoke:runtime:mac",
     "release:mac:preflight": "node scripts/release-mac-preflight.mjs",
     "dist:mac:dir": "npm run build && npm run rebuild:electron && node node_modules/electron-builder/cli.js --mac dir && npm run rebuild:node",
