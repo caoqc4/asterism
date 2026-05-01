@@ -232,7 +232,7 @@ The project is past initial architecture assembly. Current work should favor pro
   forms. Dependency Timeline suggestions now also populate the Task dependency
   form instead of exposing an inert follow-up button. The same packaged smoke
   now checks opening the seeded upstream task and resolving the active
-  dependency from Task detail.
+  dependency from Task detail, including the post-resolution Timeline refresh.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.

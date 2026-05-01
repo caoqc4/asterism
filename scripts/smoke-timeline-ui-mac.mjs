@@ -515,6 +515,7 @@ async function assertDependencyReturnAndResolution(page) {
     .first()
     .click();
   await page.getByText('当前任务还没有 active dependency。').waitFor();
+  await page.getByText('任务依赖解除：Packaged Timeline upstream fixture。').waitFor();
 }
 
 if (process.platform !== 'darwin') {

@@ -537,6 +537,9 @@ Current verification:
 - on 2026-05-02, `npm run smoke:timeline-ui:mac` passed locally after adding
   packaged dependency return/resolution coverage for opening the seeded
   upstream task and resolving the active dependency from Task detail.
+- on 2026-05-02, `npm run smoke:timeline-ui:mac` passed locally after extending
+  dependency resolution coverage to assert the post-resolution Timeline refresh
+  shows the new dependency-resolved event.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.
@@ -659,7 +662,7 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. targeted packaged-app Timeline smoke for post-resolution timeline refresh
-   and task recovery wording after dependency removal
+1. targeted packaged-app Timeline smoke for task recovery wording after
+   dependency removal
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.
