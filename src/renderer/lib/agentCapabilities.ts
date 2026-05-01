@@ -6,6 +6,7 @@ import { getProviderExecutionCapabilities } from '@shared/agent-provider-capabil
 import {
   buildAgentSessionRecoveryIntent,
   buildAgentSessionReplayReview,
+  isRecoveryCheckpointForSessionStatus,
   type AgentSessionReplayCheckpointEvidence,
   type AgentSessionRecoveryIntent,
   type AgentSessionReplayReview,
@@ -170,7 +171,7 @@ export function formatAgentSessionReplayNextStepDraft(params: {
 
   if (review.restartSafety === 'checkpoint_missing') {
     return review.openCheckpointCount > 0
-      ? `复核最近一次 ${params.runType} run 的暂停或确认原因；当前有 ${review.openCheckpointCount} 个 open checkpoint，但没有适用于该 session 的 recovery checkpoint。`
+      ? `复核最近一次 ${params.runType} run 的暂停或确认原因；当前有 ${review.openCheckpointCount} 个 open checkpoint${formatNonRecoveryCheckpointKindSuffix(params.session, params.checkpoints ?? [])}，但没有适用于该 session 的 recovery checkpoint。`
       : `复核最近一次 ${params.runType} run 的暂停或确认原因；没有 recovery checkpoint 时，先查看执行证据再决定是否重跑。`;
   }
 
@@ -181,6 +182,19 @@ export function formatAgentSessionReplayNextStepDraft(params: {
   return review.status === 'running'
     ? `检查最近一次 ${params.runType} run 的最新步骤，确认是否仍在执行或需要人工介入。`
     : `审阅最近一次 ${params.runType} run 的证据和输出，再决定是否继续推进任务。`;
+}
+
+function formatNonRecoveryCheckpointKindSuffix(
+  session: AgentSessionRecord,
+  checkpoints: AgentSessionReplayCheckpointEvidence[],
+): string {
+  const kinds = checkpoints
+    .filter((checkpoint) => checkpoint.status === 'open')
+    .filter((checkpoint) => !isRecoveryCheckpointForSessionStatus(session.status, checkpoint.kind))
+    .map((checkpoint) => checkpoint.kind ?? 'unknown')
+    .filter((kind, index, allKinds) => allKinds.indexOf(kind) === index);
+
+  return kinds.length ? `（${kinds.join(', ')}）` : '';
 }
 
 function formatRecoveryCheckpointReference(

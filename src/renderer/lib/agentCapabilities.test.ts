@@ -585,13 +585,13 @@ describe('agent capability formatting', () => {
         status: 'paused',
       },
       steps: [],
-    })).toBe('复核最近一次 agent run 的暂停或确认原因；当前有 1 个 open checkpoint，但没有适用于该 session 的 recovery checkpoint。');
+    })).toBe('复核最近一次 agent run 的暂停或确认原因；当前有 1 个 open checkpoint（patch_promotion），但没有适用于该 session 的 recovery checkpoint。');
     expect(formatAgentSessionReplayNextStepDraft({
       checkpoints: [{ kind: 'external_wait', status: 'open' }],
       runType: 'agent',
       session,
       steps: [],
-    })).toBe('复核最近一次 agent run 的暂停或确认原因；当前有 1 个 open checkpoint，但没有适用于该 session 的 recovery checkpoint。');
+    })).toBe('复核最近一次 agent run 的暂停或确认原因；当前有 1 个 open checkpoint（external_wait），但没有适用于该 session 的 recovery checkpoint。');
     expect(formatAgentSessionRecoveryRunInstructions({
       checkpoints: [{ kind: 'tool_permission', status: 'resolved' }],
       runType: 'agent',

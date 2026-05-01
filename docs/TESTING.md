@@ -511,6 +511,9 @@ Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 936
+  tests after naming non-recovery open checkpoint kinds in agent-session
+  recovery next-step copy without changing resume eligibility.
+- on 2026-05-01, `npm run verify` passed locally with 128 test files / 936
   tests after making unsupported approved checkpoint resume evidence
   actionable for unknown tool-permission checkpoints and patch-promotion
   checkpoints without a preflight service.

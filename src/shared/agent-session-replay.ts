@@ -191,7 +191,7 @@ export function buildAgentSessionRecoveryIntent(
   };
 }
 
-function isRecoveryCheckpointForSessionStatus(
+export function isRecoveryCheckpointForSessionStatus(
   status: AgentSessionRecord['status'],
   checkpointKind: RunCheckpointRecord['kind'] | undefined,
 ): boolean {

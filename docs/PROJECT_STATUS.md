@@ -344,6 +344,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - Runs detail `Run recovery safety` now uses the same executor lifecycle
   diagnostic during inspect-first recovery review, making dry-run/runtime
   unavailability visible before any new manual run is prepared.
+- Recovery next-step copy now names the open checkpoint kinds that are not
+  applicable to the current agent session, so paused/confirmation evidence can
+  distinguish non-recovery checkpoints such as `patch_promotion` or
+  `external_wait` without changing resume eligibility.
 - Renderer orchestration presentation now has one helper for executor
   lifecycle diagnostic lines, so Settings, Task detail, and Runs recovery
   surfaces share the same read-only copy without repeating page-local strings.
