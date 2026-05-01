@@ -792,7 +792,7 @@ export class AgentToolRegistry {
     {
       name: 'decision.draft',
       description: 'Draft a Decision proposal for the current Taskplane task without creating a formal Decision.',
-      risk: 'safe_read',
+      risk: 'local_write',
       requiresConfirmation: false,
     },
     {

@@ -510,6 +510,9 @@ npm run verify
 Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
+- on 2026-05-01, `npm run verify` passed locally with 128 test files / 933
+  tests after classifying `decision.draft` as a local-write/task-mutation tool
+  and covering approved checkpoint resumption for it.
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 932
   tests after aligning Decisions page checkpoint guidance and task follow-up
   prefill with the broader approved tool-permission resumable tool set.

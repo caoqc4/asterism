@@ -50,6 +50,7 @@ export type RunCheckpointPayloadV1 =
 
 export const TOOL_PERMISSION_CHECKPOINT_RESUME_TOOLS = [
   'artifact.create_note',
+  'decision.draft',
   'source_context.create',
   'task.create_completion_criterion',
   'task.update_next_step',
@@ -75,6 +76,7 @@ export function requiresTaskMutationResumePolicy(
 ): boolean {
   return (
     tool === 'source_context.create' ||
+    tool === 'decision.draft' ||
     tool === 'task.create_completion_criterion' ||
     tool === 'task.update_next_step'
   );

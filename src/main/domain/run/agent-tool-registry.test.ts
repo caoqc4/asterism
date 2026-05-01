@@ -181,7 +181,7 @@ describe('AgentToolRegistry', () => {
       }),
       expect.objectContaining({
         name: 'decision.draft',
-        risk: 'safe_read',
+        risk: 'local_write',
         requiresConfirmation: false,
       }),
       expect.objectContaining({

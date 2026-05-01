@@ -24,6 +24,7 @@ const BROWSER_CONTROLLED_CHECKPOINT_LABELS = new Set([
 
 const CHECKPOINT_ACTION_LABELS: Record<string, string> = {
   'artifact.create_note': '本地 note 产物写入',
+  'decision.draft': 'Decision 草稿生成',
   'source_context.create': '来源上下文创建',
   'task.create_completion_criterion': '完成标准创建',
   'task.update_next_step': '任务下一步更新',
@@ -189,6 +190,7 @@ function getDecisionTaskFollowUpNextStep(
     if (
       sourceLabel === 'task.update_next_step' ||
       sourceLabel === 'task.create_completion_criterion' ||
+      sourceLabel === 'decision.draft' ||
       sourceLabel === 'source_context.create'
     ) {
       return `先审查 ${sourceLabel} checkpoint 的输入；批准后再回到任务确认${CHECKPOINT_ACTION_LABELS[sourceLabel]}结果。`;

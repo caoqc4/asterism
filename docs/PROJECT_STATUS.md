@@ -978,6 +978,11 @@ The project is past initial architecture assembly. Current work should favor pro
   broader resumable tool set, including task next-step updates and
   source-context creation, and task-side follow-up prefill uses matching
   inspect-first wording. Current local acceptance status: 128 test files / 932 tests.
+- `decision.draft` is now classified consistently as a local-write /
+  task-mutation tool in the registry and approved `tool_permission` resume
+  helper, so confirmation policies can checkpoint and resume draft generation
+  instead of treating it as safe-read/no-op. Current local acceptance status:
+  128 test files / 933 tests.
 - Backend paused-run continuation mirrors that selection rule: stale or
   incompatible payloads are skipped, exactly one valid supported payload may
   execute, and multiple valid resume checkpoints fail closed before any local

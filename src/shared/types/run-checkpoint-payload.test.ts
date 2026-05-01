@@ -37,10 +37,11 @@ describe('run checkpoint payload helpers', () => {
   it('defines the tool-permission tools that approved Decisions may resume', () => {
     expect(isToolPermissionCheckpointResumeTool('task.update_next_step')).toBe(true);
     expect(isToolPermissionCheckpointResumeTool('source_context.create')).toBe(true);
-    expect(isToolPermissionCheckpointResumeTool('decision.draft')).toBe(false);
+    expect(isToolPermissionCheckpointResumeTool('decision.draft')).toBe(true);
     expect(isToolPermissionCheckpointResumeTool('workspace.search')).toBe(false);
     expect(requiresTaskMutationResumePolicy('task.update_next_step')).toBe(true);
     expect(requiresTaskMutationResumePolicy('source_context.create')).toBe(true);
+    expect(requiresTaskMutationResumePolicy('decision.draft')).toBe(true);
     expect(requiresTaskMutationResumePolicy('artifact.create_note')).toBe(false);
     expect(requiresTaskMutationResumePolicy('workspace.write_patch')).toBe(false);
   });
