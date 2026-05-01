@@ -6,7 +6,12 @@ This assessment maps the alpha checklist to the current automated coverage and t
 
 Current status: functionally alpha-accepted for the local unsigned build path, with signed/notarized release work still deferred. A focused manual alpha pass has covered the core local path through task creation, task state transition, decision creation, no-key run failure, successful AI-backed run, packaged read-only workspace agent execution, Home recovery, Settings config save, completion closeout, and unsigned macOS directory packaging.
 
-Strong automated coverage already exists for the main control-plane semantics, repository persistence, IPC routing, config/keychain behavior, scheduler behavior, and many renderer interactions. The remaining acceptance work is now release-focused: keep local verification as the source of truth while GitHub Actions quota is unavailable, and defer signed/notarized release work until the unsigned package path stays stable.
+Strong automated coverage already exists for the main control-plane semantics,
+repository persistence, IPC routing, config/keychain behavior, scheduler
+behavior, the visible Code Agent preflight gate, and many renderer interactions.
+The remaining acceptance work is now release-focused: keep local verification as
+the source of truth while GitHub Actions quota is unavailable, and defer
+signed/notarized release work until the unsigned package path stays stable.
 
 ## Verification Gate
 
