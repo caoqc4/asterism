@@ -6154,6 +6154,46 @@ describe('App UI flow', () => {
     ).toBeTruthy();
   });
 
+  it('explains task update checkpoint consequences on the decisions page', async () => {
+    const user = userEvent.setup();
+    const checkpointDecisionApi: ElectronApi = {
+      ...mockApi,
+      listDecisions: vi.fn(async () => [
+        {
+          id: 'decision_checkpoint_task_update',
+          taskId: riskTask.id,
+          title: '确认本地写入：task.update_next_step',
+          status: 'pending' as const,
+          sourceType: 'agent_checkpoint' as const,
+          sourceId: 'run_checkpoint_task_update',
+          sourceLabel: 'task.update_next_step',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]),
+    };
+
+    window.api = checkpointDecisionApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /decisions/i }));
+
+    expect(await screen.findByRole('heading', { name: '确认本地写入：task.update_next_step' })).toBeTruthy();
+    expect(
+      screen.getByText('来源：Agent checkpoint（task.update_next_step）。批准后会进入等待中的任务下一步更新恢复路径，恢复结果以 Run 证据为准；延后或取消会终止本次 run。'),
+    ).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '回到任务推进' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '先审查 task.update_next_step checkpoint 的输入；批准后再回到任务确认任务下一步更新结果。',
+    );
+  });
+
   it('explains browser controlled checkpoint consequences on the decisions page', async () => {
     const user = userEvent.setup();
     const checkpointDecisionApi: ElectronApi = {

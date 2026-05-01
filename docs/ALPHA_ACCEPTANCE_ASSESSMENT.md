@@ -18,6 +18,9 @@ signed/notarized release work until the unsigned package path stays stable.
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
+- on 2026-05-01, `npm run verify` passed locally with 128 test files / 932
+  tests after aligning Decisions page checkpoint guidance and task follow-up
+  prefill with the broader approved tool-permission resumable tool set.
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 931
   tests after aligning Runs browser-controlled review copy with the approved
   single-action Browser Controlled Resume path.

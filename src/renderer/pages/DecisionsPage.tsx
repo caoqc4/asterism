@@ -22,6 +22,16 @@ const BROWSER_CONTROLLED_CHECKPOINT_LABELS = new Set([
   'Browser controlled checkpoint',
 ]);
 
+const CHECKPOINT_ACTION_LABELS: Record<string, string> = {
+  'artifact.create_note': '本地 note 产物写入',
+  'source_context.create': '来源上下文创建',
+  'task.create_completion_criterion': '完成标准创建',
+  'task.update_next_step': '任务下一步更新',
+  'workspace.run_command': '工作区命令运行',
+  'workspace.write_patch': '工作区 patch 应用',
+  'workspace.staged_patch': 'sandbox patch promotion',
+};
+
 function formatRelatedTimelineSummary(event: TimelineEventRecord): string {
   return formatTaskTimelineEventSummary(event);
 }
@@ -85,17 +95,9 @@ function getCheckpointDecisionGuidance(
 
   const sourceLabel = decision.sourceLabel ?? '等待中的 agent 工具调用';
   const isBrowserControlledCheckpoint = BROWSER_CONTROLLED_CHECKPOINT_LABELS.has(sourceLabel);
-  const actionLabel = sourceLabel === 'workspace.write_patch'
-    ? '工作区 patch 应用'
-    : sourceLabel === 'workspace.run_command'
-      ? '工作区命令运行'
-    : sourceLabel === 'workspace.staged_patch'
-      ? 'sandbox patch promotion'
-    : isBrowserControlledCheckpoint
-      ? '受控浏览器单动作恢复'
-    : sourceLabel === 'artifact.create_note'
-      ? '本地 note 产物写入'
-      : '本地工具调用';
+  const actionLabel = isBrowserControlledCheckpoint
+    ? '受控浏览器单动作恢复'
+    : CHECKPOINT_ACTION_LABELS[sourceLabel] ?? '本地工具调用';
 
   if (decision.status === 'pending') {
     if (isBrowserControlledCheckpoint) {
@@ -182,6 +184,14 @@ function getDecisionTaskFollowUpNextStep(
 
     if (sourceLabel === 'workspace.run_command') {
       return '先审查 workspace.run_command checkpoint 的脚本、参数、超时和工作目录；批准后再回到任务确认命令结果。';
+    }
+
+    if (
+      sourceLabel === 'task.update_next_step' ||
+      sourceLabel === 'task.create_completion_criterion' ||
+      sourceLabel === 'source_context.create'
+    ) {
+      return `先审查 ${sourceLabel} checkpoint 的输入；批准后再回到任务确认${CHECKPOINT_ACTION_LABELS[sourceLabel]}结果。`;
     }
 
     if (sourceLabel === 'workspace.staged_patch') {

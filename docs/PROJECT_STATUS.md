@@ -974,6 +974,10 @@ The project is past initial architecture assembly. Current work should favor pro
   source-context creation, completion-criterion creation, local notes,
   workspace patches, and allowlisted workspace commands can resume through the
   same Decision path. Current local acceptance status: 128 test files / 931 tests.
+- Decisions page checkpoint guidance now names the restored action for the
+  broader resumable tool set, including task next-step updates and
+  source-context creation, and task-side follow-up prefill uses matching
+  inspect-first wording. Current local acceptance status: 128 test files / 932 tests.
 - Backend paused-run continuation mirrors that selection rule: stale or
   incompatible payloads are skipped, exactly one valid supported payload may
   execute, and multiple valid resume checkpoints fail closed before any local
