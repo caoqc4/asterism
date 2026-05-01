@@ -3997,6 +3997,113 @@ describe('App UI flow', () => {
     expect(runPausedStaleApi.continuePausedRun).not.toHaveBeenCalled();
   });
 
+  it('blocks paused run continuation when multiple valid resume checkpoints are open', async () => {
+    const user = userEvent.setup();
+    const pausedRun = buildRunRecord({
+      id: 'run_paused_multiple_resume',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'paused',
+      output: '等待先解除阻塞。',
+      outputSource: 'system',
+    });
+    const buildResumeCheckpoint = (id: string, title: string) => buildRunCheckpoint({
+      id,
+      runId: pausedRun.id,
+      kind: 'resume',
+      status: 'open',
+      payload: JSON.stringify({
+        version: 1,
+        kind: 'resume',
+        runId: pausedRun.id,
+        taskId: riskTask.id,
+        nextTool: 'artifact.create_note',
+        nextInput: { title, content: `${title} content` },
+      }),
+    });
+    const runPausedMultipleApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [pausedRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === pausedRun.id
+          ? {
+              ...pausedRun,
+              checkpoints: [
+                buildResumeCheckpoint('run_checkpoint_resume_a', 'Recovered note A'),
+                buildResumeCheckpoint('run_checkpoint_resume_b', 'Recovered note B'),
+              ],
+            }
+          : null,
+      ),
+      continuePausedRun: vi.fn(),
+    };
+
+    window.api = runPausedMultipleApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
+    expect(
+      await screen.findByText(
+        '当前 paused run 没有可续跑的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();
+    expect(runPausedMultipleApi.continuePausedRun).not.toHaveBeenCalled();
+  });
+
+  it('blocks paused run continuation when the resume checkpoint session binding is missing', async () => {
+    const user = userEvent.setup();
+    const pausedRun = buildRunRecord({
+      id: 'run_paused_missing_resume_session',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'paused',
+      output: '等待先解除阻塞。',
+      outputSource: 'system',
+    });
+    const boundResumeCheckpoint = buildRunCheckpoint({
+      id: 'run_checkpoint_resume_bound_missing',
+      runId: pausedRun.id,
+      kind: 'resume',
+      status: 'open',
+      payload: JSON.stringify({
+        version: 1,
+        kind: 'resume',
+        agentSessionId: 'agent_session_missing',
+        runId: pausedRun.id,
+        taskId: riskTask.id,
+        nextTool: 'artifact.create_note',
+        nextInput: { title: 'Recovered note', content: 'Recovered note' },
+      }),
+    });
+    const runPausedMissingSessionApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [pausedRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === pausedRun.id
+          ? { ...pausedRun, agentSessions: [], checkpoints: [boundResumeCheckpoint] }
+          : null,
+      ),
+      continuePausedRun: vi.fn(),
+    };
+
+    window.api = runPausedMissingSessionApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+    expect(await screen.findByRole('heading', { name: 'agent / paused' })).toBeTruthy();
+    expect(
+      await screen.findByText(
+        '当前 paused run 没有可续跑的 open resume checkpoint；先检查执行证据或关联 Decision，再决定是否启动新的 run。',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '继续 paused run' })).toBeNull();
+    expect(runPausedMissingSessionApi.continuePausedRun).not.toHaveBeenCalled();
+  });
+
   it('shows readable agent plan source summaries on the runs page', async () => {
     const user = userEvent.setup();
     const agentPlanRun = buildRunRecord({

@@ -94,8 +94,10 @@ function formatRecoveryAnchorLine(intent: AgentSessionRecoveryIntent | null): st
   ].join(' / ');
 }
 
-function hasValidOpenResumeCheckpoint(run: Pick<RunDetailRecord, 'checkpoints' | 'id' | 'taskId'>): boolean {
-  return Boolean(run.checkpoints?.some((checkpoint) => {
+function hasValidOpenResumeCheckpoint(
+  run: Pick<RunDetailRecord, 'agentSessions' | 'checkpoints' | 'id' | 'taskId'>,
+): boolean {
+  const validCheckpoints = (run.checkpoints ?? []).filter((checkpoint) => {
     if (checkpoint.kind !== 'resume' || checkpoint.status !== 'open') {
       return false;
     }
@@ -105,9 +107,24 @@ function hasValidOpenResumeCheckpoint(run: Pick<RunDetailRecord, 'checkpoints' |
       taskId: run.taskId,
     });
 
-    return validation.status === 'valid'
-      && isSupportedResumeCheckpointPayload(validation.payload);
-  }));
+    if (
+      validation.status !== 'valid'
+      || !isSupportedResumeCheckpointPayload(validation.payload)
+    ) {
+      return false;
+    }
+
+    if (!validation.payload.agentSessionId) {
+      return true;
+    }
+
+    return Boolean(run.agentSessions?.some((session) =>
+      session.id === validation.payload.agentSessionId
+      && (session.status === 'paused' || session.status === 'needs_confirmation')
+    ));
+  });
+
+  return validCheckpoints.length === 1;
 }
 
 function getRelatedTimelineActionLabel(event: TimelineEventRecord): string | null {

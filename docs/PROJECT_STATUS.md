@@ -946,11 +946,13 @@ The project is past initial architecture assembly. Current work should favor pro
   checkpoint-backed session `completed`, failed or blocked resume marks it
   `failed`, and deferred/cancelled Decisions mark it `cancelled`, while
   unsupported/no-op approvals remain review-only.
-- Runs detail now only exposes `继续 paused run` when the paused Run has an
-  open and locally valid `resume` checkpoint payload for the current run/task.
-  Paused Runs without a resumable checkpoint, or with a stale/incompatible
-  payload, show review-first guidance instead of letting the user click into a
-  known backend rejection path.
+- Runs detail now only exposes `继续 paused run` when the paused Run has exactly
+  one open and locally valid `resume` checkpoint payload for the current
+  run/task, and any payload-bound `agentSessionId` resolves to a
+  checkpoint-backed session. Paused Runs without a resumable checkpoint, with a
+  stale/incompatible payload, with multiple valid resume checkpoints, or with a
+  missing session binding show review-first guidance instead of letting the
+  user click into a known backend rejection path.
 - Backend paused-run continuation now mirrors that selection rule: if multiple
   open resume checkpoints exist, stale/incompatible payloads are skipped until a
   valid supported payload for the current run/task is found; execution still
