@@ -493,6 +493,30 @@ async function assertRelatedDecisionTimelineUi(page) {
   await page.getByText('下一步从“未填写”调整为“审阅 packaged Timeline UI smoke 结果。”').waitFor();
 }
 
+async function assertDependencyReturnAndResolution(page) {
+  await page.getByRole('button', { name: /tasks/i }).click();
+  await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
+  await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
+
+  await page
+    .locator('.timeline-item', { hasText: 'Packaged Timeline upstream fixture' })
+    .getByRole('button', { name: '打开上游任务' })
+    .first()
+    .click();
+  await page.getByRole('heading', { name: 'Packaged Timeline upstream fixture' }).waitFor();
+
+  await page.getByRole('button', { name: /tasks/i }).click();
+  await page.getByRole('button', { name: /Timeline packaged UI fixture/i }).click();
+  await page.getByRole('heading', { name: 'Timeline packaged UI fixture' }).waitFor();
+
+  await page
+    .locator('.timeline-item', { hasText: 'Packaged Timeline upstream fixture' })
+    .getByRole('button', { name: '解除依赖' })
+    .first()
+    .click();
+  await page.getByText('当前任务还没有 active dependency。').waitFor();
+}
+
 if (process.platform !== 'darwin') {
   fail('macOS packaged Timeline UI smoke requires macOS.');
 }
@@ -527,6 +551,7 @@ try {
   await assertTaskTimelineObjectActions(page);
   await assertRelatedRunTimelineUi(page);
   await assertRelatedDecisionTimelineUi(page);
+  await assertDependencyReturnAndResolution(page);
 
   await app.close();
   cleanup();
