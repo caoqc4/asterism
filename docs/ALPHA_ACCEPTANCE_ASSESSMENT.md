@@ -18,6 +18,8 @@ signed/notarized release work until the unsigned package path stays stable.
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
+- on 2026-05-01, `npm run smoke:build` passed locally, covering renderer/main
+  build outputs and electron-builder file mapping.
 - on 2026-05-01, `npm run accept:release:mac-preflight` passed locally as a
   read-only signed/notarized release readiness check. It reported
   `status=not-ready`: macOS host, `notarytool`, app id, product name, and mac

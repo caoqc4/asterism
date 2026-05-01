@@ -1473,7 +1473,7 @@ Latest local baseline:
 - TypeScript checks
 - production renderer build
 - Electron main-process build
-- build smoke check
+- build smoke check (`npm run smoke:build` passed locally on 2026-05-01)
 - macOS package and runtime smoke checks for the unpacked app, including ASAR contents, isolated startup, and packaged SQLite schema initialization
 - `npm run accept:sandbox-coding` and `npm run verify` passed locally on
   2026-05-01 after moving Code Agent selected workspace-context validation

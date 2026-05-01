@@ -19,7 +19,7 @@ Use this file when running the manual alpha path. Keep entries short and actiona
   `npm run smoke:runtime:mac`, `npm run smoke:release:mac`,
   `npm run release:mac:preflight`, 2026-04-27
   `npm run accept:release:mac-preflight`, and 2026-05-01
-  `npm run accept:release:mac-preflight`
+  `npm run smoke:build` / `npm run accept:release:mac-preflight`
 
 ## Result Summary
 
