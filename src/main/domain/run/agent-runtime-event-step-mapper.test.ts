@@ -102,12 +102,14 @@ describe('mapAgentRuntimeEventToRunStep', () => {
     expect(mapAgentRuntimeEventToRunStep({
       type: 'session.paused',
       runId: 'run_1',
+      sessionId: 'agent_session_1',
       checkpointId: 'run_checkpoint_1',
       message: 'Waiting for user confirmation.',
     })).toMatchObject({
       kind: 'checkpoint',
       status: 'pending',
       title: 'Agent session paused',
+      input: 'session=agent_session_1\ncheckpoint=run_checkpoint_1',
     });
 
     expect(mapAgentRuntimeEventToRunStep({

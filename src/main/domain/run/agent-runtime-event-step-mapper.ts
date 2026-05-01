@@ -33,6 +33,13 @@ function checkpointInput(event: Extract<AgentSessionEvent, { type: 'checkpoint.c
   ].filter(Boolean).join('\n');
 }
 
+function pausedSessionInput(event: Extract<AgentSessionEvent, { type: 'session.paused' }>): string {
+  return [
+    event.sessionId ? `session=${event.sessionId}` : null,
+    `checkpoint=${event.checkpointId}`,
+  ].filter(Boolean).join('\n');
+}
+
 export function mapAgentRuntimeEventToRunStep(
   event: AgentSessionEvent,
 ): AgentRuntimeRunStepDraft {
@@ -114,7 +121,7 @@ export function mapAgentRuntimeEventToRunStep(
         kind: 'checkpoint',
         status: 'pending',
         title: 'Agent session paused',
-        input: `checkpoint=${event.checkpointId}`,
+        input: pausedSessionInput(event),
         output: event.message,
       };
     case 'session.completed':
