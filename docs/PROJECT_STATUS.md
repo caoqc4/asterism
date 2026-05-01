@@ -969,6 +969,11 @@ The project is past initial architecture assembly. Current work should favor pro
   before executing the tool when the checkpoint payload is bound to a missing or
   non-checkpoint-backed agent session, keeping Decision-driven recovery aligned
   with paused-run continuation.
+- Approved `tool_permission` Decisions now use a shared resumable-tool helper
+  instead of a page-local allowlist, so confirmed task next-step updates,
+  source-context creation, completion-criterion creation, local notes,
+  workspace patches, and allowlisted workspace commands can resume through the
+  same Decision path. Current local acceptance status: 128 test files / 931 tests.
 - Backend paused-run continuation mirrors that selection rule: stale or
   incompatible payloads are skipped, exactly one valid supported payload may
   execute, and multiple valid resume checkpoints fail closed before any local

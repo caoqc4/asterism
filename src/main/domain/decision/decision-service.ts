@@ -26,7 +26,11 @@ import type {
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type { BrowserControlledInteractionResult } from '../../../shared/types/browser-controlled-interaction.js';
 import { parseBrowserControlledInteractionCheckpointPayload } from '../../../shared/types/browser-controlled-interaction.js';
-import { parseRunCheckpointPayload } from '../../../shared/types/run-checkpoint-payload.js';
+import {
+  isToolPermissionCheckpointResumeTool,
+  parseRunCheckpointPayload,
+  requiresTaskMutationResumePolicy,
+} from '../../../shared/types/run-checkpoint-payload.js';
 import { AgentSessionStore } from '../run/agent-session-store.js';
 import {
   findCheckpointBackedAgentSessionForSettlement,
@@ -322,12 +326,7 @@ export class DecisionService {
     }
 
     if (
-      (
-        tool !== 'artifact.create_note' &&
-        tool !== 'task.create_completion_criterion' &&
-        tool !== 'workspace.write_patch' &&
-        tool !== 'workspace.run_command'
-      ) ||
+      !isToolPermissionCheckpointResumeTool(tool) ||
       !this.agentToolRegistry
     ) {
       await this.runCheckpointRepository.updateStatus(checkpoint.id, 'resolved');
@@ -378,7 +377,7 @@ export class DecisionService {
       },
       {
         ...DEFAULT_AGENT_POLICY,
-        allowTaskMutationTools: tool === 'task.create_completion_criterion',
+        allowTaskMutationTools: requiresTaskMutationResumePolicy(tool),
         allowLocalFileWrite: tool === 'workspace.write_patch',
         allowLocalCommandRun: tool === 'workspace.run_command',
         confirmationRequiredRisks: [],

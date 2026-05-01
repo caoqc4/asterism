@@ -201,12 +201,12 @@ Covered today:
   session metadata, task mutation opt-in flow through persisted task detail, and
   completion evidence review that leaves criteria open and task state unchanged
 - `Run checkpoint payload`
-  versioned v1 payload helpers for tool-permission and resume checkpoints, with legacy JSON parsing compatibility
+  versioned v1 payload helpers for tool-permission and resume checkpoints, with legacy JSON parsing compatibility, plus the shared approved-Decision resumable tool boundary
 - `DecisionService`
-  checkpoint Decision approval can resume local note creation, high-risk
-  completion-criterion creation, and confirmation-gated workspace patch
-  application; integration coverage now also verifies approved, deferred, and
-  cancelled checkpoint Decisions after a database/service restart
+  checkpoint Decision approval can resume local note creation, task next-step
+  updates, high-risk completion-criterion creation, and confirmation-gated
+  workspace patch application; integration coverage now also verifies approved,
+  deferred, and cancelled checkpoint Decisions after a database/service restart
 - `TextExecutor`
   lane-aware run prompt composition, constrained JSON proposal prompting for agent runs, opt-in workspace tool prompt guidance, opt-in domain task/evidence tool prompt guidance, and result-shaped text generation with optional minimal provider payload extraction
 - `Agent capability UI helpers`
@@ -510,6 +510,10 @@ npm run verify
 Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
+- on 2026-05-01, `npm run verify` passed locally with 128 test files / 931
+  tests after moving the approved tool-permission Decision resumable-tool
+  boundary into a shared payload helper and covering task next-step checkpoint
+  resumption.
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 929
   tests after extracting checkpoint-backed agent-session status writes into a
   shared settlement helper used by RunService and DecisionService, with helper

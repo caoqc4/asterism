@@ -48,6 +48,38 @@ export type RunCheckpointPayloadV1 =
   | ResumeCheckpointPayloadV1
   | PatchPromotionCheckpointPayloadV1;
 
+export const TOOL_PERMISSION_CHECKPOINT_RESUME_TOOLS = [
+  'artifact.create_note',
+  'source_context.create',
+  'task.create_completion_criterion',
+  'task.update_next_step',
+  'workspace.run_command',
+  'workspace.write_patch',
+] as const satisfies readonly AgentToolName[];
+
+export type ToolPermissionCheckpointResumeTool =
+  typeof TOOL_PERMISSION_CHECKPOINT_RESUME_TOOLS[number];
+
+const TOOL_PERMISSION_CHECKPOINT_RESUME_TOOL_SET = new Set<string>(
+  TOOL_PERMISSION_CHECKPOINT_RESUME_TOOLS,
+);
+
+export function isToolPermissionCheckpointResumeTool(
+  tool: unknown,
+): tool is ToolPermissionCheckpointResumeTool {
+  return typeof tool === 'string' && TOOL_PERMISSION_CHECKPOINT_RESUME_TOOL_SET.has(tool);
+}
+
+export function requiresTaskMutationResumePolicy(
+  tool: ToolPermissionCheckpointResumeTool,
+): boolean {
+  return (
+    tool === 'source_context.create' ||
+    tool === 'task.create_completion_criterion' ||
+    tool === 'task.update_next_step'
+  );
+}
+
 export type ParsedRunCheckpointPayload = Record<string, unknown> & {
   version?: unknown;
   kind?: unknown;

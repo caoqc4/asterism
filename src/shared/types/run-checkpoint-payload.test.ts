@@ -5,7 +5,9 @@ import {
   createResumeCheckpointPayload,
   createToolPermissionCheckpointPayload,
   isSupportedResumeCheckpointPayload,
+  isToolPermissionCheckpointResumeTool,
   parseRunCheckpointPayload,
+  requiresTaskMutationResumePolicy,
   validateResumeCheckpointPayload,
 } from './run-checkpoint-payload.js';
 
@@ -30,6 +32,17 @@ describe('run checkpoint payload helpers', () => {
       decisionId: 'decision_1',
       decisionTitle: '确认本地写入：artifact.create_note',
     });
+  });
+
+  it('defines the tool-permission tools that approved Decisions may resume', () => {
+    expect(isToolPermissionCheckpointResumeTool('task.update_next_step')).toBe(true);
+    expect(isToolPermissionCheckpointResumeTool('source_context.create')).toBe(true);
+    expect(isToolPermissionCheckpointResumeTool('decision.draft')).toBe(false);
+    expect(isToolPermissionCheckpointResumeTool('workspace.search')).toBe(false);
+    expect(requiresTaskMutationResumePolicy('task.update_next_step')).toBe(true);
+    expect(requiresTaskMutationResumePolicy('source_context.create')).toBe(true);
+    expect(requiresTaskMutationResumePolicy('artifact.create_note')).toBe(false);
+    expect(requiresTaskMutationResumePolicy('workspace.write_patch')).toBe(false);
   });
 
   it('creates versioned resume checkpoint payloads', () => {
