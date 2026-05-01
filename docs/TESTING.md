@@ -420,7 +420,8 @@ Covered today:
 - `Runs` page readable agent plan-source summaries
 - `Runs` page readable agent tool observation summaries
 - `Runs` page replay recovery for running agent sessions with active latest
-  steps, preserving inspect-first / no-auto-replay task recovery wording
+  steps, preserving inspect-first / no-auto-replay task recovery wording plus
+  structured recovery intent and anchor visibility
 - `Runs` page replay recovery for paused agent sessions without open
   checkpoints, keeping recovery evidence-review first and hiding direct resume
 - `Runs` page replay recovery for failed agent sessions, routing back to task

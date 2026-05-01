@@ -4211,9 +4211,20 @@ describe('App UI flow', () => {
     await user.click(await screen.findByRole('button', { name: /runs/i }));
 
     expect(await screen.findByRole('heading', { name: 'agent / running' })).toBeTruthy();
+    const recoverySafety = within(screen.getByLabelText('Run recovery safety'));
     expect(
-      screen.getByText(
+      recoverySafety.getByText(
         'Replay review：inspect latest step before any recovery / mode=inspect_only / session=agent_session_active / status=running / restartSafety=live_status_unknown / steps=1 / openCheckpoints=0 / recoveryCheckpoints=0 / latest=tool_call:running:执行工具：workspace.read_file / autoReplay=no',
+      ),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText(
+        'Recovery intent：inspect evidence / session=agent_session_active / status=running / restartSafety=live_status_unknown / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=no / autoReplay=no',
+      ),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText(
+        'Recovery anchors：run=run_agent_active_step / session=agent_session_active / checkpoints=none / action=inspect_evidence',
       ),
     ).toBeTruthy();
 
