@@ -174,6 +174,10 @@ export function formatAgentSessionReplayNextStepDraft(params: {
       : `复核最近一次 ${params.runType} run 的暂停或确认原因；没有 recovery checkpoint 时，先查看执行证据再决定是否重跑。`;
   }
 
+  if (review.restartSafety === 'terminal_evidence') {
+    return `审阅最近一次 ${params.runType} run 的完成证据和输出；旧 session 已终止，不需要恢复或重放。`;
+  }
+
   return review.status === 'running'
     ? `检查最近一次 ${params.runType} run 的最新步骤，确认是否仍在执行或需要人工介入。`
     : `审阅最近一次 ${params.runType} run 的证据和输出，再决定是否继续推进任务。`;

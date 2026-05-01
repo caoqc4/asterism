@@ -4227,6 +4227,93 @@ describe('App UI flow', () => {
     );
   });
 
+  it('routes completed agent sessions to terminal evidence review', async () => {
+    const user = userEvent.setup();
+    const completedAgentRun = buildRunRecord({
+      id: 'run_agent_terminal_evidence',
+      taskId: riskTask.id,
+      type: 'agent',
+      status: 'completed',
+      output: 'Agent final output.',
+      outputSource: 'ai',
+    });
+    const completedAgentDetail: RunDetailRecord = {
+      ...completedAgentRun,
+      agentSessions: [
+        {
+          id: 'agent_session_completed',
+          runId: completedAgentRun.id,
+          mode: 'agent',
+          status: 'completed',
+          capabilities: {
+            structuredToolCalls: false,
+            textOnlyPlanning: true,
+            streaming: false,
+            fileContext: true,
+            taskMutationTools: false,
+            longRunningSessions: true,
+          },
+          metadata: 'executor=local_agent\nloop=local_note',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      steps: [
+        buildRunStep({
+          id: 'run_step_agent_completed',
+          runId: completedAgentRun.id,
+          index: 7,
+          kind: 'final',
+          status: 'completed',
+          title: '最终输出已生成',
+          output: 'Agent final output.',
+        }),
+      ],
+      checkpoints: [],
+    };
+    const completedAgentApi: ElectronApi = {
+      ...mockApi,
+      listRuns: vi.fn(async () => [completedAgentRun]),
+      getRunDetail: vi.fn(async (runId: string) =>
+        runId === completedAgentRun.id ? completedAgentDetail : null,
+      ),
+    };
+
+    window.api = completedAgentApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /runs/i }));
+
+    expect(await screen.findByRole('heading', { name: 'agent / completed' })).toBeTruthy();
+    const recoverySafety = within(screen.getByLabelText('Run recovery safety'));
+    expect(
+      recoverySafety.getByText(
+        'Replay review：inspect completed evidence / mode=inspect_only / session=agent_session_completed / status=completed / restartSafety=terminal_evidence / steps=1 / openCheckpoints=0 / recoveryCheckpoints=0 / latest=final:completed:最终输出已生成 / autoReplay=no',
+      ),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText(
+        'Recovery intent：inspect evidence / session=agent_session_completed / status=completed / restartSafety=terminal_evidence / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=no / autoReplay=no',
+      ),
+    ).toBeTruthy();
+    expect(
+      recoverySafety.getByText(
+        'Recovery anchors：run=run_agent_terminal_evidence / session=agent_session_completed / checkpoints=none / action=inspect_evidence',
+      ),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '回到任务推进' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '审阅最近一次 agent run 的完成证据和输出；旧 session 已终止，不需要恢复或重放。',
+    );
+    expect((screen.getByLabelText('附加要求') as HTMLTextAreaElement).value).toBe('');
+  });
+
   it('routes paused agent sessions without recovery checkpoints to evidence review', async () => {
     const user = userEvent.setup();
     const pausedAgentRun = buildRunRecord({

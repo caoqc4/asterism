@@ -606,6 +606,22 @@ describe('agent capability formatting', () => {
         },
       ],
     })).toBeNull();
+    expect(formatAgentSessionReplayNextStepDraft({
+      runType: 'agent',
+      session: {
+        ...session,
+        status: 'completed',
+      },
+      steps: [
+        {
+          createdAt: '2026-01-01T00:00:00.000Z',
+          index: 1,
+          kind: 'final',
+          status: 'completed',
+          title: 'Final output',
+        },
+      ],
+    })).toBe('审阅最近一次 agent run 的完成证据和输出；旧 session 已终止，不需要恢复或重放。');
 
     expect(formatAgentSessionReplayNextStepDraft({
       runType: 'agent',

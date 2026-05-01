@@ -778,6 +778,9 @@ The latest implementation slice:
 - Runs detail `Run recovery safety` now renders a separate structured
   `Recovery anchors` line with run id, session id, checkpoint ids, and recovery
   action for inspect-first review.
+- Completed agent sessions now produce terminal-evidence next-step copy when
+  returning from Runs to Task detail, avoiding any implication that the old
+  session should be restored or replayed.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

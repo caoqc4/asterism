@@ -425,6 +425,8 @@ Covered today:
   checkpoints, keeping recovery evidence-review first and hiding direct resume
 - `Runs` page replay recovery for failed agent sessions, routing back to task
   work as new-run preparation instead of replay or continuation
+- `Runs` page terminal completed-session recovery, routing back to task work as
+  evidence review with no restore/replay prompt
 - `Runs` page trigger form refresh and newly-created run selection, including repeated triggers
 - shared timeline summaries across `Tasks / Decisions / Runs`
 - `Settings save flow`
