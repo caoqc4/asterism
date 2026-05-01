@@ -19,6 +19,9 @@ Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 931
+  tests after aligning Runs browser-controlled review copy with the approved
+  single-action Browser Controlled Resume path.
+- on 2026-05-01, `npm run verify` passed locally with 128 test files / 931
   tests after moving the approved tool-permission Decision resumable-tool
   boundary into a shared payload helper and covering task next-step checkpoint
   resumption.

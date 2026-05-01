@@ -1121,7 +1121,11 @@ The project is past initial architecture assembly. Current work should favor pro
   are blocked before executor launch, localhost-style payloads invoke the
   injected local-QA resume executor, successful resumes resolve the checkpoint
   and update the Run, and blocked/failed attempts write failed checkpoint
-  RunSteps and cancel the checkpoint. Arbitrary URLs, authenticated profiles,
+  RunSteps and cancel the checkpoint. Runs browser-controlled review copy now
+  points operators to the Browser Controlled Resume state for the approved
+  single-action path, avoiding stale "no auto-resume" guidance while still
+  saying approval does not grant a browser session. Current local acceptance
+  status: 128 test files / 931 tests. Arbitrary URLs, authenticated profiles,
   scheduler starts, provider schemas, and model-visible browser tools remain
   deferred. A dev-app visual fixture pass on 2026-04-27 confirmed the
   approved-ready, resumed, blocked, stale-payload, and non-browser checkpoint

@@ -297,7 +297,7 @@ describe('browser controlled interaction review helpers', () => {
 
     expect(checkpoint).toMatchObject({
       checkpointCount: 1,
-      nextMove: 'next=review checkpoint payload; approval does not auto-resume browser actions yet',
+      nextMove: 'next=review checkpoint payload and Browser Controlled Resume state; approval can resume one recorded action only',
       status: 'checkpoint_required',
     });
     expect(checkpoint?.evidence.at(-1)).toEqual({

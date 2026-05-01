@@ -3535,7 +3535,7 @@ describe('App UI flow', () => {
       'Policy：modelExposure=hidden / scheduler=no / providerCall=no / genericPrompt=no',
     )).toBeTruthy();
     expect(screen.getByText(
-      'Next review move：next=review checkpoint payload; approval does not auto-resume browser actions yet',
+      'Next review move：next=review checkpoint payload and Browser Controlled Resume state; approval can resume one recorded action only',
     )).toBeTruthy();
     expect(screen.getByText('Runtime boundary')).toBeTruthy();
     expect(screen.getByText('Action plan')).toBeTruthy();

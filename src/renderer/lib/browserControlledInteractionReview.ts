@@ -339,7 +339,7 @@ function formatBrowserControlledRunNextMove(status: BrowserControlledInteraction
   }
 
   if (status === 'checkpoint_required') {
-    return 'next=review checkpoint payload; approval does not auto-resume browser actions yet';
+    return 'next=review checkpoint payload and Browser Controlled Resume state; approval can resume one recorded action only';
   }
 
   if (status === 'completed') {
