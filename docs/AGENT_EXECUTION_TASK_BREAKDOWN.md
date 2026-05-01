@@ -769,6 +769,9 @@ The latest implementation slice:
 - Manual recovery-run instructions now include the source run id and agent
   session id before latest-step evidence, so task-side retry preparation stays
   anchored to the inspected Run and does not imply automatic replay.
+- Agent session replay review and recovery intent objects now carry structured
+  `runId` alongside `sessionId`, keeping renderer recovery helpers anchored to
+  the source Run without parsing summary text.
 - The same monitor now returns an explicit settlement plan: heartbeat remains
   `no_status_change`, terminal lifecycle observations recommend
   `update_session_status`, and the service layer remains responsible for any

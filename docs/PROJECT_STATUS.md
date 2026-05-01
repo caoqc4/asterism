@@ -183,6 +183,9 @@ The project is past initial architecture assembly. Current work should favor pro
 - Manual recovery-run prefill now includes the source run id and agent session
   id alongside latest-step evidence, keeping task-side retry preparation tied
   back to the inspected Run evidence instead of becoming a free-floating prompt.
+- Agent session replay reviews and recovery intents now also carry structured
+  `runId` alongside `sessionId`, so renderer recovery helpers can preserve the
+  source Run without parsing summary copy.
 - RunService and DecisionService now pass checkpoint-backed session updates
   through a shared settlement projection, so `running` sessions are treated as
   requiring executor liveness rather than being checkpoint-settled.

@@ -508,6 +508,7 @@ describe('agent capability formatting', () => {
       openCheckpointCount: 1,
       recoveryCheckpointCount: 1,
       restartSafety: 'checkpoint_gated',
+      runId: 'run_1',
       sessionId: 'agent_session_1',
       status: 'paused',
     });
@@ -536,6 +537,7 @@ describe('agent capability formatting', () => {
       manualRunRequired: false,
       recoveryCheckpointCount: 1,
       recoveryCheckpointRequired: true,
+      runId: 'run_1',
       resumeCheckpointRequired: true,
     });
     expect(formatSandboxProducerLifecycleSummary(session)).toBe(

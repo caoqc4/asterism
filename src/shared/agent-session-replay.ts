@@ -21,6 +21,7 @@ export type AgentSessionReplayReview = {
     | 'terminal_evidence';
   runStepCount: number;
   recoveryCheckpointCount: number;
+  runId: string;
   sessionId: string;
   status: AgentSessionRecord['status'];
   summary: string;
@@ -35,6 +36,7 @@ export type AgentSessionRecoveryIntent = {
   recoveryCheckpointRequired: boolean;
   restartSafety: AgentSessionReplayReview['restartSafety'];
   resumeCheckpointRequired: boolean;
+  runId: string;
   sessionId: string;
   status: AgentSessionRecord['status'];
   summary: string;
@@ -68,6 +70,7 @@ export function buildAgentSessionReplayReview(params: {
     restartSafety,
     runStepCount: params.steps.length,
     recoveryCheckpointCount,
+    runId: params.session.runId,
     sessionId: params.session.id,
     status: params.session.status,
     summary: [
@@ -88,7 +91,7 @@ export function buildAgentSessionReplayReview(params: {
 export function buildAgentSessionRecoveryIntent(
   review: Pick<
     AgentSessionReplayReview,
-    'mode' | 'openCheckpointCount' | 'recoveryCheckpointCount' | 'restartSafety' | 'sessionId' | 'status'
+    'mode' | 'openCheckpointCount' | 'recoveryCheckpointCount' | 'restartSafety' | 'runId' | 'sessionId' | 'status'
   >,
 ): AgentSessionRecoveryIntent {
   if (review.mode === 'manual_resume' && review.recoveryCheckpointCount > 0) {
@@ -101,6 +104,7 @@ export function buildAgentSessionRecoveryIntent(
       recoveryCheckpointRequired: true,
       restartSafety: review.restartSafety,
       resumeCheckpointRequired: true,
+      runId: review.runId,
       sessionId: review.sessionId,
       status: review.status,
       summary: [
@@ -127,6 +131,7 @@ export function buildAgentSessionRecoveryIntent(
       recoveryCheckpointRequired: false,
       restartSafety: review.restartSafety,
       resumeCheckpointRequired: false,
+      runId: review.runId,
       sessionId: review.sessionId,
       status: review.status,
       summary: [
@@ -152,6 +157,7 @@ export function buildAgentSessionRecoveryIntent(
     recoveryCheckpointRequired: false,
     restartSafety: review.restartSafety,
     resumeCheckpointRequired: false,
+    runId: review.runId,
     sessionId: review.sessionId,
     status: review.status,
     summary: [

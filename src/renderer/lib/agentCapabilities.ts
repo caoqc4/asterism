@@ -202,7 +202,7 @@ export function formatAgentSessionRecoveryRunInstructions(params: {
 
   return [
     `基于最近一次 ${params.runType} run 的证据准备新的手动 run。`,
-    `来源：run=${params.session.runId} / session=${params.session.id}。`,
+    `来源：run=${recoveryIntent.runId} / session=${recoveryIntent.sessionId}。`,
     latest,
     `恢复判断：${recoveryIntent.summary}`,
     '不要自动重放旧 session；先复核失败/取消/中断证据、补齐输入，再由用户手动启动。',
