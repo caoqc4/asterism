@@ -653,6 +653,11 @@ Current verification:
   reports `status=not-ready` for the same expected missing Developer ID signing
   source and Apple notarization credentials, and performed no signing,
   notarization, upload, or Apple network request.
+- on 2026-05-02, `npm run smoke:release:mac` passed locally after the packaged
+  recovery smoke expansion. It rebuilt the unsigned macOS app, passed package
+  validation, initialized the packaged runtime SQLite path, and passed packaged
+  Timeline UI navigation coverage; electron-builder again used ad-hoc signing
+  and skipped notarization because notarization options were unavailable.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.

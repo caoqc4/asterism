@@ -281,6 +281,11 @@ The project is past initial architecture assembly. Current work should favor pro
   are not configured; no signing, notarization, upload, or Apple network request
   was performed. It passed again after the latest packaged recovery smoke
   expansion with the same expected `not-ready` status.
+- `npm run smoke:release:mac` passed locally after the latest packaged recovery
+  smoke expansion: the unsigned macOS app rebuilt, package validation passed,
+  packaged runtime SQLite initialization passed, and packaged Timeline UI
+  navigation coverage passed. Signing remained ad-hoc and notarization was
+  skipped as expected.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.
