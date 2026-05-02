@@ -2,6 +2,7 @@
 
 Use this checklist for manual local validation before treating the prototype as alpha-ready.
 
+For the short current handoff note, see [ALPHA_HANDOFF.md](ALPHA_HANDOFF.md).
 For the current coverage and manual-validation assessment, see [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md).
 For recording a concrete manual pass, use [ALPHA_MANUAL_RUN_LOG.md](ALPHA_MANUAL_RUN_LOG.md).
 

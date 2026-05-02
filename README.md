@@ -134,6 +134,8 @@ npm run accept:alpha-local
 
 This runs the non-live local alpha-readiness gate: verification, local agent acceptance, Code Agent model-producer preflight, unsigned macOS release smoke, packaged recovery acceptance, and release preflight.
 
+For the current short alpha handoff note, see [docs/ALPHA_HANDOFF.md](docs/ALPHA_HANDOFF.md).
+
 ### 8. Run the build smoke check
 
 ```bash
