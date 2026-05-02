@@ -4,7 +4,7 @@ This assessment maps the alpha checklist to the current automated coverage and t
 
 ## Summary
 
-Current status: functionally alpha-accepted for the local unsigned build path, with signed/notarized release work still deferred. A focused manual alpha pass has covered the core local path through task creation, task state transition, decision creation, no-key run failure, successful AI-backed run, packaged read-only workspace agent execution, Home recovery, Settings config save, completion closeout, and unsigned macOS directory packaging.
+Current status: functionally alpha-accepted for the local unsigned build path, with signed/notarized release work still deferred. A focused manual alpha pass plus targeted packaged smokes now cover the core local path through task creation, task state transition, decision creation, no-key run failure, successful AI-backed run, packaged read-only workspace agent execution, Home recovery, Settings config save, completion closeout, Code Agent staged-patch recovery, Browser Evidence review, and unsigned macOS directory packaging.
 
 Strong automated coverage already exists for the main control-plane semantics,
 repository persistence, IPC routing, config/keychain behavior, scheduler
@@ -18,6 +18,21 @@ signed/notarized release work until the unsigned package path stays stable.
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
+- on 2026-05-02, `npm run smoke:release:mac` passed locally after the packaged
+  recovery smoke expansion: the unsigned/ad-hoc macOS app rebuilt, package
+  smoke passed, packaged runtime SQLite initialization passed, and packaged
+  Timeline UI navigation passed.
+- on 2026-05-02, `npm run accept:packaged-recovery:mac` passed locally with
+  Home recovery, Code Agent UI, Run/Decision recovery, Browser Evidence review,
+  and Settings config smokes grouped outside the unsigned release gate.
+- on 2026-05-02, `npm run accept:sandbox-coding:model-producer-preflight`
+  passed locally in default `status=skip` mode because sandbox/model-producer
+  env flags and workspace root are not enabled; it performed no provider
+  request, Docker probe, or workspace mutation.
+- on 2026-05-02, `npm run accept:release:mac-preflight` passed locally again as
+  a read-only signed/notarized release readiness check while reporting the
+  expected `status=not-ready` because Developer ID signing source and Apple
+  notarization credentials remain missing.
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 934
   tests after surfacing task-domain tool inputs in Runs checkpoint summaries.
 - on 2026-05-01, `npm run verify` passed locally with 128 test files / 933
@@ -659,10 +674,12 @@ Automated/local coverage:
 - `npm run smoke:release:mac` combines the unsigned macOS package build plus package, runtime, and packaged Timeline UI smoke checks
 - expanded `npm run smoke:release:mac` passed locally on 2026-05-02 after the packaged Timeline UI smoke was folded into the combined release gate
 - `npm run smoke:code-agent-ui:mac` passed locally on 2026-05-02 as a targeted packaged Code Agent preflight UI smoke; it verifies workspace check detection, preflight visibility, model-producer manifest controls, and context-file candidate filling without probing Docker or calling a provider
-- `npm run smoke:run-decision-recovery:mac` passed locally on 2026-05-02 as a targeted packaged Run/Decision recovery smoke; it verifies terminal completed agent sessions stay inspect-first, interrupted-or-stale and cancelled agent sessions route to `prepare_new_manual_run` without auto-replay, checkpoint Decisions can open Run evidence, and recovery surfaces return to Task detail with expected next-step drafts
+- `npm run smoke:run-decision-recovery:mac` passed locally on 2026-05-02 as a targeted packaged Run/Decision recovery smoke; it verifies terminal completed agent sessions stay inspect-first, interrupted-or-stale and cancelled agent sessions route to `prepare_new_manual_run` without auto-replay, checkpoint Decisions can open Run evidence, Code Agent staged-patch recovery can return applied patch evidence to Task completion criteria, persisted Browser Evidence review renders in Runs, and recovery surfaces return to Task detail with expected next-step drafts
 - `npm run smoke:home-recovery:mac` passed locally on 2026-05-02 as a targeted packaged Home recovery smoke; it verifies key-source and resume-preview context actions route back to the intended Source Context
 - `npm run smoke:settings-config:mac` passed locally on 2026-05-02 as a targeted packaged Settings config smoke; it saves non-sensitive provider/model/base URL/workspace-root config into isolated `config.json`, avoids API key writes/provider calls/Docker probes, and relaunches to verify Settings hydrates from disk
-- `npm run accept:packaged-recovery:mac` passed locally on 2026-05-02 with Home recovery, Code Agent UI, Run/Decision recovery, and Settings config smokes grouped outside the unsigned release gate
+- `npm run accept:packaged-recovery:mac` passed locally on 2026-05-02 with Home recovery, Code Agent UI, Run/Decision recovery, Browser Evidence review, and Settings config smokes grouped outside the unsigned release gate
+- `npm run smoke:release:mac` passed locally again on 2026-05-02 after the packaged recovery expansion: unsigned/ad-hoc app packaging, package validation, packaged runtime SQLite initialization, and packaged Timeline UI navigation all passed
+- `npm run accept:sandbox-coding:model-producer-preflight` passed locally on 2026-05-02 in default `status=skip` mode without provider request, Docker probe, or workspace mutation
 - `npm run accept:release:mac-preflight` passed locally on 2026-05-02 as a read-only signed/notarized release readiness check while reporting `status=not-ready` because Developer ID signing source and Apple notarization credentials are not configured
 - on 2026-04-27, `npm run smoke:release:mac` passed locally after the Code
   Agent context-gate and restart/replay safety updates. It rebuilt Electron
