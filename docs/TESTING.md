@@ -595,6 +595,10 @@ Current verification:
   verifies Runs keeps terminal sessions in inspect-evidence mode, verifies the
   Decision page can open the checkpoint Run evidence, and verifies both recovery
   surfaces hand back to Task detail with the expected next-step drafts.
+- on 2026-05-02, `npm run smoke:run-decision-recovery:mac` passed locally after
+  extending the same packaged recovery smoke to cancelled agent sessions. The
+  Runs recovery card now has packaged coverage for `prepare_new_manual_run`,
+  including the no-auto-replay instruction and Task detail retry prefill.
 - on 2026-05-02, `accept:packaged-recovery:mac` was added as a local targeted
   packaged recovery acceptance command. It runs the Code Agent UI and
   Run/Decision recovery smokes against an existing packaged app, while keeping

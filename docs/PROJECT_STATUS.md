@@ -2335,6 +2335,10 @@ Latest local baseline:
   packaged app to confirm Settings hydrates from disk. It is grouped into
   `accept:packaged-recovery:mac` and kept outside the default release smoke
   gate.
+- `smoke:run-decision-recovery:mac` now also covers packaged cancelled agent
+  session recovery: Runs must present `prepare_new_manual_run`, preserve the
+  no-auto-replay boundary, and route back to Task detail with retry inputs
+  prefilled from run evidence.
 
 Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 configuration changes. Run `npm run smoke:release:mac` for the combined
