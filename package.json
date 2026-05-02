@@ -49,6 +49,7 @@
     "accept:alpha-local": "npm run verify && npm run accept:agent-local && npm run accept:sandbox-coding:model-producer-preflight && npm run smoke:release:mac && npm run accept:packaged-recovery:mac && npm run accept:release:mac-preflight",
     "accept:release:mac-preflight": "vitest run src/main/release-mac-preflight-script.test.ts && npm run release:mac:preflight",
     "accept:packaged-recovery:mac": "npm run smoke:home-recovery:mac && npm run smoke:code-agent-ui:mac && npm run smoke:run-decision-recovery:mac && npm run smoke:settings-config:mac",
+    "real-use:paths": "node scripts/real-use-paths.mjs",
     "verify": "npm run test && npm run lint && npm run build",
     "smoke:build": "npm run build && node scripts/smoke-build.mjs",
     "smoke:package:mac": "node scripts/smoke-package-mac.mjs",

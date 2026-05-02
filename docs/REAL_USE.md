@@ -15,6 +15,12 @@ unsigned/ad-hoc local app path.
 
 ## Launch The Packaged App
 
+Check where real local data will live:
+
+```bash
+npm run real-use:paths
+```
+
 For real use, launch the packaged app without a temporary
 `TASKPLANE_USER_DATA_DIR`:
 
@@ -60,12 +66,23 @@ notarization should remain manual and explicit.
 Taskplane stores non-sensitive app config in the app user-data directory as
 `config.json`.
 
+Task data is stored in `taskplane.db` in the same user-data directory. If SQLite
+has open WAL files, keep `taskplane.db-wal` and `taskplane.db-shm` with the
+database when backing it up.
+
 Sensitive credentials such as AI API keys are stored in the OS keychain via
 Settings. They should not be committed to the repository or written into docs.
 
 Local `.env` values can override runtime config during development and
 validation. For daily use, prefer Settings for non-sensitive config and the OS
 keychain for API keys.
+
+For a simple local backup, close Taskplane first, then run the backup command
+printed by:
+
+```bash
+npm run real-use:paths
+```
 
 ## When To Stop And Fix
 
