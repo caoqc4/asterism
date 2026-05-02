@@ -159,6 +159,14 @@ function getDecisionTaskFollowUpNextStep(
   decision: DecisionRecord,
   sandboxPatchPromotionApplyEnabled: boolean,
 ): string {
+  const sourceLabel = decision.sourceLabel ?? '等待中的 agent 工具调用';
+
+  if (decision.status === 'approved' && decision.sourceType === 'agent_checkpoint' && sourceLabel === 'workspace.staged_patch') {
+    return sandboxPatchPromotionApplyEnabled
+      ? '已批准 sandbox staged patch promotion；先回到 Run 证据确认写入、已应用或 blocked 状态，再回任务验证完成标准。'
+      : '已批准 sandbox staged patch promotion；当前配置不会自动写入工作区文件，先回到 Run 证据确认 no-write，再决定是否重跑或显式 apply validation。';
+  }
+
   if (decision.status === 'approved') {
     return `已获批准，继续推进：${decision.title}`;
   }
@@ -172,7 +180,6 @@ function getDecisionTaskFollowUpNextStep(
   }
 
   if (decision.sourceType === 'agent_checkpoint') {
-    const sourceLabel = decision.sourceLabel ?? '等待中的 agent 工具调用';
     const isBrowserControlledCheckpoint = BROWSER_CONTROLLED_CHECKPOINT_LABELS.has(sourceLabel);
 
     if (isBrowserControlledCheckpoint) {

@@ -630,6 +630,11 @@ The project is past initial architecture assembly. Current work should favor pro
 - Pending `workspace.staged_patch` Decisions now include a review-only
   `查看 Run 证据` action that resolves the checkpoint id back to the owning Run
   and opens the staged patch review surface before any approval action.
+- Approved `workspace.staged_patch` Decisions now return to Task detail with
+  mode-specific follow-up guidance: default approvals tell the operator to
+  confirm no-write Run evidence before rerun/apply validation, while
+  apply-enabled approvals tell the operator to verify written / already-applied
+  / blocked Run evidence before checking completion criteria.
 - Patch promotion apply semantics are now documented in
   `AGENT_EXECUTION_PATCH_PROMOTION_APPLY_DECISION.md`. The document keeps the
   current approval path review-only, defines the pre-apply gates required before

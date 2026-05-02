@@ -6424,6 +6424,93 @@ describe('App UI flow', () => {
     ).toBeTruthy();
   });
 
+  it('returns approved staged patch Decisions to task with write-mode guidance', async () => {
+    const user = userEvent.setup();
+    const approvedStagedPatchDecision: DecisionRecord = {
+      id: 'decision_approved_staged_patch',
+      taskId: riskTask.id,
+      title: 'Apply Code Agent preview',
+      status: 'approved',
+      sourceType: 'agent_checkpoint',
+      sourceId: 'run_checkpoint_staged_patch',
+      sourceLabel: 'workspace.staged_patch',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:10:00.000Z',
+    };
+    const approvedStagedPatchApi: ElectronApi = {
+      ...mockApi,
+      listDecisions: vi.fn(async () => [approvedStagedPatchDecision]),
+    };
+
+    window.api = approvedStagedPatchApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /decisions/i }));
+    await screen.findByRole('heading', { name: 'Apply Code Agent preview' });
+
+    expect(
+      screen.getByText('来源：Agent checkpoint（workspace.staged_patch）。该 promotion 已批准并记录，但当前版本不会自动写入工作区文件。'),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '回到任务推进' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '已批准 sandbox staged patch promotion；当前配置不会自动写入工作区文件，先回到 Run 证据确认 no-write，再决定是否重跑或显式 apply validation。',
+    );
+  });
+
+  it('returns approved apply-enabled staged patch Decisions to task with write verification guidance', async () => {
+    const user = userEvent.setup();
+    const approvedStagedPatchDecision: DecisionRecord = {
+      id: 'decision_approved_staged_patch_apply',
+      taskId: riskTask.id,
+      title: 'Apply Code Agent preview',
+      status: 'approved',
+      sourceType: 'agent_checkpoint',
+      sourceId: 'run_checkpoint_staged_patch',
+      sourceLabel: 'workspace.staged_patch',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:10:00.000Z',
+    };
+    const approvedStagedPatchApi: ElectronApi = {
+      ...mockApi,
+      getAiConfigStatus: vi.fn().mockResolvedValue({
+        ...aiStatus,
+        featureFlags: {
+          ...aiStatus.featureFlags,
+          enableSandboxPatchPromotionApply: true,
+        },
+      }),
+      listDecisions: vi.fn(async () => [approvedStagedPatchDecision]),
+    };
+
+    window.api = approvedStagedPatchApi;
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /decisions/i }));
+    await screen.findByRole('heading', { name: 'Apply Code Agent preview' });
+
+    expect(
+      screen.getByText('来源：Agent checkpoint（workspace.staged_patch）。该 promotion 已批准；若 apply service 通过预检，Run 证据会记录已写入或已应用状态。'),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '回到任务推进' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    });
+
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '已批准 sandbox staged patch promotion；先回到 Run 证据确认写入、已应用或 blocked 状态，再回任务验证完成标准。',
+    );
+  });
+
   it('shows related task timeline context on the decisions page', async () => {
     const user = userEvent.setup();
 
