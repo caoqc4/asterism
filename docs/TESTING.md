@@ -607,6 +607,11 @@ Current verification:
   extending the same packaged recovery smoke to interrupted-or-stale running
   sessions. The packaged Runs recovery card now covers `interrupted_or_stale`,
   the next-safe-move copy, and Task detail new-run prefill from stale evidence.
+- on 2026-05-02, `npm run smoke:run-decision-recovery:mac` passed locally after
+  extending the packaged recovery smoke to Code Agent staged-patch recovery. It
+  now verifies an applied `workspace.staged_patch` Run returns to Task
+  completion criteria instead of the rerun form, and that an approved promotion
+  Decision remains visible from the Task Code Agent Review card.
 - on 2026-05-02, `accept:packaged-recovery:mac` was added as a local targeted
   packaged recovery acceptance command. It runs the Code Agent UI and
   Run/Decision recovery smokes against an existing packaged app, while keeping
