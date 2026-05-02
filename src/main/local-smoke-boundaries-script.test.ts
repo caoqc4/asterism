@@ -59,9 +59,17 @@ function runScript(scriptPath: string, envContents = '') {
 function readPackageScripts() {
   const packageJson = JSON.parse(
     fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'),
-  ) as { scripts?: Record<string, string> };
+  ) as { engines?: Record<string, string>; scripts?: Record<string, string> };
 
   return packageJson.scripts ?? {};
+}
+
+function readPackageEngines() {
+  const packageJson = JSON.parse(
+    fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'),
+  ) as { engines?: Record<string, string> };
+
+  return packageJson.engines ?? {};
 }
 
 function collectFiles(rootPath: string, extensions: Set<string>) {
@@ -97,6 +105,17 @@ function collectRepoMarkdownFiles() {
 }
 
 describe('local smoke script default boundaries', () => {
+  it('keeps the nvm default inside the package Node engine policy', () => {
+    const engines = readPackageEngines();
+    const nvmVersion = fs.readFileSync(path.join(process.cwd(), '.nvmrc'), 'utf8').trim();
+    const [major = '', minor = ''] = nvmVersion.split('.');
+
+    expect(nvmVersion).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(engines.node).toBe('^20.19.0 || >=22.12.0');
+    expect(Number(major)).toBe(22);
+    expect(Number(minor)).toBeGreaterThanOrEqual(12);
+  });
+
   it('keeps package script references pointing to existing package scripts', () => {
     const scripts = readPackageScripts();
     const missingScripts = Object.entries(scripts).flatMap(([scriptName, command]) => {
