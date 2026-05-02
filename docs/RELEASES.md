@@ -65,6 +65,18 @@ confirms it creates `config.json`, initializes the core `taskplane.db` SQLite
 schema, and clears `ELECTRON_RUN_AS_NODE`. The combined release smoke also runs
 the packaged Timeline UI smoke against the freshly built app.
 
+Run the targeted packaged recovery bundle after `dist:mac:dir` when validating
+the local-first recovery/config surfaces without expanding the release smoke
+gate:
+
+```bash
+npm run accept:packaged-recovery:mac
+```
+
+That bundle runs Home recovery, Code Agent UI, Run/Decision recovery including
+staged-patch and Browser Evidence review, and Settings config persistence
+against the existing packaged app.
+
 ### Check signed/notarized release readiness
 
 ```bash
@@ -125,9 +137,10 @@ As of the current alpha path:
   package smoke, isolated runtime smoke, and packaged Timeline UI smoke
 - expanded `npm run smoke:release:mac` passed locally on 2026-05-02 with the
   packaged Timeline UI smoke included in the combined gate
-- `npm run smoke:release:mac` passed on 2026-05-01 before the packaged Timeline
-  UI smoke was folded into the combined release gate
-- `npm run accept:release:mac-preflight` passed on 2026-05-01 without signing,
+- `npm run accept:packaged-recovery:mac` passed locally on 2026-05-02 with Home
+  recovery, Code Agent UI, Run/Decision recovery, Browser Evidence review, and
+  Settings config smokes grouped outside the unsigned release gate
+- `npm run accept:release:mac-preflight` passed on 2026-05-02 without signing,
   notarizing, uploading, or calling Apple services. Current readiness is
   `not-ready`: macOS host, `notarytool`, app id, product name, and mac targets
   are present; Developer ID signing source and Apple notarization credentials
