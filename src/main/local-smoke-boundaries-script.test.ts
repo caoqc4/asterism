@@ -73,8 +73,9 @@ describe('local smoke script default boundaries', () => {
     ) as { scripts?: Record<string, string> };
 
     expect(packageJson.scripts?.['accept:packaged-recovery:mac']).toBe(
-      'npm run smoke:code-agent-ui:mac && npm run smoke:run-decision-recovery:mac',
+      'npm run smoke:home-recovery:mac && npm run smoke:code-agent-ui:mac && npm run smoke:run-decision-recovery:mac',
     );
+    expect(packageJson.scripts?.['smoke:release:mac']).not.toContain('smoke:home-recovery:mac');
     expect(packageJson.scripts?.['smoke:release:mac']).not.toContain('smoke:code-agent-ui:mac');
     expect(packageJson.scripts?.['smoke:release:mac']).not.toContain('smoke:run-decision-recovery:mac');
   });

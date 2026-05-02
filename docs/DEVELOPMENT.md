@@ -79,6 +79,7 @@ Use this when package/build entrypoints change. It runs the production build and
 ```bash
 npm run smoke:package:mac
 npm run smoke:runtime:mac
+npm run smoke:home-recovery:mac
 npm run smoke:code-agent-ui:mac
 npm run smoke:run-decision-recovery:mac
 npm run accept:packaged-recovery:mac
@@ -96,9 +97,11 @@ isolated user data and confirms startup creates `config.json` and
 clears `ELECTRON_RUN_AS_NODE` so shell tooling environment does not accidentally
 force the packaged app into Node mode. Use `npm run smoke:release:mac` when you
 want to build the unpacked macOS app and run package, runtime, and packaged
-Timeline UI smoke checks in one command. Use `npm run smoke:code-agent-ui:mac`
-as a targeted packaged UI check for visible Code Agent preflight boundaries
-without probing Docker or calling a provider. Use
+Timeline UI smoke checks in one command. Use `npm run smoke:home-recovery:mac`
+as a targeted packaged UI check for Home key-source and resume-preview recovery.
+Use `npm run smoke:code-agent-ui:mac` as a targeted packaged UI check for
+visible Code Agent preflight boundaries without probing Docker or calling a
+provider. Use
 `npm run smoke:run-decision-recovery:mac` as a targeted packaged recovery check
 for terminal agent-session evidence and checkpoint Decision-to-Run routing. Use
 `npm run accept:packaged-recovery:mac` to run both targeted packaged recovery

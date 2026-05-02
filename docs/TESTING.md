@@ -600,6 +600,12 @@ Current verification:
 - on 2026-05-02, `npm run accept:packaged-recovery:mac` passed locally,
   confirming the targeted packaged Code Agent UI and Run/Decision recovery
   smokes run cleanly as one command.
+- on 2026-05-02, `npm run smoke:home-recovery:mac` passed locally after adding
+  a lightweight packaged Home recovery smoke. It verifies Key Source Materials
+  and Resume Preview context actions both route back to Task detail with the
+  intended Source Context focused.
+- on 2026-05-02, `npm run accept:packaged-recovery:mac` passed locally again
+  after adding the Home recovery smoke to the targeted packaged recovery bundle.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.
@@ -662,6 +668,7 @@ Current verification:
 - `npm run smoke:timeline-ui:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged Task detail Timeline grouping/expansion coverage, Timeline follow-up/object-action navigation across task/risk/blocker/dependency context, dependency return/resolution paths, and related Timeline grouping on Runs and Decisions
 - `npm run smoke:code-agent-ui:mac` after producing `release/mac-arm64/Taskplane.app`, for targeted packaged Code Agent preflight visibility without Docker or provider execution
 - `npm run smoke:run-decision-recovery:mac` after producing `release/mac-arm64/Taskplane.app`, for targeted packaged Run/Decision recovery surfaces around terminal agent sessions and checkpoint Decisions
+- `npm run smoke:home-recovery:mac` after producing `release/mac-arm64/Taskplane.app`, for targeted packaged Home key-source and resume-preview recovery routing
 - `npm run accept:packaged-recovery:mac` after producing `release/mac-arm64/Taskplane.app`, for the targeted packaged recovery bundle outside the release smoke gate
 - `npm run smoke:release:mac` for the combined unsigned macOS build/package/runtime/Timeline UI path
 - `npm run accept:agent-local` for the local agent stack, including the non-live
@@ -736,8 +743,7 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. evaluate whether `accept:packaged-recovery:mac` should also include a
-   lightweight packaged Home recovery smoke, or keep Home covered by Timeline UI
-   and renderer tests
+1. decide whether the next alpha hardening pass should target signed/notarized
+   release readiness or continue expanding packaged UI recovery smoke coverage
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

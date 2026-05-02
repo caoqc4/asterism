@@ -266,6 +266,11 @@ The project is past initial architecture assembly. Current work should favor pro
 - `npm run accept:packaged-recovery:mac` now groups the targeted packaged Code
   Agent UI and Run/Decision recovery smokes outside the unsigned release gate,
   and passed locally on 2026-05-02.
+- `npm run smoke:home-recovery:mac` now adds a lightweight packaged Home
+  recovery check for Key Source Materials and Resume Preview context actions
+  routing back to Task detail with the intended Source Context focused. It is
+  included in `accept:packaged-recovery:mac`, which passed again locally after
+  the Home recovery smoke was added.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.
