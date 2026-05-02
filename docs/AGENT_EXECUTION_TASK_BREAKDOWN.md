@@ -894,6 +894,7 @@ npm run accept:workspace-patch
 npm run accept:domain-agent-tools
 npm run accept:provider-native-tools
 npm run accept:agent-local
+npm run accept:packaged-recovery:mac # after npm run dist:mac:dir
 npm run manual:browser-controlled-fixture
 npm run verify
 ```
@@ -901,6 +902,9 @@ npm run verify
 `npm run accept:agent-local` is the preferred non-live agent gate. Its Code
 Agent UI segment keeps main-process config and IPC checks in separate Vitest
 calls, then runs the renderer capability and App coverage together; its
-sandbox-coding segment runs 40 Vitest files / 260 tests in ten sequential
-batches, including Code Agent model-context boundary coverage, so the combined
-gate exits cleanly after preserving focused coverage.
+sandbox-coding segment runs focused sequential batches for the sandbox producer,
+Code Agent model-context boundary, patch-promotion, and run-orchestration
+contracts. After a packaged macOS app exists, `npm run
+accept:packaged-recovery:mac` is the targeted packaged UI gate for Home
+recovery, Code Agent preflight, Run/Decision recovery, stale/cancelled session
+new-run preparation, and Settings config hydration.
