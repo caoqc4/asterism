@@ -195,6 +195,27 @@ describe('local smoke script default boundaries', () => {
     expect(brokenLinks).toEqual([]);
   });
 
+  it('keeps GitHub workflow local file references pointing to existing files', () => {
+    const workflowFiles = collectFiles(path.join(process.cwd(), '.github', 'workflows'), new Set(['.yml', '.yaml']));
+    const missingFiles: string[] = [];
+
+    for (const workflowFile of workflowFiles) {
+      const relativePath = path.relative(process.cwd(), workflowFile);
+      const content = fs.readFileSync(workflowFile, 'utf8');
+      const matches = content.matchAll(/node-version-file:\s*([^\s#]+)/g);
+
+      for (const match of matches) {
+        const referencedFile = match[1].replace(/^['"]|['"]$/g, '');
+
+        if (!fs.existsSync(path.join(process.cwd(), referencedFile))) {
+          missingFiles.push(`${relativePath} -> ${referencedFile}`);
+        }
+      }
+    }
+
+    expect(missingFiles).toEqual([]);
+  });
+
   it('keeps the macOS release smoke wired through package, runtime, and Timeline UI checks', () => {
     const scripts = readPackageScripts();
 
