@@ -4,6 +4,7 @@ This is the short handoff note for the current local alpha path. Use the longer
 logs only when you need audit detail:
 
 - [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md)
+- [ALPHA_WALKTHROUGH.md](ALPHA_WALKTHROUGH.md)
 - [ALPHA_MANUAL_RUN_LOG.md](ALPHA_MANUAL_RUN_LOG.md)
 - [TESTING.md](TESTING.md)
 - [RELEASES.md](RELEASES.md)
@@ -99,7 +100,7 @@ and non-live by default.
 ## Next Best Work
 
 1. Run a human alpha walkthrough on the current unsigned app and capture only
-   concrete product friction.
+   concrete product friction with [ALPHA_WALKTHROUGH.md](ALPHA_WALKTHROUGH.md).
 2. Fix small alpha friction without broadening the domain model.
 3. Keep release docs and handoff notes concise as evidence changes.
 4. Start signed/notarized release work only after Developer ID signing and Apple
