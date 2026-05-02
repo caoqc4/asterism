@@ -25,4 +25,5 @@ Please use extra care around:
 - local config loading
 - scheduler-triggered execution
 - AI provider credentials
+- release signing and notarization credentials
 - shell or filesystem operations
