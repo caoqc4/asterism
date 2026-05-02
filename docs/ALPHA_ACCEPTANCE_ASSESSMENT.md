@@ -729,8 +729,10 @@ Finish the remaining alpha work in this order:
 1. Keep actual signed/notarized packaging out of scope until the next release-readiness pass explicitly targets signing and notarization execution.
 2. Keep live provider-native validation opt-in because it spends configured
    provider credit, even though the local preflight is ready.
-3. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
-4. Treat the current execution-layer v2 and Code Agent context-gate slices as
+3. Use `npm run accept:alpha-local` as the repeatable non-live local handoff
+   gate when validating the current alpha path end to end.
+4. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
+5. Treat the current execution-layer v2 and Code Agent context-gate slices as
    locally accepted for the alpha path; next execution work should be
    orchestration/UI design, acceptance documentation cleanup, release-readiness
    hardening, or explicitly deferred design work, not new model-visible power.

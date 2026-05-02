@@ -2397,7 +2397,9 @@ dedicated signed/notarized release pass.
 
 1. Keep actual signed/notarized release execution deferred until Developer ID
    signing and Apple notarization credentials are available.
-2. Keep using `npm run verify` after ordinary changes and `npm run smoke:build` for build/package changes.
+2. Keep using `npm run verify` after ordinary changes and `npm run smoke:build`
+   for build/package changes. Use `npm run accept:alpha-local` for a complete
+   non-live local alpha handoff check.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
 5. Treat the execution-layer Slice 0, hidden tool-scaffold baseline,
