@@ -551,6 +551,10 @@ Current verification:
   src/main/local-smoke-boundaries-script.test.ts` passed after adding a static
   guard that checks explicit package-script file references such as targeted
   Vitest files, local `.mjs` scripts, and config files still exist.
+- on 2026-05-02, `npm test -- --run
+  src/main/local-smoke-boundaries-script.test.ts` passed after extending the
+  documented-command guard to treat `npm test` shorthand as a reference to the
+  package `test` script.
 - on 2026-05-01, `npm test -- --run src/renderer/App.test.tsx -t "groups a
   seeded task detail timeline"` passed locally after adding a seeded Task
   detail Timeline UI fixture that covers date, object-family, and

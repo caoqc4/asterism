@@ -136,10 +136,12 @@ describe('local smoke script default boundaries', () => {
     for (const filePath of files) {
       const relativePath = path.relative(process.cwd(), filePath);
       const content = fs.readFileSync(filePath, 'utf8');
-      const matches = content.matchAll(/npm run ([A-Za-z0-9:_-]+)/g);
+      const scriptNames = [
+        ...[...content.matchAll(/npm run ([A-Za-z0-9:_-]+)/g)].map((match) => match[1]),
+        ...[...content.matchAll(/npm test\b/g)].map(() => 'test'),
+      ];
 
-      for (const match of matches) {
-        const scriptName = match[1];
+      for (const scriptName of scriptNames) {
         const references = documentedScriptReferences.get(scriptName) ?? new Set<string>();
         references.add(relativePath);
         documentedScriptReferences.set(scriptName, references);
