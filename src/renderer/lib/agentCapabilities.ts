@@ -585,7 +585,9 @@ export function formatCodeAgentReviewRecoverySummary(
   decision: Pick<DecisionRecord, 'id' | 'status' | 'title'> | null,
 ): string {
   if (!run && decision) {
-    return '已有待处理的 Code Agent staged patch promotion Decision；先复核 Run 证据、staged patch 和 promotion Decision。';
+    return decision.status === 'pending'
+      ? '已有待处理的 Code Agent staged patch promotion Decision；先复核 Run 证据、staged patch 和 promotion Decision。'
+      : `最近一次 Code Agent staged patch promotion Decision 已${formatDecisionStatusForCodeAgentReview(decision.status)}；先回到 Run 证据确认 workspace 状态，再决定是否验证完成标准或重跑。`;
   }
 
   if (!run) {
@@ -593,9 +595,13 @@ export function formatCodeAgentReviewRecoverySummary(
   }
 
   if (run.status === 'completed') {
-    return decision
-      ? '最近一次 Code Agent sandbox preview 已完成，先复核 Run 证据、staged patch 和 promotion Decision。'
-      : '最近一次 Code Agent sandbox preview 已完成，但当前任务没有待处理 promotion Decision；请先从 Run 证据判断是否需要重跑。';
+    if (decision) {
+      return decision.status === 'pending'
+        ? '最近一次 Code Agent sandbox preview 已完成，先复核 Run 证据、staged patch 和 promotion Decision。'
+        : `最近一次 Code Agent sandbox preview 已完成，promotion Decision 已${formatDecisionStatusForCodeAgentReview(decision.status)}；先打开 Run 证据确认 workspace 写入/no-write 状态，再核对完成标准或准备重跑。`;
+    }
+
+    return '最近一次 Code Agent sandbox preview 已完成，但当前任务没有 promotion Decision 记录；请先从 Run 证据判断是否需要重跑。';
   }
 
   if (run.status === 'failed') {
@@ -607,6 +613,17 @@ export function formatCodeAgentReviewRecoverySummary(
   }
 
   return '最近一次 Code Agent sandbox preview 记录显示 running；先查看 Run 证据和最新步骤，再判断是否等待、重跑或新建 run。';
+}
+
+function formatDecisionStatusForCodeAgentReview(status: DecisionRecord['status']): string {
+  const labels: Record<DecisionRecord['status'], string> = {
+    approved: '批准',
+    cancelled: '取消',
+    deferred: '延后',
+    pending: '待处理',
+  };
+
+  return labels[status] ?? status;
 }
 
 export function formatCodeAgentRerunIntent(params: {

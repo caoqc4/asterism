@@ -894,7 +894,7 @@ The project is past initial architecture assembly. Current work should favor pro
   before applying sandbox-specific overrides.
 - Task detail / Action Setup now projects the latest task-linked Code Agent
   sandbox preview as a `Code Agent Review` recovery card. It links back to the
-  latest Run evidence and, when present, opens the pending promotion Decision,
+  latest Run evidence and, when present, opens the latest promotion Decision,
   keeping the task object as the home base for the staged-patch review loop.
 - The first real Task detail model-backed Code Agent UI pass is validated on a
   disposable workspace. With `Use model producer` selected and one explicit
@@ -903,11 +903,11 @@ The project is past initial architecture assembly. Current work should favor pro
   one staged file through the staged-file contract, passed `lint` and `test` in
   the local-container sandbox, created a pending promotion Decision, and kept
   workspace mutation Decision-gated.
-- Task detail Code Agent recovery now treats the pending
-  `workspace.staged_patch` promotion Decision as the durable recovery anchor.
-  The recovery card can appear even when the lightweight run list lacks Code
-  Agent output text, and `查看 Code Agent Run` prefers checkpoint-to-Run lookup
-  before falling back to a directly identified Code Agent run.
+- Task detail Code Agent recovery now treats pending or resolved
+  `workspace.staged_patch` promotion Decisions as durable recovery anchors. The
+  recovery card can appear even when the lightweight run list lacks Code Agent
+  output text, and approved/deferred/cancelled promotion Decisions remain
+  visible instead of collapsing into "no pending Decision" wording.
 - The same recovery card now includes a `准备重跑 Code Agent` affordance that
   returns the operator to the Code Agent input surface and pre-fills a bounded
   rerun intent without starting a run or spending provider credit. That prefill

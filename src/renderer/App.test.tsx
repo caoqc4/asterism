@@ -3189,6 +3189,44 @@ describe('App UI flow', () => {
     })).toBeTruthy();
   });
 
+  it('keeps resolved code-agent promotion decisions visible on the task detail', async () => {
+    const user = userEvent.setup();
+    const approvedCodeAgentDecision: DecisionRecord = {
+      id: 'decision_code_agent_approved',
+      taskId: riskTask.id,
+      title: 'Apply Code Agent preview',
+      status: 'approved',
+      sourceType: 'agent_checkpoint',
+      sourceId: 'run_checkpoint_code_agent_review',
+      sourceLabel: 'workspace.staged_patch',
+      createdAt: '2026-01-03T00:00:01.000Z',
+      updatedAt: '2026-01-03T00:10:01.000Z',
+    };
+    const codeAgentApi: ElectronApi = {
+      ...mockApi,
+      listDecisions: vi.fn(async () => [approvedCodeAgentDecision]),
+      listRuns: vi.fn(async () => []),
+    };
+    window.api = codeAgentApi;
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /tasks/i }));
+    const [riskTaskCard] = await screen.findAllByRole('button', { name: /High risk task/i });
+    await user.click(riskTaskCard!);
+
+    expect(await screen.findByText('Code Agent Review')).toBeTruthy();
+    expect(screen.getByText(
+      '最近一次 Code Agent staged patch promotion Decision 已批准；先回到 Run 证据确认 workspace 状态，再决定是否验证完成标准或重跑。',
+    )).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '打开 promotion Decision' }));
+
+    expect(await screen.findByRole('heading', {
+      name: 'Apply Code Agent preview',
+    })).toBeTruthy();
+  });
+
   it('blocks saving a high-risk task without a risk note', async () => {
     const user = userEvent.setup();
 

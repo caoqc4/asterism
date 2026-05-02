@@ -996,7 +996,8 @@ Work:
   Run records
 - show a compact `Code Agent Review` card in Task detail / Action Setup
 - link directly back to the latest Code Agent Run evidence
-- link directly to the pending patch-promotion Decision when one exists
+- link directly to the latest patch-promotion Decision when one exists,
+  including resolved approved/deferred/cancelled Decisions
 - explain the failed-check/no-Decision case as a rerun/review decision, not as
   an automatic workspace action
 
@@ -1006,7 +1007,8 @@ Acceptance:
 - no approval, apply, Docker, provider, or workspace mutation is triggered from
   the card
 - ordinary tasks without Code Agent preview runs do not show the card
-- renderer coverage verifies the task-to-promotion-Decision jump
+- renderer coverage verifies the task-to-promotion-Decision jump for both
+  pending and resolved promotion Decisions
 
 ## Deferred Tasks
 

@@ -767,7 +767,19 @@ describe('agent capability formatting', () => {
       output: 'Patch source ready',
       status: 'completed',
     }, null)).toBe(
-      '最近一次 Code Agent sandbox preview 已完成，但当前任务没有待处理 promotion Decision；请先从 Run 证据判断是否需要重跑。',
+      '最近一次 Code Agent sandbox preview 已完成，但当前任务没有 promotion Decision 记录；请先从 Run 证据判断是否需要重跑。',
+    );
+
+    expect(formatCodeAgentReviewRecoverySummary({
+      failureReason: null,
+      output: 'Patch source ready',
+      status: 'completed',
+    }, {
+      id: 'decision_approved',
+      status: 'approved',
+      title: 'Apply Code Agent preview',
+    })).toBe(
+      '最近一次 Code Agent sandbox preview 已完成，promotion Decision 已批准；先打开 Run 证据确认 workspace 写入/no-write 状态，再核对完成标准或准备重跑。',
     );
 
     expect(formatCodeAgentReviewRecoverySummary({

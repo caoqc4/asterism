@@ -458,6 +458,8 @@ Covered today:
   inspect-first recovery
 - Runs page staged patch review now also covers the applied-promotion return
   path back to Task completion criteria instead of the Code Agent rerun form
+- Task detail Code Agent Review now also covers resolved promotion Decisions,
+  keeping an approved Decision visible as a recovery/navigation anchor
 - shared paused-run resume eligibility now covers unique valid resume
   checkpoint selection, supported payload checks, payload-bound session checks,
   and session-scoped replay checkpoint filtering for both backend and Runs UI

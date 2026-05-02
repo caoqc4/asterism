@@ -2140,7 +2140,7 @@ export function TasksPage({
     : null;
   const latestCodeAgentPromotionDecision = detail
     ? [...taskDecisions]
-        .filter((decision) => decision.status === 'pending' && isCodeAgentPromotionDecision(decision))
+        .filter(isCodeAgentPromotionDecision)
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null
     : null;
   const latestCodeAgentRun = detail
