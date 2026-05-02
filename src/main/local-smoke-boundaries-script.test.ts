@@ -64,7 +64,60 @@ function readPackageScripts() {
   return packageJson.scripts ?? {};
 }
 
+function collectFiles(rootPath: string, extensions: Set<string>) {
+  if (!fs.existsSync(rootPath)) {
+    return [];
+  }
+
+  const stat = fs.statSync(rootPath);
+
+  if (stat.isFile()) {
+    return extensions.has(path.extname(rootPath)) ? [rootPath] : [];
+  }
+
+  return fs.readdirSync(rootPath, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = path.join(rootPath, entry.name);
+
+    if (entry.isDirectory()) {
+      return collectFiles(entryPath, extensions);
+    }
+
+    return extensions.has(path.extname(entry.name)) ? [entryPath] : [];
+  });
+}
+
 describe('local smoke script default boundaries', () => {
+  it('keeps documented npm scripts present in package.json', () => {
+    const scripts = readPackageScripts();
+    const documentedScriptReferences = new Map<string, Set<string>>();
+    const files = [
+      ...collectFiles(path.join(process.cwd(), '.github'), new Set(['.md', '.yml', '.yaml'])),
+      ...collectFiles(path.join(process.cwd(), 'docs'), new Set(['.md'])),
+      path.join(process.cwd(), 'CONTRIBUTING.md'),
+      path.join(process.cwd(), 'README.md'),
+      path.join(process.cwd(), 'SECURITY.md'),
+    ];
+
+    for (const filePath of files) {
+      const relativePath = path.relative(process.cwd(), filePath);
+      const content = fs.readFileSync(filePath, 'utf8');
+      const matches = content.matchAll(/npm run ([A-Za-z0-9:_-]+)/g);
+
+      for (const match of matches) {
+        const scriptName = match[1];
+        const references = documentedScriptReferences.get(scriptName) ?? new Set<string>();
+        references.add(relativePath);
+        documentedScriptReferences.set(scriptName, references);
+      }
+    }
+
+    const missingScripts = [...documentedScriptReferences.entries()]
+      .filter(([scriptName]) => !scripts[scriptName])
+      .map(([scriptName, references]) => `${scriptName} (${[...references].sort().join(', ')})`);
+
+    expect(missingScripts).toEqual([]);
+  });
+
   it('keeps the macOS release smoke wired through package, runtime, and Timeline UI checks', () => {
     const scripts = readPackageScripts();
 
