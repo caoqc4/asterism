@@ -34,7 +34,9 @@ Use this file when running the manual alpha path. Keep entries short and actiona
   `npm run accept:release:mac-preflight` /
   `npm run accept:sandbox-coding:model-producer-preflight` /
   `npm run accept:alpha-local`, plus focused reruns of the alpha handoff
-  constituents on pushed `main`
+  constituents on pushed `main`, and a direct packaged alpha test with
+  `npm run smoke:release:mac && npm run accept:packaged-recovery:mac &&
+  npm run accept:release:mac-preflight`
 
 ## Result Summary
 

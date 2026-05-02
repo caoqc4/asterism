@@ -572,6 +572,13 @@ Current verification:
   `accept:packaged-recovery:mac`, and `accept:release:mac-preflight`. A single
   combined `accept:alpha-local` attempt was interrupted after Vitest stopped
   producing output; the same focused commands passed when rerun.
+- on 2026-05-02, `npm run smoke:release:mac &&
+  npm run accept:packaged-recovery:mac &&
+  npm run accept:release:mac-preflight` passed locally as a direct packaged
+  alpha test. It rebuilt the unsigned/ad-hoc macOS app, passed package/runtime
+  / Timeline UI smoke, passed Home recovery / Code Agent UI / Run-Decision
+  recovery / Settings config packaged smokes, and kept release preflight
+  read-only with the expected `status=not-ready` signing/notarization result.
 - on 2026-05-01, `npm test -- --run src/renderer/App.test.tsx -t "groups a
   seeded task detail timeline"` passed locally after adding a seeded Task
   detail Timeline UI fixture that covers date, object-family, and
