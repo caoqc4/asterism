@@ -612,6 +612,10 @@ Current verification:
   now verifies an applied `workspace.staged_patch` Run returns to Task
   completion criteria instead of the rerun form, and that an approved promotion
   Decision remains visible from the Task Code Agent Review card.
+- on 2026-05-02, `npm run accept:packaged-recovery:mac` passed locally again
+  after the staged-patch recovery smoke expansion, confirming Home recovery,
+  Code Agent UI, Run/Decision recovery, and Settings config still pass together
+  against the regenerated macOS app.
 - on 2026-05-02, `accept:packaged-recovery:mac` was added as a local targeted
   packaged recovery acceptance command. It runs the Code Agent UI and
   Run/Decision recovery smokes against an existing packaged app, while keeping
