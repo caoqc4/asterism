@@ -579,6 +579,9 @@ Current verification:
   / Timeline UI smoke, passed Home recovery / Code Agent UI / Run-Decision
   recovery / Settings config packaged smokes, and kept release preflight
   read-only with the expected `status=not-ready` signing/notarization result.
+- on 2026-05-02, `npm run verify` passed again on latest pushed `main` with 128
+  test files / 951 tests, followed by type-checking and production renderer/main
+  builds.
 - on 2026-05-01, `npm test -- --run src/renderer/App.test.tsx -t "groups a
   seeded task detail timeline"` passed locally after adding a seeded Task
   detail Timeline UI fixture that covers date, object-family, and
