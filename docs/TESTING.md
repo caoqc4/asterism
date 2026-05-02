@@ -586,6 +586,10 @@ Current verification:
   `main`: `verify`, local agent acceptance, model-producer preflight
   `status=skip`, unsigned release smoke, packaged recovery, and read-only
   release preflight all completed successfully.
+- on 2026-05-02, `npm test -- --run
+  src/main/local-smoke-boundaries-script.test.ts` passed with 13 tests after
+  adding a static guard for the read-only `real-use:paths` helper, including
+  temporary `TASKPLANE_USER_DATA_DIR` warning coverage.
 - on 2026-05-01, `npm test -- --run src/renderer/App.test.tsx -t "groups a
   seeded task detail timeline"` passed locally after adding a seeded Task
   detail Timeline UI fixture that covers date, object-family, and

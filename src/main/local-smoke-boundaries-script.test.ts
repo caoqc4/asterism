@@ -35,7 +35,7 @@ function sanitizedEnv(envFilePath: string, overrides: NodeJS.ProcessEnv = {}) {
   };
 }
 
-function runScript(scriptPath: string, envContents = '') {
+function runScript(scriptPath: string, envContents = '', overrides: NodeJS.ProcessEnv = {}) {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-local-smoke-boundary-test-'));
   const envFilePath = path.join(tempRoot, '.env');
   fs.writeFileSync(envFilePath, envContents);
@@ -44,7 +44,7 @@ function runScript(scriptPath: string, envContents = '') {
     const result = spawnSync(process.execPath, [scriptPath], {
       cwd: process.cwd(),
       encoding: 'utf8',
-      env: sanitizedEnv(envFilePath),
+      env: sanitizedEnv(envFilePath, overrides),
     });
 
     return {
@@ -241,6 +241,33 @@ describe('local smoke script default boundaries', () => {
     expect(scripts['smoke:release:mac']).toBe(
       'npm run dist:mac:dir && npm run smoke:package:mac && npm run smoke:runtime:mac && npm run smoke:timeline-ui:mac',
     );
+  });
+
+  it('keeps the real-use path helper read-only and explicit about temporary overrides', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-real-use-path-test-'));
+    const userDataPath = path.join(tempRoot, 'real-use-data');
+
+    try {
+      const defaultResult = runScript('scripts/real-use-paths.mjs');
+      const overrideResult = runScript('scripts/real-use-paths.mjs', '', {
+        TASKPLANE_USER_DATA_DIR: userDataPath,
+      });
+
+      expect(defaultResult.status).toBe(0);
+      expect(defaultResult.output).toContain('Taskplane real-use paths');
+      expect(defaultResult.output).toContain('userDataOverride=<none>');
+      expect(defaultResult.output).toContain('configPath=');
+      expect(defaultResult.output).toContain('databasePath=');
+      expect(defaultResult.output).toContain('Suggested macOS backup command while Taskplane is closed:');
+      expect(defaultResult.output).toContain('API keys live in the OS keychain, not in config.json.');
+
+      expect(overrideResult.status).toBe(0);
+      expect(overrideResult.output).toContain(`userDataOverride=${userDataPath}`);
+      expect(overrideResult.output).toContain('Warning: TASKPLANE_USER_DATA_DIR is set.');
+      expect(fs.existsSync(userDataPath)).toBe(false);
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it('keeps targeted packaged recovery acceptance outside the release gate', () => {
