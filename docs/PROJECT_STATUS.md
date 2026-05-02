@@ -127,6 +127,10 @@ The project is past initial architecture assembly. Current work should favor pro
 - Code Agent rerun intent formatting is now shared between Task detail and Runs
   staged-patch review, preserving bounded prefilled rerun prompts without
   starting a run or spending provider credit.
+- Task-side Code Agent rerun preparation now preserves the best available
+  recovery anchor: recent run status/failure/output when a Code Agent run is
+  identifiable, or the promotion checkpoint id when the lightweight run list
+  only exposes the pending `workspace.staged_patch` Decision.
 - Paused agent-run continuation now fails closed when a run has multiple valid
   open resume checkpoints, avoiding ambiguous recovery target selection before
   any local tool is executed or checkpoint is resolved.
@@ -901,7 +905,9 @@ The project is past initial architecture assembly. Current work should favor pro
   before falling back to a directly identified Code Agent run.
 - The same recovery card now includes a `准备重跑 Code Agent` affordance that
   returns the operator to the Code Agent input surface and pre-fills a bounded
-  rerun intent without starting a run or spending provider credit.
+  rerun intent without starting a run or spending provider credit. That prefill
+  now carries either recent run evidence or the promotion checkpoint id, so a
+  task-side rerun does not lose its review anchor.
 - Runs / Staged Patch Review now breaks Code Agent evidence into a compact
   checklist for source evidence, targeted checks, promotion Decision, and
   workspace mutation state, so review can happen from persisted records without

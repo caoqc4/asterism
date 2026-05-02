@@ -795,19 +795,30 @@ describe('agent capability formatting', () => {
 
   it('formats Code Agent rerun intent for task and run recovery surfaces', () => {
     expect(formatCodeAgentRerunIntent({
+      checkpointId: 'checkpoint_1',
       decisionTitle: 'Review Code Agent preview for High risk task',
       taskTitle: 'High risk task',
     })).toBe(
-      'Re-run the Code Agent staged patch review for High risk task. Review prior promotion Decision: Review Code Agent preview for High risk task.',
+      'Re-run the Code Agent staged patch review for High risk task. Review promotion checkpoint: checkpoint_1. Review prior promotion Decision: Review Code Agent preview for High risk task.',
     );
 
     expect(formatCodeAgentRerunIntent({
       decisionTitle: '确认提升 sandbox patch',
       files: ['src/notes.md'],
       runId: 'run_sandbox_producer',
+      runStatus: 'completed',
       workspaceStatus: 'workspace unchanged until Decision approval',
     })).toBe(
-      'Re-run the Code Agent staged patch review for run run_sandbox_producer. Review affected files: src/notes.md. Compare against promotion Decision: 确认提升 sandbox patch. Prior workspace status: workspace unchanged until Decision approval.',
+      'Re-run the Code Agent staged patch review for run run_sandbox_producer. Previous run status: completed. Review affected files: src/notes.md. Compare against promotion Decision: 确认提升 sandbox patch. Prior workspace status: workspace unchanged until Decision approval.',
+    );
+
+    expect(formatCodeAgentRerunIntent({
+      decisionTitle: '确认提升 sandbox patch',
+      runFailureReason: 'lint failed',
+      runId: 'run_sandbox_failed',
+      runStatus: 'failed',
+    })).toBe(
+      'Re-run the Code Agent staged patch review for run run_sandbox_failed. Previous run status: failed / evidence=lint failed. Compare against promotion Decision: 确认提升 sandbox patch.',
     );
   });
 

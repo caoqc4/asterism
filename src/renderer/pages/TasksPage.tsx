@@ -2173,7 +2173,14 @@ export function TasksPage({
 
     if (!codeAgentPatchIntent.trim()) {
       setCodeAgentPatchIntent(formatCodeAgentRerunIntent({
+        checkpointId: latestCodeAgentPromotionDecision?.sourceType === 'agent_checkpoint'
+          ? latestCodeAgentPromotionDecision.sourceId
+          : null,
         decisionTitle: latestCodeAgentPromotionDecision?.title ?? null,
+        runFailureReason: latestCodeAgentRun?.failureReason ?? null,
+        runId: latestCodeAgentRun?.id ?? null,
+        runOutput: latestCodeAgentRun?.output ?? null,
+        runStatus: latestCodeAgentRun?.status ?? null,
         taskTitle: detail?.title ?? null,
       }));
     }

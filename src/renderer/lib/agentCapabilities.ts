@@ -610,21 +610,34 @@ export function formatCodeAgentReviewRecoverySummary(
 }
 
 export function formatCodeAgentRerunIntent(params: {
+  checkpointId?: string | null;
   decisionTitle?: string | null;
   files?: string[];
+  runFailureReason?: string | null;
   runId?: string | null;
+  runOutput?: string | null;
+  runStatus?: string | null;
   taskTitle?: string | null;
   workspaceStatus?: string | null;
 }): string {
   if (!params.runId) {
     return [
       `Re-run the Code Agent staged patch review for ${params.taskTitle?.trim() || 'this task'}.`,
+      params.checkpointId ? `Review promotion checkpoint: ${params.checkpointId}.` : null,
       params.decisionTitle ? `Review prior promotion Decision: ${params.decisionTitle}.` : null,
     ].filter(Boolean).join(' ');
   }
 
   return [
     `Re-run the Code Agent staged patch review for run ${params.runId}.`,
+    params.runStatus
+      ? `Previous run status: ${[
+        params.runStatus,
+        params.runFailureReason || params.runOutput
+          ? `evidence=${params.runFailureReason || params.runOutput}`
+          : null,
+      ].filter(Boolean).join(' / ')}.`
+      : null,
     params.files?.length ? `Review affected files: ${params.files.join(', ')}.` : null,
     params.decisionTitle ? `Compare against promotion Decision: ${params.decisionTitle}.` : null,
     params.workspaceStatus ? `Prior workspace status: ${params.workspaceStatus}.` : null,

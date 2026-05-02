@@ -3179,7 +3179,7 @@ describe('App UI flow', () => {
     await user.click(riskTaskCardAfterRun!);
     await user.click(screen.getByRole('button', { name: '准备重跑 Code Agent' }));
     expect((screen.getByLabelText('Patch intent') as HTMLTextAreaElement).value).toBe(
-      'Re-run the Code Agent staged patch review for High risk task. Review prior promotion Decision: Review Code Agent preview for High risk task.',
+      'Re-run the Code Agent staged patch review for High risk task. Review promotion checkpoint: run_checkpoint_code_agent_review. Review prior promotion Decision: Review Code Agent preview for High risk task.',
     );
 
     await user.click(screen.getByRole('button', { name: '打开 promotion Decision' }));
