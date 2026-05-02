@@ -606,6 +606,11 @@ Current verification:
   intended Source Context focused.
 - on 2026-05-02, `npm run accept:packaged-recovery:mac` passed locally again
   after adding the Home recovery smoke to the targeted packaged recovery bundle.
+- on 2026-05-02, `npm run accept:release:mac-preflight` passed locally as a
+  read-only signed/notarized release readiness check. It ran the regression
+  wrapper and reported `status=not-ready` because Developer ID signing source
+  and Apple notarization credentials are not configured; no signing,
+  notarization, upload, or Apple network request was performed.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.
@@ -743,7 +748,8 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. decide whether the next alpha hardening pass should target signed/notarized
-   release readiness or continue expanding packaged UI recovery smoke coverage
+1. keep signed/notarized release execution deferred until Developer ID signing
+   source and Apple notarization credentials are available; meanwhile continue
+   only high-risk packaged UI smoke additions
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.
