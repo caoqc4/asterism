@@ -97,6 +97,19 @@ function collectRepoMarkdownFiles() {
 }
 
 describe('local smoke script default boundaries', () => {
+  it('keeps package script references pointing to existing package scripts', () => {
+    const scripts = readPackageScripts();
+    const missingScripts = Object.entries(scripts).flatMap(([scriptName, command]) => {
+      const referencedScripts = [...command.matchAll(/npm run ([A-Za-z0-9:_-]+)/g)].map((match) => match[1]);
+
+      return referencedScripts
+        .filter((referencedScript) => !scripts[referencedScript])
+        .map((referencedScript) => `${scriptName} -> ${referencedScript}`);
+    });
+
+    expect(missingScripts).toEqual([]);
+  });
+
   it('keeps documented npm scripts present in package.json', () => {
     const scripts = readPackageScripts();
     const documentedScriptReferences = new Map<string, Set<string>>();
