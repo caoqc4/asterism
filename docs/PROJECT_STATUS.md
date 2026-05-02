@@ -919,7 +919,8 @@ The project is past initial architecture assembly. Current work should favor pro
   parsing one long lifecycle sentence.
 - From that same Runs review, `回到任务准备重跑` now returns to the Task Code
   Agent input surface with a bounded rerun intent pre-filled from the persisted
-  run id, changed files, promotion Decision, and workspace mutation state.
+  run id, run status/evidence, changed files, promotion Decision, and workspace
+  mutation state.
 - The Task and Runs rerun affordances now use the same tested Code Agent rerun
   intent formatter, so recovery wording can evolve once for both surfaces.
 - Runs / Staged Patch Review now also shows a `Next review move` derived from

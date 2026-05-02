@@ -5037,7 +5037,7 @@ describe('App UI flow', () => {
     await user.click(screen.getByRole('button', { name: '回到任务准备重跑' }));
     expect(await screen.findByRole('heading', { name: 'High risk task' })).toBeTruthy();
     expect((screen.getByLabelText('Patch intent') as HTMLTextAreaElement).value).toBe(
-      'Re-run the Code Agent staged patch review for run run_sandbox_producer. Review affected files: src/notes.md. Compare against promotion Decision: 确认提升 sandbox patch. Prior workspace status: workspace unchanged until Decision approval.',
+      'Re-run the Code Agent staged patch review for run run_sandbox_producer. Previous run status: completed / evidence=Sandbox producer preview ready. Review affected files: src/notes.md. Compare against promotion Decision: 确认提升 sandbox patch. Prior workspace status: workspace unchanged until Decision approval.',
     );
 
     await user.click(screen.getByRole('button', { name: /runs/i }));

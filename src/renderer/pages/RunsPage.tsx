@@ -1105,7 +1105,10 @@ export function RunsPage({
                           prefillCodeAgentPatchIntent: formatCodeAgentRerunIntent({
                             decisionTitle: stagedPatchReview.decisionTitle,
                             files: stagedPatchReview.files,
+                            runFailureReason: detail.failureReason,
                             runId: detail.id,
+                            runOutput: detail.output,
+                            runStatus: detail.status,
                             workspaceStatus: stagedPatchReview.workspaceStatus,
                           }),
                         })
