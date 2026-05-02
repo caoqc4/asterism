@@ -563,6 +563,9 @@ Current verification:
   src/main/local-smoke-boundaries-script.test.ts` passed after adding a static
   guard that keeps the `.nvmrc` default inside the `package.json` Node engine
   policy.
+- on 2026-05-02, `npm run verify` passed locally with 128 test files / 951
+  tests after the local smoke boundary guard additions, followed by type-checking
+  and production renderer/main builds.
 - on 2026-05-01, `npm test -- --run src/renderer/App.test.tsx -t "groups a
   seeded task detail timeline"` passed locally after adding a seeded Task
   detail Timeline UI fixture that covers date, object-family, and
