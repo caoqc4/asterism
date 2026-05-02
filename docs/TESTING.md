@@ -531,6 +531,12 @@ Current verification:
   model-producer preflight skipped without provider/Docker/workspace mutation,
   and release preflight reported the expected read-only `status=not-ready`
   because signing/notarization inputs are not configured.
+- on 2026-05-02, `npm test -- --run
+  src/main/local-smoke-boundaries-script.test.ts` passed after adding a
+  lightweight regression that keeps `accept:alpha-local` explicit and non-live,
+  excluding provider-native live validation, Code Agent model-producer live or
+  preview smoke, sandbox Docker preflight, and direct signed artifact release
+  commands from the default alpha gate.
 - on 2026-05-01, `npm test -- --run src/renderer/App.test.tsx -t "groups a
   seeded task detail timeline"` passed locally after adding a seeded Task
   detail Timeline UI fixture that covers date, object-family, and

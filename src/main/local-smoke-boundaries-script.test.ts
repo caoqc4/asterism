@@ -56,29 +56,48 @@ function runScript(scriptPath: string, envContents = '') {
   }
 }
 
+function readPackageScripts() {
+  const packageJson = JSON.parse(
+    fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'),
+  ) as { scripts?: Record<string, string> };
+
+  return packageJson.scripts ?? {};
+}
+
 describe('local smoke script default boundaries', () => {
   it('keeps the macOS release smoke wired through package, runtime, and Timeline UI checks', () => {
-    const packageJson = JSON.parse(
-      fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'),
-    ) as { scripts?: Record<string, string> };
+    const scripts = readPackageScripts();
 
-    expect(packageJson.scripts?.['smoke:release:mac']).toBe(
+    expect(scripts['smoke:release:mac']).toBe(
       'npm run dist:mac:dir && npm run smoke:package:mac && npm run smoke:runtime:mac && npm run smoke:timeline-ui:mac',
     );
   });
 
   it('keeps targeted packaged recovery acceptance outside the release gate', () => {
-    const packageJson = JSON.parse(
-      fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'),
-    ) as { scripts?: Record<string, string> };
+    const scripts = readPackageScripts();
 
-    expect(packageJson.scripts?.['accept:packaged-recovery:mac']).toBe(
+    expect(scripts['accept:packaged-recovery:mac']).toBe(
       'npm run smoke:home-recovery:mac && npm run smoke:code-agent-ui:mac && npm run smoke:run-decision-recovery:mac && npm run smoke:settings-config:mac',
     );
-    expect(packageJson.scripts?.['smoke:release:mac']).not.toContain('smoke:home-recovery:mac');
-    expect(packageJson.scripts?.['smoke:release:mac']).not.toContain('smoke:code-agent-ui:mac');
-    expect(packageJson.scripts?.['smoke:release:mac']).not.toContain('smoke:run-decision-recovery:mac');
-    expect(packageJson.scripts?.['smoke:release:mac']).not.toContain('smoke:settings-config:mac');
+    expect(scripts['smoke:release:mac']).not.toContain('smoke:home-recovery:mac');
+    expect(scripts['smoke:release:mac']).not.toContain('smoke:code-agent-ui:mac');
+    expect(scripts['smoke:release:mac']).not.toContain('smoke:run-decision-recovery:mac');
+    expect(scripts['smoke:release:mac']).not.toContain('smoke:settings-config:mac');
+  });
+
+  it('keeps alpha local acceptance non-live and explicit', () => {
+    const scripts = readPackageScripts();
+
+    expect(scripts['accept:alpha-local']).toBe(
+      'npm run verify && npm run accept:agent-local && npm run accept:sandbox-coding:model-producer-preflight && npm run smoke:release:mac && npm run accept:packaged-recovery:mac && npm run accept:release:mac-preflight',
+    );
+
+    expect(scripts['accept:alpha-local']).not.toContain('accept:provider-native-live');
+    expect(scripts['accept:alpha-local']).not.toContain('model-producer-live');
+    expect(scripts['accept:alpha-local']).not.toContain('model-producer-preview-smoke');
+    expect(scripts['accept:alpha-local']).not.toContain('producer-preview-smoke');
+    expect(scripts['accept:alpha-local']).not.toContain('backend-preflight');
+    expect(scripts['accept:alpha-local']).not.toContain('dist:mac ');
   });
 
   it('keeps sandbox producer preview smoke skipped without Docker or AI by default', () => {
