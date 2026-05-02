@@ -7,6 +7,10 @@ For recording a concrete manual pass, use [ALPHA_MANUAL_RUN_LOG.md](ALPHA_MANUAL
 
 ## Verification Gate
 
+- Run `npm run accept:alpha-local` for the full non-live local alpha gate. It
+  combines `verify`, the local agent acceptance gate, Code Agent model-producer
+  preflight, unsigned macOS release smoke, packaged recovery acceptance, and
+  release preflight without calling AI providers or Apple services by default.
 - Run `npm run verify`.
 - Run `npm run accept:agent-local` for the non-live agent execution-layer
   acceptance slice. This does not call external providers.
@@ -273,6 +277,8 @@ npm run accept:sandbox-coding:patch-promotion-apply-smoke
 
 ## Release Readiness
 
+- Run `npm run accept:alpha-local` when you need the complete local
+  alpha-readiness gate in one command.
 - Build locally with `npm run build`.
 - Run `npm run smoke:build` before packaging.
 - Produce `npm run dist:mac:dir` only after the manual alpha path is coherent.

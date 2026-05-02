@@ -126,7 +126,15 @@ npm run verify
 
 This runs tests, type-checking, and the production build in sequence.
 
-### 7. Run the build smoke check
+### 7. Run the full local alpha gate
+
+```bash
+npm run accept:alpha-local
+```
+
+This runs the non-live local alpha-readiness gate: verification, local agent acceptance, Code Agent model-producer preflight, unsigned macOS release smoke, packaged recovery acceptance, and release preflight.
+
+### 8. Run the build smoke check
 
 ```bash
 npm run smoke:build
@@ -163,6 +171,14 @@ npm run accept:release:mac-preflight
 ```
 
 This checks release readiness without signing, notarizing, uploading artifacts, or contacting Apple services.
+
+### Run the full local alpha gate
+
+```bash
+npm run accept:alpha-local
+```
+
+This is the complete non-live local readiness gate before alpha handoff.
 
 See [docs/RELEASES.md](docs/RELEASES.md) for the current release scope.
 

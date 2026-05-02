@@ -117,6 +117,13 @@ Covered today:
   gate. The agent-runtime portion keeps the same coverage split across
   sequential Vitest calls so the local gate exits cleanly after lifecycle and
   recorder-heavy tests.
+- `Alpha local acceptance`
+  `npm run accept:alpha-local` is the full non-live local readiness gate for
+  alpha handoff. It runs `verify`, local agent acceptance, Code Agent
+  model-producer preflight, unsigned macOS release smoke, packaged recovery
+  acceptance, and release preflight. By default it does not call AI providers,
+  start Docker checks, sign/notarize artifacts, upload builds, or contact Apple
+  services.
 - `Sandbox coding acceptance`
   `npm run accept:sandbox-coding` exercises the disabled-by-default sandbox
   provider contracts, temp/local-container sandbox boundaries, targeted-check
@@ -501,7 +508,8 @@ These tests focus on high-value control-plane interactions rather than broad pag
 
 Still missing or intentionally light:
 
-- end-to-end packaged-app tests
+- exhaustive end-to-end packaged-app coverage beyond the targeted recovery,
+  Settings, runtime, and Timeline UI smokes
 - richer timeline grouping beyond priority-level sections is covered at the
   renderer/helper level; packaged visual regressions remain intentionally light
 
@@ -516,6 +524,13 @@ npm run verify
 Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
+- on 2026-05-02, `npm run accept:alpha-local` was added and passed locally end
+  to end. It ran `verify` with 128 test files / 944 tests, local agent
+  acceptance, Code Agent model-producer preflight, unsigned macOS release
+  smoke, packaged recovery acceptance, and release preflight. The default
+  model-producer preflight skipped without provider/Docker/workspace mutation,
+  and release preflight reported the expected read-only `status=not-ready`
+  because signing/notarization inputs are not configured.
 - on 2026-05-01, `npm test -- --run src/renderer/App.test.tsx -t "groups a
   seeded task detail timeline"` passed locally after adding a seeded Task
   detail Timeline UI fixture that covers date, object-family, and

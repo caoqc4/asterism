@@ -286,6 +286,13 @@ The project is past initial architecture assembly. Current work should favor pro
   packaged runtime SQLite initialization passed, and packaged Timeline UI
   navigation coverage passed. Signing remained ad-hoc and notarization was
   skipped as expected.
+- `npm run accept:alpha-local` now provides the full non-live local alpha gate:
+  `verify`, local agent acceptance, Code Agent model-producer preflight,
+  unsigned macOS release smoke, packaged recovery acceptance, and release
+  preflight. It passed locally on 2026-05-02 with `verify` covering 128 test
+  files / 944 tests; model-producer preflight stayed in default `status=skip`,
+  and release preflight reported the expected read-only `status=not-ready`
+  because signing/notarization inputs are still missing.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.

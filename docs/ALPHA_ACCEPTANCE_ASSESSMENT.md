@@ -4,7 +4,7 @@ This assessment maps the alpha checklist to the current automated coverage and t
 
 ## Summary
 
-Current status: functionally alpha-accepted for the local unsigned build path, with signed/notarized release work still deferred. A focused manual alpha pass plus targeted packaged smokes now cover the core local path through task creation, task state transition, decision creation, no-key run failure, successful AI-backed run, packaged read-only workspace agent execution, Home recovery, Settings config save, completion closeout, Code Agent staged-patch recovery, Browser Evidence review, and unsigned macOS directory packaging.
+Current status: functionally alpha-accepted for the local unsigned build path, with signed/notarized release work still deferred. A focused manual alpha pass plus targeted packaged smokes now cover the core local path through task creation, task state transition, decision creation, no-key run failure, successful AI-backed run, packaged read-only workspace agent execution, Home recovery, Settings config save, completion closeout, Code Agent staged-patch recovery, Browser Evidence review, and unsigned macOS directory packaging. The repeatable local handoff command is now `npm run accept:alpha-local`, which passed end to end on 2026-05-02.
 
 Strong automated coverage already exists for the main control-plane semantics,
 repository persistence, IPC routing, config/keychain behavior, scheduler
@@ -18,6 +18,13 @@ signed/notarized release work until the unsigned package path stays stable.
 Status: mostly covered.
 
 - `npm run verify` has passed locally with tests, type-checking, and production build.
+- on 2026-05-02, `npm run accept:alpha-local` passed locally end to end. It
+  ran `verify` with 128 test files / 944 tests, local agent acceptance, Code
+  Agent model-producer preflight, unsigned macOS release smoke, packaged
+  recovery acceptance, and release preflight. The model-producer preflight
+  stayed in default `status=skip`, and release preflight stayed read-only with
+  the expected `status=not-ready` because signing/notarization credentials are
+  still missing.
 - on 2026-05-02, `npm run smoke:release:mac` passed locally after the packaged
   recovery smoke expansion: the unsigned/ad-hoc macOS app rebuilt, package
   smoke passed, packaged runtime SQLite initialization passed, and packaged
@@ -679,6 +686,12 @@ Automated/local coverage:
 - `npm run smoke:settings-config:mac` passed locally on 2026-05-02 as a targeted packaged Settings config smoke; it saves non-sensitive provider/model/base URL/workspace-root config into isolated `config.json`, avoids API key writes/provider calls/Docker probes, and relaunches to verify Settings hydrates from disk
 - `npm run accept:packaged-recovery:mac` passed locally on 2026-05-02 with Home recovery, Code Agent UI, Run/Decision recovery, Browser Evidence review, and Settings config smokes grouped outside the unsigned release gate
 - `npm run smoke:release:mac` passed locally again on 2026-05-02 after the packaged recovery expansion: unsigned/ad-hoc app packaging, package validation, packaged runtime SQLite initialization, and packaged Timeline UI navigation all passed
+- `npm run accept:alpha-local` passed locally on 2026-05-02 as the complete
+  non-live local alpha-readiness gate: `verify` passed 128 test files / 944
+  tests, local agent acceptance passed, Code Agent model-producer preflight
+  stayed in default `status=skip`, unsigned release smoke passed, packaged
+  recovery acceptance passed, and release preflight reported the expected
+  read-only `status=not-ready`
 - `npm run accept:sandbox-coding:model-producer-preflight` passed locally on 2026-05-02 in default `status=skip` mode without provider request, Docker probe, or workspace mutation
 - `npm run accept:release:mac-preflight` passed locally on 2026-05-02 as a read-only signed/notarized release readiness check while reporting `status=not-ready` because Developer ID signing source and Apple notarization credentials are not configured
 - on 2026-04-27, `npm run smoke:release:mac` passed locally after the Code
