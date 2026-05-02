@@ -25,6 +25,9 @@ Status: mostly covered.
   stayed in default `status=skip`, and release preflight stayed read-only with
   the expected `status=not-ready` because signing/notarization credentials are
   still missing.
+- on 2026-05-02, `npm run verify` passed again on pushed `main` after the local
+  smoke boundary guards, with 128 test files / 951 tests plus type-checking and
+  production renderer/main builds.
 - on 2026-05-02, `npm run smoke:release:mac` passed locally after the packaged
   recovery smoke expansion: the unsigned/ad-hoc macOS app rebuilt, package
   smoke passed, packaged runtime SQLite initialization passed, and packaged
@@ -692,6 +695,8 @@ Automated/local coverage:
   stayed in default `status=skip`, unsigned release smoke passed, packaged
   recovery acceptance passed, and release preflight reported the expected
   read-only `status=not-ready`
+- a later `npm run verify` on pushed `main` passed locally on 2026-05-02 with
+  128 test files / 951 tests after the local smoke boundary guards
 - `npm run accept:sandbox-coding:model-producer-preflight` passed locally on 2026-05-02 in default `status=skip` mode without provider request, Docker probe, or workspace mutation
 - `npm run accept:release:mac-preflight` passed locally on 2026-05-02 as a read-only signed/notarized release readiness check while reporting `status=not-ready` because Developer ID signing source and Apple notarization credentials are not configured
 - on 2026-04-27, `npm run smoke:release:mac` passed locally after the Code

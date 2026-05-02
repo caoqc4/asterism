@@ -137,7 +137,9 @@ Artifacts are written to:
 
 As of the current alpha path:
 
-- `npm run verify` passes locally
+- `npm run verify` passed locally on 2026-05-02 with 128 test files / 951 tests
+  after the local smoke boundary guards, followed by type-checking and
+  production renderer/main builds
 - `npm run smoke:build` passed on 2026-05-01, covering renderer/main build
   outputs and electron-builder file mapping
 - `npm run dist:mac:dir` passes locally
