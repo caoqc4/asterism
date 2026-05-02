@@ -1046,6 +1046,11 @@ provider request, runs the model-backed loop through the sandbox producer
 preview service on a disposable workspace, uses an injected check runner, and
 does not start Docker or mutate the selected workspace.
 
+The no-credit preflight was re-run on 2026-05-02 in the default local env and
+reported `status=skip` because sandbox/model-producer flags and workspace root
+were not enabled. It did not call a provider, probe Docker, or mutate the
+workspace.
+
 Local validation passed with `fal-openrouter` / `google/gemini-2.5-flash`: the
 smoke reached `preview_ready`, staged
 `.taskplane/code-agent-model-producer-preview-smoke.md`, did not start Docker,

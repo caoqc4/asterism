@@ -658,6 +658,11 @@ Current verification:
   validation, initialized the packaged runtime SQLite path, and passed packaged
   Timeline UI navigation coverage; electron-builder again used ad-hoc signing
   and skipped notarization because notarization options were unavailable.
+- on 2026-05-02, `npm run accept:sandbox-coding:model-producer-preflight`
+  passed locally in default skip mode after the release smoke pass. It reported
+  `status=skip` because sandbox/model-producer env flags and workspace root are
+  not enabled, and performed no provider request, Docker probe, or workspace
+  mutation.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.
