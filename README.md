@@ -148,6 +148,22 @@ npm run dist:mac:dir
 npm run dist:mac
 ```
 
+### Run the local macOS release smoke
+
+```bash
+npm run smoke:release:mac
+```
+
+This verifies the local unsigned macOS app package, packaged runtime, and packaged Timeline UI path.
+
+### Run the macOS release preflight
+
+```bash
+npm run accept:release:mac-preflight
+```
+
+This checks release readiness without signing, notarizing, uploading artifacts, or contacting Apple services.
+
 See [docs/RELEASES.md](docs/RELEASES.md) for the current release scope.
 
 ## Configuration
@@ -213,8 +229,10 @@ What exists today:
 - service tests and SQLite repository integration coverage
 - IPC handler coverage for critical event-emitting entrypoints
 - renderer interaction coverage for key control-plane flows
-- local macOS packaging pipeline
-- local `verify` quality-gate coverage plus a build smoke check for packaged entrypoints; GitHub Actions coverage exists but may be unavailable during quota-limited periods
+- local macOS packaging pipeline, including unsigned release smoke coverage for packaged runtime and Timeline UI
+- packaged recovery acceptance coverage for Home recovery, Code Agent UI, Run/Decision recovery, Browser Evidence review, and Settings config
+- Code Agent staged-patch recovery semantics, including applied-patch routing back to completion criteria instead of rerun setup
+- local `verify` quality-gate coverage plus build, packaged-recovery, release-smoke, and release-preflight checks; GitHub Actions coverage exists but may be unavailable during quota-limited periods
 - Dependabot coverage for npm dependencies and GitHub Actions updates
 
 What is still in progress:
