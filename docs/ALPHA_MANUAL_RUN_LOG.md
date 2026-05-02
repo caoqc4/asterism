@@ -6,10 +6,10 @@ Use this file when running the manual alpha path. Keep entries short and actiona
 
 - First full manual pass: 2026-04-25
 - Latest update: 2026-05-02
-- Build / commit: pushed `main` through `b00a597`, including the 2026-05-02
-  unsigned release smoke, targeted packaged recovery acceptance, release
-  preflight updates, local alpha gate wiring, local smoke boundary guards, and
-  latest verification record
+- Build / commit: pushed `main` through the 2026-05-02 alpha handoff baseline,
+  including unsigned release smoke, targeted packaged recovery acceptance,
+  release preflight updates, local alpha gate wiring, local smoke boundary
+  guards, and latest verification records
 - Tester: Codex
 - Local verification run: targeted main/preload tests, `npm run lint`,
   `npm run build`, `npm run verify`, `npm run accept:agent-local`,
@@ -17,7 +17,10 @@ Use this file when running the manual alpha path. Keep entries short and actiona
   `npm run verify` with 122 test files / 848 tests, and 2026-05-02
   `npm run accept:alpha-local` with `verify` passing 128 test files / 944
   tests plus release/recovery targeted checks, and 2026-05-02 `npm run verify`
-  passing 128 test files / 951 tests after the local smoke boundary guards
+  passing 128 test files / 951 tests after the local smoke boundary guards.
+  The latest alpha handoff constituents passed when rerun as focused commands
+  after one combined `accept:alpha-local` attempt stopped producing Vitest
+  output and was interrupted.
 - Smoke check run: `npm run dev` manual launch, isolated
   `TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-20260424-fresh npm run dev`,
   `npm run smoke:build`, `npm run smoke:package:mac`,
@@ -30,7 +33,8 @@ Use this file when running the manual alpha path. Keep entries short and actiona
   `npm run smoke:release:mac` /
   `npm run accept:release:mac-preflight` /
   `npm run accept:sandbox-coding:model-producer-preflight` /
-  `npm run accept:alpha-local`
+  `npm run accept:alpha-local`, plus focused reruns of the alpha handoff
+  constituents on pushed `main`
 
 ## Result Summary
 

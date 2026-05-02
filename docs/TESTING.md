@@ -566,6 +566,12 @@ Current verification:
 - on 2026-05-02, `npm run verify` passed locally with 128 test files / 951
   tests after the local smoke boundary guard additions, followed by type-checking
   and production renderer/main builds.
+- on 2026-05-02, the latest alpha handoff constituents passed on pushed `main`:
+  `npm test`, `accept:agent-local`, `accept:sandbox-coding:code-agent-ui`,
+  `accept:sandbox-coding:model-producer-preflight`, `smoke:release:mac`,
+  `accept:packaged-recovery:mac`, and `accept:release:mac-preflight`. A single
+  combined `accept:alpha-local` attempt was interrupted after Vitest stopped
+  producing output; the same focused commands passed when rerun.
 - on 2026-05-01, `npm test -- --run src/renderer/App.test.tsx -t "groups a
   seeded task detail timeline"` passed locally after adding a seeded Task
   detail Timeline UI fixture that covers date, object-family, and
