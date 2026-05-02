@@ -81,6 +81,7 @@ npm run smoke:package:mac
 npm run smoke:runtime:mac
 npm run smoke:code-agent-ui:mac
 npm run smoke:run-decision-recovery:mac
+npm run accept:packaged-recovery:mac
 npm run smoke:release:mac
 npm run release:mac:preflight
 npm run accept:release:mac-preflight
@@ -100,6 +101,8 @@ as a targeted packaged UI check for visible Code Agent preflight boundaries
 without probing Docker or calling a provider. Use
 `npm run smoke:run-decision-recovery:mac` as a targeted packaged recovery check
 for terminal agent-session evidence and checkpoint Decision-to-Run routing. Use
+`npm run accept:packaged-recovery:mac` to run both targeted packaged recovery
+smokes against an existing packaged app without expanding the release gate. Use
 `npm run release:mac:preflight` before a dedicated signed/notarized release pass;
 it only checks local prerequisites and does not sign, notarize, upload, or call
 Apple services. Use `npm run accept:release:mac-preflight` when you want the

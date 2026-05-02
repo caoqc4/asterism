@@ -67,6 +67,18 @@ describe('local smoke script default boundaries', () => {
     );
   });
 
+  it('keeps targeted packaged recovery acceptance outside the release gate', () => {
+    const packageJson = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'),
+    ) as { scripts?: Record<string, string> };
+
+    expect(packageJson.scripts?.['accept:packaged-recovery:mac']).toBe(
+      'npm run smoke:code-agent-ui:mac && npm run smoke:run-decision-recovery:mac',
+    );
+    expect(packageJson.scripts?.['smoke:release:mac']).not.toContain('smoke:code-agent-ui:mac');
+    expect(packageJson.scripts?.['smoke:release:mac']).not.toContain('smoke:run-decision-recovery:mac');
+  });
+
   it('keeps sandbox producer preview smoke skipped without Docker or AI by default', () => {
     const result = runScript('scripts/sandbox-coding-producer-preview-smoke.mjs');
 

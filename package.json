@@ -47,6 +47,7 @@
     "accept:provider-native-live": "node scripts/provider-native-live-validate.mjs",
     "accept:provider-native-live:run": "vitest run --config vitest.live.config.ts scripts/provider-native-run-live.test.ts",
     "accept:release:mac-preflight": "vitest run src/main/release-mac-preflight-script.test.ts && npm run release:mac:preflight",
+    "accept:packaged-recovery:mac": "npm run smoke:code-agent-ui:mac && npm run smoke:run-decision-recovery:mac",
     "verify": "npm run test && npm run lint && npm run build",
     "smoke:build": "npm run build && node scripts/smoke-build.mjs",
     "smoke:package:mac": "node scripts/smoke-package-mac.mjs",

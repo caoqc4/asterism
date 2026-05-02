@@ -263,6 +263,9 @@ The project is past initial architecture assembly. Current work should favor pro
   verifies Runs keeps completed agent sessions in inspect-evidence mode, the
   Decision page can route to checkpoint Run evidence, and both surfaces hand
   back to Task detail with the expected next-step drafts.
+- `npm run accept:packaged-recovery:mac` now groups the targeted packaged Code
+  Agent UI and Run/Decision recovery smokes outside the unsigned release gate,
+  and passed locally on 2026-05-02.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.
