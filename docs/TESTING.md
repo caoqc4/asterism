@@ -587,6 +587,12 @@ Current verification:
   create/apply/remove behavior, while alpha has packaged manual SQLite evidence
   for create/edit/archive. The next automated packaged smoke should target a
   higher-risk recovery boundary instead of duplicating those stable UI forms.
+- on 2026-05-02, `npm run smoke:run-decision-recovery:mac` passed locally after
+  adding a targeted packaged recovery smoke for Runs and Decisions. It seeds a
+  completed terminal agent session and a workspace patch checkpoint Decision,
+  verifies Runs keeps terminal sessions in inspect-evidence mode, verifies the
+  Decision page can open the checkpoint Run evidence, and verifies both recovery
+  surfaces hand back to Task detail with the expected next-step drafts.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.
@@ -648,6 +654,7 @@ Current verification:
 - `npm run smoke:runtime:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged startup and SQLite schema initialization
 - `npm run smoke:timeline-ui:mac` after producing `release/mac-arm64/Taskplane.app`, for isolated packaged Task detail Timeline grouping/expansion coverage, Timeline follow-up/object-action navigation across task/risk/blocker/dependency context, dependency return/resolution paths, and related Timeline grouping on Runs and Decisions
 - `npm run smoke:code-agent-ui:mac` after producing `release/mac-arm64/Taskplane.app`, for targeted packaged Code Agent preflight visibility without Docker or provider execution
+- `npm run smoke:run-decision-recovery:mac` after producing `release/mac-arm64/Taskplane.app`, for targeted packaged Run/Decision recovery surfaces around terminal agent sessions and checkpoint Decisions
 - `npm run smoke:release:mac` for the combined unsigned macOS build/package/runtime/Timeline UI path
 - `npm run accept:agent-local` for the local agent stack, including the non-live
   sandbox/code-agent domain boundary and the Code Agent preflight UI/config/IPC
@@ -698,6 +705,9 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
   Agent preflight visibility, workspace check availability, or model-producer
   manifest controls change; this targeted smoke does not probe Docker or call a
   provider
+- run `npm run smoke:run-decision-recovery:mac` after `npm run dist:mac:dir`
+  when Runs recovery safety, terminal agent-session evidence, checkpoint
+  Decision guidance, or Decision-to-Run evidence routing changes
 - or run `npm run smoke:release:mac` to cover the unsigned macOS package,
   runtime, and packaged Timeline UI paths in one command
 - run `npm run accept:provider-native-live:preflight` for no-credit
@@ -715,8 +725,7 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 
 Recommended next additions:
 
-1. identify the next higher-risk packaged recovery boundary outside Timeline
-   and Code Agent preflight, likely Run/Decision recovery after terminal or
-   checkpointed agent sessions
+1. decide whether the targeted packaged recovery smokes should be grouped into
+   a separate local acceptance script outside the release smoke gate
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.

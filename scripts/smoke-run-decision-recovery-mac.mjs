@@ -1,0 +1,345 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import process from 'node:process';
+import Database from 'better-sqlite3';
+import { _electron as electron } from 'playwright';
+
+const root = process.cwd();
+const executablePath = path.join(root, 'release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane');
+const userDataPath = fs.mkdtempSync(path.join(os.tmpdir(), 'taskplane-run-decision-recovery-smoke-'));
+const smokePath = path.join(userDataPath, 'run-decision-recovery-smoke.log');
+const dbPath = path.join(userDataPath, 'taskplane.db');
+const timeoutMs = 20_000;
+const pollMs = 250;
+
+function cleanup() {
+  fs.rmSync(userDataPath, { recursive: true, force: true });
+}
+
+function fail(message, error) {
+  console.error(message);
+
+  if (error) {
+    console.error(error);
+  }
+
+  cleanup();
+  process.exit(1);
+}
+
+async function waitFor(condition, description) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeoutMs) {
+    if (condition()) {
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, pollMs));
+  }
+
+  throw new Error(`Timed out waiting for ${description}.`);
+}
+
+function seedRunDecisionRecoveryFixture() {
+  const database = new Database(dbPath, {
+    fileMustExist: true,
+  });
+
+  try {
+    const taskId = 'task_packaged_run_decision_recovery';
+    const terminalRunId = 'run_packaged_terminal_agent';
+    const checkpointRunId = 'run_packaged_checkpoint_agent';
+    const checkpointId = 'checkpoint_packaged_workspace_patch';
+    const checkpointStepId = 'run_step_packaged_checkpoint';
+
+    database.transaction(() => {
+      database
+        .prepare(`
+          INSERT INTO tasks (
+            id, title, summary, state, next_step, waiting_reason,
+            risk_level, risk_note, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          taskId,
+          'Packaged Run Decision recovery fixture',
+          'Seeded task for packaged Run and Decision recovery smoke.',
+          'running',
+          'Review terminal run and checkpoint Decision recovery.',
+          null,
+          'none',
+          null,
+          '2026-05-02T09:00:00.000Z',
+          '2026-05-02T09:40:00.000Z',
+        );
+
+      const insertRun = database.prepare(`
+        INSERT INTO runs (
+          id, task_id, type, status, instructions, output, output_source,
+          failure_reason, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      insertRun.run(
+        terminalRunId,
+        taskId,
+        'agent',
+        'completed',
+        'Packaged terminal recovery smoke.',
+        'Packaged terminal agent final output.',
+        'ai',
+        null,
+        '2026-05-02T09:25:00.000Z',
+        '2026-05-02T09:35:00.000Z',
+      );
+
+      insertRun.run(
+        checkpointRunId,
+        taskId,
+        'agent',
+        'needs_confirmation',
+        'Packaged checkpoint recovery smoke.',
+        'Workspace patch checkpoint pending.',
+        'system',
+        null,
+        '2026-05-02T09:05:00.000Z',
+        '2026-05-02T09:10:00.000Z',
+      );
+
+      database
+        .prepare(`
+          INSERT INTO agent_sessions (
+            id, run_id, mode, status, capabilities, metadata, created_at,
+            updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'agent_session_packaged_terminal',
+          terminalRunId,
+          'agent',
+          'completed',
+          JSON.stringify({
+            fileContext: true,
+            longRunningSessions: true,
+            streaming: false,
+            structuredToolCalls: false,
+            taskMutationTools: false,
+            textOnlyPlanning: true,
+          }),
+          'executor=packaged_smoke\nloop=terminal_evidence',
+          '2026-05-02T09:25:00.000Z',
+          '2026-05-02T09:35:00.000Z',
+        );
+
+      database
+        .prepare(`
+          INSERT INTO run_steps (
+            id, run_id, step_index, kind, status, title, input, output, error,
+            created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'run_step_packaged_terminal',
+          terminalRunId,
+          7,
+          'final',
+          'completed',
+          '最终输出已生成',
+          null,
+          'Packaged terminal agent final output.',
+          null,
+          '2026-05-02T09:35:00.000Z',
+          '2026-05-02T09:35:00.000Z',
+        );
+
+      database
+        .prepare(`
+          INSERT INTO run_steps (
+            id, run_id, step_index, kind, status, title, input, output, error,
+            created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          checkpointStepId,
+          checkpointRunId,
+          1,
+          'checkpoint',
+          'pending',
+          'Workspace patch requires confirmation',
+          null,
+          `checkpoint=${checkpointId}`,
+          null,
+          '2026-05-02T09:10:00.000Z',
+          '2026-05-02T09:10:00.000Z',
+        );
+
+      database
+        .prepare(`
+          INSERT INTO run_checkpoints (
+            id, run_id, step_id, kind, status, payload, created_at, resolved_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          checkpointId,
+          checkpointRunId,
+          checkpointStepId,
+          'confirmation',
+          'open',
+          JSON.stringify({
+            version: 1,
+            kind: 'tool_permission',
+            tool: 'workspace.write_patch',
+            risk: 'local_write',
+            input: {
+              diffPreview: [
+                'Summary: Update packaged recovery notes',
+                'Files: src/recovery.md',
+                '*** Begin Patch',
+                '*** Update File: src/recovery.md',
+                '+Packaged checkpoint recovery smoke',
+                '*** End Patch',
+              ].join('\n'),
+              expectedFiles: ['src/recovery.md'],
+            },
+            decisionId: 'decision_packaged_workspace_patch',
+            decisionTitle: '确认本地写入：workspace.write_patch',
+          }),
+          '2026-05-02T09:10:00.000Z',
+          null,
+        );
+
+      database
+        .prepare(`
+          INSERT INTO decision_requests (
+            id, task_id, title, status, source_type, source_id,
+            source_label, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'decision_packaged_workspace_patch',
+          taskId,
+          '确认本地写入：workspace.write_patch',
+          'pending',
+          'agent_checkpoint',
+          checkpointId,
+          'workspace.write_patch',
+          '2026-05-02T09:11:00.000Z',
+          '2026-05-02T09:11:00.000Z',
+        );
+    })();
+  } finally {
+    database.close();
+  }
+}
+
+async function openTaskFromTaskList(page, title) {
+  await page.getByRole('button', { name: 'Tasks 任务列表、详情与状态流转' }).click();
+  await page
+    .locator('.task-list-item', { hasText: title })
+    .getByRole('button')
+    .click();
+}
+
+async function assertTerminalRunRecovery(page) {
+  await page.getByRole('button', { name: 'Runs 执行记录与结果查看' }).click();
+  await page
+    .locator('.panel', { hasText: 'Run Queue' })
+    .locator('.task-card', { hasText: 'completed' })
+    .click();
+  await page.getByRole('heading', { name: 'agent / completed' }).waitFor();
+
+  const recoverySafety = page.getByLabel('Run recovery safety');
+  await recoverySafety.getByText('Replay review：inspect completed evidence').waitFor();
+  await recoverySafety.getByText('Recovery intent：inspect evidence').waitFor();
+  await recoverySafety
+    .getByText('Recovery anchors：run=run_packaged_terminal_agent / session=agent_session_packaged_terminal / checkpoints=none / action=inspect_evidence')
+    .waitFor();
+  await page.getByText('Packaged terminal agent final output.').first().waitFor();
+
+  await page.getByRole('button', { name: '回到任务推进' }).click();
+  await page.getByRole('heading', { name: 'Packaged Run Decision recovery fixture' }).waitFor();
+
+  const nextStep = await page.getByLabel('Next Step').inputValue();
+  if (nextStep !== '审阅最近一次 agent run 的完成证据和输出；旧 session 已终止，不需要恢复或重放。') {
+    throw new Error(`Terminal run recovery filled the wrong next step: ${nextStep}`);
+  }
+}
+
+async function assertCheckpointDecisionRecovery(page) {
+  await page.getByRole('button', { name: 'Decisions 待拍板事项与快速动作' }).click();
+  await page.getByRole('heading', { name: '确认本地写入：workspace.write_patch' }).waitFor();
+  await page
+    .getByText('来源：Agent checkpoint（workspace.write_patch）。批准后会恢复等待中的工作区 patch 应用并写入受影响文件；延后或取消会终止本次 run，不会继续应用该 patch。')
+    .waitFor();
+
+  await page.getByRole('button', { name: '查看 Run 证据' }).click();
+  await page.getByRole('heading', { name: 'agent / needs_confirmation' }).waitFor();
+  await page.getByText('当前 run 正在等待 checkpoint / Decision 确认；先审阅下方 Checkpoints 和关联 Decision，批准后才会恢复执行。').waitFor();
+  await page.getByText('工具：workspace.write_patch').waitFor();
+  await page.getByText('文件：src/recovery.md').waitFor();
+
+  await page.getByRole('button', { name: 'Decisions 待拍板事项与快速动作' }).click();
+  await page.getByRole('heading', { name: '确认本地写入：workspace.write_patch' }).waitFor();
+  await page.getByRole('button', { name: '回到任务推进' }).click();
+  await page.getByRole('heading', { name: 'Packaged Run Decision recovery fixture' }).waitFor();
+
+  const nextStep = await page.getByLabel('Next Step').inputValue();
+  if (nextStep !== '先审查 workspace.write_patch checkpoint 的 diff 和受影响文件；批准后再回到任务确认 patch 是否已应用。') {
+    throw new Error(`Checkpoint Decision recovery filled the wrong next step: ${nextStep}`);
+  }
+}
+
+if (process.platform !== 'darwin') {
+  fail('macOS packaged Run/Decision recovery smoke requires macOS.');
+}
+
+if (!fs.existsSync(executablePath)) {
+  fail(`Missing packaged app executable: ${executablePath}`);
+}
+
+let app;
+
+try {
+  app = await electron.launch({
+    executablePath,
+    env: {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: '',
+      TASKPLANE_USER_DATA_DIR: userDataPath,
+      TASKPLANE_ENABLE_SCHEDULER: 'false',
+      TASKPLANE_RUNTIME_SMOKE_PATH: smokePath,
+    },
+    timeout: timeoutMs,
+  });
+
+  await waitFor(() => fs.existsSync(dbPath) && fs.statSync(dbPath).size > 0, 'packaged app database');
+  seedRunDecisionRecoveryFixture();
+
+  const page = await app.firstWindow({ timeout: timeoutMs });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await openTaskFromTaskList(page, 'Packaged Run Decision recovery fixture');
+  await assertTerminalRunRecovery(page);
+  await assertCheckpointDecisionRecovery(page);
+
+  await app.close();
+  cleanup();
+  console.log('macOS packaged Run/Decision recovery smoke check passed.');
+} catch (error) {
+  if (app) {
+    await app.close().catch(() => {});
+  }
+
+  fail(
+    error instanceof Error ? error.message : 'macOS packaged Run/Decision recovery smoke check failed.',
+    error instanceof Error ? error.stack : null,
+  );
+}

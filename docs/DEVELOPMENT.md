@@ -80,6 +80,7 @@ Use this when package/build entrypoints change. It runs the production build and
 npm run smoke:package:mac
 npm run smoke:runtime:mac
 npm run smoke:code-agent-ui:mac
+npm run smoke:run-decision-recovery:mac
 npm run smoke:release:mac
 npm run release:mac:preflight
 npm run accept:release:mac-preflight
@@ -97,6 +98,8 @@ want to build the unpacked macOS app and run package, runtime, and packaged
 Timeline UI smoke checks in one command. Use `npm run smoke:code-agent-ui:mac`
 as a targeted packaged UI check for visible Code Agent preflight boundaries
 without probing Docker or calling a provider. Use
+`npm run smoke:run-decision-recovery:mac` as a targeted packaged recovery check
+for terminal agent-session evidence and checkpoint Decision-to-Run routing. Use
 `npm run release:mac:preflight` before a dedicated signed/notarized release pass;
 it only checks local prerequisites and does not sign, notarize, upload, or call
 Apple services. Use `npm run accept:release:mac-preflight` when you want the

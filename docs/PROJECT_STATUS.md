@@ -258,6 +258,11 @@ The project is past initial architecture assembly. Current work should favor pro
 - Source/process context editing remains covered by repository and renderer
   tests plus existing packaged manual SQLite evidence; it is intentionally not
   duplicated as an automated packaged smoke unless that area changes again.
+- `npm run smoke:run-decision-recovery:mac` now adds a targeted packaged
+  recovery smoke for terminal agent sessions and checkpoint Decisions. It
+  verifies Runs keeps completed agent sessions in inspect-evidence mode, the
+  Decision page can route to checkpoint Run evidence, and both surfaces hand
+  back to Task detail with the expected next-step drafts.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.
