@@ -32,9 +32,12 @@ npm run dev
 ### Validate before opening a PR
 
 ```bash
-npm run lint
-npm run build
+npm run verify
 ```
+
+Run `npm run smoke:build` as well when package, build, Electron entrypoint, or
+packaging configuration changes. Use `npm run accept:alpha-local` for a full
+non-live local alpha handoff check, not for every ordinary PR.
 
 ## Pull Request Expectations
 
