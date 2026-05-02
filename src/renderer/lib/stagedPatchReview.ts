@@ -71,6 +71,10 @@ export function formatStagedPatchEvidenceStatusLabel(status: StagedPatchEvidence
   return labels[status];
 }
 
+export function isStagedPatchWorkspaceApplied(workspaceStatus: string): boolean {
+  return workspaceStatus.includes('applied') || workspaceStatus.includes('already matched');
+}
+
 export function formatStagedPatchReviewNextMove(review: StagedPatchReviewSummary): string {
   const failedChecks = review.checks.filter((check) => check.includes('failed'));
 
@@ -86,7 +90,7 @@ export function formatStagedPatchReviewNextMove(review: StagedPatchReviewSummary
     return 'next=open promotion Decision; workspace remains unchanged until approval';
   }
 
-  if (review.workspaceStatus.includes('applied') || review.workspaceStatus.includes('already matched')) {
+  if (isStagedPatchWorkspaceApplied(review.workspaceStatus)) {
     return 'next=return to task and verify completion criteria against promoted workspace changes';
   }
 

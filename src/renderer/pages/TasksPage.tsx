@@ -1150,6 +1150,8 @@ export function TasksPage({
     const focusTarget =
       intent?.type === 'focus_source_context'
         ? sourceContextSectionRef.current
+        : intent?.focusArea === 'completion'
+          ? completionCriteriaSectionRef.current
         : intent?.focusArea === 'code-agent'
           ? quickRunCardRef.current
         : intent?.focusArea === 'quick-actions'

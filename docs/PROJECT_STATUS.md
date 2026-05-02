@@ -921,6 +921,10 @@ The project is past initial architecture assembly. Current work should favor pro
   Agent input surface with a bounded rerun intent pre-filled from the persisted
   run id, run status/evidence, changed files, promotion Decision, and workspace
   mutation state.
+- Applied or already-matched staged patch reviews now take a different Runs
+  return path: `回到任务验证完成标准` opens the Task completion criteria area and
+  pre-fills the next step with the promoted file list instead of preparing an
+  unnecessary Code Agent rerun.
 - The Task and Runs rerun affordances now use the same tested Code Agent rerun
   intent formatter, so recovery wording can evolve once for both surfaces.
 - Runs / Staged Patch Review now also shows a `Next review move` derived from

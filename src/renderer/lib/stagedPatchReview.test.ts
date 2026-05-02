@@ -4,6 +4,7 @@ import {
   buildStagedPatchEvidenceChecklist,
   formatStagedPatchEvidenceStatusLabel,
   formatStagedPatchReviewNextMove,
+  isStagedPatchWorkspaceApplied,
   type StagedPatchReviewSummary,
 } from './stagedPatchReview';
 
@@ -92,6 +93,12 @@ describe('staged patch review helpers', () => {
       promotionStatus: 'resolved',
       workspaceStatus: 'Decision resolved in preflight-only mode; workspace files were not written',
     }))).toBe('next=return to task and prepare rerun or explicit apply validation');
+  });
+
+  it('identifies applied workspace states for task return routing', () => {
+    expect(isStagedPatchWorkspaceApplied('workspace promotion applied after Decision approval')).toBe(true);
+    expect(isStagedPatchWorkspaceApplied('workspace already matched promoted patch')).toBe(true);
+    expect(isStagedPatchWorkspaceApplied('Decision resolved in preflight-only mode; workspace files were not written')).toBe(false);
   });
 
   it('formats evidence status labels', () => {

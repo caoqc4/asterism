@@ -49,6 +49,7 @@ import {
   buildStagedPatchEvidenceChecklist,
   formatStagedPatchEvidenceStatusLabel,
   formatStagedPatchReviewNextMove,
+  isStagedPatchWorkspaceApplied,
   type StagedPatchReviewSummary,
 } from '../lib/stagedPatchReview';
 import { buildExecutorLifecycleDiagnosticLines } from '../lib/agentOrchestrationPresentation';
@@ -838,6 +839,9 @@ export function RunsPage({
     : null;
   const sandboxProducerLifecycle = formatSandboxProducerLifecycleSummary(latestAgentSession);
   const stagedPatchReview = getStagedPatchReviewSummary(detail);
+  const stagedPatchWorkspaceApplied = stagedPatchReview
+    ? isStagedPatchWorkspaceApplied(stagedPatchReview.workspaceStatus)
+    : false;
   const stagedPatchEvidenceChecklist = stagedPatchReview
     ? buildStagedPatchEvidenceChecklist(stagedPatchReview)
     : [];
@@ -1098,24 +1102,35 @@ export function RunsPage({
                     </button>
                     <button
                       className="ghost-button"
-                      onClick={() =>
-                        onOpenTask(detail.taskId, {
-                          type: 'focus_next_step',
-                          focusArea: 'code-agent',
-                          prefillCodeAgentPatchIntent: formatCodeAgentRerunIntent({
-                            decisionTitle: stagedPatchReview.decisionTitle,
-                            files: stagedPatchReview.files,
-                            runFailureReason: detail.failureReason,
-                            runId: detail.id,
-                            runOutput: detail.output,
-                            runStatus: detail.status,
-                            workspaceStatus: stagedPatchReview.workspaceStatus,
-                          }),
-                        })
-                      }
+                      onClick={() => {
+                        onOpenTask(
+                          detail.taskId,
+                          stagedPatchWorkspaceApplied
+                            ? {
+                                type: 'focus_next_step',
+                                focusArea: 'completion',
+                                prefillNextStep: `验证已提升的 sandbox patch 是否满足完成标准：${stagedPatchReview.files.join(', ') || detail.type}`,
+                              }
+                            : {
+                                type: 'focus_next_step',
+                                focusArea: 'code-agent',
+                                prefillCodeAgentPatchIntent: formatCodeAgentRerunIntent({
+                                  decisionTitle: stagedPatchReview.decisionTitle,
+                                  files: stagedPatchReview.files,
+                                  runFailureReason: detail.failureReason,
+                                  runId: detail.id,
+                                  runOutput: detail.output,
+                                  runStatus: detail.status,
+                                  workspaceStatus: stagedPatchReview.workspaceStatus,
+                                }),
+                              },
+                        );
+                      }}
                       type="button"
                     >
-                      回到任务准备重跑
+                      {stagedPatchWorkspaceApplied
+                        ? '回到任务验证完成标准'
+                        : '回到任务准备重跑'}
                     </button>
                   </div>
                 ) : null}

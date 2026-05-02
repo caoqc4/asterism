@@ -23,7 +23,7 @@ export type RecommendedActionIntent = {
     | 'focus_risk_review'
     | 'continue_from_artifact'
     | 'focus_source_context';
-  focusArea?: 'detail' | 'quick-actions' | 'code-agent';
+  focusArea?: 'detail' | 'quick-actions' | 'code-agent' | 'completion';
   prefillNextStep?: string | null;
   prefillCodeAgentPatchIntent?: string | null;
   prefillRunInstructions?: string | null;

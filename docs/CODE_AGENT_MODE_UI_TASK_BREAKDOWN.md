@@ -980,6 +980,8 @@ Acceptance:
   to verify restart-safe default no-write and flag-enabled apply behavior
 - Runs detail staged patch review distinguishes open, preflight-only resolved,
   blocked/cancelled, and applied workspace-promotion evidence
+- applied / already-matched staged patch evidence routes back to Task
+  completion criteria review instead of the Code Agent rerun form
 
 ### T31: Task Detail Code Agent Recovery Card
 

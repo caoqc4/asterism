@@ -5144,6 +5144,12 @@ describe('App UI flow', () => {
     expect(
       screen.getAllByText('Sandbox patch promotion applied / checkpoint=run_checkpoint_sandbox_patch_promotion / files=src/notes.md').length,
     ).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '回到任务验证完成标准' }));
+    expect(await screen.findByRole('heading', { name: 'High risk task' })).toBeTruthy();
+    expect(screen.getByText('完成判断与收尾标准')).toBeTruthy();
+    expect((screen.getByLabelText('Next Step') as HTMLInputElement).value).toBe(
+      '验证已提升的 sandbox patch 是否满足完成标准：src/notes.md',
+    );
   });
 
   it('shows preflight-only sandbox patch promotion evidence on the runs page', async () => {

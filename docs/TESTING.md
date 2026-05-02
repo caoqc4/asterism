@@ -456,6 +456,8 @@ Covered today:
   instruction drafts now mirror payload-bound agent-session filtering, keeping
   missing-bound-session resume checkpoints in `checkpoint_missing`
   inspect-first recovery
+- Runs page staged patch review now also covers the applied-promotion return
+  path back to Task completion criteria instead of the Code Agent rerun form
 - shared paused-run resume eligibility now covers unique valid resume
   checkpoint selection, supported payload checks, payload-bound session checks,
   and session-scoped replay checkpoint filtering for both backend and Runs UI
