@@ -2377,11 +2377,12 @@ dedicated signed/notarized release pass.
    Browser Controlled Interaction BCI1-BCI6 are locally accepted for the
    local-QA path, and BCR1-BCR6 plus the dev-app resume review fixture are
    locally accepted for checkpoint-approved local-QA resume. Default local-smoke
-   skip boundaries are now covered for provider/Docker/workspace safety, so the
-   next execution task should keep the completed read-only orchestration UI
-   stable and move into any remaining executor/session interruption,
-   inspect-first recovery, and manual new-run preparation gaps, not broad
-   browser/MCP/computer-use model exposure;
+   skip boundaries and targeted packaged recovery smokes now cover
+   provider/Docker/workspace safety, inspect-first recovery, and manual new-run
+   preparation for stale/cancelled sessions, so the next execution task should
+   keep the completed read-only orchestration UI stable unless a concrete new
+   recovery gap appears; do not move into broad browser/MCP/computer-use model
+   exposure;
    do not expose browser, MCP, computer-use, skills, or creator connector tools
    to the model until that connector-specific slice is explicitly accepted.
 6. For Code Agent model context, keep source-context content limited to the

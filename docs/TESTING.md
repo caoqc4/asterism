@@ -587,8 +587,8 @@ Current verification:
   packaged smoke for now. Repository and renderer tests already cover
   source-context create/edit/key-source behavior and process-template
   create/apply/remove behavior, while alpha has packaged manual SQLite evidence
-  for create/edit/archive. The next automated packaged smoke should target a
-  higher-risk recovery boundary instead of duplicating those stable UI forms.
+  for create/edit/archive. The next automated packaged smoke should require a
+  new high-risk boundary rather than duplicating those stable UI forms.
 - on 2026-05-02, `npm run smoke:run-decision-recovery:mac` passed locally after
   adding a targeted packaged recovery smoke for Runs and Decisions. It seeds a
   completed terminal agent session and a workspace patch checkpoint Decision,
@@ -773,7 +773,9 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 Recommended next additions:
 
 1. keep signed/notarized release execution deferred until Developer ID signing
-   source and Apple notarization credentials are available; meanwhile continue
-   only high-risk packaged UI smoke additions
+   source and Apple notarization credentials are available
+2. add more packaged UI smoke only when a new high-risk local-first boundary is
+   introduced or changed; the current Home, Timeline, Settings, Code Agent
+   preflight, and Run/Decision recovery surfaces are already covered
 
 The current goal is not exhaustive coverage. The goal is to protect the product's control-plane semantics and the most expensive-to-break local-first flows.
