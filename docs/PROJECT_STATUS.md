@@ -279,7 +279,8 @@ The project is past initial architecture assembly. Current work should favor pro
   read-only signed/notarized release readiness check. Current status remains
   `not-ready`: Developer ID signing source and Apple notarization credentials
   are not configured; no signing, notarization, upload, or Apple network request
-  was performed.
+  was performed. It passed again after the latest packaged recovery smoke
+  expansion with the same expected `not-ready` status.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.

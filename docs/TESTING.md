@@ -648,6 +648,11 @@ Current verification:
   wrapper and reported `status=not-ready` because Developer ID signing source
   and Apple notarization credentials are not configured; no signing,
   notarization, upload, or Apple network request was performed.
+- on 2026-05-02, `npm run accept:release:mac-preflight` passed locally again
+  after the packaged recovery smoke expansion. The read-only preflight still
+  reports `status=not-ready` for the same expected missing Developer ID signing
+  source and Apple notarization credentials, and performed no signing,
+  notarization, upload, or Apple network request.
 - on 2026-05-01, `npm run smoke:runtime:mac` passed locally after adding a
   seeded packaged-runtime Timeline scan fixture that writes and reads a task
   plus ordered timeline events from the isolated SQLite database.
