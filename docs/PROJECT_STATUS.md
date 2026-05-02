@@ -2329,6 +2329,12 @@ Latest local baseline:
   the local agent acceptance gate covers the visible Code Agent preflight
   summary, package-script availability filtering, and IPC recheck in addition
   to the sandbox/code-agent domain boundary.
+- `smoke:settings-config:mac` now covers the packaged Settings persistence
+  path with isolated user data: it saves provider/model/base URL/workspace-root
+  config without an API key, verifies `config.json`, and relaunches the
+  packaged app to confirm Settings hydrates from disk. It is grouped into
+  `accept:packaged-recovery:mac` and kept outside the default release smoke
+  gate.
 
 Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 configuration changes. Run `npm run smoke:release:mac` for the combined

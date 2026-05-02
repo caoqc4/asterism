@@ -465,6 +465,8 @@ Covered today:
 - `Settings save flow`
 - `Settings save flow` now also asserts Home scheduler enabled/running state and scheduler timestamps refresh from Home brief data
 - `Settings save flow` now also covers read-only workspace root persistence
+- `Packaged Settings config smoke`
+- `Packaged Settings config smoke` saves non-sensitive provider/model/base URL/workspace-root config in an isolated packaged macOS app, verifies `config.json`, then relaunches to prove Settings hydrates the persisted disk state without writing an API key
 - `waiting item` visibility and direct resolution
 - `source context` visibility plus create/edit interactions in task detail, explicit key-source marking, and source-focused recovery from Home
 - `process context` visibility plus create/bind/remove interactions in task detail
@@ -606,6 +608,15 @@ Current verification:
   intended Source Context focused.
 - on 2026-05-02, `npm run accept:packaged-recovery:mac` passed locally again
   after adding the Home recovery smoke to the targeted packaged recovery bundle.
+- on 2026-05-02, `npm run smoke:settings-config:mac` was added as a targeted
+  packaged Settings config smoke. It saves non-sensitive AI config into
+  isolated `config.json`, avoids Keychain API key writes, provider calls, and
+  Docker probes, then relaunches the packaged app to verify persisted
+  provider/model/base URL/workspace root hydration.
+- on 2026-05-02, `npm run smoke:settings-config:mac` passed locally against
+  the existing packaged macOS app.
+- on 2026-05-02, `npm run accept:packaged-recovery:mac` passed locally after
+  adding the Settings config smoke to the targeted packaged recovery bundle.
 - on 2026-05-02, `npm run accept:release:mac-preflight` passed locally as a
   read-only signed/notarized release readiness check. It ran the regression
   wrapper and reported `status=not-ready` because Developer ID signing source
@@ -728,9 +739,13 @@ When GitHub Actions is unavailable or disabled because of monthly quota, local v
 - run `npm run smoke:run-decision-recovery:mac` after `npm run dist:mac:dir`
   when Runs recovery safety, terminal agent-session evidence, checkpoint
   Decision guidance, or Decision-to-Run evidence routing changes
+- run `npm run smoke:settings-config:mac` after `npm run dist:mac:dir` when
+  Settings persistence, local config path handling, or workspace-root config
+  hydration changes; this targeted smoke does not write an API key, call a
+  provider, or probe Docker
 - run `npm run accept:packaged-recovery:mac` after `npm run dist:mac:dir` when
-  validating the targeted packaged recovery surfaces together without expanding
-  the release smoke gate
+  validating the targeted packaged recovery and Settings config surfaces
+  together without expanding the release smoke gate
 - or run `npm run smoke:release:mac` to cover the unsigned macOS package,
   runtime, and packaged Timeline UI paths in one command
 - run `npm run accept:provider-native-live:preflight` for no-credit

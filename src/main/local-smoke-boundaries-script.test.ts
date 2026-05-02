@@ -73,11 +73,12 @@ describe('local smoke script default boundaries', () => {
     ) as { scripts?: Record<string, string> };
 
     expect(packageJson.scripts?.['accept:packaged-recovery:mac']).toBe(
-      'npm run smoke:home-recovery:mac && npm run smoke:code-agent-ui:mac && npm run smoke:run-decision-recovery:mac',
+      'npm run smoke:home-recovery:mac && npm run smoke:code-agent-ui:mac && npm run smoke:run-decision-recovery:mac && npm run smoke:settings-config:mac',
     );
     expect(packageJson.scripts?.['smoke:release:mac']).not.toContain('smoke:home-recovery:mac');
     expect(packageJson.scripts?.['smoke:release:mac']).not.toContain('smoke:code-agent-ui:mac');
     expect(packageJson.scripts?.['smoke:release:mac']).not.toContain('smoke:run-decision-recovery:mac');
+    expect(packageJson.scripts?.['smoke:release:mac']).not.toContain('smoke:settings-config:mac');
   });
 
   it('keeps sandbox producer preview smoke skipped without Docker or AI by default', () => {
