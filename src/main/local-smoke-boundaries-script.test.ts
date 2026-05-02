@@ -112,7 +112,7 @@ describe('local smoke script default boundaries', () => {
 
   it('keeps package script file references pointing to existing files', () => {
     const scripts = readPackageScripts();
-    const fileReferencePattern = /(?:^|\s)((?:\.\/)?(?:src|scripts|node_modules|vitest\.[\w.-]+)[^\s"'`|&;]*\.(?:tsx|ts|cjs|js|json|mjs))/g;
+    const fileReferencePattern = /(?:^|\s)((?:\.\/)?(?:src|scripts|node_modules|tsconfig|vitest\.[\w.-]+)[^\s"'`|&;]*\.(?:tsx|ts|json|cjs|js|mjs))/g;
     const missingFiles = Object.entries(scripts).flatMap(([scriptName, command]) => {
       const referencedFiles = [...command.matchAll(fileReferencePattern)]
         .map((match) => match[1].replace(/^\.\//, ''));
