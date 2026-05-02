@@ -5,6 +5,7 @@ logs only when you need audit detail:
 
 - [ALPHA_ACCEPTANCE_ASSESSMENT.md](ALPHA_ACCEPTANCE_ASSESSMENT.md)
 - [ALPHA_WALKTHROUGH.md](ALPHA_WALKTHROUGH.md)
+- [REAL_USE.md](REAL_USE.md)
 - [ALPHA_MANUAL_RUN_LOG.md](ALPHA_MANUAL_RUN_LOG.md)
 - [TESTING.md](TESTING.md)
 - [RELEASES.md](RELEASES.md)
@@ -101,9 +102,11 @@ and non-live by default.
 
 1. Run a human alpha walkthrough on the current unsigned app and capture only
    concrete product friction with [ALPHA_WALKTHROUGH.md](ALPHA_WALKTHROUGH.md).
-2. Fix small alpha friction without broadening the domain model.
-3. Keep release docs and handoff notes concise as evidence changes.
-4. Start signed/notarized release work only after Developer ID signing and Apple
+2. Start daily local use with [REAL_USE.md](REAL_USE.md), keeping first-session
+   scope small.
+3. Fix small alpha friction without broadening the domain model.
+4. Keep release docs and handoff notes concise as evidence changes.
+5. Start signed/notarized release work only after Developer ID signing and Apple
    notarization credentials are available.
-5. Revisit execution-layer expansion only through a separate accepted design
+6. Revisit execution-layer expansion only through a separate accepted design
    slice.
