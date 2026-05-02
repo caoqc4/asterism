@@ -278,7 +278,12 @@ npm run accept:sandbox-coding:patch-promotion-apply-smoke
 - Produce `npm run dist:mac:dir` only after the manual alpha path is coherent.
 - Run `npm run smoke:package:mac` after producing the unpacked macOS app.
 - Run `npm run smoke:runtime:mac` to confirm packaged startup creates isolated config and initializes SQLite data.
-- Or run `npm run smoke:release:mac` to combine the unpacked macOS build and both smoke checks.
+- Or run `npm run smoke:release:mac` to combine the unpacked macOS build,
+  package smoke, runtime smoke, and packaged Timeline UI smoke.
+- Run `npm run accept:packaged-recovery:mac` after `dist:mac:dir` when you
+  need the targeted packaged Home recovery, Code Agent UI, Run/Decision
+  recovery, Browser Evidence review, and Settings config bundle without
+  expanding the unsigned release smoke gate.
 - Run `npm run accept:release:mac-preflight` to check signed/notarized release
   prerequisites and regression coverage for both Apple ID and App Store Connect
   API key notarization env groups, without signing, notarizing, uploading, or
