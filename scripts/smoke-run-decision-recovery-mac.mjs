@@ -54,6 +54,7 @@ function seedRunDecisionRecoveryFixture() {
     const staleRunId = 'run_packaged_stale_agent';
     const checkpointRunId = 'run_packaged_checkpoint_agent';
     const appliedPatchRunId = 'run_packaged_staged_patch_applied';
+    const browserEvidenceRunId = 'run_packaged_browser_evidence';
     const checkpointId = 'checkpoint_packaged_workspace_patch';
     const checkpointStepId = 'run_step_packaged_checkpoint';
     const appliedPatchCheckpointId = 'checkpoint_packaged_staged_patch_applied';
@@ -146,6 +147,19 @@ function seedRunDecisionRecoveryFixture() {
         null,
         '2026-05-02T09:26:00.000Z',
         '2026-05-02T09:30:00.000Z',
+      );
+
+      insertRun.run(
+        browserEvidenceRunId,
+        taskId,
+        'agent',
+        'completed',
+        'Operator-started browser_evidence_smoke: Capture packaged browser evidence.',
+        'Browser evidence captured / artifacts=page_summary,visible_text,screenshot / credentials=no / mutation=no',
+        'system',
+        null,
+        '2026-05-02T09:23:00.000Z',
+        '2026-05-02T09:24:00.000Z',
       );
 
       insertRun.run(
@@ -390,6 +404,66 @@ function seedRunDecisionRecoveryFixture() {
         '2026-05-02T09:30:00.000Z',
       );
 
+      insertStep.run(
+        'run_step_packaged_browser_evidence_capture',
+        browserEvidenceRunId,
+        1,
+        'tool_result',
+        'completed',
+        'browser evidence captured',
+        null,
+        'Browser evidence captured / artifacts=page_summary,visible_text,screenshot / credentials=no / mutation=no',
+        null,
+        '2026-05-02T09:24:00.000Z',
+        '2026-05-02T09:24:00.000Z',
+      );
+
+      database
+        .prepare(`
+          INSERT INTO artifacts (
+            id, task_id, source_type, source_id, kind, title, content,
+            created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'artifact_packaged_browser_evidence',
+          taskId,
+          'run',
+          browserEvidenceRunId,
+          'browser_evidence',
+          'Packaged browser evidence',
+          JSON.stringify({
+            artifacts: [
+              {
+                kind: 'page_summary',
+                summary: 'Title: Taskplane Browser Evidence Smoke',
+                title: 'Browser page summary',
+              },
+              {
+                kind: 'visible_text',
+                summary: '72 visible text characters captured.',
+                title: 'Browser visible text',
+              },
+              {
+                kind: 'screenshot',
+                path: '/tmp/taskplane-packaged-browser-evidence.png',
+                summary: 'Viewport screenshot captured from an isolated packaged smoke context.',
+                title: 'Browser screenshot',
+              },
+            ],
+            request: {
+              url: 'http://127.0.0.1:4173/browser-evidence-smoke.html',
+            },
+            result: {
+              status: 'captured',
+              summary: 'Browser evidence captured / artifacts=page_summary,visible_text,screenshot / credentials=no / mutation=no',
+            },
+          }),
+          '2026-05-02T09:24:00.000Z',
+          '2026-05-02T09:24:00.000Z',
+        );
+
       database
         .prepare(`
           INSERT INTO run_checkpoints (
@@ -588,6 +662,27 @@ async function assertAppliedStagedPatchRecovery(page) {
   }
 }
 
+async function assertBrowserEvidenceReview(page) {
+  await page.getByRole('button', { name: 'Runs 执行记录与结果查看' }).click();
+  await openRunCardByStatusAndDetailText(
+    page,
+    'completed',
+    'Browser evidence captured / artifacts=page_summary,visible_text,screenshot / credentials=no / mutation=no',
+  );
+
+  await page.getByText('Browser Evidence', { exact: true }).waitFor();
+  await page.getByText('审阅这次浏览器证据采集').waitFor();
+  await page
+    .getByText(
+      'Browser evidence：url=http://127.0.0.1:4173/browser-evidence-smoke.html / artifacts=page_summary, visible_text, screenshot / artifact=artifact_packaged_browser_evidence',
+    )
+    .waitFor();
+  await page
+    .getByText('Next review move：review captured evidence before enabling any controlled browser interaction.')
+    .waitFor();
+  await page.getByText('Screenshot：/tmp/taskplane-packaged-browser-evidence.png').waitFor();
+}
+
 async function assertStaleRunRecovery(page) {
   await page.getByRole('button', { name: 'Runs 执行记录与结果查看' }).click();
   await page
@@ -738,6 +833,7 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await openTaskFromTaskList(page, 'Packaged Run Decision recovery fixture');
   await assertTerminalRunRecovery(page);
+  await assertBrowserEvidenceReview(page);
   await assertAppliedStagedPatchRecovery(page);
   await assertStaleRunRecovery(page);
   await assertCancelledRunRecovery(page);

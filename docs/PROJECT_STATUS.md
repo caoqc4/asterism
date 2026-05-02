@@ -995,6 +995,10 @@ The project is past initial architecture assembly. Current work should favor pro
   manual button created a completed agent Run, persisted a `browser_evidence`
   artifact, showed the Browser Evidence review card, and SQLite confirmed the
   accepted/captured/artifact RunSteps plus timeline events.
+- The packaged Run/Decision recovery smoke now also seeds persisted Browser
+  Evidence and verifies the packaged Runs UI review card for URL, artifact
+  kinds, screenshot path, and the controlled-interaction caution, without
+  starting a browser or widening model-visible tools.
 - T8's first service extraction is locally accepted: `CodeAgentRunService` now owns
   manual Code Agent launch orchestration, while `run:triggerCodeAgent` only
   delegates and emits app events. Service tests now cover the no-provider local

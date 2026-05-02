@@ -616,6 +616,11 @@ Current verification:
   after the staged-patch recovery smoke expansion, confirming Home recovery,
   Code Agent UI, Run/Decision recovery, and Settings config still pass together
   against the regenerated macOS app.
+- on 2026-05-02, `npm run accept:packaged-recovery:mac` passed locally again
+  after extending the packaged Run/Decision recovery smoke with persisted
+  Browser Evidence review coverage. The bundle now also confirms a
+  `browser_evidence` artifact renders its URL, evidence kinds, screenshot path,
+  and controlled-interaction caution in the packaged Runs UI.
 - on 2026-05-02, `accept:packaged-recovery:mac` was added as a local targeted
   packaged recovery acceptance command. It runs the Code Agent UI and
   Run/Decision recovery smokes against an existing packaged app, while keeping
