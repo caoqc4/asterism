@@ -541,7 +541,8 @@ Current verification:
   src/main/local-smoke-boundaries-script.test.ts` passed after adding a
   static documentation guard that scans repo-visible docs and GitHub templates
   for `npm run <script>` references, then fails if any documented script is not
-  present in `package.json`.
+  present in `package.json`; the same guard now checks repo-visible relative
+  Markdown links and fails if they point to missing files.
 - on 2026-05-01, `npm test -- --run src/renderer/App.test.tsx -t "groups a
   seeded task detail timeline"` passed locally after adding a seeded Task
   detail Timeline UI fixture that covers date, object-family, and

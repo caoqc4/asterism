@@ -86,16 +86,23 @@ function collectFiles(rootPath: string, extensions: Set<string>) {
   });
 }
 
+function collectRepoMarkdownFiles() {
+  return [
+    ...collectFiles(path.join(process.cwd(), '.github'), new Set(['.md'])),
+    ...collectFiles(path.join(process.cwd(), 'docs'), new Set(['.md'])),
+    path.join(process.cwd(), 'CONTRIBUTING.md'),
+    path.join(process.cwd(), 'README.md'),
+    path.join(process.cwd(), 'SECURITY.md'),
+  ];
+}
+
 describe('local smoke script default boundaries', () => {
   it('keeps documented npm scripts present in package.json', () => {
     const scripts = readPackageScripts();
     const documentedScriptReferences = new Map<string, Set<string>>();
     const files = [
       ...collectFiles(path.join(process.cwd(), '.github'), new Set(['.md', '.yml', '.yaml'])),
-      ...collectFiles(path.join(process.cwd(), 'docs'), new Set(['.md'])),
-      path.join(process.cwd(), 'CONTRIBUTING.md'),
-      path.join(process.cwd(), 'README.md'),
-      path.join(process.cwd(), 'SECURITY.md'),
+      ...collectRepoMarkdownFiles(),
     ];
 
     for (const filePath of files) {
@@ -116,6 +123,46 @@ describe('local smoke script default boundaries', () => {
       .map(([scriptName, references]) => `${scriptName} (${[...references].sort().join(', ')})`);
 
     expect(missingScripts).toEqual([]);
+  });
+
+  it('keeps relative Markdown links pointing to existing files', () => {
+    const files = collectRepoMarkdownFiles();
+    const brokenLinks: string[] = [];
+
+    for (const filePath of files) {
+      const relativePath = path.relative(process.cwd(), filePath);
+      const content = fs.readFileSync(filePath, 'utf8');
+      const matches = content.matchAll(/\[[^\]]+\]\(([^)]+)\)/g);
+
+      for (const match of matches) {
+        const rawTarget = match[1].trim();
+
+        if (
+          !rawTarget ||
+          rawTarget.startsWith('#') ||
+          /^[a-z][a-z0-9+.-]*:/i.test(rawTarget)
+        ) {
+          continue;
+        }
+
+        const targetWithoutTitle = rawTarget.startsWith('<')
+          ? rawTarget.slice(1, rawTarget.indexOf('>'))
+          : rawTarget.split(/\s+/)[0];
+        const targetPath = targetWithoutTitle.split('#')[0].split('?')[0];
+
+        if (!targetPath) {
+          continue;
+        }
+
+        const resolvedPath = path.resolve(path.dirname(filePath), targetPath);
+
+        if (!fs.existsSync(resolvedPath)) {
+          brokenLinks.push(`${relativePath} -> ${rawTarget}`);
+        }
+      }
+    }
+
+    expect(brokenLinks).toEqual([]);
   });
 
   it('keeps the macOS release smoke wired through package, runtime, and Timeline UI checks', () => {
