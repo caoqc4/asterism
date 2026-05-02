@@ -661,7 +661,8 @@ Automated/local coverage:
 - `npm run smoke:code-agent-ui:mac` passed locally on 2026-05-02 as a targeted packaged Code Agent preflight UI smoke; it verifies workspace check detection, preflight visibility, model-producer manifest controls, and context-file candidate filling without probing Docker or calling a provider
 - `npm run smoke:run-decision-recovery:mac` passed locally on 2026-05-02 as a targeted packaged Run/Decision recovery smoke; it verifies terminal completed agent sessions stay inspect-first, checkpoint Decisions can open Run evidence, and both recovery surfaces return to Task detail with expected next-step drafts
 - `npm run smoke:home-recovery:mac` passed locally on 2026-05-02 as a targeted packaged Home recovery smoke; it verifies key-source and resume-preview context actions route back to the intended Source Context
-- `npm run accept:packaged-recovery:mac` passed locally on 2026-05-02 with Home recovery, Code Agent UI, and Run/Decision recovery smokes grouped outside the unsigned release gate
+- `npm run smoke:settings-config:mac` passed locally on 2026-05-02 as a targeted packaged Settings config smoke; it saves non-sensitive provider/model/base URL/workspace-root config into isolated `config.json`, avoids API key writes/provider calls/Docker probes, and relaunches to verify Settings hydrates from disk
+- `npm run accept:packaged-recovery:mac` passed locally on 2026-05-02 with Home recovery, Code Agent UI, Run/Decision recovery, and Settings config smokes grouped outside the unsigned release gate
 - `npm run accept:release:mac-preflight` passed locally on 2026-05-02 as a read-only signed/notarized release readiness check while reporting `status=not-ready` because Developer ID signing source and Apple notarization credentials are not configured
 - on 2026-04-27, `npm run smoke:release:mac` passed locally after the Code
   Agent context-gate and restart/replay safety updates. It rebuilt Electron

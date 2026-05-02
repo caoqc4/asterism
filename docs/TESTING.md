@@ -685,7 +685,8 @@ Current verification:
 - `npm run smoke:code-agent-ui:mac` after producing `release/mac-arm64/Taskplane.app`, for targeted packaged Code Agent preflight visibility without Docker or provider execution
 - `npm run smoke:run-decision-recovery:mac` after producing `release/mac-arm64/Taskplane.app`, for targeted packaged Run/Decision recovery surfaces around terminal agent sessions and checkpoint Decisions
 - `npm run smoke:home-recovery:mac` after producing `release/mac-arm64/Taskplane.app`, for targeted packaged Home key-source and resume-preview recovery routing
-- `npm run accept:packaged-recovery:mac` after producing `release/mac-arm64/Taskplane.app`, for the targeted packaged recovery bundle outside the release smoke gate
+- `npm run smoke:settings-config:mac` after producing `release/mac-arm64/Taskplane.app`, for targeted packaged Settings config persistence and relaunch hydration without API key writes, provider calls, or Docker probes
+- `npm run accept:packaged-recovery:mac` after producing `release/mac-arm64/Taskplane.app`, for the targeted packaged recovery and Settings config bundle outside the release smoke gate
 - `npm run smoke:release:mac` for the combined unsigned macOS build/package/runtime/Timeline UI path
 - `npm run accept:agent-local` for the local agent stack, including the non-live
   sandbox/code-agent domain boundary and the Code Agent preflight UI/config/IPC
