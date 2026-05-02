@@ -2339,6 +2339,10 @@ Latest local baseline:
   session recovery: Runs must present `prepare_new_manual_run`, preserve the
   no-auto-replay boundary, and route back to Task detail with retry inputs
   prefilled from run evidence.
+- The same packaged Run/Decision recovery smoke now covers
+  `interrupted_or_stale` running sessions, proving stale evidence stays
+  inspect-first and returns to Task detail with a bounded new-run prefill
+  instead of replaying an old session.
 
 Run `npm run smoke:build` when package, build, Electron entrypoint, or packaging
 configuration changes. Run `npm run smoke:release:mac` for the combined

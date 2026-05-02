@@ -599,6 +599,10 @@ Current verification:
   extending the same packaged recovery smoke to cancelled agent sessions. The
   Runs recovery card now has packaged coverage for `prepare_new_manual_run`,
   including the no-auto-replay instruction and Task detail retry prefill.
+- on 2026-05-02, `npm run smoke:run-decision-recovery:mac` passed locally after
+  extending the same packaged recovery smoke to interrupted-or-stale running
+  sessions. The packaged Runs recovery card now covers `interrupted_or_stale`,
+  the next-safe-move copy, and Task detail new-run prefill from stale evidence.
 - on 2026-05-02, `accept:packaged-recovery:mac` was added as a local targeted
   packaged recovery acceptance command. It runs the Code Agent UI and
   Run/Decision recovery smokes against an existing packaged app, while keeping

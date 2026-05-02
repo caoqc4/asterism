@@ -51,6 +51,7 @@ function seedRunDecisionRecoveryFixture() {
     const taskId = 'task_packaged_run_decision_recovery';
     const terminalRunId = 'run_packaged_terminal_agent';
     const cancelledRunId = 'run_packaged_cancelled_agent';
+    const staleRunId = 'run_packaged_stale_agent';
     const checkpointRunId = 'run_packaged_checkpoint_agent';
     const checkpointId = 'checkpoint_packaged_workspace_patch';
     const checkpointStepId = 'run_step_packaged_checkpoint';
@@ -124,6 +125,19 @@ function seedRunDecisionRecoveryFixture() {
         '2026-05-02T09:20:00.000Z',
       );
 
+      insertRun.run(
+        staleRunId,
+        taskId,
+        'agent',
+        'running',
+        'Packaged interrupted-or-stale recovery smoke.',
+        'Agent plan accepted before interruption.',
+        'system',
+        null,
+        '2026-05-02T09:21:00.000Z',
+        '2026-05-02T09:22:00.000Z',
+      );
+
       database
         .prepare(`
           INSERT INTO agent_sessions (
@@ -178,6 +192,32 @@ function seedRunDecisionRecoveryFixture() {
 
       database
         .prepare(`
+          INSERT INTO agent_sessions (
+            id, run_id, mode, status, capabilities, metadata, created_at,
+            updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'agent_session_packaged_stale',
+          staleRunId,
+          'agent',
+          'running',
+          JSON.stringify({
+            fileContext: true,
+            longRunningSessions: true,
+            streaming: false,
+            structuredToolCalls: false,
+            taskMutationTools: false,
+            textOnlyPlanning: true,
+          }),
+          'executor=packaged_smoke\nloop=stale_plan',
+          '2026-05-02T09:21:00.000Z',
+          '2026-05-02T09:22:00.000Z',
+        );
+
+      database
+        .prepare(`
           INSERT INTO run_steps (
             id, run_id, step_index, kind, status, title, input, output, error,
             created_at, updated_at
@@ -218,6 +258,28 @@ function seedRunDecisionRecoveryFixture() {
           null,
           '2026-05-02T09:20:00.000Z',
           '2026-05-02T09:20:00.000Z',
+        );
+
+      database
+        .prepare(`
+          INSERT INTO run_steps (
+            id, run_id, step_index, kind, status, title, input, output, error,
+            created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'run_step_packaged_stale_plan',
+          staleRunId,
+          4,
+          'plan',
+          'completed',
+          '采用模型提出的 agent 步骤计划',
+          null,
+          '1. task.inspect_context\n2. task.inspect_timeline\n3. artifact.create_note',
+          null,
+          '2026-05-02T09:22:00.000Z',
+          '2026-05-02T09:22:00.000Z',
         );
 
       database
@@ -336,6 +398,46 @@ async function assertTerminalRunRecovery(page) {
   }
 }
 
+async function assertStaleRunRecovery(page) {
+  await page.getByRole('button', { name: 'Runs 执行记录与结果查看' }).click();
+  await page
+    .locator('.panel', { hasText: 'Run Queue' })
+    .locator('.task-card', { hasText: 'running' })
+    .click();
+  await page.getByRole('heading', { name: 'agent / running' }).waitFor();
+
+  const recoverySafety = page.getByLabel('Run recovery safety');
+  await recoverySafety.getByText('Replay review：inspect latest step before any recovery').waitFor();
+  await recoverySafety
+    .getByText(
+      'Recovery intent：prepare new manual run / session=agent_session_packaged_stale / status=running / restartSafety=interrupted_or_stale / openCheckpoints=0 / recoveryCheckpoints=0 / recoveryCheckpointRequired=no / manualRunRequired=yes / autoReplay=no',
+    )
+    .waitFor();
+  await recoverySafety
+    .getByText('Recovery anchors：run=run_packaged_stale_agent / session=agent_session_packaged_stale / checkpoints=none / action=prepare_new_manual_run')
+    .waitFor();
+  await recoverySafety
+    .getByText('Next safe move：确认最近一次 agent run 是否已中断；若没有活动执行器，先基于证据整理输入，再启动新的 run，不自动重放。')
+    .waitFor();
+
+  await page.getByRole('button', { name: '回到任务推进' }).click();
+  await page.getByRole('heading', { name: 'Packaged Run Decision recovery fixture' }).waitFor();
+
+  const nextStep = await page.getByLabel('Next Step').inputValue();
+  if (nextStep !== '确认最近一次 agent run 是否已中断；若没有活动执行器，先基于证据整理输入，再启动新的 run，不自动重放。') {
+    throw new Error(`Interrupted/stale run recovery filled the wrong next step: ${nextStep}`);
+  }
+
+  const additionalRequirements = await page.getByLabel('附加要求').inputValue();
+  if (!additionalRequirements.includes('来源：run=run_packaged_stale_agent / session=agent_session_packaged_stale。')) {
+    throw new Error(`Interrupted/stale run recovery filled the wrong source evidence: ${additionalRequirements}`);
+  }
+
+  if (!additionalRequirements.includes('restartSafety=interrupted_or_stale')) {
+    throw new Error(`Interrupted/stale run recovery missed restart safety: ${additionalRequirements}`);
+  }
+}
+
 async function assertCancelledRunRecovery(page) {
   await page.getByRole('button', { name: 'Runs 执行记录与结果查看' }).click();
   await page
@@ -427,6 +529,7 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await openTaskFromTaskList(page, 'Packaged Run Decision recovery fixture');
   await assertTerminalRunRecovery(page);
+  await assertStaleRunRecovery(page);
   await assertCancelledRunRecovery(page);
   await assertCheckpointDecisionRecovery(page);
 
