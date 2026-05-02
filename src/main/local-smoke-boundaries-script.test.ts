@@ -110,6 +110,21 @@ describe('local smoke script default boundaries', () => {
     expect(missingScripts).toEqual([]);
   });
 
+  it('keeps package script file references pointing to existing files', () => {
+    const scripts = readPackageScripts();
+    const fileReferencePattern = /(?:^|\s)((?:\.\/)?(?:src|scripts|node_modules|vitest\.[\w.-]+)[^\s"'`|&;]*\.(?:tsx|ts|cjs|js|json|mjs))/g;
+    const missingFiles = Object.entries(scripts).flatMap(([scriptName, command]) => {
+      const referencedFiles = [...command.matchAll(fileReferencePattern)]
+        .map((match) => match[1].replace(/^\.\//, ''));
+
+      return referencedFiles
+        .filter((referencedFile) => !fs.existsSync(path.join(process.cwd(), referencedFile)))
+        .map((referencedFile) => `${scriptName} -> ${referencedFile}`);
+    });
+
+    expect(missingFiles).toEqual([]);
+  });
+
   it('keeps documented npm scripts present in package.json', () => {
     const scripts = readPackageScripts();
     const documentedScriptReferences = new Map<string, Set<string>>();
