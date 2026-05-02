@@ -25,6 +25,17 @@ npm run verify
 
 This runs tests, type-checking, and the production build before packaging-specific checks.
 
+### Run the local alpha handoff gate
+
+```bash
+npm run accept:alpha-local
+```
+
+This is the full non-live local alpha gate. It runs verification, local agent
+acceptance, Code Agent model-producer preflight, unsigned macOS release smoke,
+targeted packaged recovery acceptance, and release preflight without signing,
+notarizing, uploading, or calling Apple services by default.
+
 ### Run the build smoke check
 
 ```bash
@@ -140,6 +151,10 @@ As of the current alpha path:
 - `npm run accept:packaged-recovery:mac` passed locally on 2026-05-02 with Home
   recovery, Code Agent UI, Run/Decision recovery, Browser Evidence review, and
   Settings config smokes grouped outside the unsigned release gate
+- `npm run accept:alpha-local` passed locally on 2026-05-02 as the complete
+  non-live local alpha gate, including `verify`, local agent acceptance, Code
+  Agent model-producer preflight, unsigned release smoke, packaged recovery
+  acceptance, and release preflight
 - `npm run accept:release:mac-preflight` passed on 2026-05-02 without signing,
   notarizing, uploading, or calling Apple services. Current readiness is
   `not-ready`: macOS host, `notarytool`, app id, product name, and mac targets
