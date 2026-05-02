@@ -2,8 +2,13 @@
 
 ## Status
 
-Ready for first implementation slice. The product surface decision is accepted
-for a manual, sandboxed, Decision-gated code-agent UI.
+First implementation path is locally accepted for a manual, sandboxed,
+Decision-gated code-agent UI. Task detail can start the diagnostic staged-patch
+loop, the env-gated model-backed loop has been validated with deliberate
+provider spend, and packaged recovery coverage now protects the core restart /
+new-run evidence paths. Future work should improve evidence/recovery ergonomics
+or start a separately accepted execution-layer design slice, not broaden model
+tool exposure by default.
 
 Reference inputs:
 
@@ -41,10 +46,15 @@ future automatic starts once skill/process maturity and policy readiness exist.
 
 - Product surface decision accepted.
 - Invocation decision remains accepted.
-- Docker-backed producer preview smoke passes on a Docker-enabled machine.
-- `npm run accept:sandbox-coding` and `npm run verify` pass.
+- Local diagnostic and env-gated model producer paths remain explicit,
+  manual, and Decision-gated.
+- Docker-backed producer preview smoke passes on a Docker-enabled machine when
+  deliberately enabled.
+- `npm run accept:sandbox-coding`, `npm run accept:packaged-recovery:mac`, and
+  `npm run verify` are the relevant local gates for broad changes.
 - Runs detail can display producer session policy, blocked diagnostics,
-  source/check RunSteps, and patch-promotion checkpoints.
+  source/check RunSteps, patch-promotion checkpoints, and inspect-first
+  recovery/new-run preparation for stale or cancelled sessions.
 
 ## Task Sequence
 
