@@ -261,6 +261,11 @@ signing, notarizing, uploading, or calling Apple services. Use
 `npm run release:mac:preflight -- --strict` only when a missing prerequisite
 should fail the shell command.
 
+The full local alpha gate, `npm run accept:alpha-local`, also does not require
+these signing or notarization variables. It may report release readiness as
+`status=not-ready` until they are configured, while still validating the
+non-live local alpha path.
+
 ## Read-Only Workspace Root
 
 `TASKPLANE_WORKSPACE_ROOT` or `config.json.workspaceRoot` defines the root used by opted-in
