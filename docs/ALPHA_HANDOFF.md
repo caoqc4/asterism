@@ -30,6 +30,7 @@ Signed and notarized release execution is still deferred.
 
 As of 2026-05-02 on pushed `main`:
 
+- `npm run accept:alpha-local` passed end to end on latest `main`.
 - `npm test` passed with 128 test files / 951 tests.
 - `npm run verify` passed with tests, type-checking, and production
   renderer/main builds.
@@ -43,10 +44,9 @@ As of 2026-05-02 on pushed `main`:
   `status=not-ready` because Developer ID signing and Apple notarization
   credentials are not configured.
 
-One combined `npm run accept:alpha-local` attempt was interrupted after Vitest
-stopped producing output. The same focused commands passed when rerun, so treat
-that incident as a local runner/worker exit issue, not as a product acceptance
-failure.
+A previous combined `npm run accept:alpha-local` attempt was interrupted after
+Vitest stopped producing output. That did not reproduce on the latest full gate:
+the complete command passed end to end.
 
 ## Validation Commands
 

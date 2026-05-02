@@ -582,6 +582,10 @@ Current verification:
 - on 2026-05-02, `npm run verify` passed again on latest pushed `main` with 128
   test files / 951 tests, followed by type-checking and production renderer/main
   builds.
+- on 2026-05-02, `npm run accept:alpha-local` passed end to end on latest
+  `main`: `verify`, local agent acceptance, model-producer preflight
+  `status=skip`, unsigned release smoke, packaged recovery, and read-only
+  release preflight all completed successfully.
 - on 2026-05-01, `npm test -- --run src/renderer/App.test.tsx -t "groups a
   seeded task detail timeline"` passed locally after adding a seeded Task
   detail Timeline UI fixture that covers date, object-family, and

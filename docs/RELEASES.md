@@ -156,7 +156,8 @@ As of the current alpha path:
 - `npm run accept:alpha-local` passed locally on 2026-05-02 as the complete
   non-live local alpha gate, including `verify`, local agent acceptance, Code
   Agent model-producer preflight, unsigned release smoke, packaged recovery
-  acceptance, and release preflight
+  acceptance, and release preflight. It passed again end to end on latest
+  `main` after the short alpha handoff and walkthrough docs were added
 - `npm run accept:release:mac-preflight` passed on 2026-05-02 without signing,
   notarizing, uploading, or calling Apple services. Current readiness is
   `not-ready`: macOS host, `notarytool`, app id, product name, and mac targets
