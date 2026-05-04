@@ -1,5 +1,9 @@
 # Taskplane
 
+> **任务原生的 Agent 工具——任务为锚，持久化任务记忆，让 AI 执行彻底摆脱对聊天窗口的依赖。**
+>
+> A task-native Agent tool. Tasks are the anchor: execution history, work files, and AI memory all live on the task — not locked inside a chat window. AI execution quality doesn't degrade as context grows.
+
 Taskplane is a local-first desktop workbench for turning signals into long-lived tasks, decisions, runs, and briefs.
 
 This repository currently contains an Electron + React + TypeScript prototype with:
