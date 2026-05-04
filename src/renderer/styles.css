@@ -1197,8 +1197,46 @@ a { color: inherit; text-decoration: none; }
   flex-direction: column;
   gap: 0;
 }
-.settings-head { margin-bottom: 28px; }
+.settings-head { margin-bottom: 28px; display: flex; align-items: center; gap: 12px; }
 .settings-title { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+
+.settings-status-chip {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg-sunk);
+  color: var(--ink-4);
+}
+.settings-status-chip.ok { background: var(--green-soft); border-color: var(--green-line); color: var(--green); }
+.settings-status-chip.warn { background: var(--amber-soft); border-color: var(--amber-line); color: oklch(0.45 0.13 75); }
+
+/* Provider tabs */
+.provider-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.provider-tab {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  color: var(--ink-3);
+  transition: background 60ms, color 60ms, border-color 60ms;
+}
+.provider-tab:hover { background: var(--bg-hover); color: var(--ink-2); }
+.provider-tab.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.settings-current {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
 .settings-section {
   border-bottom: 1px solid var(--line);
@@ -1274,7 +1312,8 @@ a { color: inherit; text-decoration: none; }
 }
 .model-option:hover { border-color: var(--line-strong); background: var(--bg-hover); }
 .model-option.selected { border-color: var(--ink); background: var(--bg-elev); }
-.model-option-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+.model-option-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+.model-id { font-size: 10.5px; color: var(--ink-4); font-family: var(--mono); }
 .model-name { font-size: 13px; font-weight: 500; color: var(--ink); }
 .model-speed { font-size: 11px; font-weight: 600; }
 .model-desc { font-size: 12px; color: var(--ink-3); }
