@@ -2443,6 +2443,18 @@ a { color: inherit; text-decoration: none; }
   text-overflow: ellipsis;
   max-width: 280px;
 }
+.task-row-waiting {
+  max-width: 220px;
+  border: 1px solid var(--amber-line);
+  border-radius: 999px;
+  padding: 1px 6px;
+  color: var(--ink-3);
+  background: var(--amber-soft);
+  font-size: 10.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .task-row-date {
   font-size: 11px;

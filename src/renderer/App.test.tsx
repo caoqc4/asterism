@@ -593,6 +593,7 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '创建这些子任务' }));
     expect(await screen.findByText('产出官网改版方案')).toBeTruthy();
     expect(screen.getByText('0/2 子任务完成')).toBeTruthy();
+    expect(screen.getByText('依赖：确认官网改版范围')).toBeTruthy();
     expect(harness.api.createTask).toHaveBeenCalledTimes(3);
     expect(harness.api.createCompletionCriteria).toHaveBeenCalledWith(expect.objectContaining({
       taskId: 'task_created_1',

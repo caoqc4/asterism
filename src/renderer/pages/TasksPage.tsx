@@ -66,6 +66,7 @@ function deferLabel(value: string): string {
 
 function derivelane(r: TaskListItemRecord): Lane {
   if (r.riskLevel === 'high') return 'escalate';
+  if (r.activeDependency) return 'unblock';
   if (r.activeBlocker || r.state === 'waiting_external') return 'unblock';
   if (r.state === 'running') return 'continue';
   if (r.state === 'captured') return 'clarify';
@@ -77,6 +78,7 @@ function derivelane(r: TaskListItemRecord): Lane {
 function deriveStatus(r: TaskListItemRecord): TaskStatus {
   if (r.state === 'running') return 'running';
   if (r.state === 'waiting_external') return 'waiting';
+  if (r.activeDependency) return 'blocked';
   if (r.activeBlocker) return 'blocked';
   if (r.state === 'completed' || r.state === 'archived') return 'done';
   return 'idle';
@@ -105,7 +107,9 @@ function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): 
     childTaskIds: attrs?.childTaskIds ?? [],
     whyNow: r.summary ?? undefined,
     nextStep: r.nextStep ?? undefined,
-    waitingOn: r.waitingReason ? `等待：${r.waitingReason}` : undefined,
+    waitingOn: r.activeDependency
+      ? `依赖：${r.activeDependency.blockedByTaskTitle ?? r.activeDependency.reason ?? '上游任务'}`
+      : r.waitingReason ? `等待：${r.waitingReason}` : undefined,
     commitment: attrs?.commitment ?? undefined,
     schedule: attrs?.schedule ?? undefined,
     trigger: attrs?.trigger ?? undefined,
@@ -284,11 +288,22 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
       const childIds = [...project.childTaskIds, ...childRecords.map((child) => child.id)];
       const parentAttrs = saveTaskAttributes(project.id, { childTaskIds: childIds });
       const childTasks = childRecords.map((child) => {
+        const draftSubtask = draft.subtasks.find((subtask) => subtask.title === child.title);
         const childAttrs = saveTaskAttributes(child.id, {
           type: 'simple',
           parentTaskId: project.id,
         });
-        return fromRecord({ ...child, activeBlocker: null, activeWaitingItem: null }, childAttrs);
+        const dependencyTitle = draftSubtask?.dependency?.trim() ?? '';
+        const dependency = dependencyTitle
+          ? childRecords.find((candidate) => dependencyTitle.includes(candidate.title) || candidate.title.includes(dependencyTitle))
+          : null;
+        const baseTask = fromRecord({ ...child, activeBlocker: null, activeWaitingItem: null }, childAttrs);
+        return {
+          ...baseTask,
+          status: dependency ? 'blocked' as const : baseTask.status,
+          lane: dependency ? 'unblock' as const : baseTask.lane,
+          waitingOn: dependency ? `依赖：${dependency.title}` : baseTask.waitingOn,
+        };
       });
 
       setAllTasks((prev) => {
@@ -854,6 +869,9 @@ function TaskRow({
           )}
           {task.whyNow && !selected && (
             <span className="task-row-why">{task.whyNow}</span>
+          )}
+          {task.waitingOn && (
+            <span className="task-row-waiting">{task.waitingOn}</span>
           )}
         </div>
       </div>
