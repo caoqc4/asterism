@@ -273,11 +273,24 @@ function createMockApi() {
       return created;
     }),
     getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => details[taskId] ?? null),
-    updateTask: vi.fn().mockImplementation(async (input) => ({
-      ...tasks[0]!,
-      ...input,
-      updatedAt: now,
-    })),
+    updateTask: vi.fn().mockImplementation(async (input) => {
+      const existing = tasks.find((task) => task.id === input.id) ?? tasks[0]!;
+      const updated = {
+        ...existing,
+        ...input,
+        updatedAt: now,
+      };
+      const index = tasks.findIndex((task) => task.id === input.id);
+      if (index >= 0) tasks[index] = updated;
+      if (details[input.id]) {
+        details[input.id] = {
+          ...details[input.id],
+          ...input,
+          updatedAt: now,
+        };
+      }
+      return updated;
+    }),
     transitionTask: vi.fn().mockImplementation(async (input) => ({
       ...tasks.find((task) => task.id === input.id) ?? tasks[0]!,
       state: input.nextState,
@@ -519,6 +532,40 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('定时任务')).toBeTruthy();
     expect(screen.getByText(/每周一 09:00/)).toBeTruthy();
     expect(screen.getByText(/周五 17:00 前发给 CEO/)).toBeTruthy();
+  });
+
+  it('lets users correct and clear task memory from Context', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Context/ }));
+    await user.click(await screen.findByText('董事会材料修订'));
+    expect(await screen.findByText(/需要按最新反馈更新董事会材料/)).toBeTruthy();
+
+    await user.click(screen.getAllByRole('button', { name: '编辑' })[0]!);
+    const summaryInput = screen.getByDisplayValue('需要按最新反馈更新董事会材料。');
+    await user.clear(summaryInput);
+    await user.type(summaryInput, '记忆已校正：只需要更新现金流页。');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(harness.api.updateTask).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'task_risk',
+        summary: '记忆已校正：只需要更新现金流页。',
+      }));
+    });
+    expect(await screen.findByText('记忆已校正：只需要更新现金流页。')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '清除' }));
+    await waitFor(() => {
+      expect(harness.api.updateTask).toHaveBeenCalledWith({
+        id: 'task_risk',
+        summary: null,
+        nextStep: null,
+        waitingReason: null,
+      });
+    });
+    expect(await screen.findByText('暂无详细上下文。')).toBeTruthy();
   });
 
   it('opens a task workbench and keeps Runs scoped under the task instead of global navigation', async () => {

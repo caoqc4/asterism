@@ -39,6 +39,12 @@ export function ContextPage() {
   const [tasks, setTasks] = useState<TaskListItemRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<string | null>(null);
+  const [taskMemoryDraft, setTaskMemoryDraft] = useState({
+    summary: '',
+    nextStep: '',
+    waitingReason: '',
+  });
   const [habits, setHabits] = useState<WorkHabitRecord[]>([]);
   const [expandedHabit, setExpandedHabit] = useState<string | null>(null);
   const [editingHabit, setEditingHabit] = useState<string | null>(null);
@@ -80,6 +86,53 @@ export function ContextPage() {
     setHabitDraft('');
   }
 
+  function startEditingTaskMemory(task: TaskListItemRecord) {
+    setEditingTask(task.id);
+    setExpandedTask(task.id);
+    setTaskMemoryDraft({
+      summary: task.summary ?? '',
+      nextStep: task.nextStep ?? '',
+      waitingReason: task.waitingReason ?? '',
+    });
+  }
+
+  async function saveTaskMemory(taskId: string) {
+    if (!window.api) return;
+    const patch = {
+      id: taskId,
+      summary: taskMemoryDraft.summary.trim() || null,
+      nextStep: taskMemoryDraft.nextStep.trim() || null,
+      waitingReason: taskMemoryDraft.waitingReason.trim() || null,
+    };
+    const updated = await window.api.updateTask(patch);
+    setTasks((current) => current.map((task) => task.id === taskId ? {
+      ...task,
+      summary: updated.summary,
+      nextStep: updated.nextStep,
+      waitingReason: updated.waitingReason,
+      updatedAt: updated.updatedAt,
+    } : task));
+    setEditingTask(null);
+  }
+
+  async function clearTaskMemory(taskId: string) {
+    if (!window.api) return;
+    const updated = await window.api.updateTask({
+      id: taskId,
+      summary: null,
+      nextStep: null,
+      waitingReason: null,
+    });
+    setTasks((current) => current.map((task) => task.id === taskId ? {
+      ...task,
+      summary: updated.summary,
+      nextStep: updated.nextStep,
+      waitingReason: updated.waitingReason,
+      updatedAt: updated.updatedAt,
+    } : task));
+    setEditingTask(null);
+  }
+
   return (
     <div className="context-page">
       <div className="context-page-head">
@@ -106,6 +159,7 @@ export function ContextPage() {
           {tasks.map((task) => {
             const lane = deriveLane(task);
             const isExpanded = expandedTask === task.id;
+            const isEditing = editingTask === task.id;
             const items: string[] = [];
             if (task.summary) items.push(task.summary);
             if (task.nextStep) items.push(`下一步：${task.nextStep}`);
@@ -127,7 +181,35 @@ export function ContextPage() {
                 </div>
                 {isExpanded && (
                   <div className="ctx-memory-body">
-                    {items.length > 0 ? (
+                    {isEditing ? (
+                      <div className="ctx-memory-editor">
+                        <label className="ctx-memory-edit-row">
+                          <span>摘要</span>
+                          <textarea
+                            className="settings-input ctx-memory-textarea"
+                            rows={3}
+                            value={taskMemoryDraft.summary}
+                            onChange={(e) => setTaskMemoryDraft((draft) => ({ ...draft, summary: e.target.value }))}
+                          />
+                        </label>
+                        <label className="ctx-memory-edit-row">
+                          <span>下一步</span>
+                          <input
+                            className="settings-input"
+                            value={taskMemoryDraft.nextStep}
+                            onChange={(e) => setTaskMemoryDraft((draft) => ({ ...draft, nextStep: e.target.value }))}
+                          />
+                        </label>
+                        <label className="ctx-memory-edit-row">
+                          <span>等待原因</span>
+                          <input
+                            className="settings-input"
+                            value={taskMemoryDraft.waitingReason}
+                            onChange={(e) => setTaskMemoryDraft((draft) => ({ ...draft, waitingReason: e.target.value }))}
+                          />
+                        </label>
+                      </div>
+                    ) : items.length > 0 ? (
                       items.map((item, i) => (
                         <div key={i} className="ctx-memory-item">
                           <span className="ctx-memory-bullet">·</span>
@@ -138,8 +220,17 @@ export function ContextPage() {
                       <div className="ctx-memory-item muted">暂无详细上下文。</div>
                     )}
                     <div className="ctx-memory-actions">
-                      <button className="btn sm ghost" disabled title="即将支持">编辑</button>
-                      <button className="btn sm ghost" disabled title="即将支持" style={{ color: 'var(--accent)' }}>清除</button>
+                      {isEditing ? (
+                        <>
+                          <button className="btn sm primary" onClick={() => void saveTaskMemory(task.id)}>保存</button>
+                          <button className="btn sm ghost" onClick={() => setEditingTask(null)}>取消</button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="btn sm ghost" onClick={() => startEditingTaskMemory(task)}>编辑</button>
+                          <button className="btn sm ghost" onClick={() => void clearTaskMemory(task.id)} style={{ color: 'var(--accent)' }}>清除</button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}

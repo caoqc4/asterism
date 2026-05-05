@@ -1196,6 +1196,25 @@ a { color: inherit; text-decoration: none; }
 }
 .ctx-memory-bullet { color: var(--ink-4); flex-shrink: 0; }
 .ctx-memory-actions { display: flex; gap: 6px; margin-top: 6px; }
+.ctx-memory-editor {
+  display: grid;
+  gap: 8px;
+}
+.ctx-memory-edit-row {
+  display: grid;
+  gap: 4px;
+}
+.ctx-memory-edit-row > span {
+  color: var(--ink-3);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ctx-memory-textarea {
+  min-height: 72px;
+  resize: vertical;
+}
 
 /* Habit rows */
 .ctx-habit-row {
