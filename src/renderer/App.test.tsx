@@ -605,6 +605,11 @@ describe('App redesign v1', () => {
       text: '方案可供评审。',
       verificationResponsibility: 'unknown',
     }));
+    expect(harness.api.createCompletionCriteria).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_created',
+      text: '完成并验收 2 个项目子任务。',
+      verificationResponsibility: 'unknown',
+    }));
     expect(harness.api.createTaskDependency).toHaveBeenCalledWith({
       taskId: 'task_created_2',
       blockedByTaskId: 'task_created_1',

@@ -300,6 +300,11 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
         content: draft.review,
         note: `${draft.subtasks.length} 个子任务；用户确认后创建。`,
       });
+      await window.api.createCompletionCriteria({
+        taskId: project.id,
+        text: `完成并验收 ${draft.subtasks.length} 个项目子任务。`,
+        verificationResponsibility: 'unknown',
+      });
       const childTasks = childRecords.map((child) => {
         const draftSubtask = draft.subtasks.find((subtask) => subtask.title === child.title);
         const childAttrs = saveTaskAttributes(child.id, {
