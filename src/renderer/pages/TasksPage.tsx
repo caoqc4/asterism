@@ -31,6 +31,7 @@ interface Task {
   commitment?: string;
   schedule?: string;
   trigger?: string;
+  dependencyId?: string;
   dependencyReady?: boolean;
   updatedAt: string;
   state: TaskState;
@@ -113,6 +114,7 @@ function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): 
         ? `依赖可复核：${r.dependencyReevaluation.upstreamTaskTitle}`
         : `依赖：${r.activeDependency.blockedByTaskTitle ?? r.activeDependency.reason ?? '上游任务'}`
       : r.waitingReason ? `等待：${r.waitingReason}` : undefined,
+    dependencyId: r.activeDependency?.id,
     dependencyReady: Boolean(r.dependencyReevaluation),
     commitment: attrs?.commitment ?? undefined,
     schedule: attrs?.schedule ?? undefined,
@@ -238,6 +240,27 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
     setSelectedId(null);
     setAllTasks((prev) => prev.filter((t) => t.id !== task.id));
     transitionWithPlanningHop(task, 'waiting_external', `延后处理：${deferLabel(option)}`).catch(() => reloadTasks());
+  }
+
+  async function resolveReadyDependency(task: Task) {
+    if (!window.api || !task.dependencyId) return;
+    try {
+      await window.api.resolveTaskDependency(task.dependencyId);
+      setAllTasks((prev) => prev.map((item) => (
+        item.id === task.id
+          ? {
+              ...item,
+              dependencyId: undefined,
+              dependencyReady: false,
+              waitingOn: undefined,
+              status: 'idle',
+              lane: item.state === 'captured' ? 'clarify' : 'continue',
+            }
+          : item
+      )));
+    } catch {
+      reloadTasks();
+    }
   }
 
   async function generateProjectDecomposition(project: Task) {
@@ -534,6 +557,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
               onDeferSelect={deferTask}
               onComplete={(task) => setCompletionCheckTask(task)}
               onMore={(event, task) => handleContextMenu(event, task.id)}
+              onResolveDependency={resolveReadyDependency}
               projectDraft={projectDraft}
               decomposingId={projectDecomposingId}
               creatingChildrenId={projectCreatingChildrenId}
@@ -564,6 +588,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
                       onDeferSelect={(opt) => deferTask(task, opt)}
                       onComplete={(e) => { e.stopPropagation(); setCompletionCheckTask(task); }}
                       onMore={(e) => { e.stopPropagation(); handleContextMenu(e, task.id); }}
+                      onResolveDependency={(item) => resolveReadyDependency(item)}
                     />
                   ))}
                 </div>
@@ -594,6 +619,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
                   e.stopPropagation();
                   handleContextMenu(e, task.id);
                 }}
+                onResolveDependency={(item) => resolveReadyDependency(item)}
               />
             ))
           )}
@@ -719,6 +745,7 @@ function ProjectTreeView({
   onDeferSelect,
   onComplete,
   onMore,
+  onResolveDependency,
   projectDraft,
   decomposingId,
   creatingChildrenId,
@@ -737,6 +764,7 @@ function ProjectTreeView({
   onDeferSelect: (task: Task, option: string) => void;
   onComplete: (task: Task) => void;
   onMore: (event: React.MouseEvent, task: Task) => void;
+  onResolveDependency: (task: Task) => void;
   projectDraft: { projectId: string; result: ProjectDecompositionResult } | null;
   decomposingId: string | null;
   creatingChildrenId: string | null;
@@ -771,6 +799,7 @@ function ProjectTreeView({
               onDeferSelect={(option) => onDeferSelect(project, option)}
               onComplete={(event) => { event.stopPropagation(); onComplete(project); }}
               onMore={(event) => { event.stopPropagation(); onMore(event, project); }}
+              onResolveDependency={onResolveDependency}
             />
             {children.map((child) => (
               <div key={child.id} className="project-child-row">
@@ -785,6 +814,7 @@ function ProjectTreeView({
                   onDeferSelect={(option) => onDeferSelect(child, option)}
                   onComplete={(event) => { event.stopPropagation(); onComplete(child); }}
                   onMore={(event) => { event.stopPropagation(); onMore(event, child); }}
+                  onResolveDependency={onResolveDependency}
                 />
               </div>
             ))}
@@ -874,12 +904,13 @@ interface TaskRowProps {
   onDeferSelect: (opt: string) => void;
   onComplete: (e: React.MouseEvent) => void;
   onMore: (e: React.MouseEvent) => void;
+  onResolveDependency: (task: Task) => void;
 }
 
 function TaskRow({
   task, selected, deferOpen,
   onClick, onDoubleClick, onContextMenu,
-  onDeferToggle, onDeferSelect, onComplete, onMore,
+  onDeferToggle, onDeferSelect, onComplete, onMore, onResolveDependency,
 }: TaskRowProps) {
   return (
     <div
@@ -912,6 +943,9 @@ function TaskRow({
       {/* Right side: timestamp or action buttons */}
       {selected ? (
         <div className="task-row-actions" onClick={(e) => e.stopPropagation()}>
+          {task.dependencyReady && task.dependencyId && (
+            <button className="btn sm" onClick={() => onResolveDependency(task)}>解除依赖</button>
+          )}
           <div style={{ position: 'relative' }}>
             <button className="btn sm ghost" onClick={onDeferToggle}>延后 ▾</button>
             {deferOpen && (

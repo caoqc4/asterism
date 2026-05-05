@@ -543,6 +543,12 @@ describe('App redesign v1', () => {
 
     expect(await screen.findByText('准备官网方案评审')).toBeTruthy();
     expect(screen.getByText('依赖可复核：确认官网改版范围')).toBeTruthy();
+    await user.click(screen.getByText('准备官网方案评审'));
+    await user.click(await screen.findByRole('button', { name: '解除依赖' }));
+    expect(harness.api.resolveTaskDependency).toHaveBeenCalledWith('dependency_ready');
+    await waitFor(() => {
+      expect(screen.queryByText('依赖可复核：确认官网改版范围')).toBeNull();
+    });
   });
 
   it('shows only pending decisions and dispatches formal decision actions', async () => {
