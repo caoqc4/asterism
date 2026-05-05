@@ -48,6 +48,29 @@ const TASK_TYPE_HABIT_LABELS: Record<TaskExecutionType, string> = {
   event:     '事件触发',
 };
 
+function normalizeUserMessage(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[，。！？、,.!?；;：:\s]/g, '');
+}
+
+function shouldSuggestSessionRefresh(messages: Message[]): boolean {
+  const userMessages = messages
+    .filter((message) => message.role === 'user')
+    .map((message) => normalizeUserMessage(message.text))
+    .filter(Boolean);
+  if (userMessages.length >= 5) return true;
+
+  const counts = new Map<string, number>();
+  for (const message of userMessages) {
+    const next = (counts.get(message) ?? 0) + 1;
+    if (userMessages.length >= 3 && next >= 3) return true;
+    counts.set(message, next);
+  }
+  return false;
+}
+
 interface RightPanelProps {
   taskId: string | null;
   onClose: () => void;
@@ -59,6 +82,7 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
   const [titleCache, setTitleCache] = useState<Record<string, string>>({});
   const [messages, setMessages] = useState<Message[]>([]);
   const [pendingSwitch, setPendingSwitch] = useState<PendingCtxSwitch | null>(null);
+  const [sessionRefreshDismissed, setSessionRefreshDismissed] = useState(false);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -91,7 +115,7 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
       let title = titleCache[taskId];
       if (!title && window.api) {
         const d = await window.api.getTaskDetail(taskId).catch(() => null);
-        if (d) {
+      if (d) {
           title = d.title;
           setTitleCache((prev) => ({ ...prev, [taskId]: title }));
         }
@@ -105,6 +129,7 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
     if (!pendingSwitch) return;
     setActiveTaskId(pendingSwitch.taskId);
     setPendingSwitch(null);
+    setSessionRefreshDismissed(false);
     appendSysMsg(`已切换到任务：**${pendingSwitch.taskTitle}**`);
   }
 
@@ -118,6 +143,14 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
       ...prev,
       { id: nextId(), role: 'assistant', text, ts: now() },
     ]);
+  }
+
+  function startFreshSession() {
+    const taskName = title ?? (activeTaskId ? titleCache[activeTaskId] ?? activeTaskId : null);
+    setMessages(taskName ? [makeWelcomeMessage(taskName)] : []);
+    setSessionRefreshDismissed(false);
+    setInput('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
   }
 
   function autoResize() {
@@ -183,6 +216,11 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
 
   const title = taskTitle(activeTaskId, titleCache);
   const activeAttrs = activeTaskId ? getTaskAttributes(activeTaskId) : null;
+  const shouldSuggestRefresh = Boolean(
+    activeTaskId
+    && !sessionRefreshDismissed
+    && shouldSuggestSessionRefresh(messages),
+  );
   const projectDecompositionPrompt = activeAttrs?.type === 'project' && title
     ? buildProjectDecompositionPrompt(title)
     : null;
@@ -258,6 +296,18 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
             <div className="panel-ctx-switch-actions">
               <button className="btn sm primary" onClick={confirmSwitch}>切换到此任务</button>
               <button className="btn sm ghost" onClick={dismissSwitch}>保持全局</button>
+            </div>
+          </div>
+        )}
+
+        {shouldSuggestRefresh && (
+          <div className="panel-refresh-suggestion">
+            <div className="panel-refresh-text">
+              这个任务的讨论已经有点长了，重要信息会从任务记忆继续带入。建议开始一段新会话，让后续判断更清楚。
+            </div>
+            <div className="panel-refresh-actions">
+              <button className="btn sm primary" onClick={startFreshSession}>开始新会话</button>
+              <button className="btn sm ghost" onClick={() => setSessionRefreshDismissed(true)}>继续当前会话</button>
             </div>
           </div>
         )}

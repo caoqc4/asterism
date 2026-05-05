@@ -490,6 +490,28 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('我会基于任务上下文给出下一步建议。')).toBeTruthy();
   });
 
+  it('suggests a fresh task session when the right-panel conversation gets repetitive', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
+
+    for (let i = 0; i < 3; i += 1) {
+      await user.type(input, '下一步怎么推进？');
+      await user.click(screen.getByRole('button', { name: '发送' }));
+      await waitFor(() => {
+        expect(harness.api.chatWithAI).toHaveBeenCalledTimes(i + 1);
+      });
+    }
+
+    expect(await screen.findByText(/建议开始一段新会话/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '开始新会话' }));
+    await waitFor(() => {
+      expect(screen.queryByText(/建议开始一段新会话/)).toBeNull();
+    });
+  });
+
   it('persists selected task completion from the Tasks inline row action', async () => {
     const user = userEvent.setup();
     render(<App />);

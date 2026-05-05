@@ -382,6 +382,25 @@ a { color: inherit; text-decoration: none; }
 .panel-ctx-switch-text { font-size: 11.5px; color: var(--ink-3); margin-bottom: 6px; }
 .panel-ctx-switch-actions { display: flex; gap: 6px; }
 
+.panel-refresh-suggestion {
+  margin: 2px 8px 8px;
+  padding: 9px 10px;
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  box-shadow: var(--shadow-soft);
+}
+.panel-refresh-text {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  line-height: 1.5;
+  margin-bottom: 7px;
+}
+.panel-refresh-actions {
+  display: flex;
+  gap: 6px;
+}
+
 .panel-input-wrap {
   border-top: 1px solid var(--line);
   padding: 10px 12px;
