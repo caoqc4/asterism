@@ -262,6 +262,7 @@ function createMockApi() {
   ];
   const runs = [buildRun({ taskId: tasks[0]!.id })];
   let subscriber: Parameters<ElectronApi['subscribeToEvents']>[0] | null = null;
+  let createCounter = 0;
 
   const api: ElectronApi = {
     ping: vi.fn().mockResolvedValue({ message: 'pong', timestamp: now }),
@@ -274,12 +275,13 @@ function createMockApi() {
     listTasks: vi.fn().mockResolvedValue(tasks),
     createTask: vi.fn().mockImplementation(async (input) => {
       const created = buildTask({
-        id: 'task_created',
+        id: createCounter === 0 ? 'task_created' : `task_created_${createCounter}`,
         title: input.title,
         summary: input.summary ?? null,
         state: 'captured',
         nextStep: null,
       });
+      createCounter += 1;
       tasks.unshift(created);
       details[created.id] = buildTaskDetail(created);
       return created;
@@ -544,6 +546,25 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('定时任务')).toBeTruthy();
     expect(screen.getByText(/每周一 09:00/)).toBeTruthy();
     expect(screen.getByText(/周五 17:00 前发给 CEO/)).toBeTruthy();
+  });
+
+  it('creates project tasks with real child tasks and shows them in the project lens', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByRole('button', { name: '+ 新建任务' }));
+    await user.type(await screen.findByPlaceholderText(/任务标题/), '官网改版项目');
+    expect(screen.getByRole('button', { name: '项目' }).className).toContain('active');
+    await user.click(screen.getByRole('button', { name: '创建' }));
+
+    await user.click(screen.getByRole('button', { name: /项目型/ }));
+    expect((await screen.findAllByText('官网改版项目')).length).toBeGreaterThan(0);
+    expect(screen.getByText('0/3 子任务完成')).toBeTruthy();
+    expect(screen.getByText('明确范围：官网改版项目')).toBeTruthy();
+    expect(screen.getByText('产出初稿：官网改版项目')).toBeTruthy();
+    expect(screen.getByText('验收交付：官网改版项目')).toBeTruthy();
+    expect(harness.api.createTask).toHaveBeenCalledTimes(4);
   });
 
   it('lets users correct and clear task memory from Context', async () => {

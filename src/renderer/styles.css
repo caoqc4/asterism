@@ -2460,6 +2460,54 @@ a { color: inherit; text-decoration: none; }
   font-size: 13px;
 }
 
+.project-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 8px 0 24px;
+}
+.project-group {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+.project-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 6px;
+  color: var(--ink-3);
+  font-size: 11.5px;
+}
+.project-disclosure {
+  color: var(--ink-4);
+  font-size: 10px;
+}
+.project-group-title {
+  color: var(--ink);
+  font-weight: 600;
+}
+.project-progress {
+  margin-left: auto;
+  font-family: var(--mono);
+  color: var(--ink-4);
+}
+.project-child-row {
+  position: relative;
+  padding-left: 22px;
+}
+.project-child-row::before {
+  content: "";
+  position: absolute;
+  left: 16px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--line);
+}
+.project-child-row .task-row {
+  padding-left: 12px;
+}
+
 /* Task preview panel */
 .task-preview {
   border-left: 1px solid var(--line);

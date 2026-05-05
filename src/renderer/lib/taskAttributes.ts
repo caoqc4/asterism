@@ -3,6 +3,8 @@ export type TaskExecutionType = 'simple' | 'project' | 'scheduled' | 'event';
 export type TaskAttributeRecord = {
   taskId: string;
   type: TaskExecutionType;
+  parentTaskId: string | null;
+  childTaskIds: string[];
   commitment: string | null;
   schedule: string | null;
   trigger: string | null;
@@ -43,6 +45,8 @@ export function saveTaskAttributes(
   const next: TaskAttributeRecord = {
     taskId,
     type: patch.type ?? existing?.type ?? 'simple',
+    parentTaskId: patch.parentTaskId !== undefined ? patch.parentTaskId ?? null : existing?.parentTaskId ?? null,
+    childTaskIds: patch.childTaskIds ?? existing?.childTaskIds ?? [],
     commitment: patch.commitment !== undefined ? normalizeText(patch.commitment) : existing?.commitment ?? null,
     schedule: patch.schedule !== undefined ? normalizeText(patch.schedule) : existing?.schedule ?? null,
     trigger: patch.trigger !== undefined ? normalizeText(patch.trigger) : existing?.trigger ?? null,
@@ -72,6 +76,15 @@ export function defaultScheduleForType(type: TaskExecutionType): string | null {
 export function defaultTriggerForType(type: TaskExecutionType): string | null {
   if (type === 'event') return '外部信号更新时';
   return null;
+}
+
+export function buildDefaultProjectSubtaskTitles(projectTitle: string): string[] {
+  const shortTitle = projectTitle.replace(/[。.!！?？]+$/g, '').trim();
+  return [
+    `明确范围：${shortTitle}`,
+    `产出初稿：${shortTitle}`,
+    `验收交付：${shortTitle}`,
+  ];
 }
 
 function normalizeText(value: string | null | undefined): string | null {

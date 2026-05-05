@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import type { TaskListItemRecord, TaskState } from '@shared/types/task';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import {
+  buildDefaultProjectSubtaskTitles,
   defaultScheduleForType,
   defaultTriggerForType,
   inferTaskExecutionType,
@@ -22,6 +23,8 @@ interface Task {
   lane: Lane;
   status: TaskStatus;
   type: TaskType;
+  parentTaskId?: string;
+  childTaskIds: string[];
   whyNow?: string;
   nextStep?: string;
   waitingOn?: string;
@@ -98,6 +101,8 @@ function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): 
     lane: derivelane(r),
     status: deriveStatus(r),
     type: attrs?.type ?? 'simple',
+    parentTaskId: attrs?.parentTaskId ?? undefined,
+    childTaskIds: attrs?.childTaskIds ?? [],
     whyNow: r.summary ?? undefined,
     nextStep: r.nextStep ?? undefined,
     waitingOn: r.waitingReason ? `等待：${r.waitingReason}` : undefined,
@@ -172,6 +177,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
   });
 
   const selectedTask = filtered.find((t) => t.id === selectedId) ?? null;
+  const projectParents = allTasks.filter((task) => task.type === 'project' && !task.parentTaskId);
 
   function handleRowClick(id: string) {
     if (clickTimer.current) clearTimeout(clickTimer.current);
@@ -245,7 +251,23 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
           schedule: defaultScheduleForType(selectedType),
           trigger: defaultTriggerForType(selectedType),
         });
-        setAllTasks((prev) => [fromRecord({ ...record, activeBlocker: null, activeWaitingItem: null }, attrs), ...prev]);
+        const createdTasks = [fromRecord({ ...record, activeBlocker: null, activeWaitingItem: null }, attrs)];
+        if (selectedType === 'project') {
+          const childRecords = await Promise.all(buildDefaultProjectSubtaskTitles(title).map((childTitle) => (
+            window.api!.createTask({ title: childTitle, summary: `属于项目「${title}」的子任务。` })
+          )));
+          const childIds = childRecords.map((child) => child.id);
+          const parentAttrs = saveTaskAttributes(newId, { childTaskIds: childIds });
+          createdTasks[0] = fromRecord({ ...record, activeBlocker: null, activeWaitingItem: null }, parentAttrs);
+          for (const child of childRecords) {
+            const childAttrs = saveTaskAttributes(child.id, {
+              type: 'simple',
+              parentTaskId: newId,
+            });
+            createdTasks.push(fromRecord({ ...child, activeBlocker: null, activeWaitingItem: null }, childAttrs));
+          }
+        }
+        setAllTasks((prev) => [...createdTasks, ...prev]);
       } else {
         newId = `t-${Date.now()}`;
         const attrs = saveTaskAttributes(newId, {
@@ -257,13 +279,37 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
         const fake: Task = {
           id: newId, title, lane: 'clarify', status: 'idle',
           type: attrs.type,
+          childTaskIds: attrs.childTaskIds,
           commitment: attrs.commitment ?? undefined,
           schedule: attrs.schedule ?? undefined,
           trigger: attrs.trigger ?? undefined,
           updatedAt: new Date().toLocaleDateString('zh'),
           state: 'captured',
         };
-        setAllTasks((prev) => [fake, ...prev]);
+        const createdTasks = [fake];
+        if (selectedType === 'project') {
+          const childIds: string[] = [];
+          for (const childTitle of buildDefaultProjectSubtaskTitles(title)) {
+            const childId = `t-${Date.now()}-${childIds.length}`;
+            childIds.push(childId);
+            const childAttrs = saveTaskAttributes(childId, { type: 'simple', parentTaskId: newId });
+            createdTasks.push({
+              id: childId,
+              title: childTitle,
+              lane: 'clarify',
+              status: 'idle',
+              type: childAttrs.type,
+              parentTaskId: newId,
+              childTaskIds: childAttrs.childTaskIds,
+              whyNow: `属于项目「${title}」的子任务。`,
+              updatedAt: new Date().toLocaleDateString('zh'),
+              state: 'captured',
+            });
+          }
+          const parentAttrs = saveTaskAttributes(newId, { childTaskIds: childIds });
+          createdTasks[0] = { ...fake, childTaskIds: parentAttrs.childTaskIds };
+        }
+        setAllTasks((prev) => [...createdTasks, ...prev]);
       }
       setCaptureTitle('');
       setCaptureType('simple');
@@ -292,7 +338,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
 
         <div className="lens-group-label">任务类型</div>
         <LensItem label="项目型" active={lens === 'project'} onClick={() => setLens('project')} icon="📁"
-          count={allTasks.filter(t => t.type === 'project').length} />
+          count={projectParents.length} />
         <LensItem label="定时任务" active={lens === 'scheduled'} onClick={() => setLens('scheduled')} icon="🔁"
           count={allTasks.filter(t => t.type === 'scheduled').length} />
         <LensItem label="事件触发" active={lens === 'event'} onClick={() => setLens('event')} icon="⚡"
@@ -389,7 +435,21 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
 
         {/* Task rows */}
         <div className="task-list">
-          {viewMode === 'lane' ? (
+          {lens === 'project' ? (
+            <ProjectTreeView
+              projects={projectParents}
+              tasks={allTasks}
+              selectedId={selectedId}
+              deferOpenId={deferOpenId}
+              onRowClick={handleRowClick}
+              onRowDoubleClick={handleRowDoubleClick}
+              onContextMenu={handleContextMenu}
+              onDeferToggle={(task) => setDeferOpenId((prev) => (prev === task.id ? null : task.id))}
+              onDeferSelect={deferTask}
+              onComplete={(task) => setCompletionCheckTask(task)}
+              onMore={(event, task) => handleContextMenu(event, task.id)}
+            />
+          ) : viewMode === 'lane' ? (
             LANE_ORDER.map((lane) => {
               const group = groupByLane(filtered)[lane];
               if (group.length === 0) return null;
@@ -552,6 +612,82 @@ function LensItem({ label, active, onClick, count, dot, icon }: LensItemProps) {
         <span className="lens-count">{count}</span>
       )}
     </button>
+  );
+}
+
+function ProjectTreeView({
+  projects,
+  tasks,
+  selectedId,
+  deferOpenId,
+  onRowClick,
+  onRowDoubleClick,
+  onContextMenu,
+  onDeferToggle,
+  onDeferSelect,
+  onComplete,
+  onMore,
+}: {
+  projects: Task[];
+  tasks: Task[];
+  selectedId: string | null;
+  deferOpenId: string | null;
+  onRowClick: (id: string) => void;
+  onRowDoubleClick: (id: string) => void;
+  onContextMenu: (event: React.MouseEvent, taskId: string) => void;
+  onDeferToggle: (task: Task) => void;
+  onDeferSelect: (task: Task, option: string) => void;
+  onComplete: (task: Task) => void;
+  onMore: (event: React.MouseEvent, task: Task) => void;
+}) {
+  if (projects.length === 0) return null;
+
+  return (
+    <div className="project-tree">
+      {projects.map((project) => {
+        const children = project.childTaskIds
+          .map((id) => tasks.find((task) => task.id === id))
+          .filter((task): task is Task => Boolean(task));
+        const done = children.filter((task) => task.status === 'done').length;
+        return (
+          <div key={project.id} className="project-group">
+            <div className="project-group-head">
+              <span className="project-disclosure">▾</span>
+              <span className="project-group-title">{project.title}</span>
+              <span className="project-progress">{done}/{children.length} 子任务完成</span>
+            </div>
+            <TaskRow
+              task={project}
+              selected={selectedId === project.id}
+              deferOpen={deferOpenId === project.id}
+              onClick={() => onRowClick(project.id)}
+              onDoubleClick={() => onRowDoubleClick(project.id)}
+              onContextMenu={(event) => onContextMenu(event, project.id)}
+              onDeferToggle={(event) => { event.stopPropagation(); onDeferToggle(project); }}
+              onDeferSelect={(option) => onDeferSelect(project, option)}
+              onComplete={(event) => { event.stopPropagation(); onComplete(project); }}
+              onMore={(event) => { event.stopPropagation(); onMore(event, project); }}
+            />
+            {children.map((child) => (
+              <div key={child.id} className="project-child-row">
+                <TaskRow
+                  task={child}
+                  selected={selectedId === child.id}
+                  deferOpen={deferOpenId === child.id}
+                  onClick={() => onRowClick(child.id)}
+                  onDoubleClick={() => onRowDoubleClick(child.id)}
+                  onContextMenu={(event) => onContextMenu(event, child.id)}
+                  onDeferToggle={(event) => { event.stopPropagation(); onDeferToggle(child); }}
+                  onDeferSelect={(option) => onDeferSelect(child, option)}
+                  onComplete={(event) => { event.stopPropagation(); onComplete(child); }}
+                  onMore={(event) => { event.stopPropagation(); onMore(event, child); }}
+                />
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
