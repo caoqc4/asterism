@@ -15,12 +15,42 @@ export type WorkHabitRecord = {
   applicationCount: number;
 };
 
+export type WorkHabitStorageSnapshot = {
+  version: 2;
+  storage: 'renderer_local';
+  privacyBoundary: {
+    locality: 'device_only';
+    contains: string[];
+    excludes: string[];
+  };
+  habits: WorkHabitRecord[];
+};
+
 export type WorkHabitConflict = {
   candidate: WorkHabitRecord;
   confirmed: WorkHabitRecord;
 };
 
 const STORAGE_KEY = 'taskplane.workHabits.v1';
+const STORAGE_VERSION = 2;
+const PRIVACY_BOUNDARY: WorkHabitStorageSnapshot['privacyBoundary'] = {
+  locality: 'device_only',
+  contains: [
+    '规则描述',
+    '来源类型',
+    '适用范围',
+    '确认状态',
+    '创建与最近应用时间',
+    '应用次数',
+    '用户填写的例子或触发场景',
+  ],
+  excludes: [
+    '聊天消息全文',
+    '任务产物正文',
+    '外部连接凭据',
+    '未明确写入的后台行为记录',
+  ],
+};
 
 const SEED_HABITS: WorkHabitRecord[] = [
   {
@@ -53,27 +83,60 @@ function canUseLocalStorage(): boolean {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
 }
 
-function safeParse(value: string | null): WorkHabitRecord[] | null {
+function safeParseSnapshot(value: string | null): WorkHabitStorageSnapshot | null {
   if (!value) return null;
   try {
-    const parsed = JSON.parse(value) as WorkHabitRecord[];
-    return Array.isArray(parsed) ? parsed : null;
+    const parsed = JSON.parse(value) as WorkHabitStorageSnapshot | WorkHabitRecord[];
+    if (Array.isArray(parsed)) return buildStorageSnapshot(parsed);
+    if (
+      parsed
+      && typeof parsed === 'object'
+      && Array.isArray((parsed as WorkHabitStorageSnapshot).habits)
+    ) {
+      return buildStorageSnapshot((parsed as WorkHabitStorageSnapshot).habits);
+    }
+    return null;
   } catch {
     return null;
   }
 }
 
+function buildStorageSnapshot(habits: WorkHabitRecord[]): WorkHabitStorageSnapshot {
+  return {
+    version: STORAGE_VERSION,
+    storage: 'renderer_local',
+    privacyBoundary: PRIVACY_BOUNDARY,
+    habits,
+  };
+}
+
+export function getWorkHabitStorageSnapshot(): WorkHabitStorageSnapshot {
+  if (!canUseLocalStorage()) return buildStorageSnapshot(SEED_HABITS);
+  const stored = safeParseSnapshot(window.localStorage.getItem(STORAGE_KEY));
+  if (stored) {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+    return stored;
+  }
+  const seeded = buildStorageSnapshot(SEED_HABITS);
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
+  return seeded;
+}
+
 export function loadWorkHabits(): WorkHabitRecord[] {
-  if (!canUseLocalStorage()) return SEED_HABITS;
-  const stored = safeParse(window.localStorage.getItem(STORAGE_KEY));
-  if (stored) return stored;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_HABITS));
-  return SEED_HABITS;
+  return getWorkHabitStorageSnapshot().habits;
 }
 
 export function saveWorkHabits(habits: WorkHabitRecord[]): void {
   if (!canUseLocalStorage()) return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(buildStorageSnapshot(habits)));
+}
+
+export function describeWorkHabitStorageBoundary(): string[] {
+  return [
+    '工作习惯记录仅保存在本机 Taskplane 数据中。',
+    `保存：${PRIVACY_BOUNDARY.contains.join('、')}。`,
+    `不保存：${PRIVACY_BOUNDARY.excludes.join('、')}。`,
+  ];
 }
 
 export function updateWorkHabit(

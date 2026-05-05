@@ -3,6 +3,7 @@ import type { TaskListItemRecord } from '@shared/types/task';
 import {
   createManualWorkHabit,
   deleteWorkHabit,
+  describeWorkHabitStorageBoundary,
   findWorkHabitConflict,
   loadWorkHabits,
   resolveWorkHabitConflict,
@@ -60,6 +61,7 @@ export function ContextPage() {
   const [editingHabit, setEditingHabit] = useState<string | null>(null);
   const [habitDraft, setHabitDraft] = useState('');
   const [showNewHabit, setShowNewHabit] = useState(false);
+  const storageBoundary = describeWorkHabitStorageBoundary();
   const [newHabitDraft, setNewHabitDraft] = useState({
     rule: '',
     scope: 'global' as WorkHabitScope,
@@ -293,6 +295,11 @@ export function ContextPage() {
         </div>
 
         <div className="ctx-list">
+          <div className="ctx-storage-boundary">
+            {storageBoundary.map((line) => (
+              <div key={line}>{line}</div>
+            ))}
+          </div>
           {showNewHabit && (
             <div className="ctx-habit-new">
               <input

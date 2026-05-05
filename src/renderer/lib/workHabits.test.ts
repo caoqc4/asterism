@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   createManualWorkHabit,
+  describeWorkHabitStorageBoundary,
   findWorkHabitConflict,
+  getWorkHabitStorageSnapshot,
   loadWorkHabits,
   resolveWorkHabitConflict,
   saveWorkHabits,
@@ -128,6 +130,31 @@ describe('work habit conflict handling', () => {
       'habit_type',
       'habit_global',
     ]);
+  });
+
+  it('stores habits in a versioned local-only snapshot and migrates legacy arrays', () => {
+    window.localStorage.setItem('taskplane.workHabits.v1', JSON.stringify([baseHabit]));
+
+    const snapshot = getWorkHabitStorageSnapshot();
+
+    expect(snapshot).toMatchObject({
+      version: 2,
+      storage: 'renderer_local',
+      privacyBoundary: {
+        locality: 'device_only',
+      },
+      habits: [expect.objectContaining({ id: 'habit_existing' })],
+    });
+    expect(snapshot.privacyBoundary.excludes).toContain('聊天消息全文');
+    expect(JSON.parse(window.localStorage.getItem('taskplane.workHabits.v1') ?? '{}')).toMatchObject({
+      version: 2,
+      habits: [expect.objectContaining({ id: 'habit_existing' })],
+    });
+  });
+
+  it('describes the work habit privacy boundary for Context', () => {
+    expect(describeWorkHabitStorageBoundary().join('\n')).toContain('仅保存在本机');
+    expect(describeWorkHabitStorageBoundary().join('\n')).toContain('不保存：聊天消息全文');
   });
 });
 
