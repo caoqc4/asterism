@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { TaskDetail } from '@shared/types/task';
-import type { RunRecord, RunDetailRecord, RunStepRecord } from '@shared/types/run';
+import type { RunRecord, RunDetailRecord, RunStepRecord, RunVerificationRecord } from '@shared/types/run';
 import { evaluateRunSelfCheck, evaluateRunStepSelfCheck, type RunSelfCheckResult } from '@shared/run-self-check';
 import type { SourceContextRecord } from '@shared/types/source-context';
 import type { ArtifactRecord, ArtifactKind } from '@shared/types/artifact';
@@ -522,11 +522,12 @@ function RunsTab({
                 <RunStep
                   key={step.id}
                   step={step}
+                  detail={activeRunDetail}
                 />
               ))}
             </div>
           )}
-          <RunCheckSummary check={evaluateRunSelfCheck(active, activeRunDetail)} />
+          <RunCheckSummary check={getRunCheck(active, activeRunDetail)} />
         </div>
       )}
 
@@ -549,7 +550,7 @@ function RunsTab({
             </div>
             {isExpanded && (
               <div className="run-item-detail">
-                <RunCheckSummary check={evaluateRunSelfCheck(r)} />
+                <RunCheckSummary check={getRunCheck(r)} />
                 {r.output ? (
                   <pre className="run-item-full-output">{r.output}</pre>
                 ) : (
@@ -598,12 +599,13 @@ function RunsTab({
   );
 }
 
-function RunStep({ step }: {
+function RunStep({ step, detail }: {
   step: RunStepRecord;
+  detail?: RunDetailRecord | null;
 }) {
   const done = step.status === 'completed';
   const active = step.status === 'running';
-  const check = evaluateRunStepSelfCheck(step);
+  const check = getStepCheck(step, detail);
   return (
     <div className={`run-step${active ? ' active' : done ? ' done' : ' pending'}`}>
       <span className="run-step-dot">
@@ -614,6 +616,29 @@ function RunStep({ step }: {
       {active && <span className="dot running" style={{ marginLeft: 'auto' }} />}
     </div>
   );
+}
+
+function verificationToCheck(record: RunVerificationRecord): RunSelfCheckResult {
+  return {
+    tone: record.tone,
+    label: record.label,
+    detail: record.detail,
+    source: 'lightweight_rule_engine',
+  };
+}
+
+function getRunCheck(run: RunRecord, detail?: RunDetailRecord | null): RunSelfCheckResult {
+  const persisted = detail?.verifications?.find((item) => (
+    item.targetType === 'run' && item.targetId === run.id
+  ));
+  return persisted ? verificationToCheck(persisted) : evaluateRunSelfCheck(run, detail);
+}
+
+function getStepCheck(step: RunStepRecord, detail?: RunDetailRecord | null): RunSelfCheckResult {
+  const persisted = detail?.verifications?.find((item) => (
+    item.targetType === 'step' && item.targetId === step.id
+  ));
+  return persisted ? verificationToCheck(persisted) : evaluateRunStepSelfCheck(step);
 }
 
 function RunCheckSummary({ check }: {

@@ -265,7 +265,19 @@ describe('RunService', () => {
       updateResult: vi.fn(),
     };
     const runStepRepository = {
-      listForRun: vi.fn().mockResolvedValue([{ id: 'run_step_1' }]),
+      listForRun: vi.fn().mockResolvedValue([{
+        id: 'run_step_1',
+        runId: 'run_1',
+        index: 1,
+        kind: 'final',
+        status: 'completed',
+        title: 'Final output',
+        input: null,
+        output: 'Generated output',
+        error: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }]),
     };
     const runCheckpointRepository = {
       listForRun: vi.fn().mockResolvedValue([{ id: 'run_checkpoint_1' }]),
@@ -276,6 +288,10 @@ describe('RunService', () => {
     const artifactRepository = buildArtifactRepositoryMock({
       listForRun: vi.fn().mockResolvedValue([{ id: 'artifact_1' }]),
     });
+    const runVerificationRepository = {
+      upsert: vi.fn(),
+      listForRun: vi.fn().mockResolvedValue([{ id: 'run_verification_1' }]),
+    };
     const service = new RunService(
       runRepository as never,
       {} as never,
@@ -287,6 +303,7 @@ describe('RunService', () => {
       null,
       runCheckpointRepository as never,
       agentSessionRepository as never,
+      runVerificationRepository as never,
     );
 
     const result = await service.getDetail('run_1');
@@ -296,7 +313,21 @@ describe('RunService', () => {
     expect(runCheckpointRepository.listForRun).toHaveBeenCalledWith('run_1');
     expect(agentSessionRepository.listForRun).toHaveBeenCalledWith('run_1');
     expect(artifactRepository.listForRun).toHaveBeenCalledWith('run_1');
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_1',
+      targetType: 'step',
+      targetId: 'run_step_1',
+      source: 'lightweight_rule_engine',
+    }));
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_1',
+      targetType: 'run',
+      targetId: 'run_1',
+      source: 'lightweight_rule_engine',
+    }));
+    expect(runVerificationRepository.listForRun).toHaveBeenCalledWith('run_1');
     expect(result?.artifacts).toEqual([{ id: 'artifact_1' }]);
+    expect(result?.verifications).toEqual([{ id: 'run_verification_1' }]);
     expect(result?.agentSessions).toEqual([{ id: 'agent_session_1' }]);
   });
 
@@ -555,6 +586,7 @@ describe('RunService', () => {
       null,
       undefined,
       undefined as never,
+      null,
       runOrchestrator as never,
     );
 

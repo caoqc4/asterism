@@ -1,5 +1,6 @@
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
+import { evaluateRunSelfCheck, evaluateRunStepSelfCheck } from '../../../shared/run-self-check.js';
 import { evaluatePausedRunResumeEligibility } from '../../../shared/run-resume-eligibility.js';
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type {
@@ -11,6 +12,7 @@ import { ArtifactRepository } from '../../db/repositories/artifact-repository.js
 import { RunRepository } from '../../db/repositories/run-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
 import { TaskService } from '../task/task-service.js';
 import { AgentSessionStore } from './agent-session-store.js';
 import {
@@ -32,6 +34,7 @@ export class RunService {
     private readonly agentToolRegistry: AgentToolRegistry | null = null,
     private readonly runCheckpointRepository: RunCheckpointRepository = new RunCheckpointRepository(),
     private readonly agentSessionStore: AgentSessionStore = new AgentSessionStore(),
+    private readonly runVerificationRepository: RunVerificationRepository | null = null,
     private readonly runOrchestrator: RunOrchestrator = new RunOrchestrator(
       aiConfigService,
       textExecutor,
@@ -54,13 +57,51 @@ export class RunService {
       return null;
     }
 
-    return {
+    const detail = {
       ...run,
       artifacts: await this.artifactRepository.listForRun(runId),
       steps: await this.runStepRepository.listForRun(runId),
       checkpoints: await this.runCheckpointRepository.listForRun(runId),
       agentSessions: await this.agentSessionStore.listForRun(runId),
     };
+    await this.ensureLightweightVerifications(detail);
+
+    return {
+      ...detail,
+      verifications: this.runVerificationRepository
+        ? await this.runVerificationRepository.listForRun(runId)
+        : [],
+    };
+  }
+
+  private async ensureLightweightVerifications(detail: RunDetailRecord): Promise<void> {
+    if (!this.runVerificationRepository) return;
+    const steps = detail.steps ?? [];
+    for (const step of steps) {
+      if (!['completed', 'failed', 'skipped'].includes(step.status)) continue;
+      const check = evaluateRunStepSelfCheck(step);
+      await this.runVerificationRepository.upsert({
+        runId: detail.id,
+        targetType: 'step',
+        targetId: step.id,
+        tone: check.tone,
+        label: check.label,
+        detail: check.detail,
+        source: check.source,
+      });
+    }
+
+    if (detail.status !== 'completed' && detail.status !== 'failed') return;
+    const runCheck = evaluateRunSelfCheck(detail, detail);
+    await this.runVerificationRepository.upsert({
+      runId: detail.id,
+      targetType: 'run',
+      targetId: detail.id,
+      tone: runCheck.tone,
+      label: runCheck.label,
+      detail: runCheck.detail,
+      source: runCheck.source,
+    });
   }
 
   async trigger(input: CreateRunInput): Promise<RunRecord> {

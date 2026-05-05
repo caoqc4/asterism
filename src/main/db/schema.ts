@@ -71,6 +71,19 @@ export const runCheckpoints = sqliteTable('run_checkpoints', {
   resolvedAt: text('resolved_at'),
 });
 
+export const runVerifications = sqliteTable('run_verifications', {
+  id: text('id').primaryKey(),
+  runId: text('run_id').notNull(),
+  targetType: text('target_type').notNull(),
+  targetId: text('target_id').notNull(),
+  tone: text('tone').notNull(),
+  label: text('label').notNull(),
+  detail: text('detail').notNull(),
+  source: text('source').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
 export const sandboxPatchPromotions = sqliteTable('sandbox_patch_promotions', {
   id: text('id').primaryKey(),
   checkpointId: text('checkpoint_id').notNull(),

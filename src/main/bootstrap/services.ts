@@ -8,6 +8,7 @@ import { CompletionCriteriaRepository } from '../db/repositories/completion-crit
 import { RunCheckpointRepository } from '../db/repositories/run-checkpoint-repository.js';
 import { RunRepository } from '../db/repositories/run-repository.js';
 import { RunStepRepository } from '../db/repositories/run-step-repository.js';
+import { RunVerificationRepository } from '../db/repositories/run-verification-repository.js';
 import { SandboxPatchPromotionRepository } from '../db/repositories/sandbox-patch-promotion-repository.js';
 import { ProcessTemplateRepository } from '../db/repositories/process-template-repository.js';
 import { SourceContextRepository } from '../db/repositories/source-context-repository.js';
@@ -42,6 +43,7 @@ const taskRepository = new TaskRepository();
 const decisionRepository = new DecisionRepository();
 const runRepository = new RunRepository();
 const runStepRepository = new RunStepRepository();
+const runVerificationRepository = new RunVerificationRepository();
 const runCheckpointRepository = new RunCheckpointRepository();
 const sandboxPatchPromotionRepository = new SandboxPatchPromotionRepository();
 const artifactRepository = new ArtifactRepository();
@@ -137,6 +139,7 @@ const runService = new RunService(
   agentToolRegistry,
   runCheckpointRepository,
   agentSessionStore,
+  runVerificationRepository,
 );
 const browserEvidencePersister = new BrowserEvidencePersister(
   artifactRepository,
@@ -167,6 +170,7 @@ const services = {
   decisionRepository,
   runRepository,
   runStepRepository,
+  runVerificationRepository,
   runCheckpointRepository,
   sandboxPatchPromotionRepository,
   briefSnapshotRepository,

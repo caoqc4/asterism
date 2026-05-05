@@ -9,6 +9,9 @@ export type RunStepKind = 'plan' | 'model' | 'tool_call' | 'tool_result' | 'arti
 export type RunStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
 export type RunCheckpointKind = 'resume' | 'confirmation' | 'tool_permission' | 'patch_promotion' | 'external_wait';
 export type RunCheckpointStatus = 'open' | 'resolved' | 'cancelled';
+export type RunVerificationTargetType = 'run' | 'step';
+export type RunVerificationTone = 'pass' | 'warn' | 'fail' | 'pending';
+export type RunVerificationSource = 'lightweight_rule_engine' | 'ai_verifier';
 
 export type RunRecord = {
   id: string;
@@ -42,6 +45,7 @@ export type RunDetailRecord = RunRecord & {
   steps?: RunStepRecord[];
   checkpoints?: RunCheckpointRecord[];
   agentSessions?: AgentSessionRecord[];
+  verifications?: RunVerificationRecord[];
 };
 
 export type RunCheckpointRecord = {
@@ -53,6 +57,19 @@ export type RunCheckpointRecord = {
   payload: string | null;
   createdAt: string;
   resolvedAt: string | null;
+};
+
+export type RunVerificationRecord = {
+  id: string;
+  runId: string;
+  targetType: RunVerificationTargetType;
+  targetId: string;
+  tone: RunVerificationTone;
+  label: string;
+  detail: string;
+  source: RunVerificationSource;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type CreateRunInput = {
