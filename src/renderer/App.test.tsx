@@ -610,6 +610,18 @@ describe('App redesign v1', () => {
       blockedByTaskId: 'task_created_1',
       reason: '确认官网改版范围',
     });
+    expect(harness.api.updateTask).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'task_created',
+      summary: '完成官网改版并上线。',
+      nextStep: '确认是否创建这些子任务。',
+    }));
+    expect(harness.api.createSourceContext).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_created',
+      title: 'AI 项目拆解自检',
+      kind: 'note',
+      isKey: true,
+      content: '子任务保持大块、边界清楚，暂不继续细拆。',
+    }));
 
     await user.click(screen.getByRole('button', { name: /让 AI 拆解并检查/ }));
     await user.click(await screen.findByRole('button', { name: '拆解项目结构' }));

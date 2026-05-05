@@ -287,6 +287,19 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
 
       const childIds = [...project.childTaskIds, ...childRecords.map((child) => child.id)];
       const parentAttrs = saveTaskAttributes(project.id, { childTaskIds: childIds });
+      const updatedParent = await window.api.updateTask({
+        id: project.id,
+        summary: draft.parentGoal,
+        nextStep: draft.nextStep,
+      });
+      await window.api.createSourceContext({
+        taskId: project.id,
+        title: 'AI 项目拆解自检',
+        kind: 'note',
+        isKey: true,
+        content: draft.review,
+        note: `${draft.subtasks.length} 个子任务；用户确认后创建。`,
+      });
       const childTasks = childRecords.map((child) => {
         const draftSubtask = draft.subtasks.find((subtask) => subtask.title === child.title);
         const childAttrs = saveTaskAttributes(child.id, {
@@ -308,7 +321,18 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
 
       setAllTasks((prev) => {
         const nextParent = prev.map((task) => (
-          task.id === project.id ? { ...task, childTaskIds: parentAttrs.childTaskIds } : task
+          task.id === project.id
+            ? {
+                ...fromRecord({
+                  ...updatedParent,
+                  activeBlocker: null,
+                  activeWaitingItem: null,
+                  activeDependency: null,
+                  dependencyReevaluation: null,
+                }, parentAttrs),
+                childTaskIds: parentAttrs.childTaskIds,
+              }
+            : task
         ));
         return [...childTasks, ...nextParent];
       });
