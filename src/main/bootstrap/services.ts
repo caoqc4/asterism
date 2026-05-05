@@ -152,6 +152,7 @@ const operatorStartedRunService = new OperatorStartedRunService(
   browserEvidencePersister,
   runBrowserEvidenceSmokeForOperatorStartedRun,
   runBrowserControlledLocalQaForOperatorStartedRun,
+  runVerificationRepository,
 );
 const codeAgentRunService = new CodeAgentRunService(
   taskService,
@@ -162,6 +163,8 @@ const codeAgentRunService = new CodeAgentRunService(
   runCheckpointRepository,
   decisionRepository,
   sandboxPatchPromotionRepository,
+  undefined,
+  runVerificationRepository,
 );
 const workHabitService = new WorkHabitService(workHabitRepository);
 
