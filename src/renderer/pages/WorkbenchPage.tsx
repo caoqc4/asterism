@@ -86,6 +86,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
   const [showCompletionCheck, setShowCompletionCheck] = useState(false);
   const [showSopExtract, setShowSopExtract] = useState(false);
   const [taskAttrs, setTaskAttrs] = useState<TaskAttributeRecord | null>(() => getTaskAttributes(taskId));
+  const [generatedResume, setGeneratedResume] = useState<{ summary: string; nextSuggestedMove: string; generatedAt: string } | null>(null);
 
   function loadRuns() {
     return window.api?.listRuns().then((all) => {
@@ -111,6 +112,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
     setRuns([]);
     setActiveRunDetail(null);
     setTaskAttrs(getTaskAttributes(taskId));
+    setGeneratedResume(null);
 
     const loadDetail = window.api?.getTaskDetail(taskId).then((d) => {
       if (d) setDetail(d);
@@ -134,9 +136,47 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
   const lane = detail ? deriveLane(detail) : 'continue';
   const status = detail ? deriveStatus(detail) : 'idle';
   const title = detail?.title ?? taskId;
-  const resume = detail?.resumeCard;
+  const resume = generatedResume ?? detail?.resumeCard;
 
   const activeRun = runs.find((r) => r.status === 'running' || r.status === 'paused');
+
+  function regenerateResume() {
+    if (!detail) return;
+    const recentRun = activeRun ?? runs[0] ?? null;
+    const recentRunCheck = recentRun ? deriveRunCheck(recentRun, activeRunDetail) : null;
+    const keySources = detail.sourceContexts.filter((source) => source.isKey).slice(0, 2);
+    const typeLabel = taskAttrs ? TASK_TYPE_LABELS[taskAttrs.type] : '一次性';
+    const statusLabel = status === 'running'
+      ? '正在执行'
+      : status === 'waiting'
+        ? '等待外部输入'
+        : status === 'completed'
+          ? '已完成'
+          : '待推进';
+    const summaryParts = [
+      `这是一个${typeLabel}任务，当前状态是${statusLabel}。`,
+      recentRunCheck
+        ? `最近 Run 结论：${recentRunCheck.label}，${recentRunCheck.detail}`
+        : keySources.length > 0
+          ? `当前关键来源是 ${keySources.map((source) => source.title).join('、')}。`
+          : '这个任务还没有足够执行记录，适合先明确目标和完成标准。',
+    ];
+    const nextSuggestedMove = detail.activeBlocker
+      ? `下一步建议：先处理阻塞「${detail.activeBlocker.title}」。`
+      : detail.waitingReason
+        ? `下一步建议：围绕「${detail.waitingReason}」做一次跟进。`
+        : detail.nextStep
+          ? `下一步建议：${detail.nextStep}`
+          : taskAttrs?.commitment
+            ? `下一步建议：围绕承诺「${taskAttrs.commitment}」补齐交付计划。`
+            : '下一步建议：补充任务摘要和完成标准，然后启动 Run。';
+
+    setGeneratedResume({
+      summary: summaryParts.join(' '),
+      nextSuggestedMove,
+      generatedAt: new Date().toISOString(),
+    });
+  }
 
   function startEditingTitle() {
     setTitleDraft(detail?.title ?? '');
@@ -282,10 +322,15 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
               <button className="btn ghost" onClick={onOpenPanel}>规划讨论</button>
             )}
           </div>
-          <button className="btn sm ghost resume-regen" disabled title="即将支持">
+          <button className="btn sm ghost resume-regen" onClick={regenerateResume} disabled={!detail}>
             <IconRefresh /> 重新生成
           </button>
         </div>
+        {generatedResume && (
+          <div className="resume-generated-at">
+            已重新生成 · {new Date(generatedResume.generatedAt).toLocaleTimeString('zh', { hour: '2-digit', minute: '2-digit' })}
+          </div>
+        )}
 
         {activeRun && (
           <div className="run-progress">
