@@ -814,6 +814,47 @@ describe('TaskService', () => {
     expect(result.state).toBe('running');
   });
 
+  it('records task completion check results as timeline events', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
+
+    await service.recordCompletionCheck({
+      taskId: 'task_1',
+      action: 'override_completed',
+      criteriaTotal: 3,
+      criteriaSatisfied: 2,
+      criteriaOpen: 1,
+      reason: '仍有 1 条完成标准未满足',
+      source: 'task_completion_modal',
+      checkedAt: '2026-05-05T10:00:00.000Z',
+    });
+
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith(
+      'task_1',
+      'task.completion_check',
+      {
+        action: 'override_completed',
+        criteriaTotal: 3,
+        criteriaSatisfied: 2,
+        criteriaOpen: 1,
+        reason: '仍有 1 条完成标准未满足',
+        source: 'task_completion_modal',
+        checkedAt: '2026-05-05T10:00:00.000Z',
+      },
+    );
+  });
+
   it('rejects invalid state transitions', async () => {
     const repository = {
       list: vi.fn(),

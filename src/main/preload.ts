@@ -14,6 +14,7 @@ const api: ElectronApi = {
   getTaskDetail: (taskId) => ipcRenderer.invoke('task:getDetail', taskId),
   updateTask: (input) => ipcRenderer.invoke('task:update', input),
   transitionTask: (input) => ipcRenderer.invoke('task:transition', input),
+  recordTaskCompletionCheck: (input) => ipcRenderer.invoke('task:recordCompletionCheck', input),
   createBlocker: (input) => ipcRenderer.invoke('blocker:create', input),
   updateBlocker: (input) => ipcRenderer.invoke('blocker:update', input),
   resolveBlocker: (id) => ipcRenderer.invoke('blocker:resolve', id),

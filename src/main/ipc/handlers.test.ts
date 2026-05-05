@@ -27,6 +27,7 @@ const {
       getDetail: vi.fn(),
       update: vi.fn(),
       transition: vi.fn(),
+      recordCompletionCheck: vi.fn(),
       createBlocker: vi.fn(),
       updateBlocker: vi.fn(),
       resolveBlocker: vi.fn(),
@@ -435,6 +436,36 @@ describe('registerIpcHandlers', () => {
     });
     expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
     expect(result.state).toBe('in_progress');
+  });
+
+  it('emits task.changed after task completion check records', async () => {
+    const handler = getRegisteredHandler<
+      [{
+        taskId: string;
+        action: 'passed' | 'override_completed' | 'marked_waiting';
+        criteriaTotal: number;
+        criteriaSatisfied: number;
+        criteriaOpen: number;
+      }],
+      void
+    >('task:recordCompletionCheck');
+
+    await handler({}, {
+      taskId: 'task_1',
+      action: 'marked_waiting',
+      criteriaTotal: 2,
+      criteriaSatisfied: 1,
+      criteriaOpen: 1,
+    });
+
+    expect(servicesMock.taskService.recordCompletionCheck).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      action: 'marked_waiting',
+      criteriaTotal: 2,
+      criteriaSatisfied: 1,
+      criteriaOpen: 1,
+    });
+    expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
   });
 
   it('emits task.changed for both sides after task dependency writes', async () => {

@@ -148,3 +148,19 @@ export type TransitionTaskInput = {
   nextState: TaskState;
   waitingReason?: string | null;
 };
+
+export type TaskCompletionCheckAction =
+  | 'passed'
+  | 'override_completed'
+  | 'marked_waiting';
+
+export type RecordTaskCompletionCheckInput = {
+  taskId: string;
+  action: TaskCompletionCheckAction;
+  criteriaTotal: number;
+  criteriaSatisfied: number;
+  criteriaOpen: number;
+  reason?: string | null;
+  source?: 'task_completion_modal' | 'lightweight_rule_engine' | 'ai_verifier';
+  checkedAt?: string;
+};

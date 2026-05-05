@@ -20,6 +20,7 @@ import type {
 } from '../../../shared/types/task-dependency.js';
 import type {
   CreateTaskInput,
+  RecordTaskCompletionCheckInput,
   TaskDetail,
   TaskDetailBase,
   TaskListItemRecord,
@@ -655,6 +656,20 @@ export class TaskService {
     await this.syncWaitingItem(updated.id, updated.state, updated.waitingReason);
 
     return this.attachActiveWaitingItem(updated);
+  }
+
+  async recordCompletionCheck(input: RecordTaskCompletionCheckInput): Promise<void> {
+    await this.getExistingTaskOrThrow(input.taskId);
+
+    await this.repository.appendTimelineEvent(input.taskId, 'task.completion_check', {
+      action: input.action,
+      criteriaTotal: input.criteriaTotal,
+      criteriaSatisfied: input.criteriaSatisfied,
+      criteriaOpen: input.criteriaOpen,
+      reason: input.reason?.trim() || null,
+      source: input.source ?? 'task_completion_modal',
+      checkedAt: input.checkedAt ?? new Date().toISOString(),
+    });
   }
 
   async transitionIfAllowed(id: string, nextState: TaskState): Promise<TaskListItemRecord | null> {

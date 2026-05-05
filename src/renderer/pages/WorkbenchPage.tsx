@@ -882,6 +882,35 @@ function ArtifactsTab({ taskId, artifacts }: { taskId: string; artifacts: Artifa
 
 /* ─── Activity tab ─── */
 
+function parseTimelinePayload(payload: string | null): Record<string, unknown> | null {
+  if (!payload) return null;
+  try {
+    const parsed = JSON.parse(payload) as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function formatCompletionCheckEvent(payload: string | null): string {
+  const parsed = parseTimelinePayload(payload);
+  const action = parsed?.action;
+  const total = typeof parsed?.criteriaTotal === 'number' ? parsed.criteriaTotal : null;
+  const satisfied = typeof parsed?.criteriaSatisfied === 'number' ? parsed.criteriaSatisfied : null;
+  const open = typeof parsed?.criteriaOpen === 'number' ? parsed.criteriaOpen : null;
+  const progress = total === null || satisfied === null ? '' : `：${satisfied}/${total}`;
+
+  if (action === 'marked_waiting') {
+    return `完成检查未通过，已转等待${open !== null ? `（未满足 ${open} 条）` : ''}`;
+  }
+  if (action === 'override_completed') {
+    return `完成检查被用户覆盖${progress}`;
+  }
+  return `完成检查通过${progress}`;
+}
+
 const EVENT_LABELS: Record<string, (payload: string | null) => string> = {
   'task.created':              () => '任务已创建',
   'task.updated':              () => '任务信息已更新',
@@ -889,6 +918,7 @@ const EVENT_LABELS: Record<string, (payload: string | null) => string> = {
   'task.waiting_changed':      (p) => p ? `等待：${p.slice(0, 40)}` : '等待状态已变更',
   'task.risk_changed':         (p) => p ? `风险等级：${p}` : '风险等级已变更',
   'task.transitioned':         (p) => p ? `状态变更 → ${p}` : '任务状态已变更',
+  'task.completion_check':     formatCompletionCheckEvent,
   'run.created':               () => 'AI 开始执行',
   'run.completed':             () => 'AI 执行完成',
   'run.failed':                () => 'AI 执行失败',
@@ -912,6 +942,7 @@ function eventDotClass(type: string): string {
   if (type.startsWith('run.')) return 'running';
   if (type.includes('blocker') || type.includes('failed')) return 'risk';
   if (type.includes('waiting')) return 'waiting';
+  if (type === 'task.completion_check') return 'completed';
   return '';
 }
 

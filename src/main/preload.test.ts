@@ -37,6 +37,7 @@ function getExposedApi() {
     getTaskDetail: (taskId: string) => Promise<unknown>;
     updateTask: (input: unknown) => Promise<unknown>;
     transitionTask: (input: unknown) => Promise<unknown>;
+    recordTaskCompletionCheck: (input: unknown) => Promise<unknown>;
     createBlocker: (input: unknown) => Promise<unknown>;
     updateBlocker: (input: unknown) => Promise<unknown>;
     resolveBlocker: (id: string) => Promise<unknown>;
@@ -94,6 +95,13 @@ describe('preload bridge', () => {
     const createTaskInput = { title: 'Ship preload tests' };
     const updateTaskInput = { id: 'task_1', title: 'Updated title' };
     const transitionTaskInput = { id: 'task_1', nextState: 'planned' };
+    const completionCheckInput = {
+      taskId: 'task_1',
+      action: 'override_completed',
+      criteriaTotal: 2,
+      criteriaSatisfied: 1,
+      criteriaOpen: 1,
+    };
     const createBlockerInput = {
       taskId: 'task_1',
       title: 'Legal approval pending',
@@ -177,6 +185,7 @@ describe('preload bridge', () => {
     await api.getTaskDetail('task_1');
     await api.updateTask(updateTaskInput);
     await api.transitionTask(transitionTaskInput);
+    await api.recordTaskCompletionCheck(completionCheckInput);
     await api.createBlocker(createBlockerInput);
     await api.updateBlocker(updateBlockerInput);
     await api.resolveBlocker('blocker_1');
@@ -216,6 +225,7 @@ describe('preload bridge', () => {
       ['task:getDetail', 'task_1'],
       ['task:update', updateTaskInput],
       ['task:transition', transitionTaskInput],
+      ['task:recordCompletionCheck', completionCheckInput],
       ['blocker:create', createBlockerInput],
       ['blocker:update', updateBlockerInput],
       ['blocker:resolve', 'blocker_1'],

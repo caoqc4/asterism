@@ -66,14 +66,29 @@ export function TaskCompletionCheckModal({
     if (submitting) return;
     setSubmitting(true);
     try {
+      const reason = buildWaitingReason(detail);
+      await window.api?.recordTaskCompletionCheck({
+        taskId,
+        action: action === 'waiting'
+          ? 'marked_waiting'
+          : hasConcern
+            ? 'override_completed'
+            : 'passed',
+        criteriaTotal: criteria.length,
+        criteriaSatisfied: satisfied.length,
+        criteriaOpen: open.length,
+        reason: hasConcern ? reason : null,
+        source: 'task_completion_modal',
+      });
+
       if (action === 'waiting') {
-        await onMarkWaiting(buildWaitingReason(detail));
+        await onMarkWaiting(reason);
       } else {
         if (selfLearnEnabled && hasConcern) {
           recordCompletionOverrideLearningSignal({
             taskId,
             taskTitle: detail?.title ?? taskTitle,
-            reason: buildWaitingReason(detail),
+            reason,
           });
         }
         await onCompleteAnyway();

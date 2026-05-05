@@ -80,6 +80,7 @@ import type {
 } from './source-context.js';
 import type {
   CreateTaskInput,
+  RecordTaskCompletionCheckInput,
   TaskDetail,
   TaskListItemRecord,
   TaskRecord,
@@ -97,6 +98,7 @@ export type ElectronApi = {
   getTaskDetail: (taskId: string) => Promise<TaskDetail | null>;
   updateTask: (input: UpdateTaskInput) => Promise<TaskListItemRecord>;
   transitionTask: (input: TransitionTaskInput) => Promise<TaskListItemRecord>;
+  recordTaskCompletionCheck: (input: RecordTaskCompletionCheckInput) => Promise<void>;
   createBlocker: (input: CreateBlockerInput) => Promise<BlockerRecord>;
   updateBlocker: (input: UpdateBlockerInput) => Promise<BlockerRecord>;
   resolveBlocker: (id: string) => Promise<BlockerRecord>;

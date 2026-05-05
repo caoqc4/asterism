@@ -342,6 +342,7 @@ function createMockApi() {
       waitingReason: input.waitingReason ?? null,
       updatedAt: now,
     })),
+    recordTaskCompletionCheck: vi.fn().mockResolvedValue(undefined),
     createBlocker: vi.fn(),
     updateBlocker: vi.fn(),
     resolveBlocker: vi.fn(),

@@ -26,6 +26,7 @@ import type { OperatorStartedRunRequest } from '../../shared/types/operator-star
 import type { CreateSourceContextInput, UpdateSourceContextInput } from '../../shared/types/source-context.js';
 import type {
   CreateTaskInput,
+  RecordTaskCompletionCheckInput,
   TransitionTaskInput,
   UpdateTaskInput,
 } from '../../shared/types/task.js';
@@ -182,6 +183,11 @@ export function registerIpcHandlers(): void {
     const updated = await getServices().taskService.transition(input);
     emitAppEvent('task.changed', updated.id);
     return updated;
+  });
+
+  ipcMain.handle('task:recordCompletionCheck', async (_event, input: RecordTaskCompletionCheckInput) => {
+    await getServices().taskService.recordCompletionCheck(input);
+    emitAppEvent('task.changed', input.taskId);
   });
 
   ipcMain.handle('blocker:create', async (_event, input: CreateBlockerInput) => {
