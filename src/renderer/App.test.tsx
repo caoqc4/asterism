@@ -10,6 +10,7 @@ import type { ElectronApi } from '@shared/types/ipc';
 import type { RunDetailRecord, RunRecord } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
+import type { TaskDependencyRecord } from '@shared/types/task-dependency';
 import { App } from './App';
 
 const now = '2026-01-01T00:00:00.000Z';
@@ -30,6 +31,20 @@ function buildTask(partial: Partial<TaskListItemRecord> = {}): TaskListItemRecor
     riskNote: partial.riskNote ?? null,
     createdAt: partial.createdAt ?? now,
     updatedAt: partial.updatedAt ?? now,
+  };
+}
+
+function buildTaskDependency(partial: Partial<TaskDependencyRecord> = {}): TaskDependencyRecord {
+  return {
+    id: partial.id ?? 'task_dependency_1',
+    taskId: partial.taskId ?? 'task_blocked',
+    blockedByTaskId: partial.blockedByTaskId ?? 'task_upstream',
+    blockedByTaskTitle: partial.blockedByTaskTitle ?? '上游任务',
+    reason: partial.reason ?? '等待上游完成',
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? now,
+    updatedAt: partial.updatedAt ?? now,
+    resolvedAt: partial.resolvedAt ?? null,
   };
 }
 
@@ -501,6 +516,33 @@ describe('App redesign v1', () => {
         waitingReason: '延后处理：明天',
       });
     });
+  });
+
+  it('surfaces dependency recovery signals in the task list', async () => {
+    const user = userEvent.setup();
+    harness.tasks.unshift(buildTask({
+      id: 'task_dependency_ready',
+      title: '准备官网方案评审',
+      activeDependency: buildTaskDependency({
+        id: 'dependency_ready',
+        taskId: 'task_dependency_ready',
+        blockedByTaskId: 'task_upstream_done',
+        blockedByTaskTitle: '确认官网改版范围',
+      }),
+      dependencyReevaluation: {
+        dependencyId: 'dependency_ready',
+        upstreamTaskId: 'task_upstream_done',
+        upstreamTaskTitle: '确认官网改版范围',
+        status: 'upstream_ready',
+        updatedAt: now,
+      },
+    }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+
+    expect(await screen.findByText('准备官网方案评审')).toBeTruthy();
+    expect(screen.getByText('依赖可复核：确认官网改版范围')).toBeTruthy();
   });
 
   it('shows only pending decisions and dispatches formal decision actions', async () => {

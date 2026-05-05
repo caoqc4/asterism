@@ -2455,6 +2455,11 @@ a { color: inherit; text-decoration: none; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.task-row-waiting.ready {
+  border-color: var(--green-line);
+  color: var(--ink-2);
+  background: var(--green-soft);
+}
 
 .task-row-date {
   font-size: 11px;

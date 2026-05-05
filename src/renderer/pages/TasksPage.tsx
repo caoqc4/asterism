@@ -31,6 +31,7 @@ interface Task {
   commitment?: string;
   schedule?: string;
   trigger?: string;
+  dependencyReady?: boolean;
   updatedAt: string;
   state: TaskState;
 }
@@ -108,8 +109,11 @@ function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): 
     whyNow: r.summary ?? undefined,
     nextStep: r.nextStep ?? undefined,
     waitingOn: r.activeDependency
-      ? `依赖：${r.activeDependency.blockedByTaskTitle ?? r.activeDependency.reason ?? '上游任务'}`
+      ? r.dependencyReevaluation
+        ? `依赖可复核：${r.dependencyReevaluation.upstreamTaskTitle}`
+        : `依赖：${r.activeDependency.blockedByTaskTitle ?? r.activeDependency.reason ?? '上游任务'}`
       : r.waitingReason ? `等待：${r.waitingReason}` : undefined,
+    dependencyReady: Boolean(r.dependencyReevaluation),
     commitment: attrs?.commitment ?? undefined,
     schedule: attrs?.schedule ?? undefined,
     trigger: attrs?.trigger ?? undefined,
@@ -900,7 +904,7 @@ function TaskRow({
             <span className="task-row-why">{task.whyNow}</span>
           )}
           {task.waitingOn && (
-            <span className="task-row-waiting">{task.waitingOn}</span>
+            <span className={`task-row-waiting${task.dependencyReady ? ' ready' : ''}`}>{task.waitingOn}</span>
           )}
         </div>
       </div>
