@@ -548,7 +548,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/周五 17:00 前发给 CEO/)).toBeTruthy();
   });
 
-  it('creates project tasks with real child tasks and shows them in the project lens', async () => {
+  it('creates a project parent task and guides AI decomposition instead of hard-coded subtasks', async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -560,11 +560,16 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /项目型/ }));
     expect((await screen.findAllByText('官网改版项目')).length).toBeGreaterThan(0);
-    expect(screen.getByText('0/3 子任务完成')).toBeTruthy();
-    expect(screen.getByText('明确范围：官网改版项目')).toBeTruthy();
-    expect(screen.getByText('产出初稿：官网改版项目')).toBeTruthy();
-    expect(screen.getByText('验收交付：官网改版项目')).toBeTruthy();
-    expect(harness.api.createTask).toHaveBeenCalledTimes(4);
+    expect(screen.getByText('0/0 子任务完成')).toBeTruthy();
+    expect(screen.getByText(/等待 AI 根据项目目标拆解子任务/)).toBeTruthy();
+    expect(screen.queryByText('明确范围：官网改版项目')).toBeNull();
+    expect(harness.api.createTask).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole('button', { name: /让 AI 拆解并检查/ }));
+    await user.click(await screen.findByRole('button', { name: '拆解项目结构' }));
+    const decompositionInput = screen.getByPlaceholderText(/关于「官网改版项目」/) as HTMLTextAreaElement;
+    expect(decompositionInput.value).toContain('先拆一版');
+    expect(decompositionInput.value).toContain('再自检查');
   });
 
   it('lets users correct and clear task memory from Context', async () => {

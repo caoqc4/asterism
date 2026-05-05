@@ -4,6 +4,7 @@ import {
   selectApplicableWorkHabits,
   summarizeWorkHabitsForPrompt,
 } from '../lib/workHabits';
+import { buildProjectDecompositionPrompt, getTaskAttributes } from '../lib/taskAttributes';
 
 type MessageRole = 'user' | 'assistant';
 
@@ -172,6 +173,24 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
   }
 
   const title = taskTitle(activeTaskId, titleCache);
+  const activeAttrs = activeTaskId ? getTaskAttributes(activeTaskId) : null;
+  const projectDecompositionPrompt = activeAttrs?.type === 'project' && title
+    ? buildProjectDecompositionPrompt(title)
+    : null;
+  const quickPrompts = activeTaskId
+    ? [
+        ...(projectDecompositionPrompt
+          ? [{ label: '拆解项目结构', prompt: projectDecompositionPrompt }]
+          : []),
+        { label: '总结一下现在的状态', prompt: '总结一下现在的状态' },
+        { label: '下一步怎么推进？', prompt: '下一步怎么推进？' },
+        { label: '有什么风险需要注意？', prompt: '有什么风险需要注意？' },
+      ]
+    : [
+        { label: '今天重点处理什么？', prompt: '今天重点处理什么？' },
+        { label: '帮我整理一下待办', prompt: '帮我整理一下待办' },
+        { label: '最近有什么需要跟进的？', prompt: '最近有什么需要跟进的？' },
+      ];
 
   return (
     <div className="right-panel">
@@ -207,12 +226,9 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
           <div className="panel-empty">
             <p>说点什么开始对话…</p>
             <div className="panel-prompts">
-              {(activeTaskId
-                ? ['总结一下现在的状态', '下一步怎么推进？', '有什么风险需要注意？']
-                : ['今天重点处理什么？', '帮我整理一下待办', '最近有什么需要跟进的？']
-              ).map((p) => (
-                <button key={p} className="panel-prompt-chip" onClick={() => { setInput(p); textareaRef.current?.focus(); }}>
-                  {p}
+              {quickPrompts.map((p) => (
+                <button key={p.label} className="panel-prompt-chip" onClick={() => { setInput(p.prompt); textareaRef.current?.focus(); }}>
+                  {p.label}
                 </button>
               ))}
             </div>
@@ -255,6 +271,16 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
           <div className="panel-task-chip">
             <IconTask style={{ width: 10, height: 10 }} />
             {title}
+          </div>
+        )}
+        {activeTaskId && projectDecompositionPrompt && !input.trim() && (
+          <div className="panel-inline-prompts">
+            <button
+              className="panel-prompt-chip"
+              onClick={() => { setInput(projectDecompositionPrompt); textareaRef.current?.focus(); }}
+            >
+              拆解项目结构
+            </button>
           </div>
         )}
         <textarea

@@ -474,6 +474,12 @@ a { color: inherit; text-decoration: none; }
   gap: 6px;
   width: 100%;
 }
+.panel-inline-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
 .panel-prompt-chip {
   padding: 7px 10px;
   background: var(--bg-elev);
@@ -2506,6 +2512,15 @@ a { color: inherit; text-decoration: none; }
 }
 .project-child-row .task-row {
   padding-left: 12px;
+}
+.project-child-empty {
+  margin: 8px 16px 12px 38px;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: var(--ink-4);
+  font-size: 12px;
+  background: var(--bg-soft);
 }
 
 /* Task preview panel */

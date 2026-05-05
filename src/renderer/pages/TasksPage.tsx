@@ -2,7 +2,6 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import type { TaskListItemRecord, TaskState } from '@shared/types/task';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import {
-  buildDefaultProjectSubtaskTitles,
   defaultScheduleForType,
   defaultTriggerForType,
   inferTaskExecutionType,
@@ -251,23 +250,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
           schedule: defaultScheduleForType(selectedType),
           trigger: defaultTriggerForType(selectedType),
         });
-        const createdTasks = [fromRecord({ ...record, activeBlocker: null, activeWaitingItem: null }, attrs)];
-        if (selectedType === 'project') {
-          const childRecords = await Promise.all(buildDefaultProjectSubtaskTitles(title).map((childTitle) => (
-            window.api!.createTask({ title: childTitle, summary: `属于项目「${title}」的子任务。` })
-          )));
-          const childIds = childRecords.map((child) => child.id);
-          const parentAttrs = saveTaskAttributes(newId, { childTaskIds: childIds });
-          createdTasks[0] = fromRecord({ ...record, activeBlocker: null, activeWaitingItem: null }, parentAttrs);
-          for (const child of childRecords) {
-            const childAttrs = saveTaskAttributes(child.id, {
-              type: 'simple',
-              parentTaskId: newId,
-            });
-            createdTasks.push(fromRecord({ ...child, activeBlocker: null, activeWaitingItem: null }, childAttrs));
-          }
-        }
-        setAllTasks((prev) => [...createdTasks, ...prev]);
+        setAllTasks((prev) => [fromRecord({ ...record, activeBlocker: null, activeWaitingItem: null }, attrs), ...prev]);
       } else {
         newId = `t-${Date.now()}`;
         const attrs = saveTaskAttributes(newId, {
@@ -286,30 +269,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
           updatedAt: new Date().toLocaleDateString('zh'),
           state: 'captured',
         };
-        const createdTasks = [fake];
-        if (selectedType === 'project') {
-          const childIds: string[] = [];
-          for (const childTitle of buildDefaultProjectSubtaskTitles(title)) {
-            const childId = `t-${Date.now()}-${childIds.length}`;
-            childIds.push(childId);
-            const childAttrs = saveTaskAttributes(childId, { type: 'simple', parentTaskId: newId });
-            createdTasks.push({
-              id: childId,
-              title: childTitle,
-              lane: 'clarify',
-              status: 'idle',
-              type: childAttrs.type,
-              parentTaskId: newId,
-              childTaskIds: childAttrs.childTaskIds,
-              whyNow: `属于项目「${title}」的子任务。`,
-              updatedAt: new Date().toLocaleDateString('zh'),
-              state: 'captured',
-            });
-          }
-          const parentAttrs = saveTaskAttributes(newId, { childTaskIds: childIds });
-          createdTasks[0] = { ...fake, childTaskIds: parentAttrs.childTaskIds };
-        }
-        setAllTasks((prev) => [...createdTasks, ...prev]);
+        setAllTasks((prev) => [fake, ...prev]);
       }
       setCaptureTitle('');
       setCaptureType('simple');
@@ -414,7 +374,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
                 取消
               </button>
               <span className="capture-ai-hint muted">
-                想让 AI 帮你拆解？创建后打开右上角对话
+                项目型任务创建后可让 AI 拆解并自检
               </span>
             </div>
           </div>
@@ -425,7 +385,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
           <div className="capture-nudge">
             <span>✓ 已创建</span>
             <button className="btn sm primary" onClick={() => { onOpenPanel(capturedId); setCapturedId(null); }}>
-              让 AI 帮你拆解 →
+              让 AI 拆解并检查 →
             </button>
             <button className="icon-btn" style={{ marginLeft: 4 }} onClick={() => setCapturedId(null)} title="关闭">
               <span style={{ fontSize: 12, lineHeight: 1 }}>×</span>
@@ -684,6 +644,11 @@ function ProjectTreeView({
                 />
               </div>
             ))}
+            {children.length === 0 && (
+              <div className="project-child-empty">
+                等待 AI 根据项目目标拆解子任务；拆解前不会自动生成模板任务。
+              </div>
+            )}
           </div>
         );
       })}

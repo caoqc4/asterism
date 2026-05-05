@@ -78,13 +78,22 @@ export function defaultTriggerForType(type: TaskExecutionType): string | null {
   return null;
 }
 
-export function buildDefaultProjectSubtaskTitles(projectTitle: string): string[] {
-  const shortTitle = projectTitle.replace(/[。.!！?？]+$/g, '').trim();
+export function buildProjectDecompositionPrompt(projectTitle: string): string {
+  const shortTitle = projectTitle.replace(/[。.!！?？]+$/g, '').trim() || '这个项目';
   return [
-    `明确范围：${shortTitle}`,
-    `产出初稿：${shortTitle}`,
-    `验收交付：${shortTitle}`,
-  ];
+    `请把「${shortTitle}」拆解成父任务和子任务结构。`,
+    '',
+    '流程要求：',
+    '1. 先拆一版：给出 3-7 个子任务，不要机械按“调研/初稿/验收”套模板。',
+    '2. 再自检查：评估每个子任务是否足够独立、边界清楚、仍保持合适的大块粒度。',
+    '3. 如果发现子任务过细、互相重叠、缺少验收标准或依赖关系不清，请重拆一版。',
+    '',
+    '输出格式：',
+    '- 父任务：一句话说明目标。',
+    '- 子任务列表：每项包含标题、目标、交付物/验收标准、依赖关系、为什么这个粒度合适。',
+    '- 拆解检查：说明哪些任务保持为大块任务，哪些需要继续拆，哪些暂不应拆。',
+    '- 下一步建议：建议我先确认什么，或者是否直接创建这些子任务。',
+  ].join('\n');
 }
 
 function normalizeText(value: string | null | undefined): string | null {
