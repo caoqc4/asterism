@@ -3,6 +3,7 @@ import type { ChatMessage } from '@shared/types/ipc';
 import { selectApplicableWorkHabits as selectApplicableWorkHabitsFromList } from '@shared/work-habit-rules';
 import {
   selectApplicableWorkHabits,
+  getPersistedWorkHabitStorageSnapshot,
   summarizeWorkHabitsForPrompt,
 } from '../lib/workHabits';
 import { buildProjectDecompositionPrompt, getTaskAttributes, type TaskExecutionType } from '../lib/taskAttributes';
@@ -197,7 +198,7 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
           taskTypeLabel: activeAttrs ? TASK_TYPE_HABIT_LABELS[activeAttrs.type] : null,
           projectLabel: activeAttrs?.type === 'project' ? titleCache[activeTaskId ?? ''] ?? null : null,
         };
-        const snapshot = await window.api.getWorkHabitSnapshot?.().catch(() => null);
+        const snapshot = await getPersistedWorkHabitStorageSnapshot().catch(() => null);
         const appliedHabits = summarizeWorkHabitsForPrompt(snapshot
           ? selectApplicableWorkHabitsFromList(snapshot.habits, habitParams)
           : selectApplicableWorkHabits(habitParams));

@@ -12,6 +12,7 @@ import type {
   CompletionOverrideLearningSignalInput,
   CreateManualWorkHabitInput,
   ResolveWorkHabitConflictInput,
+  ImportLegacyWorkHabitsInput,
   SopTemplateHabitInput,
   UpdateWorkHabitInput,
   WorkHabitRecord,
@@ -49,6 +50,21 @@ export class WorkHabitService {
 
   async recordSopTemplate(input: SopTemplateHabitInput): Promise<WorkHabitRecord[]> {
     return this.replace(recordSopTemplateHabitInList(await this.ensureSeeded(), input));
+  }
+
+  async importLegacy(input: ImportLegacyWorkHabitsInput): Promise<WorkHabitStorageSnapshot> {
+    const legacy = input.habits.filter((habit) => habit.id && habit.rule.trim());
+    if (!legacy.length) return this.getSnapshot();
+
+    const current = await this.ensureSeeded();
+    const importedIds = new Set(legacy.map((habit) => habit.id));
+    const next = [
+      ...legacy,
+      ...current.filter((habit) => !importedIds.has(habit.id)),
+    ];
+
+    await this.replace(next);
+    return this.getSnapshot();
   }
 
   private async ensureSeeded(): Promise<WorkHabitRecord[]> {

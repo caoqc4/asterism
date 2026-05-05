@@ -49,6 +49,7 @@ const {
     },
     workHabitService: {
       getSnapshot: vi.fn(),
+      importLegacy: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
       createManual: vi.fn(),
@@ -475,6 +476,30 @@ describe('registerIpcHandlers', () => {
       criteriaOpen: 1,
     });
     expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
+  });
+
+  it('imports legacy work habits without emitting task events', async () => {
+    servicesMock.workHabitService.importLegacy.mockResolvedValue({
+      version: 3,
+      storage: 'main_db',
+      privacyBoundary: { locality: 'device_only', contains: [], excludes: [] },
+      habits: [],
+    });
+
+    const handler = getRegisteredHandler<
+      [{ habits: Array<{ id: string; rule: string }> }],
+      Awaited<ReturnType<typeof servicesMock.workHabitService.importLegacy>>
+    >('workHabit:importLegacy');
+
+    const result = await handler({}, {
+      habits: [{ id: 'habit_1', rule: 'Run checks first' }],
+    });
+
+    expect(servicesMock.workHabitService.importLegacy).toHaveBeenCalledWith({
+      habits: [{ id: 'habit_1', rule: 'Run checks first' }],
+    });
+    expect(emitAppEventMock).not.toHaveBeenCalled();
+    expect(result.storage).toBe('main_db');
   });
 
   it('emits task.changed for both sides after task dependency writes', async () => {

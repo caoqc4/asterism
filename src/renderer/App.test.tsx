@@ -363,6 +363,16 @@ function createMockApi() {
       },
       habits: loadWorkHabits(),
     })),
+    importLegacyWorkHabits: vi.fn().mockImplementation(async (input) => ({
+      version: 3,
+      storage: 'main_db',
+      privacyBoundary: {
+        locality: 'device_only',
+        contains: [],
+        excludes: [],
+      },
+      habits: input.habits,
+    })),
     updateWorkHabit: vi.fn().mockImplementation(async (input) => updateWorkHabit(input.id, input)),
     deleteWorkHabit: vi.fn().mockImplementation(async (id) => deleteWorkHabit(id)),
     createManualWorkHabit: vi.fn().mockImplementation(async (input) => createManualWorkHabit(input)),

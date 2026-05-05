@@ -31,6 +31,7 @@ export type {
 } from '@shared/types/work-habit';
 
 const STORAGE_KEY = 'taskplane.workHabits.v1';
+const MIGRATION_KEY = 'taskplane.workHabits.mainDbMigration.v1';
 
 function canUseLocalStorage(): boolean {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
@@ -48,6 +49,27 @@ function safeParseSnapshot(value: string | null): WorkHabitStorageSnapshot | nul
   } catch {
     return null;
   }
+}
+
+export function readLegacyWorkHabitStorageSnapshot(): WorkHabitStorageSnapshot | null {
+  if (!canUseLocalStorage()) return null;
+  return safeParseSnapshot(window.localStorage.getItem(STORAGE_KEY));
+}
+
+export async function getPersistedWorkHabitStorageSnapshot(): Promise<WorkHabitStorageSnapshot> {
+  if (!window.api?.getWorkHabitSnapshot) return getWorkHabitStorageSnapshot();
+
+  const snapshot = await window.api.getWorkHabitSnapshot();
+  const legacy = readLegacyWorkHabitStorageSnapshot();
+  const alreadyMigrated = canUseLocalStorage() && window.localStorage.getItem(MIGRATION_KEY) === 'done';
+
+  if (!legacy || alreadyMigrated || !window.api.importLegacyWorkHabits) {
+    return snapshot;
+  }
+
+  const imported = await window.api.importLegacyWorkHabits({ habits: legacy.habits });
+  window.localStorage.setItem(MIGRATION_KEY, 'done');
+  return imported;
 }
 
 export function getWorkHabitStorageSnapshot(): WorkHabitStorageSnapshot {

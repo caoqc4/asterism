@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createManualWorkHabit,
   describeWorkHabitStorageBoundary,
   findWorkHabitConflict,
+  getPersistedWorkHabitStorageSnapshot,
   getWorkHabitStorageSnapshot,
   loadWorkHabits,
   recordCompletionOverrideLearningSignal,
@@ -41,6 +42,11 @@ const candidateHabit: WorkHabitRecord = {
 describe('work habit conflict handling', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    vi.restoreAllMocks();
+    Object.defineProperty(window, 'api', {
+      configurable: true,
+      value: undefined,
+    });
   });
 
   it('detects pending rules that conflict with confirmed rules in the same scope', () => {
@@ -151,6 +157,36 @@ describe('work habit conflict handling', () => {
       version: 3,
       habits: [expect.objectContaining({ id: 'habit_existing' })],
     });
+  });
+
+  it('imports legacy local habits into the main-db snapshot once', async () => {
+    window.localStorage.setItem('taskplane.workHabits.v1', JSON.stringify([baseHabit]));
+    const importLegacyWorkHabits = vi.fn().mockResolvedValue({
+      version: 3,
+      storage: 'main_db',
+      privacyBoundary: { locality: 'device_only', contains: [], excludes: [] },
+      habits: [baseHabit],
+    });
+    Object.defineProperty(window, 'api', {
+      configurable: true,
+      value: {
+        getWorkHabitSnapshot: vi.fn().mockResolvedValue({
+          version: 3,
+          storage: 'main_db',
+          privacyBoundary: { locality: 'device_only', contains: [], excludes: [] },
+          habits: [],
+        }),
+        importLegacyWorkHabits,
+      },
+    });
+
+    const snapshot = await getPersistedWorkHabitStorageSnapshot();
+    const second = await getPersistedWorkHabitStorageSnapshot();
+
+    expect(snapshot.habits[0]?.id).toBe('habit_existing');
+    expect(second.storage).toBe('main_db');
+    expect(importLegacyWorkHabits).toHaveBeenCalledTimes(1);
+    expect(window.localStorage.getItem('taskplane.workHabits.mainDbMigration.v1')).toBe('done');
   });
 
   it('describes the work habit privacy boundary for Context', () => {

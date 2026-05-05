@@ -27,6 +27,7 @@ import type { CreateSourceContextInput, UpdateSourceContextInput } from '../../s
 import type {
   CompletionOverrideLearningSignalInput,
   CreateManualWorkHabitInput,
+  ImportLegacyWorkHabitsInput,
   ResolveWorkHabitConflictInput,
   SopTemplateHabitInput,
   UpdateWorkHabitInput,
@@ -198,6 +199,9 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('workHabit:getSnapshot', async () => getServices().workHabitService.getSnapshot());
+
+  ipcMain.handle('workHabit:importLegacy', async (_event, input: ImportLegacyWorkHabitsInput) =>
+    getServices().workHabitService.importLegacy(input));
 
   ipcMain.handle('workHabit:update', async (_event, input: UpdateWorkHabitInput) =>
     getServices().workHabitService.update(input));

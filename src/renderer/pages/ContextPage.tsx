@@ -5,6 +5,7 @@ import {
   deleteWorkHabit,
   describeWorkHabitStorageBoundary,
   findWorkHabitConflict,
+  getPersistedWorkHabitStorageSnapshot,
   loadWorkHabits,
   resolveWorkHabitConflict,
   updateWorkHabit,
@@ -84,12 +85,10 @@ export function ContextPage() {
   }, []);
 
   async function refreshHabits() {
-    if (window.api?.getWorkHabitSnapshot) {
-      const snapshot = await window.api.getWorkHabitSnapshot().catch(() => null);
-      if (snapshot) {
-        setHabits(snapshot.habits);
-        return;
-      }
+    const snapshot = await getPersistedWorkHabitStorageSnapshot().catch(() => null);
+    if (snapshot) {
+      setHabits(snapshot.habits);
+      return;
     }
     setHabits(loadWorkHabits());
   }

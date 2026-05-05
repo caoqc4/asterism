@@ -39,6 +39,7 @@ function getExposedApi() {
     transitionTask: (input: unknown) => Promise<unknown>;
     recordTaskCompletionCheck: (input: unknown) => Promise<unknown>;
     getWorkHabitSnapshot: () => Promise<unknown>;
+    importLegacyWorkHabits: (input: unknown) => Promise<unknown>;
     updateWorkHabit: (input: unknown) => Promise<unknown>;
     deleteWorkHabit: (id: string) => Promise<unknown>;
     createManualWorkHabit: (input: unknown) => Promise<unknown>;
@@ -110,6 +111,7 @@ describe('preload bridge', () => {
       criteriaOpen: 1,
     };
     const updateWorkHabitInput = { id: 'habit_1', status: 'confirmed' };
+    const importLegacyWorkHabitsInput = { habits: [{ id: 'habit_1', rule: 'Run checks first' }] };
     const createManualWorkHabitInput = { rule: 'Run checks first', scope: 'global', scopeLabel: '全局' };
     const resolveWorkHabitConflictInput = { candidateId: 'habit_1', decision: 'accept_candidate' };
     const completionOverrideInput = { taskId: 'task_1', taskTitle: 'Task', reason: 'Enough evidence' };
@@ -199,6 +201,7 @@ describe('preload bridge', () => {
     await api.transitionTask(transitionTaskInput);
     await api.recordTaskCompletionCheck(completionCheckInput);
     await api.getWorkHabitSnapshot();
+    await api.importLegacyWorkHabits(importLegacyWorkHabitsInput);
     await api.updateWorkHabit(updateWorkHabitInput);
     await api.deleteWorkHabit('habit_1');
     await api.createManualWorkHabit(createManualWorkHabitInput);
@@ -246,6 +249,7 @@ describe('preload bridge', () => {
       ['task:transition', transitionTaskInput],
       ['task:recordCompletionCheck', completionCheckInput],
       ['workHabit:getSnapshot'],
+      ['workHabit:importLegacy', importLegacyWorkHabitsInput],
       ['workHabit:update', updateWorkHabitInput],
       ['workHabit:delete', 'habit_1'],
       ['workHabit:createManual', createManualWorkHabitInput],
