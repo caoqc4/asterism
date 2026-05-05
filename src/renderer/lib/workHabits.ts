@@ -258,17 +258,53 @@ export function recordSopTemplateHabit(params: {
 
 export function selectApplicableWorkHabits(params: {
   taskTitle?: string | null;
+  taskTypeLabel?: string | null;
+  projectLabel?: string | null;
   limit?: number;
 } = {}): WorkHabitRecord[] {
-  const normalizedTitle = params.taskTitle?.trim().toLowerCase() ?? '';
-  const confirmed = loadWorkHabits().filter((habit) => habit.status === 'confirmed');
+  const context = {
+    taskTitle: normalizeComparable(params.taskTitle),
+    taskTypeLabel: normalizeComparable(params.taskTypeLabel),
+    projectLabel: normalizeComparable(params.projectLabel),
+  };
+  const confirmed = loadWorkHabits().filter((habit) => (
+    habit.status === 'confirmed' && habitAppliesToContext(habit, context)
+  ));
   const sorted = confirmed.sort((a, b) => {
-    const aMatches = normalizedTitle && a.scopeLabel.toLowerCase().includes(normalizedTitle) ? 1 : 0;
-    const bMatches = normalizedTitle && b.scopeLabel.toLowerCase().includes(normalizedTitle) ? 1 : 0;
-    if (aMatches !== bMatches) return bMatches - aMatches;
+    const priorityDelta = scopePriority(b.scope) - scopePriority(a.scope);
+    if (priorityDelta !== 0) return priorityDelta;
     return b.applicationCount - a.applicationCount;
   });
   return sorted.slice(0, params.limit ?? 5);
+}
+
+function normalizeComparable(value: string | null | undefined): string {
+  return value?.trim().toLowerCase() ?? '';
+}
+
+function scopePriority(scope: WorkHabitScope): number {
+  if (scope === 'project') return 3;
+  if (scope === 'task_type') return 2;
+  return 1;
+}
+
+function labelMatches(label: string, ...candidates: string[]): boolean {
+  const normalized = normalizeComparable(label);
+  return candidates.some((candidate) => (
+    Boolean(candidate)
+    && (normalized.includes(candidate) || candidate.includes(normalized))
+  ));
+}
+
+function habitAppliesToContext(
+  habit: WorkHabitRecord,
+  context: { taskTitle: string; taskTypeLabel: string; projectLabel: string },
+): boolean {
+  if (habit.scope === 'global') return true;
+  if (habit.scope === 'project') {
+    return labelMatches(habit.scopeLabel, context.projectLabel, context.taskTitle);
+  }
+  return labelMatches(habit.scopeLabel, context.taskTypeLabel, context.taskTitle);
 }
 
 export function summarizeWorkHabitsForPrompt(habits: WorkHabitRecord[]): string[] {

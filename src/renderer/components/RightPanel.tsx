@@ -4,7 +4,7 @@ import {
   selectApplicableWorkHabits,
   summarizeWorkHabitsForPrompt,
 } from '../lib/workHabits';
-import { buildProjectDecompositionPrompt, getTaskAttributes } from '../lib/taskAttributes';
+import { buildProjectDecompositionPrompt, getTaskAttributes, type TaskExecutionType } from '../lib/taskAttributes';
 
 type MessageRole = 'user' | 'assistant';
 
@@ -40,6 +40,13 @@ function now() {
 
 let msgCounter = 1;
 function nextId() { return `m${msgCounter++}`; }
+
+const TASK_TYPE_HABIT_LABELS: Record<TaskExecutionType, string> = {
+  simple:    '一次性',
+  project:   '项目型',
+  scheduled: '定时任务',
+  event:     '事件触发',
+};
 
 interface RightPanelProps {
   taskId: string | null;
@@ -153,6 +160,8 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
       if (window.api?.chatWithAI) {
         const appliedHabits = summarizeWorkHabitsForPrompt(selectApplicableWorkHabits({
           taskTitle: titleCache[activeTaskId ?? ''] ?? null,
+          taskTypeLabel: activeAttrs ? TASK_TYPE_HABIT_LABELS[activeAttrs.type] : null,
+          projectLabel: activeAttrs?.type === 'project' ? titleCache[activeTaskId ?? ''] ?? null : null,
         }));
         const res = await window.api.chatWithAI({
           messages: historyForAI,

@@ -773,6 +773,8 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('董事会材料发出前先更新现金流页')).toBeTruthy();
     expect(screen.getByText('用户创建')).toBeTruthy();
     expect(screen.getByText('董事会材料')).toBeTruthy();
+    await user.click(screen.getByText('董事会材料发出前先更新现金流页'));
+    expect(await screen.findByText('优先级：中 · 任务类型规则')).toBeTruthy();
   });
 
   it('opens a task workbench and keeps Runs scoped under the task instead of global navigation', async () => {

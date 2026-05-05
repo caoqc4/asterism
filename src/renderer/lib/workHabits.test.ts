@@ -8,6 +8,7 @@ import {
   loadWorkHabits,
   resolveWorkHabitConflict,
   saveWorkHabits,
+  selectApplicableWorkHabits,
   type WorkHabitRecord,
 } from './workHabits';
 
@@ -83,4 +84,61 @@ describe('work habit conflict handling', () => {
     });
     expect(loadWorkHabits()[0]?.source).toBe('manual');
   });
+
+  it('selects applicable habits by project, task type, then global priority', () => {
+    saveWorkHabits([
+      buildHabit({
+        id: 'habit_global',
+        rule: '所有重要输出都先自查一遍',
+        scope: 'global',
+        scopeLabel: '全局',
+        applicationCount: 20,
+      }),
+      buildHabit({
+        id: 'habit_type',
+        rule: '定时任务提前一天检查数据源',
+        scope: 'task_type',
+        scopeLabel: '定时任务',
+        applicationCount: 2,
+      }),
+      buildHabit({
+        id: 'habit_project',
+        rule: '官网改版项目先同步视觉规范',
+        scope: 'project',
+        scopeLabel: '官网改版',
+        applicationCount: 1,
+      }),
+      buildHabit({
+        id: 'habit_irrelevant',
+        rule: '品牌合作先查邮件线程',
+        scope: 'task_type',
+        scopeLabel: '外部合作',
+        applicationCount: 99,
+      }),
+    ]);
+
+    const selected = selectApplicableWorkHabits({
+      taskTitle: '官网改版周会',
+      taskTypeLabel: '定时任务',
+      projectLabel: '官网改版',
+    });
+
+    expect(selected.map((habit) => habit.id)).toEqual([
+      'habit_project',
+      'habit_type',
+      'habit_global',
+    ]);
+  });
 });
+
+function buildHabit(partial: Partial<WorkHabitRecord>): WorkHabitRecord {
+  return {
+    ...baseHabit,
+    ...partial,
+    id: partial.id ?? `habit_${partial.scope ?? 'global'}`,
+    rule: partial.rule ?? baseHabit.rule,
+    scope: partial.scope ?? 'global',
+    scopeLabel: partial.scopeLabel ?? '全局',
+    status: partial.status ?? 'confirmed',
+  };
+}

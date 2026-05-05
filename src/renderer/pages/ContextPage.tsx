@@ -39,6 +39,12 @@ function statusLabel(status: WorkHabitStatus): string {
   return '待确认';
 }
 
+function priorityLabel(scope: WorkHabitScope): string {
+  if (scope === 'project') return '最高 · 项目规则优先';
+  if (scope === 'task_type') return '中 · 任务类型规则';
+  return '基础 · 全局规则';
+}
+
 export function ContextPage() {
   const [tasks, setTasks] = useState<TaskListItemRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -364,6 +370,7 @@ export function ContextPage() {
                   </div>
                   {isExpanded && (
                     <div className="ctx-habit-detail">
+                      <div>优先级：{priorityLabel(h.scope)}</div>
                       <div>创建：{new Date(h.createdAt).toLocaleString('zh')}</div>
                       <div>最近应用：{h.lastAppliedAt ? new Date(h.lastAppliedAt).toLocaleString('zh') : '尚未应用'}</div>
                     </div>
