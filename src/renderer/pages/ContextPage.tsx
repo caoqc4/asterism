@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import type { TaskListItemRecord } from '@shared/types/task';
 import {
   deleteWorkHabit,
+  findWorkHabitConflict,
   loadWorkHabits,
+  resolveWorkHabitConflict,
   updateWorkHabit,
   type WorkHabitRecord,
   type WorkHabitSource,
@@ -66,6 +68,11 @@ export function ContextPage() {
 
   function updateHabitStatus(id: string, status: WorkHabitStatus) {
     setHabits(updateWorkHabit(id, { status }));
+  }
+
+  function resolveHabitConflict(id: string, decision: 'accept_candidate' | 'keep_confirmed') {
+    setHabits(resolveWorkHabitConflict(id, decision));
+    setExpandedHabit((current) => current === id ? null : current);
   }
 
   function deleteHabit(id: string) {
@@ -253,8 +260,9 @@ export function ContextPage() {
           {habits.map((h) => {
             const isExpanded = expandedHabit === h.id;
             const isEditing = editingHabit === h.id;
+            const conflict = findWorkHabitConflict(h, habits);
             return (
-              <div key={h.id} className={`ctx-habit-row${h.status === 'pending' ? ' unconfirmed' : ''}`}>
+              <div key={h.id} className={`ctx-habit-row${h.status === 'pending' ? ' unconfirmed' : ''}${conflict ? ' conflict' : ''}`}>
                 <div
                   className="ctx-habit-main"
                   onClick={() => setExpandedHabit((current) => current === h.id ? null : h.id)}
@@ -275,6 +283,11 @@ export function ContextPage() {
                     <div className="ctx-habit-obs">{h.rule}</div>
                   )}
                   <div className="ctx-habit-examples muted">{h.examples}</div>
+                  {conflict && (
+                    <div className="ctx-habit-conflict">
+                      与已确认规则冲突：{conflict.confirmed.rule}
+                    </div>
+                  )}
                   <div className="ctx-habit-meta">
                     <span className="habit-chip">{sourceLabel(h.source)}</span>
                     <span className="habit-chip">{h.scopeLabel}</span>
@@ -294,8 +307,17 @@ export function ContextPage() {
                   {h.status === 'disabled' && <span className="habit-badge rejected">已停用</span>}
                   {h.status === 'pending' && (
                     <div className="habit-actions">
-                      <button className="btn sm primary" onClick={() => updateHabitStatus(h.id, 'confirmed')}>确认</button>
-                      <button className="btn sm ghost" onClick={() => updateHabitStatus(h.id, 'disabled')}>不准确</button>
+                      {conflict ? (
+                        <>
+                          <button className="btn sm primary" onClick={() => resolveHabitConflict(h.id, 'accept_candidate')}>采用新规则</button>
+                          <button className="btn sm ghost" onClick={() => resolveHabitConflict(h.id, 'keep_confirmed')}>保留旧规则</button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="btn sm primary" onClick={() => updateHabitStatus(h.id, 'confirmed')}>确认</button>
+                          <button className="btn sm ghost" onClick={() => updateHabitStatus(h.id, 'disabled')}>不准确</button>
+                        </>
+                      )}
                     </div>
                   )}
                   {h.status !== 'pending' && (

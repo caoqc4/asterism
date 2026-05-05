@@ -12,6 +12,7 @@ import type { AiConfigStatus } from '@shared/types/settings';
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import type { TaskDependencyRecord } from '@shared/types/task-dependency';
 import { App } from './App';
+import { saveWorkHabits, type WorkHabitRecord } from './lib/workHabits';
 
 const now = '2026-01-01T00:00:00.000Z';
 
@@ -45,6 +46,21 @@ function buildTaskDependency(partial: Partial<TaskDependencyRecord> = {}): TaskD
     createdAt: partial.createdAt ?? now,
     updatedAt: partial.updatedAt ?? now,
     resolvedAt: partial.resolvedAt ?? null,
+  };
+}
+
+function buildWorkHabit(partial: Partial<WorkHabitRecord> = {}): WorkHabitRecord {
+  return {
+    id: partial.id ?? 'habit_test',
+    rule: partial.rule ?? '代码合入前必须先跑完整测试',
+    source: partial.source ?? 'manual',
+    scope: partial.scope ?? 'task_type',
+    scopeLabel: partial.scopeLabel ?? '代码合入',
+    status: partial.status ?? 'confirmed',
+    examples: partial.examples ?? '发布前检查',
+    createdAt: partial.createdAt ?? now,
+    lastAppliedAt: partial.lastAppliedAt ?? null,
+    applicationCount: partial.applicationCount ?? 1,
   };
 }
 
@@ -715,6 +731,30 @@ describe('App redesign v1', () => {
       });
     });
     expect(await screen.findByText('暂无详细上下文。')).toBeTruthy();
+  });
+
+  it('lets users resolve conflicting learned work habits from Context', async () => {
+    const user = userEvent.setup();
+    saveWorkHabits([
+      buildWorkHabit({
+        id: 'habit_candidate',
+        rule: '代码合入前只需要跑受影响测试',
+        source: 'proposal',
+        status: 'pending',
+        examples: '小范围样式调整',
+      }),
+      buildWorkHabit({ id: 'habit_existing' }),
+    ]);
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Context/ }));
+
+    expect(await screen.findByText(/与已确认规则冲突/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '采用新规则' }));
+
+    expect(screen.queryByText(/与已确认规则冲突/)).toBeNull();
+    expect((await screen.findAllByText('已确认')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('已停用')).length).toBeGreaterThan(0);
   });
 
   it('opens a task workbench and keeps Runs scoped under the task instead of global navigation', async () => {

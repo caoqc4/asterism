@@ -15,6 +15,11 @@ export type WorkHabitRecord = {
   applicationCount: number;
 };
 
+export type WorkHabitConflict = {
+  candidate: WorkHabitRecord;
+  confirmed: WorkHabitRecord;
+};
+
 const STORAGE_KEY = 'taskplane.workHabits.v1';
 
 const SEED_HABITS: WorkHabitRecord[] = [
@@ -82,6 +87,56 @@ export function updateWorkHabit(
 
 export function deleteWorkHabit(id: string): WorkHabitRecord[] {
   const next = loadWorkHabits().filter((habit) => habit.id !== id);
+  saveWorkHabits(next);
+  return next;
+}
+
+function normalizeRule(value: string): string {
+  return value.trim().replace(/\s+/g, '').toLowerCase();
+}
+
+function sharesLearningScope(a: WorkHabitRecord, b: WorkHabitRecord): boolean {
+  return a.scope === b.scope && a.scopeLabel.trim() === b.scopeLabel.trim();
+}
+
+export function findWorkHabitConflict(
+  candidate: WorkHabitRecord,
+  habits: WorkHabitRecord[] = loadWorkHabits(),
+): WorkHabitConflict | null {
+  if (candidate.status !== 'pending') return null;
+  const candidateRule = normalizeRule(candidate.rule);
+  const confirmed = habits.find((habit) => (
+    habit.id !== candidate.id
+    && habit.status === 'confirmed'
+    && sharesLearningScope(candidate, habit)
+    && normalizeRule(habit.rule) !== candidateRule
+  ));
+
+  return confirmed ? { candidate, confirmed } : null;
+}
+
+export function resolveWorkHabitConflict(
+  candidateId: string,
+  decision: 'accept_candidate' | 'keep_confirmed',
+): WorkHabitRecord[] {
+  const habits = loadWorkHabits();
+  const candidate = habits.find((habit) => habit.id === candidateId);
+  const conflict = candidate ? findWorkHabitConflict(candidate, habits) : null;
+  if (!candidate || !conflict) return habits;
+
+  const next = habits.map((habit) => {
+    if (habit.id === candidate.id) {
+      return {
+        ...habit,
+        status: decision === 'accept_candidate' ? 'confirmed' as WorkHabitStatus : 'disabled' as WorkHabitStatus,
+      };
+    }
+    if (habit.id === conflict.confirmed.id && decision === 'accept_candidate') {
+      return { ...habit, status: 'disabled' as WorkHabitStatus };
+    }
+    return habit;
+  });
+
   saveWorkHabits(next);
   return next;
 }
