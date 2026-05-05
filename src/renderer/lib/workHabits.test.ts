@@ -133,14 +133,14 @@ describe('work habit conflict handling', () => {
     ]);
   });
 
-  it('stores habits in a versioned local-only snapshot and migrates legacy arrays', () => {
+  it('stores habits in a versioned main-db snapshot shape and migrates legacy arrays', () => {
     window.localStorage.setItem('taskplane.workHabits.v1', JSON.stringify([baseHabit]));
 
     const snapshot = getWorkHabitStorageSnapshot();
 
     expect(snapshot).toMatchObject({
-      version: 2,
-      storage: 'renderer_local',
+      version: 3,
+      storage: 'main_db',
       privacyBoundary: {
         locality: 'device_only',
       },
@@ -148,7 +148,7 @@ describe('work habit conflict handling', () => {
     });
     expect(snapshot.privacyBoundary.excludes).toContain('聊天消息全文');
     expect(JSON.parse(window.localStorage.getItem('taskplane.workHabits.v1') ?? '{}')).toMatchObject({
-      version: 2,
+      version: 3,
       habits: [expect.objectContaining({ id: 'habit_existing' })],
     });
   });

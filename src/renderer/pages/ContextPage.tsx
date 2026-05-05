@@ -70,7 +70,7 @@ export function ContextPage() {
   });
 
   useEffect(() => {
-    setHabits(loadWorkHabits());
+    void refreshHabits();
     if (!window.api) { setLoading(false); return; }
     window.api.listTasks()
       .then((all) => {
@@ -83,17 +83,40 @@ export function ContextPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  function updateHabitStatus(id: string, status: WorkHabitStatus) {
+  async function refreshHabits() {
+    if (window.api?.getWorkHabitSnapshot) {
+      const snapshot = await window.api.getWorkHabitSnapshot().catch(() => null);
+      if (snapshot) {
+        setHabits(snapshot.habits);
+        return;
+      }
+    }
+    setHabits(loadWorkHabits());
+  }
+
+  async function updateHabitStatus(id: string, status: WorkHabitStatus) {
+    if (window.api?.updateWorkHabit) {
+      setHabits(await window.api.updateWorkHabit({ id, status }));
+      return;
+    }
     setHabits(updateWorkHabit(id, { status }));
   }
 
-  function resolveHabitConflict(id: string, decision: 'accept_candidate' | 'keep_confirmed') {
-    setHabits(resolveWorkHabitConflict(id, decision));
+  async function resolveHabitConflict(id: string, decision: 'accept_candidate' | 'keep_confirmed') {
+    if (window.api?.resolveWorkHabitConflict) {
+      setHabits(await window.api.resolveWorkHabitConflict({ candidateId: id, decision }));
+    } else {
+      setHabits(resolveWorkHabitConflict(id, decision));
+    }
     setExpandedHabit((current) => current === id ? null : current);
   }
 
-  function deleteHabit(id: string) {
-    setHabits(deleteWorkHabit(id));
+  async function deleteHabit(id: string) {
+    if (window.api?.deleteWorkHabit) {
+      setHabits(await window.api.deleteWorkHabit(id));
+    } else {
+      setHabits(deleteWorkHabit(id));
+    }
     setExpandedHabit((current) => current === id ? null : current);
   }
 
@@ -102,10 +125,14 @@ export function ContextPage() {
     setHabitDraft(habit.rule);
   }
 
-  function saveHabitEdit(id: string) {
+  async function saveHabitEdit(id: string) {
     const rule = habitDraft.trim();
     if (!rule) return;
-    setHabits(updateWorkHabit(id, { rule }));
+    if (window.api?.updateWorkHabit) {
+      setHabits(await window.api.updateWorkHabit({ id, rule }));
+    } else {
+      setHabits(updateWorkHabit(id, { rule }));
+    }
     setEditingHabit(null);
     setHabitDraft('');
   }
@@ -115,10 +142,14 @@ export function ContextPage() {
     setNewHabitDraft((draft) => ({ ...draft, scope, scopeLabel: label }));
   }
 
-  function createHabit() {
+  async function createHabit() {
     const rule = newHabitDraft.rule.trim();
     if (!rule) return;
-    setHabits(createManualWorkHabit(newHabitDraft));
+    if (window.api?.createManualWorkHabit) {
+      setHabits(await window.api.createManualWorkHabit(newHabitDraft));
+    } else {
+      setHabits(createManualWorkHabit(newHabitDraft));
+    }
     setNewHabitDraft({
       rule: '',
       scope: 'global',
@@ -332,7 +363,7 @@ export function ContextPage() {
                 placeholder="例子或触发场景"
               />
               <div className="ctx-habit-new-actions">
-                <button className="btn sm primary" onClick={createHabit}>保存规则</button>
+                <button className="btn sm primary" onClick={() => void createHabit()}>保存规则</button>
                 <button className="btn sm ghost" onClick={() => setShowNewHabit(false)}>取消</button>
               </div>
             </div>
@@ -355,7 +386,7 @@ export function ContextPage() {
                       onChange={(e) => setHabitDraft(e.target.value)}
                       onClick={(e) => e.stopPropagation()}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') saveHabitEdit(h.id);
+                        if (e.key === 'Enter') void saveHabitEdit(h.id);
                         if (e.key === 'Escape') setEditingHabit(null);
                       }}
                     />
@@ -393,29 +424,29 @@ export function ContextPage() {
                     <div className="habit-actions">
                       {conflict ? (
                         <>
-                          <button className="btn sm primary" onClick={() => resolveHabitConflict(h.id, 'accept_candidate')}>采用新规则</button>
-                          <button className="btn sm ghost" onClick={() => resolveHabitConflict(h.id, 'keep_confirmed')}>保留旧规则</button>
+                          <button className="btn sm primary" onClick={() => void resolveHabitConflict(h.id, 'accept_candidate')}>采用新规则</button>
+                          <button className="btn sm ghost" onClick={() => void resolveHabitConflict(h.id, 'keep_confirmed')}>保留旧规则</button>
                         </>
                       ) : (
                         <>
-                          <button className="btn sm primary" onClick={() => updateHabitStatus(h.id, 'confirmed')}>确认</button>
-                          <button className="btn sm ghost" onClick={() => updateHabitStatus(h.id, 'disabled')}>不准确</button>
+                          <button className="btn sm primary" onClick={() => void updateHabitStatus(h.id, 'confirmed')}>确认</button>
+                          <button className="btn sm ghost" onClick={() => void updateHabitStatus(h.id, 'disabled')}>不准确</button>
                         </>
                       )}
                     </div>
                   )}
                   {h.status !== 'pending' && (
-                    <button className="btn sm ghost" onClick={() => updateHabitStatus(h.id, h.status === 'disabled' ? 'confirmed' : 'disabled')}>
+                    <button className="btn sm ghost" onClick={() => void updateHabitStatus(h.id, h.status === 'disabled' ? 'confirmed' : 'disabled')}>
                       {h.status === 'disabled' ? '启用' : '停用'}
                     </button>
                   )}
                 </div>
                 {isEditing ? (
-                  <button className="btn sm ghost" onClick={() => saveHabitEdit(h.id)}>保存</button>
+                  <button className="btn sm ghost" onClick={() => void saveHabitEdit(h.id)}>保存</button>
                 ) : (
                   <button className="btn sm ghost" onClick={() => startEditingHabit(h)}>编辑</button>
                 )}
-                <button className="ctx-habit-del icon-btn" onClick={() => deleteHabit(h.id)} title="删除">
+                <button className="ctx-habit-del icon-btn" onClick={() => void deleteHabit(h.id)} title="删除">
                   <IconTrash />
                 </button>
               </div>

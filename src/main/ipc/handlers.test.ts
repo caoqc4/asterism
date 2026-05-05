@@ -47,6 +47,15 @@ const {
       applyProcessTemplate: vi.fn(),
       removeProcessTemplate: vi.fn(),
     },
+    workHabitService: {
+      getSnapshot: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      createManual: vi.fn(),
+      resolveConflict: vi.fn(),
+      recordCompletionOverride: vi.fn(),
+      recordSopTemplate: vi.fn(),
+    },
     decisionService: {
       list: vi.fn(),
       draft: vi.fn(),

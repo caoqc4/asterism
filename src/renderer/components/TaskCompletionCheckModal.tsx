@@ -85,11 +85,16 @@ export function TaskCompletionCheckModal({
         await onMarkWaiting(reason);
       } else {
         if (selfLearnEnabled && hasConcern) {
-          recordCompletionOverrideLearningSignal({
+          const learningSignal = {
             taskId,
             taskTitle: detail?.title ?? taskTitle,
             reason,
-          });
+          };
+          if (window.api?.recordCompletionOverrideLearningSignal) {
+            await window.api.recordCompletionOverrideLearningSignal(learningSignal);
+          } else {
+            recordCompletionOverrideLearningSignal(learningSignal);
+          }
         }
         await onCompleteAnyway();
       }

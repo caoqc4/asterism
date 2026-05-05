@@ -38,6 +38,13 @@ function getExposedApi() {
     updateTask: (input: unknown) => Promise<unknown>;
     transitionTask: (input: unknown) => Promise<unknown>;
     recordTaskCompletionCheck: (input: unknown) => Promise<unknown>;
+    getWorkHabitSnapshot: () => Promise<unknown>;
+    updateWorkHabit: (input: unknown) => Promise<unknown>;
+    deleteWorkHabit: (id: string) => Promise<unknown>;
+    createManualWorkHabit: (input: unknown) => Promise<unknown>;
+    resolveWorkHabitConflict: (input: unknown) => Promise<unknown>;
+    recordCompletionOverrideLearningSignal: (input: unknown) => Promise<unknown>;
+    recordSopTemplateHabit: (input: unknown) => Promise<unknown>;
     createBlocker: (input: unknown) => Promise<unknown>;
     updateBlocker: (input: unknown) => Promise<unknown>;
     resolveBlocker: (id: string) => Promise<unknown>;
@@ -102,6 +109,11 @@ describe('preload bridge', () => {
       criteriaSatisfied: 1,
       criteriaOpen: 1,
     };
+    const updateWorkHabitInput = { id: 'habit_1', status: 'confirmed' };
+    const createManualWorkHabitInput = { rule: 'Run checks first', scope: 'global', scopeLabel: '全局' };
+    const resolveWorkHabitConflictInput = { candidateId: 'habit_1', decision: 'accept_candidate' };
+    const completionOverrideInput = { taskId: 'task_1', taskTitle: 'Task', reason: 'Enough evidence' };
+    const sopHabitInput = { taskId: 'task_1', taskTitle: 'Task', steps: ['Draft', 'Review'] };
     const createBlockerInput = {
       taskId: 'task_1',
       title: 'Legal approval pending',
@@ -186,6 +198,13 @@ describe('preload bridge', () => {
     await api.updateTask(updateTaskInput);
     await api.transitionTask(transitionTaskInput);
     await api.recordTaskCompletionCheck(completionCheckInput);
+    await api.getWorkHabitSnapshot();
+    await api.updateWorkHabit(updateWorkHabitInput);
+    await api.deleteWorkHabit('habit_1');
+    await api.createManualWorkHabit(createManualWorkHabitInput);
+    await api.resolveWorkHabitConflict(resolveWorkHabitConflictInput);
+    await api.recordCompletionOverrideLearningSignal(completionOverrideInput);
+    await api.recordSopTemplateHabit(sopHabitInput);
     await api.createBlocker(createBlockerInput);
     await api.updateBlocker(updateBlockerInput);
     await api.resolveBlocker('blocker_1');
@@ -226,6 +245,13 @@ describe('preload bridge', () => {
       ['task:update', updateTaskInput],
       ['task:transition', transitionTaskInput],
       ['task:recordCompletionCheck', completionCheckInput],
+      ['workHabit:getSnapshot'],
+      ['workHabit:update', updateWorkHabitInput],
+      ['workHabit:delete', 'habit_1'],
+      ['workHabit:createManual', createManualWorkHabitInput],
+      ['workHabit:resolveConflict', resolveWorkHabitConflictInput],
+      ['workHabit:recordCompletionOverride', completionOverrideInput],
+      ['workHabit:recordSopTemplate', sopHabitInput],
       ['blocker:create', createBlockerInput],
       ['blocker:update', updateBlockerInput],
       ['blocker:resolve', 'blocker_1'],

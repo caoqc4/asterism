@@ -418,11 +418,16 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
           detail={detail}
           onCancel={() => setShowSopExtract(false)}
           onSave={(steps) => {
-            recordSopTemplateHabit({
+            const input = {
               taskId,
               taskTitle: title,
               steps,
-            });
+            };
+            if (window.api?.recordSopTemplateHabit) {
+              void window.api.recordSopTemplateHabit(input);
+            } else {
+              recordSopTemplateHabit(input);
+            }
             setShowSopExtract(false);
           }}
         />

@@ -12,7 +12,17 @@ import type { AiConfigStatus } from '@shared/types/settings';
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import type { TaskDependencyRecord } from '@shared/types/task-dependency';
 import { App } from './App';
-import { recordCompletionOverrideLearningSignal, saveWorkHabits, type WorkHabitRecord } from './lib/workHabits';
+import {
+  createManualWorkHabit,
+  deleteWorkHabit,
+  loadWorkHabits,
+  recordCompletionOverrideLearningSignal,
+  recordSopTemplateHabit,
+  resolveWorkHabitConflict,
+  saveWorkHabits,
+  updateWorkHabit,
+  type WorkHabitRecord,
+} from './lib/workHabits';
 
 const now = '2026-01-01T00:00:00.000Z';
 
@@ -343,6 +353,26 @@ function createMockApi() {
       updatedAt: now,
     })),
     recordTaskCompletionCheck: vi.fn().mockResolvedValue(undefined),
+    getWorkHabitSnapshot: vi.fn().mockImplementation(async () => ({
+      version: 3,
+      storage: 'main_db',
+      privacyBoundary: {
+        locality: 'device_only',
+        contains: [],
+        excludes: [],
+      },
+      habits: loadWorkHabits(),
+    })),
+    updateWorkHabit: vi.fn().mockImplementation(async (input) => updateWorkHabit(input.id, input)),
+    deleteWorkHabit: vi.fn().mockImplementation(async (id) => deleteWorkHabit(id)),
+    createManualWorkHabit: vi.fn().mockImplementation(async (input) => createManualWorkHabit(input)),
+    resolveWorkHabitConflict: vi.fn().mockImplementation(async (input) =>
+      resolveWorkHabitConflict(input.candidateId, input.decision)),
+    recordCompletionOverrideLearningSignal: vi.fn().mockImplementation(async (input) => {
+      recordCompletionOverrideLearningSignal(input);
+      return loadWorkHabits();
+    }),
+    recordSopTemplateHabit: vi.fn().mockImplementation(async (input) => recordSopTemplateHabit(input)),
     createBlocker: vi.fn(),
     updateBlocker: vi.fn(),
     resolveBlocker: vi.fn(),

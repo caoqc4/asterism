@@ -15,7 +15,9 @@ import { TaskDependencyRepository } from '../db/repositories/task-dependency-rep
 import { TaskRepository } from '../db/repositories/task-repository.js';
 import { TaskProcessBindingRepository } from '../db/repositories/task-process-binding-repository.js';
 import { WaitingItemRepository } from '../db/repositories/waiting-item-repository.js';
+import { WorkHabitRepository } from '../db/repositories/work-habit-repository.js';
 import { HomeBriefService } from '../domain/brief/home-brief-service.js';
+import { WorkHabitService } from '../domain/context/work-habit-service.js';
 import { DecisionService } from '../domain/decision/decision-service.js';
 import { AgentSessionStore } from '../domain/run/agent-session-store.js';
 import { AgentToolRegistry } from '../domain/run/agent-tool-registry.js';
@@ -51,6 +53,7 @@ const processTemplateRepository = new ProcessTemplateRepository();
 const taskProcessBindingRepository = new TaskProcessBindingRepository();
 const briefSnapshotRepository = new BriefSnapshotRepository();
 const waitingItemRepository = new WaitingItemRepository();
+const workHabitRepository = new WorkHabitRepository();
 let schedulerService: SchedulerService | null = null;
 const homeBriefService = new HomeBriefService(
   taskRepository,
@@ -157,6 +160,7 @@ const codeAgentRunService = new CodeAgentRunService(
   decisionRepository,
   sandboxPatchPromotionRepository,
 );
+const workHabitService = new WorkHabitService(workHabitRepository);
 
 const services = {
   taskRepository,
@@ -167,6 +171,7 @@ const services = {
   sandboxPatchPromotionRepository,
   briefSnapshotRepository,
   waitingItemRepository,
+  workHabitRepository,
   blockerRepository,
   completionCriteriaRepository,
   taskDependencyRepository,
@@ -185,6 +190,7 @@ const services = {
   runService,
   operatorStartedRunService,
   codeAgentRunService,
+  workHabitService,
   browserEvidencePersister,
   homeBriefService,
   aiConfigService,

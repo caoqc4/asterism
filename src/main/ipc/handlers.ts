@@ -25,6 +25,13 @@ import type { AiConfigInput } from '../../shared/types/settings.js';
 import type { OperatorStartedRunRequest } from '../../shared/types/operator-started-run.js';
 import type { CreateSourceContextInput, UpdateSourceContextInput } from '../../shared/types/source-context.js';
 import type {
+  CompletionOverrideLearningSignalInput,
+  CreateManualWorkHabitInput,
+  ResolveWorkHabitConflictInput,
+  SopTemplateHabitInput,
+  UpdateWorkHabitInput,
+} from '../../shared/types/work-habit.js';
+import type {
   CreateTaskInput,
   RecordTaskCompletionCheckInput,
   TransitionTaskInput,
@@ -189,6 +196,26 @@ export function registerIpcHandlers(): void {
     await getServices().taskService.recordCompletionCheck(input);
     emitAppEvent('task.changed', input.taskId);
   });
+
+  ipcMain.handle('workHabit:getSnapshot', async () => getServices().workHabitService.getSnapshot());
+
+  ipcMain.handle('workHabit:update', async (_event, input: UpdateWorkHabitInput) =>
+    getServices().workHabitService.update(input));
+
+  ipcMain.handle('workHabit:delete', async (_event, id: string) =>
+    getServices().workHabitService.delete(id));
+
+  ipcMain.handle('workHabit:createManual', async (_event, input: CreateManualWorkHabitInput) =>
+    getServices().workHabitService.createManual(input));
+
+  ipcMain.handle('workHabit:resolveConflict', async (_event, input: ResolveWorkHabitConflictInput) =>
+    getServices().workHabitService.resolveConflict(input));
+
+  ipcMain.handle('workHabit:recordCompletionOverride', async (_event, input: CompletionOverrideLearningSignalInput) =>
+    getServices().workHabitService.recordCompletionOverride(input));
+
+  ipcMain.handle('workHabit:recordSopTemplate', async (_event, input: SopTemplateHabitInput) =>
+    getServices().workHabitService.recordSopTemplate(input));
 
   ipcMain.handle('blocker:create', async (_event, input: CreateBlockerInput) => {
     const created = await getServices().taskService.createBlocker(input);

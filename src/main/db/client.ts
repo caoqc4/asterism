@@ -242,6 +242,20 @@ function bootstrapTables(connection: Database.Database): void {
       updated_at TEXT NOT NULL,
       removed_at TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS work_habits (
+      id TEXT PRIMARY KEY,
+      rule TEXT NOT NULL,
+      source TEXT NOT NULL,
+      scope TEXT NOT NULL,
+      scope_label TEXT NOT NULL,
+      status TEXT NOT NULL,
+      examples TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL,
+      last_applied_at TEXT,
+      application_count INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
+    );
   `);
 
   ensureColumn(connection, 'runs', 'instructions', 'TEXT');

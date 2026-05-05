@@ -79,6 +79,15 @@ import type {
   UpdateSourceContextInput,
 } from './source-context.js';
 import type {
+  CompletionOverrideLearningSignalInput,
+  CreateManualWorkHabitInput,
+  ResolveWorkHabitConflictInput,
+  SopTemplateHabitInput,
+  UpdateWorkHabitInput,
+  WorkHabitRecord,
+  WorkHabitStorageSnapshot,
+} from './work-habit.js';
+import type {
   CreateTaskInput,
   RecordTaskCompletionCheckInput,
   TaskDetail,
@@ -99,6 +108,15 @@ export type ElectronApi = {
   updateTask: (input: UpdateTaskInput) => Promise<TaskListItemRecord>;
   transitionTask: (input: TransitionTaskInput) => Promise<TaskListItemRecord>;
   recordTaskCompletionCheck: (input: RecordTaskCompletionCheckInput) => Promise<void>;
+  getWorkHabitSnapshot: () => Promise<WorkHabitStorageSnapshot>;
+  updateWorkHabit: (input: UpdateWorkHabitInput) => Promise<WorkHabitRecord[]>;
+  deleteWorkHabit: (id: string) => Promise<WorkHabitRecord[]>;
+  createManualWorkHabit: (input: CreateManualWorkHabitInput) => Promise<WorkHabitRecord[]>;
+  resolveWorkHabitConflict: (input: ResolveWorkHabitConflictInput) => Promise<WorkHabitRecord[]>;
+  recordCompletionOverrideLearningSignal: (
+    input: CompletionOverrideLearningSignalInput,
+  ) => Promise<WorkHabitRecord[]>;
+  recordSopTemplateHabit: (input: SopTemplateHabitInput) => Promise<WorkHabitRecord[]>;
   createBlocker: (input: CreateBlockerInput) => Promise<BlockerRecord>;
   updateBlocker: (input: UpdateBlockerInput) => Promise<BlockerRecord>;
   resolveBlocker: (id: string) => Promise<BlockerRecord>;

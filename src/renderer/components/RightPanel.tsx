@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ChatMessage } from '@shared/types/ipc';
+import { selectApplicableWorkHabits as selectApplicableWorkHabitsFromList } from '@shared/work-habit-rules';
 import {
   selectApplicableWorkHabits,
   summarizeWorkHabitsForPrompt,
@@ -191,11 +192,15 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
     let replyText: string;
     try {
       if (window.api?.chatWithAI) {
-        const appliedHabits = summarizeWorkHabitsForPrompt(selectApplicableWorkHabits({
+        const habitParams = {
           taskTitle: titleCache[activeTaskId ?? ''] ?? null,
           taskTypeLabel: activeAttrs ? TASK_TYPE_HABIT_LABELS[activeAttrs.type] : null,
           projectLabel: activeAttrs?.type === 'project' ? titleCache[activeTaskId ?? ''] ?? null : null,
-        }));
+        };
+        const snapshot = await window.api.getWorkHabitSnapshot?.().catch(() => null);
+        const appliedHabits = summarizeWorkHabitsForPrompt(snapshot
+          ? selectApplicableWorkHabitsFromList(snapshot.habits, habitParams)
+          : selectApplicableWorkHabits(habitParams));
         const res = await window.api.chatWithAI({
           messages: historyForAI,
           taskId: activeTaskId,
