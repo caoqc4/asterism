@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import type { TaskListItemRecord } from '@shared/types/task';
 import {
+  createManualWorkHabit,
   deleteWorkHabit,
   findWorkHabitConflict,
   loadWorkHabits,
   resolveWorkHabitConflict,
   updateWorkHabit,
   type WorkHabitRecord,
+  type WorkHabitScope,
   type WorkHabitSource,
   type WorkHabitStatus,
 } from '../lib/workHabits';
@@ -51,6 +53,13 @@ export function ContextPage() {
   const [expandedHabit, setExpandedHabit] = useState<string | null>(null);
   const [editingHabit, setEditingHabit] = useState<string | null>(null);
   const [habitDraft, setHabitDraft] = useState('');
+  const [showNewHabit, setShowNewHabit] = useState(false);
+  const [newHabitDraft, setNewHabitDraft] = useState({
+    rule: '',
+    scope: 'global' as WorkHabitScope,
+    scopeLabel: '全局',
+    examples: '',
+  });
 
   useEffect(() => {
     setHabits(loadWorkHabits());
@@ -91,6 +100,24 @@ export function ContextPage() {
     setHabits(updateWorkHabit(id, { rule }));
     setEditingHabit(null);
     setHabitDraft('');
+  }
+
+  function updateNewHabitScope(scope: WorkHabitScope) {
+    const label = scope === 'global' ? '全局' : scope === 'project' ? '项目' : '任务类型';
+    setNewHabitDraft((draft) => ({ ...draft, scope, scopeLabel: label }));
+  }
+
+  function createHabit() {
+    const rule = newHabitDraft.rule.trim();
+    if (!rule) return;
+    setHabits(createManualWorkHabit(newHabitDraft));
+    setNewHabitDraft({
+      rule: '',
+      scope: 'global',
+      scopeLabel: '全局',
+      examples: '',
+    });
+    setShowNewHabit(false);
   }
 
   function startEditingTaskMemory(task: TaskListItemRecord) {
@@ -254,9 +281,49 @@ export function ContextPage() {
             <div className="ctx-section-title">工作习惯记录</div>
             <div className="ctx-section-desc">AI 从你的工作模式中观察到的规律 — 可确认或纠正</div>
           </div>
+          <button className="btn sm ghost" onClick={() => setShowNewHabit((value) => !value)}>
+            {showNewHabit ? '收起' : '新增规则'}
+          </button>
         </div>
 
         <div className="ctx-list">
+          {showNewHabit && (
+            <div className="ctx-habit-new">
+              <input
+                className="settings-input"
+                value={newHabitDraft.rule}
+                onChange={(e) => setNewHabitDraft((draft) => ({ ...draft, rule: e.target.value }))}
+                placeholder="例如：代码合入前先跑完整测试"
+              />
+              <div className="ctx-habit-new-row">
+                <select
+                  className="settings-input ctx-habit-scope"
+                  value={newHabitDraft.scope}
+                  onChange={(e) => updateNewHabitScope(e.target.value as WorkHabitScope)}
+                >
+                  <option value="global">全局</option>
+                  <option value="task_type">任务类型</option>
+                  <option value="project">项目</option>
+                </select>
+                <input
+                  className="settings-input"
+                  value={newHabitDraft.scopeLabel}
+                  onChange={(e) => setNewHabitDraft((draft) => ({ ...draft, scopeLabel: e.target.value }))}
+                  placeholder="适用范围"
+                />
+              </div>
+              <input
+                className="settings-input"
+                value={newHabitDraft.examples}
+                onChange={(e) => setNewHabitDraft((draft) => ({ ...draft, examples: e.target.value }))}
+                placeholder="例子或触发场景"
+              />
+              <div className="ctx-habit-new-actions">
+                <button className="btn sm primary" onClick={createHabit}>保存规则</button>
+                <button className="btn sm ghost" onClick={() => setShowNewHabit(false)}>取消</button>
+              </div>
+            </div>
+          )}
           {habits.map((h) => {
             const isExpanded = expandedHabit === h.id;
             const isEditing = editingHabit === h.id;

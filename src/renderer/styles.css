@@ -1274,6 +1274,27 @@ a { color: inherit; text-decoration: none; }
 .ctx-habit-del { opacity: 0; transition: opacity 60ms; color: var(--ink-4); }
 .ctx-habit-row:hover .ctx-habit-del { opacity: 1; }
 
+.ctx-habit-new {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+.ctx-habit-new-row {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 8px;
+}
+.ctx-habit-scope {
+  font-family: inherit;
+}
+.ctx-habit-new-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
 .habit-badge {
   display: inline-flex;
   align-items: center;

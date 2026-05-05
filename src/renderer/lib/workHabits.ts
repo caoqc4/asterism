@@ -91,6 +91,39 @@ export function deleteWorkHabit(id: string): WorkHabitRecord[] {
   return next;
 }
 
+export function createManualWorkHabit(params: {
+  rule: string;
+  scope: WorkHabitScope;
+  scopeLabel: string;
+  examples?: string;
+}): WorkHabitRecord[] {
+  const rule = params.rule.trim();
+  if (!rule) return loadWorkHabits();
+
+  const now = new Date().toISOString();
+  const habit: WorkHabitRecord = {
+    id: `habit_manual_${Date.now()}`,
+    rule,
+    source: 'manual',
+    scope: params.scope,
+    scopeLabel: params.scopeLabel.trim() || scopeFallbackLabel(params.scope),
+    status: 'confirmed',
+    examples: params.examples?.trim() || '用户手动创建',
+    createdAt: now,
+    lastAppliedAt: null,
+    applicationCount: 0,
+  };
+  const next = [habit, ...loadWorkHabits()];
+  saveWorkHabits(next);
+  return next;
+}
+
+function scopeFallbackLabel(scope: WorkHabitScope): string {
+  if (scope === 'project') return '项目';
+  if (scope === 'task_type') return '任务类型';
+  return '全局';
+}
+
 function normalizeRule(value: string): string {
   return value.trim().replace(/\s+/g, '').toLowerCase();
 }

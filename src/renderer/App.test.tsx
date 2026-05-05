@@ -757,6 +757,24 @@ describe('App redesign v1', () => {
     expect((await screen.findAllByText('已停用')).length).toBeGreaterThan(0);
   });
 
+  it('lets users manually add a confirmed work habit from Context', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Context/ }));
+    await user.click(await screen.findByRole('button', { name: '新增规则' }));
+    await user.type(screen.getByPlaceholderText('例如：代码合入前先跑完整测试'), '董事会材料发出前先更新现金流页');
+    await user.selectOptions(screen.getByRole('combobox'), 'task_type');
+    await user.clear(screen.getByPlaceholderText('适用范围'));
+    await user.type(screen.getByPlaceholderText('适用范围'), '董事会材料');
+    await user.type(screen.getByPlaceholderText('例子或触发场景'), '月度董事会包');
+    await user.click(screen.getByRole('button', { name: '保存规则' }));
+
+    expect(await screen.findByText('董事会材料发出前先更新现金流页')).toBeTruthy();
+    expect(screen.getByText('用户创建')).toBeTruthy();
+    expect(screen.getByText('董事会材料')).toBeTruthy();
+  });
+
   it('opens a task workbench and keeps Runs scoped under the task instead of global navigation', async () => {
     const user = userEvent.setup();
     render(<App />);

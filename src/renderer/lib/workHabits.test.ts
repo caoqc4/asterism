@@ -3,6 +3,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  createManualWorkHabit,
   findWorkHabitConflict,
   loadWorkHabits,
   resolveWorkHabitConflict,
@@ -61,5 +62,25 @@ describe('work habit conflict handling', () => {
 
     expect(habits.find((habit) => habit.id === 'habit_candidate')?.status).toBe('disabled');
     expect(habits.find((habit) => habit.id === 'habit_existing')?.status).toBe('confirmed');
+  });
+
+  it('creates user-authored habits as confirmed local rules', () => {
+    const habits = createManualWorkHabit({
+      rule: '董事会材料发出前先更新现金流页',
+      scope: 'task_type',
+      scopeLabel: '董事会材料',
+      examples: '月度董事会包',
+    });
+
+    expect(habits[0]).toMatchObject({
+      rule: '董事会材料发出前先更新现金流页',
+      source: 'manual',
+      scope: 'task_type',
+      scopeLabel: '董事会材料',
+      status: 'confirmed',
+      examples: '月度董事会包',
+      applicationCount: 0,
+    });
+    expect(loadWorkHabits()[0]?.source).toBe('manual');
   });
 });
