@@ -44,6 +44,7 @@ const api: ElectronApi = {
   triggerOperatorStartedRun: (input) => ipcRenderer.invoke('run:triggerOperatorStarted', input),
   continuePausedRun: (runId) => ipcRenderer.invoke('run:continuePaused', runId),
   chatWithAI: (input) => ipcRenderer.invoke('ai:chat', input),
+  decomposeProject: (input) => ipcRenderer.invoke('ai:decomposeProject', input),
   subscribeToEvents: (listener) => {
     const wrapped = (_event: IpcRendererEvent, payload: Parameters<typeof listener>[0]) => {
       listener(payload);

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import type { ProjectDecompositionResult } from '@shared/types/ipc';
 import type { TaskListItemRecord, TaskState } from '@shared/types/task';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import {
@@ -127,6 +128,10 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
   const [deferOpenId, setDeferOpenId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; taskId: string } | null>(null);
   const [completionCheckTask, setCompletionCheckTask] = useState<Task | null>(null);
+  const [projectDraft, setProjectDraft] = useState<{ projectId: string; result: ProjectDecompositionResult } | null>(null);
+  const [projectDecomposingId, setProjectDecomposingId] = useState<string | null>(null);
+  const [projectCreatingChildrenId, setProjectCreatingChildrenId] = useState<string | null>(null);
+  const [projectDecompositionError, setProjectDecompositionError] = useState<string | null>(null);
 
   const [showCapture, setShowCapture] = useState(false);
   const [captureTitle, setCaptureTitle] = useState('');
@@ -225,6 +230,62 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
     setSelectedId(null);
     setAllTasks((prev) => prev.filter((t) => t.id !== task.id));
     transitionWithPlanningHop(task, 'waiting_external', `延后处理：${deferLabel(option)}`).catch(() => reloadTasks());
+  }
+
+  async function generateProjectDecomposition(project: Task) {
+    if (!window.api?.decomposeProject || projectDecomposingId) {
+      setProjectDecompositionError('当前版本暂时无法调用 AI 拆解服务。');
+      return;
+    }
+    setProjectDecomposingId(project.id);
+    setProjectDecompositionError(null);
+    try {
+      const result = await window.api.decomposeProject({ taskId: project.id });
+      setProjectDraft({ projectId: project.id, result });
+    } catch (error) {
+      setProjectDecompositionError(error instanceof Error ? error.message : 'AI 拆解失败，请稍后重试。');
+    } finally {
+      setProjectDecomposingId(null);
+    }
+  }
+
+  async function createProjectChildren(project: Task) {
+    if (!window.api || projectCreatingChildrenId) return;
+    const draft = projectDraft?.projectId === project.id ? projectDraft.result : null;
+    if (!draft) return;
+    setProjectCreatingChildrenId(project.id);
+    setProjectDecompositionError(null);
+    try {
+      const childRecords = await Promise.all(draft.subtasks.map((subtask) => window.api!.createTask({
+        title: subtask.title,
+        summary: [
+          subtask.summary,
+          `验收标准：${subtask.acceptanceCriteria}`,
+          subtask.dependency ? `依赖：${subtask.dependency}` : null,
+        ].filter(Boolean).join('\n'),
+      })));
+      const childIds = [...project.childTaskIds, ...childRecords.map((child) => child.id)];
+      const parentAttrs = saveTaskAttributes(project.id, { childTaskIds: childIds });
+      const childTasks = childRecords.map((child) => {
+        const childAttrs = saveTaskAttributes(child.id, {
+          type: 'simple',
+          parentTaskId: project.id,
+        });
+        return fromRecord({ ...child, activeBlocker: null, activeWaitingItem: null }, childAttrs);
+      });
+
+      setAllTasks((prev) => {
+        const nextParent = prev.map((task) => (
+          task.id === project.id ? { ...task, childTaskIds: parentAttrs.childTaskIds } : task
+        ));
+        return [...childTasks, ...nextParent];
+      });
+      setProjectDraft(null);
+    } catch (error) {
+      setProjectDecompositionError(error instanceof Error ? error.message : '创建子任务失败，请稍后重试。');
+    } finally {
+      setProjectCreatingChildrenId(null);
+    }
   }
 
   function groupByLane(tasks: Task[]): Record<Lane, Task[]> {
@@ -408,6 +469,12 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
               onDeferSelect={deferTask}
               onComplete={(task) => setCompletionCheckTask(task)}
               onMore={(event, task) => handleContextMenu(event, task.id)}
+              projectDraft={projectDraft}
+              decomposingId={projectDecomposingId}
+              creatingChildrenId={projectCreatingChildrenId}
+              decompositionError={projectDecompositionError}
+              onGenerateDecomposition={generateProjectDecomposition}
+              onCreateDraftChildren={createProjectChildren}
             />
           ) : viewMode === 'lane' ? (
             LANE_ORDER.map((lane) => {
@@ -587,6 +654,12 @@ function ProjectTreeView({
   onDeferSelect,
   onComplete,
   onMore,
+  projectDraft,
+  decomposingId,
+  creatingChildrenId,
+  decompositionError,
+  onGenerateDecomposition,
+  onCreateDraftChildren,
 }: {
   projects: Task[];
   tasks: Task[];
@@ -599,6 +672,12 @@ function ProjectTreeView({
   onDeferSelect: (task: Task, option: string) => void;
   onComplete: (task: Task) => void;
   onMore: (event: React.MouseEvent, task: Task) => void;
+  projectDraft: { projectId: string; result: ProjectDecompositionResult } | null;
+  decomposingId: string | null;
+  creatingChildrenId: string | null;
+  decompositionError: string | null;
+  onGenerateDecomposition: (project: Task) => void;
+  onCreateDraftChildren: (project: Task) => void;
 }) {
   if (projects.length === 0) return null;
 
@@ -645,13 +724,74 @@ function ProjectTreeView({
               </div>
             ))}
             {children.length === 0 && (
-              <div className="project-child-empty">
-                等待 AI 根据项目目标拆解子任务；拆解前不会自动生成模板任务。
-              </div>
+              <ProjectDecompositionPanel
+                project={project}
+                draft={projectDraft?.projectId === project.id ? projectDraft.result : null}
+                busy={decomposingId === project.id}
+                creating={creatingChildrenId === project.id}
+                error={decompositionError}
+                onGenerate={() => onGenerateDecomposition(project)}
+                onCreate={() => onCreateDraftChildren(project)}
+              />
             )}
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function ProjectDecompositionPanel({
+  project,
+  draft,
+  busy,
+  creating,
+  error,
+  onGenerate,
+  onCreate,
+}: {
+  project: Task;
+  draft: ProjectDecompositionResult | null;
+  busy: boolean;
+  creating: boolean;
+  error: string | null;
+  onGenerate: () => void;
+  onCreate: () => void;
+}) {
+  return (
+    <div className="project-child-empty">
+      {!draft ? (
+        <>
+          <div className="project-empty-title">等待 AI 根据项目目标拆解子任务</div>
+          <div className="project-empty-copy">拆解前不会自动生成模板任务；先生成草稿，确认后再创建真实子任务。</div>
+          <button className={`btn sm primary${busy ? ' disabled' : ''}`} onClick={onGenerate} disabled={busy}>
+            {busy ? '生成中…' : '生成拆解草稿'}
+          </button>
+        </>
+      ) : (
+        <>
+          <div className="project-draft-head">
+            <div>
+              <div className="project-empty-title">AI 拆解草稿</div>
+              <div className="project-empty-copy">{draft.parentGoal}</div>
+            </div>
+            <button className={`btn sm primary${creating ? ' disabled' : ''}`} onClick={onCreate} disabled={creating}>
+              {creating ? '创建中…' : '创建这些子任务'}
+            </button>
+          </div>
+          <div className="project-draft-list">
+            {draft.subtasks.map((subtask) => (
+              <div key={`${project.id}-${subtask.title}`} className="project-draft-item">
+                <strong>{subtask.title}</strong>
+                <span>{subtask.summary}</span>
+                <small>{subtask.acceptanceCriteria}</small>
+              </div>
+            ))}
+          </div>
+          <div className="project-draft-review">{draft.review}</div>
+        </>
+      )}
+      {error && <div className="project-draft-error">{error}</div>}
     </div>
   );
 }

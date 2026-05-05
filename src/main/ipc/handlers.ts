@@ -1,4 +1,10 @@
-import type { ChatInput, PingResponse } from '../../shared/types/ipc.js';
+import type {
+  ChatInput,
+  PingResponse,
+  ProjectDecompositionInput,
+  ProjectDecompositionResult,
+  ProjectSubtaskDraft,
+} from '../../shared/types/ipc.js';
 import type { CreateBlockerInput, UpdateBlockerInput } from '../../shared/types/blocker.js';
 import type {
   CreateCompletionCriteriaInput,
@@ -34,6 +40,57 @@ import { ipcMain } from '../electron.js';
 import { emitAppEvent } from './event-bus.js';
 
 const PING_CHANNEL = 'app:ping';
+
+function extractJsonObject(text: string): unknown {
+  const trimmed = text.trim();
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    return JSON.parse(trimmed);
+  }
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced?.[1]) {
+    return JSON.parse(fenced[1].trim());
+  }
+  const first = trimmed.indexOf('{');
+  const last = trimmed.lastIndexOf('}');
+  if (first >= 0 && last > first) {
+    return JSON.parse(trimmed.slice(first, last + 1));
+  }
+  throw new Error('Project decomposition response did not contain JSON.');
+}
+
+function readString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' ? value.trim() : fallback;
+}
+
+function normalizeProjectDecomposition(value: unknown): ProjectDecompositionResult {
+  if (!value || typeof value !== 'object') {
+    throw new Error('Project decomposition response must be an object.');
+  }
+  const record = value as Record<string, unknown>;
+  const rawSubtasks = Array.isArray(record.subtasks) ? record.subtasks : [];
+  const subtasks: ProjectSubtaskDraft[] = rawSubtasks.slice(0, 8).map((item, index) => {
+    const subtask = item && typeof item === 'object' ? item as Record<string, unknown> : {};
+    const title = readString(subtask.title, `子任务 ${index + 1}`);
+    return {
+      title,
+      summary: readString(subtask.summary, title),
+      acceptanceCriteria: readString(subtask.acceptanceCriteria, '完成后能明确验收。'),
+      dependency: readString(subtask.dependency) || null,
+      rationale: readString(subtask.rationale, '保持为相对独立的大块任务。'),
+    };
+  }).filter((item) => item.title);
+
+  if (subtasks.length === 0) {
+    throw new Error('Project decomposition response did not include subtasks.');
+  }
+
+  return {
+    parentGoal: readString(record.parentGoal, '明确项目目标并拆解可执行子任务。'),
+    subtasks,
+    review: readString(record.review, '已检查子任务边界、依赖和粒度。'),
+    nextStep: readString(record.nextStep, '请确认是否创建这些子任务。'),
+  };
+}
 
 export function registerIpcHandlers(): void {
   ipcMain.handle(PING_CHANNEL, async (): Promise<PingResponse> => {
@@ -337,5 +394,50 @@ export function registerIpcHandlers(): void {
     });
 
     return { text: result.text };
+  });
+
+  ipcMain.handle('ai:decomposeProject', async (_event, input: ProjectDecompositionInput) => {
+    const config = await getServices().aiConfigService.resolveRuntimeConfig();
+    const model = getLanguageModel(config);
+    const task = await getServices().taskService.getDetail(input.taskId);
+    if (!task) throw new Error(`Task not found: ${input.taskId}`);
+
+    const result = await generateText({
+      model,
+      system: [
+        'You are Taskplane project decomposition planner.',
+        'Return only one valid JSON object. Do not wrap it in markdown.',
+        'The JSON shape must be:',
+        '{',
+        '  "parentGoal": "one sentence",',
+        '  "subtasks": [',
+        '    {',
+        '      "title": "short task title",',
+        '      "summary": "what this child task accomplishes",',
+        '      "acceptanceCriteria": "how the user can verify completion",',
+        '      "dependency": "dependency or null",',
+        '      "rationale": "why this is an independent but not over-small chunk"',
+        '    }',
+        '  ],',
+        '  "review": "self-check of chunk size, independence, overlaps, missing criteria, and dependencies",',
+        '  "nextStep": "what the user should confirm next"',
+        '}',
+        'Create 3 to 7 subtasks unless the project is genuinely smaller or larger.',
+        'Avoid generic phase templates. Preserve large, independently valuable chunks.',
+        'If the first decomposition is too fine, overlapping, missing acceptance criteria, or dependency-unclear, revise it before returning JSON.',
+        'Reply in the same language as the task title and user instructions.',
+      ].join('\n'),
+      prompt: [
+        `Project parent task: ${task.title}`,
+        `Summary: ${task.summary ?? 'none'}`,
+        `Next step: ${task.nextStep ?? 'none'}`,
+        `Risk: ${task.riskLevel}${task.riskNote ? ` (${task.riskNote})` : ''}`,
+        `Key sources: ${task.sourceContexts.slice(0, 3).map((source) => `${source.title}: ${source.note ?? source.content ?? source.uri ?? ''}`).join(' / ') || 'none'}`,
+        `Recent activity: ${task.timeline.slice(-5).map((event) => `${event.type}${event.payload ? `=${event.payload}` : ''}`).join(' / ') || 'none'}`,
+        input.instructions?.trim() ? `User instructions: ${input.instructions.trim()}` : 'User instructions: none',
+      ].join('\n'),
+    });
+
+    return normalizeProjectDecomposition(extractJsonObject(result.text));
   });
 }

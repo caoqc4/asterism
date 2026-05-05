@@ -377,6 +377,27 @@ function createMockApi() {
       return () => { subscriber = null; };
     }),
     chatWithAI: vi.fn().mockResolvedValue({ text: '我会基于任务上下文给出下一步建议。' }),
+    decomposeProject: vi.fn().mockResolvedValue({
+      parentGoal: '完成官网改版并上线。',
+      subtasks: [
+        {
+          title: '确认官网改版范围',
+          summary: '明确页面范围、目标用户和上线边界。',
+          acceptanceCriteria: '范围清单被确认。',
+          dependency: null,
+          rationale: '这是后续执行的独立输入。',
+        },
+        {
+          title: '产出官网改版方案',
+          summary: '形成信息架构、文案和视觉方向。',
+          acceptanceCriteria: '方案可供评审。',
+          dependency: '确认官网改版范围',
+          rationale: '这是一个可验收的大块交付。',
+        },
+      ],
+      review: '子任务保持大块、边界清楚，暂不继续细拆。',
+      nextStep: '确认是否创建这些子任务。',
+    }),
   };
 
   return {
@@ -564,6 +585,15 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/等待 AI 根据项目目标拆解子任务/)).toBeTruthy();
     expect(screen.queryByText('明确范围：官网改版项目')).toBeNull();
     expect(harness.api.createTask).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole('button', { name: '生成拆解草稿' }));
+    expect(await screen.findByText('确认官网改版范围')).toBeTruthy();
+    expect(screen.getByText('子任务保持大块、边界清楚，暂不继续细拆。')).toBeTruthy();
+    expect(harness.api.decomposeProject).toHaveBeenCalledWith({ taskId: 'task_created' });
+    await user.click(screen.getByRole('button', { name: '创建这些子任务' }));
+    expect(await screen.findByText('产出官网改版方案')).toBeTruthy();
+    expect(screen.getByText('0/2 子任务完成')).toBeTruthy();
+    expect(harness.api.createTask).toHaveBeenCalledTimes(3);
 
     await user.click(screen.getByRole('button', { name: /让 AI 拆解并检查/ }));
     await user.click(await screen.findByRole('button', { name: '拆解项目结构' }));

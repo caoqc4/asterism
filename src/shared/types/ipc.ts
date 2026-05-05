@@ -18,6 +18,26 @@ export type ChatResponse = {
   text: string;
 };
 
+export type ProjectDecompositionInput = {
+  taskId: string;
+  instructions?: string;
+};
+
+export type ProjectSubtaskDraft = {
+  title: string;
+  summary: string;
+  acceptanceCriteria: string;
+  dependency: string | null;
+  rationale: string;
+};
+
+export type ProjectDecompositionResult = {
+  parentGoal: string;
+  subtasks: ProjectSubtaskDraft[];
+  review: string;
+  nextStep: string;
+};
+
 import type { HomeBriefData } from './brief.js';
 import type {
   BlockerRecord,
@@ -112,4 +132,5 @@ export type ElectronApi = {
   continuePausedRun: (runId: string) => Promise<RunRecord>;
   subscribeToEvents: (listener: (event: AppEvent) => void) => () => void;
   chatWithAI?: (input: ChatInput) => Promise<ChatResponse>;
+  decomposeProject?: (input: ProjectDecompositionInput) => Promise<ProjectDecompositionResult>;
 };

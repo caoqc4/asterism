@@ -2522,6 +2522,48 @@ a { color: inherit; text-decoration: none; }
   font-size: 12px;
   background: var(--bg-soft);
 }
+.project-empty-title {
+  color: var(--ink-2);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.project-empty-copy {
+  color: var(--ink-4);
+  margin-bottom: 10px;
+}
+.project-draft-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.project-draft-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.project-draft-item {
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: var(--bg-elev);
+}
+.project-draft-item strong {
+  color: var(--ink-2);
+}
+.project-draft-item small {
+  color: var(--ink-4);
+}
+.project-draft-review {
+  margin-top: 10px;
+  color: var(--ink-3);
+}
+.project-draft-error {
+  margin-top: 8px;
+  color: var(--accent);
+}
 
 /* Task preview panel */
 .task-preview {

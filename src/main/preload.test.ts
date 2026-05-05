@@ -60,8 +60,11 @@ function getExposedApi() {
     listRuns: () => Promise<unknown>;
     getRunDetail: (runId: string) => Promise<unknown>;
     triggerRun: (input: unknown) => Promise<unknown>;
+    triggerCodeAgentRun?: (input: unknown) => Promise<unknown>;
     triggerOperatorStartedRun?: (input: unknown) => Promise<unknown>;
     continuePausedRun: (runId: string) => Promise<unknown>;
+    chatWithAI?: (input: unknown) => Promise<unknown>;
+    decomposeProject?: (input: unknown) => Promise<unknown>;
     subscribeToEvents: (listener: (event: unknown) => void) => () => void;
   };
 }
@@ -162,6 +165,8 @@ describe('preload bridge', () => {
       requestedChecks: ['test'],
       taskId: 'task_1',
     };
+    const chatInput = { messages: [{ role: 'user', content: 'Next?' }], taskId: 'task_1' };
+    const decomposeProjectInput = { taskId: 'task_1' };
 
     await api.ping();
     await api.getAiConfigStatus();
@@ -198,6 +203,8 @@ describe('preload bridge', () => {
     await api.triggerCodeAgentRun?.(createCodeAgentRunInput);
     await api.triggerOperatorStartedRun?.(operatorStartedRunInput);
     await api.continuePausedRun('run_1');
+    await api.chatWithAI?.(chatInput);
+    await api.decomposeProject?.(decomposeProjectInput);
 
     expect(invokeMock.mock.calls).toEqual([
       ['app:ping'],
@@ -235,6 +242,8 @@ describe('preload bridge', () => {
       ['run:triggerCodeAgent', createCodeAgentRunInput],
       ['run:triggerOperatorStarted', operatorStartedRunInput],
       ['run:continuePaused', 'run_1'],
+      ['ai:chat', chatInput],
+      ['ai:decomposeProject', decomposeProjectInput],
     ]);
   });
 
