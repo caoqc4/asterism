@@ -167,3 +167,26 @@ export function recordSopTemplateHabit(params: {
   saveWorkHabits(next);
   return next;
 }
+
+export function selectApplicableWorkHabits(params: {
+  taskTitle?: string | null;
+  limit?: number;
+} = {}): WorkHabitRecord[] {
+  const normalizedTitle = params.taskTitle?.trim().toLowerCase() ?? '';
+  const confirmed = loadWorkHabits().filter((habit) => habit.status === 'confirmed');
+  const sorted = confirmed.sort((a, b) => {
+    const aMatches = normalizedTitle && a.scopeLabel.toLowerCase().includes(normalizedTitle) ? 1 : 0;
+    const bMatches = normalizedTitle && b.scopeLabel.toLowerCase().includes(normalizedTitle) ? 1 : 0;
+    if (aMatches !== bMatches) return bMatches - aMatches;
+    return b.applicationCount - a.applicationCount;
+  });
+  return sorted.slice(0, params.limit ?? 5);
+}
+
+export function summarizeWorkHabitsForPrompt(habits: WorkHabitRecord[]): string[] {
+  return habits.map((habit) => {
+    const scope = habit.scopeLabel || habit.scope;
+    const examples = habit.examples ? `；例：${habit.examples}` : '';
+    return `${habit.rule}（范围：${scope}${examples}）`;
+  });
+}

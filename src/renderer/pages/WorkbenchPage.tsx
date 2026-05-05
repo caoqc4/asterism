@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { TaskDetail } from '@shared/types/task';
-import type { RunRecord, RunDetailRecord } from '@shared/types/run';
+import type { RunRecord, RunDetailRecord, RunStepRecord } from '@shared/types/run';
 import type { SourceContextRecord } from '@shared/types/source-context';
 import type { ArtifactRecord, ArtifactKind } from '@shared/types/artifact';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
@@ -361,6 +361,80 @@ function activeRunLabel(rd: RunDetailRecord | null): string {
   return `步骤 ${done + 1} / ${total}${current ? ` · ${current.title}` : ''}`;
 }
 
+type CheckTone = 'pass' | 'warn' | 'fail' | 'pending';
+
+function deriveStepCheck(step: RunStepRecord): { tone: CheckTone; label: string; detail: string } {
+  if (step.status === 'failed') {
+    return {
+      tone: 'fail',
+      label: '检查未通过',
+      detail: step.error ?? '步骤执行失败，需要修正后继续。',
+    };
+  }
+  if (step.status === 'completed') {
+    const hasEvidence = Boolean(step.output?.trim() || step.error?.trim());
+    return {
+      tone: hasEvidence ? 'pass' : 'warn',
+      label: hasEvidence ? '检查通过' : '需补证据',
+      detail: hasEvidence ? '已对照预期输出留下结果记录。' : '步骤已结束，但没有留下可审查输出。',
+    };
+  }
+  if (step.status === 'running') {
+    return {
+      tone: 'pending',
+      label: '检查待完成',
+      detail: '步骤结束后自动展示对照结论。',
+    };
+  }
+  return {
+    tone: 'pending',
+    label: '未开始',
+    detail: '等待执行后检查。',
+  };
+}
+
+function deriveRunCheck(run: RunRecord, detail?: RunDetailRecord | null): { tone: CheckTone; label: string; detail: string } {
+  if (run.status === 'failed') {
+    return {
+      tone: 'fail',
+      label: 'Run 检查未通过',
+      detail: run.failureReason ?? 'Run 执行失败，需要修正后重试。',
+    };
+  }
+
+  if (run.status === 'completed') {
+    const steps = detail?.steps ?? [];
+    const hasFailedStep = steps.some((step) => step.status === 'failed');
+    const hasEvidence = Boolean(run.output?.trim()) || steps.some((step) => step.output?.trim());
+    if (hasFailedStep) {
+      return {
+        tone: 'fail',
+        label: 'Run 检查未通过',
+        detail: '有步骤检查失败，需要回看执行记录。',
+      };
+    }
+    return {
+      tone: hasEvidence ? 'pass' : 'warn',
+      label: hasEvidence ? 'Run 验证通过' : 'Run 需补验证',
+      detail: hasEvidence ? '执行结果已有输出或步骤证据，可进入人工审查。' : 'Run 已完成，但缺少可复核输出。',
+    };
+  }
+
+  if (run.status === 'running' || run.status === 'paused') {
+    return {
+      tone: 'pending',
+      label: run.status === 'paused' ? 'Run 暂停中' : 'Run 检查中',
+      detail: 'Run 完成后会汇总步骤检查结果。',
+    };
+  }
+
+  return {
+    tone: 'pending',
+    label: '等待执行',
+    detail: 'Run 启动后显示检查结果。',
+  };
+}
+
 /* ─── Status badge ─── */
 
 function StatusBadge({ status }: { status: string }) {
@@ -432,14 +506,12 @@ function RunsTab({
               {activeRunDetail.steps.map((step) => (
                 <RunStep
                   key={step.id}
-                  label={step.title}
-                  done={step.status === 'completed'}
-                  active={step.status === 'running'}
-                  pending={step.status === 'pending'}
+                  step={step}
                 />
               ))}
             </div>
           )}
+          <RunCheckSummary check={deriveRunCheck(active, activeRunDetail)} />
         </div>
       )}
 
@@ -462,6 +534,7 @@ function RunsTab({
             </div>
             {isExpanded && (
               <div className="run-item-detail">
+                <RunCheckSummary check={deriveRunCheck(r)} />
                 {r.output ? (
                   <pre className="run-item-full-output">{r.output}</pre>
                 ) : (
@@ -510,16 +583,31 @@ function RunsTab({
   );
 }
 
-function RunStep({ label, done, active, pending }: {
-  label: string; done?: boolean; active?: boolean; pending?: boolean;
+function RunStep({ step }: {
+  step: RunStepRecord;
 }) {
+  const done = step.status === 'completed';
+  const active = step.status === 'running';
+  const check = deriveStepCheck(step);
   return (
     <div className={`run-step${active ? ' active' : done ? ' done' : ' pending'}`}>
       <span className="run-step-dot">
         {done ? '✓' : active ? '●' : '○'}
       </span>
-      <span className="run-step-label">{label}</span>
+      <span className="run-step-label">{step.title}</span>
+      <span className={`run-check-pill ${check.tone}`} title={check.detail}>{check.label}</span>
       {active && <span className="dot running" style={{ marginLeft: 'auto' }} />}
+    </div>
+  );
+}
+
+function RunCheckSummary({ check }: {
+  check: { tone: CheckTone; label: string; detail: string };
+}) {
+  return (
+    <div className={`run-check-summary ${check.tone}`}>
+      <strong>{check.label}</strong>
+      <span>{check.detail}</span>
     </div>
   );
 }

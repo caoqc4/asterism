@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ChatMessage } from '@shared/types/ipc';
+import {
+  selectApplicableWorkHabits,
+  summarizeWorkHabitsForPrompt,
+} from '../lib/workHabits';
 
 type MessageRole = 'user' | 'assistant';
 
@@ -146,7 +150,14 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
     let replyText: string;
     try {
       if (window.api?.chatWithAI) {
-        const res = await window.api.chatWithAI({ messages: historyForAI, taskId: activeTaskId });
+        const appliedHabits = summarizeWorkHabitsForPrompt(selectApplicableWorkHabits({
+          taskTitle: titleCache[activeTaskId ?? ''] ?? null,
+        }));
+        const res = await window.api.chatWithAI({
+          messages: historyForAI,
+          taskId: activeTaskId,
+          workHabits: appliedHabits,
+        });
         replyText = res.text;
       } else {
         await new Promise((r) => setTimeout(r, 900 + Math.random() * 600));

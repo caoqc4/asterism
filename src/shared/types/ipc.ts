@@ -11,6 +11,7 @@ export type ChatMessage = {
 export type ChatInput = {
   messages: ChatMessage[];
   taskId?: string | null;
+  workHabits?: string[];
 };
 
 export type ChatResponse = {

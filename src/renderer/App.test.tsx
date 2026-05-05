@@ -398,6 +398,9 @@ describe('App redesign v1', () => {
     await waitFor(() => {
       expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
         taskId: 'task_risk',
+        workHabits: expect.arrayContaining([
+          expect.stringContaining('数据报告初稿完成后先内部评审再对外发送'),
+        ]),
       }));
     });
     expect(await screen.findByText('我会基于任务上下文给出下一步建议。')).toBeTruthy();
@@ -502,6 +505,8 @@ describe('App redesign v1', () => {
     expect(screen.getByRole('button', { name: '执行' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '来源' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Runs$/ })).toBeNull();
+    await user.click(await screen.findByText(/Run #1 · 已完成/));
+    expect(await screen.findByText('Run 验证通过')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '来源' }));
     expect(await screen.findByText('董事会反馈邮件')).toBeTruthy();
