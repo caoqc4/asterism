@@ -561,6 +561,8 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByText('董事会材料修订'));
     await user.click(await screen.findByRole('button', { name: '完成' }));
     expect(await screen.findByText('完成确认')).toBeTruthy();
+    expect(await screen.findByText('最近 Run 验证')).toBeTruthy();
+    expect(await screen.findByText('Run 验证通过')).toBeTruthy();
     expect(screen.getByText(/建议先标记为等待中/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '仍然完成' }));
 

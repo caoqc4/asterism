@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { evaluateRunSelfCheck, type RunSelfCheckResult } from '@shared/run-self-check';
+import type { RunDetailRecord, RunRecord, RunVerificationRecord } from '@shared/types/run';
 import type { TaskDetail } from '@shared/types/task';
 import { recordCompletionOverrideLearningSignal } from '../lib/workHabits';
 
@@ -10,9 +12,27 @@ interface TaskCompletionCheckModalProps {
   onMarkWaiting: (reason: string) => void | Promise<void>;
 }
 
-function buildWaitingReason(detail: TaskDetail | null): string {
+function verificationToCheck(record: RunVerificationRecord): RunSelfCheckResult {
+  return {
+    tone: record.tone,
+    label: record.label,
+    detail: record.detail,
+    source: 'lightweight_rule_engine',
+  };
+}
+
+function buildRunCheck(run: RunRecord, detail: RunDetailRecord | null): RunSelfCheckResult {
+  const persisted = detail?.verifications?.find((item) => (
+    item.targetType === 'run' && item.targetId === run.id
+  ));
+  return persisted ? verificationToCheck(persisted) : evaluateRunSelfCheck(run, detail);
+}
+
+function buildWaitingReason(detail: TaskDetail | null, runCheck: RunSelfCheckResult | null): string {
   const openCount = detail?.completionCriteria.filter((item) => item.status === 'open').length ?? 0;
   if (openCount > 0) return `完成检查未通过：仍有 ${openCount} 条完成标准未满足`;
+  if (runCheck?.tone === 'fail') return `完成检查未通过：最近 Run 验证失败：${runCheck.detail}`;
+  if (runCheck?.tone === 'warn') return `完成检查提醒：最近 Run 需要补验证：${runCheck.detail}`;
   return '完成检查需要补充完成标准';
 }
 
@@ -24,6 +44,7 @@ export function TaskCompletionCheckModal({
   onMarkWaiting,
 }: TaskCompletionCheckModalProps) {
   const [detail, setDetail] = useState<TaskDetail | null>(null);
+  const [recentRunCheck, setRecentRunCheck] = useState<RunSelfCheckResult | null>(null);
   const [selfLearnEnabled, setSelfLearnEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -33,9 +54,10 @@ export function TaskCompletionCheckModal({
     let cancelled = false;
     async function loadCheckContext() {
       try {
-        const [status, taskDetail] = await Promise.all([
+        const [status, taskDetail, runs] = await Promise.all([
           window.api?.getAiConfigStatus(),
           window.api?.getTaskDetail(taskId),
+          window.api?.listRuns?.(),
         ]);
 
         if (cancelled) return;
@@ -48,6 +70,16 @@ export function TaskCompletionCheckModal({
 
         setSelfLearnEnabled(status?.featureFlags.enableSelfLearn ?? true);
         setDetail(taskDetail ?? null);
+
+        const recentRun = (runs ?? [])
+          .filter((run) => run.taskId === taskId)
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null;
+        if (recentRun && window.api?.getRunDetail) {
+          const runDetail = await window.api.getRunDetail(recentRun.id).catch(() => null);
+          if (!cancelled) setRecentRunCheck(buildRunCheck(recentRun, runDetail));
+        } else {
+          setRecentRunCheck(null);
+        }
       } finally {
         if (!cancelled && !autoCompleted.current) setLoading(false);
       }
@@ -60,13 +92,14 @@ export function TaskCompletionCheckModal({
   const criteria = detail?.completionCriteria ?? [];
   const satisfied = criteria.filter((item) => item.status === 'satisfied');
   const open = criteria.filter((item) => item.status === 'open');
-  const hasConcern = open.length > 0 || criteria.length === 0;
+  const hasRunConcern = recentRunCheck?.tone === 'fail' || recentRunCheck?.tone === 'warn';
+  const hasConcern = open.length > 0 || criteria.length === 0 || hasRunConcern;
 
   async function submit(action: 'waiting' | 'complete') {
     if (submitting) return;
     setSubmitting(true);
     try {
-      const reason = buildWaitingReason(detail);
+      const reason = buildWaitingReason(detail, recentRunCheck);
       await window.api?.recordTaskCompletionCheck({
         taskId,
         action: action === 'waiting'
@@ -144,9 +177,21 @@ export function TaskCompletionCheckModal({
                 </div>
               )}
 
+              <div className="completion-run-evidence">
+                <span className="completion-check-label">最近 Run 验证</span>
+                {recentRunCheck ? (
+                  <div className={`completion-run-evidence-line ${recentRunCheck.tone}`}>
+                    <strong>{recentRunCheck.label}</strong>
+                    <span>{recentRunCheck.detail}</span>
+                  </div>
+                ) : (
+                  <p>暂无近期 Run 验证记录。可以完成，但更建议先留下可复核执行证据。</p>
+                )}
+              </div>
+
               {hasConcern && (
                 <p className="completion-check-advice">
-                  建议先标记为等待中，等完成标准满足后再完成；你也可以覆盖检查结论，直接完成。
+                  建议先标记为等待中，等完成标准或 Run 验证结论补齐后再完成；你也可以覆盖检查结论，直接完成。
                 </p>
               )}
             </>
