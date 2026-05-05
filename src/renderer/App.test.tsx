@@ -594,6 +594,21 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('产出官网改版方案')).toBeTruthy();
     expect(screen.getByText('0/2 子任务完成')).toBeTruthy();
     expect(harness.api.createTask).toHaveBeenCalledTimes(3);
+    expect(harness.api.createCompletionCriteria).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_created_1',
+      text: '范围清单被确认。',
+      verificationResponsibility: 'unknown',
+    }));
+    expect(harness.api.createCompletionCriteria).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_created_2',
+      text: '方案可供评审。',
+      verificationResponsibility: 'unknown',
+    }));
+    expect(harness.api.createTaskDependency).toHaveBeenCalledWith({
+      taskId: 'task_created_2',
+      blockedByTaskId: 'task_created_1',
+      reason: '确认官网改版范围',
+    });
 
     await user.click(screen.getByRole('button', { name: /让 AI 拆解并检查/ }));
     await user.click(await screen.findByRole('button', { name: '拆解项目结构' }));

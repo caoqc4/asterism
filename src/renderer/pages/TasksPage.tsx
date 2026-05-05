@@ -258,12 +258,29 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
     try {
       const childRecords = await Promise.all(draft.subtasks.map((subtask) => window.api!.createTask({
         title: subtask.title,
-        summary: [
-          subtask.summary,
-          `验收标准：${subtask.acceptanceCriteria}`,
-          subtask.dependency ? `依赖：${subtask.dependency}` : null,
-        ].filter(Boolean).join('\n'),
+        summary: subtask.summary,
       })));
+      await Promise.all(childRecords.map((child, index) => window.api!.createCompletionCriteria({
+        taskId: child.id,
+        text: draft.subtasks[index]?.acceptanceCriteria ?? '完成后能明确验收。',
+        verificationResponsibility: 'unknown',
+      })));
+
+      const childRecordByTitle = new Map(childRecords.map((child) => [child.title.trim(), child]));
+      await Promise.all(draft.subtasks.map((subtask, index) => {
+        const dependencyTitle = subtask.dependency?.trim();
+        if (!dependencyTitle) return Promise.resolve(null);
+        const dependency = childRecordByTitle.get(dependencyTitle)
+          ?? childRecords.find((child) => dependencyTitle.includes(child.title) || child.title.includes(dependencyTitle));
+        const child = childRecords[index];
+        if (!child || !dependency || dependency.id === child.id) return Promise.resolve(null);
+        return window.api!.createTaskDependency({
+          taskId: child.id,
+          blockedByTaskId: dependency.id,
+          reason: subtask.dependency,
+        });
+      }));
+
       const childIds = [...project.childTaskIds, ...childRecords.map((child) => child.id)];
       const parentAttrs = saveTaskAttributes(project.id, { childTaskIds: childIds });
       const childTasks = childRecords.map((child) => {
