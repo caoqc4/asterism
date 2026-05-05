@@ -6,12 +6,14 @@ import type {
   DraftDecisionInput,
 } from '../../../shared/types/decision.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
+import type { RunOutputSource, RunRecord, RunStatus } from '../../../shared/types/run.js';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunRepository } from '../../db/repositories/run-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import type { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
 import { getLanguageModel } from '../../executors/ai-client.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
 import { TaskService } from '../task/task-service.js';
@@ -36,6 +38,7 @@ import {
   findCheckpointBackedAgentSessionForSettlement,
   updateCheckpointBackedAgentSessionStatus,
 } from '../run/agent-session-continuation.js';
+import { persistTerminalRunVerifications } from '../run/run-verification-service.js';
 import {
   DecisionProcessTemplateSelector,
   type DecisionProcessTemplateSelectionResult,
@@ -153,7 +156,7 @@ export class DecisionService {
     private readonly aiConfigService: AiConfigService,
     private readonly processTemplateSelector: DecisionProcessTemplateSelector = new DecisionProcessTemplateSelector(),
     private readonly runCheckpointRepository: Pick<RunCheckpointRepository, 'findOpenByDecisionId' | 'updateStatus'> | null = null,
-    private readonly runStepRepository: Pick<RunStepRepository, 'create'> | null = null,
+    private readonly runStepRepository: Pick<RunStepRepository, 'create' | 'listForRun'> | null = null,
     private readonly runRepository: Pick<RunRepository, 'getDetail' | 'updateResult'> | null = null,
     private readonly agentToolRegistry: AgentToolRegistry | null = null,
     private readonly sandboxPatchPromotionPreflightService: Pick<SandboxPatchPromotionPreflightService, 'preflight'> | null = null,
@@ -161,6 +164,7 @@ export class DecisionService {
     private readonly sandboxPatchPromotionApplyEnabled: () => boolean = () => false,
     private readonly browserControlledResumeExecutor: BrowserControlledResumeExecutor | null = null,
     private readonly agentSessionStore: Pick<AgentSessionStore, 'listForRun' | 'updateStatus'> | null = null,
+    private readonly runVerificationRepository: Pick<RunVerificationRepository, 'upsert'> | null = null,
   ) {}
 
   list(): Promise<DecisionRecord[]> {
@@ -314,7 +318,7 @@ export class DecisionService {
             ? '关联 Decision 已延后，本次 checkpoint 不再继续执行。'
             : '关联 Decision 已取消，本次 checkpoint 不再继续执行。',
       });
-      await this.runRepository.updateResult(
+      await this.updateRunResult(
         checkpoint.runId,
         'failed',
         action === 'defer'
@@ -378,7 +382,7 @@ export class DecisionService {
           'No checkpoint tool was executed.',
         ].join('\n'),
       });
-      await this.runRepository.updateResult(
+      await this.updateRunResult(
         checkpoint.runId,
         'failed',
         summary,
@@ -418,7 +422,7 @@ export class DecisionService {
         title: `确认后续跑失败：${decision.title}`,
         error: result.error ?? result.summary,
       });
-      await this.runRepository.updateResult(
+      await this.updateRunResult(
         checkpoint.runId,
         'failed',
         result.error ?? result.summary,
@@ -442,7 +446,7 @@ export class DecisionService {
       title: `确认已通过：${decision.title}`,
       output: result.summary,
     });
-    await this.runRepository.updateResult(
+    await this.updateRunResult(
       checkpoint.runId,
       'completed',
       result.output ?? result.summary,
@@ -484,7 +488,7 @@ export class DecisionService {
           'No browser action was executed.',
         ].join('\n'),
       });
-      await this.runRepository.updateResult(runId, 'failed', summary, 'system', summary);
+      await this.updateRunResult(runId, 'failed', summary, 'system', summary);
       return;
     }
 
@@ -525,7 +529,7 @@ export class DecisionService {
           `Blocked reasons: ${blockedReasons}`,
         ].join('\n'),
       });
-      await this.runRepository.updateResult(runId, 'failed', summary, 'system', summary);
+      await this.updateRunResult(runId, 'failed', summary, 'system', summary);
       return;
     }
 
@@ -542,7 +546,7 @@ export class DecisionService {
         `Artifacts: ${result.artifacts.map((artifact) => artifact.kind).join(',') || 'none'}`,
       ].join('\n'),
     });
-    await this.runRepository.updateResult(runId, 'completed', result.summary, 'system');
+    await this.updateRunResult(runId, 'completed', result.summary, 'system');
     await this.taskService.annotateRunCompleted(decision.taskId, run?.type ?? 'agent', true, runId);
   }
 
@@ -592,7 +596,7 @@ export class DecisionService {
           'No workspace files were written.',
         ].join('\n'),
       });
-      await this.runRepository.updateResult(
+      await this.updateRunResult(
         runId,
         'failed',
         preflight.summary,
@@ -645,7 +649,7 @@ export class DecisionService {
           'No workspace files were written.',
         ].join('\n'),
       });
-      await this.runRepository.updateResult(
+      await this.updateRunResult(
         runId,
         'failed',
         result.auditSummary,
@@ -668,7 +672,7 @@ export class DecisionService {
         `Touched files: ${result.touchedFiles.join(', ')}`,
       ].join('\n'),
     });
-    await this.runRepository.updateResult(
+    await this.updateRunResult(
       runId,
       'completed',
       result.auditSummary,
@@ -693,6 +697,36 @@ export class DecisionService {
       status,
       store: this.agentSessionStore,
     });
+  }
+
+  private async updateRunResult(
+    runId: string,
+    status: RunStatus,
+    output: string | null,
+    outputSource: RunOutputSource,
+    failureReason: string | null = null,
+  ): Promise<RunRecord> {
+    if (!this.runRepository) {
+      throw new Error('Run repository is not configured.');
+    }
+
+    const updated = failureReason === null
+      ? await this.runRepository.updateResult(runId, status, output, outputSource)
+      : await this.runRepository.updateResult(runId, status, output, outputSource, failureReason);
+
+    if (
+      this.runStepRepository &&
+      this.runVerificationRepository &&
+      (status === 'completed' || status === 'failed')
+    ) {
+      await persistTerminalRunVerifications({
+        run: updated,
+        runStepRepository: this.runStepRepository,
+        runVerificationRepository: this.runVerificationRepository,
+      });
+    }
+
+    return updated;
   }
 
   private async findCheckpointBackedAgentSession(

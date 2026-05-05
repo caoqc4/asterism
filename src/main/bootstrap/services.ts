@@ -126,6 +126,7 @@ const decisionService = new DecisionService(
   () => Boolean(appConfigService.read().featureFlags.enableSandboxPatchPromotionApply),
   runBrowserControlledResumeForApprovedDecision,
   agentSessionStore,
+  runVerificationRepository,
 );
 agentToolRegistry.setDecisionDraftService(decisionService);
 const runService = new RunService(

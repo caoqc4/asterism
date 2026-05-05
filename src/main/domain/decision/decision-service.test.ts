@@ -464,6 +464,21 @@ describe('DecisionService', () => {
     };
     const runStepRepository = {
       create: vi.fn(),
+      listForRun: vi.fn().mockResolvedValue([
+        {
+          createdAt: '2026-01-01T00:00:00.000Z',
+          error: null,
+          id: 'run_step_1',
+          index: 1,
+          input: 'Decision approved checkpoint',
+          kind: 'checkpoint',
+          output: 'Captured note',
+          runId: 'run_1',
+          status: 'completed',
+          title: '确认已通过：Need approval',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]),
     };
     const runRepository = {
       getDetail: vi.fn().mockResolvedValue({
@@ -471,7 +486,21 @@ describe('DecisionService', () => {
         taskId: 'task_1',
         type: 'agent',
       }),
-      updateResult: vi.fn(),
+      updateResult: vi.fn().mockResolvedValue({
+        createdAt: '2026-01-01T00:00:00.000Z',
+        failureReason: null,
+        id: 'run_1',
+        instructions: 'Paused agent run',
+        output: 'Captured note',
+        outputSource: 'system',
+        status: 'completed',
+        taskId: 'task_1',
+        type: 'agent',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+    };
+    const runVerificationRepository = {
+      upsert: vi.fn(),
     };
     const agentToolRegistry = {
       execute: vi.fn().mockResolvedValue({
@@ -551,6 +580,7 @@ describe('DecisionService', () => {
       undefined,
       null,
       agentSessionStore as never,
+      runVerificationRepository as never,
     );
 
     await service.act({
@@ -580,6 +610,12 @@ describe('DecisionService', () => {
       'system',
     );
     expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'agent', true, 'run_1');
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_1',
+      targetType: 'run',
+      targetId: 'run_1',
+      source: 'lightweight_rule_engine',
+    }));
   });
 
   it('records actionable evidence when an approved checkpoint tool cannot resume', async () => {
