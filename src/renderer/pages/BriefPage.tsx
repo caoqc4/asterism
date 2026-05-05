@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import type { HomeBriefData } from '@shared/types/brief';
 
 type Lane = 'escalate' | 'unblock' | 'continue' | 'clarify' | 'steady';
 
@@ -26,41 +27,6 @@ const LANE_LABELS: Record<Lane, string> = {
   steady:   'Steady',
 };
 
-const MOCK_FOCUS: FocusTask[] = [
-  {
-    id: 'task-001',
-    title: '品牌合作来信回复',
-    lane: 'escalate',
-    whyNow: '对方已等待 48 小时，再不回复可能失去合作机会。',
-    action: '起草回复',
-  },
-  {
-    id: 'task-002',
-    title: 'Q2 财报分析报告',
-    lane: 'unblock',
-    whyNow: '数据团队已送达原始数据，等你拍板核心指标口径后可以继续。',
-    action: '拍板',
-    status: 'waiting',
-  },
-  {
-    id: 'task-003',
-    title: '周例会纪要整理',
-    lane: 'continue',
-    whyNow: '上次 Run 完成 80%，剩余结论部分约 15 分钟可完成。',
-    action: '查看 Run',
-    status: 'running',
-  },
-];
-
-const MOCK_SIGNALS: ExternalSignal[] = [
-  {
-    id: 'sig-001',
-    source: 'email',
-    summary: 'Re: 合作意向确认 — 对方希望本周内明确合作方向',
-    suggestion: '合并到「品牌合作来信回复」',
-  },
-];
-
 const DEFER_OPTIONS = [
   { label: '明天', value: 'tomorrow' },
   { label: '本周末', value: 'weekend' },
@@ -74,9 +40,38 @@ interface BriefPageProps {
   onOpenPanel: (taskId: string) => void;
 }
 
+function laneFromPriorityLane(lane: string | undefined): Lane {
+  if (lane === 'escalate_now') return 'escalate';
+  if (lane === 'unblock_or_decide') return 'unblock';
+  if (lane === 'continue_or_review') return 'continue';
+  if (lane === 'clarify') return 'clarify';
+  return 'steady';
+}
+
 export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPageProps) {
-  const [tasks, setTasks] = useState<FocusTask[]>(MOCK_FOCUS);
-  const [signals, setSignals] = useState<ExternalSignal[]>(MOCK_SIGNALS);
+  const [tasks, setTasks] = useState<FocusTask[]>([]);
+  const [signals, setSignals] = useState<ExternalSignal[]>([]);
+  const [briefData, setBriefData] = useState<HomeBriefData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!window.api) { setLoading(false); return; }
+    window.api.getHomeBrief().then((data) => {
+      setBriefData(data);
+      const fromActions: FocusTask[] = data.recommendedActions
+        .filter((a) => a.taskId)
+        .slice(0, 5)
+        .map((a) => ({
+          id: a.taskId!,
+          title: data.recentTasks.find((t) => t.id === a.taskId)?.title ?? a.taskId!,
+          lane: laneFromPriorityLane(a.lane),
+          whyNow: a.reason,
+          action: a.label,
+          status: undefined,
+        }));
+      setTasks(fromActions);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [deferOpenId, setDeferOpenId] = useState<string | null>(null);
   const [conflictState, setConflictState] = useState<{
@@ -145,27 +140,32 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
             {tasks.length} 件最值得处理
           </span>
         </div>
-        <button className="btn ghost sm">昨日总结</button>
+        <button className="btn ghost sm" disabled title="即将支持">昨日总结</button>
       </div>
+
+      {/* Loading */}
+      {loading && <div className="brief-loading muted">加载中…</div>}
 
       {/* Stats strip */}
       <div className="brief-stats">
-        {runningCount > 0 && (
+        {(briefData?.recentRunCount ?? runningCount) > 0 && (
           <div className="stat-chip">
             <span className="dot running" />
-            Running: {runningCount}
+            Running: {briefData?.recentRunCount ?? runningCount}
           </div>
         )}
-        {waitingCount > 0 && (
+        {(briefData?.waitingTaskCount ?? waitingCount) > 0 && (
           <div className="stat-chip">
             <span className="dot waiting" />
-            等待中: {waitingCount}
+            等待中: {briefData?.waitingTaskCount ?? waitingCount}
           </div>
         )}
-        <div className="stat-chip">
-          <span className="dot" />
-          本周承诺: 4
-        </div>
+        {(briefData?.activeTaskCount ?? 0) > 0 && (
+          <div className="stat-chip">
+            <span className="dot" />
+            进行中: {briefData?.activeTaskCount}
+          </div>
+        )}
       </div>
 
       {/* Focus cards */}
@@ -197,33 +197,47 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
               onClick={() => onOpenPanel(task.id)}
             />
           ))}
-          {tasks.length === 0 && (
-            <div className="brief-empty">今日焦点清空——休息一下，或者从 Tasks 拉入新的任务。</div>
+          {!loading && tasks.length === 0 && (
+            <div className="brief-empty">
+              <p>今天没有待关注的高优先级事项。</p>
+              <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>在 Tasks 创建任务后，AI 会在这里汇总需要你处理的内容。</p>
+            </div>
           )}
         </div>
       </div>
 
-      {/* External signals */}
-      {signals.length > 0 && (
+      {/* External signals — always visible */}
+      {!loading && (
         <div className="brief-section">
           <div className="brief-section-label">外部信号</div>
-          <div className="signal-list">
-            {signals.map((sig) => (
-              <SignalCard
-                key={sig.id}
-                signal={sig}
-                onConfirm={() => dismissSignal(sig.id)}
-                onDismiss={() => dismissSignal(sig.id)}
-              />
-            ))}
-          </div>
+          {signals.length > 0 ? (
+            <div className="signal-list">
+              {signals.map((sig) => (
+                <SignalCard
+                  key={sig.id}
+                  signal={sig}
+                  onConfirm={() => dismissSignal(sig.id)}
+                  onDismiss={() => dismissSignal(sig.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="brief-empty">
+              <p>暂无外部信号。</p>
+              <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>
+                在 Connections 连接邮件或日历后，AI 会自动从中提取需要跟进的信号。
+              </p>
+            </div>
+          )}
         </div>
       )}
 
       {/* Pending decisions footer */}
-      <button className="brief-decisions-link" onClick={onOpenDecision}>
-        等你拍板 2 ›
-      </button>
+      {(briefData?.pendingDecisionCount ?? 0) > 0 && (
+        <button className="brief-decisions-link" onClick={onOpenDecision}>
+          等你拍板 {briefData!.pendingDecisionCount} ›
+        </button>
+      )}
 
       {/* Conflict modal */}
       {conflictState && (

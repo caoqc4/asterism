@@ -1,25 +1,5 @@
-import { useState } from 'react';
-
-/* ─── Types ─── */
-
-type SourceStatus = 'connected' | 'error' | 'pending';
-
-interface ConnectedSource {
-  id: string;
-  type: 'email' | 'calendar' | 'github' | 'notion' | 'slack';
-  label: string;
-  account: string;
-  status: SourceStatus;
-  lastSync: string;
-}
-
-interface TaskMemory {
-  id: string;
-  taskTitle: string;
-  lane: string;
-  items: string[];
-  updatedAt: string;
-}
+import { useState, useEffect } from 'react';
+import type { TaskListItemRecord } from '@shared/types/task';
 
 interface HabitRecord {
   id: string;
@@ -28,45 +8,7 @@ interface HabitRecord {
   confirmed: boolean | null;
 }
 
-/* ─── Mock data ─── */
-
-const MOCK_SOURCES: ConnectedSource[] = [
-  { id: 's1', type: 'email', label: 'Gmail', account: 'liqiang@company.com', status: 'connected', lastSync: '5 分钟前' },
-  { id: 's2', type: 'calendar', label: 'Google Calendar', account: 'liqiang@company.com', status: 'connected', lastSync: '1 小时前' },
-  { id: 's3', type: 'github', label: 'GitHub', account: 'liqiang95530', status: 'error', lastSync: '认证已过期' },
-];
-
-const MOCK_MEMORIES: TaskMemory[] = [
-  {
-    id: 'm1', taskTitle: '品牌合作来信回复', lane: 'escalate',
-    items: [
-      '对方为墨笺品牌，联系人 Lisa，微信同步在谈',
-      '上次讨论：优先确认联名款数量和交货期',
-      '决策记录：报价方案 B 已被接受（4/20）',
-    ],
-    updatedAt: '5/1',
-  },
-  {
-    id: 'm2', taskTitle: 'Q2 财报分析报告', lane: 'unblock',
-    items: [
-      '核心指标：GMV、活跃用户、NPS',
-      '数据来源：BI 系统导出 + 用户调研结果',
-      '等待：用户确认是否纳入退款率指标',
-    ],
-    updatedAt: '4/29',
-  },
-  {
-    id: 'm3', taskTitle: '周例会纪要整理', lane: 'continue',
-    items: [
-      '参会人：产品、设计、研发 TL',
-      '核心议题：Q2 路线图优先级',
-      '上次结论：推迟搜索功能，优先完成任务工作台',
-    ],
-    updatedAt: '5/3',
-  },
-];
-
-const MOCK_HABITS: HabitRecord[] = [
+const SEED_HABITS: HabitRecord[] = [
   {
     id: 'h1',
     observation: '回复合作邮件前总会先确认对方微信上是否有同步沟通',
@@ -79,143 +21,118 @@ const MOCK_HABITS: HabitRecord[] = [
     examples: 'Q1 财报、用户调研报告',
     confirmed: null,
   },
-  {
-    id: 'h3',
-    observation: '周五下午较少处理需要深度思考的任务',
-    examples: '过去 6 周的活动记录',
-    confirmed: null,
-  },
 ];
 
-const SOURCE_ICONS: Record<string, string> = {
-  email: '✉️', calendar: '📅', github: '🐙', notion: '📝', slack: '💬',
-};
+function deriveLane(t: TaskListItemRecord): string {
+  if (t.riskLevel === 'high') return 'escalate';
+  if (t.activeBlocker || t.state === 'waiting_external') return 'unblock';
+  if (t.state === 'running') return 'continue';
+  if (t.state === 'captured') return 'clarify';
+  return 'steady';
+}
 
-/* ─── Page ─── */
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
 
 export function ContextPage() {
-  const [sources, setSources] = useState<ConnectedSource[]>(MOCK_SOURCES);
-  const [memories, setMemories] = useState<TaskMemory[]>(MOCK_MEMORIES);
-  const [habits, setHabits] = useState<HabitRecord[]>(MOCK_HABITS);
-  const [expandedMemory, setExpandedMemory] = useState<string | null>(null);
-  const [editingHabit, setEditingHabit] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<TaskListItemRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedTask, setExpandedTask] = useState<string | null>(null);
+  const [habits, setHabits] = useState<HabitRecord[]>(SEED_HABITS);
+
+  useEffect(() => {
+    if (!window.api) { setLoading(false); return; }
+    window.api.listTasks()
+      .then((all) => {
+        const withContext = all.filter(
+          (t) => t.state !== 'archived' && (t.summary || t.nextStep || t.activeBlocker || t.waitingReason)
+        );
+        setTasks(withContext.slice(0, 12));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   function confirmHabit(id: string, confirmed: boolean) {
     setHabits((prev) => prev.map((h) => h.id === id ? { ...h, confirmed } : h));
-    setEditingHabit(null);
   }
 
   function deleteHabit(id: string) {
     setHabits((prev) => prev.filter((h) => h.id !== id));
   }
 
-  function disconnectSource(id: string) {
-    setSources((prev) => prev.filter((s) => s.id !== id));
-  }
-
   return (
     <div className="context-page">
-      {/* Header */}
       <div className="context-page-head">
         <h2 className="context-page-title">Context</h2>
-        <p className="context-page-subtitle">AI 的感知与记忆层 — 对话结束后 agent 不失忆</p>
+        <p className="context-page-subtitle">AI 的记忆层 — 任务信息与工作习惯在会话间持续保留</p>
       </div>
 
-      {/* Section 1: Connected Sources */}
-      <section className="ctx-section">
-        <div className="ctx-section-header">
-          <div>
-            <div className="ctx-section-title">已连接来源</div>
-            <div className="ctx-section-desc">AI 可感知的外部信号源</div>
-          </div>
-          <button className="btn sm primary">+ 连接来源</button>
-        </div>
-
-        <div className="ctx-list">
-          {sources.map((src) => (
-            <div key={src.id} className="ctx-source-row">
-              <span className="ctx-source-icon">{SOURCE_ICONS[src.type]}</span>
-              <div className="ctx-source-info">
-                <span className="ctx-source-label">{src.label}</span>
-                <span className="ctx-source-account">{src.account}</span>
-              </div>
-              <div className="ctx-source-status">
-                {src.status === 'connected' && (
-                  <span className="status-pill connected">
-                    <span className="dot running" style={{ width: 5, height: 5 }} />
-                    已连接
-                  </span>
-                )}
-                {src.status === 'error' && (
-                  <span className="status-pill error">
-                    <span className="dot risk" style={{ width: 5, height: 5 }} />
-                    {src.lastSync}
-                  </span>
-                )}
-                {src.status === 'pending' && (
-                  <span className="status-pill">授权中</span>
-                )}
-              </div>
-              <span className="ctx-source-sync muted">
-                {src.status === 'connected' ? `同步于 ${src.lastSync}` : ''}
-              </span>
-              <div className="ctx-source-actions">
-                {src.status === 'error' && (
-                  <button className="btn sm">重新授权</button>
-                )}
-                <button className="btn sm ghost" onClick={() => disconnectSource(src.id)}>
-                  断开
-                </button>
-              </div>
-            </div>
-          ))}
-          {sources.length === 0 && (
-            <div className="ctx-empty">暂无已连接来源。连接邮件、日历等来源后 AI 可感知外部信号。</div>
-          )}
-        </div>
-      </section>
-
-      {/* Section 2: Task memory */}
+      {/* Task memory */}
       <section className="ctx-section">
         <div className="ctx-section-header">
           <div>
             <div className="ctx-section-title">任务上下文记忆</div>
-            <div className="ctx-section-desc">AI 对每个任务积累的关键信息，跨会话持续保留</div>
+            <div className="ctx-section-desc">AI 对活跃任务掌握的关键信息，跨会话持续保留</div>
           </div>
         </div>
 
         <div className="ctx-list">
-          {memories.map((mem) => (
-            <div key={mem.id} className="ctx-memory-row">
-              <div
-                className="ctx-memory-head"
-                onClick={() => setExpandedMemory((prev) => (prev === mem.id ? null : mem.id))}
-              >
-                <span className={`tag lane-${mem.lane}`} style={{ fontSize: 10 }}>{mem.lane}</span>
-                <span className="ctx-memory-title">{mem.taskTitle}</span>
-                <span className="muted" style={{ marginLeft: 'auto', fontSize: 11 }}>{mem.updatedAt}</span>
-                <span className="ctx-chevron">{expandedMemory === mem.id ? '▴' : '▾'}</span>
-              </div>
-              {expandedMemory === mem.id && (
-                <div className="ctx-memory-body">
-                  {mem.items.map((item, i) => (
-                    <div key={i} className="ctx-memory-item">
-                      <span className="ctx-memory-bullet">·</span>
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                  <div className="ctx-memory-actions">
-                    <button className="btn sm ghost">编辑记忆</button>
-                    <button className="btn sm ghost" style={{ color: 'var(--accent)' }}>清除</button>
-                  </div>
+          {loading && (
+            <div className="ctx-empty muted">加载中…</div>
+          )}
+          {!loading && tasks.length === 0 && (
+            <div className="ctx-empty">暂无带有上下文的活跃任务。在 Tasks 创建任务并补充说明后，AI 将自动建立记忆。</div>
+          )}
+          {tasks.map((task) => {
+            const lane = deriveLane(task);
+            const isExpanded = expandedTask === task.id;
+            const items: string[] = [];
+            if (task.summary) items.push(task.summary);
+            if (task.nextStep) items.push(`下一步：${task.nextStep}`);
+            if (task.waitingReason) items.push(`等待中：${task.waitingReason}`);
+            if (task.activeBlocker) items.push(`阻塞：${task.activeBlocker.title}`);
+
+            return (
+              <div key={task.id} className="ctx-memory-row">
+                <div
+                  className="ctx-memory-head"
+                  onClick={() => setExpandedTask((prev) => (prev === task.id ? null : task.id))}
+                >
+                  <span className={`tag lane-${lane}`} style={{ fontSize: 10 }}>{lane}</span>
+                  <span className="ctx-memory-title">{task.title}</span>
+                  <span className="muted" style={{ marginLeft: 'auto', fontSize: 11 }}>
+                    {formatDate(task.updatedAt)}
+                  </span>
+                  <span className="ctx-chevron">{isExpanded ? '▴' : '▾'}</span>
                 </div>
-              )}
-            </div>
-          ))}
+                {isExpanded && (
+                  <div className="ctx-memory-body">
+                    {items.length > 0 ? (
+                      items.map((item, i) => (
+                        <div key={i} className="ctx-memory-item">
+                          <span className="ctx-memory-bullet">·</span>
+                          <span>{item}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="ctx-memory-item muted">暂无详细上下文。</div>
+                    )}
+                    <div className="ctx-memory-actions">
+                      <button className="btn sm ghost" disabled title="即将支持">编辑</button>
+                      <button className="btn sm ghost" disabled title="即将支持" style={{ color: 'var(--accent)' }}>清除</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
 
-      {/* Section 3: Work habits */}
+      {/* Work habits */}
       <section className="ctx-section">
         <div className="ctx-section-header">
           <div>
@@ -232,12 +149,8 @@ export function ContextPage() {
                 <div className="ctx-habit-examples muted">{h.examples}</div>
               </div>
               <div className="ctx-habit-verdict">
-                {h.confirmed === true && (
-                  <span className="habit-badge confirmed">已确认</span>
-                )}
-                {h.confirmed === false && (
-                  <span className="habit-badge rejected">已纠正</span>
-                )}
+                {h.confirmed === true && <span className="habit-badge confirmed">已确认</span>}
+                {h.confirmed === false && <span className="habit-badge rejected">已纠正</span>}
                 {h.confirmed === null && (
                   <div className="habit-actions">
                     <button className="btn sm primary" onClick={() => confirmHabit(h.id, true)}>确认</button>
@@ -245,11 +158,7 @@ export function ContextPage() {
                   </div>
                 )}
               </div>
-              <button
-                className="ctx-habit-del icon-btn"
-                onClick={() => deleteHabit(h.id)}
-                title="删除"
-              >
+              <button className="ctx-habit-del icon-btn" onClick={() => deleteHabit(h.id)} title="删除">
                 <IconTrash />
               </button>
             </div>

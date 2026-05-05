@@ -25,8 +25,11 @@ const require = createRequire(import.meta.url);
 const AI_PROVIDERS = new Set<AiProvider>([
   'anthropic',
   'openai',
-  'openai-compatible',
+  'google',
+  'deepseek',
+  'groq',
   'fal-openrouter',
+  'openai-compatible',
   'replicate',
 ]);
 

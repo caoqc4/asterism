@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import type { TaskListItemRecord } from '@shared/types/task';
 
 type Lane = 'escalate' | 'unblock' | 'continue' | 'clarify' | 'steady';
 type TaskStatus = 'running' | 'waiting' | 'blocked' | 'idle' | 'done';
@@ -11,12 +12,10 @@ interface Task {
   lane: Lane;
   status: TaskStatus;
   type: TaskType;
-  project?: string;
   whyNow?: string;
   nextStep?: string;
   waitingOn?: string;
   commitment?: string;
-  sources?: string[];
   updatedAt: string;
 }
 
@@ -29,60 +28,6 @@ const LANE_LABELS: Record<Lane, string> = {
 };
 
 const LANE_ORDER: Lane[] = ['escalate', 'unblock', 'continue', 'clarify', 'steady'];
-
-const MOCK_TASKS: Task[] = [
-  {
-    id: 't-001', title: '品牌合作来信回复', lane: 'escalate', status: 'idle',
-    type: 'simple', project: '外部合作',
-    whyNow: '对方已等待 48 小时，再不回复可能失去合作机会。',
-    nextStep: '确认合作意向，起草初步回复邮件。',
-    sources: ['邮件: Re: 合作意向确认', '日历: 对接会议 5/6'],
-    updatedAt: '5/1',
-  },
-  {
-    id: 't-002', title: 'Q2 财报分析报告', lane: 'unblock', status: 'waiting',
-    type: 'simple', project: '财务',
-    whyNow: '数据团队已送达原始数据，等你拍板核心指标口径后可以继续。',
-    nextStep: '拍板核心指标口径，解锁后续分析。',
-    waitingOn: '等待：用户确认指标口径',
-    commitment: '本周五前完成初稿',
-    sources: ['数据包 v2.xlsx', '上次例会纪要'],
-    updatedAt: '4/29',
-  },
-  {
-    id: 't-003', title: '周例会纪要整理', lane: 'continue', status: 'running',
-    type: 'simple',
-    whyNow: '上次 Run 完成 80%，剩余结论部分约 15 分钟可完成。',
-    nextStep: '完成结论摘要，发送给与会人员。',
-    updatedAt: '5/3',
-  },
-  {
-    id: 't-004', title: '官网改版项目', lane: 'continue', status: 'idle',
-    type: 'project', project: '产品',
-    whyNow: '设计稿已确认，开发排期待确定。',
-    nextStep: '与开发团队确认排期。',
-    updatedAt: '4/28',
-  },
-  {
-    id: 't-005', title: '竞品调研报告', lane: 'clarify', status: 'idle',
-    type: 'simple', project: '产品',
-    whyNow: '调研范围还未明确，需要先对齐再开始。',
-    nextStep: '明确调研范围和输出格式。',
-    updatedAt: '4/25',
-  },
-  {
-    id: 't-006', title: '每日邮件监控', lane: 'steady', status: 'running',
-    type: 'event',
-    whyNow: '自动运行中，无需操作。',
-    updatedAt: '5/4',
-  },
-  {
-    id: 't-007', title: '月度数据报表', lane: 'steady', status: 'idle',
-    type: 'scheduled',
-    whyNow: '下次执行：5 月 31 日。',
-    updatedAt: '4/30',
-  },
-];
 
 type Lens =
   | 'all'
@@ -97,21 +42,90 @@ const DEFER_OPTIONS = [
   { label: '选日期…', value: 'custom' },
 ];
 
+/* ─── Map real task record → UI task ─── */
+
+function derivelane(r: TaskListItemRecord): Lane {
+  if (r.riskLevel === 'high') return 'escalate';
+  if (r.activeBlocker || r.state === 'waiting_external') return 'unblock';
+  if (r.state === 'running') return 'continue';
+  if (r.state === 'captured') return 'clarify';
+  if (r.riskLevel === 'medium') return 'unblock';
+  if (r.state === 'completed' || r.state === 'archived') return 'steady';
+  return 'continue';
+}
+
+function deriveStatus(r: TaskListItemRecord): TaskStatus {
+  if (r.state === 'running') return 'running';
+  if (r.state === 'waiting_external') return 'waiting';
+  if (r.activeBlocker) return 'blocked';
+  if (r.state === 'completed' || r.state === 'archived') return 'done';
+  return 'idle';
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function fromRecord(r: TaskListItemRecord): Task {
+  return {
+    id: r.id,
+    title: r.title,
+    lane: derivelane(r),
+    status: deriveStatus(r),
+    type: 'simple',
+    whyNow: r.summary ?? undefined,
+    nextStep: r.nextStep ?? undefined,
+    waitingOn: r.waitingReason ? `等待：${r.waitingReason}` : undefined,
+    updatedAt: formatDate(r.updatedAt),
+  };
+}
+
 interface TasksPageProps {
   onOpenPanel: (taskId: string) => void;
   onOpenWorkbench: (taskId: string) => void;
 }
 
 export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(false);
   const [lens, setLens] = useState<Lens>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('lane');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deferOpenId, setDeferOpenId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; taskId: string } | null>(null);
 
+  const [showCapture, setShowCapture] = useState(false);
+  const [captureTitle, setCaptureTitle] = useState('');
+  const [capturing, setCapturing] = useState(false);
+  const [capturedId, setCapturedId] = useState<string | null>(null);
+
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const filtered = MOCK_TASKS.filter((t) => {
+  function reloadTasks() {
+    window.api?.listTasks().then((records) => {
+      if (records.length > 0) setAllTasks(records.map(fromRecord));
+    }).catch(() => {});
+  }
+
+  // Load real tasks from backend when available
+  useEffect(() => {
+    if (!window.api) return;
+    setLoading(true);
+    window.api.listTasks()
+      .then((records) => {
+        setAllTasks(records.map(fromRecord));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+
+    const unsub = window.api.subscribeToEvents((event) => {
+      if (event.type === 'task.changed') reloadTasks();
+    });
+    return () => unsub?.();
+  }, []);
+
+  const filtered = allTasks.filter((t) => {
     if (lens === 'all') return true;
     if (lens === 'running') return t.status === 'running';
     if (lens === 'waiting') return t.status === 'waiting';
@@ -147,6 +161,12 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
 
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
 
+  function completeTask(id: string) {
+    setAllTasks((prev) => prev.filter((t) => t.id !== id));
+    setSelectedId(null);
+    window.api?.transitionTask({ id, nextState: 'completed' }).catch(() => reloadTasks());
+  }
+
   function groupByLane(tasks: Task[]): Record<Lane, Task[]> {
     const result = {} as Record<Lane, Task[]>;
     LANE_ORDER.forEach((lane) => { result[lane] = []; });
@@ -154,29 +174,61 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
     return result;
   }
 
+  async function captureTask() {
+    const title = captureTitle.trim();
+    if (!title || capturing) return;
+    setCapturing(true);
+    try {
+      let newId: string;
+      if (window.api) {
+        const record = await window.api.createTask({ title });
+        newId = record.id;
+        setAllTasks((prev) => [fromRecord({ ...record, activeBlocker: null, activeWaitingItem: null }), ...prev]);
+      } else {
+        newId = `t-${Date.now()}`;
+        const fake: Task = {
+          id: newId, title, lane: 'clarify', status: 'idle',
+          type: 'simple',
+          updatedAt: new Date().toLocaleDateString('zh'),
+        };
+        setAllTasks((prev) => [fake, ...prev]);
+      }
+      setCaptureTitle('');
+      setShowCapture(false);
+      setCapturedId(newId);
+    } finally {
+      setCapturing(false);
+    }
+  }
+
   return (
     <div className="tasks-page" onClick={closeContextMenu}>
       {/* Lenses Rail */}
       <aside className="lenses-rail">
         <LensItem label="全部" active={lens === 'all'} onClick={() => setLens('all')}
-          count={MOCK_TASKS.length} />
+          count={allTasks.length} />
 
         <div className="lens-group-label">执行状态</div>
         <LensItem label="Running" active={lens === 'running'} onClick={() => setLens('running')}
-          dot="running" count={MOCK_TASKS.filter(t => t.status === 'running').length} />
+          dot="running" count={allTasks.filter(t => t.status === 'running').length} />
         <LensItem label="等待中 7d+" active={lens === 'waiting'} onClick={() => setLens('waiting')}
-          dot="waiting" count={MOCK_TASKS.filter(t => t.status === 'waiting').length} />
+          dot="waiting" count={allTasks.filter(t => t.status === 'waiting').length} />
         <LensItem label="有风险" active={lens === 'blocked'} onClick={() => setLens('blocked')}
-          dot="risk" count={MOCK_TASKS.filter(t => t.status === 'blocked').length} />
+          dot="risk" count={allTasks.filter(t => t.status === 'blocked').length} />
 
         <div className="lens-group-label">任务类型</div>
-        <LensItem label="项目型" active={lens === 'project'} onClick={() => setLens('project')} icon="📁" />
-        <LensItem label="定时任务" active={lens === 'scheduled'} onClick={() => setLens('scheduled')} icon="🔁" />
-        <LensItem label="事件触发" active={lens === 'event'} onClick={() => setLens('event')} icon="⚡" />
+        <LensItem label="项目型" active={lens === 'project'} onClick={() => setLens('project')} icon="📁"
+          count={allTasks.filter(t => t.type === 'project').length} />
+        <LensItem label="定时任务" active={lens === 'scheduled'} onClick={() => setLens('scheduled')} icon="🔁"
+          count={allTasks.filter(t => t.type === 'scheduled').length} />
+        <LensItem label="事件触发" active={lens === 'event'} onClick={() => setLens('event')} icon="⚡"
+          count={allTasks.filter(t => t.type === 'event').length} />
 
         <div className="lens-group-label" style={{ marginTop: 'auto' }}>特殊视角</div>
-        <LensItem label="已承诺" active={lens === 'committed'} onClick={() => setLens('committed')} icon="🤝" />
-        <LensItem label="已完成 / 归档" active={lens === 'done'} onClick={() => setLens('done')} icon="🗄" />
+        <LensItem label="已承诺" active={lens === 'committed'} onClick={() => setLens('committed')} icon="🤝"
+          count={allTasks.filter(t => !!t.commitment).length} />
+        <LensItem label="已完成 / 归档" active={lens === 'done'} onClick={() => setLens('done')} icon="🗄"
+          count={allTasks.filter(t => t.status === 'done').length} />
       </aside>
 
       {/* Task list */}
@@ -194,10 +246,51 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
               </button>
             ))}
           </div>
-          <button className="btn sm primary" style={{ marginLeft: 'auto' }}>
+          <button className="btn sm primary" style={{ marginLeft: 'auto' }} onClick={() => setShowCapture((v) => !v)}>
             + 新建任务
           </button>
         </div>
+
+        {/* Capture form */}
+        {showCapture && (
+          <div className="capture-form">
+            <input
+              className="capture-input"
+              autoFocus
+              placeholder="任务标题… (Enter 快速创建)"
+              value={captureTitle}
+              onChange={(e) => setCaptureTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void captureTask(); }
+                if (e.key === 'Escape') { setShowCapture(false); setCaptureTitle(''); }
+              }}
+            />
+            <div className="capture-actions">
+              <button className={`btn sm primary${capturing ? ' disabled' : ''}`} onClick={() => void captureTask()} disabled={!captureTitle.trim() || capturing}>
+                {capturing ? '创建中…' : '创建'}
+              </button>
+              <button className="btn sm ghost" onClick={() => { setShowCapture(false); setCaptureTitle(''); }}>
+                取消
+              </button>
+              <span className="capture-ai-hint muted">
+                想让 AI 帮你拆解？创建后打开右上角对话
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Post-capture AI nudge */}
+        {capturedId && (
+          <div className="capture-nudge">
+            <span>✓ 已创建</span>
+            <button className="btn sm primary" onClick={() => { onOpenPanel(capturedId); setCapturedId(null); }}>
+              让 AI 帮你拆解 →
+            </button>
+            <button className="icon-btn" style={{ marginLeft: 4 }} onClick={() => setCapturedId(null)} title="关闭">
+              <span style={{ fontSize: 12, lineHeight: 1 }}>×</span>
+            </button>
+          </div>
+        )}
 
         {/* Task rows */}
         <div className="task-list">
@@ -220,23 +313,16 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
                       onClick={() => handleRowClick(task.id)}
                       onDoubleClick={() => handleRowDoubleClick(task.id)}
                       onContextMenu={(e) => handleContextMenu(e, task.id)}
-                      onDeferToggle={(e) => {
-                        e.stopPropagation();
-                        setDeferOpenId((prev) => (prev === task.id ? null : task.id));
-                      }}
-                      onComplete={(e) => {
-                        e.stopPropagation();
-                        setSelectedId(null);
-                      }}
-                      onMore={(e) => {
-                        e.stopPropagation();
-                        handleContextMenu(e, task.id);
-                      }}
+                      onDeferToggle={(e) => { e.stopPropagation(); setDeferOpenId((prev) => (prev === task.id ? null : task.id)); }}
+                      onComplete={(e) => { e.stopPropagation(); completeTask(task.id); }}
+                      onMore={(e) => { e.stopPropagation(); handleContextMenu(e, task.id); }}
                     />
                   ))}
                 </div>
               );
             })
+          ) : viewMode === 'timeline' ? (
+            <TimelineView tasks={filtered} onOpen={onOpenWorkbench} />
           ) : (
             filtered.map((task) => (
               <TaskRow
@@ -262,8 +348,13 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
               />
             ))
           )}
-          {filtered.length === 0 && (
-            <div className="tasks-empty">当前视角下没有任务</div>
+          {filtered.length === 0 && !loading && (
+            <div className="tasks-empty">
+              {allTasks.length === 0
+                ? <><p>还没有任何任务。</p><p className="muted" style={{ marginTop: 4, fontSize: 12 }}>点击「新建任务」开始捕获你的第一个任务。</p></>
+                : <p>当前视角下没有任务。</p>
+              }
+            </div>
           )}
         </div>
       </div>
@@ -284,6 +375,42 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
           onOpenWorkbench={() => { onOpenWorkbench(contextMenu.taskId); closeContextMenu(); }}
         />
       )}
+    </div>
+  );
+}
+
+/* ─── Timeline view ─── */
+
+function TimelineView({ tasks, onOpen }: { tasks: Task[]; onOpen: (id: string) => void }) {
+  const grouped = new Map<string, Task[]>();
+  for (const t of [...tasks].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))) {
+    const key = t.updatedAt;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push(t);
+  }
+
+  if (tasks.length === 0) return null;
+
+  return (
+    <div className="timeline-view">
+      {[...grouped.entries()].map(([date, group]) => (
+        <div key={date} className="timeline-group">
+          <div className="timeline-date">{date}</div>
+          <div className="timeline-items">
+            {group.map((task) => (
+              <div key={task.id} className="timeline-item" onClick={() => onOpen(task.id)}>
+                <div className={`timeline-dot ${task.status}`} />
+                <div className="timeline-content">
+                  <span className="timeline-title">{task.title}</span>
+                  <span className={`tag lane-${task.lane}`} style={{ fontSize: 10, marginLeft: 8 }}>
+                    {LANE_LABELS[task.lane]}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -345,7 +472,6 @@ function TaskRow({
       <div className="task-row-body">
         <span className="task-row-title">{task.title}</span>
         <div className="task-row-meta">
-          {task.project && <span className="tag">{task.project}</span>}
           {task.type !== 'simple' && (
             <span className="tag">
               {task.type === 'project' ? '项目' : task.type === 'scheduled' ? '定时' : '事件'}
@@ -422,29 +548,21 @@ function TaskPreview({ task, onOpenWorkbench }: TaskPreviewProps) {
         </div>
       )}
 
-      {(task.waitingOn || task.commitment) && (
+      {task.waitingOn && (
         <div className="preview-section">
-          {task.waitingOn && (
-            <div className="preview-chip">
-              <span className="dot waiting" />
-              {task.waitingOn}
-            </div>
-          )}
-          {task.commitment && (
-            <div className="preview-chip">
-              🤝 {task.commitment}
-            </div>
-          )}
+          <div className="preview-chip">
+            <span className="dot waiting" />
+            {task.waitingOn}
+          </div>
         </div>
       )}
 
-      {task.sources && task.sources.length > 0 && (
+      {task.commitment && (
         <div className="preview-section">
-          <div className="preview-label">关键来源</div>
-          <div className="preview-sources">
-            {task.sources.slice(0, 3).map((s) => (
-              <div key={s} className="preview-source-item">{s}</div>
-            ))}
+          <div className="preview-label">已承诺</div>
+          <div className="preview-chip">
+            <span>🤝</span>
+            <span style={{ marginLeft: 4 }}>{task.commitment}</span>
           </div>
         </div>
       )}

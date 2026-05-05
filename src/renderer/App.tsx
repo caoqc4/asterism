@@ -1,37 +1,38 @@
-import { useState, useCallback } from 'react';
-import { getRouteFromHash, setRoute } from './lib/router';
+import { useState, useCallback, useEffect, type ReactNode } from 'react';
+import { getRouteFromHash, setRoute, type AppRoute } from './lib/router';
 import { BriefPage } from './pages/BriefPage';
 import { TasksPage } from './pages/TasksPage';
 import { WorkbenchPage } from './pages/WorkbenchPage';
 import { DecisionsPage } from './pages/DecisionsPage';
 import { ContextPage } from './pages/ContextPage';
+import { ConnectionsPage } from './pages/ConnectionsPage';
+import { SkillsPage } from './pages/SkillsPage';
+import { ModelPage } from './pages/ModelPage';
+import { McpPage } from './pages/McpPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { RightPanel } from './components/RightPanel';
 
-type Route = 'brief' | 'tasks' | 'decisions' | 'context' | 'settings';
-
-const ROUTE_LABELS: Record<Route, string> = {
+const ROUTE_LABELS: Record<AppRoute, string> = {
   brief: 'Brief',
   tasks: 'Tasks',
   decisions: 'Decisions',
   context: 'Context',
+  skills: 'Skills',
+  mcp: 'MCP',
+  model: 'Model',
+  connections: 'Connections',
   settings: 'Settings',
 };
 
-function resolveInitialRoute(): Route {
-  const hash = getRouteFromHash();
-  const valid: Route[] = ['brief', 'tasks', 'decisions', 'context', 'settings'];
-  return valid.includes(hash as Route) ? (hash as Route) : 'brief';
-}
-
 export function App() {
-  const [route, setRouteState] = useState<Route>(resolveInitialRoute);
+  const [route, setRouteState] = useState<AppRoute>(getRouteFromHash);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelTaskId, setPanelTaskId] = useState<string | null>(null);
   const [workbenchTaskId, setWorkbenchTaskId] = useState<string | null>(null);
-  const [workbenchOrigin, setWorkbenchOrigin] = useState<Route>('tasks');
+  const [workbenchOrigin, setWorkbenchOrigin] = useState<AppRoute>('tasks');
+  const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
 
-  const navigate = useCallback((r: Route) => {
+  const navigate = useCallback((r: AppRoute) => {
     setRouteState(r);
     setRoute(r);
     setWorkbenchTaskId(null);
@@ -56,12 +57,27 @@ export function App() {
     setPanelOpen(true);
   }, []);
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        openPanelGlobal();
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [openPanelGlobal]);
+
+  useEffect(() => {
+    window.api?.getAiConfigStatus().then((s) => setAiConfigured(s.configured)).catch(() => setAiConfigured(false));
+  }, []);
+
   return (
     <div className={`app${panelOpen ? ' panel-open' : ''}`}>
-      <Sidebar route={route} onNavigate={navigate} />
+      <Sidebar route={workbenchTaskId ? workbenchOrigin : route} onNavigate={navigate} />
       <div className="main">
         <Topbar
-          route={route}
+          route={workbenchTaskId ? workbenchOrigin : route}
           workbenchTaskId={workbenchTaskId}
           panelOpen={panelOpen}
           onBack={closeWorkbench}
@@ -69,6 +85,9 @@ export function App() {
           onOpenGlobalPanel={openPanelGlobal}
         />
         <div className="content">
+          {aiConfigured === false && (
+            <SetupBanner onGoToModel={() => navigate('model')} />
+          )}
           {workbenchTaskId ? (
             <WorkbenchPage
               taskId={workbenchTaskId}
@@ -79,7 +98,7 @@ export function App() {
             <>
               {route === 'brief' && (
                 <BriefPage
-                  onOpenTask={(id) => navigate('tasks')}
+                  onOpenTask={() => navigate('tasks')}
                   onOpenDecision={() => navigate('decisions')}
                   onOpenPanel={openPanelForTask}
                 />
@@ -92,6 +111,10 @@ export function App() {
               )}
               {route === 'decisions' && <DecisionsPage />}
               {route === 'context' && <ContextPage />}
+              {route === 'connections' && <ConnectionsPage />}
+              {route === 'skills' && <SkillsPage />}
+              {route === 'mcp' && <McpPage />}
+              {route === 'model' && <ModelPage />}
               {route === 'settings' && <SettingsPage />}
             </>
           )}
@@ -108,11 +131,32 @@ export function App() {
   );
 }
 
+/* ─── Setup banner ─── */
+
+function SetupBanner({ onGoToModel }: { onGoToModel: () => void }) {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+  return (
+    <div className="setup-banner">
+      <span className="setup-banner-icon">⚠</span>
+      <span className="setup-banner-text">
+        AI 尚未配置，请先添加 API Key 以使用 AI 功能。
+      </span>
+      <button className="btn sm primary" onClick={onGoToModel}>
+        前往配置 →
+      </button>
+      <button className="icon-btn" onClick={() => setDismissed(true)} title="关闭">
+        <span style={{ fontSize: 14, lineHeight: 1 }}>×</span>
+      </button>
+    </div>
+  );
+}
+
 /* ─── Sidebar ─── */
 
 interface SidebarProps {
-  route: Route;
-  onNavigate: (r: Route) => void;
+  route: AppRoute;
+  onNavigate: (r: AppRoute) => void;
 }
 
 function Sidebar({ route, onNavigate }: SidebarProps) {
@@ -137,8 +181,10 @@ function Sidebar({ route, onNavigate }: SidebarProps) {
 
         <div className="nav-divider" />
         <div className="nav-zone-label">Capabilities</div>
-        <NavItem icon={<IconSkills />} label="Skills" active={false} onClick={() => {}} />
-        <NavItem icon={<IconModel />} label="Model" active={false} onClick={() => {}} />
+        <NavItem icon={<IconConnections />} label="Connections" active={route === 'connections'} onClick={() => onNavigate('connections')} />
+        <NavItem icon={<IconSkills />} label="Skills" active={route === 'skills'} onClick={() => onNavigate('skills')} />
+        <NavItem icon={<IconMcp />} label="MCP" active={route === 'mcp'} onClick={() => onNavigate('mcp')} />
+        <NavItem icon={<IconModel />} label="Model" active={route === 'model'} onClick={() => onNavigate('model')} />
         <NavItem icon={<IconSettings />} label="Settings" active={route === 'settings'} onClick={() => onNavigate('settings')} />
       </nav>
 
@@ -177,7 +223,7 @@ function NavItem({ icon, label, active, badge, hot, onClick }: NavItemProps) {
 /* ─── Topbar ─── */
 
 interface TopbarProps {
-  route: Route;
+  route: AppRoute;
   workbenchTaskId: string | null;
   panelOpen: boolean;
   onBack: () => void;
@@ -212,7 +258,7 @@ function Topbar({ route, workbenchTaskId, panelOpen, onBack, onTogglePanel, onOp
         <button
           className={`icon-btn${panelOpen ? ' active' : ''}`}
           onClick={onTogglePanel}
-          title="Toggle AI panel"
+          title="AI 对话（⌘K）"
         >
           <IconPanel />
         </button>
@@ -221,7 +267,7 @@ function Topbar({ route, workbenchTaskId, panelOpen, onBack, onTogglePanel, onOp
   );
 }
 
-/* ─── Icons (inline SVG, matches hi-fi prototype style) ─── */
+/* ─── Icons ─── */
 
 function IconBrief() {
   return (
@@ -259,10 +305,33 @@ function IconContext() {
   );
 }
 
+function IconConnections() {
+  return (
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="3" cy="7" r="1.5" />
+      <circle cx="11" cy="3.5" r="1.5" />
+      <circle cx="11" cy="10.5" r="1.5" />
+      <line x1="4.5" y1="6.5" x2="9.5" y2="4" />
+      <line x1="4.5" y1="7.5" x2="9.5" y2="10" />
+    </svg>
+  );
+}
+
 function IconSkills() {
   return (
     <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <polygon points="7,1.5 9,5.5 13,6 10,9 10.5,13 7,11 3.5,13 4,9 1,6 5,5.5" />
+    </svg>
+  );
+}
+
+function IconMcp() {
+  return (
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="4.5" width="4" height="5" rx="1" />
+      <rect x="8.5" y="4.5" width="4" height="5" rx="1" />
+      <line x1="5.5" y1="7" x2="8.5" y2="7" />
+      <line x1="7" y1="5.5" x2="7" y2="8.5" />
     </svg>
   );
 }
@@ -296,9 +365,11 @@ function IconSearch() {
 
 function IconPanel() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-      <rect x="1.5" y="1.5" width="11" height="11" rx="2" />
-      <line x1="9" y1="1.5" x2="9" y2="12.5" />
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.5 1.5h9a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-.5.5H7l-2 2V8.5H2.5a.5.5 0 0 1-.5-.5V2a.5.5 0 0 1 .5-.5z" />
+      <circle cx="5" cy="5" r=".55" fill="currentColor" stroke="none" />
+      <circle cx="7" cy="5" r=".55" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="5" r=".55" fill="currentColor" stroke="none" />
     </svg>
   );
 }

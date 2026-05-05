@@ -1,6 +1,6 @@
-export type AppRoute = 'brief' | 'tasks' | 'decisions' | 'context' | 'settings';
+export type AppRoute = 'brief' | 'tasks' | 'decisions' | 'context' | 'skills' | 'mcp' | 'model' | 'connections' | 'settings';
 
-const validRoutes = new Set<AppRoute>(['brief', 'tasks', 'decisions', 'context', 'settings']);
+const validRoutes = new Set<AppRoute>(['brief', 'tasks', 'decisions', 'context', 'skills', 'mcp', 'model', 'connections', 'settings']);
 
 export function getRouteFromHash(): AppRoute {
   const hash = window.location.hash;

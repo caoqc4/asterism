@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import type { ChatMessage } from '@shared/types/ipc';
 
 type MessageRole = 'user' | 'assistant';
 
@@ -14,32 +15,18 @@ interface PendingCtxSwitch {
   taskTitle: string;
 }
 
-const TASK_TITLES: Record<string, string> = {
-  't-001': '品牌合作来信回复',
-  't-002': 'Q2 财报分析报告',
-  't-003': '周例会纪要整理',
-  't-004': '官网改版项目',
-  't-005': '竞品调研报告',
-  't-006': '每日邮件监控',
-  't-007': '月度数据报表',
-};
-
-function taskTitle(taskId: string | null): string | null {
+function taskTitle(taskId: string | null, cache: Record<string, string>): string | null {
   if (!taskId) return null;
-  return TASK_TITLES[taskId] ?? taskId;
+  return cache[taskId] ?? null;
 }
 
-function mockInitialMessages(taskId: string | null): Message[] {
-  if (!taskId) return [];
-  const title = taskTitle(taskId);
-  return [
-    {
-      id: 'm0',
-      role: 'assistant',
-      text: `已切换到任务上下文：**${title}**。\n\n有什么需要讨论或推进的？`,
-      ts: now(),
-    },
-  ];
+function makeWelcomeMessage(taskTitle: string): Message {
+  return {
+    id: 'm0',
+    role: 'assistant',
+    text: `已切换到任务上下文：**${taskTitle}**。\n\n有什么需要讨论或推进的？`,
+    ts: now(),
+  };
 }
 
 function now() {
@@ -57,27 +44,49 @@ interface RightPanelProps {
 
 export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(taskId);
-  const [messages, setMessages] = useState<Message[]>(() => mockInitialMessages(taskId));
+  const [titleCache, setTitleCache] = useState<Record<string, string>>({});
+  const [messages, setMessages] = useState<Message[]>([]);
   const [pendingSwitch, setPendingSwitch] = useState<PendingCtxSwitch | null>(null);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Fetch task title and seed welcome message when panel first opens with a task
+  useEffect(() => {
+    if (!taskId) return;
+    if (titleCache[taskId]) {
+      setMessages([makeWelcomeMessage(titleCache[taskId])]);
+      return;
+    }
+    window.api?.getTaskDetail(taskId).then((d) => {
+      if (!d) return;
+      setTitleCache((prev) => ({ ...prev, [taskId]: d.title }));
+      setMessages([makeWelcomeMessage(d.title)]);
+    }).catch(() => {});
+  }, []);
+
   // When taskId changes from outside (e.g. clicking a different task)
   useEffect(() => {
     if (taskId === activeTaskId) return;
     if (taskId === null) {
-      // Clearing task context
       setActiveTaskId(null);
       setPendingSwitch(null);
       return;
     }
-    // Propose soft context switch
-    const title = taskTitle(taskId);
-    if (title) {
-      setPendingSwitch({ taskId, taskTitle: title });
-    }
+    // Fetch title if not cached, then propose soft context switch
+    const fetchAndPropose = async () => {
+      let title = titleCache[taskId];
+      if (!title && window.api) {
+        const d = await window.api.getTaskDetail(taskId).catch(() => null);
+        if (d) {
+          title = d.title;
+          setTitleCache((prev) => ({ ...prev, [taskId]: title }));
+        }
+      }
+      if (title) setPendingSwitch({ taskId, taskTitle: title });
+    };
+    void fetchAndPropose();
   }, [taskId]);
 
   function confirmSwitch() {
@@ -119,24 +128,39 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
     }
   }
 
-  function send() {
+  async function send() {
     const text = input.trim();
     if (!text || thinking) return;
+
     const userMsg: Message = { id: nextId(), role: 'user', text, ts: now() };
+    const historyForAI: ChatMessage[] = [
+      ...messages.map((m) => ({ role: m.role, content: m.text })),
+      { role: 'user', content: text },
+    ];
+
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
     setThinking(true);
-    setTimeout(() => {
-      const reply = generateReply(text, activeTaskId);
-      setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', text: reply, ts: now() }]);
-      setThinking(false);
-    }, 900 + Math.random() * 600);
+
+    let replyText: string;
+    try {
+      if (window.api?.chatWithAI) {
+        const res = await window.api.chatWithAI({ messages: historyForAI, taskId: activeTaskId });
+        replyText = res.text;
+      } else {
+        await new Promise((r) => setTimeout(r, 900 + Math.random() * 600));
+        replyText = generateReply(text, activeTaskId);
+      }
+    } catch {
+      replyText = generateReply(text, activeTaskId);
+    }
+
+    setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', text: replyText, ts: now() }]);
+    setThinking(false);
   }
 
-  const title = taskTitle(activeTaskId);
+  const title = taskTitle(activeTaskId, titleCache);
 
   return (
     <div className="right-panel">

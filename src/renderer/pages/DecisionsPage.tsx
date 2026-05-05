@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import type { DecisionRecord } from '@shared/types/decision';
 
 interface Decision {
   id: string;
@@ -18,66 +19,31 @@ interface DecisionOption {
   risk?: string;
 }
 
-const MOCK_DECISIONS: Decision[] = [
-  {
-    id: 'd1',
-    title: '品牌合作报价：确认合作方案',
-    taskTitle: '品牌合作来信回复',
-    lane: 'escalate',
-    urgency: 'today',
-    deadline: '今日 18:00',
-    recommendation: '方案 B',
-    options: [
-      { label: '方案 A：联名限定款', desc: '最低起量 500 件，交货 30 天，利润率约 35%', risk: '库存积压风险' },
-      { label: '方案 B：买断授权', desc: '一次性授权费 8 万，对方自行生产，我方无库存压力', },
-      { label: '方案 C：先小批量试单', desc: '100 件试水，双方各承担 50% 损耗', },
-    ],
-    expanded: false,
-  },
-  {
-    id: 'd2',
-    title: 'Q2 财报：是否纳入退款率指标',
-    taskTitle: 'Q2 财报分析报告',
-    lane: 'unblock',
-    urgency: 'today',
-    deadline: '今日',
-    recommendation: '纳入（推荐）',
-    options: [
-      { label: '纳入退款率', desc: '更全面反映用户满意度，但数据需额外处理 2 小时', },
-      { label: '不纳入', desc: '按原方案推进，本周五可完成初稿', },
-    ],
-    expanded: false,
-  },
-  {
-    id: 'd3',
-    title: '官网改版：开发排期是否接受延后 2 周',
-    taskTitle: '官网改版项目',
+
+function fromRecord(r: DecisionRecord): Decision {
+  return {
+    id: r.id,
+    title: r.title,
+    taskTitle: r.taskId,
     lane: 'continue',
     urgency: 'week',
-    recommendation: '接受延后',
-    options: [
-      { label: '接受延后 2 周', desc: '开发资源优先处理 App 版本，官网顺延至 6/15 上线', },
-      { label: '坚持原排期', desc: '需要协调额外 1 名前端资源，成本增加约 1.5 万', risk: '资源紧张' },
-    ],
+    options: [],
+    recommendation: '',
     expanded: false,
-  },
-  {
-    id: 'd4',
-    title: '竞品调研：范围是否包含海外市场',
-    taskTitle: '竞品调研报告',
-    lane: 'clarify',
-    urgency: 'week',
-    recommendation: '仅国内（推荐先行）',
-    options: [
-      { label: '仅国内竞品', desc: '聚焦 5 款主要竞品，2 周可出报告', },
-      { label: '含海外市场', desc: '额外覆盖 Notion、Linear 等，周期延长至 4 周', },
-    ],
-    expanded: false,
-  },
-];
+  };
+}
 
 export function DecisionsPage() {
-  const [decisions, setDecisions] = useState<Decision[]>(MOCK_DECISIONS);
+  const [decisions, setDecisions] = useState<Decision[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!window.api) { setLoading(false); return; }
+    window.api.listDecisions()
+      .then((records) => setDecisions(records.map(fromRecord)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   function toggleExpand(id: string) {
     setDecisions((prev) =>
@@ -87,6 +53,7 @@ export function DecisionsPage() {
 
   function decide(id: string) {
     setDecisions((prev) => prev.filter((d) => d.id !== id));
+    window.api?.actOnDecision({ id, action: 'approve' }).catch(() => {});
   }
 
   const today = decisions.filter((d) => d.urgency === 'today');
@@ -125,9 +92,10 @@ export function DecisionsPage() {
         </section>
       )}
 
-      {decisions.length === 0 && (
+      {!loading && decisions.length === 0 && (
         <div className="decisions-empty">
           <p>当前没有待拍板事项。</p>
+          <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>AI 在执行任务时遇到需要你决策的分歧点，会自动在这里汇总。</p>
         </div>
       )}
     </div>

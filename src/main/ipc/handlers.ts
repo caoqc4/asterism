@@ -1,4 +1,4 @@
-import type { PingResponse } from '../../shared/types/ipc.js';
+import type { ChatInput, PingResponse } from '../../shared/types/ipc.js';
 import type { CreateBlockerInput, UpdateBlockerInput } from '../../shared/types/blocker.js';
 import type {
   CreateCompletionCriteriaInput,
@@ -24,8 +24,10 @@ import type {
   UpdateTaskInput,
 } from '../../shared/types/task.js';
 
+import { generateText } from 'ai';
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
 import { getServices } from '../bootstrap/services.js';
+import { getLanguageModel } from '../executors/ai-client.js';
 import { probeLocalContainerSandboxBackend } from '../domain/run/local-container-sandbox-backend.js';
 import { evaluateSandboxedCodingProducerBackendReadiness } from '../domain/run/sandboxed-coding-producer-backend.js';
 import { ipcMain } from '../electron.js';
@@ -294,5 +296,25 @@ export function registerIpcHandlers(): void {
     emitAppEvent('task.changed', updated.taskId);
     emitAppEvent('brief.changed');
     return updated;
+  });
+
+  ipcMain.handle('ai:chat', async (_event, input: ChatInput) => {
+    const config = await getServices().aiConfigService.resolveRuntimeConfig();
+    const model = getLanguageModel(config);
+
+    const systemPrompt = input.taskId
+      ? `You are a helpful AI assistant inside Taskplane, a task management tool. The user is asking about task ID: ${input.taskId}. Help them understand status, next steps, and risks. Be concise and actionable. Reply in the same language as the user's message (Chinese or English).`
+      : `You are a helpful AI assistant inside Taskplane, a task management tool. You have a global view of all tasks. Help the user prioritize, plan, and think through their work. Be concise and actionable. Reply in the same language as the user's message (Chinese or English).`;
+
+    const result = await generateText({
+      model,
+      system: systemPrompt,
+      messages: input.messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
+    });
+
+    return { text: result.text };
   });
 }

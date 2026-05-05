@@ -3,6 +3,20 @@ export type PingResponse = {
   timestamp: string;
 };
 
+export type ChatMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+export type ChatInput = {
+  messages: ChatMessage[];
+  taskId?: string | null;
+};
+
+export type ChatResponse = {
+  text: string;
+};
+
 import type { HomeBriefData } from './brief.js';
 import type {
   BlockerRecord,
@@ -96,4 +110,5 @@ export type ElectronApi = {
   triggerOperatorStartedRun?: (input: OperatorStartedRunRequest) => Promise<RunRecord>;
   continuePausedRun: (runId: string) => Promise<RunRecord>;
   subscribeToEvents: (listener: (event: AppEvent) => void) => () => void;
+  chatWithAI: (input: ChatInput) => Promise<ChatResponse>;
 };
