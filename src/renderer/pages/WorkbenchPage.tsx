@@ -13,6 +13,13 @@ import {
   type TaskAttributeRecord,
   type TaskExecutionType,
 } from '../lib/taskAttributes';
+import {
+  createManualArtifact,
+  deleteArtifactWorkspace,
+  isInlineEditableArtifact,
+  mergeTaskArtifacts,
+  updateArtifactWorkspace,
+} from '../lib/artifactWorkspace';
 
 type WorkbenchTab = 'runs' | 'sources' | 'artifacts' | 'activity';
 
@@ -329,7 +336,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
               : d)}
           />
         )}
-        {tab === 'artifacts' && <ArtifactsTab artifacts={detail?.artifacts ?? []} />}
+        {tab === 'artifacts' && <ArtifactsTab taskId={taskId} artifacts={detail?.artifacts ?? []} />}
         {tab === 'activity' && <ActivityTab timeline={detail?.timeline ?? []} />}
       </div>
 
@@ -765,29 +772,138 @@ const ARTIFACT_KIND_LABELS: Record<ArtifactKind, string> = {
   browser_evidence: '浏览器截图',
 };
 
-function ArtifactsTab({ artifacts }: { artifacts: ArtifactRecord[] }) {
+function ArtifactsTab({ taskId, artifacts }: { taskId: string; artifacts: ArtifactRecord[] }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [, setLocalVersion] = useState(0);
+  const [showNewNote, setShowNewNote] = useState(false);
+  const [newTitle, setNewTitle] = useState('note.md');
+  const [newContent, setNewContent] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [contentDraft, setContentDraft] = useState('');
+  const visibleArtifacts = mergeTaskArtifacts(taskId, artifacts);
+
+  function refreshLocal() {
+    setLocalVersion((value) => value + 1);
+  }
+
+  function startEditing(artifact: ArtifactRecord) {
+    setEditingId(artifact.id);
+    setExpandedId(artifact.id);
+    setTitleDraft(artifact.title);
+    setContentDraft(artifact.content);
+  }
+
+  function saveEditing(artifact: ArtifactRecord) {
+    updateArtifactWorkspace(artifact.id, {
+      title: titleDraft.trim() || artifact.title,
+      content: contentDraft,
+    });
+    setEditingId(null);
+    refreshLocal();
+  }
+
+  function deleteArtifact(artifact: ArtifactRecord) {
+    deleteArtifactWorkspace(artifact.id);
+    setExpandedId((current) => current === artifact.id ? null : current);
+    setEditingId((current) => current === artifact.id ? null : current);
+    refreshLocal();
+  }
+
+  function createNote() {
+    const title = newTitle.trim();
+    if (!title) return;
+    const created = createManualArtifact({
+      taskId,
+      title,
+      content: newContent,
+      kind: 'note',
+    });
+    setExpandedId(created.id);
+    setShowNewNote(false);
+    setNewTitle('note.md');
+    setNewContent('');
+    refreshLocal();
+  }
 
   return (
     <div className="tab-content">
-      {artifacts.length === 0 && (
+      <div className="artifact-toolbar">
+        <button className="btn sm ghost" onClick={() => setShowNewNote((value) => !value)}>
+          + 新建笔记
+        </button>
+      </div>
+      {showNewNote && (
+        <div className="artifact-editor new">
+          <input
+            className="settings-input"
+            value={newTitle}
+            placeholder="文件名，如 note.md"
+            onChange={(e) => setNewTitle(e.target.value)}
+          />
+          <textarea
+            className="artifact-edit-textarea"
+            rows={8}
+            value={newContent}
+            placeholder="Markdown / 纯文本内容"
+            onChange={(e) => setNewContent(e.target.value)}
+          />
+          <div className="artifact-edit-actions">
+            <button className="btn sm primary" onClick={createNote} disabled={!newTitle.trim()}>保存笔记</button>
+            <button className="btn sm ghost" onClick={() => setShowNewNote(false)}>取消</button>
+          </div>
+        </div>
+      )}
+      {visibleArtifacts.length === 0 && !showNewNote && (
         <div className="tab-empty">暂无产物文件。Run 完成后产出的内容会出现在这里。</div>
       )}
-      {artifacts.map((a) => (
+      {visibleArtifacts.map((a) => {
+        const isExpanded = expandedId === a.id;
+        const isEditing = editingId === a.id;
+        const canEdit = isInlineEditableArtifact(a);
+        return (
         <div key={a.id} className={`artifact-item${expandedId === a.id ? ' expanded' : ''}`}>
           <div className="artifact-header" onClick={() => setExpandedId((p) => p === a.id ? null : a.id)}>
             <span className="tag">{ARTIFACT_KIND_LABELS[a.kind as ArtifactKind] ?? a.kind}</span>
-            <span className="artifact-title">{a.title ?? a.id}</span>
+            <span className="artifact-title">{a.title}</span>
             <span className="muted" style={{ marginLeft: 'auto', fontSize: 11 }}>{formatDate(a.createdAt)}</span>
             <span className={`skill-expand-arrow${expandedId === a.id ? ' open' : ''}`}>›</span>
           </div>
-          {expandedId === a.id && a.content && (
+          {isExpanded && (
             <div className="artifact-body">
-              <pre className="artifact-content">{a.content}</pre>
+              {isEditing ? (
+                <div className="artifact-editor">
+                  <input
+                    className="settings-input"
+                    value={titleDraft}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                  />
+                  <textarea
+                    className="artifact-edit-textarea"
+                    rows={10}
+                    value={contentDraft}
+                    onChange={(e) => setContentDraft(e.target.value)}
+                  />
+                  <div className="artifact-edit-actions">
+                    <button className="btn sm primary" onClick={() => saveEditing(a)}>保存</button>
+                    <button className="btn sm ghost" onClick={() => setEditingId(null)}>取消</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <pre className="artifact-content">{a.content || '空文件。'}</pre>
+                  <div className="artifact-actions">
+                    {canEdit && <button className="btn sm ghost" onClick={() => startEditing(a)}>编辑</button>}
+                    <button className="btn sm ghost" onClick={() => startEditing(a)}>重命名</button>
+                    <button className="btn sm ghost" onClick={() => deleteArtifact(a)} style={{ color: 'var(--accent)' }}>删除</button>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

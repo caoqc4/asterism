@@ -69,7 +69,19 @@ function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
       },
       nextSuggestedMove: task.nextStep ?? '明确下一步。',
     },
-    artifacts: [],
+    artifacts: [
+      {
+        id: 'artifact_report',
+        taskId: task.id,
+        sourceType: 'run',
+        sourceId: 'run_1',
+        kind: 'note',
+        title: 'report_v1.md',
+        content: '# 初稿\n\n需要补现金流页。',
+        createdAt: now,
+        updatedAt: now,
+      },
+    ],
     completionCriteria: [],
     sourceContexts: [
       {
@@ -595,6 +607,24 @@ describe('App redesign v1', () => {
     await waitFor(() => {
       expect(harness.api.archiveSourceContext).toHaveBeenCalledWith('source_1');
     });
+
+    await user.click(screen.getByRole('button', { name: '产物' }));
+    await user.click(await screen.findByText('report_v1.md'));
+    expect(await screen.findByText(/需要补现金流页/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '编辑' }));
+    const artifactEditor = screen.getByDisplayValue(/需要补现金流页/);
+    await user.clear(artifactEditor);
+    await user.type(artifactEditor, '# 终稿\n\n现金流页已补齐。');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+    expect(await screen.findByText(/现金流页已补齐/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '重命名' }));
+    const titleEditor = screen.getByDisplayValue('report_v1.md');
+    await user.clear(titleEditor);
+    await user.type(titleEditor, 'board_report_final.md');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+    expect(await screen.findByText('board_report_final.md')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '删除' }));
+    expect(screen.queryByText('board_report_final.md')).toBeNull();
 
     await user.click(screen.getByRole('button', { name: '执行' }));
     await user.click(screen.getByRole('button', { name: /启动 Run/ }));

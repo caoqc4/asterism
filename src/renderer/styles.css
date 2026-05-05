@@ -2062,6 +2062,11 @@ a { color: inherit; text-decoration: none; }
 .source-label { font-size: 12.5px; color: var(--ink-2); flex: 1; }
 
 /* Artifact items */
+.artifact-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
 .artifact-item {
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -2095,6 +2100,41 @@ a { color: inherit; text-decoration: none; }
   max-height: 320px;
   overflow-y: auto;
   line-height: 1.55;
+}
+.artifact-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.artifact-editor {
+  display: grid;
+  gap: 8px;
+}
+.artifact-editor.new {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-sunk);
+  margin-bottom: 8px;
+}
+.artifact-edit-textarea {
+  width: 100%;
+  min-height: 160px;
+  resize: vertical;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg-elev);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
+  outline: none;
+}
+.artifact-edit-textarea:focus { border-color: var(--ink-3); }
+.artifact-edit-actions {
+  display: flex;
+  gap: 6px;
 }
 .source-uri { font-size: 11px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
