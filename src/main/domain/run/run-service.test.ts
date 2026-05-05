@@ -374,6 +374,16 @@ describe('RunService', () => {
       }),
     };
     const runStepRepository = buildRunStepRepositoryMock();
+    const runVerificationRepository = {
+      upsert: vi.fn(),
+      listForRun: vi.fn(),
+    };
+    const runCheckpointRepository = {
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
+    const agentSessionRepository = {
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
     const service = new RunService(
       runRepository as never,
       taskService as never,
@@ -382,6 +392,10 @@ describe('RunService', () => {
       textExecutor as never,
       processTemplateSelector as never,
       runStepRepository as never,
+      null,
+      runCheckpointRepository as never,
+      agentSessionRepository as never,
+      runVerificationRepository as never,
     );
 
     const result = await service.trigger({
@@ -453,6 +467,12 @@ describe('RunService', () => {
       'run_step_2',
       expect.objectContaining({ status: 'completed', output: 'Generated output' }),
     );
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_1',
+      targetType: 'run',
+      targetId: 'run_1',
+      source: 'lightweight_rule_engine',
+    }));
     expect(result.status).toBe('completed');
   });
 
@@ -766,6 +786,10 @@ describe('RunService', () => {
       ]),
       updateStatus: vi.fn(),
     };
+    const runVerificationRepository = {
+      upsert: vi.fn(),
+      listForRun: vi.fn(),
+    };
     const service = new RunService(
       runRepository as never,
       taskService as never,
@@ -777,6 +801,7 @@ describe('RunService', () => {
       agentToolRegistry as never,
       runCheckpointRepository as never,
       agentSessionRepository as never,
+      runVerificationRepository as never,
     );
 
     const result = await service.continuePausedRun('run_1');
@@ -824,6 +849,12 @@ describe('RunService', () => {
       true,
       'run_1',
     );
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_1',
+      targetType: 'run',
+      targetId: 'run_1',
+      source: 'lightweight_rule_engine',
+    }));
     expect(artifactRepository.createFromRun).not.toHaveBeenCalled();
     expect(result.status).toBe('completed');
   });

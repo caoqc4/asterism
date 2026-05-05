@@ -157,6 +157,7 @@ export class RunService {
         Boolean(result.output?.trim()),
         completed.id,
       );
+      await this.persistTerminalRunVerifications(completed);
       return completed;
     }
 
@@ -189,6 +190,7 @@ export class RunService {
       result.message,
     );
     await this.taskService.annotateRunFailed(input.taskId, result.message, failed.id);
+    await this.persistTerminalRunVerifications(failed);
     return failed;
   }
 
@@ -240,6 +242,7 @@ export class RunService {
         result.error ?? result.summary,
       );
       await this.taskService.annotateRunFailed(run.taskId, result.error ?? result.summary, runId);
+      await this.persistTerminalRunVerifications(failed);
       return failed;
     }
 
@@ -265,8 +268,23 @@ export class RunService {
       Boolean((result.output ?? result.summary).trim()),
       runId,
     );
+    await this.persistTerminalRunVerifications(completed);
 
     return completed;
+  }
+
+  private async persistTerminalRunVerifications(run: RunRecord): Promise<void> {
+    if (!this.runVerificationRepository) return;
+
+    const detail: RunDetailRecord = {
+      ...run,
+      artifacts: await this.artifactRepository.listForRun(run.id),
+      steps: await this.runStepRepository.listForRun(run.id),
+      checkpoints: await this.runCheckpointRepository.listForRun(run.id),
+      agentSessions: await this.agentSessionStore.listForRun(run.id),
+    };
+
+    await this.ensureLightweightVerifications(detail);
   }
 
   private async annotateProcessTemplateSelection(
