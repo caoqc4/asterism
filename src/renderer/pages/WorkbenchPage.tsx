@@ -5,6 +5,14 @@ import type { SourceContextRecord } from '@shared/types/source-context';
 import type { ArtifactRecord, ArtifactKind } from '@shared/types/artifact';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import { recordSopTemplateHabit } from '../lib/workHabits';
+import {
+  defaultScheduleForType,
+  defaultTriggerForType,
+  getTaskAttributes,
+  saveTaskAttributes,
+  type TaskAttributeRecord,
+  type TaskExecutionType,
+} from '../lib/taskAttributes';
 
 type WorkbenchTab = 'runs' | 'sources' | 'artifacts' | 'activity';
 
@@ -13,6 +21,13 @@ const TAB_LABELS: Record<WorkbenchTab, string> = {
   sources:   '来源',
   artifacts: '产物',
   activity:  '活动',
+};
+
+const TASK_TYPE_LABELS: Record<TaskExecutionType, string> = {
+  simple:    '一次性',
+  project:   '项目型',
+  scheduled: '定时任务',
+  event:     '事件触发',
 };
 
 const LANE_LABELS: Record<string, string> = {
@@ -63,6 +78,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
   const [runFormRequest, setRunFormRequest] = useState(0);
   const [showCompletionCheck, setShowCompletionCheck] = useState(false);
   const [showSopExtract, setShowSopExtract] = useState(false);
+  const [taskAttrs, setTaskAttrs] = useState<TaskAttributeRecord | null>(() => getTaskAttributes(taskId));
 
   function loadRuns() {
     return window.api?.listRuns().then((all) => {
@@ -87,6 +103,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
     setDetail(null);
     setRuns([]);
     setActiveRunDetail(null);
+    setTaskAttrs(getTaskAttributes(taskId));
 
     const loadDetail = window.api?.getTaskDetail(taskId).then((d) => {
       if (d) setDetail(d);
@@ -197,15 +214,29 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
         {showEditPanel && detail && (
           <TaskEditPanel
             detail={detail}
+            attrs={taskAttrs}
             onSave={(patch) => {
               setDetail((d) => d ? { ...d, ...patch } : d);
               window.api?.updateTask({ id: taskId, ...patch }).catch(() => {});
               setShowEditPanel(false);
             }}
+            onSaveAttrs={(patch) => {
+              const nextAttrs = saveTaskAttributes(taskId, patch);
+              setTaskAttrs(nextAttrs);
+            }}
             onClose={() => setShowEditPanel(false)}
           />
         )}
       </div>
+
+      {taskAttrs && (taskAttrs.type !== 'simple' || taskAttrs.commitment) && (
+        <div className="workbench-config-strip">
+          <span className="tag">{TASK_TYPE_LABELS[taskAttrs.type]}</span>
+          {taskAttrs.schedule && <button className="workbench-config-pill">🔁 {taskAttrs.schedule}</button>}
+          {taskAttrs.trigger && <button className="workbench-config-pill">⚡ {taskAttrs.trigger}</button>}
+          {taskAttrs.commitment && <button className="workbench-config-pill">🤝 {taskAttrs.commitment}</button>}
+        </div>
+      )}
 
       {/* Resume Card */}
       <div className="resume-card">
@@ -948,19 +979,69 @@ function SopExtractModal({
 
 function TaskEditPanel({
   detail,
+  attrs,
   onSave,
+  onSaveAttrs,
   onClose,
 }: {
   detail: TaskDetail;
+  attrs: TaskAttributeRecord | null;
   onSave: (patch: { summary?: string | null; nextStep?: string | null; riskLevel?: 'none' | 'low' | 'medium' | 'high' }) => void;
+  onSaveAttrs: (patch: Partial<Omit<TaskAttributeRecord, 'taskId' | 'updatedAt'>>) => void;
   onClose: () => void;
 }) {
   const [summary, setSummary] = useState(detail.summary ?? '');
   const [nextStep, setNextStep] = useState(detail.nextStep ?? '');
   const [riskLevel, setRiskLevel] = useState(detail.riskLevel);
+  const [type, setType] = useState<TaskExecutionType>(attrs?.type ?? 'simple');
+  const [commitment, setCommitment] = useState(attrs?.commitment ?? '');
+  const [schedule, setSchedule] = useState(attrs?.schedule ?? defaultScheduleForType(attrs?.type ?? 'simple') ?? '');
+  const [trigger, setTrigger] = useState(attrs?.trigger ?? defaultTriggerForType(attrs?.type ?? 'simple') ?? '');
+
+  function updateType(nextType: TaskExecutionType) {
+    setType(nextType);
+    setSchedule((current) => current || defaultScheduleForType(nextType) || '');
+    setTrigger((current) => current || defaultTriggerForType(nextType) || '');
+  }
 
   return (
     <div className="task-edit-panel">
+      <div className="task-edit-row">
+        <label className="task-edit-label">任务类型</label>
+        <div className="task-edit-risk-row">
+          {(['simple', 'project', 'scheduled', 'event'] as TaskExecutionType[]).map((item) => (
+            <button
+              key={item}
+              className={`task-edit-risk-btn${type === item ? ' active' : ''}`}
+              onClick={() => updateType(item)}
+            >
+              {TASK_TYPE_LABELS[item]}
+            </button>
+          ))}
+        </div>
+      </div>
+      {type === 'scheduled' && (
+        <div className="task-edit-row">
+          <label className="task-edit-label">定时配置</label>
+          <input
+            className="settings-input"
+            value={schedule}
+            placeholder="例：每周一 09:00"
+            onChange={(e) => setSchedule(e.target.value)}
+          />
+        </div>
+      )}
+      {type === 'event' && (
+        <div className="task-edit-row">
+          <label className="task-edit-label">触发条件</label>
+          <input
+            className="settings-input"
+            value={trigger}
+            placeholder="例：Gmail 发件人包含 @brand-partner.com"
+            onChange={(e) => setTrigger(e.target.value)}
+          />
+        </div>
+      )}
       <div className="task-edit-row">
         <label className="task-edit-label">任务摘要</label>
         <textarea
@@ -981,15 +1062,12 @@ function TaskEditPanel({
         />
       </div>
       <div className="task-edit-row">
-        <label className="task-edit-label">
-          已承诺
-          <span className="settings-hint" style={{ marginLeft: 6, fontSize: 10 }}>即将支持</span>
-        </label>
+        <label className="task-edit-label">已承诺</label>
         <input
           className="settings-input"
-          disabled
+          value={commitment}
           placeholder="例：向客户承诺 3/20 前交付初稿"
-          title="即将支持"
+          onChange={(e) => setCommitment(e.target.value)}
         />
         <span className="settings-hint">填写后任务出现在「已承诺」视角，AI 将其视为高优先级</span>
       </div>
@@ -1010,7 +1088,15 @@ function TaskEditPanel({
       <div className="task-edit-actions">
         <button
           className="btn sm primary"
-          onClick={() => onSave({ summary: summary || null, nextStep: nextStep || null, riskLevel })}
+          onClick={() => {
+            onSaveAttrs({
+              type,
+              commitment,
+              schedule: type === 'scheduled' ? schedule : null,
+              trigger: type === 'event' ? trigger : null,
+            });
+            onSave({ summary: summary || null, nextStep: nextStep || null, riskLevel });
+          }}
         >
           保存
         </button>

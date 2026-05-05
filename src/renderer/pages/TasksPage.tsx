@@ -1,10 +1,19 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { TaskListItemRecord, TaskState } from '@shared/types/task';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
+import {
+  defaultScheduleForType,
+  defaultTriggerForType,
+  inferTaskExecutionType,
+  loadTaskAttributes,
+  saveTaskAttributes,
+  type TaskAttributeRecord,
+  type TaskExecutionType,
+} from '../lib/taskAttributes';
 
 type Lane = 'escalate' | 'unblock' | 'continue' | 'clarify' | 'steady';
 type TaskStatus = 'running' | 'waiting' | 'blocked' | 'idle' | 'done';
-type TaskType = 'project' | 'scheduled' | 'event' | 'simple';
+type TaskType = TaskExecutionType;
 type ViewMode = 'lane' | 'list' | 'timeline';
 
 interface Task {
@@ -17,6 +26,8 @@ interface Task {
   nextStep?: string;
   waitingOn?: string;
   commitment?: string;
+  schedule?: string;
+  trigger?: string;
   updatedAt: string;
   state: TaskState;
 }
@@ -73,16 +84,26 @@ function formatDate(iso: string): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
-function fromRecord(r: TaskListItemRecord): Task {
+const TASK_TYPE_LABELS: Record<TaskType, string> = {
+  simple:    '一次性',
+  project:   '项目',
+  scheduled: '定时',
+  event:     '事件',
+};
+
+function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): Task {
   return {
     id: r.id,
     title: r.title,
     lane: derivelane(r),
     status: deriveStatus(r),
-    type: 'simple',
+    type: attrs?.type ?? 'simple',
     whyNow: r.summary ?? undefined,
     nextStep: r.nextStep ?? undefined,
     waitingOn: r.waitingReason ? `等待：${r.waitingReason}` : undefined,
+    commitment: attrs?.commitment ?? undefined,
+    schedule: attrs?.schedule ?? undefined,
+    trigger: attrs?.trigger ?? undefined,
     updatedAt: formatDate(r.updatedAt),
     state: r.state,
   };
@@ -105,6 +126,8 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
 
   const [showCapture, setShowCapture] = useState(false);
   const [captureTitle, setCaptureTitle] = useState('');
+  const [captureType, setCaptureType] = useState<TaskType>('simple');
+  const [captureCommitment, setCaptureCommitment] = useState('');
   const [capturing, setCapturing] = useState(false);
   const [capturedId, setCapturedId] = useState<string | null>(null);
 
@@ -112,7 +135,8 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
 
   function reloadTasks() {
     window.api?.listTasks().then((records) => {
-      setAllTasks(records.map(fromRecord));
+      const attrs = loadTaskAttributes();
+      setAllTasks(records.map((record) => fromRecord(record, attrs[record.id])));
     }).catch(() => {});
   }
 
@@ -122,7 +146,8 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
     setLoading(true);
     window.api.listTasks()
       .then((records) => {
-        setAllTasks(records.map(fromRecord));
+        const attrs = loadTaskAttributes();
+        setAllTasks(records.map((record) => fromRecord(record, attrs[record.id])));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -210,21 +235,39 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
     setCapturing(true);
     try {
       let newId: string;
+      const selectedType = captureType;
       if (window.api) {
         const record = await window.api.createTask({ title });
         newId = record.id;
-        setAllTasks((prev) => [fromRecord({ ...record, activeBlocker: null, activeWaitingItem: null }), ...prev]);
+        const attrs = saveTaskAttributes(newId, {
+          type: selectedType,
+          commitment: captureCommitment,
+          schedule: defaultScheduleForType(selectedType),
+          trigger: defaultTriggerForType(selectedType),
+        });
+        setAllTasks((prev) => [fromRecord({ ...record, activeBlocker: null, activeWaitingItem: null }, attrs), ...prev]);
       } else {
         newId = `t-${Date.now()}`;
+        const attrs = saveTaskAttributes(newId, {
+          type: selectedType,
+          commitment: captureCommitment,
+          schedule: defaultScheduleForType(selectedType),
+          trigger: defaultTriggerForType(selectedType),
+        });
         const fake: Task = {
           id: newId, title, lane: 'clarify', status: 'idle',
-          type: 'simple',
+          type: attrs.type,
+          commitment: attrs.commitment ?? undefined,
+          schedule: attrs.schedule ?? undefined,
+          trigger: attrs.trigger ?? undefined,
           updatedAt: new Date().toLocaleDateString('zh'),
           state: 'captured',
         };
         setAllTasks((prev) => [fake, ...prev]);
       }
       setCaptureTitle('');
+      setCaptureType('simple');
+      setCaptureCommitment('');
       setShowCapture(false);
       setCapturedId(newId);
     } finally {
@@ -290,12 +333,33 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
               autoFocus
               placeholder="任务标题… (Enter 快速创建)"
               value={captureTitle}
-              onChange={(e) => setCaptureTitle(e.target.value)}
+              onChange={(e) => {
+                const nextTitle = e.target.value;
+                setCaptureTitle(nextTitle);
+                setCaptureType((current) => current === 'simple' ? inferTaskExecutionType(nextTitle) : current);
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void captureTask(); }
                 if (e.key === 'Escape') { setShowCapture(false); setCaptureTitle(''); }
               }}
             />
+            <div className="capture-type-row">
+              {(['simple', 'project', 'scheduled', 'event'] as TaskType[]).map((type) => (
+                <button
+                  key={type}
+                  className={`capture-type-btn${captureType === type ? ' active' : ''}`}
+                  onClick={() => setCaptureType(type)}
+                >
+                  {TASK_TYPE_LABELS[type]}
+                </button>
+              ))}
+              <input
+                className="capture-commitment-input"
+                placeholder="已承诺时间或对象（可选）"
+                value={captureCommitment}
+                onChange={(e) => setCaptureCommitment(e.target.value)}
+              />
+            </div>
             <div className="capture-actions">
               <button className={`btn sm primary${capturing ? ' disabled' : ''}`} onClick={() => void captureTask()} disabled={!captureTitle.trim() || capturing}>
                 {capturing ? '创建中…' : '创建'}
@@ -583,6 +647,12 @@ function TaskPreview({ task, onOpenWorkbench }: TaskPreviewProps) {
       <div className="task-preview-head">
         <span className={`tag lane-${task.lane}`}>{LANE_LABELS[task.lane]}</span>
         <h3 className="task-preview-title">{task.title}</h3>
+        <div className="task-preview-type-row">
+          <span className="tag">{TASK_TYPE_LABELS[task.type]}</span>
+          {task.type === 'project' && <span className="preview-type-hint">可在项目型 Lens 查看</span>}
+          {task.type === 'scheduled' && <span className="preview-type-hint">周期触发</span>}
+          {task.type === 'event' && <span className="preview-type-hint">监听外部条件</span>}
+        </div>
       </div>
 
       {task.whyNow && (
@@ -606,6 +676,26 @@ function TaskPreview({ task, onOpenWorkbench }: TaskPreviewProps) {
           <div className="preview-chip">
             <span className="dot waiting" />
             {task.waitingOn}
+          </div>
+        </div>
+      )}
+
+      {task.schedule && (
+        <div className="preview-section">
+          <div className="preview-label">定时配置</div>
+          <div className="preview-chip">
+            <span>🔁</span>
+            <span>{task.schedule}</span>
+          </div>
+        </div>
+      )}
+
+      {task.trigger && (
+        <div className="preview-section">
+          <div className="preview-label">触发条件</div>
+          <div className="preview-chip">
+            <span>⚡</span>
+            <span>{task.trigger}</span>
           </div>
         </div>
       )}

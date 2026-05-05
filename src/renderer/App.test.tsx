@@ -243,7 +243,7 @@ function createMockApi() {
       nextStep: '明天上午跟进法务',
     }),
   ];
-  const details = Object.fromEntries(tasks.map((task) => [task.id, buildTaskDetail(task)]));
+  const details: Record<string, TaskDetail> = Object.fromEntries(tasks.map((task) => [task.id, buildTaskDetail(task)]));
   const decisions = [
     buildDecision({ id: 'decision_pending', taskId: tasks[0]!.id }),
     buildDecision({ id: 'decision_done', taskId: tasks[1]!.id, status: 'approved' }),
@@ -260,13 +260,18 @@ function createMockApi() {
       featureFlags: input.featureFlags,
     })),
     listTasks: vi.fn().mockResolvedValue(tasks),
-    createTask: vi.fn().mockImplementation(async (input) => buildTask({
-      id: 'task_created',
-      title: input.title,
-      summary: input.summary ?? null,
-      state: 'captured',
-      nextStep: null,
-    })),
+    createTask: vi.fn().mockImplementation(async (input) => {
+      const created = buildTask({
+        id: 'task_created',
+        title: input.title,
+        summary: input.summary ?? null,
+        state: 'captured',
+        nextStep: null,
+      });
+      tasks.unshift(created);
+      details[created.id] = buildTaskDetail(created);
+      return created;
+    }),
     getTaskDetail: vi.fn().mockImplementation(async (taskId: string) => details[taskId] ?? null),
     updateTask: vi.fn().mockImplementation(async (input) => ({
       ...tasks[0]!,
@@ -492,6 +497,28 @@ describe('App redesign v1', () => {
         }),
       }));
     });
+  });
+
+  it('keeps task type and commitment lenses usable from capture through workbench config', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByRole('button', { name: '+ 新建任务' }));
+    await user.type(await screen.findByPlaceholderText(/任务标题/), '每周一准备经营周报');
+    expect(screen.getByRole('button', { name: '定时' }).className).toContain('active');
+    await user.type(screen.getByPlaceholderText(/已承诺时间/), '周五 17:00 前发给 CEO');
+    await user.click(screen.getByRole('button', { name: '创建' }));
+
+    await user.click(screen.getByRole('button', { name: /定时任务/ }));
+    expect(await screen.findByText('每周一准备经营周报')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /已承诺/ }));
+    expect(await screen.findByText('每周一准备经营周报')).toBeTruthy();
+
+    await user.dblClick(screen.getByText('每周一准备经营周报'));
+    expect(await screen.findByText('定时任务')).toBeTruthy();
+    expect(screen.getByText(/每周一 09:00/)).toBeTruthy();
+    expect(screen.getByText(/周五 17:00 前发给 CEO/)).toBeTruthy();
   });
 
   it('opens a task workbench and keeps Runs scoped under the task instead of global navigation', async () => {

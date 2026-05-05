@@ -1707,6 +1707,25 @@ a { color: inherit; text-decoration: none; }
   flex-shrink: 0;
   margin-top: 2px;
 }
+.workbench-config-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-sunk);
+  flex-wrap: wrap;
+}
+.workbench-config-pill {
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-elev);
+  color: var(--ink-2);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
 
 /* Resume Card */
 .resume-card {
@@ -2231,6 +2250,43 @@ a { color: inherit; text-decoration: none; }
   width: 100%;
 }
 .capture-input::placeholder { color: var(--ink-3); font-weight: 400; }
+.capture-type-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(54px, max-content)) minmax(180px, 1fr);
+  align-items: center;
+  gap: 6px;
+}
+.capture-type-btn {
+  min-height: 26px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg-elev);
+  color: var(--ink-3);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.capture-type-btn:hover {
+  border-color: var(--line-strong);
+  color: var(--ink-2);
+}
+.capture-type-btn.active {
+  border-color: var(--blue-line);
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-weight: 500;
+}
+.capture-commitment-input {
+  min-width: 0;
+  height: 26px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg-elev);
+  color: var(--ink);
+  font-size: 12px;
+}
+.capture-commitment-input::placeholder { color: var(--ink-4); }
 .capture-actions { display: flex; gap: 6px; align-items: center; }
 .capture-ai-hint { font-size: 11px; margin-left: 4px; }
 
@@ -2361,6 +2417,16 @@ a { color: inherit; text-decoration: none; }
   color: var(--ink);
   line-height: 1.35;
   letter-spacing: -0.01em;
+}
+.task-preview-type-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.preview-type-hint {
+  color: var(--ink-3);
+  font-size: 11px;
 }
 
 .preview-section {
