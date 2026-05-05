@@ -362,6 +362,9 @@ export function ContextPage() {
                   ) : (
                     <div className="ctx-habit-obs">{h.rule}</div>
                   )}
+                  {h.examples.includes('观察窗口') && (
+                    <div className="ctx-habit-observation">跨任务观察窗口 · 累计 {h.applicationCount} 次</div>
+                  )}
                   <div className="ctx-habit-examples muted">{h.examples}</div>
                   {conflict && (
                     <div className="ctx-habit-conflict">

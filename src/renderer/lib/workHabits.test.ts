@@ -8,6 +8,7 @@ import {
   findWorkHabitConflict,
   getWorkHabitStorageSnapshot,
   loadWorkHabits,
+  recordCompletionOverrideLearningSignal,
   resolveWorkHabitConflict,
   saveWorkHabits,
   selectApplicableWorkHabits,
@@ -155,6 +156,37 @@ describe('work habit conflict handling', () => {
   it('describes the work habit privacy boundary for Context', () => {
     expect(describeWorkHabitStorageBoundary().join('\n')).toContain('仅保存在本机');
     expect(describeWorkHabitStorageBoundary().join('\n')).toContain('不保存：聊天消息全文');
+  });
+
+  it('aggregates repeated completion overrides into a cross-task observation window', () => {
+    recordCompletionOverrideLearningSignal({
+      taskId: 'task_a',
+      taskTitle: '董事会材料修订',
+      reason: '完成检查未通过：仍有 1 条完成标准未满足',
+    });
+    recordCompletionOverrideLearningSignal({
+      taskId: 'task_b',
+      taskTitle: '官网改版方案',
+      reason: '完成检查未通过：仍有 2 条完成标准未满足',
+    });
+    recordCompletionOverrideLearningSignal({
+      taskId: 'task_c',
+      taskTitle: '周报发送',
+      reason: '完成检查需要补充完成标准',
+    });
+
+    const pattern = loadWorkHabits().find((habit) => habit.id === 'habit_pattern_completion_override');
+
+    expect(pattern).toMatchObject({
+      source: 'proposal',
+      scope: 'task_type',
+      scopeLabel: '任务完成',
+      status: 'pending',
+      applicationCount: 3,
+    });
+    expect(pattern?.rule).toContain('跨任务观察');
+    expect(pattern?.examples).toContain('董事会材料修订');
+    expect(pattern?.examples).toContain('周报发送');
   });
 });
 

@@ -33,6 +33,8 @@ export type WorkHabitConflict = {
 
 const STORAGE_KEY = 'taskplane.workHabits.v1';
 const STORAGE_VERSION = 2;
+const COMPLETION_OVERRIDE_PATTERN_ID = 'habit_pattern_completion_override';
+const PATTERN_CONFIRMATION_THRESHOLD = 3;
 const PRIVACY_BOUNDARY: WorkHabitStorageSnapshot['privacyBoundary'] = {
   locality: 'device_only',
   contains: [
@@ -260,7 +262,7 @@ export function recordCompletionOverrideLearningSignal(params: {
     applicationCount: 1,
   };
 
-  const next: WorkHabitRecord[] = existing.some((habit) => habit.id === id)
+  const withTaskHabit: WorkHabitRecord[] = existing.some((habit) => habit.id === id)
     ? existing.map((habit) => habit.id === id
       ? {
           ...habit,
@@ -272,7 +274,50 @@ export function recordCompletionOverrideLearningSignal(params: {
       : habit)
     : [nextHabit, ...existing];
 
-  saveWorkHabits(next);
+  saveWorkHabits(recordCompletionOverridePattern(withTaskHabit, {
+    now,
+    taskTitle: params.taskTitle,
+    reason: params.reason,
+  }));
+}
+
+function recordCompletionOverridePattern(
+  habits: WorkHabitRecord[],
+  params: { now: string; taskTitle: string; reason: string },
+): WorkHabitRecord[] {
+  const existing = habits.find((habit) => habit.id === COMPLETION_OVERRIDE_PATTERN_ID);
+  const example = `观察窗口：${params.taskTitle} / ${params.reason}`;
+  if (!existing) {
+    return [
+      {
+        id: COMPLETION_OVERRIDE_PATTERN_ID,
+        rule: '多次任务完成时覆盖未满足的完成检查',
+        source: 'proposal',
+        scope: 'task_type',
+        scopeLabel: '任务完成',
+        status: 'pending',
+        examples: example,
+        createdAt: params.now,
+        lastAppliedAt: params.now,
+        applicationCount: 1,
+      },
+      ...habits,
+    ];
+  }
+
+  const nextCount = existing.applicationCount + 1;
+  return habits.map((habit) => habit.id === COMPLETION_OVERRIDE_PATTERN_ID
+    ? {
+        ...habit,
+        rule: nextCount >= PATTERN_CONFIRMATION_THRESHOLD
+          ? '跨任务观察：你经常会在完成检查未全部满足时主动确认够用'
+          : habit.rule,
+        examples: `${existing.examples} / ${example}`,
+        lastAppliedAt: params.now,
+        applicationCount: nextCount,
+        status: habit.status === 'disabled' ? habit.status : 'pending' as WorkHabitStatus,
+      }
+    : habit);
 }
 
 export function recordSopTemplateHabit(params: {

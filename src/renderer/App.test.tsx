@@ -12,7 +12,7 @@ import type { AiConfigStatus } from '@shared/types/settings';
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import type { TaskDependencyRecord } from '@shared/types/task-dependency';
 import { App } from './App';
-import { saveWorkHabits, type WorkHabitRecord } from './lib/workHabits';
+import { recordCompletionOverrideLearningSignal, saveWorkHabits, type WorkHabitRecord } from './lib/workHabits';
 
 const now = '2026-01-01T00:00:00.000Z';
 
@@ -799,6 +799,31 @@ describe('App redesign v1', () => {
     expect(screen.getByText('董事会材料')).toBeTruthy();
     await user.click(screen.getByText('董事会材料发出前先更新现金流页'));
     expect(await screen.findByText('优先级：中 · 任务类型规则')).toBeTruthy();
+  });
+
+  it('surfaces repeated completion overrides as a cross-task observation in Context', async () => {
+    const user = userEvent.setup();
+    recordCompletionOverrideLearningSignal({
+      taskId: 'task_override_a',
+      taskTitle: '董事会材料修订',
+      reason: '完成检查未通过：仍有 1 条完成标准未满足',
+    });
+    recordCompletionOverrideLearningSignal({
+      taskId: 'task_override_b',
+      taskTitle: '官网改版方案',
+      reason: '完成检查未通过：仍有 2 条完成标准未满足',
+    });
+    recordCompletionOverrideLearningSignal({
+      taskId: 'task_override_c',
+      taskTitle: '周报发送',
+      reason: '完成检查需要补充完成标准',
+    });
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Context/ }));
+
+    expect(await screen.findByText(/跨任务观察：你经常会在完成检查未全部满足时主动确认够用/)).toBeTruthy();
+    expect(screen.getByText('跨任务观察窗口 · 累计 3 次')).toBeTruthy();
   });
 
   it('opens a task workbench and keeps Runs scoped under the task instead of global navigation', async () => {

@@ -1264,6 +1264,15 @@ a { color: inherit; text-decoration: none; }
 }
 .ctx-habit-obs { font-size: 13px; color: var(--ink); line-height: 1.4; }
 .ctx-habit-examples { font-size: 11.5px; }
+.ctx-habit-observation {
+  width: fit-content;
+  padding: 3px 7px;
+  border: 1px solid var(--blue-line);
+  border-radius: 6px;
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-size: 11px;
+}
 .ctx-habit-conflict {
   width: fit-content;
   max-width: 100%;
