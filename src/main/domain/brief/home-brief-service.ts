@@ -1,4 +1,5 @@
 import { RunRepository } from '../../db/repositories/run-repository.js';
+import type { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
 import { BriefSnapshotRepository } from '../../db/repositories/brief-snapshot-repository.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { SchedulerService } from '../../scheduler/scheduler-service.js';
@@ -13,7 +14,7 @@ import type {
 } from '../../../shared/types/brief.js';
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import type { DecisionRecord } from '../../../shared/types/decision.js';
-import type { RunRecord } from '../../../shared/types/run.js';
+import type { RunRecord, RunVerificationRecord } from '../../../shared/types/run.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
 import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
@@ -64,6 +65,18 @@ const LANE_ORDER: Record<PriorityLane, number> = {
   clarify: 3,
   steady: 4,
 };
+
+function pickRunVerification(
+  runId: string,
+  verifications: RunVerificationRecord[],
+): RunVerificationRecord | null {
+  return verifications.find((item) => item.targetType === 'run' && item.targetId === runId) ?? null;
+}
+
+function formatRunVerificationResumeSummary(verification: RunVerificationRecord): string {
+  const prefix = verification.tone === 'pass' ? '验证结论' : '验证提醒';
+  return `${prefix}：${verification.label}，${verification.detail}`;
+}
 
 function buildRecommendedActions(params: {
   activeTasks: HomeBriefData['recentTasks'];
@@ -557,6 +570,7 @@ export class HomeBriefService {
     private readonly taskProcessBindingRepository: TaskProcessBindingRepository | null = null,
     private readonly taskDependencyRepository: TaskDependencyRepository | null = null,
     private readonly completionCriteriaRepository: CompletionCriteriaRepository | null = null,
+    private readonly runVerificationRepository: Pick<RunVerificationRepository, 'listForRun'> | null = null,
   ) {}
 
   private async buildCompletionProgressMap(taskIds: string[]): Promise<
@@ -620,6 +634,32 @@ export class HomeBriefService {
     }
 
     return progressByTaskId;
+  }
+
+  private async buildRunVerificationSummaryMap(
+    runs: Awaited<ReturnType<RunRepository['list']>>,
+  ): Promise<Map<string, string>> {
+    const summaryByRunId = new Map<string, string>();
+
+    if (!this.runVerificationRepository) {
+      return summaryByRunId;
+    }
+
+    const runVerificationRepository = this.runVerificationRepository;
+    await Promise.all(
+      runs
+        .filter((run) => run.status === 'completed' || run.status === 'failed')
+        .slice(0, 20)
+        .map(async (run) => {
+          const verifications = await runVerificationRepository.listForRun(run.id);
+          const runVerification = pickRunVerification(run.id, verifications);
+          if (runVerification) {
+            summaryByRunId.set(run.id, formatRunVerificationResumeSummary(runVerification));
+          }
+        }),
+    );
+
+    return summaryByRunId;
   }
 
   private withCompletionProgress(
@@ -754,6 +794,7 @@ export class HomeBriefService {
     recentSourceContexts: HomeSourceContextRecord[];
     appliedTemplates: Awaited<ReturnType<TaskProcessBindingRepository['listActiveForTasks']>>;
     laneByTaskId: Map<string, PriorityLane>;
+    runVerificationSummaryByRunId: Map<string, string>;
   }): Promise<HomeTaskResumePreviewRecord[]> {
     const activityByTaskId = new Map<string, HomeActivityRecord>();
 
@@ -813,6 +854,9 @@ export class HomeBriefService {
           : null,
         taskState: task.state,
         completionStatus: task.completionProgress ?? null,
+        runVerificationSummary: latestActivity?.sourceType === 'run'
+          ? params.runVerificationSummaryByRunId.get(latestActivity.sourceId) ?? null
+          : null,
       });
 
       const nextSuggestedMove = deriveNextSuggestedMove({
@@ -1481,6 +1525,7 @@ export class HomeBriefService {
     const completionProgressByTaskId = await this.buildCompletionProgressMap(
       activeTasks.map((task) => task.id),
     );
+    const runVerificationSummaryByRunId = await this.buildRunVerificationSummaryMap(runs);
     const closeoutEvidenceByTaskId = this.buildCloseoutEvidenceMap({
       tasks: activeTasks,
       decisions,
@@ -1532,6 +1577,7 @@ export class HomeBriefService {
       recentSourceContexts,
       appliedTemplates,
       laneByTaskId,
+      runVerificationSummaryByRunId,
     });
     const recommendedActions = buildRecommendedActions({
       activeTasks: activeTasks.slice(0, 10),

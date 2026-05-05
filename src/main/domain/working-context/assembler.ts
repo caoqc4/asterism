@@ -605,12 +605,21 @@ export function buildHomeResumeLatestChange(params: {
   activeDependency?: { blockedByTaskTitle: string | null } | null;
   taskState?: TaskState;
   completionStatus?: CompletionStatusLite | null;
+  runVerificationSummary?: string | null;
 }): {
   summary: string;
   action: HomeTaskResumePreviewRecord['latestChange']['action'];
   recentChange: WorkingContextRecentChange | null;
 } {
-  const { latestActivity, keySource, activeBlocker, activeDependency, taskState, completionStatus } = params;
+  const {
+    latestActivity,
+    keySource,
+    activeBlocker,
+    activeDependency,
+    taskState,
+    completionStatus,
+    runVerificationSummary,
+  } = params;
 
   if (latestActivity) {
     if (latestActivity.sourceType === 'task') {
@@ -693,11 +702,13 @@ export function buildHomeResumeLatestChange(params: {
       };
     }
 
+    const runSummary =
+      latestActivity.status === 'completed' && isCloseoutCompletionProgress(completionStatus)
+        ? `最近执行动态：${latestActivity.title} · ${latestActivity.status}，这可能说明某些完成标准已具备`
+        : `最近执行动态：${latestActivity.title} · ${latestActivity.status}`;
+
     return {
-      summary:
-        latestActivity.status === 'completed' && isCloseoutCompletionProgress(completionStatus)
-          ? `最近执行动态：${latestActivity.title} · ${latestActivity.status}，这可能说明某些完成标准已具备`
-          : `最近执行动态：${latestActivity.title} · ${latestActivity.status}`,
+      summary: runVerificationSummary ? `${runSummary}；${runVerificationSummary}` : runSummary,
       action: {
         label: '查看 Run',
         targetType: 'run',

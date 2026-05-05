@@ -4,7 +4,7 @@ import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { BlockerRecord } from '../../../shared/types/blocker.js';
 import type { DecisionRecord } from '../../../shared/types/decision.js';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
-import type { RunRecord } from '../../../shared/types/run.js';
+import type { RunRecord, RunVerificationRecord } from '../../../shared/types/run.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import type { TaskDependencyRecord } from '../../../shared/types/task-dependency.js';
 import type { TaskListItemRecord } from '../../../shared/types/task.js';
@@ -100,6 +100,21 @@ function buildRun(partial: Partial<RunRecord>): RunRecord {
     output: partial.output ?? null,
     outputSource: partial.outputSource ?? null,
     failureReason: partial.failureReason ?? null,
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+  };
+}
+
+function buildRunVerification(partial: Partial<RunVerificationRecord>): RunVerificationRecord {
+  return {
+    id: partial.id ?? 'run_verification_1',
+    runId: partial.runId ?? 'run_1',
+    targetType: partial.targetType ?? 'run',
+    targetId: partial.targetId ?? partial.runId ?? 'run_1',
+    tone: partial.tone ?? 'pass',
+    label: partial.label ?? 'Run 验证通过',
+    detail: partial.detail ?? '执行结果已有输出或步骤证据，可进入人工审查。',
+    source: partial.source ?? 'lightweight_rule_engine',
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
   };
@@ -1269,6 +1284,70 @@ describe('HomeBriefService', () => {
       'run:run_failed_after_capture',
       'task:task_captured_run_failed:2026-01-01T00:00:00.000Z',
     ]);
+  });
+
+  it('includes recent run verification in home resume preview latest change', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_run_verified',
+            title: 'Run verified task',
+            state: 'planned',
+            nextStep: 'Review verified output',
+            updatedAt: '2026-01-02T00:00:00.000Z',
+          }),
+        ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      null as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([
+          buildRun({
+            id: 'run_verified',
+            taskId: 'task_run_verified',
+            status: 'completed',
+            type: 'agent',
+            updatedAt: '2026-01-03T00:00:00.000Z',
+          }),
+        ]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+      null,
+      null,
+      null,
+      {
+        listForRun: vi.fn().mockResolvedValue([
+          buildRunVerification({
+            runId: 'run_verified',
+            targetId: 'run_verified',
+            label: 'Run 验证通过',
+            detail: '执行结果已有输出或步骤证据，可进入人工审查。',
+          }),
+        ]),
+      } as never,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.recentTaskResumes[0]?.latestChange.summary).toBe(
+      '最近执行动态：agent · completed；验证结论：Run 验证通过，执行结果已有输出或步骤证据，可进入人工审查。',
+    );
   });
 
   it('prioritizes the latest lifecycle change when deriving home resume preview suggestions', async () => {

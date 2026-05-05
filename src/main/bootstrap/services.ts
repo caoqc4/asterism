@@ -70,6 +70,7 @@ const homeBriefService = new HomeBriefService(
   taskProcessBindingRepository,
   taskDependencyRepository,
   completionCriteriaRepository,
+  runVerificationRepository,
 );
 const textExecutor = new TextExecutor();
 const briefExecutor = new BriefExecutor();
