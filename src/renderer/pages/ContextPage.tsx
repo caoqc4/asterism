@@ -1,27 +1,13 @@
 import { useState, useEffect } from 'react';
 import type { TaskListItemRecord } from '@shared/types/task';
-
-interface HabitRecord {
-  id: string;
-  observation: string;
-  examples: string;
-  confirmed: boolean | null;
-}
-
-const SEED_HABITS: HabitRecord[] = [
-  {
-    id: 'h1',
-    observation: '回复合作邮件前总会先确认对方微信上是否有同步沟通',
-    examples: '品牌合作来信（3 次）、投资人跟进（2 次）',
-    confirmed: true,
-  },
-  {
-    id: 'h2',
-    observation: '数据报告初稿完成后习惯先内部评审再对外发送',
-    examples: 'Q1 财报、用户调研报告',
-    confirmed: null,
-  },
-];
+import {
+  deleteWorkHabit,
+  loadWorkHabits,
+  updateWorkHabit,
+  type WorkHabitRecord,
+  type WorkHabitSource,
+  type WorkHabitStatus,
+} from '../lib/workHabits';
 
 function deriveLane(t: TaskListItemRecord): string {
   if (t.riskLevel === 'high') return 'escalate';
@@ -36,13 +22,30 @@ function formatDate(iso: string): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
+function sourceLabel(source: WorkHabitSource): string {
+  if (source === 'silent') return '静默积累';
+  if (source === 'proposal') return '提议确认';
+  if (source === 'sop') return 'SOP 提取';
+  return '用户创建';
+}
+
+function statusLabel(status: WorkHabitStatus): string {
+  if (status === 'confirmed') return '已确认';
+  if (status === 'disabled') return '已停用';
+  return '待确认';
+}
+
 export function ContextPage() {
   const [tasks, setTasks] = useState<TaskListItemRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
-  const [habits, setHabits] = useState<HabitRecord[]>(SEED_HABITS);
+  const [habits, setHabits] = useState<WorkHabitRecord[]>([]);
+  const [expandedHabit, setExpandedHabit] = useState<string | null>(null);
+  const [editingHabit, setEditingHabit] = useState<string | null>(null);
+  const [habitDraft, setHabitDraft] = useState('');
 
   useEffect(() => {
+    setHabits(loadWorkHabits());
     if (!window.api) { setLoading(false); return; }
     window.api.listTasks()
       .then((all) => {
@@ -55,12 +58,26 @@ export function ContextPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  function confirmHabit(id: string, confirmed: boolean) {
-    setHabits((prev) => prev.map((h) => h.id === id ? { ...h, confirmed } : h));
+  function updateHabitStatus(id: string, status: WorkHabitStatus) {
+    setHabits(updateWorkHabit(id, { status }));
   }
 
   function deleteHabit(id: string) {
-    setHabits((prev) => prev.filter((h) => h.id !== id));
+    setHabits(deleteWorkHabit(id));
+    setExpandedHabit((current) => current === id ? null : current);
+  }
+
+  function startEditingHabit(habit: WorkHabitRecord) {
+    setEditingHabit(habit.id);
+    setHabitDraft(habit.rule);
+  }
+
+  function saveHabitEdit(id: string) {
+    const rule = habitDraft.trim();
+    if (!rule) return;
+    setHabits(updateWorkHabit(id, { rule }));
+    setEditingHabit(null);
+    setHabitDraft('');
   }
 
   return (
@@ -142,27 +159,71 @@ export function ContextPage() {
         </div>
 
         <div className="ctx-list">
-          {habits.map((h) => (
-            <div key={h.id} className={`ctx-habit-row${h.confirmed === null ? ' unconfirmed' : ''}`}>
-              <div className="ctx-habit-main">
-                <div className="ctx-habit-obs">{h.observation}</div>
-                <div className="ctx-habit-examples muted">{h.examples}</div>
-              </div>
-              <div className="ctx-habit-verdict">
-                {h.confirmed === true && <span className="habit-badge confirmed">已确认</span>}
-                {h.confirmed === false && <span className="habit-badge rejected">已纠正</span>}
-                {h.confirmed === null && (
-                  <div className="habit-actions">
-                    <button className="btn sm primary" onClick={() => confirmHabit(h.id, true)}>确认</button>
-                    <button className="btn sm ghost" onClick={() => confirmHabit(h.id, false)}>不准确</button>
+          {habits.map((h) => {
+            const isExpanded = expandedHabit === h.id;
+            const isEditing = editingHabit === h.id;
+            return (
+              <div key={h.id} className={`ctx-habit-row${h.status === 'pending' ? ' unconfirmed' : ''}`}>
+                <div
+                  className="ctx-habit-main"
+                  onClick={() => setExpandedHabit((current) => current === h.id ? null : h.id)}
+                >
+                  {isEditing ? (
+                    <input
+                      className="settings-input"
+                      value={habitDraft}
+                      autoFocus
+                      onChange={(e) => setHabitDraft(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveHabitEdit(h.id);
+                        if (e.key === 'Escape') setEditingHabit(null);
+                      }}
+                    />
+                  ) : (
+                    <div className="ctx-habit-obs">{h.rule}</div>
+                  )}
+                  <div className="ctx-habit-examples muted">{h.examples}</div>
+                  <div className="ctx-habit-meta">
+                    <span className="habit-chip">{sourceLabel(h.source)}</span>
+                    <span className="habit-chip">{h.scopeLabel}</span>
+                    <span className={`habit-chip status-${h.status}`}>{statusLabel(h.status)}</span>
+                    <span className="muted">应用 {h.applicationCount} 次</span>
+                    <span className="muted">{formatDate(h.lastAppliedAt ?? h.createdAt)}</span>
                   </div>
+                  {isExpanded && (
+                    <div className="ctx-habit-detail">
+                      <div>创建：{new Date(h.createdAt).toLocaleString('zh')}</div>
+                      <div>最近应用：{h.lastAppliedAt ? new Date(h.lastAppliedAt).toLocaleString('zh') : '尚未应用'}</div>
+                    </div>
+                  )}
+                </div>
+                <div className="ctx-habit-verdict">
+                  {h.status === 'confirmed' && <span className="habit-badge confirmed">已确认</span>}
+                  {h.status === 'disabled' && <span className="habit-badge rejected">已停用</span>}
+                  {h.status === 'pending' && (
+                    <div className="habit-actions">
+                      <button className="btn sm primary" onClick={() => updateHabitStatus(h.id, 'confirmed')}>确认</button>
+                      <button className="btn sm ghost" onClick={() => updateHabitStatus(h.id, 'disabled')}>不准确</button>
+                    </div>
+                  )}
+                  {h.status !== 'pending' && (
+                    <button className="btn sm ghost" onClick={() => updateHabitStatus(h.id, h.status === 'disabled' ? 'confirmed' : 'disabled')}>
+                      {h.status === 'disabled' ? '启用' : '停用'}
+                    </button>
+                  )}
+                </div>
+                {isEditing ? (
+                  <button className="btn sm ghost" onClick={() => saveHabitEdit(h.id)}>保存</button>
+                ) : (
+                  <button className="btn sm ghost" onClick={() => startEditingHabit(h)}>编辑</button>
                 )}
+                <button className="ctx-habit-del icon-btn" onClick={() => deleteHabit(h.id)} title="删除">
+                  <IconTrash />
+                </button>
               </div>
-              <button className="ctx-habit-del icon-btn" onClick={() => deleteHabit(h.id)} title="删除">
-                <IconTrash />
-              </button>
-            </div>
-          ))}
+            );
+          })}
           {habits.length === 0 && (
             <div className="ctx-empty">AI 还没有观察到明显的工作习惯规律。</div>
           )}

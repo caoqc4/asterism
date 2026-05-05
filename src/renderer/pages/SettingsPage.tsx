@@ -6,6 +6,9 @@ const DEFAULT_FLAGS = {
   enableProviderNativeToolCalls: true,
   enableSandboxCodingAgent: false,
   enableSandboxPatchPromotionApply: false,
+  enableSelfCheck: true,
+  enableSelfLearn: true,
+  contextCompressionThreshold: 45,
 };
 
 export function SettingsPage() {
@@ -18,7 +21,12 @@ export function SettingsPage() {
 
   useEffect(() => {
     if (!window.api) return;
-    window.api.getAiConfigStatus().then((s) => setStatus(s)).catch(() => {});
+    window.api.getAiConfigStatus().then((s) => {
+      setStatus(s);
+      setSelfCheck(s.featureFlags.enableSelfCheck ?? true);
+      setSelfLearn(s.featureFlags.enableSelfLearn ?? true);
+      setCtxCompress(s.featureFlags.contextCompressionThreshold ?? 45);
+    }).catch(() => {});
   }, []);
 
   async function save() {
@@ -31,7 +39,10 @@ export function SettingsPage() {
         model: status?.model ?? 'google/gemini-2.5-flash',
         featureFlags: {
           ...DEFAULT_FLAGS,
-          enableProviderNativeToolCalls: selfCheck,
+          ...(status?.featureFlags ?? {}),
+          enableSelfCheck: selfCheck,
+          enableSelfLearn: selfLearn,
+          contextCompressionThreshold: ctxCompress,
         },
       });
       setStatus(next);

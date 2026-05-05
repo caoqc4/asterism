@@ -9,6 +9,9 @@ export type FeatureFlags = {
   enableProviderNativeToolCalls?: boolean;
   enableSandboxCodingAgent?: boolean;
   enableSandboxPatchPromotionApply?: boolean;
+  enableSelfCheck?: boolean;
+  enableSelfLearn?: boolean;
+  contextCompressionThreshold?: number;
 };
 
 export type AppConfigFile = {
@@ -48,7 +51,7 @@ export type AiConfigStatus = {
   configured: boolean;
   apiKeyStored: boolean;
   apiKeySource: 'keychain' | 'env' | null;
-  configuredProviders: AiProvider[];
+  configuredProviders?: AiProvider[];
   codeAgentWorkspaceChecks?: {
     lint: { available: boolean; reason: string };
     test: { available: boolean; reason: string };

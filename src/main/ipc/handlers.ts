@@ -301,9 +301,27 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('ai:chat', async (_event, input: ChatInput) => {
     const config = await getServices().aiConfigService.resolveRuntimeConfig();
     const model = getLanguageModel(config);
+    const task = input.taskId
+      ? await getServices().taskService.getDetail(input.taskId).catch(() => null)
+      : null;
+    const taskContext = task
+      ? [
+          `Task title: ${task.title}`,
+          `State: ${task.state}`,
+          `Risk: ${task.riskLevel}${task.riskNote ? ` (${task.riskNote})` : ''}`,
+          `Summary: ${task.summary ?? 'none'}`,
+          `Next step: ${task.nextStep ?? 'none'}`,
+          `Waiting reason: ${task.waitingReason ?? task.activeWaitingItem?.reason ?? 'none'}`,
+          `Active blocker: ${task.activeBlocker?.title ?? 'none'}`,
+          `Resume: ${task.resumeCard.summary}`,
+          `Suggested move: ${task.resumeCard.nextSuggestedMove}`,
+          `Key sources: ${task.sourceContexts.slice(0, 3).map((s) => s.title).join(', ') || 'none'}`,
+          `Recent activity: ${task.timeline.slice(-5).map((e) => `${e.type}${e.payload ? `=${e.payload}` : ''}`).join(' / ') || 'none'}`,
+        ].join('\n')
+      : null;
 
     const systemPrompt = input.taskId
-      ? `You are a helpful AI assistant inside Taskplane, a task management tool. The user is asking about task ID: ${input.taskId}. Help them understand status, next steps, and risks. Be concise and actionable. Reply in the same language as the user's message (Chinese or English).`
+      ? `You are a helpful AI assistant inside Taskplane, a task management tool. The user is asking about a specific task. Use the persisted task context below as the source of truth. Help them understand status, next steps, and risks. Be concise and actionable. Reply in the same language as the user's message (Chinese or English).\n\n${taskContext ?? `Task ID: ${input.taskId}`}`
       : `You are a helpful AI assistant inside Taskplane, a task management tool. You have a global view of all tasks. Help the user prioritize, plan, and think through their work. Be concise and actionable. Reply in the same language as the user's message (Chinese or English).`;
 
     const result = await generateText({

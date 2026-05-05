@@ -10,6 +10,9 @@ const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   enableProviderNativeToolCalls: false,
   enableSandboxCodingAgent: false,
   enableSandboxPatchPromotionApply: false,
+  enableSelfCheck: true,
+  enableSelfLearn: true,
+  contextCompressionThreshold: 45,
 };
 
 const DEFAULT_CONFIG: AppConfigFile = {
@@ -87,6 +90,21 @@ function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
         typeof nextFeatureFlags.enableSandboxPatchPromotionApply === 'boolean'
           ? nextFeatureFlags.enableSandboxPatchPromotionApply
           : DEFAULT_FEATURE_FLAGS.enableSandboxPatchPromotionApply,
+      enableSelfCheck:
+        typeof nextFeatureFlags.enableSelfCheck === 'boolean'
+          ? nextFeatureFlags.enableSelfCheck
+          : DEFAULT_FEATURE_FLAGS.enableSelfCheck,
+      enableSelfLearn:
+        typeof nextFeatureFlags.enableSelfLearn === 'boolean'
+          ? nextFeatureFlags.enableSelfLearn
+          : DEFAULT_FEATURE_FLAGS.enableSelfLearn,
+      contextCompressionThreshold:
+        typeof nextFeatureFlags.contextCompressionThreshold === 'number'
+          && Number.isFinite(nextFeatureFlags.contextCompressionThreshold)
+          && nextFeatureFlags.contextCompressionThreshold >= 30
+          && nextFeatureFlags.contextCompressionThreshold <= 70
+          ? nextFeatureFlags.contextCompressionThreshold
+          : DEFAULT_FEATURE_FLAGS.contextCompressionThreshold,
     },
     updatedAt: input.updatedAt ?? new Date().toISOString(),
   };
@@ -101,6 +119,15 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
   const enableProviderNativeToolCalls = readEnvBoolean('TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS');
   const enableSandboxCodingAgent = readEnvBoolean('TASKPLANE_ENABLE_SANDBOX_CODING_AGENT');
   const enableSandboxPatchPromotionApply = readEnvBoolean('TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY');
+  const enableSelfCheck = readEnvBoolean('TASKPLANE_ENABLE_SELF_CHECK');
+  const enableSelfLearn = readEnvBoolean('TASKPLANE_ENABLE_SELF_LEARN');
+  const contextCompressionThresholdRaw = readEnvValue('TASKPLANE_CONTEXT_COMPRESSION_THRESHOLD');
+  const contextCompressionThreshold = contextCompressionThresholdRaw
+    ? Number(contextCompressionThresholdRaw)
+    : undefined;
+  const safeContextCompressionThreshold = Number.isFinite(contextCompressionThreshold)
+    ? contextCompressionThreshold
+    : undefined;
 
   return sanitizeConfig({
     ...config,
@@ -123,6 +150,19 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
         enableSandboxPatchPromotionApply
         ?? config.featureFlags.enableSandboxPatchPromotionApply
         ?? DEFAULT_FEATURE_FLAGS.enableSandboxPatchPromotionApply,
+      enableSelfCheck:
+        enableSelfCheck
+        ?? config.featureFlags.enableSelfCheck
+        ?? DEFAULT_FEATURE_FLAGS.enableSelfCheck,
+      enableSelfLearn:
+        enableSelfLearn
+        ?? config.featureFlags.enableSelfLearn
+        ?? DEFAULT_FEATURE_FLAGS.enableSelfLearn,
+      contextCompressionThreshold:
+        safeContextCompressionThreshold !== undefined
+          ? safeContextCompressionThreshold
+          : config.featureFlags.contextCompressionThreshold
+            ?? DEFAULT_FEATURE_FLAGS.contextCompressionThreshold,
     },
   });
 }

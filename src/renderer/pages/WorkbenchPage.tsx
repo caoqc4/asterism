@@ -3,6 +3,8 @@ import type { TaskDetail } from '@shared/types/task';
 import type { RunRecord, RunDetailRecord } from '@shared/types/run';
 import type { SourceContextRecord } from '@shared/types/source-context';
 import type { ArtifactRecord, ArtifactKind } from '@shared/types/artifact';
+import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
+import { recordSopTemplateHabit } from '../lib/workHabits';
 
 type WorkbenchTab = 'runs' | 'sources' | 'artifacts' | 'activity';
 
@@ -58,6 +60,9 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
   const [titleDraft, setTitleDraft] = useState('');
   const [moreOpen, setMoreOpen] = useState(false);
   const [showEditPanel, setShowEditPanel] = useState(false);
+  const [runFormRequest, setRunFormRequest] = useState(0);
+  const [showCompletionCheck, setShowCompletionCheck] = useState(false);
+  const [showSopExtract, setShowSopExtract] = useState(false);
 
   function loadRuns() {
     return window.api?.listRuns().then((all) => {
@@ -130,6 +135,11 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
     onBack();
   }
 
+  function openRunForm() {
+    setTab('runs');
+    setRunFormRequest((value) => value + 1);
+  }
+
   return (
     <div className="workbench" onClick={() => setMoreOpen(false)}>
       {/* Header */}
@@ -174,7 +184,8 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
               {moreOpen && (
                 <div className="more-menu">
                   <button className="more-menu-item" onClick={() => { setMoreOpen(false); onOpenPanel(); }}>规划讨论</button>
-                  <button className="more-menu-item" onClick={() => void transitionTo('completed')}>标记完成</button>
+                  <button className="more-menu-item" onClick={() => { setMoreOpen(false); setShowSopExtract(true); }}>提取流程模板</button>
+                  <button className="more-menu-item" onClick={() => { setMoreOpen(false); setShowCompletionCheck(true); }}>标记完成</button>
                   <button className="more-menu-item danger" onClick={() => void transitionTo('archived')}>归档任务</button>
                 </div>
               )}
@@ -226,8 +237,8 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
 
         <div className="resume-card-footer">
           <div className="resume-actions">
-            <button className="btn primary" onClick={() => setTab('runs')}>
-              {activeRun ? '查看进度 →' : lane === 'unblock' ? '去拍板 →' : '启动 Run →'}
+            <button className="btn primary" onClick={activeRun ? () => setTab('runs') : openRunForm}>
+              {activeRun ? '查看进度 →' : '启动 Run →'}
             </button>
             {!activeRun && (
               <button className="btn ghost" onClick={onOpenPanel}>规划讨论</button>
@@ -270,12 +281,68 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
             taskId={taskId}
             runs={runs}
             activeRunDetail={activeRunDetail}
+            runFormRequest={runFormRequest}
+            onRunCreated={(run) => setRuns((items) => [run, ...items.filter((item) => item.id !== run.id)])}
           />
         )}
-        {tab === 'sources' && <SourcesTab taskId={taskId} sources={detail?.sourceContexts ?? []} onAdded={(sc) => setDetail((d) => d ? { ...d, sourceContexts: [...d.sourceContexts, sc] } : d)} />}
+        {tab === 'sources' && (
+          <SourcesTab
+            taskId={taskId}
+            sources={detail?.sourceContexts ?? []}
+            onAdded={(sc) => setDetail((d) => d ? { ...d, sourceContexts: [...d.sourceContexts, sc] } : d)}
+            onUpdated={(sc) => setDetail((d) => d
+              ? { ...d, sourceContexts: d.sourceContexts.map((item) => item.id === sc.id ? sc : item) }
+              : d)}
+            onArchived={(id) => setDetail((d) => d
+              ? { ...d, sourceContexts: d.sourceContexts.filter((item) => item.id !== id) }
+              : d)}
+          />
+        )}
         {tab === 'artifacts' && <ArtifactsTab artifacts={detail?.artifacts ?? []} />}
         {tab === 'activity' && <ActivityTab timeline={detail?.timeline ?? []} />}
       </div>
+
+      {showCompletionCheck && (
+        <TaskCompletionCheckModal
+          taskId={taskId}
+          taskTitle={title}
+          onCancel={() => setShowCompletionCheck(false)}
+          onCompleteAnyway={() => {
+            setShowCompletionCheck(false);
+            void transitionTo('completed');
+          }}
+          onMarkWaiting={(reason) => {
+            setShowCompletionCheck(false);
+            void window.api?.transitionTask({
+              id: taskId,
+              nextState: 'waiting_external',
+              waitingReason: reason,
+            }).then((record) => {
+              setDetail((current) => current ? {
+                ...current,
+                state: record.state,
+                waitingReason: record.waitingReason,
+                updatedAt: record.updatedAt,
+              } : current);
+            }).catch(() => {});
+          }}
+        />
+      )}
+
+      {showSopExtract && detail && (
+        <SopExtractModal
+          detail={detail}
+          onCancel={() => setShowSopExtract(false)}
+          onSave={(steps) => {
+            recordSopTemplateHabit({
+              taskId,
+              taskTitle: title,
+              steps,
+            });
+            setShowSopExtract(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -312,10 +379,14 @@ function RunsTab({
   taskId,
   runs,
   activeRunDetail,
+  runFormRequest,
+  onRunCreated,
 }: {
   taskId: string;
   runs: RunRecord[];
   activeRunDetail: RunDetailRecord | null;
+  runFormRequest: number;
+  onRunCreated: (run: RunRecord) => void;
 }) {
   const active = runs.find((r) => r.status === 'running' || r.status === 'paused');
   const historical = runs.filter((r) => r !== active);
@@ -324,11 +395,20 @@ function RunsTab({
   const [runNote, setRunNote] = useState('');
   const [triggering, setTriggering] = useState(false);
 
+  useEffect(() => {
+    if (runFormRequest > 0 && !active) setShowRunForm(true);
+  }, [active, runFormRequest]);
+
   async function triggerNewRun() {
     if (!window.api || triggering) return;
     setTriggering(true);
     try {
-      await window.api.triggerRun({ taskId, type: 'agent' });
+      const created = await window.api.triggerRun({
+        taskId,
+        type: 'agent',
+        instructions: runNote.trim() || undefined,
+      });
+      onRunCreated(created);
       setShowRunForm(false);
       setRunNote('');
     } catch (e) {
@@ -450,16 +530,21 @@ function SourcesTab({
   taskId,
   sources,
   onAdded,
+  onUpdated,
+  onArchived,
 }: {
   taskId: string;
-  sources: { id: string; title: string; kind: string; updatedAt: string; uri?: string | null }[];
+  sources: SourceContextRecord[];
   onAdded: (sc: SourceContextRecord) => void;
+  onUpdated: (sc: SourceContextRecord) => void;
+  onArchived: (id: string) => void;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
   const [uri, setUri] = useState('');
   const [kind, setKind] = useState<'link' | 'doc' | 'note'>('link');
   const [saving, setSaving] = useState(false);
+  const [savingSourceId, setSavingSourceId] = useState<string | null>(null);
 
   async function addSource() {
     const t = title.trim();
@@ -476,6 +561,28 @@ function SourcesTab({
     }
   }
 
+  async function toggleKeySource(source: SourceContextRecord) {
+    if (!window.api || savingSourceId) return;
+    setSavingSourceId(source.id);
+    try {
+      const updated = await window.api.updateSourceContext({ id: source.id, isKey: !source.isKey });
+      onUpdated(updated);
+    } finally {
+      setSavingSourceId(null);
+    }
+  }
+
+  async function archiveSource(source: SourceContextRecord) {
+    if (!window.api || savingSourceId) return;
+    setSavingSourceId(source.id);
+    try {
+      await window.api.archiveSourceContext(source.id);
+      onArchived(source.id);
+    } finally {
+      setSavingSourceId(null);
+    }
+  }
+
   return (
     <div className="tab-content">
       {sources.length === 0 && !showForm && (
@@ -484,9 +591,24 @@ function SourcesTab({
       {sources.map((s) => (
         <div key={s.id} className="source-item">
           <span className="tag captured">{s.kind.toUpperCase()}</span>
+          {s.isKey && <span className="tag lane-escalate">关键</span>}
           <span className="source-label">{s.title}</span>
           {s.uri && <a className="source-uri muted" href={s.uri} target="_blank" rel="noreferrer">{s.uri.slice(0, 40)}…</a>}
           <span className="muted" style={{ marginLeft: 'auto', flexShrink: 0 }}>{formatDate(s.updatedAt)}</span>
+          <button
+            className="btn sm ghost"
+            disabled={savingSourceId === s.id}
+            onClick={() => void toggleKeySource(s)}
+          >
+            {s.isKey ? '取消关键' : '设为关键'}
+          </button>
+          <button
+            className="btn sm ghost"
+            disabled={savingSourceId === s.id}
+            onClick={() => void archiveSource(s)}
+          >
+            归档
+          </button>
         </div>
       ))}
       {showForm ? (
@@ -646,6 +768,91 @@ function IconEdit() {
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" />
     </svg>
+  );
+}
+
+/* ─── SOP extraction ─── */
+
+function buildSopSteps(detail: TaskDetail): string[] {
+  const steps: string[] = [];
+
+  if (detail.sourceContexts.length > 0) {
+    steps.push(`收集并确认关键来源：${detail.sourceContexts.slice(0, 2).map((source) => source.title).join('、')}`);
+  }
+
+  if (detail.summary) {
+    steps.push(`明确任务目标：${detail.summary}`);
+  }
+
+  for (const criteria of detail.completionCriteria.slice(0, 3)) {
+    steps.push(`完成标准：${criteria.text}`);
+  }
+
+  if (detail.processTemplates.length > 0) {
+    steps.push(`复用方法模板：${detail.processTemplates.slice(0, 2).map((template) => template.title).join('、')}`);
+  }
+
+  if (detail.nextStep) {
+    steps.push(`推进下一步：${detail.nextStep}`);
+  }
+
+  if (steps.length === 0) {
+    steps.push('补充目标背景', '确认完成标准', '启动执行并审查产物');
+  }
+
+  return steps;
+}
+
+function SopExtractModal({
+  detail,
+  onCancel,
+  onSave,
+}: {
+  detail: TaskDetail;
+  onCancel: () => void;
+  onSave: (steps: string[]) => void;
+}) {
+  const [steps, setSteps] = useState(buildSopSteps(detail));
+
+  function updateStep(index: number, value: string) {
+    setSteps((current) => current.map((step, i) => i === index ? value : step));
+  }
+
+  const cleanSteps = steps.map((step) => step.trim()).filter(Boolean);
+
+  return (
+    <div className="modal-backdrop" onClick={onCancel}>
+      <div className="modal sop-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <h3>提取流程模板</h3>
+        </div>
+        <div className="modal-body">
+          <div className="sop-template-head">
+            <span className="completion-check-label">任务类型</span>
+            <strong>{detail.title}</strong>
+            <p>保存后会写入 Context 的工作习惯记录，后续类似任务可作为默认流程参考。</p>
+          </div>
+          <div className="sop-step-list">
+            {steps.map((step, index) => (
+              <label key={index} className="sop-step-row">
+                <span>{index + 1}</span>
+                <input
+                  className="settings-input"
+                  value={step}
+                  onChange={(e) => updateStep(index, e.target.value)}
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="modal-foot">
+          <button className="btn sm ghost" onClick={onCancel}>不保存</button>
+          <button className="btn sm primary" onClick={() => onSave(cleanSteps)} disabled={cleanSteps.length === 0}>
+            保存为模板
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

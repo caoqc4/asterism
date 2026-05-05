@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { HomeBriefData } from '@shared/types/brief';
+import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 
 type Lane = 'escalate' | 'unblock' | 'continue' | 'clarify' | 'steady';
 
@@ -34,6 +35,10 @@ const DEFER_OPTIONS = [
   { label: '选日期…', value: 'custom' },
 ];
 
+function deferLabel(value: string): string {
+  return DEFER_OPTIONS.find((opt) => opt.value === value)?.label ?? value;
+}
+
 interface BriefPageProps {
   onOpenTask: (id: string) => void;
   onOpenDecision: () => void;
@@ -48,28 +53,37 @@ function laneFromPriorityLane(lane: string | undefined): Lane {
   return 'steady';
 }
 
+function focusTasksFromBriefData(data: HomeBriefData): FocusTask[] {
+  const seen = new Set<string>();
+  return data.recommendedActions
+    .filter((a) => {
+      if (!a.taskId || seen.has(a.taskId)) return false;
+      seen.add(a.taskId);
+      return true;
+    })
+    .slice(0, 5)
+    .map((a) => ({
+      id: a.taskId!,
+      title: data.recentTasks.find((t) => t.id === a.taskId)?.title ?? a.taskId!,
+      lane: laneFromPriorityLane(a.lane),
+      whyNow: a.reason,
+      action: a.label,
+      status: undefined,
+    }));
+}
+
 export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPageProps) {
   const [tasks, setTasks] = useState<FocusTask[]>([]);
   const [signals, setSignals] = useState<ExternalSignal[]>([]);
   const [briefData, setBriefData] = useState<HomeBriefData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [completionCheckTask, setCompletionCheckTask] = useState<FocusTask | null>(null);
 
   useEffect(() => {
     if (!window.api) { setLoading(false); return; }
     window.api.getHomeBrief().then((data) => {
       setBriefData(data);
-      const fromActions: FocusTask[] = data.recommendedActions
-        .filter((a) => a.taskId)
-        .slice(0, 5)
-        .map((a) => ({
-          id: a.taskId!,
-          title: data.recentTasks.find((t) => t.id === a.taskId)?.title ?? a.taskId!,
-          lane: laneFromPriorityLane(a.lane),
-          whyNow: a.reason,
-          action: a.label,
-          status: undefined,
-        }));
-      setTasks(fromActions);
+      setTasks(focusTasksFromBriefData(data));
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -116,11 +130,40 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
       return;
     }
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    window.api?.transitionTask({
+      id: taskId,
+      nextState: 'waiting_external',
+      waitingReason: `延后处理：${deferLabel(option)}`,
+    }).catch(() => {
+      window.api?.getHomeBrief().then((data) => {
+        setTasks(focusTasksFromBriefData(data));
+        setBriefData(data);
+      }).catch(() => {});
+    });
   }
 
   function confirmDefer(taskId: string) {
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    window.api?.transitionTask({
+      id: taskId,
+      nextState: 'waiting_external',
+      waitingReason: `延后处理：${deferLabel(conflictState?.option ?? 'next-monday')}`,
+    }).catch(() => {});
     setConflictState(null);
+  }
+
+  function completeTask(taskId: string) {
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    window.api?.transitionTask({ id: taskId, nextState: 'completed' }).catch(() => {});
+  }
+
+  function markWaitingAfterCompletionCheck(taskId: string, reason: string) {
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    window.api?.transitionTask({
+      id: taskId,
+      nextState: 'waiting_external',
+      waitingReason: reason,
+    }).catch(() => {});
   }
 
   function dismissSignal(id: string) {
@@ -191,9 +234,7 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
                 setDeferOpenId((prev) => (prev === task.id ? null : task.id))
               }
               onDeferSelect={(opt) => handleDefer(task.id, opt)}
-              onComplete={() =>
-                setTasks((prev) => prev.filter((t) => t.id !== task.id))
-              }
+              onComplete={() => setCompletionCheckTask(task)}
               onClick={() => onOpenPanel(task.id)}
             />
           ))}
@@ -270,6 +311,26 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
             </div>
           </div>
         </div>
+      )}
+
+      {completionCheckTask && (
+        <TaskCompletionCheckModal
+          taskId={completionCheckTask.id}
+          taskTitle={completionCheckTask.title}
+          onCancel={() => setCompletionCheckTask(null)}
+          onCompleteAnyway={() => {
+            const task = completionCheckTask;
+            if (!task) return;
+            setCompletionCheckTask(null);
+            completeTask(task.id);
+          }}
+          onMarkWaiting={(reason) => {
+            const task = completionCheckTask;
+            if (!task) return;
+            setCompletionCheckTask(null);
+            markWaitingAfterCompletionCheck(task.id, reason);
+          }}
+        />
       )}
     </div>
   );

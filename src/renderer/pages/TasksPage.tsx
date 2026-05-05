@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import type { TaskListItemRecord } from '@shared/types/task';
+import type { TaskListItemRecord, TaskState } from '@shared/types/task';
+import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 
 type Lane = 'escalate' | 'unblock' | 'continue' | 'clarify' | 'steady';
 type TaskStatus = 'running' | 'waiting' | 'blocked' | 'idle' | 'done';
@@ -17,6 +18,7 @@ interface Task {
   waitingOn?: string;
   commitment?: string;
   updatedAt: string;
+  state: TaskState;
 }
 
 const LANE_LABELS: Record<Lane, string> = {
@@ -41,6 +43,10 @@ const DEFER_OPTIONS = [
   { label: '下周一', value: 'next-monday' },
   { label: '选日期…', value: 'custom' },
 ];
+
+function deferLabel(value: string): string {
+  return DEFER_OPTIONS.find((opt) => opt.value === value)?.label ?? value;
+}
 
 /* ─── Map real task record → UI task ─── */
 
@@ -78,6 +84,7 @@ function fromRecord(r: TaskListItemRecord): Task {
     nextStep: r.nextStep ?? undefined,
     waitingOn: r.waitingReason ? `等待：${r.waitingReason}` : undefined,
     updatedAt: formatDate(r.updatedAt),
+    state: r.state,
   };
 }
 
@@ -94,6 +101,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deferOpenId, setDeferOpenId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; taskId: string } | null>(null);
+  const [completionCheckTask, setCompletionCheckTask] = useState<Task | null>(null);
 
   const [showCapture, setShowCapture] = useState(false);
   const [captureTitle, setCaptureTitle] = useState('');
@@ -104,7 +112,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
 
   function reloadTasks() {
     window.api?.listTasks().then((records) => {
-      if (records.length > 0) setAllTasks(records.map(fromRecord));
+      setAllTasks(records.map(fromRecord));
     }).catch(() => {});
   }
 
@@ -161,10 +169,32 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
 
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
 
-  function completeTask(id: string) {
-    setAllTasks((prev) => prev.filter((t) => t.id !== id));
+  async function transitionWithPlanningHop(task: Task, nextState: TaskState, waitingReason?: string | null) {
+    if (!window.api) return;
+    if ((task.state === 'captured' || task.state === 'triaged') && nextState !== 'archived') {
+      await window.api.transitionTask({ id: task.id, nextState: 'planned' });
+    }
+    await window.api.transitionTask({ id: task.id, nextState, waitingReason });
+  }
+
+  function completeTask(task: Task) {
+    setAllTasks((prev) => prev.filter((t) => t.id !== task.id));
     setSelectedId(null);
-    window.api?.transitionTask({ id, nextState: 'completed' }).catch(() => reloadTasks());
+    transitionWithPlanningHop(task, 'completed').catch(() => reloadTasks());
+  }
+
+  function markWaitingAfterCompletionCheck(task: Task, reason: string) {
+    setCompletionCheckTask(null);
+    setAllTasks((prev) => prev.filter((t) => t.id !== task.id));
+    setSelectedId(null);
+    transitionWithPlanningHop(task, 'waiting_external', reason).catch(() => reloadTasks());
+  }
+
+  function deferTask(task: Task, option: string) {
+    setDeferOpenId(null);
+    setSelectedId(null);
+    setAllTasks((prev) => prev.filter((t) => t.id !== task.id));
+    transitionWithPlanningHop(task, 'waiting_external', `延后处理：${deferLabel(option)}`).catch(() => reloadTasks());
   }
 
   function groupByLane(tasks: Task[]): Record<Lane, Task[]> {
@@ -190,6 +220,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
           id: newId, title, lane: 'clarify', status: 'idle',
           type: 'simple',
           updatedAt: new Date().toLocaleDateString('zh'),
+          state: 'captured',
         };
         setAllTasks((prev) => [fake, ...prev]);
       }
@@ -314,7 +345,8 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
                       onDoubleClick={() => handleRowDoubleClick(task.id)}
                       onContextMenu={(e) => handleContextMenu(e, task.id)}
                       onDeferToggle={(e) => { e.stopPropagation(); setDeferOpenId((prev) => (prev === task.id ? null : task.id)); }}
-                      onComplete={(e) => { e.stopPropagation(); completeTask(task.id); }}
+                      onDeferSelect={(opt) => deferTask(task, opt)}
+                      onComplete={(e) => { e.stopPropagation(); setCompletionCheckTask(task); }}
                       onMore={(e) => { e.stopPropagation(); handleContextMenu(e, task.id); }}
                     />
                   ))}
@@ -337,9 +369,10 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
                   e.stopPropagation();
                   setDeferOpenId((prev) => (prev === task.id ? null : task.id));
                 }}
+                onDeferSelect={(opt) => deferTask(task, opt)}
                 onComplete={(e) => {
                   e.stopPropagation();
-                  setSelectedId(null);
+                  setCompletionCheckTask(task);
                 }}
                 onMore={(e) => {
                   e.stopPropagation();
@@ -373,6 +406,25 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
           y={contextMenu.y}
           onClose={closeContextMenu}
           onOpenWorkbench={() => { onOpenWorkbench(contextMenu.taskId); closeContextMenu(); }}
+        />
+      )}
+
+      {completionCheckTask && (
+        <TaskCompletionCheckModal
+          taskId={completionCheckTask.id}
+          taskTitle={completionCheckTask.title}
+          onCancel={() => setCompletionCheckTask(null)}
+          onCompleteAnyway={() => {
+            const task = completionCheckTask;
+            if (!task) return;
+            setCompletionCheckTask(null);
+            completeTask(task);
+          }}
+          onMarkWaiting={(reason) => {
+            const task = completionCheckTask;
+            if (!task) return;
+            markWaitingAfterCompletionCheck(task, reason);
+          }}
         />
       )}
     </div>
@@ -449,6 +501,7 @@ interface TaskRowProps {
   onDoubleClick: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
   onDeferToggle: (e: React.MouseEvent) => void;
+  onDeferSelect: (opt: string) => void;
   onComplete: (e: React.MouseEvent) => void;
   onMore: (e: React.MouseEvent) => void;
 }
@@ -456,7 +509,7 @@ interface TaskRowProps {
 function TaskRow({
   task, selected, deferOpen,
   onClick, onDoubleClick, onContextMenu,
-  onDeferToggle, onComplete, onMore,
+  onDeferToggle, onDeferSelect, onComplete, onMore,
 }: TaskRowProps) {
   return (
     <div
@@ -492,7 +545,7 @@ function TaskRow({
               <div className="defer-menu">
                 {DEFER_OPTIONS.map((opt) => (
                   <button key={opt.value} className="defer-option"
-                    onClick={(e) => { e.stopPropagation(); }}>
+                    onClick={(e) => { e.stopPropagation(); onDeferSelect(opt.value); }}>
                     {opt.label}
                   </button>
                 ))}

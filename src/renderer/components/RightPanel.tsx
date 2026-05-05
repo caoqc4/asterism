@@ -116,7 +116,7 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
   }
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
   }, []);
 
   useEffect(() => { scrollToBottom(); }, [messages, thinking]);

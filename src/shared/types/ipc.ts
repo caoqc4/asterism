@@ -110,5 +110,5 @@ export type ElectronApi = {
   triggerOperatorStartedRun?: (input: OperatorStartedRunRequest) => Promise<RunRecord>;
   continuePausedRun: (runId: string) => Promise<RunRecord>;
   subscribeToEvents: (listener: (event: AppEvent) => void) => () => void;
-  chatWithAI: (input: ChatInput) => Promise<ChatResponse>;
+  chatWithAI?: (input: ChatInput) => Promise<ChatResponse>;
 };

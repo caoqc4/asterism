@@ -24,11 +24,15 @@ function fromRecord(r: DecisionRecord): Decision {
   return {
     id: r.id,
     title: r.title,
-    taskTitle: r.taskId,
+    taskTitle: r.sourceLabel ?? r.taskId,
     lane: 'continue',
     urgency: 'week',
-    options: [],
-    recommendation: '',
+    options: [
+      { label: '批准', desc: '按当前建议继续推进，并记录这次拍板。' },
+      { label: '稍后再定', desc: '暂缓处理，任务会回到等待状态。' },
+      { label: '取消', desc: '取消这次决策请求，不改变任务当前执行状态。' },
+    ],
+    recommendation: '批准',
     expanded: false,
   };
 }
@@ -40,7 +44,7 @@ export function DecisionsPage() {
   useEffect(() => {
     if (!window.api) { setLoading(false); return; }
     window.api.listDecisions()
-      .then((records) => setDecisions(records.map(fromRecord)))
+      .then((records) => setDecisions(records.filter((r) => r.status === 'pending').map(fromRecord)))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -51,9 +55,9 @@ export function DecisionsPage() {
     );
   }
 
-  function decide(id: string) {
+  function decide(id: string, action: 'approve' | 'defer' | 'cancel' = 'approve') {
     setDecisions((prev) => prev.filter((d) => d.id !== id));
-    window.api?.actOnDecision({ id, action: 'approve' }).catch(() => {});
+    window.api?.actOnDecision({ id, action }).catch(() => {});
   }
 
   const today = decisions.filter((d) => d.urgency === 'today');
@@ -74,7 +78,7 @@ export function DecisionsPage() {
             <span className="dec-count">{today.length}</span>
           </div>
           {today.map((d) => (
-            <DecisionCard key={d.id} decision={d} onToggle={() => toggleExpand(d.id)} onDecide={() => decide(d.id)} />
+            <DecisionCard key={d.id} decision={d} onToggle={() => toggleExpand(d.id)} onDecide={(action) => decide(d.id, action)} />
           ))}
         </section>
       )}
@@ -87,7 +91,7 @@ export function DecisionsPage() {
             <span className="dec-count">{week.length}</span>
           </div>
           {week.map((d) => (
-            <DecisionCard key={d.id} decision={d} onToggle={() => toggleExpand(d.id)} onDecide={() => decide(d.id)} />
+            <DecisionCard key={d.id} decision={d} onToggle={() => toggleExpand(d.id)} onDecide={(action) => decide(d.id, action)} />
           ))}
         </section>
       )}
@@ -107,7 +111,7 @@ export function DecisionsPage() {
 interface DecisionCardProps {
   decision: Decision;
   onToggle: () => void;
-  onDecide: () => void;
+  onDecide: (action?: 'approve' | 'defer' | 'cancel') => void;
 }
 
 function DecisionCard({ decision: d, onToggle, onDecide }: DecisionCardProps) {
@@ -129,7 +133,7 @@ function DecisionCard({ decision: d, onToggle, onDecide }: DecisionCardProps) {
             <span className="dec-rec-label">推荐</span>
             <span className="dec-rec-value">{d.recommendation}</span>
           </div>
-          <button className="btn primary" onClick={(e) => { e.stopPropagation(); onDecide(); }}>
+          <button className="btn primary" onClick={(e) => { e.stopPropagation(); onDecide('approve'); }}>
             拍板 →
           </button>
           <span className="dec-chevron">{d.expanded ? '▴' : '▾'}</span>
@@ -149,7 +153,12 @@ function DecisionCard({ decision: d, onToggle, onDecide }: DecisionCardProps) {
                 {opt.risk && <span className="tag risk" style={{ fontSize: 10 }}>{opt.risk}</span>}
               </div>
               <p className="dec-option-desc">{opt.desc}</p>
-              <button className="btn sm" onClick={onDecide}>选择此方案</button>
+              <button
+                className="btn sm"
+                onClick={() => onDecide(opt.label === '稍后再定' ? 'defer' : opt.label === '取消' ? 'cancel' : 'approve')}
+              >
+                选择此方案
+              </button>
             </div>
           ))}
         </div>
