@@ -800,6 +800,8 @@ describe('App redesign v1', () => {
     expect(screen.queryByText('decision_done')).toBeNull();
 
     await user.click(screen.getByText('是否批准本轮材料修改方案'));
+    expect(await screen.findByText('为什么现在')).toBeTruthy();
+    expect(screen.getByText(/等待拍板状态/)).toBeTruthy();
     await user.click((await screen.findAllByRole('button', { name: '选择此方案' }))[0]!);
 
     await waitFor(() => {

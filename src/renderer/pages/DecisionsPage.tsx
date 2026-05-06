@@ -8,9 +8,15 @@ interface Decision {
   lane: string;
   urgency: 'today' | 'week';
   deadline?: string;
+  context: DecisionContext;
   options: DecisionOption[];
   recommendation: string;
   expanded: boolean;
+}
+
+interface DecisionContext {
+  whyNow: string;
+  ifDeferred: string;
 }
 
 interface DecisionOption {
@@ -27,6 +33,10 @@ function fromRecord(r: DecisionRecord): Decision {
     taskTitle: r.sourceLabel ?? r.taskId,
     lane: 'continue',
     urgency: 'week',
+    context: {
+      whyNow: `这次拍板会决定「${r.sourceLabel ?? r.title}」是否按当前方向继续推进。`,
+      ifDeferred: '如果暂不处理，相关任务会继续停留在等待拍板状态，后续执行不应自动推进。',
+    },
     options: [
       { label: '批准', desc: '按当前建议继续推进，并记录这次拍板。' },
       { label: '稍后再定', desc: '暂缓处理，任务会回到等待状态。' },
@@ -160,6 +170,17 @@ function DecisionCard({ decision: d, onToggle, onDecide }: DecisionCardProps) {
       {/* Expanded options */}
       {d.expanded && (
         <div className="dec-options">
+          <div className="dec-context">
+            <div className="dec-context-item">
+              <span className="dec-context-label">为什么现在</span>
+              <span className="dec-context-text">{d.context.whyNow}</span>
+            </div>
+            <div className="dec-context-item">
+              <span className="dec-context-label">如果不处理</span>
+              <span className="dec-context-text">{d.context.ifDeferred}</span>
+            </div>
+          </div>
+
           {d.options.map((opt) => (
             <div key={opt.label} className={`dec-option${opt.label === d.recommendation || opt.label.includes(d.recommendation) ? ' recommended' : ''}`}>
               <div className="dec-option-head">
