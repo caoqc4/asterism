@@ -993,6 +993,18 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/周五 17:00 前发给 CEO/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /每周一 09:00/ }));
     expect(await screen.findByText('定时配置')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '取消' }));
+
+    await user.click(screen.getAllByRole('button', { name: /Tasks/ })[0]!);
+    await user.click(await screen.findByRole('button', { name: '+ 新建任务' }));
+    await user.type(await screen.findByPlaceholderText(/任务标题/), '收到品牌合作邮件时跟进');
+    expect(screen.getByRole('button', { name: '事件' }).className).toContain('active');
+    await user.click(screen.getByRole('button', { name: '创建' }));
+    await user.click(screen.getByRole('button', { name: /事件触发/ }));
+    await user.dblClick(await screen.findByText('收到品牌合作邮件时跟进'));
+    expect(await screen.findByText('事件监听')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '产物' }));
+    expect(screen.getByText(/事件信号默认追加到同一份积累式记录/)).toBeTruthy();
   });
 
   it('creates a project parent task and guides AI decomposition instead of hard-coded subtasks', async () => {

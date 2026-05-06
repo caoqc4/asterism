@@ -520,7 +520,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
               : d)}
           />
         )}
-        {tab === 'artifacts' && <ArtifactsTab taskId={taskId} artifacts={detail?.artifacts ?? []} />}
+        {tab === 'artifacts' && <ArtifactsTab taskId={taskId} artifacts={detail?.artifacts ?? []} taskAttrs={taskAttrs} />}
         {tab === 'activity' && <ActivityTab timeline={detail?.timeline ?? []} />}
       </div>
 
@@ -1131,7 +1131,11 @@ const ARTIFACT_KIND_LABELS: Record<ArtifactKind, string> = {
   browser_evidence: '浏览器截图',
 };
 
-function ArtifactsTab({ taskId, artifacts }: { taskId: string; artifacts: ArtifactRecord[] }) {
+function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
+  taskId: string;
+  artifacts: ArtifactRecord[];
+  taskAttrs: TaskAttributeRecord | null;
+}) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [, setLocalVersion] = useState(0);
   const [showNewNote, setShowNewNote] = useState(false);
@@ -1202,6 +1206,12 @@ function ArtifactsTab({ taskId, artifacts }: { taskId: string; artifacts: Artifa
           <div className="artifact-summary-note">
             最近更新：{latestArtifact ? formatDate(latestArtifact.updatedAt) : '暂无'}
           </div>
+        </div>
+      )}
+
+      {taskAttrs?.type === 'event' && (
+        <div className="artifact-mode-note">
+          事件信号默认追加到同一份积累式记录；只有你明确要求草稿、报告等独立产物时，才新建文件。
         </div>
       )}
 

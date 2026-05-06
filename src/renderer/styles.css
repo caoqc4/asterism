@@ -2800,6 +2800,16 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   justify-content: flex-end;
 }
+.artifact-mode-note {
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-sunk);
+  color: var(--ink-3);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
 @media (max-width: 680px) {
   .artifact-summary { grid-template-columns: 1fr; }
   .artifact-summary-note { justify-content: flex-start; }
