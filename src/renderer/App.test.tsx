@@ -678,6 +678,33 @@ describe('App redesign v1', () => {
     expect(screen.getByPlaceholderText(/关于「董事会材料修订」/)).toBeTruthy();
   });
 
+  it('captures a global right-panel discussion as a task before planning', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Search or ask/ }));
+    const input = await screen.findByPlaceholderText(/搜索、提问或捕获想法/);
+    await user.type(input, '准备投资人沟通材料');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: null,
+      }));
+    });
+    expect(await screen.findByText(/这段讨论可以先捕获为任务/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '捕获为任务' }));
+
+    await waitFor(() => {
+      expect(harness.api.createTask).toHaveBeenCalledWith({
+        title: '准备投资人沟通材料',
+        summary: '从右侧面板捕获：准备投资人沟通材料',
+      });
+    });
+    expect(await screen.findByText(/已捕获为任务/)).toBeTruthy();
+    expect(await screen.findByPlaceholderText(/关于「准备投资人沟通材料」/)).toBeTruthy();
+  });
+
   it('suggests a fresh task session when the right-panel conversation gets repetitive', async () => {
     const user = userEvent.setup();
     render(<App />);

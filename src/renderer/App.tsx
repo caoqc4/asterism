@@ -146,6 +146,7 @@ export function App() {
         <RightPanel
           taskId={panelTaskId}
           hidden={!panelOpen}
+          onTaskCaptured={(taskId) => setPanelTaskId(taskId)}
           onClose={(hasSession) => {
             setPanelOpen(false);
             setPanelSuspended(hasSession);

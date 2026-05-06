@@ -93,11 +93,12 @@ function shouldSuggestSessionRefresh(
 interface RightPanelProps {
   taskId: string | null;
   hidden?: boolean;
+  onTaskCaptured?: (taskId: string) => void;
   onClose: (hasSession: boolean) => void;
   onClearTask: () => void;
 }
 
-export function RightPanel({ taskId, hidden = false, onClose, onClearTask }: RightPanelProps) {
+export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, onClearTask }: RightPanelProps) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(taskId);
   const [titleCache, setTitleCache] = useState<Record<string, string>>({});
   const [messages, setMessages] = useState<Message[]>([]);
@@ -108,6 +109,7 @@ export function RightPanel({ taskId, hidden = false, onClose, onClearTask }: Rig
   const [compressionThreshold, setCompressionThreshold] = useState<number>(
     CONTEXT_COMPRESSION_THRESHOLD.default,
   );
+  const [capturingTask, setCapturingTask] = useState(false);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -187,6 +189,36 @@ export function RightPanel({ taskId, hidden = false, onClose, onClearTask }: Rig
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   }
 
+  function getLastUserMessage(): string | null {
+    const last = [...messages].reverse().find((message) => message.role === 'user');
+    return last?.text.trim() || null;
+  }
+
+  function deriveCapturedTaskTitle(text: string): string {
+    const firstLine = text.split('\n').find((line) => line.trim())?.trim() ?? text.trim();
+    return firstLine.length > 42 ? `${firstLine.slice(0, 42)}…` : firstLine;
+  }
+
+  async function captureGlobalConversationAsTask() {
+    const lastUserText = getLastUserMessage();
+    if (!lastUserText || capturingTask || !window.api?.createTask) return;
+    setCapturingTask(true);
+    try {
+      const created = await window.api.createTask({
+        title: deriveCapturedTaskTitle(lastUserText),
+        summary: `从右侧面板捕获：${lastUserText}`,
+      });
+      setActiveTaskId(created.id);
+      setTitleCache((prev) => ({ ...prev, [created.id]: created.title }));
+      onTaskCaptured?.(created.id);
+      appendSysMsg(`已捕获为任务：**${created.title}**。接下来可以继续讨论目标、类型和拆解方式。`);
+    } catch {
+      appendSysMsg('捕获任务失败，请稍后再试。');
+    } finally {
+      setCapturingTask(false);
+    }
+  }
+
   function autoResize() {
     const el = textareaRef.current;
     if (!el) return;
@@ -258,6 +290,10 @@ export function RightPanel({ taskId, hidden = false, onClose, onClearTask }: Rig
     activeTaskId
     && !sessionRefreshDismissed
     && shouldSuggestSessionRefresh(messages, compressionThreshold),
+  );
+  const canCaptureGlobalConversation = Boolean(
+    !activeTaskId
+    && messages.some((message) => message.role === 'user')
   );
   const projectDecompositionPrompt = activeAttrs?.type === 'project' && title
     ? buildProjectDecompositionPrompt(title)
@@ -378,6 +414,21 @@ export function RightPanel({ taskId, hidden = false, onClose, onClearTask }: Rig
               <button className="btn sm primary" onClick={startFreshSession}>开始新会话</button>
               <button className="btn sm ghost" onClick={() => setSessionRefreshDismissed(true)}>继续当前会话</button>
             </div>
+          </div>
+        )}
+
+        {canCaptureGlobalConversation && (
+          <div className="panel-capture-suggestion">
+            <div className="panel-capture-text">
+              这段讨论可以先捕获为任务，之后再由 AI 判断类型、补齐上下文或拆解。
+            </div>
+            <button
+              className={`btn sm primary${capturingTask ? ' disabled' : ''}`}
+              onClick={() => void captureGlobalConversationAsTask()}
+              disabled={capturingTask}
+            >
+              {capturingTask ? '捕获中…' : '捕获为任务'}
+            </button>
           </div>
         )}
 
