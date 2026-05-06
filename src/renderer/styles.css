@@ -2155,6 +2155,10 @@ a { color: inherit; text-decoration: none; }
   font-size: 11.5px;
   white-space: nowrap;
 }
+.workbench-config-pill:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
 
 /* Resume Card */
 .resume-card {

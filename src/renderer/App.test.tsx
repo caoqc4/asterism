@@ -989,6 +989,8 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('定时任务')).toBeTruthy();
     expect(screen.getByText(/每周一 09:00/)).toBeTruthy();
     expect(screen.getByText(/周五 17:00 前发给 CEO/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /每周一 09:00/ }));
+    expect(await screen.findByText('定时配置')).toBeTruthy();
   });
 
   it('creates a project parent task and guides AI decomposition instead of hard-coded subtasks', async () => {
