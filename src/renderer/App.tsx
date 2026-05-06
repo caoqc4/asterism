@@ -27,6 +27,7 @@ const ROUTE_LABELS: Record<AppRoute, string> = {
 export function App() {
   const [route, setRouteState] = useState<AppRoute>(getRouteFromHash);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [panelSuspended, setPanelSuspended] = useState(false);
   const [panelTaskId, setPanelTaskId] = useState<string | null>(null);
   const [workbenchTaskId, setWorkbenchTaskId] = useState<string | null>(null);
   const [workbenchOrigin, setWorkbenchOrigin] = useState<AppRoute>('tasks');
@@ -50,12 +51,18 @@ export function App() {
   const openPanelForTask = useCallback((taskId: string) => {
     setPanelTaskId(taskId);
     setPanelOpen(true);
+    setPanelSuspended(false);
   }, []);
 
   const openPanelGlobal = useCallback(() => {
+    if (panelSuspended) {
+      setPanelOpen(true);
+      setPanelSuspended(false);
+      return;
+    }
     setPanelTaskId(null);
     setPanelOpen(true);
-  }, []);
+  }, [panelSuspended]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -80,8 +87,17 @@ export function App() {
           route={workbenchTaskId ? workbenchOrigin : route}
           workbenchTaskId={workbenchTaskId}
           panelOpen={panelOpen}
+          panelSuspended={panelSuspended}
           onBack={closeWorkbench}
-          onTogglePanel={() => setPanelOpen((v) => !v)}
+          onTogglePanel={() => {
+            if (panelOpen) {
+              setPanelOpen(false);
+              setPanelSuspended(true);
+              return;
+            }
+            setPanelOpen(true);
+            setPanelSuspended(false);
+          }}
           onOpenGlobalPanel={openPanelGlobal}
         />
         <div className="content">
@@ -126,10 +142,14 @@ export function App() {
           )}
         </div>
       </div>
-      {panelOpen && (
+      {(panelOpen || panelSuspended) && (
         <RightPanel
           taskId={panelTaskId}
-          onClose={() => setPanelOpen(false)}
+          hidden={!panelOpen}
+          onClose={(hasSession) => {
+            setPanelOpen(false);
+            setPanelSuspended(hasSession);
+          }}
           onClearTask={() => setPanelTaskId(null)}
         />
       )}
@@ -232,12 +252,13 @@ interface TopbarProps {
   route: AppRoute;
   workbenchTaskId: string | null;
   panelOpen: boolean;
+  panelSuspended: boolean;
   onBack: () => void;
   onTogglePanel: () => void;
   onOpenGlobalPanel: () => void;
 }
 
-function Topbar({ route, workbenchTaskId, panelOpen, onBack, onTogglePanel, onOpenGlobalPanel }: TopbarProps) {
+function Topbar({ route, workbenchTaskId, panelOpen, panelSuspended, onBack, onTogglePanel, onOpenGlobalPanel }: TopbarProps) {
   return (
     <div className="topbar">
       <div className="topbar-left">
@@ -259,6 +280,7 @@ function Topbar({ route, workbenchTaskId, panelOpen, onBack, onTogglePanel, onOp
         <button className="cmd-k-trigger" onClick={onOpenGlobalPanel}>
           <IconSearch />
           <span>Search or ask…</span>
+          {panelSuspended && !panelOpen && <span className="cmd-k-suspended">挂起</span>}
           <span className="cmd-k-kbd">⌘K</span>
         </button>
         <button
@@ -267,6 +289,7 @@ function Topbar({ route, workbenchTaskId, panelOpen, onBack, onTogglePanel, onOp
           title="AI 对话（⌘K）"
         >
           <IconPanel />
+          {panelSuspended && !panelOpen && <span className="badge" />}
         </button>
       </div>
     </div>

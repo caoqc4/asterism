@@ -306,6 +306,13 @@ a { color: inherit; text-decoration: none; }
   padding: 1px 4px;
   background: var(--bg-sunk);
 }
+.cmd-k-trigger .cmd-k-suspended {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.cmd-k-trigger .cmd-k-suspended + .cmd-k-kbd { margin-left: 0; }
 
 .content {
   flex: 1;
@@ -349,6 +356,7 @@ a { color: inherit; text-decoration: none; }
   min-height: 0;
   overflow: hidden;
 }
+.right-panel.hidden { display: none; }
 .right-panel.fullscreen {
   position: fixed;
   inset: 0;

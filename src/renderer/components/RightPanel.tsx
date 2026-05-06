@@ -92,11 +92,12 @@ function shouldSuggestSessionRefresh(
 
 interface RightPanelProps {
   taskId: string | null;
-  onClose: () => void;
+  hidden?: boolean;
+  onClose: (hasSession: boolean) => void;
   onClearTask: () => void;
 }
 
-export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
+export function RightPanel({ taskId, hidden = false, onClose, onClearTask }: RightPanelProps) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(taskId);
   const [titleCache, setTitleCache] = useState<Record<string, string>>({});
   const [messages, setMessages] = useState<Message[]>([]);
@@ -275,9 +276,10 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
         { label: '帮我整理一下待办', prompt: '帮我整理一下待办' },
         { label: '最近有什么需要跟进的？', prompt: '最近有什么需要跟进的？' },
       ];
+  const hasSessionActivity = Boolean(activeTaskId || messages.length > 0 || input.trim());
 
   return (
-    <div className={`right-panel${fullScreen ? ' fullscreen' : ''}`}>
+    <div className={`right-panel${fullScreen ? ' fullscreen' : ''}${hidden ? ' hidden' : ''}`}>
       {/* Header */}
       <div className="panel-header">
         <div className="panel-header-ctx">
@@ -309,7 +311,7 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
           >
             {fullScreen ? <IconMinimize /> : <IconMaximize />}
           </button>
-          <button className="icon-btn" onClick={onClose} title="关闭面板">
+          <button className="icon-btn" onClick={() => onClose(hasSessionActivity)} title="关闭面板">
             <IconClose />
           </button>
           {historyOpen && (

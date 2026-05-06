@@ -668,6 +668,11 @@ describe('App redesign v1', () => {
       }));
     });
     expect(await screen.findByText('我会基于任务上下文给出下一步建议。')).toBeTruthy();
+
+    fireEvent.click(screen.getByTitle('关闭面板'));
+    expect(screen.getByText('挂起')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Search or ask/ }));
+    expect(screen.getByPlaceholderText(/关于「董事会材料修订」/)).toBeTruthy();
   });
 
   it('suggests a fresh task session when the right-panel conversation gets repetitive', async () => {
