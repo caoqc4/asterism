@@ -57,12 +57,13 @@ function normalizeUserMessage(text: string): string {
     .replace(/[，。！？、,.!?；;：:\s]/g, '');
 }
 
-function shouldSuggestSessionRefresh(messages: Message[]): boolean {
+function shouldSuggestSessionRefresh(messages: Message[], compressionThreshold = 45): boolean {
   const userMessages = messages
     .filter((message) => message.role === 'user')
     .map((message) => normalizeUserMessage(message.text))
     .filter(Boolean);
-  if (userMessages.length >= 5) return true;
+  const messageLimit = Math.max(3, Math.round(compressionThreshold / 10));
+  if (userMessages.length >= messageLimit) return true;
 
   const counts = new Map<string, number>();
   for (const message of userMessages) {
@@ -85,6 +86,7 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [pendingSwitch, setPendingSwitch] = useState<PendingCtxSwitch | null>(null);
   const [sessionRefreshDismissed, setSessionRefreshDismissed] = useState(false);
+  const [compressionThreshold, setCompressionThreshold] = useState(45);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -101,6 +103,12 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
       if (!d) return;
       setTitleCache((prev) => ({ ...prev, [taskId]: d.title }));
       setMessages([makeWelcomeMessage(d.title)]);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    window.api?.getAiConfigStatus().then((status) => {
+      setCompressionThreshold(status.featureFlags.contextCompressionThreshold ?? 45);
     }).catch(() => {});
   }, []);
 
@@ -225,7 +233,7 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
   const shouldSuggestRefresh = Boolean(
     activeTaskId
     && !sessionRefreshDismissed
-    && shouldSuggestSessionRefresh(messages),
+    && shouldSuggestSessionRefresh(messages, compressionThreshold),
   );
   const projectDecompositionPrompt = activeAttrs?.type === 'project' && title
     ? buildProjectDecompositionPrompt(title)
