@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import type { AiConfigStatus } from '@shared/types/settings';
-import { CONTEXT_COMPRESSION_THRESHOLD, DEFAULT_FEATURE_FLAGS } from '@shared/settings-defaults';
+import { CONTEXT_COMPRESSION_THRESHOLD, DEFAULT_FEATURE_FLAGS, SELF_CHECK_RETRY_LIMIT } from '@shared/settings-defaults';
 
 export function SettingsPage() {
   const [status, setStatus] = useState<AiConfigStatus | null>(null);
   const [selfCheck, setSelfCheck] = useState(true);
   const [selfLearn, setSelfLearn] = useState(true);
   const [ctxCompress, setCtxCompress] = useState<number>(CONTEXT_COMPRESSION_THRESHOLD.default);
+  const [selfCheckRetries, setSelfCheckRetries] = useState<number>(SELF_CHECK_RETRY_LIMIT.default);
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<'ok' | 'error' | null>(null);
 
@@ -17,6 +18,7 @@ export function SettingsPage() {
       setSelfCheck(s.featureFlags.enableSelfCheck ?? true);
       setSelfLearn(s.featureFlags.enableSelfLearn ?? true);
       setCtxCompress(s.featureFlags.contextCompressionThreshold ?? CONTEXT_COMPRESSION_THRESHOLD.default);
+      setSelfCheckRetries(s.featureFlags.selfCheckRetryLimit ?? SELF_CHECK_RETRY_LIMIT.default);
     }).catch(() => {});
   }, []);
 
@@ -35,6 +37,7 @@ export function SettingsPage() {
           enableSelfCheck: selfCheck,
           enableSelfLearn: selfLearn,
           contextCompressionThreshold: ctxCompress,
+          selfCheckRetryLimit: selfCheckRetries,
         },
       });
       setStatus(next);
@@ -80,6 +83,23 @@ export function SettingsPage() {
 
         <div className="settings-behavior-note">
           自学习绑定在完成、覆盖、SOP 提取等节点触发，不做持续行为监控；学到的规则会在 Context 展示，可停用或删除。
+        </div>
+
+        <div className="settings-field" style={{ marginTop: 16 }}>
+          <label className="settings-label">
+            Step 失败自动重试
+            <span className="settings-badge">{selfCheckRetries} 次</span>
+          </label>
+          <input
+            type="range"
+            min={SELF_CHECK_RETRY_LIMIT.min}
+            max={SELF_CHECK_RETRY_LIMIT.max}
+            step={SELF_CHECK_RETRY_LIMIT.step}
+            value={selfCheckRetries}
+            onChange={(e) => setSelfCheckRetries(Number(e.target.value))}
+            className="settings-range"
+          />
+          <p className="settings-hint">用于 Step 级检查失败后的自动修正上限；0 表示失败后直接等待人工处理。</p>
         </div>
 
         <div className="settings-field" style={{ marginTop: 16 }}>

@@ -323,6 +323,7 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
       enableSelfCheck: true,
       enableSelfLearn: true,
       contextCompressionThreshold: 45,
+      selfCheckRetryLimit: 2,
     },
     ...partial,
   };
@@ -939,7 +940,7 @@ describe('App redesign v1', () => {
     });
   });
 
-  it('saves self-check, self-learn, and compression preferences as dedicated feature flags', async () => {
+  it('saves self-check, self-learn, retry, and compression preferences as dedicated feature flags', async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -950,8 +951,9 @@ describe('App redesign v1', () => {
     await user.click(switches[0]!);
     await user.click(switches[1]!);
 
-    const slider = screen.getByRole('slider');
-    fireEvent.change(slider, { target: { value: '50' } });
+    const sliders = screen.getAllByRole('slider');
+    fireEvent.change(sliders[0]!, { target: { value: '3' } });
+    fireEvent.change(sliders[1]!, { target: { value: '50' } });
     await user.click(screen.getByRole('button', { name: '保存设置' }));
 
     await waitFor(() => {
@@ -959,6 +961,7 @@ describe('App redesign v1', () => {
         featureFlags: expect.objectContaining({
           enableSelfCheck: false,
           enableSelfLearn: false,
+          selfCheckRetryLimit: 3,
           contextCompressionThreshold: 50,
         }),
       }));

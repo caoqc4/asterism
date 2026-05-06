@@ -12,6 +12,7 @@ export type FeatureFlags = {
   enableSelfCheck?: boolean;
   enableSelfLearn?: boolean;
   contextCompressionThreshold?: number;
+  selfCheckRetryLimit?: number;
 };
 
 export type AppConfigFile = {

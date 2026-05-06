@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import type { AiProvider, AppConfigFile, FeatureFlags } from '../../shared/types/settings.js';
-import { CONTEXT_COMPRESSION_THRESHOLD, DEFAULT_FEATURE_FLAGS } from '../../shared/settings-defaults.js';
+import { CONTEXT_COMPRESSION_THRESHOLD, DEFAULT_FEATURE_FLAGS, SELF_CHECK_RETRY_LIMIT } from '../../shared/settings-defaults.js';
 import { readEnvBoolean, readEnvValue } from './env.js';
 
 const DEFAULT_CONFIG: AppConfigFile = {
@@ -96,6 +96,13 @@ function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
           && nextFeatureFlags.contextCompressionThreshold <= CONTEXT_COMPRESSION_THRESHOLD.max
           ? nextFeatureFlags.contextCompressionThreshold
           : DEFAULT_FEATURE_FLAGS.contextCompressionThreshold,
+      selfCheckRetryLimit:
+        typeof nextFeatureFlags.selfCheckRetryLimit === 'number'
+          && Number.isFinite(nextFeatureFlags.selfCheckRetryLimit)
+          && nextFeatureFlags.selfCheckRetryLimit >= SELF_CHECK_RETRY_LIMIT.min
+          && nextFeatureFlags.selfCheckRetryLimit <= SELF_CHECK_RETRY_LIMIT.max
+          ? nextFeatureFlags.selfCheckRetryLimit
+          : DEFAULT_FEATURE_FLAGS.selfCheckRetryLimit,
     },
     updatedAt: input.updatedAt ?? new Date().toISOString(),
   };
@@ -113,11 +120,18 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
   const enableSelfCheck = readEnvBoolean('TASKPLANE_ENABLE_SELF_CHECK');
   const enableSelfLearn = readEnvBoolean('TASKPLANE_ENABLE_SELF_LEARN');
   const contextCompressionThresholdRaw = readEnvValue('TASKPLANE_CONTEXT_COMPRESSION_THRESHOLD');
+  const selfCheckRetryLimitRaw = readEnvValue('TASKPLANE_SELF_CHECK_RETRY_LIMIT');
   const contextCompressionThreshold = contextCompressionThresholdRaw
     ? Number(contextCompressionThresholdRaw)
     : undefined;
+  const selfCheckRetryLimit = selfCheckRetryLimitRaw
+    ? Number(selfCheckRetryLimitRaw)
+    : undefined;
   const safeContextCompressionThreshold = Number.isFinite(contextCompressionThreshold)
     ? contextCompressionThreshold
+    : undefined;
+  const safeSelfCheckRetryLimit = Number.isFinite(selfCheckRetryLimit)
+    ? selfCheckRetryLimit
     : undefined;
 
   return sanitizeConfig({
@@ -154,6 +168,11 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
           ? safeContextCompressionThreshold
           : config.featureFlags.contextCompressionThreshold
             ?? DEFAULT_FEATURE_FLAGS.contextCompressionThreshold,
+      selfCheckRetryLimit:
+        safeSelfCheckRetryLimit !== undefined
+          ? safeSelfCheckRetryLimit
+          : config.featureFlags.selfCheckRetryLimit
+            ?? DEFAULT_FEATURE_FLAGS.selfCheckRetryLimit,
     },
   });
 }
