@@ -3,6 +3,7 @@ import type { DecisionRecord } from '@shared/types/decision';
 
 interface Decision {
   id: string;
+  taskId: string;
   title: string;
   taskTitle: string;
   typeLabel: string;
@@ -31,6 +32,7 @@ interface DecisionOption {
 function fromRecord(r: DecisionRecord): Decision {
   return {
     id: r.id,
+    taskId: r.taskId,
     title: r.title,
     taskTitle: r.sourceLabel ?? r.taskId,
     typeLabel: formatDecisionType(r.sourceType),
@@ -60,7 +62,12 @@ function formatDecisionDate(value: string): string {
   return value.slice(0, 10);
 }
 
-export function DecisionsPage() {
+interface DecisionsPageProps {
+  onOpenPanel: (taskId: string) => void;
+  onOpenWorkbench: (taskId: string) => void;
+}
+
+export function DecisionsPage({ onOpenPanel, onOpenWorkbench }: DecisionsPageProps) {
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -121,7 +128,14 @@ export function DecisionsPage() {
             <span className="dec-count">{today.length}</span>
           </div>
           {today.map((d) => (
-            <DecisionCard key={d.id} decision={d} onToggle={() => toggleExpand(d.id)} onDecide={(action) => decide(d.id, action)} />
+            <DecisionCard
+              key={d.id}
+              decision={d}
+              onToggle={() => toggleExpand(d.id)}
+              onDecide={(action) => decide(d.id, action)}
+              onOpenPanel={() => onOpenPanel(d.taskId)}
+              onOpenWorkbench={() => onOpenWorkbench(d.taskId)}
+            />
           ))}
         </section>
       )}
@@ -134,7 +148,14 @@ export function DecisionsPage() {
             <span className="dec-count">{week.length}</span>
           </div>
           {week.map((d) => (
-            <DecisionCard key={d.id} decision={d} onToggle={() => toggleExpand(d.id)} onDecide={(action) => decide(d.id, action)} />
+            <DecisionCard
+              key={d.id}
+              decision={d}
+              onToggle={() => toggleExpand(d.id)}
+              onDecide={(action) => decide(d.id, action)}
+              onOpenPanel={() => onOpenPanel(d.taskId)}
+              onOpenWorkbench={() => onOpenWorkbench(d.taskId)}
+            />
           ))}
         </section>
       )}
@@ -155,9 +176,11 @@ interface DecisionCardProps {
   decision: Decision;
   onToggle: () => void;
   onDecide: (action?: 'approve' | 'defer' | 'cancel') => void;
+  onOpenPanel: () => void;
+  onOpenWorkbench: () => void;
 }
 
-function DecisionCard({ decision: d, onToggle, onDecide }: DecisionCardProps) {
+function DecisionCard({ decision: d, onToggle, onDecide, onOpenPanel, onOpenWorkbench }: DecisionCardProps) {
   return (
     <div className={`dec-card${d.expanded ? ' expanded' : ''}`}>
       {/* Card header */}
@@ -217,6 +240,12 @@ function DecisionCard({ decision: d, onToggle, onDecide }: DecisionCardProps) {
               </button>
             </div>
           ))}
+
+          <div className="dec-actions">
+            <button className="btn sm ghost" onClick={onOpenPanel}>修改后批准</button>
+            <button className="btn sm ghost" onClick={onOpenPanel}>要求补充信息</button>
+            <button className="btn sm ghost" onClick={onOpenWorkbench}>查看任务详情</button>
+          </div>
         </div>
       )}
     </div>

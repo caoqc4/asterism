@@ -804,6 +804,13 @@ describe('App redesign v1', () => {
     await user.click(screen.getByText('是否批准本轮材料修改方案'));
     expect(await screen.findByText('为什么现在')).toBeTruthy();
     expect(screen.getByText(/等待拍板状态/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: '修改后批准' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '要求补充信息' }));
+    expect((await screen.findAllByText('董事会材料修订')).length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: '查看任务详情' }));
+    expect(await screen.findByText('工作台')).toBeTruthy();
+    await user.click(screen.getAllByRole('button', { name: /Decisions/ })[0]!);
+    await user.click(await screen.findByText('是否批准本轮材料修改方案'));
     await user.click((await screen.findAllByRole('button', { name: '选择此方案' }))[0]!);
 
     await waitFor(() => {

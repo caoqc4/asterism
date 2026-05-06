@@ -110,7 +110,12 @@ export function App() {
                   onOpenDecision={() => navigate('decisions')}
                 />
               )}
-              {route === 'decisions' && <DecisionsPage />}
+              {route === 'decisions' && (
+                <DecisionsPage
+                  onOpenPanel={openPanelForTask}
+                  onOpenWorkbench={openWorkbench}
+                />
+              )}
               {route === 'context' && <ContextPage />}
               {route === 'connections' && <ConnectionsPage />}
               {route === 'skills' && <SkillsPage />}
