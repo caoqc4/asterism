@@ -931,6 +931,8 @@ function ArtifactsTab({ taskId, artifacts }: { taskId: string; artifacts: Artifa
   const [titleDraft, setTitleDraft] = useState('');
   const [contentDraft, setContentDraft] = useState('');
   const visibleArtifacts = mergeTaskArtifacts(taskId, artifacts);
+  const editableArtifactCount = visibleArtifacts.filter(isInlineEditableArtifact).length;
+  const latestArtifact = visibleArtifacts[0] ?? null;
 
   function refreshLocal() {
     setLocalVersion((value) => value + 1);
@@ -977,6 +979,22 @@ function ArtifactsTab({ taskId, artifacts }: { taskId: string; artifacts: Artifa
 
   return (
     <div className="tab-content">
+      {visibleArtifacts.length > 0 && (
+        <div className="artifact-summary">
+          <div className="artifact-summary-item">
+            <span className="artifact-summary-value">{visibleArtifacts.length}</span>
+            <span>工作文件夹产物</span>
+          </div>
+          <div className="artifact-summary-item">
+            <span className="artifact-summary-value">{editableArtifactCount}</span>
+            <span>可内联编辑</span>
+          </div>
+          <div className="artifact-summary-note">
+            最近更新：{latestArtifact ? formatDate(latestArtifact.updatedAt) : '暂无'}
+          </div>
+        </div>
+      )}
+
       <div className="artifact-toolbar">
         <button className="btn sm ghost" onClick={() => setShowNewNote((value) => !value)}>
           + 新建笔记
