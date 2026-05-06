@@ -2,12 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   codeAgentExecutionRunMock,
+  generateTextMock,
+  getLanguageModelMock,
   handleMock,
   emitAppEventMock,
   probeLocalContainerSandboxBackendMock,
   servicesMock,
 } = vi.hoisted(() => ({
   codeAgentExecutionRunMock: vi.fn(),
+  generateTextMock: vi.fn(),
+  getLanguageModelMock: vi.fn(),
   handleMock: vi.fn(),
   emitAppEventMock: vi.fn(),
   probeLocalContainerSandboxBackendMock: vi.fn(),
@@ -109,6 +113,14 @@ vi.mock('../bootstrap/services.js', () => ({
   getServices: () => servicesMock,
 }));
 
+vi.mock('ai', () => ({
+  generateText: generateTextMock,
+}));
+
+vi.mock('../executors/ai-client.js', () => ({
+  getLanguageModel: getLanguageModelMock,
+}));
+
 vi.mock('./event-bus.js', () => ({
   emitAppEvent: emitAppEventMock,
 }));
@@ -151,6 +163,10 @@ const readyCodeAgentWorkspaceChecks = {
 describe('registerIpcHandlers', () => {
   beforeEach(() => {
     codeAgentExecutionRunMock.mockReset();
+    generateTextMock.mockReset();
+    getLanguageModelMock.mockReset();
+    getLanguageModelMock.mockReturnValue('language-model');
+    generateTextMock.mockResolvedValue({ text: 'AI response' });
     handleMock.mockClear();
     emitAppEventMock.mockClear();
     probeLocalContainerSandboxBackendMock.mockReset();
@@ -288,6 +304,43 @@ describe('registerIpcHandlers', () => {
     expect(servicesMock.schedulerService.stop).not.toHaveBeenCalled();
     expect(emitAppEventMock).toHaveBeenCalledWith('settings.changed');
     expect(result.featureFlags.enableScheduler).toBe(true);
+  });
+
+  it('applies saved AI behavior preferences to chat prompts', async () => {
+    servicesMock.aiConfigService.resolveRuntimeConfig.mockResolvedValue({
+      provider: 'openai',
+      model: 'gpt-test',
+      apiKey: 'sk-test',
+      baseUrl: null,
+      featureFlags: {
+        enableScheduler: false,
+        communicationStyle: 'detailed',
+        confirmationThreshold: 'high',
+      },
+    });
+
+    const handler = getRegisteredHandler<
+      [{ messages: Array<{ role: 'user' | 'assistant'; content: string }>; taskId?: string | null }],
+      { text: string }
+    >('ai:chat');
+
+    const result = await handler({}, {
+      taskId: null,
+      messages: [{ role: 'user', content: '帮我规划今天' }],
+    });
+
+    expect(result.text).toBe('AI response');
+    expect(getLanguageModelMock).toHaveBeenCalledWith(expect.objectContaining({
+      model: 'gpt-test',
+    }));
+    expect(generateTextMock).toHaveBeenCalledWith(expect.objectContaining({
+      model: 'language-model',
+      system: expect.stringContaining('AI behavior preferences'),
+      messages: [{ role: 'user', content: '帮我规划今天' }],
+    }));
+    const system = generateTextMock.mock.calls[0]?.[0]?.system as string;
+    expect(system).toContain('Provide more context and rationale');
+    expect(system).toContain('Ask for confirmation more often');
   });
 
   it('emits decision and task events after decision actions', async () => {

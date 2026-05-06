@@ -21,7 +21,7 @@ import type {
   UpdateProcessTemplateInput,
 } from '../../shared/types/process-template.js';
 import type { CreateCodeAgentRunInput, CreateRunInput } from '../../shared/types/run.js';
-import type { AiConfigInput } from '../../shared/types/settings.js';
+import type { AiConfigInput, FeatureFlags } from '../../shared/types/settings.js';
 import type { OperatorStartedRunRequest } from '../../shared/types/operator-started-run.js';
 import type { CreateSourceContextInput, UpdateSourceContextInput } from '../../shared/types/source-context.js';
 import type {
@@ -69,6 +69,23 @@ function extractJsonObject(text: string): unknown {
 
 function readString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value.trim() : fallback;
+}
+
+function formatAiBehaviorPreferences(featureFlags: FeatureFlags): string {
+  const communication = featureFlags.communicationStyle ?? 'balanced';
+  const confirmation = featureFlags.confirmationThreshold ?? 'normal';
+  const communicationInstruction = {
+    concise: 'Keep replies short and direct; prefer bullets only when they reduce friction.',
+    balanced: 'Use a balanced level of detail: explain reasoning briefly, then give concrete next steps.',
+    detailed: 'Provide more context and rationale when it helps the user make a decision, while staying practical.',
+  }[communication];
+  const confirmationInstruction = {
+    low: 'Ask for confirmation only before irreversible or clearly risky actions.',
+    normal: 'Ask for confirmation before risky, ambiguous, or externally visible actions.',
+    high: 'Ask for confirmation more often when intent, risk, external effects, or task type is uncertain.',
+  }[confirmation];
+
+  return `\n\nAI behavior preferences:\n- Communication style: ${communicationInstruction}\n- Confirmation threshold: ${confirmationInstruction}`;
 }
 
 function normalizeProjectDecomposition(value: unknown): ProjectDecompositionResult {
@@ -417,9 +434,10 @@ export function registerIpcHandlers(): void {
       ? `\n\nApplicable confirmed work habits:\n${input.workHabits.slice(0, 5).map((habit) => `- ${habit}`).join('\n')}`
       : '';
 
+    const behaviorContext = formatAiBehaviorPreferences(config.featureFlags);
     const systemPrompt = input.taskId
-      ? `You are a helpful AI assistant inside Taskplane, a task management tool. The user is asking about a specific task. Use the persisted task context below as the source of truth. Treat applicable confirmed work habits as user preferences and quality criteria, but do not mention them unless relevant. Help them understand status, next steps, and risks. Be concise and actionable. Reply in the same language as the user's message (Chinese or English).\n\n${taskContext ?? `Task ID: ${input.taskId}`}${workHabitContext}`
-      : `You are a helpful AI assistant inside Taskplane, a task management tool. You have a global view of all tasks. Treat applicable confirmed work habits as user preferences and quality criteria, but do not mention them unless relevant. Help the user prioritize, plan, and think through their work. Be concise and actionable. Reply in the same language as the user's message (Chinese or English).${workHabitContext}`;
+      ? `You are a helpful AI assistant inside Taskplane, a task management tool. The user is asking about a specific task. Use the persisted task context below as the source of truth. Treat applicable confirmed work habits as user preferences and quality criteria, but do not mention them unless relevant. Help them understand status, next steps, and risks. Reply in the same language as the user's message (Chinese or English).${behaviorContext}\n\n${taskContext ?? `Task ID: ${input.taskId}`}${workHabitContext}`
+      : `You are a helpful AI assistant inside Taskplane, a task management tool. You have a global view of all tasks. Treat applicable confirmed work habits as user preferences and quality criteria, but do not mention them unless relevant. Help the user prioritize, plan, and think through their work. Reply in the same language as the user's message (Chinese or English).${behaviorContext}${workHabitContext}`;
 
     const result = await generateText({
       model,
