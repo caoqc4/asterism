@@ -511,6 +511,7 @@ function RunsTab({
   const active = runs.find((r) => r.status === 'running' || r.status === 'paused');
   const historical = runs.filter((r) => r !== active);
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
+  const [runDetailsById, setRunDetailsById] = useState<Record<string, RunDetailRecord | null>>({});
   const [showRunForm, setShowRunForm] = useState(false);
   const [runNote, setRunNote] = useState('');
   const [triggering, setTriggering] = useState(false);
@@ -518,6 +519,20 @@ function RunsTab({
   useEffect(() => {
     if (runFormRequest > 0 && !active) setShowRunForm(true);
   }, [active, runFormRequest]);
+
+  useEffect(() => {
+    setExpandedRunId(null);
+    setRunDetailsById({});
+  }, [taskId]);
+
+  async function toggleHistoricalRun(runId: string) {
+    const isExpanded = expandedRunId === runId;
+    setExpandedRunId(isExpanded ? null : runId);
+    if (isExpanded || runDetailsById[runId] !== undefined || !window.api?.getRunDetail) return;
+
+    const detail = await window.api.getRunDetail(runId).catch(() => null);
+    setRunDetailsById((current) => ({ ...current, [runId]: detail }));
+  }
 
   async function triggerNewRun() {
     if (!window.api || triggering) return;
@@ -565,9 +580,10 @@ function RunsTab({
       {historical.map((r, i) => {
         const isExpanded = expandedRunId === r.id;
         const runNum = runs.length - i - (active ? 1 : 0);
+        const historicalDetail = runDetailsById[r.id] ?? null;
         return (
           <div key={r.id} className={`run-item${isExpanded ? ' expanded' : ''}`}>
-            <div className="run-item-header" style={{ cursor: 'pointer' }} onClick={() => setExpandedRunId(isExpanded ? null : r.id)}>
+            <div className="run-item-header" style={{ cursor: 'pointer' }} onClick={() => void toggleHistoricalRun(r.id)}>
               <span className={`dot ${r.status === 'completed' ? 'completed' : r.status === 'failed' ? 'risk' : ''}`} />
               <span className="run-item-name">
                 Run #{runNum} · {
@@ -581,7 +597,18 @@ function RunsTab({
             </div>
             {isExpanded && (
               <div className="run-item-detail">
-                <RunCheckSummary check={getRunCheck(r)} />
+                <RunCheckSummary check={getRunCheck(r, historicalDetail)} />
+                {historicalDetail?.steps && historicalDetail.steps.length > 0 && (
+                  <div className="run-steps">
+                    {historicalDetail.steps.map((step) => (
+                      <RunStep
+                        key={step.id}
+                        step={step}
+                        detail={historicalDetail}
+                      />
+                    ))}
+                  </div>
+                )}
                 {r.output ? (
                   <pre className="run-item-full-output">{r.output}</pre>
                 ) : (
