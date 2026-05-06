@@ -987,6 +987,8 @@ describe('App redesign v1', () => {
 
     await user.dblClick((await screen.findAllByText('每周一准备经营周报'))[0]!);
     expect(await screen.findByText('定时任务')).toBeTruthy();
+    expect(screen.getByText('定时执行')).toBeTruthy();
+    expect(screen.getByText(/每次触发会在这里形成一条独立 Run 实例/)).toBeTruthy();
     expect(screen.getByText(/每周一 09:00/)).toBeTruthy();
     expect(screen.getByText(/周五 17:00 前发给 CEO/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /每周一 09:00/ }));

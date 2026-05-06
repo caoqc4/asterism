@@ -504,6 +504,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
             runFormRequest={runFormRequest}
             onRunCreated={(run) => setRuns((items) => [run, ...items.filter((item) => item.id !== run.id)])}
             projectChildren={projectChildren}
+            taskAttrs={taskAttrs}
           />
         )}
         {tab === 'sources' && (
@@ -660,6 +661,7 @@ function RunsTab({
   runFormRequest,
   onRunCreated,
   projectChildren,
+  taskAttrs,
 }: {
   taskId: string;
   runs: RunRecord[];
@@ -667,6 +669,7 @@ function RunsTab({
   runFormRequest: number;
   onRunCreated: (run: RunRecord) => void;
   projectChildren: ProjectChildSummary[];
+  taskAttrs: TaskAttributeRecord | null;
 }) {
   const active = runs.find((r) => r.status === 'running' || r.status === 'paused');
   const historical = runs.filter((r) => r !== active);
@@ -721,6 +724,7 @@ function RunsTab({
   return (
     <div className="tab-content">
       {projectChildren.length > 0 && <ProjectExecutionSummary children={projectChildren} />}
+      <ExecutionModeNote attrs={taskAttrs} />
 
       {runs.length > 0 && (
         <div className="run-check-overview">
@@ -876,6 +880,26 @@ function ProjectExecutionSummary({ children }: { children: ProjectChildSummary[]
       )}
     </div>
   );
+}
+
+function ExecutionModeNote({ attrs }: { attrs: TaskAttributeRecord | null }) {
+  if (attrs?.type === 'scheduled') {
+    return (
+      <div className="run-mode-note">
+        <strong>定时执行</strong>
+        <span>每次触发会在这里形成一条独立 Run 实例，周期配置保存在任务 Header。</span>
+      </div>
+    );
+  }
+  if (attrs?.type === 'event') {
+    return (
+      <div className="run-mode-note">
+        <strong>事件监听</strong>
+        <span>这是一条持续运行的触发规则；每次外部信号会追加到任务产物和执行记录，不会自动新建任务。</span>
+      </div>
+    );
+  }
+  return null;
 }
 
 function formatProjectChildState(state: ProjectChildSummary['state']): string {
