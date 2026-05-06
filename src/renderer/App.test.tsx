@@ -795,6 +795,8 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /Decisions/ }));
 
     expect(await screen.findByText('是否批准本轮材料修改方案')).toBeTruthy();
+    expect(screen.getByText('待拍板')).toBeTruthy();
+    expect(screen.getAllByText('本周内').length).toBeGreaterThan(0);
     expect(screen.queryByText('decision_done')).toBeNull();
 
     await user.click(screen.getByText('是否批准本轮材料修改方案'));

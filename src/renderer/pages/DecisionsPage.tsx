@@ -70,6 +70,23 @@ export function DecisionsPage() {
         <p className="decisions-subtitle">跨任务汇总所有需要你拍板的事项</p>
       </div>
 
+      {decisions.length > 0 && (
+        <div className="dec-overview">
+          <div className="dec-overview-chip">
+            <span className="dec-overview-value">{decisions.length}</span>
+            <span>待拍板</span>
+          </div>
+          <div className="dec-overview-chip">
+            <span className="dec-overview-value">{today.length}</span>
+            <span>今天必须处理</span>
+          </div>
+          <div className="dec-overview-chip">
+            <span className="dec-overview-value">{week.length}</span>
+            <span>本周内</span>
+          </div>
+        </div>
+      )}
+
       {today.length > 0 && (
         <section className="dec-section">
           <div className="dec-section-label">
