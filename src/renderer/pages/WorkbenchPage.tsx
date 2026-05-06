@@ -25,6 +25,12 @@ import {
 } from '../lib/artifactWorkspace';
 
 type WorkbenchTab = 'runs' | 'sources' | 'artifacts' | 'activity';
+type ResumeSignalTone = 'ready' | 'thin';
+
+interface ResumeSignal {
+  label: string;
+  tone?: ResumeSignalTone;
+}
 
 const TAB_LABELS: Record<WorkbenchTab, string> = {
   runs:      '执行',
@@ -67,6 +73,39 @@ function deriveStatus(detail: TaskDetail): string {
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function buildResumeSignals(params: {
+  detail: TaskDetail | null;
+  runs: RunRecord[];
+  activeRun: RunRecord | null;
+}): ResumeSignal[] {
+  const { detail, runs, activeRun } = params;
+  if (!detail) return [];
+
+  const signals: ResumeSignal[] = [
+    { label: `Priority Lane · ${LANE_LABELS[deriveLane(detail)] ?? deriveLane(detail)}` },
+  ];
+  const keySources = detail.sourceContexts.filter((source) => source.isKey).length;
+  const completedCriteria = detail.completionCriteria.filter((criterion) => Boolean(criterion.satisfiedAt)).length;
+  const evidenceCount = [
+    runs.length > 0,
+    keySources > 0,
+    detail.timeline.length > 0,
+    detail.completionCriteria.length > 0,
+  ].filter(Boolean).length;
+
+  if (activeRun) signals.push({ label: activeRun.status === 'paused' ? 'Run 暂停中' : 'Run 执行中' });
+  else if (runs.length > 0) signals.push({ label: `Run ${runs.length}` });
+
+  if (keySources > 0) signals.push({ label: `关键来源 ${keySources}` });
+  if (detail.completionCriteria.length > 0) {
+    signals.push({ label: `完成标准 ${completedCriteria}/${detail.completionCriteria.length}` });
+  }
+  if (detail.timeline.length > 0) signals.push({ label: `活动 ${detail.timeline.length}` });
+  if (evidenceCount < 2) signals.push({ label: '信号不足，先补齐目标', tone: 'thin' });
+
+  return signals;
 }
 
 interface WorkbenchPageProps {
@@ -163,6 +202,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
     : null;
 
   const activeRun = runs.find((r) => r.status === 'running' || r.status === 'paused');
+  const resumeSignals = buildResumeSignals({ detail, runs, activeRun: activeRun ?? null });
 
   function regenerateResume() {
     if (!detail) return;
@@ -389,6 +429,17 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
         {generatedResume && (
           <div className="resume-generated-at">
             已重新生成 · {new Date(generatedResume.generatedAt).toLocaleTimeString('zh', { hour: '2-digit', minute: '2-digit' })}
+          </div>
+        )}
+
+        {resumeSignals.length > 0 && (
+          <div className="resume-signals" aria-label="推进依据">
+            <span className="resume-signals-label">推进依据</span>
+            {resumeSignals.map((signal) => (
+              <span key={signal.label} className={`resume-signal${signal.tone === 'thin' ? ' thin' : ''}`}>
+                {signal.label}
+              </span>
+            ))}
           </div>
         )}
 
