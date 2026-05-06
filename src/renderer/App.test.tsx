@@ -858,16 +858,27 @@ describe('App redesign v1', () => {
 
   it('shows only pending decisions and dispatches formal decision actions', async () => {
     const user = userEvent.setup();
+    harness.decisions.push(buildDecision({
+      id: 'decision_checkpoint',
+      taskId: 'task_risk',
+      title: '是否恢复暂停的 Agent 执行',
+      sourceType: 'agent_checkpoint',
+      sourceLabel: '董事会材料修订',
+    }));
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /Decisions/ }));
 
     expect(await screen.findByText('是否批准本轮材料修改方案')).toBeTruthy();
+    expect(await screen.findByText('是否恢复暂停的 Agent 执行')).toBeTruthy();
     expect(screen.getByText('待拍板')).toBeTruthy();
+    expect(screen.getAllByText('今天必须处理').length).toBeGreaterThan(0);
     expect(screen.getAllByText('本周内').length).toBeGreaterThan(0);
+    expect(screen.getByText('Agent 检查点')).toBeTruthy();
+    expect(screen.getByText('需要复核')).toBeTruthy();
     expect(screen.getByText('人工决策')).toBeTruthy();
     expect(screen.getByText('推荐路径清晰')).toBeTruthy();
-    expect(screen.getByText('更新 2026-01-01')).toBeTruthy();
+    expect(screen.getAllByText('更新 2026-01-01').length).toBeGreaterThan(0);
     expect(screen.queryByText('decision_done')).toBeNull();
     await user.type(screen.getByPlaceholderText('搜索决策或任务'), '合同');
     expect(await screen.findByText('没有匹配的待拍板事项。')).toBeTruthy();

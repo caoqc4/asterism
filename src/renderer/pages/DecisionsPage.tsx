@@ -31,6 +31,7 @@ interface DecisionOption {
 
 
 function fromRecord(r: DecisionRecord): Decision {
+  const isAgentCheckpoint = r.sourceType === 'agent_checkpoint';
   return {
     id: r.id,
     taskId: r.taskId,
@@ -39,7 +40,7 @@ function fromRecord(r: DecisionRecord): Decision {
     typeLabel: formatDecisionType(r.sourceType),
     updatedLabel: `更新 ${formatDecisionDate(r.updatedAt)}`,
     lane: 'continue',
-    urgency: 'week',
+    urgency: isAgentCheckpoint ? 'today' : 'week',
     context: {
       whyNow: `这次拍板会决定「${r.sourceLabel ?? r.title}」是否按当前方向继续推进。`,
       ifDeferred: '如果暂不处理，相关任务会继续停留在等待拍板状态，后续执行不应自动推进。',
@@ -50,7 +51,7 @@ function fromRecord(r: DecisionRecord): Decision {
       { label: '取消', desc: '取消这次决策请求，不改变任务当前执行状态。' },
     ],
     recommendation: '批准',
-    recommendationClarity: 'clear',
+    recommendationClarity: isAgentCheckpoint ? 'review' : 'clear',
     expanded: false,
   };
 }
