@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import type { ProjectDecompositionResult } from '@shared/types/ipc';
 import type { TaskListItemRecord, TaskState } from '@shared/types/task';
 import type { SourceContextRecord } from '@shared/types/source-context';
+import type { DecisionRecord } from '@shared/types/decision';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import {
   defaultScheduleForType,
@@ -128,15 +129,17 @@ function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): 
 interface TasksPageProps {
   onOpenPanel: (taskId: string) => void;
   onOpenWorkbench: (taskId: string) => void;
+  onOpenDecision: () => void;
 }
 
-export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
+export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: TasksPageProps) {
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [lens, setLens] = useState<Lens>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('lane');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedSources, setSelectedSources] = useState<SourceContextRecord[]>([]);
+  const [pendingDecisions, setPendingDecisions] = useState<DecisionRecord[]>([]);
   const [deferOpenId, setDeferOpenId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; taskId: string } | null>(null);
   const [completionCheckTask, setCompletionCheckTask] = useState<Task | null>(null);
@@ -172,6 +175,9 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+    window.api.listDecisions?.()
+      .then((decisions) => setPendingDecisions(decisions.filter((decision) => decision.status === 'pending')))
+      .catch(() => {});
 
     const unsub = window.api.subscribeToEvents((event) => {
       if (event.type === 'task.changed') reloadTasks();
@@ -193,6 +199,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
   });
 
   const selectedTask = filtered.find((t) => t.id === selectedId) ?? null;
+  const selectedHasDecision = Boolean(selectedTask && pendingDecisions.some((decision) => decision.taskId === selectedTask.id));
   const projectParents = allTasks.filter((task) => task.type === 'project' && !task.parentTaskId);
 
   useEffect(() => {
@@ -660,7 +667,9 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
           <TaskPreview
             task={selectedTask}
             keySources={selectedSources}
+            hasPendingDecision={selectedHasDecision}
             onOpenWorkbench={() => onOpenWorkbench(selectedTask.id)}
+            onOpenDecision={onOpenDecision}
           />
         </div>
       )}
@@ -1006,10 +1015,12 @@ function statusDot(status: TaskStatus): string {
 interface TaskPreviewProps {
   task: Task;
   keySources: SourceContextRecord[];
+  hasPendingDecision: boolean;
   onOpenWorkbench: () => void;
+  onOpenDecision: () => void;
 }
 
-function TaskPreview({ task, keySources, onOpenWorkbench }: TaskPreviewProps) {
+function TaskPreview({ task, keySources, hasPendingDecision, onOpenWorkbench, onOpenDecision }: TaskPreviewProps) {
   return (
     <div className="task-preview-inner">
       <div className="task-preview-head">
@@ -1092,8 +1103,8 @@ function TaskPreview({ task, keySources, onOpenWorkbench }: TaskPreviewProps) {
       )}
 
       <div className="preview-actions">
-        <button className="btn primary" onClick={onOpenWorkbench}>
-          打开工作台 →
+        <button className="btn primary" onClick={hasPendingDecision ? onOpenDecision : onOpenWorkbench}>
+          {hasPendingDecision ? '去拍板 →' : '打开工作台 →'}
         </button>
       </div>
     </div>

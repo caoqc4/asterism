@@ -674,6 +674,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByText('董事会材料修订'));
     expect(await screen.findByText('关键来源')).toBeTruthy();
     expect(await screen.findByText('董事会反馈邮件')).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /去拍板/ })).toBeTruthy();
     await user.click(await screen.findByRole('button', { name: '完成' }));
     expect(await screen.findByText('完成确认')).toBeTruthy();
     expect(await screen.findByText('最近 Run 验证')).toBeTruthy();
@@ -723,6 +724,17 @@ describe('App redesign v1', () => {
         waitingReason: '延后处理：明天',
       });
     });
+  });
+
+  it('routes task preview primary action to Decisions when the task needs approval', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByText('董事会材料修订'));
+    await user.click(await screen.findByRole('button', { name: /去拍板/ }));
+
+    expect(await screen.findByText('是否批准本轮材料修改方案')).toBeTruthy();
   });
 
   it('surfaces dependency recovery signals in the task list', async () => {

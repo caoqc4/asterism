@@ -107,6 +107,7 @@ export function App() {
                 <TasksPage
                   onOpenPanel={openPanelForTask}
                   onOpenWorkbench={openWorkbench}
+                  onOpenDecision={() => navigate('decisions')}
                 />
               )}
               {route === 'decisions' && <DecisionsPage />}
