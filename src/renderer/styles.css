@@ -2202,6 +2202,54 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* Run items */
+.project-exec-summary {
+  display: grid;
+  gap: 8px;
+  padding: 11px 12px;
+  margin-bottom: 8px;
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.project-exec-head,
+.project-exec-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.project-exec-title {
+  flex: 1;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.project-exec-progress,
+.project-exec-child-state {
+  color: var(--ink-4);
+  font-size: 11px;
+  font-family: var(--mono);
+}
+.project-exec-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.project-exec-list {
+  display: grid;
+  gap: 5px;
+}
+.project-exec-child-title {
+  flex: 1;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+.project-exec-next {
+  padding-top: 2px;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.45;
+}
 .run-check-overview {
   display: flex;
   align-items: center;

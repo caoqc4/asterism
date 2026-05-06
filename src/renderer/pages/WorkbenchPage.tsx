@@ -32,6 +32,15 @@ interface ResumeSignal {
   tone?: ResumeSignalTone;
 }
 
+interface ProjectChildSummary {
+  id: string;
+  title: string;
+  state: TaskListItemRecord['state'];
+  nextStep: string | null;
+  waitingReason: string | null;
+  riskLevel: TaskListItemRecord['riskLevel'];
+}
+
 const TAB_LABELS: Record<WorkbenchTab, string> = {
   runs:      '执行',
   sources:   '来源',
@@ -129,14 +138,27 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
   const [showSopExtract, setShowSopExtract] = useState(false);
   const [taskAttrs, setTaskAttrs] = useState<TaskAttributeRecord | null>(() => getTaskAttributes(taskId));
   const [projectOptions, setProjectOptions] = useState<Array<{ id: string; title: string }>>([]);
+  const [projectChildren, setProjectChildren] = useState<ProjectChildSummary[]>([]);
   const [generatedResume, setGeneratedResume] = useState<{ summary: string; nextSuggestedMove: string; generatedAt: string } | null>(null);
 
   function loadProjectOptions(records?: TaskListItemRecord[]) {
     const applyRecords = (items: TaskListItemRecord[]) => {
       const attrs = loadTaskAttributes();
+      const currentAttrs = attrs[taskId] ?? null;
       setProjectOptions(items
         .filter((task) => task.id !== taskId && attrs[task.id]?.type === 'project' && !attrs[task.id]?.parentTaskId)
         .map((task) => ({ id: task.id, title: task.title })));
+      setProjectChildren((currentAttrs?.childTaskIds ?? [])
+        .map((id) => items.find((task) => task.id === id))
+        .filter((task): task is TaskListItemRecord => Boolean(task))
+        .map((task) => ({
+          id: task.id,
+          title: task.title,
+          state: task.state,
+          nextStep: task.nextStep,
+          waitingReason: task.waitingReason,
+          riskLevel: task.riskLevel,
+        })));
     };
 
     if (records) {
@@ -481,6 +503,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
             activeRunDetail={activeRunDetail}
             runFormRequest={runFormRequest}
             onRunCreated={(run) => setRuns((items) => [run, ...items.filter((item) => item.id !== run.id)])}
+            projectChildren={projectChildren}
           />
         )}
         {tab === 'sources' && (
@@ -636,12 +659,14 @@ function RunsTab({
   activeRunDetail,
   runFormRequest,
   onRunCreated,
+  projectChildren,
 }: {
   taskId: string;
   runs: RunRecord[];
   activeRunDetail: RunDetailRecord | null;
   runFormRequest: number;
   onRunCreated: (run: RunRecord) => void;
+  projectChildren: ProjectChildSummary[];
 }) {
   const active = runs.find((r) => r.status === 'running' || r.status === 'paused');
   const historical = runs.filter((r) => r !== active);
@@ -695,6 +720,8 @@ function RunsTab({
 
   return (
     <div className="tab-content">
+      {projectChildren.length > 0 && <ProjectExecutionSummary children={projectChildren} />}
+
       {runs.length > 0 && (
         <div className="run-check-overview">
           <span className="run-check-overview-title">自检查记录</span>
@@ -810,6 +837,52 @@ function RunsTab({
       )}
     </div>
   );
+}
+
+function ProjectExecutionSummary({ children }: { children: ProjectChildSummary[] }) {
+  const completed = children.filter((child) => child.state === 'completed').length;
+  const waiting = children.filter((child) => child.state === 'waiting_external').length;
+  const running = children.filter((child) => child.state === 'running').length;
+  const attention = children.filter((child) => child.riskLevel === 'high' || child.state === 'waiting_external');
+  const nextChild = attention[0] ?? children.find((child) => child.state !== 'completed') ?? children[0]!;
+
+  return (
+    <div className="project-exec-summary">
+      <div className="project-exec-head">
+        <span className="project-exec-title">项目子任务执行概览</span>
+        <span className="project-exec-progress">{completed}/{children.length} 子任务完成</span>
+      </div>
+      <div className="project-exec-chips">
+        {running > 0 && <span className="run-check-overview-chip pending">执行中 {running}</span>}
+        {waiting > 0 && <span className="run-check-overview-chip warn">等待中 {waiting}</span>}
+        {attention.length > 0 && <span className="run-check-overview-chip warn">需关注 {attention.length}</span>}
+      </div>
+      <div className="project-exec-list">
+        {children.slice(0, 4).map((child) => (
+          <div key={child.id} className="project-exec-child">
+            <span className={`dot ${child.state === 'completed' ? 'completed' : child.riskLevel === 'high' ? 'risk' : child.state === 'waiting_external' ? 'waiting' : ''}`} />
+            <span className="project-exec-child-title">{child.title}</span>
+            <span className="project-exec-child-state">{formatProjectChildState(child.state)}</span>
+          </div>
+        ))}
+      </div>
+      {nextChild && (
+        <div className="project-exec-next">
+          下一步：{nextChild.waitingReason ?? nextChild.nextStep ?? `推进「${nextChild.title}」`}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatProjectChildState(state: ProjectChildSummary['state']): string {
+  if (state === 'completed') return '已完成';
+  if (state === 'running') return '执行中';
+  if (state === 'waiting_external') return '等待中';
+  if (state === 'captured') return '待确认';
+  if (state === 'planned') return '已计划';
+  if (state === 'archived') return '已归档';
+  return '待推进';
 }
 
 function collectRunCheckStats(params: {

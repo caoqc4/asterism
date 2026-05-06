@@ -1020,6 +1020,14 @@ describe('App redesign v1', () => {
     const decompositionInput = screen.getByPlaceholderText(/关于「官网改版项目」/) as HTMLTextAreaElement;
     expect(decompositionInput.value).toContain('先拆一版');
     expect(decompositionInput.value).toContain('再自检查');
+    await user.click(screen.getByTitle('关闭面板'));
+
+    await user.dblClick((await screen.findAllByText('官网改版项目'))[1]!);
+    expect(await screen.findByText('项目子任务执行概览')).toBeTruthy();
+    expect(screen.getByText('0/2 子任务完成')).toBeTruthy();
+    expect(screen.getByText('确认官网改版范围')).toBeTruthy();
+    expect(screen.getByText('产出官网改版方案')).toBeTruthy();
+    expect(screen.getByText(/下一步：/)).toBeTruthy();
   });
 
   it('lets users correct and clear task memory from Context', async () => {
