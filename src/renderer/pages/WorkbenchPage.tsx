@@ -1146,6 +1146,16 @@ function IconEdit() {
   );
 }
 
+function IconTrash() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="2,4 12,4" />
+      <path d="M5 4V2.5h4V4" />
+      <rect x="3" y="4" width="8" height="8" rx="1.5" />
+    </svg>
+  );
+}
+
 /* ─── SOP extraction ─── */
 
 function buildSopSteps(detail: TaskDetail): string[] {
@@ -1202,6 +1212,14 @@ function SopExtractModal({
     setSteps((current) => current.map((step, i) => i === index ? value : step));
   }
 
+  function addStep() {
+    setSteps((current) => [...current, '']);
+  }
+
+  function removeStep(index: number) {
+    setSteps((current) => current.filter((_, i) => i !== index));
+  }
+
   const cleanSteps = steps.map((step) => step.trim()).filter(Boolean);
 
   return (
@@ -1225,9 +1243,18 @@ function SopExtractModal({
                   value={step}
                   onChange={(e) => updateStep(index, e.target.value)}
                 />
+                <button
+                  type="button"
+                  className="icon-btn sop-step-remove"
+                  onClick={() => removeStep(index)}
+                  title="删除步骤"
+                >
+                  <IconTrash />
+                </button>
               </label>
             ))}
           </div>
+          <button className="btn sm ghost sop-step-add" onClick={addStep}>+ 新增步骤</button>
         </div>
         <div className="modal-foot">
           <button className="btn sm ghost" onClick={onCancel}>不保存</button>
