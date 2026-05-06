@@ -32,7 +32,7 @@ function makeWelcomeMessage(taskTitle: string): Message {
   return {
     id: 'm0',
     role: 'assistant',
-    text: `已切换到任务上下文：**${taskTitle}**。\n\n有什么需要讨论或推进的？`,
+    text: `已切换到任务上下文：**${taskTitle}**。\n\n我会从任务记忆、执行记录和工作习惯重新组装上下文。有什么需要讨论或推进的？`,
     ts: now(),
   };
 }
@@ -324,6 +324,9 @@ export function RightPanel({ taskId, hidden = false, onClose, onClearTask }: Rig
               <div className="panel-history-row">
                 <span>消息</span>
                 <strong>{messages.length}</strong>
+              </div>
+              <div className="panel-history-note">
+                当前会话只是临时工作内存；开始新会话会从任务记忆种子继续，不默认加载旧聊天。
               </div>
               <button className="btn sm ghost" onClick={startFreshSession}>
                 开始新会话
