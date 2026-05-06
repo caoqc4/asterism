@@ -42,15 +42,25 @@ function fromRecord(r: DecisionRecord): Decision {
     lane: 'continue',
     urgency: isAgentCheckpoint ? 'today' : 'week',
     context: {
-      whyNow: `这次拍板会决定「${r.sourceLabel ?? r.title}」是否按当前方向继续推进。`,
-      ifDeferred: '如果暂不处理，相关任务会继续停留在等待拍板状态，后续执行不应自动推进。',
+      whyNow: isAgentCheckpoint
+        ? `Agent 在「${r.sourceLabel ?? r.title}」的执行检查点暂停，需要你确认是否恢复推进。`
+        : `这次拍板会决定「${r.sourceLabel ?? r.title}」是否按当前方向继续推进。`,
+      ifDeferred: isAgentCheckpoint
+        ? '如果暂不处理，Agent 会保持暂停，相关任务不会自动继续执行。'
+        : '如果暂不处理，相关任务会继续停留在等待拍板状态，后续执行不应自动推进。',
     },
-    options: [
-      { label: '批准', desc: '按当前建议继续推进，并记录这次拍板。' },
-      { label: '稍后再定', desc: '暂缓处理，任务会回到等待状态。' },
-      { label: '取消', desc: '取消这次决策请求，不改变任务当前执行状态。' },
-    ],
-    recommendation: '批准',
+    options: isAgentCheckpoint
+      ? [
+          { label: '恢复执行', desc: '确认检查点，可以让 Agent 按当前上下文继续推进。' },
+          { label: '暂停等待', desc: '暂缓处理，保留检查点，等补充信息后再恢复。' },
+          { label: '取消本次执行', desc: '取消这次检查点请求，不自动继续当前执行。' },
+        ]
+      : [
+          { label: '批准', desc: '按当前建议继续推进，并记录这次拍板。' },
+          { label: '稍后再定', desc: '暂缓处理，任务会回到等待状态。' },
+          { label: '取消', desc: '取消这次决策请求，不改变任务当前执行状态。' },
+        ],
+    recommendation: isAgentCheckpoint ? '恢复执行' : '批准',
     recommendationClarity: isAgentCheckpoint ? 'review' : 'clear',
     expanded: false,
   };
@@ -262,7 +272,13 @@ function DecisionCard({ decision: d, onToggle, onDecide, onOpenPanel, onOpenWork
               <p className="dec-option-desc">{opt.desc}</p>
               <button
                 className="btn sm"
-                onClick={() => onDecide(opt.label === '稍后再定' ? 'defer' : opt.label === '取消' ? 'cancel' : 'approve')}
+                onClick={() => onDecide(
+                  opt.label === '稍后再定' || opt.label === '暂停等待'
+                    ? 'defer'
+                    : opt.label === '取消' || opt.label === '取消本次执行'
+                      ? 'cancel'
+                      : 'approve'
+                )}
               >
                 选择此方案
               </button>

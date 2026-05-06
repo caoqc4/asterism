@@ -876,6 +876,7 @@ describe('App redesign v1', () => {
     expect(screen.getAllByText('本周内').length).toBeGreaterThan(0);
     expect(screen.getByText('Agent 检查点')).toBeTruthy();
     expect(screen.getByText('需要复核')).toBeTruthy();
+    expect(screen.getByText('恢复执行')).toBeTruthy();
     expect(screen.getByText('人工决策')).toBeTruthy();
     expect(screen.getByText('推荐路径清晰')).toBeTruthy();
     expect(screen.getAllByText('更新 2026-01-01').length).toBeGreaterThan(0);
@@ -884,13 +885,18 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('没有匹配的待拍板事项。')).toBeTruthy();
     await user.clear(screen.getByPlaceholderText('搜索决策或任务'));
 
+    await user.click(screen.getByText('是否恢复暂停的 Agent 执行'));
+    expect(await screen.findByText(/Agent 在「董事会材料修订」的执行检查点暂停/)).toBeTruthy();
+    expect(screen.getByText('暂停等待')).toBeTruthy();
+    expect(screen.getByText('取消本次执行')).toBeTruthy();
+
     await user.click(screen.getByText('是否批准本轮材料修改方案'));
-    expect(await screen.findByText('为什么现在')).toBeTruthy();
+    expect((await screen.findAllByText('为什么现在')).length).toBeGreaterThan(0);
     expect(screen.getByText(/等待拍板状态/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: '修改后批准' })).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '要求补充信息' }));
+    expect(screen.getAllByRole('button', { name: '修改后批准' }).length).toBeGreaterThan(0);
+    await user.click(screen.getAllByRole('button', { name: '要求补充信息' })[0]!);
     expect((await screen.findAllByText('董事会材料修订')).length).toBeGreaterThan(0);
-    await user.click(screen.getByRole('button', { name: '查看任务详情' }));
+    await user.click(screen.getAllByRole('button', { name: '查看任务详情' })[0]!);
     expect(await screen.findByText('工作台')).toBeTruthy();
     await user.click(screen.getAllByRole('button', { name: /Decisions/ })[0]!);
     await user.click(await screen.findByText('是否批准本轮材料修改方案'));
