@@ -94,6 +94,12 @@ export function TaskCompletionCheckModal({
   const open = criteria.filter((item) => item.status === 'open');
   const hasRunConcern = recentRunCheck?.tone === 'fail' || recentRunCheck?.tone === 'warn';
   const hasConcern = open.length > 0 || criteria.length === 0 || hasRunConcern;
+  const traceParts = [
+    hasConcern ? '覆盖完成' : '检查通过',
+    `完成标准 ${satisfied.length}/${criteria.length}`,
+    open.length > 0 ? `未满足 ${open.length} 条` : null,
+    recentRunCheck ? `最近 Run：${recentRunCheck.label}` : '暂无近期 Run 验证',
+  ].filter((part): part is string => Boolean(part));
 
   async function submit(action: 'waiting' | 'complete') {
     if (submitting) return;
@@ -198,6 +204,7 @@ export function TaskCompletionCheckModal({
               {hasConcern && (
                 <div className="completion-check-advice">
                   <p>建议先标记为等待中，等完成标准或 Run 验证结论补齐后再完成；你也可以覆盖检查结论，直接完成。</p>
+                  <p className="completion-check-trace">将记录：{traceParts.join(' · ')}</p>
                   <p>
                     覆盖会写入任务活动记录
                     {selfLearnEnabled ? '，并作为后续工作习惯提议的学习信号。' : '；自学习已关闭，不会生成新的工作习惯提议。'}
