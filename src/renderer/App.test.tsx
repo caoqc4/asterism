@@ -652,6 +652,9 @@ describe('App redesign v1', () => {
     fireEvent.click(screen.getByTitle('全屏显示'));
     expect(screen.getByTitle('退出全屏')).toBeTruthy();
     fireEvent.click(screen.getByTitle('退出全屏'));
+    fireEvent.click(screen.getByTitle('历史记录'));
+    expect(screen.getByText('当前会话')).toBeTruthy();
+    expect(screen.getByText('消息')).toBeTruthy();
     const input = screen.getByPlaceholderText(/关于「董事会材料修订」/);
     await user.type(input, '下一步怎么推进？');
     await user.click(screen.getByRole('button', { name: '发送' }));

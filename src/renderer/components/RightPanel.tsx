@@ -102,6 +102,7 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [pendingSwitch, setPendingSwitch] = useState<PendingCtxSwitch | null>(null);
   const [fullScreen, setFullScreen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [sessionRefreshDismissed, setSessionRefreshDismissed] = useState(false);
   const [compressionThreshold, setCompressionThreshold] = useState<number>(
     CONTEXT_COMPRESSION_THRESHOLD.default,
@@ -179,6 +180,7 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
   function startFreshSession() {
     const taskName = title ?? (activeTaskId ? titleCache[activeTaskId] ?? activeTaskId : null);
     setMessages(taskName ? [makeWelcomeMessage(taskName)] : []);
+    setHistoryOpen(false);
     setSessionRefreshDismissed(false);
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
@@ -293,7 +295,11 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
           )}
         </div>
         <div className="panel-header-actions">
-          <button className="icon-btn" title="历史记录">
+          <button
+            className={`icon-btn${historyOpen ? ' active' : ''}`}
+            onClick={() => setHistoryOpen((value) => !value)}
+            title="历史记录"
+          >
             <IconHistory />
           </button>
           <button
@@ -306,6 +312,22 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
           <button className="icon-btn" onClick={onClose} title="关闭面板">
             <IconClose />
           </button>
+          {historyOpen && (
+            <div className="panel-history-popover">
+              <div className="panel-history-title">当前会话</div>
+              <div className="panel-history-row">
+                <span>上下文</span>
+                <strong>{title ?? '全局'}</strong>
+              </div>
+              <div className="panel-history-row">
+                <span>消息</span>
+                <strong>{messages.length}</strong>
+              </div>
+              <button className="btn sm ghost" onClick={startFreshSession}>
+                开始新会话
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
