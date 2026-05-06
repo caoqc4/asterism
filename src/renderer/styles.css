@@ -2960,6 +2960,11 @@ a { color: inherit; text-decoration: none; }
   font-size: 12px;
 }
 .capture-commitment-input::placeholder { color: var(--ink-4); }
+.capture-type-note {
+  color: var(--ink-4);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
 .capture-actions { display: flex; gap: 6px; align-items: center; }
 .capture-ai-hint { font-size: 11px; margin-left: 4px; }
 

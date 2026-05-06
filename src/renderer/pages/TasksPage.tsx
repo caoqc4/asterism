@@ -604,6 +604,9 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
                 onChange={(e) => setCaptureCommitment(e.target.value)}
               />
             </div>
+            <div className="capture-type-note">
+              AI 会根据标题预判任务类型，你可在创建前调整；项目型先生成拆解草稿，确认后才创建真实子任务。
+            </div>
             <div className="capture-actions">
               <button className={`btn sm primary${capturing ? ' disabled' : ''}`} onClick={() => void captureTask()} disabled={!captureTitle.trim() || capturing}>
                 {capturing ? '创建中…' : '创建'}
