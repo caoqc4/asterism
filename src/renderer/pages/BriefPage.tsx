@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { HomeBriefData } from '@shared/types/brief';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
+import { loadTaskAttributes } from '../lib/taskAttributes';
 
 type Lane = 'escalate' | 'unblock' | 'continue' | 'clarify' | 'steady';
 
@@ -172,6 +173,10 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
 
   const runningCount = tasks.filter((t) => t.status === 'running').length;
   const waitingCount = tasks.filter((t) => t.status === 'waiting').length;
+  const taskAttributes = loadTaskAttributes();
+  const committedTaskCount = briefData
+    ? briefData.recentTasks.filter((task) => taskAttributes[task.id]?.commitment).length
+    : 0;
 
   return (
     <div className="brief-page">
@@ -201,6 +206,12 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
           <div className="stat-chip">
             <span className="dot waiting" />
             等待中: {briefData?.waitingTaskCount ?? waitingCount}
+          </div>
+        )}
+        {committedTaskCount > 0 && (
+          <div className="stat-chip">
+            <span className="dot" />
+            本周承诺: {committedTaskCount}
           </div>
         )}
         {(briefData?.activeTaskCount ?? 0) > 0 && (

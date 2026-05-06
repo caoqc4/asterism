@@ -24,6 +24,7 @@ import {
   updateWorkHabit,
   type WorkHabitRecord,
 } from './lib/workHabits';
+import { saveTaskAttributes } from './lib/taskAttributes';
 
 const now = '2026-01-01T00:00:00.000Z';
 
@@ -544,6 +545,13 @@ describe('App redesign v1', () => {
     expect(screen.queryByRole('button', { name: /Runs/ })).toBeNull();
     expect(await screen.findByText('外部信号')).toBeTruthy();
     expect(screen.getByText('暂无外部信号。')).toBeTruthy();
+  });
+
+  it('surfaces committed active tasks in the Brief stats strip', async () => {
+    saveTaskAttributes('task_risk', { commitment: '今晚前给 CFO 过目' });
+    render(<App />);
+
+    expect(await screen.findByText('本周承诺: 1')).toBeTruthy();
   });
 
   it('opens task context in the right panel from a Brief focus card and sends task-aware chat', async () => {
