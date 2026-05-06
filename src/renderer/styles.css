@@ -996,6 +996,15 @@ a { color: inherit; text-decoration: none; }
   flex-direction: column;
   gap: 2px;
 }
+.focus-order-note {
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-sunk);
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.4;
+}
 
 .focus-card {
   display: flex;

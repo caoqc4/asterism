@@ -626,6 +626,22 @@ describe('App redesign v1', () => {
     expect(blockedCard?.querySelector('.dot.risk')).toBeTruthy();
   });
 
+  it('lets users adjust Brief focus order for today without changing lanes', async () => {
+    render(<App />);
+
+    const firstCard = (await screen.findByText('董事会材料修订')).closest('.focus-card')!;
+    const secondCard = (await screen.findByText('合同盖章跟进')).closest('.focus-card')!;
+    fireEvent.dragStart(firstCard);
+    fireEvent.dragOver(secondCard);
+    fireEvent.drop(secondCard);
+
+    expect(await screen.findByText(/今日顺序已调整，仅今天有效/)).toBeTruthy();
+    const cards = Array.from(document.querySelectorAll('.focus-card'));
+    expect(cards[0]?.textContent).toContain('合同盖章跟进');
+    expect(cards[1]?.textContent).toContain('董事会材料修订');
+    expect(cards[1]?.textContent).toContain('Escalate now');
+  });
+
   it('opens task context in the right panel from a Brief focus card and sends task-aware chat', async () => {
     const user = userEvent.setup();
     render(<App />);

@@ -90,12 +90,14 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
   const [briefData, setBriefData] = useState<HomeBriefData | null>(null);
   const [loading, setLoading] = useState(true);
   const [completionCheckTask, setCompletionCheckTask] = useState<FocusTask | null>(null);
+  const [orderAdjusted, setOrderAdjusted] = useState(false);
 
   useEffect(() => {
     if (!window.api) { setLoading(false); return; }
     window.api.getHomeBrief().then((data) => {
       setBriefData(data);
       setTasks(focusTasksFromBriefData(data));
+      setOrderAdjusted(false);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -126,10 +128,13 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
       const next = [...prev];
       const fromIdx = next.findIndex((t) => t.id === from);
       const toIdx = next.findIndex((t) => t.id === to);
+      if (fromIdx < 0 || toIdx < 0) return prev;
       const [item] = next.splice(fromIdx, 1);
+      if (!item) return prev;
       next.splice(toIdx, 0, item);
       return next;
     });
+    setOrderAdjusted(true);
     dragId.current = null;
     dragOverId.current = null;
   }
@@ -237,6 +242,11 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
       <div className="brief-section">
         <div className="brief-section-label">内部信息</div>
         <div className="focus-list">
+          {orderAdjusted && (
+            <div className="focus-order-note">
+              今日顺序已调整，仅今天有效；Priority Lane 不会被改写。
+            </div>
+          )}
           {tasks.map((task) => (
             <FocusCard
               key={task.id}
