@@ -200,6 +200,22 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
     onBack();
   }
 
+  async function deferUntilTomorrow() {
+    setMoreOpen(false);
+    await window.api?.transitionTask({
+      id: taskId,
+      nextState: 'waiting_external',
+      waitingReason: '延后处理：明天',
+    }).then((record) => {
+      setDetail((current) => current ? {
+        ...current,
+        state: record.state,
+        waitingReason: record.waitingReason,
+        updatedAt: record.updatedAt,
+      } : current);
+    }).catch(() => {});
+  }
+
   function openRunForm() {
     setTab('runs');
     setRunFormRequest((value) => value + 1);
@@ -249,6 +265,8 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
               {moreOpen && (
                 <div className="more-menu">
                   <button className="more-menu-item" onClick={() => { setMoreOpen(false); onOpenPanel(); }}>规划讨论</button>
+                  <button className="more-menu-item" onClick={() => void deferUntilTomorrow()}>延期到明天</button>
+                  <button className="more-menu-item" onClick={() => { setMoreOpen(false); setShowEditPanel(true); }}>改优先级</button>
                   <button className="more-menu-item" onClick={() => { setMoreOpen(false); setShowSopExtract(true); }}>提取流程模板</button>
                   <button className="more-menu-item" onClick={() => { setMoreOpen(false); setShowCompletionCheck(true); }}>标记完成</button>
                   <button className="more-menu-item danger" onClick={() => void transitionTo('archived')}>归档任务</button>
