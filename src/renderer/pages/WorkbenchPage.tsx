@@ -333,6 +333,10 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
           </div>
         )}
 
+        {detail && detail.completionCriteria.length > 0 && (
+          <CompletionCriteriaProgress detail={detail} />
+        )}
+
         {activeRun && (
           <div className="run-progress">
             <div className="run-progress-bar">
@@ -491,6 +495,27 @@ function StatusBadge({ status }: { status: string }) {
     <span className="tag waiting"><span className="dot waiting" style={{ width: 5, height: 5 }} /> 等待中</span>
   );
   return null;
+}
+
+function CompletionCriteriaProgress({ detail }: { detail: TaskDetail }) {
+  const total = detail.completionCriteria.length;
+  const satisfied = detail.completionCriteria.filter((item) => item.status === 'satisfied').length;
+  const nextOpen = detail.completionCriteria.find((item) => item.status !== 'satisfied');
+
+  return (
+    <div className="resume-criteria">
+      <div className="resume-criteria-head">
+        <span>完成标准</span>
+        <strong>{satisfied}/{total}</strong>
+      </div>
+      <div className="resume-criteria-bar">
+        <div className="resume-criteria-fill" style={{ width: `${Math.round((satisfied / total) * 100)}%` }} />
+      </div>
+      {nextOpen && (
+        <div className="resume-criteria-next">下一项：{nextOpen.text}</div>
+      )}
+    </div>
+  );
 }
 
 /* ─── Runs tab ─── */

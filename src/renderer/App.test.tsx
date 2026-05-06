@@ -144,7 +144,19 @@ function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
         updatedAt: now,
       },
     ],
-    completionCriteria: [],
+    completionCriteria: [
+      {
+        id: 'criterion_1',
+        taskId: task.id,
+        text: '确认最终材料',
+        verificationResponsibility: 'unknown',
+        verificationResponsibilityLabel: null,
+        status: 'open',
+        createdAt: now,
+        updatedAt: now,
+        satisfiedAt: null,
+      },
+    ],
     sourceContexts: [
       {
         id: 'source_1',
@@ -1057,6 +1069,9 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('工作台')).toBeTruthy();
     expect(screen.getByRole('button', { name: '执行' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '来源' })).toBeTruthy();
+    expect(await screen.findByText('完成标准')).toBeTruthy();
+    expect(screen.getByText('0/1')).toBeTruthy();
+    expect(screen.getByText('下一项：确认最终材料')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Runs$/ })).toBeNull();
     expect(await screen.findByText('自检查记录')).toBeTruthy();
     expect(screen.getByText('Run 1')).toBeTruthy();
