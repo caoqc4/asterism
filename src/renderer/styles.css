@@ -460,6 +460,12 @@ a { color: inherit; text-decoration: none; }
   font-size: 11.5px;
   color: var(--ink-3);
   line-height: 1.5;
+  margin-bottom: 4px;
+}
+.panel-refresh-reason {
+  font-size: 11px;
+  color: var(--ink-4);
+  line-height: 1.45;
   margin-bottom: 7px;
 }
 .panel-refresh-actions {

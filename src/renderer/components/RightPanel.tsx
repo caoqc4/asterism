@@ -81,21 +81,25 @@ function deriveSessionRefreshMessageLimit(
 function shouldSuggestSessionRefresh(
   messages: Message[],
   compressionThreshold: number = CONTEXT_COMPRESSION_THRESHOLD.default,
-): boolean {
+): { reason: string } | null {
   const userMessages = messages
     .filter((message) => message.role === 'user')
     .map((message) => normalizeUserMessage(message.text))
     .filter(Boolean);
   const messageLimit = deriveSessionRefreshMessageLimit(compressionThreshold);
-  if (userMessages.length >= messageLimit) return true;
 
   const counts = new Map<string, number>();
   for (const message of userMessages) {
     const next = (counts.get(message) ?? 0) + 1;
-    if (userMessages.length >= 3 && next >= 3) return true;
+    if (userMessages.length >= 3 && next >= 3) {
+      return { reason: '触发原因：同一个问题已重复出现 3 次。' };
+    }
     counts.set(message, next);
   }
-  return false;
+  if (userMessages.length >= messageLimit) {
+    return { reason: `触发原因：当前会话已有 ${userMessages.length} 条用户消息，达到刷新阈值 ${messageLimit}。` };
+  }
+  return null;
 }
 
 interface RightPanelProps {
@@ -294,11 +298,9 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
 
   const title = taskTitle(activeTaskId, titleCache);
   const activeAttrs = activeTaskId ? getTaskAttributes(activeTaskId) : null;
-  const shouldSuggestRefresh = Boolean(
-    activeTaskId
-    && !sessionRefreshDismissed
-    && shouldSuggestSessionRefresh(messages, compressionThreshold),
-  );
+  const sessionRefreshSuggestion = activeTaskId && !sessionRefreshDismissed
+    ? shouldSuggestSessionRefresh(messages, compressionThreshold)
+    : null;
   const canCaptureGlobalConversation = Boolean(
     !activeTaskId
     && messages.some((message) => message.role === 'user')
@@ -414,11 +416,12 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
           </div>
         )}
 
-        {shouldSuggestRefresh && (
+        {sessionRefreshSuggestion && (
           <div className="panel-refresh-suggestion">
             <div className="panel-refresh-text">
               这个任务的讨论已经有点长了，重要信息会从任务记忆继续带入。建议开始一段新会话，让后续判断更清楚。
             </div>
+            <div className="panel-refresh-reason">{sessionRefreshSuggestion.reason}</div>
             <div className="panel-refresh-actions">
               <button className="btn sm primary" onClick={startFreshSession}>开始新会话</button>
               <button className="btn sm ghost" onClick={() => setSessionRefreshDismissed(true)}>继续当前会话</button>

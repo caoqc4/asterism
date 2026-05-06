@@ -727,6 +727,7 @@ describe('App redesign v1', () => {
     }
 
     expect(await screen.findByText(/建议开始一段新会话/)).toBeTruthy();
+    expect(screen.getByText(/同一个问题已重复出现 3 次/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '开始新会话' }));
     await waitFor(() => {
       expect(screen.queryByText(/建议开始一段新会话/)).toBeNull();
@@ -760,6 +761,7 @@ describe('App redesign v1', () => {
     }
 
     expect(await screen.findByText(/建议开始一段新会话/)).toBeTruthy();
+    expect(screen.getByText(/达到刷新阈值 3/)).toBeTruthy();
   });
 
   it('persists selected task completion from the Tasks inline row action', async () => {
