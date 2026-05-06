@@ -3251,6 +3251,12 @@ a { color: inherit; text-decoration: none; }
   border-radius: 5px;
   padding: 4px 8px;
 }
+.preview-config-note {
+  margin: 0;
+  color: var(--ink-4);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
 .preview-sources {
   display: flex;
   flex-direction: column;

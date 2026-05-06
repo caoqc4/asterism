@@ -1137,6 +1137,7 @@ function TaskPreview({ task, keySources, hasPendingDecision, onOpenWorkbench, on
             <span>🔁</span>
             <span>{task.schedule}</span>
           </div>
+          <p className="preview-config-note">周期配置保存在任务属性中，每次触发会在执行记录里形成独立 Run。</p>
         </div>
       )}
 
@@ -1147,6 +1148,7 @@ function TaskPreview({ task, keySources, hasPendingDecision, onOpenWorkbench, on
             <span>⚡</span>
             <span>{task.trigger}</span>
           </div>
+          <p className="preview-config-note">事件触发任务是一条持续监听规则，触发结果会追加到任务记录，不会自动新建散乱任务。</p>
         </div>
       )}
 

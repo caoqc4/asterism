@@ -965,10 +965,12 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /定时任务/ }));
     expect(await screen.findByText('每周一准备经营周报')).toBeTruthy();
+    await user.click(await screen.findByText('每周一准备经营周报'));
+    expect(await screen.findByText(/周期配置保存在任务属性中/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /已承诺/ }));
-    expect(await screen.findByText('每周一准备经营周报')).toBeTruthy();
+    expect((await screen.findAllByText('每周一准备经营周报')).length).toBeGreaterThan(0);
 
-    await user.dblClick(screen.getByText('每周一准备经营周报'));
+    await user.dblClick((await screen.findAllByText('每周一准备经营周报'))[0]!);
     expect(await screen.findByText('定时任务')).toBeTruthy();
     expect(screen.getByText(/每周一 09:00/)).toBeTruthy();
     expect(screen.getByText(/周五 17:00 前发给 CEO/)).toBeTruthy();
