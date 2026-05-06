@@ -55,7 +55,7 @@ function statusPriority(status: WorkHabitStatus): number {
   return 2;
 }
 
-export function ContextPage() {
+export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => void }) {
   const [tasks, setTasks] = useState<TaskListItemRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
@@ -248,6 +248,9 @@ export function ContextPage() {
             <div className="ctx-section-title">AI 可见来源</div>
             <div className="ctx-section-desc">AI 当前可读取的感知范围，外部来源需授权后才会进入上下文</div>
           </div>
+          {onOpenConnections && (
+            <button className="btn sm ghost" onClick={onOpenConnections}>管理连接</button>
+          )}
         </div>
         <div className="ctx-list">
           <div className="ctx-visible-boundary">

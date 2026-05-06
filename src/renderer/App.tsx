@@ -132,7 +132,7 @@ export function App() {
                   onOpenWorkbench={openWorkbench}
                 />
               )}
-              {route === 'context' && <ContextPage />}
+              {route === 'context' && <ContextPage onOpenConnections={() => navigate('connections')} />}
               {route === 'connections' && <ConnectionsPage />}
               {route === 'skills' && <SkillsPage />}
               {route === 'mcp' && <McpPage />}

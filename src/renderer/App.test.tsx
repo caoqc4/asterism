@@ -1094,6 +1094,11 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /Context/ }));
     expect(await screen.findByText('AI 可见来源')).toBeTruthy();
     expect(screen.getByText(/外部信号只会在授权连接后进入 Brief/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '管理连接' }));
+    expect(await screen.findByText(/AI 可感知的外部信号源/)).toBeTruthy();
+    expect(screen.getByText('已连接来源')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /Context/ }));
+    expect(await screen.findByText('AI 可见来源')).toBeTruthy();
     await user.click(await screen.findByText('董事会材料修订'));
     expect(await screen.findByText(/需要按最新反馈更新董事会材料/)).toBeTruthy();
     expect(screen.getByText(/工作习惯记录仅保存在本机/)).toBeTruthy();
