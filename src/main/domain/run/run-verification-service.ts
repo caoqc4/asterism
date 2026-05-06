@@ -6,9 +6,14 @@ import type { RunVerificationRepository } from '../../db/repositories/run-verifi
 export type RunVerificationWriter = Pick<RunVerificationRepository, 'upsert'>;
 export type RunStepReader = Pick<RunStepRepository, 'listForRun'>;
 
+type PersistRunVerificationOptions = {
+  includeRunLevel?: boolean;
+};
+
 export async function persistLightweightRunVerifications(
   detail: RunDetailRecord,
   runVerificationRepository: RunVerificationWriter | null,
+  options: PersistRunVerificationOptions = {},
 ): Promise<void> {
   if (!runVerificationRepository) return;
 
@@ -27,6 +32,7 @@ export async function persistLightweightRunVerifications(
     });
   }
 
+  if (options.includeRunLevel === false) return;
   if (detail.status !== 'completed' && detail.status !== 'failed') return;
 
   const runCheck = evaluateRunSelfCheck(detail, detail);
@@ -45,6 +51,7 @@ export async function persistTerminalRunVerifications(params: {
   run: RunRecord;
   runStepRepository: RunStepReader;
   runVerificationRepository: RunVerificationWriter | null;
+  includeRunLevel?: boolean;
 }): Promise<void> {
   if (!params.runVerificationRepository) return;
 
@@ -57,5 +64,8 @@ export async function persistTerminalRunVerifications(params: {
       steps: await params.runStepRepository.listForRun(params.run.id),
     },
     params.runVerificationRepository,
+    {
+      includeRunLevel: params.includeRunLevel,
+    },
   );
 }

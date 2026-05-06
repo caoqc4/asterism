@@ -73,7 +73,7 @@ export function SettingsPage() {
         <div className="settings-toggle-row">
           <div className="settings-toggle-info">
             <span className="settings-label">自检查（Self-Check）</span>
-            <span className="settings-hint">Run 完成后 AI 自动验证输出质量</span>
+            <span className="settings-hint">Run 级和任务完成检查可关闭；Step 级轻量对照始终保留</span>
           </div>
           <Toggle value={selfCheck} onChange={setSelfCheck} />
         </div>

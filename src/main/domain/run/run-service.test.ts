@@ -519,6 +519,96 @@ describe('RunService', () => {
     expect(result.status).toBe('completed');
   });
 
+  it('keeps step checks but skips run-level verification when self-check is disabled', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn(),
+      create: vi.fn().mockResolvedValue(buildRunRecord('pending')),
+      updateResult: vi.fn().mockResolvedValue({
+        ...buildRunRecord('completed'),
+        output: 'Generated output',
+        outputSource: 'ai',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
+      transitionIfAllowed: vi.fn(),
+      annotateRunCompleted: vi.fn().mockResolvedValue(buildTaskRecord('running')),
+      annotateRunFailed: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
+    };
+    const artifactRepository = buildArtifactRepositoryMock({
+      createFromRun: vi.fn().mockResolvedValue(buildArtifactRecord()),
+    });
+    const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue({
+        featureFlags: {
+          enableSelfCheck: false,
+        },
+      }),
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn().mockResolvedValue('Generated output'),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: '当前无明显匹配模板。',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    runStepRepository.listForRun.mockResolvedValue([{
+      id: 'run_step_checked',
+      runId: 'run_1',
+      index: 1,
+      kind: 'model',
+      status: 'completed',
+      title: 'draft 模型执行',
+      input: null,
+      output: 'Generated output',
+      error: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    }]);
+    const runVerificationRepository = {
+      upsert: vi.fn(),
+      listForRun: vi.fn(),
+    };
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      artifactRepository as never,
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+      null,
+      undefined,
+      undefined as never,
+      runVerificationRepository as never,
+    );
+
+    await service.trigger({
+      taskId: 'task_1',
+      type: 'draft',
+    });
+
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      targetType: 'step',
+      source: 'lightweight_rule_engine',
+    }));
+    expect(runVerificationRepository.upsert).not.toHaveBeenCalledWith(expect.objectContaining({
+      targetType: 'run',
+    }));
+  });
+
   it('marks the run as failed when the executor throws', async () => {
     const runRepository = {
       list: vi.fn(),

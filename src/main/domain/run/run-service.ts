@@ -74,7 +74,9 @@ export class RunService {
       checkpoints: await this.runCheckpointRepository.listForRun(runId),
       agentSessions: await this.agentSessionStore.listForRun(runId),
     };
-    await persistLightweightRunVerifications(detail, this.runVerificationRepository);
+    await persistLightweightRunVerifications(detail, this.runVerificationRepository, {
+      includeRunLevel: await this.shouldPersistRunLevelSelfCheck(),
+    });
 
     return {
       ...detail,
@@ -261,7 +263,17 @@ export class RunService {
       run,
       runStepRepository: this.runStepRepository,
       runVerificationRepository: this.runVerificationRepository,
+      includeRunLevel: await this.shouldPersistRunLevelSelfCheck(),
     });
+  }
+
+  private async shouldPersistRunLevelSelfCheck(): Promise<boolean> {
+    try {
+      const status = await this.aiConfigService.getStatus();
+      return status.featureFlags.enableSelfCheck !== false;
+    } catch {
+      return true;
+    }
   }
 
   private async buildApplicableWorkHabitSummaries(task: TaskDetail): Promise<string[]> {
