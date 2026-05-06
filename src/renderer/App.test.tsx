@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import userEvent from '@testing-library/user-event';
 
 import type { HomeBriefData } from '@shared/types/brief';
+import type { BlockerRecord } from '@shared/types/blocker';
 import type { DecisionRecord } from '@shared/types/decision';
 import type { ElectronApi } from '@shared/types/ipc';
 import type { AppliedProcessTemplateRecord, ProcessTemplateRecord } from '@shared/types/process-template';
@@ -44,6 +45,24 @@ function buildTask(partial: Partial<TaskListItemRecord> = {}): TaskListItemRecor
     riskNote: partial.riskNote ?? null,
     createdAt: partial.createdAt ?? now,
     updatedAt: partial.updatedAt ?? now,
+  };
+}
+
+function buildBlocker(partial: Partial<BlockerRecord> = {}): BlockerRecord {
+  return {
+    id: partial.id ?? 'blocker_1',
+    taskId: partial.taskId ?? 'task_risk',
+    title: partial.title ?? '等待 CFO 反馈',
+    kind: partial.kind ?? 'approval',
+    detail: partial.detail ?? null,
+    owner: partial.owner ?? null,
+    responsibility: partial.responsibility ?? null,
+    responsibilityLabel: partial.responsibilityLabel ?? null,
+    sourceContextId: partial.sourceContextId ?? null,
+    status: partial.status ?? 'active',
+    createdAt: partial.createdAt ?? now,
+    updatedAt: partial.updatedAt ?? now,
+    resolvedAt: partial.resolvedAt ?? null,
   };
 }
 
@@ -559,6 +578,19 @@ describe('App redesign v1', () => {
 
     const waitingCard = (await screen.findByText('合同盖章跟进')).closest('.focus-card');
     expect(waitingCard?.querySelector('.dot.waiting')).toBeTruthy();
+  });
+
+  it('marks blocked focus cards from Brief task blockers', async () => {
+    const blockedTask = buildTask({
+      id: 'task_blocked_brief',
+      title: '发布口径确认',
+      activeBlocker: buildBlocker({ taskId: 'task_blocked_brief', title: '等待 CEO 审批' }),
+    });
+    vi.mocked(harness.api.getHomeBrief).mockResolvedValue(buildBriefData([blockedTask], []));
+    render(<App />);
+
+    const blockedCard = (await screen.findByText('发布口径确认')).closest('.focus-card');
+    expect(blockedCard?.querySelector('.dot.risk')).toBeTruthy();
   });
 
   it('opens task context in the right panel from a Brief focus card and sends task-aware chat', async () => {

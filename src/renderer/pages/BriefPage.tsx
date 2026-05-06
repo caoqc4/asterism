@@ -428,6 +428,9 @@ function FocusCard({
           {task.status === 'waiting' && (
             <span className="dot waiting" style={{ marginLeft: 6 }} />
           )}
+          {task.status === 'blocked' && (
+            <span className="dot risk" style={{ marginLeft: 6 }} />
+          )}
         </div>
         <div className="focus-title">{task.title}</div>
         <div className={whyNowClass}>{task.whyNow}</div>
