@@ -1169,6 +1169,15 @@ function formatCompletionCheckEvent(payload: string | null): string {
   return `完成检查通过${progress}${runVerificationSuffix}`;
 }
 
+function formatCompletionCheckDetail(payload: string | null): string | null {
+  const parsed = parseTimelinePayload(payload);
+  const reason = typeof parsed?.reason === 'string' ? parsed.reason.trim() : '';
+  const runVerificationDetail = typeof parsed?.runVerificationDetail === 'string'
+    ? parsed.runVerificationDetail.trim()
+    : '';
+  return [reason, runVerificationDetail].filter(Boolean).join(' · ') || null;
+}
+
 const EVENT_LABELS: Record<string, (payload: string | null) => string> = {
   'task.created':              () => '任务已创建',
   'task.updated':              () => '任务信息已更新',
@@ -1194,6 +1203,11 @@ function formatEventLabel(type: string, payload: string | null): string {
   const formatter = EVENT_LABELS[type];
   if (formatter) return formatter(payload);
   return type.replace(/\./g, ' › ');
+}
+
+function formatEventDetail(type: string, payload: string | null): string | null {
+  if (type === 'task.completion_check') return formatCompletionCheckDetail(payload);
+  return null;
 }
 
 function eventDotClass(type: string): string {
@@ -1239,19 +1253,27 @@ function ActivityTab({ timeline }: { timeline: { id: string; type: string; paylo
       )}
       <div className="activity-list">
         {timeline.slice().reverse().map((e) => (
-          <div key={e.id} className="activity-item">
-            <div className="activity-dot-wrap">
-              <span className={`dot ${eventDotClass(e.type)}`} style={{ width: 7, height: 7 }} />
-              <div className="activity-line" />
-            </div>
-            <div className="activity-body">
-              <span className="activity-text">{formatEventLabel(e.type, e.payload)}</span>
-              <span className="activity-time muted">
-                {new Date(e.createdAt).toLocaleString('zh', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-          </div>
+          <ActivityItem key={e.id} event={e} />
         ))}
+      </div>
+    </div>
+  );
+}
+
+function ActivityItem({ event }: { event: { id: string; type: string; payload: string | null; createdAt: string } }) {
+  const detail = formatEventDetail(event.type, event.payload);
+  return (
+    <div className="activity-item">
+      <div className="activity-dot-wrap">
+        <span className={`dot ${eventDotClass(event.type)}`} style={{ width: 7, height: 7 }} />
+        <div className="activity-line" />
+      </div>
+      <div className="activity-body">
+        <span className="activity-text">{formatEventLabel(event.type, event.payload)}</span>
+        {detail && <span className="activity-detail">{detail}</span>}
+        <span className="activity-time muted">
+          {new Date(event.createdAt).toLocaleString('zh', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+        </span>
       </div>
     </div>
   );

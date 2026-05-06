@@ -183,6 +183,21 @@ function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
         payload: '下一步已更新',
         createdAt: now,
       },
+      {
+        id: 'event_completion_check',
+        taskId: task.id,
+        type: 'task.completion_check',
+        payload: JSON.stringify({
+          action: 'override_completed',
+          criteriaTotal: 1,
+          criteriaSatisfied: 0,
+          criteriaOpen: 1,
+          reason: '完成检查未通过：仍有 1 条完成标准未满足',
+          runVerificationLabel: 'Run 验证通过',
+          runVerificationDetail: '执行结果已有输出或步骤证据，可进入人工审查。',
+        }),
+        createdAt: now,
+      },
     ],
   };
 }
@@ -1165,6 +1180,8 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('活动记录')).toBeTruthy();
     expect(screen.getByText('需关注')).toBeTruthy();
     expect(screen.getByText('最近更新：1/1')).toBeTruthy();
+    expect(screen.getByText('完成检查被用户覆盖：0/1 · Run 验证通过')).toBeTruthy();
+    expect(screen.getByText(/完成检查未通过：仍有 1 条完成标准未满足/)).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '执行' }));
     await user.click(screen.getByRole('button', { name: /启动 Run/ }));
