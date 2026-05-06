@@ -35,6 +35,8 @@ function sourceLabel(source: WorkHabitSource): string {
   return '用户创建';
 }
 
+const WORK_HABIT_SOURCE_ORDER: WorkHabitSource[] = ['silent', 'proposal', 'sop', 'manual'];
+
 function statusLabel(status: WorkHabitStatus): string {
   if (status === 'confirmed') return '已确认';
   if (status === 'disabled') return '已停用';
@@ -227,6 +229,10 @@ export function ContextPage() {
   const confirmedHabitCount = habits.filter((habit) => habit.status === 'confirmed').length;
   const pendingHabitCount = habits.filter((habit) => habit.status === 'pending').length;
   const disabledHabitCount = habits.filter((habit) => habit.status === 'disabled').length;
+  const sourceCounts = WORK_HABIT_SOURCE_ORDER.map((source) => ({
+    source,
+    count: habits.filter((habit) => habit.source === source).length,
+  })).filter((item) => item.count > 0);
 
   return (
     <div className="context-page">
@@ -370,6 +376,16 @@ export function ContextPage() {
               待确认规则只作为提议展示，不会自动改变后续执行流程。
             </div>
           </div>
+          {sourceCounts.length > 0 && (
+            <div className="ctx-learning-source-summary">
+              <span>来源分布</span>
+              {sourceCounts.map((item) => (
+                <span key={item.source} className="habit-chip">
+                  {sourceLabel(item.source)} {item.count}
+                </span>
+              ))}
+            </div>
+          )}
           {showNewHabit && (
             <div className="ctx-habit-new">
               <input

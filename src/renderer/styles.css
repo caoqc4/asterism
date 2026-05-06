@@ -1400,6 +1400,17 @@ a { color: inherit; text-decoration: none; }
   font-size: 11.5px;
   line-height: 1.45;
 }
+.ctx-learning-source-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink-3);
+  font-size: 11.5px;
+}
 @media (max-width: 760px) {
   .ctx-learning-summary { grid-template-columns: 1fr; }
 }

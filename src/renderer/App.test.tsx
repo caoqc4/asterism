@@ -1059,6 +1059,9 @@ describe('App redesign v1', () => {
 
     expect(await screen.findByText(/与已确认规则冲突/)).toBeTruthy();
     expect(screen.getByText('待确认规则只作为提议展示，不会自动改变后续执行流程。')).toBeTruthy();
+    expect(screen.getByText('来源分布')).toBeTruthy();
+    expect(screen.getByText('提议确认 1')).toBeTruthy();
+    expect(screen.getByText('用户创建 1')).toBeTruthy();
     expect(screen.getByText('待你确认')).toBeTruthy();
     const candidate = screen.getByText('代码合入前只需要跑受影响测试');
     const existing = screen.getByText('代码合入前必须先跑完整测试');
