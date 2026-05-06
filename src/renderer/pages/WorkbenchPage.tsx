@@ -1563,6 +1563,9 @@ function SopExtractModal({
             ))}
           </div>
           <button className="btn sm ghost sop-step-add" onClick={addStep}>+ 新增步骤</button>
+          <div className="sop-save-boundary">
+            只有点击保存才会写入模板；不保存不会改变当前任务或后续默认流程。
+          </div>
         </div>
         <div className="modal-foot">
           <button className="btn sm ghost" onClick={onCancel}>不保存</button>

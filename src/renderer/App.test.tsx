@@ -1303,6 +1303,7 @@ describe('App redesign v1', () => {
     await user.click(screen.getByTitle('更多操作'));
     await user.click(await screen.findByRole('button', { name: '提取流程模板' }));
     expect(await screen.findByText('提取流程模板')).toBeTruthy();
+    expect(screen.getByText(/只有点击保存才会写入模板/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '+ 新增步骤' }));
     const sopInputs = screen.getAllByRole('textbox');
     await user.type(sopInputs[sopInputs.length - 1]!, '复盘本次执行并更新默认流程');

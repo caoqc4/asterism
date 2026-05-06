@@ -974,6 +974,12 @@ a { color: inherit; text-decoration: none; }
   width: fit-content;
   margin-top: 10px;
 }
+.sop-save-boundary {
+  margin-top: 10px;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
 
 /* ─── Skeleton ─── */
 .skel {
