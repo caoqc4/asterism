@@ -54,6 +54,14 @@ const TASK_TYPE_HABIT_LABELS: Record<TaskExecutionType, string> = {
 const MIN_SESSION_REFRESH_MESSAGE_LIMIT = 3;
 const REFRESH_MESSAGE_LIMIT_THRESHOLD_STEP = 10;
 
+function buildTaskTypeReviewPrompt(taskName: string): string {
+  return [
+    `请判断「${taskName}」更适合哪种任务类型：一次性 / 定时重复 / 事件触发 / 项目型。`,
+    '请先说明判断理由，再给出建议类型。',
+    '如果是项目型，请只给高层级拆解方向，不要直接生成真实子任务；如果不是项目型，请说明下一步需要补齐什么上下文。',
+  ].join('\n');
+}
+
 function normalizeUserMessage(text: string): string {
   return text
     .trim()
@@ -298,6 +306,7 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
   const projectDecompositionPrompt = activeAttrs?.type === 'project' && title
     ? buildProjectDecompositionPrompt(title)
     : null;
+  const taskTypeReviewPrompt = activeTaskId && title ? buildTaskTypeReviewPrompt(title) : null;
   const quickPrompts = activeTaskId
     ? [
         ...(projectDecompositionPrompt
@@ -452,14 +461,24 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
             {title}
           </div>
         )}
-        {activeTaskId && projectDecompositionPrompt && !input.trim() && (
+        {activeTaskId && !input.trim() && (taskTypeReviewPrompt || projectDecompositionPrompt) && (
           <div className="panel-inline-prompts">
+            {taskTypeReviewPrompt && (
+              <button
+                className="panel-prompt-chip"
+                onClick={() => { setInput(taskTypeReviewPrompt); textareaRef.current?.focus(); }}
+              >
+                判断任务类型
+              </button>
+            )}
+            {projectDecompositionPrompt && (
             <button
               className="panel-prompt-chip"
               onClick={() => { setInput(projectDecompositionPrompt); textareaRef.current?.focus(); }}
             >
               拆解项目结构
             </button>
+            )}
           </div>
         )}
         <textarea

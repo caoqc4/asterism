@@ -703,6 +703,10 @@ describe('App redesign v1', () => {
     });
     expect(await screen.findByText(/已捕获为任务/)).toBeTruthy();
     expect(await screen.findByPlaceholderText(/关于「准备投资人沟通材料」/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '判断任务类型' }));
+    const taskInput = screen.getByPlaceholderText(/关于「准备投资人沟通材料」/) as HTMLTextAreaElement;
+    expect(taskInput.value).toContain('一次性 / 定时重复 / 事件触发 / 项目型');
+    expect(taskInput.value).toContain('不要直接生成真实子任务');
   });
 
   it('suggests a fresh task session when the right-panel conversation gets repetitive', async () => {
