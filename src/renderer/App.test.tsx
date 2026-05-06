@@ -1313,10 +1313,12 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByText('report_v1.md'));
     expect(await screen.findByText(/需要补现金流页/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '编辑' }));
+    expect(await screen.findByText(/编辑产物会作为自学习观察信号/)).toBeTruthy();
     const artifactEditor = screen.getByDisplayValue(/需要补现金流页/);
     await user.clear(artifactEditor);
     await user.type(artifactEditor, '# 终稿\n\n现金流页已补齐。');
     await user.click(screen.getByRole('button', { name: '保存' }));
+    expect(await screen.findByText(/已保留本次产物改动方向/)).toBeTruthy();
     expect(await screen.findByText(/现金流页已补齐/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '重命名' }));
     const titleEditor = screen.getByDisplayValue('report_v1.md');

@@ -2929,6 +2929,18 @@ a { color: inherit; text-decoration: none; }
   outline: none;
 }
 .artifact-edit-textarea:focus { border-color: var(--ink-3); }
+.artifact-learning-note,
+.artifact-learning-saved {
+  font-size: 11px;
+  color: var(--ink-3);
+  line-height: 1.45;
+}
+.artifact-learning-saved {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg-sunk);
+}
 .artifact-edit-actions {
   display: flex;
   gap: 6px;

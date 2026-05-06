@@ -1152,6 +1152,7 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [titleDraft, setTitleDraft] = useState('');
   const [contentDraft, setContentDraft] = useState('');
+  const [editLearningNotice, setEditLearningNotice] = useState<string | null>(null);
   const visibleArtifacts = mergeTaskArtifacts(taskId, artifacts);
   const editableArtifactCount = visibleArtifacts.filter(isInlineEditableArtifact).length;
   const latestArtifact = visibleArtifacts[0] ?? null;
@@ -1165,6 +1166,7 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
     setExpandedId(artifact.id);
     setTitleDraft(artifact.title);
     setContentDraft(artifact.content);
+    setEditLearningNotice(null);
   }
 
   function saveEditing(artifact: ArtifactRecord) {
@@ -1173,6 +1175,7 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
       content: contentDraft,
     });
     setEditingId(null);
+    setEditLearningNotice('已保留本次产物改动方向；明显偏好会在任务完成或复盘时归纳到 Context。');
     refreshLocal();
   }
 
@@ -1221,6 +1224,9 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
         <div className="artifact-mode-note">
           事件信号默认追加到同一份积累式记录；只有你明确要求草稿、报告等独立产物时，才新建文件。
         </div>
+      )}
+      {editLearningNotice && (
+        <div className="artifact-learning-saved">{editLearningNotice}</div>
       )}
 
       <div className="artifact-toolbar">
@@ -1279,6 +1285,9 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
                     value={contentDraft}
                     onChange={(e) => setContentDraft(e.target.value)}
                   />
+                  <div className="artifact-learning-note">
+                    编辑产物会作为自学习观察信号；不会立即写入规则，明显偏好会在任务完成或复盘时归纳。
+                  </div>
                   <div className="artifact-edit-actions">
                     <button className="btn sm primary" onClick={() => saveEditing(a)}>保存</button>
                     <button className="btn sm ghost" onClick={() => setEditingId(null)}>取消</button>
