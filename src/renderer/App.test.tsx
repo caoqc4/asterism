@@ -800,6 +800,9 @@ describe('App redesign v1', () => {
     expect(screen.getByText('人工决策')).toBeTruthy();
     expect(screen.getByText('更新 2026-01-01')).toBeTruthy();
     expect(screen.queryByText('decision_done')).toBeNull();
+    await user.type(screen.getByPlaceholderText('搜索决策或任务'), '合同');
+    expect(await screen.findByText('没有匹配的待拍板事项。')).toBeTruthy();
+    await user.clear(screen.getByPlaceholderText('搜索决策或任务'));
 
     await user.click(screen.getByText('是否批准本轮材料修改方案'));
     expect(await screen.findByText('为什么现在')).toBeTruthy();

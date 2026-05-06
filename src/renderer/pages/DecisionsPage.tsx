@@ -69,6 +69,7 @@ interface DecisionsPageProps {
 
 export function DecisionsPage({ onOpenPanel, onOpenWorkbench }: DecisionsPageProps) {
   const [decisions, setDecisions] = useState<Decision[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -93,8 +94,12 @@ export function DecisionsPage({ onOpenPanel, onOpenWorkbench }: DecisionsPagePro
     window.api?.actOnDecision({ id, action }).catch(() => {});
   }
 
-  const today = decisions.filter((d) => d.urgency === 'today');
-  const week = decisions.filter((d) => d.urgency === 'week');
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const visibleDecisions = normalizedQuery
+    ? decisions.filter((d) => `${d.title} ${d.taskTitle}`.toLowerCase().includes(normalizedQuery))
+    : decisions;
+  const today = visibleDecisions.filter((d) => d.urgency === 'today');
+  const week = visibleDecisions.filter((d) => d.urgency === 'week');
 
   return (
     <div className="decisions-page">
@@ -104,20 +109,31 @@ export function DecisionsPage({ onOpenPanel, onOpenWorkbench }: DecisionsPagePro
       </div>
 
       {decisions.length > 0 && (
-        <div className="dec-overview">
-          <div className="dec-overview-chip">
-            <span className="dec-overview-value">{decisions.length}</span>
-            <span>待拍板</span>
+        <>
+          <div className="dec-overview">
+            <div className="dec-overview-chip">
+              <span className="dec-overview-value">{decisions.length}</span>
+              <span>待拍板</span>
+            </div>
+            <div className="dec-overview-chip">
+              <span className="dec-overview-value">{today.length}</span>
+              <span>今天必须处理</span>
+            </div>
+            <div className="dec-overview-chip">
+              <span className="dec-overview-value">{week.length}</span>
+              <span>本周内</span>
+            </div>
           </div>
-          <div className="dec-overview-chip">
-            <span className="dec-overview-value">{today.length}</span>
-            <span>今天必须处理</span>
+
+          <div className="dec-filter">
+            <input
+              className="dec-filter-input"
+              placeholder="搜索决策或任务"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-          <div className="dec-overview-chip">
-            <span className="dec-overview-value">{week.length}</span>
-            <span>本周内</span>
-          </div>
-        </div>
+        </>
       )}
 
       {today.length > 0 && (
@@ -158,6 +174,12 @@ export function DecisionsPage({ onOpenPanel, onOpenWorkbench }: DecisionsPagePro
             />
           ))}
         </section>
+      )}
+
+      {!loading && decisions.length > 0 && visibleDecisions.length === 0 && (
+        <div className="decisions-empty">
+          <p>没有匹配的待拍板事项。</p>
+        </div>
       )}
 
       {!loading && decisions.length === 0 && (
