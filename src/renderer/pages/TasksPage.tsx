@@ -164,6 +164,12 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
     }).catch(() => {});
   }
 
+  function reloadPendingDecisions() {
+    window.api?.listDecisions?.()
+      .then((decisions) => setPendingDecisions(decisions.filter((decision) => decision.status === 'pending')))
+      .catch(() => {});
+  }
+
   // Load real tasks from backend when available
   useEffect(() => {
     if (!window.api) return;
@@ -175,12 +181,11 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-    window.api.listDecisions?.()
-      .then((decisions) => setPendingDecisions(decisions.filter((decision) => decision.status === 'pending')))
-      .catch(() => {});
+    reloadPendingDecisions();
 
     const unsub = window.api.subscribeToEvents((event) => {
       if (event.type === 'task.changed') reloadTasks();
+      if (event.type === 'decision.changed') reloadPendingDecisions();
     });
     return () => unsub?.();
   }, []);

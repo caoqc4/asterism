@@ -737,6 +737,24 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('是否批准本轮材料修改方案')).toBeTruthy();
   });
 
+  it('refreshes task preview decisions when decision state changes', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByText('董事会材料修订'));
+    expect(await screen.findByRole('button', { name: /去拍板/ })).toBeTruthy();
+
+    vi.mocked(harness.api.listDecisions).mockResolvedValueOnce(
+      harness.decisions.map((decision) => (
+        decision.id === 'decision_pending' ? { ...decision, status: 'approved' } : decision
+      )),
+    );
+    harness.emit('decision.changed', 'decision_pending');
+
+    expect(await screen.findByRole('button', { name: /打开工作台/ })).toBeTruthy();
+  });
+
   it('surfaces dependency recovery signals in the task list', async () => {
     const user = userEvent.setup();
     harness.tasks.unshift(buildTask({
