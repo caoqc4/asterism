@@ -1141,6 +1141,17 @@ describe('App redesign v1', () => {
     await user.click(screen.getByTitle('更多操作'));
     expect(await screen.findByRole('button', { name: '延期到明天' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '改优先级' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '改优先级' }));
+    expect(await screen.findByText('风险等级')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '中' }));
+    await user.click(screen.getByRole('button', { name: '保存' }));
+    await waitFor(() => {
+      expect(harness.api.updateTask).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'task_risk',
+        riskLevel: 'medium',
+      }));
+    });
+    await user.click(screen.getByTitle('更多操作'));
     await user.click(screen.getByRole('button', { name: '延期到明天' }));
     await waitFor(() => {
       expect(harness.api.transitionTask).toHaveBeenCalledWith({

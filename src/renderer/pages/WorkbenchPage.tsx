@@ -1495,6 +1495,7 @@ function TaskEditPanel({
               trigger: type === 'event' ? trigger : null,
             });
             onSave({ summary: summary || null, nextStep: nextStep || null, riskLevel });
+            onClose();
           }}
         >
           保存
