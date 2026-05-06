@@ -2330,6 +2330,12 @@ a { color: inherit; text-decoration: none; }
   background: var(--blue-soft);
   border-color: var(--blue-line);
 }
+.run-check-overview-note {
+  flex-basis: 100%;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
 .run-item {
   background: var(--bg-elev);
   border: 1px solid var(--line);

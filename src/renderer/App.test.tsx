@@ -1181,6 +1181,7 @@ describe('App redesign v1', () => {
     expect(screen.getAllByText('Run 1').length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: /^Runs$/ })).toBeNull();
     expect(await screen.findByText('自检查记录')).toBeTruthy();
+    expect(screen.getByText(/Step 检查内置记录/)).toBeTruthy();
     expect(screen.getAllByText('Run 1').length).toBeGreaterThan(0);
     await user.click(await screen.findByText(/Run #1 · 已完成/));
     expect(await screen.findByText('Step 1')).toBeTruthy();

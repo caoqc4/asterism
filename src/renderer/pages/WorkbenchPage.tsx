@@ -734,6 +734,9 @@ function RunsTab({
           {(checkStats.warn + checkStats.fail) > 0 && (
             <span className="run-check-overview-chip warn">需关注 {checkStats.warn + checkStats.fail}</span>
           )}
+          <span className="run-check-overview-note">
+            Step 检查内置记录；Run 检查与完成确认按 AI 行为偏好触发。
+          </span>
         </div>
       )}
 
