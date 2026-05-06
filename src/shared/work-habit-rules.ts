@@ -163,6 +163,7 @@ export function recordCompletionOverrideLearningSignalInList(
   now = new Date().toISOString(),
 ): WorkHabitRecord[] {
   const id = `habit_completion_override_${input.taskId}`;
+  const examples = formatCompletionOverrideExample(input);
   const nextHabit: WorkHabitRecord = {
     id,
     rule: `完成「${input.taskTitle}」时允许覆盖未满足的完成检查`,
@@ -170,7 +171,7 @@ export function recordCompletionOverrideLearningSignalInList(
     scope: 'task_type',
     scopeLabel: '任务完成',
     status: 'pending',
-    examples: input.reason,
+    examples,
     createdAt: now,
     lastAppliedAt: now,
     applicationCount: 1,
@@ -180,7 +181,7 @@ export function recordCompletionOverrideLearningSignalInList(
     ? habits.map((habit) => habit.id === id
       ? {
           ...habit,
-          examples: input.reason,
+          examples,
           lastAppliedAt: now,
           applicationCount: habit.applicationCount + 1,
           status: habit.status === 'disabled' ? habit.status : 'pending' as WorkHabitStatus,
@@ -193,6 +194,18 @@ export function recordCompletionOverrideLearningSignalInList(
     taskTitle: input.taskTitle,
     reason: input.reason,
   });
+}
+
+function formatCompletionOverrideExample(input: CompletionOverrideLearningSignalInput): string {
+  const label = input.runVerificationLabel?.trim();
+  const detail = input.runVerificationDetail?.trim();
+  const runVerification = label
+    ? detail
+      ? `最近 Run 验证：${label}，${detail}`
+      : `最近 Run 验证：${label}`
+    : null;
+
+  return [input.reason, runVerification].filter(Boolean).join(' / ');
 }
 
 export function recordSopTemplateHabitInList(

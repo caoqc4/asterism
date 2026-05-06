@@ -578,6 +578,11 @@ describe('App redesign v1', () => {
         waitingReason: undefined,
       });
     });
+    expect(harness.api.recordCompletionOverrideLearningSignal).toHaveBeenCalledWith(expect.objectContaining({
+      runVerificationTone: 'pass',
+      runVerificationLabel: 'Run 验证通过',
+      runVerificationDetail: '执行结果已有输出或步骤证据，可进入人工审查。',
+    }));
 
     await user.click(screen.getByRole('button', { name: /Context/ }));
     expect(await screen.findByText(/允许覆盖未满足的完成检查/)).toBeTruthy();

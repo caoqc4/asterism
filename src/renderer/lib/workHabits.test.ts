@@ -224,6 +224,22 @@ describe('work habit conflict handling', () => {
     expect(pattern?.examples).toContain('董事会材料修订');
     expect(pattern?.examples).toContain('周报发送');
   });
+
+  it('keeps run verification context on completion override learning signals', () => {
+    recordCompletionOverrideLearningSignal({
+      taskId: 'task_run_warn',
+      taskTitle: '发布检查',
+      reason: '完成检查提醒：最近 Run 需要补验证',
+      runVerificationTone: 'warn',
+      runVerificationLabel: 'Run 需补验证',
+      runVerificationDetail: 'Run 已完成，但缺少可复核输出。',
+    });
+
+    const habit = loadWorkHabits().find((item) => item.id === 'habit_completion_override_task_run_warn');
+
+    expect(habit?.examples).toContain('完成检查提醒：最近 Run 需要补验证');
+    expect(habit?.examples).toContain('最近 Run 验证：Run 需补验证，Run 已完成，但缺少可复核输出。');
+  });
 });
 
 function buildHabit(partial: Partial<WorkHabitRecord>): WorkHabitRecord {

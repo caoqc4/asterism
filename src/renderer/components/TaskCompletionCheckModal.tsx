@@ -125,6 +125,9 @@ export function TaskCompletionCheckModal({
             taskId,
             taskTitle: detail?.title ?? taskTitle,
             reason,
+            runVerificationTone: recentRunCheck?.tone ?? null,
+            runVerificationLabel: recentRunCheck?.label ?? null,
+            runVerificationDetail: recentRunCheck?.detail ?? null,
           };
           if (window.api?.recordCompletionOverrideLearningSignal) {
             await window.api.recordCompletionOverrideLearningSignal(learningSignal);

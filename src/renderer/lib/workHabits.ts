@@ -136,6 +136,9 @@ export function recordCompletionOverrideLearningSignal(params: {
   taskId: string;
   taskTitle: string;
   reason: string;
+  runVerificationTone?: 'pass' | 'warn' | 'fail' | 'pending' | null;
+  runVerificationLabel?: string | null;
+  runVerificationDetail?: string | null;
 }): void {
   const next = recordCompletionOverrideLearningSignalInList(loadWorkHabits(), params);
   saveWorkHabits(next);

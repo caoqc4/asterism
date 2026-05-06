@@ -54,6 +54,9 @@ export type CompletionOverrideLearningSignalInput = {
   taskId: string;
   taskTitle: string;
   reason: string;
+  runVerificationTone?: 'pass' | 'warn' | 'fail' | 'pending' | null;
+  runVerificationLabel?: string | null;
+  runVerificationDetail?: string | null;
 };
 
 export type SopTemplateHabitInput = {
