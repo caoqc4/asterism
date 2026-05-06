@@ -14,6 +14,9 @@ export const SELF_CHECK_RETRY_LIMIT = {
   step: 1,
 } as const;
 
+export const AI_COMMUNICATION_STYLES = ['concise', 'balanced', 'detailed'] as const;
+export const AI_CONFIRMATION_THRESHOLDS = ['low', 'normal', 'high'] as const;
+
 export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   enableScheduler: false,
   enableProviderNativeToolCalls: false,
@@ -23,4 +26,6 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   enableSelfLearn: true,
   contextCompressionThreshold: CONTEXT_COMPRESSION_THRESHOLD.default,
   selfCheckRetryLimit: SELF_CHECK_RETRY_LIMIT.default,
+  communicationStyle: 'balanced',
+  confirmationThreshold: 'normal',
 };

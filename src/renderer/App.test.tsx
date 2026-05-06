@@ -324,6 +324,8 @@ function buildAiStatus(partial: Partial<AiConfigStatus> = {}): AiConfigStatus {
       enableSelfLearn: true,
       contextCompressionThreshold: 45,
       selfCheckRetryLimit: 2,
+      communicationStyle: 'balanced',
+      confirmationThreshold: 'normal',
     },
     ...partial,
   };
@@ -973,13 +975,17 @@ describe('App redesign v1', () => {
     });
   });
 
-  it('saves self-check, self-learn, retry, and compression preferences as dedicated feature flags', async () => {
+  it('saves AI behavior preferences as dedicated feature flags', async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /Settings/ }));
     expect(await screen.findByText(/不做持续行为监控/)).toBeTruthy();
     expect(screen.getByText(/Context 展示，可停用或删除/)).toBeTruthy();
+    expect(screen.getByText('沟通风格')).toBeTruthy();
+    expect(screen.getByText('确认阈值')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '详细' }));
+    await user.click(screen.getByRole('button', { name: '高' }));
     const switches = await screen.findAllByRole('switch');
     await user.click(switches[0]!);
     await user.click(switches[1]!);
@@ -996,6 +1002,8 @@ describe('App redesign v1', () => {
           enableSelfLearn: false,
           selfCheckRetryLimit: 3,
           contextCompressionThreshold: 50,
+          communicationStyle: 'detailed',
+          confirmationThreshold: 'high',
         }),
       }));
     });

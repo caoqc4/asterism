@@ -1889,6 +1889,28 @@ a { color: inherit; text-decoration: none; }
   padding: 1px 6px;
 }
 .settings-hint { font-size: 11.5px; color: var(--ink-4); line-height: 1.5; }
+.settings-segmented {
+  display: flex;
+  width: fit-content;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg-sunk);
+}
+.settings-segment {
+  min-height: 26px;
+  padding: 3px 10px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+.settings-segment.active {
+  background: var(--bg-elev);
+  color: var(--ink-1);
+  box-shadow: var(--shadow-sm);
+}
 
 .settings-api-row { display: flex; gap: 8px; }
 .settings-input {

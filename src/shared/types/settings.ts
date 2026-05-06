@@ -3,6 +3,8 @@ import type { AgentExecutorLifecycleServiceAvailability } from '../agent-executo
 import type { AgentToolScaffoldFamilySummary } from '../agent-tool-scaffold.js';
 
 export type AiProvider = 'anthropic' | 'openai' | 'google' | 'deepseek' | 'groq' | 'fal-openrouter' | 'openai-compatible' | 'replicate';
+export type AiCommunicationStyle = 'concise' | 'balanced' | 'detailed';
+export type AiConfirmationThreshold = 'low' | 'normal' | 'high';
 
 export type FeatureFlags = {
   enableScheduler: boolean;
@@ -13,6 +15,8 @@ export type FeatureFlags = {
   enableSelfLearn?: boolean;
   contextCompressionThreshold?: number;
   selfCheckRetryLimit?: number;
+  communicationStyle?: AiCommunicationStyle;
+  confirmationThreshold?: AiConfirmationThreshold;
 };
 
 export type AppConfigFile = {

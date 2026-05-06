@@ -1,6 +1,18 @@
 import { useState, useEffect } from 'react';
-import type { AiConfigStatus } from '@shared/types/settings';
+import type { AiCommunicationStyle, AiConfigStatus, AiConfirmationThreshold } from '@shared/types/settings';
 import { CONTEXT_COMPRESSION_THRESHOLD, DEFAULT_FEATURE_FLAGS, SELF_CHECK_RETRY_LIMIT } from '@shared/settings-defaults';
+
+const COMMUNICATION_STYLE_LABELS: Record<AiCommunicationStyle, string> = {
+  concise: '简洁',
+  balanced: '均衡',
+  detailed: '详细',
+};
+
+const CONFIRMATION_THRESHOLD_LABELS: Record<AiConfirmationThreshold, string> = {
+  low: '低',
+  normal: '标准',
+  high: '高',
+};
 
 export function SettingsPage() {
   const [status, setStatus] = useState<AiConfigStatus | null>(null);
@@ -8,6 +20,8 @@ export function SettingsPage() {
   const [selfLearn, setSelfLearn] = useState(true);
   const [ctxCompress, setCtxCompress] = useState<number>(CONTEXT_COMPRESSION_THRESHOLD.default);
   const [selfCheckRetries, setSelfCheckRetries] = useState<number>(SELF_CHECK_RETRY_LIMIT.default);
+  const [communicationStyle, setCommunicationStyle] = useState<AiCommunicationStyle>('balanced');
+  const [confirmationThreshold, setConfirmationThreshold] = useState<AiConfirmationThreshold>('normal');
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<'ok' | 'error' | null>(null);
 
@@ -19,6 +33,8 @@ export function SettingsPage() {
       setSelfLearn(s.featureFlags.enableSelfLearn ?? true);
       setCtxCompress(s.featureFlags.contextCompressionThreshold ?? CONTEXT_COMPRESSION_THRESHOLD.default);
       setSelfCheckRetries(s.featureFlags.selfCheckRetryLimit ?? SELF_CHECK_RETRY_LIMIT.default);
+      setCommunicationStyle(s.featureFlags.communicationStyle ?? 'balanced');
+      setConfirmationThreshold(s.featureFlags.confirmationThreshold ?? 'normal');
     }).catch(() => {});
   }, []);
 
@@ -38,6 +54,8 @@ export function SettingsPage() {
           enableSelfLearn: selfLearn,
           contextCompressionThreshold: ctxCompress,
           selfCheckRetryLimit: selfCheckRetries,
+          communicationStyle,
+          confirmationThreshold,
         },
       });
       setStatus(next);
@@ -83,6 +101,28 @@ export function SettingsPage() {
 
         <div className="settings-behavior-note">
           自学习绑定在完成、覆盖、SOP 提取等节点触发，不做持续行为监控；学到的规则会在 Context 展示，可停用或删除。
+        </div>
+
+        <div className="settings-field" style={{ marginTop: 16 }}>
+          <div className="settings-label">沟通风格</div>
+          <SegmentedControl
+            value={communicationStyle}
+            options={['concise', 'balanced', 'detailed']}
+            labels={COMMUNICATION_STYLE_LABELS}
+            onChange={setCommunicationStyle}
+          />
+          <p className="settings-hint">影响 AI 的回答密度和展开程度；不改变任务生命周期。</p>
+        </div>
+
+        <div className="settings-field" style={{ marginTop: 16 }}>
+          <div className="settings-label">确认阈值</div>
+          <SegmentedControl
+            value={confirmationThreshold}
+            options={['low', 'normal', 'high']}
+            labels={CONFIRMATION_THRESHOLD_LABELS}
+            onChange={setConfirmationThreshold}
+          />
+          <p className="settings-hint">用于校准 AI 遇到风险、外部动作或不确定结论时主动请你确认的频率。</p>
         </div>
 
         <div className="settings-field" style={{ marginTop: 16 }}>
@@ -144,6 +184,32 @@ export function SettingsPage() {
           {saving ? '保存中…' : saveResult === 'ok' ? '已保存 ✓' : saveResult === 'error' ? '保存失败' : '保存设置'}
         </button>
       </div>
+    </div>
+  );
+}
+
+function SegmentedControl<T extends string>({
+  value,
+  options,
+  labels,
+  onChange,
+}: {
+  value: T;
+  options: T[];
+  labels: Record<T, string>;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="settings-segmented">
+      {options.map((option) => (
+        <button
+          key={option}
+          className={`settings-segment${value === option ? ' active' : ''}`}
+          onClick={() => onChange(option)}
+        >
+          {labels[option]}
+        </button>
+      ))}
     </div>
   );
 }

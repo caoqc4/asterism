@@ -3,7 +3,13 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import type { AiProvider, AppConfigFile, FeatureFlags } from '../../shared/types/settings.js';
-import { CONTEXT_COMPRESSION_THRESHOLD, DEFAULT_FEATURE_FLAGS, SELF_CHECK_RETRY_LIMIT } from '../../shared/settings-defaults.js';
+import {
+  AI_COMMUNICATION_STYLES,
+  AI_CONFIRMATION_THRESHOLDS,
+  CONTEXT_COMPRESSION_THRESHOLD,
+  DEFAULT_FEATURE_FLAGS,
+  SELF_CHECK_RETRY_LIMIT,
+} from '../../shared/settings-defaults.js';
 import { readEnvBoolean, readEnvValue } from './env.js';
 
 const DEFAULT_CONFIG: AppConfigFile = {
@@ -103,6 +109,14 @@ function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
           && nextFeatureFlags.selfCheckRetryLimit <= SELF_CHECK_RETRY_LIMIT.max
           ? nextFeatureFlags.selfCheckRetryLimit
           : DEFAULT_FEATURE_FLAGS.selfCheckRetryLimit,
+      communicationStyle:
+        AI_COMMUNICATION_STYLES.includes(nextFeatureFlags.communicationStyle as never)
+          ? nextFeatureFlags.communicationStyle
+          : DEFAULT_FEATURE_FLAGS.communicationStyle,
+      confirmationThreshold:
+        AI_CONFIRMATION_THRESHOLDS.includes(nextFeatureFlags.confirmationThreshold as never)
+          ? nextFeatureFlags.confirmationThreshold
+          : DEFAULT_FEATURE_FLAGS.confirmationThreshold,
     },
     updatedAt: input.updatedAt ?? new Date().toISOString(),
   };

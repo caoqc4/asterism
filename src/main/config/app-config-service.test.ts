@@ -48,6 +48,8 @@ describe('AppConfigService', () => {
     expect(config.featureFlags.enableSandboxCodingAgent).toBe(false);
     expect(config.featureFlags.enableSandboxPatchPromotionApply).toBe(false);
     expect(config.featureFlags.selfCheckRetryLimit).toBe(2);
+    expect(config.featureFlags.communicationStyle).toBe('balanced');
+    expect(config.featureFlags.confirmationThreshold).toBe('normal');
     expect(fs.existsSync(getConfigPath(() => tempRoot))).toBe(true);
   });
 
@@ -77,6 +79,8 @@ describe('AppConfigService', () => {
         enableSandboxCodingAgent: true,
         enableSandboxPatchPromotionApply: true,
         selfCheckRetryLimit: 4,
+        communicationStyle: 'detailed',
+        confirmationThreshold: 'high',
       },
     });
 
@@ -91,6 +95,8 @@ describe('AppConfigService', () => {
     expect(config.featureFlags.enableSandboxCodingAgent).toBe(true);
     expect(config.featureFlags.enableSandboxPatchPromotionApply).toBe(true);
     expect(config.featureFlags.selfCheckRetryLimit).toBe(4);
+    expect(config.featureFlags.communicationStyle).toBe('detailed');
+    expect(config.featureFlags.confirmationThreshold).toBe('high');
   });
 
   it('falls back to the default provider when config contains an unknown provider', async () => {
@@ -167,6 +173,8 @@ describe('AppConfigService', () => {
           enableSandboxCodingAgent: 'yes',
           enableSandboxPatchPromotionApply: 'yes',
           selfCheckRetryLimit: 8,
+          communicationStyle: 'verbose',
+          confirmationThreshold: 'always',
         },
       }),
       'utf8',
@@ -181,6 +189,8 @@ describe('AppConfigService', () => {
     expect(config.featureFlags.enableSandboxCodingAgent).toBe(false);
     expect(config.featureFlags.enableSandboxPatchPromotionApply).toBe(false);
     expect(config.featureFlags.selfCheckRetryLimit).toBe(2);
+    expect(config.featureFlags.communicationStyle).toBe('balanced');
+    expect(config.featureFlags.confirmationThreshold).toBe('normal');
   });
 
   it('migrates legacy settings.json into config.json', async () => {
