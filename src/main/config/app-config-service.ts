@@ -3,17 +3,8 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import type { AiProvider, AppConfigFile, FeatureFlags } from '../../shared/types/settings.js';
+import { CONTEXT_COMPRESSION_THRESHOLD, DEFAULT_FEATURE_FLAGS } from '../../shared/settings-defaults.js';
 import { readEnvBoolean, readEnvValue } from './env.js';
-
-const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
-  enableScheduler: false,
-  enableProviderNativeToolCalls: false,
-  enableSandboxCodingAgent: false,
-  enableSandboxPatchPromotionApply: false,
-  enableSelfCheck: true,
-  enableSelfLearn: true,
-  contextCompressionThreshold: 45,
-};
 
 const DEFAULT_CONFIG: AppConfigFile = {
   aiProvider: 'anthropic',
@@ -101,8 +92,8 @@ function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
       contextCompressionThreshold:
         typeof nextFeatureFlags.contextCompressionThreshold === 'number'
           && Number.isFinite(nextFeatureFlags.contextCompressionThreshold)
-          && nextFeatureFlags.contextCompressionThreshold >= 30
-          && nextFeatureFlags.contextCompressionThreshold <= 70
+          && nextFeatureFlags.contextCompressionThreshold >= CONTEXT_COMPRESSION_THRESHOLD.min
+          && nextFeatureFlags.contextCompressionThreshold <= CONTEXT_COMPRESSION_THRESHOLD.max
           ? nextFeatureFlags.contextCompressionThreshold
           : DEFAULT_FEATURE_FLAGS.contextCompressionThreshold,
     },

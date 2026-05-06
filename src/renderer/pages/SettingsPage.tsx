@@ -1,21 +1,12 @@
 import { useState, useEffect } from 'react';
 import type { AiConfigStatus } from '@shared/types/settings';
-
-const DEFAULT_FLAGS = {
-  enableScheduler: false,
-  enableProviderNativeToolCalls: true,
-  enableSandboxCodingAgent: false,
-  enableSandboxPatchPromotionApply: false,
-  enableSelfCheck: true,
-  enableSelfLearn: true,
-  contextCompressionThreshold: 45,
-};
+import { CONTEXT_COMPRESSION_THRESHOLD, DEFAULT_FEATURE_FLAGS } from '@shared/settings-defaults';
 
 export function SettingsPage() {
   const [status, setStatus] = useState<AiConfigStatus | null>(null);
   const [selfCheck, setSelfCheck] = useState(true);
   const [selfLearn, setSelfLearn] = useState(true);
-  const [ctxCompress, setCtxCompress] = useState(45);
+  const [ctxCompress, setCtxCompress] = useState<number>(CONTEXT_COMPRESSION_THRESHOLD.default);
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<'ok' | 'error' | null>(null);
 
@@ -25,7 +16,7 @@ export function SettingsPage() {
       setStatus(s);
       setSelfCheck(s.featureFlags.enableSelfCheck ?? true);
       setSelfLearn(s.featureFlags.enableSelfLearn ?? true);
-      setCtxCompress(s.featureFlags.contextCompressionThreshold ?? 45);
+      setCtxCompress(s.featureFlags.contextCompressionThreshold ?? CONTEXT_COMPRESSION_THRESHOLD.default);
     }).catch(() => {});
   }, []);
 
@@ -38,7 +29,8 @@ export function SettingsPage() {
         provider: status?.provider ?? 'fal-openrouter',
         model: status?.model ?? 'google/gemini-2.5-flash',
         featureFlags: {
-          ...DEFAULT_FLAGS,
+          ...DEFAULT_FEATURE_FLAGS,
+          enableProviderNativeToolCalls: true,
           ...(status?.featureFlags ?? {}),
           enableSelfCheck: selfCheck,
           enableSelfLearn: selfLearn,
@@ -92,7 +84,10 @@ export function SettingsPage() {
             <span className="settings-badge">{ctxCompress}%</span>
           </label>
           <input
-            type="range" min={30} max={70} step={5}
+            type="range"
+            min={CONTEXT_COMPRESSION_THRESHOLD.min}
+            max={CONTEXT_COMPRESSION_THRESHOLD.max}
+            step={CONTEXT_COMPRESSION_THRESHOLD.step}
             value={ctxCompress}
             onChange={(e) => setCtxCompress(Number(e.target.value))}
             className="settings-range"

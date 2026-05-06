@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ChatMessage } from '@shared/types/ipc';
 import { selectApplicableWorkHabits as selectApplicableWorkHabitsFromList } from '@shared/work-habit-rules';
+import { CONTEXT_COMPRESSION_THRESHOLD } from '@shared/settings-defaults';
 import {
   selectApplicableWorkHabits,
   getPersistedWorkHabitStorageSnapshot,
@@ -50,7 +51,6 @@ const TASK_TYPE_HABIT_LABELS: Record<TaskExecutionType, string> = {
   event:     '事件触发',
 };
 
-const DEFAULT_COMPRESSION_THRESHOLD = 45;
 const MIN_SESSION_REFRESH_MESSAGE_LIMIT = 3;
 const REFRESH_MESSAGE_LIMIT_THRESHOLD_STEP = 10;
 
@@ -61,7 +61,9 @@ function normalizeUserMessage(text: string): string {
     .replace(/[，。！？、,.!?；;：:\s]/g, '');
 }
 
-function deriveSessionRefreshMessageLimit(compressionThreshold = DEFAULT_COMPRESSION_THRESHOLD): number {
+function deriveSessionRefreshMessageLimit(
+  compressionThreshold: number = CONTEXT_COMPRESSION_THRESHOLD.default,
+): number {
   return Math.max(
     MIN_SESSION_REFRESH_MESSAGE_LIMIT,
     Math.round(compressionThreshold / REFRESH_MESSAGE_LIMIT_THRESHOLD_STEP),
@@ -70,7 +72,7 @@ function deriveSessionRefreshMessageLimit(compressionThreshold = DEFAULT_COMPRES
 
 function shouldSuggestSessionRefresh(
   messages: Message[],
-  compressionThreshold = DEFAULT_COMPRESSION_THRESHOLD,
+  compressionThreshold: number = CONTEXT_COMPRESSION_THRESHOLD.default,
 ): boolean {
   const userMessages = messages
     .filter((message) => message.role === 'user')
@@ -100,7 +102,9 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [pendingSwitch, setPendingSwitch] = useState<PendingCtxSwitch | null>(null);
   const [sessionRefreshDismissed, setSessionRefreshDismissed] = useState(false);
-  const [compressionThreshold, setCompressionThreshold] = useState(DEFAULT_COMPRESSION_THRESHOLD);
+  const [compressionThreshold, setCompressionThreshold] = useState<number>(
+    CONTEXT_COMPRESSION_THRESHOLD.default,
+  );
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -122,7 +126,9 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
 
   useEffect(() => {
     window.api?.getAiConfigStatus().then((status) => {
-      setCompressionThreshold(status.featureFlags.contextCompressionThreshold ?? DEFAULT_COMPRESSION_THRESHOLD);
+      setCompressionThreshold(
+        status.featureFlags.contextCompressionThreshold ?? CONTEXT_COMPRESSION_THRESHOLD.default,
+      );
     }).catch(() => {});
   }, []);
 
