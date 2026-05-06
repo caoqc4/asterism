@@ -9,6 +9,7 @@ import {
   defaultTriggerForType,
   inferTaskExecutionType,
   loadTaskAttributes,
+  moveTaskToProject,
   saveTaskAttributes,
   type TaskAttributeRecord,
   type TaskExecutionType,
@@ -272,6 +273,24 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
     setSelectedId(null);
     setAllTasks((prev) => prev.filter((t) => t.id !== task.id));
     transitionWithPlanningHop(task, 'waiting_external', `延后处理：${deferLabel(option)}`).catch(() => reloadTasks());
+  }
+
+  function moveIntoProject(taskId: string, projectId: string | null) {
+    const result = moveTaskToProject(taskId, projectId);
+    setContextMenu(null);
+    setSelectedId(taskId);
+    setAllTasks((prev) => prev.map((task) => {
+      if (task.id === taskId) {
+        return { ...task, parentTaskId: result.task.parentTaskId ?? undefined };
+      }
+      if (result.previousProject && task.id === result.previousProject.taskId) {
+        return { ...task, childTaskIds: result.previousProject.childTaskIds };
+      }
+      if (result.nextProject && task.id === result.nextProject.taskId) {
+        return { ...task, type: 'project', childTaskIds: result.nextProject.childTaskIds };
+      }
+      return task;
+    }));
   }
 
   async function resolveReadyDependency(task: Task) {
@@ -684,8 +703,11 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
         <ContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
+          task={allTasks.find((task) => task.id === contextMenu.taskId) ?? null}
+          projects={projectParents}
           onClose={closeContextMenu}
           onOpenWorkbench={() => { onOpenWorkbench(contextMenu.taskId); closeContextMenu(); }}
+          onMoveToProject={(projectId) => moveIntoProject(contextMenu.taskId, projectId)}
         />
       )}
 
@@ -1121,14 +1143,19 @@ function TaskPreview({ task, keySources, hasPendingDecision, onOpenWorkbench, on
 interface ContextMenuProps {
   x: number;
   y: number;
+  task: Task | null;
+  projects: Task[];
   onClose: () => void;
   onOpenWorkbench: () => void;
+  onMoveToProject: (projectId: string | null) => void;
 }
 
-function ContextMenu({ x, y, onClose, onOpenWorkbench }: ContextMenuProps) {
+function ContextMenu({ x, y, task, projects, onClose, onOpenWorkbench, onMoveToProject }: ContextMenuProps) {
+  const projectOptions = task
+    ? projects.filter((project) => project.id !== task.id && project.id !== task.parentTaskId)
+    : [];
   const items = [
     { label: '打开工作台', action: onOpenWorkbench },
-    { label: '移至项目', action: onClose },
     { label: '改优先级', action: onClose },
     { label: '归档', action: onClose },
     { label: '复制链接', action: onClose },
@@ -1140,6 +1167,19 @@ function ContextMenu({ x, y, onClose, onOpenWorkbench }: ContextMenuProps) {
       style={{ left: x, top: y }}
       onClick={(e) => e.stopPropagation()}
     >
+      <button className="ctx-menu-item muted" onClick={onClose}>
+        移至项目
+      </button>
+      {projectOptions.map((project) => (
+        <button key={project.id} className="ctx-menu-item sub" onClick={() => onMoveToProject(project.id)}>
+          {project.title}
+        </button>
+      ))}
+      {task?.parentTaskId && (
+        <button className="ctx-menu-item sub" onClick={() => onMoveToProject(null)}>
+          移出项目
+        </button>
+      )}
       {items.map((item) => (
         <button key={item.label} className="ctx-menu-item" onClick={item.action}>
           {item.label}

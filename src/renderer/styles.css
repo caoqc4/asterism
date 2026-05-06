@@ -1931,6 +1931,15 @@ a { color: inherit; text-decoration: none; }
   transition: background 80ms;
 }
 .more-menu-item:hover { background: var(--bg-hover); color: var(--ink); }
+.more-menu-item.sub {
+  padding-left: 24px;
+  font-size: 12px;
+}
+.more-menu-label {
+  padding: 8px 14px 4px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
 .more-menu-item.danger { color: var(--accent); }
 .more-menu-item.danger:hover { background: oklch(97% 0.03 20); }
 
@@ -3122,6 +3131,13 @@ a { color: inherit; text-decoration: none; }
   transition: background 60ms;
 }
 .ctx-menu-item:hover { background: var(--bg-hover); }
+.ctx-menu-item.sub {
+  padding-left: 22px;
+  font-size: 12px;
+}
+.ctx-menu-item.muted {
+  color: var(--ink-3);
+}
 
 /* ─── Connections page ─── */
 .connections-page { padding: 32px 40px; max-width: 720px; margin: 0 auto; width: 100%; box-sizing: border-box; }

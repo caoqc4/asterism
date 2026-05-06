@@ -25,7 +25,7 @@ import {
   updateWorkHabit,
   type WorkHabitRecord,
 } from './lib/workHabits';
-import { saveTaskAttributes } from './lib/taskAttributes';
+import { loadTaskAttributes, saveTaskAttributes } from './lib/taskAttributes';
 
 const now = '2026-01-01T00:00:00.000Z';
 
@@ -1061,6 +1061,7 @@ describe('App redesign v1', () => {
 
   it('opens a task workbench and keeps Runs scoped under the task instead of global navigation', async () => {
     const user = userEvent.setup();
+    saveTaskAttributes('task_waiting', { type: 'project' });
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /Tasks/ }));
@@ -1141,6 +1142,11 @@ describe('App redesign v1', () => {
     await user.click(screen.getByTitle('更多操作'));
     expect(await screen.findByRole('button', { name: '延期到明天' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '改优先级' })).toBeTruthy();
+    expect(screen.getByText('移至项目')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '合同盖章跟进' }));
+    expect(loadTaskAttributes().task_risk?.parentTaskId).toBe('task_waiting');
+    expect(await screen.findByText('📁 合同盖章跟进')).toBeTruthy();
+    await user.click(screen.getByTitle('更多操作'));
     await user.click(screen.getByRole('button', { name: '改优先级' }));
     expect(await screen.findByText('风险等级')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '中' }));

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { TaskDetail } from '@shared/types/task';
+import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import type { RunRecord, RunDetailRecord, RunStepRecord, RunVerificationRecord } from '@shared/types/run';
 import { evaluateRunSelfCheck, evaluateRunStepSelfCheck, type RunSelfCheckResult } from '@shared/run-self-check';
 import type { SourceContextRecord } from '@shared/types/source-context';
@@ -10,6 +10,8 @@ import {
   defaultScheduleForType,
   defaultTriggerForType,
   getTaskAttributes,
+  loadTaskAttributes,
+  moveTaskToProject,
   saveTaskAttributes,
   type TaskAttributeRecord,
   type TaskExecutionType,
@@ -87,7 +89,23 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
   const [showCompletionCheck, setShowCompletionCheck] = useState(false);
   const [showSopExtract, setShowSopExtract] = useState(false);
   const [taskAttrs, setTaskAttrs] = useState<TaskAttributeRecord | null>(() => getTaskAttributes(taskId));
+  const [projectOptions, setProjectOptions] = useState<Array<{ id: string; title: string }>>([]);
   const [generatedResume, setGeneratedResume] = useState<{ summary: string; nextSuggestedMove: string; generatedAt: string } | null>(null);
+
+  function loadProjectOptions(records?: TaskListItemRecord[]) {
+    const applyRecords = (items: TaskListItemRecord[]) => {
+      const attrs = loadTaskAttributes();
+      setProjectOptions(items
+        .filter((task) => task.id !== taskId && attrs[task.id]?.type === 'project' && !attrs[task.id]?.parentTaskId)
+        .map((task) => ({ id: task.id, title: task.title })));
+    };
+
+    if (records) {
+      applyRecords(records);
+      return;
+    }
+    window.api?.listTasks?.().then(applyRecords).catch(() => {});
+  }
 
   function loadRuns() {
     return window.api?.listRuns().then((all) => {
@@ -113,6 +131,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
     setRuns([]);
     setActiveRunDetail(null);
     setTaskAttrs(getTaskAttributes(taskId));
+    loadProjectOptions();
     setGeneratedResume(null);
 
     const loadDetail = window.api?.getTaskDetail(taskId).then((d) => {
@@ -128,6 +147,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
       }
       if (event.type === 'task.changed' && (!event.entityId || event.entityId === taskId)) {
         window.api?.getTaskDetail(taskId).then((d) => { if (d) setDetail(d); }).catch(() => {});
+        loadProjectOptions();
       }
     });
 
@@ -138,6 +158,9 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
   const status = detail ? deriveStatus(detail) : 'idle';
   const title = detail?.title ?? taskId;
   const resume = generatedResume ?? detail?.resumeCard;
+  const currentProject = taskAttrs?.parentTaskId
+    ? projectOptions.find((project) => project.id === taskAttrs.parentTaskId)
+    : null;
 
   const activeRun = runs.find((r) => r.status === 'running' || r.status === 'paused');
 
@@ -216,6 +239,12 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
     }).catch(() => {});
   }
 
+  function moveCurrentTaskToProject(projectId: string | null) {
+    const result = moveTaskToProject(taskId, projectId);
+    setTaskAttrs(result.task);
+    setMoreOpen(false);
+  }
+
   function openRunForm() {
     setTab('runs');
     setRunFormRequest((value) => value + 1);
@@ -267,6 +296,17 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
                   <button className="more-menu-item" onClick={() => { setMoreOpen(false); onOpenPanel(); }}>规划讨论</button>
                   <button className="more-menu-item" onClick={() => void deferUntilTomorrow()}>延期到明天</button>
                   <button className="more-menu-item" onClick={() => { setMoreOpen(false); setShowEditPanel(true); }}>改优先级</button>
+                  <div className="more-menu-label">移至项目</div>
+                  {projectOptions
+                    .filter((project) => project.id !== taskAttrs?.parentTaskId)
+                    .map((project) => (
+                      <button key={project.id} className="more-menu-item sub" onClick={() => moveCurrentTaskToProject(project.id)}>
+                        {project.title}
+                      </button>
+                    ))}
+                  {taskAttrs?.parentTaskId && (
+                    <button className="more-menu-item sub" onClick={() => moveCurrentTaskToProject(null)}>移出项目</button>
+                  )}
                   <button className="more-menu-item" onClick={() => { setMoreOpen(false); setShowSopExtract(true); }}>提取流程模板</button>
                   <button className="more-menu-item" onClick={() => { setMoreOpen(false); setShowCompletionCheck(true); }}>标记完成</button>
                   <button className="more-menu-item danger" onClick={() => void transitionTo('archived')}>归档任务</button>
@@ -295,9 +335,10 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
         )}
       </div>
 
-      {taskAttrs && (taskAttrs.type !== 'simple' || taskAttrs.commitment) && (
+      {taskAttrs && (taskAttrs.type !== 'simple' || taskAttrs.parentTaskId || taskAttrs.commitment) && (
         <div className="workbench-config-strip">
           <span className="tag">{TASK_TYPE_LABELS[taskAttrs.type]}</span>
+          {currentProject && <button className="workbench-config-pill">📁 {currentProject.title}</button>}
           {taskAttrs.schedule && <button className="workbench-config-pill">🔁 {taskAttrs.schedule}</button>}
           {taskAttrs.trigger && <button className="workbench-config-pill">⚡ {taskAttrs.trigger}</button>}
           {taskAttrs.commitment && <button className="workbench-config-pill">🤝 {taskAttrs.commitment}</button>}

@@ -60,6 +60,67 @@ export function saveTaskAttributes(
   return next;
 }
 
+export function moveTaskToProject(taskId: string, projectId: string | null): {
+  task: TaskAttributeRecord;
+  previousProject: TaskAttributeRecord | null;
+  nextProject: TaskAttributeRecord | null;
+} {
+  const all = loadTaskAttributes();
+  const existing = all[taskId];
+  const previousProjectId = existing?.parentTaskId ?? null;
+  const now = new Date().toISOString();
+  let previousProject: TaskAttributeRecord | null = null;
+  let nextProject: TaskAttributeRecord | null = null;
+
+  if (previousProjectId && previousProjectId !== projectId) {
+    const previous = all[previousProjectId];
+    previousProject = {
+      taskId: previousProjectId,
+      type: previous?.type ?? 'project',
+      parentTaskId: previous?.parentTaskId ?? null,
+      childTaskIds: (previous?.childTaskIds ?? []).filter((id) => id !== taskId),
+      commitment: previous?.commitment ?? null,
+      schedule: previous?.schedule ?? null,
+      trigger: previous?.trigger ?? null,
+      updatedAt: now,
+    };
+    all[previousProjectId] = previousProject;
+  }
+
+  if (projectId && projectId !== taskId) {
+    const project = all[projectId];
+    const childIds = project?.childTaskIds ?? [];
+    nextProject = {
+      taskId: projectId,
+      type: 'project',
+      parentTaskId: project?.parentTaskId ?? null,
+      childTaskIds: childIds.includes(taskId) ? childIds : [...childIds, taskId],
+      commitment: project?.commitment ?? null,
+      schedule: project?.schedule ?? null,
+      trigger: project?.trigger ?? null,
+      updatedAt: now,
+    };
+    all[projectId] = nextProject;
+  }
+
+  const task: TaskAttributeRecord = {
+    taskId,
+    type: existing?.type ?? 'simple',
+    parentTaskId: projectId && projectId !== taskId ? projectId : null,
+    childTaskIds: existing?.childTaskIds ?? [],
+    commitment: existing?.commitment ?? null,
+    schedule: existing?.schedule ?? null,
+    trigger: existing?.trigger ?? null,
+    updatedAt: now,
+  };
+  all[taskId] = task;
+
+  if (canUseLocalStorage()) {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  }
+  return { task, previousProject, nextProject };
+}
+
 export function inferTaskExecutionType(title: string): TaskExecutionType {
   const normalized = title.toLowerCase();
   if (/每(日|天|周|月)|daily|weekly|monthly|定期|定时|周期/.test(normalized)) return 'scheduled';
