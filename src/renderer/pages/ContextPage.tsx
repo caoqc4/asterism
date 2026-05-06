@@ -47,6 +47,12 @@ function priorityLabel(scope: WorkHabitScope): string {
   return '基础 · 全局规则';
 }
 
+function statusPriority(status: WorkHabitStatus): number {
+  if (status === 'pending') return 0;
+  if (status === 'confirmed') return 1;
+  return 2;
+}
+
 export function ContextPage() {
   const [tasks, setTasks] = useState<TaskListItemRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -204,6 +210,20 @@ export function ContextPage() {
     } : task));
     setEditingTask(null);
   }
+
+  const habitRows = habits
+    .map((habit) => ({
+      habit,
+      conflict: findWorkHabitConflict(habit, habits),
+    }))
+    .sort((a, b) => {
+      if (Boolean(a.conflict) !== Boolean(b.conflict)) return a.conflict ? -1 : 1;
+      const statusDelta = statusPriority(a.habit.status) - statusPriority(b.habit.status);
+      if (statusDelta !== 0) return statusDelta;
+      const aDate = a.habit.lastAppliedAt ?? a.habit.createdAt;
+      const bDate = b.habit.lastAppliedAt ?? b.habit.createdAt;
+      return bDate.localeCompare(aDate);
+    });
 
   return (
     <div className="context-page">
@@ -367,10 +387,9 @@ export function ContextPage() {
               </div>
             </div>
           )}
-          {habits.map((h) => {
+          {habitRows.map(({ habit: h, conflict }) => {
             const isExpanded = expandedHabit === h.id;
             const isEditing = editingHabit === h.id;
-            const conflict = findWorkHabitConflict(h, habits);
             return (
               <div key={h.id} className={`ctx-habit-row${h.status === 'pending' ? ' unconfirmed' : ''}${conflict ? ' conflict' : ''}`}>
                 <div

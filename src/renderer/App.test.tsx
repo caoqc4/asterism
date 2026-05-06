@@ -893,6 +893,9 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /Context/ }));
 
     expect(await screen.findByText(/与已确认规则冲突/)).toBeTruthy();
+    const candidate = screen.getByText('代码合入前只需要跑受影响测试');
+    const existing = screen.getByText('代码合入前必须先跑完整测试');
+    expect(candidate.compareDocumentPosition(existing) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '采用新规则' }));
 
     expect(screen.queryByText(/与已确认规则冲突/)).toBeNull();
