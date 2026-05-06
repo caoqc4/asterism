@@ -1619,6 +1619,9 @@ function TaskEditPanel({
             </button>
           ))}
         </div>
+        <span className="task-edit-hint">
+          任务类型、周期和触发条件属于任务属性；实际执行记录仍保留在执行 Tab。
+        </span>
       </div>
       {type === 'scheduled' && (
         <div className="task-edit-row">
