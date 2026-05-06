@@ -1255,8 +1255,15 @@ describe('App redesign v1', () => {
     expect(screen.getByText('需关注')).toBeTruthy();
     expect(screen.getByText('最近更新：1/1')).toBeTruthy();
     expect(screen.getByText(/完成检查覆盖已保留为自学习观察/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /P2 需关注/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /P3 记录/ })).toBeTruthy();
     expect(screen.getByText('完成检查被用户覆盖：0/1 · Run 验证通过')).toBeTruthy();
     expect(screen.getByText(/完成检查未通过：仍有 1 条完成标准未满足/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /P3 记录/ }));
+    expect(screen.getByText('任务信息已更新')).toBeTruthy();
+    expect(screen.queryByText('完成检查被用户覆盖：0/1 · Run 验证通过')).toBeNull();
+    await user.click(screen.getByRole('button', { name: /P2 需关注/ }));
+    expect(screen.getByText('完成检查被用户覆盖：0/1 · Run 验证通过')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '执行' }));
     await user.click(screen.getByRole('button', { name: /启动 Run/ }));

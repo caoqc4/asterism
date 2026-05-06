@@ -1358,10 +1358,28 @@ function isCompletionOverrideActivity(event: { type: string; payload: string | n
   return parseTimelinePayload(event.payload)?.action === 'override_completed';
 }
 
+type ActivityPriorityFilter = 'all' | 'p1' | 'p2' | 'p3';
+
+function activityPriority(type: string): Exclude<ActivityPriorityFilter, 'all'> {
+  if (type.includes('blocker') || type.includes('failed')) return 'p1';
+  if (type.includes('waiting') || type.includes('decision') || type === 'task.completion_check') return 'p2';
+  return 'p3';
+}
+
 function ActivityTab({ timeline }: { timeline: { id: string; type: string; payload: string | null; createdAt: string }[] }) {
+  const [filter, setFilter] = useState<ActivityPriorityFilter>('all');
   const priorityCount = timeline.filter((event) => isPriorityActivity(event.type)).length;
   const overrideCount = timeline.filter(isCompletionOverrideActivity).length;
   const latestEvent = timeline[timeline.length - 1] ?? null;
+  const visibleTimeline = filter === 'all'
+    ? timeline
+    : timeline.filter((event) => activityPriority(event.type) === filter);
+  const filterOptions: Array<{ value: ActivityPriorityFilter; label: string; count: number }> = [
+    { value: 'all', label: '全部', count: timeline.length },
+    { value: 'p1', label: 'P1 关键', count: timeline.filter((event) => activityPriority(event.type) === 'p1').length },
+    { value: 'p2', label: 'P2 需关注', count: timeline.filter((event) => activityPriority(event.type) === 'p2').length },
+    { value: 'p3', label: 'P3 记录', count: timeline.filter((event) => activityPriority(event.type) === 'p3').length },
+  ];
 
   return (
     <div className="tab-content">
@@ -1389,8 +1407,25 @@ function ActivityTab({ timeline }: { timeline: { id: string; type: string; paylo
       {timeline.length === 0 && (
         <div className="tab-empty">暂无活动记录。</div>
       )}
+      {timeline.length > 0 && (
+        <div className="activity-filter" aria-label="活动优先级筛选">
+          {filterOptions.map((option) => (
+            <button
+              key={option.value}
+              className={`activity-filter-btn${filter === option.value ? ' active' : ''}`}
+              onClick={() => setFilter(option.value)}
+            >
+              {option.label}
+              <span>{option.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {timeline.length > 0 && visibleTimeline.length === 0 && (
+        <div className="tab-empty">当前筛选下暂无活动记录。</div>
+      )}
       <div className="activity-list">
-        {timeline.slice().reverse().map((e) => (
+        {visibleTimeline.slice().reverse().map((e) => (
           <ActivityItem key={e.id} event={e} />
         ))}
       </div>
