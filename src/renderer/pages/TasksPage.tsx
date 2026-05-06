@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { ProjectDecompositionResult } from '@shared/types/ipc';
 import type { TaskListItemRecord, TaskState } from '@shared/types/task';
+import type { SourceContextRecord } from '@shared/types/source-context';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import {
   defaultScheduleForType,
@@ -135,6 +136,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
   const [lens, setLens] = useState<Lens>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('lane');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedSources, setSelectedSources] = useState<SourceContextRecord[]>([]);
   const [deferOpenId, setDeferOpenId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; taskId: string } | null>(null);
   const [completionCheckTask, setCompletionCheckTask] = useState<Task | null>(null);
@@ -192,6 +194,24 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
 
   const selectedTask = filtered.find((t) => t.id === selectedId) ?? null;
   const projectParents = allTasks.filter((task) => task.type === 'project' && !task.parentTaskId);
+
+  useEffect(() => {
+    let cancelled = false;
+    setSelectedSources([]);
+    if (!selectedId || !window.api?.getTaskDetail) return;
+
+    window.api.getTaskDetail(selectedId)
+      .then((detail) => {
+        if (cancelled) return;
+        const keySources = (detail?.sourceContexts ?? [])
+          .filter((source) => source.status === 'active' && source.isKey)
+          .slice(0, 3);
+        setSelectedSources(keySources);
+      })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [selectedId]);
 
   function handleRowClick(id: string) {
     if (clickTimer.current) clearTimeout(clickTimer.current);
@@ -637,7 +657,11 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench }: TasksPageProps) {
       {/* Right preview panel */}
       {selectedTask && (
         <div className="task-preview">
-          <TaskPreview task={selectedTask} onOpenWorkbench={() => onOpenWorkbench(selectedTask.id)} />
+          <TaskPreview
+            task={selectedTask}
+            keySources={selectedSources}
+            onOpenWorkbench={() => onOpenWorkbench(selectedTask.id)}
+          />
         </div>
       )}
 
@@ -981,10 +1005,11 @@ function statusDot(status: TaskStatus): string {
 
 interface TaskPreviewProps {
   task: Task;
+  keySources: SourceContextRecord[];
   onOpenWorkbench: () => void;
 }
 
-function TaskPreview({ task, onOpenWorkbench }: TaskPreviewProps) {
+function TaskPreview({ task, keySources, onOpenWorkbench }: TaskPreviewProps) {
   return (
     <div className="task-preview-inner">
       <div className="task-preview-head">
@@ -1049,6 +1074,19 @@ function TaskPreview({ task, onOpenWorkbench }: TaskPreviewProps) {
           <div className="preview-chip">
             <span>🤝</span>
             <span style={{ marginLeft: 4 }}>{task.commitment}</span>
+          </div>
+        </div>
+      )}
+
+      {keySources.length > 0 && (
+        <div className="preview-section">
+          <div className="preview-label">关键来源</div>
+          <div className="preview-sources">
+            {keySources.map((source) => (
+              <div key={source.id} className="preview-source-item">
+                {source.title}
+              </div>
+            ))}
           </div>
         </div>
       )}
