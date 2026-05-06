@@ -151,10 +151,13 @@ export function DecisionsPage({ onOpenPanel, onOpenWorkbench }: DecisionsPagePro
 
       {today.length > 0 && (
         <section className="dec-section">
-          <div className="dec-section-label">
-            <span className="dot risk" style={{ flexShrink: 0 }} />
-            今天必须处理
-            <span className="dec-count">{today.length}</span>
+          <div className="dec-section-head">
+            <div className="dec-section-label">
+              <span className="dot risk" style={{ flexShrink: 0 }} />
+              今天必须处理
+              <span className="dec-count">{today.length}</span>
+            </div>
+            <div className="dec-section-note">有截止时间或 Agent 检查点暂停的事项优先处理</div>
           </div>
           {today.map((d) => (
             <DecisionCard
@@ -171,10 +174,13 @@ export function DecisionsPage({ onOpenPanel, onOpenWorkbench }: DecisionsPagePro
 
       {week.length > 0 && (
         <section className="dec-section">
-          <div className="dec-section-label">
-            <span className="dot waiting" style={{ flexShrink: 0 }} />
-            本周内
-            <span className="dec-count">{week.length}</span>
+          <div className="dec-section-head">
+            <div className="dec-section-label">
+              <span className="dot waiting" style={{ flexShrink: 0 }} />
+              本周内
+              <span className="dec-count">{week.length}</span>
+            </div>
+            <div className="dec-section-note">推荐顺序按影响面 × 不可逆程度排列</div>
           </div>
           {week.map((d) => (
             <DecisionCard

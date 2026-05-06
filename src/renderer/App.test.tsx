@@ -901,6 +901,8 @@ describe('App redesign v1', () => {
     expect(screen.getByText('待拍板')).toBeTruthy();
     expect(screen.getAllByText('今天必须处理').length).toBeGreaterThan(0);
     expect(screen.getAllByText('本周内').length).toBeGreaterThan(0);
+    expect(screen.getByText(/检查点暂停的事项优先处理/)).toBeTruthy();
+    expect(screen.getByText(/影响面 × 不可逆程度/)).toBeTruthy();
     expect(screen.getByText('Agent 检查点')).toBeTruthy();
     expect(screen.getByText('需要复核')).toBeTruthy();
     expect(screen.getByText('恢复执行')).toBeTruthy();
