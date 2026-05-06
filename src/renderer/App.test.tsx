@@ -1119,6 +1119,11 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '删除' }));
     expect(screen.queryByText('board_report_final.md')).toBeNull();
 
+    await user.click(screen.getByRole('button', { name: '活动' }));
+    expect(await screen.findByText('活动记录')).toBeTruthy();
+    expect(screen.getByText('需关注')).toBeTruthy();
+    expect(screen.getByText('最近更新：1/1')).toBeTruthy();
+
     await user.click(screen.getByRole('button', { name: '执行' }));
     await user.click(screen.getByRole('button', { name: /启动 Run/ }));
     const runInput = await screen.findByPlaceholderText(/给 AI 的指令/);

@@ -1145,9 +1145,36 @@ function eventDotClass(type: string): string {
   return '';
 }
 
+function isPriorityActivity(type: string): boolean {
+  return type.includes('blocker')
+    || type.includes('waiting')
+    || type.includes('decision')
+    || type.includes('failed')
+    || type === 'task.completion_check';
+}
+
 function ActivityTab({ timeline }: { timeline: { id: string; type: string; payload: string | null; createdAt: string }[] }) {
+  const priorityCount = timeline.filter((event) => isPriorityActivity(event.type)).length;
+  const latestEvent = timeline[timeline.length - 1] ?? null;
+
   return (
     <div className="tab-content">
+      {timeline.length > 0 && (
+        <div className="activity-summary">
+          <div className="activity-summary-item">
+            <span className="activity-summary-value">{timeline.length}</span>
+            <span>活动记录</span>
+          </div>
+          <div className="activity-summary-item">
+            <span className="activity-summary-value">{priorityCount}</span>
+            <span>需关注</span>
+          </div>
+          <div className="activity-summary-note">
+            最近更新：{latestEvent ? formatDate(latestEvent.createdAt) : '暂无'}
+          </div>
+        </div>
+      )}
+
       {timeline.length === 0 && (
         <div className="tab-empty">暂无活动记录。</div>
       )}
