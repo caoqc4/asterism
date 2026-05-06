@@ -839,8 +839,27 @@ function SourcesTab({
     }
   }
 
+  const keySourceCount = sources.filter((source) => source.isKey).length;
+  const latestSource = sources[0] ?? null;
+
   return (
     <div className="tab-content">
+      {sources.length > 0 && (
+        <div className="source-summary">
+          <div className="source-summary-item">
+            <span className="source-summary-value">{sources.length}</span>
+            <span>来源</span>
+          </div>
+          <div className="source-summary-item">
+            <span className="source-summary-value">{keySourceCount}</span>
+            <span>关键来源</span>
+          </div>
+          <div className="source-summary-note">
+            最近更新：{latestSource ? formatDate(latestSource.updatedAt) : '暂无'}
+          </div>
+        </div>
+      )}
+
       {sources.length === 0 && !showForm && (
         <div className="tab-empty">暂无来源文件。</div>
       )}

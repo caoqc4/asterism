@@ -1085,6 +1085,8 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: '来源' }));
     expect(await screen.findByText('董事会反馈邮件')).toBeTruthy();
+    expect(screen.getByText('关键来源')).toBeTruthy();
+    expect(screen.getByText('最近更新：1/1')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '取消关键' }));
     await waitFor(() => {
       expect(harness.api.updateSourceContext).toHaveBeenCalledWith({
