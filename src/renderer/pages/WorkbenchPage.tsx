@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import type { RunRecord, RunDetailRecord, RunStepRecord, RunVerificationRecord } from '@shared/types/run';
 import { evaluateRunSelfCheck, evaluateRunStepSelfCheck, type RunSelfCheckResult } from '@shared/run-self-check';
+import { SELF_CHECK_RETRY_LIMIT } from '@shared/settings-defaults';
 import type { SourceContextRecord } from '@shared/types/source-context';
 import type { ArtifactRecord, ArtifactKind } from '@shared/types/artifact';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
@@ -678,6 +679,7 @@ function RunsTab({
   const [showRunForm, setShowRunForm] = useState(false);
   const [runNote, setRunNote] = useState('');
   const [triggering, setTriggering] = useState(false);
+  const [selfCheckRetryLimit, setSelfCheckRetryLimit] = useState<number>(SELF_CHECK_RETRY_LIMIT.default);
   const checkStats = collectRunCheckStats({
     runs,
     activeRunDetail,
@@ -692,6 +694,12 @@ function RunsTab({
     setExpandedRunId(null);
     setRunDetailsById({});
   }, [taskId]);
+
+  useEffect(() => {
+    window.api?.getAiConfigStatus().then((status) => {
+      setSelfCheckRetryLimit(status.featureFlags.selfCheckRetryLimit ?? SELF_CHECK_RETRY_LIMIT.default);
+    }).catch(() => {});
+  }, []);
 
   async function toggleHistoricalRun(runId: string) {
     const isExpanded = expandedRunId === runId;
@@ -739,7 +747,7 @@ function RunsTab({
             <span className="run-check-overview-chip warn">需关注 {checkStats.warn + checkStats.fail}</span>
           )}
           <span className="run-check-overview-note">
-            Step 检查内置记录；Run 检查与完成确认按 AI 行为偏好触发。
+            Step 检查内置记录；失败自动修正上限 {selfCheckRetryLimit} 次；Run 检查与完成确认按 AI 行为偏好触发。
           </span>
         </div>
       )}
