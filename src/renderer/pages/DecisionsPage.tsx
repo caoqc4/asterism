@@ -14,6 +14,7 @@ interface Decision {
   context: DecisionContext;
   options: DecisionOption[];
   recommendation: string;
+  recommendationClarity: 'clear' | 'review';
   expanded: boolean;
 }
 
@@ -49,6 +50,7 @@ function fromRecord(r: DecisionRecord): Decision {
       { label: '取消', desc: '取消这次决策请求，不改变任务当前执行状态。' },
     ],
     recommendation: '批准',
+    recommendationClarity: 'clear',
     expanded: false,
   };
 }
@@ -212,6 +214,9 @@ function DecisionCard({ decision: d, onToggle, onDecide, onOpenPanel, onOpenWork
           <div className="dec-card-meta">
             <span className={`tag lane-${d.lane}`} style={{ fontSize: 10 }}>{d.taskTitle}</span>
             <span className="tag captured" style={{ fontSize: 10 }}>{d.typeLabel}</span>
+            <span className={`dec-clarity ${d.recommendationClarity}`}>
+              {d.recommendationClarity === 'clear' ? '推荐路径清晰' : '需要复核'}
+            </span>
             <span className="dec-updated">{d.updatedLabel}</span>
             {d.deadline && (
               <span className="dec-deadline">截止：{d.deadline}</span>
