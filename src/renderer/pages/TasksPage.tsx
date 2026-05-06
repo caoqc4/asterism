@@ -608,6 +608,10 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
                 if (e.key === 'Escape') { setShowCapture(false); setCaptureTitle(''); }
               }}
             />
+            <div className="capture-type-suggestion">
+              <span>AI 建议类型</span>
+              <strong>{TASK_TYPE_LABELS[captureType]}</strong>
+            </div>
             <div className="capture-type-row">
               {(['simple', 'project', 'scheduled', 'event'] as TaskType[]).map((type) => (
                 <button
@@ -626,7 +630,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
               />
             </div>
             <div className="capture-type-note">
-              AI 会根据标题预判任务类型，你可在创建前调整；项目型先生成拆解草稿，确认后才创建真实子任务。
+              类型由 AI 根据标题预判，你只需要确认或调整建议；项目型先生成拆解草稿，确认后才创建真实子任务。
             </div>
             <div className="capture-actions">
               <button className={`btn sm primary${capturing ? ' disabled' : ''}`} onClick={() => void captureTask()} disabled={!captureTitle.trim() || capturing}>

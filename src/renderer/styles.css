@@ -3034,6 +3034,18 @@ a { color: inherit; text-decoration: none; }
   width: 100%;
 }
 .capture-input::placeholder { color: var(--ink-3); font-weight: 400; }
+.capture-type-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-4);
+  font-size: 11.5px;
+}
+.capture-type-suggestion strong {
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 600;
+}
 .capture-type-row {
   display: grid;
   grid-template-columns: repeat(4, minmax(54px, max-content)) minmax(180px, 1fr);
