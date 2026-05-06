@@ -1230,6 +1230,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('活动记录')).toBeTruthy();
     expect(screen.getByText('需关注')).toBeTruthy();
     expect(screen.getByText('最近更新：1/1')).toBeTruthy();
+    expect(screen.getByText(/完成检查覆盖已保留为自学习观察/)).toBeTruthy();
     expect(screen.getByText('完成检查被用户覆盖：0/1 · Run 验证通过')).toBeTruthy();
     expect(screen.getByText(/完成检查未通过：仍有 1 条完成标准未满足/)).toBeTruthy();
 

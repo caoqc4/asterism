@@ -1350,8 +1350,14 @@ function isPriorityActivity(type: string): boolean {
     || type === 'task.completion_check';
 }
 
+function isCompletionOverrideActivity(event: { type: string; payload: string | null }): boolean {
+  if (event.type !== 'task.completion_check') return false;
+  return parseTimelinePayload(event.payload)?.action === 'override_completed';
+}
+
 function ActivityTab({ timeline }: { timeline: { id: string; type: string; payload: string | null; createdAt: string }[] }) {
   const priorityCount = timeline.filter((event) => isPriorityActivity(event.type)).length;
+  const overrideCount = timeline.filter(isCompletionOverrideActivity).length;
   const latestEvent = timeline[timeline.length - 1] ?? null;
 
   return (
@@ -1369,6 +1375,11 @@ function ActivityTab({ timeline }: { timeline: { id: string; type: string; paylo
           <div className="activity-summary-note">
             最近更新：{latestEvent ? formatDate(latestEvent.createdAt) : '暂无'}
           </div>
+          {overrideCount > 0 && (
+            <div className="activity-learning-note">
+              {overrideCount} 次完成检查覆盖已保留为自学习观察，不会自动改变后续流程。
+            </div>
+          )}
         </div>
       )}
 
