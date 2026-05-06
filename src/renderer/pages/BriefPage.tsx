@@ -54,6 +54,14 @@ function laneFromPriorityLane(lane: string | undefined): Lane {
   return 'steady';
 }
 
+function statusFromBriefTask(task: HomeBriefData['recentTasks'][number] | undefined): FocusTask['status'] {
+  if (!task) return undefined;
+  if (task.state === 'running') return 'running';
+  if (task.state === 'waiting_external') return 'waiting';
+  if (task.activeBlocker) return 'blocked';
+  return undefined;
+}
+
 function focusTasksFromBriefData(data: HomeBriefData): FocusTask[] {
   const seen = new Set<string>();
   return data.recommendedActions
@@ -63,14 +71,17 @@ function focusTasksFromBriefData(data: HomeBriefData): FocusTask[] {
       return true;
     })
     .slice(0, 5)
-    .map((a) => ({
-      id: a.taskId!,
-      title: data.recentTasks.find((t) => t.id === a.taskId)?.title ?? a.taskId!,
-      lane: laneFromPriorityLane(a.lane),
-      whyNow: a.reason,
-      action: a.label,
-      status: undefined,
-    }));
+    .map((a) => {
+      const task = data.recentTasks.find((t) => t.id === a.taskId);
+      return {
+        id: a.taskId!,
+        title: task?.title ?? a.taskId!,
+        lane: laneFromPriorityLane(a.lane),
+        whyNow: a.reason,
+        action: a.label,
+        status: statusFromBriefTask(task),
+      };
+    });
 }
 
 export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPageProps) {

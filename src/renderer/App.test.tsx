@@ -554,6 +554,13 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('本周承诺: 1')).toBeTruthy();
   });
 
+  it('marks waiting focus cards from Brief task state', async () => {
+    render(<App />);
+
+    const waitingCard = (await screen.findByText('合同盖章跟进')).closest('.focus-card');
+    expect(waitingCard?.querySelector('.dot.waiting')).toBeTruthy();
+  });
+
   it('opens task context in the right panel from a Brief focus card and sends task-aware chat', async () => {
     const user = userEvent.setup();
     render(<App />);
