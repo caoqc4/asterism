@@ -1003,6 +1003,10 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('产出官网改版方案')).toBeTruthy();
     expect(screen.getByText('0/2 子任务完成')).toBeTruthy();
     expect(screen.getByText('依赖：确认官网改版范围')).toBeTruthy();
+    expect(screen.getByText('归属')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /官网改版项目2/ }));
+    expect(screen.getByText('确认官网改版范围')).toBeTruthy();
+    expect(screen.getByText('产出官网改版方案')).toBeTruthy();
     expect(harness.api.createTask).toHaveBeenCalledTimes(3);
     expect(harness.api.createCompletionCriteria).toHaveBeenCalledWith(expect.objectContaining({
       taskId: 'task_created_1',

@@ -54,7 +54,8 @@ type Lens =
   | 'all'
   | 'running' | 'waiting' | 'blocked'
   | 'project' | 'scheduled' | 'event'
-  | 'committed' | 'done';
+  | 'committed' | 'done'
+  | `project:${string}`;
 
 const DEFER_OPTIONS = [
   { label: '明天', value: 'tomorrow' },
@@ -198,6 +199,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
     return () => unsub?.();
   }, []);
 
+  const projectParents = allTasks.filter((task) => task.type === 'project' && !task.parentTaskId);
   const filtered = allTasks.filter((t) => {
     if (lens === 'all') return true;
     if (lens === 'running') return t.status === 'running';
@@ -208,12 +210,15 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
     if (lens === 'event') return t.type === 'event';
     if (lens === 'committed') return !!t.commitment;
     if (lens === 'done') return t.status === 'done';
+    if (lens.startsWith('project:')) {
+      const projectId = lens.slice('project:'.length);
+      return t.id === projectId || t.parentTaskId === projectId;
+    }
     return true;
   });
 
   const selectedTask = filtered.find((t) => t.id === selectedId) ?? null;
   const selectedHasDecision = Boolean(selectedTask && pendingDecisions.some((decision) => decision.taskId === selectedTask.id));
-  const projectParents = allTasks.filter((task) => task.type === 'project' && !task.parentTaskId);
 
   useEffect(() => {
     let cancelled = false;
@@ -541,6 +546,22 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
           count={allTasks.filter(t => t.type === 'scheduled').length} />
         <LensItem label="事件触发" active={lens === 'event'} onClick={() => setLens('event')} icon="⚡"
           count={allTasks.filter(t => t.type === 'event').length} />
+
+        {projectParents.length > 0 && (
+          <>
+            <div className="lens-group-label">归属</div>
+            {projectParents.map((project) => (
+              <LensItem
+                key={project.id}
+                label={project.title}
+                active={lens === `project:${project.id}`}
+                onClick={() => setLens(`project:${project.id}`)}
+                icon="□"
+                count={allTasks.filter((task) => task.parentTaskId === project.id).length}
+              />
+            ))}
+          </>
+        )}
 
         <div className="lens-group-label" style={{ marginTop: 'auto' }}>特殊视角</div>
         <LensItem label="已承诺" active={lens === 'committed'} onClick={() => setLens('committed')} icon="🤝"
