@@ -1350,6 +1350,48 @@ a { color: inherit; text-decoration: none; }
   font-size: 11.5px;
   line-height: 1.45;
 }
+.ctx-learning-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(180px, 1.6fr);
+  gap: 8px;
+  align-items: stretch;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+.ctx-learning-summary-item {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink-3);
+  font-size: 11px;
+}
+.ctx-learning-summary-value {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.ctx-learning-summary-note {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 8px 10px;
+  background: var(--blue-soft);
+  border: 1px solid var(--blue-line);
+  border-radius: 6px;
+  color: var(--blue);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+@media (max-width: 760px) {
+  .ctx-learning-summary { grid-template-columns: 1fr; }
+}
 .ctx-habit-new-row {
   display: grid;
   grid-template-columns: 120px minmax(0, 1fr);

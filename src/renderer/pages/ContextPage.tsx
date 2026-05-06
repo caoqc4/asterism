@@ -224,6 +224,9 @@ export function ContextPage() {
       const bDate = b.habit.lastAppliedAt ?? b.habit.createdAt;
       return bDate.localeCompare(aDate);
     });
+  const confirmedHabitCount = habits.filter((habit) => habit.status === 'confirmed').length;
+  const pendingHabitCount = habits.filter((habit) => habit.status === 'pending').length;
+  const disabledHabitCount = habits.filter((habit) => habit.status === 'disabled').length;
 
   return (
     <div className="context-page">
@@ -349,6 +352,23 @@ export function ContextPage() {
             {storageBoundary.map((line) => (
               <div key={line}>{line}</div>
             ))}
+          </div>
+          <div className="ctx-learning-summary">
+            <div className="ctx-learning-summary-item">
+              <span className="ctx-learning-summary-value">{confirmedHabitCount}</span>
+              <span>已确认会应用</span>
+            </div>
+            <div className="ctx-learning-summary-item">
+              <span className="ctx-learning-summary-value">{pendingHabitCount}</span>
+              <span>待你确认</span>
+            </div>
+            <div className="ctx-learning-summary-item">
+              <span className="ctx-learning-summary-value">{disabledHabitCount}</span>
+              <span>已停用</span>
+            </div>
+            <div className="ctx-learning-summary-note">
+              待确认规则只作为提议展示，不会自动改变后续执行流程。
+            </div>
           </div>
           {showNewHabit && (
             <div className="ctx-habit-new">
