@@ -1008,11 +1008,23 @@ function ProjectDecompositionPanel({
               <div key={`${project.id}-${subtask.title}`} className="project-draft-item">
                 <strong>{subtask.title}</strong>
                 <span>{subtask.summary}</span>
-                <small>{subtask.acceptanceCriteria}</small>
+                <small>验收：{subtask.acceptanceCriteria}</small>
+                {subtask.dependency && <small>依赖：{subtask.dependency}</small>}
+                <small>独立性：{subtask.rationale}</small>
               </div>
             ))}
           </div>
-          <div className="project-draft-review">{draft.review}</div>
+          <div className="project-draft-review">
+            <div className="project-draft-review-title">拆解自检</div>
+            <div className="project-draft-checks">
+              <span>大块任务</span>
+              <span>边界独立</span>
+              <span>依赖明确</span>
+              <span>验收可见</span>
+            </div>
+            <p>{draft.review}</p>
+            <small>{draft.nextStep}</small>
+          </div>
         </>
       )}
       {error && <div className="project-draft-error">{error}</div>}

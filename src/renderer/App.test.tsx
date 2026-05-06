@@ -1033,6 +1033,14 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: '生成拆解草稿' }));
     expect(await screen.findByText('确认官网改版范围')).toBeTruthy();
+    expect(screen.getByText('拆解自检')).toBeTruthy();
+    expect(screen.getByText('大块任务')).toBeTruthy();
+    expect(screen.getByText('边界独立')).toBeTruthy();
+    expect(screen.getByText('依赖明确')).toBeTruthy();
+    expect(screen.getByText('验收可见')).toBeTruthy();
+    expect(screen.getByText('独立性：这是后续执行的独立输入。')).toBeTruthy();
+    expect(screen.getByText('依赖：确认官网改版范围')).toBeTruthy();
+    expect(screen.getByText('确认是否创建这些子任务。')).toBeTruthy();
     expect(screen.getByText('子任务保持大块、边界清楚，暂不继续细拆。')).toBeTruthy();
     expect(harness.api.decomposeProject).toHaveBeenCalledWith({ taskId: 'task_created' });
     await user.click(screen.getByRole('button', { name: '创建这些子任务' }));
