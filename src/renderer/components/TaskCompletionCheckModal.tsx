@@ -111,6 +111,9 @@ export function TaskCompletionCheckModal({
         criteriaSatisfied: satisfied.length,
         criteriaOpen: open.length,
         reason: hasConcern ? reason : null,
+        runVerificationTone: recentRunCheck?.tone ?? null,
+        runVerificationLabel: recentRunCheck?.label ?? null,
+        runVerificationDetail: recentRunCheck?.detail ?? null,
         source: 'task_completion_modal',
       });
 

@@ -161,6 +161,9 @@ export type RecordTaskCompletionCheckInput = {
   criteriaSatisfied: number;
   criteriaOpen: number;
   reason?: string | null;
+  runVerificationTone?: 'pass' | 'warn' | 'fail' | 'pending' | null;
+  runVerificationLabel?: string | null;
+  runVerificationDetail?: string | null;
   source?: 'task_completion_modal' | 'lightweight_rule_engine' | 'ai_verifier';
   checkedAt?: string;
 };

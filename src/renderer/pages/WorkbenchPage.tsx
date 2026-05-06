@@ -931,14 +931,18 @@ function formatCompletionCheckEvent(payload: string | null): string {
   const satisfied = typeof parsed?.criteriaSatisfied === 'number' ? parsed.criteriaSatisfied : null;
   const open = typeof parsed?.criteriaOpen === 'number' ? parsed.criteriaOpen : null;
   const progress = total === null || satisfied === null ? '' : `：${satisfied}/${total}`;
+  const runVerificationLabel = typeof parsed?.runVerificationLabel === 'string'
+    ? parsed.runVerificationLabel.trim()
+    : '';
+  const runVerificationSuffix = runVerificationLabel ? ` · ${runVerificationLabel}` : '';
 
   if (action === 'marked_waiting') {
-    return `完成检查未通过，已转等待${open !== null ? `（未满足 ${open} 条）` : ''}`;
+    return `完成检查未通过，已转等待${open !== null ? `（未满足 ${open} 条）` : ''}${runVerificationSuffix}`;
   }
   if (action === 'override_completed') {
-    return `完成检查被用户覆盖${progress}`;
+    return `完成检查被用户覆盖${progress}${runVerificationSuffix}`;
   }
-  return `完成检查通过${progress}`;
+  return `完成检查通过${progress}${runVerificationSuffix}`;
 }
 
 const EVENT_LABELS: Record<string, (payload: string | null) => string> = {

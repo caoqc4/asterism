@@ -667,6 +667,9 @@ export class TaskService {
       criteriaSatisfied: input.criteriaSatisfied,
       criteriaOpen: input.criteriaOpen,
       reason: input.reason?.trim() || null,
+      runVerificationTone: input.runVerificationTone ?? null,
+      runVerificationLabel: input.runVerificationLabel?.trim() || null,
+      runVerificationDetail: input.runVerificationDetail?.trim() || null,
       source: input.source ?? 'task_completion_modal',
       checkedAt: input.checkedAt ?? new Date().toISOString(),
     });

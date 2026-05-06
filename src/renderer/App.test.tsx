@@ -567,6 +567,11 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '仍然完成' }));
 
     await waitFor(() => {
+      expect(harness.api.recordTaskCompletionCheck).toHaveBeenCalledWith(expect.objectContaining({
+        runVerificationTone: 'pass',
+        runVerificationLabel: 'Run 验证通过',
+        runVerificationDetail: '执行结果已有输出或步骤证据，可进入人工审查。',
+      }));
       expect(harness.api.transitionTask).toHaveBeenCalledWith({
         id: 'task_risk',
         nextState: 'completed',
