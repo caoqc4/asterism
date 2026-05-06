@@ -797,6 +797,8 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('是否批准本轮材料修改方案')).toBeTruthy();
     expect(screen.getByText('待拍板')).toBeTruthy();
     expect(screen.getAllByText('本周内').length).toBeGreaterThan(0);
+    expect(screen.getByText('人工决策')).toBeTruthy();
+    expect(screen.getByText('更新 2026-01-01')).toBeTruthy();
     expect(screen.queryByText('decision_done')).toBeNull();
 
     await user.click(screen.getByText('是否批准本轮材料修改方案'));

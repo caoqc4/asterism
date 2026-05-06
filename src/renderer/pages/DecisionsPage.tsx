@@ -5,6 +5,8 @@ interface Decision {
   id: string;
   title: string;
   taskTitle: string;
+  typeLabel: string;
+  updatedLabel: string;
   lane: string;
   urgency: 'today' | 'week';
   deadline?: string;
@@ -31,6 +33,8 @@ function fromRecord(r: DecisionRecord): Decision {
     id: r.id,
     title: r.title,
     taskTitle: r.sourceLabel ?? r.taskId,
+    typeLabel: formatDecisionType(r.sourceType),
+    updatedLabel: `更新 ${formatDecisionDate(r.updatedAt)}`,
     lane: 'continue',
     urgency: 'week',
     context: {
@@ -47,6 +51,15 @@ function fromRecord(r: DecisionRecord): Decision {
   };
 }
 
+function formatDecisionType(sourceType: DecisionRecord['sourceType']): string {
+  if (sourceType === 'agent_checkpoint') return 'Agent 检查点';
+  return '人工决策';
+}
+
+function formatDecisionDate(value: string): string {
+  return value.slice(0, 10);
+}
+
 export function DecisionsPage() {
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +67,10 @@ export function DecisionsPage() {
   useEffect(() => {
     if (!window.api) { setLoading(false); return; }
     window.api.listDecisions()
-      .then((records) => setDecisions(records.filter((r) => r.status === 'pending').map(fromRecord)))
+      .then((records) => setDecisions(records
+        .filter((r) => r.status === 'pending')
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+        .map(fromRecord)))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -150,6 +166,8 @@ function DecisionCard({ decision: d, onToggle, onDecide }: DecisionCardProps) {
           <div className="dec-card-title">{d.title}</div>
           <div className="dec-card-meta">
             <span className={`tag lane-${d.lane}`} style={{ fontSize: 10 }}>{d.taskTitle}</span>
+            <span className="tag captured" style={{ fontSize: 10 }}>{d.typeLabel}</span>
+            <span className="dec-updated">{d.updatedLabel}</span>
             {d.deadline && (
               <span className="dec-deadline">截止：{d.deadline}</span>
             )}
