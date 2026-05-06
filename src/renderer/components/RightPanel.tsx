@@ -50,6 +50,10 @@ const TASK_TYPE_HABIT_LABELS: Record<TaskExecutionType, string> = {
   event:     '事件触发',
 };
 
+const DEFAULT_COMPRESSION_THRESHOLD = 45;
+const MIN_SESSION_REFRESH_MESSAGE_LIMIT = 3;
+const REFRESH_MESSAGE_LIMIT_THRESHOLD_STEP = 10;
+
 function normalizeUserMessage(text: string): string {
   return text
     .trim()
@@ -57,12 +61,22 @@ function normalizeUserMessage(text: string): string {
     .replace(/[，。！？、,.!?；;：:\s]/g, '');
 }
 
-function shouldSuggestSessionRefresh(messages: Message[], compressionThreshold = 45): boolean {
+function deriveSessionRefreshMessageLimit(compressionThreshold = DEFAULT_COMPRESSION_THRESHOLD): number {
+  return Math.max(
+    MIN_SESSION_REFRESH_MESSAGE_LIMIT,
+    Math.round(compressionThreshold / REFRESH_MESSAGE_LIMIT_THRESHOLD_STEP),
+  );
+}
+
+function shouldSuggestSessionRefresh(
+  messages: Message[],
+  compressionThreshold = DEFAULT_COMPRESSION_THRESHOLD,
+): boolean {
   const userMessages = messages
     .filter((message) => message.role === 'user')
     .map((message) => normalizeUserMessage(message.text))
     .filter(Boolean);
-  const messageLimit = Math.max(3, Math.round(compressionThreshold / 10));
+  const messageLimit = deriveSessionRefreshMessageLimit(compressionThreshold);
   if (userMessages.length >= messageLimit) return true;
 
   const counts = new Map<string, number>();
@@ -86,7 +100,7 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [pendingSwitch, setPendingSwitch] = useState<PendingCtxSwitch | null>(null);
   const [sessionRefreshDismissed, setSessionRefreshDismissed] = useState(false);
-  const [compressionThreshold, setCompressionThreshold] = useState(45);
+  const [compressionThreshold, setCompressionThreshold] = useState(DEFAULT_COMPRESSION_THRESHOLD);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -108,7 +122,7 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
 
   useEffect(() => {
     window.api?.getAiConfigStatus().then((status) => {
-      setCompressionThreshold(status.featureFlags.contextCompressionThreshold ?? 45);
+      setCompressionThreshold(status.featureFlags.contextCompressionThreshold ?? DEFAULT_COMPRESSION_THRESHOLD);
     }).catch(() => {});
   }, []);
 
