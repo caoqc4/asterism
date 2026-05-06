@@ -241,6 +241,35 @@ export function ContextPage() {
         <p className="context-page-subtitle">AI 的记忆层 — 任务信息与工作习惯在会话间持续保留</p>
       </div>
 
+      {/* Visible sources */}
+      <section className="ctx-section">
+        <div className="ctx-section-header">
+          <div>
+            <div className="ctx-section-title">AI 可见来源</div>
+            <div className="ctx-section-desc">AI 当前可读取的感知范围，外部来源需授权后才会进入上下文</div>
+          </div>
+        </div>
+        <div className="ctx-list">
+          <div className="ctx-visible-boundary">
+            <div className="ctx-visible-boundary-item">
+              <span>本机任务上下文</span>
+              <span className="habit-chip status-confirmed">已启用</span>
+            </div>
+            <div className="ctx-visible-boundary-item">
+              <span>工作习惯记录</span>
+              <span className="habit-chip status-confirmed">已启用</span>
+            </div>
+            <div className="ctx-visible-boundary-item">
+              <span>邮件 / 日历 / 协作工具</span>
+              <span className="habit-chip status-disabled">未连接</span>
+            </div>
+          </div>
+          <div className="ctx-empty ctx-source-empty">
+            尚未连接外部来源。当前 AI 不会读取邮件、日历或协作工具；外部信号只会在授权连接后进入 Brief 和任务上下文。
+          </div>
+        </div>
+      </section>
+
       {/* Task memory */}
       <section className="ctx-section">
         <div className="ctx-section-header">
