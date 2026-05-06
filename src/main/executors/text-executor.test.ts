@@ -115,6 +115,43 @@ describe('TextExecutor', () => {
     expect(result).toBe('Generated output');
   });
 
+  it('injects applicable confirmed work habits into run prompts', async () => {
+    generateTextMock.mockResolvedValue({ text: 'Generated output' });
+    const executor = new TextExecutor();
+
+    await executor.execute(
+      buildTaskDetail(),
+      {
+        taskId: 'task_1',
+        type: 'draft',
+      },
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: true,
+        },
+      },
+      {
+        applicableWorkHabitSummaries: [
+          '数据报告初稿完成后先内部评审再对外发送（范围：全局；例：Q1 财报）',
+        ],
+      },
+    );
+
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('执行时遵循以下已确认工作习惯：'),
+      }),
+    );
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: expect.stringContaining('- 数据报告初稿完成后先内部评审再对外发送（范围：全局；例：Q1 财报）'),
+      }),
+    );
+  });
+
   it('asks agent runs for constrained JSON step proposals', async () => {
     generateTextMock.mockResolvedValue({ text: '{"finalOutput":"Generated output","steps":[]}' });
     const executor = new TextExecutor();

@@ -7,6 +7,11 @@ import type {
   RunDetailRecord,
   RunRecord,
 } from '../../../shared/types/run.js';
+import type { TaskDetail } from '../../../shared/types/task.js';
+import {
+  selectApplicableWorkHabits,
+  summarizeWorkHabitsForPrompt,
+} from '../../../shared/work-habit-rules.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { RunRepository } from '../../db/repositories/run-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
@@ -24,6 +29,7 @@ import {
   persistTerminalRunVerifications,
 } from './run-verification-service.js';
 import { RunOrchestrator, type RunOrchestrationResult } from './run-orchestrator.js';
+import type { WorkHabitService } from '../context/work-habit-service.js';
 
 export class RunService {
   constructor(
@@ -47,6 +53,7 @@ export class RunService {
       undefined,
       agentSessionStore,
     ),
+    private readonly workHabitService: WorkHabitService | null = null,
   ) {}
 
   list(): Promise<RunRecord[]> {
@@ -99,17 +106,20 @@ export class RunService {
     }
 
     const created = await this.runRepository.create(input);
+    const applicableWorkHabitSummaries = await this.buildApplicableWorkHabitSummaries(taskForExecution);
     const result =
       input.type === 'agent'
         ? await this.runOrchestrator.executeAgentRun({
             run: created,
             task: taskForExecution,
             input,
+            applicableWorkHabitSummaries,
           })
         : await this.runOrchestrator.executeTextRun({
             run: created,
             task: taskForExecution,
             input,
+            applicableWorkHabitSummaries,
           });
 
     await this.annotateProcessTemplateSelection(input.taskId, created.id, taskForExecution, result);
@@ -252,6 +262,22 @@ export class RunService {
       runStepRepository: this.runStepRepository,
       runVerificationRepository: this.runVerificationRepository,
     });
+  }
+
+  private async buildApplicableWorkHabitSummaries(task: TaskDetail): Promise<string[]> {
+    if (!this.workHabitService) {
+      return [];
+    }
+
+    try {
+      const snapshot = await this.workHabitService.getSnapshot();
+      return summarizeWorkHabitsForPrompt(selectApplicableWorkHabits(snapshot.habits, {
+        taskTitle: task.title,
+        limit: 5,
+      }));
+    } catch {
+      return [];
+    }
   }
 
   private async annotateProcessTemplateSelection(

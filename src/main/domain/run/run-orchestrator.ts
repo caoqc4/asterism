@@ -87,6 +87,7 @@ export class RunOrchestrator {
     run: RunRecord;
     task: TaskDetail;
     input: CreateRunInput;
+    applicableWorkHabitSummaries?: string[];
   }): Promise<RunOrchestrationResult> {
     const { input, run, task } = params;
     const request = buildAgentRunRequest({ run, task, input });
@@ -132,6 +133,9 @@ export class RunOrchestrator {
       });
       const textResult = await this.executeRuntimeText(task, input, runtimeConfig, {
         selectedTemplates: selection.shouldUse ? selection.selectedTemplates : [],
+        ...(params.applicableWorkHabitSummaries?.length
+          ? { applicableWorkHabitSummaries: params.applicableWorkHabitSummaries }
+          : {}),
         ...(providerNativeToolSchemas.length
           ? { providerNativeToolSchemas }
           : {}),
@@ -197,6 +201,7 @@ export class RunOrchestrator {
     run: RunRecord;
     task: TaskDetail;
     input: CreateRunInput;
+    applicableWorkHabitSummaries?: string[];
   }): Promise<RunOrchestrationResult> {
     const input: CreateRunInput = {
       ...params.input,

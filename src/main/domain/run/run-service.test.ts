@@ -378,6 +378,43 @@ describe('RunService', () => {
       upsert: vi.fn(),
       listForRun: vi.fn(),
     };
+    const workHabitService = {
+      getSnapshot: vi.fn().mockResolvedValue({
+        version: 3,
+        storage: 'main_db',
+        privacyBoundary: {
+          locality: 'device_only',
+          contains: [],
+          excludes: [],
+        },
+        habits: [
+          {
+            id: 'habit_confirmed',
+            rule: '数据报告初稿完成后先内部评审再对外发送',
+            source: 'manual',
+            scope: 'global',
+            scopeLabel: '全局',
+            status: 'confirmed',
+            examples: 'Q1 财报',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            lastAppliedAt: null,
+            applicationCount: 2,
+          },
+          {
+            id: 'habit_pending',
+            rule: '待确认习惯不应进入 Run 提示词',
+            source: 'proposal',
+            scope: 'global',
+            scopeLabel: '全局',
+            status: 'pending',
+            examples: null,
+            createdAt: '2026-01-01T00:00:00.000Z',
+            lastAppliedAt: null,
+            applicationCount: 0,
+          },
+        ],
+      }),
+    };
     const runCheckpointRepository = {
       listForRun: vi.fn().mockResolvedValue([]),
     };
@@ -396,6 +433,8 @@ describe('RunService', () => {
       runCheckpointRepository as never,
       agentSessionRepository as never,
       runVerificationRepository as never,
+      undefined,
+      workHabitService as never,
     );
 
     const result = await service.trigger({
@@ -440,8 +479,12 @@ describe('RunService', () => {
       },
       {
         selectedTemplates: [buildAppliedTemplate()],
+        applicableWorkHabitSummaries: [
+          '数据报告初稿完成后先内部评审再对外发送（范围：全局；例：Q1 财报）',
+        ],
       },
     );
+    expect(workHabitService.getSnapshot).toHaveBeenCalled();
     expect(runRepository.updateResult).toHaveBeenCalledWith(
       'run_1',
       'completed',

@@ -130,6 +130,7 @@ const decisionService = new DecisionService(
   runVerificationRepository,
 );
 agentToolRegistry.setDecisionDraftService(decisionService);
+const workHabitService = new WorkHabitService(workHabitRepository);
 const runService = new RunService(
   runRepository,
   taskService,
@@ -142,6 +143,8 @@ const runService = new RunService(
   runCheckpointRepository,
   agentSessionStore,
   runVerificationRepository,
+  undefined,
+  workHabitService,
 );
 const browserEvidencePersister = new BrowserEvidencePersister(
   artifactRepository,
@@ -168,7 +171,6 @@ const codeAgentRunService = new CodeAgentRunService(
   undefined,
   runVerificationRepository,
 );
-const workHabitService = new WorkHabitService(workHabitRepository);
 
 const services = {
   taskRepository,

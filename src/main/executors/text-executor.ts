@@ -10,6 +10,7 @@ import { getExposedAgentToolNames } from '../../shared/agent-tool-exposure.js';
 type ExecuteOptions = {
   selectedTemplates?: AppliedProcessTemplateRecord[];
   providerNativeToolSchemas?: ProviderNativeToolSchema[];
+  applicableWorkHabitSummaries?: string[];
 };
 
 function buildPrompt(
@@ -35,6 +36,12 @@ function buildPrompt(
         ),
       ].join('\n')
     : '执行时参考以下方法模板：暂无';
+  const workHabitContext = options.applicableWorkHabitSummaries?.length
+    ? [
+        '执行时遵循以下已确认工作习惯：',
+        ...options.applicableWorkHabitSummaries.map((summary) => `- ${summary}`),
+      ].join('\n')
+    : '执行时遵循以下已确认工作习惯：暂无';
 
   if (input.type === 'draft' || input.type === 'agent') {
     if (input.type === 'agent') {
@@ -108,6 +115,7 @@ function buildPrompt(
         getPriorityLanePromptGuidance(lane),
         risk,
         processContext,
+        workHabitContext,
         extra,
       ].join('\n');
     }
@@ -124,6 +132,7 @@ function buildPrompt(
       getPriorityLanePromptGuidance(lane),
       risk,
       processContext,
+      workHabitContext,
       extra,
     ].join('\n');
   }
@@ -141,6 +150,7 @@ function buildPrompt(
     getPriorityLanePromptGuidance(lane),
     risk,
     processContext,
+    workHabitContext,
     extra,
   ].join('\n');
 }
