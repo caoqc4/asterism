@@ -630,6 +630,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('最近 Run 验证')).toBeTruthy();
     expect(await screen.findByText('Run 验证通过')).toBeTruthy();
     expect(screen.getByText(/建议先标记为等待中/)).toBeTruthy();
+    expect(screen.getByText(/作为后续工作习惯提议的学习信号/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '仍然完成' }));
 
     await waitFor(() => {

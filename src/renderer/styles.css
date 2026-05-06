@@ -831,6 +831,12 @@ a { color: inherit; text-decoration: none; }
   color: var(--ink-2);
   line-height: 1.6;
 }
+.completion-check-advice p {
+  margin: 0;
+}
+.completion-check-advice p + p {
+  margin-top: 4px;
+}
 .completion-run-evidence {
   margin-top: 12px;
   padding: 10px 12px;

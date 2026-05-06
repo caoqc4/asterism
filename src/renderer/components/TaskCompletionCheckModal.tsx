@@ -196,9 +196,13 @@ export function TaskCompletionCheckModal({
               </div>
 
               {hasConcern && (
-                <p className="completion-check-advice">
-                  建议先标记为等待中，等完成标准或 Run 验证结论补齐后再完成；你也可以覆盖检查结论，直接完成。
-                </p>
+                <div className="completion-check-advice">
+                  <p>建议先标记为等待中，等完成标准或 Run 验证结论补齐后再完成；你也可以覆盖检查结论，直接完成。</p>
+                  <p>
+                    覆盖会写入任务活动记录
+                    {selfLearnEnabled ? '，并作为后续工作习惯提议的学习信号。' : '；自学习已关闭，不会生成新的工作习惯提议。'}
+                  </p>
+                </div>
               )}
             </>
           )}
