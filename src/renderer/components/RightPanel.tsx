@@ -101,6 +101,7 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
   const [titleCache, setTitleCache] = useState<Record<string, string>>({});
   const [messages, setMessages] = useState<Message[]>([]);
   const [pendingSwitch, setPendingSwitch] = useState<PendingCtxSwitch | null>(null);
+  const [fullScreen, setFullScreen] = useState(false);
   const [sessionRefreshDismissed, setSessionRefreshDismissed] = useState(false);
   const [compressionThreshold, setCompressionThreshold] = useState<number>(
     CONTEXT_COMPRESSION_THRESHOLD.default,
@@ -274,7 +275,7 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
       ];
 
   return (
-    <div className="right-panel">
+    <div className={`right-panel${fullScreen ? ' fullscreen' : ''}`}>
       {/* Header */}
       <div className="panel-header">
         <div className="panel-header-ctx">
@@ -294,6 +295,13 @@ export function RightPanel({ taskId, onClose, onClearTask }: RightPanelProps) {
         <div className="panel-header-actions">
           <button className="icon-btn" title="历史记录">
             <IconHistory />
+          </button>
+          <button
+            className="icon-btn"
+            onClick={() => setFullScreen((value) => !value)}
+            title={fullScreen ? '退出全屏' : '全屏显示'}
+          >
+            {fullScreen ? <IconMinimize /> : <IconMaximize />}
           </button>
           <button className="icon-btn" onClick={onClose} title="关闭面板">
             <IconClose />
@@ -488,6 +496,28 @@ function IconHistory() {
       <path d="M1.5 7a5.5 5.5 0 1 0 1-3.2" />
       <polyline points="1.5,2 1.5,5 4.5,5" />
       <path d="M7 4.5v3l2 1.5" />
+    </svg>
+  );
+}
+
+function IconMaximize() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="5,2 2,2 2,5" />
+      <polyline points="9,2 12,2 12,5" />
+      <polyline points="5,12 2,12 2,9" />
+      <polyline points="9,12 12,12 12,9" />
+    </svg>
+  );
+}
+
+function IconMinimize() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="2,5 5,5 5,2" />
+      <polyline points="12,5 9,5 9,2" />
+      <polyline points="2,9 5,9 5,12" />
+      <polyline points="12,9 9,9 9,12" />
     </svg>
   );
 }

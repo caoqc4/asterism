@@ -349,6 +349,18 @@ a { color: inherit; text-decoration: none; }
   min-height: 0;
   overflow: hidden;
 }
+.right-panel.fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  border-left: none;
+  background: var(--bg);
+}
+.right-panel.fullscreen .panel-messages,
+.right-panel.fullscreen .panel-input-wrap {
+  width: min(820px, calc(100vw - 48px));
+  margin: 0 auto;
+}
 
 .panel-header {
   height: var(--topbar-h);
