@@ -931,6 +931,8 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /Settings/ }));
+    expect(await screen.findByText(/不做持续行为监控/)).toBeTruthy();
+    expect(screen.getByText(/Context 展示，可停用或删除/)).toBeTruthy();
     const switches = await screen.findAllByRole('switch');
     await user.click(switches[0]!);
     await user.click(switches[1]!);

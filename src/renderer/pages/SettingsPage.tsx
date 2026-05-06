@@ -78,6 +78,10 @@ export function SettingsPage() {
           <Toggle value={selfLearn} onChange={setSelfLearn} />
         </div>
 
+        <div className="settings-behavior-note">
+          自学习绑定在完成、覆盖、SOP 提取等节点触发，不做持续行为监控；学到的规则会在 Context 展示，可停用或删除。
+        </div>
+
         <div className="settings-field" style={{ marginTop: 16 }}>
           <label className="settings-label">
             上下文压缩阈值
