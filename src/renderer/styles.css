@@ -2068,6 +2068,49 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* Run items */
+.run-check-overview {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 9px 12px;
+  margin-bottom: 8px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.run-check-overview-title {
+  margin-right: 2px;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+.run-check-overview-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 1px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--ink-3);
+  font-size: 11px;
+}
+.run-check-overview-chip.pass {
+  color: var(--green);
+  background: var(--green-soft);
+  border-color: var(--green-line);
+}
+.run-check-overview-chip.warn {
+  color: var(--amber);
+  background: var(--amber-soft);
+  border-color: var(--amber-line);
+}
+.run-check-overview-chip.pending {
+  color: var(--blue);
+  background: var(--blue-soft);
+  border-color: var(--blue-line);
+}
 .run-item {
   background: var(--bg-elev);
   border: 1px solid var(--line);

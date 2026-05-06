@@ -1047,7 +1047,10 @@ describe('App redesign v1', () => {
     expect(screen.getByRole('button', { name: '执行' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '来源' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Runs$/ })).toBeNull();
+    expect(await screen.findByText('自检查记录')).toBeTruthy();
+    expect(screen.getByText('Run 1')).toBeTruthy();
     await user.click(await screen.findByText(/Run #1 · 已完成/));
+    expect(await screen.findByText('Step 1')).toBeTruthy();
     expect(await screen.findByText('Run 验证通过')).toBeTruthy();
     expect(await screen.findByText('整理反馈')).toBeTruthy();
     expect(await screen.findByText('检查通过')).toBeTruthy();

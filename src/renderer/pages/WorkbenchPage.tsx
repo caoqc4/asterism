@@ -515,6 +515,11 @@ function RunsTab({
   const [showRunForm, setShowRunForm] = useState(false);
   const [runNote, setRunNote] = useState('');
   const [triggering, setTriggering] = useState(false);
+  const checkStats = collectRunCheckStats({
+    runs,
+    activeRunDetail,
+    runDetailsById,
+  });
 
   useEffect(() => {
     if (runFormRequest > 0 && !active) setShowRunForm(true);
@@ -555,6 +560,21 @@ function RunsTab({
 
   return (
     <div className="tab-content">
+      {runs.length > 0 && (
+        <div className="run-check-overview">
+          <span className="run-check-overview-title">自检查记录</span>
+          <span className="run-check-overview-chip">Run {checkStats.runs}</span>
+          <span className="run-check-overview-chip">Step {checkStats.steps}</span>
+          <span className="run-check-overview-chip pass">通过 {checkStats.pass}</span>
+          {checkStats.pending > 0 && (
+            <span className="run-check-overview-chip pending">检查中 {checkStats.pending}</span>
+          )}
+          {(checkStats.warn + checkStats.fail) > 0 && (
+            <span className="run-check-overview-chip warn">需关注 {checkStats.warn + checkStats.fail}</span>
+          )}
+        </div>
+      )}
+
       {active && (
         <div className="run-item run-active">
           <div className="run-item-header">
@@ -655,6 +675,31 @@ function RunsTab({
       )}
     </div>
   );
+}
+
+function collectRunCheckStats(params: {
+  runs: RunRecord[];
+  activeRunDetail: RunDetailRecord | null;
+  runDetailsById: Record<string, RunDetailRecord | null>;
+}): { runs: number; steps: number; pass: number; warn: number; fail: number; pending: number } {
+  const stats = { runs: 0, steps: 0, pass: 0, warn: 0, fail: 0, pending: 0 };
+
+  for (const run of params.runs) {
+    const detail = run.status === 'running' || run.status === 'paused'
+      ? params.activeRunDetail
+      : params.runDetailsById[run.id] ?? null;
+    const runCheck = getRunCheck(run, detail);
+    stats.runs += 1;
+    stats[runCheck.tone] += 1;
+
+    for (const step of detail?.steps ?? []) {
+      const stepCheck = getStepCheck(step, detail);
+      stats.steps += 1;
+      stats[stepCheck.tone] += 1;
+    }
+  }
+
+  return stats;
 }
 
 function RunStep({ step, detail }: {
