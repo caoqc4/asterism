@@ -2143,6 +2143,9 @@ a { color: inherit; text-decoration: none; }
   font-size: 11.5px;
   line-height: 1.45;
 }
+.task-edit-hint.strong {
+  color: var(--ink-3);
+}
 .task-edit-textarea {
   font-size: 13px;
   background: var(--bg-elev);

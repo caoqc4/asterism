@@ -1711,6 +1711,11 @@ function TaskEditPanel({
         <span className="task-edit-hint">
           任务类型、周期和触发条件属于任务属性；实际执行记录仍保留在执行 Tab。
         </span>
+        {attrs?.parentTaskId && type === 'project' && (
+          <span className="task-edit-hint strong">
+            这个子任务会升级为新的项目型任务；后续让 AI 按大块子任务重新拆解，不继续堆叠更深层级。
+          </span>
+        )}
       </div>
       {type === 'scheduled' && (
         <div className="task-edit-row">

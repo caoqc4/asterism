@@ -1369,6 +1369,8 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '改优先级' }));
     expect(await screen.findByText('风险等级')).toBeTruthy();
     expect(screen.getByText(/周期和触发条件属于任务属性/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '项目型' }));
+    expect(screen.getByText(/这个子任务会升级为新的项目型任务/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '中' }));
     await user.click(screen.getByRole('button', { name: '保存' }));
     await waitFor(() => {
