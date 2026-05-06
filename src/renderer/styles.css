@@ -3126,6 +3126,26 @@ a { color: inherit; text-decoration: none; }
   font-size: 11.5px;
   line-height: 1.45;
 }
+.capture-sop-suggestions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 7px 8px;
+  border: 1px solid var(--green-line);
+  border-radius: 6px;
+  background: var(--green-soft);
+  color: var(--ink-3);
+  font-size: 11.5px;
+}
+.capture-sop-suggestions strong {
+  color: var(--green);
+  font-weight: 600;
+}
+.capture-sop-suggestions small {
+  flex-basis: 100%;
+  color: var(--ink-4);
+}
 .capture-actions { display: flex; gap: 6px; align-items: center; }
 .capture-ai-hint { font-size: 11px; margin-left: 4px; }
 

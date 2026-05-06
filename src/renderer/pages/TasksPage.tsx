@@ -14,6 +14,7 @@ import {
   type TaskAttributeRecord,
   type TaskExecutionType,
 } from '../lib/taskAttributes';
+import { selectApplicableWorkHabits, type WorkHabitRecord } from '../lib/workHabits';
 
 type Lane = 'escalate' | 'unblock' | 'continue' | 'clarify' | 'steady';
 type TaskStatus = 'running' | 'waiting' | 'blocked' | 'idle' | 'done';
@@ -219,6 +220,13 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
 
   const selectedTask = filtered.find((t) => t.id === selectedId) ?? null;
   const selectedHasDecision = Boolean(selectedTask && pendingDecisions.some((decision) => decision.taskId === selectedTask.id));
+  const captureSopSuggestions = captureTitle.trim()
+    ? selectApplicableWorkHabits({
+        taskTitle: captureTitle,
+        taskTypeLabel: TASK_TYPE_LABELS[captureType],
+        limit: 4,
+      }).filter((habit): habit is WorkHabitRecord => habit.source === 'sop')
+    : [];
 
   useEffect(() => {
     let cancelled = false;
@@ -632,6 +640,15 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
             <div className="capture-type-note">
               类型由 AI 根据标题预判，你只需要确认或调整建议；项目型先生成拆解草稿，确认后才创建真实子任务。
             </div>
+            {captureSopSuggestions.length > 0 && (
+              <div className="capture-sop-suggestions">
+                <span>可参考流程模板</span>
+                {captureSopSuggestions.slice(0, 2).map((habit) => (
+                  <strong key={habit.id}>{habit.rule}</strong>
+                ))}
+                <small>创建后 AI 会在规划讨论中建议是否加载，不会自动套用。</small>
+              </div>
+            )}
             <div className="capture-actions">
               <button className={`btn sm primary${capturing ? ' disabled' : ''}`} onClick={() => void captureTask()} disabled={!captureTitle.trim() || capturing}>
                 {capturing ? '创建中…' : '创建'}

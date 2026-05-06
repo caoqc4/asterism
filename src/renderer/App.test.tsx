@@ -1370,5 +1370,12 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /Context/ }));
     expect(await screen.findByText('「董事会材料修订」流程模板')).toBeTruthy();
     expect(screen.getByText('SOP 提取')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByRole('button', { name: '+ 新建任务' }));
+    await user.type(await screen.findByPlaceholderText(/任务标题/), '董事会材料修订复盘');
+    expect(await screen.findByText('可参考流程模板')).toBeTruthy();
+    expect(screen.getAllByText('「董事会材料修订」流程模板').length).toBeGreaterThan(0);
+    expect(screen.getByText(/不会自动套用/)).toBeTruthy();
   });
 });
