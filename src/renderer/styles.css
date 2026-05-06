@@ -3464,6 +3464,12 @@ a { color: inherit; text-decoration: none; }
 .connections-head { margin-bottom: 28px; }
 .connections-title { font-size: 22px; font-weight: 650; color: var(--ink-1); margin: 0 0 4px; }
 .connections-subtitle { font-size: 13px; color: var(--ink-3); margin: 0; }
+.connections-boundary-note {
+  margin-top: 8px;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
 
 .conn-available-grid {
   display: grid;

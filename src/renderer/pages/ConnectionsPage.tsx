@@ -84,6 +84,9 @@ export function ConnectionsPage() {
             </div>
           )}
         </div>
+        <div className="connections-boundary-note">
+          未授权的来源不会进入 AI 上下文；只有连接成功且产生新信号时，外部信息才会出现在 Brief 和任务上下文里。
+        </div>
       </section>
 
       {/* Available to connect */}
