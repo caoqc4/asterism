@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { ProjectDecompositionResult } from '@shared/types/ipc';
-import type { TaskListItemRecord, TaskState } from '@shared/types/task';
+import type { TaskListItemRecord, TaskRiskLevel, TaskState } from '@shared/types/task';
 import type { SourceContextRecord } from '@shared/types/source-context';
 import type { DecisionRecord } from '@shared/types/decision';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
@@ -100,6 +100,13 @@ const TASK_TYPE_LABELS: Record<TaskType, string> = {
   scheduled: '定时',
   event:     '事件',
 };
+
+const RISK_OPTIONS: Array<{ label: string; value: TaskRiskLevel }> = [
+  { label: '高', value: 'high' },
+  { label: '中', value: 'medium' },
+  { label: '低', value: 'low' },
+  { label: '无', value: 'none' },
+];
 
 function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): Task {
   return {
@@ -273,6 +280,37 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
     setSelectedId(null);
     setAllTasks((prev) => prev.filter((t) => t.id !== task.id));
     transitionWithPlanningHop(task, 'waiting_external', `延后处理：${deferLabel(option)}`).catch(() => reloadTasks());
+  }
+
+  function updateTaskRisk(taskId: string, riskLevel: TaskRiskLevel) {
+    const nextLane: Lane = riskLevel === 'high'
+      ? 'escalate'
+      : riskLevel === 'medium'
+        ? 'unblock'
+        : 'continue';
+    setContextMenu(null);
+    setSelectedId(taskId);
+    setAllTasks((prev) => prev.map((task) => (
+      task.id === taskId
+        ? { ...task, lane: nextLane, status: riskLevel === 'high' ? 'blocked' : task.status }
+        : task
+    )));
+    window.api?.updateTask({ id: taskId, riskLevel }).catch(() => reloadTasks());
+  }
+
+  function archiveTask(taskId: string) {
+    const task = allTasks.find((item) => item.id === taskId);
+    if (!task) return;
+    setContextMenu(null);
+    setSelectedId(null);
+    setAllTasks((prev) => prev.filter((item) => item.id !== taskId));
+    transitionWithPlanningHop(task, 'archived').catch(() => reloadTasks());
+  }
+
+  function copyTaskLink(taskId: string) {
+    setContextMenu(null);
+    const link = `taskplane://task/${taskId}`;
+    void navigator.clipboard?.writeText(link).catch(() => {});
   }
 
   function moveIntoProject(taskId: string, projectId: string | null) {
@@ -708,6 +746,9 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
           onClose={closeContextMenu}
           onOpenWorkbench={() => { onOpenWorkbench(contextMenu.taskId); closeContextMenu(); }}
           onMoveToProject={(projectId) => moveIntoProject(contextMenu.taskId, projectId)}
+          onUpdateRisk={(riskLevel) => updateTaskRisk(contextMenu.taskId, riskLevel)}
+          onArchive={() => archiveTask(contextMenu.taskId)}
+          onCopyLink={() => copyTaskLink(contextMenu.taskId)}
         />
       )}
 
@@ -1148,17 +1189,30 @@ interface ContextMenuProps {
   onClose: () => void;
   onOpenWorkbench: () => void;
   onMoveToProject: (projectId: string | null) => void;
+  onUpdateRisk: (riskLevel: TaskRiskLevel) => void;
+  onArchive: () => void;
+  onCopyLink: () => void;
 }
 
-function ContextMenu({ x, y, task, projects, onClose, onOpenWorkbench, onMoveToProject }: ContextMenuProps) {
+function ContextMenu({
+  x,
+  y,
+  task,
+  projects,
+  onClose,
+  onOpenWorkbench,
+  onMoveToProject,
+  onUpdateRisk,
+  onArchive,
+  onCopyLink,
+}: ContextMenuProps) {
   const projectOptions = task
     ? projects.filter((project) => project.id !== task.id && project.id !== task.parentTaskId)
     : [];
   const items = [
     { label: '打开工作台', action: onOpenWorkbench },
-    { label: '改优先级', action: onClose },
-    { label: '归档', action: onClose },
-    { label: '复制链接', action: onClose },
+    { label: '归档', action: onArchive },
+    { label: '复制链接', action: onCopyLink },
   ];
 
   return (
@@ -1180,6 +1234,14 @@ function ContextMenu({ x, y, task, projects, onClose, onOpenWorkbench, onMoveToP
           移出项目
         </button>
       )}
+      <button className="ctx-menu-item muted" onClick={onClose}>
+        改优先级
+      </button>
+      {RISK_OPTIONS.map((option) => (
+        <button key={option.value} className="ctx-menu-item sub" onClick={() => onUpdateRisk(option.value)}>
+          {option.label}
+        </button>
+      ))}
       {items.map((item) => (
         <button key={item.label} className="ctx-menu-item" onClick={item.action}>
           {item.label}

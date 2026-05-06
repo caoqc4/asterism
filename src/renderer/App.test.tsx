@@ -557,6 +557,12 @@ describe('App redesign v1', () => {
   beforeEach(() => {
     window.location.hash = '';
     window.localStorage.clear();
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: vi.fn().mockResolvedValue(undefined),
+      },
+    });
     harness = createMockApi();
     window.api = harness.api;
   });
@@ -734,6 +740,40 @@ describe('App redesign v1', () => {
         id: 'task_risk',
         nextState: 'waiting_external',
         waitingReason: '延后处理：明天',
+      });
+    });
+  });
+
+  it('runs low-frequency task row actions from the Tasks context menu', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    const taskRowTitle = async () => (await screen.findAllByText('董事会材料修订'))[0]!;
+    fireEvent.contextMenu(await taskRowTitle());
+    await user.click(await screen.findByRole('button', { name: '中' }));
+    await waitFor(() => {
+      expect(harness.api.updateTask).toHaveBeenCalledWith({
+        id: 'task_risk',
+        riskLevel: 'medium',
+      });
+    });
+
+    fireEvent.contextMenu(await taskRowTitle());
+    await user.click(await screen.findByRole('button', { name: '复制链接' }));
+    expect(writeText).toHaveBeenCalledWith('taskplane://task/task_risk');
+
+    fireEvent.contextMenu(await taskRowTitle());
+    await user.click(await screen.findByRole('button', { name: '归档' }));
+    await waitFor(() => {
+      expect(harness.api.transitionTask).toHaveBeenCalledWith({
+        id: 'task_risk',
+        nextState: 'archived',
       });
     });
   });
