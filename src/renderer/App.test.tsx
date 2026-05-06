@@ -7,6 +7,7 @@ import userEvent from '@testing-library/user-event';
 import type { HomeBriefData } from '@shared/types/brief';
 import type { DecisionRecord } from '@shared/types/decision';
 import type { ElectronApi } from '@shared/types/ipc';
+import type { AppliedProcessTemplateRecord, ProcessTemplateRecord } from '@shared/types/process-template';
 import type { RunDetailRecord, RunRecord } from '@shared/types/run';
 import type { AiConfigStatus } from '@shared/types/settings';
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
@@ -419,10 +420,46 @@ function createMockApi() {
       archivedAt: now,
       updatedAt: now,
     })),
-    createProcessTemplate: vi.fn(),
+    createProcessTemplate: vi.fn().mockImplementation(async (input): Promise<ProcessTemplateRecord> => ({
+      id: 'process_template_sop',
+      title: input.title,
+      summary: input.summary ?? null,
+      content: input.content,
+      kind: input.kind,
+      tags: input.tags ?? [],
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+      archivedAt: null,
+    })),
     updateProcessTemplate: vi.fn(),
     archiveProcessTemplate: vi.fn(),
-    applyProcessTemplate: vi.fn(),
+    applyProcessTemplate: vi.fn().mockImplementation(async (input): Promise<AppliedProcessTemplateRecord> => {
+      const binding: AppliedProcessTemplateRecord = {
+        id: input.templateId,
+        title: '「董事会材料修订」流程模板',
+        summary: '董事会材料修订 的可复用 SOP 流程',
+        content: '关键步骤：\n1. 收集并确认关键来源：董事会反馈邮件',
+        kind: 'sop',
+        tags: ['董事会材料修订'],
+        status: 'active',
+        createdAt: now,
+        updatedAt: now,
+        archivedAt: null,
+        bindingId: 'task_process_binding_sop',
+        taskId: input.taskId,
+        bindingStatus: 'active',
+        bindingNote: input.note ?? null,
+        boundAt: now,
+        bindingUpdatedAt: now,
+        removedAt: null,
+      };
+      details[input.taskId] = {
+        ...details[input.taskId]!,
+        processTemplates: [binding, ...details[input.taskId]!.processTemplates],
+      };
+      return binding;
+    }),
     removeProcessTemplate: vi.fn(),
     listDecisions: vi.fn().mockResolvedValue(decisions),
     draftDecision: vi.fn(),
@@ -945,6 +982,19 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: '提取流程模板' }));
     expect(await screen.findByText('提取流程模板')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '保存为模板' }));
+
+    await waitFor(() => {
+      expect(harness.api.createProcessTemplate).toHaveBeenCalledWith(expect.objectContaining({
+        title: '「董事会材料修订」流程模板',
+        kind: 'sop',
+        tags: ['董事会材料修订'],
+      }));
+      expect(harness.api.applyProcessTemplate).toHaveBeenCalledWith({
+        taskId: 'task_risk',
+        templateId: 'process_template_sop',
+        note: '从任务工作台提取并保存的 SOP 模板',
+      });
+    });
 
     await user.click(screen.getByRole('button', { name: /Context/ }));
     expect(await screen.findByText('「董事会材料修订」流程模板')).toBeTruthy();

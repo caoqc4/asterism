@@ -428,6 +428,37 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
             } else {
               recordSopTemplateHabit(input);
             }
+            const api = window.api;
+            if (api) {
+              void api.createProcessTemplate({
+                title: `「${title}」流程模板`,
+                summary: `${title} 的可复用 SOP 流程`,
+                content: formatSopProcessTemplateContent(steps),
+                kind: 'sop',
+                tags: [title],
+              }).then((template) => api.applyProcessTemplate({
+                taskId,
+                templateId: template.id,
+                note: '从任务工作台提取并保存的 SOP 模板',
+              })).then((applied) => {
+                setDetail((current) => current ? {
+                  ...current,
+                  processTemplates: [
+                    applied,
+                    ...current.processTemplates.filter((template) => template.bindingId !== applied.bindingId),
+                  ],
+                  resumeCard: {
+                    ...current.resumeCard,
+                    currentMethod: {
+                      templateId: applied.id,
+                      title: applied.title,
+                      detail: applied.summary,
+                      selectionReason: '刚从当前任务提取为 SOP 模板。',
+                    },
+                  },
+                } : current);
+              }).catch(() => {});
+            }
             setShowSopExtract(false);
           }}
         />
@@ -1073,6 +1104,15 @@ function buildSopSteps(detail: TaskDetail): string[] {
   }
 
   return steps;
+}
+
+function formatSopProcessTemplateContent(steps: string[]): string {
+  return [
+    '适用方式：作为同类任务执行前的默认流程参考。',
+    '关键步骤：',
+    ...steps.map((step, index) => `${index + 1}. ${step}`),
+    '执行要求：保持步骤为大块任务，必要时先检查是否需要进一步拆解。',
+  ].join('\n');
 }
 
 function SopExtractModal({
