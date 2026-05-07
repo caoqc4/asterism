@@ -119,36 +119,28 @@ function seedHomeRecoveryFixture() {
 
 async function assertSourceContextFocused(page) {
   await page.getByRole('heading', { name: 'Packaged Home recovery fixture' }).waitFor();
-  await page.getByRole('heading', { name: 'Source Context' }).waitFor();
-  await page.getByText('Edit Material').waitFor();
-
-  const sourceTitle = await page.locator('label', { hasText: '来源标题' }).locator('input').inputValue();
-  if (sourceTitle !== 'Packaged Home key source') {
-    throw new Error(`Home recovery focused the wrong source context: ${sourceTitle}`);
-  }
+  await page.getByRole('button', { name: '来源' }).click();
+  await page.getByText('Packaged Home key source', { exact: true }).waitFor();
+  await page.getByText('关键来源', { exact: true }).waitFor();
+  await page.getByText(/AI 上下文优先读取最多 3 条关键来源/).waitFor();
 }
 
 async function assertHomeSourceCardRecovery(page) {
-  await page.getByRole('button', { name: 'Home 局势概览与系统状态' }).click();
-
-  const keySourcePanel = page.locator('.panel', { hasText: 'Key Source Materials' });
-  await keySourcePanel.getByText('Packaged Home key source').waitFor();
-  await keySourcePanel
-    .locator('.task-card', { hasText: 'Packaged Home key source' })
-    .click();
+  await page.getByRole('button', { name: 'Brief' }).click();
+  await page.getByText('内部信息').waitFor();
+  await page.getByText('外部信号', { exact: true }).waitFor();
+  await page.getByText('暂无外部信号。').waitFor();
+  await page.locator('.focus-card', { hasText: 'Packaged Home recovery fixture' }).waitFor();
+  await page.getByRole('button', { name: 'Tasks' }).click();
+  await page.locator('.task-row', { hasText: 'Packaged Home recovery fixture' }).dblclick();
   await assertSourceContextFocused(page);
 }
 
 async function assertHomeResumeContextRecovery(page) {
-  await page.getByRole('button', { name: 'Home 局势概览与系统状态' }).click();
-
-  const resumePanel = page.locator('.panel', { hasText: 'Resume Previews' });
-  await resumePanel.getByRole('button', { name: /恢复任务 Packaged Home recovery fixture/ }).waitFor();
-  await resumePanel
-    .locator('.task-card', { hasText: 'Packaged Home recovery fixture' })
-    .getByRole('button', { name: '查看关键来源' })
-    .click();
-  await assertSourceContextFocused(page);
+  await page.getByRole('button', { name: 'Brief' }).click();
+  await page.locator('.focus-card', { hasText: 'Packaged Home recovery fixture' }).waitFor();
+  await page.getByText(/按共享 Priority Lane 排序/).waitFor();
+  await page.getByText(/在 Connections 连接邮件或日历后/).waitFor();
 }
 
 if (process.platform !== 'darwin') {

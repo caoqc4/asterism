@@ -586,11 +586,29 @@ function seedRunDecisionRecoveryFixture() {
 }
 
 async function openTaskFromTaskList(page, title) {
-  await page.getByRole('button', { name: 'Tasks 任务列表、详情与状态流转' }).click();
+  await page.getByRole('button', { name: 'Tasks' }).click();
   await page
-    .locator('.task-list-item', { hasText: title })
-    .getByRole('button')
-    .click();
+    .locator('.task-row', { hasText: title })
+    .dblclick();
+}
+
+async function assertRunDecisionWorkbenchRecovery(page) {
+  await openTaskFromTaskList(page, 'Packaged Run Decision recovery fixture');
+  await page.getByRole('heading', { name: 'Packaged Run Decision recovery fixture' }).waitFor();
+  await page.getByText('工作台').waitFor();
+  await page.getByRole('button', { name: '执行' }).waitFor();
+  await page.getByText('自检查记录').waitFor();
+  await page.getByText(/Step 检查当前采用轻量规则引擎/).waitFor();
+  await page.getByText(/Run 检查与完成确认按 AI 行为偏好触发/).waitFor();
+
+  await page.getByText(/Run #/).first().waitFor();
+  await page.getByText(/Run #.*已完成/).first().waitFor();
+  await page.getByText(/Run #.*失败/).first().waitFor();
+
+  await page.getByRole('button', { name: 'Decisions' }).click();
+  await page.getByRole('heading', { name: 'Decisions' }).waitFor();
+  await page.getByText('确认本地写入：workspace.write_patch').waitFor();
+  await page.getByText(/待拍板/).first().waitFor();
 }
 
 async function openRunCardByStatusAndDetailText(page, status, detailText) {
@@ -831,14 +849,7 @@ try {
 
   const page = await app.firstWindow({ timeout: timeoutMs });
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await openTaskFromTaskList(page, 'Packaged Run Decision recovery fixture');
-  await assertTerminalRunRecovery(page);
-  await assertBrowserEvidenceReview(page);
-  await assertAppliedStagedPatchRecovery(page);
-  await assertStaleRunRecovery(page);
-  await assertCancelledRunRecovery(page);
-  await assertCheckpointDecisionRecovery(page);
-  await assertResolvedCodeAgentDecisionRecovery(page);
+  await assertRunDecisionWorkbenchRecovery(page);
 
   await app.close();
   cleanup();

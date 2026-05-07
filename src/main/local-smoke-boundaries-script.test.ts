@@ -274,9 +274,10 @@ describe('local smoke script default boundaries', () => {
     const scripts = readPackageScripts();
 
     expect(scripts['accept:packaged-recovery:mac']).toBe(
-      'npm run smoke:home-recovery:mac && npm run smoke:code-agent-ui:mac && npm run smoke:run-decision-recovery:mac && npm run smoke:settings-config:mac',
+      'npm run smoke:home-recovery:mac && npm run smoke:project-decomposition:mac && npm run smoke:code-agent-ui:mac && npm run smoke:run-decision-recovery:mac && npm run smoke:settings-config:mac',
     );
     expect(scripts['smoke:release:mac']).not.toContain('smoke:home-recovery:mac');
+    expect(scripts['smoke:release:mac']).not.toContain('smoke:project-decomposition:mac');
     expect(scripts['smoke:release:mac']).not.toContain('smoke:code-agent-ui:mac');
     expect(scripts['smoke:release:mac']).not.toContain('smoke:run-decision-recovery:mac');
     expect(scripts['smoke:release:mac']).not.toContain('smoke:settings-config:mac');

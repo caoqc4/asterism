@@ -177,53 +177,31 @@ function seedCodeAgentFixture() {
 }
 
 async function openTaskFromTaskList(page, title) {
-  await page.getByRole('button', { name: 'Tasks 任务列表、详情与状态流转' }).click();
+  await page.getByRole('button', { name: 'Tasks' }).click();
   await page
-    .locator('.task-list-item', { hasText: title })
-    .getByRole('button')
-    .click();
+    .locator('.task-row', { hasText: title })
+    .dblclick();
 }
 
 async function assertCodeAgentPreflightUi(page) {
   await openTaskFromTaskList(page, 'Packaged Code Agent UI fixture');
   await page.getByRole('heading', { name: 'Packaged Code Agent UI fixture' }).waitFor();
+  await page.getByText('工作台').waitFor();
+  await page.getByText('完成标准', { exact: true }).waitFor();
+  await page.getByText('Code Agent preflight is visible before any provider or Docker action').waitFor();
 
-  const intent = page.getByLabel('Code agent run intent');
-  await intent.getByText('AgentProfile：manual sandbox producer').waitFor();
-  await page.getByText('Code Agent Runtime', { exact: true }).waitFor();
-  await page.getByText(/^ExecutionRuntime：/).first().waitFor();
-  await intent
-    .getByText(
-      'Check availability：test=package.json exposes npm run test. / lint=package.json exposes npm run lint.',
-    )
-    .waitFor();
-  await intent
-    .getByText(
-      'Code Agent preflight：blocked / runtime=needs readiness check / checks=test,lint / producer=local diagnostic; no provider call / promotion=Decision required / next=check Code Agent runtime readiness first.',
-    )
-    .waitFor();
-  await intent.getByText('Start blocked：check Code Agent runtime readiness first.').waitFor();
-  await intent.getByText('Model producer：available by local env').waitFor();
-  await intent.getByText('Context selection：none selected /').waitFor();
-  await intent.getByRole('button', { name: contextFile }).waitFor();
-  await intent.getByRole('button', { name: 'src/manual-target.md' }).waitFor();
+  await page.getByRole('button', { name: '来源' }).click();
+  await page.getByText('Code Agent context note', { exact: true }).waitFor();
+  await page.getByText(/AI 上下文优先读取最多 3 条关键来源/).waitFor();
 
-  await intent
-    .getByRole('checkbox', {
-      name: 'Use model producer（会调用已配置 provider；需要显式 context files）',
-    })
-    .click();
-  await intent.getByText('Source context manifest：none selected / content=manifest only').waitFor();
-  await intent.getByText('Artifact manifest：none selected / content=manifest only').waitFor();
+  await page.getByRole('button', { name: '产物' }).click();
+  await page.getByText('工作文件夹产物').waitFor();
+  await page.getByText('Code Agent patch notes').click();
+  await page.getByText(/Suggested packaged smoke patch target/).waitFor();
 
-  await intent.getByRole('button', { name: contextFile }).click();
-  const contextFiles = await intent.getByRole('textbox', { name: 'Context files' }).inputValue();
-  if (contextFiles !== contextFile) {
-    throw new Error(`Packaged Code Agent context candidate filled wrong files: ${contextFiles}`);
-  }
-  await intent
-    .getByText(`Context selection：1 selected / ${contextFile} / files are not read until the run starts`)
-    .waitFor();
+  await page.getByRole('button', { name: '执行' }).click();
+  await page.getByRole('button', { name: '+ 新建 Run' }).click();
+  await page.getByPlaceholder(/给 AI 的指令/).waitFor();
 }
 
 if (process.platform !== 'darwin') {

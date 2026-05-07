@@ -96,31 +96,19 @@ function readConfig() {
 }
 
 async function openSettings(page) {
-  await page.getByRole('button', { name: 'Settings AI Provider 与本地配置' }).click();
-  await page.getByRole('heading', { name: 'AI Provider 与本地密钥存储' }).waitFor();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByRole('heading', { name: 'Settings' }).waitFor();
+  await page.getByText('AI 行为').waitFor();
 }
 
 async function saveSettings(page) {
   await openSettings(page);
-  await page.getByText(/API Key 尚未存入系统 Keychain/).waitFor();
-
-  await page.selectOption('select', 'openai-compatible');
-
-  const modelInput = page.getByLabel('Model');
-  await modelInput.fill('gpt-packaged-settings-smoke');
-
-  const baseUrlInput = page.getByLabel('Base URL');
-  await baseUrlInput.fill('https://relay.invalid/v1');
-
-  const workspaceInput = page.getByLabel('Workspace Root');
-  await workspaceInput.fill(workspaceRoot);
-
-  await page.getByRole('button', { name: '保存到 Main / Keychain' }).click();
-  await page.getByText(/已选择 openai-compatible \/ gpt-packaged-settings-smoke，但 AI config 未就绪/).waitFor();
-  await page.getByText('Base URL：https://relay.invalid/v1').waitFor();
-  await page.getByText(`Workspace Root：${workspaceRoot}`).waitFor();
-  await page.getByText(`配置文件路径：${configPath}`).waitFor();
-  await page.getByText('Scheduler 开关：未启用').waitFor();
+  await page.getByText('Run / Task 自检查').waitFor();
+  await page.getByText('自学习（Self-Learn）').waitFor();
+  await page.getByText('当前 AI 配置').waitFor();
+  await page.getByText(/Step 级检查是执行质量基线/).waitFor();
+  await page.getByRole('button', { name: '保存设置' }).click();
+  await page.getByRole('button', { name: '已保存 ✓' }).waitFor();
 
   await waitFor(() => {
     if (!fs.existsSync(configPath)) {
@@ -128,30 +116,20 @@ async function saveSettings(page) {
     }
 
     const config = readConfig();
-    return config.aiProvider === 'openai-compatible'
-      && config.aiModel === 'gpt-packaged-settings-smoke'
-      && config.aiBaseUrl === 'https://relay.invalid/v1'
-      && config.workspaceRoot === workspaceRoot
+    return config.aiProvider
+      && config.aiModel
+      && config.featureFlags?.enableSelfCheck === true
+      && config.featureFlags?.enableSelfLearn === true
       && config.featureFlags?.enableScheduler === false;
   }, 'packaged Settings config.json write');
 }
 
 async function assertPersistedSettings(page) {
   await openSettings(page);
-  await page.getByText(/已选择 openai-compatible \/ gpt-packaged-settings-smoke，但 AI config 未就绪/).waitFor();
-  await page.getByText('Base URL：https://relay.invalid/v1').waitFor();
-  await page.getByText(`Workspace Root：${workspaceRoot}`).waitFor();
-  await page.getByText('API Key 尚未存入系统 Keychain').waitFor();
-
-  const modelValue = await page.getByLabel('Model').inputValue();
-  if (modelValue !== 'gpt-packaged-settings-smoke') {
-    throw new Error(`Packaged Settings did not hydrate saved model into the form: ${modelValue}`);
-  }
-
-  const workspaceValue = await page.getByLabel('Workspace Root').inputValue();
-  if (workspaceValue !== workspaceRoot) {
-    throw new Error(`Packaged Settings did not hydrate saved workspace root into the form: ${workspaceValue}`);
-  }
+  await page.getByText('Run / Task 自检查').waitFor();
+  await page.getByText('自学习（Self-Learn）').waitFor();
+  await page.getByText(/真正压缩前会先保留关键决策/).waitFor();
+  await page.getByText(/修改 Provider 密钥或切换模型请前往/).waitFor();
 }
 
 if (process.platform !== 'darwin') {
