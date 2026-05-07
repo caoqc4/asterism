@@ -226,6 +226,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
 
   const activeRun = runs.find((r) => r.status === 'running' || r.status === 'paused');
   const resumeSignals = buildResumeSignals({ detail, runs, activeRun: activeRun ?? null });
+  const hasThinResumeSignal = resumeSignals.some((signal) => signal.tone === 'thin');
 
   function regenerateResume() {
     if (!detail) return;
@@ -463,6 +464,9 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
                 {signal.label}
               </span>
             ))}
+            {hasThinResumeSignal && (
+              <span className="resume-signal-note">可通过规划讨论或补充来源纠正这段叙事。</span>
+            )}
           </div>
         )}
 

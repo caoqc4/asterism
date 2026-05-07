@@ -1263,6 +1263,41 @@ describe('App redesign v1', () => {
     expect(screen.getByText('跨任务观察窗口 · 累计 3 次')).toBeTruthy();
   });
 
+  it('invites correction when the workbench resume has thin context signals', async () => {
+    const thinTask = buildTask({ id: 'task_thin', title: '低信号任务' });
+    thinTask.summary = null;
+    thinTask.nextStep = null;
+    harness.tasks.unshift(thinTask);
+    const baseDetail = buildTaskDetail(thinTask);
+    const thinDetail: TaskDetail = {
+      ...baseDetail,
+      artifacts: [],
+      completionCriteria: [],
+      sourceContexts: [],
+      processTemplates: [],
+      availableProcessTemplates: [],
+      timeline: [],
+      resumeCard: {
+        ...baseDetail.resumeCard,
+        summary: '这个任务还没有足够信号，适合先补齐目标。',
+        nextSuggestedMove: '下一步建议：补充任务摘要和完成标准。',
+      },
+    };
+    const originalGetTaskDetail = harness.api.getTaskDetail;
+    vi.mocked(harness.api.getTaskDetail).mockImplementation(async (taskId: string) => (
+      taskId === 'task_thin' ? thinDetail : originalGetTaskDetail(taskId)
+    ));
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.dblClick(await screen.findByText('低信号任务'));
+
+    expect(await screen.findByText('信号不足，先补齐目标')).toBeTruthy();
+    expect(screen.getByText(/可通过规划讨论或补充来源纠正这段叙事/)).toBeTruthy();
+  });
+
   it('opens a task workbench and keeps Runs scoped under the task instead of global navigation', async () => {
     const user = userEvent.setup();
     saveTaskAttributes('task_waiting', { type: 'project' });
