@@ -737,6 +737,7 @@ describe('App redesign v1', () => {
       }));
     });
     expect(await screen.findByText(/这段讨论可以先捕获为任务/)).toBeTruthy();
+    expect(screen.getByText(/不会直接执行/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '捕获为任务' }));
 
     await waitFor(() => {

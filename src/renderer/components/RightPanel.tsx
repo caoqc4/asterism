@@ -436,7 +436,7 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
         {canCaptureGlobalConversation && (
           <div className="panel-capture-suggestion">
             <div className="panel-capture-text">
-              这段讨论可以先捕获为任务，之后再由 AI 判断类型、补齐上下文或拆解。
+              这段讨论可以先捕获为任务，之后再由 AI 判断类型、补齐上下文或拆解；不会直接执行。
             </div>
             <button
               className={`btn sm primary${capturingTask ? ' disabled' : ''}`}
