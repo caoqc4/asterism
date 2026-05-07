@@ -1417,6 +1417,27 @@ describe('App redesign v1', () => {
     expect((await screen.findAllByText('已停用')).length).toBeGreaterThan(0);
   });
 
+  it('lets users suppress a pending work habit proposal from Context', async () => {
+    const user = userEvent.setup();
+    saveWorkHabits([
+      buildWorkHabit({
+        id: 'habit_suppress',
+        rule: '所有外部合作回复都先走人工确认',
+        source: 'proposal',
+        status: 'pending',
+        examples: '合作邮件回复',
+      }),
+    ]);
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Context/ }));
+    await user.click(await screen.findByText('所有外部合作回复都先走人工确认'));
+    await user.click(screen.getByRole('button', { name: '以后不再提示' }));
+
+    expect((await screen.findAllByText('已停用')).length).toBeGreaterThan(0);
+    expect(screen.getByText(/已停用规则不会进入后续 AI 提示词/)).toBeTruthy();
+  });
+
   it('lets users manually add a confirmed work habit from Context', async () => {
     const user = userEvent.setup();
     render(<App />);

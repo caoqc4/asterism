@@ -505,6 +505,9 @@ export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => v
                       <div>优先级：{priorityLabel(h.scope)}</div>
                       <div>创建：{new Date(h.createdAt).toLocaleString('zh')}</div>
                       <div>最近应用：{h.lastAppliedAt ? new Date(h.lastAppliedAt).toLocaleString('zh') : '尚未应用'}</div>
+                      {h.status === 'disabled' && (
+                        <div>已停用规则不会进入后续 AI 提示词，也不会自动改变执行流程。</div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -521,7 +524,7 @@ export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => v
                       ) : (
                         <>
                           <button className="btn sm primary" onClick={() => void updateHabitStatus(h.id, 'confirmed')}>确认</button>
-                          <button className="btn sm ghost" onClick={() => void updateHabitStatus(h.id, 'disabled')}>不准确</button>
+                          <button className="btn sm ghost" onClick={() => void updateHabitStatus(h.id, 'disabled')}>以后不再提示</button>
                         </>
                       )}
                     </div>
