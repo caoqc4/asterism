@@ -241,6 +241,9 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
       {/* Focus cards */}
       <div className="brief-section">
         <div className="brief-section-label">内部信息</div>
+        <div className="brief-section-note">
+          按共享 Priority Lane 排序；这里不是单独看板，拖拽只调整今日顺序。
+        </div>
         <div className="focus-list">
           {orderAdjusted && (
             <div className="focus-order-note">

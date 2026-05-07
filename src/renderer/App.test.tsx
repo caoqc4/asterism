@@ -600,6 +600,8 @@ describe('App redesign v1', () => {
     expect(screen.getByRole('button', { name: /Tasks/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Runs/ })).toBeNull();
     expect(await screen.findByText('外部信号')).toBeTruthy();
+    expect(screen.getByText(/按共享 Priority Lane 排序/)).toBeTruthy();
+    expect(screen.getByText(/这里不是单独看板/)).toBeTruthy();
     expect(screen.getByText('暂无外部信号。')).toBeTruthy();
     expect(screen.getByText(/等待你确认是否长成任务/)).toBeTruthy();
   });
