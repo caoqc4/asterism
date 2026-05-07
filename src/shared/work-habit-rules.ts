@@ -302,20 +302,28 @@ function recordCompletionOverridePattern(
 ): WorkHabitRecord[] {
   const existing = habits.find((habit) => habit.id === COMPLETION_OVERRIDE_PATTERN_ID);
   const example = `观察窗口：${params.taskTitle} / ${params.reason}`;
-  const observedTaskCount = habits.filter((habit) => (
+  const observedTaskHabits = habits.filter((habit) => (
     habit.id.startsWith('habit_completion_override_')
     && habit.id !== COMPLETION_OVERRIDE_PATTERN_ID
-  )).length;
+  ));
+  const observedTaskCount = observedTaskHabits.length;
+
+  if (!existing && observedTaskCount < PATTERN_CONFIRMATION_THRESHOLD) {
+    return habits;
+  }
+
   if (!existing) {
     return [
       {
         id: COMPLETION_OVERRIDE_PATTERN_ID,
-        rule: '多次任务完成时覆盖未满足的完成检查',
+        rule: '跨任务观察：你经常会在完成检查未全部满足时主动确认够用',
         source: 'proposal',
         scope: 'task_type',
         scopeLabel: '任务完成',
         status: 'pending',
-        examples: example,
+        examples: observedTaskHabits.map((habit) => (
+          habit.examples ? `${habit.rule}：${habit.examples}` : habit.rule
+        )).join(' / ') || example,
         createdAt: params.now,
         lastAppliedAt: params.now,
         applicationCount: observedTaskCount,

@@ -225,6 +225,21 @@ describe('work habit conflict handling', () => {
     expect(pattern?.examples).toContain('周报发送');
   });
 
+  it('waits for three distinct completion overrides before proposing a cross-task pattern', () => {
+    recordCompletionOverrideLearningSignal({
+      taskId: 'task_a',
+      taskTitle: '董事会材料修订',
+      reason: '完成检查未通过：仍有 1 条完成标准未满足',
+    });
+    recordCompletionOverrideLearningSignal({
+      taskId: 'task_b',
+      taskTitle: '官网改版方案',
+      reason: '完成检查未通过：仍有 2 条完成标准未满足',
+    });
+
+    expect(loadWorkHabits().some((habit) => habit.id === 'habit_pattern_completion_override')).toBe(false);
+  });
+
   it('does not promote same-task completion overrides as a cross-task pattern', () => {
     recordCompletionOverrideLearningSignal({
       taskId: 'task_override_same',
@@ -244,8 +259,7 @@ describe('work habit conflict handling', () => {
 
     const pattern = loadWorkHabits().find((habit) => habit.id === 'habit_pattern_completion_override');
 
-    expect(pattern?.applicationCount).toBe(1);
-    expect(pattern?.rule).toBe('多次任务完成时覆盖未满足的完成检查');
+    expect(pattern).toBeUndefined();
   });
 
   it('keeps run verification context on completion override learning signals', () => {
