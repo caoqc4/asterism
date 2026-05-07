@@ -724,6 +724,7 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /Search or ask/ }));
+    expect(await screen.findByText(/重要内容会进入任务记忆/)).toBeTruthy();
     const input = await screen.findByPlaceholderText(/搜索、提问或捕获想法/);
     await user.type(input, '准备投资人沟通材料');
     await user.click(screen.getByRole('button', { name: '发送' }));

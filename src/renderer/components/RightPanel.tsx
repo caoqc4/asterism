@@ -387,7 +387,8 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
       <div className="panel-messages">
         {messages.length === 0 && (
           <div className="panel-empty">
-            <p>说点什么开始对话…</p>
+            <p>围绕任务或想法说一句…</p>
+            <span className="muted">重要内容会进入任务记忆，不依赖聊天窗口长期保存。</span>
             <div className="panel-prompts">
               {quickPrompts.map((p) => (
                 <button key={p.label} className="panel-prompt-chip" onClick={() => { setInput(p.prompt); textareaRef.current?.focus(); }}>
