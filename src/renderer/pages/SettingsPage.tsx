@@ -85,8 +85,8 @@ export function SettingsPage() {
 
         <div className="settings-toggle-row">
           <div className="settings-toggle-info">
-            <span className="settings-label">自检查（Self-Check）</span>
-            <span className="settings-hint">Run 级和任务完成检查可关闭；Step 级轻量对照始终保留</span>
+            <span className="settings-label">Run / Task 自检查</span>
+            <span className="settings-hint">控制 Run 级验证和任务完成确认；Step 级轻量对照始终保留</span>
           </div>
           <Toggle value={selfCheck} onChange={setSelfCheck} />
         </div>
@@ -100,7 +100,7 @@ export function SettingsPage() {
         </div>
 
         <div className="settings-behavior-note">
-          自检查通过时静默，只在失败、等待拍板或完成确认时提示；自学习绑定在完成、覆盖、SOP 提取等节点触发，不做持续行为监控；学到的规则会在 Context 展示，可停用或删除。
+          Step 级检查是执行质量基线，通过时静默，只在失败时留下说明；Run / Task 检查只在失败、等待拍板或完成确认时提示。自学习绑定在完成、覆盖、SOP 提取等节点触发，不做持续行为监控；学到的规则会在 Context 展示，可停用或删除。
         </div>
 
         <div className="settings-field" style={{ marginTop: 16 }}>
@@ -127,7 +127,7 @@ export function SettingsPage() {
 
         <div className="settings-field" style={{ marginTop: 16 }}>
           <label className="settings-label">
-            Step 失败自动重试
+            Step 级自动修正上限
             <span className="settings-badge">{selfCheckRetries} 次</span>
           </label>
           <input
