@@ -320,7 +320,7 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
       ]
     : [
         { label: '今天重点处理什么？', prompt: '今天重点处理什么？' },
-        { label: '帮我整理一下待办', prompt: '帮我整理一下待办' },
+        { label: '把待办整理成任务', prompt: '把这些待办整理成任务' },
         { label: '最近有什么需要跟进的？', prompt: '最近有什么需要跟进的？' },
       ];
   const hasSessionActivity = Boolean(activeTaskId || messages.length > 0 || input.trim());
@@ -491,7 +491,7 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
         <textarea
           ref={textareaRef}
           className="panel-input"
-          placeholder={activeTaskId ? `关于「${title}」…` : '搜索、提问或捕获想法…'}
+          placeholder={activeTaskId ? `关于「${title}」…` : '搜索、提问或捕获任务想法…'}
           value={input}
           rows={1}
           onChange={(e) => { setInput(e.target.value); autoResize(); }}

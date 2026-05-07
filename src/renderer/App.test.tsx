@@ -597,7 +597,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('Work')).toBeTruthy();
     expect(screen.getByText('Capabilities')).toBeTruthy();
     expect(screen.getByText(/任务级 Agent · 通用任务流/)).toBeTruthy();
-    expect(screen.getByTitle(/搜索、提问或捕获想法/)).toBeTruthy();
+    expect(screen.getByTitle(/搜索、提问或捕获任务想法/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Tasks/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Runs/ })).toBeNull();
     expect(await screen.findByText('外部信号')).toBeTruthy();
@@ -727,7 +727,8 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /Search or ask/ }));
     expect(await screen.findByText(/重要内容会进入任务记忆/)).toBeTruthy();
-    const input = await screen.findByPlaceholderText(/搜索、提问或捕获想法/);
+    expect(await screen.findByText('把待办整理成任务')).toBeTruthy();
+    const input = await screen.findByPlaceholderText(/搜索、提问或捕获任务想法/);
     await user.type(input, '准备投资人沟通材料');
     await user.click(screen.getByRole('button', { name: '发送' }));
 
@@ -1119,6 +1120,7 @@ describe('App redesign v1', () => {
     await user.type(await screen.findByPlaceholderText(/任务标题/), '官网改版项目');
     expect(screen.getByRole('button', { name: '项目' }).className).toContain('active');
     expect(screen.getByText(/类型由 AI 根据标题预判/)).toBeTruthy();
+    expect(screen.getByText(/点击创建即确认当前建议/)).toBeTruthy();
     expect(screen.getByText(/确认后才创建真实子任务/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '创建' }));
 

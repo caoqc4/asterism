@@ -638,7 +638,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
               />
             </div>
             <div className="capture-type-note">
-              类型由 AI 根据标题预判，你只需要确认或调整建议；定时/事件会先创建单条任务，周期和触发条件可在工作台 Header 调整；项目型先生成拆解草稿，确认后才创建真实子任务。
+              类型由 AI 根据标题预判，你只需要确认或调整建议；点击创建即确认当前建议。定时/事件会先创建单条任务，周期和触发条件可在工作台 Header 调整；项目型先生成拆解草稿，确认后才创建真实子任务。
             </div>
             {captureSopSuggestions.length > 0 && (
               <div className="capture-sop-suggestions">

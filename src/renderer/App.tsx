@@ -281,7 +281,7 @@ function Topbar({ route, workbenchTaskId, panelOpen, panelSuspended, onBack, onT
         <button
           className="cmd-k-trigger"
           onClick={onOpenGlobalPanel}
-          title="快捷入口：搜索、提问或捕获想法，用完即走"
+          title="快捷入口：搜索、提问或捕获任务想法，用完即走"
         >
           <IconSearch />
           <span>Search or ask…</span>
