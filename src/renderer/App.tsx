@@ -167,7 +167,7 @@ function SetupBanner({ onGoToModel }: { onGoToModel: () => void }) {
     <div className="setup-banner">
       <span className="setup-banner-icon">⚠</span>
       <span className="setup-banner-text">
-        AI 尚未配置，请先添加 API Key 以使用 AI 功能。
+        AI 尚未配置，请先添加 API Key 以使用 AI 功能；任务管理仍可继续使用。
       </span>
       <button className="btn sm primary" onClick={onGoToModel}>
         前往配置 →

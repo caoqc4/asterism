@@ -204,7 +204,7 @@ export function DecisionsPage({ onOpenPanel, onOpenWorkbench }: DecisionsPagePro
       {!loading && decisions.length === 0 && (
         <div className="decisions-empty">
           <p>当前没有待拍板事项。</p>
-          <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>AI 在执行任务时遇到需要你决策的分歧点，会自动在这里汇总。</p>
+          <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>AI 在执行任务时遇到需要你决策的分歧点，会汇总到这里等待你拍板。</p>
         </div>
       )}
     </div>

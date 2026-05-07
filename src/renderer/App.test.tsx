@@ -617,6 +617,15 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/不会写入任务记忆/)).toBeTruthy();
   });
 
+  it('keeps task management available before AI setup', async () => {
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValueOnce(buildAiStatus({ configured: false }));
+    render(<App />);
+
+    expect(await screen.findByText(/AI 尚未配置/)).toBeTruthy();
+    expect(screen.getByText(/任务管理仍可继续使用/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Tasks/ })).toBeTruthy();
+  });
+
   it('clarifies enabled Skills are only available tools, not automatic execution', async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -1024,6 +1033,17 @@ describe('App redesign v1', () => {
         action: 'approve',
       });
     });
+  });
+
+  it('keeps the empty Decisions state anchored on user approval', async () => {
+    const user = userEvent.setup();
+    harness.decisions.length = 0;
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Decisions/ }));
+
+    expect(await screen.findByText('当前没有待拍板事项。')).toBeTruthy();
+    expect(screen.getByText(/汇总到这里等待你拍板/)).toBeTruthy();
   });
 
   it('saves AI behavior preferences as dedicated feature flags', async () => {
