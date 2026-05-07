@@ -298,7 +298,7 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
             <div className="brief-empty">
               <p>暂无外部信号。</p>
               <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>
-                在 Connections 连接邮件或日历后，AI 会自动从中提取需要跟进的信号。
+                在 Connections 连接邮件或日历后，AI 会提取需要跟进的信号，并等待你确认是否长成任务。
               </p>
             </div>
           )}

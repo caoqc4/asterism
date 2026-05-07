@@ -600,6 +600,7 @@ describe('App redesign v1', () => {
     expect(screen.queryByRole('button', { name: /Runs/ })).toBeNull();
     expect(await screen.findByText('外部信号')).toBeTruthy();
     expect(screen.getByText('暂无外部信号。')).toBeTruthy();
+    expect(screen.getByText(/等待你确认是否长成任务/)).toBeTruthy();
   });
 
   it('clarifies Model configuration stays local and separate from task memory', async () => {
