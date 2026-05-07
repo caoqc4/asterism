@@ -4,6 +4,7 @@ import type { TaskListItemRecord, TaskRiskLevel, TaskState } from '@shared/types
 import type { SourceContextRecord } from '@shared/types/source-context';
 import type { DecisionRecord } from '@shared/types/decision';
 import { isUnconfirmedPanelCaptureRecord } from '@shared/panel-capture';
+import { selectApplicableWorkHabits as selectApplicableWorkHabitsFromList } from '@shared/work-habit-rules';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import {
   buildProjectDecompositionGuidance,
@@ -16,7 +17,7 @@ import {
   type TaskAttributeRecord,
   type TaskExecutionType,
 } from '../lib/taskAttributes';
-import { selectApplicableWorkHabits, type WorkHabitRecord } from '../lib/workHabits';
+import { getPersistedWorkHabitStorageSnapshot, type WorkHabitRecord } from '../lib/workHabits';
 
 type Lane = 'escalate' | 'unblock' | 'continue' | 'clarify' | 'steady';
 type TaskStatus = 'running' | 'waiting' | 'blocked' | 'idle' | 'done';
@@ -163,6 +164,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
   const [projectDecomposingId, setProjectDecomposingId] = useState<string | null>(null);
   const [projectCreatingChildrenId, setProjectCreatingChildrenId] = useState<string | null>(null);
   const [projectDecompositionError, setProjectDecompositionError] = useState<string | null>(null);
+  const [workHabits, setWorkHabits] = useState<WorkHabitRecord[]>([]);
 
   const [showCapture, setShowCapture] = useState(false);
   const [captureTitle, setCaptureTitle] = useState('');
@@ -186,6 +188,12 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
       .catch(() => {});
   }
 
+  function reloadWorkHabits() {
+    void getPersistedWorkHabitStorageSnapshot()
+      .then((snapshot) => setWorkHabits(snapshot.habits))
+      .catch(() => {});
+  }
+
   // Load real tasks from backend when available
   useEffect(() => {
     if (!window.api) return;
@@ -198,6 +206,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
       .catch(() => {})
       .finally(() => setLoading(false));
     reloadPendingDecisions();
+    reloadWorkHabits();
 
     const unsub = window.api.subscribeToEvents((event) => {
       if (event.type === 'task.changed') reloadTasks();
@@ -205,6 +214,10 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
     });
     return () => unsub?.();
   }, []);
+
+  useEffect(() => {
+    if (showCapture) reloadWorkHabits();
+  }, [showCapture]);
 
   const projectParents = allTasks.filter((task) => task.type === 'project' && !task.parentTaskId);
   const filtered = allTasks.filter((t) => {
@@ -227,7 +240,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
   const selectedTask = filtered.find((t) => t.id === selectedId) ?? null;
   const selectedHasDecision = Boolean(selectedTask && pendingDecisions.some((decision) => decision.taskId === selectedTask.id));
   const captureSopSuggestions = captureTitle.trim()
-    ? selectApplicableWorkHabits({
+    ? selectApplicableWorkHabitsFromList(workHabits, {
         taskTitle: captureTitle,
         taskTypeLabel: TASK_TYPE_LABELS[captureType],
         limit: 4,

@@ -124,6 +124,15 @@ async function assertContextLearningUi(page) {
   await page.locator('.ctx-habit-row', { hasText: '打包验收后记录结论' }).getByText('用户创建', { exact: true }).waitFor();
 }
 
+async function assertSopSuggestionUsesPersistedHabits(page) {
+  await page.getByRole('button', { name: 'Tasks' }).click();
+  await page.getByRole('button', { name: '+ 新建任务' }).click();
+  await page.getByPlaceholder(/任务标题/).fill('项目拆解验收任务');
+  await page.getByText('可参考流程模板').waitFor();
+  await page.getByText('项目拆解后先检查父子结构').waitFor();
+  await page.getByText('创建后 AI 会在规划讨论中建议是否加载，不会自动套用。').waitFor();
+}
+
 if (process.platform !== 'darwin') {
   fail('macOS packaged Context learning smoke requires macOS.');
 }
@@ -153,6 +162,7 @@ try {
   const page = await app.firstWindow({ timeout: timeoutMs });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await assertContextLearningUi(page);
+  await assertSopSuggestionUsesPersistedHabits(page);
 
   await app.close();
   cleanup();
