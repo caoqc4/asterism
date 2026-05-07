@@ -33,7 +33,7 @@ export function ConnectionsPage() {
     <div className="connections-page">
       <div className="connections-head">
         <h2 className="connections-title">Connections</h2>
-        <p className="connections-subtitle">AI 可感知的外部信号源 — 连接后自动感知相关更新</p>
+        <p className="connections-subtitle">AI 可感知的外部信号源 — 授权后只处理相关新信号</p>
       </div>
 
       {/* Connected sources */}
@@ -80,7 +80,9 @@ export function ConnectionsPage() {
           {sources.length === 0 && (
             <div className="ctx-empty">
               <p>尚未连接任何来源。</p>
-              <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>连接后 AI 可在执行任务时主动感知相关更新。</p>
+              <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>
+                连接后 AI 只会把相关新信号带入 Brief 和任务上下文，等待你确认。
+              </p>
             </div>
           )}
         </div>

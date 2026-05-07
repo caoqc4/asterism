@@ -1199,7 +1199,9 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/外部信号只会在授权连接后进入 Brief/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '管理连接' }));
     expect(await screen.findByText(/AI 可感知的外部信号源/)).toBeTruthy();
+    expect(screen.getByText(/授权后只处理相关新信号/)).toBeTruthy();
     expect(screen.getByText('已连接来源')).toBeTruthy();
+    expect(screen.getByText(/相关新信号带入 Brief 和任务上下文，等待你确认/)).toBeTruthy();
     expect(screen.getByText(/未授权的来源不会进入 AI 上下文/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /Context/ }));
     expect(await screen.findByText('AI 可见来源')).toBeTruthy();
