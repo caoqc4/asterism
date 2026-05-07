@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { TaskListItemRecord } from '@shared/types/task';
+import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import {
   createManualWorkHabit,
   deleteWorkHabit,
@@ -57,6 +57,7 @@ function statusPriority(status: WorkHabitStatus): number {
 
 export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => void }) {
   const [tasks, setTasks] = useState<TaskListItemRecord[]>([]);
+  const [taskDetails, setTaskDetails] = useState<Record<string, TaskDetail | null>>({});
   const [loading, setLoading] = useState(true);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<string | null>(null);
@@ -82,10 +83,25 @@ export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => v
     void refreshHabits();
     if (!window.api) { setLoading(false); return; }
     window.api.listTasks()
-      .then((all) => {
-        const withContext = all.filter(
-          (t) => t.state !== 'archived' && (t.summary || t.nextStep || t.activeBlocker || t.waitingReason)
-        );
+      .then(async (all) => {
+        const active = all.filter((task) => task.state !== 'archived');
+        const detailEntries = await Promise.all(active.map(async (task): Promise<[string, TaskDetail | null]> => [
+          task.id,
+          await window.api!.getTaskDetail(task.id).catch(() => null),
+        ]));
+        const details: Record<string, TaskDetail | null> = Object.fromEntries(detailEntries);
+        setTaskDetails(details);
+        const withContext = active.filter((task) => {
+          const detail = details[task.id];
+          return Boolean(
+            task.summary
+              || task.nextStep
+              || task.activeBlocker
+              || task.waitingReason
+              || detail?.sourceContexts.length
+              || detail?.timeline.length,
+          );
+        });
         setTasks(withContext.slice(0, 12));
       })
       .catch(() => {})
@@ -294,11 +310,20 @@ export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => v
             const lane = deriveLane(task);
             const isExpanded = expandedTask === task.id;
             const isEditing = editingTask === task.id;
+            const detail = taskDetails[task.id];
+            const recentSources = (detail?.sourceContexts ?? []).slice(0, 3);
+            const recentTimeline = (detail?.timeline ?? []).slice(-2).reverse();
             const items: string[] = [];
             if (task.summary) items.push(task.summary);
             if (task.nextStep) items.push(`下一步：${task.nextStep}`);
             if (task.waitingReason) items.push(`等待中：${task.waitingReason}`);
             if (task.activeBlocker) items.push(`阻塞：${task.activeBlocker.title}`);
+            recentSources.forEach((source) => {
+              items.push(`记忆来源：${source.title}${source.note ? ` · ${source.note}` : ''}`);
+            });
+            recentTimeline.forEach((event) => {
+              items.push(`近期活动：${event.type.replace(/\./g, ' › ')}`);
+            });
 
             return (
               <div key={task.id} className="ctx-memory-row">

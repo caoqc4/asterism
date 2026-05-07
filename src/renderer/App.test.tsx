@@ -1520,7 +1520,9 @@ describe('App redesign v1', () => {
         waitingReason: null,
       });
     });
-    expect(await screen.findByText('暂无详细上下文。')).toBeTruthy();
+    expect(screen.queryByText('记忆已校正：只需要更新现金流页。')).toBeNull();
+    expect(await screen.findByText(/记忆来源：董事会反馈邮件/)).toBeTruthy();
+    expect(screen.getByText(/近期活动：task › completion_check/)).toBeTruthy();
   });
 
   it('explains how task memory starts when Context has no active memories', async () => {
@@ -1538,6 +1540,37 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /Context/ }));
 
     expect(await screen.findByText(/任务记忆会随任务说明、执行记录和你的修正逐步建立/)).toBeTruthy();
+  });
+
+  it('surfaces source-context-only task memory in Context', async () => {
+    const user = userEvent.setup();
+    const sourceOnlyTask = {
+      ...buildTask({ id: 'task_source_only', title: '来源驱动任务' }),
+      summary: null,
+      nextStep: null,
+      waitingReason: null,
+    };
+    vi.mocked(harness.api.listTasks).mockResolvedValueOnce([sourceOnlyTask]);
+    vi.mocked(harness.api.getTaskDetail).mockImplementation(async (taskId: string) =>
+      taskId === 'task_source_only'
+        ? {
+            ...buildTaskDetail(sourceOnlyTask),
+            sourceContexts: [
+              {
+                ...buildTaskDetail(sourceOnlyTask).sourceContexts[0]!,
+                title: '会话刷新前保全',
+                note: '自学习观察：会话刷新前保全关键决策、偏好变化和未解决问题。',
+              },
+            ],
+          }
+        : null);
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Context/ }));
+    await user.click(await screen.findByText('来源驱动任务'));
+
+    expect(await screen.findByText(/记忆来源：会话刷新前保全/)).toBeTruthy();
+    expect(screen.getByText(/自学习观察：会话刷新前保全关键决策/)).toBeTruthy();
   });
 
   it('lets users resolve conflicting learned work habits from Context', async () => {
