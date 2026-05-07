@@ -62,6 +62,15 @@ const GENERIC_ASSISTANT_REPLY_PATTERNS = [
   /当前任务处于正常推进中/,
   /需要我展开.*部分/,
 ];
+const USER_CORRECTION_PATTERNS = [
+  /不对/,
+  /不是/,
+  /刚才.*说错/,
+  /前面.*错/,
+  /改成/,
+  /别.*要/,
+  /不要.*要/,
+];
 
 function buildTaskTypeReviewPrompt(taskName: string): string {
   return [
@@ -81,6 +90,10 @@ function normalizeUserMessage(text: string): string {
 function looksGenericAssistantReply(text: string): boolean {
   const normalized = text.replace(/\s+/g, '');
   return GENERIC_ASSISTANT_REPLY_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+function looksLikeUserCorrection(text: string): boolean {
+  return USER_CORRECTION_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 function deriveSessionRefreshMessageLimit(
@@ -112,6 +125,13 @@ function shouldSuggestSessionRefresh(
   }
   if (userMessages.length >= messageLimit) {
     return { reason: `触发原因：当前会话已有 ${userMessages.length} 条用户消息，达到刷新阈值 ${messageLimit}。` };
+  }
+
+  const recentCorrectionCount = userMessages
+    .slice(-4)
+    .filter((message) => looksLikeUserCorrection(message)).length;
+  if (userMessages.length >= 3 && recentCorrectionCount >= 2) {
+    return { reason: '触发原因：最近多次出现改口或纠正，建议刷新任务会话。' };
   }
 
   const recentAssistantMessages = messages
