@@ -1,7 +1,7 @@
 import type { RunDetailRecord, RunRecord, RunStepRecord } from './types/run.js';
 
 export type RunSelfCheckTone = 'pass' | 'warn' | 'fail' | 'pending';
-export type RunSelfCheckSource = 'lightweight_rule_engine';
+export type RunSelfCheckSource = 'lightweight_rule_engine' | 'ai_verifier';
 
 export type RunSelfCheckResult = {
   tone: RunSelfCheckTone;

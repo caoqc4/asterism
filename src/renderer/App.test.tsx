@@ -262,6 +262,32 @@ function buildRunDetail(run: RunRecord): RunDetailRecord {
         updatedAt: now,
       },
     ],
+    verifications: [
+      {
+        id: 'verification_run_1',
+        runId: run.id,
+        targetType: 'run',
+        targetId: run.id,
+        tone: 'pass',
+        label: 'Run 验证通过',
+        detail: '验证子 Agent 已对照 Run 目标完成审查。',
+        source: 'ai_verifier',
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: 'verification_step_1',
+        runId: run.id,
+        targetType: 'step',
+        targetId: 'step_1',
+        tone: 'pass',
+        label: '检查通过',
+        detail: '验证子 Agent 已对照步骤预期输出完成审查。',
+        source: 'ai_verifier',
+        createdAt: now,
+        updatedAt: now,
+      },
+    ],
   };
 }
 
@@ -948,7 +974,7 @@ describe('App redesign v1', () => {
       expect(harness.api.recordTaskCompletionCheck).toHaveBeenCalledWith(expect.objectContaining({
         runVerificationTone: 'pass',
         runVerificationLabel: 'Run 验证通过',
-        runVerificationDetail: '执行结果已有输出或步骤证据，可进入人工审查。',
+        runVerificationDetail: '验证子 Agent 已对照 Run 目标完成审查。',
       }));
       expect(harness.api.transitionTask).toHaveBeenCalledWith({
         id: 'task_risk',
@@ -959,7 +985,7 @@ describe('App redesign v1', () => {
     expect(harness.api.recordCompletionOverrideLearningSignal).toHaveBeenCalledWith(expect.objectContaining({
       runVerificationTone: 'pass',
       runVerificationLabel: 'Run 验证通过',
-      runVerificationDetail: '执行结果已有输出或步骤证据，可进入人工审查。',
+      runVerificationDetail: '验证子 Agent 已对照 Run 目标完成审查。',
     }));
 
     await user.click(screen.getByRole('button', { name: /Context/ }));
@@ -1615,6 +1641,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByText(/Run #1 · 已完成/));
     expect(await screen.findByText('Step 1')).toBeTruthy();
     expect(await screen.findByText('Run 验证通过')).toBeTruthy();
+    expect(await screen.findAllByText('验证子 Agent')).toHaveLength(1);
     expect(await screen.findByText('整理反馈')).toBeTruthy();
     expect(await screen.findByText('检查通过')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /重新生成/ }));

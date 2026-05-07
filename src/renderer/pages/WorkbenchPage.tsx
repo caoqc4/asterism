@@ -984,7 +984,7 @@ function verificationToCheck(record: RunVerificationRecord): RunSelfCheckResult 
     tone: record.tone,
     label: record.label,
     detail: record.detail,
-    source: 'lightweight_rule_engine',
+    source: record.source,
   };
 }
 
@@ -1009,8 +1009,13 @@ function RunCheckSummary({ check }: {
     <div className={`run-check-summary ${check.tone}`}>
       <strong>{check.label}</strong>
       <span>{check.detail}</span>
+      <span className="run-check-source">{runCheckSourceLabel(check.source)}</span>
     </div>
   );
+}
+
+function runCheckSourceLabel(source: RunSelfCheckResult['source']): string {
+  return source === 'ai_verifier' ? '验证子 Agent' : '轻量规则对照';
 }
 
 /* ─── Sources tab ─── */

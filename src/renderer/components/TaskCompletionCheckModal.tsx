@@ -17,7 +17,7 @@ function verificationToCheck(record: RunVerificationRecord): RunSelfCheckResult 
     tone: record.tone,
     label: record.label,
     detail: record.detail,
-    source: 'lightweight_rule_engine',
+    source: record.source,
   };
 }
 
