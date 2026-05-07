@@ -183,7 +183,7 @@ export function buildFallbackBrief(
             `- ${item.title} [${item.kind}] | task=${item.taskTitle}${item.note ? ` | ${item.note}` : ''}`,
         )
         .join('\n')
-    : '- 最近没有关键来源材料';
+    : '- 最近没有来源材料更新';
   const templateLines = selectedTemplates.length
     ? selectedTemplates.map((template) => formatTemplateLine(template)).join('\n')
     : '- 本次未额外参考方法模板';
@@ -255,7 +255,7 @@ export function buildFallbackBrief(
     '最近动态：',
     activityLaneLines,
     '',
-    '关键来源材料：',
+    '最近来源材料（关键优先）：',
     sourceContextLines,
     '',
     '本次参考的方法模板：',
@@ -372,7 +372,7 @@ function buildPrompt(
         )
       : ['- 无']),
     '',
-    '关键来源材料：',
+    '最近来源材料（关键优先）：',
     ...(homeData.recentSourceContexts.length
       ? homeData.recentSourceContexts.map(
           (item) =>
