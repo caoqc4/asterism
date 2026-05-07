@@ -1196,13 +1196,25 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
     setEditLearningNotice(null);
   }
 
-  function saveEditing(artifact: ArtifactRecord) {
+  async function saveEditing(artifact: ArtifactRecord) {
+    const nextTitle = titleDraft.trim() || artifact.title;
+    const nextContent = editingMode === 'content' ? contentDraft : artifact.content;
     updateArtifactWorkspace(artifact.id, {
-      title: titleDraft.trim() || artifact.title,
-      content: editingMode === 'content' ? contentDraft : artifact.content,
+      title: nextTitle,
+      content: nextContent,
     });
     setEditingId(null);
-    setEditLearningNotice('已保留本次产物改动方向；明显偏好会在任务完成或复盘时归纳到 Context。');
+    if (editingMode === 'content' && nextContent !== artifact.content) {
+      await recordArtifactEditLearningSignal({
+        taskId,
+        artifact,
+        nextTitle,
+        nextContent,
+      });
+      setEditLearningNotice('已把本次产物改动方向写入任务记忆；明显偏好会在任务完成或复盘时归纳到 Context。');
+    } else {
+      setEditLearningNotice('已保留本次产物改动方向；明显偏好会在任务完成或复盘时归纳到 Context。');
+    }
     refreshLocal();
   }
 
@@ -1324,7 +1336,7 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
                     </div>
                   )}
                   <div className="artifact-edit-actions">
-                    <button className="btn sm primary" onClick={() => saveEditing(a)}>保存</button>
+                    <button className="btn sm primary" onClick={() => void saveEditing(a)}>保存</button>
                     <button className="btn sm ghost" onClick={() => setEditingId(null)}>取消</button>
                   </div>
                 </div>
@@ -1345,6 +1357,40 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
       })}
     </div>
   );
+}
+
+async function recordArtifactEditLearningSignal(params: {
+  taskId: string;
+  artifact: ArtifactRecord;
+  nextTitle: string;
+  nextContent: string;
+}): Promise<void> {
+  if (!window.api?.createSourceContext) return;
+  const direction = describeArtifactEditDirection(params.artifact.content, params.nextContent);
+  await window.api.createSourceContext({
+    taskId: params.taskId,
+    title: '产物编辑观察',
+    kind: 'note',
+    isKey: false,
+    content: [
+      `产物：${params.nextTitle}`,
+      `改动方向：${direction}`,
+      `编辑前长度：${params.artifact.content.length}`,
+      `编辑后长度：${params.nextContent.length}`,
+      '用途：作为任务完成或复盘时的自学习输入，不会立即生成工作习惯规则。',
+    ].join('\n'),
+    note: '自学习观察：用户编辑了 AI 产物。',
+  }).catch(() => undefined);
+}
+
+function describeArtifactEditDirection(before: string, after: string): string {
+  const beforeText = before.trim();
+  const afterText = after.trim();
+  if (!beforeText && afterText) return '从空白补充内容';
+  if (beforeText && !afterText) return '清空或大幅删除内容';
+  if (afterText.includes(beforeText) && afterText.length > beforeText.length) return '在原稿基础上补充内容';
+  if (beforeText.includes(afterText) && beforeText.length > afterText.length) return '压缩或删减原稿';
+  return '重写或调整表达结构';
 }
 
 /* ─── Activity tab ─── */

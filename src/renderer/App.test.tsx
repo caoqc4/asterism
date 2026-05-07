@@ -1687,8 +1687,16 @@ describe('App redesign v1', () => {
     await user.clear(artifactEditor);
     await user.type(artifactEditor, '# 终稿\n\n现金流页已补齐。');
     await user.click(screen.getByRole('button', { name: '保存' }));
-    expect(await screen.findByText(/已保留本次产物改动方向/)).toBeTruthy();
+    expect(await screen.findByText(/已把本次产物改动方向写入任务记忆/)).toBeTruthy();
     expect(await screen.findByText(/现金流页已补齐/)).toBeTruthy();
+    expect(harness.api.createSourceContext).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_risk',
+      title: '产物编辑观察',
+      kind: 'note',
+      isKey: false,
+      content: expect.stringContaining('用途：作为任务完成或复盘时的自学习输入'),
+      note: '自学习观察：用户编辑了 AI 产物。',
+    }));
     await user.click(screen.getByRole('button', { name: '重命名' }));
     const titleEditor = screen.getByDisplayValue('report_v1.md');
     await user.clear(titleEditor);
