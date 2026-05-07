@@ -122,6 +122,8 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
     CONTEXT_COMPRESSION_THRESHOLD.default,
   );
   const [capturingTask, setCapturingTask] = useState(false);
+  const [confirmingCapturedTask, setConfirmingCapturedTask] = useState(false);
+  const [pendingCapturedTaskId, setPendingCapturedTaskId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -221,13 +223,28 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
         summary: `从右侧面板捕获：${lastUserText}`,
       });
       setActiveTaskId(created.id);
+      setPendingCapturedTaskId(created.id);
       setTitleCache((prev) => ({ ...prev, [created.id]: created.title }));
       onTaskCaptured?.(created.id);
-      appendSysMsg(`已捕获为任务：**${created.title}**。接下来先让 AI 判断任务类型，必要时补齐上下文或拆解；真实子任务仍需你确认。`);
+      appendSysMsg(`已捕获为任务：**${created.title}**（待确认）。接下来先让 AI 判断任务类型，必要时补齐上下文或拆解；确认后才进入 Tasks，真实子任务仍需你确认。`);
     } catch {
       appendSysMsg('捕获任务失败，请稍后再试。');
     } finally {
       setCapturingTask(false);
+    }
+  }
+
+  async function confirmCapturedTask() {
+    if (!activeTaskId || pendingCapturedTaskId !== activeTaskId || confirmingCapturedTask) return;
+    setConfirmingCapturedTask(true);
+    try {
+      await window.api?.transitionTask({ id: activeTaskId, nextState: 'planned' });
+      setPendingCapturedTaskId(null);
+      appendSysMsg('已确认加入 Tasks。你可以继续在这里规划，也可以回到任务列表推进。');
+    } catch {
+      appendSysMsg('确认任务失败，请稍后再试。');
+    } finally {
+      setConfirmingCapturedTask(false);
     }
   }
 
@@ -444,6 +461,21 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
               disabled={capturingTask}
             >
               {capturingTask ? '捕获中…' : '捕获为任务'}
+            </button>
+          </div>
+        )}
+
+        {activeTaskId && pendingCapturedTaskId === activeTaskId && (
+          <div className="panel-capture-suggestion">
+            <div className="panel-capture-text">
+              这是待确认任务，确认后才会进入 Tasks 主列表。
+            </div>
+            <button
+              className={`btn sm primary${confirmingCapturedTask ? ' disabled' : ''}`}
+              onClick={() => void confirmCapturedTask()}
+              disabled={confirmingCapturedTask}
+            >
+              {confirmingCapturedTask ? '确认中…' : '确认加入 Tasks'}
             </button>
           </div>
         )}
