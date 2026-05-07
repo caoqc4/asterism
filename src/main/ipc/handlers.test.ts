@@ -399,7 +399,7 @@ describe('registerIpcHandlers', () => {
     const system = generateTextMock.mock.calls[0]?.[0]?.system as string;
     expect(system).toContain('Key sources: 财务复核, 法务意见, CEO 批注');
     expect(system).toContain('Completion criteria: open: 确认最终材料 / satisfied: 更新现金流页');
-    expect(system).toContain('Recent artifacts: report_v1.md (note), cashflow.png (browser_evidence)');
+    expect(system).toContain('Recent artifacts: cashflow.png (browser_evidence), report_v1.md (note)');
     expect(system).not.toContain('旧邮件');
     expect(system).not.toContain('归档材料');
     expect(system).not.toContain('普通备注');

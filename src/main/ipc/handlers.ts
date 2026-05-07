@@ -430,9 +430,13 @@ export function registerIpcHandlers(): void {
     const completionCriteria = task?.completionCriteria?.slice(0, 5)
       .map((criterion) => `${criterion.status}: ${criterion.text}`)
       .join(' / ') || 'none';
-    const recentArtifacts = task?.artifacts?.slice(0, 5)
+    const recentArtifacts = task?.artifacts
+      ? [...task.artifacts]
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+        .slice(0, 5)
       .map((artifact) => `${artifact.title} (${artifact.kind})`)
-      .join(', ') || 'none';
+        .join(', ')
+      : 'none';
     const taskContext = task
       ? [
           `Task title: ${task.title}`,
