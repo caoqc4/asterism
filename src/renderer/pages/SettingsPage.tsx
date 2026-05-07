@@ -94,7 +94,7 @@ export function SettingsPage() {
         <div className="settings-toggle-row">
           <div className="settings-toggle-info">
             <span className="settings-label">自学习（Self-Learn）</span>
-            <span className="settings-hint">任务完成时 AI 提炼工作习惯并更新 Context 记忆</span>
+            <span className="settings-hint">完成、覆盖、SOP 提取等节点提炼工作习惯；关闭后不生成新的习惯提议</span>
           </div>
           <Toggle value={selfLearn} onChange={setSelfLearn} />
         </div>
