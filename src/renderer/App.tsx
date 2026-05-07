@@ -278,7 +278,11 @@ function Topbar({ route, workbenchTaskId, panelOpen, panelSuspended, onBack, onT
       </div>
 
       <div className="topbar-right">
-        <button className="cmd-k-trigger" onClick={onOpenGlobalPanel}>
+        <button
+          className="cmd-k-trigger"
+          onClick={onOpenGlobalPanel}
+          title="快捷入口：搜索、提问或捕获想法，用完即走"
+        >
           <IconSearch />
           <span>Search or ask…</span>
           {panelSuspended && !panelOpen && <span className="cmd-k-suspended">挂起</span>}

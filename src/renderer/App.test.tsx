@@ -596,6 +596,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByRole('button', { name: /Brief/ })).toBeTruthy();
     expect(screen.getByText('Work')).toBeTruthy();
     expect(screen.getByText('Capabilities')).toBeTruthy();
+    expect(screen.getByTitle(/搜索、提问或捕获想法/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Tasks/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Runs/ })).toBeNull();
     expect(await screen.findByText('外部信号')).toBeTruthy();
