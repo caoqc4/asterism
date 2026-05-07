@@ -752,7 +752,7 @@ function RunsTab({
             <span className="run-check-overview-chip warn">需关注 {checkStats.warn + checkStats.fail}</span>
           )}
           <span className="run-check-overview-note">
-            Step 检查按预期输出和已确认工作习惯轻量对照；失败自动修正上限 {selfCheckRetryLimit} 次；Run 检查与完成确认按 AI 行为偏好触发。
+            Step 检查按预期输出和已确认工作习惯轻量对照；失败自动修正上限 {selfCheckRetryLimit} 次；Run 检查与完成确认按 AI 行为偏好触发；验证由独立子 Agent 完成，避免执行者自我确认。
           </span>
         </div>
       )}

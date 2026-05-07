@@ -1342,6 +1342,8 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('自检查记录')).toBeTruthy();
     expect(screen.getByText(/Step 检查按预期输出和已确认工作习惯轻量对照/)).toBeTruthy();
     expect(screen.getByText(/失败自动修正上限 2 次/)).toBeTruthy();
+    expect(screen.getByText(/验证由独立子 Agent 完成/)).toBeTruthy();
+    expect(screen.getByText(/避免执行者自我确认/)).toBeTruthy();
     expect(screen.getAllByText('Run 1').length).toBeGreaterThan(0);
     await user.click(await screen.findByText(/Run #1 · 已完成/));
     expect(await screen.findByText('Step 1')).toBeTruthy();
