@@ -1098,7 +1098,9 @@ describe('App redesign v1', () => {
     expect(screen.getByRole('button', { name: '事件' }).className).toContain('active');
     await user.click(screen.getByRole('button', { name: '创建' }));
     await user.click(screen.getByRole('button', { name: /事件触发/ }));
-    await user.dblClick(await screen.findByText('收到品牌合作邮件时跟进'));
+    await user.click(await screen.findByText('收到品牌合作邮件时跟进'));
+    expect(await screen.findByText(/追加到任务产物和执行记录/)).toBeTruthy();
+    await user.dblClick((await screen.findAllByText('收到品牌合作邮件时跟进'))[0]!);
     expect(await screen.findByText('事件监听')).toBeTruthy();
     expect(screen.getByText('等待触发')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '产物' }));
