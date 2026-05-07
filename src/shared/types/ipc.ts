@@ -3,6 +3,41 @@ export type PingResponse = {
   timestamp: string;
 };
 
+export type ChatMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+export type ChatInput = {
+  messages: ChatMessage[];
+  taskId?: string | null;
+  workHabits?: string[];
+};
+
+export type ChatResponse = {
+  text: string;
+};
+
+export type ProjectDecompositionInput = {
+  taskId: string;
+  instructions?: string;
+};
+
+export type ProjectSubtaskDraft = {
+  title: string;
+  summary: string;
+  acceptanceCriteria: string;
+  dependency: string | null;
+  rationale: string;
+};
+
+export type ProjectDecompositionResult = {
+  parentGoal: string;
+  subtasks: ProjectSubtaskDraft[];
+  review: string;
+  nextStep: string;
+};
+
 import type { HomeBriefData } from './brief.js';
 import type {
   BlockerRecord,
@@ -44,7 +79,18 @@ import type {
   UpdateSourceContextInput,
 } from './source-context.js';
 import type {
+  CompletionOverrideLearningSignalInput,
+  CreateManualWorkHabitInput,
+  ImportLegacyWorkHabitsInput,
+  ResolveWorkHabitConflictInput,
+  SopTemplateHabitInput,
+  UpdateWorkHabitInput,
+  WorkHabitRecord,
+  WorkHabitStorageSnapshot,
+} from './work-habit.js';
+import type {
   CreateTaskInput,
+  RecordTaskCompletionCheckInput,
   TaskDetail,
   TaskListItemRecord,
   TaskRecord,
@@ -62,6 +108,17 @@ export type ElectronApi = {
   getTaskDetail: (taskId: string) => Promise<TaskDetail | null>;
   updateTask: (input: UpdateTaskInput) => Promise<TaskListItemRecord>;
   transitionTask: (input: TransitionTaskInput) => Promise<TaskListItemRecord>;
+  recordTaskCompletionCheck: (input: RecordTaskCompletionCheckInput) => Promise<void>;
+  getWorkHabitSnapshot: () => Promise<WorkHabitStorageSnapshot>;
+  importLegacyWorkHabits: (input: ImportLegacyWorkHabitsInput) => Promise<WorkHabitStorageSnapshot>;
+  updateWorkHabit: (input: UpdateWorkHabitInput) => Promise<WorkHabitRecord[]>;
+  deleteWorkHabit: (id: string) => Promise<WorkHabitRecord[]>;
+  createManualWorkHabit: (input: CreateManualWorkHabitInput) => Promise<WorkHabitRecord[]>;
+  resolveWorkHabitConflict: (input: ResolveWorkHabitConflictInput) => Promise<WorkHabitRecord[]>;
+  recordCompletionOverrideLearningSignal: (
+    input: CompletionOverrideLearningSignalInput,
+  ) => Promise<WorkHabitRecord[]>;
+  recordSopTemplateHabit: (input: SopTemplateHabitInput) => Promise<WorkHabitRecord[]>;
   createBlocker: (input: CreateBlockerInput) => Promise<BlockerRecord>;
   updateBlocker: (input: UpdateBlockerInput) => Promise<BlockerRecord>;
   resolveBlocker: (id: string) => Promise<BlockerRecord>;
@@ -96,4 +153,6 @@ export type ElectronApi = {
   triggerOperatorStartedRun?: (input: OperatorStartedRunRequest) => Promise<RunRecord>;
   continuePausedRun: (runId: string) => Promise<RunRecord>;
   subscribeToEvents: (listener: (event: AppEvent) => void) => () => void;
+  chatWithAI?: (input: ChatInput) => Promise<ChatResponse>;
+  decomposeProject?: (input: ProjectDecompositionInput) => Promise<ProjectDecompositionResult>;
 };

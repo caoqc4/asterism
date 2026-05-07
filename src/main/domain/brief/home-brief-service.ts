@@ -1,4 +1,5 @@
 import { RunRepository } from '../../db/repositories/run-repository.js';
+import type { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
 import { BriefSnapshotRepository } from '../../db/repositories/brief-snapshot-repository.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { SchedulerService } from '../../scheduler/scheduler-service.js';
@@ -13,7 +14,7 @@ import type {
 } from '../../../shared/types/brief.js';
 import { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import type { DecisionRecord } from '../../../shared/types/decision.js';
-import type { RunRecord } from '../../../shared/types/run.js';
+import type { RunRecord, RunVerificationRecord } from '../../../shared/types/run.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
 import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
@@ -42,6 +43,7 @@ import { isStaleDependency } from '../../../shared/working-context/dependency.js
 import { comparePriorityLaneContext, comparePriorityLanes, deriveTaskPriorityLaneMap } from '../../../shared/working-context/priority-lanes.js';
 import { getResponsibilitySummary } from '../../../shared/working-context/responsibility.js';
 import { parseTimelinePayload } from '../../../shared/working-context/timeline.js';
+import { isUnconfirmedPanelCaptureRecord } from '../../../shared/panel-capture.js';
 
 type InternalRecommendedAction = RecommendedAction & {
   lane: PriorityLane;
@@ -64,6 +66,18 @@ const LANE_ORDER: Record<PriorityLane, number> = {
   clarify: 3,
   steady: 4,
 };
+
+function pickRunVerification(
+  runId: string,
+  verifications: RunVerificationRecord[],
+): RunVerificationRecord | null {
+  return verifications.find((item) => item.targetType === 'run' && item.targetId === runId) ?? null;
+}
+
+function formatRunVerificationResumeSummary(verification: RunVerificationRecord): string {
+  const prefix = verification.tone === 'pass' ? '验证结论' : '验证提醒';
+  return `${prefix}：${verification.label}，${verification.detail}`;
+}
 
 function buildRecommendedActions(params: {
   activeTasks: HomeBriefData['recentTasks'];
@@ -324,9 +338,10 @@ function buildRecommendedActions(params: {
     }
 
     if (missingNextStepTaskIds.has(task.id)) {
+      const sourceLabel = sourceContext.isKey ? '关键来源' : '最近来源';
       actions.push({
         id: `source-context:next-step:${sourceContext.id}`,
-        label: `先查看关键来源，再补下一步：${task.title}`,
+        label: `先查看${sourceLabel}，再补下一步：${task.title}`,
         reason: `该任务还缺少明确下一步，先参考来源材料“${sourceContext.title}”。`,
         responsibilitySummary: null,
         taskId: task.id,
@@ -557,6 +572,7 @@ export class HomeBriefService {
     private readonly taskProcessBindingRepository: TaskProcessBindingRepository | null = null,
     private readonly taskDependencyRepository: TaskDependencyRepository | null = null,
     private readonly completionCriteriaRepository: CompletionCriteriaRepository | null = null,
+    private readonly runVerificationRepository: Pick<RunVerificationRepository, 'listForRun'> | null = null,
   ) {}
 
   private async buildCompletionProgressMap(taskIds: string[]): Promise<
@@ -620,6 +636,32 @@ export class HomeBriefService {
     }
 
     return progressByTaskId;
+  }
+
+  private async buildRunVerificationSummaryMap(
+    runs: Awaited<ReturnType<RunRepository['list']>>,
+  ): Promise<Map<string, string>> {
+    const summaryByRunId = new Map<string, string>();
+
+    if (!this.runVerificationRepository) {
+      return summaryByRunId;
+    }
+
+    const runVerificationRepository = this.runVerificationRepository;
+    await Promise.all(
+      runs
+        .filter((run) => run.status === 'completed' || run.status === 'failed')
+        .slice(0, 20)
+        .map(async (run) => {
+          const verifications = await runVerificationRepository.listForRun(run.id);
+          const runVerification = pickRunVerification(run.id, verifications);
+          if (runVerification) {
+            summaryByRunId.set(run.id, formatRunVerificationResumeSummary(runVerification));
+          }
+        }),
+    );
+
+    return summaryByRunId;
   }
 
   private withCompletionProgress(
@@ -754,6 +796,7 @@ export class HomeBriefService {
     recentSourceContexts: HomeSourceContextRecord[];
     appliedTemplates: Awaited<ReturnType<TaskProcessBindingRepository['listActiveForTasks']>>;
     laneByTaskId: Map<string, PriorityLane>;
+    runVerificationSummaryByRunId: Map<string, string>;
   }): Promise<HomeTaskResumePreviewRecord[]> {
     const activityByTaskId = new Map<string, HomeActivityRecord>();
 
@@ -813,6 +856,9 @@ export class HomeBriefService {
           : null,
         taskState: task.state,
         completionStatus: task.completionProgress ?? null,
+        runVerificationSummary: latestActivity?.sourceType === 'run'
+          ? params.runVerificationSummaryByRunId.get(latestActivity.sourceId) ?? null
+          : null,
       });
 
       const nextSuggestedMove = deriveNextSuggestedMove({
@@ -941,7 +987,7 @@ export class HomeBriefService {
         };
       } else if (keySource) {
         contextAction = {
-          label: '查看关键来源',
+          label: keySource.isKey ? '查看关键来源' : '查看来源材料',
           intent: {
             type: 'focus_source_context',
             focusArea: 'detail',
@@ -1411,17 +1457,27 @@ export class HomeBriefService {
       this.briefSnapshotRepository.listRecent(5),
     ]);
     const tasks = await this.attachActiveWaitingItems(taskRows);
+    const unconfirmedPanelCaptureTaskIds = new Set(
+      tasks.filter((task) => isUnconfirmedPanelCaptureRecord(task)).map((task) => task.id),
+    );
+    const workflowTasks = tasks.filter((task) => !isUnconfirmedPanelCaptureRecord(task));
+    const workflowRuns = runs.filter((run) => !unconfirmedPanelCaptureTaskIds.has(run.taskId));
+    const workflowRecentArtifacts = recentArtifacts.filter(
+      (artifact) => !unconfirmedPanelCaptureTaskIds.has(artifact.taskId),
+    );
 
-    const activeTasks = tasks.filter((task) => !['completed', 'archived'].includes(task.state));
-    const completedTasks = tasks.filter((task) => task.state === 'completed');
-    const pendingDecisions = decisions.filter((decision) => decision.status === 'pending');
-    const waitingTasks = tasks.filter(
+    const activeTasks = workflowTasks.filter((task) => !['completed', 'archived'].includes(task.state));
+    const completedTasks = workflowTasks.filter((task) => task.state === 'completed');
+    const pendingDecisions = decisions.filter(
+      (decision) => decision.status === 'pending' && !unconfirmedPanelCaptureTaskIds.has(decision.taskId),
+    );
+    const waitingTasks = workflowTasks.filter(
       (task) =>
         task.state === 'waiting_external' ||
         Boolean(task.activeWaitingItem?.reason) ||
         Boolean(task.waitingReason),
     );
-    const allBlockedTasks = tasks
+    const allBlockedTasks = workflowTasks
       .filter((task) => Boolean(task.activeBlocker?.title))
       .sort((left, right) =>
         (left.activeBlocker?.createdAt ?? left.updatedAt).localeCompare(
@@ -1452,11 +1508,11 @@ export class HomeBriefService {
       const rightCreatedAt = right.activeBlocker?.createdAt ?? right.activeDependency?.createdAt ?? right.updatedAt;
       return leftCreatedAt.localeCompare(rightCreatedAt);
     });
-    const highRiskTasks = tasks.filter((task) => task.riskLevel === 'high');
+    const highRiskTasks = workflowTasks.filter((task) => task.riskLevel === 'high');
     const missingNextStepTasks = activeTasks.filter((task) => !task.nextStep?.trim());
     const scheduler = this.getSchedulerStatus();
     const taskTimelines = await Promise.all(
-      tasks.map(async (task) => ({
+      workflowTasks.map(async (task) => ({
         taskId: task.id,
         taskTitle: task.title,
         activeBlocker: task.activeBlocker,
@@ -1464,16 +1520,16 @@ export class HomeBriefService {
       })),
     );
     const dependencyReevaluations = this.buildDependencyReevaluations({
-      tasks,
+      tasks: workflowTasks,
       taskTimelines,
     });
     const dependencyReevaluationByTaskId = new Map(
       dependencyReevaluations.map((item) => [item.taskId, item]),
     );
     const recentActivity = this.buildRecentActivity(
-      tasks,
+      workflowTasks,
       decisions,
-      runs,
+      workflowRuns,
       taskTimelines,
       dependencyReevaluations,
     );
@@ -1481,10 +1537,11 @@ export class HomeBriefService {
     const completionProgressByTaskId = await this.buildCompletionProgressMap(
       activeTasks.map((task) => task.id),
     );
+    const runVerificationSummaryByRunId = await this.buildRunVerificationSummaryMap(workflowRuns);
     const closeoutEvidenceByTaskId = this.buildCloseoutEvidenceMap({
       tasks: activeTasks,
       decisions,
-      runs,
+      runs: workflowRuns,
     });
     const appliedTemplates = this.taskProcessBindingRepository
       ? await this.taskProcessBindingRepository.listActiveForTasks(activeTasks.map((task) => task.id))
@@ -1513,10 +1570,10 @@ export class HomeBriefService {
         ),
       );
     const laneByTaskId = deriveTaskPriorityLaneMap({
-      tasks,
+      tasks: workflowTasks,
       missingNextStepTasks: missingNextStepTasks.map((task) => this.toHomeTaskSlice(task)),
       waitingTasks: waitingTasks.map((task) => this.toHomeTaskSlice(task)),
-      recentArtifacts,
+      recentArtifacts: workflowRecentArtifacts,
       recentSourceContexts,
       recentActivity,
       blockerTasks: blockerTasks.map((task) => this.toHomeTaskSlice(task)),
@@ -1527,11 +1584,12 @@ export class HomeBriefService {
       decisions,
     });
     const recentTaskResumes = await this.buildTaskResumePreviews({
-      recentTasks: tasks.slice(0, 5).map((task) => this.withCompletionProgress(task, completionProgressByTaskId)),
+      recentTasks: workflowTasks.slice(0, 5).map((task) => this.withCompletionProgress(task, completionProgressByTaskId)),
       recentActivity,
       recentSourceContexts,
       appliedTemplates,
       laneByTaskId,
+      runVerificationSummaryByRunId,
     });
     const recommendedActions = buildRecommendedActions({
       activeTasks: activeTasks.slice(0, 10),
@@ -1544,7 +1602,7 @@ export class HomeBriefService {
       completionReadyTasks,
       nearCompletionTasks,
       recentSourceContexts,
-      recentArtifacts,
+      recentArtifacts: workflowRecentArtifacts,
     });
 
     const blockerReevaluationTaskIds = recentSourceContexts
@@ -1566,7 +1624,7 @@ export class HomeBriefService {
     ]).size;
     const continueOrReviewCount = [
       ...new Set([
-        ...recentArtifacts.map((artifact) => artifact.taskId),
+        ...workflowRecentArtifacts.map((artifact) => artifact.taskId),
         ...recentSourceContexts.map((sourceContext) => sourceContext.taskId),
         ...dependencyReevaluations.map((item) => item.taskId),
         ...completionReadyTasks.map((task) => task.id),
@@ -1605,7 +1663,7 @@ export class HomeBriefService {
       activeTaskCount: activeTasks.length,
       pendingDecisionCount: pendingDecisions.length,
       completedTaskCount: completedTasks.length,
-      recentRunCount: runs.length,
+      recentRunCount: workflowRuns.length,
       waitingTaskCount: waitingTasks.length,
       blockerTaskCount: blockerTasks.length,
       dependencyTaskCount: dependencyTasks.length,
@@ -1614,7 +1672,7 @@ export class HomeBriefService {
       missingNextStepTaskCount: missingNextStepTasks.length,
       completionReadyTaskCount: completionReadyTasks.length,
       nearCompletionTaskCount: nearCompletionTasks.length,
-      recentTasks: tasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
+      recentTasks: workflowTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       waitingTasks: waitingTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       blockerTasks: blockerTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       dependencyTasks: dependencyTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
@@ -1627,7 +1685,7 @@ export class HomeBriefService {
       nearCompletionTasks: nearCompletionTasks.slice(0, 5),
       pendingDecisions: pendingDecisions.slice(0, 5),
       recommendedActions,
-      recentArtifacts,
+      recentArtifacts: workflowRecentArtifacts,
       recentSourceContexts,
       recentTaskResumes,
       recentActivity,

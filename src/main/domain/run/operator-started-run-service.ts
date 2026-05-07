@@ -13,13 +13,17 @@ import type {
 } from '../../../shared/types/browser-controlled-interaction.js';
 import type {
   CreateRunInput,
+  RunOutputSource,
   RunRecord,
+  RunStatus,
 } from '../../../shared/types/run.js';
 import type { RunRepository } from '../../db/repositories/run-repository.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import type { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
 import type { TaskService } from '../task/task-service.js';
 import type { BrowserEvidencePersister } from './browser-evidence-persister.js';
 import { runBrowserControlledInteractionDryRun } from './browser-controlled-interaction-dry-runner.js';
+import { persistTerminalRunVerifications } from './run-verification-service.js';
 
 export type OperatorStartedBrowserEvidenceSmokeExecution = {
   browserRequest: BrowserEvidenceRequest;
@@ -48,10 +52,11 @@ export class OperatorStartedRunService {
       TaskService,
       'annotateRunCompleted' | 'annotateRunFailed' | 'getDetail'
     >,
-    private readonly runStepRepository: Pick<RunStepRepository, 'create'>,
+    private readonly runStepRepository: Pick<RunStepRepository, 'create' | 'listForRun'>,
     private readonly browserEvidencePersister: Pick<BrowserEvidencePersister, 'persistCaptured'>,
     private readonly browserEvidenceSmokeExecutor: OperatorStartedBrowserEvidenceSmokeExecutor,
     private readonly browserControlledLocalQaExecutor: OperatorStartedBrowserControlledLocalQaExecutor,
+    private readonly runVerificationRepository: Pick<RunVerificationRepository, 'upsert'> | null = null,
   ) {}
 
   async trigger(input: unknown): Promise<RunRecord> {
@@ -107,7 +112,7 @@ export class OperatorStartedRunService {
         runId: run.id,
         taskId: request.taskId,
       });
-      const completed = await this.runRepository.updateResult(
+      const completed = await this.updateRunResult(
         run.id,
         'completed',
         execution.result.summary,
@@ -132,7 +137,7 @@ export class OperatorStartedRunService {
       output: execution.result.summary,
       error: failureSummary,
     });
-    const failed = await this.runRepository.updateResult(
+    const failed = await this.updateRunResult(
       run.id,
       'failed',
       failureSummary,
@@ -155,7 +160,7 @@ export class OperatorStartedRunService {
     });
 
     if (execution.result.status === 'completed') {
-      const completed = await this.runRepository.updateResult(
+      const completed = await this.updateRunResult(
         params.run.id,
         'completed',
         execution.result.summary,
@@ -176,7 +181,7 @@ export class OperatorStartedRunService {
       output: execution.result.summary,
       error: failureSummary,
     });
-    const failed = await this.runRepository.updateResult(
+    const failed = await this.updateRunResult(
       params.run.id,
       'failed',
       failureSummary,
@@ -185,5 +190,27 @@ export class OperatorStartedRunService {
     );
     await this.taskService.annotateRunFailed(params.request.taskId, failureSummary, failed.id);
     return failed;
+  }
+
+  private async updateRunResult(
+    runId: string,
+    status: RunStatus,
+    output: string | null,
+    outputSource: RunOutputSource,
+    failureReason: string | null = null,
+  ): Promise<RunRecord> {
+    const updated = failureReason === null
+      ? await this.runRepository.updateResult(runId, status, output, outputSource)
+      : await this.runRepository.updateResult(runId, status, output, outputSource, failureReason);
+
+    if (status === 'completed' || status === 'failed') {
+      await persistTerminalRunVerifications({
+        run: updated,
+        runStepRepository: this.runStepRepository,
+        runVerificationRepository: this.runVerificationRepository,
+      });
+    }
+
+    return updated;
   }
 }

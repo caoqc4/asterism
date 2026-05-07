@@ -20,18 +20,25 @@ export type DecisionProcessTemplateSelectionResult = {
   reason: string;
 };
 
+function selectPromptKeySources(task: TaskDetail) {
+  return task.sourceContexts
+    .filter((item) => item.status === 'active' && item.isKey)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, 3);
+}
+
 function buildSelectionPrompt(
   task: TaskDetail,
   input: DraftDecisionInput,
   templates: AppliedProcessTemplateRecord[],
 ): string {
   const lane = deriveTaskDetailPriorityLane(task);
-  const sources = task.sourceContexts.length
-    ? `来源材料：\n${task.sourceContexts
-        .slice(0, 6)
+  const keySources = selectPromptKeySources(task);
+  const sources = keySources.length
+    ? `关键来源材料：\n${keySources
         .map((item) => `- ${item.title} [${item.kind}]${item.note ? ` | ${item.note}` : ''}`)
         .join('\n')}`
-    : '来源材料：暂无';
+    : '关键来源材料：暂无';
   const artifacts = task.artifacts.length
     ? `最近产物：\n${task.artifacts
         .slice(0, 3)

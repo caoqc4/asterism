@@ -132,6 +132,21 @@ describe('CodeAgentRunService', () => {
   };
   const runStepRepository = {
     create: vi.fn(),
+    listForRun: vi.fn().mockResolvedValue([
+      {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        error: null,
+        id: 'run_step_1',
+        index: 1,
+        input: 'Prepare a staged notes patch.',
+        kind: 'plan',
+        output: 'operator-started code-agent run accepted',
+        runId: 'run_code_agent_1',
+        status: 'completed',
+        title: 'operator-started code-agent run accepted',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+    ]),
     update: vi.fn(),
   };
   const artifactRepository = {
@@ -151,6 +166,9 @@ describe('CodeAgentRunService', () => {
   const sandboxPatchPromotionRepository = {
     createPending: vi.fn(),
   };
+  const runVerificationRepository = {
+    upsert: vi.fn(),
+  };
   const executionService = {
     run: vi.fn(),
   };
@@ -166,6 +184,7 @@ describe('CodeAgentRunService', () => {
       decisionRepository as never,
       sandboxPatchPromotionRepository as never,
       () => executionService,
+      runVerificationRepository as never,
     );
   }
 
@@ -217,6 +236,12 @@ describe('CodeAgentRunService', () => {
         sourceId: 'sandbox_source_run_code_agent_1',
         taskId: 'task_1',
       }),
+    }));
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_code_agent_1',
+      targetType: 'run',
+      targetId: 'run_code_agent_1',
+      source: 'lightweight_rule_engine',
     }));
     expect(runRepository.updateResult).toHaveBeenCalledWith(
       'run_code_agent_1',

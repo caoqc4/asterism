@@ -2,12 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   codeAgentExecutionRunMock,
+  generateTextMock,
+  getLanguageModelMock,
   handleMock,
   emitAppEventMock,
   probeLocalContainerSandboxBackendMock,
   servicesMock,
 } = vi.hoisted(() => ({
   codeAgentExecutionRunMock: vi.fn(),
+  generateTextMock: vi.fn(),
+  getLanguageModelMock: vi.fn(),
   handleMock: vi.fn(),
   emitAppEventMock: vi.fn(),
   probeLocalContainerSandboxBackendMock: vi.fn(),
@@ -27,6 +31,7 @@ const {
       getDetail: vi.fn(),
       update: vi.fn(),
       transition: vi.fn(),
+      recordCompletionCheck: vi.fn(),
       createBlocker: vi.fn(),
       updateBlocker: vi.fn(),
       resolveBlocker: vi.fn(),
@@ -45,6 +50,16 @@ const {
       archiveProcessTemplate: vi.fn(),
       applyProcessTemplate: vi.fn(),
       removeProcessTemplate: vi.fn(),
+    },
+    workHabitService: {
+      getSnapshot: vi.fn(),
+      importLegacy: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      createManual: vi.fn(),
+      resolveConflict: vi.fn(),
+      recordCompletionOverride: vi.fn(),
+      recordSopTemplate: vi.fn(),
     },
     decisionService: {
       list: vi.fn(),
@@ -98,6 +113,14 @@ vi.mock('../bootstrap/services.js', () => ({
   getServices: () => servicesMock,
 }));
 
+vi.mock('ai', () => ({
+  generateText: generateTextMock,
+}));
+
+vi.mock('../executors/ai-client.js', () => ({
+  getLanguageModel: getLanguageModelMock,
+}));
+
 vi.mock('./event-bus.js', () => ({
   emitAppEvent: emitAppEventMock,
 }));
@@ -140,6 +163,10 @@ const readyCodeAgentWorkspaceChecks = {
 describe('registerIpcHandlers', () => {
   beforeEach(() => {
     codeAgentExecutionRunMock.mockReset();
+    generateTextMock.mockReset();
+    getLanguageModelMock.mockReset();
+    getLanguageModelMock.mockReturnValue('language-model');
+    generateTextMock.mockResolvedValue({ text: 'AI response' });
     handleMock.mockClear();
     emitAppEventMock.mockClear();
     probeLocalContainerSandboxBackendMock.mockReset();
@@ -277,6 +304,162 @@ describe('registerIpcHandlers', () => {
     expect(servicesMock.schedulerService.stop).not.toHaveBeenCalled();
     expect(emitAppEventMock).toHaveBeenCalledWith('settings.changed');
     expect(result.featureFlags.enableScheduler).toBe(true);
+  });
+
+  it('applies saved AI behavior preferences to chat prompts', async () => {
+    servicesMock.aiConfigService.resolveRuntimeConfig.mockResolvedValue({
+      provider: 'openai',
+      model: 'gpt-test',
+      apiKey: 'sk-test',
+      baseUrl: null,
+      featureFlags: {
+        enableScheduler: false,
+        communicationStyle: 'detailed',
+        confirmationThreshold: 'high',
+      },
+    });
+
+    const handler = getRegisteredHandler<
+      [{ messages: Array<{ role: 'user' | 'assistant'; content: string }>; taskId?: string | null }],
+      { text: string }
+    >('ai:chat');
+
+    const result = await handler({}, {
+      taskId: null,
+      messages: [{ role: 'user', content: '帮我规划今天' }],
+    });
+
+    expect(result.text).toBe('AI response');
+    expect(getLanguageModelMock).toHaveBeenCalledWith(expect.objectContaining({
+      model: 'gpt-test',
+    }));
+    expect(generateTextMock).toHaveBeenCalledWith(expect.objectContaining({
+      model: 'language-model',
+      system: expect.stringContaining('AI behavior preferences'),
+      messages: [{ role: 'user', content: '帮我规划今天' }],
+    }));
+    const system = generateTextMock.mock.calls[0]?.[0]?.system as string;
+    expect(system).toContain('Provide more context and rationale');
+    expect(system).toContain('Ask for confirmation more often');
+  });
+
+  it('uses the latest active key sources in task chat prompts', async () => {
+    servicesMock.aiConfigService.resolveRuntimeConfig.mockResolvedValue({
+      provider: 'openai',
+      model: 'gpt-test',
+      apiKey: 'sk-test',
+      baseUrl: null,
+      featureFlags: {
+        enableScheduler: false,
+      },
+    });
+    servicesMock.taskService.getDetail.mockResolvedValue({
+      activeBlocker: null,
+      activeWaitingItem: null,
+      nextStep: '确认材料',
+      resumeCard: {
+        nextSuggestedMove: '继续修订',
+        summary: '等待最终拍板',
+      },
+      artifacts: [
+        { id: 'artifact_1', title: 'report_v1.md', kind: 'note', updatedAt: '2026-01-03T00:00:00.000Z' },
+        { id: 'artifact_2', title: 'cashflow.png', kind: 'browser_evidence', updatedAt: '2026-01-04T00:00:00.000Z' },
+      ],
+      completionCriteria: [
+        { id: 'criterion_1', text: '确认最终材料', status: 'open' },
+        { id: 'criterion_2', text: '更新现金流页', status: 'satisfied' },
+      ],
+      riskLevel: 'high',
+      riskNote: null,
+      sourceContexts: [
+        { id: 'source_old', isKey: true, status: 'active', title: '旧邮件', updatedAt: '2026-01-01T00:00:00.000Z' },
+        { id: 'source_inactive', isKey: true, status: 'archived', title: '归档材料', updatedAt: '2026-01-05T00:00:00.000Z' },
+        { id: 'source_ignore', isKey: false, status: 'active', title: '普通备注', updatedAt: '2026-01-06T00:00:00.000Z' },
+        { id: 'source_2', isKey: true, status: 'active', title: 'CEO 批注', updatedAt: '2026-01-02T00:00:00.000Z' },
+        { id: 'source_3', isKey: true, status: 'active', title: '法务意见', updatedAt: '2026-01-03T00:00:00.000Z' },
+        { id: 'source_4', isKey: true, status: 'active', title: '财务复核', updatedAt: '2026-01-04T00:00:00.000Z' },
+      ],
+      state: 'blocked',
+      summary: '修订董事会材料',
+      timeline: [],
+      title: '董事会材料修订',
+      waitingReason: null,
+    });
+
+    const handler = getRegisteredHandler<
+      [{ messages: Array<{ role: 'user' | 'assistant'; content: string }>; taskId?: string | null }],
+      { text: string }
+    >('ai:chat');
+
+    await handler({}, {
+      taskId: 'task_1',
+      messages: [{ role: 'user', content: '现在该看什么？' }],
+    });
+
+    const system = generateTextMock.mock.calls[0]?.[0]?.system as string;
+    expect(system).toContain('Key sources: 财务复核, 法务意见, CEO 批注');
+    expect(system).toContain('Completion criteria: open: 确认最终材料 / satisfied: 更新现金流页');
+    expect(system).toContain('Recent artifacts: cashflow.png (browser_evidence), report_v1.md (note)');
+    expect(system).not.toContain('旧邮件');
+    expect(system).not.toContain('归档材料');
+    expect(system).not.toContain('普通备注');
+  });
+
+  it('uses the latest active key sources in project decomposition prompts', async () => {
+    servicesMock.aiConfigService.resolveRuntimeConfig.mockResolvedValue({
+      provider: 'openai',
+      model: 'gpt-test',
+      apiKey: 'sk-test',
+      baseUrl: null,
+      featureFlags: {
+        enableScheduler: false,
+      },
+    });
+    generateTextMock.mockResolvedValue({
+      text: JSON.stringify({
+        parentGoal: '完成董事会材料修订',
+        review: '拆解保持大块且独立。',
+        nextStep: '确认拆解',
+        subtasks: [
+          {
+            title: '完成材料修订',
+            summary: '整合关键意见并形成版本。',
+            acceptanceCriteria: '用户确认可提交。',
+            dependency: null,
+            rationale: '可独立交付。',
+          },
+        ],
+      }),
+    });
+    servicesMock.taskService.getDetail.mockResolvedValue({
+      nextStep: '确认材料',
+      riskLevel: 'high',
+      riskNote: null,
+      sourceContexts: [
+        { id: 'source_old', isKey: true, note: 'old', status: 'active', title: '旧邮件', updatedAt: '2026-01-01T00:00:00.000Z' },
+        { id: 'source_2', isKey: true, note: 'ceo', status: 'active', title: 'CEO 批注', updatedAt: '2026-01-02T00:00:00.000Z' },
+        { id: 'source_3', isKey: true, note: 'legal', status: 'active', title: '法务意见', updatedAt: '2026-01-03T00:00:00.000Z' },
+        { id: 'source_4', isKey: true, note: 'finance', status: 'active', title: '财务复核', updatedAt: '2026-01-04T00:00:00.000Z' },
+      ],
+      summary: '修订董事会材料',
+      timeline: [],
+      title: '董事会材料修订',
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; instructions?: string | null }],
+      unknown
+    >('ai:decomposeProject');
+
+    await handler({}, { taskId: 'task_1' });
+
+    const system = generateTextMock.mock.calls[0]?.[0]?.system as string;
+    const prompt = generateTextMock.mock.calls[0]?.[0]?.prompt as string;
+    expect(system).toContain('Choose the number of subtasks from the actual project boundaries');
+    expect(system).toContain('do not split just to hit a number');
+    expect(system).not.toContain('Create 3 to 7 subtasks');
+    expect(prompt).toContain('Key sources: 财务复核: finance / 法务意见: legal / CEO 批注: ceo');
+    expect(prompt).not.toContain('旧邮件');
   });
 
   it('emits decision and task events after decision actions', async () => {
@@ -435,6 +618,60 @@ describe('registerIpcHandlers', () => {
     });
     expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
     expect(result.state).toBe('in_progress');
+  });
+
+  it('emits task.changed after task completion check records', async () => {
+    const handler = getRegisteredHandler<
+      [{
+        taskId: string;
+        action: 'passed' | 'override_completed' | 'marked_waiting';
+        criteriaTotal: number;
+        criteriaSatisfied: number;
+        criteriaOpen: number;
+      }],
+      void
+    >('task:recordCompletionCheck');
+
+    await handler({}, {
+      taskId: 'task_1',
+      action: 'marked_waiting',
+      criteriaTotal: 2,
+      criteriaSatisfied: 1,
+      criteriaOpen: 1,
+    });
+
+    expect(servicesMock.taskService.recordCompletionCheck).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      action: 'marked_waiting',
+      criteriaTotal: 2,
+      criteriaSatisfied: 1,
+      criteriaOpen: 1,
+    });
+    expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
+  });
+
+  it('imports legacy work habits without emitting task events', async () => {
+    servicesMock.workHabitService.importLegacy.mockResolvedValue({
+      version: 3,
+      storage: 'main_db',
+      privacyBoundary: { locality: 'device_only', contains: [], excludes: [] },
+      habits: [],
+    });
+
+    const handler = getRegisteredHandler<
+      [{ habits: Array<{ id: string; rule: string }> }],
+      Awaited<ReturnType<typeof servicesMock.workHabitService.importLegacy>>
+    >('workHabit:importLegacy');
+
+    const result = await handler({}, {
+      habits: [{ id: 'habit_1', rule: 'Run checks first' }],
+    });
+
+    expect(servicesMock.workHabitService.importLegacy).toHaveBeenCalledWith({
+      habits: [{ id: 'habit_1', rule: 'Run checks first' }],
+    });
+    expect(emitAppEventMock).not.toHaveBeenCalled();
+    expect(result.storage).toBe('main_db');
   });
 
   it('emits task.changed for both sides after task dependency writes', async () => {

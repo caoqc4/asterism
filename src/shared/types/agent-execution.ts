@@ -71,6 +71,12 @@ export type AgentWorkingContext = {
     note: string | null;
     contentPreview: string | null;
   }>;
+  artifacts: Array<{
+    title: string;
+    kind: string;
+    sourceType: string;
+    updatedAt: string;
+  }>;
   processTemplates: Array<{
     id: string;
     title: string;
@@ -95,6 +101,7 @@ export type AgentRunRequest = {
   instructions?: string | null;
   mode: AgentRunMode;
   context: AgentWorkingContext;
+  applicableWorkHabits: string[];
   policy: AgentPolicy;
 };
 

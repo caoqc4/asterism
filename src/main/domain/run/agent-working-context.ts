@@ -16,6 +16,8 @@ import {
 } from '../../../shared/working-context/timeline.js';
 
 const RECENT_TIMELINE_LIMIT = 6;
+const SOURCE_CONTEXT_LIMIT = 3;
+const ARTIFACT_LIMIT = 5;
 const SOURCE_PREVIEW_LIMIT = 240;
 
 export const DEFAULT_AGENT_POLICY: AgentPolicy = {
@@ -58,8 +60,18 @@ function recentTimeline(events: TimelineEventRecord[]): AgentWorkingContext['rec
     }));
 }
 
+function selectAgentSourceContexts(task: TaskDetail): TaskDetail['sourceContexts'] {
+  const activeSources = task.sourceContexts
+    .filter((source) => source.status === 'active')
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const keySources = activeSources.filter((source) => source.isKey);
+
+  return (keySources.length ? keySources : activeSources).slice(0, SOURCE_CONTEXT_LIMIT);
+}
+
 export function buildAgentWorkingContext(task: TaskDetail): AgentWorkingContext {
   const completionStatus = task.resumeCard.completionStatus;
+  const selectedSources = selectAgentSourceContexts(task);
 
   return {
     task: {
@@ -96,14 +108,22 @@ export function buildAgentWorkingContext(task: TaskDetail): AgentWorkingContext 
           },
         ]
       : [],
-    sources: task.sourceContexts
-      .filter((source) => source.status === 'active')
+    sources: selectedSources
       .map((source) => ({
         title: source.title,
         kind: source.kind,
         isKey: source.isKey,
         note: source.note,
         contentPreview: preview(source.content),
+      })),
+    artifacts: [...task.artifacts]
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, ARTIFACT_LIMIT)
+      .map((artifact) => ({
+        title: artifact.title,
+        kind: artifact.kind,
+        sourceType: artifact.sourceType,
+        updatedAt: artifact.updatedAt,
       })),
     processTemplates: task.processTemplates.map((template) => ({
       id: template.id,
@@ -119,6 +139,7 @@ export function buildAgentRunRequest(params: {
   run: RunRecord;
   task: TaskDetail;
   input: CreateRunInput;
+  applicableWorkHabitSummaries?: string[];
   policy?: AgentPolicy;
 }): AgentRunRequest {
   return {
@@ -128,6 +149,7 @@ export function buildAgentRunRequest(params: {
     instructions: params.input.instructions?.trim() || null,
     mode: params.input.type,
     context: buildAgentWorkingContext(params.task),
+    applicableWorkHabits: params.applicableWorkHabitSummaries ?? [],
     policy: params.policy ?? DEFAULT_AGENT_POLICY,
   };
 }
@@ -152,7 +174,10 @@ export function formatAgentRunRequestForStep(request: AgentRunRequest): string {
     `优先级语义：${request.context.priorityLane}`,
     `完成标准：${request.context.completion.satisfied}/${request.context.completion.total}`,
     `可用来源：${request.context.sources.length}`,
+    `可用产物：${request.context.artifacts.length}`,
     `可用方法模板：${request.context.processTemplates.length}`,
+    `适用工作习惯：${request.applicableWorkHabits.length}`,
+    ...request.applicableWorkHabits.map((habit) => `- ${habit}`),
     `策略：maxSteps=${request.policy.maxSteps}, allowNetwork=${request.policy.allowNetwork}`,
   ].join('\n');
 }

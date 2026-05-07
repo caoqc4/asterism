@@ -1,923 +1,427 @@
-import { useEffect, useMemo, useState } from 'react';
-
-import type { ArtifactRecord } from '@shared/types/artifact';
-import type {
-  CreateBlockerInput,
-  UpdateBlockerInput,
-} from '@shared/types/blocker';
-import type {
-  CompletionCriteriaRecord,
-  CreateCompletionCriteriaInput,
-  UpdateCompletionCriteriaInput,
-} from '@shared/types/completion-criteria';
-import type {
-  CreateTaskDependencyInput,
-  UpdateTaskDependencyInput,
-} from '@shared/types/task-dependency';
-import type {
-  HomeActivityRecord,
-  HomeBriefData,
-  HomeSourceContextRecord,
-  RecommendedActionIntent,
-  RecommendedAction,
-} from '@shared/types/brief';
-import type { CreateDecisionInput, DecisionDraftRecord, DecisionRecord } from '@shared/types/decision';
-import type { AppEvent } from '@shared/types/events';
-import type { PingResponse } from '@shared/types/ipc';
-import type {
-  ApplyProcessTemplateInput,
-  CreateProcessTemplateInput,
-  UpdateProcessTemplateInput,
-} from '@shared/types/process-template';
-import type { CreateCodeAgentRunInput, CreateRunInput, RunRecord } from '@shared/types/run';
-import type { OperatorStartedRunRequest } from '@shared/types/operator-started-run';
-import type { AiConfigInput, AiConfigStatus } from '@shared/types/settings';
-import type {
-  CreateSourceContextInput,
-  UpdateSourceContextInput,
-} from '@shared/types/source-context';
-import type { TaskListItemRecord, TaskState, UpdateTaskInput } from '@shared/types/task';
-import {
-  comparePriorityLaneContext,
-  deriveTaskPriorityLaneMap,
-} from '@shared/working-context/priority-lanes';
-
+import { useState, useCallback, useEffect, type ReactNode } from 'react';
 import { getRouteFromHash, setRoute, type AppRoute } from './lib/router';
-import { DecisionsPage } from './pages/DecisionsPage';
-import { HomePage } from './pages/HomePage';
-import { RunsPage } from './pages/RunsPage';
-import { SettingsPage } from './pages/SettingsPage';
+import { BriefPage } from './pages/BriefPage';
 import { TasksPage } from './pages/TasksPage';
+import { WorkbenchPage } from './pages/WorkbenchPage';
+import { DecisionsPage } from './pages/DecisionsPage';
+import { ContextPage } from './pages/ContextPage';
+import { ConnectionsPage } from './pages/ConnectionsPage';
+import { SkillsPage } from './pages/SkillsPage';
+import { ModelPage } from './pages/ModelPage';
+import { McpPage } from './pages/McpPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { RightPanel } from './components/RightPanel';
 
-const BLOCKER_TOKEN_STOP_WORDS = new Set([
-  'need',
-  'needs',
-  'with',
-  'from',
-  'before',
-  'after',
-  'task',
-  'item',
-  'owner',
-  'team',
-  'current',
-  'waiting',
-]);
-
-function getMeaningfulBlockerTokens(value: string): string[] {
-  return (value.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter((token) => {
-    const hasCjk = /[\p{Script=Han}]/u.test(token);
-    if (hasCjk) {
-      return token.length >= 2;
-    }
-
-    return token.length >= 4 && !BLOCKER_TOKEN_STOP_WORDS.has(token);
-  });
-}
-
-function waitingIsClearlyDrivenByBlocker(task: HomeBriefData['blockerTasks'][number]): boolean {
-  if (task.state !== 'waiting_external' || !task.activeBlocker) {
-    return false;
-  }
-
-  const waitingText = [task.activeWaitingItem?.reason, task.waitingReason].filter(Boolean).join(' ').trim();
-  if (!waitingText) {
-    return false;
-  }
-
-  const blockerTexts = [
-    task.activeBlocker.title,
-    task.activeBlocker.detail,
-    task.activeBlocker.owner,
-  ].filter(Boolean) as string[];
-
-  const waitingLower = waitingText.toLowerCase();
-  const blockerLower = blockerTexts.map((value) => value.toLowerCase());
-
-  if (blockerLower.some((value) => waitingLower.includes(value) || value.includes(waitingLower))) {
-    return true;
-  }
-
-  const waitingTokens = new Set(getMeaningfulBlockerTokens(waitingText));
-  if (!waitingTokens.size) {
-    return false;
-  }
-
-  return blockerTexts.some((value) =>
-    getMeaningfulBlockerTokens(value).some((token) => waitingTokens.has(token)),
-  );
-}
-
-const navItems: Array<{ id: AppRoute; label: string; description: string }> = [
-  { id: 'home', label: 'Home', description: '局势概览与系统状态' },
-  { id: 'tasks', label: 'Tasks', description: '任务列表、详情与状态流转' },
-  { id: 'decisions', label: 'Decisions', description: '待拍板事项与快速动作' },
-  { id: 'runs', label: 'Runs', description: '执行记录与结果查看' },
-  { id: 'settings', label: 'Settings', description: 'AI Provider 与本地配置' },
-];
+const ROUTE_LABELS: Record<AppRoute, string> = {
+  brief: 'Brief',
+  tasks: 'Tasks',
+  decisions: 'Decisions',
+  context: 'Context',
+  skills: 'Skills',
+  mcp: 'MCP',
+  model: 'Model',
+  connections: 'Connections',
+  settings: 'Settings',
+};
 
 export function App() {
-  const [route, setCurrentRoute] = useState<AppRoute>(() => getRouteFromHash(window.location.hash));
-  const [focusedTaskRequest, setFocusedTaskRequest] = useState<{
-    key: string;
-    taskId: string;
-    intent: RecommendedActionIntent | null;
-  } | null>(null);
-  const [focusedDecisionId, setFocusedDecisionId] = useState<string | null>(null);
-  const [focusedRunId, setFocusedRunId] = useState<string | null>(null);
-  const [ping, setPing] = useState<PingResponse | null>(null);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
-  const [aiStatus, setAiStatus] = useState<AiConfigStatus | null>(null);
-  const [tasks, setTasks] = useState<TaskListItemRecord[]>([]);
-  const [decisions, setDecisions] = useState<DecisionRecord[]>([]);
-  const [runs, setRuns] = useState<RunRecord[]>([]);
-  const [briefData, setBriefData] = useState<HomeBriefData | null>(null);
-  const [sandboxBackendProbePending, setSandboxBackendProbePending] = useState(false);
-  const [configForm, setConfigForm] = useState<AiConfigInput>({
-    provider: 'anthropic',
-    model: 'claude-3-5-sonnet-latest',
-    baseUrl: '',
-    workspaceRoot: '',
-    apiKey: '',
-    featureFlags: {
-      enableScheduler: false,
-      enableSandboxPatchPromotionApply: false,
-    },
-  });
-  const [lastEvent, setLastEvent] = useState<AppEvent | null>(null);
+  const [route, setRouteState] = useState<AppRoute>(getRouteFromHash);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelSuspended, setPanelSuspended] = useState(false);
+  const [panelTaskId, setPanelTaskId] = useState<string | null>(null);
+  const [panelTaskTitle, setPanelTaskTitle] = useState<string | null>(null);
+  const [panelDraftPrompt, setPanelDraftPrompt] = useState<string | null>(null);
+  const [workbenchTaskId, setWorkbenchTaskId] = useState<string | null>(null);
+  const [workbenchOrigin, setWorkbenchOrigin] = useState<AppRoute>('tasks');
+  const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
 
-  const taskPriorityLanes = useMemo(
-    () =>
-      deriveTaskPriorityLaneMap({
-        tasks,
-        missingNextStepTasks: briefData?.missingNextStepTasks,
-        waitingTasks: briefData?.waitingTasks,
-        recentArtifacts: briefData?.recentArtifacts,
-        recentSourceContexts: briefData?.recentSourceContexts,
-        recentActivity: briefData?.recentActivity,
-        blockerTasks: briefData?.blockerTasks,
-        highRiskTasks: briefData?.highRiskTasks,
-        escalationTasks: briefData?.escalationTasks,
-        completionReadyTasks: briefData?.completionReadyTasks,
-        nearCompletionTasks: briefData?.nearCompletionTasks,
-        decisions,
-      }),
-    [briefData, decisions, tasks],
-  );
-  const closeoutCompletionProgressByTaskId = useMemo(() => {
-    const progressByTaskId = new Map<string, { total: number; satisfied: number; open: number }>();
-
-    for (const task of briefData?.completionReadyTasks ?? []) {
-      if (task.completionProgress) {
-        progressByTaskId.set(task.id, task.completionProgress);
-      }
-    }
-
-    for (const task of briefData?.nearCompletionTasks ?? []) {
-      if (task.completionProgress) {
-        progressByTaskId.set(task.id, task.completionProgress);
-      }
-    }
-
-    return progressByTaskId;
-  }, [briefData?.completionReadyTasks, briefData?.nearCompletionTasks]);
-  const orderedTasks = useMemo(
-    () =>
-      [...tasks].sort((left, right) => {
-        const laneDiff = comparePriorityLaneContext(
-          {
-            lane: taskPriorityLanes.get(left.id),
-            completionProgress: closeoutCompletionProgressByTaskId.get(left.id) ?? null,
-          },
-          {
-            lane: taskPriorityLanes.get(right.id),
-            completionProgress: closeoutCompletionProgressByTaskId.get(right.id) ?? null,
-          },
-        );
-
-        if (laneDiff !== 0) {
-          return laneDiff;
-        }
-
-        return right.updatedAt.localeCompare(left.updatedAt);
-      }),
-    [closeoutCompletionProgressByTaskId, taskPriorityLanes, tasks],
-  );
-
-  useEffect(() => {
-    function handleHashChange() {
-      setCurrentRoute(getRouteFromHash(window.location.hash));
-    }
-
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+  const navigate = useCallback((r: AppRoute) => {
+    setRouteState(r);
+    setRoute(r);
+    setWorkbenchTaskId(null);
   }, []);
 
-  async function loadShellData() {
-    setStatus('loading');
+  const openWorkbench = useCallback((taskId: string) => {
+    setWorkbenchTaskId(taskId);
+    setWorkbenchOrigin(route);
+  }, [route]);
 
-    try {
-      const [response, configStatus, taskRows, decisionRows, runRows, homeBrief] =
-        await Promise.all([
-        window.api.ping(),
-        window.api.getAiConfigStatus(),
-        window.api.listTasks(),
-        window.api.listDecisions(),
-        window.api.listRuns(),
-        window.api.getHomeBrief(),
-        ]);
-
-      setPing(response);
-      setAiStatus(configStatus);
-      setTasks(taskRows);
-      setDecisions(decisionRows);
-      setRuns(runRows);
-      setBriefData(homeBrief);
-      setConfigForm((current) => ({
-        ...current,
-        provider: configStatus.provider ?? current.provider,
-        model: configStatus.model ?? current.model,
-        baseUrl: configStatus.baseUrl ?? '',
-        workspaceRoot: configStatus.workspaceRoot ?? '',
-        featureFlags: configStatus.featureFlags,
-      }));
-      setStatus('ready');
-    } catch {
-      setStatus('error');
-    }
-  }
-
-  useEffect(() => {
-    void loadShellData();
+  const closeWorkbench = useCallback(() => {
+    setWorkbenchTaskId(null);
   }, []);
 
-  useEffect(() => {
-    let timeoutId: number | null = null;
-
-    const unsubscribe = window.api.subscribeToEvents((event) => {
-      setLastEvent(event);
-
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
-
-      timeoutId = window.setTimeout(() => {
-        void loadShellData();
-      }, 120);
-    });
-
-    return () => {
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
-      unsubscribe();
-    };
+  const openPanelForTask = useCallback((taskId: string, draftPrompt?: string, taskTitle?: string) => {
+    setPanelTaskId(taskId);
+    setPanelTaskTitle(taskTitle ?? null);
+    setPanelDraftPrompt(draftPrompt ?? null);
+    setPanelOpen(true);
+    setPanelSuspended(false);
   }, []);
 
-  async function handleSaveConfig(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const nextStatus = await window.api.setAiConfig(configForm);
-    setAiStatus(nextStatus);
-    setConfigForm((current) => ({
-      ...current,
-      apiKey: '',
-      baseUrl: nextStatus.baseUrl ?? '',
-      workspaceRoot: nextStatus.workspaceRoot ?? '',
-      featureFlags: nextStatus.featureFlags,
-    }));
-  }
-
-  async function handleProbeSandboxBackend() {
-    if (!window.api.probeSandboxBackend) {
+  const openPanelGlobal = useCallback(() => {
+    if (panelSuspended) {
+      setPanelOpen(true);
+      setPanelSuspended(false);
       return;
     }
-
-    setSandboxBackendProbePending(true);
-
-    try {
-      const sandboxBackendStatus = await window.api.probeSandboxBackend();
-      setAiStatus((current) =>
-        current ? { ...current, sandboxBackendStatus } : current,
-      );
-    } finally {
-      setSandboxBackendProbePending(false);
-    }
-  }
-
-  async function handleCreateTask(input: { title: string; summary?: string }) {
-    const created = await window.api.createTask(input);
-    setTasks((current) => [created, ...current]);
-    setBriefData(await window.api.getHomeBrief());
-    setFocusedTaskRequest({
-      key: `created:${created.id}:${created.updatedAt}`,
-      taskId: created.id,
-      intent: {
-        type: 'focus_next_step',
-        focusArea: 'detail',
-      },
-    });
-    setCurrentRoute('tasks');
-    return created;
-  }
-
-  async function handleUpdateTask(input: UpdateTaskInput) {
-    const updated = await window.api.updateTask(input);
-    setTasks((current) => current.map((task) => (task.id === updated.id ? updated : task)));
-    setBriefData(await window.api.getHomeBrief());
-    return updated;
-  }
-
-  async function handleTransitionTask(
-    taskId: string,
-    nextState: TaskState,
-    waitingReason?: string,
-  ) {
-    const updated = await window.api.transitionTask({ id: taskId, nextState, waitingReason });
-    setTasks((current) => current.map((task) => (task.id === updated.id ? updated : task)));
-    setBriefData(await window.api.getHomeBrief());
-    return updated;
-  }
-
-  async function handleCreateSourceContext(input: CreateSourceContextInput) {
-    const created = await window.api.createSourceContext(input);
-    setTasks((current) =>
-      current.map((task) => (task.id === created.taskId ? { ...task, updatedAt: created.updatedAt } : task)),
-    );
-    setBriefData(await window.api.getHomeBrief());
-    return created;
-  }
-
-  async function handleUpdateSourceContext(input: UpdateSourceContextInput) {
-    const updated = await window.api.updateSourceContext(input);
-    setTasks((current) =>
-      current.map((task) => (task.id === updated.taskId ? { ...task, updatedAt: updated.updatedAt } : task)),
-    );
-    setBriefData(await window.api.getHomeBrief());
-    return updated;
-  }
-
-  async function handleArchiveSourceContext(id: string) {
-    const archived = await window.api.archiveSourceContext(id);
-    setTasks((current) =>
-      current.map((task) => (task.id === archived.taskId ? { ...task, updatedAt: archived.updatedAt } : task)),
-    );
-    setBriefData(await window.api.getHomeBrief());
-    return archived;
-  }
-
-  async function handleCreateBlocker(input: CreateBlockerInput) {
-    const created = await window.api.createBlocker(input);
-    setTasks((current) =>
-      current.map((task) => (task.id === created.taskId ? { ...task, updatedAt: created.updatedAt } : task)),
-    );
-    setBriefData(await window.api.getHomeBrief());
-    return created;
-  }
-
-  async function handleUpdateBlocker(input: UpdateBlockerInput) {
-    const updated = await window.api.updateBlocker(input);
-    setTasks((current) =>
-      current.map((task) => (task.id === updated.taskId ? { ...task, updatedAt: updated.updatedAt } : task)),
-    );
-    setBriefData(await window.api.getHomeBrief());
-    return updated;
-  }
-
-  async function handleResolveBlocker(id: string) {
-    const resolved = await window.api.resolveBlocker(id);
-    setTasks((current) =>
-      current.map((task) => (task.id === resolved.taskId ? { ...task, updatedAt: resolved.updatedAt } : task)),
-    );
-    setBriefData(await window.api.getHomeBrief());
-    return resolved;
-  }
-
-  async function handleCreateCompletionCriteria(input: CreateCompletionCriteriaInput) {
-    const created = await window.api.createCompletionCriteria(input);
-    setTasks((current) =>
-      current.map((task) => (task.id === created.taskId ? { ...task, updatedAt: created.updatedAt } : task)),
-    );
-    return created;
-  }
-
-  async function handleUpdateCompletionCriteria(input: UpdateCompletionCriteriaInput) {
-    const updated = await window.api.updateCompletionCriteria(input);
-    setTasks((current) =>
-      current.map((task) => (task.id === updated.taskId ? { ...task, updatedAt: updated.updatedAt } : task)),
-    );
-    return updated;
-  }
-
-  async function handleSatisfyCompletionCriteria(id: string): Promise<CompletionCriteriaRecord> {
-    const satisfied = await window.api.satisfyCompletionCriteria(id);
-    setTasks((current) =>
-      current.map((task) => (task.id === satisfied.taskId ? { ...task, updatedAt: satisfied.updatedAt } : task)),
-    );
-    return satisfied;
-  }
-
-  async function handleReopenCompletionCriteria(id: string): Promise<CompletionCriteriaRecord> {
-    const reopened = await window.api.reopenCompletionCriteria(id);
-    setTasks((current) =>
-      current.map((task) => (task.id === reopened.taskId ? { ...task, updatedAt: reopened.updatedAt } : task)),
-    );
-    return reopened;
-  }
-
-  async function handleCreateTaskDependency(input: CreateTaskDependencyInput) {
-    const created = await window.api.createTaskDependency(input);
-    setTasks((current) =>
-      current.map((task) =>
-        task.id === created.taskId || task.id === created.blockedByTaskId
-          ? { ...task, updatedAt: created.updatedAt }
-          : task,
-      ),
-    );
-    setBriefData(await window.api.getHomeBrief());
-    return created;
-  }
-
-  async function handleUpdateTaskDependency(input: UpdateTaskDependencyInput) {
-    const updated = await window.api.updateTaskDependency(input);
-    setTasks((current) =>
-      current.map((task) =>
-        task.id === updated.taskId || task.id === updated.blockedByTaskId
-          ? { ...task, updatedAt: updated.updatedAt }
-          : task,
-      ),
-    );
-    setBriefData(await window.api.getHomeBrief());
-    return updated;
-  }
-
-  async function handleResolveTaskDependency(id: string) {
-    const resolved = await window.api.resolveTaskDependency(id);
-    setTasks((current) =>
-      current.map((task) =>
-        task.id === resolved.taskId || task.id === resolved.blockedByTaskId
-          ? { ...task, updatedAt: resolved.updatedAt }
-          : task,
-      ),
-    );
-    setBriefData(await window.api.getHomeBrief());
-    return resolved;
-  }
-
-  async function handleResolveBlockerFromHome(task: HomeBriefData['blockerTasks'][number]) {
-    if (!task.activeBlocker) {
-      return;
-    }
-
-    await window.api.resolveBlocker(task.activeBlocker.id);
-
-    if (waitingIsClearlyDrivenByBlocker(task)) {
-      await window.api.transitionTask({
-        id: task.id,
-        nextState: 'planned',
-      });
-    }
-
-    await loadShellData();
-  }
-
-  async function handleCreateProcessTemplate(input: CreateProcessTemplateInput) {
-    return window.api.createProcessTemplate(input);
-  }
-
-  async function handleUpdateProcessTemplate(input: UpdateProcessTemplateInput) {
-    return window.api.updateProcessTemplate(input);
-  }
-
-  async function handleArchiveProcessTemplate(id: string) {
-    return window.api.archiveProcessTemplate(id);
-  }
-
-  async function handleApplyProcessTemplate(input: ApplyProcessTemplateInput) {
-    const applied = await window.api.applyProcessTemplate(input);
-    setBriefData(await window.api.getHomeBrief());
-    return applied;
-  }
-
-  async function handleRemoveProcessTemplate(bindingId: string) {
-    const removed = await window.api.removeProcessTemplate(bindingId);
-    setBriefData(await window.api.getHomeBrief());
-    return removed;
-  }
-
-  async function handleCreateDecision(input: CreateDecisionInput) {
-    const created = await window.api.createDecision(input);
-    setDecisions((current) => [created, ...current]);
-    setBriefData(await window.api.getHomeBrief());
-  }
-
-  async function handleDraftDecision(taskId: string, note?: string | null): Promise<DecisionDraftRecord> {
-    return window.api.draftDecision({
-      taskId,
-      note,
-    });
-  }
-
-  async function handleDecisionAction(
-    id: string,
-    action: 'approve' | 'defer' | 'cancel',
-  ) {
-    const updated = await window.api.actOnDecision({ id, action });
-    setDecisions((current) =>
-      current.map((decision) => (decision.id === updated.id ? updated : decision)),
-    );
-    setBriefData(await window.api.getHomeBrief());
-  }
-
-  async function handleTriggerRun(input: CreateRunInput) {
-    const created = await window.api.triggerRun(input);
-    setRuns((current) => [created, ...current]);
-    setBriefData(await window.api.getHomeBrief());
-    return created;
-  }
-
-  async function handleTriggerCodeAgentRun(input: CreateCodeAgentRunInput) {
-    if (!window.api.triggerCodeAgentRun) {
-      throw new Error('Code Agent run IPC is not available.');
-    }
-
-    const created = await window.api.triggerCodeAgentRun(input);
-    setRuns((current) => [created, ...current.filter((run) => run.id !== created.id)]);
-    setBriefData(await window.api.getHomeBrief());
-    return created;
-  }
-
-  async function handleTriggerOperatorStartedRun(input: OperatorStartedRunRequest) {
-    if (!window.api.triggerOperatorStartedRun) {
-      throw new Error('Operator-started run IPC is not available.');
-    }
-
-    const created = await window.api.triggerOperatorStartedRun(input);
-    setRuns((current) => [created, ...current.filter((run) => run.id !== created.id)]);
-    setBriefData(await window.api.getHomeBrief());
-    return created;
-  }
-
-  async function handleContinuePausedRun(runId: string) {
-    const updated = await window.api.continuePausedRun(runId);
-    setRuns((current) => current.map((run) => (run.id === updated.id ? updated : run)));
-    setBriefData(await window.api.getHomeBrief());
-    return updated;
-  }
-
-  function handleOpenTask(taskId: string | null, intent: RecommendedActionIntent | null = null) {
-    if (!taskId) {
-      return;
-    }
-
-    setFocusedTaskRequest({
-      key: `${taskId}:${intent?.type ?? 'open'}:${Date.now()}`,
-      taskId,
-      intent,
-    });
-    setRoute('tasks');
-  }
-
-  function handleOpenRecommendedAction(action: RecommendedAction) {
-    handleOpenTask(action.taskId, action.intent ?? null);
-  }
-
-  function handleOpenArtifact(artifact: ArtifactRecord) {
-    handleOpenTask(artifact.taskId, {
-      type: 'continue_from_artifact',
-      focusArea: 'detail',
-      prefillNextStep: `基于产物继续推进：${artifact.title}`,
-      prefillRunInstructions: artifact.content
-        ? `请基于这份已有产物继续扩展、改写或整理：${artifact.content}`
-        : `请基于已有产物继续推进：${artifact.title}`,
-    });
-  }
-
-  function handleOpenSourceContext(sourceContext: HomeSourceContextRecord) {
-    handleOpenTask(sourceContext.taskId, {
-      type: 'focus_source_context',
-      focusArea: 'detail',
-      sourceContextId: sourceContext.id,
-      prefillNextStep: `基于来源材料继续推进：${sourceContext.title}`,
-    });
-  }
-
-  function handleOpenActivity(activity: HomeActivityRecord) {
-    if (activity.sourceType === 'task') {
-      handleOpenTask(activity.taskId, {
-        type: 'focus_next_step',
-        focusArea: 'detail',
-        prefillNextStep:
-          activity.status === 'captured'
-            ? '先补一句任务摘要，再明确下一步。'
-            : '先补清下一步，并判断这条任务是否需要正式拍板或继续执行。',
-      });
-      return;
-    }
-
-    if (activity.sourceType === 'dependency') {
-      handleOpenTask(activity.taskId, {
-        type: 'focus_next_step',
-        focusArea: 'detail',
-        prefillNextStep:
-          activity.status === 'created'
-            ? `先推动上游任务，以解除当前依赖：${activity.title}`
-            : activity.status === 'resolved'
-            ? `依赖已解除，继续推进：${activity.title}`
-            : activity.status === 'upstream_ready'
-            ? `基于上游任务完成重新判断是否解除依赖：${activity.title}`
-            : `基于上游任务进展重新判断是否解除依赖：${activity.title}`,
-      });
-      return;
-    }
-
-    if (activity.sourceType === 'decision') {
-      if (activity.status === 'approved') {
-        handleOpenTask(activity.taskId, {
-          type: 'focus_next_step',
-          focusArea: 'detail',
-          prefillNextStep: `已获批准，继续推进：${activity.title}`,
-        });
-        return;
-      }
-
-      if (activity.status === 'deferred') {
-        handleOpenTask(activity.taskId, {
-          type: 'focus_waiting_follow_up',
-          focusArea: 'detail',
-          prefillNextStep: '跟进该决策是否可以恢复拍板，或准备替代推进路径。',
-        });
-        return;
-      }
-
-      if (activity.status === 'cancelled') {
-        handleOpenTask(activity.taskId, {
-          type: 'focus_next_step',
-          focusArea: 'detail',
-          prefillNextStep: `重新评估该决策并确定替代推进路径：${activity.title}`,
-        });
-        return;
-      }
-
-      handleOpenTask(activity.taskId, {
-        type: 'open_task',
-        focusArea: 'quick-actions',
-      });
-      return;
-    }
-
-    if (activity.sourceType === 'blocker') {
-      if (activity.status === 'source_updated') {
-        handleOpenTask(activity.taskId, {
-          type: activity.relatedSourceContextId ? 'focus_source_context' : 'focus_next_step',
-          focusArea: 'detail',
-          sourceContextId: activity.relatedSourceContextId ?? undefined,
-          prefillNextStep: `基于来源更新重新判断是否解除阻塞：${activity.title}`,
-        });
-        return;
-      }
-
-      if (activity.status === 'resolved') {
-        handleOpenTask(activity.taskId, {
-          type: 'focus_next_step',
-          focusArea: 'detail',
-          prefillNextStep: `阻塞项已解除，继续推进：${activity.title}`,
-        });
-        return;
-      }
-
-      handleOpenTask(activity.taskId, {
-        type: 'focus_next_step',
-        focusArea: 'detail',
-        prefillNextStep: `先解除阻塞项：${activity.title}`,
-      });
-      return;
-    }
-
-    if (activity.status === 'failed') {
-      handleOpenTask(activity.taskId, {
-        type: 'focus_next_step',
-        focusArea: 'detail',
-        prefillNextStep: `检查最近一次 ${activity.title} run 的失败原因，并决定是否重试。`,
-      });
-      return;
-    }
-
-    if (activity.status === 'paused') {
-      handleOpenTask(activity.taskId, {
-        type: 'focus_next_step',
-        focusArea: 'detail',
-        prefillNextStep: `复核最近一次 ${activity.title} run 的暂停原因，处理阻塞后再继续。`,
-      });
-      return;
-    }
-
-    handleOpenTask(activity.taskId, {
-      type: 'focus_next_step',
-      focusArea: 'detail',
-      prefillNextStep: `审阅最近一次 ${activity.title} run 的结果，并决定是否继续推进。`,
-    });
-  }
-
-  function handleOpenActivityObject(activity: HomeActivityRecord) {
-    if (activity.sourceType === 'decision') {
-      handleOpenDecision(activity.sourceId);
-      return;
-    }
-
-    if (activity.sourceType === 'dependency' && activity.relatedTaskId) {
-      handleOpenTask(activity.relatedTaskId, {
-        type: 'focus_next_step',
-        focusArea: 'detail',
-        prefillNextStep: `先完成这条上游任务，以解除对“${activity.taskTitle}”的依赖。`,
-      });
-      return;
-    }
-
-    if (activity.sourceType === 'blocker' && activity.relatedSourceContextId) {
-      handleOpenTask(activity.taskId, {
-        type: 'focus_source_context',
-        focusArea: 'detail',
-        sourceContextId: activity.relatedSourceContextId,
-        prefillNextStep: `基于来源更新重新判断是否解除阻塞：${activity.title}`,
-      });
-      return;
-    }
-
-    handleOpenRun(activity.sourceId);
-  }
-
-  function handleOpenResumeLatestChange(preview: HomeBriefData['recentTaskResumes'][number]) {
-    if (preview.latestChange.action.targetType === 'decision' && preview.latestChange.action.targetId) {
-      handleOpenDecision(preview.latestChange.action.targetId);
-      return;
-    }
-
-    if (preview.latestChange.action.targetType === 'run' && preview.latestChange.action.targetId) {
-      handleOpenRun(preview.latestChange.action.targetId);
-      return;
-    }
-
-    if (preview.latestChange.action.targetType === 'source_context' && preview.latestChange.action.targetId) {
-      handleOpenTask(preview.taskId, {
-        type: 'focus_source_context',
-        focusArea: 'detail',
-        sourceContextId: preview.latestChange.action.targetId,
-        prefillNextStep: preview.nextSuggestedMove,
-      });
-    }
-  }
-
-  function handleOpenDecision(decisionId: string) {
-    setFocusedDecisionId(decisionId);
-    setRoute('decisions');
-  }
-
-  function handleOpenRun(runId: string) {
-    setFocusedRunId(runId);
-    setRoute('runs');
-  }
-
-  async function handleOpenRunForCheckpoint(checkpointId: string): Promise<boolean> {
-    for (const run of runs) {
-      const detail = await window.api.getRunDetail(run.id);
-      const hasCheckpoint = detail?.checkpoints?.some((checkpoint) => checkpoint.id === checkpointId);
-
-      if (hasCheckpoint) {
-        handleOpenRun(run.id);
-        return true;
+    setPanelTaskId(null);
+    setPanelOpen(true);
+  }, [panelSuspended]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        openPanelGlobal();
       }
     }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [openPanelGlobal]);
 
-    return false;
-  }
+  useEffect(() => {
+    window.api?.getAiConfigStatus().then((s) => setAiConfigured(s.configured)).catch(() => setAiConfigured(false));
+  }, []);
 
   return (
-    <main className="app-shell">
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <p className="eyebrow">Taskplane</p>
-          <h2>Local-First Workbench</h2>
-          <p className="meta">Main 进程持有 DB、LLM 与调度权限。</p>
-          <p className="meta">
-            最近事件：{lastEvent ? `${lastEvent.type} @ ${lastEvent.at}` : '尚未收到推送'}
-          </p>
+    <div className={`app${panelOpen ? ' panel-open' : ''}`}>
+      <Sidebar route={workbenchTaskId ? workbenchOrigin : route} onNavigate={navigate} />
+      <div className="main">
+        <Topbar
+          route={workbenchTaskId ? workbenchOrigin : route}
+          workbenchTaskId={workbenchTaskId}
+          panelOpen={panelOpen}
+          panelSuspended={panelSuspended}
+          onBack={closeWorkbench}
+          onTogglePanel={() => {
+            if (panelOpen) {
+              setPanelOpen(false);
+              setPanelSuspended(true);
+              return;
+            }
+            setPanelOpen(true);
+            setPanelSuspended(false);
+          }}
+          onOpenGlobalPanel={openPanelGlobal}
+        />
+        <div className="content">
+          {aiConfigured === false && (
+            <SetupBanner onGoToModel={() => navigate('model')} />
+          )}
+          {workbenchTaskId ? (
+            <WorkbenchPage
+              taskId={workbenchTaskId}
+              onBack={closeWorkbench}
+              onOpenPanel={() => openPanelForTask(workbenchTaskId)}
+            />
+          ) : (
+            <>
+              {route === 'brief' && (
+                <BriefPage
+                  onOpenTask={openWorkbench}
+                  onOpenDecision={() => navigate('decisions')}
+                  onOpenPanel={openPanelForTask}
+                />
+              )}
+              {route === 'tasks' && (
+                <TasksPage
+                  onOpenPanel={openPanelForTask}
+                  onOpenWorkbench={openWorkbench}
+                  onOpenDecision={() => navigate('decisions')}
+                />
+              )}
+              {route === 'decisions' && (
+                <DecisionsPage
+                  onOpenPanel={openPanelForTask}
+                  onOpenWorkbench={openWorkbench}
+                />
+              )}
+              {route === 'context' && <ContextPage onOpenConnections={() => navigate('connections')} />}
+              {route === 'connections' && <ConnectionsPage />}
+              {route === 'skills' && <SkillsPage />}
+              {route === 'mcp' && <McpPage />}
+              {route === 'model' && <ModelPage />}
+              {route === 'settings' && <SettingsPage />}
+            </>
+          )}
         </div>
-        <nav className="nav-list">
-          {navItems.map((item) => (
-            <button
-              className={`nav-button ${route === item.id ? 'nav-button-active' : ''}`}
-              key={item.id}
-              onClick={() => setRoute(item.id)}
-              type="button"
-            >
-              <strong>{item.label}</strong>
-              <span>{item.description}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      </div>
+      {(panelOpen || panelSuspended) && (
+        <RightPanel
+          taskId={panelTaskId}
+          taskTitleHint={panelTaskTitle}
+          draftPrompt={panelDraftPrompt}
+          hidden={!panelOpen}
+          onTaskCaptured={(taskId) => setPanelTaskId(taskId)}
+          onClose={(hasSession) => {
+            setPanelOpen(false);
+            setPanelSuspended(hasSession);
+          }}
+          onClearTask={() => {
+            setPanelTaskId(null);
+            setPanelTaskTitle(null);
+            setPanelDraftPrompt(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
 
-      <section className="content">
-        {route === 'home' ? (
-          <HomePage
-            aiStatus={aiStatus}
-            briefData={briefData}
-            onOpenAction={handleOpenRecommendedAction}
-            onOpenActivity={handleOpenActivity}
-            onOpenActivityObject={handleOpenActivityObject}
-            onOpenArtifact={handleOpenArtifact}
-            onOpenDecision={handleOpenDecision}
-            onOpenRun={handleOpenRun}
-            onOpenResumeLatestChange={handleOpenResumeLatestChange}
-            onResolveBlockedTask={handleResolveBlockerFromHome}
-            onOpenSourceContext={handleOpenSourceContext}
-            ping={ping}
-            status={status}
-          />
-        ) : null}
-        {route === 'tasks' ? (
-          <TasksPage
-            aiStatus={aiStatus}
-            decisions={decisions}
-            focusedTaskRequest={focusedTaskRequest}
-            runs={runs}
-            taskPriorityLanes={taskPriorityLanes}
-            tasks={orderedTasks}
-            onApplyProcessTemplate={handleApplyProcessTemplate}
-            onArchiveProcessTemplate={handleArchiveProcessTemplate}
-            onCreateBlocker={handleCreateBlocker}
-            onCreateCompletionCriteria={handleCreateCompletionCriteria}
-            onCreateDecision={handleCreateDecision}
-            onCreateTaskDependency={handleCreateTaskDependency}
-            onDraftDecision={handleDraftDecision}
-            onCreateProcessTemplate={handleCreateProcessTemplate}
-            onCreateTask={handleCreateTask}
-            onCreateSourceContext={handleCreateSourceContext}
-            onArchiveSourceContext={handleArchiveSourceContext}
-            onOpenDecision={handleOpenDecision}
-            onOpenRun={handleOpenRun}
-            onOpenRunForCheckpoint={handleOpenRunForCheckpoint}
-            onRefresh={loadShellData}
-            onReopenCompletionCriteria={handleReopenCompletionCriteria}
-            onProbeSandboxBackend={handleProbeSandboxBackend}
-            onRemoveProcessTemplate={handleRemoveProcessTemplate}
-            onResolveBlocker={handleResolveBlocker}
-            onResolveTaskDependency={handleResolveTaskDependency}
-            onSatisfyCompletionCriteria={handleSatisfyCompletionCriteria}
-            onTransitionTask={handleTransitionTask}
-            onTriggerCodeAgentRun={handleTriggerCodeAgentRun}
-            onTriggerRun={handleTriggerRun}
-            onUpdateBlocker={handleUpdateBlocker}
-            onUpdateCompletionCriteria={handleUpdateCompletionCriteria}
-            onUpdateTaskDependency={handleUpdateTaskDependency}
-            onUpdateProcessTemplate={handleUpdateProcessTemplate}
-            onUpdateSourceContext={handleUpdateSourceContext}
-            onUpdateTask={handleUpdateTask}
-            onTaskFocusConsumed={() => setFocusedTaskRequest(null)}
-            sandboxBackendProbePending={sandboxBackendProbePending}
-          />
-        ) : null}
-        {route === 'decisions' ? (
-          <DecisionsPage
-            aiStatus={aiStatus}
-            decisions={decisions}
-            focusedDecisionId={focusedDecisionId}
-            tasks={tasks}
-            onOpenTask={handleOpenTask}
-            onAct={handleDecisionAction}
-            onCreateDecision={handleCreateDecision}
-            onDraftDecision={handleDraftDecision}
-            onDecisionFocusConsumed={() => setFocusedDecisionId(null)}
-            onOpenRunForCheckpoint={handleOpenRunForCheckpoint}
-          />
-        ) : null}
-        {route === 'runs' ? (
-          <RunsPage
-            aiStatus={aiStatus}
-            decisions={decisions}
-            focusedRunId={focusedRunId}
-            runs={runs}
-            tasks={tasks}
-            onOpenDecision={handleOpenDecision}
-            onOpenTask={handleOpenTask}
-            onRefresh={loadShellData}
-            onRunFocusConsumed={() => setFocusedRunId(null)}
-            onContinuePausedRun={handleContinuePausedRun}
-            onTriggerOperatorStartedRun={handleTriggerOperatorStartedRun}
-            onTriggerRun={handleTriggerRun}
-          />
-        ) : null}
-        {route === 'settings' ? (
-          <SettingsPage
-            aiStatus={aiStatus}
-            configForm={configForm}
-            onChange={setConfigForm}
-            onProbeSandboxBackend={handleProbeSandboxBackend}
-            sandboxBackendProbePending={sandboxBackendProbePending}
-            onSubmit={handleSaveConfig}
-          />
-        ) : null}
-      </section>
-    </main>
+/* ─── Setup banner ─── */
+
+function SetupBanner({ onGoToModel }: { onGoToModel: () => void }) {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+  return (
+    <div className="setup-banner">
+      <span className="setup-banner-icon">⚠</span>
+      <span className="setup-banner-text">
+        AI 尚未配置，请先添加 API Key 以使用 AI 功能；任务管理仍可继续使用。
+      </span>
+      <button className="btn sm primary" onClick={onGoToModel}>
+        前往配置 →
+      </button>
+      <button className="icon-btn" onClick={() => setDismissed(true)} title="关闭">
+        <span style={{ fontSize: 14, lineHeight: 1 }}>×</span>
+      </button>
+    </div>
+  );
+}
+
+/* ─── Sidebar ─── */
+
+interface SidebarProps {
+  route: AppRoute;
+  onNavigate: (r: AppRoute) => void;
+}
+
+function Sidebar({ route, onNavigate }: SidebarProps) {
+  return (
+    <aside className="sidebar">
+      <div className="sidebar-traffic">
+        <div className="tl-dot" />
+        <div className="tl-dot" />
+        <div className="tl-dot" />
+      </div>
+      <div className="sidebar-brand">
+        <div className="brand-glyph" />
+        <span className="brand-name">Taskplane</span>
+      </div>
+
+      <nav className="nav">
+        <div className="nav-zone-label">Work</div>
+        <NavItem icon={<IconBrief />} label="Brief" active={route === 'brief'} onClick={() => onNavigate('brief')} />
+        <NavItem icon={<IconTasks />} label="Tasks" active={route === 'tasks'} onClick={() => onNavigate('tasks')} />
+        <NavItem icon={<IconDecisions />} label="Decisions" active={route === 'decisions'} onClick={() => onNavigate('decisions')} />
+        <NavItem icon={<IconContext />} label="Context" active={route === 'context'} onClick={() => onNavigate('context')} />
+
+        <div className="nav-divider" />
+        <div className="nav-zone-label">Capabilities</div>
+        <NavItem icon={<IconConnections />} label="Connections" active={route === 'connections'} onClick={() => onNavigate('connections')} />
+        <NavItem icon={<IconSkills />} label="Skills" active={route === 'skills'} onClick={() => onNavigate('skills')} />
+        <NavItem icon={<IconMcp />} label="MCP" active={route === 'mcp'} onClick={() => onNavigate('mcp')} />
+        <NavItem icon={<IconModel />} label="Model" active={route === 'model'} onClick={() => onNavigate('model')} />
+        <NavItem icon={<IconSettings />} label="Settings" active={route === 'settings'} onClick={() => onNavigate('settings')} />
+      </nav>
+
+      <div className="sidebar-footer">
+        <div className="avatar">T</div>
+        <div className="footer-meta">
+          <strong>Taskplane</strong>
+          任务级 Agent · 通用任务流
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+interface NavItemProps {
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+  badge?: number | string;
+  hot?: boolean;
+  onClick: () => void;
+}
+
+function NavItem({ icon, label, active, badge, hot, onClick }: NavItemProps) {
+  return (
+    <button className={`nav-item${active ? ' active' : ''}`} onClick={onClick}>
+      {icon}
+      <span>{label}</span>
+      {badge != null && (
+        <span className={`nav-badge${hot ? ' hot' : ''}`}>{badge}</span>
+      )}
+    </button>
+  );
+}
+
+/* ─── Topbar ─── */
+
+interface TopbarProps {
+  route: AppRoute;
+  workbenchTaskId: string | null;
+  panelOpen: boolean;
+  panelSuspended: boolean;
+  onBack: () => void;
+  onTogglePanel: () => void;
+  onOpenGlobalPanel: () => void;
+}
+
+function Topbar({ route, workbenchTaskId, panelOpen, panelSuspended, onBack, onTogglePanel, onOpenGlobalPanel }: TopbarProps) {
+  return (
+    <div className="topbar">
+      <div className="topbar-left">
+        {workbenchTaskId ? (
+          <>
+            <button className="topbar-back" onClick={onBack}>
+              <IconChevronLeft />
+              <span className="topbar-back-label">{ROUTE_LABELS[route]}</span>
+            </button>
+            <span className="sep">/</span>
+            <span className="current">工作台</span>
+          </>
+        ) : (
+          <span className="current">{ROUTE_LABELS[route]}</span>
+        )}
+      </div>
+
+      <div className="topbar-right">
+        <button
+          className="cmd-k-trigger"
+          onClick={onOpenGlobalPanel}
+          title="快捷入口：搜索、提问或捕获任务想法，用完即走"
+        >
+          <IconSearch />
+          <span>Search or ask…</span>
+          {panelSuspended && !panelOpen && <span className="cmd-k-suspended">挂起</span>}
+          <span className="cmd-k-kbd">⌘K</span>
+        </button>
+        <button
+          className={`icon-btn${panelOpen ? ' active' : ''}`}
+          onClick={onTogglePanel}
+          title="AI 对话（⌘K）"
+        >
+          <IconPanel />
+          {panelSuspended && !panelOpen && <span className="badge" />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Icons ─── */
+
+function IconBrief() {
+  return (
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="2" width="11" height="10" rx="1.5" />
+      <line x1="4" y1="5.5" x2="10" y2="5.5" />
+      <line x1="4" y1="8" x2="8" y2="8" />
+    </svg>
+  );
+}
+
+function IconTasks() {
+  return (
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="1.5" width="11" height="11" rx="2" />
+      <polyline points="4,7 6,9 10,5" />
+    </svg>
+  );
+}
+
+function IconDecisions() {
+  return (
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 2v4l2.5 1.5" />
+      <circle cx="7" cy="7" r="5" />
+    </svg>
+  );
+}
+
+function IconContext() {
+  return (
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 4h10M2 7h7M2 10h5" />
+    </svg>
+  );
+}
+
+function IconConnections() {
+  return (
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="3" cy="7" r="1.5" />
+      <circle cx="11" cy="3.5" r="1.5" />
+      <circle cx="11" cy="10.5" r="1.5" />
+      <line x1="4.5" y1="6.5" x2="9.5" y2="4" />
+      <line x1="4.5" y1="7.5" x2="9.5" y2="10" />
+    </svg>
+  );
+}
+
+function IconSkills() {
+  return (
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="7,1.5 9,5.5 13,6 10,9 10.5,13 7,11 3.5,13 4,9 1,6 5,5.5" />
+    </svg>
+  );
+}
+
+function IconMcp() {
+  return (
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="4.5" width="4" height="5" rx="1" />
+      <rect x="8.5" y="4.5" width="4" height="5" rx="1" />
+      <line x1="5.5" y1="7" x2="8.5" y2="7" />
+      <line x1="7" y1="5.5" x2="7" y2="8.5" />
+    </svg>
+  );
+}
+
+function IconModel() {
+  return (
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="7" cy="7" r="2" />
+      <circle cx="7" cy="7" r="5" strokeDasharray="2.5 2" />
+    </svg>
+  );
+}
+
+function IconSettings() {
+  return (
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="7" cy="7" r="1.8" />
+      <path d="M7 1.5v1M7 11.5v1M1.5 7h1M11.5 7h1M3.2 3.2l.7.7M10.1 10.1l.7.7M10.8 3.2l-.7.7M3.9 10.1l-.7.7" />
+    </svg>
+  );
+}
+
+function IconSearch() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="5" cy="5" r="3.5" />
+      <line x1="8" y1="8" x2="10.5" y2="10.5" />
+    </svg>
+  );
+}
+
+function IconPanel() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.5 1.5h9a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-.5.5H7l-2 2V8.5H2.5a.5.5 0 0 1-.5-.5V2a.5.5 0 0 1 .5-.5z" />
+      <circle cx="5" cy="5" r=".55" fill="currentColor" stroke="none" />
+      <circle cx="7" cy="5" r=".55" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="5" r=".55" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function IconChevronLeft() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9,2 5,7 9,12" />
+    </svg>
   );
 }

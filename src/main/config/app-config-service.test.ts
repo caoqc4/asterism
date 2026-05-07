@@ -14,6 +14,7 @@ const envKeys = [
   'TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS',
   'TASKPLANE_ENABLE_SANDBOX_CODING_AGENT',
   'TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY',
+  'TASKPLANE_SELF_CHECK_RETRY_LIMIT',
 ];
 
 describe('AppConfigService', () => {
@@ -46,6 +47,9 @@ describe('AppConfigService', () => {
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(false);
     expect(config.featureFlags.enableSandboxCodingAgent).toBe(false);
     expect(config.featureFlags.enableSandboxPatchPromotionApply).toBe(false);
+    expect(config.featureFlags.selfCheckRetryLimit).toBe(2);
+    expect(config.featureFlags.communicationStyle).toBe('balanced');
+    expect(config.featureFlags.confirmationThreshold).toBe('normal');
     expect(fs.existsSync(getConfigPath(() => tempRoot))).toBe(true);
   });
 
@@ -74,6 +78,9 @@ describe('AppConfigService', () => {
         enableProviderNativeToolCalls: true,
         enableSandboxCodingAgent: true,
         enableSandboxPatchPromotionApply: true,
+        selfCheckRetryLimit: 4,
+        communicationStyle: 'detailed',
+        confirmationThreshold: 'high',
       },
     });
 
@@ -87,6 +94,9 @@ describe('AppConfigService', () => {
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(true);
     expect(config.featureFlags.enableSandboxCodingAgent).toBe(true);
     expect(config.featureFlags.enableSandboxPatchPromotionApply).toBe(true);
+    expect(config.featureFlags.selfCheckRetryLimit).toBe(4);
+    expect(config.featureFlags.communicationStyle).toBe('detailed');
+    expect(config.featureFlags.confirmationThreshold).toBe('high');
   });
 
   it('falls back to the default provider when config contains an unknown provider', async () => {
@@ -120,6 +130,7 @@ describe('AppConfigService', () => {
     process.env.TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS = 'true';
     process.env.TASKPLANE_ENABLE_SANDBOX_CODING_AGENT = 'true';
     process.env.TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY = 'true';
+    process.env.TASKPLANE_SELF_CHECK_RETRY_LIMIT = '3';
     const { AppConfigService } = await import('./app-config-service.js');
     const service = new AppConfigService(() => tempRoot);
 
@@ -132,6 +143,7 @@ describe('AppConfigService', () => {
         enableProviderNativeToolCalls: false,
         enableSandboxCodingAgent: false,
         enableSandboxPatchPromotionApply: false,
+        selfCheckRetryLimit: 1,
       },
     });
 
@@ -145,6 +157,7 @@ describe('AppConfigService', () => {
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(true);
     expect(config.featureFlags.enableSandboxCodingAgent).toBe(true);
     expect(config.featureFlags.enableSandboxPatchPromotionApply).toBe(true);
+    expect(config.featureFlags.selfCheckRetryLimit).toBe(3);
   });
 
   it('falls back to default feature flags when stored flags have invalid values', async () => {
@@ -159,6 +172,9 @@ describe('AppConfigService', () => {
           enableProviderNativeToolCalls: 'yes',
           enableSandboxCodingAgent: 'yes',
           enableSandboxPatchPromotionApply: 'yes',
+          selfCheckRetryLimit: 8,
+          communicationStyle: 'verbose',
+          confirmationThreshold: 'always',
         },
       }),
       'utf8',
@@ -172,6 +188,9 @@ describe('AppConfigService', () => {
     expect(config.featureFlags.enableProviderNativeToolCalls).toBe(false);
     expect(config.featureFlags.enableSandboxCodingAgent).toBe(false);
     expect(config.featureFlags.enableSandboxPatchPromotionApply).toBe(false);
+    expect(config.featureFlags.selfCheckRetryLimit).toBe(2);
+    expect(config.featureFlags.communicationStyle).toBe('balanced');
+    expect(config.featureFlags.confirmationThreshold).toBe('normal');
   });
 
   it('migrates legacy settings.json into config.json', async () => {

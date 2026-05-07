@@ -170,6 +170,9 @@ describe('RunOrchestrator', () => {
       run: buildRun(),
       task: buildTaskDetail(),
       input: buildInput(),
+      applicableWorkHabitSummaries: [
+        '对外材料发布前先做一次事实核对（范围：全局；例：公告初稿）',
+      ],
     });
 
     expect(result).toMatchObject({
@@ -179,7 +182,11 @@ describe('RunOrchestrator', () => {
     });
     expect(runStepRepository.create).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ kind: 'plan', title: '准备执行上下文' }),
+      expect.objectContaining({
+        input: expect.stringContaining('- 对外材料发布前先做一次事实核对（范围：全局；例：公告初稿）'),
+        kind: 'plan',
+        title: '准备执行上下文',
+      }),
     );
     expect(runStepRepository.create).toHaveBeenNthCalledWith(
       2,

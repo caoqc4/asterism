@@ -66,6 +66,7 @@ function buildRequest(): AgentRunRequest {
     taskId: 'task_1',
     goal: 'Create a local note',
     mode: 'agent',
+    applicableWorkHabits: [],
     context: {
       task: {
         id: 'task_1',
@@ -87,6 +88,7 @@ function buildRequest(): AgentRunRequest {
       blockers: [],
       dependencies: [],
       sources: [],
+      artifacts: [],
       processTemplates: [],
       recentTimeline: [],
     },

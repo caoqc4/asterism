@@ -102,6 +102,19 @@ function bootstrapTables(connection: Database.Database): void {
       resolved_at TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS run_verifications (
+      id TEXT PRIMARY KEY,
+      run_id TEXT NOT NULL,
+      target_type TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      tone TEXT NOT NULL,
+      label TEXT NOT NULL,
+      detail TEXT NOT NULL,
+      source TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS sandbox_patch_promotions (
       id TEXT PRIMARY KEY,
       checkpoint_id TEXT NOT NULL,
@@ -241,6 +254,20 @@ function bootstrapTables(connection: Database.Database): void {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       removed_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS work_habits (
+      id TEXT PRIMARY KEY,
+      rule TEXT NOT NULL,
+      source TEXT NOT NULL,
+      scope TEXT NOT NULL,
+      scope_label TEXT NOT NULL,
+      status TEXT NOT NULL,
+      examples TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL,
+      last_applied_at TEXT,
+      application_count INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
     );
   `);
 

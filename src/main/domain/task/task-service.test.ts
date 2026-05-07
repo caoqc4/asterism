@@ -320,6 +320,59 @@ describe('TaskService', () => {
     expect(detail?.resumeCard.currentState).toContain('阻塞：Legal approval pending');
   });
 
+  it('does not label a non-key source as the most important resume source', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('planned'),
+        timeline: [
+          {
+            id: 'timeline_1',
+            taskId: 'task_1',
+            type: 'source_context.updated',
+            payload: JSON.stringify({
+              sourceContextId: 'source_context_recent',
+              title: 'General research note',
+            }),
+            createdAt: '2026-01-02T00:00:00.000Z',
+          },
+        ],
+      }),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+      { listRecentForTask: vi.fn().mockResolvedValue([]) } as never,
+      {
+        listActiveForTask: vi.fn().mockResolvedValue([
+          buildSourceContextRecord({
+            id: 'source_context_recent',
+            title: 'General research note',
+            isKey: false,
+            note: 'Recent but not pinned',
+          }),
+        ]),
+      } as never,
+      { listActive: vi.fn().mockResolvedValue([]) } as never,
+      { listActiveForTask: vi.fn().mockResolvedValue([]) } as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    const detail = await service.getDetail('task_1');
+
+    expect(detail?.resumeCard.summary).toContain('当前最近更新的来源材料是“General research note”。');
+    expect(detail?.resumeCard.summary).not.toContain('当前最关键的来源材料是“General research note”');
+    expect(detail?.resumeCard.keySource).toMatchObject({
+      sourceContextId: 'source_context_recent',
+      title: 'General research note',
+      priorityReason: '当前材料架里该来源最近更新，建议先查看。',
+    });
+  });
+
   it('prioritizes a clear lifecycle change when deriving the next suggested move', async () => {
     const repository = {
       list: vi.fn(),
@@ -812,6 +865,53 @@ describe('TaskService', () => {
       }),
     );
     expect(result.state).toBe('running');
+  });
+
+  it('records task completion check results as timeline events', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
+
+    await service.recordCompletionCheck({
+      taskId: 'task_1',
+      action: 'override_completed',
+      criteriaTotal: 3,
+      criteriaSatisfied: 2,
+      criteriaOpen: 1,
+      reason: '仍有 1 条完成标准未满足',
+      runVerificationTone: 'warn',
+      runVerificationLabel: 'Run 需补验证',
+      runVerificationDetail: 'Run 已完成，但缺少可复核输出。',
+      source: 'task_completion_modal',
+      checkedAt: '2026-05-05T10:00:00.000Z',
+    });
+
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith(
+      'task_1',
+      'task.completion_check',
+      {
+        action: 'override_completed',
+        criteriaTotal: 3,
+        criteriaSatisfied: 2,
+        criteriaOpen: 1,
+        reason: '仍有 1 条完成标准未满足',
+        runVerificationTone: 'warn',
+        runVerificationLabel: 'Run 需补验证',
+        runVerificationDetail: 'Run 已完成，但缺少可复核输出。',
+        source: 'task_completion_modal',
+        checkedAt: '2026-05-05T10:00:00.000Z',
+      },
+    );
   });
 
   it('rejects invalid state transitions', async () => {

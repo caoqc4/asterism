@@ -7,10 +7,16 @@ import type {
   RunDetailRecord,
   RunRecord,
 } from '../../../shared/types/run.js';
+import type { TaskDetail } from '../../../shared/types/task.js';
+import {
+  selectApplicableWorkHabits,
+  summarizeWorkHabitsForPrompt,
+} from '../../../shared/work-habit-rules.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { RunRepository } from '../../db/repositories/run-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
 import { TaskService } from '../task/task-service.js';
 import { AgentSessionStore } from './agent-session-store.js';
 import {
@@ -18,7 +24,17 @@ import {
 } from './agent-session-continuation.js';
 import { AgentToolRegistry } from './agent-tool-registry.js';
 import { ProcessTemplateSelector } from './process-template-selector.js';
+import {
+  persistLightweightRunVerifications,
+  persistTerminalRunVerifications,
+} from './run-verification-service.js';
 import { RunOrchestrator, type RunOrchestrationResult } from './run-orchestrator.js';
+import type { WorkHabitService } from '../context/work-habit-service.js';
+
+type ApplicableWorkHabits = {
+  ids: string[];
+  summaries: string[];
+};
 
 export class RunService {
   constructor(
@@ -32,6 +48,7 @@ export class RunService {
     private readonly agentToolRegistry: AgentToolRegistry | null = null,
     private readonly runCheckpointRepository: RunCheckpointRepository = new RunCheckpointRepository(),
     private readonly agentSessionStore: AgentSessionStore = new AgentSessionStore(),
+    private readonly runVerificationRepository: RunVerificationRepository | null = null,
     private readonly runOrchestrator: RunOrchestrator = new RunOrchestrator(
       aiConfigService,
       textExecutor,
@@ -41,6 +58,7 @@ export class RunService {
       undefined,
       agentSessionStore,
     ),
+    private readonly workHabitService: WorkHabitService | null = null,
   ) {}
 
   list(): Promise<RunRecord[]> {
@@ -54,12 +72,22 @@ export class RunService {
       return null;
     }
 
-    return {
+    const detail = {
       ...run,
       artifacts: await this.artifactRepository.listForRun(runId),
       steps: await this.runStepRepository.listForRun(runId),
       checkpoints: await this.runCheckpointRepository.listForRun(runId),
       agentSessions: await this.agentSessionStore.listForRun(runId),
+    };
+    await persistLightweightRunVerifications(detail, this.runVerificationRepository, {
+      includeRunLevel: await this.shouldPersistRunLevelSelfCheck(),
+    });
+
+    return {
+      ...detail,
+      verifications: this.runVerificationRepository
+        ? await this.runVerificationRepository.listForRun(runId)
+        : [],
     };
   }
 
@@ -85,18 +113,22 @@ export class RunService {
     }
 
     const created = await this.runRepository.create(input);
+    const applicableWorkHabits = await this.buildApplicableWorkHabits(taskForExecution);
     const result =
       input.type === 'agent'
         ? await this.runOrchestrator.executeAgentRun({
             run: created,
             task: taskForExecution,
             input,
+            applicableWorkHabitSummaries: applicableWorkHabits.summaries,
           })
         : await this.runOrchestrator.executeTextRun({
             run: created,
             task: taskForExecution,
             input,
+            applicableWorkHabitSummaries: applicableWorkHabits.summaries,
           });
+    await this.recordAppliedWorkHabits(applicableWorkHabits.ids);
 
     await this.annotateProcessTemplateSelection(input.taskId, created.id, taskForExecution, result);
 
@@ -116,6 +148,7 @@ export class RunService {
         Boolean(result.output?.trim()),
         completed.id,
       );
+      await this.persistTerminalRunVerifications(completed, applicableWorkHabits.summaries);
       return completed;
     }
 
@@ -148,6 +181,7 @@ export class RunService {
       result.message,
     );
     await this.taskService.annotateRunFailed(input.taskId, result.message, failed.id);
+    await this.persistTerminalRunVerifications(failed, applicableWorkHabits.summaries);
     return failed;
   }
 
@@ -199,6 +233,7 @@ export class RunService {
         result.error ?? result.summary,
       );
       await this.taskService.annotateRunFailed(run.taskId, result.error ?? result.summary, runId);
+      await this.persistTerminalRunVerifications(failed);
       return failed;
     }
 
@@ -224,8 +259,63 @@ export class RunService {
       Boolean((result.output ?? result.summary).trim()),
       runId,
     );
+    await this.persistTerminalRunVerifications(completed);
 
     return completed;
+  }
+
+  private async persistTerminalRunVerifications(
+    run: RunRecord,
+    applicableWorkHabitSummaries: string[] = [],
+  ): Promise<void> {
+    await persistTerminalRunVerifications({
+      run,
+      runStepRepository: this.runStepRepository,
+      runVerificationRepository: this.runVerificationRepository,
+      applicableWorkHabitSummaries,
+      includeRunLevel: await this.shouldPersistRunLevelSelfCheck(),
+    });
+  }
+
+  private async shouldPersistRunLevelSelfCheck(): Promise<boolean> {
+    try {
+      const status = await this.aiConfigService.getStatus();
+      return status.featureFlags.enableSelfCheck !== false;
+    } catch {
+      return true;
+    }
+  }
+
+  private async buildApplicableWorkHabits(task: TaskDetail): Promise<ApplicableWorkHabits> {
+    if (!this.workHabitService) {
+      return { ids: [], summaries: [] };
+    }
+
+    try {
+      const snapshot = await this.workHabitService.getSnapshot();
+      const habits = selectApplicableWorkHabits(snapshot.habits, {
+        taskTitle: task.title,
+        limit: 5,
+      });
+      return {
+        ids: habits.map((habit) => habit.id),
+        summaries: summarizeWorkHabitsForPrompt(habits),
+      };
+    } catch {
+      return { ids: [], summaries: [] };
+    }
+  }
+
+  private async recordAppliedWorkHabits(habitIds: string[]): Promise<void> {
+    if (!habitIds.length || !this.workHabitService) {
+      return;
+    }
+
+    try {
+      await this.workHabitService.recordApplications(habitIds);
+    } catch {
+      // Work habit telemetry should never block the run lifecycle.
+    }
   }
 
   private async annotateProcessTemplateSelection(

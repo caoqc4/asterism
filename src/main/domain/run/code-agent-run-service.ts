@@ -10,13 +10,20 @@ import {
   formatCodeAgentProviderVisibleContextManifestForStep,
 } from '../../../shared/code-agent-model-context.js';
 import type { ArtifactRecord } from '../../../shared/types/artifact.js';
-import type { CreateCodeAgentRunInput, CodeAgentAllowedCheck, RunRecord } from '../../../shared/types/run.js';
+import type {
+  CreateCodeAgentRunInput,
+  CodeAgentAllowedCheck,
+  RunOutputSource,
+  RunRecord,
+  RunStatus,
+} from '../../../shared/types/run.js';
 import type { AiConfigStatus } from '../../../shared/types/settings.js';
 import type { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import type { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import type { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import type { RunRepository } from '../../db/repositories/run-repository.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import type { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
 import type { SandboxPatchPromotionRepository } from '../../db/repositories/sandbox-patch-promotion-repository.js';
 import type { AiConfigService } from '../../keychain/ai-config-service.js';
 import { readEnvBoolean, readEnvValue } from '../../config/env.js';
@@ -30,6 +37,7 @@ import { collectCodeAgentWorkspaceContext } from './code-agent-workspace-context
 import { collectCodeAgentSourceContext } from './code-agent-source-context.js';
 import type { LocalContainerSandboxPatchReviewPreparation } from './local-container-sandbox-backend.js';
 import { LocalContainerSandboxedCodingProducerExecutionService } from './local-container-sandboxed-coding-producer-execution-service.js';
+import { persistTerminalRunVerifications } from './run-verification-service.js';
 import type { LocalContainerSandboxedCodingProducerLoop } from './local-container-sandboxed-coding-producer-runner.js';
 import { SandboxPatchReviewPersister } from './sandbox-patch-review-persister.js';
 import type {
@@ -57,6 +65,7 @@ export class CodeAgentRunService {
     private readonly sandboxPatchPromotionRepository: Pick<SandboxPatchPromotionRepository, 'createPending'>,
     private readonly createExecutionService: () => CodeAgentRunExecutionService = () =>
       new LocalContainerSandboxedCodingProducerExecutionService(),
+    private readonly runVerificationRepository: Pick<RunVerificationRepository, 'upsert'> | null = null,
   ) {}
 
   async trigger(input: CreateCodeAgentRunInput): Promise<RunRecord> {
@@ -145,7 +154,7 @@ export class CodeAgentRunService {
     const selectedSourceContexts = selectCodeAgentSourceContexts(input, task.sourceContexts);
 
     if (modelProducerRequested && !modelProducerAvailable) {
-      return this.runRepository.updateResult(
+      return this.updateRunResult(
         run.id,
         'failed',
         'Code Agent model producer runtime blocked: TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER is not enabled.',
@@ -155,7 +164,7 @@ export class CodeAgentRunService {
     }
 
     if (modelProducerOptIn && !selectedContextFiles.length) {
-      return this.runRepository.updateResult(
+      return this.updateRunResult(
         run.id,
         'failed',
         'Code Agent model producer runtime blocked: bounded workspace context files are required.',
@@ -165,7 +174,7 @@ export class CodeAgentRunService {
     }
 
     if (modelProducerOptIn && selectedSourceContexts.status === 'blocked') {
-      return this.runRepository.updateResult(
+      return this.updateRunResult(
         run.id,
         'failed',
         selectedSourceContexts.summary,
@@ -175,7 +184,7 @@ export class CodeAgentRunService {
     }
 
     if (modelProducerOptIn && selectedArtifacts.status === 'blocked') {
-      return this.runRepository.updateResult(
+      return this.updateRunResult(
         run.id,
         'failed',
         selectedArtifacts.summary,
@@ -185,7 +194,7 @@ export class CodeAgentRunService {
     }
 
     if (input.includeArtifactContent === true) {
-      return this.runRepository.updateResult(
+      return this.updateRunResult(
         run.id,
         'failed',
         'Code Agent artifact content blocked: artifact content is not accepted as provider-visible context.',
@@ -195,7 +204,7 @@ export class CodeAgentRunService {
     }
 
     if (input.includeSourceContextContent === true && !modelProducerOptIn) {
-      return this.runRepository.updateResult(
+      return this.updateRunResult(
         run.id,
         'failed',
         'Code Agent source context content blocked: model producer opt-in is required.',
@@ -210,7 +219,7 @@ export class CodeAgentRunService {
     });
 
     if (modelProducerOptIn && sourceContextContent.status === 'blocked') {
-      return this.runRepository.updateResult(
+      return this.updateRunResult(
         run.id,
         'failed',
         sourceContextContent.summary,
@@ -228,7 +237,7 @@ export class CodeAgentRunService {
       : null;
 
     if (workspaceContext?.status === 'blocked') {
-      return this.runRepository.updateResult(
+      return this.updateRunResult(
         run.id,
         'failed',
         workspaceContext.summary,
@@ -264,7 +273,7 @@ export class CodeAgentRunService {
     });
 
     if (modelProducerOptIn && modelRuntime.status === 'blocked') {
-      return this.runRepository.updateResult(
+      return this.updateRunResult(
         run.id,
         'failed',
         modelRuntime.summary,
@@ -297,7 +306,7 @@ export class CodeAgentRunService {
     });
 
     if (execution.status === 'blocked') {
-      return this.runRepository.updateResult(
+      return this.updateRunResult(
         run.id,
         'failed',
         execution.summary,
@@ -322,7 +331,7 @@ export class CodeAgentRunService {
           ? 'paused'
           : 'failed';
 
-      return this.runRepository.updateResult(
+      return this.updateRunResult(
         run.id,
         status,
         [execution.summary, reviewSummary].filter(Boolean).join(' / '),
@@ -333,7 +342,7 @@ export class CodeAgentRunService {
       );
     }
 
-    return this.runRepository.updateResult(
+    return this.updateRunResult(
       run.id,
       'failed',
       execution.summary,
@@ -364,6 +373,28 @@ export class CodeAgentRunService {
     }
 
     return result;
+  }
+
+  private async updateRunResult(
+    runId: string,
+    status: RunStatus,
+    output: string | null,
+    outputSource: RunOutputSource,
+    failureReason: string | null = null,
+  ): Promise<RunRecord> {
+    const updated = failureReason === null
+      ? await this.runRepository.updateResult(runId, status, output, outputSource)
+      : await this.runRepository.updateResult(runId, status, output, outputSource, failureReason);
+
+    if (status === 'completed' || status === 'failed') {
+      await persistTerminalRunVerifications({
+        run: updated,
+        runStepRepository: this.runStepRepository,
+        runVerificationRepository: this.runVerificationRepository,
+      });
+    }
+
+    return updated;
   }
 
   private async persistPatchReview(params: {

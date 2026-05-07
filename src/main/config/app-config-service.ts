@@ -3,14 +3,14 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import type { AiProvider, AppConfigFile, FeatureFlags } from '../../shared/types/settings.js';
+import {
+  AI_COMMUNICATION_STYLES,
+  AI_CONFIRMATION_THRESHOLDS,
+  CONTEXT_COMPRESSION_THRESHOLD,
+  DEFAULT_FEATURE_FLAGS,
+  SELF_CHECK_RETRY_LIMIT,
+} from '../../shared/settings-defaults.js';
 import { readEnvBoolean, readEnvValue } from './env.js';
-
-const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
-  enableScheduler: false,
-  enableProviderNativeToolCalls: false,
-  enableSandboxCodingAgent: false,
-  enableSandboxPatchPromotionApply: false,
-};
 
 const DEFAULT_CONFIG: AppConfigFile = {
   aiProvider: 'anthropic',
@@ -25,8 +25,11 @@ const require = createRequire(import.meta.url);
 const AI_PROVIDERS = new Set<AiProvider>([
   'anthropic',
   'openai',
-  'openai-compatible',
+  'google',
+  'deepseek',
+  'groq',
   'fal-openrouter',
+  'openai-compatible',
   'replicate',
 ]);
 
@@ -84,6 +87,36 @@ function sanitizeConfig(input: Partial<AppConfigFile>): AppConfigFile {
         typeof nextFeatureFlags.enableSandboxPatchPromotionApply === 'boolean'
           ? nextFeatureFlags.enableSandboxPatchPromotionApply
           : DEFAULT_FEATURE_FLAGS.enableSandboxPatchPromotionApply,
+      enableSelfCheck:
+        typeof nextFeatureFlags.enableSelfCheck === 'boolean'
+          ? nextFeatureFlags.enableSelfCheck
+          : DEFAULT_FEATURE_FLAGS.enableSelfCheck,
+      enableSelfLearn:
+        typeof nextFeatureFlags.enableSelfLearn === 'boolean'
+          ? nextFeatureFlags.enableSelfLearn
+          : DEFAULT_FEATURE_FLAGS.enableSelfLearn,
+      contextCompressionThreshold:
+        typeof nextFeatureFlags.contextCompressionThreshold === 'number'
+          && Number.isFinite(nextFeatureFlags.contextCompressionThreshold)
+          && nextFeatureFlags.contextCompressionThreshold >= CONTEXT_COMPRESSION_THRESHOLD.min
+          && nextFeatureFlags.contextCompressionThreshold <= CONTEXT_COMPRESSION_THRESHOLD.max
+          ? nextFeatureFlags.contextCompressionThreshold
+          : DEFAULT_FEATURE_FLAGS.contextCompressionThreshold,
+      selfCheckRetryLimit:
+        typeof nextFeatureFlags.selfCheckRetryLimit === 'number'
+          && Number.isFinite(nextFeatureFlags.selfCheckRetryLimit)
+          && nextFeatureFlags.selfCheckRetryLimit >= SELF_CHECK_RETRY_LIMIT.min
+          && nextFeatureFlags.selfCheckRetryLimit <= SELF_CHECK_RETRY_LIMIT.max
+          ? nextFeatureFlags.selfCheckRetryLimit
+          : DEFAULT_FEATURE_FLAGS.selfCheckRetryLimit,
+      communicationStyle:
+        AI_COMMUNICATION_STYLES.includes(nextFeatureFlags.communicationStyle as never)
+          ? nextFeatureFlags.communicationStyle
+          : DEFAULT_FEATURE_FLAGS.communicationStyle,
+      confirmationThreshold:
+        AI_CONFIRMATION_THRESHOLDS.includes(nextFeatureFlags.confirmationThreshold as never)
+          ? nextFeatureFlags.confirmationThreshold
+          : DEFAULT_FEATURE_FLAGS.confirmationThreshold,
     },
     updatedAt: input.updatedAt ?? new Date().toISOString(),
   };
@@ -98,6 +131,22 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
   const enableProviderNativeToolCalls = readEnvBoolean('TASKPLANE_ENABLE_PROVIDER_NATIVE_TOOL_CALLS');
   const enableSandboxCodingAgent = readEnvBoolean('TASKPLANE_ENABLE_SANDBOX_CODING_AGENT');
   const enableSandboxPatchPromotionApply = readEnvBoolean('TASKPLANE_ENABLE_SANDBOX_PATCH_PROMOTION_APPLY');
+  const enableSelfCheck = readEnvBoolean('TASKPLANE_ENABLE_SELF_CHECK');
+  const enableSelfLearn = readEnvBoolean('TASKPLANE_ENABLE_SELF_LEARN');
+  const contextCompressionThresholdRaw = readEnvValue('TASKPLANE_CONTEXT_COMPRESSION_THRESHOLD');
+  const selfCheckRetryLimitRaw = readEnvValue('TASKPLANE_SELF_CHECK_RETRY_LIMIT');
+  const contextCompressionThreshold = contextCompressionThresholdRaw
+    ? Number(contextCompressionThresholdRaw)
+    : undefined;
+  const selfCheckRetryLimit = selfCheckRetryLimitRaw
+    ? Number(selfCheckRetryLimitRaw)
+    : undefined;
+  const safeContextCompressionThreshold = Number.isFinite(contextCompressionThreshold)
+    ? contextCompressionThreshold
+    : undefined;
+  const safeSelfCheckRetryLimit = Number.isFinite(selfCheckRetryLimit)
+    ? selfCheckRetryLimit
+    : undefined;
 
   return sanitizeConfig({
     ...config,
@@ -120,6 +169,24 @@ function applyEnvironmentOverrides(config: AppConfigFile): AppConfigFile {
         enableSandboxPatchPromotionApply
         ?? config.featureFlags.enableSandboxPatchPromotionApply
         ?? DEFAULT_FEATURE_FLAGS.enableSandboxPatchPromotionApply,
+      enableSelfCheck:
+        enableSelfCheck
+        ?? config.featureFlags.enableSelfCheck
+        ?? DEFAULT_FEATURE_FLAGS.enableSelfCheck,
+      enableSelfLearn:
+        enableSelfLearn
+        ?? config.featureFlags.enableSelfLearn
+        ?? DEFAULT_FEATURE_FLAGS.enableSelfLearn,
+      contextCompressionThreshold:
+        safeContextCompressionThreshold !== undefined
+          ? safeContextCompressionThreshold
+          : config.featureFlags.contextCompressionThreshold
+            ?? DEFAULT_FEATURE_FLAGS.contextCompressionThreshold,
+      selfCheckRetryLimit:
+        safeSelfCheckRetryLimit !== undefined
+          ? safeSelfCheckRetryLimit
+          : config.featureFlags.selfCheckRetryLimit
+            ?? DEFAULT_FEATURE_FLAGS.selfCheckRetryLimit,
     },
   });
 }

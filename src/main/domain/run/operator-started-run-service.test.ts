@@ -14,6 +14,9 @@ describe('OperatorStartedRunService', () => {
     const runRepository = buildRunRepositoryMock();
     const taskService = buildTaskServiceMock();
     const runStepRepository = buildRunStepRepositoryMock();
+    const runVerificationRepository = {
+      upsert: vi.fn(),
+    };
     const browserEvidencePersister = {
       persistCaptured: vi.fn().mockResolvedValue({
         artifact: {
@@ -43,6 +46,7 @@ describe('OperatorStartedRunService', () => {
       browserEvidencePersister,
       executor,
       vi.fn(),
+      runVerificationRepository,
     );
 
     const completed = await service.trigger(buildDefaultOperatorStartedRunRequest({
@@ -81,6 +85,12 @@ describe('OperatorStartedRunService', () => {
       'system',
     );
     expect(taskService.annotateRunCompleted).toHaveBeenCalledWith('task_1', 'agent', true, 'run_operator_1');
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_operator_1',
+      targetType: 'run',
+      targetId: 'run_operator_1',
+      source: 'lightweight_rule_engine',
+    }));
     expect(completed).toMatchObject({
       id: 'run_operator_1',
       status: 'completed',
@@ -271,6 +281,21 @@ function buildRunStepRepositoryMock() {
     create: vi.fn().mockResolvedValue({
       id: 'run_step_1',
     }),
+    listForRun: vi.fn().mockResolvedValue([
+      {
+        createdAt: '2026-04-27T00:00:00.000Z',
+        error: null,
+        id: 'run_step_1',
+        index: 1,
+        input: 'accepted',
+        kind: 'plan',
+        output: 'operator-started run accepted',
+        runId: 'run_operator_1',
+        status: 'completed',
+        title: 'operator-started run accepted',
+        updatedAt: '2026-04-27T00:00:00.000Z',
+      },
+    ]),
   };
 }
 

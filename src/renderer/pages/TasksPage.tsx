@@ -1,4376 +1,1327 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
-
-import type { RecommendedActionIntent } from '@shared/types/brief';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import type { ProjectDecompositionResult } from '@shared/types/ipc';
+import type { TaskListItemRecord, TaskRiskLevel, TaskState } from '@shared/types/task';
+import type { SourceContextRecord } from '@shared/types/source-context';
+import type { DecisionRecord } from '@shared/types/decision';
+import { isUnconfirmedPanelCaptureRecord } from '@shared/panel-capture';
+import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import {
-  buildAgentExecutionOrchestrationSnapshot,
-  evaluateSkillInformedAutomationReadiness,
-} from '@shared/agent-orchestration';
-import type {
-  BlockerKind,
-  BlockerRecord,
-  CreateBlockerInput,
-  UpdateBlockerInput,
-} from '@shared/types/blocker';
-import type {
-  CompletionCriteriaRecord,
-  CreateCompletionCriteriaInput,
-  UpdateCompletionCriteriaInput,
-} from '@shared/types/completion-criteria';
-import type { ResponsibilityKind } from '@shared/types/responsibility';
-import type {
-  CreateTaskDependencyInput,
-  TaskDependencyRecord,
-  UpdateTaskDependencyInput,
-} from '@shared/types/task-dependency';
-import type { CreateDecisionInput, DecisionDraftRecord, DecisionRecord } from '@shared/types/decision';
-import type {
-  ApplyProcessTemplateInput,
-  AppliedProcessTemplateRecord,
-  CreateProcessTemplateInput,
-  ProcessTemplateKind,
-  ProcessTemplateRecord,
-  UpdateProcessTemplateInput,
-} from '@shared/types/process-template';
-import type { CreateCodeAgentRunInput, CreateRunInput, RunRecord } from '@shared/types/run';
-import type { AiConfigStatus } from '@shared/types/settings';
-import type {
-  CreateSourceContextInput,
-  SourceContextKind,
-  SourceContextRecord,
-  UpdateSourceContextInput,
-} from '@shared/types/source-context';
-import type {
-  CreateTaskInput,
-  TaskDetail,
-  TaskListItemRecord,
-  TaskRiskLevel,
-  TaskState,
-  TimelineEventRecord,
-  UpdateTaskInput,
-} from '@shared/types/task';
-import {
-  formatTaskTimelineEventSummary,
-  getTaskTimelineEventLabel,
-  getTaskTimelineFollowUpActionLabel,
-  getTaskTimelineLane,
-  getTaskTimelineLaneLabel,
-  getTaskTimelineObjectAction,
-  getTaskTimelinePreviewEvents,
-  getTaskTimelinePriority,
-  getTaskTimelinePriorityLabel,
-  getTaskTimelineResponsibilitySummary,
-  groupTaskTimelineEventsByDateObjectAndPriority,
-  interpretTaskTimelineEvent,
-  parseTimelinePayload,
-} from '@shared/working-context/timeline';
-import { formatBlockerAgeLabel } from '@shared/working-context/blocker';
-import type { PriorityLane } from '@shared/types/brief';
-import { getPriorityLaneContextLabel, getPriorityLaneLabel } from '@shared/working-context/priority-lanes';
-import {
-  formatDependencyAgeLabel,
-  getDependencyAgeReason,
-  isStaleDependency,
-} from '@shared/working-context/dependency';
-import {
-  getCompletionTransitionGuidance,
-  getTaskTransitionGuidance,
-  orderTaskTransitions,
-} from '@shared/working-context/transitions';
-import {
-  formatCodeAgentAutomaticStartPolicySummary,
-  formatCodeAgentPreflightSummary,
-  formatCodeAgentRerunIntent,
-  formatCodeAgentReviewRecoverySummary,
-  formatCodeAgentStartBlockedReason,
-  formatCodeAgentModelProducerOptInSummary,
-  formatExecutionRuntimeReadinessSummary,
-  formatPreRunAgentCapabilitySummary,
-  isCodeAgentPromotionDecision,
-  isCodeAgentSandboxRun,
-} from '../lib/agentCapabilities';
-import {
-  buildExecutorLifecycleDiagnosticLines,
-  buildReadOnlyOrchestrationPresentation,
-} from '../lib/agentOrchestrationPresentation';
+  buildProjectDecompositionGuidance,
+  defaultScheduleForType,
+  defaultTriggerForType,
+  inferTaskExecutionType,
+  loadTaskAttributes,
+  moveTaskToProject,
+  saveTaskAttributes,
+  type TaskAttributeRecord,
+  type TaskExecutionType,
+} from '../lib/taskAttributes';
+import { selectApplicableWorkHabits, type WorkHabitRecord } from '../lib/workHabits';
 
-const riskOptions: TaskRiskLevel[] = ['none', 'low', 'medium', 'high'];
-const sourceContextKindOptions: SourceContextKind[] = [
-  'link',
-  'doc',
-  'issue',
-  'pr',
-  'website_list',
-  'note',
-];
-const processTemplateKindOptions: ProcessTemplateKind[] = [
-  'skill',
-  'workflow',
-  'sop',
-  'checklist',
-];
-const blockerKindOptions: BlockerKind[] = [
-  'external_person',
-  'external_team',
-  'approval',
-  'document_or_material',
-  'system_or_tool',
-  'other',
-];
+type Lane = 'escalate' | 'unblock' | 'continue' | 'clarify' | 'steady';
+type TaskStatus = 'running' | 'waiting' | 'blocked' | 'idle' | 'done';
+type TaskType = TaskExecutionType;
+type ViewMode = 'lane' | 'list' | 'timeline';
 
-const responsibilityOptions: ResponsibilityKind[] = [
-  'self',
-  'external_person',
-  'external_team',
-  'upstream_task',
-  'shared',
-  'unknown',
-];
-
-const transitionOptions: Record<TaskState, TaskState[]> = {
-  captured: ['triaged', 'planned', 'archived'],
-  triaged: ['planned', 'archived'],
-  planned: ['running', 'waiting_external', 'completed', 'archived'],
-  running: ['planned', 'waiting_external', 'completed', 'archived'],
-  waiting_external: ['planned', 'running', 'completed', 'archived'],
-  completed: ['archived'],
-  archived: [],
-};
-
-const TIMELINE_PREVIEW_COUNT = 5;
-const COMPLETION_EVIDENCE_LIMIT = 3;
-const CODE_AGENT_CONTEXT_CANDIDATE_LIMIT = 8;
-const WORKSPACE_PATH_PATTERN = /(?:^|[\s"'`(：:])((?:[\w.-]+\/)+[\w.-]+\.[A-Za-z0-9]{1,12}|[\w.-]+\.(?:ts|tsx|js|jsx|mjs|cjs|json|md|mdx|css|scss|html|yml|yaml|toml|txt))(?:$|[\s"'`),，。；;!?])/g;
-const WORKSPACE_CONTEXT_FORBIDDEN_SEGMENTS = new Set(['.git', 'node_modules']);
-const WORKSPACE_CONTEXT_FORBIDDEN_BASENAMES = new Set(['.env', '.env.local', '.npmrc', '.netrc']);
-
-type CompletionEvidenceCard = {
+interface Task {
   id: string;
-  type: 'decision' | 'run' | 'artifact';
   title: string;
-  detail: string;
-  responsibilityGuidance: string | null;
-  matchedCriteria: string[];
-  matchedCriteriaIds: string[];
-  targetId: string | null;
+  lane: Lane;
+  status: TaskStatus;
+  type: TaskType;
+  parentTaskId?: string;
+  childTaskIds: string[];
+  whyNow?: string;
+  nextStep?: string;
+  waitingOn?: string;
+  commitment?: string;
+  schedule?: string;
+  trigger?: string;
+  dependencyId?: string;
+  dependencyReady?: boolean;
+  updatedAt: string;
+  state: TaskState;
+}
+
+const LANE_LABELS: Record<Lane, string> = {
+  escalate: 'Escalate now',
+  unblock:  'Unblock or decide',
+  continue: 'Continue or review',
+  clarify:  'Clarify',
+  steady:   'Steady',
 };
 
-function normalizeWorkspaceContextCandidate(value: string): string | null {
-  const candidate = value.replaceAll('\\', '/').replace(/^\.\/+/, '').trim();
+const LANE_ORDER: Lane[] = ['escalate', 'unblock', 'continue', 'clarify', 'steady'];
 
-  if (!candidate
-    || candidate.startsWith('/')
-    || candidate.startsWith('../')
-    || candidate.includes('/../')
-    || candidate === '.'
-    || candidate === '..') {
-    return null;
-  }
+type Lens =
+  | 'all'
+  | 'running' | 'waiting' | 'blocked'
+  | 'project' | 'scheduled' | 'event'
+  | 'committed' | 'done'
+  | `project:${string}`;
 
-  const segments = candidate.split('/');
-  if (segments.some((segment) => !segment || WORKSPACE_CONTEXT_FORBIDDEN_SEGMENTS.has(segment))) {
-    return null;
-  }
+const DEFER_OPTIONS = [
+  { label: '明天', value: 'tomorrow' },
+  { label: '本周末', value: 'weekend' },
+  { label: '下周一', value: 'next-monday' },
+  { label: '选日期…', value: 'custom' },
+];
 
-  const basename = segments.at(-1) ?? '';
-  return WORKSPACE_CONTEXT_FORBIDDEN_BASENAMES.has(basename) ? null : candidate;
+function deferLabel(value: string): string {
+  return DEFER_OPTIONS.find((opt) => opt.value === value)?.label ?? value;
 }
 
-function extractWorkspacePathCandidates(...values: Array<string | null | undefined>): string[] {
-  const candidates: string[] = [];
+/* ─── Map real task record → UI task ─── */
 
-  for (const value of values) {
-    if (!value) {
-      continue;
-    }
-
-    for (const match of value.matchAll(WORKSPACE_PATH_PATTERN)) {
-      const candidate = normalizeWorkspaceContextCandidate(match[1] ?? '');
-      if (candidate && !candidates.includes(candidate)) {
-        candidates.push(candidate);
-      }
-    }
-  }
-
-  return candidates.slice(0, CODE_AGENT_CONTEXT_CANDIDATE_LIMIT);
+function derivelane(r: TaskListItemRecord): Lane {
+  if (r.riskLevel === 'high') return 'escalate';
+  if (r.activeDependency) return 'unblock';
+  if (r.activeBlocker || r.state === 'waiting_external') return 'unblock';
+  if (r.state === 'running') return 'continue';
+  if (r.state === 'captured') return 'clarify';
+  if (r.riskLevel === 'medium') return 'unblock';
+  if (r.state === 'completed' || r.state === 'archived') return 'steady';
+  return 'continue';
 }
 
-function parseCodeAgentContextFileInput(value: string): string[] {
-  const files: string[] = [];
-
-  for (const rawFile of value.split(/[\n,]/)) {
-    const file = rawFile.trim();
-    if (file && !files.includes(file)) {
-      files.push(file);
-    }
-  }
-
-  return files;
+function deriveStatus(r: TaskListItemRecord): TaskStatus {
+  if (r.state === 'running') return 'running';
+  if (r.state === 'waiting_external') return 'waiting';
+  if (r.activeDependency) return 'blocked';
+  if (r.activeBlocker) return 'blocked';
+  if (r.state === 'completed' || r.state === 'archived') return 'done';
+  return 'idle';
 }
 
-function getCodeAgentContextFileCandidates(detail: TaskDetail | null): string[] {
-  if (!detail) {
-    return [];
-  }
-
-  return extractWorkspacePathCandidates(
-    detail.title,
-    detail.summary,
-    detail.nextStep,
-    detail.riskNote,
-    ...detail.completionCriteria.map((item) => item.text),
-    ...detail.sourceContexts.flatMap((item) => [
-      item.title,
-      item.uri,
-      item.content,
-      item.note,
-    ]),
-    ...detail.artifacts.flatMap((item) => [
-      item.title,
-      item.content,
-    ]),
-  );
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
-function isEarlyTask(task: Pick<TaskListItemRecord, 'state'>): boolean {
-  return task.state === 'captured' || task.state === 'triaged';
-}
-
-function getTaskCardSummary(task: TaskListItemRecord): string {
-  if (task.dependencyReevaluation) {
-    return task.dependencyReevaluation.status === 'upstream_ready'
-      ? '上游任务已完成，建议重新判断是否解除依赖。'
-      : '上游任务刚解除关键阻塞，建议重新判断是否解除依赖。';
-  }
-
-  if (task.summary?.trim()) {
-    return task.summary;
-  }
-
-  if (task.activeDependency?.blockedByTaskTitle) {
-    return `当前依赖上游任务：${task.activeDependency.blockedByTaskTitle}。`;
-  }
-
-  if (isEarlyTask(task)) {
-    return task.state === 'captured'
-      ? '刚进入系统，先补一句任务摘要。'
-      : '刚完成初步整理，先补清摘要与下一步。';
-  }
-
-  return task.id;
-}
-
-function getTaskCardNextMoveHint(task: TaskListItemRecord): string | null {
-  if (task.dependencyReevaluation) {
-    return task.dependencyReevaluation.status === 'upstream_ready'
-      ? '重判重点：确认上游任务已完成后，这条任务是否可以恢复推进。'
-      : '重判重点：先确认上游阻塞是否已足够解除，再决定是否恢复推进。';
-  }
-
-  if (task.activeDependency?.blockedByTaskTitle) {
-    return `解阻塞重点：先推动上游任务“${task.activeDependency.blockedByTaskTitle}”，再恢复这条任务。`;
-  }
-
-  if (task.nextStep) {
-    return `下一步：${task.nextStep}`;
-  }
-
-  if (isEarlyTask(task)) {
-    return task.state === 'captured'
-      ? '整理重点：先补一句任务摘要，再明确下一步。'
-      : '整理重点：先补清下一步，并判断是否需要拍板或执行。';
-  }
-
-  return null;
-}
-
-function getTaskCardTone(task: TaskListItemRecord): string {
-  if (task.riskLevel === 'high') {
-    return 'task-card-danger';
-  }
-
-  if (task.state === 'waiting_external' || task.waitingReason) {
-    return 'task-card-warning';
-  }
-
-  if (!task.nextStep && !['completed', 'archived'].includes(task.state)) {
-    return 'task-card-muted';
-  }
-
-  return '';
-}
-
-function buildTaskBadges(task: TaskListItemRecord): string[] {
-  const badges: string[] = [];
-
-  if (task.riskLevel !== 'none') {
-    badges.push(`risk:${task.riskLevel}`);
-  }
-
-  if (task.state === 'waiting_external' || task.waitingReason) {
-    badges.push('waiting');
-  }
-
-  if (!task.nextStep && !['completed', 'archived'].includes(task.state)) {
-    badges.push('next-step?');
-  }
-
-  return badges;
-}
-
-function normalizeCompletionText(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-function buildCompletionKeywords(value: string): string[] {
-  return normalizeCompletionText(value)
-    .split(/[^a-z0-9\u4e00-\u9fff]+/i)
-    .map((token) => token.trim())
-    .filter((token) => token.length >= 2);
-}
-
-function findMatchedCompletionCriteria(
-  criteria: CompletionCriteriaRecord[],
-  evidenceTexts: string[],
-): string[] {
-  const openCriteria = criteria.filter((item) => item.status === 'open');
-
-  if (openCriteria.length === 0) {
-    return [];
-  }
-
-  if (openCriteria.length === 1) {
-    return [openCriteria[0]!.text];
-  }
-
-  const haystack = evidenceTexts.map(normalizeCompletionText).join(' ');
-
-  const matched = openCriteria.filter((item) => {
-    const normalized = normalizeCompletionText(item.text);
-
-    if (normalized && haystack.includes(normalized)) {
-      return true;
-    }
-
-    const keywords = buildCompletionKeywords(item.text);
-    return keywords.some((keyword) => haystack.includes(keyword));
-  });
-
-  return matched.map((item) => item.text);
-}
-
-function findMatchedCompletionCriteriaIds(
-  criteria: CompletionCriteriaRecord[],
-  evidenceTexts: string[],
-): string[] {
-  const openCriteria = criteria.filter((item) => item.status === 'open');
-
-  if (openCriteria.length === 0) {
-    return [];
-  }
-
-  if (openCriteria.length === 1) {
-    return [openCriteria[0]!.id];
-  }
-
-  const haystack = evidenceTexts.map(normalizeCompletionText).join(' ');
-
-  return openCriteria
-    .filter((item) => {
-      const normalized = normalizeCompletionText(item.text);
-
-      if (normalized && haystack.includes(normalized)) {
-        return true;
-      }
-
-      const keywords = buildCompletionKeywords(item.text);
-      return keywords.some((keyword) => haystack.includes(keyword));
-    })
-    .map((item) => item.id);
-}
-
-function formatSourceContextKind(kind: SourceContextKind): string {
-  switch (kind) {
-    case 'doc':
-      return '文档';
-    case 'issue':
-      return 'Issue';
-    case 'pr':
-      return 'PR';
-    case 'website_list':
-      return '网站列表';
-    case 'note':
-      return '备注';
-    default:
-      return '链接';
-  }
-}
-
-function formatProcessTemplateKind(kind: ProcessTemplateKind): string {
-  switch (kind) {
-    case 'workflow':
-      return '流程';
-    case 'sop':
-      return 'SOP';
-    case 'checklist':
-      return '清单';
-    default:
-      return 'Skill';
-  }
-}
-
-function formatBlockerKind(kind: BlockerKind): string {
-  switch (kind) {
-    case 'external_person':
-      return '外部个人';
-    case 'external_team':
-      return '外部团队';
-    case 'approval':
-      return '审批';
-    case 'document_or_material':
-      return '资料';
-    case 'system_or_tool':
-      return '系统/工具';
-    default:
-      return '其他';
-  }
-}
-
-function formatResponsibilityKind(kind: ResponsibilityKind): string {
-  switch (kind) {
-    case 'self':
-      return '自己推进';
-    case 'external_person':
-      return '外部个人推进';
-    case 'external_team':
-      return '外部团队推进';
-    case 'upstream_task':
-      return '上游任务推进';
-    case 'shared':
-      return '共同推进';
-    default:
-      return '责任待明确';
-  }
-}
-
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined || value === '') {
-    return '未填写';
-  }
-
-  return String(value);
-}
-
-function getTimelineToneClass(type: string): string {
-  if (getTaskTimelinePriority(type) === 'p3') {
-    return 'timeline-item-muted';
-  }
-
-  switch (type) {
-    case 'task.decision_cancelled':
-    case 'task.run_failed':
-    case 'task.risk_changed':
-      return 'timeline-item-risk';
-    case 'task.decision_approved':
-    case 'task.decision_deferred':
-      return 'timeline-item-state';
-    case 'task.run_completed':
-      return 'timeline-item-state';
-    case 'task.waiting_changed':
-    case 'waiting_item.created':
-    case 'waiting_item.updated':
-    case 'waiting_item.resolved':
-      return 'timeline-item-waiting';
-    case 'artifact.created':
-      return 'timeline-item-next-step';
-    case 'source_context.created':
-    case 'source_context.updated':
-    case 'source_context.archived':
-    case 'blocker.created':
-    case 'blocker.updated':
-    case 'blocker.resolved':
-    case 'task_dependency.created':
-    case 'task_dependency.updated':
-    case 'task_dependency.resolved':
-    case 'process_template.applied':
-    case 'process_template.removed':
-    case 'process_template.selected':
-    case 'process_template.skipped':
-      return 'timeline-item-default';
-    case 'task.transitioned':
-      return 'timeline-item-state';
-    case 'task.next_step_changed':
-      return 'timeline-item-next-step';
-    default:
-      return 'timeline-item-default';
-  }
-}
-
-function formatTimelineSummary(event: TimelineEventRecord): string {
-  return formatTaskTimelineEventSummary(event);
-}
-
-function getTimelineActionLabel(type: string): string | null {
-  return getTaskTimelineFollowUpActionLabel(type);
-}
-
-function getTimelineObjectLabel(event: TimelineEventRecord): string | null {
-  return getTaskTimelineObjectAction(event).label;
-}
-
-function buildQuickDecisionSeed(detail: TaskDetail, lane: PriorityLane | undefined): string {
-  switch (lane) {
-    case 'escalate_now':
-      return detail.activeBlocker?.title
-        ? `优先明确升级路径、责任归属和解除条件：${detail.activeBlocker.title}`
-        : '优先明确升级路径和当前高风险事项的拍板点。';
-    case 'unblock_or_decide':
-      return detail.activeBlocker?.title
-        ? `优先明确如何解除当前阻塞：${detail.activeBlocker.title}`
-        : '优先明确当前需要拍板或解阻塞的关键点。';
-    case 'continue_or_review':
-      return detail.nextStep?.trim() || '围绕最近结果继续推进，并明确本轮需要复核的重点。';
-    case 'clarify':
-      return detail.activeWaitingItem?.reason ?? detail.waitingReason ?? '先补清当前下一步、等待条件或缺失信息。';
-    default:
-      return detail.nextStep ?? '';
-  }
-}
-
-function buildQuickRunSeed(detail: TaskDetail, lane: PriorityLane | undefined): string {
-  const explicitNextStep = detail.nextStep?.trim();
-  const summary = detail.summary?.trim();
-
-  switch (lane) {
-    case 'escalate_now':
-      return explicitNextStep
-        ? `${explicitNextStep}\n\n本轮执行优先围绕升级处理当前高风险/阻塞，输出可直接用于推进的结果。`
-        : '本轮执行优先围绕升级处理当前高风险/阻塞，输出可直接用于推进的结果。';
-    case 'unblock_or_decide':
-      return detail.activeBlocker?.title
-        ? `请围绕当前阻塞“${detail.activeBlocker.title}”整理解阻塞所需输入、判断点和建议下一步。`
-        : '请围绕当前拍板/解阻塞需要，整理关键信息、判断点和建议下一步。';
-    case 'continue_or_review':
-      return explicitNextStep
-        ? `${explicitNextStep}\n\n请基于最近结果继续推进，并明确下一步可执行输出。`
-        : '请基于最近结果继续推进，并明确下一步可执行输出。';
-    case 'clarify':
-      return detail.activeWaitingItem?.reason ?? detail.waitingReason
-        ? `请先帮助澄清当前等待/缺口：${detail.activeWaitingItem?.reason ?? detail.waitingReason}`
-        : '请先帮助补清下一步、等待条件或缺失上下文。';
-    default:
-      return explicitNextStep ?? summary ?? '';
-  }
-}
-
-function getQuickDecisionGuidance(lane: PriorityLane | undefined): string {
-  switch (lane) {
-    case 'escalate_now':
-      return '当前按「立即升级」语义，草拟更偏向明确升级路径、责任归属和拍板点。';
-    case 'unblock_or_decide':
-      return '当前按「先解阻塞/拍板」语义，草拟更偏向明确当前阻塞或待拍板的关键判断。';
-    case 'continue_or_review':
-      return '当前按「继续推进/复核」语义，草拟更偏向承接最近结果并组织下一步判断。';
-    case 'clarify':
-      return '当前按「先补清晰度」语义，草拟更偏向补清下一步、等待条件或缺失信息。';
-    default:
-      return '当前保持稳态推进，草拟会优先围绕现有下一步组织。';
-  }
-}
-
-function getQuickDecisionResponsibilityGuidance(detail: TaskDetail | null): string | null {
-  if (!detail) {
-    return null;
-  }
-
-  const completionResponsibility = detail.resumeCard.completionStatus.nextOpenResponsibilitySummary?.trim();
-  if (completionResponsibility) {
-    return `如果这次拍板会影响收尾判断，也应顺手明确最后由谁确认完成标准。${completionResponsibility}`;
-  }
-
-  const blockerResponsibility = detail.resumeCard.currentBlocker.responsibilitySummary?.trim();
-  if (detail.activeBlocker && blockerResponsibility) {
-    return `如果这次拍板是为了解阻塞，也应顺手明确解除责任。${blockerResponsibility}`;
-  }
-
-  const dependencyResponsibility = detail.resumeCard.currentDependency?.responsibilitySummary?.trim();
-  if (detail.activeDependency && dependencyResponsibility) {
-    return `如果这次拍板会影响依赖链路，也应顺手明确由谁推动上游任务。${dependencyResponsibility}`;
-  }
-
-  return null;
-}
-
-function getCompletionEvidenceResponsibilityGuidance(
-  responsibilitySummary: string | null | undefined,
-): string | null {
-  const actor = responsibilitySummary
-    ?.trim()
-    .replace(/^确认责任：/, '')
-    .replace(/负责确认$/, '')
-    .replace(/确认$/, '')
-    .trim();
-
-  if (!actor) {
-    return null;
-  }
-
-  return `如果这条证据对应当前未满足标准，仍需由${actor}确认。`;
-}
-
-function getQuickRunGuidance(lane: PriorityLane | undefined): string {
-  switch (lane) {
-    case 'escalate_now':
-      return '当前按「立即升级」语义，本轮 run 默认更偏向输出可直接用于升级处理的结果。';
-    case 'unblock_or_decide':
-      return '当前按「先解阻塞/拍板」语义，本轮 run 默认更偏向整理解阻塞或拍板所需输入。';
-    case 'continue_or_review':
-      return '当前按「继续推进/复核」语义，本轮 run 默认更偏向承接最近结果继续推进。';
-    case 'clarify':
-      return '当前按「先补清晰度」语义，本轮 run 默认更偏向补清下一步、等待条件或缺失上下文。';
-    default:
-      return '当前保持稳态推进，本轮 run 默认会围绕现有下一步或摘要展开。';
-  }
-}
-
-function isEarlyTaskState(state: TaskState | undefined): boolean {
-  return state === 'captured' || state === 'triaged';
-}
-
-function getPrimaryMoveConfig(detail: TaskDetail | null, lane: PriorityLane | undefined): Array<{
-  id: 'detail' | 'decision' | 'run' | 'transition' | 'blocker' | 'dependency' | 'completion';
-  label: string;
-}> {
-  if (!detail) {
-    return [];
-  }
-
-  if (isEarlyTaskState(detail.state)) {
-    return [
-      { id: 'detail', label: '补摘要与下一步' },
-      { id: 'decision', label: '判断是否需要拍板' },
-    ];
-  }
-
-  if (detail.activeBlocker) {
-    return [
-      { id: 'blocker', label: '处理当前阻塞' },
-      { id: 'transition', label: '调整任务状态' },
-    ];
-  }
-
-  if (detail.activeDependency) {
-    return [
-      {
-        id: 'dependency',
-        label: detail.dependencyReevaluation ? '重新判断依赖' : '推动上游任务',
-      },
-      { id: 'transition', label: '调整任务状态' },
-    ];
-  }
-
-  if (detail.resumeCard.completionStatus.total > 0) {
-    return [
-      {
-        id: 'completion',
-        label: detail.resumeCard.completionStatus.open === 0 ? '最终收尾判断' : '核对完成标准',
-      },
-      { id: 'transition', label: '调整任务状态' },
-    ];
-  }
-
-  switch (lane) {
-    case 'escalate_now':
-    case 'unblock_or_decide':
-      return [
-        { id: 'decision', label: '草拟或创建 Decision' },
-        { id: 'transition', label: '调整任务状态' },
-      ];
-    case 'continue_or_review':
-      return [
-        { id: 'run', label: '配置并触发 Run' },
-        { id: 'transition', label: '调整任务状态' },
-      ];
-    case 'clarify':
-      return [
-        { id: 'detail', label: '补摘要与下一步' },
-        { id: 'decision', label: '判断是否需要拍板' },
-      ];
-    default:
-      return [
-        { id: 'run', label: '配置并触发 Run' },
-        { id: 'decision', label: '草拟或创建 Decision' },
-      ];
-  }
-}
-
-function getActionDeskStageGuidance(detail: TaskDetail | null): string {
-  if (!detail) {
-    return '先给当前最常用的三个入口，详细配置再放到下方，不把中层做成工具箱。';
-  }
-
-  if (isEarlyTaskState(detail.state)) {
-    return '当前任务还在捕获/整理阶段，先补清摘要、下一步和是否需要拍板，再考虑执行动作。';
-  }
-
-  return '先给当前最值得处理的一到两个入口，详细配置再放到下方，不把中层做成工具箱。';
-}
-
-function getActionSetupGuidance(detail: TaskDetail | null): string {
-  if (!detail) {
-    return '需要补充上下文时，再使用这里的详细表单。';
-  }
-
-  if (isEarlyTaskState(detail.state)) {
-    return '当前仍以整理任务为主，Run 放在补清摘要、下一步和拍板判断之后。';
-  }
-
-  return '需要补充上下文时，再使用这里的详细表单。';
-}
-
-function getActionSetupOrder(detail: TaskDetail | null, lane: PriorityLane | undefined): Array<'decision' | 'run'> {
-  if (!detail) {
-    return ['decision', 'run'];
-  }
-
-  if (isEarlyTaskState(detail.state)) {
-    return ['decision', 'run'];
-  }
-
-  return lane === 'continue_or_review' || lane === 'steady' || !lane
-    ? ['run', 'decision']
-    : ['decision', 'run'];
-}
-
-function getDependencyReevaluationNextStep(detail: TaskDetail): string | null {
-  if (!detail.activeDependency?.blockedByTaskTitle || !detail.dependencyReevaluation) {
-    return null;
-  }
-
-  return detail.dependencyReevaluation.status === 'upstream_ready'
-    ? `基于上游任务完成重新判断是否解除依赖：${detail.activeDependency.blockedByTaskTitle}`
-    : `基于上游任务进展重新判断是否解除依赖：${detail.activeDependency.blockedByTaskTitle}`;
-}
-
-function getDependencyEscalationNextStep(detail: TaskDetail): string | null {
-  if (!detail.activeDependency?.blockedByTaskTitle) {
-    return null;
-  }
-
-  return `优先推动上游任务“${detail.activeDependency.blockedByTaskTitle}”，并重新判断是否解除对“${detail.title}”的依赖。`;
-}
-
-function formatActionError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-type TasksPageProps = {
-  aiStatus: AiConfigStatus | null;
-  decisions: DecisionRecord[];
-  focusedTaskRequest: {
-    key: string;
-    taskId: string;
-    intent: RecommendedActionIntent | null;
-  } | null;
-  runs: RunRecord[];
-  taskPriorityLanes: Map<string, PriorityLane>;
-  tasks: TaskListItemRecord[];
-  onApplyProcessTemplate: (input: ApplyProcessTemplateInput) => Promise<AppliedProcessTemplateRecord>;
-  onArchiveProcessTemplate: (id: string) => Promise<ProcessTemplateRecord>;
-  onCreateBlocker: (input: CreateBlockerInput) => Promise<BlockerRecord>;
-  onCreateCompletionCriteria: (
-    input: CreateCompletionCriteriaInput,
-  ) => Promise<CompletionCriteriaRecord>;
-  onCreateDecision: (input: CreateDecisionInput) => Promise<void>;
-  onCreateTaskDependency: (input: CreateTaskDependencyInput) => Promise<TaskDependencyRecord>;
-  onDraftDecision: (taskId: string, note?: string | null) => Promise<DecisionDraftRecord>;
-  onCreateProcessTemplate: (input: CreateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
-  onCreateSourceContext: (input: CreateSourceContextInput) => Promise<SourceContextRecord>;
-  onArchiveSourceContext: (id: string) => Promise<SourceContextRecord>;
-  onOpenDecision: (decisionId: string) => void;
-  onOpenRun: (runId: string) => void;
-  onOpenRunForCheckpoint: (checkpointId: string) => Promise<boolean>;
-  onRefresh: () => Promise<void>;
-  onReopenCompletionCriteria: (id: string) => Promise<CompletionCriteriaRecord>;
-  onCreateTask: (input: CreateTaskInput) => Promise<TaskListItemRecord>;
-  onProbeSandboxBackend: () => Promise<void>;
-  onRemoveProcessTemplate: (bindingId: string) => Promise<AppliedProcessTemplateRecord>;
-  onResolveBlocker: (id: string) => Promise<BlockerRecord>;
-  onResolveTaskDependency: (id: string) => Promise<TaskDependencyRecord>;
-  onSatisfyCompletionCriteria: (id: string) => Promise<CompletionCriteriaRecord>;
-  onTriggerCodeAgentRun: (input: CreateCodeAgentRunInput) => Promise<RunRecord>;
-  onTriggerRun: (input: CreateRunInput) => Promise<RunRecord>;
-  onUpdateBlocker: (input: UpdateBlockerInput) => Promise<BlockerRecord>;
-  onUpdateCompletionCriteria: (
-    input: UpdateCompletionCriteriaInput,
-  ) => Promise<CompletionCriteriaRecord>;
-  onUpdateTaskDependency: (input: UpdateTaskDependencyInput) => Promise<TaskDependencyRecord>;
-  onUpdateProcessTemplate: (input: UpdateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
-  onUpdateSourceContext: (input: UpdateSourceContextInput) => Promise<SourceContextRecord>;
-  onUpdateTask: (input: UpdateTaskInput) => Promise<TaskListItemRecord>;
-  onTransitionTask: (
-    taskId: string,
-    nextState: TaskState,
-    waitingReason?: string,
-  ) => Promise<TaskListItemRecord>;
-  onTaskFocusConsumed: () => void;
-  sandboxBackendProbePending: boolean;
+const TASK_TYPE_LABELS: Record<TaskType, string> = {
+  simple:    '一次性',
+  project:   '项目',
+  scheduled: '定时',
+  event:     '事件',
 };
 
-export function TasksPage({
-  aiStatus,
-  decisions,
-  focusedTaskRequest,
-  runs,
-  taskPriorityLanes,
-  tasks,
-  onApplyProcessTemplate,
-  onArchiveProcessTemplate,
-  onCreateBlocker,
-  onCreateCompletionCriteria,
-  onCreateDecision,
-  onCreateTaskDependency,
-  onDraftDecision,
-  onCreateProcessTemplate,
-  onCreateSourceContext,
-  onArchiveSourceContext,
-  onOpenDecision,
-  onOpenRun,
-  onOpenRunForCheckpoint,
-  onRefresh,
-  onReopenCompletionCriteria,
-  onCreateTask,
-  onProbeSandboxBackend,
-  onRemoveProcessTemplate,
-  onResolveBlocker,
-  onResolveTaskDependency,
-  onSatisfyCompletionCriteria,
-  onTriggerCodeAgentRun,
-  onTriggerRun,
-  onUpdateBlocker,
-  onUpdateCompletionCriteria,
-  onUpdateTaskDependency,
-  onUpdateProcessTemplate,
-  onUpdateSourceContext,
-  onUpdateTask,
-  onTransitionTask,
-  onTaskFocusConsumed,
-  sandboxBackendProbePending,
-}: TasksPageProps) {
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(tasks[0]?.id ?? null);
-  const [detail, setDetail] = useState<TaskDetail | null>(null);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [draftTitle, setDraftTitle] = useState('');
-  const [draftSummary, setDraftSummary] = useState('');
-  const [draftNextStep, setDraftNextStep] = useState('');
-  const [draftWaitingReason, setDraftWaitingReason] = useState('');
-  const [draftRiskLevel, setDraftRiskLevel] = useState<TaskRiskLevel>('none');
-  const [draftRiskNote, setDraftRiskNote] = useState('');
-  const [quickDecisionTitle, setQuickDecisionTitle] = useState('');
-  const [quickDecisionNote, setQuickDecisionNote] = useState('');
-  const [quickDecisionRationale, setQuickDecisionRationale] = useState<string | null>(null);
-  const [quickRunType, setQuickRunType] = useState<CreateRunInput['type']>('draft');
-  const [quickRunInstructions, setQuickRunInstructions] = useState('');
-  const [quickRunAllowLocalWorkspaceRead, setQuickRunAllowLocalWorkspaceRead] = useState(false);
-  const [quickRunAllowTaskMutationTools, setQuickRunAllowTaskMutationTools] = useState(false);
-  const [codeAgentPatchIntent, setCodeAgentPatchIntent] = useState('');
-  const [codeAgentContextFiles, setCodeAgentContextFiles] = useState('');
-  const [codeAgentArtifactIds, setCodeAgentArtifactIds] = useState<string[]>([]);
-  const [codeAgentSourceContextIds, setCodeAgentSourceContextIds] = useState<string[]>([]);
-  const [codeAgentIncludeSourceContextContent, setCodeAgentIncludeSourceContextContent] = useState(false);
-  const [codeAgentRunTestCheck, setCodeAgentRunTestCheck] = useState(true);
-  const [codeAgentRunLintCheck, setCodeAgentRunLintCheck] = useState(true);
-  const [codeAgentOperatorConfirmed, setCodeAgentOperatorConfirmed] = useState(false);
-  const [codeAgentUseModelProducer, setCodeAgentUseModelProducer] = useState(false);
-  const [codeAgentIntentDiagnostic, setCodeAgentIntentDiagnostic] = useState<string | null>(null);
-  const [codeAgentRunPending, setCodeAgentRunPending] = useState(false);
-  const [transitionWaitingReason, setTransitionWaitingReason] = useState('');
-  const [blockerEditingId, setBlockerEditingId] = useState<string | null>(null);
-  const [blockerTitle, setBlockerTitle] = useState('');
-  const [blockerKind, setBlockerKind] = useState<BlockerKind>('other');
-  const [blockerDetail, setBlockerDetail] = useState('');
-  const [blockerOwner, setBlockerOwner] = useState('');
-  const [blockerResponsibility, setBlockerResponsibility] = useState<ResponsibilityKind>('unknown');
-  const [blockerResponsibilityLabel, setBlockerResponsibilityLabel] = useState('');
-  const [blockerSourceContextId, setBlockerSourceContextId] = useState('');
-  const [blockerError, setBlockerError] = useState<string | null>(null);
-  const [completionCriteriaEditingId, setCompletionCriteriaEditingId] = useState<string | null>(null);
-  const [completionCriteriaFocusIds, setCompletionCriteriaFocusIds] = useState<string[]>([]);
-  const [completionCriteriaText, setCompletionCriteriaText] = useState('');
-  const [completionCriteriaResponsibility, setCompletionCriteriaResponsibility] = useState<ResponsibilityKind>('unknown');
-  const [completionCriteriaResponsibilityLabel, setCompletionCriteriaResponsibilityLabel] = useState('');
-  const [completionCriteriaError, setCompletionCriteriaError] = useState<string | null>(null);
-  const [dependencyEditingId, setDependencyEditingId] = useState<string | null>(null);
-  const [dependencyBlockedByTaskId, setDependencyBlockedByTaskId] = useState('');
-  const [dependencyReason, setDependencyReason] = useState('');
-  const [dependencyError, setDependencyError] = useState<string | null>(null);
-  const [sourceContextEditingId, setSourceContextEditingId] = useState<string | null>(null);
-  const [sourceContextTitle, setSourceContextTitle] = useState('');
-  const [sourceContextKind, setSourceContextKind] = useState<SourceContextKind>('link');
-  const [sourceContextIsKey, setSourceContextIsKey] = useState(false);
-  const [sourceContextUri, setSourceContextUri] = useState('');
-  const [sourceContextContent, setSourceContextContent] = useState('');
-  const [sourceContextNote, setSourceContextNote] = useState('');
-  const [sourceContextError, setSourceContextError] = useState<string | null>(null);
-  const [processTemplateEditingId, setProcessTemplateEditingId] = useState<string | null>(null);
-  const [processTemplateTitle, setProcessTemplateTitle] = useState('');
-  const [processTemplateSummary, setProcessTemplateSummary] = useState('');
-  const [processTemplateKind, setProcessTemplateKind] = useState<ProcessTemplateKind>('skill');
-  const [processTemplateTags, setProcessTemplateTags] = useState('');
-  const [processTemplateContent, setProcessTemplateContent] = useState('');
-  const [processTemplateError, setProcessTemplateError] = useState<string | null>(null);
-  const [codeAgentReviewError, setCodeAgentReviewError] = useState<string | null>(null);
-  const [detailError, setDetailError] = useState<string | null>(null);
-  const [transitionError, setTransitionError] = useState<string | null>(null);
-  const [showAllTimeline, setShowAllTimeline] = useState(false);
-  const currentSnapshotSectionRef = useRef<HTMLDivElement | null>(null);
-  const detailFormRef = useRef<HTMLFormElement | null>(null);
-  const quickActionsRef = useRef<HTMLDivElement | null>(null);
-  const quickDecisionCardRef = useRef<HTMLFormElement | null>(null);
-  const quickRunCardRef = useRef<HTMLFormElement | null>(null);
-  const transitionCardRef = useRef<HTMLDivElement | null>(null);
-  const actionDeskSectionRef = useRef<HTMLDivElement | null>(null);
-  const activityFeedSectionRef = useRef<HTMLDivElement | null>(null);
-  const contextStudioSectionRef = useRef<HTMLDivElement | null>(null);
-  const blockerSectionRef = useRef<HTMLDivElement | null>(null);
-  const completionCriteriaSectionRef = useRef<HTMLDivElement | null>(null);
-  const dependencySectionRef = useRef<HTMLDivElement | null>(null);
-  const sourceContextSectionRef = useRef<HTMLDivElement | null>(null);
-  const processContextSectionRef = useRef<HTMLDivElement | null>(null);
-  const resumeCurrentBlocker = detail?.resumeCard.currentBlocker ?? {
-    blockerId: null,
-    title: '暂无当前阻塞项',
-    detail: null,
+const RISK_OPTIONS: Array<{ label: string; value: TaskRiskLevel }> = [
+  { label: '高', value: 'high' },
+  { label: '中', value: 'medium' },
+  { label: '低', value: 'low' },
+  { label: '无', value: 'none' },
+];
+
+function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): Task {
+  return {
+    id: r.id,
+    title: r.title,
+    lane: derivelane(r),
+    status: deriveStatus(r),
+    type: attrs?.type ?? 'simple',
+    parentTaskId: attrs?.parentTaskId ?? undefined,
+    childTaskIds: attrs?.childTaskIds ?? [],
+    whyNow: r.summary ?? undefined,
+    nextStep: r.nextStep ?? undefined,
+    waitingOn: r.activeDependency
+      ? r.dependencyReevaluation
+        ? `依赖可复核：${r.dependencyReevaluation.upstreamTaskTitle}`
+        : `依赖：${r.activeDependency.blockedByTaskTitle ?? r.activeDependency.reason ?? '上游任务'}`
+      : r.waitingReason ? `等待：${r.waitingReason}` : undefined,
+    dependencyId: r.activeDependency?.id,
+    dependencyReady: Boolean(r.dependencyReevaluation),
+    commitment: attrs?.commitment ?? undefined,
+    schedule: attrs?.schedule ?? undefined,
+    trigger: attrs?.trigger ?? undefined,
+    updatedAt: formatDate(r.updatedAt),
+    state: r.state,
   };
-  const resumeCurrentDependency = detail?.resumeCard.currentDependency ?? {
-    dependencyId: null,
-    title: '暂无任务依赖',
-    detail: null,
-  };
-  const resumeCompletionStatus = detail?.resumeCard.completionStatus ?? {
-    total: 0,
-    satisfied: 0,
-    open: 0,
-    summary: '尚未定义完成标准',
-  };
-  const resumeLane = detail ? taskPriorityLanes.get(detail.id) : undefined;
-  const resumeLaneLabel = getPriorityLaneContextLabel({
-    lane: resumeLane,
-    completionProgress: detail?.resumeCard.completionStatus,
-  });
-  const quickDecisionGuidance = getQuickDecisionGuidance(resumeLane);
-  const quickDecisionResponsibilityGuidance = getQuickDecisionResponsibilityGuidance(detail);
-  const quickRunGuidance = getQuickRunGuidance(resumeLane);
-  const taskDecisions = detail
-    ? decisions.filter((decision) => decision.taskId === detail.id)
-    : [];
-  const taskRuns = detail ? runs.filter((run) => run.taskId === detail.id) : [];
-  const completionEvidenceCards: CompletionEvidenceCard[] = detail
-    ? [
-        ...taskDecisions
-          .filter((decision) => decision.status === 'approved')
-          .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
-          .slice(0, 1)
-          .map((decision) => ({
-            id: `decision:${decision.id}`,
-            type: 'decision' as const,
-            title: decision.title,
-            detail: '这条拍板结果可能说明某些完成标准已经具备。',
-            responsibilityGuidance: getCompletionEvidenceResponsibilityGuidance(
-              resumeCompletionStatus.nextOpenResponsibilitySummary,
-            ),
-            matchedCriteria: findMatchedCompletionCriteria(detail.completionCriteria, [
-              decision.title,
-              decision.status,
-            ]),
-            matchedCriteriaIds: findMatchedCompletionCriteriaIds(detail.completionCriteria, [
-              decision.title,
-              decision.status,
-            ]),
-            targetId: decision.id,
-          })),
-        ...taskRuns
-          .filter((run) => run.status === 'completed' || run.status === 'failed')
-          .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
-          .slice(0, 1)
-          .map((run) => ({
-            id: `run:${run.id}`,
-            type: 'run' as const,
-            title: `${run.type} · ${run.status}`,
-            detail:
-              run.status === 'completed'
-                ? '这次执行结果值得先对照当前未满足的完成标准。'
-                : '这次执行虽然失败，但也可能说明某条完成标准仍未达成。',
-            responsibilityGuidance: getCompletionEvidenceResponsibilityGuidance(
-              resumeCompletionStatus.nextOpenResponsibilitySummary,
-            ),
-            matchedCriteria: findMatchedCompletionCriteria(detail.completionCriteria, [
-              run.type,
-              run.status,
-              run.instructions ?? '',
-              run.output ?? '',
-              run.failureReason ?? '',
-            ]),
-            matchedCriteriaIds: findMatchedCompletionCriteriaIds(detail.completionCriteria, [
-              run.type,
-              run.status,
-              run.instructions ?? '',
-              run.output ?? '',
-              run.failureReason ?? '',
-            ]),
-            targetId: run.id,
-          })),
-        ...detail.artifacts
-          .slice(0, 1)
-          .map((artifact) => ({
-            id: `artifact:${artifact.id}`,
-            type: 'artifact' as const,
-            title: artifact.title,
-            detail: '这份最近产物可能已经覆盖某条完成标准，值得先核对。',
-            responsibilityGuidance: getCompletionEvidenceResponsibilityGuidance(
-              resumeCompletionStatus.nextOpenResponsibilitySummary,
-            ),
-            matchedCriteria: findMatchedCompletionCriteria(detail.completionCriteria, [
-              artifact.title,
-              artifact.content,
-            ]),
-            matchedCriteriaIds: findMatchedCompletionCriteriaIds(detail.completionCriteria, [
-              artifact.title,
-              artifact.content,
-            ]),
-            targetId: artifact.sourceType === 'run' ? artifact.sourceId : null,
-          })),
-      ].slice(0, COMPLETION_EVIDENCE_LIMIT)
-    : [];
-  const transitionStates = detail
-    ? orderTaskTransitions({
-        currentState: detail.state,
-        availableStates: transitionOptions[detail.state],
-        lane: resumeLane,
-        hasActiveBlocker: Boolean(detail.activeBlocker),
-        hasPendingDecision: taskDecisions.some((decision) => decision.status === 'pending'),
-        hasWaitingContext: Boolean(detail.activeWaitingItem || detail.waitingReason),
-        isCompletionReady: resumeCompletionStatus.total > 0 && resumeCompletionStatus.open === 0,
-      })
-    : [];
-  const transitionGuidance = detail
-    ? getTaskTransitionGuidance({
-        currentState: detail.state,
-        availableStates: transitionOptions[detail.state],
-        lane: resumeLane,
-        hasActiveBlocker: Boolean(detail.activeBlocker),
-        hasPendingDecision: taskDecisions.some((decision) => decision.status === 'pending'),
-        hasWaitingContext: Boolean(detail.activeWaitingItem || detail.waitingReason),
-        isCompletionReady: resumeCompletionStatus.total > 0 && resumeCompletionStatus.open === 0,
-      })
-    : null;
-  const openCompletionCriteria = detail?.completionCriteria.filter((criteria) => criteria.status === 'open') ?? [];
-  const completionTransitionGuidance = detail
-    ? getCompletionTransitionGuidance({
-        currentState: detail.state,
-        availableStates: transitionStates,
-        completionTotal: resumeCompletionStatus.total,
-        completionOpen: resumeCompletionStatus.open,
-        openCriteriaTexts: openCompletionCriteria.map((criteria) => criteria.text),
-        nextOpenResponsibilitySummary: resumeCompletionStatus.nextOpenResponsibilitySummary,
-      })
-    : null;
+}
 
-  function updateDraftRiskLevel(nextRiskLevel: TaskRiskLevel) {
-    setDraftRiskLevel(nextRiskLevel);
+function confirmedTaskRecords(records: TaskListItemRecord[]): TaskListItemRecord[] {
+  return records.filter((record) => !isUnconfirmedPanelCaptureRecord(record));
+}
 
-    if (detailError) {
-      setDetailError(null);
-    }
+interface TasksPageProps {
+  onOpenPanel: (taskId: string, draftPrompt?: string, taskTitle?: string) => void;
+  onOpenWorkbench: (taskId: string) => void;
+  onOpenDecision: () => void;
+}
 
-    if (
-      nextRiskLevel !== 'high' &&
-      detail?.riskLevel === 'high' &&
-      draftRiskNote === (detail.riskNote ?? '')
-    ) {
-      setDraftRiskNote('');
-    }
+export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: TasksPageProps) {
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [lens, setLens] = useState<Lens>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('lane');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedSources, setSelectedSources] = useState<SourceContextRecord[]>([]);
+  const [pendingDecisions, setPendingDecisions] = useState<DecisionRecord[]>([]);
+  const [deferOpenId, setDeferOpenId] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; taskId: string } | null>(null);
+  const [completionCheckTask, setCompletionCheckTask] = useState<Task | null>(null);
+  const [projectDraft, setProjectDraft] = useState<{ projectId: string; result: ProjectDecompositionResult } | null>(null);
+  const [projectDecomposingId, setProjectDecomposingId] = useState<string | null>(null);
+  const [projectCreatingChildrenId, setProjectCreatingChildrenId] = useState<string | null>(null);
+  const [projectDecompositionError, setProjectDecompositionError] = useState<string | null>(null);
+
+  const [showCapture, setShowCapture] = useState(false);
+  const [captureTitle, setCaptureTitle] = useState('');
+  const [captureType, setCaptureType] = useState<TaskType>('simple');
+  const [captureCommitment, setCaptureCommitment] = useState('');
+  const [capturing, setCapturing] = useState(false);
+  const [capturedTask, setCapturedTask] = useState<{ id: string; title: string } | null>(null);
+
+  const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function reloadTasks() {
+    window.api?.listTasks().then((records) => {
+      const attrs = loadTaskAttributes();
+      setAllTasks(confirmedTaskRecords(records).map((record) => fromRecord(record, attrs[record.id])));
+    }).catch(() => {});
   }
 
+  function reloadPendingDecisions() {
+    window.api?.listDecisions?.()
+      .then((decisions) => setPendingDecisions(decisions.filter((decision) => decision.status === 'pending')))
+      .catch(() => {});
+  }
+
+  // Load real tasks from backend when available
   useEffect(() => {
-    if (!selectedTaskId && tasks[0]) {
-      setSelectedTaskId(tasks[0].id);
-    }
-  }, [selectedTaskId, tasks]);
-
-  useEffect(() => {
-    if (!focusedTaskRequest) {
-      return;
-    }
-
-    const taskExists = tasks.some((task) => task.id === focusedTaskRequest.taskId);
-
-    if (taskExists) {
-      setSelectedTaskId(focusedTaskRequest.taskId);
-    }
-  }, [focusedTaskRequest, tasks]);
-
-  useEffect(() => {
-    if (!focusedTaskRequest || !detail || focusedTaskRequest.taskId !== detail.id) {
-      return;
-    }
-
-    const intent = focusedTaskRequest.intent;
-
-    if (intent?.prefillNextStep !== undefined) {
-      setDraftNextStep(intent.prefillNextStep ?? '');
-    }
-
-    if (intent?.prefillRunInstructions !== undefined) {
-      setQuickRunInstructions(intent.prefillRunInstructions ?? '');
-    }
-
-    if (intent?.prefillCodeAgentPatchIntent !== undefined) {
-      setQuickRunType('agent');
-      setCodeAgentPatchIntent(intent.prefillCodeAgentPatchIntent ?? '');
-    }
-
-    if (intent?.prefillRiskLevel) {
-      setDraftRiskLevel(intent.prefillRiskLevel);
-    }
-
-    if (intent?.prefillRiskNote !== undefined) {
-      setDraftRiskNote(intent.prefillRiskNote ?? '');
-    }
-
-    if (intent?.sourceContextId) {
-      const matchedSourceContext = detail.sourceContexts.find(
-        (item) => item.id === intent.sourceContextId,
-      );
-
-      if (matchedSourceContext) {
-        populateSourceContextForm(matchedSourceContext);
-      }
-    }
-
-    const focusTarget =
-      intent?.type === 'focus_source_context'
-        ? sourceContextSectionRef.current
-        : intent?.focusArea === 'completion'
-          ? completionCriteriaSectionRef.current
-        : intent?.focusArea === 'code-agent'
-          ? quickRunCardRef.current
-        : intent?.focusArea === 'quick-actions'
-          ? quickActionsRef.current
-          : detailFormRef.current;
-
-    if (typeof focusTarget?.scrollIntoView === 'function') {
-      focusTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    onTaskFocusConsumed();
-  }, [detail, focusedTaskRequest, onTaskFocusConsumed]);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadDetail() {
-      if (!selectedTaskId) {
-        setDetail(null);
-        return;
-      }
-
-      const nextDetail = await window.api.getTaskDetail(selectedTaskId);
-
-      if (mounted) {
-        setDetail(nextDetail);
-        setDraftTitle(nextDetail?.title ?? '');
-        setDraftSummary(nextDetail?.summary ?? '');
-        setDraftNextStep(nextDetail?.nextStep ?? '');
-        setDraftWaitingReason(nextDetail?.waitingReason ?? '');
-        setDraftRiskLevel(nextDetail?.riskLevel ?? 'none');
-        setDraftRiskNote(nextDetail?.riskNote ?? '');
-        setTransitionWaitingReason(nextDetail?.waitingReason ?? '');
-        setBlockerEditingId(null);
-        setBlockerTitle('');
-        setBlockerKind('other');
-        setBlockerDetail('');
-        setBlockerOwner('');
-        setBlockerSourceContextId('');
-        setBlockerError(null);
-        setDependencyEditingId(null);
-        setDependencyBlockedByTaskId('');
-        setDependencyReason('');
-        setDependencyError(null);
-        setCompletionCriteriaFocusIds([]);
-        setSourceContextEditingId(null);
-        setSourceContextTitle('');
-        setSourceContextKind('link');
-        setSourceContextIsKey(false);
-        setSourceContextUri('');
-        setSourceContextContent('');
-        setSourceContextNote('');
-        setSourceContextError(null);
-        setCodeAgentArtifactIds([]);
-        setCodeAgentSourceContextIds([]);
-        setCodeAgentIncludeSourceContextContent(false);
-        setProcessTemplateEditingId(null);
-        setProcessTemplateTitle('');
-        setProcessTemplateSummary('');
-        setProcessTemplateKind('skill');
-        setProcessTemplateTags('');
-        setProcessTemplateContent('');
-        setProcessTemplateError(null);
-        setDetailError(null);
-        setTransitionError(null);
-        setShowAllTimeline(false);
-        setQuickDecisionTitle(
-          nextDetail ? `${nextDetail.title} 需要拍板` : '',
-        );
-        const nextLane = nextDetail ? taskPriorityLanes.get(nextDetail.id) : undefined;
-        setQuickDecisionNote(nextDetail ? buildQuickDecisionSeed(nextDetail, nextLane) : '');
-        setQuickDecisionRationale(null);
-        setQuickRunInstructions(nextDetail ? buildQuickRunSeed(nextDetail, nextLane) : '');
-      }
-    }
-
-    void loadDetail();
-
-    return () => {
-      mounted = false;
-    };
-  }, [selectedTaskId, taskPriorityLanes, tasks]);
-
-  async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!newTaskTitle.trim()) {
-      return;
-    }
-
-    const created = await onCreateTask({ title: newTaskTitle.trim() });
-    setNewTaskTitle('');
-    setSelectedTaskId(created.id);
-    await onRefresh();
-  }
-
-  async function handleSaveDetail(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!detail) {
-      return;
-    }
-
-    if (draftRiskLevel === 'high' && !draftRiskNote.trim()) {
-      setDetailError('将风险等级设为 high 前，请先填写风险说明。');
-      return;
-    }
-
-    setDetailError(null);
-
-    await onUpdateTask({
-      id: detail.id,
-      title: draftTitle,
-      summary: draftSummary,
-      nextStep: draftNextStep,
-      waitingReason: draftWaitingReason,
-      riskLevel: draftRiskLevel,
-      riskNote: draftRiskNote,
-    });
-
-    await onRefresh();
-    const nextDetail = await window.api.getTaskDetail(detail.id);
-    setDetail(nextDetail);
-  }
-
-  async function handleTransition(nextState: TaskState) {
-    if (!detail) {
-      return;
-    }
-
-    if (nextState === 'waiting_external' && !transitionWaitingReason.trim()) {
-      setTransitionError('转入 waiting_external 前，请先填写等待原因。');
-      return;
-    }
-
-    setTransitionError(null);
-
-    await onTransitionTask(detail.id, nextState, nextState === 'waiting_external' ? transitionWaitingReason : undefined);
-    await onRefresh();
-    const nextDetail = await window.api.getTaskDetail(detail.id);
-    setDetail(nextDetail);
-  }
-
-  async function handleQuickDecision(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!detail || !quickDecisionTitle.trim()) {
-      return;
-    }
-
-    await onCreateDecision({
-      taskId: detail.id,
-      title: quickDecisionTitle.trim(),
-    });
-    setQuickDecisionTitle(`${detail.title} 需要拍板`);
-    setQuickDecisionRationale(null);
-    await onRefresh();
-  }
-
-  async function handleDraftQuickDecision() {
-    if (!detail) {
-      return;
-    }
-
-    const draft = await onDraftDecision(detail.id, quickDecisionNote.trim() || null);
-    setQuickDecisionTitle(draft.title);
-    setQuickDecisionRationale(
-      `${draft.source === 'ai' ? 'AI 草拟' : 'Fallback 草拟'}：${draft.rationale}${
-        draft.selectedTemplateTitles.length
-          ? ` | 模板：${draft.selectedTemplateTitles.join('、')}`
-          : ''
-      }`,
-    );
-  }
-
-  async function handleQuickRun(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!detail) {
-      return;
-    }
-
-    await onTriggerRun({
-      taskId: detail.id,
-      type: quickRunType,
-      instructions: quickRunInstructions.trim(),
-      ...(quickRunType === 'agent' && quickRunAllowLocalWorkspaceRead
-        ? { allowLocalWorkspaceRead: true }
-        : {}),
-      ...(quickRunType === 'agent' && quickRunAllowTaskMutationTools
-        ? { allowTaskMutationTools: true }
-        : {}),
-    });
-    await onRefresh();
-  }
-
-  async function handleCodeAgentRunStart(): Promise<void> {
-    if (!detail) {
-      return;
-    }
-
-    setCodeAgentRunPending(true);
-    setCodeAgentIntentDiagnostic(null);
-
-    try {
-      const requestedChecks = [
-        codeAgentSelectedTestCheck ? 'test' : null,
-        codeAgentSelectedLintCheck ? 'lint' : null,
-      ].filter((check): check is 'test' | 'lint' => Boolean(check));
-      const contextFiles = parseCodeAgentContextFileInput(codeAgentContextFiles);
-      const created = await onTriggerCodeAgentRun({
-        ...(codeAgentEffectiveUseModelProducer && codeAgentArtifactIds.length
-          ? { artifactIds: codeAgentArtifactIds }
-          : {}),
-        ...(contextFiles.length ? { contextFiles } : {}),
-        ...(codeAgentEffectiveUseModelProducer && codeAgentSourceContextIds.length
-          ? { sourceContextIds: codeAgentSourceContextIds }
-          : {}),
-        ...(codeAgentEffectiveUseModelProducer && codeAgentIncludeSourceContextContent
-          ? { includeSourceContextContent: true }
-          : {}),
-        operatorConfirmed: codeAgentOperatorConfirmed,
-        patchIntent: codeAgentPatchIntent,
-        requestedChecks,
-        taskId: detail.id,
-        ...(codeAgentEffectiveUseModelProducer ? { useModelProducer: true } : {}),
-      });
-
-      setCodeAgentIntentDiagnostic(
-        `Code Agent sandbox preview run created: ${created.id}. Open Runs to review lifecycle and staged source evidence.`,
-      );
-      onOpenRun(created.id);
-      await onRefresh();
-    } catch (error) {
-      setCodeAgentIntentDiagnostic(`Code Agent sandbox preview failed: ${formatActionError(error)}`);
-    } finally {
-      setCodeAgentRunPending(false);
-    }
-  }
-
-  function populateBlockerForm(item: BlockerRecord) {
-    setBlockerEditingId(item.id);
-    setBlockerTitle(item.title);
-    setBlockerKind(item.kind);
-    setBlockerDetail(item.detail ?? '');
-    setBlockerOwner(item.owner ?? '');
-    setBlockerResponsibility(item.responsibility ?? 'unknown');
-    setBlockerResponsibilityLabel(item.responsibilityLabel ?? '');
-    setBlockerSourceContextId(item.sourceContextId ?? '');
-    setBlockerError(null);
-  }
-
-  function resetBlockerForm() {
-    setBlockerEditingId(null);
-    setBlockerTitle('');
-    setBlockerKind('other');
-    setBlockerDetail('');
-    setBlockerOwner('');
-    setBlockerResponsibility('unknown');
-    setBlockerResponsibilityLabel('');
-    setBlockerSourceContextId('');
-    setBlockerError(null);
-  }
-
-  function focusBlockerSection() {
-    if (typeof blockerSectionRef.current?.scrollIntoView === 'function') {
-      blockerSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-
-  async function handleSaveBlocker(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!detail) {
-      return;
-    }
-
-    if (!blockerTitle.trim()) {
-      setBlockerError('请先填写阻塞项标题。');
-      return;
-    }
-
-    setBlockerError(null);
-
-    if (blockerEditingId) {
-      await onUpdateBlocker({
-        id: blockerEditingId,
-        title: blockerTitle,
-        kind: blockerKind,
-        detail: blockerDetail,
-        owner: blockerOwner,
-        responsibility: blockerResponsibility,
-        responsibilityLabel: blockerResponsibilityLabel,
-        sourceContextId: blockerSourceContextId || null,
-      });
-    } else {
-      await onCreateBlocker({
-        taskId: detail.id,
-        title: blockerTitle,
-        kind: blockerKind,
-        detail: blockerDetail,
-        owner: blockerOwner,
-        responsibility: blockerResponsibility,
-        responsibilityLabel: blockerResponsibilityLabel,
-        sourceContextId: blockerSourceContextId || null,
-      });
-    }
-
-    await onRefresh();
-    setDetail(await window.api.getTaskDetail(detail.id));
-    resetBlockerForm();
-  }
-
-  async function handleResolveCurrentBlocker(id: string) {
-    if (!detail) {
-      return;
-    }
-
-    await onResolveBlocker(id);
-    await onRefresh();
-    setDetail(await window.api.getTaskDetail(detail.id));
-
-    if (blockerEditingId === id) {
-      resetBlockerForm();
-    }
-  }
-
-  function populateDependencyForm(item: TaskDependencyRecord) {
-    setDependencyEditingId(item.id);
-    setDependencyBlockedByTaskId(item.blockedByTaskId);
-    setDependencyReason(item.reason ?? '');
-    setDependencyError(null);
-  }
-
-  function resetDependencyForm() {
-    setDependencyEditingId(null);
-    setDependencyBlockedByTaskId('');
-    setDependencyReason('');
-    setDependencyError(null);
-  }
-
-  function focusDependencySection() {
-    if (typeof dependencySectionRef.current?.scrollIntoView === 'function') {
-      dependencySectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-
-  function populateCompletionCriteriaForm(item: CompletionCriteriaRecord) {
-    setCompletionCriteriaEditingId(item.id);
-    setCompletionCriteriaText(item.text);
-    setCompletionCriteriaResponsibility(item.verificationResponsibility ?? 'unknown');
-    setCompletionCriteriaResponsibilityLabel(item.verificationResponsibilityLabel ?? '');
-    setCompletionCriteriaError(null);
-  }
-
-  function resetCompletionCriteriaForm() {
-    setCompletionCriteriaEditingId(null);
-    setCompletionCriteriaText('');
-    setCompletionCriteriaResponsibility('unknown');
-    setCompletionCriteriaResponsibilityLabel('');
-    setCompletionCriteriaError(null);
-  }
-
-  function focusCompletionCriteriaSection(matchedCriteriaIds: string[] = []) {
-    setCompletionCriteriaFocusIds(matchedCriteriaIds);
-
-    if (typeof completionCriteriaSectionRef.current?.scrollIntoView === 'function') {
-      completionCriteriaSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-
-  async function handleSaveCompletionCriteria(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!detail) {
-      return;
-    }
-
-    if (!completionCriteriaText.trim()) {
-      setCompletionCriteriaError('请先填写完成标准。');
-      return;
-    }
-
-    setCompletionCriteriaError(null);
-
-    if (completionCriteriaEditingId) {
-      await onUpdateCompletionCriteria({
-        id: completionCriteriaEditingId,
-        text: completionCriteriaText,
-        verificationResponsibility: completionCriteriaResponsibility,
-        verificationResponsibilityLabel: completionCriteriaResponsibilityLabel,
-      });
-    } else {
-      await onCreateCompletionCriteria({
-        taskId: detail.id,
-        text: completionCriteriaText,
-        verificationResponsibility: completionCriteriaResponsibility,
-        verificationResponsibilityLabel: completionCriteriaResponsibilityLabel,
-      });
-    }
-
-    await onRefresh();
-    setDetail(await window.api.getTaskDetail(detail.id));
-    resetCompletionCriteriaForm();
-  }
-
-  async function handleSatisfyCurrentCompletionCriteria(id: string) {
-    if (!detail) {
-      return;
-    }
-
-    await onSatisfyCompletionCriteria(id);
-    await onRefresh();
-    setDetail(await window.api.getTaskDetail(detail.id));
-  }
-
-  async function handleReopenCurrentCompletionCriteria(id: string) {
-    if (!detail) {
-      return;
-    }
-
-    await onReopenCompletionCriteria(id);
-    await onRefresh();
-    setDetail(await window.api.getTaskDetail(detail.id));
-  }
-
-  function reevaluateCurrentDependency() {
-    if (!detail) {
-      return;
-    }
-
-    const nextStep = getDependencyReevaluationNextStep(detail);
-
-    if (!nextStep) {
-      return;
-    }
-
-    setDraftNextStep(nextStep);
-    setDetailError(null);
-
-    if (typeof detailFormRef.current?.scrollIntoView === 'function') {
-      detailFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-
-  function shouldEscalateCurrentDependency(): boolean {
-    return Boolean(
-      detail?.activeDependency &&
-        !detail.dependencyReevaluation &&
-        isStaleDependency(detail.activeDependency.createdAt),
-    );
-  }
-
-  function escalateCurrentDependency() {
-    if (!detail) {
-      return;
-    }
-
-    const nextStep = getDependencyEscalationNextStep(detail);
-
-    if (!nextStep) {
-      return;
-    }
-
-    setDraftNextStep(nextStep);
-    setDetailError(null);
-
-    if (typeof detailFormRef.current?.scrollIntoView === 'function') {
-      detailFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-
-  function openUpstreamDependencyTask() {
-    if (!detail?.activeDependency?.blockedByTaskId) {
-      return;
-    }
-
-    setSelectedTaskId(detail.activeDependency.blockedByTaskId);
-  }
-
-  async function handleSaveDependency(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!detail) {
-      return;
-    }
-
-    if (!dependencyBlockedByTaskId) {
-      setDependencyError('请先选择上游任务。');
-      return;
-    }
-
-    if (dependencyBlockedByTaskId === detail.id) {
-      setDependencyError('任务不能依赖自己。');
-      return;
-    }
-
-    setDependencyError(null);
-
-    if (dependencyEditingId) {
-      await onUpdateTaskDependency({
-        id: dependencyEditingId,
-        blockedByTaskId: dependencyBlockedByTaskId,
-        reason: dependencyReason,
-      });
-    } else {
-      await onCreateTaskDependency({
-        taskId: detail.id,
-        blockedByTaskId: dependencyBlockedByTaskId,
-        reason: dependencyReason,
-      });
-    }
-
-    await onRefresh();
-    setDetail(await window.api.getTaskDetail(detail.id));
-    resetDependencyForm();
-  }
-
-  async function handleResolveCurrentDependency(id: string) {
-    if (!detail) {
-      return;
-    }
-
-    await onResolveTaskDependency(id);
-    await onRefresh();
-    setDetail(await window.api.getTaskDetail(detail.id));
-
-    if (dependencyEditingId === id) {
-      resetDependencyForm();
-    }
-  }
-
-  function populateSourceContextForm(item: SourceContextRecord) {
-    setSourceContextEditingId(item.id);
-    setSourceContextTitle(item.title);
-    setSourceContextKind(item.kind);
-    setSourceContextIsKey(item.isKey);
-    setSourceContextUri(item.uri ?? '');
-    setSourceContextContent(item.content ?? '');
-    setSourceContextNote(item.note ?? '');
-    setSourceContextError(null);
-  }
-
-  function resetSourceContextForm() {
-    setSourceContextEditingId(null);
-    setSourceContextTitle('');
-    setSourceContextKind('link');
-    setSourceContextIsKey(false);
-    setSourceContextUri('');
-    setSourceContextContent('');
-    setSourceContextNote('');
-    setSourceContextError(null);
-  }
-
-  function focusSourceContext(sourceContextId: string | null = null) {
-    if (!detail) {
-      return;
-    }
-
-    if (sourceContextId) {
-      const matchedSourceContext = detail.sourceContexts.find((item) => item.id === sourceContextId);
-
-      if (!matchedSourceContext) {
-        return;
-      }
-
-      populateSourceContextForm(matchedSourceContext);
-    } else {
-      resetSourceContextForm();
-    }
-
-    if (typeof sourceContextSectionRef.current?.scrollIntoView === 'function') {
-      sourceContextSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-
-  function populateProcessTemplateForm(item: ProcessTemplateRecord) {
-    setProcessTemplateEditingId(item.id);
-    setProcessTemplateTitle(item.title);
-    setProcessTemplateSummary(item.summary ?? '');
-    setProcessTemplateKind(item.kind);
-    setProcessTemplateTags(item.tags.join(', '));
-    setProcessTemplateContent(item.content);
-    setProcessTemplateError(null);
-  }
-
-  function resetProcessTemplateForm() {
-    setProcessTemplateEditingId(null);
-    setProcessTemplateTitle('');
-    setProcessTemplateSummary('');
-    setProcessTemplateKind('skill');
-    setProcessTemplateTags('');
-    setProcessTemplateContent('');
-    setProcessTemplateError(null);
-  }
-
-  function focusProcessTemplate(templateId: string | null = null) {
-    if (!detail) {
-      return;
-    }
-
-    if (templateId) {
-      const matchedTemplate =
-        detail.processTemplates.find((item) => item.id === templateId) ??
-        detail.availableProcessTemplates.find((item) => item.id === templateId);
-
-      if (!matchedTemplate) {
-        return;
-      }
-
-      populateProcessTemplateForm(matchedTemplate);
-    } else {
-      resetProcessTemplateForm();
-    }
-
-    if (typeof processContextSectionRef.current?.scrollIntoView === 'function') {
-      processContextSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-
-  function focusActionTarget(target: 'detail' | 'decision' | 'run' | 'transition' | 'blocker' | 'dependency' | 'completion') {
-    const node =
-      target === 'detail'
-        ? detailFormRef.current
-        : target === 'completion'
-          ? completionCriteriaSectionRef.current
-        : target === 'blocker'
-          ? blockerSectionRef.current
-        : target === 'dependency'
-          ? dependencySectionRef.current
-        : target === 'decision'
-        ? quickDecisionCardRef.current
-        : target === 'run'
-          ? quickRunCardRef.current
-          : transitionCardRef.current;
-
-    if (typeof node?.scrollIntoView === 'function') {
-      node.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }
-
-  function focusTaskDetailSection(target: 'snapshot' | 'completion' | 'action' | 'activity' | 'studio') {
-    const node =
-      target === 'snapshot'
-        ? currentSnapshotSectionRef.current
-        : target === 'completion'
-          ? completionCriteriaSectionRef.current
-          : target === 'action'
-            ? actionDeskSectionRef.current
-            : target === 'activity'
-              ? activityFeedSectionRef.current
-              : contextStudioSectionRef.current;
-
-    if (typeof node?.scrollIntoView === 'function') {
-      node.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-
-  function adoptResumeNextStep() {
-    if (!detail) {
-      return;
-    }
-
-    setDraftNextStep(detail.resumeCard.nextSuggestedMove);
-    setDetailError(null);
-    if (typeof detailFormRef.current?.scrollIntoView === 'function') {
-      detailFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-
-  function openResumeLatestChange() {
-    if (!detail?.resumeCard.latestChange.action.targetType || !detail.resumeCard.latestChange.action.targetId) {
-      return;
-    }
-
-    if (detail.resumeCard.latestChange.action.targetType === 'source_context') {
-      focusSourceContext(detail.resumeCard.latestChange.action.targetId);
-      return;
-    }
-
-    if (detail.resumeCard.latestChange.action.targetType === 'decision') {
-      onOpenDecision(detail.resumeCard.latestChange.action.targetId);
-      return;
-    }
-
-    onOpenRun(detail.resumeCard.latestChange.action.targetId);
-  }
-
-  async function handleSaveSourceContext(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!detail) {
-      return;
-    }
-
-    if (!sourceContextTitle.trim()) {
-      setSourceContextError('请先填写来源标题。');
-      return;
-    }
-
-    if (
-      ['link', 'doc', 'issue', 'pr'].includes(sourceContextKind) &&
-      !sourceContextUri.trim()
-    ) {
-      setSourceContextError('该来源类型需要填写链接。');
-      return;
-    }
-
-    setSourceContextError(null);
-
-    if (sourceContextEditingId) {
-      await onUpdateSourceContext({
-        id: sourceContextEditingId,
-        title: sourceContextTitle,
-        kind: sourceContextKind,
-        isKey: sourceContextIsKey,
-        uri: sourceContextUri,
-        content: sourceContextContent,
-        note: sourceContextNote,
-      });
-    } else {
-      await onCreateSourceContext({
-        taskId: detail.id,
-        title: sourceContextTitle,
-        kind: sourceContextKind,
-        isKey: sourceContextIsKey,
-        uri: sourceContextUri,
-        content: sourceContextContent,
-        note: sourceContextNote,
-      });
-    }
-
-    await onRefresh();
-    const nextDetail = await window.api.getTaskDetail(detail.id);
-    setDetail(nextDetail);
-    resetSourceContextForm();
-  }
-
-  async function handleArchiveCurrentSourceContext(id: string) {
-    if (!detail) {
-      return;
-    }
-
-    await onArchiveSourceContext(id);
-    await onRefresh();
-    const nextDetail = await window.api.getTaskDetail(detail.id);
-    setDetail(nextDetail);
-
-    if (sourceContextEditingId === id) {
-      resetSourceContextForm();
-    }
-  }
-
-  async function handleSaveProcessTemplate(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!detail) {
-      return;
-    }
-
-    if (!processTemplateTitle.trim()) {
-      setProcessTemplateError('请先填写模板标题。');
-      return;
-    }
-
-    if (!processTemplateContent.trim()) {
-      setProcessTemplateError('请先填写模板内容。');
-      return;
-    }
-
-    setProcessTemplateError(null);
-    const tags = processTemplateTags
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-
-    if (processTemplateEditingId) {
-      await onUpdateProcessTemplate({
-        id: processTemplateEditingId,
-        title: processTemplateTitle,
-        summary: processTemplateSummary,
-        kind: processTemplateKind,
-        tags,
-        content: processTemplateContent,
-      });
-    } else {
-      const created = await onCreateProcessTemplate({
-        title: processTemplateTitle,
-        summary: processTemplateSummary,
-        kind: processTemplateKind,
-        tags,
-        content: processTemplateContent,
-      });
-
-      await onApplyProcessTemplate({
-        taskId: detail.id,
-        templateId: created.id,
-      });
-    }
-
-    await onRefresh();
-    const nextDetail = await window.api.getTaskDetail(detail.id);
-    setDetail(nextDetail);
-    resetProcessTemplateForm();
-  }
-
-  async function handleApplyAvailableProcessTemplate(templateId: string) {
-    if (!detail) {
-      return;
-    }
-
-    await onApplyProcessTemplate({
-      taskId: detail.id,
-      templateId,
-    });
-    await onRefresh();
-    setDetail(await window.api.getTaskDetail(detail.id));
-  }
-
-  async function handleRemoveCurrentProcessTemplate(bindingId: string) {
-    if (!detail) {
-      return;
-    }
-
-    await onRemoveProcessTemplate(bindingId);
-    await onRefresh();
-    setDetail(await window.api.getTaskDetail(detail.id));
-  }
-
-  async function handleArchiveCurrentProcessTemplate(id: string) {
-    if (!detail) {
-      return;
-    }
-
-    await onArchiveProcessTemplate(id);
-    await onRefresh();
-    setDetail(await window.api.getTaskDetail(detail.id));
-
-    if (processTemplateEditingId === id) {
-      resetProcessTemplateForm();
-    }
-  }
-
-  function handleTimelineAction(event: TimelineEventRecord) {
-    if (!detail) {
-      return;
-    }
-
-    const payload = parseTimelinePayload(event.payload);
-
-    if (event.type === 'task.decision_cancelled') {
-      setQuickDecisionTitle(`${detail.title} 重新拍板`);
-    }
-
-    if (event.type === 'task.decision_approved') {
-      setDraftNextStep(`已获批准，继续推进：${formatValue(payload?.decisionTitle)}`);
-    }
-
-    if (event.type === 'task.decision_deferred') {
-      setDraftNextStep('跟进该决策是否可以恢复拍板，或准备替代推进路径。');
-      setTransitionWaitingReason(formatValue(payload?.waitingReason));
-    }
-
-    if (event.type === 'task.run_failed') {
-      setQuickRunType('draft');
-      setQuickRunInstructions(
-        `请先处理这个失败原因，再准备新的执行内容：${formatValue(payload?.failureReason)}`,
-      );
-    }
-
-    if (event.type === 'task.run_paused') {
-      setQuickRunType('agent');
-      setQuickRunInstructions(
-        `已处理暂停原因后继续 agent run：${formatValue(payload?.pauseReason)}`,
-      );
-    }
-
-    if (event.type === 'task.waiting_changed') {
-      setDraftNextStep(`跟进并确认是否解除等待：${formatValue(payload?.to)}`);
-    }
-
-    if (event.type === 'blocker.created' || event.type === 'blocker.updated') {
-      setDraftNextStep(`先解除阻塞项，再继续推进：${formatValue(payload?.title)}`);
-      if (detail.activeBlocker) {
-        populateBlockerForm(detail.activeBlocker);
-      }
-    }
-
-    if (event.type === 'task_dependency.created' || event.type === 'task_dependency.updated') {
-      const upstreamTitle = formatValue(payload?.blockedByTaskTitle);
-      setDraftNextStep(`优先推动上游任务“${upstreamTitle}”，并确认是否解除依赖。`);
-      if (detail.activeDependency) {
-        populateDependencyForm(detail.activeDependency);
-      }
-    }
-
-    if (event.type === 'task_dependency.resolved') {
-      setDraftNextStep(`依赖已解除，确认是否恢复推进：${formatValue(payload?.blockedByTaskTitle)}`);
-      if (detail.activeDependency) {
-        populateDependencyForm(detail.activeDependency);
-      }
-    }
-
-    if (event.type === 'task.risk_changed') {
-      const nextRisk = (payload?.to as Record<string, unknown> | undefined) ?? {};
-      const nextRiskLevel = nextRisk.level;
-      const nextRiskNote = formatValue(nextRisk.note);
-
-      if (nextRiskLevel && ['none', 'low', 'medium', 'high'].includes(String(nextRiskLevel))) {
-        setDraftRiskLevel(nextRiskLevel as TaskRiskLevel);
-      }
-
-      setDraftRiskNote(nextRiskNote === '未填写' ? '' : nextRiskNote);
-      setDraftNextStep(
-        `处理当前风险并确认是否需要降级：${nextRiskNote === '未填写' ? '补充风险说明' : nextRiskNote}`,
-      );
-    }
-
-    if (event.type === 'artifact.created') {
-      const artifactId = payload?.artifactId;
-      const artifact = detail.artifacts.find((item) => item.id === artifactId);
-      const artifactTitle = artifact?.title ?? formatValue(payload?.title);
-      const artifactContent = artifact?.content ?? '';
-
-      setDraftNextStep(`基于产物继续推进：${artifactTitle}`);
-      setQuickRunInstructions(
-        artifactContent
-          ? `请基于这份已有产物继续扩展、改写或整理：${artifactContent}`
-          : `请基于已有产物继续推进：${artifactTitle}`,
-      );
-    }
-
-    const focusTarget =
-      event.type === 'task.decision_approved' ||
-      event.type === 'task.decision_deferred' ||
-      event.type === 'task.waiting_changed' ||
-      event.type === 'task.risk_changed' ||
-      event.type === 'artifact.created'
-        ? detailFormRef.current
-        : event.type === 'blocker.created' || event.type === 'blocker.updated'
-          ? blockerSectionRef.current
-          : event.type === 'task_dependency.created' ||
-              event.type === 'task_dependency.updated' ||
-              event.type === 'task_dependency.resolved'
-            ? dependencySectionRef.current
-            : quickActionsRef.current;
-
-    if (typeof focusTarget?.scrollIntoView === 'function') {
-      focusTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-
-  function handleTimelineObjectOpen(event: TimelineEventRecord) {
-    const objectAction = getTaskTimelineObjectAction(event);
-
-    if (objectAction.targetType === 'decision' && objectAction.targetId) {
-      onOpenDecision(objectAction.targetId);
-      return;
-    }
-
-    if (objectAction.targetType === 'run' && objectAction.targetId) {
-      onOpenRun(objectAction.targetId);
-      return;
-    }
-
-    if (objectAction.targetType === 'source_context' && objectAction.targetId) {
-      focusSourceContext(objectAction.targetId);
-    }
-  }
-
-  const relatedDecisions = detail
-    ? taskDecisions
-        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
-        .slice(0, 5)
-    : [];
-
-  const relatedRuns = detail
-    ? taskRuns
-        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
-        .slice(0, 5)
-    : [];
-  const latestPausedRun = detail
-    ? [...taskRuns]
-        .filter((run) => run.status === 'paused')
-        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null
-    : null;
-  const latestCodeAgentPromotionDecision = detail
-    ? [...taskDecisions]
-        .filter(isCodeAgentPromotionDecision)
-        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null
-    : null;
-  const latestCodeAgentRun = detail
-    ? [...taskRuns]
-        .filter(isCodeAgentSandboxRun)
-        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null
-    : null;
-  const shouldShowCodeAgentReview = Boolean(latestCodeAgentRun || latestCodeAgentPromotionDecision);
-
-  async function openLatestCodeAgentRun(): Promise<void> {
-    setCodeAgentReviewError(null);
-
-    if (latestCodeAgentPromotionDecision?.sourceType === 'agent_checkpoint' && latestCodeAgentPromotionDecision.sourceId) {
-      const opened = await onOpenRunForCheckpoint(latestCodeAgentPromotionDecision.sourceId);
-
-      if (opened) {
-        return;
-      }
-    }
-
-    if (latestCodeAgentRun) {
-      onOpenRun(latestCodeAgentRun.id);
-      return;
-    }
-
-    setCodeAgentReviewError('未能从当前 run 列表定位到这个 promotion checkpoint；请先打开 promotion Decision。');
-  }
-
-  function prepareCodeAgentRerun(): void {
-    setCodeAgentReviewError(null);
-    setQuickRunType('agent');
-
-    if (!codeAgentPatchIntent.trim()) {
-      setCodeAgentPatchIntent(formatCodeAgentRerunIntent({
-        checkpointId: latestCodeAgentPromotionDecision?.sourceType === 'agent_checkpoint'
-          ? latestCodeAgentPromotionDecision.sourceId
-          : null,
-        decisionTitle: latestCodeAgentPromotionDecision?.title ?? null,
-        runFailureReason: latestCodeAgentRun?.failureReason ?? null,
-        runId: latestCodeAgentRun?.id ?? null,
-        runOutput: latestCodeAgentRun?.output ?? null,
-        runStatus: latestCodeAgentRun?.status ?? null,
-        taskTitle: detail?.title ?? null,
-      }));
-    }
-
-    focusActionTarget('run');
-  }
-
-  const visibleTimeline = detail
-    ? showAllTimeline
-      ? detail.timeline
-      : getTaskTimelinePreviewEvents(detail.timeline, TIMELINE_PREVIEW_COUNT)
-    : [];
-  const visibleTimelineDateGroups = groupTaskTimelineEventsByDateObjectAndPriority(visibleTimeline);
-  const primaryMoves = getPrimaryMoveConfig(detail, resumeLane);
-  const actionSetupOrder = getActionSetupOrder(detail, resumeLane);
-  const snapshotArtifact = detail?.artifacts[0] ?? null;
-  const snapshotSourceContext = detail?.sourceContexts[0] ?? null;
-  const codeAgentContextFileCandidates = getCodeAgentContextFileCandidates(detail);
-  const selectedCodeAgentContextFiles = parseCodeAgentContextFileInput(codeAgentContextFiles);
-  const codeAgentEffectiveUseModelProducer = Boolean(
-    aiStatus?.codeAgentModelProducerEnabled && codeAgentUseModelProducer,
-  );
-  const codeAgentTestAvailable = aiStatus?.codeAgentWorkspaceChecks?.test.available === true;
-  const codeAgentLintAvailable = aiStatus?.codeAgentWorkspaceChecks?.lint.available === true;
-  const codeAgentSelectedTestCheck = codeAgentRunTestCheck && codeAgentTestAvailable;
-  const codeAgentSelectedLintCheck = codeAgentRunLintCheck && codeAgentLintAvailable;
-  const codeAgentStartGateInput = {
-    aiStatus,
-    lintCheck: codeAgentSelectedLintCheck,
-    lintCheckAvailable: codeAgentLintAvailable,
-    operatorConfirmed: codeAgentOperatorConfirmed,
-    runPending: codeAgentRunPending,
-    selectedContextFileCount: selectedCodeAgentContextFiles.length,
-    testCheck: codeAgentSelectedTestCheck,
-    testCheckAvailable: codeAgentTestAvailable,
-    useModelProducer: codeAgentEffectiveUseModelProducer,
-  };
-  const codeAgentStartBlockedReason = formatCodeAgentStartBlockedReason(codeAgentStartGateInput);
-  const codeAgentPreflightSummary = formatCodeAgentPreflightSummary(codeAgentStartGateInput);
-  const orchestrationSnapshot = buildAgentExecutionOrchestrationSnapshot(aiStatus);
-  const selectedCodeAgentSourceContextTitles = detail?.sourceContexts
-    .filter((item) => codeAgentSourceContextIds.includes(item.id))
-    .map((item) => item.title) ?? [];
-  const selectedCodeAgentArtifactTitles = detail?.artifacts
-    .filter((item) => codeAgentArtifactIds.includes(item.id))
-    .map((item) => item.title) ?? [];
-  const automationReadiness = detail
-    ? evaluateSkillInformedAutomationReadiness({
-        snapshot: orchestrationSnapshot,
-        task: detail,
+    if (!window.api) return;
+    setLoading(true);
+    window.api.listTasks()
+      .then((records) => {
+        const attrs = loadTaskAttributes();
+        setAllTasks(confirmedTaskRecords(records).map((record) => fromRecord(record, attrs[record.id])));
       })
-    : null;
-  const orchestrationPresentation = buildReadOnlyOrchestrationPresentation({
-    automationReadiness,
-    executorLifecycleAvailability: aiStatus?.executorLifecycleAvailability,
-    snapshot: orchestrationSnapshot,
-  });
-  const executorLifecycleLines = buildExecutorLifecycleDiagnosticLines(
-    orchestrationPresentation.executorLifecycle,
-  );
-  const snapshotProcessTemplate = detail?.processTemplates[0] ?? null;
-  const orderedLaneLabels = tasks.reduce<string[]>((labels, task) => {
-    const laneLabel = getPriorityLaneLabel(taskPriorityLanes.get(task.id));
+      .catch(() => {})
+      .finally(() => setLoading(false));
+    reloadPendingDecisions();
 
-    if (!laneLabel || labels.includes(laneLabel)) {
-      return labels;
-    }
-
-    labels.push(laneLabel);
-    return labels;
+    const unsub = window.api.subscribeToEvents((event) => {
+      if (event.type === 'task.changed') reloadTasks();
+      if (event.type === 'decision.changed') reloadPendingDecisions();
+    });
+    return () => unsub?.();
   }, []);
-  const taskQueueSummary =
-    tasks.length === 0
-      ? '当前没有任务，先创建一条开始流转。'
-      : tasks.some((task) => Boolean(task.dependencyReevaluation))
-        ? `当前队列先重新判断已具备条件的依赖任务；共 ${tasks.length} 条任务，优先确认上游任务完成或解阻塞后是否可以恢复推进。`
-      : orderedLaneLabels[0] === '先补清晰度' && tasks.some((task) => isEarlyTask(task))
-        ? `当前队列先处理新进入系统、还需整理清楚的任务；共 ${tasks.length} 条任务，先补摘要、下一步和是否需要拍板。`
-      : orderedLaneLabels.length <= 1
-        ? `当前队列按「${orderedLaneLabels[0] ?? '稳态推进'}」语义排序，共 ${tasks.length} 条任务。`
-        : `当前队列会先处理「${orderedLaneLabels[0]}」，再到「${orderedLaneLabels[1]}」；共 ${tasks.length} 条任务，分布在 ${orderedLaneLabels.length} 个优先级层次。`;
-  const quickDecisionSetup = (
-    <form
-      className="stack task-card quick-action-card"
-      key="decision"
-      onSubmit={handleQuickDecision}
-      ref={quickDecisionCardRef}
-    >
-      <strong>Decision</strong>
-      <label>
-        决策标题
-        <input
-          value={quickDecisionTitle}
-          onChange={(event) => setQuickDecisionTitle(event.target.value)}
-        />
-      </label>
-      <label>
-        拍板背景
-        <textarea
-          rows={3}
-          value={quickDecisionNote}
-          onChange={(event) => setQuickDecisionNote(event.target.value)}
-        />
-      </label>
-      <p className="meta">{quickDecisionGuidance}</p>
-      {quickDecisionResponsibilityGuidance ? (
-        <p className="meta">{quickDecisionResponsibilityGuidance}</p>
-      ) : null}
-      {quickDecisionRationale ? <p className="meta">{quickDecisionRationale}</p> : null}
-      <button type="button" className="ghost-button" onClick={() => void handleDraftQuickDecision()}>
-        草拟 Decision
-      </button>
-      <button type="submit">提交 Decision</button>
-    </form>
-  );
-  const quickRunSetup = (
-    <form
-      className="stack task-card quick-action-card quick-run-card"
-      key="run"
-      onSubmit={handleQuickRun}
-      ref={quickRunCardRef}
-    >
-      <strong>Run</strong>
-      <label>
-        Run 类型
-        <select
-          value={quickRunType}
-          onChange={(event) => {
-            const nextType = event.target.value as CreateRunInput['type'];
-            setQuickRunType(nextType);
-            if (nextType !== 'agent') {
-              setQuickRunAllowLocalWorkspaceRead(false);
-              setQuickRunAllowTaskMutationTools(false);
+
+  const projectParents = allTasks.filter((task) => task.type === 'project' && !task.parentTaskId);
+  const filtered = allTasks.filter((t) => {
+    if (lens === 'all') return true;
+    if (lens === 'running') return t.status === 'running';
+    if (lens === 'waiting') return t.status === 'waiting';
+    if (lens === 'blocked') return t.status === 'blocked';
+    if (lens === 'project') return t.type === 'project';
+    if (lens === 'scheduled') return t.type === 'scheduled';
+    if (lens === 'event') return t.type === 'event';
+    if (lens === 'committed') return !!t.commitment;
+    if (lens === 'done') return t.status === 'done';
+    if (lens.startsWith('project:')) {
+      const projectId = lens.slice('project:'.length);
+      return t.id === projectId || t.parentTaskId === projectId;
+    }
+    return true;
+  });
+
+  const selectedTask = filtered.find((t) => t.id === selectedId) ?? null;
+  const selectedHasDecision = Boolean(selectedTask && pendingDecisions.some((decision) => decision.taskId === selectedTask.id));
+  const captureSopSuggestions = captureTitle.trim()
+    ? selectApplicableWorkHabits({
+        taskTitle: captureTitle,
+        taskTypeLabel: TASK_TYPE_LABELS[captureType],
+        limit: 4,
+      }).filter((habit): habit is WorkHabitRecord => habit.source === 'sop')
+    : [];
+
+  useEffect(() => {
+    let cancelled = false;
+    setSelectedSources([]);
+    if (!selectedId || !window.api?.getTaskDetail) return;
+
+    window.api.getTaskDetail(selectedId)
+      .then((detail) => {
+        if (cancelled) return;
+        const keySources = (detail?.sourceContexts ?? [])
+          .filter((source) => source.status === 'active' && source.isKey)
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+          .slice(0, 3);
+        setSelectedSources(keySources);
+      })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [selectedId]);
+
+  function handleRowClick(id: string) {
+    if (clickTimer.current) clearTimeout(clickTimer.current);
+    clickTimer.current = setTimeout(() => {
+      setSelectedId((prev) => (prev === id ? null : id));
+      setDeferOpenId(null);
+    }, 180);
+  }
+
+  function handleRowDoubleClick(id: string) {
+    if (clickTimer.current) clearTimeout(clickTimer.current);
+    onOpenWorkbench(id);
+  }
+
+  function handleContextMenu(e: React.MouseEvent, taskId: string) {
+    e.preventDefault();
+    setSelectedId(null);
+    setContextMenu({ x: e.clientX, y: e.clientY, taskId });
+  }
+
+  const closeContextMenu = useCallback(() => setContextMenu(null), []);
+
+  async function transitionWithPlanningHop(task: Task, nextState: TaskState, waitingReason?: string | null) {
+    if (!window.api) return;
+    if ((task.state === 'captured' || task.state === 'triaged') && nextState !== 'archived') {
+      await window.api.transitionTask({ id: task.id, nextState: 'planned' });
+    }
+    await window.api.transitionTask({ id: task.id, nextState, waitingReason });
+  }
+
+  function completeTask(task: Task) {
+    setAllTasks((prev) => prev.filter((t) => t.id !== task.id));
+    setSelectedId(null);
+    transitionWithPlanningHop(task, 'completed').catch(() => reloadTasks());
+  }
+
+  function markWaitingAfterCompletionCheck(task: Task, reason: string) {
+    setCompletionCheckTask(null);
+    setAllTasks((prev) => prev.filter((t) => t.id !== task.id));
+    setSelectedId(null);
+    transitionWithPlanningHop(task, 'waiting_external', reason).catch(() => reloadTasks());
+  }
+
+  function deferTask(task: Task, option: string) {
+    setDeferOpenId(null);
+    setSelectedId(null);
+    setAllTasks((prev) => prev.filter((t) => t.id !== task.id));
+    transitionWithPlanningHop(task, 'waiting_external', `延后处理：${deferLabel(option)}`).catch(() => reloadTasks());
+  }
+
+  function updateTaskRisk(taskId: string, riskLevel: TaskRiskLevel) {
+    const nextLane: Lane = riskLevel === 'high'
+      ? 'escalate'
+      : riskLevel === 'medium'
+        ? 'unblock'
+        : 'continue';
+    setContextMenu(null);
+    setSelectedId(taskId);
+    setAllTasks((prev) => prev.map((task) => (
+      task.id === taskId
+        ? { ...task, lane: nextLane, status: riskLevel === 'high' ? 'blocked' : task.status }
+        : task
+    )));
+    window.api?.updateTask({ id: taskId, riskLevel }).catch(() => reloadTasks());
+  }
+
+  function archiveTask(taskId: string) {
+    const task = allTasks.find((item) => item.id === taskId);
+    if (!task) return;
+    setContextMenu(null);
+    setSelectedId(null);
+    setAllTasks((prev) => prev.filter((item) => item.id !== taskId));
+    transitionWithPlanningHop(task, 'archived').catch(() => reloadTasks());
+  }
+
+  function copyTaskLink(taskId: string) {
+    setContextMenu(null);
+    const link = `taskplane://task/${taskId}`;
+    void navigator.clipboard?.writeText(link).catch(() => {});
+  }
+
+  function moveIntoProject(taskId: string, projectId: string | null) {
+    const result = moveTaskToProject(taskId, projectId);
+    setContextMenu(null);
+    setSelectedId(taskId);
+    setAllTasks((prev) => prev.map((task) => {
+      if (task.id === taskId) {
+        return { ...task, parentTaskId: result.task.parentTaskId ?? undefined };
+      }
+      if (result.previousProject && task.id === result.previousProject.taskId) {
+        return { ...task, childTaskIds: result.previousProject.childTaskIds };
+      }
+      if (result.nextProject && task.id === result.nextProject.taskId) {
+        return { ...task, type: 'project', childTaskIds: result.nextProject.childTaskIds };
+      }
+      return task;
+    }));
+  }
+
+  async function resolveReadyDependency(task: Task) {
+    if (!window.api || !task.dependencyId) return;
+    try {
+      await window.api.resolveTaskDependency(task.dependencyId);
+      setAllTasks((prev) => prev.map((item) => (
+        item.id === task.id
+          ? {
+              ...item,
+              dependencyId: undefined,
+              dependencyReady: false,
+              waitingOn: undefined,
+              status: 'idle',
+              lane: item.state === 'captured' ? 'clarify' : 'continue',
             }
-          }}
-        >
-          <option value="draft">draft</option>
-          <option value="summarize">summarize</option>
-          <option value="agent">agent</option>
-        </select>
-      </label>
-      <label>
-        附加要求
-        <textarea
-          rows={3}
-          value={quickRunInstructions}
-          onChange={(event) => setQuickRunInstructions(event.target.value)}
-        />
-      </label>
-      {quickRunType === 'agent' ? (
-        <>
-          <label>
-            <input
-              checked={quickRunAllowLocalWorkspaceRead}
-              onChange={(event) => setQuickRunAllowLocalWorkspaceRead(event.target.checked)}
-              type="checkbox"
-            />
-            允许只读工作区上下文
-          </label>
-          <label>
-            <input
-              checked={quickRunAllowTaskMutationTools}
-              onChange={(event) => setQuickRunAllowTaskMutationTools(event.target.checked)}
-              type="checkbox"
-            />
-            允许任务内更新/证据工具
-          </label>
-          <p className="meta">
-            {formatPreRunAgentCapabilitySummary(
-              aiStatus,
-              quickRunAllowLocalWorkspaceRead,
-              quickRunAllowTaskMutationTools,
-            )}
-          </p>
-        </>
-      ) : null}
-      <div className="runtime-readiness">
-        <strong>Code Agent Runtime</strong>
-        <p className="meta">
-          {formatExecutionRuntimeReadinessSummary(aiStatus, sandboxBackendProbePending)}
-        </p>
-        <p className="meta">
-          staged patch / network disabled / credentials none / Decision promotion
-        </p>
-        <button
-          className="ghost-button"
-          disabled={sandboxBackendProbePending}
-          onClick={() => void onProbeSandboxBackend()}
-          type="button"
-        >
-          {sandboxBackendProbePending ? '检查中' : '检查运行时'}
-        </button>
-        <div className="code-agent-intent" aria-label="Code agent run intent">
-          <div className="orchestration-readiness" aria-label="Orchestration readiness">
-            <div className="orchestration-readiness-header">
-              <strong>AgentProfile：manual sandbox producer</strong>
-              <span className="status lane-status lane-status-steady">manual only</span>
-            </div>
-            <p className="meta">
-              Task：{detail?.title ?? '未选择任务'} / Skill readiness：deferred until policy exists
-            </p>
-            <p className="meta">
-              {orchestrationPresentation.runtime}
-            </p>
-            <p className="meta">
-              {orchestrationPresentation.profile}
-            </p>
-            <p className="meta">
-              {orchestrationPresentation.lifecycle}
-            </p>
-            <p className="meta">
-              {orchestrationPresentation.hiddenToolFamilies}
-            </p>
-            {executorLifecycleLines.map((line) => (
-              <p className="meta" key={line}>{line}</p>
-            ))}
-            {orchestrationPresentation.automationReadiness ? (
-              <p className="meta">
-                {orchestrationPresentation.automationReadiness}
-              </p>
-            ) : null}
-            <p className="meta">
-              Orchestration：{orchestrationPresentation.summary}
-            </p>
-          </div>
-          <p className="meta">
-            {formatCodeAgentAutomaticStartPolicySummary()}
-          </p>
-          <p className="meta">
-            {formatCodeAgentModelProducerOptInSummary(aiStatus)}
-          </p>
-          {aiStatus?.codeAgentModelProducerEnabled ? (
-            <label>
-              <input
-                checked={codeAgentUseModelProducer}
-                onChange={(event) => {
-                  setCodeAgentUseModelProducer(event.target.checked);
-                  if (!event.target.checked) {
-                    setCodeAgentIncludeSourceContextContent(false);
-                  }
-                }}
-                type="checkbox"
-              />
-              Use model producer（会调用已配置 provider；需要显式 context files）
-            </label>
-          ) : null}
-          <p className="meta">
-            Completion criteria：{
-              detail?.completionCriteria.length
-                ? detail.completionCriteria.map((item) => item.text).join('；')
-                : '暂无'
-            }
-          </p>
-          <label>
-            Patch intent
-            <textarea
-              rows={2}
-              value={codeAgentPatchIntent}
-              onChange={(event) => setCodeAgentPatchIntent(event.target.value)}
-              placeholder="Describe the staged patch this code-agent run should try to produce."
-            />
-          </label>
-          <label>
-            Context files
-            <textarea
-              rows={2}
-              value={codeAgentContextFiles}
-              onChange={(event) => setCodeAgentContextFiles(event.target.value)}
-              placeholder="Optional workspace-relative files, comma or newline separated."
-            />
-          </label>
-          <p className="meta">
-            Context files are read-only evidence for the model producer; Taskplane still blocks path escapes, secrets, binary files, and oversized context.
-          </p>
-          <p className="meta">
-            Context selection：{
-              selectedCodeAgentContextFiles.length
-                ? `${selectedCodeAgentContextFiles.length} selected / ${selectedCodeAgentContextFiles.join('、')}`
-                : `none selected / ${codeAgentContextFileCandidates.length} suggestions available`
-            } / files are not read until the run starts
-          </p>
-          {codeAgentContextFileCandidates.length ? (
-            <div className="inline-actions" aria-label="Context file candidates">
-              {codeAgentContextFileCandidates.map((candidate) => (
-                <button
-                  className="ghost-button"
-                  key={candidate}
-                  onClick={() => {
-                    const current = parseCodeAgentContextFileInput(codeAgentContextFiles);
-                    if (!current.includes(candidate)) {
-                      setCodeAgentContextFiles([...current, candidate].join('\n'));
-                    }
-                  }}
-                  type="button"
-                >
-                  {candidate}
-                </button>
-              ))}
-            </div>
-          ) : null}
-          {detail?.sourceContexts.length && codeAgentEffectiveUseModelProducer ? (
-            <div className="stack" aria-label="Source context selections">
-              <p className="meta">
-                Source context manifest：{
-                  selectedCodeAgentSourceContextTitles.length
-                    ? `${selectedCodeAgentSourceContextTitles.length} selected / ${selectedCodeAgentSourceContextTitles.join('、')}`
-                    : 'none selected'
-                } / content={
-                  codeAgentIncludeSourceContextContent && selectedCodeAgentSourceContextTitles.length
-                    ? 'will be sent as bounded read-only evidence'
-                    : 'manifest only'
-                }
-              </p>
-              {detail.sourceContexts.map((item) => (
-                <label key={item.id}>
-                  <input
-                    checked={codeAgentSourceContextIds.includes(item.id)}
-                    onChange={(event) => {
-                      setCodeAgentSourceContextIds((current) => {
-                        const next = event.target.checked
-                          ? [...current, item.id].filter((id, index, ids) => ids.indexOf(id) === index)
-                          : current.filter((id) => id !== item.id);
-                        if (!next.length) {
-                          setCodeAgentIncludeSourceContextContent(false);
-                        }
-                        return next;
-                      });
-                    }}
-                    type="checkbox"
-                  />
-                  {item.title}
-                </label>
-              ))}
-              <label>
-                <input
-                  checked={codeAgentIncludeSourceContextContent}
-                  disabled={!codeAgentSourceContextIds.length}
-                  onChange={(event) => setCodeAgentIncludeSourceContextContent(event.target.checked)}
-                  type="checkbox"
-                />
-                Include selected source content（bounded local snapshot only）
-              </label>
-            </div>
-          ) : null}
-          {detail?.artifacts.length && codeAgentEffectiveUseModelProducer ? (
-            <div className="stack" aria-label="Artifact selections">
-              <p className="meta">
-                Artifact manifest：{
-                  selectedCodeAgentArtifactTitles.length
-                    ? `${selectedCodeAgentArtifactTitles.length} selected / ${selectedCodeAgentArtifactTitles.join('、')}`
-                    : 'none selected'
-                } / content=manifest only
-              </p>
-              {detail.artifacts.map((item) => (
-                <label key={item.id}>
-                  <input
-                    checked={codeAgentArtifactIds.includes(item.id)}
-                    onChange={(event) => {
-                      setCodeAgentArtifactIds((current) => event.target.checked
-                        ? [...current, item.id].filter((id, index, ids) => ids.indexOf(id) === index)
-                        : current.filter((id) => id !== item.id));
-                    }}
-                    type="checkbox"
-                  />
-                  {item.title}
-                </label>
-              ))}
-            </div>
-          ) : null}
-          <fieldset className="inline-fieldset">
-            <legend>Allowed checks</legend>
-            <label>
-              <input
-                checked={codeAgentSelectedTestCheck}
-                disabled={!codeAgentTestAvailable}
-                onChange={(event) => setCodeAgentRunTestCheck(event.target.checked)}
-                type="checkbox"
-              />
-              test{codeAgentTestAvailable ? '' : '（unavailable）'}
-            </label>
-            <label>
-              <input
-                checked={codeAgentSelectedLintCheck}
-                disabled={!codeAgentLintAvailable}
-                onChange={(event) => setCodeAgentRunLintCheck(event.target.checked)}
-                type="checkbox"
-              />
-              lint{codeAgentLintAvailable ? '' : '（unavailable）'}
-            </label>
-          </fieldset>
-          <p className="meta">
-            Check availability：test={
-              aiStatus?.codeAgentWorkspaceChecks?.test.reason ?? 'workspace status not loaded.'
-            } / lint={
-              aiStatus?.codeAgentWorkspaceChecks?.lint.reason ?? 'workspace status not loaded.'
-            }
-          </p>
-          <p className="meta">{codeAgentPreflightSummary}</p>
-          <label>
-            <input
-              checked={codeAgentOperatorConfirmed}
-              onChange={(event) => setCodeAgentOperatorConfirmed(event.target.checked)}
-              type="checkbox"
-            />
-            我确认后续执行可能启动 Docker 容器，但工作区只会收到 Decision 批准后的变更
-          </label>
-          <button
-            className="ghost-button"
-            disabled={codeAgentStartBlockedReason !== null}
-            onClick={() => void handleCodeAgentRunStart()}
-            type="button"
-          >
-            {codeAgentRunPending ? '启动中' : '启动 sandbox preview run'}
-          </button>
-          {codeAgentStartBlockedReason ? <p className="meta">{codeAgentStartBlockedReason}</p> : null}
-          {codeAgentIntentDiagnostic ? <p className="meta">{codeAgentIntentDiagnostic}</p> : null}
-        </div>
-      </div>
-      <p className="meta">{quickRunGuidance}</p>
-      <button type="submit">触发 Run</button>
-    </form>
-  );
-  const actionSetupCards = {
-    decision: quickDecisionSetup,
-    run: quickRunSetup,
-  };
+          : item
+      )));
+    } catch {
+      reloadTasks();
+    }
+  }
+
+  async function generateProjectDecomposition(project: Task) {
+    if (!window.api?.decomposeProject || projectDecomposingId) {
+      setProjectDecompositionError('当前版本暂时无法调用 AI 拆解服务。');
+      return;
+    }
+    setProjectDecomposingId(project.id);
+    setProjectDecompositionError(null);
+    try {
+      const result = await window.api.decomposeProject({
+        taskId: project.id,
+        instructions: buildProjectDecompositionGuidance(project.title),
+      });
+      setProjectDraft({ projectId: project.id, result });
+    } catch (error) {
+      setProjectDecompositionError(error instanceof Error ? error.message : 'AI 拆解失败，请稍后重试。');
+    } finally {
+      setProjectDecomposingId(null);
+    }
+  }
+
+  async function createProjectChildren(project: Task) {
+    if (!window.api || projectCreatingChildrenId) return;
+    const draft = projectDraft?.projectId === project.id ? projectDraft.result : null;
+    if (!draft) return;
+    setProjectCreatingChildrenId(project.id);
+    setProjectDecompositionError(null);
+    try {
+      const childRecords = await Promise.all(draft.subtasks.map((subtask) => window.api!.createTask({
+        title: subtask.title,
+        summary: subtask.summary,
+      })));
+      const plannedChildRecords = await Promise.all(childRecords.map((child) => (
+        window.api!.transitionTask({ id: child.id, nextState: 'planned' })
+      )));
+      await Promise.all(childRecords.map((child, index) => window.api!.createCompletionCriteria({
+        taskId: child.id,
+        text: draft.subtasks[index]?.acceptanceCriteria ?? '完成后能明确验收。',
+        verificationResponsibility: 'unknown',
+      })));
+
+      const childRecordByTitle = new Map(plannedChildRecords.map((child) => [child.title.trim(), child]));
+      await Promise.all(draft.subtasks.map((subtask, index) => {
+        const dependencyTitle = subtask.dependency?.trim();
+        if (!dependencyTitle) return Promise.resolve(null);
+        const dependency = childRecordByTitle.get(dependencyTitle)
+          ?? plannedChildRecords.find((child) => dependencyTitle.includes(child.title) || child.title.includes(dependencyTitle));
+        const child = plannedChildRecords[index];
+        if (!child || !dependency || dependency.id === child.id) return Promise.resolve(null);
+        return window.api!.createTaskDependency({
+          taskId: child.id,
+          blockedByTaskId: dependency.id,
+          reason: subtask.dependency,
+        });
+      }));
+
+      const childIds = [...project.childTaskIds, ...plannedChildRecords.map((child) => child.id)];
+      const parentAttrs = saveTaskAttributes(project.id, { childTaskIds: childIds });
+      const updatedParent = await window.api.updateTask({
+        id: project.id,
+        summary: draft.parentGoal,
+        nextStep: draft.nextStep,
+      });
+      await window.api.createSourceContext({
+        taskId: project.id,
+        title: 'AI 项目拆解自检',
+        kind: 'note',
+        isKey: true,
+        content: draft.review,
+        note: `${draft.subtasks.length} 个子任务；用户确认后创建。`,
+      });
+      await window.api.createCompletionCriteria({
+        taskId: project.id,
+        text: `完成并验收 ${draft.subtasks.length} 个项目子任务。`,
+        verificationResponsibility: 'unknown',
+      });
+      const childTasks = plannedChildRecords.map((child) => {
+        const draftSubtask = draft.subtasks.find((subtask) => subtask.title === child.title);
+        const childAttrs = saveTaskAttributes(child.id, {
+          type: 'simple',
+          parentTaskId: project.id,
+        });
+        const dependencyTitle = draftSubtask?.dependency?.trim() ?? '';
+        const dependency = dependencyTitle
+          ? plannedChildRecords.find((candidate) => dependencyTitle.includes(candidate.title) || candidate.title.includes(dependencyTitle))
+          : null;
+        const baseTask = fromRecord({ ...child, activeBlocker: null, activeWaitingItem: null }, childAttrs);
+        return {
+          ...baseTask,
+          status: dependency ? 'blocked' as const : baseTask.status,
+          lane: dependency ? 'unblock' as const : baseTask.lane,
+          waitingOn: dependency ? `依赖：${dependency.title}` : baseTask.waitingOn,
+        };
+      });
+
+      setAllTasks((prev) => {
+        const nextParent = prev.map((task) => (
+          task.id === project.id
+            ? {
+                ...fromRecord({
+                  ...updatedParent,
+                  activeBlocker: null,
+                  activeWaitingItem: null,
+                  activeDependency: null,
+                  dependencyReevaluation: null,
+                }, parentAttrs),
+                childTaskIds: parentAttrs.childTaskIds,
+              }
+            : task
+        ));
+        return [...childTasks, ...nextParent];
+      });
+      setProjectDraft(null);
+    } catch (error) {
+      setProjectDecompositionError(error instanceof Error ? error.message : '创建子任务失败，请稍后重试。');
+    } finally {
+      setProjectCreatingChildrenId(null);
+    }
+  }
+
+  function groupByLane(tasks: Task[]): Record<Lane, Task[]> {
+    const result = {} as Record<Lane, Task[]>;
+    LANE_ORDER.forEach((lane) => { result[lane] = []; });
+    tasks.forEach((t) => result[t.lane].push(t));
+    return result;
+  }
+
+  async function captureTask() {
+    const title = captureTitle.trim();
+    if (!title || capturing) return;
+    setCapturing(true);
+    try {
+      let newId: string;
+      const selectedType = captureType;
+      if (window.api) {
+        const record = await window.api.createTask({ title });
+        newId = record.id;
+        const plannedRecord = await window.api.transitionTask({ id: record.id, nextState: 'planned' });
+        const attrs = saveTaskAttributes(newId, {
+          type: selectedType,
+          commitment: captureCommitment,
+          schedule: defaultScheduleForType(selectedType),
+          trigger: defaultTriggerForType(selectedType),
+        });
+        setAllTasks((prev) => [fromRecord({ ...plannedRecord, activeBlocker: null, activeWaitingItem: null }, attrs), ...prev]);
+      } else {
+        newId = `t-${Date.now()}`;
+        const attrs = saveTaskAttributes(newId, {
+          type: selectedType,
+          commitment: captureCommitment,
+          schedule: defaultScheduleForType(selectedType),
+          trigger: defaultTriggerForType(selectedType),
+        });
+        const fake: Task = {
+          id: newId, title, lane: 'clarify', status: 'idle',
+          type: attrs.type,
+          childTaskIds: attrs.childTaskIds,
+          commitment: attrs.commitment ?? undefined,
+          schedule: attrs.schedule ?? undefined,
+          trigger: attrs.trigger ?? undefined,
+          updatedAt: new Date().toLocaleDateString('zh'),
+          state: 'planned',
+        };
+        setAllTasks((prev) => [fake, ...prev]);
+      }
+      setCaptureTitle('');
+      setCaptureType('simple');
+      setCaptureCommitment('');
+      setShowCapture(false);
+      setCapturedTask({ id: newId, title });
+    } finally {
+      setCapturing(false);
+    }
+  }
 
   return (
-    <section className="tasks-layout">
-      <article className="panel">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">Tasks</p>
-            <h2>任务列表</h2>
-            <p className="lede">{taskQueueSummary}</p>
-          </div>
-        </div>
-        <form className="stack" onSubmit={handleCreate}>
-          <label>
-            新任务标题
-            <input value={newTaskTitle} onChange={(event) => setNewTaskTitle(event.target.value)} />
-          </label>
-          <p className="meta">新任务创建后会先按「先补清晰度」语义打开，方便立刻补下一步。</p>
-          <button type="submit">创建任务</button>
-        </form>
-        <div className="task-list">
-          {tasks.length === 0 ? (
-            <p className="meta">还没有任务，先创建一条开始流转。</p>
-          ) : (
-            tasks.map((task, index) => {
-              const lane = taskPriorityLanes.get(task.id);
-              const laneLabel = getPriorityLaneLabel(lane);
-              const previousLane = index > 0 ? taskPriorityLanes.get(tasks[index - 1]!.id) : null;
-              const showLaneSection = laneLabel && lane !== previousLane;
+    <div className="tasks-page" onClick={closeContextMenu}>
+      {/* Lenses Rail */}
+      <aside className="lenses-rail">
+        <LensItem label="全部" active={lens === 'all'} onClick={() => setLens('all')}
+          count={allTasks.length} />
 
+        <div className="lens-group-label">执行状态</div>
+        <LensItem label="Running" active={lens === 'running'} onClick={() => setLens('running')}
+          dot="running" count={allTasks.filter(t => t.status === 'running').length} />
+        <LensItem label="等待中 7d+" active={lens === 'waiting'} onClick={() => setLens('waiting')}
+          dot="waiting" count={allTasks.filter(t => t.status === 'waiting').length} />
+        <LensItem label="有风险" active={lens === 'blocked'} onClick={() => setLens('blocked')}
+          dot="risk" count={allTasks.filter(t => t.status === 'blocked').length} />
+
+        <div className="lens-group-label">任务类型</div>
+        <LensItem label="项目型" active={lens === 'project'} onClick={() => setLens('project')} icon="📁"
+          count={projectParents.length} />
+        <LensItem label="定时任务" active={lens === 'scheduled'} onClick={() => setLens('scheduled')} icon="🔁"
+          count={allTasks.filter(t => t.type === 'scheduled').length} />
+        <LensItem label="事件触发" active={lens === 'event'} onClick={() => setLens('event')} icon="⚡"
+          count={allTasks.filter(t => t.type === 'event').length} />
+
+        {projectParents.length > 0 && (
+          <>
+            <div className="lens-group-label">归属</div>
+            {projectParents.map((project) => (
+              <LensItem
+                key={project.id}
+                label={project.title}
+                active={lens === `project:${project.id}`}
+                onClick={() => setLens(`project:${project.id}`)}
+                icon="□"
+                count={allTasks.filter((task) => task.parentTaskId === project.id).length}
+              />
+            ))}
+          </>
+        )}
+
+        <div className="lens-group-label" style={{ marginTop: 'auto' }}>特殊视角</div>
+        <LensItem label="已承诺" active={lens === 'committed'} onClick={() => setLens('committed')} icon="🤝"
+          count={allTasks.filter(t => !!t.commitment).length} />
+        <LensItem label="已完成 / 归档" active={lens === 'done'} onClick={() => setLens('done')} icon="🗄"
+          count={allTasks.filter(t => t.status === 'done').length} />
+      </aside>
+
+      {/* Task list */}
+      <div className="tasks-main">
+        {/* View mode switcher */}
+        <div className="tasks-toolbar">
+          <div className="view-switcher">
+            {(['lane', 'list', 'timeline'] as ViewMode[]).map((m) => (
+              <button
+                key={m}
+                className={`view-btn${viewMode === m ? ' active' : ''}`}
+                onClick={() => setViewMode(m)}
+              >
+                {m === 'lane' ? 'Priority Lane' : m === 'list' ? '列表' : '时间线'}
+              </button>
+            ))}
+          </div>
+          <button className="btn sm primary" style={{ marginLeft: 'auto' }} onClick={() => setShowCapture((v) => !v)}>
+            + 新建任务
+          </button>
+        </div>
+
+        {/* Capture form */}
+        {showCapture && (
+          <div className="capture-form">
+            <input
+              className="capture-input"
+              autoFocus
+              placeholder="任务标题… (Enter 快速创建)"
+              value={captureTitle}
+              onChange={(e) => {
+                const nextTitle = e.target.value;
+                setCaptureTitle(nextTitle);
+                setCaptureType((current) => current === 'simple' ? inferTaskExecutionType(nextTitle) : current);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void captureTask(); }
+                if (e.key === 'Escape') { setShowCapture(false); setCaptureTitle(''); }
+              }}
+            />
+            <div className="capture-type-suggestion">
+              <span>AI 建议类型</span>
+              <strong>{TASK_TYPE_LABELS[captureType]}</strong>
+            </div>
+            <div className="capture-type-row">
+              {(['simple', 'project', 'scheduled', 'event'] as TaskType[]).map((type) => (
+                <button
+                  key={type}
+                  className={`capture-type-btn${captureType === type ? ' active' : ''}`}
+                  onClick={() => setCaptureType(type)}
+                >
+                  {TASK_TYPE_LABELS[type]}
+                </button>
+              ))}
+              <input
+                className="capture-commitment-input"
+                placeholder="已承诺时间或对象（可选）"
+                value={captureCommitment}
+                onChange={(e) => setCaptureCommitment(e.target.value)}
+              />
+            </div>
+            <div className="capture-type-note">
+              类型由 AI 根据标题预判，你只需要确认或调整建议；点击创建即确认当前建议。定时/事件会先创建单条任务，周期和触发条件可在工作台 Header 调整；项目型先生成拆解草稿，确认后才创建真实子任务。
+            </div>
+            {captureSopSuggestions.length > 0 && (
+              <div className="capture-sop-suggestions">
+                <span>可参考流程模板</span>
+                {captureSopSuggestions.slice(0, 2).map((habit) => (
+                  <strong key={habit.id}>{habit.rule}</strong>
+                ))}
+                <small>创建后 AI 会在规划讨论中建议是否加载，不会自动套用。</small>
+              </div>
+            )}
+            <div className="capture-actions">
+              <button className={`btn sm primary${capturing ? ' disabled' : ''}`} onClick={() => void captureTask()} disabled={!captureTitle.trim() || capturing}>
+                {capturing ? '创建中…' : '创建'}
+              </button>
+              <button className="btn sm ghost" onClick={() => { setShowCapture(false); setCaptureTitle(''); }}>
+                取消
+              </button>
+              <span className="capture-ai-hint muted">
+                项目型任务创建后可让 AI 拆解并自检
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Post-capture AI nudge */}
+        {capturedTask && (
+          <div className="capture-nudge">
+            <span>✓ 已创建</span>
+            <button className="btn sm primary" onClick={() => { onOpenPanel(capturedTask.id, undefined, capturedTask.title); setCapturedTask(null); }}>
+              让 AI 拆解并检查 →
+            </button>
+            <button className="icon-btn" style={{ marginLeft: 4 }} onClick={() => setCapturedTask(null)} title="关闭">
+              <span style={{ fontSize: 12, lineHeight: 1 }}>×</span>
+            </button>
+          </div>
+        )}
+
+        {/* Task rows */}
+        <div className="task-list">
+          {lens === 'project' ? (
+            <ProjectTreeView
+              projects={projectParents}
+              tasks={allTasks}
+              selectedId={selectedId}
+              deferOpenId={deferOpenId}
+              onRowClick={handleRowClick}
+              onRowDoubleClick={handleRowDoubleClick}
+              onContextMenu={handleContextMenu}
+              onDeferToggle={(task) => setDeferOpenId((prev) => (prev === task.id ? null : task.id))}
+              onDeferSelect={deferTask}
+              onComplete={(task) => setCompletionCheckTask(task)}
+              onMore={(event, task) => handleContextMenu(event, task.id)}
+              onResolveDependency={resolveReadyDependency}
+              projectDraft={projectDraft}
+              decomposingId={projectDecomposingId}
+              creatingChildrenId={projectCreatingChildrenId}
+              decompositionError={projectDecompositionError}
+              onGenerateDecomposition={generateProjectDecomposition}
+              onCreateDraftChildren={createProjectChildren}
+            />
+          ) : viewMode === 'lane' ? (
+            LANE_ORDER.map((lane) => {
+              const group = groupByLane(filtered)[lane];
+              if (group.length === 0) return null;
               return (
-                <div className="task-list-item" key={task.id}>
-                  {showLaneSection ? (
-                    <div className="task-lane-section">
-                      <span className={`status lane-status lane-status-${lane}`}>{laneLabel}</span>
-                    </div>
-                  ) : null}
-                  <button
-                    className={`task-card task-card-button ${getTaskCardTone(task)} ${
-                      task.id === selectedTaskId ? 'task-card-active' : ''
-                    }`}
-                    onClick={() => setSelectedTaskId(task.id)}
-                    type="button"
-                  >
-                    <div className="task-row">
-                      <strong>{task.title}</strong>
-                      <div className="task-row task-row-compact">
-                        {laneLabel ? (
-                          <span className={`status lane-status lane-status-${lane}`}>
-                            {laneLabel}
-                          </span>
-                        ) : null}
-                        <span className="status">{task.state}</span>
-                      </div>
-                    </div>
-                    <p className="meta">{getTaskCardSummary(task)}</p>
-                    {buildTaskBadges(task).length ? (
-                      <div className="signal-row">
-                        {buildTaskBadges(task).map((badge) => (
-                          <span className="signal-pill" key={badge}>
-                            {badge}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
-                    {getTaskCardNextMoveHint(task) ? (
-                      <p className="meta">{getTaskCardNextMoveHint(task)}</p>
-                    ) : null}
-                    {task.dependencyReevaluation ? (
-                      <p className="meta">
-                        {task.dependencyReevaluation.status === 'upstream_ready'
-                          ? `依赖重判：上游任务“${task.dependencyReevaluation.upstreamTaskTitle}”已完成。`
-                          : `依赖重判：上游任务“${task.dependencyReevaluation.upstreamTaskTitle}”刚解除关键阻塞。`}
-                      </p>
-                    ) : task.activeDependency?.blockedByTaskTitle ? (
-                      <>
-                        <p className="meta">依赖：当前被上游任务“{task.activeDependency.blockedByTaskTitle}”卡住。</p>
-                        <p className="meta">{formatDependencyAgeLabel(task.activeDependency.createdAt)}</p>
-                        {getDependencyAgeReason(task.activeDependency.createdAt, 'task') ? (
-                          <p className="meta">{getDependencyAgeReason(task.activeDependency.createdAt, 'task')}</p>
-                        ) : null}
-                      </>
-                    ) : null}
-                    {task.waitingReason ? <p className="meta">等待：{task.waitingReason}</p> : null}
-                  </button>
+                <div key={lane} className="lane-group">
+                  <div className="lane-group-header">
+                    <span className={`tag lane-${lane}`}>{LANE_LABELS[lane]}</span>
+                    <span className="lane-count">{group.length}</span>
+                  </div>
+                  {group.map((task) => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      selected={selectedId === task.id}
+                      deferOpen={deferOpenId === task.id}
+                      onClick={() => handleRowClick(task.id)}
+                      onDoubleClick={() => handleRowDoubleClick(task.id)}
+                      onContextMenu={(e) => handleContextMenu(e, task.id)}
+                      onDeferToggle={(e) => { e.stopPropagation(); setDeferOpenId((prev) => (prev === task.id ? null : task.id)); }}
+                      onDeferSelect={(opt) => deferTask(task, opt)}
+                      onComplete={(e) => { e.stopPropagation(); setCompletionCheckTask(task); }}
+                      onMore={(e) => { e.stopPropagation(); handleContextMenu(e, task.id); }}
+                      onResolveDependency={(item) => resolveReadyDependency(item)}
+                    />
+                  ))}
                 </div>
               );
             })
+          ) : viewMode === 'timeline' ? (
+            <TimelineView tasks={filtered} onOpen={onOpenWorkbench} />
+          ) : (
+            filtered.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                selected={selectedId === task.id}
+                deferOpen={deferOpenId === task.id}
+                onClick={() => handleRowClick(task.id)}
+                onDoubleClick={() => handleRowDoubleClick(task.id)}
+                onContextMenu={(e) => handleContextMenu(e, task.id)}
+                onDeferToggle={(e) => {
+                  e.stopPropagation();
+                  setDeferOpenId((prev) => (prev === task.id ? null : task.id));
+                }}
+                onDeferSelect={(opt) => deferTask(task, opt)}
+                onComplete={(e) => {
+                  e.stopPropagation();
+                  setCompletionCheckTask(task);
+                }}
+                onMore={(e) => {
+                  e.stopPropagation();
+                  handleContextMenu(e, task.id);
+                }}
+                onResolveDependency={(item) => resolveReadyDependency(item)}
+              />
+            ))
+          )}
+          {filtered.length === 0 && !loading && (
+            <div className="tasks-empty">
+              {allTasks.length === 0
+                ? <><p>还没有任何任务。</p><p className="muted" style={{ marginTop: 4, fontSize: 12 }}>点击「新建任务」开始捕获你的第一个任务。</p></>
+                : <p>当前视角下没有任务。</p>
+              }
+            </div>
           )}
         </div>
-      </article>
+      </div>
 
-      <article className="panel">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">Task Detail</p>
-            <h2>{detail?.title ?? '选择一个任务'}</h2>
+      {/* Right preview panel */}
+      {selectedTask && (
+        <div className="task-preview">
+          <TaskPreview
+            task={selectedTask}
+            keySources={selectedSources}
+            hasPendingDecision={selectedHasDecision}
+            onOpenWorkbench={() => onOpenWorkbench(selectedTask.id)}
+            onOpenDecision={onOpenDecision}
+          />
+        </div>
+      )}
+
+      {/* Context menu */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          task={allTasks.find((task) => task.id === contextMenu.taskId) ?? null}
+          projects={projectParents}
+          onClose={closeContextMenu}
+          onOpenWorkbench={() => { onOpenWorkbench(contextMenu.taskId); closeContextMenu(); }}
+          onMoveToProject={(projectId) => moveIntoProject(contextMenu.taskId, projectId)}
+          onUpdateRisk={(riskLevel) => updateTaskRisk(contextMenu.taskId, riskLevel)}
+          onArchive={() => archiveTask(contextMenu.taskId)}
+          onCopyLink={() => copyTaskLink(contextMenu.taskId)}
+        />
+      )}
+
+      {completionCheckTask && (
+        <TaskCompletionCheckModal
+          taskId={completionCheckTask.id}
+          taskTitle={completionCheckTask.title}
+          onCancel={() => setCompletionCheckTask(null)}
+          onCompleteAnyway={() => {
+            const task = completionCheckTask;
+            if (!task) return;
+            setCompletionCheckTask(null);
+            completeTask(task);
+          }}
+          onMarkWaiting={(reason) => {
+            const task = completionCheckTask;
+            if (!task) return;
+            markWaitingAfterCompletionCheck(task, reason);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ─── Timeline view ─── */
+
+function TimelineView({ tasks, onOpen }: { tasks: Task[]; onOpen: (id: string) => void }) {
+  const grouped = new Map<string, Task[]>();
+  for (const t of [...tasks].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))) {
+    const key = t.updatedAt;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push(t);
+  }
+
+  if (tasks.length === 0) return null;
+
+  return (
+    <div className="timeline-view">
+      {[...grouped.entries()].map(([date, group]) => (
+        <div key={date} className="timeline-group">
+          <div className="timeline-date">{date}</div>
+          <div className="timeline-items">
+            {group.map((task) => (
+              <div key={task.id} className="timeline-item" onClick={() => onOpen(task.id)}>
+                <div className={`timeline-dot ${task.status}`} />
+                <div className="timeline-content">
+                  <span className="timeline-title">{task.title}</span>
+                  <span className={`tag lane-${task.lane}`} style={{ fontSize: 10, marginLeft: 8 }}>
+                    {LANE_LABELS[task.lane]}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-        {detail ? (
-          <>
-            <nav aria-label="Task detail sections" className="detail-jump-nav">
-              <button type="button" onClick={() => focusTaskDetailSection('snapshot')}>
-                当前
-              </button>
-              <button type="button" onClick={() => focusTaskDetailSection('completion')}>
-                完成
-              </button>
-              <button type="button" onClick={() => focusTaskDetailSection('action')}>
-                动作
-              </button>
-              <button type="button" onClick={() => focusTaskDetailSection('activity')}>
-                历史
-              </button>
-              <button type="button" onClick={() => focusTaskDetailSection('studio')}>
-                管理
-              </button>
-            </nav>
+      ))}
+    </div>
+  );
+}
 
-            <div className="transition-group detail-stage" ref={currentSnapshotSectionRef}>
-                <div className="detail-stage-head">
-                  <div>
-                    <p className="eyebrow">Current Snapshot</p>
-                    <h3>恢复与当前推进</h3>
-                  </div>
-                  <p className="meta">第一屏只保留能帮助你恢复状态、看清当前对象并继续推进的切片。</p>
-                </div>
-              <div className="detail-cluster-grid">
-                <div className="transition-group detail-card-group detail-card-wide">
-                  <h3>Task Resume Card</h3>
-                  <div className="timeline-item timeline-item-state">
-                    <strong>Resume Summary</strong>
-                    <p className="meta">{detail.resumeCard.summary}</p>
-                    <div className="resume-grid">
-                      <div className="resume-cell">
-                        <strong>Priority Lane</strong>
-                        {resumeLaneLabel ? (
-                          <>
-                            <span className={`status lane-status lane-status-${resumeLane}`}>{resumeLaneLabel}</span>
-                            <p className="meta">这条任务当前在跨任务队列里按这类优先级语义排序。</p>
-                          </>
-                        ) : (
-                          <p className="meta">当前没有更高优先级语义，保持稳态推进。</p>
-                        )}
-                      </div>
-                      <div className="resume-cell">
-                        <strong>Current State</strong>
-                        <p className="meta">{detail.resumeCard.currentState}</p>
-                      </div>
-                      <div className="resume-cell">
-                        <strong>Completion Status</strong>
-                        <p className="meta">{resumeCompletionStatus.summary}</p>
-                        {resumeCompletionStatus.total > 0 ? (
-                          <>
-                            <p className="meta">
-                              还差 {resumeCompletionStatus.open} 条完成标准，当前已满足 {resumeCompletionStatus.satisfied} 条。
-                            </p>
-                            {resumeCompletionStatus.satisfiedCriteriaHighlights?.length ? (
-                              <p className="meta">
-                                已满足：
-                                {resumeCompletionStatus.satisfiedCriteriaHighlights.join('；')}
-                              </p>
-                            ) : null}
-                            {resumeCompletionStatus.nextOpenCriterion ? (
-                              <p className="meta">
-                                最后还差：{resumeCompletionStatus.nextOpenCriterion}
-                              </p>
-                            ) : null}
-                            {resumeCompletionStatus.nextOpenResponsibilitySummary ? (
-                              <p className="meta">{resumeCompletionStatus.nextOpenResponsibilitySummary}</p>
-                            ) : null}
-                          </>
-                        ) : (
-                          <p className="meta">建议先补 1 到 3 条完成标准，帮助判断这条任务何时可以收尾。</p>
-                        )}
-                      </div>
-                      <div className="resume-cell">
-                        <strong>Latest Change</strong>
-                          <p className="meta">{detail.resumeCard.latestChange.summary}</p>
-                        {detail.resumeCard.latestChange.action.label ? (
-                          <button
-                            className="ghost-button timeline-action"
-                            onClick={openResumeLatestChange}
-                            type="button"
-                          >
-                            {detail.resumeCard.latestChange.action.label}
-                          </button>
-                        ) : null}
-                      </div>
-                      <div className="resume-cell">
-                        <strong>Current Blocker</strong>
-                        <p className="meta">{resumeCurrentBlocker.title}</p>
-                        {resumeCurrentBlocker.detail ? (
-                          <p className="meta">{resumeCurrentBlocker.detail}</p>
-                        ) : null}
-                        {resumeCurrentBlocker.ageLabel ? (
-                          <p className="meta">{resumeCurrentBlocker.ageLabel}</p>
-                        ) : null}
-                        {resumeCurrentBlocker.priorityReason ? (
-                          <p className="meta">{resumeCurrentBlocker.priorityReason}</p>
-                        ) : null}
-                        {resumeCurrentBlocker.responsibilitySummary ? (
-                          <p className="meta">{resumeCurrentBlocker.responsibilitySummary}</p>
-                        ) : null}
-                      </div>
-                      <div className="resume-cell">
-                        <strong>Current Dependency</strong>
-                        <p className="meta">{resumeCurrentDependency.title}</p>
-                        {resumeCurrentDependency.detail ? (
-                          <p className="meta">{resumeCurrentDependency.detail}</p>
-                        ) : null}
-                        {resumeCurrentDependency.ageLabel ? (
-                          <p className="meta">{resumeCurrentDependency.ageLabel}</p>
-                        ) : null}
-                        {resumeCurrentDependency.priorityReason ? (
-                          <p className="meta">{resumeCurrentDependency.priorityReason}</p>
-                        ) : null}
-                        {resumeCurrentDependency.responsibilitySummary ? (
-                          <p className="meta">{resumeCurrentDependency.responsibilitySummary}</p>
-                        ) : null}
-                      </div>
-                      <div className="resume-cell resume-cell-source-lane">
-                        <strong>Key Source</strong>
-                        <p className="meta context-lane-meta">Material Shelf slice</p>
-                        <p className="meta">{detail.resumeCard.keySource.title}</p>
-                        {detail.resumeCard.keySource.detail ? (
-                          <p className="meta">{detail.resumeCard.keySource.detail}</p>
-                        ) : null}
-                        {detail.resumeCard.keySource.priorityReason ? (
-                          <p className="meta">{detail.resumeCard.keySource.priorityReason}</p>
-                        ) : null}
-                      </div>
-                      <div className="resume-cell resume-cell-process-lane">
-                        <strong>Current Method</strong>
-                        <p className="meta context-lane-meta">Active Methods slice</p>
-                        <p className="meta">{detail.resumeCard.currentMethod.title}</p>
-                        {detail.resumeCard.currentMethod.detail ? (
-                          <p className="meta">{detail.resumeCard.currentMethod.detail}</p>
-                        ) : null}
-                        {detail.resumeCard.currentMethod.selectionReason ? (
-                          <p className="meta">{detail.resumeCard.currentMethod.selectionReason}</p>
-                        ) : null}
-                      </div>
-                      <div className="resume-cell resume-cell-wide">
-                        <strong>Next Suggested Move</strong>
-                        <p className="meta">{detail.resumeCard.nextSuggestedMove}</p>
-                      </div>
-                    </div>
-                    <div className="timeline-actions">
-                      {detail.resumeCard.keySource.sourceContextId ? (
-                        <button
-                          className="ghost-button timeline-action"
-                          onClick={() => focusSourceContext(detail.resumeCard.keySource.sourceContextId)}
-                          type="button"
-                        >
-                          打开 Material Shelf
-                        </button>
-                      ) : null}
-                      {detail.resumeCard.currentMethod.templateId ? (
-                        <button
-                          className="ghost-button timeline-action"
-                          onClick={() => focusProcessTemplate(detail.resumeCard.currentMethod.templateId)}
-                          type="button"
-                        >
-                          打开 Active Methods
-                        </button>
-                      ) : null}
-                      {resumeCurrentBlocker.blockerId ? (
-                        <button
-                          className="ghost-button timeline-action"
-                          onClick={focusBlockerSection}
-                          type="button"
-                        >
-                          打开 Current Blocker
-                        </button>
-                      ) : null}
-                      {resumeCurrentDependency.dependencyId ? (
-                        <button
-                          className="ghost-button timeline-action"
-                          onClick={focusDependencySection}
-                          type="button"
-                        >
-                          打开 Task Dependency
-                        </button>
-                      ) : null}
-                      <button
-                        className="ghost-button timeline-action"
-                        onClick={() => focusCompletionCriteriaSection()}
-                        type="button"
-                      >
-                        打开 Completion Criteria
-                      </button>
-                      {shouldEscalateCurrentDependency() ? (
-                        <button
-                          className="ghost-button timeline-action"
-                          onClick={escalateCurrentDependency}
-                          type="button"
-                        >
-                          直接升级依赖链路
-                        </button>
-                      ) : null}
-                      <button
-                        className="ghost-button timeline-action"
-                        onClick={adoptResumeNextStep}
-                        type="button"
-                      >
-                        采用建议下一步
-                      </button>
-                    </div>
-                  </div>
-                </div>
+/* ─── Lens item ─── */
 
-                <div className="transition-group detail-card-group">
-                  <h3>Active Slices</h3>
-                  <p className="meta">这里把当前信号、等待、阻塞和依赖压成摘要切片；完整维护下沉到 Context Studio。</p>
-                  <div className="timeline-list">
-                    <div className="timeline-item">
-                      <div className="task-row">
-                        <strong>Task Signals</strong>
-                        <span className="signal-pill timeline-badge timeline-item-default">{detail.riskLevel}</span>
-                      </div>
-                      <p className="meta">Next Step: {detail.nextStep ?? '未填写'}</p>
-                      <p className="meta">
-                        Waiting: {detail.activeWaitingItem?.reason ?? detail.waitingReason ?? '未填写'}
-                      </p>
-                      {detail.riskNote ? <p className="meta">Risk note: {detail.riskNote}</p> : null}
-                    </div>
+interface LensItemProps {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  count?: number;
+  dot?: string;
+  icon?: string;
+}
 
-                    {detail.activeWaitingItem ? (
-                      <div className="timeline-item timeline-item-waiting">
-                        <div className="task-row">
-                          <strong>Waiting: {detail.activeWaitingItem.reason}</strong>
-                          <span className="signal-pill timeline-badge timeline-item-waiting">
-                            {detail.activeWaitingItem.status}
-                          </span>
-                        </div>
-                        <p className="meta">
-                          waiting item · {detail.activeWaitingItem.status} · since {detail.activeWaitingItem.createdAt}
-                        </p>
-                        {detail.state === 'waiting_external' ? (
-                          <button
-                            className="ghost-button timeline-action"
-                            onClick={() => void handleTransition('planned')}
-                            type="button"
-                          >
-                            解除等待
-                          </button>
-                        ) : null}
-                      </div>
-                    ) : null}
+function LensItem({ label, active, onClick, count, dot, icon }: LensItemProps) {
+  return (
+    <button className={`lens-item${active ? ' active' : ''}`} onClick={onClick}>
+      {dot && <span className={`dot ${dot}`} />}
+      {icon && <span className="lens-icon">{icon}</span>}
+      <span className="lens-label">{label}</span>
+      {count != null && count > 0 && (
+        <span className="lens-count">{count}</span>
+      )}
+    </button>
+  );
+}
 
-                    {detail.activeBlocker ? (
-                      <div className="timeline-item timeline-item-risk">
-                        <div className="task-row">
-                          <strong>Blocker: {detail.activeBlocker.title}</strong>
-                          <span className="signal-pill timeline-badge timeline-item-risk">
-                            {formatBlockerKind(detail.activeBlocker.kind)}
-                          </span>
-                        </div>
-                        {detail.activeBlocker.detail ? (
-                          <p className="meta">{detail.activeBlocker.detail}</p>
-                        ) : null}
-                        {detail.resumeCard.currentBlocker.priorityReason ? (
-                          <p className="meta">{detail.resumeCard.currentBlocker.priorityReason}</p>
-                        ) : (
-                          <p className="meta">{formatBlockerAgeLabel(detail.activeBlocker.createdAt)}</p>
-                        )}
-                        <div className="timeline-actions">
-                          <button
-                            className="ghost-button timeline-action"
-                            onClick={focusBlockerSection}
-                            type="button"
-                          >
-                            管理阻塞项
-                          </button>
-                          {detail.activeBlocker.sourceContextId ? (
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => focusSourceContext(detail.activeBlocker?.sourceContextId ?? null)}
-                              type="button"
-                            >
-                              查看阻塞来源
-                            </button>
-                          ) : null}
-                          <button
-                            className="ghost-button timeline-action"
-                            onClick={() => void handleResolveCurrentBlocker(detail.activeBlocker!.id)}
-                            type="button"
-                          >
-                            解除阻塞
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
+function ProjectTreeView({
+  projects,
+  tasks,
+  selectedId,
+  deferOpenId,
+  onRowClick,
+  onRowDoubleClick,
+  onContextMenu,
+  onDeferToggle,
+  onDeferSelect,
+  onComplete,
+  onMore,
+  onResolveDependency,
+  projectDraft,
+  decomposingId,
+  creatingChildrenId,
+  decompositionError,
+  onGenerateDecomposition,
+  onCreateDraftChildren,
+}: {
+  projects: Task[];
+  tasks: Task[];
+  selectedId: string | null;
+  deferOpenId: string | null;
+  onRowClick: (id: string) => void;
+  onRowDoubleClick: (id: string) => void;
+  onContextMenu: (event: React.MouseEvent, taskId: string) => void;
+  onDeferToggle: (task: Task) => void;
+  onDeferSelect: (task: Task, option: string) => void;
+  onComplete: (task: Task) => void;
+  onMore: (event: React.MouseEvent, task: Task) => void;
+  onResolveDependency: (task: Task) => void;
+  projectDraft: { projectId: string; result: ProjectDecompositionResult } | null;
+  decomposingId: string | null;
+  creatingChildrenId: string | null;
+  decompositionError: string | null;
+  onGenerateDecomposition: (project: Task) => void;
+  onCreateDraftChildren: (project: Task) => void;
+}) {
+  if (projects.length === 0) return null;
 
-                    {detail.activeDependency ? (
-                      <div className="timeline-item timeline-item-default">
-                        <div className="task-row">
-                          <strong>Dependency: {detail.activeDependency.blockedByTaskTitle ?? '未命名上游任务'}</strong>
-                          <span className="signal-pill timeline-badge timeline-item-default">task</span>
-                        </div>
-                        {detail.activeDependency.reason ? (
-                          <p className="meta">{detail.activeDependency.reason}</p>
-                        ) : null}
-                        <p className="meta">
-                          {detail.resumeCard.currentDependency?.ageLabel ?? `depends since ${detail.activeDependency.createdAt.slice(0, 10)}`}
-                        </p>
-                        {detail.resumeCard.currentDependency?.priorityReason ? (
-                          <p className="meta">{detail.resumeCard.currentDependency.priorityReason}</p>
-                        ) : null}
-                        <div className="timeline-actions">
-                          <button
-                            className="ghost-button timeline-action"
-                            onClick={focusDependencySection}
-                            type="button"
-                          >
-                            管理依赖
-                          </button>
-                          {detail.dependencyReevaluation ? (
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={reevaluateCurrentDependency}
-                              type="button"
-                            >
-                              重新判断依赖
-                            </button>
-                          ) : null}
-                          {detail.activeDependency.blockedByTaskId ? (
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={openUpstreamDependencyTask}
-                              type="button"
-                            >
-                              打开上游任务
-                            </button>
-                          ) : null}
-                          {shouldEscalateCurrentDependency() ? (
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={escalateCurrentDependency}
-                              type="button"
-                            >
-                              直接升级依赖链路
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="transition-group detail-card-group">
-                  <h3>Recent Artifact</h3>
-                  <p className="meta">这里只显示最新产物，避免把当前层做成产物归档区。</p>
-                  <div className="timeline-list">
-                    {snapshotArtifact ? (
-                      <div className="timeline-item timeline-item-next-step" key={snapshotArtifact.id}>
-                        <div className="task-row">
-                          <strong>{snapshotArtifact.title}</strong>
-                          <span className="signal-pill timeline-badge timeline-item-next-step">
-                            {snapshotArtifact.kind}
-                          </span>
-                        </div>
-                        <p className="meta">
-                          source: {snapshotArtifact.sourceType} · {snapshotArtifact.sourceId}
-                        </p>
-                        <p className="meta brief-preview">{snapshotArtifact.content}</p>
-                        {detail.artifacts.length > 1 ? (
-                          <p className="meta">其余 {detail.artifacts.length - 1} 条产物留在下方活动与历史层。</p>
-                        ) : null}
-                      </div>
-                    ) : (
-                      <p className="meta">当前任务还没有沉淀出 artifact。</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="transition-group detail-card-group">
-                  <h3>Context Slices</h3>
-                  <p className="meta">这里只保留当前最关键的来源和方法入口，完整材料架与方法库下沉到 Context Studio。</p>
-                  <div className="timeline-list">
-                    {snapshotSourceContext ? (
-                      <button
-                        className="task-card task-card-button task-card-muted"
-                        key={`key-source:${snapshotSourceContext.id}`}
-                        onClick={() => populateSourceContextForm(snapshotSourceContext)}
-                        type="button"
-                      >
-                        <div className="task-row">
-                          <strong>{snapshotSourceContext.title}</strong>
-                          <span className="signal-pill timeline-badge timeline-item-default">
-                            {formatSourceContextKind(snapshotSourceContext.kind)}
-                            {snapshotSourceContext.isKey ? ' · key' : ''}
-                          </span>
-                        </div>
-                        {snapshotSourceContext.note ? <p className="meta">{snapshotSourceContext.note}</p> : null}
-                        {snapshotSourceContext.uri ? (
-                          <p className="meta brief-preview">{snapshotSourceContext.uri}</p>
-                        ) : null}
-                        <p className="meta">最近更新：{snapshotSourceContext.updatedAt}</p>
-                        {detail.sourceContexts.length > 1 ? (
-                          <p className="meta">其余 {detail.sourceContexts.length - 1} 条来源材料移到 Context Studio。</p>
-                        ) : null}
-                      </button>
-                    ) : (
-                      <p className="meta">当前还没有关键来源材料。</p>
-                    )}
-
-                    {snapshotProcessTemplate ? (
-                      <div
-                        className="timeline-item timeline-item-state"
-                        key={`current-method:${snapshotProcessTemplate.bindingId}`}
-                      >
-                        <div className="task-row">
-                          <strong>{snapshotProcessTemplate.title}</strong>
-                          <span className="signal-pill timeline-badge timeline-item-state">
-                            {formatProcessTemplateKind(snapshotProcessTemplate.kind)}
-                          </span>
-                        </div>
-                        {snapshotProcessTemplate.summary ? (
-                          <p className="meta">{snapshotProcessTemplate.summary}</p>
-                        ) : null}
-                        {snapshotProcessTemplate.tags.length ? (
-                          <p className="meta">tags: {snapshotProcessTemplate.tags.join(', ')}</p>
-                        ) : null}
-                        {detail.resumeCard.currentMethod.selectionReason ? (
-                          <p className="meta">{detail.resumeCard.currentMethod.selectionReason}</p>
-                        ) : null}
-                        {detail.processTemplates.length > 1 ? (
-                          <p className="meta">其余 {detail.processTemplates.length - 1} 个方法模板移到 Context Studio。</p>
-                        ) : null}
-                      </div>
-                    ) : (
-                      <p className="meta">当前任务还没有启用中的方法模板。</p>
-                    )}
-                  </div>
-                  <div className="timeline-actions">
-                    <button
-                      className="ghost-button timeline-action"
-                      onClick={() => focusSourceContext(snapshotSourceContext?.id ?? null)}
-                      type="button"
-                    >
-                      {snapshotSourceContext ? '管理来源材料' : '新增来源材料'}
-                    </button>
-                    <button
-                      className="ghost-button timeline-action"
-                      onClick={() => focusProcessTemplate(snapshotProcessTemplate?.id ?? null)}
-                      type="button"
-                    >
-                      {snapshotProcessTemplate ? '管理当前方法' : '新增方法模板'}
-                    </button>
-                  </div>
-                </div>
-
-              </div>
+  return (
+    <div className="project-tree">
+      {projects.map((project) => {
+        const children = project.childTaskIds
+          .map((id) => tasks.find((task) => task.id === id))
+          .filter((task): task is Task => Boolean(task));
+        const done = children.filter((task) => task.status === 'done').length;
+        return (
+          <div key={project.id} className="project-group">
+            <div className="project-group-head">
+              <span className="project-disclosure">▾</span>
+              <span className="project-group-title">{project.title}</span>
+              <span className="project-progress">{done}/{children.length} 子任务完成</span>
             </div>
-
-            <div className="transition-group detail-stage" ref={completionCriteriaSectionRef}>
-              <div className="detail-stage-head">
-                <div>
-                  <p className="eyebrow">Completion Criteria</p>
-                  <h3>完成判断与收尾标准</h3>
-                </div>
-                <p className="meta">这一层回答“做到什么程度才算真的完成”，不是过程清单，也不自动替你判定完成。</p>
+            <TaskRow
+              task={project}
+              selected={selectedId === project.id}
+              deferOpen={deferOpenId === project.id}
+              onClick={() => onRowClick(project.id)}
+              onDoubleClick={() => onRowDoubleClick(project.id)}
+              onContextMenu={(event) => onContextMenu(event, project.id)}
+              onDeferToggle={(event) => { event.stopPropagation(); onDeferToggle(project); }}
+              onDeferSelect={(option) => onDeferSelect(project, option)}
+              onComplete={(event) => { event.stopPropagation(); onComplete(project); }}
+              onMore={(event) => { event.stopPropagation(); onMore(event, project); }}
+              onResolveDependency={onResolveDependency}
+            />
+            {children.map((child) => (
+              <div key={child.id} className="project-child-row">
+                <TaskRow
+                  task={child}
+                  selected={selectedId === child.id}
+                  deferOpen={deferOpenId === child.id}
+                  onClick={() => onRowClick(child.id)}
+                  onDoubleClick={() => onRowDoubleClick(child.id)}
+                  onContextMenu={(event) => onContextMenu(event, child.id)}
+                  onDeferToggle={(event) => { event.stopPropagation(); onDeferToggle(child); }}
+                  onDeferSelect={(option) => onDeferSelect(child, option)}
+                  onComplete={(event) => { event.stopPropagation(); onComplete(child); }}
+                  onMore={(event) => { event.stopPropagation(); onMore(event, child); }}
+                  onResolveDependency={onResolveDependency}
+                />
               </div>
-              <div className="detail-cluster-grid">
-                <div className="transition-group detail-card-group detail-card-wide">
-                  <h3>Current Completion Criteria</h3>
-                  <p className="meta">先看还差哪些完成标准，再决定这条任务是否真的可以收尾。</p>
-                  <div className="timeline-list">
-                    {detail.completionCriteria.length ? (
-                      detail.completionCriteria.map((criteria) => (
-                        <div
-                          className={`timeline-item timeline-item-state ${
-                            completionCriteriaFocusIds.includes(criteria.id)
-                              ? 'timeline-item-completion-focus'
-                              : ''
-                          }`}
-                          key={criteria.id}
-                        >
-                          <div className="task-row">
-                            <strong>{criteria.text}</strong>
-                            <div className="timeline-badge-row">
-                              {completionCriteriaFocusIds.includes(criteria.id) ? (
-                                <span className="signal-pill timeline-badge timeline-item-next-step">
-                                  证据可能对应
-                                </span>
-                              ) : null}
-                              <span
-                                className={`signal-pill timeline-badge ${
-                                  criteria.status === 'satisfied'
-                                    ? 'timeline-item-state'
-                                    : 'timeline-item-default'
-                                }`}
-                              >
-                                {criteria.status === 'satisfied' ? '已满足' : '未满足'}
-                              </span>
-                            </div>
-                          </div>
-                          <p className="meta">
-                            created {criteria.createdAt.slice(0, 10)}
-                            {criteria.satisfiedAt ? ` · satisfied ${criteria.satisfiedAt.slice(0, 10)}` : ''}
-                          </p>
-                          {criteria.verificationResponsibility ||
-                          criteria.verificationResponsibilityLabel ? (
-                            <p className="meta">
-                              确认责任：
-                              {criteria.verificationResponsibilityLabel ??
-                                formatResponsibilityKind(
-                                  criteria.verificationResponsibility ?? 'unknown',
-                                )}
-                            </p>
-                          ) : null}
-                          <div className="timeline-actions">
-                            {criteria.status === 'open' ? (
-                              <button
-                                className="ghost-button timeline-action"
-                                onClick={() => void handleSatisfyCurrentCompletionCriteria(criteria.id)}
-                                type="button"
-                              >
-                                标记已满足
-                              </button>
-                            ) : (
-                              <button
-                                className="ghost-button timeline-action"
-                                onClick={() => void handleReopenCurrentCompletionCriteria(criteria.id)}
-                                type="button"
-                              >
-                                重新打开
-                              </button>
-                            )}
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => populateCompletionCriteriaForm(criteria)}
-                              type="button"
-                            >
-                              编辑标准
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="meta">当前任务还没有定义完成标准。首版建议先补 1 到 3 条，帮助判断什么时候真的可以完成。</p>
-                    )}
-                  </div>
-                </div>
+            ))}
+            {children.length === 0 && (
+              <ProjectDecompositionPanel
+                project={project}
+                draft={projectDraft?.projectId === project.id ? projectDraft.result : null}
+                busy={decomposingId === project.id}
+                creating={creatingChildrenId === project.id}
+                error={decompositionError}
+                onGenerate={() => onGenerateDecomposition(project)}
+                onCreate={() => onCreateDraftChildren(project)}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
-                <div className="transition-group detail-card-group">
-                  <h3>Completion Snapshot</h3>
-                  <p className="meta">恢复卡只保留一条切片，这里再补一层当前完成判断状态。</p>
-                  <div className="timeline-list">
-                    <div className="timeline-item timeline-item-default">
-                      <strong>{resumeCompletionStatus.summary}</strong>
-                      {resumeCompletionStatus.total > 0 ? (
-                        <>
-                          <p className="meta">
-                            未满足 {resumeCompletionStatus.open} 条，已满足{' '}
-                            {resumeCompletionStatus.satisfied} 条。
-                          </p>
-                          {resumeCompletionStatus.nextOpenResponsibilitySummary ? (
-                            <p className="meta">
-                              {resumeCompletionStatus.nextOpenResponsibilitySummary}
-                            </p>
-                          ) : null}
-                        </>
-                      ) : (
-                        <p className="meta">还没有退出条件对象，当前不适合直接凭感觉判断已完成。</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="transition-group detail-card-group">
-                  <h3>Potential Completion Evidence</h3>
-                  <p className="meta">系统只提示最近哪些结果值得先对照完成标准，不会自动替你标记已满足。</p>
-                  <div className="timeline-list">
-                    {completionEvidenceCards.length ? (
-                      completionEvidenceCards.map((evidence) => (
-                        <div className="timeline-item timeline-item-default" key={evidence.id}>
-                          <div className="task-row">
-                            <strong>{evidence.title}</strong>
-                            <span className="signal-pill timeline-badge timeline-item-default">
-                              {evidence.type === 'decision'
-                                ? '拍板结果'
-                                : evidence.type === 'run'
-                                  ? '执行结果'
-                                  : '最近产物'}
-                            </span>
-                          </div>
-                          <p className="meta">{evidence.detail}</p>
-                          {evidence.matchedCriteria.length ? (
-                            <p className="meta">
-                              可能对应：{evidence.matchedCriteria.slice(0, 2).join('；')}
-                              {evidence.matchedCriteria.length > 2 ? '；…' : ''}
-                            </p>
-                          ) : (
-                            <p className="meta">值得先对照当前仍未满足的完成标准。</p>
-                          )}
-                          {evidence.responsibilityGuidance ? (
-                            <p className="meta">{evidence.responsibilityGuidance}</p>
-                          ) : null}
-                          <div className="timeline-actions">
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => focusCompletionCriteriaSection(evidence.matchedCriteriaIds)}
-                              type="button"
-                            >
-                              {evidence.matchedCriteriaIds.length ? '对照可能对应标准' : '对照未满足标准'}
-                            </button>
-                            {evidence.type === 'decision' && evidence.targetId ? (
-                              <button
-                                className="ghost-button timeline-action"
-                                onClick={() => onOpenDecision(evidence.targetId as string)}
-                                type="button"
-                              >
-                                查看 Decision
-                              </button>
-                            ) : null}
-                            {(evidence.type === 'run' || evidence.type === 'artifact') && evidence.targetId ? (
-                              <button
-                                className="ghost-button timeline-action"
-                                onClick={() => onOpenRun(evidence.targetId as string)}
-                                type="button"
-                              >
-                                查看 Run
-                              </button>
-                            ) : null}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="meta">最近还没有足够明确的完成证据。后续的拍板结果、执行结果或产物会先出现在这里。</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="transition-group detail-card-group">
-                  <form className="stack studio-form" onSubmit={handleSaveCompletionCriteria}>
-                    <div className="studio-section-head">
-                      <strong>{completionCriteriaEditingId ? 'Edit Completion Criteria' : 'Add Completion Criteria'}</strong>
-                      <p className="meta">填写一条退出条件，例如“稿件已发出并获确认”，而不是过程步骤。</p>
-                    </div>
-                    <label>
-                      完成标准
-                      <textarea
-                        rows={3}
-                        value={completionCriteriaText}
-                        onChange={(event) => {
-                          setCompletionCriteriaText(event.target.value);
-                          if (completionCriteriaError) {
-                            setCompletionCriteriaError(null);
-                          }
-                        }}
-                      />
-                    </label>
-                    <label>
-                      确认责任
-                      <select
-                        value={completionCriteriaResponsibility}
-                        onChange={(event) =>
-                          setCompletionCriteriaResponsibility(
-                            event.target.value as ResponsibilityKind,
-                          )
-                        }
-                      >
-                        {responsibilityOptions.map((item) => (
-                          <option key={item} value={item}>
-                            {formatResponsibilityKind(item)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      确认责任说明
-                      <input
-                        value={completionCriteriaResponsibilityLabel}
-                        onChange={(event) =>
-                          setCompletionCriteriaResponsibilityLabel(event.target.value)
-                        }
-                        placeholder="例如：我自己确认 / 客户确认 / 法务确认"
-                      />
-                    </label>
-                    {completionCriteriaError ? <p className="meta">{completionCriteriaError}</p> : null}
-                    <div className="timeline-actions">
-                      <button type="submit">
-                        {completionCriteriaEditingId ? '保存完成标准' : '新增完成标准'}
-                      </button>
-                      {completionCriteriaEditingId ? (
-                        <button className="ghost-button" onClick={resetCompletionCriteriaForm} type="button">
-                          取消编辑
-                        </button>
-                      ) : null}
-                    </div>
-                  </form>
-                </div>
-              </div>
+function ProjectDecompositionPanel({
+  project,
+  draft,
+  busy,
+  creating,
+  error,
+  onGenerate,
+  onCreate,
+}: {
+  project: Task;
+  draft: ProjectDecompositionResult | null;
+  busy: boolean;
+  creating: boolean;
+  error: string | null;
+  onGenerate: () => void;
+  onCreate: () => void;
+}) {
+  return (
+    <div className="project-child-empty">
+      {!draft ? (
+        <>
+          <div className="project-empty-title">等待 AI 根据项目目标拆解子任务</div>
+          <div className="project-empty-copy">拆解前不会自动生成模板任务；先生成草稿，确认后再创建真实子任务。</div>
+          <button className={`btn sm primary${busy ? ' disabled' : ''}`} onClick={onGenerate} disabled={busy}>
+            {busy ? '生成中…' : '生成拆解草稿'}
+          </button>
+        </>
+      ) : (
+        <>
+          <div className="project-draft-head">
+            <div>
+              <div className="project-empty-title">AI 拆解草稿</div>
+              <div className="project-empty-copy">{draft.parentGoal}</div>
             </div>
-
-            <div className="transition-group detail-stage" ref={actionDeskSectionRef}>
-              <div className="detail-stage-head">
-                <div>
-                  <p className="eyebrow">Action Desk</p>
-                  <h3>动作与状态流转</h3>
-                </div>
-                <p className="meta">{getActionDeskStageGuidance(detail)}</p>
+            <button className={`btn sm primary${creating ? ' disabled' : ''}`} onClick={onCreate} disabled={creating}>
+              {creating ? '创建中…' : '创建这些子任务'}
+            </button>
+          </div>
+          <div className="project-draft-list">
+            {draft.subtasks.map((subtask) => (
+              <div key={`${project.id}-${subtask.title}`} className="project-draft-item">
+                <strong>{subtask.title}</strong>
+                <span>{subtask.summary}</span>
+                <small>验收：{subtask.acceptanceCriteria}</small>
+                {subtask.dependency && <small>依赖：{subtask.dependency}</small>}
+                <small>独立性：{subtask.rationale}</small>
               </div>
-              <div className="detail-cluster-grid">
-                <div className="transition-group detail-card-group detail-card-wide">
-                  <h3>Primary Moves</h3>
-                  <p className="meta">这里只前置当前最值得先处理的一到两个入口，具体填写和状态选择放在下方。</p>
-                  <div className="primary-moves-grid">
-                    {primaryMoves.map((move) => (
-                      <button
-                        className="ghost-button primary-move-button"
-                        key={move.id}
-                        onClick={() => focusActionTarget(move.id)}
-                        type="button"
-                      >
-                        {move.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="transition-group detail-card-group detail-action-setup">
-                  <h3>Action Setup</h3>
-                  <p className="meta">{getActionSetupGuidance(detail)}</p>
-                  {shouldShowCodeAgentReview ? (
-                    <div className="timeline-item timeline-item-waiting">
-                      <strong>Code Agent Review</strong>
-                      <p className="meta">{formatCodeAgentReviewRecoverySummary(latestCodeAgentRun, latestCodeAgentPromotionDecision)}</p>
-                      {latestCodeAgentRun ? (
-                        <p className="meta">
-                          Run：{latestCodeAgentRun.status} / {latestCodeAgentRun.updatedAt}
-                        </p>
-                      ) : null}
-                      <button
-                        className="ghost-button"
-                        onClick={() => void openLatestCodeAgentRun()}
-                        type="button"
-                      >
-                        查看 Code Agent Run
-                      </button>
-                      <button
-                        className="ghost-button"
-                        onClick={prepareCodeAgentRerun}
-                        type="button"
-                      >
-                        准备重跑 Code Agent
-                      </button>
-                      {codeAgentReviewError ? <p className="meta">{codeAgentReviewError}</p> : null}
-                      {latestCodeAgentPromotionDecision ? (
-                        <button
-                          className="ghost-button"
-                          onClick={() => onOpenDecision(latestCodeAgentPromotionDecision.id)}
-                          type="button"
-                        >
-                          打开 promotion Decision
-                        </button>
-                      ) : (
-                        <p className="meta">
-                          当前没有待处理的 promotion Decision；如检查失败，请先从 Run 证据判断是否需要重跑。
-                        </p>
-                      )}
-                    </div>
-                  ) : null}
-                  {latestPausedRun ? (
-                    <div className="timeline-item timeline-item-waiting">
-                      <strong>Paused Run Recovery</strong>
-                      <p className="meta">
-                        最近一次 {latestPausedRun.type} run 暂停待复核：{latestPausedRun.output || '未记录暂停原因'}
-                      </p>
-                      <button
-                        className="ghost-button"
-                        onClick={() => onOpenRun(latestPausedRun.id)}
-                        type="button"
-                      >
-                        查看恢复 checkpoint
-                      </button>
-                      <p className="meta">
-                        续跑前先打开 Run 证据；只有存在唯一、有效、会话绑定可恢复的 open resume checkpoint 时，Runs 页才会显示继续入口。
-                      </p>
-                    </div>
-                  ) : null}
-                  <div className="quick-actions-grid" ref={quickActionsRef}>
-                    {actionSetupOrder.map((setup) => actionSetupCards[setup])}
-                  </div>
-                </div>
-
-                <div className="transition-group detail-card-group" ref={transitionCardRef}>
-                  <h3>状态流转</h3>
-                  <p className="meta">只保留当前状态允许的后续流转，避免把所有状态都摊在面前。</p>
-                  {transitionGuidance ? <p className="meta">{transitionGuidance}</p> : null}
-                  <div className="stack">
-                    <label>
-                      Waiting Transition Reason
-                      <input
-                        placeholder="例如：等待外部审批 / 客户回复 / 法务确认"
-                        value={transitionWaitingReason}
-                        onChange={(event) => {
-                          setTransitionWaitingReason(event.target.value);
-                          if (transitionError) {
-                            setTransitionError(null);
-                          }
-                        }}
-                      />
-                    </label>
-                    {transitionError ? <p className="meta">{transitionError}</p> : null}
-                  </div>
-                  {completionTransitionGuidance ? (
-                    <div className="task-card stack">
-                      <strong>完成前判断</strong>
-                      <p className="meta">{completionTransitionGuidance.summary}</p>
-                      {completionTransitionGuidance.tone !== 'ready' ? (
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          onClick={() => focusCompletionCriteriaSection()}
-                        >
-                          打开 Completion Criteria
-                        </button>
-                      ) : null}
-                    </div>
-                  ) : null}
-                  <div className="chip-row">
-                    {transitionStates.length === 0 ? (
-                      <p className="meta">当前状态没有可用的下一步。</p>
-                    ) : (
-                      transitionStates.map((nextState) => (
-                        <button
-                          className="ghost-button"
-                          key={nextState}
-                          onClick={() => void handleTransition(nextState)}
-                          type="button"
-                        >
-                          {nextState === 'completed' && completionTransitionGuidance
-                            ? completionTransitionGuidance.buttonLabel
-                            : `转到 ${nextState}`}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
+            ))}
+          </div>
+          <div className="project-draft-review">
+            <div className="project-draft-review-title">拆解自检</div>
+            <div className="project-draft-checks">
+              <span>大块任务</span>
+              <span>边界独立</span>
+              <span>依赖明确</span>
+              <span>验收可见</span>
             </div>
+            <p>{draft.review}</p>
+            <small>{draft.nextStep}</small>
+            <small>层级规则：最多保持项目 → 子任务两层；复杂子任务应升级为项目型重新拆解。</small>
+          </div>
+        </>
+      )}
+      {error && <div className="project-draft-error">{error}</div>}
+    </div>
+  );
+}
 
-            <div className="transition-group detail-stage" ref={activityFeedSectionRef}>
-              <div className="detail-stage-head">
-                <div>
-                  <p className="eyebrow">Activity Feed</p>
-                  <h3>关联活动与任务历史</h3>
-                </div>
-                <p className="meta">最后再看相关对象和 Timeline，更容易分清“当前”与“历史”。</p>
+/* ─── Task row ─── */
+
+interface TaskRowProps {
+  task: Task;
+  selected: boolean;
+  deferOpen: boolean;
+  onClick: () => void;
+  onDoubleClick: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
+  onDeferToggle: (e: React.MouseEvent) => void;
+  onDeferSelect: (opt: string) => void;
+  onComplete: (e: React.MouseEvent) => void;
+  onMore: (e: React.MouseEvent) => void;
+  onResolveDependency: (task: Task) => void;
+}
+
+function TaskRow({
+  task, selected, deferOpen,
+  onClick, onDoubleClick, onContextMenu,
+  onDeferToggle, onDeferSelect, onComplete, onMore, onResolveDependency,
+}: TaskRowProps) {
+  return (
+    <div
+      className={`task-row${selected ? ' selected' : ''}`}
+      onClick={onClick}
+      onDoubleClick={onDoubleClick}
+      onContextMenu={onContextMenu}
+    >
+      {/* Status dot */}
+      <span className={`dot ${statusDot(task.status)}`} style={{ flexShrink: 0 }} />
+
+      {/* Title + metadata */}
+      <div className="task-row-body">
+        <span className="task-row-title">{task.title}</span>
+        <div className="task-row-meta">
+          {task.type !== 'simple' && (
+            <span className="tag">
+              {task.type === 'project' ? '项目' : task.type === 'scheduled' ? '定时' : '事件'}
+            </span>
+          )}
+          {task.whyNow && !selected && (
+            <span className="task-row-why">{task.whyNow}</span>
+          )}
+          {task.waitingOn && (
+            <span className={`task-row-waiting${task.dependencyReady ? ' ready' : ''}`}>{task.waitingOn}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Right side: timestamp or action buttons */}
+      {selected ? (
+        <div className="task-row-actions" onClick={(e) => e.stopPropagation()}>
+          {task.dependencyReady && task.dependencyId && (
+            <button className="btn sm" onClick={() => onResolveDependency(task)}>解除依赖</button>
+          )}
+          <div style={{ position: 'relative' }}>
+            <button className="btn sm ghost" onClick={onDeferToggle}>延后 ▾</button>
+            {deferOpen && (
+              <div className="defer-menu">
+                {DEFER_OPTIONS.map((opt) => (
+                  <button key={opt.value} className="defer-option"
+                    onClick={(e) => { e.stopPropagation(); onDeferSelect(opt.value); }}>
+                    {opt.label}
+                  </button>
+                ))}
               </div>
+            )}
+          </div>
+          <button className="btn sm" onClick={onComplete}>完成</button>
+          <button className="btn sm ghost" onClick={onMore} style={{ padding: '3px 6px' }}>⋯</button>
+        </div>
+      ) : (
+        <span className="task-row-date">{task.updatedAt}</span>
+      )}
+    </div>
+  );
+}
 
-              <div className="transition-group detail-card-group">
-                <h3>Related Activity</h3>
-                <div className="related-grid">
-                  <div className="timeline-list">
-                    <strong>Decisions</strong>
-                    {relatedDecisions.length ? (
-                      relatedDecisions.map((decision) => (
-                        <button
-                          className="timeline-item task-card-button"
-                          key={decision.id}
-                          onClick={() => onOpenDecision(decision.id)}
-                          type="button"
-                        >
-                          <div className="task-row">
-                            <strong>{decision.title}</strong>
-                            <span className="status">{decision.status}</span>
-                          </div>
-                          <p className="meta">{decision.updatedAt}</p>
-                        </button>
-                      ))
-                    ) : (
-                      <p className="meta">当前任务还没有关联 decision。</p>
-                    )}
-                  </div>
+function statusDot(status: TaskStatus): string {
+  if (status === 'running') return 'running';
+  if (status === 'waiting') return 'waiting';
+  if (status === 'blocked') return 'risk';
+  if (status === 'done') return 'completed';
+  return '';
+}
 
-                  <div className="timeline-list">
-                    <strong>Recent Runs</strong>
-                    {relatedRuns.length ? (
-                      relatedRuns.map((run) => (
-                        <button
-                          className="timeline-item task-card-button"
-                          key={run.id}
-                          onClick={() => onOpenRun(run.id)}
-                          type="button"
-                        >
-                          <div className="task-row">
-                            <strong>{run.type}</strong>
-                            <span className="status">{run.status}</span>
-                          </div>
-                          <p className="meta">
-                            {run.outputSource ? `来源：${run.outputSource}` : '来源：尚未产生'}
-                          </p>
-                          <p className="meta">{run.updatedAt}</p>
-                        </button>
-                      ))
-                    ) : (
-                      <p className="meta">当前任务还没有关联 run。</p>
-                    )}
-                  </div>
-                </div>
+/* ─── Task preview ─── */
+
+interface TaskPreviewProps {
+  task: Task;
+  keySources: SourceContextRecord[];
+  hasPendingDecision: boolean;
+  onOpenWorkbench: () => void;
+  onOpenDecision: () => void;
+}
+
+function TaskPreview({ task, keySources, hasPendingDecision, onOpenWorkbench, onOpenDecision }: TaskPreviewProps) {
+  return (
+    <div className="task-preview-inner">
+      <div className="task-preview-head">
+        <span className={`tag lane-${task.lane}`}>{LANE_LABELS[task.lane]}</span>
+        <h3 className="task-preview-title">{task.title}</h3>
+        <div className="task-preview-type-row">
+          <span className="tag">{TASK_TYPE_LABELS[task.type]}</span>
+          {task.type === 'project' && <span className="preview-type-hint">可在项目型 Lens 查看</span>}
+          {task.type === 'scheduled' && <span className="preview-type-hint">周期触发</span>}
+          {task.type === 'event' && <span className="preview-type-hint">监听外部条件</span>}
+        </div>
+      </div>
+
+      {task.whyNow && (
+        <div className="preview-section">
+          <div className="preview-label">为什么现在</div>
+          <div className={`why-now${task.lane === 'escalate' ? ' risk' : task.lane === 'unblock' ? ' waiting' : ''}`}>
+            {task.whyNow}
+          </div>
+        </div>
+      )}
+
+      {task.nextStep && (
+        <div className="preview-section">
+          <div className="preview-label">下一步</div>
+          <p className="preview-text">{task.nextStep}</p>
+        </div>
+      )}
+
+      {task.waitingOn && (
+        <div className="preview-section">
+          <div className="preview-chip">
+            <span className="dot waiting" />
+            {task.waitingOn}
+          </div>
+        </div>
+      )}
+
+      {task.schedule && (
+        <div className="preview-section">
+          <div className="preview-label">定时配置</div>
+          <div className="preview-chip">
+            <span>🔁</span>
+            <span>{task.schedule}</span>
+          </div>
+          <p className="preview-config-note">周期配置保存在任务属性中，每次触发会在执行记录里形成独立 Run。</p>
+        </div>
+      )}
+
+      {task.trigger && (
+        <div className="preview-section">
+          <div className="preview-label">触发条件</div>
+          <div className="preview-chip">
+            <span>⚡</span>
+            <span>{task.trigger}</span>
+          </div>
+          <p className="preview-config-note">事件触发任务是一条持续监听规则，触发结果会追加到任务产物和执行记录，不会自动新建散乱任务。</p>
+        </div>
+      )}
+
+      {task.commitment && (
+        <div className="preview-section">
+          <div className="preview-label">已承诺</div>
+          <div className="preview-chip">
+            <span>🤝</span>
+            <span style={{ marginLeft: 4 }}>{task.commitment}</span>
+          </div>
+        </div>
+      )}
+
+      {keySources.length > 0 && (
+        <div className="preview-section">
+          <div className="preview-label">关键来源</div>
+          <div className="preview-sources">
+            {keySources.map((source) => (
+              <div key={source.id} className="preview-source-item">
+                {source.title}
               </div>
+            ))}
+          </div>
+          <p className="preview-config-note">预览只展示最近更新的 3 条关键来源；完整来源在任务工作台管理。</p>
+        </div>
+      )}
 
-              <div className="transition-group detail-card-group">
-                <div className="task-row">
-                  <div>
-                    <h3>Timeline</h3>
-                    <p className="meta">预览优先展示关键事件与解释事件；Timeline 先按日期和对象族分段，再按事件强度分组。</p>
-                  </div>
-                  {detail.timeline.length > TIMELINE_PREVIEW_COUNT ? (
-                    <button
-                      className="ghost-button timeline-toggle"
-                      onClick={() => setShowAllTimeline((current) => !current)}
-                      type="button"
-                    >
-                      {showAllTimeline ? '收起旧事件' : `展开全部 (${detail.timeline.length})`}
-                    </button>
-                  ) : null}
-                </div>
-                <div className="timeline-list">
-                  {visibleTimelineDateGroups.map((dateGroup) => (
-                    <Fragment key={dateGroup.id}>
-                      <div className="timeline-date-heading">
-                        <span>{dateGroup.title}</span>
-                        <span>{dateGroup.eventCount}</span>
-                      </div>
-                      {dateGroup.objectGroups.map((objectGroup) => (
-                        <Fragment key={`${dateGroup.id}:${objectGroup.id}`}>
-                          <div className="timeline-object-heading">
-                            <span>{objectGroup.title}</span>
-                            <span>{objectGroup.eventCount}</span>
-                          </div>
-                          {objectGroup.priorityGroups.map((group) => (
-                            <Fragment key={`${dateGroup.id}:${objectGroup.id}:${group.id}`}>
-                              <div className="timeline-group-heading">
-                                <span>{group.title}</span>
-                                <span>{group.events.length}</span>
-                              </div>
-                              {group.events.map((event) => (
-                                <div className={`timeline-item ${getTimelineToneClass(event.type)}`} key={event.id}>
-                                  <div className="task-row">
-                                    <strong>{formatTimelineSummary(event)}</strong>
-                                    <div className="timeline-badge-row">
-                                      <span
-                                        className={`signal-pill timeline-badge ${getTimelineToneClass(event.type)}`}
-                                      >
-                                        {getTaskTimelineEventLabel(event.type)}
-                                      </span>
-                                      <span className="signal-pill timeline-priority-pill">
-                                        {getTaskTimelinePriorityLabel(event.type)}
-                                      </span>
-                                      {getTaskTimelineLaneLabel(event.type) ? (
-                                        <span
-                                          className={`signal-pill lane-status lane-status-${getTaskTimelineLane(event.type)}`}
-                                        >
-                                          {getTaskTimelineLaneLabel(event.type)}
-                                        </span>
-                                      ) : null}
-                                    </div>
-                                  </div>
-                                  <p className="meta">{event.createdAt}</p>
-                                  {getTaskTimelineResponsibilitySummary(event) ? (
-                                    <p className="meta">{getTaskTimelineResponsibilitySummary(event)}</p>
-                                  ) : null}
-                                  {getTimelineActionLabel(event.type) || getTimelineObjectLabel(event) ? (
-                                    <div className="timeline-actions">
-                                      {getTimelineActionLabel(event.type) ? (
-                                        <button
-                                          className="ghost-button timeline-action"
-                                          onClick={() => handleTimelineAction(event)}
-                                          type="button"
-                                        >
-                                          {getTimelineActionLabel(event.type)}
-                                        </button>
-                                      ) : null}
-                                      {getTimelineObjectLabel(event) ? (
-                                        <button
-                                          className="ghost-button timeline-action"
-                                          onClick={() => handleTimelineObjectOpen(event)}
-                                          type="button"
-                                        >
-                                          {getTimelineObjectLabel(event)}
-                                        </button>
-                                      ) : null}
-                                    </div>
-                                  ) : null}
-                                </div>
-                              ))}
-                            </Fragment>
-                          ))}
-                        </Fragment>
-                      ))}
-                    </Fragment>
-                  ))}
-                </div>
-              </div>
-            </div>
+      <div className="preview-actions">
+        <button className="btn primary" onClick={hasPendingDecision ? onOpenDecision : onOpenWorkbench}>
+          {hasPendingDecision ? '去拍板 →' : '打开工作台 →'}
+        </button>
+      </div>
+    </div>
+  );
+}
 
-            <div className="transition-group detail-stage" ref={contextStudioSectionRef}>
-              <div className="detail-stage-head">
-                <div>
-                  <p className="eyebrow">Context Studio</p>
-                  <h3>来源与方法管理</h3>
-                </div>
-                <p className="meta">完整的来源材料和方法模板管理下沉到这一层，不再抢第一屏恢复入口。</p>
-              </div>
-              <div className="detail-cluster-grid">
-                <form
-                  className="transition-group detail-card-group detail-card-wide stack"
-                  onSubmit={handleSaveDetail}
-                  ref={detailFormRef}
-                >
-                  <div className="studio-section-head">
-                    <strong>Task Basics</strong>
-                    <p className="meta">基础字段管理下沉到这一层，避免抢占第一屏的恢复入口。</p>
-                  </div>
-                  <label>
-                    标题
-                    <input
-                      value={draftTitle}
-                      onChange={(event) => {
-                        setDraftTitle(event.target.value);
-                        if (detailError) {
-                          setDetailError(null);
-                        }
-                      }}
-                    />
-                  </label>
-                  <label>
-                    Summary
-                    <textarea
-                      rows={4}
-                      value={draftSummary}
-                      onChange={(event) => {
-                        setDraftSummary(event.target.value);
-                        if (detailError) {
-                          setDetailError(null);
-                        }
-                      }}
-                    />
-                  </label>
-                  <label>
-                    Next Step
-                    <input
-                      value={draftNextStep}
-                      onChange={(event) => {
-                        setDraftNextStep(event.target.value);
-                        if (detailError) {
-                          setDetailError(null);
-                        }
-                      }}
-                    />
-                  </label>
-                  <label>
-                    Waiting Reason
-                    <input
-                      value={draftWaitingReason}
-                      onChange={(event) => {
-                        setDraftWaitingReason(event.target.value);
-                        if (detailError) {
-                          setDetailError(null);
-                        }
-                      }}
-                    />
-                  </label>
-                  <label>
-                    Risk Level
-                    <select
-                      value={draftRiskLevel}
-                      onChange={(event) => updateDraftRiskLevel(event.target.value as TaskRiskLevel)}
-                    >
-                      {riskOptions.map((riskLevel) => (
-                        <option key={riskLevel} value={riskLevel}>
-                          {riskLevel}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Risk Note
-                    <textarea
-                      rows={3}
-                      value={draftRiskNote}
-                      onChange={(event) => {
-                        setDraftRiskNote(event.target.value);
-                        if (detailError) {
-                          setDetailError(null);
-                        }
-                      }}
-                    />
-                  </label>
-                  {detailError ? <p className="meta">{detailError}</p> : null}
-                  <button type="submit">保存详情</button>
-                </form>
+/* ─── Context menu ─── */
 
-                <div className="transition-group detail-card-group" ref={blockerSectionRef}>
-                  <h3>Blocker Context</h3>
-                  <p className="meta">这一层管理当前阻塞项；上方 Resume Card 和 Current Snapshot 只抽出当前主阻塞切片。</p>
-                  <div className="studio-section studio-section-risk-lane">
-                    <div className="studio-section-head">
-                      <strong className="context-lane-heading">Current Blocker</strong>
-                      <p className="meta">当前任务的主阻塞项。</p>
-                    </div>
-                    <div className="timeline-list">
-                      {detail.activeBlocker ? (
-                        <div className="timeline-item timeline-item-risk">
-                          <div className="task-row">
-                            <strong>{detail.activeBlocker.title}</strong>
-                            <span className="signal-pill timeline-badge timeline-item-risk">
-                              {formatBlockerKind(detail.activeBlocker.kind)}
-                            </span>
-                          </div>
-                          {detail.activeBlocker.detail ? (
-                            <p className="meta">{detail.activeBlocker.detail}</p>
-                          ) : null}
-                          {detail.activeBlocker.owner ? (
-                            <p className="meta">owner: {detail.activeBlocker.owner}</p>
-                          ) : null}
-                          {detail.activeBlocker.responsibility ||
-                          detail.activeBlocker.responsibilityLabel ? (
-                            <p className="meta">
-                              解除责任：
-                              {detail.activeBlocker.responsibilityLabel ??
-                                formatResponsibilityKind(
-                                  detail.activeBlocker.responsibility ?? 'unknown',
-                                )}
-                            </p>
-                          ) : null}
-                          <p className="meta">{formatBlockerAgeLabel(detail.activeBlocker.createdAt)}</p>
-                          <div className="timeline-actions">
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => populateBlockerForm(detail.activeBlocker!)}
-                              type="button"
-                            >
-                              编辑阻塞项
-                            </button>
-                            {detail.activeBlocker.sourceContextId ? (
-                              <button
-                                className="ghost-button timeline-action"
-                                onClick={() => focusSourceContext(detail.activeBlocker?.sourceContextId ?? null)}
-                                type="button"
-                              >
-                                查看阻塞来源
-                              </button>
-                            ) : null}
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => void handleResolveCurrentBlocker(detail.activeBlocker!.id)}
-                              type="button"
-                            >
-                              解除阻塞
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="meta">当前任务还没有 active blocker。</p>
-                      )}
-                    </div>
-                  </div>
-                  <form className="stack studio-form" onSubmit={handleSaveBlocker}>
-                    <div className="studio-section-head">
-                      <strong>{blockerEditingId ? 'Edit Blocker' : 'Add Blocker'}</strong>
-                      <p className="meta">把“为什么推进不下去”单独对象化，而不是继续散在 waiting 或风险备注里。</p>
-                    </div>
-                    <label>
-                      阻塞项标题
-                      <input
-                        value={blockerTitle}
-                        onChange={(event) => {
-                          setBlockerTitle(event.target.value);
-                          if (blockerError) {
-                            setBlockerError(null);
-                          }
-                        }}
-                      />
-                    </label>
-                    <label>
-                      阻塞项类型
-                      <select
-                        value={blockerKind}
-                        onChange={(event) => setBlockerKind(event.target.value as BlockerKind)}
-                      >
-                        {blockerKindOptions.map((kind) => (
-                          <option key={kind} value={kind}>
-                            {formatBlockerKind(kind)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      阻塞说明
-                      <textarea
-                        rows={2}
-                        value={blockerDetail}
-                        onChange={(event) => setBlockerDetail(event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      owner / 卡点对象
-                      <input
-                        value={blockerOwner}
-                        onChange={(event) => setBlockerOwner(event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      解除责任
-                      <select
-                        value={blockerResponsibility}
-                        onChange={(event) =>
-                          setBlockerResponsibility(event.target.value as ResponsibilityKind)
-                        }
-                      >
-                        {responsibilityOptions.map((item) => (
-                          <option key={item} value={item}>
-                            {formatResponsibilityKind(item)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      解除责任说明
-                      <input
-                        value={blockerResponsibilityLabel}
-                        onChange={(event) => setBlockerResponsibilityLabel(event.target.value)}
-                        placeholder="例如：法务团队确认 / 我自己跟进 / 对方运营回复"
-                      />
-                    </label>
-                    <label>
-                      关联来源材料
-                      <select
-                        value={blockerSourceContextId}
-                        onChange={(event) => setBlockerSourceContextId(event.target.value)}
-                      >
-                        <option value="">不关联来源</option>
-                        {detail.sourceContexts.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.title}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    {blockerError ? <p className="meta">{blockerError}</p> : null}
-                    <div className="timeline-actions">
-                      <button type="submit">{blockerEditingId ? '保存阻塞项' : '新增阻塞项'}</button>
-                      {blockerEditingId ? (
-                        <button className="ghost-button" onClick={resetBlockerForm} type="button">
-                          取消编辑
-                        </button>
-                      ) : null}
-                    </div>
-                  </form>
-                </div>
+interface ContextMenuProps {
+  x: number;
+  y: number;
+  task: Task | null;
+  projects: Task[];
+  onClose: () => void;
+  onOpenWorkbench: () => void;
+  onMoveToProject: (projectId: string | null) => void;
+  onUpdateRisk: (riskLevel: TaskRiskLevel) => void;
+  onArchive: () => void;
+  onCopyLink: () => void;
+}
 
-                <div className="transition-group detail-card-group" ref={dependencySectionRef}>
-                  <h3>Task Dependency</h3>
-                  <p className="meta">这一层管理“被哪条任务卡住”的关系；上方 Resume Card 和 Current Snapshot 只抽当前依赖切片。</p>
-                  <div className="studio-section studio-section-default-lane">
-                    <div className="studio-section-head">
-                      <strong className="context-lane-heading">Current Dependency</strong>
-                      <p className="meta">当前任务依赖的上游任务。</p>
-                    </div>
-                    <div className="timeline-list">
-                      {detail.activeDependency ? (
-                        <div className="timeline-item timeline-item-default">
-                          <div className="task-row">
-                            <strong>{detail.activeDependency.blockedByTaskTitle ?? '未命名上游任务'}</strong>
-                            <span className="signal-pill timeline-badge timeline-item-default">task</span>
-                          </div>
-                          {detail.activeDependency.reason ? (
-                            <p className="meta">{detail.activeDependency.reason}</p>
-                          ) : null}
-                          <p className="meta">{detail.resumeCard.currentDependency?.ageLabel ?? `depends since ${detail.activeDependency.createdAt.slice(0, 10)}`}</p>
-                          {detail.resumeCard.currentDependency?.priorityReason ? (
-                            <p className="meta">{detail.resumeCard.currentDependency.priorityReason}</p>
-                          ) : null}
-                          <div className="timeline-actions">
-                            {detail.dependencyReevaluation ? (
-                              <button
-                                className="ghost-button timeline-action"
-                                onClick={reevaluateCurrentDependency}
-                                type="button"
-                              >
-                                重新判断依赖
-                              </button>
-                            ) : null}
-                            {detail.activeDependency.blockedByTaskId ? (
-                              <button
-                                className="ghost-button timeline-action"
-                                onClick={openUpstreamDependencyTask}
-                                type="button"
-                                >
-                                  打开上游任务
-                                </button>
-                              ) : null}
-                            {shouldEscalateCurrentDependency() ? (
-                              <button
-                                className="ghost-button timeline-action"
-                                onClick={escalateCurrentDependency}
-                                type="button"
-                              >
-                                直接升级依赖链路
-                              </button>
-                            ) : null}
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => populateDependencyForm(detail.activeDependency!)}
-                              type="button"
-                            >
-                              编辑依赖
-                            </button>
-                            <button
-                              className="ghost-button timeline-action"
-                              onClick={() => void handleResolveCurrentDependency(detail.activeDependency!.id)}
-                              type="button"
-                            >
-                              解除依赖
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="meta">当前任务还没有 active dependency。</p>
-                      )}
-                    </div>
-                  </div>
-                  <form className="stack studio-form" onSubmit={handleSaveDependency}>
-                    <div className="studio-section-head">
-                      <strong>{dependencyEditingId ? 'Edit Dependency' : 'Add Dependency'}</strong>
-                      <p className="meta">把“被另一条任务卡住”的关系单独对象化，而不是继续散在阻塞或等待说明里。</p>
-                    </div>
-                    <label>
-                      上游任务
-                      <select
-                        value={dependencyBlockedByTaskId}
-                        onChange={(event) => {
-                          setDependencyBlockedByTaskId(event.target.value);
-                          if (dependencyError) {
-                            setDependencyError(null);
-                          }
-                        }}
-                      >
-                        <option value="">请选择上游任务</option>
-                        {tasks
-                          .filter((item) => !detail || item.id !== detail.id)
-                          .map((item) => (
-                            <option key={item.id} value={item.id}>
-                              {item.title}
-                            </option>
-                          ))}
-                      </select>
-                    </label>
-                    <label>
-                      依赖说明
-                      <textarea
-                        rows={2}
-                        value={dependencyReason}
-                        onChange={(event) => setDependencyReason(event.target.value)}
-                      />
-                    </label>
-                    {dependencyError ? <p className="meta">{dependencyError}</p> : null}
-                    <div className="timeline-actions">
-                      <button type="submit">{dependencyEditingId ? '保存依赖' : '新增依赖'}</button>
-                      {dependencyEditingId ? (
-                        <button className="ghost-button" onClick={resetDependencyForm} type="button">
-                          取消编辑
-                        </button>
-                      ) : null}
-                    </div>
-                  </form>
-                </div>
+function ContextMenu({
+  x,
+  y,
+  task,
+  projects,
+  onClose,
+  onOpenWorkbench,
+  onMoveToProject,
+  onUpdateRisk,
+  onArchive,
+  onCopyLink,
+}: ContextMenuProps) {
+  const projectOptions = task
+    ? projects.filter((project) => project.id !== task.id && project.id !== task.parentTaskId)
+    : [];
+  const items = [
+    { label: '打开工作台', action: onOpenWorkbench },
+    { label: '归档', action: onArchive },
+    { label: '复制链接', action: onCopyLink },
+  ];
 
-                <div className="transition-group detail-card-group" ref={sourceContextSectionRef}>
-                  <h3>Source Context</h3>
-                  <p className="meta">这一层管理任务依赖的材料，不和方法模板混在一起；上方 Resume Card 的 Key Source 就是从这里抽出的关键切片。</p>
-                  <div className="studio-section studio-section-source-lane">
-                    <div className="studio-section-head">
-                      <strong className="context-lane-heading">Material Shelf</strong>
-                      <p className="meta">当前任务已挂载的来源材料。</p>
-                    </div>
-                    <div className="timeline-list">
-                      {detail.sourceContexts.length ? (
-                        detail.sourceContexts.map((item) => (
-                          <div className="timeline-item" key={item.id}>
-                            <div className="task-row">
-                              <strong>{item.title}</strong>
-                              <span className="signal-pill timeline-badge timeline-item-default">
-                                {formatSourceContextKind(item.kind)}
-                                {item.isKey ? ' · key' : ''}
-                              </span>
-                            </div>
-                            {item.uri ? (
-                              <p className="meta">
-                                <a href={item.uri} rel="noreferrer" target="_blank">
-                                  {item.uri}
-                                </a>
-                              </p>
-                            ) : null}
-                            {item.note ? <p className="meta">{item.note}</p> : null}
-                            {item.content ? <p className="meta brief-preview">{item.content}</p> : null}
-                            <div className="timeline-actions">
-                              <button
-                                className="ghost-button timeline-action"
-                                onClick={() => populateSourceContextForm(item)}
-                                type="button"
-                              >
-                                编辑来源
-                              </button>
-                              <button
-                                className="ghost-button timeline-action"
-                                onClick={() => void handleArchiveCurrentSourceContext(item.id)}
-                                type="button"
-                              >
-                                归档来源
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="meta">当前任务还没有挂载来源材料。</p>
-                      )}
-                    </div>
-                  </div>
-                  <form className="stack studio-form" onSubmit={handleSaveSourceContext}>
-                    <div className="studio-section-head">
-                      <strong>{sourceContextEditingId ? 'Edit Material' : 'Add Material'}</strong>
-                      <p className="meta">在这里维护来源标题、链接、说明和是否为关键来源。</p>
-                    </div>
-                    <label>
-                      来源标题
-                      <input
-                        value={sourceContextTitle}
-                        onChange={(event) => {
-                          setSourceContextTitle(event.target.value);
-                          if (sourceContextError) {
-                            setSourceContextError(null);
-                          }
-                        }}
-                      />
-                    </label>
-                    <label>
-                      来源类型
-                      <select
-                        value={sourceContextKind}
-                        onChange={(event) => setSourceContextKind(event.target.value as SourceContextKind)}
-                      >
-                        {sourceContextKindOptions.map((kind) => (
-                          <option key={kind} value={kind}>
-                            {formatSourceContextKind(kind)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="checkbox-row">
-                      <input
-                        checked={sourceContextIsKey}
-                        onChange={(event) => setSourceContextIsKey(event.target.checked)}
-                        type="checkbox"
-                      />
-                      标记为关键来源
-                    </label>
-                    <label>
-                      链接 / URI
-                      <input
-                        value={sourceContextUri}
-                        onChange={(event) => {
-                          setSourceContextUri(event.target.value);
-                          if (sourceContextError) {
-                            setSourceContextError(null);
-                          }
-                        }}
-                      />
-                    </label>
-                    <label>
-                      说明
-                      <textarea
-                        rows={2}
-                        value={sourceContextNote}
-                        onChange={(event) => setSourceContextNote(event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      补充内容
-                      <textarea
-                        rows={3}
-                        value={sourceContextContent}
-                        onChange={(event) => setSourceContextContent(event.target.value)}
-                      />
-                    </label>
-                    {sourceContextError ? <p className="meta">{sourceContextError}</p> : null}
-                    <div className="timeline-actions">
-                      <button type="submit">{sourceContextEditingId ? '保存来源' : '新增来源'}</button>
-                      {sourceContextEditingId ? (
-                        <button className="ghost-button" onClick={resetSourceContextForm} type="button">
-                          取消编辑
-                        </button>
-                      ) : null}
-                    </div>
-                  </form>
-                </div>
-
-                <div className="transition-group detail-card-group" ref={processContextSectionRef}>
-                  <h3>Process Context</h3>
-                  <p className="meta">这一层管理任务当前采用的方法和可复用模板库；上方 Resume Card 的 Current Method 就是从这里抽出的当前切片。</p>
-                  <div className="studio-section studio-section-process-lane">
-                    <div className="studio-section-head">
-                      <strong className="context-lane-heading">Active Methods</strong>
-                      <p className="meta">当前任务已挂载的方法模板。</p>
-                    </div>
-                    <div className="timeline-list">
-                      {detail.processTemplates.length ? (
-                        detail.processTemplates.map((item) => (
-                          <div className="timeline-item timeline-item-state" key={item.bindingId}>
-                            <div className="task-row">
-                              <strong>{item.title}</strong>
-                              <span className="signal-pill timeline-badge timeline-item-state">
-                                {formatProcessTemplateKind(item.kind)}
-                              </span>
-                            </div>
-                            {item.summary ? <p className="meta">{item.summary}</p> : null}
-                            {item.tags.length ? <p className="meta">tags: {item.tags.join(', ')}</p> : null}
-                            <p className="meta">active template · bound at {item.boundAt}</p>
-                            <p className="meta brief-preview">{item.content}</p>
-                            <div className="timeline-actions">
-                              <button
-                                className="ghost-button timeline-action"
-                                onClick={() => populateProcessTemplateForm(item)}
-                                type="button"
-                              >
-                                编辑模板
-                              </button>
-                              <button
-                                className="ghost-button timeline-action"
-                                onClick={() => void handleRemoveCurrentProcessTemplate(item.bindingId)}
-                                type="button"
-                              >
-                                移除模板
-                              </button>
-                              <button
-                                className="ghost-button timeline-action"
-                                onClick={() => void handleArchiveCurrentProcessTemplate(item.id)}
-                                type="button"
-                              >
-                                归档模板
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="meta">当前任务还没有挂载方法模板。</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="studio-section">
-                    <div className="studio-section-head">
-                      <strong>Template Library</strong>
-                      <p className="meta">可复用的方法模板库，用来给当前任务补充方法卡。</p>
-                    </div>
-                    <div className="timeline-list">
-                      <div className="timeline-item">
-                        {detail.availableProcessTemplates.length ? (
-                          <div className="stack">
-                            {detail.availableProcessTemplates.map((item) => (
-                              <div className="task-row" key={item.id}>
-                                <div>
-                                  <strong>{item.title}</strong>
-                                  <p className="meta">
-                                    {formatProcessTemplateKind(item.kind)}
-                                    {item.summary ? ` · ${item.summary}` : ''}
-                                  </p>
-                                </div>
-                                <button
-                                  className="ghost-button timeline-action"
-                                  onClick={() => void handleApplyAvailableProcessTemplate(item.id)}
-                                  type="button"
-                                >
-                                  挂载模板
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="meta">当前没有可挂载的其它模板。</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <form className="stack studio-form" onSubmit={handleSaveProcessTemplate}>
-                    <div className="studio-section-head">
-                      <strong>{processTemplateEditingId ? 'Edit Template' : 'Create Template'}</strong>
-                      <p className="meta">维护可复用的方法卡，再决定是否挂到当前任务上。</p>
-                    </div>
-                    <label>
-                      模板标题
-                      <input
-                        value={processTemplateTitle}
-                        onChange={(event) => {
-                          setProcessTemplateTitle(event.target.value);
-                          if (processTemplateError) {
-                            setProcessTemplateError(null);
-                          }
-                        }}
-                      />
-                    </label>
-                    <label>
-                      模板类型
-                      <select
-                        value={processTemplateKind}
-                        onChange={(event) => setProcessTemplateKind(event.target.value as ProcessTemplateKind)}
-                      >
-                        {processTemplateKindOptions.map((kind) => (
-                          <option key={kind} value={kind}>
-                            {formatProcessTemplateKind(kind)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      简述
-                      <input
-                        value={processTemplateSummary}
-                        onChange={(event) => setProcessTemplateSummary(event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      标签
-                      <input
-                        placeholder="writing, outreach, review"
-                        value={processTemplateTags}
-                        onChange={(event) => setProcessTemplateTags(event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      模板内容
-                      <textarea
-                        rows={5}
-                        value={processTemplateContent}
-                        onChange={(event) => setProcessTemplateContent(event.target.value)}
-                      />
-                    </label>
-                    {processTemplateError ? <p className="meta">{processTemplateError}</p> : null}
-                    <div className="timeline-actions">
-                      <button type="submit">
-                        {processTemplateEditingId ? '保存模板' : '创建模板并挂载'}
-                      </button>
-                      {processTemplateEditingId ? (
-                        <button className="ghost-button" onClick={resetProcessTemplateForm} type="button">
-                          取消编辑
-                        </button>
-                      ) : null}
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </>
-        ) : (
-          <p className="meta">先在左侧创建或选择一个任务。</p>
-        )}
-      </article>
-    </section>
+  return (
+    <div
+      className="ctx-menu"
+      style={{ left: x, top: y }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button className="ctx-menu-item muted" onClick={onClose}>
+        移至项目
+      </button>
+      {projectOptions.map((project) => (
+        <button key={project.id} className="ctx-menu-item sub" onClick={() => onMoveToProject(project.id)}>
+          {project.title}
+        </button>
+      ))}
+      {task?.parentTaskId && (
+        <button className="ctx-menu-item sub" onClick={() => onMoveToProject(null)}>
+          移出项目
+        </button>
+      )}
+      <button className="ctx-menu-item muted" onClick={onClose}>
+        改优先级
+      </button>
+      {RISK_OPTIONS.map((option) => (
+        <button key={option.value} className="ctx-menu-item sub" onClick={() => onUpdateRisk(option.value)}>
+          {option.label}
+        </button>
+      ))}
+      {items.map((item) => (
+        <button key={item.label} className="ctx-menu-item" onClick={item.action}>
+          {item.label}
+        </button>
+      ))}
+    </div>
   );
 }

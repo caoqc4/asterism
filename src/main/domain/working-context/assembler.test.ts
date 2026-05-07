@@ -43,6 +43,7 @@ describe('buildHomeResumeLatestChange', () => {
       keySource: {
         id: 'source_context_1',
         title: 'Customer notes',
+        isKey: true,
       },
     });
 
@@ -56,6 +57,33 @@ describe('buildHomeResumeLatestChange', () => {
       recentChange: {
         kind: 'source_context_changed',
         title: 'Customer notes',
+      },
+    });
+  });
+
+  it('does not label a fallback recent source as a key source on home resume previews', () => {
+    const latestChange = buildHomeResumeLatestChange({
+      latestActivity: undefined,
+      timeline: [
+        { type: 'task.updated', payload: null },
+      ],
+      keySource: {
+        id: 'source_context_1',
+        title: 'Research notes',
+        isKey: false,
+      },
+    });
+
+    expect(latestChange).toMatchObject({
+      summary: '最近来源材料更新：Research notes',
+      action: {
+        label: '查看来源',
+        targetType: 'source_context',
+        targetId: 'source_context_1',
+      },
+      recentChange: {
+        kind: 'source_context_changed',
+        title: 'Research notes',
       },
     });
   });

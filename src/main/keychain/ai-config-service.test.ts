@@ -95,20 +95,25 @@ describe('AiConfigService', () => {
     );
     const { AppConfigService } = await import('../config/app-config-service.js');
     const { AiConfigService } = await import('./ai-config-service.js');
-    const service = new AiConfigService(new AppConfigService(() => tempRoot));
+    const appConfigService = new AppConfigService(() => tempRoot);
+    appConfigService.write({
+      workspaceRoot,
+    });
+    const service = new AiConfigService(appConfigService);
 
     const status = await service.setConfig({
       provider: 'openai',
       model: ' gpt-4.1 ',
-      baseUrl: ' https://relay.example.com/v1 ',
-      workspaceRoot: ` ${workspaceRoot} `,
-      apiKey: '  new-secret  ',
+      providerKeys: {
+        openai: '  new-secret  ',
+        customBaseUrl: ' https://relay.example.com/v1 ',
+      },
       featureFlags: {
         enableScheduler: true,
       },
     });
 
-    expect(setPasswordMock).toHaveBeenCalledWith('taskplane', 'ai_api_key', 'new-secret');
+    expect(setPasswordMock).toHaveBeenCalledWith('taskplane', 'ai_key_openai', 'new-secret');
     expect(status.provider).toBe('openai');
     expect(status.model).toBe('gpt-4.1');
     expect(status.baseUrl).toBe('https://relay.example.com/v1');
@@ -196,7 +201,7 @@ describe('AiConfigService', () => {
     const service = new AiConfigService(new AppConfigService(() => tempRoot));
 
     await expect(service.resolveRuntimeConfig()).rejects.toThrow(
-      'AI API Key is not configured in system Keychain.',
+      'AI API Key is not configured. Please add a key in Settings.',
     );
   });
 });

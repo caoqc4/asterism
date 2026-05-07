@@ -1,281 +1,228 @@
-import type { AiConfigInput, AiConfigStatus } from '@shared/types/settings';
-import type { AgentToolScaffoldFamilySummary } from '@shared/agent-tool-scaffold';
-import { buildAgentExecutionOrchestrationSnapshot } from '@shared/agent-orchestration';
-import { buildDefaultAgentToolExecutionPolicy } from '@shared/agent-tool-scaffold';
-import {
-  buildDefaultAgentSandboxCommandPolicy,
-  evaluateAgentSandboxCodingLaneEligibilityFromBackendStatus,
-} from '@shared/agent-sandbox-provider';
-import { buildBrowserEvidencePreflight } from '@shared/types/browser-evidence';
-import {
-  buildExecutorLifecycleDiagnosticLines,
-  buildReadOnlyOrchestrationPresentation,
-} from '../lib/agentOrchestrationPresentation';
+import { useState, useEffect } from 'react';
+import type { AiCommunicationStyle, AiConfigStatus, AiConfirmationThreshold } from '@shared/types/settings';
+import { CONTEXT_COMPRESSION_THRESHOLD, DEFAULT_FEATURE_FLAGS, SELF_CHECK_RETRY_LIMIT } from '@shared/settings-defaults';
 
-type SettingsPageProps = {
-  aiStatus: AiConfigStatus | null;
-  configForm: AiConfigInput;
-  onChange: (next: AiConfigInput) => void;
-  onProbeSandboxBackend: () => Promise<void>;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
-  sandboxBackendProbePending: boolean;
+const COMMUNICATION_STYLE_LABELS: Record<AiCommunicationStyle, string> = {
+  concise: '简洁',
+  balanced: '均衡',
+  detailed: '详细',
 };
 
-function formatAiConfigState(aiStatus: AiConfigStatus | null): string {
-  if (!aiStatus) {
-    return 'AI config 尚未初始化';
+const CONFIRMATION_THRESHOLD_LABELS: Record<AiConfirmationThreshold, string> = {
+  low: '低',
+  normal: '标准',
+  high: '高',
+};
+
+export function SettingsPage() {
+  const [status, setStatus] = useState<AiConfigStatus | null>(null);
+  const [selfCheck, setSelfCheck] = useState(true);
+  const [selfLearn, setSelfLearn] = useState(true);
+  const [ctxCompress, setCtxCompress] = useState<number>(CONTEXT_COMPRESSION_THRESHOLD.default);
+  const [selfCheckRetries, setSelfCheckRetries] = useState<number>(SELF_CHECK_RETRY_LIMIT.default);
+  const [communicationStyle, setCommunicationStyle] = useState<AiCommunicationStyle>('balanced');
+  const [confirmationThreshold, setConfirmationThreshold] = useState<AiConfirmationThreshold>('normal');
+  const [saving, setSaving] = useState(false);
+  const [saveResult, setSaveResult] = useState<'ok' | 'error' | null>(null);
+
+  useEffect(() => {
+    if (!window.api) return;
+    window.api.getAiConfigStatus().then((s) => {
+      setStatus(s);
+      setSelfCheck(s.featureFlags.enableSelfCheck ?? true);
+      setSelfLearn(s.featureFlags.enableSelfLearn ?? true);
+      setCtxCompress(s.featureFlags.contextCompressionThreshold ?? CONTEXT_COMPRESSION_THRESHOLD.default);
+      setSelfCheckRetries(s.featureFlags.selfCheckRetryLimit ?? SELF_CHECK_RETRY_LIMIT.default);
+      setCommunicationStyle(s.featureFlags.communicationStyle ?? 'balanced');
+      setConfirmationThreshold(s.featureFlags.confirmationThreshold ?? 'normal');
+    }).catch(() => {});
+  }, []);
+
+  async function save() {
+    if (saving || !window.api) return;
+    setSaving(true);
+    setSaveResult(null);
+    try {
+      const next = await window.api.setAiConfig({
+        provider: status?.provider ?? 'fal-openrouter',
+        model: status?.model ?? 'google/gemini-2.5-flash',
+        featureFlags: {
+          ...DEFAULT_FEATURE_FLAGS,
+          enableProviderNativeToolCalls: true,
+          ...(status?.featureFlags ?? {}),
+          enableSelfCheck: selfCheck,
+          enableSelfLearn: selfLearn,
+          contextCompressionThreshold: ctxCompress,
+          selfCheckRetryLimit: selfCheckRetries,
+          communicationStyle,
+          confirmationThreshold,
+        },
+      });
+      setStatus(next);
+      setSaveResult('ok');
+    } catch {
+      setSaveResult('error');
+    } finally {
+      setSaving(false);
+      setTimeout(() => setSaveResult(null), 2500);
+    }
   }
-
-  if (aiStatus.configured) {
-    return `已配置 ${aiStatus.provider} / ${aiStatus.model}，更新时间 ${aiStatus.updatedAt}`;
-  }
-
-  if (aiStatus.provider && aiStatus.model) {
-    return `已选择 ${aiStatus.provider} / ${aiStatus.model}，但 AI config 未就绪`;
-  }
-
-  return '尚未配置';
-}
-
-function formatSandboxBackendState(aiStatus: AiConfigStatus | null): string {
-  const status = aiStatus?.sandboxBackendStatus;
-
-  if (!status?.probe) {
-    return '未检测';
-  }
-
-  if (status.readiness?.ready) {
-    return `可用：${status.summary}`;
-  }
-
-  return `不可用：${status.summary}`;
-}
-
-function formatSandboxCodingLaneReadiness(aiStatus: AiConfigStatus | null): string {
-  if (!aiStatus?.sandboxBackendStatus?.probe) {
-    return '等待 Sandbox Backend 检测';
-  }
-
-  const eligibility = evaluateAgentSandboxCodingLaneEligibilityFromBackendStatus({
-    backendStatus: aiStatus.sandboxBackendStatus,
-    commandPolicy: buildDefaultAgentSandboxCommandPolicy(),
-    executionPolicy: buildDefaultAgentToolExecutionPolicy({ descriptorId: 'workspace.staged_patch' }),
-    featureFlags: aiStatus.featureFlags,
-    workspaceRoot: aiStatus.workspaceRoot,
-  });
-
-  return eligibility.summary;
-}
-
-function formatSandboxProducerBackendReadiness(aiStatus: AiConfigStatus | null): string {
-  if (!aiStatus?.sandboxBackendStatus?.probe) {
-    return '等待 Sandbox Backend 检测';
-  }
-
-  const readiness = aiStatus.sandboxBackendStatus.producerBackendReadiness;
-  if (!readiness) {
-    return '等待 Producer Backend readiness 评估';
-  }
-
-  return readiness.summary;
-}
-
-function formatBrowserEvidencePreflightState(): string {
-  return buildBrowserEvidencePreflight().summary;
-}
-
-function formatToolScaffoldFamilyLabel(family: AgentToolScaffoldFamilySummary['family']): string {
-  const labels: Record<AgentToolScaffoldFamilySummary['family'], string> = {
-    browser_playwright: 'Browser / Playwright',
-    computer_use: 'Computer Use',
-    creator_connector: 'Creator Connectors',
-    mcp: 'MCP',
-    skill: 'Skills',
-    task_domain: 'Task Domain',
-    workspace_coding: 'Workspace Coding',
-  };
-
-  return labels[family];
-}
-
-function formatToolScaffoldFamilySummary(summary: AgentToolScaffoldFamilySummary): string {
-  return [
-    `${summary.implementedCount} implemented`,
-    `${summary.reservedCount} reserved`,
-    `${summary.textPromptExposedIds.length} text`,
-    `${summary.providerNativeExposedIds.length} native`,
-    `${summary.checkpointRequiredIds.length} approval`,
-    `${summary.credentialGatedIds.length} credential`,
-    `${summary.localVerificationRequiredIds.length} verification`,
-  ].join(' / ');
-}
-
-export function SettingsPage({
-  aiStatus,
-  configForm,
-  onChange,
-  onProbeSandboxBackend,
-  onSubmit,
-  sandboxBackendProbePending,
-}: SettingsPageProps) {
-  const orchestrationDiagnostics = buildReadOnlyOrchestrationPresentation({
-    executorLifecycleAvailability: aiStatus?.executorLifecycleAvailability,
-    snapshot: buildAgentExecutionOrchestrationSnapshot(aiStatus),
-  });
-  const executorLifecycleLines = buildExecutorLifecycleDiagnosticLines(
-    orchestrationDiagnostics.executorLifecycle,
-  );
 
   return (
-    <section className="page-grid">
-      <article className="panel page-hero">
-        <p className="eyebrow">Settings</p>
-        <h1>AI Provider 与本地密钥存储</h1>
-        <p className="lede">
-          非敏感配置写入本地 config.json，真正的 API Key 只在 Main 进程中写入系统 Keychain。
-        </p>
-      </article>
+    <div className="settings-page">
+      <div className="settings-head">
+        <h2 className="settings-title">Settings</h2>
+        {status && (
+          <div className={`settings-status-chip ${status.configured ? 'ok' : 'warn'}`}>
+            {status.configured ? '✓ 已配置' : '未配置'}
+          </div>
+        )}
+      </div>
 
-      <article className="panel">
-        <h2>当前状态</h2>
-        <p className="meta">{formatAiConfigState(aiStatus)}</p>
-        <p className="meta">
-          {aiStatus?.apiKeySource === 'env'
-            ? 'API Key 来自环境变量'
-            : aiStatus?.apiKeyStored
-            ? 'API Key 已存入系统 Keychain'
-            : 'API Key 尚未存入系统 Keychain'}
-        </p>
-        <p className="meta">Base URL：{aiStatus?.baseUrl ?? '默认官方端点'}</p>
-        <p className="meta">Workspace Root：{aiStatus?.workspaceRoot ?? '默认当前进程目录'}</p>
-        <p className="meta">配置文件路径：{aiStatus?.configPath ?? '尚未初始化'}</p>
-        <p className="meta">
-          Scheduler 开关：{aiStatus?.featureFlags.enableScheduler ? '启用' : '未启用'}
-        </p>
-        <p className="meta">
-          Sandbox Coding Agent：{aiStatus?.featureFlags.enableSandboxCodingAgent ? '启用' : '未启用'}
-        </p>
-        <p className="meta">
-          Sandbox Patch Promotion Apply：{aiStatus?.featureFlags.enableSandboxPatchPromotionApply ? '启用' : '未启用'}
-        </p>
-        <div className="settings-status-row">
-          <p className="meta">Sandbox Backend：{formatSandboxBackendState(aiStatus)}</p>
-          <button
-            className="ghost-button"
-            disabled={sandboxBackendProbePending}
-            onClick={() => {
-              void onProbeSandboxBackend();
-            }}
-            type="button"
-          >
-            {sandboxBackendProbePending ? '检测中' : '检测 Sandbox Backend'}
-          </button>
-        </div>
-        <p className="meta">Sandbox Coding Lane：{formatSandboxCodingLaneReadiness(aiStatus)}</p>
-        <p className="meta">Producer Backend：{formatSandboxProducerBackendReadiness(aiStatus)}</p>
-        <p className="meta">Browser Evidence：{formatBrowserEvidencePreflightState()}</p>
-        <div className="settings-diagnostic-card" aria-label="Orchestration diagnostics">
-          <strong>Orchestration Diagnostics</strong>
-          <p className="meta">Summary：{orchestrationDiagnostics.summary}</p>
-          <p className="meta">{orchestrationDiagnostics.lifecycle}</p>
-          <p className="meta">{orchestrationDiagnostics.hiddenToolFamilies}</p>
-          {executorLifecycleLines.map((line) => (
-            <p className="meta" key={line}>{line}</p>
-          ))}
-        </div>
-        <div className="tool-scaffold-summary" aria-label="Tool scaffold diagnostics">
-          {(aiStatus?.toolScaffoldSummaries?.length ? aiStatus.toolScaffoldSummaries : []).map((summary) => (
-            <div className="tool-scaffold-row" key={summary.family}>
-              <strong>{formatToolScaffoldFamilyLabel(summary.family)}</strong>
-              <span>{formatToolScaffoldFamilySummary(summary)}</span>
-            </div>
-          ))}
-          {aiStatus?.toolScaffoldSummaries?.length ? null : (
-            <p className="meta">Tool Scaffold：等待 AI config status</p>
-          )}
-        </div>
-      </article>
+      {/* AI Behavior */}
+      <section className="settings-section">
+        <div className="settings-section-title">AI 行为</div>
 
-      <article className="panel">
-        <h2>保存配置</h2>
-        <form className="stack" onSubmit={onSubmit}>
-          <label>
-            Provider
-            <select
-              value={configForm.provider}
-              onChange={(event) =>
-                onChange({
-                  ...configForm,
-                  provider: event.target.value as AiConfigInput['provider'],
-                })
-              }
-            >
-              <option value="anthropic">Anthropic</option>
-              <option value="openai">OpenAI</option>
-              <option value="openai-compatible">OpenAI-compatible</option>
-              <option value="fal-openrouter">fal OpenRouter</option>
-              <option value="replicate">Replicate</option>
-            </select>
+        <div className="settings-toggle-row">
+          <div className="settings-toggle-info">
+            <span className="settings-label">Run / Task 自检查</span>
+            <span className="settings-hint">控制 Run 级验证和任务完成确认；Step 级轻量对照始终保留</span>
+          </div>
+          <Toggle value={selfCheck} onChange={setSelfCheck} />
+        </div>
+
+        <div className="settings-toggle-row">
+          <div className="settings-toggle-info">
+            <span className="settings-label">自学习（Self-Learn）</span>
+            <span className="settings-hint">完成、覆盖、SOP 提取等节点提炼工作习惯；关闭后不生成新的习惯提议</span>
+          </div>
+          <Toggle value={selfLearn} onChange={setSelfLearn} />
+        </div>
+
+        <div className="settings-behavior-note">
+          Step 级检查是执行质量基线，通过时静默，只在失败时留下说明；Run / Task 检查只在失败、等待拍板或完成确认时提示。自学习绑定在完成、覆盖、SOP 提取等节点触发，不做持续行为监控；学到的规则会在 Context 展示，可停用或删除。
+        </div>
+
+        <div className="settings-field" style={{ marginTop: 16 }}>
+          <div className="settings-label">沟通风格</div>
+          <SegmentedControl
+            value={communicationStyle}
+            options={['concise', 'balanced', 'detailed']}
+            labels={COMMUNICATION_STYLE_LABELS}
+            onChange={setCommunicationStyle}
+          />
+          <p className="settings-hint">影响 AI 的回答密度和展开程度；不改变任务生命周期。</p>
+        </div>
+
+        <div className="settings-field" style={{ marginTop: 16 }}>
+          <div className="settings-label">确认阈值</div>
+          <SegmentedControl
+            value={confirmationThreshold}
+            options={['low', 'normal', 'high']}
+            labels={CONFIRMATION_THRESHOLD_LABELS}
+            onChange={setConfirmationThreshold}
+          />
+          <p className="settings-hint">用于校准 AI 遇到风险、外部动作或不确定结论时主动请你确认的频率。</p>
+        </div>
+
+        <div className="settings-field" style={{ marginTop: 16 }}>
+          <label className="settings-label">
+            Step 级自动修正上限
+            <span className="settings-badge">{selfCheckRetries} 次</span>
           </label>
-          <label>
-            Model
-            <input
-              value={configForm.model}
-              onChange={(event) => onChange({ ...configForm, model: event.target.value })}
-            />
+          <input
+            type="range"
+            min={SELF_CHECK_RETRY_LIMIT.min}
+            max={SELF_CHECK_RETRY_LIMIT.max}
+            step={SELF_CHECK_RETRY_LIMIT.step}
+            value={selfCheckRetries}
+            onChange={(e) => setSelfCheckRetries(Number(e.target.value))}
+            className="settings-range"
+          />
+          <p className="settings-hint">用于 Step 级检查失败后的自动修正上限；0 表示失败后直接等待人工处理。</p>
+        </div>
+
+        <div className="settings-field" style={{ marginTop: 16 }}>
+          <label className="settings-label">
+            上下文压缩阈值
+            <span className="settings-badge">{ctxCompress}%</span>
           </label>
-          <label>
-            Base URL
-            <input
-              placeholder={
-                configForm.provider === 'fal-openrouter'
-                  ? 'https://fal.run/openrouter/router/openai/v1'
-                  : configForm.provider === 'replicate'
-                    ? 'https://api.replicate.com/v1'
-                  : 'https://api.example.com/v1'
-              }
-              value={configForm.baseUrl ?? ''}
-              onChange={(event) => onChange({ ...configForm, baseUrl: event.target.value })}
-            />
-          </label>
-          <label>
-            API Key
-            <input
-              type="password"
-              value={configForm.apiKey}
-              onChange={(event) => onChange({ ...configForm, apiKey: event.target.value })}
-            />
-          </label>
-          <label>
-            Workspace Root
-            <input
-              placeholder="/absolute/path/to/workspace"
-              value={configForm.workspaceRoot ?? ''}
-              onChange={(event) => onChange({ ...configForm, workspaceRoot: event.target.value })}
-            />
-          </label>
-          <label className="checkbox-row">
-            <input
-              checked={configForm.featureFlags.enableScheduler}
-              onChange={(event) =>
-                onChange({
-                  ...configForm,
-                  featureFlags: {
-                    ...configForm.featureFlags,
-                    enableScheduler: event.target.checked,
-                  },
-                })
-              }
-              type="checkbox"
-            />
-            <span>启用本地 scheduler</span>
-          </label>
-          <button type="submit">保存到 Main / Keychain</button>
-        </form>
-        <p className="meta">
-          提示：如果 API Key 留空，将保留当前 Keychain 中已有的密钥，只更新 config.json 中的非敏感配置。
+          <input
+            type="range"
+            min={CONTEXT_COMPRESSION_THRESHOLD.min}
+            max={CONTEXT_COMPRESSION_THRESHOLD.max}
+            step={CONTEXT_COMPRESSION_THRESHOLD.step}
+            value={ctxCompress}
+            onChange={(e) => setCtxCompress(Number(e.target.value))}
+            className="settings-range"
+          />
+          <p className="settings-hint">用于右侧任务对话的刷新建议；推荐 40–50%。真正压缩前会先保留关键决策、偏好变化和未解决问题。</p>
+        </div>
+      </section>
+
+      {/* Current model summary — always visible */}
+      <section className="settings-section">
+        <div className="settings-section-title">当前 AI 配置</div>
+        <div className="settings-current">
+          <span className="settings-hint">活跃模型：</span>
+          <span className="mono" style={{ fontSize: 11.5 }}>
+            {status ? `${status.provider} / ${status.model}` : '加载中…'}
+          </span>
+        </div>
+        <p className="settings-hint" style={{ marginTop: 6 }}>
+          修改 Provider 密钥或切换模型请前往 <strong>Model</strong> 页。
         </p>
-      </article>
-    </section>
+      </section>
+
+      {/* Save */}
+      <div className="settings-footer">
+        <button
+          className={`btn primary${saving ? ' disabled' : ''}${saveResult === 'ok' ? ' saved' : ''}${saveResult === 'error' ? ' danger' : ''}`}
+          onClick={save}
+          disabled={saving}
+        >
+          {saving ? '保存中…' : saveResult === 'ok' ? '已保存 ✓' : saveResult === 'error' ? '保存失败' : '保存设置'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SegmentedControl<T extends string>({
+  value,
+  options,
+  labels,
+  onChange,
+}: {
+  value: T;
+  options: T[];
+  labels: Record<T, string>;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="settings-segmented">
+      {options.map((option) => (
+        <button
+          key={option}
+          className={`settings-segment${value === option ? ' active' : ''}`}
+          onClick={() => onChange(option)}
+        >
+          {labels[option]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      className={`toggle${value ? ' on' : ''}`}
+      onClick={() => onChange(!value)}
+      role="switch"
+      aria-checked={value}
+    >
+      <span className="toggle-thumb" />
+    </button>
   );
 }

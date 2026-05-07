@@ -7,7 +7,26 @@ vi.mock('ai', () => ({
 }));
 
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
+import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
+
+function buildSourceContext(partial: Partial<SourceContextRecord>): SourceContextRecord {
+  return {
+    archivedAt: null,
+    content: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    id: partial.id ?? 'source_context_1',
+    isKey: partial.isKey ?? true,
+    kind: partial.kind ?? 'note',
+    note: partial.note ?? null,
+    status: partial.status ?? 'active',
+    taskId: 'task_1',
+    title: partial.title ?? 'Source context',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+    uri: null,
+    ...partial,
+  };
+}
 
 function buildTaskDetail(): TaskDetail {
   return {
@@ -127,6 +146,53 @@ describe('DecisionProcessTemplateSelector', () => {
       }),
     );
     expect(result.reason).toBe('当前更偏升级处理，适合参考 escalation 模板。');
+  });
+
+  it('uses only the latest active key sources in decision template selection prompts', async () => {
+    generateObjectMock.mockResolvedValue({
+      object: {
+        shouldUse: false,
+        selectedTemplateIds: [],
+        reason: '无需模板。',
+      },
+    });
+
+    const task = buildTaskDetail();
+    task.sourceContexts = [
+      buildSourceContext({ id: 'source_old', title: '旧邮件', note: 'old', updatedAt: '2026-01-01T00:00:00.000Z' }),
+      buildSourceContext({ id: 'source_inactive', title: '归档材料', status: 'archived', updatedAt: '2026-01-05T00:00:00.000Z' }),
+      buildSourceContext({ id: 'source_ignore', title: '普通备注', isKey: false, updatedAt: '2026-01-06T00:00:00.000Z' }),
+      buildSourceContext({ id: 'source_2', title: 'CEO 批注', note: 'ceo', updatedAt: '2026-01-02T00:00:00.000Z' }),
+      buildSourceContext({ id: 'source_3', title: '法务意见', note: 'legal', updatedAt: '2026-01-03T00:00:00.000Z' }),
+      buildSourceContext({ id: 'source_4', title: '财务复核', note: 'finance', updatedAt: '2026-01-04T00:00:00.000Z' }),
+    ];
+
+    const { DecisionProcessTemplateSelector } = await import('./process-template-selector.js');
+    const selector = new DecisionProcessTemplateSelector();
+
+    await selector.select(
+      task,
+      {
+        taskId: 'task_1',
+      },
+      {
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+        featureFlags: {
+          enableScheduler: true,
+        },
+      },
+    );
+
+    const prompt = generateObjectMock.mock.calls[0]?.[0]?.prompt as string;
+    expect(prompt).toContain('关键来源材料：');
+    expect(prompt).toContain('- 财务复核 [note] | finance');
+    expect(prompt).toContain('- 法务意见 [note] | legal');
+    expect(prompt).toContain('- CEO 批注 [note] | ceo');
+    expect(prompt).not.toContain('旧邮件');
+    expect(prompt).not.toContain('归档材料');
+    expect(prompt).not.toContain('普通备注');
   });
 
   it('skips model selection when the task has no active process templates', async () => {

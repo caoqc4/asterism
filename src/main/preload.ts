@@ -14,6 +14,15 @@ const api: ElectronApi = {
   getTaskDetail: (taskId) => ipcRenderer.invoke('task:getDetail', taskId),
   updateTask: (input) => ipcRenderer.invoke('task:update', input),
   transitionTask: (input) => ipcRenderer.invoke('task:transition', input),
+  recordTaskCompletionCheck: (input) => ipcRenderer.invoke('task:recordCompletionCheck', input),
+  getWorkHabitSnapshot: () => ipcRenderer.invoke('workHabit:getSnapshot'),
+  importLegacyWorkHabits: (input) => ipcRenderer.invoke('workHabit:importLegacy', input),
+  updateWorkHabit: (input) => ipcRenderer.invoke('workHabit:update', input),
+  deleteWorkHabit: (id) => ipcRenderer.invoke('workHabit:delete', id),
+  createManualWorkHabit: (input) => ipcRenderer.invoke('workHabit:createManual', input),
+  resolveWorkHabitConflict: (input) => ipcRenderer.invoke('workHabit:resolveConflict', input),
+  recordCompletionOverrideLearningSignal: (input) => ipcRenderer.invoke('workHabit:recordCompletionOverride', input),
+  recordSopTemplateHabit: (input) => ipcRenderer.invoke('workHabit:recordSopTemplate', input),
   createBlocker: (input) => ipcRenderer.invoke('blocker:create', input),
   updateBlocker: (input) => ipcRenderer.invoke('blocker:update', input),
   resolveBlocker: (id) => ipcRenderer.invoke('blocker:resolve', id),
@@ -43,6 +52,8 @@ const api: ElectronApi = {
   triggerCodeAgentRun: (input) => ipcRenderer.invoke('run:triggerCodeAgent', input),
   triggerOperatorStartedRun: (input) => ipcRenderer.invoke('run:triggerOperatorStarted', input),
   continuePausedRun: (runId) => ipcRenderer.invoke('run:continuePaused', runId),
+  chatWithAI: (input) => ipcRenderer.invoke('ai:chat', input),
+  decomposeProject: (input) => ipcRenderer.invoke('ai:decomposeProject', input),
   subscribeToEvents: (listener) => {
     const wrapped = (_event: IpcRendererEvent, payload: Parameters<typeof listener>[0]) => {
       listener(payload);

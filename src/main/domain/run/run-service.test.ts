@@ -265,7 +265,19 @@ describe('RunService', () => {
       updateResult: vi.fn(),
     };
     const runStepRepository = {
-      listForRun: vi.fn().mockResolvedValue([{ id: 'run_step_1' }]),
+      listForRun: vi.fn().mockResolvedValue([{
+        id: 'run_step_1',
+        runId: 'run_1',
+        index: 1,
+        kind: 'final',
+        status: 'completed',
+        title: 'Final output',
+        input: null,
+        output: 'Generated output',
+        error: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }]),
     };
     const runCheckpointRepository = {
       listForRun: vi.fn().mockResolvedValue([{ id: 'run_checkpoint_1' }]),
@@ -276,6 +288,10 @@ describe('RunService', () => {
     const artifactRepository = buildArtifactRepositoryMock({
       listForRun: vi.fn().mockResolvedValue([{ id: 'artifact_1' }]),
     });
+    const runVerificationRepository = {
+      upsert: vi.fn(),
+      listForRun: vi.fn().mockResolvedValue([{ id: 'run_verification_1' }]),
+    };
     const service = new RunService(
       runRepository as never,
       {} as never,
@@ -287,6 +303,7 @@ describe('RunService', () => {
       null,
       runCheckpointRepository as never,
       agentSessionRepository as never,
+      runVerificationRepository as never,
     );
 
     const result = await service.getDetail('run_1');
@@ -296,7 +313,21 @@ describe('RunService', () => {
     expect(runCheckpointRepository.listForRun).toHaveBeenCalledWith('run_1');
     expect(agentSessionRepository.listForRun).toHaveBeenCalledWith('run_1');
     expect(artifactRepository.listForRun).toHaveBeenCalledWith('run_1');
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_1',
+      targetType: 'step',
+      targetId: 'run_step_1',
+      source: 'lightweight_rule_engine',
+    }));
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_1',
+      targetType: 'run',
+      targetId: 'run_1',
+      source: 'lightweight_rule_engine',
+    }));
+    expect(runVerificationRepository.listForRun).toHaveBeenCalledWith('run_1');
     expect(result?.artifacts).toEqual([{ id: 'artifact_1' }]);
+    expect(result?.verifications).toEqual([{ id: 'run_verification_1' }]);
     expect(result?.agentSessions).toEqual([{ id: 'agent_session_1' }]);
   });
 
@@ -343,6 +374,54 @@ describe('RunService', () => {
       }),
     };
     const runStepRepository = buildRunStepRepositoryMock();
+    const runVerificationRepository = {
+      upsert: vi.fn(),
+      listForRun: vi.fn(),
+    };
+    const workHabitService = {
+      getSnapshot: vi.fn().mockResolvedValue({
+        version: 3,
+        storage: 'main_db',
+        privacyBoundary: {
+          locality: 'device_only',
+          contains: [],
+          excludes: [],
+        },
+        habits: [
+          {
+            id: 'habit_confirmed',
+            rule: '数据报告初稿完成后先内部评审再对外发送',
+            source: 'manual',
+            scope: 'global',
+            scopeLabel: '全局',
+            status: 'confirmed',
+            examples: 'Q1 财报',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            lastAppliedAt: null,
+            applicationCount: 2,
+          },
+          {
+            id: 'habit_pending',
+            rule: '待确认习惯不应进入 Run 提示词',
+            source: 'proposal',
+            scope: 'global',
+            scopeLabel: '全局',
+            status: 'pending',
+            examples: null,
+            createdAt: '2026-01-01T00:00:00.000Z',
+            lastAppliedAt: null,
+            applicationCount: 0,
+          },
+        ],
+      }),
+      recordApplications: vi.fn(),
+    };
+    const runCheckpointRepository = {
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
+    const agentSessionRepository = {
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
     const service = new RunService(
       runRepository as never,
       taskService as never,
@@ -351,6 +430,12 @@ describe('RunService', () => {
       textExecutor as never,
       processTemplateSelector as never,
       runStepRepository as never,
+      null,
+      runCheckpointRepository as never,
+      agentSessionRepository as never,
+      runVerificationRepository as never,
+      undefined,
+      workHabitService as never,
     );
 
     const result = await service.trigger({
@@ -395,8 +480,13 @@ describe('RunService', () => {
       },
       {
         selectedTemplates: [buildAppliedTemplate()],
+        applicableWorkHabitSummaries: [
+          '数据报告初稿完成后先内部评审再对外发送（范围：全局；例：Q1 财报）',
+        ],
       },
     );
+    expect(workHabitService.getSnapshot).toHaveBeenCalled();
+    expect(workHabitService.recordApplications).toHaveBeenCalledWith(['habit_confirmed']);
     expect(runRepository.updateResult).toHaveBeenCalledWith(
       'run_1',
       'completed',
@@ -422,7 +512,104 @@ describe('RunService', () => {
       'run_step_2',
       expect.objectContaining({ status: 'completed', output: 'Generated output' }),
     );
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_1',
+      targetType: 'run',
+      targetId: 'run_1',
+      source: 'lightweight_rule_engine',
+      detail: expect.stringContaining('本次还对照 1 条已确认工作习惯。'),
+    }));
     expect(result.status).toBe('completed');
+  });
+
+  it('keeps step checks but skips run-level verification when self-check is disabled', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn(),
+      create: vi.fn().mockResolvedValue(buildRunRecord('pending')),
+      updateResult: vi.fn().mockResolvedValue({
+        ...buildRunRecord('completed'),
+        output: 'Generated output',
+        outputSource: 'ai',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
+      transitionIfAllowed: vi.fn(),
+      annotateRunCompleted: vi.fn().mockResolvedValue(buildTaskRecord('running')),
+      annotateRunFailed: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
+    };
+    const artifactRepository = buildArtifactRepositoryMock({
+      createFromRun: vi.fn().mockResolvedValue(buildArtifactRecord()),
+    });
+    const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue({
+        featureFlags: {
+          enableSelfCheck: false,
+        },
+      }),
+      resolveRuntimeConfig: vi.fn().mockResolvedValue({
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        apiKey: 'secret',
+      }),
+    };
+    const textExecutor = {
+      execute: vi.fn().mockResolvedValue('Generated output'),
+    };
+    const processTemplateSelector = {
+      select: vi.fn().mockResolvedValue({
+        shouldUse: false,
+        selectedTemplates: [],
+        reason: '当前无明显匹配模板。',
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    runStepRepository.listForRun.mockResolvedValue([{
+      id: 'run_step_checked',
+      runId: 'run_1',
+      index: 1,
+      kind: 'model',
+      status: 'completed',
+      title: 'draft 模型执行',
+      input: null,
+      output: 'Generated output',
+      error: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    }]);
+    const runVerificationRepository = {
+      upsert: vi.fn(),
+      listForRun: vi.fn(),
+    };
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      artifactRepository as never,
+      aiConfigService as never,
+      textExecutor as never,
+      processTemplateSelector as never,
+      runStepRepository as never,
+      null,
+      undefined,
+      undefined as never,
+      runVerificationRepository as never,
+    );
+
+    await service.trigger({
+      taskId: 'task_1',
+      type: 'draft',
+    });
+
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      targetType: 'step',
+      source: 'lightweight_rule_engine',
+    }));
+    expect(runVerificationRepository.upsert).not.toHaveBeenCalledWith(expect.objectContaining({
+      targetType: 'run',
+    }));
   });
 
   it('marks the run as failed when the executor throws', async () => {
@@ -555,6 +742,7 @@ describe('RunService', () => {
       null,
       undefined,
       undefined as never,
+      null,
       runOrchestrator as never,
     );
 
@@ -734,6 +922,10 @@ describe('RunService', () => {
       ]),
       updateStatus: vi.fn(),
     };
+    const runVerificationRepository = {
+      upsert: vi.fn(),
+      listForRun: vi.fn(),
+    };
     const service = new RunService(
       runRepository as never,
       taskService as never,
@@ -745,6 +937,7 @@ describe('RunService', () => {
       agentToolRegistry as never,
       runCheckpointRepository as never,
       agentSessionRepository as never,
+      runVerificationRepository as never,
     );
 
     const result = await service.continuePausedRun('run_1');
@@ -792,6 +985,12 @@ describe('RunService', () => {
       true,
       'run_1',
     );
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_1',
+      targetType: 'run',
+      targetId: 'run_1',
+      source: 'lightweight_rule_engine',
+    }));
     expect(artifactRepository.createFromRun).not.toHaveBeenCalled();
     expect(result.status).toBe('completed');
   });

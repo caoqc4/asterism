@@ -8,6 +8,7 @@ import { CompletionCriteriaRepository } from '../db/repositories/completion-crit
 import { RunCheckpointRepository } from '../db/repositories/run-checkpoint-repository.js';
 import { RunRepository } from '../db/repositories/run-repository.js';
 import { RunStepRepository } from '../db/repositories/run-step-repository.js';
+import { RunVerificationRepository } from '../db/repositories/run-verification-repository.js';
 import { SandboxPatchPromotionRepository } from '../db/repositories/sandbox-patch-promotion-repository.js';
 import { ProcessTemplateRepository } from '../db/repositories/process-template-repository.js';
 import { SourceContextRepository } from '../db/repositories/source-context-repository.js';
@@ -15,7 +16,9 @@ import { TaskDependencyRepository } from '../db/repositories/task-dependency-rep
 import { TaskRepository } from '../db/repositories/task-repository.js';
 import { TaskProcessBindingRepository } from '../db/repositories/task-process-binding-repository.js';
 import { WaitingItemRepository } from '../db/repositories/waiting-item-repository.js';
+import { WorkHabitRepository } from '../db/repositories/work-habit-repository.js';
 import { HomeBriefService } from '../domain/brief/home-brief-service.js';
+import { WorkHabitService } from '../domain/context/work-habit-service.js';
 import { DecisionService } from '../domain/decision/decision-service.js';
 import { AgentSessionStore } from '../domain/run/agent-session-store.js';
 import { AgentToolRegistry } from '../domain/run/agent-tool-registry.js';
@@ -40,6 +43,7 @@ const taskRepository = new TaskRepository();
 const decisionRepository = new DecisionRepository();
 const runRepository = new RunRepository();
 const runStepRepository = new RunStepRepository();
+const runVerificationRepository = new RunVerificationRepository();
 const runCheckpointRepository = new RunCheckpointRepository();
 const sandboxPatchPromotionRepository = new SandboxPatchPromotionRepository();
 const artifactRepository = new ArtifactRepository();
@@ -51,6 +55,7 @@ const processTemplateRepository = new ProcessTemplateRepository();
 const taskProcessBindingRepository = new TaskProcessBindingRepository();
 const briefSnapshotRepository = new BriefSnapshotRepository();
 const waitingItemRepository = new WaitingItemRepository();
+const workHabitRepository = new WorkHabitRepository();
 let schedulerService: SchedulerService | null = null;
 const homeBriefService = new HomeBriefService(
   taskRepository,
@@ -65,6 +70,7 @@ const homeBriefService = new HomeBriefService(
   taskProcessBindingRepository,
   taskDependencyRepository,
   completionCriteriaRepository,
+  runVerificationRepository,
 );
 const textExecutor = new TextExecutor();
 const briefExecutor = new BriefExecutor();
@@ -121,8 +127,10 @@ const decisionService = new DecisionService(
   () => Boolean(appConfigService.read().featureFlags.enableSandboxPatchPromotionApply),
   runBrowserControlledResumeForApprovedDecision,
   agentSessionStore,
+  runVerificationRepository,
 );
 agentToolRegistry.setDecisionDraftService(decisionService);
+const workHabitService = new WorkHabitService(workHabitRepository);
 const runService = new RunService(
   runRepository,
   taskService,
@@ -134,6 +142,9 @@ const runService = new RunService(
   agentToolRegistry,
   runCheckpointRepository,
   agentSessionStore,
+  runVerificationRepository,
+  undefined,
+  workHabitService,
 );
 const browserEvidencePersister = new BrowserEvidencePersister(
   artifactRepository,
@@ -146,6 +157,7 @@ const operatorStartedRunService = new OperatorStartedRunService(
   browserEvidencePersister,
   runBrowserEvidenceSmokeForOperatorStartedRun,
   runBrowserControlledLocalQaForOperatorStartedRun,
+  runVerificationRepository,
 );
 const codeAgentRunService = new CodeAgentRunService(
   taskService,
@@ -156,6 +168,8 @@ const codeAgentRunService = new CodeAgentRunService(
   runCheckpointRepository,
   decisionRepository,
   sandboxPatchPromotionRepository,
+  undefined,
+  runVerificationRepository,
 );
 
 const services = {
@@ -163,10 +177,12 @@ const services = {
   decisionRepository,
   runRepository,
   runStepRepository,
+  runVerificationRepository,
   runCheckpointRepository,
   sandboxPatchPromotionRepository,
   briefSnapshotRepository,
   waitingItemRepository,
+  workHabitRepository,
   blockerRepository,
   completionCriteriaRepository,
   taskDependencyRepository,
@@ -185,6 +201,7 @@ const services = {
   runService,
   operatorStartedRunService,
   codeAgentRunService,
+  workHabitService,
   browserEvidencePersister,
   homeBriefService,
   aiConfigService,

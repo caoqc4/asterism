@@ -4,12 +4,13 @@ import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type { BlockerRecord } from '../../../shared/types/blocker.js';
 import type { DecisionRecord } from '../../../shared/types/decision.js';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
-import type { RunRecord } from '../../../shared/types/run.js';
+import type { RunRecord, RunVerificationRecord } from '../../../shared/types/run.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import type { TaskDependencyRecord } from '../../../shared/types/task-dependency.js';
 import type { TaskListItemRecord } from '../../../shared/types/task.js';
 import type { WaitingItemRecord } from '../../../shared/types/waiting-item.js';
 import type { CompletionCriteriaRecord } from '../../../shared/types/completion-criteria.js';
+import { PANEL_CAPTURE_SUMMARY_PREFIX } from '../../../shared/panel-capture.js';
 import { HomeBriefService } from './home-brief-service.js';
 
 afterEach(() => {
@@ -100,6 +101,21 @@ function buildRun(partial: Partial<RunRecord>): RunRecord {
     output: partial.output ?? null,
     outputSource: partial.outputSource ?? null,
     failureReason: partial.failureReason ?? null,
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
+  };
+}
+
+function buildRunVerification(partial: Partial<RunVerificationRecord>): RunVerificationRecord {
+  return {
+    id: partial.id ?? 'run_verification_1',
+    runId: partial.runId ?? 'run_1',
+    targetType: partial.targetType ?? 'run',
+    targetId: partial.targetId ?? partial.runId ?? 'run_1',
+    tone: partial.tone ?? 'pass',
+    label: partial.label ?? 'Run 验证通过',
+    detail: partial.detail ?? '执行结果已有输出或步骤证据，可进入人工审查。',
+    source: partial.source ?? 'lightweight_rule_engine',
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
   };
@@ -757,7 +773,7 @@ describe('HomeBriefService', () => {
     );
     expect(homeData.recommendedActions).toContainEqual(
       expect.objectContaining({
-      label: '先查看关键来源，再补下一步：Missing-next-step task',
+      label: '先查看最近来源，再补下一步：Missing-next-step task',
       reason: '该任务还缺少明确下一步，先参考来源材料“Research notes”。',
       taskId: 'task_source_missing',
       priority: 'medium',
@@ -773,6 +789,12 @@ describe('HomeBriefService', () => {
       'task_source_missing',
       'task_source_focus',
     ]);
+    expect(homeData.recentTaskResumes.find((item) => item.taskId === 'task_source_focus')).toMatchObject({
+      latestChange: {
+        summary: '最近来源材料更新：Partner website shortlist',
+      },
+      contextActionLabel: '查看来源材料',
+    });
   });
 
   it('prioritizes key source contexts ahead of newer non-key sources', async () => {
@@ -1217,6 +1239,99 @@ describe('HomeBriefService', () => {
     );
   });
 
+  it('keeps unconfirmed right-panel captures out of home brief workflow data', async () => {
+    const decisions = {
+      list: vi.fn().mockResolvedValue([
+        buildDecision({
+          id: 'decision_panel_capture',
+          taskId: 'task_panel_capture',
+          status: 'pending',
+        }),
+        buildDecision({
+          id: 'decision_planned',
+          taskId: 'task_planned',
+          status: 'pending',
+        }),
+      ]),
+    };
+    const runs = {
+      list: vi.fn().mockResolvedValue([
+        buildRun({
+          id: 'run_panel_capture',
+          taskId: 'task_panel_capture',
+          status: 'completed',
+        }),
+        buildRun({
+          id: 'run_planned',
+          taskId: 'task_planned',
+          status: 'completed',
+        }),
+      ]),
+    };
+    const artifacts = {
+      listRecent: vi.fn().mockResolvedValue([
+        buildArtifact({
+          id: 'artifact_panel_capture',
+          taskId: 'task_panel_capture',
+        }),
+        buildArtifact({
+          id: 'artifact_planned',
+          taskId: 'task_planned',
+        }),
+      ]),
+    };
+
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_panel_capture',
+            title: 'Panel capture',
+            state: 'captured',
+            summary: `${PANEL_CAPTURE_SUMMARY_PREFIX}Panel capture`,
+            nextStep: null,
+            updatedAt: '2026-01-03T00:00:00.000Z',
+          }),
+          buildTask({
+            id: 'task_planned',
+            title: 'Planned task',
+            state: 'planned',
+            nextStep: 'Continue',
+            updatedAt: '2026-01-02T00:00:00.000Z',
+          }),
+        ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      null as never,
+      decisions as never,
+      runs as never,
+      artifacts as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+      null,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.activeTaskCount).toBe(1);
+    expect(homeData.pendingDecisionCount).toBe(1);
+    expect(homeData.recentRunCount).toBe(1);
+    expect(homeData.recentTasks.map((task) => task.id)).toEqual(['task_planned']);
+    expect(homeData.pendingDecisions.map((decision) => decision.id)).toEqual(['decision_planned']);
+    expect(homeData.recentArtifacts.map((artifact) => artifact.id)).toEqual(['artifact_planned']);
+    expect(homeData.missingNextStepTasks.map((task) => task.id)).not.toContain('task_panel_capture');
+    expect(homeData.recentActivity.map((item) => item.taskId)).not.toContain('task_panel_capture');
+    expect(homeData.recentTaskResumes.map((item) => item.taskId)).not.toContain('task_panel_capture');
+  });
+
   it('does not resurface captured-task activity ahead of later run outcomes after task updates', async () => {
     const service = new HomeBriefService(
       {
@@ -1269,6 +1384,70 @@ describe('HomeBriefService', () => {
       'run:run_failed_after_capture',
       'task:task_captured_run_failed:2026-01-01T00:00:00.000Z',
     ]);
+  });
+
+  it('includes recent run verification in home resume preview latest change', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_run_verified',
+            title: 'Run verified task',
+            state: 'planned',
+            nextStep: 'Review verified output',
+            updatedAt: '2026-01-02T00:00:00.000Z',
+          }),
+        ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      null as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([
+          buildRun({
+            id: 'run_verified',
+            taskId: 'task_run_verified',
+            status: 'completed',
+            type: 'agent',
+            updatedAt: '2026-01-03T00:00:00.000Z',
+          }),
+        ]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+      null,
+      null,
+      null,
+      {
+        listForRun: vi.fn().mockResolvedValue([
+          buildRunVerification({
+            runId: 'run_verified',
+            targetId: 'run_verified',
+            label: 'Run 验证通过',
+            detail: '执行结果已有输出或步骤证据，可进入人工审查。',
+          }),
+        ]),
+      } as never,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.recentTaskResumes[0]?.latestChange.summary).toBe(
+      '最近执行动态：agent · completed；验证结论：Run 验证通过，执行结果已有输出或步骤证据，可进入人工审查。',
+    );
   });
 
   it('prioritizes the latest lifecycle change when deriving home resume preview suggestions', async () => {

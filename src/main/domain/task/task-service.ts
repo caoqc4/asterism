@@ -20,6 +20,7 @@ import type {
 } from '../../../shared/types/task-dependency.js';
 import type {
   CreateTaskInput,
+  RecordTaskCompletionCheckInput,
   TaskDetail,
   TaskDetailBase,
   TaskListItemRecord,
@@ -319,7 +320,8 @@ export class TaskService {
   }
 
   private buildResumeCard(detail: TaskDetailBase): TaskResumeCardRecord {
-    const keySource = detail.sourceContexts.find((item) => item.isKey) ?? detail.sourceContexts[0] ?? null;
+    const keySource = detail.sourceContexts.find((item) => item.isKey) ?? null;
+    const recentSource = keySource ?? detail.sourceContexts[0] ?? null;
     const currentMethod = detail.processTemplates[0] ?? null;
     const latestArtifact = detail.artifacts[0] ?? null;
     const waitingReason = detail.activeWaitingItem?.reason ?? detail.waitingReason;
@@ -405,7 +407,7 @@ export class TaskService {
       blockerCreatedAt: detail.activeBlocker?.createdAt ?? null,
       dependencyTitle,
       dependencyCreatedAt: detail.activeDependency?.createdAt ?? null,
-      keySourceTitle: keySource?.title ?? null,
+      keySourceTitle: recentSource?.title ?? null,
       latestArtifactTitle: latestArtifact?.title ?? null,
       completionStatus,
       recentChange: latestChange.recentChange,
@@ -424,7 +426,11 @@ export class TaskService {
         ? `完成标准进度：${completionStatus.summary}。`
         : null,
       latestChange.summary,
-      keySource ? `当前最关键的来源材料是“${keySource.title}”。` : null,
+      keySource
+        ? `当前最关键的来源材料是“${keySource.title}”。`
+        : recentSource
+          ? `当前最近更新的来源材料是“${recentSource.title}”。`
+          : null,
       currentMethod ? `当前采用的方法模板是“${currentMethod.title}”。` : null,
       `建议先做：${nextSuggestedMove}`,
     ].filter(Boolean);
@@ -493,14 +499,14 @@ export class TaskService {
             ageLabel: null,
             responsibilitySummary: null,
           },
-      keySource: keySource
+      keySource: recentSource
         ? {
-            sourceContextId: keySource.id,
-            title: keySource.title,
-            detail: keySource.note ?? keySource.uri,
+            sourceContextId: recentSource.id,
+            title: recentSource.title,
+            detail: recentSource.note ?? recentSource.uri,
             priorityReason: getKeySourcePriorityReason({
               timeline: detail.timeline,
-              keySource,
+              keySource: recentSource,
               audience: 'task',
             }),
           }
@@ -655,6 +661,23 @@ export class TaskService {
     await this.syncWaitingItem(updated.id, updated.state, updated.waitingReason);
 
     return this.attachActiveWaitingItem(updated);
+  }
+
+  async recordCompletionCheck(input: RecordTaskCompletionCheckInput): Promise<void> {
+    await this.getExistingTaskOrThrow(input.taskId);
+
+    await this.repository.appendTimelineEvent(input.taskId, 'task.completion_check', {
+      action: input.action,
+      criteriaTotal: input.criteriaTotal,
+      criteriaSatisfied: input.criteriaSatisfied,
+      criteriaOpen: input.criteriaOpen,
+      reason: input.reason?.trim() || null,
+      runVerificationTone: input.runVerificationTone ?? null,
+      runVerificationLabel: input.runVerificationLabel?.trim() || null,
+      runVerificationDetail: input.runVerificationDetail?.trim() || null,
+      source: input.source ?? 'task_completion_modal',
+      checkedAt: input.checkedAt ?? new Date().toISOString(),
+    });
   }
 
   async transitionIfAllowed(id: string, nextState: TaskState): Promise<TaskListItemRecord | null> {

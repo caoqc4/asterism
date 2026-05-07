@@ -135,6 +135,39 @@ describe('buildFallbackBrief', () => {
     expect(brief).toContain('run:draft [completed] | task=Resume task');
   });
 
+  it('labels brief source context as recent source material with key priority', () => {
+    const brief = buildFallbackBrief(
+      {
+        ...buildHomeBriefData(),
+        recentSourceContexts: [
+          {
+            id: 'source_context_general',
+            taskId: 'task_resume_brief',
+            taskTitle: 'Resume task',
+            title: 'General research note',
+            kind: 'note',
+            isKey: false,
+            uri: null,
+            note: 'Not marked key, but recently updated.',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+      },
+      'startup',
+    );
+
+    expect(brief).toContain('最近来源材料（关键优先）：');
+    expect(brief).toContain('General research note');
+    expect(brief).not.toContain('关键来源材料：');
+  });
+
+  it('uses neutral empty wording when no brief source context changed recently', () => {
+    const brief = buildFallbackBrief(buildHomeBriefData(), 'startup');
+
+    expect(brief).toContain('- 最近没有来源材料更新');
+    expect(brief).not.toContain('- 最近没有关键来源材料');
+  });
+
   it('uses clarify-first wording for captured task resumes in briefs', () => {
     const brief = buildFallbackBrief(
       {
