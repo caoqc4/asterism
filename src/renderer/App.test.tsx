@@ -1024,6 +1024,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('AI 建议类型')).toBeTruthy();
     expect(screen.getByRole('button', { name: '定时' }).className).toContain('active');
     expect(screen.getByText(/只需要确认或调整建议/)).toBeTruthy();
+    expect(screen.getByText(/周期和触发条件可在工作台 Header 调整/)).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/已承诺时间/), '周五 17:00 前发给 CEO');
     await user.click(screen.getByRole('button', { name: '创建' }));
 
