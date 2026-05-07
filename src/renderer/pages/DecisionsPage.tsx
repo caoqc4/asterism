@@ -118,7 +118,7 @@ export function DecisionsPage({ onOpenPanel, onOpenWorkbench }: DecisionsPagePro
     <div className="decisions-page">
       <div className="decisions-head">
         <h2 className="decisions-title">Decisions</h2>
-        <p className="decisions-subtitle">跨任务汇总所有需要你拍板的事项</p>
+        <p className="decisions-subtitle">跨任务汇总所有需要你拍板的事项；AI 只给建议，不替你选择</p>
       </div>
 
       {decisions.length > 0 && (

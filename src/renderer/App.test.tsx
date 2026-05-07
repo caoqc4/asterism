@@ -976,6 +976,7 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /Decisions/ }));
 
+    expect(await screen.findByText(/AI 只给建议，不替你选择/)).toBeTruthy();
     expect(await screen.findByText('是否批准本轮材料修改方案')).toBeTruthy();
     expect(await screen.findByText('是否恢复暂停的 Agent 执行')).toBeTruthy();
     expect(screen.getByText('待拍板')).toBeTruthy();
