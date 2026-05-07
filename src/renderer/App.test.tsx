@@ -1270,6 +1270,23 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('暂无详细上下文。')).toBeTruthy();
   });
 
+  it('explains how task memory starts when Context has no active memories', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.listTasks).mockResolvedValueOnce([
+      {
+        ...buildTask({ id: 'task_plain', title: '普通任务' }),
+        summary: null,
+        nextStep: null,
+        waitingReason: null,
+      },
+    ]);
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Context/ }));
+
+    expect(await screen.findByText(/任务记忆会随任务说明、执行记录和你的修正逐步建立/)).toBeTruthy();
+  });
+
   it('lets users resolve conflicting learned work habits from Context', async () => {
     const user = userEvent.setup();
     saveWorkHabits([

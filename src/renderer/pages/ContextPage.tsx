@@ -288,7 +288,7 @@ export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => v
             <div className="ctx-empty muted">加载中…</div>
           )}
           {!loading && tasks.length === 0 && (
-            <div className="ctx-empty">暂无带有上下文的活跃任务。在 Tasks 创建任务并补充说明后，AI 将自动建立记忆。</div>
+            <div className="ctx-empty">暂无带有上下文的活跃任务。任务记忆会随任务说明、执行记录和你的修正逐步建立。</div>
           )}
           {tasks.map((task) => {
             const lane = deriveLane(task);
