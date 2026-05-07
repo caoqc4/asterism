@@ -486,7 +486,9 @@ export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => v
                     <div className="ctx-habit-obs">{h.rule}</div>
                   )}
                   {h.examples.includes('观察窗口') && (
-                    <div className="ctx-habit-observation">跨任务观察窗口 · 累计 {h.applicationCount} 次</div>
+                    <div className="ctx-habit-observation">
+                      跨任务观察窗口 · 累计 {h.applicationCount} 次；达到 3 次才作为待确认提议，确认前不应用。
+                    </div>
                   )}
                   <div className="ctx-habit-examples muted">{h.examples}</div>
                   {conflict && (

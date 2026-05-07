@@ -1484,7 +1484,8 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /Context/ }));
 
     expect(await screen.findByText(/跨任务观察：你经常会在完成检查未全部满足时主动确认够用/)).toBeTruthy();
-    expect(screen.getByText('跨任务观察窗口 · 累计 3 次')).toBeTruthy();
+    expect(screen.getByText(/跨任务观察窗口 · 累计 3 次/)).toBeTruthy();
+    expect(screen.getByText(/达到 3 次才作为待确认提议，确认前不应用/)).toBeTruthy();
   });
 
   it('invites correction when the workbench resume has thin context signals', async () => {
