@@ -43,7 +43,7 @@ function deferLabel(value: string): string {
 interface BriefPageProps {
   onOpenTask: (id: string) => void;
   onOpenDecision: () => void;
-  onOpenPanel: (taskId: string) => void;
+  onOpenPanel: (taskId: string, draftPrompt?: string) => void;
 }
 
 function laneFromPriorityLane(lane: string | undefined): Lane {
@@ -70,6 +70,16 @@ function actionLabelFromStatus(
   if (status === 'waiting') return '起草跟进';
   if (status === 'blocked') return '解除阻塞';
   return fallback;
+}
+
+function actionPromptFromTask(task: FocusTask): string | undefined {
+  if (task.status === 'waiting') {
+    return `请基于当前任务状态，帮我起草一条跟进等待项的消息，并说明是否应该继续等待或升级处理。\n\n任务：${task.title}\n为什么现在：${task.whyNow}`;
+  }
+  if (task.status === 'blocked') {
+    return `请基于当前任务状态，帮我判断阻塞点怎么解除，并给出 1-2 个可执行选项。\n\n任务：${task.title}\n为什么现在：${task.whyNow}`;
+  }
+  return undefined;
 }
 
 function focusTasksFromBriefData(data: HomeBriefData): FocusTask[] {
@@ -277,7 +287,7 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
               onDrop={handleDrop}
               onAction={() => {
                 if (task.status === 'running') onOpenTask(task.id);
-                else onOpenPanel(task.id);
+                else onOpenPanel(task.id, actionPromptFromTask(task));
               }}
               onDeferToggle={() =>
                 setDeferOpenId((prev) => (prev === task.id ? null : task.id))

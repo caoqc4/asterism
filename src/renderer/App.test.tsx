@@ -695,6 +695,17 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('生成投资人更新稿')).toBeTruthy();
   });
 
+  it('prefills waiting Brief focus actions with a follow-up prompt', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /起草跟进/ }));
+
+    const input = await screen.findByPlaceholderText(/关于「合同盖章跟进」/) as HTMLTextAreaElement;
+    expect(input.value).toContain('起草一条跟进等待项的消息');
+    expect(input.value).toContain('合同盖章跟进');
+  });
+
   it('lets users adjust Brief focus order for today without changing lanes', async () => {
     render(<App />);
 

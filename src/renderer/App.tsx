@@ -29,6 +29,7 @@ export function App() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelSuspended, setPanelSuspended] = useState(false);
   const [panelTaskId, setPanelTaskId] = useState<string | null>(null);
+  const [panelDraftPrompt, setPanelDraftPrompt] = useState<string | null>(null);
   const [workbenchTaskId, setWorkbenchTaskId] = useState<string | null>(null);
   const [workbenchOrigin, setWorkbenchOrigin] = useState<AppRoute>('tasks');
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
@@ -48,8 +49,9 @@ export function App() {
     setWorkbenchTaskId(null);
   }, []);
 
-  const openPanelForTask = useCallback((taskId: string) => {
+  const openPanelForTask = useCallback((taskId: string, draftPrompt?: string) => {
     setPanelTaskId(taskId);
+    setPanelDraftPrompt(draftPrompt ?? null);
     setPanelOpen(true);
     setPanelSuspended(false);
   }, []);
@@ -145,13 +147,17 @@ export function App() {
       {(panelOpen || panelSuspended) && (
         <RightPanel
           taskId={panelTaskId}
+          draftPrompt={panelDraftPrompt}
           hidden={!panelOpen}
           onTaskCaptured={(taskId) => setPanelTaskId(taskId)}
           onClose={(hasSession) => {
             setPanelOpen(false);
             setPanelSuspended(hasSession);
           }}
-          onClearTask={() => setPanelTaskId(null)}
+          onClearTask={() => {
+            setPanelTaskId(null);
+            setPanelDraftPrompt(null);
+          }}
         />
       )}
     </div>

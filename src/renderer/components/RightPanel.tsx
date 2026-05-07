@@ -104,13 +104,14 @@ function shouldSuggestSessionRefresh(
 
 interface RightPanelProps {
   taskId: string | null;
+  draftPrompt?: string | null;
   hidden?: boolean;
   onTaskCaptured?: (taskId: string) => void;
   onClose: (hasSession: boolean) => void;
   onClearTask: () => void;
 }
 
-export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, onClearTask }: RightPanelProps) {
+export function RightPanel({ taskId, draftPrompt = null, hidden = false, onTaskCaptured, onClose, onClearTask }: RightPanelProps) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(taskId);
   const [titleCache, setTitleCache] = useState<Record<string, string>>({});
   const [messages, setMessages] = useState<Message[]>([]);
@@ -152,6 +153,12 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
       );
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!draftPrompt || !taskId || taskId !== activeTaskId) return;
+    setInput(draftPrompt);
+    textareaRef.current?.focus();
+  }, [activeTaskId, draftPrompt, taskId]);
 
   // When taskId changes from outside (e.g. clicking a different task)
   useEffect(() => {
