@@ -1113,6 +1113,42 @@ describe('App redesign v1', () => {
     expect((await screen.findAllByText('已确认')).length).toBeGreaterThan(0);
   });
 
+  it('does not create completion-override habit proposals when self-learn is disabled', async () => {
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      featureFlags: {
+        enableScheduler: false,
+        enableProviderNativeToolCalls: true,
+        enableSandboxCodingAgent: false,
+        enableSandboxPatchPromotionApply: false,
+        enableSelfCheck: true,
+        enableSelfLearn: false,
+      },
+    }));
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByText('董事会材料修订'));
+    await user.click(await screen.findByRole('button', { name: '完成' }));
+
+    expect(await screen.findByText('完成确认')).toBeTruthy();
+    expect(screen.getByText(/自学习已关闭，不会生成新的工作习惯提议/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '仍然完成' }));
+
+    await waitFor(() => {
+      expect(harness.api.recordTaskCompletionCheck).toHaveBeenCalledWith(expect.objectContaining({
+        action: 'override_completed',
+        source: 'task_completion_modal',
+      }));
+      expect(harness.api.transitionTask).toHaveBeenCalledWith({
+        id: 'task_risk',
+        nextState: 'completed',
+        waitingReason: undefined,
+      });
+    });
+    expect(harness.api.recordCompletionOverrideLearningSignal).not.toHaveBeenCalled();
+  });
+
   it('persists task defer as a waiting task with a reason', async () => {
     const user = userEvent.setup();
     render(<App />);
