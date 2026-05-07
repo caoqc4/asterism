@@ -704,6 +704,7 @@ describe('App redesign v1', () => {
       });
     });
     expect(await screen.findByText(/已捕获为任务/)).toBeTruthy();
+    expect(screen.getByText(/真实子任务仍需你确认/)).toBeTruthy();
     expect(await screen.findByPlaceholderText(/关于「准备投资人沟通材料」/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '判断任务类型' }));
     const taskInput = screen.getByPlaceholderText(/关于「准备投资人沟通材料」/) as HTMLTextAreaElement;

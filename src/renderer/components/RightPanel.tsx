@@ -223,7 +223,7 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
       setActiveTaskId(created.id);
       setTitleCache((prev) => ({ ...prev, [created.id]: created.title }));
       onTaskCaptured?.(created.id);
-      appendSysMsg(`已捕获为任务：**${created.title}**。接下来可以继续讨论目标、类型和拆解方式。`);
+      appendSysMsg(`已捕获为任务：**${created.title}**。接下来先让 AI 判断任务类型，必要时补齐上下文或拆解；真实子任务仍需你确认。`);
     } catch {
       appendSysMsg('捕获任务失败，请稍后再试。');
     } finally {
