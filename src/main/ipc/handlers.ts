@@ -427,6 +427,12 @@ export function registerIpcHandlers(): void {
       ? await getServices().taskService.getDetail(input.taskId).catch(() => null)
       : null;
     const keySources = task ? selectPromptKeySources(task.sourceContexts) : [];
+    const completionCriteria = task?.completionCriteria?.slice(0, 5)
+      .map((criterion) => `${criterion.status}: ${criterion.text}`)
+      .join(' / ') || 'none';
+    const recentArtifacts = task?.artifacts?.slice(0, 5)
+      .map((artifact) => `${artifact.title} (${artifact.kind})`)
+      .join(', ') || 'none';
     const taskContext = task
       ? [
           `Task title: ${task.title}`,
@@ -438,6 +444,8 @@ export function registerIpcHandlers(): void {
           `Active blocker: ${task.activeBlocker?.title ?? 'none'}`,
           `Resume: ${task.resumeCard.summary}`,
           `Suggested move: ${task.resumeCard.nextSuggestedMove}`,
+          `Completion criteria: ${completionCriteria}`,
+          `Recent artifacts: ${recentArtifacts}`,
           `Key sources: ${keySources.map((s) => s.title).join(', ') || 'none'}`,
           `Recent activity: ${task.timeline.slice(-5).map((e) => `${e.type}${e.payload ? `=${e.payload}` : ''}`).join(' / ') || 'none'}`,
         ].join('\n')

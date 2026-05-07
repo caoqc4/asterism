@@ -361,6 +361,14 @@ describe('registerIpcHandlers', () => {
         nextSuggestedMove: '继续修订',
         summary: '等待最终拍板',
       },
+      artifacts: [
+        { id: 'artifact_1', title: 'report_v1.md', kind: 'note', updatedAt: '2026-01-03T00:00:00.000Z' },
+        { id: 'artifact_2', title: 'cashflow.png', kind: 'browser_evidence', updatedAt: '2026-01-04T00:00:00.000Z' },
+      ],
+      completionCriteria: [
+        { id: 'criterion_1', text: '确认最终材料', status: 'open' },
+        { id: 'criterion_2', text: '更新现金流页', status: 'satisfied' },
+      ],
       riskLevel: 'high',
       riskNote: null,
       sourceContexts: [
@@ -390,6 +398,8 @@ describe('registerIpcHandlers', () => {
 
     const system = generateTextMock.mock.calls[0]?.[0]?.system as string;
     expect(system).toContain('Key sources: 财务复核, 法务意见, CEO 批注');
+    expect(system).toContain('Completion criteria: open: 确认最终材料 / satisfied: 更新现金流页');
+    expect(system).toContain('Recent artifacts: report_v1.md (note), cashflow.png (browser_evidence)');
     expect(system).not.toContain('旧邮件');
     expect(system).not.toContain('归档材料');
     expect(system).not.toContain('普通备注');
