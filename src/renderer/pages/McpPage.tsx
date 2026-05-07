@@ -71,7 +71,7 @@ export function McpPage() {
             <p>还没有连接任何 MCP 服务器</p>
             <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>
               MCP（Model Context Protocol）是 Anthropic 推出的开放工具协议，
-              兼容的服务端会自动将工具注册给 AI
+              兼容的服务端可将工具注册到 AI 能力库
             </p>
           </div>
         )}
@@ -80,7 +80,7 @@ export function McpPage() {
       {servers.length > 0 && (
         <div className="mcp-hint">
           <span className="mcp-hint-icon">ℹ</span>
-          服务器上线后，其暴露的工具会自动出现在 AI 的工具列表中，无需手动配置每个工具
+          服务器上线后，其暴露的工具可出现在 AI 可用工具列表中，无需手动配置每个工具
         </div>
       )}
     </div>

@@ -219,7 +219,7 @@ function Sidebar({ route, onNavigate }: SidebarProps) {
         <div className="avatar">T</div>
         <div className="footer-meta">
           <strong>Taskplane</strong>
-          alpha
+          任务级 Agent · 通用任务流
         </div>
       </div>
     </aside>

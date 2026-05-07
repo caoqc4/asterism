@@ -411,7 +411,7 @@ export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => v
             </div>
           </div>
           <div className="ctx-learning-output-note">
-            学习输出：轻微偏好可静默确认；显著流程、步骤顺序和工具选择必须提议确认；SOP 模板只由你主动保存。
+            学习输出：轻微偏好可静默确认；显著流程、步骤顺序和工具选择必须提议确认；SOP 模板只由你主动保存；停用、删除和覆盖已有规则都由你主动操作。
           </div>
           {sourceCounts.length > 0 && (
             <div className="ctx-learning-source-summary">

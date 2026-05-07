@@ -16,10 +16,10 @@ const SOURCE_ICONS: Record<string, string> = {
 };
 
 const AVAILABLE_SOURCES = [
-  { type: 'notion', label: 'Notion', desc: '同步页面和数据库作为任务来源' },
-  { type: 'slack', label: 'Slack', desc: '监听频道消息，自动捕获任务信号' },
-  { type: 'linear', label: 'Linear', desc: '同步 Issue 和项目进度' },
-  { type: 'jira', label: 'Jira', desc: '同步 Ticket 状态' },
+  { type: 'notion', label: 'Notion', desc: '授权后同步页面和数据库作为任务来源' },
+  { type: 'slack', label: 'Slack', desc: '授权后提取频道里的任务信号' },
+  { type: 'linear', label: 'Linear', desc: '授权后同步 Issue 和项目进度' },
+  { type: 'jira', label: 'Jira', desc: '授权后同步 Ticket 状态' },
 ];
 
 export function ConnectionsPage() {

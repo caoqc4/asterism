@@ -596,6 +596,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByRole('button', { name: /Brief/ })).toBeTruthy();
     expect(screen.getByText('Work')).toBeTruthy();
     expect(screen.getByText('Capabilities')).toBeTruthy();
+    expect(screen.getByText(/任务级 Agent · 通用任务流/)).toBeTruthy();
     expect(screen.getByTitle(/搜索、提问或捕获想法/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Tasks/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Runs/ })).toBeNull();
@@ -636,6 +637,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/Model Context Protocol 工具服务端/)).toBeTruthy();
     expect(screen.getByText(/连接服务器只会让工具进入 AI 能力库/)).toBeTruthy();
     expect(screen.getByText(/具体调用仍由任务上下文、用户指令和执行确认决定/)).toBeTruthy();
+    expect(screen.getByText(/可将工具注册到 AI 能力库/)).toBeTruthy();
   });
 
   it('surfaces committed active tasks in the Brief stats strip', async () => {
@@ -1210,6 +1212,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('已连接来源')).toBeTruthy();
     expect(screen.getByText(/相关新信号带入 Brief 和任务上下文，等待你确认/)).toBeTruthy();
     expect(screen.getByText(/未授权的来源不会进入 AI 上下文/)).toBeTruthy();
+    expect(screen.getByText(/授权后提取频道里的任务信号/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /Context/ }));
     expect(await screen.findByText('AI 可见来源')).toBeTruthy();
     await user.click(await screen.findByText('董事会材料修订'));
@@ -1264,6 +1267,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('待确认规则只作为提议展示，不会自动改变后续执行流程。')).toBeTruthy();
     expect(screen.getByText(/显著流程、步骤顺序和工具选择必须提议确认/)).toBeTruthy();
     expect(screen.getByText(/SOP 模板只由你主动保存/)).toBeTruthy();
+    expect(screen.getByText(/停用、删除和覆盖已有规则都由你主动操作/)).toBeTruthy();
     expect(screen.getByText('来源分布')).toBeTruthy();
     expect(screen.getByText('提议确认 1')).toBeTruthy();
     expect(screen.getByText('用户创建 1')).toBeTruthy();
