@@ -1106,6 +1106,7 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByText('是否恢复暂停的 Agent 执行'));
     expect(await screen.findByText(/Agent 在「董事会材料修订」的执行检查点暂停/)).toBeTruthy();
+    expect(screen.getByText(/不会授予后续同类动作的长期权限/)).toBeTruthy();
     expect(screen.getByText('暂停等待')).toBeTruthy();
     expect(screen.getByText('取消本次执行')).toBeTruthy();
 

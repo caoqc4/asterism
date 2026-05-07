@@ -51,7 +51,7 @@ function fromRecord(r: DecisionRecord): Decision {
     },
     options: isAgentCheckpoint
       ? [
-          { label: '恢复执行', desc: '确认检查点，可以让 Agent 按当前上下文继续推进。' },
+          { label: '恢复执行', desc: '确认当前检查点，让 Agent 按当前上下文继续推进；这不会授予后续同类动作的长期权限。' },
           { label: '暂停等待', desc: '暂缓处理，保留检查点，等补充信息后再恢复。' },
           { label: '取消本次执行', desc: '取消这次检查点请求，不自动继续当前执行。' },
         ]
