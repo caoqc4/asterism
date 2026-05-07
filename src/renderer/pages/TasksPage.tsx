@@ -246,6 +246,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
         if (cancelled) return;
         const keySources = (detail?.sourceContexts ?? [])
           .filter((source) => source.status === 'active' && source.isKey)
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
           .slice(0, 3);
         setSelectedSources(keySources);
       })
@@ -1235,6 +1236,7 @@ function TaskPreview({ task, keySources, hasPendingDecision, onOpenWorkbench, on
               </div>
             ))}
           </div>
+          <p className="preview-config-note">预览只展示最近更新的 3 条关键来源；完整来源在任务工作台管理。</p>
         </div>
       )}
 

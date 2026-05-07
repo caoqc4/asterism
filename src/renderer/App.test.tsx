@@ -1012,10 +1012,22 @@ describe('App redesign v1', () => {
 
   it('routes task preview primary action to Decisions when the task needs approval', async () => {
     const user = userEvent.setup();
+    const baseSource = harness.details.task_risk!.sourceContexts[0]!;
+    harness.details.task_risk!.sourceContexts = [
+      baseSource,
+      { ...baseSource, id: 'source_2', title: 'CEO 批注', updatedAt: '2026-01-02T00:00:00.000Z' },
+      { ...baseSource, id: 'source_3', title: '法务意见', updatedAt: '2026-01-03T00:00:00.000Z' },
+      { ...baseSource, id: 'source_4', title: '财务复核', updatedAt: '2026-01-04T00:00:00.000Z' },
+    ];
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(await screen.findByText('董事会材料修订'));
+    expect(await screen.findByText('财务复核')).toBeTruthy();
+    expect(screen.getByText('法务意见')).toBeTruthy();
+    expect(screen.getByText('CEO 批注')).toBeTruthy();
+    expect(screen.getByText(/预览只展示最近更新的 3 条关键来源/)).toBeTruthy();
+    expect(screen.queryByText('董事会反馈邮件')).toBeNull();
     await user.click(await screen.findByRole('button', { name: /去拍板/ }));
 
     expect(await screen.findByText('是否批准本轮材料修改方案')).toBeTruthy();
