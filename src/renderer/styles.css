@@ -1756,6 +1756,7 @@ a { color: inherit; text-decoration: none; }
 .dec-rec { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
 .dec-rec-label { font-size: 9.5px; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.06em; }
 .dec-rec-value { font-size: 11.5px; font-weight: 600; color: var(--ink-2); }
+.dec-rec-hint { font-size: 10.5px; color: var(--ink-4); white-space: nowrap; }
 .dec-chevron { font-size: 10px; color: var(--ink-4); }
 
 .dec-options {

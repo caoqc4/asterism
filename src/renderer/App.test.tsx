@@ -962,6 +962,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('恢复执行')).toBeTruthy();
     expect(screen.getByText('人工决策')).toBeTruthy();
     expect(screen.getByText('推荐路径清晰')).toBeTruthy();
+    expect(screen.getAllByText('展开可比较备选').length).toBeGreaterThan(0);
     expect(screen.getAllByText('更新 2026-01-01').length).toBeGreaterThan(0);
     expect(screen.queryByText('decision_done')).toBeNull();
     await user.type(screen.getByPlaceholderText('搜索决策或任务'), '合同');

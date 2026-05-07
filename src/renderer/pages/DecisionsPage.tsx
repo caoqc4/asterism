@@ -244,6 +244,7 @@ function DecisionCard({ decision: d, onToggle, onDecide, onOpenPanel, onOpenWork
           <div className="dec-rec">
             <span className="dec-rec-label">推荐</span>
             <span className="dec-rec-value">{d.recommendation}</span>
+            <span className="dec-rec-hint">展开可比较备选</span>
           </div>
           <button className="btn primary" onClick={(e) => { e.stopPropagation(); onDecide('approve'); }}>
             拍板 →
