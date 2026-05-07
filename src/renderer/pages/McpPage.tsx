@@ -43,6 +43,9 @@ export function McpPage() {
           <p className="mcp-subtitle">
             接入 Model Context Protocol 工具服务端，每个服务器可暴露多个工具供 AI 调用
           </p>
+          <p className="mcp-boundary">
+            连接服务器只会让工具进入 AI 能力库；具体调用仍由任务上下文、用户指令和执行确认决定。
+          </p>
         </div>
         <button className="btn sm primary" onClick={() => setShowForm(true)}>
           + 添加服务器
