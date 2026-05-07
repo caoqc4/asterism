@@ -1382,6 +1382,8 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('工作文件夹产物')).toBeTruthy();
     expect(screen.getByText('可内联编辑')).toBeTruthy();
     expect(screen.getByText(/任务产出的持久存储/)).toBeTruthy();
+    expect(screen.getByText(/仅 Markdown \/ 纯文本内联编辑/)).toBeTruthy();
+    expect(screen.getByText(/其他格式交给系统默认应用/)).toBeTruthy();
     await user.click(await screen.findByText('report_v1.md'));
     expect(await screen.findByText(/需要补现金流页/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '编辑' }));

@@ -1222,7 +1222,7 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
             <span>可内联编辑</span>
           </div>
           <div className="artifact-summary-note">
-            任务产出的持久存储；最近更新：{latestArtifact ? formatDate(latestArtifact.updatedAt) : '暂无'}
+            任务产出的持久存储；仅 Markdown / 纯文本内联编辑，其他格式交给系统默认应用；最近更新：{latestArtifact ? formatDate(latestArtifact.updatedAt) : '暂无'}
           </div>
         </div>
       )}
