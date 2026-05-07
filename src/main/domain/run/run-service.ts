@@ -31,6 +31,11 @@ import {
 import { RunOrchestrator, type RunOrchestrationResult } from './run-orchestrator.js';
 import type { WorkHabitService } from '../context/work-habit-service.js';
 
+type ApplicableWorkHabits = {
+  ids: string[];
+  summaries: string[];
+};
+
 export class RunService {
   constructor(
     private readonly runRepository: RunRepository,
@@ -108,21 +113,22 @@ export class RunService {
     }
 
     const created = await this.runRepository.create(input);
-    const applicableWorkHabitSummaries = await this.buildApplicableWorkHabitSummaries(taskForExecution);
+    const applicableWorkHabits = await this.buildApplicableWorkHabits(taskForExecution);
     const result =
       input.type === 'agent'
         ? await this.runOrchestrator.executeAgentRun({
             run: created,
             task: taskForExecution,
             input,
-            applicableWorkHabitSummaries,
+            applicableWorkHabitSummaries: applicableWorkHabits.summaries,
           })
         : await this.runOrchestrator.executeTextRun({
             run: created,
             task: taskForExecution,
             input,
-            applicableWorkHabitSummaries,
+            applicableWorkHabitSummaries: applicableWorkHabits.summaries,
           });
+    await this.recordAppliedWorkHabits(applicableWorkHabits.ids);
 
     await this.annotateProcessTemplateSelection(input.taskId, created.id, taskForExecution, result);
 
@@ -142,7 +148,7 @@ export class RunService {
         Boolean(result.output?.trim()),
         completed.id,
       );
-      await this.persistTerminalRunVerifications(completed, applicableWorkHabitSummaries);
+      await this.persistTerminalRunVerifications(completed, applicableWorkHabits.summaries);
       return completed;
     }
 
@@ -175,7 +181,7 @@ export class RunService {
       result.message,
     );
     await this.taskService.annotateRunFailed(input.taskId, result.message, failed.id);
-    await this.persistTerminalRunVerifications(failed, applicableWorkHabitSummaries);
+    await this.persistTerminalRunVerifications(failed, applicableWorkHabits.summaries);
     return failed;
   }
 
@@ -280,19 +286,35 @@ export class RunService {
     }
   }
 
-  private async buildApplicableWorkHabitSummaries(task: TaskDetail): Promise<string[]> {
+  private async buildApplicableWorkHabits(task: TaskDetail): Promise<ApplicableWorkHabits> {
     if (!this.workHabitService) {
-      return [];
+      return { ids: [], summaries: [] };
     }
 
     try {
       const snapshot = await this.workHabitService.getSnapshot();
-      return summarizeWorkHabitsForPrompt(selectApplicableWorkHabits(snapshot.habits, {
+      const habits = selectApplicableWorkHabits(snapshot.habits, {
         taskTitle: task.title,
         limit: 5,
-      }));
+      });
+      return {
+        ids: habits.map((habit) => habit.id),
+        summaries: summarizeWorkHabitsForPrompt(habits),
+      };
     } catch {
-      return [];
+      return { ids: [], summaries: [] };
+    }
+  }
+
+  private async recordAppliedWorkHabits(habitIds: string[]): Promise<void> {
+    if (!habitIds.length || !this.workHabitService) {
+      return;
+    }
+
+    try {
+      await this.workHabitService.recordApplications(habitIds);
+    } catch {
+      // Work habit telemetry should never block the run lifecycle.
     }
   }
 

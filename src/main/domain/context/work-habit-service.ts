@@ -3,6 +3,7 @@ import {
   createManualWorkHabitInList,
   deleteWorkHabitFromList,
   recordCompletionOverrideLearningSignalInList,
+  recordWorkHabitApplicationsInList,
   recordSopTemplateHabitInList,
   resolveWorkHabitConflictInList,
   SEED_WORK_HABITS,
@@ -50,6 +51,10 @@ export class WorkHabitService {
 
   async recordSopTemplate(input: SopTemplateHabitInput): Promise<WorkHabitRecord[]> {
     return this.replace(recordSopTemplateHabitInList(await this.ensureSeeded(), input));
+  }
+
+  async recordApplications(habitIds: string[]): Promise<WorkHabitRecord[]> {
+    return this.replace(recordWorkHabitApplicationsInList(await this.ensureSeeded(), habitIds));
   }
 
   async importLegacy(input: ImportLegacyWorkHabitsInput): Promise<WorkHabitStorageSnapshot> {

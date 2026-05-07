@@ -414,6 +414,7 @@ describe('RunService', () => {
           },
         ],
       }),
+      recordApplications: vi.fn(),
     };
     const runCheckpointRepository = {
       listForRun: vi.fn().mockResolvedValue([]),
@@ -485,6 +486,7 @@ describe('RunService', () => {
       },
     );
     expect(workHabitService.getSnapshot).toHaveBeenCalled();
+    expect(workHabitService.recordApplications).toHaveBeenCalledWith(['habit_confirmed']);
     expect(runRepository.updateResult).toHaveBeenCalledWith(
       'run_1',
       'completed',

@@ -278,6 +278,23 @@ export function summarizeWorkHabitsForPrompt(habits: WorkHabitRecord[]): string[
   });
 }
 
+export function recordWorkHabitApplicationsInList(
+  habits: WorkHabitRecord[],
+  habitIds: string[],
+  now = new Date().toISOString(),
+): WorkHabitRecord[] {
+  const appliedIds = new Set(habitIds);
+  if (!appliedIds.size) return habits;
+
+  return habits.map((habit) => appliedIds.has(habit.id)
+    ? {
+        ...habit,
+        lastAppliedAt: now,
+        applicationCount: habit.applicationCount + 1,
+      }
+    : habit);
+}
+
 function recordCompletionOverridePattern(
   habits: WorkHabitRecord[],
   params: { now: string; taskTitle: string; reason: string },
