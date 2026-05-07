@@ -190,6 +190,7 @@ function truncateMemoryLine(value: string): string {
 
 interface RightPanelProps {
   taskId: string | null;
+  taskTitleHint?: string | null;
   draftPrompt?: string | null;
   hidden?: boolean;
   onTaskCaptured?: (taskId: string) => void;
@@ -197,7 +198,7 @@ interface RightPanelProps {
   onClearTask: () => void;
 }
 
-export function RightPanel({ taskId, draftPrompt = null, hidden = false, onTaskCaptured, onClose, onClearTask }: RightPanelProps) {
+export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, hidden = false, onTaskCaptured, onClose, onClearTask }: RightPanelProps) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(taskId);
   const [titleCache, setTitleCache] = useState<Record<string, string>>({});
   const [messages, setMessages] = useState<Message[]>([]);
@@ -221,6 +222,11 @@ export function RightPanel({ taskId, draftPrompt = null, hidden = false, onTaskC
   // Fetch task title and seed welcome message when panel first opens with a task
   useEffect(() => {
     if (!taskId) return;
+    if (taskTitleHint) {
+      setTitleCache((prev) => ({ ...prev, [taskId]: taskTitleHint }));
+      setMessages([makeWelcomeMessage(taskTitleHint)]);
+      return;
+    }
     if (titleCache[taskId]) {
       setMessages([makeWelcomeMessage(titleCache[taskId])]);
       return;
@@ -256,7 +262,10 @@ export function RightPanel({ taskId, draftPrompt = null, hidden = false, onTaskC
     }
     // Fetch title if not cached, then propose soft context switch
     const fetchAndPropose = async () => {
-      let title = titleCache[taskId];
+      let title = taskTitleHint ?? titleCache[taskId];
+      if (taskTitleHint) {
+        setTitleCache((prev) => ({ ...prev, [taskId]: taskTitleHint }));
+      }
       if (!title && window.api) {
         const d = await window.api.getTaskDetail(taskId).catch(() => null);
       if (d) {
@@ -629,7 +638,7 @@ export function RightPanel({ taskId, draftPrompt = null, hidden = false, onTaskC
         {activeTaskId && (
           <div className="panel-task-chip">
             <IconTask style={{ width: 10, height: 10 }} />
-            {title}
+            {title ?? activeTaskId}
           </div>
         )}
         {activeTaskId && !input.trim() && (taskTypeReviewPrompt || projectDecompositionPrompt) && (
@@ -655,7 +664,7 @@ export function RightPanel({ taskId, draftPrompt = null, hidden = false, onTaskC
         <textarea
           ref={textareaRef}
           className="panel-input"
-          placeholder={activeTaskId ? `关于「${title}」…` : '搜索、提问或捕获任务想法…'}
+          placeholder={activeTaskId ? `关于「${title ?? activeTaskId}」…` : '搜索、提问或捕获任务想法…'}
           value={input}
           rows={1}
           onChange={(e) => { setInput(e.target.value); autoResize(); }}

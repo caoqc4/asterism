@@ -143,7 +143,7 @@ function confirmedTaskRecords(records: TaskListItemRecord[]): TaskListItemRecord
 }
 
 interface TasksPageProps {
-  onOpenPanel: (taskId: string) => void;
+  onOpenPanel: (taskId: string, draftPrompt?: string, taskTitle?: string) => void;
   onOpenWorkbench: (taskId: string) => void;
   onOpenDecision: () => void;
 }
@@ -169,7 +169,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
   const [captureType, setCaptureType] = useState<TaskType>('simple');
   const [captureCommitment, setCaptureCommitment] = useState('');
   const [capturing, setCapturing] = useState(false);
-  const [capturedId, setCapturedId] = useState<string | null>(null);
+  const [capturedTask, setCapturedTask] = useState<{ id: string; title: string } | null>(null);
 
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -540,7 +540,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
       setCaptureType('simple');
       setCaptureCommitment('');
       setShowCapture(false);
-      setCapturedId(newId);
+      setCapturedTask({ id: newId, title });
     } finally {
       setCapturing(false);
     }
@@ -678,13 +678,13 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
         )}
 
         {/* Post-capture AI nudge */}
-        {capturedId && (
+        {capturedTask && (
           <div className="capture-nudge">
             <span>✓ 已创建</span>
-            <button className="btn sm primary" onClick={() => { onOpenPanel(capturedId); setCapturedId(null); }}>
+            <button className="btn sm primary" onClick={() => { onOpenPanel(capturedTask.id, undefined, capturedTask.title); setCapturedTask(null); }}>
               让 AI 拆解并检查 →
             </button>
-            <button className="icon-btn" style={{ marginLeft: 4 }} onClick={() => setCapturedId(null)} title="关闭">
+            <button className="icon-btn" style={{ marginLeft: 4 }} onClick={() => setCapturedTask(null)} title="关闭">
               <span style={{ fontSize: 12, lineHeight: 1 }}>×</span>
             </button>
           </div>
