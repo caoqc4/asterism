@@ -616,6 +616,17 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/不会写入任务记忆/)).toBeTruthy();
   });
 
+  it('clarifies enabled Skills are only available tools, not automatic execution', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Skills/ }));
+
+    expect(await screen.findByText(/AI 执行任务时可调用的工具模块/)).toBeTruthy();
+    expect(screen.getByText(/启用技能只会把工具加入 AI 能力库/)).toBeTruthy();
+    expect(screen.getByText(/是否调用仍由任务上下文、用户指令和执行确认决定/)).toBeTruthy();
+  });
+
   it('surfaces committed active tasks in the Brief stats strip', async () => {
     saveTaskAttributes('task_risk', { commitment: '今晚前给 CFO 过目' });
     render(<App />);

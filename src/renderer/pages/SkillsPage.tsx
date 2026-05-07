@@ -168,6 +168,9 @@ export function SkillsPage() {
         <div>
           <h2 className="skills-title">Skills</h2>
           <p className="skills-subtitle">AI 执行任务时可调用的工具模块</p>
+          <p className="skills-boundary">
+            启用技能只会把工具加入 AI 能力库；是否调用仍由任务上下文、用户指令和执行确认决定。
+          </p>
         </div>
         {allEnabled.length > 0 && (
           <span className="skills-enabled-summary">

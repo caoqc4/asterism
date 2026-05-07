@@ -3664,6 +3664,7 @@ a { color: inherit; text-decoration: none; }
 }
 .skills-title { font-size: 22px; font-weight: 650; color: var(--ink-1); margin: 0 0 4px; }
 .skills-subtitle { font-size: 13px; color: var(--ink-3); margin: 0; }
+.skills-boundary { font-size: 12px; color: var(--ink-4); line-height: 1.45; margin: 6px 0 0; }
 .skills-enabled-summary { font-size: 12px; color: var(--ink-3); align-self: center; flex-shrink: 0; }
 
 /* Tab bar */
