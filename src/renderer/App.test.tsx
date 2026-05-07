@@ -1221,6 +1221,8 @@ describe('App redesign v1', () => {
 
     expect(await screen.findByText(/与已确认规则冲突/)).toBeTruthy();
     expect(screen.getByText('待确认规则只作为提议展示，不会自动改变后续执行流程。')).toBeTruthy();
+    expect(screen.getByText(/显著流程、步骤顺序和工具选择必须提议确认/)).toBeTruthy();
+    expect(screen.getByText(/SOP 模板只由你主动保存/)).toBeTruthy();
     expect(screen.getByText('来源分布')).toBeTruthy();
     expect(screen.getByText('提议确认 1')).toBeTruthy();
     expect(screen.getByText('用户创建 1')).toBeTruthy();

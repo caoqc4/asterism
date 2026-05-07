@@ -410,6 +410,9 @@ export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => v
               <span>优先级：项目规则 &gt; 任务类型规则 &gt; 全局规则。</span>
             </div>
           </div>
+          <div className="ctx-learning-output-note">
+            学习输出：轻微偏好可静默确认；显著流程、步骤顺序和工具选择必须提议确认；SOP 模板只由你主动保存。
+          </div>
           {sourceCounts.length > 0 && (
             <div className="ctx-learning-source-summary">
               <span>来源分布</span>
