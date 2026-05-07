@@ -1298,6 +1298,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('董事会反馈邮件')).toBeTruthy();
     expect(screen.getByText('关键来源')).toBeTruthy();
     expect(screen.getByText('最近更新：1/1')).toBeTruthy();
+    expect(screen.getByText(/AI 上下文优先读取最多 3 条关键来源/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '取消关键' }));
     await waitFor(() => {
       expect(harness.api.updateSourceContext).toHaveBeenCalledWith({

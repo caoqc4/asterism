@@ -2807,8 +2807,10 @@ a { color: inherit; text-decoration: none; }
 }
 .source-summary-note {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: flex-end;
+  gap: 3px;
 }
 @media (max-width: 680px) {
   .source-summary { grid-template-columns: 1fr; }
