@@ -984,6 +984,7 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /Settings/ }));
     expect(await screen.findByText(/不做持续行为监控/)).toBeTruthy();
     expect(screen.getByText(/Context 展示，可停用或删除/)).toBeTruthy();
+    expect(screen.getByText(/真正压缩前会先保留关键决策、偏好变化和未解决问题/)).toBeTruthy();
     expect(screen.getByText('沟通风格')).toBeTruthy();
     expect(screen.getByText('确认阈值')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '详细' }));

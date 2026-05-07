@@ -156,7 +156,7 @@ export function SettingsPage() {
             onChange={(e) => setCtxCompress(Number(e.target.value))}
             className="settings-range"
           />
-          <p className="settings-hint">用于右侧任务对话的刷新建议；推荐 40–50%。真正压缩前会先保留任务记忆。</p>
+          <p className="settings-hint">用于右侧任务对话的刷新建议；推荐 40–50%。真正压缩前会先保留关键决策、偏好变化和未解决问题。</p>
         </div>
       </section>
 
