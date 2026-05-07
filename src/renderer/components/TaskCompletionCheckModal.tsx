@@ -209,6 +209,7 @@ export function TaskCompletionCheckModal({
                     覆盖会写入任务活动记录
                     {selfLearnEnabled ? '，并作为后续工作习惯提议的学习信号。' : '；自学习已关闭，不会生成新的工作习惯提议。'}
                   </p>
+                  <p>这是用户确认后的完成判断，不会被视为系统异常。</p>
                 </div>
               )}
             </>

@@ -797,6 +797,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/检查建议不阻断操作/)).toBeTruthy();
     expect(screen.getByText(/将记录：覆盖完成 · 完成标准 0\/1 · 未满足 1 条 · 最近 Run：Run 验证通过/)).toBeTruthy();
     expect(screen.getByText(/作为后续工作习惯提议的学习信号/)).toBeTruthy();
+    expect(screen.getByText(/用户确认后的完成判断/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '仍然完成' }));
 
     await waitFor(() => {
