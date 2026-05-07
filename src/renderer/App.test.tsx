@@ -765,6 +765,29 @@ describe('App redesign v1', () => {
     expect(taskInput.value).toContain('不要直接生成真实子任务');
   });
 
+  it('keeps unconfirmed right-panel captures out of the Tasks main list', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.listTasks).mockResolvedValueOnce([
+      buildTask({
+        id: 'task_panel_capture',
+        title: '准备投资人沟通材料',
+        state: 'captured',
+        summary: '从右侧面板捕获：准备投资人沟通材料',
+      }),
+      buildTask({
+        id: 'task_confirmed',
+        title: '董事会材料修订',
+        state: 'planned',
+      }),
+    ]);
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+
+    expect(await screen.findByText('董事会材料修订')).toBeTruthy();
+    expect(screen.queryByText('准备投资人沟通材料')).toBeNull();
+  });
+
   it('suggests a fresh task session when the right-panel conversation gets repetitive', async () => {
     const user = userEvent.setup();
     render(<App />);

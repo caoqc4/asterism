@@ -136,6 +136,14 @@ function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): 
   };
 }
 
+function isUnconfirmedPanelCapture(record: TaskListItemRecord): boolean {
+  return record.state === 'captured' && (record.summary ?? '').startsWith('从右侧面板捕获：');
+}
+
+function confirmedTaskRecords(records: TaskListItemRecord[]): TaskListItemRecord[] {
+  return records.filter((record) => !isUnconfirmedPanelCapture(record));
+}
+
 interface TasksPageProps {
   onOpenPanel: (taskId: string) => void;
   onOpenWorkbench: (taskId: string) => void;
@@ -170,7 +178,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
   function reloadTasks() {
     window.api?.listTasks().then((records) => {
       const attrs = loadTaskAttributes();
-      setAllTasks(records.map((record) => fromRecord(record, attrs[record.id])));
+      setAllTasks(confirmedTaskRecords(records).map((record) => fromRecord(record, attrs[record.id])));
     }).catch(() => {});
   }
 
@@ -187,7 +195,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
     window.api.listTasks()
       .then((records) => {
         const attrs = loadTaskAttributes();
-        setAllTasks(records.map((record) => fromRecord(record, attrs[record.id])));
+        setAllTasks(confirmedTaskRecords(records).map((record) => fromRecord(record, attrs[record.id])));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
