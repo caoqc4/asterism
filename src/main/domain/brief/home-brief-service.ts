@@ -337,9 +337,10 @@ function buildRecommendedActions(params: {
     }
 
     if (missingNextStepTaskIds.has(task.id)) {
+      const sourceLabel = sourceContext.isKey ? '关键来源' : '最近来源';
       actions.push({
         id: `source-context:next-step:${sourceContext.id}`,
-        label: `先查看关键来源，再补下一步：${task.title}`,
+        label: `先查看${sourceLabel}，再补下一步：${task.title}`,
         reason: `该任务还缺少明确下一步，先参考来源材料“${sourceContext.title}”。`,
         responsibilitySummary: null,
         taskId: task.id,

@@ -772,7 +772,7 @@ describe('HomeBriefService', () => {
     );
     expect(homeData.recommendedActions).toContainEqual(
       expect.objectContaining({
-      label: '先查看关键来源，再补下一步：Missing-next-step task',
+      label: '先查看最近来源，再补下一步：Missing-next-step task',
       reason: '该任务还缺少明确下一步，先参考来源材料“Research notes”。',
       taskId: 'task_source_missing',
       priority: 'medium',
