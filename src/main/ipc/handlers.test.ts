@@ -443,7 +443,11 @@ describe('registerIpcHandlers', () => {
 
     await handler({}, { taskId: 'task_1' });
 
+    const system = generateTextMock.mock.calls[0]?.[0]?.system as string;
     const prompt = generateTextMock.mock.calls[0]?.[0]?.prompt as string;
+    expect(system).toContain('Choose the number of subtasks from the actual project boundaries');
+    expect(system).toContain('do not split just to hit a number');
+    expect(system).not.toContain('Create 3 to 7 subtasks');
     expect(prompt).toContain('Key sources: 财务复核: finance / 法务意见: legal / CEO 批注: ceo');
     expect(prompt).not.toContain('旧邮件');
   });
