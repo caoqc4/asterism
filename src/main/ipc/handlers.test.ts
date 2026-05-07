@@ -431,6 +431,41 @@ describe('registerIpcHandlers', () => {
         ],
       }),
     });
+    servicesMock.workHabitService.getSnapshot.mockResolvedValue({
+      version: 3,
+      storage: 'main_db',
+      privacyBoundary: {
+        locality: 'device_only',
+        contains: [],
+        excludes: [],
+      },
+      habits: [
+        {
+          id: 'habit_sop_board',
+          rule: '「董事会材料修订」流程模板',
+          source: 'sop',
+          scope: 'task_type',
+          scopeLabel: '董事会材料修订',
+          status: 'confirmed',
+          examples: '1. 收集 CEO 批注 / 2. 复核法务意见',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastAppliedAt: null,
+          applicationCount: 2,
+        },
+        {
+          id: 'habit_pending',
+          rule: '待确认规则不进入拆解提示',
+          source: 'proposal',
+          scope: 'global',
+          scopeLabel: '全局',
+          status: 'pending',
+          examples: null,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastAppliedAt: null,
+          applicationCount: 0,
+        },
+      ],
+    });
     servicesMock.taskService.getDetail.mockResolvedValue({
       nextStep: '确认材料',
       riskLevel: 'high',
@@ -457,8 +492,11 @@ describe('registerIpcHandlers', () => {
     const prompt = generateTextMock.mock.calls[0]?.[0]?.prompt as string;
     expect(system).toContain('Choose the number of subtasks from the actual project boundaries');
     expect(system).toContain('do not split just to hit a number');
+    expect(system).toContain('Use applicable confirmed work habits and SOP templates as reference context');
     expect(system).not.toContain('Create 3 to 7 subtasks');
     expect(prompt).toContain('Key sources: 财务复核: finance / 法务意见: legal / CEO 批注: ceo');
+    expect(prompt).toContain('Applicable confirmed work habits: 「董事会材料修订」流程模板');
+    expect(prompt).not.toContain('待确认规则不进入拆解提示');
     expect(prompt).not.toContain('旧邮件');
   });
 

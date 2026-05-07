@@ -51,6 +51,10 @@ import { probeLocalContainerSandboxBackend } from '../domain/run/local-container
 import { evaluateSandboxedCodingProducerBackendReadiness } from '../domain/run/sandboxed-coding-producer-backend.js';
 import { ipcMain } from '../electron.js';
 import { emitAppEvent } from './event-bus.js';
+import {
+  selectApplicableWorkHabits,
+  summarizeWorkHabitsForPrompt,
+} from '../../shared/work-habit-rules.js';
 
 const PING_CHANNEL = 'app:ping';
 
@@ -481,6 +485,19 @@ export function registerIpcHandlers(): void {
     const task = await getServices().taskService.getDetail(input.taskId);
     if (!task) throw new Error(`Task not found: ${input.taskId}`);
     const keySources = selectPromptKeySources(task.sourceContexts);
+    let habitSnapshot: Awaited<ReturnType<ReturnType<typeof getServices>['workHabitService']['getSnapshot']>> | null = null;
+    try {
+      habitSnapshot = await getServices().workHabitService.getSnapshot();
+    } catch {
+      habitSnapshot = null;
+    }
+    const applicableWorkHabits = habitSnapshot
+      ? summarizeWorkHabitsForPrompt(selectApplicableWorkHabits(habitSnapshot.habits, {
+          taskTitle: task.title,
+          projectLabel: task.title,
+          limit: 4,
+        }))
+      : [];
 
     const result = await generateText({
       model,
@@ -505,6 +522,7 @@ export function registerIpcHandlers(): void {
         'Choose the number of subtasks from the actual project boundaries; most projects need 2 to 7, but do not split just to hit a number.',
         'Keep a single large child task when it is independently valuable; mark it for later re-decomposition instead of over-splitting now.',
         'Avoid generic phase templates. Preserve large, independently valuable chunks.',
+        'Use applicable confirmed work habits and SOP templates as reference context and quality criteria; do not apply them mechanically when the project boundary differs.',
         'If the first decomposition is too fine, overlapping, missing acceptance criteria, or dependency-unclear, revise it before returning JSON.',
         'Reply in the same language as the task title and user instructions.',
       ].join('\n'),
@@ -514,6 +532,7 @@ export function registerIpcHandlers(): void {
         `Next step: ${task.nextStep ?? 'none'}`,
         `Risk: ${task.riskLevel}${task.riskNote ? ` (${task.riskNote})` : ''}`,
         `Key sources: ${keySources.map((source) => `${source.title}: ${source.note ?? source.content ?? source.uri ?? ''}`).join(' / ') || 'none'}`,
+        `Applicable confirmed work habits: ${applicableWorkHabits.join(' / ') || 'none'}`,
         `Recent activity: ${task.timeline.slice(-5).map((event) => `${event.type}${event.payload ? `=${event.payload}` : ''}`).join(' / ') || 'none'}`,
         input.instructions?.trim() ? `User instructions: ${input.instructions.trim()}` : 'User instructions: none',
       ].join('\n'),
