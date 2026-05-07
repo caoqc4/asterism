@@ -802,6 +802,33 @@ describe('App redesign v1', () => {
     expect(screen.queryByText('准备投资人沟通材料')).toBeNull();
   });
 
+  it('abandons an unconfirmed right-panel capture only after a second confirmation', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Search or ask/ }));
+    const input = await screen.findByPlaceholderText(/搜索、提问或捕获任务想法/);
+    await user.type(input, '整理下周路演安排');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+    expect(await screen.findByText(/这段讨论可以先捕获为任务/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '捕获为任务' }));
+
+    await user.click(await screen.findByRole('button', { name: '放弃' }));
+    expect(harness.api.transitionTask).not.toHaveBeenCalledWith({
+      id: 'task_created',
+      nextState: 'archived',
+    });
+    await user.click(screen.getByRole('button', { name: '确认放弃' }));
+
+    await waitFor(() => {
+      expect(harness.api.transitionTask).toHaveBeenCalledWith({
+        id: 'task_created',
+        nextState: 'archived',
+      });
+    });
+    expect(await screen.findByText(/已放弃这条待确认任务/)).toBeTruthy();
+  });
+
   it('suggests a fresh task session when the right-panel conversation gets repetitive', async () => {
     const user = userEvent.setup();
     render(<App />);

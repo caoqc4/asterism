@@ -124,6 +124,8 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
   const [capturingTask, setCapturingTask] = useState(false);
   const [confirmingCapturedTask, setConfirmingCapturedTask] = useState(false);
   const [pendingCapturedTaskId, setPendingCapturedTaskId] = useState<string | null>(null);
+  const [abandonConfirmOpen, setAbandonConfirmOpen] = useState(false);
+  const [abandoningCapturedTask, setAbandoningCapturedTask] = useState(false);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -224,6 +226,7 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
       });
       setActiveTaskId(created.id);
       setPendingCapturedTaskId(created.id);
+      setAbandonConfirmOpen(false);
       setTitleCache((prev) => ({ ...prev, [created.id]: created.title }));
       onTaskCaptured?.(created.id);
       appendSysMsg(`已捕获为任务：**${created.title}**（待确认）。接下来先让 AI 判断任务类型，必要时补齐上下文或拆解；确认后才进入 Tasks，真实子任务仍需你确认。`);
@@ -240,11 +243,33 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
     try {
       await window.api?.transitionTask({ id: activeTaskId, nextState: 'planned' });
       setPendingCapturedTaskId(null);
+      setAbandonConfirmOpen(false);
       appendSysMsg('已确认加入 Tasks。你可以继续在这里规划，也可以回到任务列表推进。');
     } catch {
       appendSysMsg('确认任务失败，请稍后再试。');
     } finally {
       setConfirmingCapturedTask(false);
+    }
+  }
+
+  async function abandonCapturedTask() {
+    if (!activeTaskId || pendingCapturedTaskId !== activeTaskId || abandoningCapturedTask) return;
+    if (!abandonConfirmOpen) {
+      setAbandonConfirmOpen(true);
+      return;
+    }
+    setAbandoningCapturedTask(true);
+    try {
+      await window.api?.transitionTask({ id: activeTaskId, nextState: 'archived' });
+      setPendingCapturedTaskId(null);
+      setAbandonConfirmOpen(false);
+      setActiveTaskId(null);
+      onClearTask();
+      appendSysMsg('已放弃这条待确认任务，当前会话已回到全局。');
+    } catch {
+      appendSysMsg('放弃任务失败，请稍后再试。');
+    } finally {
+      setAbandoningCapturedTask(false);
     }
   }
 
@@ -473,9 +498,16 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
             <button
               className={`btn sm primary${confirmingCapturedTask ? ' disabled' : ''}`}
               onClick={() => void confirmCapturedTask()}
-              disabled={confirmingCapturedTask}
+              disabled={confirmingCapturedTask || abandoningCapturedTask}
             >
               {confirmingCapturedTask ? '确认中…' : '确认加入 Tasks'}
+            </button>
+            <button
+              className={`btn sm ghost${abandoningCapturedTask ? ' disabled' : ''}`}
+              onClick={() => void abandonCapturedTask()}
+              disabled={confirmingCapturedTask || abandoningCapturedTask}
+            >
+              {abandoningCapturedTask ? '放弃中…' : abandonConfirmOpen ? '确认放弃' : '放弃'}
             </button>
           </div>
         )}
