@@ -1823,6 +1823,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/任务产出的持久存储/)).toBeTruthy();
     expect(screen.getByText(/仅 Markdown \/ 纯文本内联编辑/)).toBeTruthy();
     expect(screen.getByText(/其他格式交给系统默认应用/)).toBeTruthy();
+    expect(screen.getAllByText('AI 生成').length).toBeGreaterThan(0);
     await user.click(await screen.findByText('mockup.png'));
     expect(screen.queryByRole('button', { name: '编辑' })).toBeNull();
     await user.click(screen.getByRole('button', { name: '重命名' }));

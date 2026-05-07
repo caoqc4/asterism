@@ -1198,6 +1198,13 @@ const ARTIFACT_KIND_LABELS: Record<ArtifactKind, string> = {
   browser_evidence: '浏览器截图',
 };
 
+function artifactSourceLabel(artifact: ArtifactRecord): string {
+  if (artifact.sourceId === 'manual') return '手动笔记';
+  if (artifact.kind === 'browser_evidence') return '浏览证据';
+  if (artifact.kind === 'patch') return 'Code Agent';
+  return 'AI 生成';
+}
+
 function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
   taskId: string;
   artifacts: ArtifactRecord[];
@@ -1339,6 +1346,7 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
         <div key={a.id} className={`artifact-item${expandedId === a.id ? ' expanded' : ''}`}>
           <div className="artifact-header" onClick={() => setExpandedId((p) => p === a.id ? null : a.id)}>
             <span className="tag">{ARTIFACT_KIND_LABELS[a.kind as ArtifactKind] ?? a.kind}</span>
+            <span className="artifact-source">{artifactSourceLabel(a)}</span>
             <span className="artifact-title">{a.title}</span>
             <span className="muted" style={{ marginLeft: 'auto', fontSize: 11 }}>{formatDate(a.createdAt)}</span>
             <span className={`skill-expand-arrow${expandedId === a.id ? ' open' : ''}`}>›</span>
