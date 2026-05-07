@@ -1066,7 +1066,7 @@ function SourcesTab({
   }
 
   const keySourceCount = sources.filter((source) => source.isKey).length;
-  const latestSource = sources[0] ?? null;
+  const latestSource = [...sources].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null;
 
   return (
     <div className="tab-content">
@@ -1083,6 +1083,9 @@ function SourcesTab({
           <div className="source-summary-note">
             <span>最近更新：{latestSource ? formatDate(latestSource.updatedAt) : '暂无'}</span>
             <span>AI 上下文优先读取最多 3 条关键来源。</span>
+            {keySourceCount > 3 && (
+              <span>已标记 {keySourceCount} 条关键来源；最近更新的 3 条会优先进入 AI 上下文。</span>
+            )}
             <span>设为关键或归档会影响后续任务上下文。</span>
           </div>
         </div>

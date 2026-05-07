@@ -562,6 +562,7 @@ function createMockApi() {
   return {
     api,
     tasks,
+    details,
     decisions,
     emit: (type: Parameters<NonNullable<typeof subscriber>>[0]['type'], entityId?: string) => {
       subscriber?.({ type, entityId, at: now });
@@ -1527,6 +1528,13 @@ describe('App redesign v1', () => {
   it('opens a task workbench and keeps Runs scoped under the task instead of global navigation', async () => {
     const user = userEvent.setup();
     saveTaskAttributes('task_waiting', { type: 'project' });
+    const baseSource = harness.details.task_risk!.sourceContexts[0]!;
+    harness.details.task_risk!.sourceContexts = [
+      baseSource,
+      { ...baseSource, id: 'source_2', title: 'CEO 批注', updatedAt: '2026-01-02T00:00:00.000Z' },
+      { ...baseSource, id: 'source_3', title: '法务意见', updatedAt: '2026-01-03T00:00:00.000Z' },
+      { ...baseSource, id: 'source_4', title: '财务复核', updatedAt: '2026-01-04T00:00:00.000Z' },
+    ];
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /Tasks/ }));
@@ -1540,7 +1548,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('下一项：确认最终材料')).toBeTruthy();
     expect(screen.getByLabelText('推进依据')).toBeTruthy();
     expect(screen.getByText('Priority Lane · Escalate now')).toBeTruthy();
-    expect(screen.getByText('关键来源 1')).toBeTruthy();
+    expect(screen.getByText('关键来源 4')).toBeTruthy();
     expect(screen.getAllByText('Run 1').length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: /^Runs$/ })).toBeNull();
     expect(await screen.findByText('自检查记录')).toBeTruthy();
@@ -1560,22 +1568,22 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '来源' }));
     expect(await screen.findByText('董事会反馈邮件')).toBeTruthy();
     expect(screen.getByText('关键来源')).toBeTruthy();
-    expect(screen.getByText('最近更新：1/1')).toBeTruthy();
+    expect(screen.getByText('最近更新：1/4')).toBeTruthy();
     expect(screen.getByText(/AI 上下文优先读取最多 3 条关键来源/)).toBeTruthy();
+    expect(screen.getByText(/已标记 4 条关键来源；最近更新的 3 条会优先进入 AI 上下文/)).toBeTruthy();
     expect(screen.getByText(/设为关键或归档会影响后续任务上下文/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '取消关键' }));
+    await user.click(screen.getAllByRole('button', { name: '取消关键' })[0]!);
     await waitFor(() => {
       expect(harness.api.updateSourceContext).toHaveBeenCalledWith({
         id: 'source_1',
         isKey: false,
       });
     });
-    await user.click(await screen.findByRole('button', { name: '归档' }));
+    await user.click(screen.getAllByRole('button', { name: '归档' })[0]!);
     await waitFor(() => {
       expect(harness.api.archiveSourceContext).toHaveBeenCalledWith('source_1');
     });
-    expect(await screen.findByText(/暂无来源材料或链接/)).toBeTruthy();
-    expect(screen.getByText(/产出的文件会在「产物」Tab 管理/)).toBeTruthy();
+    expect(await screen.findByText('CEO 批注')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '产物' }));
     expect(await screen.findByText('工作文件夹产物')).toBeTruthy();
