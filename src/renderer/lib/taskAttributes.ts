@@ -139,7 +139,7 @@ export function defaultTriggerForType(type: TaskExecutionType): string | null {
   return null;
 }
 
-export function buildProjectDecompositionPrompt(projectTitle: string): string {
+export function buildProjectDecompositionGuidance(projectTitle: string): string {
   const shortTitle = projectTitle.replace(/[。.!！?？]+$/g, '').trim() || '这个项目';
   return [
     `请把「${shortTitle}」拆解成父任务和子任务结构。`,
@@ -148,6 +148,13 @@ export function buildProjectDecompositionPrompt(projectTitle: string): string {
     '1. 先拆一版：根据项目边界决定子任务数量，通常 2-7 个；不要为凑数量拆任务，也不要机械套“调研/初稿/验收”模板。',
     '2. 再自检查：评估每个子任务是否足够独立、边界清楚、仍保持合适的大块粒度。',
     '3. 如果发现子任务过细、互相重叠、缺少验收标准或依赖关系不清，请重拆一版。',
+    '4. 保持最多两层：项目 → 子任务；复杂子任务应升级为项目型，后续再拆自己的子任务。',
+  ].join('\n');
+}
+
+export function buildProjectDecompositionPrompt(projectTitle: string): string {
+  return [
+    buildProjectDecompositionGuidance(projectTitle),
     '',
     '输出格式：',
     '- 父任务：一句话说明目标。',

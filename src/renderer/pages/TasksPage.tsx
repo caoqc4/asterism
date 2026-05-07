@@ -6,6 +6,7 @@ import type { DecisionRecord } from '@shared/types/decision';
 import { isUnconfirmedPanelCaptureRecord } from '@shared/panel-capture';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import {
+  buildProjectDecompositionGuidance,
   defaultScheduleForType,
   defaultTriggerForType,
   inferTaskExecutionType,
@@ -379,7 +380,10 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
     setProjectDecomposingId(project.id);
     setProjectDecompositionError(null);
     try {
-      const result = await window.api.decomposeProject({ taskId: project.id });
+      const result = await window.api.decomposeProject({
+        taskId: project.id,
+        instructions: buildProjectDecompositionGuidance(project.title),
+      });
       setProjectDraft({ projectId: project.id, result });
     } catch (error) {
       setProjectDecompositionError(error instanceof Error ? error.message : 'AI 拆解失败，请稍后重试。');
