@@ -402,19 +402,22 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
         title: subtask.title,
         summary: subtask.summary,
       })));
+      const plannedChildRecords = await Promise.all(childRecords.map((child) => (
+        window.api!.transitionTask({ id: child.id, nextState: 'planned' })
+      )));
       await Promise.all(childRecords.map((child, index) => window.api!.createCompletionCriteria({
         taskId: child.id,
         text: draft.subtasks[index]?.acceptanceCriteria ?? '完成后能明确验收。',
         verificationResponsibility: 'unknown',
       })));
 
-      const childRecordByTitle = new Map(childRecords.map((child) => [child.title.trim(), child]));
+      const childRecordByTitle = new Map(plannedChildRecords.map((child) => [child.title.trim(), child]));
       await Promise.all(draft.subtasks.map((subtask, index) => {
         const dependencyTitle = subtask.dependency?.trim();
         if (!dependencyTitle) return Promise.resolve(null);
         const dependency = childRecordByTitle.get(dependencyTitle)
-          ?? childRecords.find((child) => dependencyTitle.includes(child.title) || child.title.includes(dependencyTitle));
-        const child = childRecords[index];
+          ?? plannedChildRecords.find((child) => dependencyTitle.includes(child.title) || child.title.includes(dependencyTitle));
+        const child = plannedChildRecords[index];
         if (!child || !dependency || dependency.id === child.id) return Promise.resolve(null);
         return window.api!.createTaskDependency({
           taskId: child.id,
@@ -423,7 +426,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
         });
       }));
 
-      const childIds = [...project.childTaskIds, ...childRecords.map((child) => child.id)];
+      const childIds = [...project.childTaskIds, ...plannedChildRecords.map((child) => child.id)];
       const parentAttrs = saveTaskAttributes(project.id, { childTaskIds: childIds });
       const updatedParent = await window.api.updateTask({
         id: project.id,
@@ -443,7 +446,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
         text: `完成并验收 ${draft.subtasks.length} 个项目子任务。`,
         verificationResponsibility: 'unknown',
       });
-      const childTasks = childRecords.map((child) => {
+      const childTasks = plannedChildRecords.map((child) => {
         const draftSubtask = draft.subtasks.find((subtask) => subtask.title === child.title);
         const childAttrs = saveTaskAttributes(child.id, {
           type: 'simple',
@@ -451,7 +454,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
         });
         const dependencyTitle = draftSubtask?.dependency?.trim() ?? '';
         const dependency = dependencyTitle
-          ? childRecords.find((candidate) => dependencyTitle.includes(candidate.title) || candidate.title.includes(dependencyTitle))
+          ? plannedChildRecords.find((candidate) => dependencyTitle.includes(candidate.title) || candidate.title.includes(dependencyTitle))
           : null;
         const baseTask = fromRecord({ ...child, activeBlocker: null, activeWaitingItem: null }, childAttrs);
         return {
@@ -504,13 +507,14 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
       if (window.api) {
         const record = await window.api.createTask({ title });
         newId = record.id;
+        const plannedRecord = await window.api.transitionTask({ id: record.id, nextState: 'planned' });
         const attrs = saveTaskAttributes(newId, {
           type: selectedType,
           commitment: captureCommitment,
           schedule: defaultScheduleForType(selectedType),
           trigger: defaultTriggerForType(selectedType),
         });
-        setAllTasks((prev) => [fromRecord({ ...record, activeBlocker: null, activeWaitingItem: null }, attrs), ...prev]);
+        setAllTasks((prev) => [fromRecord({ ...plannedRecord, activeBlocker: null, activeWaitingItem: null }, attrs), ...prev]);
       } else {
         newId = `t-${Date.now()}`;
         const attrs = saveTaskAttributes(newId, {
@@ -527,7 +531,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
           schedule: attrs.schedule ?? undefined,
           trigger: attrs.trigger ?? undefined,
           updatedAt: new Date().toLocaleDateString('zh'),
-          state: 'captured',
+          state: 'planned',
         };
         setAllTasks((prev) => [fake, ...prev]);
       }

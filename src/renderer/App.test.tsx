@@ -1171,8 +1171,9 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /Settings/ }));
     expect(await screen.findByText(/不做持续行为监控/)).toBeTruthy();
-    expect(screen.getByText(/自检查通过时静默/)).toBeTruthy();
-    expect(screen.getByText(/失败、等待拍板或完成确认时提示/)).toBeTruthy();
+    expect(screen.getByText('Run / Task 自检查')).toBeTruthy();
+    expect(screen.getByText(/Step 级检查是执行质量基线/)).toBeTruthy();
+    expect(screen.getByText(/Run \/ Task 检查只在失败、等待拍板或完成确认时提示/)).toBeTruthy();
     expect(screen.getByText(/完成、覆盖、SOP 提取等节点提炼工作习惯/)).toBeTruthy();
     expect(screen.getByText(/关闭后不生成新的习惯提议/)).toBeTruthy();
     expect(screen.getByText(/Context 展示，可停用或删除/)).toBeTruthy();
@@ -1217,6 +1218,12 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/周期和触发条件可在工作台 Header 调整/)).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/已承诺时间/), '周五 17:00 前发给 CEO');
     await user.click(screen.getByRole('button', { name: '创建' }));
+    await waitFor(() => {
+      expect(harness.api.transitionTask).toHaveBeenCalledWith({
+        id: 'task_created',
+        nextState: 'planned',
+      });
+    });
 
     await user.click(screen.getByRole('button', { name: /定时任务/ }));
     expect(await screen.findByText('每周一准备经营周报')).toBeTruthy();
@@ -1262,6 +1269,12 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/点击创建即确认当前建议/)).toBeTruthy();
     expect(screen.getByText(/确认后才创建真实子任务/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '创建' }));
+    await waitFor(() => {
+      expect(harness.api.transitionTask).toHaveBeenCalledWith({
+        id: 'task_created',
+        nextState: 'planned',
+      });
+    });
 
     await user.click(screen.getByRole('button', { name: /项目型/ }));
     expect((await screen.findAllByText('官网改版项目')).length).toBeGreaterThan(0);
@@ -1284,6 +1297,16 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/最多保持项目 → 子任务两层/)).toBeTruthy();
     expect(harness.api.decomposeProject).toHaveBeenCalledWith({ taskId: 'task_created' });
     await user.click(screen.getByRole('button', { name: '创建这些子任务' }));
+    await waitFor(() => {
+      expect(harness.api.transitionTask).toHaveBeenCalledWith({
+        id: 'task_created_1',
+        nextState: 'planned',
+      });
+      expect(harness.api.transitionTask).toHaveBeenCalledWith({
+        id: 'task_created_2',
+        nextState: 'planned',
+      });
+    });
     expect(await screen.findByText('产出官网改版方案')).toBeTruthy();
     expect(screen.getByText('0/2 子任务完成')).toBeTruthy();
     expect(screen.getByText('依赖：确认官网改版范围')).toBeTruthy();
