@@ -239,6 +239,7 @@ export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => v
       <div className="context-page-head">
         <h2 className="context-page-title">Context</h2>
         <p className="context-page-subtitle">AI 的记忆层 — 任务信息与工作习惯在会话间持续保留</p>
+        <p className="context-page-boundary">这里不是文件库；文件和产物在任务工作台管理，AI 的疑问会在右侧对话里提出。</p>
       </div>
 
       {/* Visible sources */}
