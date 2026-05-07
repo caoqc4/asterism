@@ -1363,6 +1363,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('关键来源')).toBeTruthy();
     expect(screen.getByText('最近更新：1/1')).toBeTruthy();
     expect(screen.getByText(/AI 上下文优先读取最多 3 条关键来源/)).toBeTruthy();
+    expect(screen.getByText(/设为关键或归档会影响后续任务上下文/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '取消关键' }));
     await waitFor(() => {
       expect(harness.api.updateSourceContext).toHaveBeenCalledWith({

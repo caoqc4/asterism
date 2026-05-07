@@ -1080,6 +1080,7 @@ function SourcesTab({
           <div className="source-summary-note">
             <span>最近更新：{latestSource ? formatDate(latestSource.updatedAt) : '暂无'}</span>
             <span>AI 上下文优先读取最多 3 条关键来源。</span>
+            <span>设为关键或归档会影响后续任务上下文。</span>
           </div>
         </div>
       )}
