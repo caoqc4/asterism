@@ -284,6 +284,10 @@ function recordCompletionOverridePattern(
 ): WorkHabitRecord[] {
   const existing = habits.find((habit) => habit.id === COMPLETION_OVERRIDE_PATTERN_ID);
   const example = `观察窗口：${params.taskTitle} / ${params.reason}`;
+  const observedTaskCount = habits.filter((habit) => (
+    habit.id.startsWith('habit_completion_override_')
+    && habit.id !== COMPLETION_OVERRIDE_PATTERN_ID
+  )).length;
   if (!existing) {
     return [
       {
@@ -296,22 +300,21 @@ function recordCompletionOverridePattern(
         examples: example,
         createdAt: params.now,
         lastAppliedAt: params.now,
-        applicationCount: 1,
+        applicationCount: observedTaskCount,
       },
       ...habits,
     ];
   }
 
-  const nextCount = existing.applicationCount + 1;
   return habits.map((habit) => habit.id === COMPLETION_OVERRIDE_PATTERN_ID
     ? {
         ...habit,
-        rule: nextCount >= PATTERN_CONFIRMATION_THRESHOLD
+        rule: observedTaskCount >= PATTERN_CONFIRMATION_THRESHOLD
           ? '跨任务观察：你经常会在完成检查未全部满足时主动确认够用'
           : habit.rule,
         examples: `${existing.examples} / ${example}`,
         lastAppliedAt: params.now,
-        applicationCount: nextCount,
+        applicationCount: observedTaskCount,
         status: habit.status === 'disabled' ? habit.status : 'pending' as WorkHabitStatus,
       }
     : habit);
