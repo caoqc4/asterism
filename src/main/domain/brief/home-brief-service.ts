@@ -986,7 +986,7 @@ export class HomeBriefService {
         };
       } else if (keySource) {
         contextAction = {
-          label: '查看关键来源',
+          label: keySource.isKey ? '查看关键来源' : '查看来源材料',
           intent: {
             type: 'focus_source_context',
             focusArea: 'detail',

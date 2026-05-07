@@ -788,6 +788,12 @@ describe('HomeBriefService', () => {
       'task_source_missing',
       'task_source_focus',
     ]);
+    expect(homeData.recentTaskResumes.find((item) => item.taskId === 'task_source_focus')).toMatchObject({
+      latestChange: {
+        summary: '最近来源材料更新：Partner website shortlist',
+      },
+      contextActionLabel: '查看来源材料',
+    });
   });
 
   it('prioritizes key source contexts ahead of newer non-key sources', async () => {
