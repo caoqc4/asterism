@@ -71,6 +71,12 @@ export type AgentWorkingContext = {
     note: string | null;
     contentPreview: string | null;
   }>;
+  artifacts: Array<{
+    title: string;
+    kind: string;
+    sourceType: string;
+    updatedAt: string;
+  }>;
   processTemplates: Array<{
     id: string;
     title: string;

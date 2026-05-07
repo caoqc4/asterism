@@ -17,6 +17,7 @@ import {
 
 const RECENT_TIMELINE_LIMIT = 6;
 const SOURCE_CONTEXT_LIMIT = 3;
+const ARTIFACT_LIMIT = 5;
 const SOURCE_PREVIEW_LIMIT = 240;
 
 export const DEFAULT_AGENT_POLICY: AgentPolicy = {
@@ -115,6 +116,15 @@ export function buildAgentWorkingContext(task: TaskDetail): AgentWorkingContext 
         note: source.note,
         contentPreview: preview(source.content),
       })),
+    artifacts: [...task.artifacts]
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, ARTIFACT_LIMIT)
+      .map((artifact) => ({
+        title: artifact.title,
+        kind: artifact.kind,
+        sourceType: artifact.sourceType,
+        updatedAt: artifact.updatedAt,
+      })),
     processTemplates: task.processTemplates.map((template) => ({
       id: template.id,
       title: template.title,
@@ -162,6 +172,7 @@ export function formatAgentRunRequestForStep(request: AgentRunRequest): string {
     `优先级语义：${request.context.priorityLane}`,
     `完成标准：${request.context.completion.satisfied}/${request.context.completion.total}`,
     `可用来源：${request.context.sources.length}`,
+    `可用产物：${request.context.artifacts.length}`,
     `可用方法模板：${request.context.processTemplates.length}`,
     `策略：maxSteps=${request.policy.maxSteps}, allowNetwork=${request.policy.allowNetwork}`,
   ].join('\n');

@@ -84,7 +84,30 @@ function buildTaskDetail(): TaskDetail {
       },
       nextSuggestedMove: 'Draft the note',
     },
-    artifacts: [],
+    artifacts: [
+      {
+        id: 'artifact_1',
+        taskId: 'task_1',
+        sourceType: 'run',
+        sourceId: 'run_1',
+        kind: 'note',
+        title: 'launch_note.md',
+        content: 'Draft launch note',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-03T00:00:00.000Z',
+      },
+      {
+        id: 'artifact_2',
+        taskId: 'task_1',
+        sourceType: 'run',
+        sourceId: 'run_2',
+        kind: 'browser_evidence',
+        title: 'qa_screenshot.png',
+        content: 'screenshot path',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-04T00:00:00.000Z',
+      },
+    ],
     completionCriteria: [],
     sourceContexts: [
       buildSourceContext({
@@ -143,6 +166,10 @@ describe('agent working context', () => {
     });
     expect(context.blockers[0]).toMatchObject({ title: 'Legal review', owner: 'Legal' });
     expect(context.sources[0]).toMatchObject({ title: 'Launch source', isKey: true });
+    expect(context.artifacts.map((artifact) => artifact.title)).toEqual([
+      'qa_screenshot.png',
+      'launch_note.md',
+    ]);
     expect(context.processTemplates[0]).toMatchObject({ title: 'Launch writing skill' });
     expect(context.recentTimeline[0]).toMatchObject({
       type: 'task.created',
@@ -202,6 +229,7 @@ describe('agent working context', () => {
 
     expect(request.goal).toBe('产出一份可继续编辑的工作草稿');
     expect(formatAgentRunRequestForStep(request)).toContain('优先级语义：escalate_now');
+    expect(formatAgentRunRequestForStep(request)).toContain('可用产物：2');
     expect(formatAgentRunRequestForStep(request)).toContain('可用方法模板：1');
   });
 });

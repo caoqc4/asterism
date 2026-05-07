@@ -87,6 +87,7 @@ function buildRequest(): AgentRunRequest {
       blockers: [],
       dependencies: [],
       sources: [],
+      artifacts: [],
       processTemplates: [],
       recentTimeline: [],
     },

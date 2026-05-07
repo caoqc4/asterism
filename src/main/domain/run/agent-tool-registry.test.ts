@@ -38,6 +38,14 @@ function buildWorkingContext(): AgentWorkingContext {
         contentPreview: 'Brief content',
       },
     ],
+    artifacts: [
+      {
+        title: 'context_note.md',
+        kind: 'note',
+        sourceType: 'run',
+        updatedAt: '2026-01-01T02:00:00.000Z',
+      },
+    ],
     processTemplates: [
       {
         id: 'process_template_1',
@@ -233,6 +241,7 @@ describe('AgentToolRegistry', () => {
     });
     expect(result.output).toContain('任务：Inspect agent context');
     expect(result.output).toContain('关键来源：Key brief');
+    expect(result.output).toContain('工作产物：context_note.md (note)');
     expect(runStepRepository.update).toHaveBeenCalledWith(
       'run_step_1',
       expect.objectContaining({ status: 'completed' }),

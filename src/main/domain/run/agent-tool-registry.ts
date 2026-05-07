@@ -562,6 +562,7 @@ function formatWorkingContextSummary(context: AgentWorkingContext): string {
     `阻塞项：${context.blockers.map((item) => item.title).join('；') || '无'}`,
     `依赖项：${context.dependencies.map((item) => item.title).join('；') || '无'}`,
     `关键来源：${context.sources.filter((item) => item.isKey).map((item) => item.title).join('；') || '无'}`,
+    `工作产物：${context.artifacts.map((item) => `${item.title} (${item.kind})`).join('；') || '无'}`,
     `方法模板：${context.processTemplates.map((item) => item.title).join('；') || '无'}`,
   ].join('\n');
 }
