@@ -11,6 +11,7 @@ interface FocusTask {
   lane: Lane;
   whyNow: string;
   action: string;
+  state?: HomeBriefData['recentTasks'][number]['state'];
   status?: 'running' | 'waiting' | 'blocked';
 }
 
@@ -100,6 +101,7 @@ function focusTasksFromBriefData(data: HomeBriefData): FocusTask[] {
         lane: laneFromPriorityLane(a.lane),
         whyNow: a.reason,
         action: actionLabelFromStatus(status, a.label),
+        state: task?.state,
         status,
       };
     });
@@ -124,7 +126,7 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [deferOpenId, setDeferOpenId] = useState<string | null>(null);
   const [conflictState, setConflictState] = useState<{
-    taskId: string;
+    task: FocusTask;
     option: string;
     count: number;
   } | null>(null);
@@ -160,19 +162,15 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
     dragOverId.current = null;
   }
 
-  function handleDefer(taskId: string, option: string) {
+  function handleDefer(task: FocusTask, option: string) {
     setDeferOpenId(null);
     const simulatedCount = option === 'next-monday' ? 4 : 1;
     if (simulatedCount >= 3) {
-      setConflictState({ taskId, option, count: simulatedCount });
+      setConflictState({ task, option, count: simulatedCount });
       return;
     }
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    window.api?.transitionTask({
-      id: taskId,
-      nextState: 'waiting_external',
-      waitingReason: `延后处理：${deferLabel(option)}`,
-    }).catch(() => {
+    setTasks((prev) => prev.filter((t) => t.id !== task.id));
+    transitionFocusTask(task, 'waiting_external', `延后处理：${deferLabel(option)}`).catch(() => {
       window.api?.getHomeBrief().then((data) => {
         setTasks(focusTasksFromBriefData(data));
         setBriefData(data);
@@ -180,28 +178,32 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
     });
   }
 
-  function confirmDefer(taskId: string) {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    window.api?.transitionTask({
-      id: taskId,
-      nextState: 'waiting_external',
-      waitingReason: `延后处理：${deferLabel(conflictState?.option ?? 'next-monday')}`,
-    }).catch(() => {});
+  function confirmDefer(task: FocusTask) {
+    setTasks((prev) => prev.filter((t) => t.id !== task.id));
+    transitionFocusTask(task, 'waiting_external', `延后处理：${deferLabel(conflictState?.option ?? 'next-monday')}`).catch(() => {});
     setConflictState(null);
   }
 
-  function completeTask(taskId: string) {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    window.api?.transitionTask({ id: taskId, nextState: 'completed' }).catch(() => {});
+  async function transitionFocusTask(task: FocusTask, nextState: 'completed' | 'waiting_external', waitingReason?: string) {
+    if (!window.api) return;
+    if (task.state === 'captured' || task.state === 'triaged') {
+      await window.api.transitionTask({ id: task.id, nextState: 'planned' });
+    }
+    await window.api.transitionTask({
+      id: task.id,
+      nextState,
+      waitingReason,
+    });
   }
 
-  function markWaitingAfterCompletionCheck(taskId: string, reason: string) {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    window.api?.transitionTask({
-      id: taskId,
-      nextState: 'waiting_external',
-      waitingReason: reason,
-    }).catch(() => {});
+  function completeTask(task: FocusTask) {
+    setTasks((prev) => prev.filter((t) => t.id !== task.id));
+    transitionFocusTask(task, 'completed').catch(() => {});
+  }
+
+  function markWaitingAfterCompletionCheck(task: FocusTask, reason: string) {
+    setTasks((prev) => prev.filter((t) => t.id !== task.id));
+    transitionFocusTask(task, 'waiting_external', reason).catch(() => {});
   }
 
   function dismissSignal(id: string) {
@@ -292,7 +294,7 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
               onDeferToggle={() =>
                 setDeferOpenId((prev) => (prev === task.id ? null : task.id))
               }
-              onDeferSelect={(opt) => handleDefer(task.id, opt)}
+              onDeferSelect={(opt) => handleDefer(task, opt)}
               onComplete={() => setCompletionCheckTask(task)}
               onClick={() => onOpenPanel(task.id)}
             />
@@ -357,13 +359,13 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
               </button>
               <button
                 className="btn sm"
-                onClick={() => confirmDefer(conflictState.taskId)}
+                onClick={() => confirmDefer(conflictState.task)}
               >
                 周一
               </button>
               <button
                 className="btn sm primary"
-                onClick={() => confirmDefer(conflictState.taskId)}
+                onClick={() => confirmDefer(conflictState.task)}
               >
                 周二
               </button>
@@ -381,13 +383,13 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
             const task = completionCheckTask;
             if (!task) return;
             setCompletionCheckTask(null);
-            completeTask(task.id);
+            completeTask(task);
           }}
           onMarkWaiting={(reason) => {
             const task = completionCheckTask;
             if (!task) return;
             setCompletionCheckTask(null);
-            markWaitingAfterCompletionCheck(task.id, reason);
+            markWaitingAfterCompletionCheck(task, reason);
           }}
         />
       )}

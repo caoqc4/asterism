@@ -714,6 +714,69 @@ describe('App redesign v1', () => {
     expect(blockedCard?.querySelector('.dot.risk')).toBeTruthy();
   });
 
+  it('plans captured Brief focus tasks before completing them', async () => {
+    const user = userEvent.setup();
+    const capturedTask = buildTask({
+      id: 'task_captured_brief_complete',
+      title: '整理临时线索',
+      state: 'captured',
+      summary: '从临时讨论捕获，还未进入正式计划。',
+    });
+    vi.mocked(harness.api.getHomeBrief).mockResolvedValue(buildBriefData([capturedTask], []));
+    vi.mocked(harness.api.getTaskDetail).mockImplementation(async (taskId: string) =>
+      taskId === capturedTask.id ? buildTaskDetail(capturedTask) : null);
+    render(<App />);
+
+    const capturedCard = (await screen.findByText('整理临时线索')).closest('.focus-card')!;
+    const completeButton = Array.from(capturedCard.querySelectorAll('button'))
+      .find((button) => button.textContent?.trim() === '完成') as HTMLButtonElement;
+    await user.click(completeButton);
+    expect(await screen.findByText('完成确认')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '仍然完成' }));
+
+    await waitFor(() => {
+      expect(harness.api.transitionTask).toHaveBeenNthCalledWith(1, {
+        id: 'task_captured_brief_complete',
+        nextState: 'planned',
+      });
+      expect(harness.api.transitionTask).toHaveBeenNthCalledWith(2, {
+        id: 'task_captured_brief_complete',
+        nextState: 'completed',
+        waitingReason: undefined,
+      });
+    });
+  });
+
+  it('plans captured Brief focus tasks before deferring them', async () => {
+    const user = userEvent.setup();
+    const capturedTask = buildTask({
+      id: 'task_captured_brief_defer',
+      title: '延后临时线索',
+      state: 'captured',
+      summary: '从临时讨论捕获，稍后再处理。',
+    });
+    vi.mocked(harness.api.getHomeBrief).mockResolvedValue(buildBriefData([capturedTask], []));
+    render(<App />);
+
+    const capturedCard = (await screen.findByText('延后临时线索')).closest('.focus-card')!;
+    fireEvent.mouseEnter(capturedCard);
+    fireEvent.click(Array.from(capturedCard.querySelectorAll('button'))
+      .find((button) => button.textContent?.trim() === '延后 ▾') as HTMLButtonElement);
+    await user.click(await screen.findByRole('button', { name: '明天' }));
+
+    await waitFor(() => {
+      expect(harness.api.transitionTask).toHaveBeenNthCalledWith(1, {
+        id: 'task_captured_brief_defer',
+        nextState: 'planned',
+      });
+      expect(harness.api.transitionTask).toHaveBeenNthCalledWith(2, {
+        id: 'task_captured_brief_defer',
+        nextState: 'waiting_external',
+        waitingReason: '延后处理：明天',
+      });
+    });
+  });
+
   it('routes running Brief focus primary action to the task workbench', async () => {
     const user = userEvent.setup();
     const runningTask = buildTask({
