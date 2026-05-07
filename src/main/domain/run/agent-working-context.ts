@@ -16,6 +16,7 @@ import {
 } from '../../../shared/working-context/timeline.js';
 
 const RECENT_TIMELINE_LIMIT = 6;
+const SOURCE_CONTEXT_LIMIT = 3;
 const SOURCE_PREVIEW_LIMIT = 240;
 
 export const DEFAULT_AGENT_POLICY: AgentPolicy = {
@@ -58,8 +59,18 @@ function recentTimeline(events: TimelineEventRecord[]): AgentWorkingContext['rec
     }));
 }
 
+function selectAgentSourceContexts(task: TaskDetail): TaskDetail['sourceContexts'] {
+  const activeSources = task.sourceContexts
+    .filter((source) => source.status === 'active')
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const keySources = activeSources.filter((source) => source.isKey);
+
+  return (keySources.length ? keySources : activeSources).slice(0, SOURCE_CONTEXT_LIMIT);
+}
+
 export function buildAgentWorkingContext(task: TaskDetail): AgentWorkingContext {
   const completionStatus = task.resumeCard.completionStatus;
+  const selectedSources = selectAgentSourceContexts(task);
 
   return {
     task: {
@@ -96,8 +107,7 @@ export function buildAgentWorkingContext(task: TaskDetail): AgentWorkingContext 
           },
         ]
       : [],
-    sources: task.sourceContexts
-      .filter((source) => source.status === 'active')
+    sources: selectedSources
       .map((source) => ({
         title: source.title,
         kind: source.kind,
