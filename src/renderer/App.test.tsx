@@ -1651,6 +1651,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('最近更新：1/1')).toBeTruthy();
     expect(screen.getByText(/P1 是阻塞或失败/)).toBeTruthy();
     expect(screen.getByText(/P2 是等待、决策和完成检查/)).toBeTruthy();
+    expect(screen.getByText(/筛选只影响时间线显示/)).toBeTruthy();
     expect(screen.getByText(/完成检查覆盖已保留为自学习观察/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /P2 需关注/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /P3 记录/ })).toBeTruthy();

@@ -1480,6 +1480,9 @@ function ActivityTab({ timeline }: { timeline: { id: string; type: string; paylo
           <div className="activity-priority-note">
             P1 是阻塞或失败，P2 是等待、决策和完成检查，P3 是普通记录。
           </div>
+          <div className="activity-priority-note">
+            筛选只影响时间线显示，不会改变任务状态、Lane 或执行优先级。
+          </div>
           {overrideCount > 0 && (
             <div className="activity-learning-note">
               {overrideCount} 次完成检查覆盖已保留为自学习观察，不会自动改变后续流程。
