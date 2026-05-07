@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ChatMessage } from '@shared/types/ipc';
 import { selectApplicableWorkHabits as selectApplicableWorkHabitsFromList } from '@shared/work-habit-rules';
 import { CONTEXT_COMPRESSION_THRESHOLD } from '@shared/settings-defaults';
+import { PANEL_CAPTURE_SUMMARY_PREFIX } from '@shared/panel-capture';
 import {
   selectApplicableWorkHabits,
   getPersistedWorkHabitStorageSnapshot,
@@ -229,7 +230,7 @@ export function RightPanel({ taskId, draftPrompt = null, hidden = false, onTaskC
     try {
       const created = await window.api.createTask({
         title: deriveCapturedTaskTitle(lastUserText),
-        summary: `从右侧面板捕获：${lastUserText}`,
+        summary: `${PANEL_CAPTURE_SUMMARY_PREFIX}${lastUserText}`,
       });
       setActiveTaskId(created.id);
       setPendingCapturedTaskId(created.id);

@@ -43,6 +43,7 @@ import { isStaleDependency } from '../../../shared/working-context/dependency.js
 import { comparePriorityLaneContext, comparePriorityLanes, deriveTaskPriorityLaneMap } from '../../../shared/working-context/priority-lanes.js';
 import { getResponsibilitySummary } from '../../../shared/working-context/responsibility.js';
 import { parseTimelinePayload } from '../../../shared/working-context/timeline.js';
+import { isUnconfirmedPanelCaptureRecord } from '../../../shared/panel-capture.js';
 
 type InternalRecommendedAction = RecommendedAction & {
   lane: PriorityLane;
@@ -1456,17 +1457,18 @@ export class HomeBriefService {
       this.briefSnapshotRepository.listRecent(5),
     ]);
     const tasks = await this.attachActiveWaitingItems(taskRows);
+    const workflowTasks = tasks.filter((task) => !isUnconfirmedPanelCaptureRecord(task));
 
-    const activeTasks = tasks.filter((task) => !['completed', 'archived'].includes(task.state));
-    const completedTasks = tasks.filter((task) => task.state === 'completed');
+    const activeTasks = workflowTasks.filter((task) => !['completed', 'archived'].includes(task.state));
+    const completedTasks = workflowTasks.filter((task) => task.state === 'completed');
     const pendingDecisions = decisions.filter((decision) => decision.status === 'pending');
-    const waitingTasks = tasks.filter(
+    const waitingTasks = workflowTasks.filter(
       (task) =>
         task.state === 'waiting_external' ||
         Boolean(task.activeWaitingItem?.reason) ||
         Boolean(task.waitingReason),
     );
-    const allBlockedTasks = tasks
+    const allBlockedTasks = workflowTasks
       .filter((task) => Boolean(task.activeBlocker?.title))
       .sort((left, right) =>
         (left.activeBlocker?.createdAt ?? left.updatedAt).localeCompare(
@@ -1497,11 +1499,11 @@ export class HomeBriefService {
       const rightCreatedAt = right.activeBlocker?.createdAt ?? right.activeDependency?.createdAt ?? right.updatedAt;
       return leftCreatedAt.localeCompare(rightCreatedAt);
     });
-    const highRiskTasks = tasks.filter((task) => task.riskLevel === 'high');
+    const highRiskTasks = workflowTasks.filter((task) => task.riskLevel === 'high');
     const missingNextStepTasks = activeTasks.filter((task) => !task.nextStep?.trim());
     const scheduler = this.getSchedulerStatus();
     const taskTimelines = await Promise.all(
-      tasks.map(async (task) => ({
+      workflowTasks.map(async (task) => ({
         taskId: task.id,
         taskTitle: task.title,
         activeBlocker: task.activeBlocker,
@@ -1509,14 +1511,14 @@ export class HomeBriefService {
       })),
     );
     const dependencyReevaluations = this.buildDependencyReevaluations({
-      tasks,
+      tasks: workflowTasks,
       taskTimelines,
     });
     const dependencyReevaluationByTaskId = new Map(
       dependencyReevaluations.map((item) => [item.taskId, item]),
     );
     const recentActivity = this.buildRecentActivity(
-      tasks,
+      workflowTasks,
       decisions,
       runs,
       taskTimelines,
@@ -1559,7 +1561,7 @@ export class HomeBriefService {
         ),
       );
     const laneByTaskId = deriveTaskPriorityLaneMap({
-      tasks,
+      tasks: workflowTasks,
       missingNextStepTasks: missingNextStepTasks.map((task) => this.toHomeTaskSlice(task)),
       waitingTasks: waitingTasks.map((task) => this.toHomeTaskSlice(task)),
       recentArtifacts,
@@ -1573,7 +1575,7 @@ export class HomeBriefService {
       decisions,
     });
     const recentTaskResumes = await this.buildTaskResumePreviews({
-      recentTasks: tasks.slice(0, 5).map((task) => this.withCompletionProgress(task, completionProgressByTaskId)),
+      recentTasks: workflowTasks.slice(0, 5).map((task) => this.withCompletionProgress(task, completionProgressByTaskId)),
       recentActivity,
       recentSourceContexts,
       appliedTemplates,
@@ -1661,7 +1663,7 @@ export class HomeBriefService {
       missingNextStepTaskCount: missingNextStepTasks.length,
       completionReadyTaskCount: completionReadyTasks.length,
       nearCompletionTaskCount: nearCompletionTasks.length,
-      recentTasks: tasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
+      recentTasks: workflowTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       waitingTasks: waitingTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       blockerTasks: blockerTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),
       dependencyTasks: dependencyTasks.slice(0, 5).map((task) => this.toHomeTaskSlice(task)),

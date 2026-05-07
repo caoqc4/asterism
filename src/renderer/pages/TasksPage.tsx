@@ -3,6 +3,7 @@ import type { ProjectDecompositionResult } from '@shared/types/ipc';
 import type { TaskListItemRecord, TaskRiskLevel, TaskState } from '@shared/types/task';
 import type { SourceContextRecord } from '@shared/types/source-context';
 import type { DecisionRecord } from '@shared/types/decision';
+import { isUnconfirmedPanelCaptureRecord } from '@shared/panel-capture';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import {
   defaultScheduleForType,
@@ -136,12 +137,8 @@ function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): 
   };
 }
 
-function isUnconfirmedPanelCapture(record: TaskListItemRecord): boolean {
-  return record.state === 'captured' && (record.summary ?? '').startsWith('从右侧面板捕获：');
-}
-
 function confirmedTaskRecords(records: TaskListItemRecord[]): TaskListItemRecord[] {
-  return records.filter((record) => !isUnconfirmedPanelCapture(record));
+  return records.filter((record) => !isUnconfirmedPanelCaptureRecord(record));
 }
 
 interface TasksPageProps {

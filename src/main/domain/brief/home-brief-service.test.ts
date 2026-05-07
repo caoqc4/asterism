@@ -10,6 +10,7 @@ import type { TaskDependencyRecord } from '../../../shared/types/task-dependency
 import type { TaskListItemRecord } from '../../../shared/types/task.js';
 import type { WaitingItemRecord } from '../../../shared/types/waiting-item.js';
 import type { CompletionCriteriaRecord } from '../../../shared/types/completion-criteria.js';
+import { PANEL_CAPTURE_SUMMARY_PREFIX } from '../../../shared/panel-capture.js';
 import { HomeBriefService } from './home-brief-service.js';
 
 afterEach(() => {
@@ -1236,6 +1237,60 @@ describe('HomeBriefService', () => {
     expect(homeData.recentTaskResumes[0]?.latestChange.summary).toBe(
       '最近刚捕获这条任务，先补清摘要与下一步。',
     );
+  });
+
+  it('keeps unconfirmed right-panel captures out of home brief workflow data', async () => {
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([
+          buildTask({
+            id: 'task_panel_capture',
+            title: 'Panel capture',
+            state: 'captured',
+            summary: `${PANEL_CAPTURE_SUMMARY_PREFIX}Panel capture`,
+            nextStep: null,
+            updatedAt: '2026-01-03T00:00:00.000Z',
+          }),
+          buildTask({
+            id: 'task_planned',
+            title: 'Planned task',
+            state: 'planned',
+            nextStep: 'Continue',
+            updatedAt: '2026-01-02T00:00:00.000Z',
+          }),
+        ]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      null as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+      null,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.activeTaskCount).toBe(1);
+    expect(homeData.recentTasks.map((task) => task.id)).toEqual(['task_planned']);
+    expect(homeData.missingNextStepTasks.map((task) => task.id)).not.toContain('task_panel_capture');
+    expect(homeData.recentActivity.map((item) => item.taskId)).not.toContain('task_panel_capture');
+    expect(homeData.recentTaskResumes.map((item) => item.taskId)).not.toContain('task_panel_capture');
   });
 
   it('does not resurface captured-task activity ahead of later run outcomes after task updates', async () => {
