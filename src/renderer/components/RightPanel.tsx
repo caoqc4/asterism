@@ -103,6 +103,47 @@ function shouldSuggestSessionRefresh(
   return null;
 }
 
+async function preserveSessionRefreshMemory(params: {
+  taskId: string;
+  taskTitle: string;
+  messages: Message[];
+}): Promise<void> {
+  if (!window.api?.createSourceContext) return;
+  const userMessages = params.messages
+    .filter((message) => message.role === 'user')
+    .map((message) => message.text.trim())
+    .filter(Boolean);
+  if (userMessages.length === 0) return;
+
+  const recentFocus = userMessages.slice(-3).map((message) => truncateMemoryLine(message));
+  const preferenceSignals = userMessages
+    .filter((message) => /不要|别|希望|以后|默认|必须|尽量|偏好|习惯/.test(message))
+    .slice(-2)
+    .map((message) => truncateMemoryLine(message));
+  const lastQuestion = recentFocus.at(-1) ?? '暂无';
+
+  await window.api.createSourceContext({
+    taskId: params.taskId,
+    title: '会话刷新前保全',
+    kind: 'note',
+    isKey: false,
+    content: [
+      `任务：${params.taskTitle}`,
+      `用户消息数：${userMessages.length}`,
+      `最近关注：${recentFocus.join(' / ')}`,
+      `偏好变化候选：${preferenceSignals.length ? preferenceSignals.join(' / ') : '暂无明显候选'}`,
+      `未解决问题候选：${lastQuestion}`,
+      '用途：刷新会话前的保全式学习提取，只保存精选信号，不保存完整聊天全文。',
+    ].join('\n'),
+    note: '自学习观察：会话刷新前保全关键决策、偏好变化和未解决问题。',
+  }).catch(() => undefined);
+}
+
+function truncateMemoryLine(value: string): string {
+  const singleLine = value.replace(/\s+/g, ' ').trim();
+  return singleLine.length > 80 ? `${singleLine.slice(0, 80)}...` : singleLine;
+}
+
 interface RightPanelProps {
   taskId: string | null;
   draftPrompt?: string | null;
@@ -204,8 +245,15 @@ export function RightPanel({ taskId, draftPrompt = null, hidden = false, onTaskC
     ]);
   }
 
-  function startFreshSession() {
+  async function startFreshSession() {
     const taskName = title ?? (activeTaskId ? titleCache[activeTaskId] ?? activeTaskId : null);
+    if (activeTaskId && messages.some((message) => message.role === 'user')) {
+      await preserveSessionRefreshMemory({
+        taskId: activeTaskId,
+        taskTitle: taskName ?? activeTaskId,
+        messages,
+      });
+    }
     setMessages(taskName ? [makeWelcomeMessage(taskName)] : []);
     setHistoryOpen(false);
     setSessionRefreshDismissed(false);
@@ -425,7 +473,7 @@ export function RightPanel({ taskId, draftPrompt = null, hidden = false, onTaskC
               <div className="panel-history-note">
                 当前会话只是临时工作内存；开始新会话会从任务记忆种子继续，不默认加载旧聊天。
               </div>
-              <button className="btn sm ghost" onClick={startFreshSession}>
+              <button className="btn sm ghost" onClick={() => void startFreshSession()}>
                 开始新会话
               </button>
             </div>
@@ -477,7 +525,7 @@ export function RightPanel({ taskId, draftPrompt = null, hidden = false, onTaskC
             </div>
             <div className="panel-refresh-reason">{sessionRefreshSuggestion.reason}</div>
             <div className="panel-refresh-actions">
-              <button className="btn sm primary" onClick={startFreshSession}>开始新会话</button>
+              <button className="btn sm primary" onClick={() => void startFreshSession()}>开始新会话</button>
               <button className="btn sm ghost" onClick={() => setSessionRefreshDismissed(true)}>继续当前会话</button>
             </div>
           </div>

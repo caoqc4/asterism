@@ -916,6 +916,16 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/同一个问题已重复出现 3 次/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '开始新会话' }));
     await waitFor(() => {
+      expect(harness.api.createSourceContext).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: 'task_risk',
+        title: '会话刷新前保全',
+        kind: 'note',
+        isKey: false,
+        content: expect.stringContaining('只保存精选信号，不保存完整聊天全文'),
+        note: '自学习观察：会话刷新前保全关键决策、偏好变化和未解决问题。',
+      }));
+    });
+    await waitFor(() => {
       expect(screen.queryByText(/开始新会话前会先保全关键决策、偏好变化和未解决问题/)).toBeNull();
     });
   });
