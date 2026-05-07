@@ -256,6 +256,16 @@ export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => v
         <h2 className="context-page-title">Context</h2>
         <p className="context-page-subtitle">AI 的记忆层 — 任务信息与工作习惯在会话间持续保留</p>
         <p className="context-page-boundary">这里不是文件库；文件和产物在任务工作台管理，AI 的疑问会在右侧对话里提出。</p>
+        <div className="ctx-uncertainty-boundary">
+          <div>
+            <strong>外部信号不确定</strong>
+            <span>进入 Brief 的新捕获线索，由你实时确认。</span>
+          </div>
+          <div>
+            <strong>任务推进疑问</strong>
+            <span>在右侧对话里直接提出，不沉积为 Context 待确认项。</span>
+          </div>
+        </div>
       </div>
 
       {/* Visible sources */}

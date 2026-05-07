@@ -1522,6 +1522,10 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /Context/ }));
     expect(await screen.findByText('AI 可见来源')).toBeTruthy();
     expect(screen.getByText(/这里不是文件库/)).toBeTruthy();
+    expect(screen.getByText('外部信号不确定')).toBeTruthy();
+    expect(screen.getByText(/进入 Brief 的新捕获线索/)).toBeTruthy();
+    expect(screen.getByText('任务推进疑问')).toBeTruthy();
+    expect(screen.getByText(/不沉积为 Context 待确认项/)).toBeTruthy();
     expect(screen.getByText(/外部信号只会在授权连接后进入 Brief/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '管理连接' }));
     expect(await screen.findByText(/AI 可感知的外部信号源/)).toBeTruthy();
