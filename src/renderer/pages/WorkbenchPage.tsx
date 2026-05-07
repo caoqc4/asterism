@@ -1454,6 +1454,9 @@ function ActivityTab({ timeline }: { timeline: { id: string; type: string; paylo
           <div className="activity-summary-note">
             最近更新：{latestEvent ? formatDate(latestEvent.createdAt) : '暂无'}
           </div>
+          <div className="activity-priority-note">
+            P1 是阻塞或失败，P2 是等待、决策和完成检查，P3 是普通记录。
+          </div>
           {overrideCount > 0 && (
             <div className="activity-learning-note">
               {overrideCount} 次完成检查覆盖已保留为自学习观察，不会自动改变后续流程。
