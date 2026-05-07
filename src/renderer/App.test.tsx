@@ -993,6 +993,28 @@ describe('App redesign v1', () => {
     });
   });
 
+  it('suggests a fresh task session when recent AI replies stay generic', async () => {
+    vi.mocked(harness.api.chatWithAI!).mockResolvedValue({
+      text: '我会基于任务上下文给出下一步建议。你希望我重点关注哪个方向？',
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
+
+    for (const prompt of ['先整理目标', '再看看风险', '帮我判断推进路径']) {
+      await user.type(input, prompt);
+      await user.click(screen.getByRole('button', { name: '发送' }));
+      await waitFor(() => {
+        expect(harness.api.chatWithAI).toHaveBeenCalled();
+      });
+    }
+
+    expect(await screen.findByText(/开始新会话前会先保全关键决策、偏好变化和未解决问题/)).toBeTruthy();
+    expect(screen.getByText(/最近 3 次回复都偏泛化/)).toBeTruthy();
+  });
+
   it('uses the compression threshold preference for right-panel session refresh suggestions', async () => {
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
       featureFlags: {

@@ -54,6 +54,14 @@ const TASK_TYPE_HABIT_LABELS: Record<TaskExecutionType, string> = {
 
 const MIN_SESSION_REFRESH_MESSAGE_LIMIT = 3;
 const REFRESH_MESSAGE_LIMIT_THRESHOLD_STEP = 10;
+const GENERIC_ASSISTANT_REPLY_PATTERNS = [
+  /基于.*任务上下文/,
+  /结合.*任务.*上下文/,
+  /重点关注.*方向/,
+  /建议下一步/,
+  /当前任务处于正常推进中/,
+  /需要我展开.*部分/,
+];
 
 function buildTaskTypeReviewPrompt(taskName: string): string {
   return [
@@ -68,6 +76,11 @@ function normalizeUserMessage(text: string): string {
     .trim()
     .toLowerCase()
     .replace(/[，。！？、,.!?；;：:\s]/g, '');
+}
+
+function looksGenericAssistantReply(text: string): boolean {
+  const normalized = text.replace(/\s+/g, '');
+  return GENERIC_ASSISTANT_REPLY_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
 function deriveSessionRefreshMessageLimit(
@@ -99,6 +112,17 @@ function shouldSuggestSessionRefresh(
   }
   if (userMessages.length >= messageLimit) {
     return { reason: `触发原因：当前会话已有 ${userMessages.length} 条用户消息，达到刷新阈值 ${messageLimit}。` };
+  }
+
+  const recentAssistantMessages = messages
+    .filter((message) => message.role === 'assistant')
+    .slice(-3);
+  if (
+    userMessages.length >= 3
+    && recentAssistantMessages.length >= 3
+    && recentAssistantMessages.every((message) => looksGenericAssistantReply(message.text))
+  ) {
+    return { reason: '触发原因：最近 3 次回复都偏泛化，建议刷新任务会话。' };
   }
   return null;
 }
