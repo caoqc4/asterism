@@ -41,7 +41,7 @@ export function ConnectionsPage() {
         <div className="ctx-section-header">
           <div>
             <div className="ctx-section-title">已连接来源</div>
-            <div className="ctx-section-desc">实时同步中，AI 可在任务上下文中主动引用</div>
+            <div className="ctx-section-desc">连接成功后，AI 只在任务上下文需要时引用相关信号</div>
           </div>
           <button className="btn sm primary" disabled title="即将支持">+ 连接来源</button>
         </div>

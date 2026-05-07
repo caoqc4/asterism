@@ -831,7 +831,7 @@ function RunsTab({
           <div className="run-trigger-form">
             <textarea
               className="run-trigger-input"
-              placeholder="给 AI 的指令（可选）— 留空则由 AI 根据任务上下文自主决定"
+              placeholder="给 AI 的指令（可选）— 留空则按任务上下文生成下一步"
               value={runNote}
               rows={3}
               autoFocus

@@ -1233,6 +1233,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/AI 可感知的外部信号源/)).toBeTruthy();
     expect(screen.getByText(/授权后只处理相关新信号/)).toBeTruthy();
     expect(screen.getByText('已连接来源')).toBeTruthy();
+    expect(screen.getByText(/只在任务上下文需要时引用相关信号/)).toBeTruthy();
     expect(screen.getByText(/相关新信号带入 Brief 和任务上下文，等待你确认/)).toBeTruthy();
     expect(screen.getByText(/未授权的来源不会进入 AI 上下文/)).toBeTruthy();
     expect(screen.getByText(/授权后提取频道里的任务信号/)).toBeTruthy();
@@ -1500,6 +1501,7 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '执行' }));
     await user.click(screen.getByRole('button', { name: /启动 Run/ }));
     const runInput = await screen.findByPlaceholderText(/给 AI 的指令/);
+    expect(screen.getByPlaceholderText(/按任务上下文生成下一步/)).toBeTruthy();
     await user.type(runInput, '请先整理 CFO 反馈再生成修改建议');
     await user.click(screen.getByRole('button', { name: '启动 Run' }));
 
