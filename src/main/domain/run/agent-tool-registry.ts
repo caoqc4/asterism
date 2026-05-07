@@ -604,6 +604,7 @@ function isPotentialCompletionEvidence(event: AgentWorkingContext['recentTimelin
 
 function formatCompletionEvidenceReview(context: AgentWorkingContext): string {
   const evidence = context.recentTimeline.filter(isPotentialCompletionEvidence);
+  const artifacts = context.artifacts.slice(0, 5);
   const missingEvidence = context.completion.nextOpenCriterion
     ? `仍需补证据或人工确认：${context.completion.nextOpenCriterion}`
     : context.completion.open > 0
@@ -628,6 +629,12 @@ function formatCompletionEvidenceReview(context: AgentWorkingContext): string {
           ...evidence.map((event, index) => formatTimelineEventObservation(event, index)),
         ].join('\n')
       : '可能支持收尾的近期证据：暂无。',
+    artifacts.length
+      ? [
+          '可复核工作产物：',
+          ...artifacts.map((artifact, index) => `${index + 1}. ${artifact.title} (${artifact.kind}) · ${artifact.sourceType} · ${artifact.updatedAt}`),
+        ].join('\n')
+      : '可复核工作产物：暂无。',
     context.task.riskLevel === 'none'
       ? '建议：用户复核证据后再手动满足标准或完成任务。'
       : `建议：该任务风险为 ${context.task.riskLevel}，收尾前建议先草拟或处理 Decision。`,

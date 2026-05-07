@@ -324,6 +324,8 @@ describe('AgentToolRegistry', () => {
     expect(result.output).toContain('仍需补证据或人工确认：Confirm output quality');
     expect(result.output).toContain('task.decision_approved');
     expect(result.output).toContain('2026-01-01 / 决策 / 关键事件');
+    expect(result.output).toContain('可复核工作产物：');
+    expect(result.output).toContain('context_note.md (note) · run');
     expect(runStepRepository.update).toHaveBeenCalledWith(
       'run_step_1',
       expect.objectContaining({
