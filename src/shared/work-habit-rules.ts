@@ -130,6 +130,7 @@ export function findWorkHabitConflict(
     && habit.status === 'confirmed'
     && sharesLearningScope(candidate, habit)
     && normalizeRule(habit.rule) !== candidateRule
+    && rulesLikelyConflict(candidate.rule, habit.rule)
   ));
 
   return confirmed ? { candidate, confirmed } : null;
@@ -345,6 +346,40 @@ function scopeFallbackLabel(scope: WorkHabitScope): string {
 
 function normalizeRule(value: string): string {
   return value.trim().replace(/\s+/g, '').toLowerCase();
+}
+
+function rulesLikelyConflict(left: string, right: string): boolean {
+  const leftTerms = extractRuleTerms(left);
+  const rightTerms = extractRuleTerms(right);
+  if (leftTerms.size === 0 || rightTerms.size === 0) return false;
+
+  let overlap = 0;
+  for (const term of leftTerms) {
+    if (rightTerms.has(term)) overlap += 1;
+  }
+
+  const smaller = Math.min(leftTerms.size, rightTerms.size);
+  return overlap / smaller >= 0.35;
+}
+
+function extractRuleTerms(value: string): Set<string> {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[，。！？；：、,.!?;:()[\]【】"'“”‘’]/g, ' ')
+    .replace(/\s+/g, ' ');
+  const terms = new Set<string>();
+
+  for (const word of normalized.match(/[a-z0-9_-]{2,}/g) ?? []) {
+    terms.add(word);
+  }
+
+  const cjk = normalized.replace(/[^\u4e00-\u9fff]/g, '');
+  for (let index = 0; index < cjk.length - 1; index += 1) {
+    terms.add(cjk.slice(index, index + 2));
+  }
+
+  return terms;
 }
 
 function sharesLearningScope(a: WorkHabitRecord, b: WorkHabitRecord): boolean {

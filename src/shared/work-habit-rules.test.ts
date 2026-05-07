@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { recordWorkHabitApplicationsInList } from './work-habit-rules.js';
+import {
+  findWorkHabitConflict,
+  recordWorkHabitApplicationsInList,
+} from './work-habit-rules.js';
 import type { WorkHabitRecord } from './types/work-habit.js';
 
 const baseHabit: WorkHabitRecord = {
@@ -30,6 +33,39 @@ describe('work habit rules', () => {
     expect(habits.find((habit) => habit.id === 'habit_2')).toMatchObject({
       applicationCount: 7,
       lastAppliedAt: null,
+    });
+  });
+
+  it('does not mark unrelated pending rules as conflicts only because scope matches', () => {
+    const pending: WorkHabitRecord = {
+      ...baseHabit,
+      id: 'habit_pending',
+      rule: '周报任务每周五 17:00 前完成',
+      source: 'proposal',
+      status: 'pending',
+      applicationCount: 0,
+    };
+
+    expect(findWorkHabitConflict(pending, [baseHabit, pending])).toBeNull();
+  });
+
+  it('flags pending rules that overlap with an existing confirmed rule in the same scope', () => {
+    const confirmed: WorkHabitRecord = {
+      ...baseHabit,
+      rule: '代码合入前先跑完整测试',
+    };
+    const pending: WorkHabitRecord = {
+      ...baseHabit,
+      id: 'habit_pending',
+      rule: '代码合入前只跑快速冒烟测试',
+      source: 'proposal',
+      status: 'pending',
+      applicationCount: 0,
+    };
+
+    expect(findWorkHabitConflict(pending, [confirmed, pending])).toMatchObject({
+      candidate: { id: 'habit_pending' },
+      confirmed: { id: 'habit_1' },
     });
   });
 });
