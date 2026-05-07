@@ -100,7 +100,7 @@ export function SettingsPage() {
         </div>
 
         <div className="settings-behavior-note">
-          自学习绑定在完成、覆盖、SOP 提取等节点触发，不做持续行为监控；学到的规则会在 Context 展示，可停用或删除。
+          自检查通过时静默，只在失败、等待拍板或完成确认时提示；自学习绑定在完成、覆盖、SOP 提取等节点触发，不做持续行为监控；学到的规则会在 Context 展示，可停用或删除。
         </div>
 
         <div className="settings-field" style={{ marginTop: 16 }}>

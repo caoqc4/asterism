@@ -1027,6 +1027,8 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /Settings/ }));
     expect(await screen.findByText(/不做持续行为监控/)).toBeTruthy();
+    expect(screen.getByText(/自检查通过时静默/)).toBeTruthy();
+    expect(screen.getByText(/失败、等待拍板或完成确认时提示/)).toBeTruthy();
     expect(screen.getByText(/完成、覆盖、SOP 提取等节点提炼工作习惯/)).toBeTruthy();
     expect(screen.getByText(/关闭后不生成新的习惯提议/)).toBeTruthy();
     expect(screen.getByText(/Context 展示，可停用或删除/)).toBeTruthy();
