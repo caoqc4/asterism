@@ -405,7 +405,8 @@ export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => v
               <span>已停用</span>
             </div>
             <div className="ctx-learning-summary-note">
-              待确认规则只作为提议展示，不会自动改变后续执行流程。
+              <span>待确认规则只作为提议展示，不会自动改变后续执行流程。</span>
+              <span>优先级：项目规则 &gt; 任务类型规则 &gt; 全局规则。</span>
             </div>
           </div>
           {sourceCounts.length > 0 && (

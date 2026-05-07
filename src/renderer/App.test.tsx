@@ -1158,6 +1158,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/需要按最新反馈更新董事会材料/)).toBeTruthy();
     expect(screen.getByText(/工作习惯记录仅保存在本机/)).toBeTruthy();
     expect(screen.getByText(/不保存：聊天消息全文/)).toBeTruthy();
+    expect(screen.getByText(/优先级：项目规则 > 任务类型规则 > 全局规则/)).toBeTruthy();
 
     await user.click(screen.getAllByRole('button', { name: '编辑' })[0]!);
     const summaryInput = screen.getByDisplayValue('需要按最新反馈更新董事会材料。');
