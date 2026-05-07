@@ -492,12 +492,13 @@ export function registerIpcHandlers(): void {
       habitSnapshot = null;
     }
     const applicableWorkHabits = habitSnapshot
-      ? summarizeWorkHabitsForPrompt(selectApplicableWorkHabits(habitSnapshot.habits, {
+      ? selectApplicableWorkHabits(habitSnapshot.habits, {
           taskTitle: task.title,
           projectLabel: task.title,
           limit: 4,
-        }))
+        })
       : [];
+    const applicableWorkHabitSummaries = summarizeWorkHabitsForPrompt(applicableWorkHabits);
 
     const result = await generateText({
       model,
@@ -532,12 +533,21 @@ export function registerIpcHandlers(): void {
         `Next step: ${task.nextStep ?? 'none'}`,
         `Risk: ${task.riskLevel}${task.riskNote ? ` (${task.riskNote})` : ''}`,
         `Key sources: ${keySources.map((source) => `${source.title}: ${source.note ?? source.content ?? source.uri ?? ''}`).join(' / ') || 'none'}`,
-        `Applicable confirmed work habits: ${applicableWorkHabits.join(' / ') || 'none'}`,
+        `Applicable confirmed work habits: ${applicableWorkHabitSummaries.join(' / ') || 'none'}`,
         `Recent activity: ${task.timeline.slice(-5).map((event) => `${event.type}${event.payload ? `=${event.payload}` : ''}`).join(' / ') || 'none'}`,
         input.instructions?.trim() ? `User instructions: ${input.instructions.trim()}` : 'User instructions: none',
       ].join('\n'),
     });
 
-    return normalizeProjectDecomposition(extractJsonObject(result.text));
+    const decomposition = normalizeProjectDecomposition(extractJsonObject(result.text));
+    const appliedHabitIds = applicableWorkHabits.map((habit) => habit.id);
+    if (appliedHabitIds.length > 0) {
+      try {
+        await Promise.resolve(getServices().workHabitService.recordApplications(appliedHabitIds));
+      } catch {
+        // Habit usage telemetry should never block project decomposition.
+      }
+    }
+    return decomposition;
   });
 }

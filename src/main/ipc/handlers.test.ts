@@ -60,6 +60,7 @@ const {
       resolveConflict: vi.fn(),
       recordCompletionOverride: vi.fn(),
       recordSopTemplate: vi.fn(),
+      recordApplications: vi.fn(),
     },
     decisionService: {
       list: vi.fn(),
@@ -498,6 +499,7 @@ describe('registerIpcHandlers', () => {
     expect(prompt).toContain('Applicable confirmed work habits: 「董事会材料修订」流程模板');
     expect(prompt).not.toContain('待确认规则不进入拆解提示');
     expect(prompt).not.toContain('旧邮件');
+    expect(servicesMock.workHabitService.recordApplications).toHaveBeenCalledWith(['habit_sop_board']);
   });
 
   it('emits decision and task events after decision actions', async () => {
