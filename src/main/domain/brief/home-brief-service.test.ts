@@ -1240,6 +1240,47 @@ describe('HomeBriefService', () => {
   });
 
   it('keeps unconfirmed right-panel captures out of home brief workflow data', async () => {
+    const decisions = {
+      list: vi.fn().mockResolvedValue([
+        buildDecision({
+          id: 'decision_panel_capture',
+          taskId: 'task_panel_capture',
+          status: 'pending',
+        }),
+        buildDecision({
+          id: 'decision_planned',
+          taskId: 'task_planned',
+          status: 'pending',
+        }),
+      ]),
+    };
+    const runs = {
+      list: vi.fn().mockResolvedValue([
+        buildRun({
+          id: 'run_panel_capture',
+          taskId: 'task_panel_capture',
+          status: 'completed',
+        }),
+        buildRun({
+          id: 'run_planned',
+          taskId: 'task_planned',
+          status: 'completed',
+        }),
+      ]),
+    };
+    const artifacts = {
+      listRecent: vi.fn().mockResolvedValue([
+        buildArtifact({
+          id: 'artifact_panel_capture',
+          taskId: 'task_panel_capture',
+        }),
+        buildArtifact({
+          id: 'artifact_planned',
+          taskId: 'task_planned',
+        }),
+      ]),
+    };
+
     const service = new HomeBriefService(
       {
         list: vi.fn().mockResolvedValue([
@@ -1265,15 +1306,9 @@ describe('HomeBriefService', () => {
         getActiveForTask: vi.fn().mockResolvedValue(null),
       } as never,
       null as never,
-      {
-        list: vi.fn().mockResolvedValue([]),
-      } as never,
-      {
-        list: vi.fn().mockResolvedValue([]),
-      } as never,
-      {
-        listRecent: vi.fn().mockResolvedValue([]),
-      } as never,
+      decisions as never,
+      runs as never,
+      artifacts as never,
       {
         listActiveForTasks: vi.fn().mockResolvedValue([]),
       } as never,
@@ -1287,7 +1322,11 @@ describe('HomeBriefService', () => {
     const homeData = await service.getHomeData();
 
     expect(homeData.activeTaskCount).toBe(1);
+    expect(homeData.pendingDecisionCount).toBe(1);
+    expect(homeData.recentRunCount).toBe(1);
     expect(homeData.recentTasks.map((task) => task.id)).toEqual(['task_planned']);
+    expect(homeData.pendingDecisions.map((decision) => decision.id)).toEqual(['decision_planned']);
+    expect(homeData.recentArtifacts.map((artifact) => artifact.id)).toEqual(['artifact_planned']);
     expect(homeData.missingNextStepTasks.map((task) => task.id)).not.toContain('task_panel_capture');
     expect(homeData.recentActivity.map((item) => item.taskId)).not.toContain('task_panel_capture');
     expect(homeData.recentTaskResumes.map((item) => item.taskId)).not.toContain('task_panel_capture');

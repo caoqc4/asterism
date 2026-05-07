@@ -1457,11 +1457,20 @@ export class HomeBriefService {
       this.briefSnapshotRepository.listRecent(5),
     ]);
     const tasks = await this.attachActiveWaitingItems(taskRows);
+    const unconfirmedPanelCaptureTaskIds = new Set(
+      tasks.filter((task) => isUnconfirmedPanelCaptureRecord(task)).map((task) => task.id),
+    );
     const workflowTasks = tasks.filter((task) => !isUnconfirmedPanelCaptureRecord(task));
+    const workflowRuns = runs.filter((run) => !unconfirmedPanelCaptureTaskIds.has(run.taskId));
+    const workflowRecentArtifacts = recentArtifacts.filter(
+      (artifact) => !unconfirmedPanelCaptureTaskIds.has(artifact.taskId),
+    );
 
     const activeTasks = workflowTasks.filter((task) => !['completed', 'archived'].includes(task.state));
     const completedTasks = workflowTasks.filter((task) => task.state === 'completed');
-    const pendingDecisions = decisions.filter((decision) => decision.status === 'pending');
+    const pendingDecisions = decisions.filter(
+      (decision) => decision.status === 'pending' && !unconfirmedPanelCaptureTaskIds.has(decision.taskId),
+    );
     const waitingTasks = workflowTasks.filter(
       (task) =>
         task.state === 'waiting_external' ||
@@ -1520,7 +1529,7 @@ export class HomeBriefService {
     const recentActivity = this.buildRecentActivity(
       workflowTasks,
       decisions,
-      runs,
+      workflowRuns,
       taskTimelines,
       dependencyReevaluations,
     );
@@ -1528,11 +1537,11 @@ export class HomeBriefService {
     const completionProgressByTaskId = await this.buildCompletionProgressMap(
       activeTasks.map((task) => task.id),
     );
-    const runVerificationSummaryByRunId = await this.buildRunVerificationSummaryMap(runs);
+    const runVerificationSummaryByRunId = await this.buildRunVerificationSummaryMap(workflowRuns);
     const closeoutEvidenceByTaskId = this.buildCloseoutEvidenceMap({
       tasks: activeTasks,
       decisions,
-      runs,
+      runs: workflowRuns,
     });
     const appliedTemplates = this.taskProcessBindingRepository
       ? await this.taskProcessBindingRepository.listActiveForTasks(activeTasks.map((task) => task.id))
@@ -1564,7 +1573,7 @@ export class HomeBriefService {
       tasks: workflowTasks,
       missingNextStepTasks: missingNextStepTasks.map((task) => this.toHomeTaskSlice(task)),
       waitingTasks: waitingTasks.map((task) => this.toHomeTaskSlice(task)),
-      recentArtifacts,
+      recentArtifacts: workflowRecentArtifacts,
       recentSourceContexts,
       recentActivity,
       blockerTasks: blockerTasks.map((task) => this.toHomeTaskSlice(task)),
@@ -1593,7 +1602,7 @@ export class HomeBriefService {
       completionReadyTasks,
       nearCompletionTasks,
       recentSourceContexts,
-      recentArtifacts,
+      recentArtifacts: workflowRecentArtifacts,
     });
 
     const blockerReevaluationTaskIds = recentSourceContexts
@@ -1615,7 +1624,7 @@ export class HomeBriefService {
     ]).size;
     const continueOrReviewCount = [
       ...new Set([
-        ...recentArtifacts.map((artifact) => artifact.taskId),
+        ...workflowRecentArtifacts.map((artifact) => artifact.taskId),
         ...recentSourceContexts.map((sourceContext) => sourceContext.taskId),
         ...dependencyReevaluations.map((item) => item.taskId),
         ...completionReadyTasks.map((task) => task.id),
@@ -1654,7 +1663,7 @@ export class HomeBriefService {
       activeTaskCount: activeTasks.length,
       pendingDecisionCount: pendingDecisions.length,
       completedTaskCount: completedTasks.length,
-      recentRunCount: runs.length,
+      recentRunCount: workflowRuns.length,
       waitingTaskCount: waitingTasks.length,
       blockerTaskCount: blockerTasks.length,
       dependencyTaskCount: dependencyTasks.length,
@@ -1676,7 +1685,7 @@ export class HomeBriefService {
       nearCompletionTasks: nearCompletionTasks.slice(0, 5),
       pendingDecisions: pendingDecisions.slice(0, 5),
       recommendedActions,
-      recentArtifacts,
+      recentArtifacts: workflowRecentArtifacts,
       recentSourceContexts,
       recentTaskResumes,
       recentActivity,
