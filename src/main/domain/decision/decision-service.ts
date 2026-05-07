@@ -5,6 +5,7 @@ import type {
   DecisionRecord,
   DraftDecisionInput,
 } from '../../../shared/types/decision.js';
+import type { SourceContextRecord } from '../../../shared/types/source-context.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
 import type { RunOutputSource, RunRecord, RunStatus } from '../../../shared/types/run.js';
 import { generateObject } from 'ai';
@@ -76,6 +77,13 @@ function stripResponsibilityPrefix(summary: string | null | undefined): string |
   return trimmed || null;
 }
 
+function selectPromptKeySources(sourceContexts: SourceContextRecord[], maxItems = 3): SourceContextRecord[] {
+  return sourceContexts
+    .filter((item) => item.status === 'active' && item.isKey)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, maxItems);
+}
+
 function isLocalBrowserControlledOrigin(origin: string): boolean {
   try {
     const parsed = new URL(origin);
@@ -107,6 +115,7 @@ function buildDraftPrompt(
 ): string {
   const selectedTemplates = selection.shouldUse ? selection.selectedTemplates : [];
   const lane = deriveTaskDetailPriorityLane(task);
+  const keySources = selectPromptKeySources(task.sourceContexts);
 
   return [
     '请草拟一条简洁、明确、适合知识工作者阅读的决策请求。',
@@ -129,9 +138,9 @@ function buildDraftPrompt(
         : `${task.riskLevel}${task.riskNote ? ` - ${task.riskNote}` : ''}`
     }`,
     `用户补充说明：${input.note?.trim() || '无'}`,
-    '来源材料：',
-    ...(task.sourceContexts.length
-      ? task.sourceContexts.map(
+    '关键来源材料：',
+    ...(keySources.length
+      ? keySources.map(
           (item) => `- ${item.title} [${item.kind}]${item.note ? ` | ${item.note}` : ''}`,
         )
       : ['- 无']),
