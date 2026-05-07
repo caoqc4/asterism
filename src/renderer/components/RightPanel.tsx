@@ -409,6 +409,9 @@ export function RightPanel({ taskId, hidden = false, onTaskCaptured, onClose, on
               <IconTask style={{ width: 12, height: 12 }} />
               <strong>{pendingSwitch.taskTitle}</strong> 上下文已可用
             </div>
+            <div className="panel-ctx-switch-note">
+              不会中断当前对话；上下文切换由你确认。
+            </div>
             <div className="panel-ctx-switch-actions">
               <button className="btn sm primary" onClick={confirmSwitch}>切换到此任务</button>
               <button className="btn sm ghost" onClick={dismissSwitch}>保持全局</button>

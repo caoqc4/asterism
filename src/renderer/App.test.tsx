@@ -664,6 +664,9 @@ describe('App redesign v1', () => {
 
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
     expect(screen.getByText(/从任务记忆、执行记录和工作习惯重新组装上下文/)).toBeTruthy();
+    await user.click(await screen.findByText('合同盖章跟进'));
+    expect(await screen.findByText(/不会中断当前对话/)).toBeTruthy();
+    expect(screen.getByText(/上下文切换由你确认/)).toBeTruthy();
     fireEvent.click(screen.getByTitle('全屏显示'));
     expect(screen.getByTitle('退出全屏')).toBeTruthy();
     fireEvent.click(screen.getByTitle('退出全屏'));
