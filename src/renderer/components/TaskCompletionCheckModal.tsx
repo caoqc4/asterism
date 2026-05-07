@@ -203,7 +203,7 @@ export function TaskCompletionCheckModal({
 
               {hasConcern && (
                 <div className="completion-check-advice">
-                  <p>建议先标记为等待中，等完成标准或 Run 验证结论补齐后再完成；你也可以覆盖检查结论，直接完成。</p>
+                  <p>建议先标记为等待中，等完成标准或 Run 验证结论补齐后再完成；检查建议不阻断操作，你也可以覆盖检查结论，直接完成。</p>
                   <p className="completion-check-trace">将记录：{traceParts.join(' · ')}</p>
                   <p>
                     覆盖会写入任务活动记录
