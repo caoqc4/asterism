@@ -402,6 +402,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
       {taskAttrs && (taskAttrs.type !== 'simple' || taskAttrs.parentTaskId || taskAttrs.commitment) && (
         <div className="workbench-config-strip">
           <span className="tag">{TASK_TYPE_LABELS[taskAttrs.type]}</span>
+          {taskAttrs.type === 'event' && <span className="workbench-config-status">等待触发</span>}
           {currentProject && <button className="workbench-config-pill" onClick={() => setShowEditPanel(true)}>📁 {currentProject.title}</button>}
           {taskAttrs.schedule && <button className="workbench-config-pill" onClick={() => setShowEditPanel(true)}>🔁 {taskAttrs.schedule} ▾</button>}
           {taskAttrs.trigger && <button className="workbench-config-pill" onClick={() => setShowEditPanel(true)}>⚡ {taskAttrs.trigger} ▾</button>}

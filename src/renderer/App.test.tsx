@@ -1049,6 +1049,7 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /事件触发/ }));
     await user.dblClick(await screen.findByText('收到品牌合作邮件时跟进'));
     expect(await screen.findByText('事件监听')).toBeTruthy();
+    expect(screen.getByText('等待触发')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '产物' }));
     expect(screen.getByText(/事件信号默认追加到同一份积累式记录/)).toBeTruthy();
   });
