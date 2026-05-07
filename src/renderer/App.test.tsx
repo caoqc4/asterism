@@ -1374,6 +1374,7 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '产物' }));
     expect(await screen.findByText('工作文件夹产物')).toBeTruthy();
     expect(screen.getByText('可内联编辑')).toBeTruthy();
+    expect(screen.getByText(/任务产出的持久存储/)).toBeTruthy();
     await user.click(await screen.findByText('report_v1.md'));
     expect(await screen.findByText(/需要补现金流页/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '编辑' }));

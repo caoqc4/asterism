@@ -1221,7 +1221,7 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
             <span>可内联编辑</span>
           </div>
           <div className="artifact-summary-note">
-            最近更新：{latestArtifact ? formatDate(latestArtifact.updatedAt) : '暂无'}
+            任务产出的持久存储；最近更新：{latestArtifact ? formatDate(latestArtifact.updatedAt) : '暂无'}
           </div>
         </div>
       )}
