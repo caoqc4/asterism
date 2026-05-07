@@ -1346,6 +1346,12 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/只在任务上下文需要时引用相关信号/)).toBeTruthy();
     expect(screen.getByText(/相关新信号带入 Brief 和任务上下文，等待你确认/)).toBeTruthy();
     expect(screen.getByText(/未授权的来源不会进入 AI 上下文/)).toBeTruthy();
+    expect(screen.getByText('Gmail / Email')).toBeTruthy();
+    expect(screen.getByText('Calendar')).toBeTruthy();
+    expect(screen.getByText('GitHub')).toBeTruthy();
+    expect(screen.getByText('EMAIL')).toBeTruthy();
+    expect(screen.getByText('CAL')).toBeTruthy();
+    expect(screen.getByText('GIT')).toBeTruthy();
     expect(screen.getByText(/授权后提取频道里的任务信号/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /Context/ }));
     expect(await screen.findByText('AI 可见来源')).toBeTruthy();

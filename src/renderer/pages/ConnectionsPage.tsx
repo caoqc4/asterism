@@ -4,18 +4,29 @@ type SourceStatus = 'connected' | 'error' | 'pending';
 
 interface ConnectedSource {
   id: string;
-  type: 'email' | 'calendar' | 'github' | 'notion' | 'slack';
+  type: SourceType;
   label: string;
   account: string;
   status: SourceStatus;
   lastSync: string;
 }
 
-const SOURCE_ICONS: Record<string, string> = {
-  email: '✉️', calendar: '📅', github: '🐙', notion: '📝', slack: '💬',
+type SourceType = 'email' | 'calendar' | 'github' | 'notion' | 'slack' | 'linear' | 'jira';
+
+const SOURCE_BADGES: Record<SourceType, string> = {
+  email: 'EMAIL',
+  calendar: 'CAL',
+  github: 'GIT',
+  notion: 'NOTE',
+  slack: 'CHAT',
+  linear: 'ISSUE',
+  jira: 'TICKET',
 };
 
-const AVAILABLE_SOURCES = [
+const AVAILABLE_SOURCES: Array<{ type: SourceType; label: string; desc: string }> = [
+  { type: 'email', label: 'Gmail / Email', desc: '授权后提取邮件里的待跟进信号' },
+  { type: 'calendar', label: 'Calendar', desc: '授权后识别会议、截止时间和日程变更' },
+  { type: 'github', label: 'GitHub', desc: '授权后同步 PR、Issue 和代码协作信号' },
   { type: 'notion', label: 'Notion', desc: '授权后同步页面和数据库作为任务来源' },
   { type: 'slack', label: 'Slack', desc: '授权后提取频道里的任务信号' },
   { type: 'linear', label: 'Linear', desc: '授权后同步 Issue 和项目进度' },
@@ -49,7 +60,7 @@ export function ConnectionsPage() {
         <div className="ctx-list">
           {sources.map((src) => (
             <div key={src.id} className="ctx-source-row">
-              <span className="ctx-source-icon">{SOURCE_ICONS[src.type]}</span>
+              <span className="ctx-source-icon">{SOURCE_BADGES[src.type]}</span>
               <div className="ctx-source-info">
                 <span className="ctx-source-label">{src.label}</span>
                 <span className="ctx-source-account">{src.account}</span>
@@ -102,6 +113,7 @@ export function ConnectionsPage() {
         <div className="conn-available-grid">
           {AVAILABLE_SOURCES.map((s) => (
             <div key={s.type} className="conn-available-card">
+              <span className="ctx-source-icon">{SOURCE_BADGES[s.type]}</span>
               <div className="conn-available-label">{s.label}</div>
               <div className="conn-available-desc muted">{s.desc}</div>
               <button className="btn sm ghost" disabled>即将支持</button>
