@@ -891,6 +891,9 @@ function ProjectExecutionSummary({ children }: { children: ProjectChildSummary[]
           下一步：{nextChild.waitingReason ?? nextChild.nextStep ?? `推进「${nextChild.title}」`}
         </div>
       )}
+      <div className="project-exec-boundary">
+        父任务工作台负责汇总子任务进度；实际执行请进入具体子任务工作台。复杂子任务应先升级为项目型再重新拆解，避免继续加深层级。
+      </div>
     </div>
   );
 }

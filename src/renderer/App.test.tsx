@@ -1313,6 +1313,8 @@ describe('App redesign v1', () => {
     expect(screen.getByText('确认官网改版范围')).toBeTruthy();
     expect(screen.getByText('产出官网改版方案')).toBeTruthy();
     expect(screen.getByText(/下一步：/)).toBeTruthy();
+    expect(screen.getByText(/父任务工作台负责汇总子任务进度/)).toBeTruthy();
+    expect(screen.getByText(/复杂子任务应先升级为项目型再重新拆解/)).toBeTruthy();
   });
 
   it('lets users correct and clear task memory from Context', async () => {
