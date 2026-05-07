@@ -692,10 +692,12 @@ function RunsTab({
   const [runNote, setRunNote] = useState('');
   const [triggering, setTriggering] = useState(false);
   const [selfCheckRetryLimit, setSelfCheckRetryLimit] = useState<number>(SELF_CHECK_RETRY_LIMIT.default);
+  const [runSelfCheckEnabled, setRunSelfCheckEnabled] = useState(true);
   const checkStats = collectRunCheckStats({
     runs,
     activeRunDetail,
     runDetailsById,
+    includeRunChecks: runSelfCheckEnabled,
   });
 
   useEffect(() => {
@@ -709,6 +711,7 @@ function RunsTab({
 
   useEffect(() => {
     window.api?.getAiConfigStatus().then((status) => {
+      setRunSelfCheckEnabled(status.featureFlags.enableSelfCheck !== false);
       setSelfCheckRetryLimit(status.featureFlags.selfCheckRetryLimit ?? SELF_CHECK_RETRY_LIMIT.default);
     }).catch(() => {});
   }, []);
@@ -751,6 +754,9 @@ function RunsTab({
           <span className="run-check-overview-title">自检查记录</span>
           <span className="run-check-overview-chip">Run {checkStats.runs}</span>
           <span className="run-check-overview-chip">Step {checkStats.steps}</span>
+          {!runSelfCheckEnabled && (
+            <span className="run-check-overview-chip pending">Run 检查已关闭</span>
+          )}
           <span className="run-check-overview-chip pass">通过 {checkStats.pass}</span>
           {checkStats.pending > 0 && (
             <span className="run-check-overview-chip pending">检查中 {checkStats.pending}</span>
@@ -759,7 +765,7 @@ function RunsTab({
             <span className="run-check-overview-chip warn">需关注 {checkStats.warn + checkStats.fail}</span>
           )}
           <span className="run-check-overview-note">
-            Step 检查按预期输出和已确认工作习惯轻量对照；失败自动修正上限 {selfCheckRetryLimit} 次；Run 检查与完成确认按 AI 行为偏好触发；验证由独立子 Agent 完成，避免执行者自我确认。
+            Step 检查按预期输出和已确认工作习惯轻量对照；失败自动修正上限 {selfCheckRetryLimit} 次；{runSelfCheckEnabled ? 'Run 检查与完成确认按 AI 行为偏好触发' : 'Run 检查已按 AI 行为偏好关闭，完成确认会直接采用用户操作'}；验证由独立子 Agent 完成，避免执行者自我确认。
           </span>
         </div>
       )}
@@ -782,7 +788,11 @@ function RunsTab({
               ))}
             </div>
           )}
-          <RunCheckSummary check={getRunCheck(active, activeRunDetail)} />
+          {runSelfCheckEnabled ? (
+            <RunCheckSummary check={getRunCheck(active, activeRunDetail)} />
+          ) : (
+            <RunCheckDisabledSummary />
+          )}
         </div>
       )}
 
@@ -806,7 +816,11 @@ function RunsTab({
             </div>
             {isExpanded && (
               <div className="run-item-detail">
-                <RunCheckSummary check={getRunCheck(r, historicalDetail)} />
+                {runSelfCheckEnabled ? (
+                  <RunCheckSummary check={getRunCheck(r, historicalDetail)} />
+                ) : (
+                  <RunCheckDisabledSummary />
+                )}
                 {historicalDetail?.steps && historicalDetail.steps.length > 0 && (
                   <div className="run-steps">
                     {historicalDetail.steps.map((step) => (
@@ -939,6 +953,7 @@ function collectRunCheckStats(params: {
   runs: RunRecord[];
   activeRunDetail: RunDetailRecord | null;
   runDetailsById: Record<string, RunDetailRecord | null>;
+  includeRunChecks?: boolean;
 }): { runs: number; steps: number; pass: number; warn: number; fail: number; pending: number } {
   const stats = { runs: 0, steps: 0, pass: 0, warn: 0, fail: 0, pending: 0 };
 
@@ -946,9 +961,11 @@ function collectRunCheckStats(params: {
     const detail = run.status === 'running' || run.status === 'paused'
       ? params.activeRunDetail
       : params.runDetailsById[run.id] ?? null;
-    const runCheck = getRunCheck(run, detail);
     stats.runs += 1;
-    stats[runCheck.tone] += 1;
+    if (params.includeRunChecks !== false) {
+      const runCheck = getRunCheck(run, detail);
+      stats[runCheck.tone] += 1;
+    }
 
     for (const step of detail?.steps ?? []) {
       const stepCheck = getStepCheck(step, detail);
@@ -1010,6 +1027,16 @@ function RunCheckSummary({ check }: {
       <strong>{check.label}</strong>
       <span>{check.detail}</span>
       <span className="run-check-source">{runCheckSourceLabel(check.source)}</span>
+    </div>
+  );
+}
+
+function RunCheckDisabledSummary() {
+  return (
+    <div className="run-check-summary pending">
+      <strong>Run 检查已关闭</strong>
+      <span>AI 行为偏好已关闭 Run / Task 自检查；Step 级轻量对照仍会保留。</span>
+      <span className="run-check-source">用户偏好</span>
     </div>
   );
 }

@@ -1959,4 +1959,31 @@ describe('App redesign v1', () => {
     expect(screen.getAllByText('「董事会材料修订」流程模板').length).toBeGreaterThan(0);
     expect(screen.getByText(/不会自动套用/)).toBeTruthy();
   });
+
+  it('keeps Step checks visible while hiding Run checks when self-check is disabled', async () => {
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      featureFlags: {
+        enableScheduler: false,
+        enableProviderNativeToolCalls: true,
+        enableSandboxCodingAgent: false,
+        enableSandboxPatchPromotionApply: false,
+        enableSelfCheck: false,
+        enableSelfLearn: true,
+        selfCheckRetryLimit: 2,
+      },
+    }));
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.dblClick(await screen.findByText('董事会材料修订'));
+
+    expect(await screen.findByText('Run 检查已关闭')).toBeTruthy();
+    expect(screen.getByText(/Step 检查按预期输出和已确认工作习惯轻量对照/)).toBeTruthy();
+    await user.click(await screen.findByText(/Run #1 · 已完成/));
+    expect(await screen.findByText('Step 1')).toBeTruthy();
+    expect(await screen.findByText('检查通过')).toBeTruthy();
+    expect(screen.getByText(/Step 级轻量对照仍会保留/)).toBeTruthy();
+    expect(screen.queryByText('Run 验证通过')).toBeNull();
+  });
 });
