@@ -1261,9 +1261,13 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/影响面 × 不可逆程度/)).toBeTruthy();
     expect(screen.getByText('Agent 检查点')).toBeTruthy();
     expect(screen.getByText('需要复核')).toBeTruthy();
+    expect(screen.getByText('高影响')).toBeTruthy();
+    expect(screen.getByText('需谨慎恢复')).toBeTruthy();
     expect(screen.getByText('恢复执行')).toBeTruthy();
     expect(screen.getByText('人工决策')).toBeTruthy();
     expect(screen.getByText('推荐路径清晰')).toBeTruthy();
+    expect(screen.getByText('中影响')).toBeTruthy();
+    expect(screen.getByText('可回退')).toBeTruthy();
     expect(screen.getAllByText('展开可比较备选').length).toBeGreaterThan(0);
     expect(screen.getAllByText('更新 2026-01-01').length).toBeGreaterThan(0);
     expect(screen.queryByText('decision_done')).toBeNull();

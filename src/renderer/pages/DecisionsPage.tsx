@@ -15,6 +15,9 @@ interface Decision {
   options: DecisionOption[];
   recommendation: string;
   recommendationClarity: 'clear' | 'review';
+  impactLabel: string;
+  reversibilityLabel: string;
+  sortScore: number;
   expanded: boolean;
 }
 
@@ -62,6 +65,9 @@ function fromRecord(r: DecisionRecord): Decision {
         ],
     recommendation: isAgentCheckpoint ? '恢复执行' : '批准',
     recommendationClarity: isAgentCheckpoint ? 'review' : 'clear',
+    impactLabel: isAgentCheckpoint ? '高影响' : '中影响',
+    reversibilityLabel: isAgentCheckpoint ? '需谨慎恢复' : '可回退',
+    sortScore: isAgentCheckpoint ? 4 : 2,
     expanded: false,
   };
 }
@@ -111,8 +117,11 @@ export function DecisionsPage({ onOpenPanel, onOpenWorkbench }: DecisionsPagePro
   const visibleDecisions = normalizedQuery
     ? decisions.filter((d) => `${d.title} ${d.taskTitle}`.toLowerCase().includes(normalizedQuery))
     : decisions;
-  const today = visibleDecisions.filter((d) => d.urgency === 'today');
-  const week = visibleDecisions.filter((d) => d.urgency === 'week');
+  const sortedVisibleDecisions = [...visibleDecisions].sort((a, b) => (
+    b.sortScore - a.sortScore || b.updatedLabel.localeCompare(a.updatedLabel)
+  ));
+  const today = sortedVisibleDecisions.filter((d) => d.urgency === 'today');
+  const week = sortedVisibleDecisions.filter((d) => d.urgency === 'week');
 
   return (
     <div className="decisions-page">
@@ -234,6 +243,8 @@ function DecisionCard({ decision: d, onToggle, onDecide, onOpenPanel, onOpenWork
             <span className={`dec-clarity ${d.recommendationClarity}`}>
               {d.recommendationClarity === 'clear' ? '推荐路径清晰' : '需要复核'}
             </span>
+            <span className="dec-rank-chip">{d.impactLabel}</span>
+            <span className="dec-rank-chip">{d.reversibilityLabel}</span>
             <span className="dec-updated">{d.updatedLabel}</span>
             {d.deadline && (
               <span className="dec-deadline">截止：{d.deadline}</span>
