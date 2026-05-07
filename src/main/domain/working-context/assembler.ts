@@ -600,7 +600,7 @@ export function buildTaskResumeLatestChange(
 export function buildHomeResumeLatestChange(params: {
   latestActivity: HomeActivityRecord | undefined;
   timeline?: TimelineLite;
-  keySource: Pick<SourceContextRecord, 'id' | 'title'> | null;
+  keySource: Pick<SourceContextRecord, 'id' | 'title' | 'isKey'> | null;
   activeBlocker?: Pick<BlockerRecord, 'id' | 'title' | 'sourceContextId'> | null;
   activeDependency?: { blockedByTaskTitle: string | null } | null;
   taskState?: TaskState;
@@ -768,8 +768,10 @@ export function buildHomeResumeLatestChange(params: {
   }
 
   if (keySource) {
+    const sourceLabel = keySource.isKey ? '关键来源' : '来源材料';
+
     return {
-      summary: `最近关键来源更新：${keySource.title}`,
+      summary: `最近${sourceLabel}更新：${keySource.title}`,
       action: {
         label: '查看来源',
         targetType: 'source_context',
