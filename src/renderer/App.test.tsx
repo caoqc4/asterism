@@ -143,6 +143,17 @@ function buildTaskDetail(task: TaskListItemRecord): TaskDetail {
         createdAt: now,
         updatedAt: now,
       },
+      {
+        id: 'artifact_screenshot',
+        taskId: task.id,
+        sourceType: 'run',
+        sourceId: 'run_1',
+        kind: 'browser_evidence',
+        title: 'mockup.png',
+        content: 'binary image placeholder',
+        createdAt: now,
+        updatedAt: now,
+      },
     ],
     completionCriteria: [
       {
@@ -1609,6 +1620,12 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/任务产出的持久存储/)).toBeTruthy();
     expect(screen.getByText(/仅 Markdown \/ 纯文本内联编辑/)).toBeTruthy();
     expect(screen.getByText(/其他格式交给系统默认应用/)).toBeTruthy();
+    await user.click(await screen.findByText('mockup.png'));
+    expect(screen.queryByRole('button', { name: '编辑' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: '重命名' }));
+    expect(await screen.findByText(/此类产物只在 Taskplane 内重命名/)).toBeTruthy();
+    expect(screen.queryByDisplayValue('binary image placeholder')).toBeNull();
+    await user.click(screen.getByRole('button', { name: '取消' }));
     await user.click(await screen.findByText('report_v1.md'));
     expect(await screen.findByText(/需要补现金流页/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '编辑' }));

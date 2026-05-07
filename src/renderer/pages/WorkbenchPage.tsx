@@ -1170,6 +1170,7 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
   const [newTitle, setNewTitle] = useState('note.md');
   const [newContent, setNewContent] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingMode, setEditingMode] = useState<'content' | 'rename'>('content');
   const [titleDraft, setTitleDraft] = useState('');
   const [contentDraft, setContentDraft] = useState('');
   const [editLearningNotice, setEditLearningNotice] = useState<string | null>(null);
@@ -1181,8 +1182,9 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
     setLocalVersion((value) => value + 1);
   }
 
-  function startEditing(artifact: ArtifactRecord) {
+  function startEditing(artifact: ArtifactRecord, mode: 'content' | 'rename') {
     setEditingId(artifact.id);
+    setEditingMode(mode);
     setExpandedId(artifact.id);
     setTitleDraft(artifact.title);
     setContentDraft(artifact.content);
@@ -1192,7 +1194,7 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
   function saveEditing(artifact: ArtifactRecord) {
     updateArtifactWorkspace(artifact.id, {
       title: titleDraft.trim() || artifact.title,
-      content: contentDraft,
+      content: editingMode === 'content' ? contentDraft : artifact.content,
     });
     setEditingId(null);
     setEditLearningNotice('已保留本次产物改动方向；明显偏好会在任务完成或复盘时归纳到 Context。');
@@ -1299,15 +1301,23 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
                     value={titleDraft}
                     onChange={(e) => setTitleDraft(e.target.value)}
                   />
-                  <textarea
-                    className="artifact-edit-textarea"
-                    rows={10}
-                    value={contentDraft}
-                    onChange={(e) => setContentDraft(e.target.value)}
-                  />
-                  <div className="artifact-learning-note">
-                    编辑产物会作为自学习观察信号；不会立即写入规则，明显偏好会在任务完成或复盘时归纳。
-                  </div>
+                  {editingMode === 'content' ? (
+                    <>
+                      <textarea
+                        className="artifact-edit-textarea"
+                        rows={10}
+                        value={contentDraft}
+                        onChange={(e) => setContentDraft(e.target.value)}
+                      />
+                      <div className="artifact-learning-note">
+                        编辑产物会作为自学习观察信号；不会立即写入规则，明显偏好会在任务完成或复盘时归纳。
+                      </div>
+                    </>
+                  ) : (
+                    <div className="artifact-learning-note">
+                      此类产物只在 Taskplane 内重命名；正文或二进制内容交给系统默认应用处理。
+                    </div>
+                  )}
                   <div className="artifact-edit-actions">
                     <button className="btn sm primary" onClick={() => saveEditing(a)}>保存</button>
                     <button className="btn sm ghost" onClick={() => setEditingId(null)}>取消</button>
@@ -1317,8 +1327,8 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
                 <>
                   <pre className="artifact-content">{a.content || '空文件。'}</pre>
                   <div className="artifact-actions">
-                    {canEdit && <button className="btn sm ghost" onClick={() => startEditing(a)}>编辑</button>}
-                    <button className="btn sm ghost" onClick={() => startEditing(a)}>重命名</button>
+                    {canEdit && <button className="btn sm ghost" onClick={() => startEditing(a, 'content')}>编辑</button>}
+                    <button className="btn sm ghost" onClick={() => startEditing(a, 'rename')}>重命名</button>
                     <button className="btn sm ghost" onClick={() => deleteArtifact(a)} style={{ color: 'var(--accent)' }}>删除</button>
                   </div>
                 </>
