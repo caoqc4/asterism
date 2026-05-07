@@ -1041,6 +1041,7 @@ function ProjectDecompositionPanel({
             </div>
             <p>{draft.review}</p>
             <small>{draft.nextStep}</small>
+            <small>层级规则：最多保持项目 → 子任务两层；复杂子任务应升级为项目型重新拆解。</small>
           </div>
         </>
       )}

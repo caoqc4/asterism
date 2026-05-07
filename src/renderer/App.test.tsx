@@ -1131,6 +1131,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('依赖：确认官网改版范围')).toBeTruthy();
     expect(screen.getByText('确认是否创建这些子任务。')).toBeTruthy();
     expect(screen.getByText('子任务保持大块、边界清楚，暂不继续细拆。')).toBeTruthy();
+    expect(screen.getByText(/最多保持项目 → 子任务两层/)).toBeTruthy();
     expect(harness.api.decomposeProject).toHaveBeenCalledWith({ taskId: 'task_created' });
     await user.click(screen.getByRole('button', { name: '创建这些子任务' }));
     expect(await screen.findByText('产出官网改版方案')).toBeTruthy();
