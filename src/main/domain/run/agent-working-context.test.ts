@@ -225,11 +225,18 @@ describe('agent working context', () => {
       },
       task: buildTaskDetail(),
       input: { taskId: 'task_1', type: 'draft', instructions: 'Draft carefully' },
+      applicableWorkHabitSummaries: [
+        '对外材料发布前先做一次事实核对（范围：全局；例：公告初稿）',
+      ],
     });
 
     expect(request.goal).toBe('产出一份可继续编辑的工作草稿');
     expect(formatAgentRunRequestForStep(request)).toContain('优先级语义：escalate_now');
     expect(formatAgentRunRequestForStep(request)).toContain('可用产物：2');
     expect(formatAgentRunRequestForStep(request)).toContain('可用方法模板：1');
+    expect(formatAgentRunRequestForStep(request)).toContain('适用工作习惯：1');
+    expect(formatAgentRunRequestForStep(request)).toContain(
+      '- 对外材料发布前先做一次事实核对（范围：全局；例：公告初稿）',
+    );
   });
 });

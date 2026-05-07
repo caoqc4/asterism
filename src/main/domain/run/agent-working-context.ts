@@ -139,6 +139,7 @@ export function buildAgentRunRequest(params: {
   run: RunRecord;
   task: TaskDetail;
   input: CreateRunInput;
+  applicableWorkHabitSummaries?: string[];
   policy?: AgentPolicy;
 }): AgentRunRequest {
   return {
@@ -148,6 +149,7 @@ export function buildAgentRunRequest(params: {
     instructions: params.input.instructions?.trim() || null,
     mode: params.input.type,
     context: buildAgentWorkingContext(params.task),
+    applicableWorkHabits: params.applicableWorkHabitSummaries ?? [],
     policy: params.policy ?? DEFAULT_AGENT_POLICY,
   };
 }
@@ -174,6 +176,8 @@ export function formatAgentRunRequestForStep(request: AgentRunRequest): string {
     `可用来源：${request.context.sources.length}`,
     `可用产物：${request.context.artifacts.length}`,
     `可用方法模板：${request.context.processTemplates.length}`,
+    `适用工作习惯：${request.applicableWorkHabits.length}`,
+    ...request.applicableWorkHabits.map((habit) => `- ${habit}`),
     `策略：maxSteps=${request.policy.maxSteps}, allowNetwork=${request.policy.allowNetwork}`,
   ].join('\n');
 }

@@ -101,6 +101,7 @@ export type AgentRunRequest = {
   instructions?: string | null;
   mode: AgentRunMode;
   context: AgentWorkingContext;
+  applicableWorkHabits: string[];
   policy: AgentPolicy;
 };
 

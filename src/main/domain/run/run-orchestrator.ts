@@ -90,7 +90,12 @@ export class RunOrchestrator {
     applicableWorkHabitSummaries?: string[];
   }): Promise<RunOrchestrationResult> {
     const { input, run, task } = params;
-    const request = buildAgentRunRequest({ run, task, input });
+    const request = buildAgentRunRequest({
+      run,
+      task,
+      input,
+      applicableWorkHabitSummaries: params.applicableWorkHabitSummaries,
+    });
 
     await this.createRunStepFromAgentEvent({
       type: 'plan.proposed',
@@ -225,6 +230,7 @@ export class RunOrchestrator {
       run: params.run,
       task: params.task,
       input,
+      applicableWorkHabitSummaries: params.applicableWorkHabitSummaries,
       policy: {
         ...LOCAL_AGENT_TOOL_POLICY,
         allowLocalWorkspaceRead: Boolean(input.allowLocalWorkspaceRead),
