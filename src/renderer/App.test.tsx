@@ -830,7 +830,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /继续推进/ }));
 
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
-    expect(screen.getByText(/从任务记忆、执行记录和工作习惯重新组装上下文/)).toBeTruthy();
+    expect(screen.getByText(/从任务记忆、执行记录、关键来源和工作习惯重新组装上下文/)).toBeTruthy();
     await user.click(await screen.findByText('合同盖章跟进'));
     expect(await screen.findByText(/不会中断当前对话/)).toBeTruthy();
     expect(screen.getByText(/上下文切换由你确认/)).toBeTruthy();
@@ -976,6 +976,7 @@ describe('App redesign v1', () => {
     }
 
     expect(await screen.findByText(/开始新会话前会先保全关键决策、偏好变化和未解决问题/)).toBeTruthy();
+    expect(screen.getByText(/只保存精选信号，不保存完整聊天全文/)).toBeTruthy();
     expect(screen.getByText(/同一个问题已重复出现 3 次/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '开始新会话' }));
     await waitFor(() => {

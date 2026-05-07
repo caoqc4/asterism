@@ -33,7 +33,7 @@ function makeWelcomeMessage(taskTitle: string): Message {
   return {
     id: 'm0',
     role: 'assistant',
-    text: `已切换到任务上下文：**${taskTitle}**。\n\n我会从任务记忆、执行记录和工作习惯重新组装上下文。有什么需要讨论或推进的？`,
+    text: `已切换到任务上下文：**${taskTitle}**。\n\n我会从任务记忆、执行记录、关键来源和工作习惯重新组装上下文。有什么需要讨论或推进的？`,
     ts: now(),
   };
 }
@@ -565,7 +565,7 @@ export function RightPanel({ taskId, draftPrompt = null, hidden = false, onTaskC
         {sessionRefreshSuggestion && (
           <div className="panel-refresh-suggestion">
             <div className="panel-refresh-text">
-              这个任务的讨论已经有点长了，重要信息会从任务记忆继续带入。开始新会话前会先保全关键决策、偏好变化和未解决问题，让后续判断更清楚。
+              这个任务的讨论已经有点长了，重要信息会从任务记忆继续带入。开始新会话前会先保全关键决策、偏好变化和未解决问题；只保存精选信号，不保存完整聊天全文。
             </div>
             <div className="panel-refresh-reason">{sessionRefreshSuggestion.reason}</div>
             <div className="panel-refresh-actions">
