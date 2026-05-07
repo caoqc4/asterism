@@ -180,6 +180,7 @@ export function ModelPage() {
       <div className="model-page-head">
         <h2 className="model-page-title">Model</h2>
         <p className="model-page-subtitle">配置 AI Provider 密钥，选择默认使用的模型。</p>
+        <p className="model-page-boundary">Provider 密钥保存在本机系统钥匙串；模型选择只影响后续 AI 调用，不会写入任务记忆。</p>
       </div>
 
       {PROVIDERS.map((section) => {

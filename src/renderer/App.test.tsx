@@ -602,6 +602,16 @@ describe('App redesign v1', () => {
     expect(screen.getByText('暂无外部信号。')).toBeTruthy();
   });
 
+  it('clarifies Model configuration stays local and separate from task memory', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Model/ }));
+
+    expect(await screen.findByText(/Provider 密钥保存在本机系统钥匙串/)).toBeTruthy();
+    expect(screen.getByText(/不会写入任务记忆/)).toBeTruthy();
+  });
+
   it('surfaces committed active tasks in the Brief stats strip', async () => {
     saveTaskAttributes('task_risk', { commitment: '今晚前给 CFO 过目' });
     render(<App />);
