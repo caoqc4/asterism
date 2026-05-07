@@ -320,7 +320,8 @@ export class TaskService {
   }
 
   private buildResumeCard(detail: TaskDetailBase): TaskResumeCardRecord {
-    const keySource = detail.sourceContexts.find((item) => item.isKey) ?? detail.sourceContexts[0] ?? null;
+    const keySource = detail.sourceContexts.find((item) => item.isKey) ?? null;
+    const recentSource = keySource ?? detail.sourceContexts[0] ?? null;
     const currentMethod = detail.processTemplates[0] ?? null;
     const latestArtifact = detail.artifacts[0] ?? null;
     const waitingReason = detail.activeWaitingItem?.reason ?? detail.waitingReason;
@@ -406,7 +407,7 @@ export class TaskService {
       blockerCreatedAt: detail.activeBlocker?.createdAt ?? null,
       dependencyTitle,
       dependencyCreatedAt: detail.activeDependency?.createdAt ?? null,
-      keySourceTitle: keySource?.title ?? null,
+      keySourceTitle: recentSource?.title ?? null,
       latestArtifactTitle: latestArtifact?.title ?? null,
       completionStatus,
       recentChange: latestChange.recentChange,
@@ -425,7 +426,11 @@ export class TaskService {
         ? `完成标准进度：${completionStatus.summary}。`
         : null,
       latestChange.summary,
-      keySource ? `当前最关键的来源材料是“${keySource.title}”。` : null,
+      keySource
+        ? `当前最关键的来源材料是“${keySource.title}”。`
+        : recentSource
+          ? `当前最近更新的来源材料是“${recentSource.title}”。`
+          : null,
       currentMethod ? `当前采用的方法模板是“${currentMethod.title}”。` : null,
       `建议先做：${nextSuggestedMove}`,
     ].filter(Boolean);
@@ -494,14 +499,14 @@ export class TaskService {
             ageLabel: null,
             responsibilitySummary: null,
           },
-      keySource: keySource
+      keySource: recentSource
         ? {
-            sourceContextId: keySource.id,
-            title: keySource.title,
-            detail: keySource.note ?? keySource.uri,
+            sourceContextId: recentSource.id,
+            title: recentSource.title,
+            detail: recentSource.note ?? recentSource.uri,
             priorityReason: getKeySourcePriorityReason({
               timeline: detail.timeline,
-              keySource,
+              keySource: recentSource,
               audience: 'task',
             }),
           }

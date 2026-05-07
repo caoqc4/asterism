@@ -320,6 +320,59 @@ describe('TaskService', () => {
     expect(detail?.resumeCard.currentState).toContain('阻塞：Legal approval pending');
   });
 
+  it('does not label a non-key source as the most important resume source', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('planned'),
+        timeline: [
+          {
+            id: 'timeline_1',
+            taskId: 'task_1',
+            type: 'source_context.updated',
+            payload: JSON.stringify({
+              sourceContextId: 'source_context_recent',
+              title: 'General research note',
+            }),
+            createdAt: '2026-01-02T00:00:00.000Z',
+          },
+        ],
+      }),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+      { listRecentForTask: vi.fn().mockResolvedValue([]) } as never,
+      {
+        listActiveForTask: vi.fn().mockResolvedValue([
+          buildSourceContextRecord({
+            id: 'source_context_recent',
+            title: 'General research note',
+            isKey: false,
+            note: 'Recent but not pinned',
+          }),
+        ]),
+      } as never,
+      { listActive: vi.fn().mockResolvedValue([]) } as never,
+      { listActiveForTask: vi.fn().mockResolvedValue([]) } as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    const detail = await service.getDetail('task_1');
+
+    expect(detail?.resumeCard.summary).toContain('当前最近更新的来源材料是“General research note”。');
+    expect(detail?.resumeCard.summary).not.toContain('当前最关键的来源材料是“General research note”');
+    expect(detail?.resumeCard.keySource).toMatchObject({
+      sourceContextId: 'source_context_recent',
+      title: 'General research note',
+      priorityReason: '当前材料架里该来源最近更新，建议先查看。',
+    });
+  });
+
   it('prioritizes a clear lifecycle change when deriving the next suggested move', async () => {
     const repository = {
       list: vi.fn(),
