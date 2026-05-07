@@ -412,6 +412,7 @@ export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => v
           </div>
           <div className="ctx-learning-output-note">
             学习输出：轻微偏好可静默确认；显著流程、步骤顺序和工具选择必须提议确认；SOP 模板只由你主动保存；停用、删除和覆盖已有规则都由你主动操作。
+            触发边界：只在 Step/Run/Task 完成、你编辑 AI 产物、或会话压缩前提取学习信号，不做持续行为监控。
           </div>
           {sourceCounts.length > 0 && (
             <div className="ctx-learning-source-summary">

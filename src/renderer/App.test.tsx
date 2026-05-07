@@ -1405,6 +1405,8 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/显著流程、步骤顺序和工具选择必须提议确认/)).toBeTruthy();
     expect(screen.getByText(/SOP 模板只由你主动保存/)).toBeTruthy();
     expect(screen.getByText(/停用、删除和覆盖已有规则都由你主动操作/)).toBeTruthy();
+    expect(screen.getByText(/只在 Step\/Run\/Task 完成、你编辑 AI 产物、或会话压缩前提取学习信号/)).toBeTruthy();
+    expect(screen.getByText(/不做持续行为监控/)).toBeTruthy();
     expect(screen.getByText('来源分布')).toBeTruthy();
     expect(screen.getByText('提议确认 1')).toBeTruthy();
     expect(screen.getByText('用户创建 1')).toBeTruthy();
