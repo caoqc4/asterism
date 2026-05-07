@@ -1986,4 +1986,41 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/Step 级轻量对照仍会保留/)).toBeTruthy();
     expect(screen.queryByText('Run 验证通过')).toBeNull();
   });
+
+  it('saves SOP templates without creating work habits when self-learn is disabled', async () => {
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      featureFlags: {
+        enableScheduler: false,
+        enableProviderNativeToolCalls: true,
+        enableSandboxCodingAgent: false,
+        enableSandboxPatchPromotionApply: false,
+        enableSelfCheck: true,
+        enableSelfLearn: false,
+        selfCheckRetryLimit: 2,
+      },
+    }));
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.dblClick(await screen.findByText('董事会材料修订'));
+    await user.click(screen.getByTitle('更多操作'));
+    await user.click(await screen.findByRole('button', { name: '提取流程模板' }));
+
+    expect(await screen.findByText(/自学习已关闭，不会生成新的工作习惯记录/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '保存为模板' }));
+
+    await waitFor(() => {
+      expect(harness.api.createProcessTemplate).toHaveBeenCalledWith(expect.objectContaining({
+        title: '「董事会材料修订」流程模板',
+        kind: 'sop',
+      }));
+      expect(harness.api.applyProcessTemplate).toHaveBeenCalledWith({
+        taskId: 'task_risk',
+        templateId: 'process_template_sop',
+        note: '从任务工作台提取并保存的 SOP 模板',
+      });
+    });
+    expect(harness.api.recordSopTemplateHabit).not.toHaveBeenCalled();
+  });
 });

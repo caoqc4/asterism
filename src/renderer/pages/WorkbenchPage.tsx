@@ -148,6 +148,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
   const [projectOptions, setProjectOptions] = useState<Array<{ id: string; title: string }>>([]);
   const [projectChildren, setProjectChildren] = useState<ProjectChildSummary[]>([]);
   const [generatedResume, setGeneratedResume] = useState<{ summary: string; nextSuggestedMove: string; generatedAt: string } | null>(null);
+  const [selfLearnEnabled, setSelfLearnEnabled] = useState(true);
 
   function loadProjectOptions(records?: TaskListItemRecord[]) {
     const applyRecords = (items: TaskListItemRecord[]) => {
@@ -205,6 +206,9 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
 
     const loadDetail = window.api?.getTaskDetail(taskId).then((d) => {
       if (d) setDetail(d);
+    }).catch(() => {});
+    window.api?.getAiConfigStatus?.().then((status) => {
+      setSelfLearnEnabled(status.featureFlags.enableSelfLearn !== false);
     }).catch(() => {});
 
     Promise.allSettled([loadDetail, loadRuns()].filter(Boolean)).finally(() => setLoading(false));
@@ -567,6 +571,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
       {showSopExtract && detail && (
         <SopExtractModal
           detail={detail}
+          selfLearnEnabled={selfLearnEnabled}
           onCancel={() => setShowSopExtract(false)}
           onSave={(steps) => {
             const input = {
@@ -574,10 +579,12 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
               taskTitle: title,
               steps,
             };
-            if (window.api?.recordSopTemplateHabit) {
-              void window.api.recordSopTemplateHabit(input);
-            } else {
-              recordSopTemplateHabit(input);
+            if (selfLearnEnabled) {
+              if (window.api?.recordSopTemplateHabit) {
+                void window.api.recordSopTemplateHabit(input);
+              } else {
+                recordSopTemplateHabit(input);
+              }
             }
             const api = window.api;
             if (api) {
@@ -1708,10 +1715,12 @@ function formatSopProcessTemplateContent(steps: string[]): string {
 
 function SopExtractModal({
   detail,
+  selfLearnEnabled,
   onCancel,
   onSave,
 }: {
   detail: TaskDetail;
+  selfLearnEnabled: boolean;
   onCancel: () => void;
   onSave: (steps: string[]) => void;
 }) {
@@ -1741,7 +1750,12 @@ function SopExtractModal({
           <div className="sop-template-head">
             <span className="completion-check-label">任务类型</span>
             <strong>{detail.title}</strong>
-            <p>保存后会写入 Context 的工作习惯记录，后续类似任务可作为默认流程参考。</p>
+            <p>
+              保存后会写入流程模板并挂到当前任务
+              {selfLearnEnabled
+                ? '，同时写入 Context 的工作习惯记录，后续类似任务可作为默认流程参考。'
+                : '；自学习已关闭，不会生成新的工作习惯记录。'}
+            </p>
           </div>
           <div className="sop-step-list">
             {steps.map((step, index) => (
