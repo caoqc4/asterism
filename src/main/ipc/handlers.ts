@@ -23,7 +23,11 @@ import type {
 import type { CreateCodeAgentRunInput, CreateRunInput } from '../../shared/types/run.js';
 import type { AiConfigInput, FeatureFlags } from '../../shared/types/settings.js';
 import type { OperatorStartedRunRequest } from '../../shared/types/operator-started-run.js';
-import type { CreateSourceContextInput, UpdateSourceContextInput } from '../../shared/types/source-context.js';
+import type {
+  CreateSourceContextInput,
+  SourceContextRecord,
+  UpdateSourceContextInput,
+} from '../../shared/types/source-context.js';
 import type {
   CompletionOverrideLearningSignalInput,
   CreateManualWorkHabitInput,
@@ -69,6 +73,13 @@ function extractJsonObject(text: string): unknown {
 
 function readString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value.trim() : fallback;
+}
+
+function selectPromptKeySources(sourceContexts: SourceContextRecord[], maxItems = 3): SourceContextRecord[] {
+  return sourceContexts
+    .filter((source) => source.status === 'active' && source.isKey)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, maxItems);
 }
 
 function formatAiBehaviorPreferences(featureFlags: FeatureFlags): string {
@@ -415,6 +426,7 @@ export function registerIpcHandlers(): void {
     const task = input.taskId
       ? await getServices().taskService.getDetail(input.taskId).catch(() => null)
       : null;
+    const keySources = task ? selectPromptKeySources(task.sourceContexts) : [];
     const taskContext = task
       ? [
           `Task title: ${task.title}`,
@@ -426,7 +438,7 @@ export function registerIpcHandlers(): void {
           `Active blocker: ${task.activeBlocker?.title ?? 'none'}`,
           `Resume: ${task.resumeCard.summary}`,
           `Suggested move: ${task.resumeCard.nextSuggestedMove}`,
-          `Key sources: ${task.sourceContexts.slice(0, 3).map((s) => s.title).join(', ') || 'none'}`,
+          `Key sources: ${keySources.map((s) => s.title).join(', ') || 'none'}`,
           `Recent activity: ${task.timeline.slice(-5).map((e) => `${e.type}${e.payload ? `=${e.payload}` : ''}`).join(' / ') || 'none'}`,
         ].join('\n')
       : null;
@@ -456,6 +468,7 @@ export function registerIpcHandlers(): void {
     const model = getLanguageModel(config);
     const task = await getServices().taskService.getDetail(input.taskId);
     if (!task) throw new Error(`Task not found: ${input.taskId}`);
+    const keySources = selectPromptKeySources(task.sourceContexts);
 
     const result = await generateText({
       model,
@@ -487,7 +500,7 @@ export function registerIpcHandlers(): void {
         `Summary: ${task.summary ?? 'none'}`,
         `Next step: ${task.nextStep ?? 'none'}`,
         `Risk: ${task.riskLevel}${task.riskNote ? ` (${task.riskNote})` : ''}`,
-        `Key sources: ${task.sourceContexts.slice(0, 3).map((source) => `${source.title}: ${source.note ?? source.content ?? source.uri ?? ''}`).join(' / ') || 'none'}`,
+        `Key sources: ${keySources.map((source) => `${source.title}: ${source.note ?? source.content ?? source.uri ?? ''}`).join(' / ') || 'none'}`,
         `Recent activity: ${task.timeline.slice(-5).map((event) => `${event.type}${event.payload ? `=${event.payload}` : ''}`).join(' / ') || 'none'}`,
         input.instructions?.trim() ? `User instructions: ${input.instructions.trim()}` : 'User instructions: none',
       ].join('\n'),

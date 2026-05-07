@@ -343,6 +343,111 @@ describe('registerIpcHandlers', () => {
     expect(system).toContain('Ask for confirmation more often');
   });
 
+  it('uses the latest active key sources in task chat prompts', async () => {
+    servicesMock.aiConfigService.resolveRuntimeConfig.mockResolvedValue({
+      provider: 'openai',
+      model: 'gpt-test',
+      apiKey: 'sk-test',
+      baseUrl: null,
+      featureFlags: {
+        enableScheduler: false,
+      },
+    });
+    servicesMock.taskService.getDetail.mockResolvedValue({
+      activeBlocker: null,
+      activeWaitingItem: null,
+      nextStep: '确认材料',
+      resumeCard: {
+        nextSuggestedMove: '继续修订',
+        summary: '等待最终拍板',
+      },
+      riskLevel: 'high',
+      riskNote: null,
+      sourceContexts: [
+        { id: 'source_old', isKey: true, status: 'active', title: '旧邮件', updatedAt: '2026-01-01T00:00:00.000Z' },
+        { id: 'source_inactive', isKey: true, status: 'archived', title: '归档材料', updatedAt: '2026-01-05T00:00:00.000Z' },
+        { id: 'source_ignore', isKey: false, status: 'active', title: '普通备注', updatedAt: '2026-01-06T00:00:00.000Z' },
+        { id: 'source_2', isKey: true, status: 'active', title: 'CEO 批注', updatedAt: '2026-01-02T00:00:00.000Z' },
+        { id: 'source_3', isKey: true, status: 'active', title: '法务意见', updatedAt: '2026-01-03T00:00:00.000Z' },
+        { id: 'source_4', isKey: true, status: 'active', title: '财务复核', updatedAt: '2026-01-04T00:00:00.000Z' },
+      ],
+      state: 'blocked',
+      summary: '修订董事会材料',
+      timeline: [],
+      title: '董事会材料修订',
+      waitingReason: null,
+    });
+
+    const handler = getRegisteredHandler<
+      [{ messages: Array<{ role: 'user' | 'assistant'; content: string }>; taskId?: string | null }],
+      { text: string }
+    >('ai:chat');
+
+    await handler({}, {
+      taskId: 'task_1',
+      messages: [{ role: 'user', content: '现在该看什么？' }],
+    });
+
+    const system = generateTextMock.mock.calls[0]?.[0]?.system as string;
+    expect(system).toContain('Key sources: 财务复核, 法务意见, CEO 批注');
+    expect(system).not.toContain('旧邮件');
+    expect(system).not.toContain('归档材料');
+    expect(system).not.toContain('普通备注');
+  });
+
+  it('uses the latest active key sources in project decomposition prompts', async () => {
+    servicesMock.aiConfigService.resolveRuntimeConfig.mockResolvedValue({
+      provider: 'openai',
+      model: 'gpt-test',
+      apiKey: 'sk-test',
+      baseUrl: null,
+      featureFlags: {
+        enableScheduler: false,
+      },
+    });
+    generateTextMock.mockResolvedValue({
+      text: JSON.stringify({
+        parentGoal: '完成董事会材料修订',
+        review: '拆解保持大块且独立。',
+        nextStep: '确认拆解',
+        subtasks: [
+          {
+            title: '完成材料修订',
+            summary: '整合关键意见并形成版本。',
+            acceptanceCriteria: '用户确认可提交。',
+            dependency: null,
+            rationale: '可独立交付。',
+          },
+        ],
+      }),
+    });
+    servicesMock.taskService.getDetail.mockResolvedValue({
+      nextStep: '确认材料',
+      riskLevel: 'high',
+      riskNote: null,
+      sourceContexts: [
+        { id: 'source_old', isKey: true, note: 'old', status: 'active', title: '旧邮件', updatedAt: '2026-01-01T00:00:00.000Z' },
+        { id: 'source_2', isKey: true, note: 'ceo', status: 'active', title: 'CEO 批注', updatedAt: '2026-01-02T00:00:00.000Z' },
+        { id: 'source_3', isKey: true, note: 'legal', status: 'active', title: '法务意见', updatedAt: '2026-01-03T00:00:00.000Z' },
+        { id: 'source_4', isKey: true, note: 'finance', status: 'active', title: '财务复核', updatedAt: '2026-01-04T00:00:00.000Z' },
+      ],
+      summary: '修订董事会材料',
+      timeline: [],
+      title: '董事会材料修订',
+    });
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; instructions?: string | null }],
+      unknown
+    >('ai:decomposeProject');
+
+    await handler({}, { taskId: 'task_1' });
+
+    const prompt = generateTextMock.mock.calls[0]?.[0]?.prompt as string;
+    expect(prompt).toContain('Key sources: 财务复核: finance / 法务意见: legal / CEO 批注: ceo');
+    expect(prompt).not.toContain('旧邮件');
+  });
+
   it('emits decision and task events after decision actions', async () => {
     servicesMock.decisionService.act.mockResolvedValue({
       id: 'decision_1',
