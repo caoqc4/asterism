@@ -1406,6 +1406,8 @@ describe('App redesign v1', () => {
     await waitFor(() => {
       expect(harness.api.archiveSourceContext).toHaveBeenCalledWith('source_1');
     });
+    expect(await screen.findByText(/暂无来源材料或链接/)).toBeTruthy();
+    expect(screen.getByText(/产出的文件会在「产物」Tab 管理/)).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '产物' }));
     expect(await screen.findByText('工作文件夹产物')).toBeTruthy();

@@ -1086,7 +1086,7 @@ function SourcesTab({
       )}
 
       {sources.length === 0 && !showForm && (
-        <div className="tab-empty">暂无来源文件。</div>
+        <div className="tab-empty">暂无来源材料或链接。产出的文件会在「产物」Tab 管理。</div>
       )}
       {sources.map((s) => (
         <div key={s.id} className="source-item">
