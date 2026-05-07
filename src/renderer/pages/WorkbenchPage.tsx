@@ -1615,6 +1615,7 @@ function ActivityTab({ timeline }: { timeline: { id: string; type: string; paylo
 
 function ActivityItem({ event }: { event: { id: string; type: string; payload: string | null; createdAt: string } }) {
   const detail = formatEventDetail(event.type, event.payload);
+  const priority = activityPriority(event.type);
   return (
     <div className="activity-item">
       <div className="activity-dot-wrap">
@@ -1622,7 +1623,10 @@ function ActivityItem({ event }: { event: { id: string; type: string; payload: s
         <div className="activity-line" />
       </div>
       <div className="activity-body">
-        <span className="activity-text">{formatEventLabel(event.type, event.payload)}</span>
+        <div className="activity-title-row">
+          <span className={`activity-priority-badge ${priority}`}>{priority.toUpperCase()}</span>
+          <span className="activity-text">{formatEventLabel(event.type, event.payload)}</span>
+        </div>
         {detail && <span className="activity-detail">{detail}</span>}
         <span className="activity-time muted">
           {new Date(event.createdAt).toLocaleString('zh', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}

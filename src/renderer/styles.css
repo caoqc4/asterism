@@ -3102,6 +3102,36 @@ a { color: inherit; text-decoration: none; }
   gap: 1px;
   padding: 4px 0 12px;
   flex: 1;
+  min-width: 0;
+}
+.activity-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.activity-priority-badge {
+  flex-shrink: 0;
+  width: 24px;
+  padding: 1px 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--ink-4);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 15px;
+  text-align: center;
+}
+.activity-priority-badge.p1 {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.activity-priority-badge.p2 {
+  border-color: var(--amber-line);
+  background: var(--amber-soft);
+  color: var(--amber);
 }
 .activity-text { color: var(--ink-2); line-height: 1.4; }
 .activity-detail {
