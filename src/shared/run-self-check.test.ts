@@ -45,6 +45,12 @@ describe('run self-check lightweight rule engine', () => {
     });
   });
 
+  it('mentions applicable work habits in step check details', () => {
+    expect(evaluateRunStepSelfCheck(buildStep(), { applicableWorkHabitCount: 2 })).toMatchObject({
+      detail: '已通过轻量规则对照并留下结果记录。 本次还对照 2 条已确认工作习惯。',
+    });
+  });
+
   it('warns when a completed step has no reviewable output', () => {
     expect(evaluateRunStepSelfCheck(buildStep({ output: null }))).toMatchObject({
       tone: 'warn',
@@ -66,6 +72,15 @@ describe('run self-check lightweight rule engine', () => {
     })).toMatchObject({
       tone: 'fail',
       label: 'Run 检查未通过',
+    });
+  });
+
+  it('mentions applicable work habits in run check details', () => {
+    expect(evaluateRunSelfCheck(buildRun(), {
+      ...buildRun(),
+      steps: [buildStep()],
+    }, { applicableWorkHabitCount: 1 })).toMatchObject({
+      detail: '执行结果已有输出或步骤证据，可进入人工审查。 本次还对照 1 条已确认工作习惯。',
     });
   });
 });

@@ -515,6 +515,7 @@ describe('RunService', () => {
       targetType: 'run',
       targetId: 'run_1',
       source: 'lightweight_rule_engine',
+      detail: expect.stringContaining('本次还对照 1 条已确认工作习惯。'),
     }));
     expect(result.status).toBe('completed');
   });

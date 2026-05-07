@@ -142,7 +142,7 @@ export class RunService {
         Boolean(result.output?.trim()),
         completed.id,
       );
-      await this.persistTerminalRunVerifications(completed);
+      await this.persistTerminalRunVerifications(completed, applicableWorkHabitSummaries);
       return completed;
     }
 
@@ -175,7 +175,7 @@ export class RunService {
       result.message,
     );
     await this.taskService.annotateRunFailed(input.taskId, result.message, failed.id);
-    await this.persistTerminalRunVerifications(failed);
+    await this.persistTerminalRunVerifications(failed, applicableWorkHabitSummaries);
     return failed;
   }
 
@@ -258,11 +258,15 @@ export class RunService {
     return completed;
   }
 
-  private async persistTerminalRunVerifications(run: RunRecord): Promise<void> {
+  private async persistTerminalRunVerifications(
+    run: RunRecord,
+    applicableWorkHabitSummaries: string[] = [],
+  ): Promise<void> {
     await persistTerminalRunVerifications({
       run,
       runStepRepository: this.runStepRepository,
       runVerificationRepository: this.runVerificationRepository,
+      applicableWorkHabitSummaries,
       includeRunLevel: await this.shouldPersistRunLevelSelfCheck(),
     });
   }

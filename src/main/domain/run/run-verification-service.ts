@@ -7,6 +7,7 @@ export type RunVerificationWriter = Pick<RunVerificationRepository, 'upsert'>;
 export type RunStepReader = Pick<RunStepRepository, 'listForRun'>;
 
 type PersistRunVerificationOptions = {
+  applicableWorkHabitSummaries?: string[];
   includeRunLevel?: boolean;
 };
 
@@ -20,7 +21,9 @@ export async function persistLightweightRunVerifications(
   const steps = detail.steps ?? [];
   for (const step of steps) {
     if (!['completed', 'failed', 'skipped'].includes(step.status)) continue;
-    const check = evaluateRunStepSelfCheck(step);
+    const check = evaluateRunStepSelfCheck(step, {
+      applicableWorkHabitCount: options.applicableWorkHabitSummaries?.length,
+    });
     await runVerificationRepository.upsert({
       runId: detail.id,
       targetType: 'step',
@@ -35,7 +38,9 @@ export async function persistLightweightRunVerifications(
   if (options.includeRunLevel === false) return;
   if (detail.status !== 'completed' && detail.status !== 'failed') return;
 
-  const runCheck = evaluateRunSelfCheck(detail, detail);
+  const runCheck = evaluateRunSelfCheck(detail, detail, {
+    applicableWorkHabitCount: options.applicableWorkHabitSummaries?.length,
+  });
   await runVerificationRepository.upsert({
     runId: detail.id,
     targetType: 'run',
@@ -51,6 +56,7 @@ export async function persistTerminalRunVerifications(params: {
   run: RunRecord;
   runStepRepository: RunStepReader;
   runVerificationRepository: RunVerificationWriter | null;
+  applicableWorkHabitSummaries?: string[];
   includeRunLevel?: boolean;
 }): Promise<void> {
   if (!params.runVerificationRepository) return;
@@ -65,6 +71,7 @@ export async function persistTerminalRunVerifications(params: {
     },
     params.runVerificationRepository,
     {
+      applicableWorkHabitSummaries: params.applicableWorkHabitSummaries,
       includeRunLevel: params.includeRunLevel,
     },
   );
