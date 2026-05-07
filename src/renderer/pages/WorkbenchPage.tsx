@@ -118,6 +118,13 @@ function buildResumeSignals(params: {
   return signals;
 }
 
+function selectRecentKeySources(sources: SourceContextRecord[], maxItems: number): SourceContextRecord[] {
+  return sources
+    .filter((source) => source.status === 'active' && source.isKey)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, maxItems);
+}
+
 interface WorkbenchPageProps {
   taskId: string;
   onBack: () => void;
@@ -232,7 +239,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
     if (!detail) return;
     const recentRun = activeRun ?? runs[0] ?? null;
     const recentRunCheck = recentRun ? evaluateRunSelfCheck(recentRun, activeRunDetail) : null;
-    const keySources = detail.sourceContexts.filter((source) => source.isKey).slice(0, 2);
+    const keySources = selectRecentKeySources(detail.sourceContexts, 2);
     const typeLabel = taskAttrs ? TASK_TYPE_LABELS[taskAttrs.type] : '一次性';
     const statusLabel = status === 'running'
       ? '正在执行'
@@ -1571,8 +1578,9 @@ function IconTrash() {
 function buildSopSteps(detail: TaskDetail): string[] {
   const steps: string[] = [];
 
-  if (detail.sourceContexts.length > 0) {
-    steps.push(`收集并确认关键来源：${detail.sourceContexts.slice(0, 2).map((source) => source.title).join('、')}`);
+  const keySources = selectRecentKeySources(detail.sourceContexts, 2);
+  if (keySources.length > 0) {
+    steps.push(`收集并确认关键来源：${keySources.map((source) => source.title).join('、')}`);
   }
 
   if (detail.summary) {

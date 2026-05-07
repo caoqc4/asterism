@@ -1706,6 +1706,12 @@ describe('App redesign v1', () => {
         tags: ['董事会材料修订'],
         content: expect.stringContaining('复盘本次执行并更新默认流程'),
       }));
+      expect(harness.api.createProcessTemplate).toHaveBeenCalledWith(expect.objectContaining({
+        content: expect.stringContaining('收集并确认关键来源：财务复核、法务意见'),
+      }));
+      expect(harness.api.createProcessTemplate).toHaveBeenCalledWith(expect.objectContaining({
+        content: expect.not.stringContaining('董事会反馈邮件'),
+      }));
       expect(harness.api.applyProcessTemplate).toHaveBeenCalledWith({
         taskId: 'task_risk',
         templateId: 'process_template_sop',
