@@ -114,7 +114,7 @@ export function App() {
             <>
               {route === 'brief' && (
                 <BriefPage
-                  onOpenTask={() => navigate('tasks')}
+                  onOpenTask={openWorkbench}
                   onOpenDecision={() => navigate('decisions')}
                   onOpenPanel={openPanelForTask}
                 />

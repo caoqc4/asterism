@@ -676,6 +676,25 @@ describe('App redesign v1', () => {
     expect(blockedCard?.querySelector('.dot.risk')).toBeTruthy();
   });
 
+  it('routes running Brief focus primary action to the task workbench', async () => {
+    const user = userEvent.setup();
+    const runningTask = buildTask({
+      id: 'task_running_brief',
+      title: '生成投资人更新稿',
+      state: 'running',
+      summary: 'Run 正在生成投资人更新稿。',
+    });
+    vi.mocked(harness.api.getHomeBrief).mockResolvedValue(buildBriefData([runningTask], []));
+    vi.mocked(harness.api.getTaskDetail).mockImplementation(async (taskId: string) =>
+      taskId === runningTask.id ? buildTaskDetail(runningTask) : null);
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /查看 Run/ }));
+
+    expect(await screen.findByText('工作台')).toBeTruthy();
+    expect(await screen.findByText('生成投资人更新稿')).toBeTruthy();
+  });
+
   it('lets users adjust Brief focus order for today without changing lanes', async () => {
     render(<App />);
 

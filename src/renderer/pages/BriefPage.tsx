@@ -62,6 +62,16 @@ function statusFromBriefTask(task: HomeBriefData['recentTasks'][number] | undefi
   return undefined;
 }
 
+function actionLabelFromStatus(
+  status: FocusTask['status'],
+  fallback: string,
+): string {
+  if (status === 'running') return '查看 Run';
+  if (status === 'waiting') return '起草跟进';
+  if (status === 'blocked') return '解除阻塞';
+  return fallback;
+}
+
 function focusTasksFromBriefData(data: HomeBriefData): FocusTask[] {
   const seen = new Set<string>();
   return data.recommendedActions
@@ -73,13 +83,14 @@ function focusTasksFromBriefData(data: HomeBriefData): FocusTask[] {
     .slice(0, 5)
     .map((a) => {
       const task = data.recentTasks.find((t) => t.id === a.taskId);
+      const status = statusFromBriefTask(task);
       return {
         id: a.taskId!,
         title: task?.title ?? a.taskId!,
         lane: laneFromPriorityLane(a.lane),
         whyNow: a.reason,
-        action: a.label,
-        status: statusFromBriefTask(task),
+        action: actionLabelFromStatus(status, a.label),
+        status,
       };
     });
 }
@@ -264,7 +275,10 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
               onDragStart={() => handleDragStart(task.id)}
               onDragOver={(e) => handleDragOver(e, task.id)}
               onDrop={handleDrop}
-              onAction={() => onOpenPanel(task.id)}
+              onAction={() => {
+                if (task.status === 'running') onOpenTask(task.id);
+                else onOpenPanel(task.id);
+              }}
               onDeferToggle={() =>
                 setDeferOpenId((prev) => (prev === task.id ? null : task.id))
               }
