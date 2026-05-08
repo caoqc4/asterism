@@ -2,6 +2,22 @@
 
 Use this file when running the manual alpha path. Keep entries short and actionable.
 
+## 2026-05-08 Main Packaged Recovery Recheck
+
+- Build / commit: `a47a5ce Clarify alpha handoff baseline docs`
+- Tester: Codex
+- Commands:
+  - `npm run accept:packaged-recovery:mac`
+  - `npx vitest run src/main/local-smoke-boundaries-script.test.ts`
+- Result: pass
+- Notes:
+  - Packaged Home recovery, project decomposition, Context learning, Code Agent
+    UI, Run/Decision recovery, and Settings config smokes all passed against
+    the current unsigned app.
+  - The light local smoke-boundary regression also passed with 1 file / 13
+    tests after updating the redesign assessment from `redesign` branch / PR
+    wording to current `main` alpha-use wording.
+
 ## 2026-05-08 Redesign Packaged Recovery Pass
 
 - Build / commit: `20ea48c Strengthen redesign packaged smoke checks`

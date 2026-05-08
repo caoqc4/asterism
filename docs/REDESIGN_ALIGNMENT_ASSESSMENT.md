@@ -1,26 +1,27 @@
 # Redesign Alignment Assessment
 
-Status: current `redesign` branch assessment for the high-fidelity prototype and
-the product design documents in `doc_privice/19...` and `doc_privice/20...`.
+Status: current `main` assessment for the high-fidelity prototype and the
+product design documents in `doc_privice/19...` and `doc_privice/20...`.
 
 Assessment date: 2026-05-07.
 
 ## Summary
 
-The current `redesign` branch is broadly aligned with the v1 product direction:
+The current `main` branch is broadly aligned with the v1 product direction:
 Taskplane now reads as a task-native Agent workbench rather than a chat-first or
 run-first tool. The main navigation, Brief/Tasks/Decisions/Context split,
 right-panel task conversation model, task workbench, project decomposition,
 self-check visibility, and work-habit learning surfaces are in place.
 
 The remaining gaps are not mostly missing UI screens. They are product-depth
-gaps that should be validated after PR review: real external signal ingestion,
-real scheduled/event trigger execution, stronger AI-backed verifier behavior,
-and richer session history. These should stay out of the current frontend
-redesign closeout unless a real use case proves they are blocking.
+gaps that should be validated through alpha use: real external signal
+ingestion, real scheduled/event trigger execution, stronger AI-backed verifier
+behavior, and richer session history. These should stay out of the current
+frontend redesign closeout unless a real use case proves they are blocking.
 
-Recommended next state: prepare `redesign` for PR review after one focused
-manual walkthrough. Avoid broad new feature work until the branch is reviewed.
+Recommended next state: run focused alpha walkthroughs and fix only concrete
+product friction. Avoid broad new feature work until real use exposes a
+blocking gap.
 
 For the concrete product validation pass, use
 [REDESIGN_V1_ACCEPTANCE_CHECKLIST.md](REDESIGN_V1_ACCEPTANCE_CHECKLIST.md).
@@ -63,7 +64,7 @@ For the concrete product validation pass, use
 
 ## Deferred On Purpose
 
-These items should not block PR review of the redesign branch:
+These items should not block alpha use of the redesign baseline:
 
 - Live external-source ingestion into Brief.
 - Full scheduler/event listener runtime for scheduled and event-triggered tasks.
@@ -75,7 +76,7 @@ These items should not block PR review of the redesign branch:
 
 ## Suggested Manual Walkthrough
 
-Before opening or merging the PR, run one manual product pass:
+For each focused alpha pass, run one manual product walkthrough:
 
 1. Open Brief and confirm external-signal empty state is visible by design.
 2. Continue a Brief focus task into the right panel.
@@ -91,14 +92,14 @@ Before opening or merging the PR, run one manual product pass:
    memory is preserved.
 8. Review Decisions and confirm ranking cues make approval risk clearer.
 
-## PR Recommendation
+## Alpha Recommendation
 
-The next work item should be PR preparation rather than more feature expansion:
+The next work item should be alpha-use validation rather than more feature
+expansion:
 
-- keep `redesign` as the review branch;
-- include this assessment in the PR description;
+- keep this assessment as the redesign baseline on `main`;
 - list the intentional exception for Brief external-signal empty state;
 - call out backend/runtime deferred items separately from frontend redesign
   acceptance;
-- require `npm run lint`, `npm run build`, and the renderer interaction tests
-  before merge.
+- require `npm run verify` plus targeted packaged smokes before treating a new
+  alpha baseline as accepted.
