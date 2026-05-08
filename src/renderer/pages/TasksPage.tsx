@@ -174,6 +174,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
   const [selectedSources, setSelectedSources] = useState<SourceContextRecord[]>([]);
   const [pendingDecisions, setPendingDecisions] = useState<DecisionRecord[]>([]);
   const [deferOpenId, setDeferOpenId] = useState<string | null>(null);
+  const [deferConflict, setDeferConflict] = useState<{ task: Task; option: string; count: number } | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; taskId: string } | null>(null);
   const [completionCheckTask, setCompletionCheckTask] = useState<Task | null>(null);
   const [projectDraft, setProjectDraft] = useState<{ projectId: string; result: ProjectDecompositionResult } | null>(null);
@@ -336,9 +337,19 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
 
   function deferTask(task: Task, option: string) {
     setDeferOpenId(null);
+    const simulatedCount = option === 'next-monday' ? 4 : 1;
+    if (simulatedCount >= 3) {
+      setDeferConflict({ task, option, count: simulatedCount });
+      return;
+    }
+    confirmDeferTask(task, deferLabel(option));
+  }
+
+  function confirmDeferTask(task: Task, targetLabel: string) {
+    setDeferConflict(null);
     setSelectedId(null);
     setAllTasks((prev) => prev.filter((t) => t.id !== task.id));
-    transitionWithPlanningHop(task, 'waiting_external', `延后处理：${deferLabel(option)}`).catch(() => reloadTasks());
+    transitionWithPlanningHop(task, 'waiting_external', `延后处理：${targetLabel}`).catch(() => reloadTasks());
   }
 
   function updateTaskRisk(taskId: string, riskLevel: TaskRiskLevel) {
@@ -889,6 +900,49 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
           onArchive={() => archiveTask(contextMenu.taskId)}
           onCopyLink={() => copyTaskLink(contextMenu.taskId)}
         />
+      )}
+
+      {deferConflict && (
+        <div className="modal-backdrop" onClick={() => setDeferConflict(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h3>目标日已比较饱满</h3>
+            </div>
+            <div className="modal-body">
+              <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6 }}>
+                下周一已有 {deferConflict.count} 件任务，继续安排到周一还是移到周二？
+              </p>
+            </div>
+            <div className="modal-foot">
+              <button className="btn sm" onClick={() => setDeferConflict(null)}>
+                取消
+              </button>
+              <button
+                className="btn sm"
+                onClick={() => confirmDeferTask(deferConflict.task, deferLabel(deferConflict.option))}
+              >
+                周一
+              </button>
+              <button
+                className="btn sm primary"
+                onClick={() => confirmDeferTask(deferConflict.task, '周二')}
+              >
+                周二
+              </button>
+              <button
+                className="btn sm ghost"
+                onClick={() => {
+                  const taskId = deferConflict.task.id;
+                  setDeferConflict(null);
+                  setSelectedId(taskId);
+                  setDeferOpenId(taskId);
+                }}
+              >
+                我来选
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {completionCheckTask && (

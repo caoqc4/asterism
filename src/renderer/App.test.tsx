@@ -1200,6 +1200,33 @@ describe('App redesign v1', () => {
     });
   });
 
+  it('uses the Brief-style fullness prompt for Tasks row defer', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByText('董事会材料修订'));
+    await user.click(await screen.findByRole('button', { name: '延后 ▾' }));
+    await user.click(await screen.findByRole('button', { name: '下周一' }));
+
+    expect(await screen.findByText(/下周一已有 4 件任务/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: '我来选' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '我来选' }));
+    expect(screen.queryByText(/下周一已有 4 件任务/)).toBeNull();
+    expect(await screen.findByRole('button', { name: '选日期…' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '下周一' }));
+    await user.click(await screen.findByRole('button', { name: '周二' }));
+
+    await waitFor(() => {
+      expect(harness.api.transitionTask).toHaveBeenCalledWith({
+        id: 'task_risk',
+        nextState: 'waiting_external',
+        waitingReason: '延后处理：周二',
+      });
+    });
+  });
+
   it('runs low-frequency task row actions from the Tasks context menu', async () => {
     const user = userEvent.setup();
     const writeText = vi.fn().mockResolvedValue(undefined);
