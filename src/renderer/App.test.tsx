@@ -1845,7 +1845,7 @@ describe('App redesign v1', () => {
     await user.dblClick(await screen.findByText('低信号任务'));
 
     expect(await screen.findByText('信号不足，先补齐目标')).toBeTruthy();
-    expect(screen.getByText(/可通过规划讨论或补充来源纠正这段叙事/)).toBeTruthy();
+    expect(screen.getByText(/可通过规划下一步或补充来源纠正这段叙事/)).toBeTruthy();
   });
 
   it('opens a task workbench and keeps Runs scoped under the task instead of global navigation', async () => {

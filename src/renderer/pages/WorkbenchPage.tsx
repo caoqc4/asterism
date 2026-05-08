@@ -483,7 +483,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
               </span>
             ))}
             {hasThinResumeSignal && (
-              <span className="resume-signal-note">可通过规划讨论或补充来源纠正这段叙事。</span>
+              <span className="resume-signal-note">可通过{planningPrompt.label}或补充来源纠正这段叙事。</span>
             )}
           </div>
         )}
