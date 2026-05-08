@@ -4,7 +4,7 @@ This assessment maps the alpha checklist to the current automated coverage and t
 
 ## Summary
 
-Current status: functionally alpha-accepted for the local unsigned build path, with signed/notarized release work still deferred. A focused manual alpha pass plus targeted packaged smokes now cover the core local path through task creation, task state transition, decision creation, no-key run failure, successful AI-backed run, packaged read-only workspace agent execution, Home recovery, Settings config save, completion closeout, Code Agent staged-patch recovery, Browser Evidence review, and unsigned macOS directory packaging. The repeatable local handoff command is now `npm run accept:alpha-local`, which passed end to end on 2026-05-02.
+Current status: functionally alpha-accepted for the local unsigned build path, with signed/notarized release work still deferred. A focused manual alpha pass plus targeted packaged smokes now cover the core local path through task creation, task state transition, decision creation, no-key run failure, successful AI-backed run, packaged read-only workspace agent execution, Home recovery, Settings config save, completion closeout, Code Agent staged-patch recovery, Browser Evidence review, redesign v1 packaged recovery, and unsigned macOS directory packaging. The repeatable local handoff command remains `npm run accept:alpha-local`; it passed end to end on 2026-05-02. On 2026-05-08, a combined attempt reached the sandbox-coding batch before an apparent Vitest process exit hang, and all alpha-local constituent gates passed when rerun in focused commands.
 
 Strong automated coverage already exists for the main control-plane semantics,
 repository persistence, IPC routing, config/keychain behavior, scheduler
@@ -25,6 +25,20 @@ Status: mostly covered.
   stayed in default `status=skip`, and release preflight stayed read-only with
   the expected `status=not-ready` because signing/notarization credentials are
   still missing.
+- on 2026-05-08, `npm run accept:alpha-local` was attempted on pushed `main`.
+  The run completed `verify` with 133 test files / 897 tests and reached the
+  sandbox-coding batch before an apparent Vitest process exit hang. The specific
+  idle batch files passed immediately when split out; focused reruns of
+  `accept:sandbox-coding`, `accept:agent-local`,
+  `accept:sandbox-coding:model-producer-preflight`, `smoke:release:mac`,
+  `accept:packaged-recovery:mac`, and `accept:release:mac-preflight` all passed.
+  Model-producer preflight stayed in default `status=skip`; release preflight
+  stayed read-only with expected `status=not-ready`.
+- on 2026-05-08, `npm run accept:packaged-recovery:mac` passed after the
+  redesign v1 smoke updates, covering Home recovery, project decomposition,
+  Context learning, Code Agent UI, Run/Decision recovery, and Settings config.
+  The first Settings smoke correctly failed against an older packaged app until
+  `npm run dist:mac:dir` rebuilt `release/mac-arm64/Taskplane.app`.
 - on 2026-05-02, `npm run verify` passed again on pushed `main` after the local
   smoke boundary guards, with 128 test files / 951 tests plus type-checking and
   production renderer/main builds.
@@ -695,6 +709,16 @@ Automated/local coverage:
   stayed in default `status=skip`, unsigned release smoke passed, packaged
   recovery acceptance passed, and release preflight reported the expected
   read-only `status=not-ready`
+- on 2026-05-08, a combined `npm run accept:alpha-local` rerun reached the
+  sandbox-coding batch before an apparent Vitest process exit hang. Focused
+  reruns passed for the idle batch files, `accept:sandbox-coding`,
+  `accept:agent-local`, Code Agent model-producer preflight, unsigned release
+  smoke, packaged recovery, and release preflight. Treat this as constituent
+  evidence, not a clean single-command alpha-local pass.
+- on 2026-05-08, `npm run accept:packaged-recovery:mac` passed after rebuilding
+  the unsigned macOS directory package and strengthening redesign packaged
+  smoke checks for Settings confirmation-threshold copy and Context learning
+  strict selectors.
 - a later `npm run verify` on pushed `main` passed locally on 2026-05-02 with
   128 test files / 951 tests after the local smoke boundary guards
 - `npm run accept:sandbox-coding:model-producer-preflight` passed locally on 2026-05-02 in default `status=skip` mode without provider request, Docker probe, or workspace mutation
@@ -735,7 +759,9 @@ Finish the remaining alpha work in this order:
 2. Keep live provider-native validation opt-in because it spends configured
    provider credit, even though the local preflight is ready.
 3. Use `npm run accept:alpha-local` as the repeatable non-live local handoff
-   gate when validating the current alpha path end to end.
+   gate when validating the current alpha path end to end; if the long combined
+   run hits a Vitest process exit hang, record it explicitly and rerun the
+   constituent gates rather than hiding the interruption.
 4. Keep any further alpha friction as small acceptance fixes rather than adding new domain objects.
 5. Treat the current execution-layer v2 and Code Agent context-gate slices as
    locally accepted for the alpha path; next execution work should be
