@@ -12,6 +12,7 @@ Use this file when running the manual alpha path. Keep entries short and actiona
   - `npm run smoke:context-learning:mac`
   - `npm run smoke:settings-config:mac`
   - `npm run accept:packaged-recovery:mac`
+  - `npm run accept:release:mac-preflight`
 - Result: pass
 - Notes:
   - The first Settings packaged smoke run correctly failed against an older
@@ -22,6 +23,10 @@ Use this file when running the manual alpha path. Keep entries short and actiona
     Run/Decision recovery smokes all passed.
   - This pass specifically supports the redesign v1 acceptance checklist for
     project decomposition, self-learning boundaries, and AI behavior settings.
+  - Release preflight also passed its wrapper and read-only check while
+    reporting expected `status=not-ready`: macOS host, `notarytool`, app id,
+    product name, and mac targets are present; Developer ID signing source and
+    Apple notarization credentials are still missing.
 
 ## Run Metadata
 
@@ -62,7 +67,8 @@ Use this file when running the manual alpha path. Keep entries short and actiona
   `npm run smoke:release:mac && npm run accept:packaged-recovery:mac &&
   npm run accept:release:mac-preflight`, plus 2026-05-08
   `npm run dist:mac:dir`, focused packaged redesign smokes, and
-  `npm run accept:packaged-recovery:mac`
+  `npm run accept:packaged-recovery:mac`, followed by
+  `npm run accept:release:mac-preflight`
 
 ## Result Summary
 
