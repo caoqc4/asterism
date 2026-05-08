@@ -532,6 +532,13 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
     return result;
   }
 
+  function resetCaptureDraft() {
+    setCaptureTitle('');
+    setCaptureType('simple');
+    setCaptureTypeTouched(false);
+    setCaptureCommitment('');
+  }
+
   async function captureTask() {
     const title = captureTitle.trim();
     if (!title || capturing) return;
@@ -570,10 +577,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
         };
         setAllTasks((prev) => [fake, ...prev]);
       }
-      setCaptureTitle('');
-      setCaptureType('simple');
-      setCaptureTypeTouched(false);
-      setCaptureCommitment('');
+      resetCaptureDraft();
       setShowCapture(false);
       setCapturedTask({ id: newId, title, type: selectedType });
     } finally {
@@ -642,7 +646,12 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
               </button>
             ))}
           </div>
-          <button className="btn sm primary" style={{ marginLeft: 'auto' }} onClick={() => setShowCapture((v) => !v)}>
+          <button className="btn sm primary" style={{ marginLeft: 'auto' }} onClick={() => {
+            setShowCapture((visible) => {
+              if (visible) resetCaptureDraft();
+              return !visible;
+            });
+          }}>
             + 新建任务
           </button>
         </div>
@@ -666,9 +675,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void captureTask(); }
                 if (e.key === 'Escape') {
                   setShowCapture(false);
-                  setCaptureTitle('');
-                  setCaptureType('simple');
-                  setCaptureTypeTouched(false);
+                  resetCaptureDraft();
                 }
               }}
             />
@@ -725,9 +732,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
               </button>
               <button className="btn sm ghost" onClick={() => {
                 setShowCapture(false);
-                setCaptureTitle('');
-                setCaptureType('simple');
-                setCaptureTypeTouched(false);
+                resetCaptureDraft();
               }}>
                 取消
               </button>
