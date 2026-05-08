@@ -524,6 +524,14 @@ npm run verify
 Current verification:
 
 - `npm run verify` for tests, type-checking, and production build
+- on 2026-05-08, the redesign alpha-local verification pass completed
+  `verify` with 133 test files / 897 tests before a combined
+  `accept:alpha-local` attempt appeared idle in the sandbox-coding batch. The
+  idle batch files, `accept:sandbox-coding`, `accept:agent-local`,
+  `accept:sandbox-coding:model-producer-preflight`, `smoke:release:mac`,
+  `accept:packaged-recovery:mac`, and `accept:release:mac-preflight` all passed
+  when rerun as focused commands. Treat this as constituent evidence rather
+  than a clean single-command alpha-local pass.
 - on 2026-05-02, `npm run accept:alpha-local` was added and passed locally end
   to end. It ran `verify` with 128 test files / 944 tests, local agent
   acceptance, Code Agent model-producer preflight, unsigned macOS release

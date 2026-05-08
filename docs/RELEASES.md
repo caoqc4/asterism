@@ -140,11 +140,11 @@ Artifacts are written to:
 
 ## Current Local Baseline
 
-As of the current alpha path:
+As of the 2026-05-08 redesign alpha path:
 
-- `npm run verify` passed locally on 2026-05-02 with 128 test files / 951 tests
-  after the local smoke boundary guards, followed by type-checking and
-  production renderer/main builds
+- `npm run verify` passed inside the latest alpha-local attempt with 133 test
+  files / 897 tests, followed by type-checking and production renderer/main
+  builds
 - `npm run smoke:build` passed on 2026-05-01, covering renderer/main build
   outputs and electron-builder file mapping
 - `npm run dist:mac:dir` passes locally
@@ -155,15 +155,17 @@ As of the current alpha path:
   package smoke, isolated runtime smoke, and packaged Timeline UI smoke
 - expanded `npm run smoke:release:mac` passed locally on 2026-05-02 with the
   packaged Timeline UI smoke included in the combined gate
-- `npm run accept:packaged-recovery:mac` passed locally on 2026-05-02 with Home
-  recovery, Code Agent UI, Run/Decision recovery, Browser Evidence review, and
-  Settings config smokes grouped outside the unsigned release gate
+- `npm run accept:packaged-recovery:mac` passed locally on 2026-05-08 with Home
+  recovery, project decomposition, Context learning, Code Agent UI,
+  Run/Decision recovery, and Settings config smokes grouped outside the
+  unsigned release gate
 - `npm run accept:alpha-local` passed locally on 2026-05-02 as the complete
   non-live local alpha gate, including `verify`, local agent acceptance, Code
   Agent model-producer preflight, unsigned release smoke, packaged recovery
-  acceptance, and release preflight. It passed again end to end on latest
-  `main` after the short alpha handoff and walkthrough docs were added
-- `npm run accept:release:mac-preflight` passed on 2026-05-02 without signing,
+  acceptance, and release preflight. On 2026-05-08, the combined command reached
+  the sandbox-coding batch before an apparent Vitest process exit hang; the
+  constituent gates passed when rerun as focused commands.
+- `npm run accept:release:mac-preflight` passed on 2026-05-08 without signing,
   notarizing, uploading, or calling Apple services. Current readiness is
   `not-ready`: macOS host, `notarytool`, app id, product name, and mac targets
   are present; Developer ID signing source and Apple notarization credentials
