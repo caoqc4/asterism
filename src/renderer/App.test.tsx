@@ -1416,10 +1416,16 @@ describe('App redesign v1', () => {
         nextState: 'planned',
       });
     });
+    expect(screen.getByRole('button', { name: /确认周期与节奏/ })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /确认周期与节奏/ }));
+    const scheduledInput = screen.getByPlaceholderText(/关于「每周一准备经营周报」/) as HTMLTextAreaElement;
+    expect(scheduledInput.value).toContain('定时任务');
+    expect(scheduledInput.value).toContain('周期');
+    await user.click(screen.getByTitle('关闭面板'));
 
     await user.click(screen.getByRole('button', { name: /定时任务/ }));
-    expect(await screen.findByText('每周一准备经营周报')).toBeTruthy();
-    await user.click(await screen.findByText('每周一准备经营周报'));
+    expect((await screen.findAllByText('每周一准备经营周报')).length).toBeGreaterThan(0);
+    await user.click((await screen.findAllByText('每周一准备经营周报'))[0]!);
     expect(await screen.findByText(/周期配置保存在任务属性中/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /已承诺/ }));
     expect((await screen.findAllByText('每周一准备经营周报')).length).toBeGreaterThan(0);
@@ -1544,7 +1550,6 @@ describe('App redesign v1', () => {
     }));
 
     await user.click(screen.getByRole('button', { name: /让 AI 拆解并检查/ }));
-    await user.click(await screen.findByRole('button', { name: '拆解项目结构' }));
     const decompositionInput = screen.getByPlaceholderText(/关于「官网改版项目」/) as HTMLTextAreaElement;
     expect(decompositionInput.value).toContain('先拆一版');
     expect(decompositionInput.value).toContain('再自检查');
