@@ -490,7 +490,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
         kind: 'note',
         isKey: true,
         content: draft.review,
-        note: `${draft.subtasks.length} 个子任务；用户确认后创建。`,
+        note: `${draft.subtasks.length} 个子任务；用户已确认创建。`,
       });
       await window.api.createCompletionCriteria({
         taskId: project.id,

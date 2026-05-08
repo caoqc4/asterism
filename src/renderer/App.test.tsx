@@ -1668,6 +1668,7 @@ describe('App redesign v1', () => {
       kind: 'note',
       isKey: true,
       content: '子任务保持大块、边界清楚，暂不继续细拆。',
+      note: '2 个子任务；用户已确认创建。',
     }));
 
     await user.click(screen.getByRole('button', { name: /让 AI 拆解并检查/ }));
