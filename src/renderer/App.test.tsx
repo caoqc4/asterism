@@ -696,6 +696,29 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('本周承诺: 1')).toBeTruthy();
   });
 
+  it('opens recent Brief snapshots from yesterday summary', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.getHomeBrief).mockResolvedValueOnce({
+      ...buildBriefData(harness.tasks, harness.decisions),
+      recentBriefSnapshots: [
+        {
+          id: 'brief_snapshot_1',
+          kind: 'home',
+          payload: '昨天完成了董事会材料修订初稿，并留下 1 个等待法务确认的事项。',
+          source: 'ai',
+          fallbackReason: null,
+          createdAt: '2026-05-07T09:00:00.000Z',
+        },
+      ],
+    });
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: '昨日总结' }));
+
+    expect(await screen.findByText(/昨天完成了董事会材料修订初稿/)).toBeTruthy();
+    expect(screen.getByText('AI 生成')).toBeTruthy();
+  });
+
   it('marks waiting focus cards from Brief task state', async () => {
     render(<App />);
 

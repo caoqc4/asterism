@@ -114,6 +114,7 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
   const [loading, setLoading] = useState(true);
   const [completionCheckTask, setCompletionCheckTask] = useState<FocusTask | null>(null);
   const [orderAdjusted, setOrderAdjusted] = useState(false);
+  const [showBriefHistory, setShowBriefHistory] = useState(false);
 
   useEffect(() => {
     if (!window.api) { setLoading(false); return; }
@@ -216,6 +217,7 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
   const committedTaskCount = briefData
     ? briefData.recentTasks.filter((task) => taskAttributes[task.id]?.commitment).length
     : 0;
+  const recentBriefSnapshots = briefData?.recentBriefSnapshots ?? [];
 
   return (
     <div className="brief-page">
@@ -227,7 +229,14 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
             {tasks.length} 件最值得处理
           </span>
         </div>
-        <button className="btn ghost sm" disabled title="即将支持">昨日总结</button>
+        <button
+          className="btn ghost sm"
+          disabled={recentBriefSnapshots.length === 0}
+          title={recentBriefSnapshots.length === 0 ? '暂无历史总结' : '查看最近 Brief 总结'}
+          onClick={() => setShowBriefHistory(true)}
+        >
+          昨日总结
+        </button>
       </div>
 
       {/* Loading */}
@@ -339,6 +348,33 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
         <button className="brief-decisions-link" onClick={onOpenDecision}>
           等你拍板 {briefData!.pendingDecisionCount} ›
         </button>
+      )}
+
+      {showBriefHistory && (
+        <div className="modal-backdrop" onClick={() => setShowBriefHistory(false)}>
+          <div className="modal brief-history-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h3>昨日总结</h3>
+            </div>
+            <div className="modal-body">
+              {recentBriefSnapshots.slice(0, 3).map((snapshot) => (
+                <div key={snapshot.id} className="brief-history-item">
+                  <div className="brief-history-meta">
+                    <span>{new Date(snapshot.createdAt).toLocaleString('zh')}</span>
+                    <span>{snapshot.source === 'ai' ? 'AI 生成' : '本地兜底'}</span>
+                  </div>
+                  <p>{snapshot.payload}</p>
+                  {snapshot.fallbackReason && (
+                    <small>兜底原因：{snapshot.fallbackReason}</small>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="modal-foot">
+              <button className="btn sm primary" onClick={() => setShowBriefHistory(false)}>关闭</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Conflict modal */}
