@@ -28,6 +28,36 @@ Use this file when running the manual alpha path. Keep entries short and actiona
     product name, and mac targets are present; Developer ID signing source and
     Apple notarization credentials are still missing.
 
+## 2026-05-08 Alpha Local Constituent Rerun
+
+- Build / commit: `c512919 Record redesign release preflight`
+- Tester: Codex
+- Commands:
+  - `npm run accept:alpha-local` (interrupted after an apparent Vitest process
+    exit hang during the sandbox-coding batch)
+  - `npx vitest run src/main/domain/run/sandboxed-coding-producer-backend-preflight-service.test.ts src/main/domain/run/sandboxed-coding-staged-patch.test.ts --reporter verbose`
+  - `npm run accept:sandbox-coding`
+  - `npm run accept:agent-local`
+  - `npm run accept:sandbox-coding:model-producer-preflight`
+  - `npm run smoke:release:mac`
+  - `npm run accept:packaged-recovery:mac`
+  - `npm run accept:release:mac-preflight`
+- Result: pass with rerun note
+- Notes:
+  - The first full `accept:alpha-local` attempt reached `accept:agent-local`
+    and then appeared idle in the sandbox-coding batch. The specific batch files
+    passed immediately when split out, and the full `accept:sandbox-coding`
+    gate passed on rerun.
+  - `verify` passed inside the first alpha-local attempt with 133 test files /
+    897 tests before the interruption.
+  - `accept:agent-local` passed as a focused rerun after the interruption.
+  - Model-producer preflight stayed in the expected default `status=skip` path:
+    no provider request, Docker probe, or workspace mutation was performed.
+  - Unsigned macOS release smoke, packaged recovery, and read-only release
+    preflight passed after the rerun. Release preflight remained
+    `status=not-ready` for missing Developer ID signing and notarization
+    credentials.
+
 ## Run Metadata
 
 - First full manual pass: 2026-04-25
@@ -36,7 +66,8 @@ Use this file when running the manual alpha path. Keep entries short and actiona
   including unsigned release smoke, targeted packaged recovery acceptance,
   release preflight updates, local alpha gate wiring, local smoke boundary
   guards, latest verification records, and the 2026-05-08 redesign packaged
-  recovery pass at `20ea48c`
+  recovery pass at `20ea48c`, and the 2026-05-08 alpha-local constituent rerun
+  at `c512919`
 - Tester: Codex
 - Local verification run: targeted main/preload tests, `npm run lint`,
   `npm run build`, `npm run verify`, `npm run accept:agent-local`,
@@ -46,7 +77,9 @@ Use this file when running the manual alpha path. Keep entries short and actiona
   tests plus release/recovery targeted checks, and 2026-05-02 `npm run verify`
   passing 128 test files / 951 tests after the local smoke boundary guards,
   and 2026-05-08 `npm run verify` passing 133 test files / 897 tests after the
-  redesign packaged smoke checks were strengthened.
+  redesign packaged smoke checks were strengthened. A later 2026-05-08
+  `accept:alpha-local` attempt reached the sandbox-coding batch before an
+  apparent Vitest process exit hang; focused constituent reruns passed.
   The latest alpha handoff constituents passed when rerun as focused commands
   after one combined `accept:alpha-local` attempt stopped producing Vitest
   output and was interrupted.
@@ -68,7 +101,8 @@ Use this file when running the manual alpha path. Keep entries short and actiona
   npm run accept:release:mac-preflight`, plus 2026-05-08
   `npm run dist:mac:dir`, focused packaged redesign smokes, and
   `npm run accept:packaged-recovery:mac`, followed by
-  `npm run accept:release:mac-preflight`
+  `npm run accept:release:mac-preflight`, then focused alpha-local constituent
+  reruns after one interrupted combined attempt
 
 ## Result Summary
 
