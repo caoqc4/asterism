@@ -1408,6 +1408,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('创建后推进')).toBeTruthy();
     expect(screen.getAllByText(/只需要确认或调整建议/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/周期和触发条件可在工作台 Header 调整/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/定时任务创建后可确认周期与执行节奏/)).toBeTruthy();
     await user.type(screen.getByPlaceholderText(/已承诺时间/), '周五 17:00 前发给 CEO');
     await user.click(screen.getByRole('button', { name: '创建' }));
     await waitFor(() => {

@@ -115,6 +115,13 @@ const TASK_TYPE_CAPTURE_NEXT_STEP: Record<TaskType, string> = {
   event: '先创建单条事件触发任务，监听条件可在工作台 Header 调整。',
 };
 
+const TASK_TYPE_CAPTURE_HINT: Record<TaskType, string> = {
+  simple: '一次性任务创建后可继续规划目标和验收标准',
+  project: '项目型任务创建后可让 AI 拆解并自检',
+  scheduled: '定时任务创建后可确认周期与执行节奏',
+  event: '事件触发任务创建后可确认来源与触发条件',
+};
+
 const RISK_OPTIONS: Array<{ label: string; value: TaskRiskLevel }> = [
   { label: '高', value: 'high' },
   { label: '中', value: 'medium' },
@@ -708,7 +715,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
                 取消
               </button>
               <span className="capture-ai-hint muted">
-                项目型任务创建后可让 AI 拆解并自检
+                {TASK_TYPE_CAPTURE_HINT[captureType]}
               </span>
             </div>
           </div>
