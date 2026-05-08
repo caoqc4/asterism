@@ -36,6 +36,27 @@ describe('work habit rules', () => {
     });
   });
 
+  it('does not record applications for pending or disabled habits', () => {
+    const habits = recordWorkHabitApplicationsInList([
+      { ...baseHabit, id: 'habit_confirmed', status: 'confirmed', applicationCount: 2 },
+      { ...baseHabit, id: 'habit_pending', status: 'pending', applicationCount: 4, lastAppliedAt: null },
+      { ...baseHabit, id: 'habit_disabled', status: 'disabled', applicationCount: 6, lastAppliedAt: null },
+    ], ['habit_confirmed', 'habit_pending', 'habit_disabled'], '2026-05-07T00:00:00.000Z');
+
+    expect(habits.find((habit) => habit.id === 'habit_confirmed')).toMatchObject({
+      applicationCount: 3,
+      lastAppliedAt: '2026-05-07T00:00:00.000Z',
+    });
+    expect(habits.find((habit) => habit.id === 'habit_pending')).toMatchObject({
+      applicationCount: 4,
+      lastAppliedAt: null,
+    });
+    expect(habits.find((habit) => habit.id === 'habit_disabled')).toMatchObject({
+      applicationCount: 6,
+      lastAppliedAt: null,
+    });
+  });
+
   it('does not mark unrelated pending rules as conflicts only because scope matches', () => {
     const pending: WorkHabitRecord = {
       ...baseHabit,

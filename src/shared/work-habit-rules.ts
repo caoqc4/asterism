@@ -290,8 +290,8 @@ export function recordWorkHabitApplicationsInList(
   return habits.map((habit) => appliedIds.has(habit.id)
     ? {
         ...habit,
-        lastAppliedAt: now,
-        applicationCount: habit.applicationCount + 1,
+        lastAppliedAt: habit.status === 'confirmed' ? now : habit.lastAppliedAt,
+        applicationCount: habit.status === 'confirmed' ? habit.applicationCount + 1 : habit.applicationCount,
       }
     : habit);
 }
