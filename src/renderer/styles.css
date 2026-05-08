@@ -3762,6 +3762,9 @@ a { color: inherit; text-decoration: none; }
 .preview-source-item:last-child { border-bottom: none; }
 
 .preview-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
   padding-top: 4px;
 }
 

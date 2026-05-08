@@ -1427,6 +1427,11 @@ describe('App redesign v1', () => {
     expect((await screen.findAllByText('每周一准备经营周报')).length).toBeGreaterThan(0);
     await user.click((await screen.findAllByText('每周一准备经营周报'))[0]!);
     expect(await screen.findByText(/周期配置保存在任务属性中/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /规划讨论/ }));
+    const previewPlanningInput = screen.getByPlaceholderText(/关于「每周一准备经营周报」/) as HTMLTextAreaElement;
+    expect(previewPlanningInput.value).toContain('定时任务');
+    expect(previewPlanningInput.value).toContain('第一次执行前');
+    await user.click(screen.getByTitle('关闭面板'));
     await user.click(screen.getByRole('button', { name: /已承诺/ }));
     expect((await screen.findAllByText('每周一准备经营周报')).length).toBeGreaterThan(0);
 
