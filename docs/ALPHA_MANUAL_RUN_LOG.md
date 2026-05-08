@@ -2,6 +2,22 @@
 
 Use this file when running the manual alpha path. Keep entries short and actionable.
 
+## 2026-05-08 Main Unsigned Release Smoke Recheck
+
+- Build / commit: `f9b8c9a Record alpha walkthrough readiness`
+- Tester: Codex
+- Commands:
+  - `npm run smoke:release:mac`
+- Result: pass
+- Notes:
+  - Rebuilt the unsigned/ad-hoc macOS directory package.
+  - Package smoke passed, including bundle structure, ASAR/native-module checks,
+    executable/signature validation, and packaged app preparation.
+  - Runtime smoke initialized the packaged app with isolated user data.
+  - Packaged Timeline UI smoke passed.
+  - Signing remained ad-hoc and notarization was skipped as expected for the
+    current local alpha path.
+
 ## 2026-05-08 Walkthrough Readiness Notes
 
 - Build / commit: `6786981 Use fresh alpha walkthrough data dirs`
@@ -97,7 +113,8 @@ Use this file when running the manual alpha path. Keep entries short and actiona
   release preflight updates, local alpha gate wiring, local smoke boundary
   guards, latest verification records, and the 2026-05-08 redesign packaged
   recovery pass at `20ea48c`, and the 2026-05-08 alpha-local constituent rerun
-  at `c512919`, with walkthrough-readiness notes through `6786981`
+  at `c512919`, walkthrough-readiness notes through `6786981`, and the latest
+  unsigned release smoke recheck at `f9b8c9a`
 - Tester: Codex
 - Local verification run: targeted main/preload tests, `npm run lint`,
   `npm run build`, `npm run verify`, `npm run accept:agent-local`,
