@@ -10,11 +10,13 @@ Start from the current handoff note:
 - [ALPHA_HANDOFF.md](ALPHA_HANDOFF.md)
 
 Use an isolated user-data directory so the walkthrough does not touch normal
-local state:
+local state. Create a fresh directory for each pass so old walkthrough data
+does not affect the result:
 
 ```bash
+TASKPLANE_ALPHA_USER_DATA_DIR="$(mktemp -d /tmp/taskplane-alpha-walkthrough-XXXXXX)"
 ELECTRON_RUN_AS_NODE= \
-TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-walkthrough \
+TASKPLANE_USER_DATA_DIR="$TASKPLANE_ALPHA_USER_DATA_DIR" \
 release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane
 ```
 

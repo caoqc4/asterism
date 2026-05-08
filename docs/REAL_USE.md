@@ -31,9 +31,9 @@ ELECTRON_RUN_AS_NODE= \
 release/mac-arm64/Taskplane.app/Contents/MacOS/Taskplane
 ```
 
-Do not use the alpha walkthrough command with
-`TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-walkthrough` for real work. That
-path is intentionally disposable test state.
+Do not use the alpha walkthrough command with a
+`TASKPLANE_USER_DATA_DIR=/tmp/taskplane-alpha-walkthrough-*` directory for real
+work. Those paths are intentionally disposable test state.
 
 ## First Session
 
