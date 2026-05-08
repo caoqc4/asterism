@@ -1870,9 +1870,12 @@ function TaskEditPanel({
           <input
             className="settings-input"
             value={schedule}
-            placeholder="例：每周一 09:00"
+            placeholder="例：每周一 09:00；结束条件：完成 8 次"
             onChange={(e) => setSchedule(e.target.value)}
           />
+          <span className="task-edit-hint">
+            v1 先用一行配置表达频率、执行时间、结束条件；下次执行时间由后续调度器预览。
+          </span>
         </div>
       )}
       {type === 'event' && (
@@ -1881,9 +1884,12 @@ function TaskEditPanel({
           <input
             className="settings-input"
             value={trigger}
-            placeholder="例：Gmail 发件人包含 @brand-partner.com"
+            placeholder="例：Gmail · 发件人包含 @brand-partner.com"
             onChange={(e) => setTrigger(e.target.value)}
           />
+          <span className="task-edit-hint">
+            v1 先记录来源与触发条件；当前状态显示在 Header，触发后的摘要追加到执行记录和产物。
+          </span>
         </div>
       )}
       <div className="task-edit-row">

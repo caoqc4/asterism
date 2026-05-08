@@ -1462,6 +1462,8 @@ describe('App redesign v1', () => {
     await user.click(screen.getByTitle('关闭面板'));
     await user.click(screen.getByRole('button', { name: /每周一 09:00/ }));
     expect(await screen.findByText('定时配置')).toBeTruthy();
+    expect(screen.getByText(/频率、执行时间、结束条件/)).toBeTruthy();
+    expect(screen.getByText(/下次执行时间由后续调度器预览/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '取消' }));
 
     await user.click(screen.getAllByRole('button', { name: /Tasks/ })[0]!);
@@ -1475,6 +1477,10 @@ describe('App redesign v1', () => {
     await user.dblClick((await screen.findAllByText('收到品牌合作邮件时跟进'))[0]!);
     expect(await screen.findByText('事件监听')).toBeTruthy();
     expect(screen.getByText('等待触发')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /外部信号更新时/ }));
+    expect(await screen.findByText(/来源与触发条件/)).toBeTruthy();
+    expect(screen.getByText(/触发后的摘要追加到执行记录和产物/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '取消' }));
     await user.click(screen.getByRole('button', { name: '产物' }));
     expect(screen.getByText(/事件信号默认追加到同一份积累式记录/)).toBeTruthy();
   });
