@@ -107,6 +107,8 @@ async function saveSettings(page) {
   await page.getByText('自学习（Self-Learn）').waitFor();
   await page.getByText('当前 AI 配置').waitFor();
   await page.getByText(/Step 级检查是执行质量基线/).waitFor();
+  await page.getByText(/低：更少打断/).waitFor();
+  await page.getByText(/高：不确定结论也更常请你拍板/).waitFor();
   await page.getByRole('button', { name: '保存设置' }).click();
   await page.getByRole('button', { name: '已保存 ✓' }).waitFor();
 
@@ -129,6 +131,7 @@ async function assertPersistedSettings(page) {
   await page.getByText('Run / Task 自检查').waitFor();
   await page.getByText('自学习（Self-Learn）').waitFor();
   await page.getByText(/真正压缩前会先保留关键决策/).waitFor();
+  await page.getByText(/标准：风险和外部动作会确认/).waitFor();
   await page.getByText(/修改 Provider 密钥或切换模型请前往/).waitFor();
 }
 
