@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   findWorkHabitConflict,
   recordWorkHabitApplicationsInList,
+  selectApplicableWorkHabits,
 } from './work-habit-rules.js';
 import type { WorkHabitRecord } from './types/work-habit.js';
 
@@ -55,6 +56,29 @@ describe('work habit rules', () => {
       applicationCount: 6,
       lastAppliedAt: null,
     });
+  });
+
+  it('selects confirmed habits by project, task type, then global priority', () => {
+    const habits: WorkHabitRecord[] = [
+      { ...baseHabit, id: 'habit_global', scope: 'global', scopeLabel: '全局', applicationCount: 12 },
+      { ...baseHabit, id: 'habit_type', scope: 'task_type', scopeLabel: '定时任务', applicationCount: 4 },
+      { ...baseHabit, id: 'habit_project', scope: 'project', scopeLabel: '官网改版', applicationCount: 1 },
+      { ...baseHabit, id: 'habit_pending_project', scope: 'project', scopeLabel: '官网改版', status: 'pending', applicationCount: 30 },
+      { ...baseHabit, id: 'habit_disabled_global', scope: 'global', scopeLabel: '全局', status: 'disabled', applicationCount: 40 },
+      { ...baseHabit, id: 'habit_other_project', scope: 'project', scopeLabel: '投资人路演', applicationCount: 50 },
+    ];
+
+    const selected = selectApplicableWorkHabits(habits, {
+      taskTitle: '官网改版周会',
+      taskTypeLabel: '定时任务',
+      projectLabel: '官网改版',
+    });
+
+    expect(selected.map((habit) => habit.id)).toEqual([
+      'habit_project',
+      'habit_type',
+      'habit_global',
+    ]);
   });
 
   it('does not mark unrelated pending rules as conflicts only because scope matches', () => {
