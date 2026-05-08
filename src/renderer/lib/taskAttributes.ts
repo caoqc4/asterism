@@ -1,5 +1,12 @@
 export type TaskExecutionType = 'simple' | 'project' | 'scheduled' | 'event';
 
+export type TaskPlanningPrompt = {
+  label: string;
+  prompt: string;
+};
+
+export type TaskPlanningPromptSurface = 'capture' | 'panel';
+
 export type TaskAttributeRecord = {
   taskId: string;
   type: TaskExecutionType;
@@ -162,6 +169,44 @@ export function buildProjectDecompositionPrompt(projectTitle: string): string {
     '- 拆解检查：说明哪些任务保持为大块任务，哪些需要继续拆，哪些暂不应拆。',
     '- 下一步建议：建议我先确认什么，或者是否直接创建这些子任务。',
   ].join('\n');
+}
+
+export function buildTaskPlanningPrompt(
+  taskTitle: string,
+  type: TaskExecutionType,
+  surface: TaskPlanningPromptSurface = 'capture',
+): TaskPlanningPrompt {
+  if (type === 'project') {
+    return {
+      label: surface === 'panel' ? '拆解项目结构' : '让 AI 拆解并检查',
+      prompt: buildProjectDecompositionPrompt(taskTitle),
+    };
+  }
+  if (type === 'scheduled') {
+    return {
+      label: '确认周期与节奏',
+      prompt: [
+        `请继续规划「${taskTitle}」这条定时任务。`,
+        '先确认它是否应该保持为定时重复任务，再帮我梳理周期、执行时间、结束条件和第一次执行前需要补齐的信息。',
+      ].join('\n'),
+    };
+  }
+  if (type === 'event') {
+    return {
+      label: '确认触发条件',
+      prompt: [
+        `请继续规划「${taskTitle}」这条事件触发任务。`,
+        '先确认它是否应该保持为事件触发任务，再帮我梳理监听来源、触发条件、触发后写入哪里，以及什么情况下需要推到 Brief。',
+      ].join('\n'),
+    };
+  }
+  return {
+    label: surface === 'panel' ? '规划下一步' : '继续规划任务',
+    prompt: [
+      `请继续规划「${taskTitle}」这条一次性任务。`,
+      '先确认目标和验收标准，再给出下一步行动；如果信息不足，请直接问我最关键的一个问题。',
+    ].join('\n'),
+  };
 }
 
 function normalizeText(value: string | null | undefined): string | null {

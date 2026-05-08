@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildProjectDecompositionGuidance, buildProjectDecompositionPrompt } from './taskAttributes';
+import {
+  buildProjectDecompositionGuidance,
+  buildProjectDecompositionPrompt,
+  buildTaskPlanningPrompt,
+} from './taskAttributes';
 
 describe('buildProjectDecompositionPrompt', () => {
   it('keeps project decomposition counts flexible instead of hard-coding child tasks', () => {
@@ -19,5 +23,20 @@ describe('buildProjectDecompositionPrompt', () => {
     expect(guidance).toContain('再自检查');
     expect(guidance).toContain('最多两层');
     expect(guidance).not.toContain('输出格式');
+  });
+});
+
+describe('buildTaskPlanningPrompt', () => {
+  it('keeps shared planning prompts while tailoring entry labels by surface', () => {
+    const captureProject = buildTaskPlanningPrompt('官网改版项目', 'project');
+    const panelProject = buildTaskPlanningPrompt('官网改版项目', 'project', 'panel');
+    const scheduled = buildTaskPlanningPrompt('经营周报', 'scheduled', 'panel');
+
+    expect(captureProject.label).toBe('让 AI 拆解并检查');
+    expect(panelProject.label).toBe('拆解项目结构');
+    expect(captureProject.prompt).toBe(panelProject.prompt);
+    expect(scheduled.label).toBe('确认周期与节奏');
+    expect(scheduled.prompt).toContain('周期');
+    expect(scheduled.prompt).toContain('第一次执行前');
   });
 });

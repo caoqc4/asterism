@@ -9,7 +9,7 @@ import {
   recordWorkHabitApplications,
   summarizeWorkHabitsForPrompt,
 } from '../lib/workHabits';
-import { buildProjectDecompositionPrompt, getTaskAttributes, type TaskExecutionType } from '../lib/taskAttributes';
+import { buildTaskPlanningPrompt, getTaskAttributes, type TaskExecutionType } from '../lib/taskAttributes';
 
 type MessageRole = 'user' | 'assistant';
 
@@ -79,40 +79,6 @@ function buildTaskTypeReviewPrompt(taskName: string): string {
     '请先说明判断理由，再给出建议类型。',
     '如果是项目型，请只给高层级拆解方向，不要直接生成真实子任务；如果不是项目型，请说明下一步需要补齐什么上下文。',
   ].join('\n');
-}
-
-function buildTaskPlanningPrompt(taskName: string, type: TaskExecutionType): { label: string; prompt: string } | null {
-  if (type === 'project') {
-    return {
-      label: '拆解项目结构',
-      prompt: buildProjectDecompositionPrompt(taskName),
-    };
-  }
-  if (type === 'scheduled') {
-    return {
-      label: '确认周期与节奏',
-      prompt: [
-        `请继续规划「${taskName}」这条定时任务。`,
-        '先确认它是否应该保持为定时重复任务，再帮我梳理周期、执行时间、结束条件和第一次执行前需要补齐的信息。',
-      ].join('\n'),
-    };
-  }
-  if (type === 'event') {
-    return {
-      label: '确认触发条件',
-      prompt: [
-        `请继续规划「${taskName}」这条事件触发任务。`,
-        '先确认它是否应该保持为事件触发任务，再帮我梳理监听来源、触发条件、触发后写入哪里，以及什么情况下需要推到 Brief。',
-      ].join('\n'),
-    };
-  }
-  return {
-    label: '规划下一步',
-    prompt: [
-      `请继续规划「${taskName}」这条一次性任务。`,
-      '先确认目标和验收标准，再给出下一步行动；如果信息不足，请直接问我最关键的一个问题。',
-    ].join('\n'),
-  };
 }
 
 function normalizeUserMessage(text: string): string {
@@ -501,7 +467,7 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
     && messages.some((message) => message.role === 'user')
   );
   const taskPlanningPrompt = activeAttrs?.type && title
-    ? buildTaskPlanningPrompt(title, activeAttrs.type)
+    ? buildTaskPlanningPrompt(title, activeAttrs.type, 'panel')
     : null;
   const taskTypeReviewPrompt = activeTaskId && title ? buildTaskTypeReviewPrompt(title) : null;
   const quickPrompts = activeTaskId

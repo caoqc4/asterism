@@ -8,9 +8,9 @@ import { selectApplicableWorkHabits as selectApplicableWorkHabitsFromList } from
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import {
   buildProjectDecompositionGuidance,
+  buildTaskPlanningPrompt,
   defaultScheduleForType,
   defaultTriggerForType,
-  buildProjectDecompositionPrompt,
   inferTaskExecutionType,
   loadTaskAttributes,
   moveTaskToProject,
@@ -716,11 +716,11 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
           <div className="capture-nudge">
             <span>✓ 已创建</span>
             <button className="btn sm primary" onClick={() => {
-              const followup = buildCapturedTaskFollowup(capturedTask);
+              const followup = buildTaskPlanningPrompt(capturedTask.title, capturedTask.type);
               onOpenPanel(capturedTask.id, followup.prompt, capturedTask.title);
               setCapturedTask(null);
             }}>
-              {buildCapturedTaskFollowup(capturedTask).label} →
+              {buildTaskPlanningPrompt(capturedTask.title, capturedTask.type).label} →
             </button>
             <button className="icon-btn" style={{ marginLeft: 4 }} onClick={() => setCapturedTask(null)} title="关闭">
               <span style={{ fontSize: 12, lineHeight: 1 }}>×</span>
@@ -960,40 +960,6 @@ function buildCapturePhaseItems(title: string, type: TaskType, sopSuggestionCoun
       active: hasTitle,
     },
   ];
-}
-
-function buildCapturedTaskFollowup(task: CapturedTaskSummary): { label: string; prompt: string } {
-  if (task.type === 'project') {
-    return {
-      label: '让 AI 拆解并检查',
-      prompt: buildProjectDecompositionPrompt(task.title),
-    };
-  }
-  if (task.type === 'scheduled') {
-    return {
-      label: '确认周期与节奏',
-      prompt: [
-        `请继续规划「${task.title}」这条定时任务。`,
-        '先确认它是否应该保持为定时重复任务，再帮我梳理周期、执行时间、结束条件和第一次执行前需要补齐的信息。',
-      ].join('\n'),
-    };
-  }
-  if (task.type === 'event') {
-    return {
-      label: '确认触发条件',
-      prompt: [
-        `请继续规划「${task.title}」这条事件触发任务。`,
-        '先确认它是否应该保持为事件触发任务，再帮我梳理监听来源、触发条件、触发后写入哪里，以及什么情况下需要推到 Brief。',
-      ].join('\n'),
-    };
-  }
-  return {
-    label: '继续规划任务',
-    prompt: [
-      `请继续规划「${task.title}」这条一次性任务。`,
-      '先确认目标和验收标准，再给出下一步行动；如果信息不足，请直接问我最关键的一个问题。',
-    ].join('\n'),
-  };
 }
 
 function ProjectTreeView({
