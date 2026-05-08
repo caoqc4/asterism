@@ -266,7 +266,12 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
         limit: 4,
       }).filter((habit): habit is WorkHabitRecord => habit.source === 'sop')
     : [];
-  const capturePhaseItems = buildCapturePhaseItems(captureTitle, captureType, captureSopSuggestions.length);
+  const capturePhaseItems = buildCapturePhaseItems(
+    captureTitle,
+    captureType,
+    captureTypeTouched,
+    captureSopSuggestions.length,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -968,7 +973,7 @@ function LensItem({ label, active, onClick, count, dot, icon }: LensItemProps) {
   );
 }
 
-function buildCapturePhaseItems(title: string, type: TaskType, sopSuggestionCount: number): Array<{
+function buildCapturePhaseItems(title: string, type: TaskType, typeTouched: boolean, sopSuggestionCount: number): Array<{
   label: string;
   detail: string;
   active: boolean;
@@ -985,7 +990,9 @@ function buildCapturePhaseItems(title: string, type: TaskType, sopSuggestionCoun
     {
       label: '确认类型',
       detail: hasTitle
-        ? `AI 建议为${TASK_TYPE_LABELS[type]}任务，你只需要确认或调整建议。`
+        ? typeTouched
+          ? `你已确认为${TASK_TYPE_LABELS[type]}任务，可继续调整或直接创建。`
+          : `AI 建议为${TASK_TYPE_LABELS[type]}任务，你只需要确认或调整建议。`
         : '输入标题后会给出一次性 / 项目 / 定时 / 事件建议。',
       active: hasTitle,
     },

@@ -1409,6 +1409,7 @@ describe('App redesign v1', () => {
     expect(screen.getByRole('button', { name: '项目' }).className).toContain('active');
     await user.click(screen.getByRole('button', { name: '一次性' }));
     expect(screen.getByText('用户确认类型')).toBeTruthy();
+    expect(screen.getByText(/你已确认为一次性任务/)).toBeTruthy();
     await user.clear(captureInput);
     await user.type(captureInput, '每周一准备经营周报');
     expect(screen.getByRole('button', { name: '一次性' }).className).toContain('active');
@@ -1417,6 +1418,7 @@ describe('App redesign v1', () => {
     const reopenedCaptureInput = await screen.findByPlaceholderText(/任务标题/);
     await user.type(reopenedCaptureInput, '每周一准备经营周报');
     expect(screen.getByText('AI 建议类型')).toBeTruthy();
+    expect(screen.getByText(/AI 建议为定时任务/)).toBeTruthy();
     expect(screen.getByRole('button', { name: '定时' }).className).toContain('active');
     expect(screen.getByText('捕获意图')).toBeTruthy();
     expect(screen.getByText('确认类型')).toBeTruthy();
