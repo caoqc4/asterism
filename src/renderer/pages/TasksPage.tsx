@@ -248,6 +248,9 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
 
   const selectedTask = filtered.find((t) => t.id === selectedId) ?? null;
   const selectedHasDecision = Boolean(selectedTask && pendingDecisions.some((decision) => decision.taskId === selectedTask.id));
+  const selectedTaskPlanningPrompt = selectedTask
+    ? buildTaskPlanningPrompt(selectedTask.title, selectedTask.type, 'panel')
+    : null;
   const captureSopSuggestions = captureTitle.trim()
     ? selectApplicableWorkHabitsFromList(workHabits, {
         taskTitle: captureTitle,
@@ -827,9 +830,10 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
             task={selectedTask}
             keySources={selectedSources}
             hasPendingDecision={selectedHasDecision}
+            planningLabel={selectedTaskPlanningPrompt?.label ?? '规划讨论'}
             onOpenPanel={() => {
-              const followup = buildTaskPlanningPrompt(selectedTask.title, selectedTask.type, 'panel');
-              onOpenPanel(selectedTask.id, followup.prompt, selectedTask.title);
+              if (!selectedTaskPlanningPrompt) return;
+              onOpenPanel(selectedTask.id, selectedTaskPlanningPrompt.prompt, selectedTask.title);
             }}
             onOpenWorkbench={() => onOpenWorkbench(selectedTask.id)}
             onOpenDecision={onOpenDecision}
@@ -1229,12 +1233,13 @@ interface TaskPreviewProps {
   task: Task;
   keySources: SourceContextRecord[];
   hasPendingDecision: boolean;
+  planningLabel: string;
   onOpenPanel: () => void;
   onOpenWorkbench: () => void;
   onOpenDecision: () => void;
 }
 
-function TaskPreview({ task, keySources, hasPendingDecision, onOpenPanel, onOpenWorkbench, onOpenDecision }: TaskPreviewProps) {
+function TaskPreview({ task, keySources, hasPendingDecision, planningLabel, onOpenPanel, onOpenWorkbench, onOpenDecision }: TaskPreviewProps) {
   return (
     <div className="task-preview-inner">
       <div className="task-preview-head">
@@ -1321,7 +1326,7 @@ function TaskPreview({ task, keySources, hasPendingDecision, onOpenPanel, onOpen
 
       <div className="preview-actions">
         <button className="btn ghost" onClick={onOpenPanel}>
-          规划讨论 →
+          {planningLabel} →
         </button>
         <button className="btn primary" onClick={hasPendingDecision ? onOpenDecision : onOpenWorkbench}>
           {hasPendingDecision ? '去拍板 →' : '打开工作台 →'}
