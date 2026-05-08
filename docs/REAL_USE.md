@@ -10,8 +10,10 @@ Run the current non-live local handoff gate:
 npm run accept:alpha-local
 ```
 
-The current latest baseline has passed this end to end on macOS for the
-unsigned/ad-hoc local app path.
+The current baseline is tracked in [ALPHA_HANDOFF.md](ALPHA_HANDOFF.md). The
+last clean single-command pass was on 2026-05-02; the 2026-05-08 redesign
+baseline passed through focused constituent reruns after the combined command
+showed a Vitest process exit hang.
 
 ## Launch The Packaged App
 

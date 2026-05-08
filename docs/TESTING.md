@@ -587,11 +587,11 @@ Current verification:
   / Timeline UI smoke, passed Home recovery / Code Agent UI / Run-Decision
   recovery / Settings config packaged smokes, and kept release preflight
   read-only with the expected `status=not-ready` signing/notarization result.
-- on 2026-05-02, `npm run verify` passed again on latest pushed `main` with 128
-  test files / 951 tests, followed by type-checking and production renderer/main
-  builds.
-- on 2026-05-02, `npm run accept:alpha-local` passed end to end on latest
-  `main`: `verify`, local agent acceptance, model-producer preflight
+- on 2026-05-02, `npm run verify` passed again on the then-current pushed
+  `main` with 128 test files / 951 tests, followed by type-checking and
+  production renderer/main builds.
+- on 2026-05-02, `npm run accept:alpha-local` passed end to end on the
+  then-current `main`: `verify`, local agent acceptance, model-producer preflight
   `status=skip`, unsigned release smoke, packaged recovery, and read-only
   release preflight all completed successfully.
 - on 2026-05-02, `npm test -- --run

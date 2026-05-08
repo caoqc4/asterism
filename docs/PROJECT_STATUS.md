@@ -292,7 +292,11 @@ The project is past initial architecture assembly. Current work should favor pro
   preflight. It passed locally on 2026-05-02 with `verify` covering 128 test
   files / 944 tests; model-producer preflight stayed in default `status=skip`,
   and release preflight reported the expected read-only `status=not-ready`
-  because signing/notarization inputs are still missing.
+  because signing/notarization inputs are still missing. On 2026-05-08, the
+  redesign baseline passed through focused constituent reruns after the long
+  combined command reached the sandbox-coding batch and then showed an apparent
+  Vitest process exit hang; see `docs/ALPHA_HANDOFF.md` for the current
+  handoff baseline and fallback sequence.
 - Code Agent provider-visible artifact selection now fails closed on duplicate
   artifact ids before provider runtime config is resolved, matching the
   existing duplicate source-context selection boundary.
@@ -2399,7 +2403,9 @@ dedicated signed/notarized release pass.
    signing and Apple notarization credentials are available.
 2. Keep using `npm run verify` after ordinary changes and `npm run smoke:build`
    for build/package changes. Use `npm run accept:alpha-local` for a complete
-   non-live local alpha handoff check.
+   non-live local alpha handoff check, with the focused constituent rerun path
+   in `docs/ALPHA_HANDOFF.md` if the long combined command appears idle after a
+   passing Vitest phase.
 3. Defer GitHub Actions work until quota is restored.
 4. Avoid adding new domain objects until the release-readiness pass is cleaner.
 5. Treat the execution-layer Slice 0, hidden tool-scaffold baseline,
