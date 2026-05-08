@@ -8,6 +8,7 @@ import type { ArtifactRecord, ArtifactKind } from '@shared/types/artifact';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import { recordSopTemplateHabit } from '../lib/workHabits';
 import {
+  buildTaskPlanningPrompt,
   defaultScheduleForType,
   defaultTriggerForType,
   getTaskAttributes,
@@ -128,7 +129,7 @@ function selectRecentKeySources(sources: SourceContextRecord[], maxItems: number
 interface WorkbenchPageProps {
   taskId: string;
   onBack: () => void;
-  onOpenPanel: () => void;
+  onOpenPanel: (draftPrompt?: string, taskTitle?: string) => void;
 }
 
 export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProps) {
@@ -230,6 +231,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
   const lane = detail ? deriveLane(detail) : 'continue';
   const status = detail ? deriveStatus(detail) : 'idle';
   const title = detail?.title ?? taskId;
+  const planningPrompt = buildTaskPlanningPrompt(title, taskAttrs?.type ?? 'simple', 'panel');
   const resume = generatedResume ?? detail?.resumeCard;
   const currentProject = taskAttrs?.parentTaskId
     ? projectOptions.find((project) => project.id === taskAttrs.parentTaskId)
@@ -325,6 +327,10 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
     setRunFormRequest((value) => value + 1);
   }
 
+  function openPlanningPanel() {
+    onOpenPanel(planningPrompt.prompt, title);
+  }
+
   return (
     <div className="workbench" onClick={() => setMoreOpen(false)}>
       {/* Header */}
@@ -356,7 +362,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
             </div>
           </div>
           <div className="workbench-header-actions">
-            <button className="icon-btn" onClick={onOpenPanel} title="AI 面板">
+            <button className="icon-btn" onClick={() => onOpenPanel()} title="AI 面板">
               <IconChat />
             </button>
             <button className="icon-btn" title="编辑详情" onClick={(e) => { e.stopPropagation(); setShowEditPanel((v) => !v); }}>
@@ -368,7 +374,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
               </button>
               {moreOpen && (
                 <div className="more-menu">
-                  <button className="more-menu-item" onClick={() => { setMoreOpen(false); onOpenPanel(); }}>规划讨论</button>
+                  <button className="more-menu-item" onClick={() => { setMoreOpen(false); openPlanningPanel(); }}>{planningPrompt.label}</button>
                   <button className="more-menu-item" onClick={() => void deferUntilTomorrow()}>延期到明天</button>
                   <button className="more-menu-item" onClick={() => { setMoreOpen(false); setShowEditPanel(true); }}>改优先级</button>
                   <div className="more-menu-label">移至项目</div>
@@ -455,7 +461,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
               {activeRun ? '查看进度 →' : '启动 Run →'}
             </button>
             {!activeRun && (
-              <button className="btn ghost" onClick={onOpenPanel}>规划讨论</button>
+              <button className="btn ghost" onClick={openPlanningPanel}>{planningPrompt.label}</button>
             )}
           </div>
           <button className="btn sm ghost resume-regen" onClick={regenerateResume} disabled={!detail}>

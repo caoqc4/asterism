@@ -1441,6 +1441,11 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/每次触发会在这里形成一条独立 Run 实例/)).toBeTruthy();
     expect(screen.getByText(/每周一 09:00/)).toBeTruthy();
     expect(screen.getByText(/周五 17:00 前发给 CEO/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /确认周期与节奏/ }));
+    const workbenchPlanningInput = screen.getByPlaceholderText(/关于「每周一准备经营周报」/) as HTMLTextAreaElement;
+    expect(workbenchPlanningInput.value).toContain('定时任务');
+    expect(workbenchPlanningInput.value).toContain('第一次执行前');
+    await user.click(screen.getByTitle('关闭面板'));
     await user.click(screen.getByRole('button', { name: /每周一 09:00/ }));
     expect(await screen.findByText('定时配置')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '取消' }));

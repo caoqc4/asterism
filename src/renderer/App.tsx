@@ -112,7 +112,7 @@ export function App() {
             <WorkbenchPage
               taskId={workbenchTaskId}
               onBack={closeWorkbench}
-              onOpenPanel={() => openPanelForTask(workbenchTaskId)}
+              onOpenPanel={(draftPrompt, taskTitle) => openPanelForTask(workbenchTaskId, draftPrompt, taskTitle)}
             />
           ) : (
             <>
