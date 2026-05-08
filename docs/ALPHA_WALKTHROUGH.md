@@ -40,6 +40,19 @@ Pass means a user can complete the local-first work loop without getting lost:
 Do not require signed/notarized distribution, live provider spending, Docker
 execution, or broad tool exposure for this pass.
 
+## Focus Matrix
+
+Use the walkthrough to judge product friction, not to duplicate every automated
+check.
+
+| Focus | Walkthrough Steps | Existing Coverage | Human Check |
+| --- | --- | --- | --- |
+| Core task loop | 2-6, 15-17 | Repository, service, renderer, and packaged Timeline/Home smokes cover task creation semantics, transitions, source context, completion criteria, closeout evidence, and Home recovery routes. | Confirm the flow feels understandable in the real packaged app: labels, action order, and return paths should not make the user hunt. |
+| Context and learning | 6-8, 16-17 | Packaged project-decomposition and Context learning smokes cover project decomposition, key source / habit surfaces, artifact learning boundaries, and SOP hints. | Confirm source/process/blocker/dependency actions are findable from the workbench without needing prior knowledge. |
+| Decisions and runs | 11-14 | Packaged Run/Decision recovery smoke covers checkpoint review, terminal run evidence, staged patch recovery, Browser Evidence review, and task return drafts. | For the normal run path, prefer no-key/fallback wording unless provider credentials are deliberately configured for this pass. |
+| Settings | 18 | Packaged Settings config smoke covers non-sensitive config persistence and relaunch hydration. | Confirm the status copy makes local storage and Keychain boundaries obvious. |
+| Explicit opt-in only | Code Agent, live providers, Docker, signing/notarization | Non-live preflights and smoke checks cover disabled/default-safe states. | Do not run these during a normal walkthrough unless the pass is explicitly about that capability. |
+
 ## Walkthrough Script
 
 1. Open the packaged app with isolated user data.
