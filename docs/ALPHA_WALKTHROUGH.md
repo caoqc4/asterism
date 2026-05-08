@@ -106,6 +106,19 @@ Keep severity practical:
 - Medium: blocks a normal alpha path until the user discovers a workaround.
 - High: data loss, wrong state, unsafe action, or a loop that prevents recovery.
 
+## Result Classification
+
+Use one of these outcomes when recording the pass:
+
+- Pass: the local-first loop is understandable end to end, with no High or
+  Medium issues.
+- Pass with friction: the loop completes, but Low issues should be fixed before
+  broader alpha use.
+- Fix before continuing: any Medium issue blocks normal use until a workaround
+  is documented or the UI is adjusted.
+- Stop and fix: any High issue, unsafe implicit action, wrong storage location,
+  or unrecoverable navigation loop.
+
 ## Stop Conditions
 
 Stop the walkthrough and fix before continuing if you see:
