@@ -2050,6 +2050,9 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '保存' }));
     expect(await screen.findByText('board_report_final.md')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '删除' }));
+    expect(await screen.findByText('删除产物')).toBeTruthy();
+    expect(screen.getByText(/不会删除任务、来源或活动时间线/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '确认删除' }));
     expect(screen.queryByText('board_report_final.md')).toBeNull();
 
     await user.click(screen.getByRole('button', { name: '活动' }));

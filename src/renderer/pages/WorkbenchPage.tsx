@@ -1227,6 +1227,7 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
   const [titleDraft, setTitleDraft] = useState('');
   const [contentDraft, setContentDraft] = useState('');
   const [editLearningNotice, setEditLearningNotice] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ArtifactRecord | null>(null);
   const visibleArtifacts = mergeTaskArtifacts(taskId, artifacts);
   const editableArtifactCount = visibleArtifacts.filter(isInlineEditableArtifact).length;
   const latestArtifact = visibleArtifacts[0] ?? null;
@@ -1266,10 +1267,11 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
     refreshLocal();
   }
 
-  function deleteArtifact(artifact: ArtifactRecord) {
+  function confirmDeleteArtifact(artifact: ArtifactRecord) {
     deleteArtifactWorkspace(artifact.id);
     setExpandedId((current) => current === artifact.id ? null : current);
     setEditingId((current) => current === artifact.id ? null : current);
+    setPendingDelete(null);
     refreshLocal();
   }
 
@@ -1395,7 +1397,7 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
                   <div className="artifact-actions">
                     {canEdit && <button className="btn sm ghost" onClick={() => startEditing(a, 'content')}>编辑</button>}
                     <button className="btn sm ghost" onClick={() => startEditing(a, 'rename')}>重命名</button>
-                    <button className="btn sm ghost" onClick={() => deleteArtifact(a)} style={{ color: 'var(--accent)' }}>删除</button>
+                    <button className="btn sm ghost" onClick={() => setPendingDelete(a)} style={{ color: 'var(--accent)' }}>删除</button>
                   </div>
                 </>
               )}
@@ -1404,6 +1406,24 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
         </div>
         );
       })}
+      {pendingDelete && (
+        <div className="modal-backdrop" onClick={() => setPendingDelete(null)}>
+          <div className="modal artifact-delete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h3>删除产物</h3>
+            </div>
+            <div className="modal-body">
+              <p className="artifact-delete-copy">
+                将从任务工作文件夹中删除「{pendingDelete.title}」。这只影响该产物记录，不会删除任务、来源或活动时间线。
+              </p>
+            </div>
+            <div className="modal-foot">
+              <button className="btn sm ghost" onClick={() => setPendingDelete(null)}>取消</button>
+              <button className="btn sm primary" onClick={() => confirmDeleteArtifact(pendingDelete)}>确认删除</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
