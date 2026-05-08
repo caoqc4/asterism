@@ -29,25 +29,31 @@ Signed and notarized release execution is still deferred.
 
 ## Latest Local Baseline
 
-As of 2026-05-02 on pushed `main`:
+As of 2026-05-08 on pushed `main`:
 
-- `npm run accept:alpha-local` passed end to end on latest `main`.
-- `npm test` passed with 128 test files / 951 tests.
-- `npm run verify` passed with tests, type-checking, and production
-  renderer/main builds.
-- The alpha handoff constituents passed when run as focused commands:
-  `accept:agent-local`, `accept:sandbox-coding:code-agent-ui`,
-  `accept:sandbox-coding:model-producer-preflight`, `smoke:release:mac`,
-  `accept:packaged-recovery:mac`, and `accept:release:mac-preflight`.
+- `npm run verify` passed inside the latest alpha-local attempt with 133 test
+  files / 897 tests, plus type-checking and production renderer/main builds.
+- A combined `npm run accept:alpha-local` attempt reached the sandbox-coding
+  batch before an apparent Vitest process exit hang. This is recorded as an
+  interrupted combined run, not a clean single-command pass.
+- The alpha handoff constituents then passed when rerun as focused commands:
+  the idle sandbox-coding batch files, `accept:sandbox-coding`,
+  `accept:agent-local`, `accept:sandbox-coding:model-producer-preflight`,
+  `smoke:release:mac`, `accept:packaged-recovery:mac`, and
+  `accept:release:mac-preflight`.
 - `smoke:release:mac` rebuilt the unsigned/ad-hoc macOS app and passed package,
   runtime, and packaged Timeline UI smoke checks.
+- `accept:packaged-recovery:mac` passed with Home recovery, project
+  decomposition, Context learning, Code Agent UI, Run/Decision recovery, and
+  Settings config smokes.
 - `accept:release:mac-preflight` remained read-only and reported the expected
   `status=not-ready` because Developer ID signing and Apple notarization
   credentials are not configured.
 
-A previous combined `npm run accept:alpha-local` attempt was interrupted after
-Vitest stopped producing output. That did not reproduce on the latest full gate:
-the complete command passed end to end.
+The last clean single-command `npm run accept:alpha-local` pass was on
+2026-05-02. The 2026-05-08 result should be treated as constituent evidence:
+all gates passed when focused, but the long combined command still showed a
+Vitest process exit hang.
 
 ## Validation Commands
 

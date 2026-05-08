@@ -36,6 +36,11 @@ acceptance, Code Agent model-producer preflight, unsigned macOS release smoke,
 targeted packaged recovery acceptance, and release preflight without signing,
 notarizing, uploading, or calling Apple services by default.
 
+If this long combined command appears idle after a passing Vitest batch, record
+the interruption and rerun the constituent gates listed in
+[ALPHA_HANDOFF.md](ALPHA_HANDOFF.md). The 2026-05-08 alpha pass used this
+constituent-rerun path after an apparent Vitest process exit hang.
+
 ### Run the build smoke check
 
 ```bash
