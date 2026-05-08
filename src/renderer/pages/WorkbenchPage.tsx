@@ -1261,8 +1261,10 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
         nextContent,
       });
       setEditLearningNotice('已把本次产物改动方向写入任务记忆；明显偏好会在任务完成或复盘时归纳到 Context。');
+    } else if (editingMode === 'rename') {
+      setEditLearningNotice('已保存产物名称；正文未变化，不生成自学习观察信号。');
     } else {
-      setEditLearningNotice('已保留本次产物改动方向；明显偏好会在任务完成或复盘时归纳到 Context。');
+      setEditLearningNotice('正文未变化，不生成自学习观察信号。');
     }
     refreshLocal();
   }

@@ -2045,6 +2045,7 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '保存' }));
     expect(await screen.findByText(/已把本次产物改动方向写入任务记忆/)).toBeTruthy();
     expect(await screen.findByText(/现金流页已补齐/)).toBeTruthy();
+    const sourceContextCallCountAfterContentEdit = vi.mocked(harness.api.createSourceContext).mock.calls.length;
     expect(harness.api.createSourceContext).toHaveBeenCalledWith(expect.objectContaining({
       taskId: 'task_risk',
       title: '产物编辑观察',
@@ -2059,6 +2060,8 @@ describe('App redesign v1', () => {
     await user.type(titleEditor, 'board_report_final.md');
     await user.click(screen.getByRole('button', { name: '保存' }));
     expect(await screen.findByText('board_report_final.md')).toBeTruthy();
+    expect(screen.getByText(/正文未变化，不生成自学习观察信号/)).toBeTruthy();
+    expect(harness.api.createSourceContext).toHaveBeenCalledTimes(sourceContextCallCountAfterContentEdit);
     await user.click(screen.getByRole('button', { name: '删除' }));
     expect(await screen.findByText('删除产物')).toBeTruthy();
     expect(screen.getByText(/不会删除任务、来源或活动时间线/)).toBeTruthy();
