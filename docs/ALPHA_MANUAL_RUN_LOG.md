@@ -2,6 +2,20 @@
 
 Use this file when running the manual alpha path. Keep entries short and actionable.
 
+## 2026-05-08 Walkthrough Readiness Notes
+
+- Build / commit: `6786981 Use fresh alpha walkthrough data dirs`
+- Tester: Codex
+- Commands:
+  - `npx vitest run src/main/local-smoke-boundaries-script.test.ts`
+- Result: pass
+- Notes:
+  - `ALPHA_WALKTHROUGH.md` now separates human-friction checks from existing
+    automated coverage, defines pass / friction / fix outcomes, and launches
+    walkthroughs with a fresh temporary user-data directory per pass.
+  - `REAL_USE.md` now warns that `taskplane-alpha-walkthrough-*` directories
+    are disposable test state and should not be used for real work.
+
 ## 2026-05-08 Main Packaged Recovery Recheck
 
 - Build / commit: `a47a5ce Clarify alpha handoff baseline docs`
@@ -83,7 +97,7 @@ Use this file when running the manual alpha path. Keep entries short and actiona
   release preflight updates, local alpha gate wiring, local smoke boundary
   guards, latest verification records, and the 2026-05-08 redesign packaged
   recovery pass at `20ea48c`, and the 2026-05-08 alpha-local constituent rerun
-  at `c512919`
+  at `c512919`, with walkthrough-readiness notes through `6786981`
 - Tester: Codex
 - Local verification run: targeted main/preload tests, `npm run lint`,
   `npm run build`, `npm run verify`, `npm run accept:agent-local`,
