@@ -22,6 +22,9 @@ redesign closeout unless a real use case proves they are blocking.
 Recommended next state: prepare `redesign` for PR review after one focused
 manual walkthrough. Avoid broad new feature work until the branch is reviewed.
 
+For the concrete product validation pass, use
+[REDESIGN_V1_ACCEPTANCE_CHECKLIST.md](REDESIGN_V1_ACCEPTANCE_CHECKLIST.md).
+
 ## Product Document 19 Alignment
 
 | Area | Status | Current Alignment | Remaining Work |
