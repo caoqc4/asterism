@@ -23,6 +23,7 @@ const api: ElectronApi = {
   resolveWorkHabitConflict: (input) => ipcRenderer.invoke('workHabit:resolveConflict', input),
   recordCompletionOverrideLearningSignal: (input) => ipcRenderer.invoke('workHabit:recordCompletionOverride', input),
   recordSopTemplateHabit: (input) => ipcRenderer.invoke('workHabit:recordSopTemplate', input),
+  recordWorkHabitApplications: (input) => ipcRenderer.invoke('workHabit:recordApplications', input),
   createBlocker: (input) => ipcRenderer.invoke('blocker:create', input),
   updateBlocker: (input) => ipcRenderer.invoke('blocker:update', input),
   resolveBlocker: (id) => ipcRenderer.invoke('blocker:resolve', id),

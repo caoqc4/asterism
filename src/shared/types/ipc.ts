@@ -82,6 +82,7 @@ import type {
   CompletionOverrideLearningSignalInput,
   CreateManualWorkHabitInput,
   ImportLegacyWorkHabitsInput,
+  RecordWorkHabitApplicationsInput,
   ResolveWorkHabitConflictInput,
   SopTemplateHabitInput,
   UpdateWorkHabitInput,
@@ -119,6 +120,7 @@ export type ElectronApi = {
     input: CompletionOverrideLearningSignalInput,
   ) => Promise<WorkHabitRecord[]>;
   recordSopTemplateHabit: (input: SopTemplateHabitInput) => Promise<WorkHabitRecord[]>;
+  recordWorkHabitApplications: (input: RecordWorkHabitApplicationsInput) => Promise<WorkHabitRecord[]>;
   createBlocker: (input: CreateBlockerInput) => Promise<BlockerRecord>;
   updateBlocker: (input: UpdateBlockerInput) => Promise<BlockerRecord>;
   resolveBlocker: (id: string) => Promise<BlockerRecord>;

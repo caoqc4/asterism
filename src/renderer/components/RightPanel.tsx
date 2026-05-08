@@ -6,6 +6,7 @@ import { PANEL_CAPTURE_SUMMARY_PREFIX } from '@shared/panel-capture';
 import {
   selectApplicableWorkHabits,
   getPersistedWorkHabitStorageSnapshot,
+  recordWorkHabitApplications,
   summarizeWorkHabitsForPrompt,
 } from '../lib/workHabits';
 import { buildProjectDecompositionPrompt, getTaskAttributes, type TaskExecutionType } from '../lib/taskAttributes';
@@ -426,14 +427,23 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
           projectLabel: activeAttrs?.type === 'project' ? titleCache[activeTaskId ?? ''] ?? null : null,
         };
         const snapshot = await getPersistedWorkHabitStorageSnapshot().catch(() => null);
-        const appliedHabits = summarizeWorkHabitsForPrompt(snapshot
+        const selectedHabits = snapshot
           ? selectApplicableWorkHabitsFromList(snapshot.habits, habitParams)
-          : selectApplicableWorkHabits(habitParams));
+          : selectApplicableWorkHabits(habitParams);
+        const appliedHabits = summarizeWorkHabitsForPrompt(selectedHabits);
         const res = await window.api.chatWithAI({
           messages: historyForAI,
           taskId: activeTaskId,
           workHabits: appliedHabits,
         });
+        if (selectedHabits.length > 0) {
+          const habitIds = selectedHabits.map((habit) => habit.id);
+          if (window.api.recordWorkHabitApplications) {
+            void window.api.recordWorkHabitApplications({ habitIds });
+          } else {
+            recordWorkHabitApplications(habitIds);
+          }
+        }
         replyText = res.text;
       } else {
         await new Promise((r) => setTimeout(r, 900 + Math.random() * 600));

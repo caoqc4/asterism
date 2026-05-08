@@ -19,6 +19,7 @@ import {
   deleteWorkHabit,
   loadWorkHabits,
   recordCompletionOverrideLearningSignal,
+  recordWorkHabitApplications,
   recordSopTemplateHabit,
   resolveWorkHabitConflict,
   saveWorkHabits,
@@ -471,6 +472,7 @@ function createMockApi() {
       return loadWorkHabits();
     }),
     recordSopTemplateHabit: vi.fn().mockImplementation(async (input) => recordSopTemplateHabit(input)),
+    recordWorkHabitApplications: vi.fn().mockImplementation(async (input) => recordWorkHabitApplications(input.habitIds)),
     createBlocker: vi.fn(),
     updateBlocker: vi.fn(),
     resolveBlocker: vi.fn(),
@@ -852,6 +854,9 @@ describe('App redesign v1', () => {
           expect.stringContaining('数据报告初稿完成后先内部评审再对外发送'),
         ]),
       }));
+      expect(harness.api.recordWorkHabitApplications).toHaveBeenCalledWith({
+        habitIds: ['habit_seed_review_before_send'],
+      });
     });
     expect(await screen.findByText('我会基于任务上下文给出下一步建议。')).toBeTruthy();
 

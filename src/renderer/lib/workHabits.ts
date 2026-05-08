@@ -5,6 +5,7 @@ import {
   describeWorkHabitStorageBoundary,
   findWorkHabitConflict as findWorkHabitConflictInList,
   recordCompletionOverrideLearningSignalInList,
+  recordWorkHabitApplicationsInList,
   recordSopTemplateHabitInList,
   resolveWorkHabitConflictInList,
   selectApplicableWorkHabits as selectApplicableWorkHabitsFromList,
@@ -146,6 +147,12 @@ export function recordCompletionOverrideLearningSignal(params: {
 
 export function recordSopTemplateHabit(params: SopTemplateHabitInput): WorkHabitRecord[] {
   const next = recordSopTemplateHabitInList(loadWorkHabits(), params);
+  saveWorkHabits(next);
+  return next;
+}
+
+export function recordWorkHabitApplications(habitIds: string[]): WorkHabitRecord[] {
+  const next = recordWorkHabitApplicationsInList(loadWorkHabits(), habitIds);
   saveWorkHabits(next);
   return next;
 }

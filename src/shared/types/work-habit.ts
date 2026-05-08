@@ -68,3 +68,7 @@ export type SopTemplateHabitInput = {
 export type ImportLegacyWorkHabitsInput = {
   habits: WorkHabitRecord[];
 };
+
+export type RecordWorkHabitApplicationsInput = {
+  habitIds: string[];
+};

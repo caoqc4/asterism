@@ -32,6 +32,7 @@ import type {
   CompletionOverrideLearningSignalInput,
   CreateManualWorkHabitInput,
   ImportLegacyWorkHabitsInput,
+  RecordWorkHabitApplicationsInput,
   ResolveWorkHabitConflictInput,
   SopTemplateHabitInput,
   UpdateWorkHabitInput,
@@ -252,6 +253,9 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('workHabit:recordSopTemplate', async (_event, input: SopTemplateHabitInput) =>
     getServices().workHabitService.recordSopTemplate(input));
+
+  ipcMain.handle('workHabit:recordApplications', async (_event, input: RecordWorkHabitApplicationsInput) =>
+    getServices().workHabitService.recordApplications(input.habitIds));
 
   ipcMain.handle('blocker:create', async (_event, input: CreateBlockerInput) => {
     const created = await getServices().taskService.createBlocker(input);

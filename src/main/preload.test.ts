@@ -46,6 +46,7 @@ function getExposedApi() {
     resolveWorkHabitConflict: (input: unknown) => Promise<unknown>;
     recordCompletionOverrideLearningSignal: (input: unknown) => Promise<unknown>;
     recordSopTemplateHabit: (input: unknown) => Promise<unknown>;
+    recordWorkHabitApplications: (input: unknown) => Promise<unknown>;
     createBlocker: (input: unknown) => Promise<unknown>;
     updateBlocker: (input: unknown) => Promise<unknown>;
     resolveBlocker: (id: string) => Promise<unknown>;
@@ -116,6 +117,7 @@ describe('preload bridge', () => {
     const resolveWorkHabitConflictInput = { candidateId: 'habit_1', decision: 'accept_candidate' };
     const completionOverrideInput = { taskId: 'task_1', taskTitle: 'Task', reason: 'Enough evidence' };
     const sopHabitInput = { taskId: 'task_1', taskTitle: 'Task', steps: ['Draft', 'Review'] };
+    const recordHabitApplicationsInput = { habitIds: ['habit_1'] };
     const createBlockerInput = {
       taskId: 'task_1',
       title: 'Legal approval pending',
@@ -208,6 +210,7 @@ describe('preload bridge', () => {
     await api.resolveWorkHabitConflict(resolveWorkHabitConflictInput);
     await api.recordCompletionOverrideLearningSignal(completionOverrideInput);
     await api.recordSopTemplateHabit(sopHabitInput);
+    await api.recordWorkHabitApplications(recordHabitApplicationsInput);
     await api.createBlocker(createBlockerInput);
     await api.updateBlocker(updateBlockerInput);
     await api.resolveBlocker('blocker_1');
@@ -256,6 +259,7 @@ describe('preload bridge', () => {
       ['workHabit:resolveConflict', resolveWorkHabitConflictInput],
       ['workHabit:recordCompletionOverride', completionOverrideInput],
       ['workHabit:recordSopTemplate', sopHabitInput],
+      ['workHabit:recordApplications', recordHabitApplicationsInput],
       ['blocker:create', createBlockerInput],
       ['blocker:update', updateBlockerInput],
       ['blocker:resolve', 'blocker_1'],
