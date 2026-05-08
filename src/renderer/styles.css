@@ -3673,6 +3673,13 @@ a { color: inherit; text-decoration: none; }
   justify-content: space-between;
   gap: 12px;
 }
+.project-draft-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 .project-draft-list {
   display: grid;
   gap: 8px;

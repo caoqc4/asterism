@@ -1605,10 +1605,16 @@ describe('App redesign v1', () => {
     expect(screen.getByText('确认是否创建这些子任务。')).toBeTruthy();
     expect(screen.getByText('子任务保持大块、边界清楚，暂不继续细拆。')).toBeTruthy();
     expect(screen.getByText(/最多保持项目 → 子任务两层/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: '重新生成' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '放弃草稿' })).toBeTruthy();
     expect(harness.api.decomposeProject).toHaveBeenCalledWith(expect.objectContaining({
       taskId: 'task_created',
       instructions: expect.stringContaining('最多两层'),
     }));
+    await user.click(screen.getByRole('button', { name: '放弃草稿' }));
+    expect(screen.queryByText('AI 拆解草稿')).toBeNull();
+    await user.click(screen.getByRole('button', { name: '生成拆解草稿' }));
+    expect(await screen.findByText('AI 拆解草稿')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '创建这些子任务' }));
     await waitFor(() => {
       expect(harness.api.transitionTask).toHaveBeenCalledWith({

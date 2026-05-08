@@ -798,6 +798,9 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
               decompositionError={projectDecompositionError}
               onGenerateDecomposition={generateProjectDecomposition}
               onCreateDraftChildren={createProjectChildren}
+              onDiscardDraft={(project) => setProjectDraft((current) => (
+                current?.projectId === project.id ? null : current
+              ))}
             />
           ) : viewMode === 'lane' ? (
             LANE_ORDER.map((lane) => {
@@ -1079,6 +1082,7 @@ function ProjectTreeView({
   decompositionError,
   onGenerateDecomposition,
   onCreateDraftChildren,
+  onDiscardDraft,
 }: {
   projects: Task[];
   tasks: Task[];
@@ -1098,6 +1102,7 @@ function ProjectTreeView({
   decompositionError: string | null;
   onGenerateDecomposition: (project: Task) => void;
   onCreateDraftChildren: (project: Task) => void;
+  onDiscardDraft: (project: Task) => void;
 }) {
   if (projects.length === 0) return null;
 
@@ -1154,6 +1159,7 @@ function ProjectTreeView({
                 error={decompositionError}
                 onGenerate={() => onGenerateDecomposition(project)}
                 onCreate={() => onCreateDraftChildren(project)}
+                onDiscard={() => onDiscardDraft(project)}
               />
             )}
           </div>
@@ -1171,6 +1177,7 @@ function ProjectDecompositionPanel({
   error,
   onGenerate,
   onCreate,
+  onDiscard,
 }: {
   project: Task;
   draft: ProjectDecompositionResult | null;
@@ -1179,6 +1186,7 @@ function ProjectDecompositionPanel({
   error: string | null;
   onGenerate: () => void;
   onCreate: () => void;
+  onDiscard: () => void;
 }) {
   return (
     <div className="project-child-empty">
@@ -1197,9 +1205,17 @@ function ProjectDecompositionPanel({
               <div className="project-empty-title">AI 拆解草稿</div>
               <div className="project-empty-copy">{draft.parentGoal}</div>
             </div>
-            <button className={`btn sm primary${creating ? ' disabled' : ''}`} onClick={onCreate} disabled={creating}>
-              {creating ? '创建中…' : '创建这些子任务'}
-            </button>
+            <div className="project-draft-actions">
+              <button className="btn sm ghost" onClick={onGenerate} disabled={busy || creating}>
+                {busy ? '生成中…' : '重新生成'}
+              </button>
+              <button className="btn sm ghost" onClick={onDiscard} disabled={creating}>
+                放弃草稿
+              </button>
+              <button className={`btn sm primary${creating ? ' disabled' : ''}`} onClick={onCreate} disabled={creating}>
+                {creating ? '创建中…' : '创建这些子任务'}
+              </button>
+            </div>
           </div>
           <div className="project-draft-list">
             {draft.subtasks.map((subtask) => (
