@@ -185,6 +185,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
   const [showCapture, setShowCapture] = useState(false);
   const [captureTitle, setCaptureTitle] = useState('');
   const [captureType, setCaptureType] = useState<TaskType>('simple');
+  const [captureTypeTouched, setCaptureTypeTouched] = useState(false);
   const [captureCommitment, setCaptureCommitment] = useState('');
   const [capturing, setCapturing] = useState(false);
   const [capturedTask, setCapturedTask] = useState<CapturedTaskSummary | null>(null);
@@ -571,6 +572,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
       }
       setCaptureTitle('');
       setCaptureType('simple');
+      setCaptureTypeTouched(false);
       setCaptureCommitment('');
       setShowCapture(false);
       setCapturedTask({ id: newId, title, type: selectedType });
@@ -656,11 +658,18 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
               onChange={(e) => {
                 const nextTitle = e.target.value;
                 setCaptureTitle(nextTitle);
-                setCaptureType((current) => current === 'simple' ? inferTaskExecutionType(nextTitle) : current);
+                if (!captureTypeTouched) {
+                  setCaptureType(inferTaskExecutionType(nextTitle));
+                }
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void captureTask(); }
-                if (e.key === 'Escape') { setShowCapture(false); setCaptureTitle(''); }
+                if (e.key === 'Escape') {
+                  setShowCapture(false);
+                  setCaptureTitle('');
+                  setCaptureType('simple');
+                  setCaptureTypeTouched(false);
+                }
               }}
             />
             <div className="capture-type-suggestion">
@@ -672,7 +681,10 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
                 <button
                   key={type}
                   className={`capture-type-btn${captureType === type ? ' active' : ''}`}
-                  onClick={() => setCaptureType(type)}
+                  onClick={() => {
+                    setCaptureType(type);
+                    setCaptureTypeTouched(true);
+                  }}
                 >
                   {TASK_TYPE_LABELS[type]}
                 </button>
@@ -711,7 +723,12 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
               <button className={`btn sm primary${capturing ? ' disabled' : ''}`} onClick={() => void captureTask()} disabled={!captureTitle.trim() || capturing}>
                 {capturing ? '创建中…' : '创建'}
               </button>
-              <button className="btn sm ghost" onClick={() => { setShowCapture(false); setCaptureTitle(''); }}>
+              <button className="btn sm ghost" onClick={() => {
+                setShowCapture(false);
+                setCaptureTitle('');
+                setCaptureType('simple');
+                setCaptureTypeTouched(false);
+              }}>
                 取消
               </button>
               <span className="capture-ai-hint muted">
