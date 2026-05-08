@@ -1936,7 +1936,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByText(/Run #1 · 已完成/));
     expect(await screen.findByText('Step 1')).toBeTruthy();
     expect(await screen.findByText('Run 验证通过')).toBeTruthy();
-    expect(await screen.findAllByText('验证子 Agent')).toHaveLength(1);
+    expect(await screen.findAllByText('验证子 Agent')).toHaveLength(2);
     expect(await screen.findByText('整理反馈')).toBeTruthy();
     expect(await screen.findByText('检查通过')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /重新生成/ }));

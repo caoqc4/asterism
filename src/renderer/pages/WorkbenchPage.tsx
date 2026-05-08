@@ -1004,6 +1004,7 @@ function RunStep({ step, detail }: {
       </span>
       <span className="run-step-label">{step.title}</span>
       <span className={`run-check-pill ${check.tone}`} title={check.detail}>{check.label}</span>
+      <span className="run-step-check-source">{runCheckSourceLabel(check.source)}</span>
       {active && <span className="dot running" style={{ marginLeft: 'auto' }} />}
     </div>
   );
