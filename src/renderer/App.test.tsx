@@ -1725,6 +1725,29 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/已停用规则不会进入后续 AI 提示词/)).toBeTruthy();
   });
 
+  it('lets users delete learned work habits from Context', async () => {
+    const user = userEvent.setup();
+    saveWorkHabits([
+      buildWorkHabit({
+        id: 'habit_delete',
+        rule: '临时规则可被用户删除',
+        source: 'manual',
+        status: 'confirmed',
+        examples: '用户主动清理',
+      }),
+    ]);
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Context/ }));
+    expect(await screen.findByText('临时规则可被用户删除')).toBeTruthy();
+    await user.click(screen.getByTitle('删除'));
+
+    await waitFor(() => {
+      expect(screen.queryByText('临时规则可被用户删除')).toBeNull();
+    });
+    expect(harness.api.deleteWorkHabit).toHaveBeenCalledWith('habit_delete');
+  });
+
   it('lets users manually add a confirmed work habit from Context', async () => {
     const user = userEvent.setup();
     render(<App />);
