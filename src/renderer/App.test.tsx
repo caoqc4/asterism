@@ -1403,8 +1403,11 @@ describe('App redesign v1', () => {
     await user.type(await screen.findByPlaceholderText(/任务标题/), '每周一准备经营周报');
     expect(screen.getByText('AI 建议类型')).toBeTruthy();
     expect(screen.getByRole('button', { name: '定时' }).className).toContain('active');
-    expect(screen.getByText(/只需要确认或调整建议/)).toBeTruthy();
-    expect(screen.getByText(/周期和触发条件可在工作台 Header 调整/)).toBeTruthy();
+    expect(screen.getByText('捕获意图')).toBeTruthy();
+    expect(screen.getByText('确认类型')).toBeTruthy();
+    expect(screen.getByText('创建后推进')).toBeTruthy();
+    expect(screen.getAllByText(/只需要确认或调整建议/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/周期和触发条件可在工作台 Header 调整/).length).toBeGreaterThan(0);
     await user.type(screen.getByPlaceholderText(/已承诺时间/), '周五 17:00 前发给 CEO');
     await user.click(screen.getByRole('button', { name: '创建' }));
     await waitFor(() => {
@@ -1454,9 +1457,9 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: '+ 新建任务' }));
     await user.type(await screen.findByPlaceholderText(/任务标题/), '官网改版项目');
     expect(screen.getByRole('button', { name: '项目' }).className).toContain('active');
-    expect(screen.getByText(/类型由 AI 根据标题预判/)).toBeTruthy();
+    expect(screen.getAllByText(/类型由 AI 根据标题预判/).length).toBeGreaterThan(0);
     expect(screen.getByText(/点击创建即确认当前建议/)).toBeTruthy();
-    expect(screen.getByText(/确认后才创建真实子任务/)).toBeTruthy();
+    expect(screen.getAllByText(/确认后才创建真实子任务/).length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: '创建' }));
     await waitFor(() => {
       expect(harness.api.transitionTask).toHaveBeenCalledWith({

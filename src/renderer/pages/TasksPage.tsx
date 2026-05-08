@@ -106,6 +106,13 @@ const TASK_TYPE_LABELS: Record<TaskType, string> = {
   event:     '事件',
 };
 
+const TASK_TYPE_CAPTURE_NEXT_STEP: Record<TaskType, string> = {
+  simple: '创建单条任务，进入 Tasks 后可直接执行或继续规划。',
+  project: '先创建项目父任务，再由 AI 拆解草稿；确认后才创建真实子任务。',
+  scheduled: '先创建单条定时任务，周期和触发条件可在工作台 Header 调整。',
+  event: '先创建单条事件触发任务，监听条件可在工作台 Header 调整。',
+};
+
 const RISK_OPTIONS: Array<{ label: string; value: TaskRiskLevel }> = [
   { label: '高', value: 'high' },
   { label: '中', value: 'medium' },
@@ -246,6 +253,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
         limit: 4,
       }).filter((habit): habit is WorkHabitRecord => habit.source === 'sop')
     : [];
+  const capturePhaseItems = buildCapturePhaseItems(captureTitle, captureType, captureSopSuggestions.length);
 
   useEffect(() => {
     let cancelled = false;
@@ -667,6 +675,17 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
             <div className="capture-type-note">
               类型由 AI 根据标题预判，你只需要确认或调整建议；点击创建即确认当前建议。定时/事件会先创建单条任务，周期和触发条件可在工作台 Header 调整；项目型先生成拆解草稿，确认后才创建真实子任务。
             </div>
+            <div className="capture-phase-flow" aria-label="任务创建阶段">
+              {capturePhaseItems.map((item, index) => (
+                <div key={item.label} className={`capture-phase-item${item.active ? ' active' : ''}`}>
+                  <span className="capture-phase-index">{index + 1}</span>
+                  <div>
+                    <strong>{item.label}</strong>
+                    <span>{item.detail}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
             {captureSopSuggestions.length > 0 && (
               <div className="capture-sop-suggestions">
                 <span>可参考流程模板</span>
@@ -904,6 +923,37 @@ function LensItem({ label, active, onClick, count, dot, icon }: LensItemProps) {
       )}
     </button>
   );
+}
+
+function buildCapturePhaseItems(title: string, type: TaskType, sopSuggestionCount: number): Array<{
+  label: string;
+  detail: string;
+  active: boolean;
+}> {
+  const hasTitle = Boolean(title.trim());
+  return [
+    {
+      label: '捕获意图',
+      detail: hasTitle
+        ? '已根据标题形成初步任务意图，后续可在右侧面板继续补上下文。'
+        : '先写下任务目标或外部线索，AI 会根据标题预判类型。',
+      active: true,
+    },
+    {
+      label: '确认类型',
+      detail: hasTitle
+        ? `AI 建议为${TASK_TYPE_LABELS[type]}任务，你只需要确认或调整建议。`
+        : '输入标题后会给出一次性 / 项目 / 定时 / 事件建议。',
+      active: hasTitle,
+    },
+    {
+      label: '创建后推进',
+      detail: sopSuggestionCount > 0
+        ? `${TASK_TYPE_CAPTURE_NEXT_STEP[type]} 已发现可参考流程模板，创建后 AI 会建议是否加载。`
+        : TASK_TYPE_CAPTURE_NEXT_STEP[type],
+      active: hasTitle,
+    },
+  ];
 }
 
 function ProjectTreeView({
