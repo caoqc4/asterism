@@ -2,14 +2,36 @@
 
 Use this file when running the manual alpha path. Keep entries short and actionable.
 
+## 2026-05-08 Redesign Packaged Recovery Pass
+
+- Build / commit: `20ea48c Strengthen redesign packaged smoke checks`
+- Tester: Codex
+- Commands:
+  - `npm run dist:mac:dir`
+  - `npm run smoke:project-decomposition:mac`
+  - `npm run smoke:context-learning:mac`
+  - `npm run smoke:settings-config:mac`
+  - `npm run accept:packaged-recovery:mac`
+- Result: pass
+- Notes:
+  - The first Settings packaged smoke run correctly failed against an older
+    `release/mac-arm64/Taskplane.app` because the app did not include the new
+    confirmation-threshold copy.
+  - After rebuilding the unsigned macOS directory package, Settings config,
+    project decomposition, Context learning, Home recovery, Code Agent UI, and
+    Run/Decision recovery smokes all passed.
+  - This pass specifically supports the redesign v1 acceptance checklist for
+    project decomposition, self-learning boundaries, and AI behavior settings.
+
 ## Run Metadata
 
 - First full manual pass: 2026-04-25
-- Latest update: 2026-05-02
+- Latest update: 2026-05-08
 - Build / commit: pushed `main` through the 2026-05-02 alpha handoff baseline,
   including unsigned release smoke, targeted packaged recovery acceptance,
   release preflight updates, local alpha gate wiring, local smoke boundary
-  guards, and latest verification records
+  guards, latest verification records, and the 2026-05-08 redesign packaged
+  recovery pass at `20ea48c`
 - Tester: Codex
 - Local verification run: targeted main/preload tests, `npm run lint`,
   `npm run build`, `npm run verify`, `npm run accept:agent-local`,
@@ -17,7 +39,9 @@ Use this file when running the manual alpha path. Keep entries short and actiona
   `npm run verify` with 122 test files / 848 tests, and 2026-05-02
   `npm run accept:alpha-local` with `verify` passing 128 test files / 944
   tests plus release/recovery targeted checks, and 2026-05-02 `npm run verify`
-  passing 128 test files / 951 tests after the local smoke boundary guards.
+  passing 128 test files / 951 tests after the local smoke boundary guards,
+  and 2026-05-08 `npm run verify` passing 133 test files / 897 tests after the
+  redesign packaged smoke checks were strengthened.
   The latest alpha handoff constituents passed when rerun as focused commands
   after one combined `accept:alpha-local` attempt stopped producing Vitest
   output and was interrupted.
@@ -36,7 +60,9 @@ Use this file when running the manual alpha path. Keep entries short and actiona
   `npm run accept:alpha-local`, plus focused reruns of the alpha handoff
   constituents on pushed `main`, and a direct packaged alpha test with
   `npm run smoke:release:mac && npm run accept:packaged-recovery:mac &&
-  npm run accept:release:mac-preflight`
+  npm run accept:release:mac-preflight`, plus 2026-05-08
+  `npm run dist:mac:dir`, focused packaged redesign smokes, and
+  `npm run accept:packaged-recovery:mac`
 
 ## Result Summary
 
