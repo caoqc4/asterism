@@ -779,6 +779,34 @@ describe('App redesign v1', () => {
     });
   });
 
+  it('keeps Brief defer conflict choices aligned with the selected day', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const focusCard = (await screen.findByText('董事会材料修订')).closest('.focus-card')!;
+    fireEvent.mouseEnter(focusCard);
+    fireEvent.click(Array.from(focusCard.querySelectorAll('button'))
+      .find((button) => button.textContent?.trim() === '延后 ▾') as HTMLButtonElement);
+    await user.click(await screen.findByRole('button', { name: '下周一' }));
+
+    expect(await screen.findByText(/下周一已有 4 件任务/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: '我来选' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '我来选' }));
+    expect(screen.queryByText(/下周一已有 4 件任务/)).toBeNull();
+    expect(await screen.findByRole('button', { name: '选日期…' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '下周一' }));
+    await user.click(await screen.findByRole('button', { name: '周二' }));
+
+    await waitFor(() => {
+      expect(harness.api.transitionTask).toHaveBeenCalledWith({
+        id: 'task_risk',
+        nextState: 'waiting_external',
+        waitingReason: '延后处理：周二',
+      });
+    });
+  });
+
   it('routes running Brief focus primary action to the task workbench', async () => {
     const user = userEvent.setup();
     const runningTask = buildTask({

@@ -178,9 +178,9 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
     });
   }
 
-  function confirmDefer(task: FocusTask) {
+  function confirmDefer(task: FocusTask, targetLabel = deferLabel(conflictState?.option ?? 'next-monday')) {
     setTasks((prev) => prev.filter((t) => t.id !== task.id));
-    transitionFocusTask(task, 'waiting_external', `延后处理：${deferLabel(conflictState?.option ?? 'next-monday')}`).catch(() => {});
+    transitionFocusTask(task, 'waiting_external', `延后处理：${targetLabel}`).catch(() => {});
     setConflictState(null);
   }
 
@@ -365,9 +365,19 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
               </button>
               <button
                 className="btn sm primary"
-                onClick={() => confirmDefer(conflictState.task)}
+                onClick={() => confirmDefer(conflictState.task, '周二')}
               >
                 周二
+              </button>
+              <button
+                className="btn sm ghost"
+                onClick={() => {
+                  const taskId = conflictState.task.id;
+                  setConflictState(null);
+                  setDeferOpenId(taskId);
+                }}
+              >
+                我来选
               </button>
             </div>
           </div>
