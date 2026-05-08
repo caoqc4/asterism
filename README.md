@@ -136,7 +136,7 @@ This runs tests, type-checking, and the production build in sequence.
 npm run accept:alpha-local
 ```
 
-This runs the non-live local alpha-readiness gate: verification, local agent acceptance, Code Agent model-producer preflight, unsigned macOS release smoke, packaged recovery acceptance, and release preflight.
+This runs the non-live local alpha-readiness gate: verification, local agent acceptance, Code Agent model-producer preflight, unsigned macOS release smoke, packaged recovery acceptance, and release preflight. Check the handoff note for the current baseline and constituent-rerun fallback if the long combined gate appears idle after a passing test batch.
 
 For the current short alpha handoff note, see [docs/ALPHA_HANDOFF.md](docs/ALPHA_HANDOFF.md).
 For moving into daily local use, see [docs/REAL_USE.md](docs/REAL_USE.md).
@@ -185,7 +185,7 @@ This checks release readiness without signing, notarizing, uploading artifacts, 
 npm run accept:alpha-local
 ```
 
-This is the complete non-live local readiness gate before alpha handoff.
+This is the complete non-live local readiness gate before alpha handoff; use the handoff note for the current pass status and fallback constituent commands.
 
 See [docs/RELEASES.md](docs/RELEASES.md) for the current release scope.
 
