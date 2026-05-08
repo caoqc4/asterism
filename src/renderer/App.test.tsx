@@ -1448,6 +1448,8 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/真正压缩前会先保留关键决策、偏好变化和未解决问题/)).toBeTruthy();
     expect(screen.getByText('沟通风格')).toBeTruthy();
     expect(screen.getByText('确认阈值')).toBeTruthy();
+    expect(screen.getByText(/低：更少打断/)).toBeTruthy();
+    expect(screen.getByText(/高：不确定结论也更常请你拍板/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '详细' }));
     await user.click(screen.getByRole('button', { name: '高' }));
     const switches = await screen.findAllByRole('switch');

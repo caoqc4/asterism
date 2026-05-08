@@ -123,6 +123,7 @@ export function SettingsPage() {
             onChange={setConfirmationThreshold}
           />
           <p className="settings-hint">用于校准 AI 遇到风险、外部动作或不确定结论时主动请你确认的频率。</p>
+          <p className="settings-hint">低：更少打断；标准：风险和外部动作会确认；高：不确定结论也更常请你拍板。</p>
         </div>
 
         <div className="settings-field" style={{ marginTop: 16 }}>
