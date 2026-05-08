@@ -35,6 +35,13 @@ function sourceLabel(source: WorkHabitSource): string {
   return '用户创建';
 }
 
+function learningRouteLabel(source: WorkHabitSource): string {
+  if (source === 'silent') return '轻微偏好由系统静默确认，后续可随时停用或删除。';
+  if (source === 'proposal') return '显著流程、步骤顺序或工具选择必须由你确认后才应用。';
+  if (source === 'sop') return '完整流程模板只来自你在工作台主动保存的 SOP。';
+  return '你手动创建的规则默认已确认，可随时编辑、停用或删除。';
+}
+
 const WORK_HABIT_SOURCE_ORDER: WorkHabitSource[] = ['silent', 'proposal', 'sop', 'manual'];
 
 function statusLabel(status: WorkHabitStatus): string {
@@ -541,6 +548,10 @@ export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => v
                   {isExpanded && (
                     <div className="ctx-habit-detail">
                       <div>优先级：{priorityLabel(h.scope)}</div>
+                      <div>学习路径：{learningRouteLabel(h.source)}</div>
+                      {h.status === 'pending' && (
+                        <div>待确认提议不会进入后续 AI 提示词；确认后才会改变同类任务流程，选择“以后不再提示”会停用该模式。</div>
+                      )}
                       <div>创建：{new Date(h.createdAt).toLocaleString('zh')}</div>
                       <div>最近应用：{h.lastAppliedAt ? new Date(h.lastAppliedAt).toLocaleString('zh') : '尚未应用'}</div>
                       {h.status === 'disabled' && (

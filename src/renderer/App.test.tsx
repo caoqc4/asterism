@@ -1761,6 +1761,8 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /Context/ }));
     await user.click(await screen.findByText('所有外部合作回复都先走人工确认'));
+    expect(screen.getByText(/显著流程、步骤顺序或工具选择必须由你确认后才应用/)).toBeTruthy();
+    expect(screen.getByText(/待确认提议不会进入后续 AI 提示词/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '以后不再提示' }));
 
     expect((await screen.findAllByText('已停用')).length).toBeGreaterThan(0);
