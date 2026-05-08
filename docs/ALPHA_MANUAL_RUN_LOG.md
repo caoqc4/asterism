@@ -2,6 +2,21 @@
 
 Use this file when running the manual alpha path. Keep entries short and actionable.
 
+## 2026-05-08 Main Packaged Recovery Recheck After Fresh Build
+
+- Build / commit: `e63be3d Record unsigned release smoke recheck`
+- Tester: Codex
+- Commands:
+  - `npm run accept:packaged-recovery:mac`
+- Result: pass
+- Notes:
+  - Ran against the freshly rebuilt unsigned/ad-hoc macOS app from the latest
+    release smoke recheck.
+  - Home recovery, project decomposition, Context learning, Code Agent UI,
+    Run/Decision recovery, and Settings config smokes all passed.
+  - The pass remained non-live: no provider call, Docker action,
+    signing/notarization, upload, or Apple network action was performed.
+
 ## 2026-05-08 Main Unsigned Release Smoke Recheck
 
 - Build / commit: `f9b8c9a Record alpha walkthrough readiness`
