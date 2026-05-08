@@ -612,7 +612,7 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
         {activeTaskId && pendingCapturedTaskId === activeTaskId && (
           <div className="panel-capture-suggestion">
             <div className="panel-capture-text">
-              这是待确认任务，确认后才会进入 Tasks 主列表。
+              这是待确认任务，确认后才会进入 Tasks 主列表；放弃需要二次确认，放弃后会归档这条捕获记录。
             </div>
             <button
               className={`btn sm primary${confirmingCapturedTask ? ' disabled' : ''}`}
