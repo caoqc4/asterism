@@ -680,7 +680,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
               }}
             />
             <div className="capture-type-suggestion">
-              <span>AI 建议类型</span>
+              <span>{captureTypeTouched ? '用户确认类型' : 'AI 建议类型'}</span>
               <strong>{TASK_TYPE_LABELS[captureType]}</strong>
             </div>
             <div className="capture-type-row">
