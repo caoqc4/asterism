@@ -81,6 +81,40 @@ function buildTaskTypeReviewPrompt(taskName: string): string {
   ].join('\n');
 }
 
+function buildTaskPlanningPrompt(taskName: string, type: TaskExecutionType): { label: string; prompt: string } | null {
+  if (type === 'project') {
+    return {
+      label: '拆解项目结构',
+      prompt: buildProjectDecompositionPrompt(taskName),
+    };
+  }
+  if (type === 'scheduled') {
+    return {
+      label: '确认周期与节奏',
+      prompt: [
+        `请继续规划「${taskName}」这条定时任务。`,
+        '先确认它是否应该保持为定时重复任务，再帮我梳理周期、执行时间、结束条件和第一次执行前需要补齐的信息。',
+      ].join('\n'),
+    };
+  }
+  if (type === 'event') {
+    return {
+      label: '确认触发条件',
+      prompt: [
+        `请继续规划「${taskName}」这条事件触发任务。`,
+        '先确认它是否应该保持为事件触发任务，再帮我梳理监听来源、触发条件、触发后写入哪里，以及什么情况下需要推到 Brief。',
+      ].join('\n'),
+    };
+  }
+  return {
+    label: '规划下一步',
+    prompt: [
+      `请继续规划「${taskName}」这条一次性任务。`,
+      '先确认目标和验收标准，再给出下一步行动；如果信息不足，请直接问我最关键的一个问题。',
+    ].join('\n'),
+  };
+}
+
 function normalizeUserMessage(text: string): string {
   return text
     .trim()
@@ -466,14 +500,14 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
     !activeTaskId
     && messages.some((message) => message.role === 'user')
   );
-  const projectDecompositionPrompt = activeAttrs?.type === 'project' && title
-    ? buildProjectDecompositionPrompt(title)
+  const taskPlanningPrompt = activeAttrs?.type && title
+    ? buildTaskPlanningPrompt(title, activeAttrs.type)
     : null;
   const taskTypeReviewPrompt = activeTaskId && title ? buildTaskTypeReviewPrompt(title) : null;
   const quickPrompts = activeTaskId
     ? [
-        ...(projectDecompositionPrompt
-          ? [{ label: '拆解项目结构', prompt: projectDecompositionPrompt }]
+        ...(taskPlanningPrompt
+          ? [taskPlanningPrompt]
           : []),
         { label: '总结一下现在的状态', prompt: '总结一下现在的状态' },
         { label: '下一步怎么推进？', prompt: '下一步怎么推进？' },
@@ -651,7 +685,7 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
             {title ?? activeTaskId}
           </div>
         )}
-        {activeTaskId && !input.trim() && (taskTypeReviewPrompt || projectDecompositionPrompt) && (
+        {activeTaskId && !input.trim() && (taskTypeReviewPrompt || taskPlanningPrompt) && (
           <div className="panel-inline-prompts">
             {taskTypeReviewPrompt && (
               <button
@@ -661,13 +695,13 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
                 判断任务类型
               </button>
             )}
-            {projectDecompositionPrompt && (
-            <button
-              className="panel-prompt-chip"
-              onClick={() => { setInput(projectDecompositionPrompt); textareaRef.current?.focus(); }}
-            >
-              拆解项目结构
-            </button>
+            {taskPlanningPrompt && (
+              <button
+                className="panel-prompt-chip"
+                onClick={() => { setInput(taskPlanningPrompt.prompt); textareaRef.current?.focus(); }}
+              >
+                {taskPlanningPrompt.label}
+              </button>
             )}
           </div>
         )}
