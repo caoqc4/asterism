@@ -4,9 +4,10 @@
 
 Taskplane uses a dual configuration model.
 
-For local development and alpha validation, Taskplane also reads environment variables from the
-process environment or a repo-root `.env` file. Environment variables override non-sensitive
-`config.json` values at runtime and can provide an API key without writing it to Keychain.
+For local development and validation, Taskplane also reads environment variables
+from the process environment or a repo-root `.env` file. Environment variables
+override non-sensitive `config.json` values at runtime and can provide an API key
+without writing it to Keychain.
 
 ### Non-sensitive config
 
@@ -261,10 +262,9 @@ signing, notarizing, uploading, or calling Apple services. Use
 `npm run release:mac:preflight -- --strict` only when a missing prerequisite
 should fail the shell command.
 
-The full local alpha gate, `npm run accept:alpha-local`, also does not require
-these signing or notarization variables. It may report release readiness as
-`status=not-ready` until they are configured, while still validating the
-non-live local alpha path.
+The full local verification gate does not require these signing or notarization
+variables. Release readiness may still be `status=not-ready` until they are
+configured, while ordinary unsigned package validation can pass.
 
 ## Read-Only Workspace Root
 

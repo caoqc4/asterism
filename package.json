@@ -5,6 +5,7 @@
   "private": true,
   "description": "A local-first desktop workbench for tasks, decisions, runs, and briefs.",
   "author": "Taskplane contributors",
+  "license": "MIT",
   "type": "module",
   "main": "dist-electron/main/bootstrap.cjs",
   "engines": {

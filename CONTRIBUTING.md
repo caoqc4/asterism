@@ -36,8 +36,9 @@ npm run verify
 ```
 
 Run `npm run smoke:build` as well when package, build, Electron entrypoint, or
-packaging configuration changes. Use `npm run accept:alpha-local` for a full
-non-live local alpha handoff check, not for every ordinary PR.
+packaging configuration changes. Run the package or release smoke commands
+listed in [docs/TESTING.md](docs/TESTING.md) when your change affects packaged
+runtime behavior.
 
 ## Pull Request Expectations
 

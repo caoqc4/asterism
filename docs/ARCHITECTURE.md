@@ -1,0 +1,69 @@
+# Architecture
+
+Taskplane is a local-first Electron application with a task-native control
+plane.
+
+## Layers
+
+```text
+src/main      Electron main process
+src/renderer  React renderer
+src/shared    shared contracts and pure helpers
+```
+
+## Main Process
+
+The main process owns trusted local capabilities:
+
+- SQLite connection and migrations;
+- repositories and domain services;
+- local scheduler lifecycle;
+- AI execution clients;
+- OS keychain access;
+- filesystem and packaged-runtime paths;
+- IPC handlers exposed through preload.
+
+Renderer code should call these capabilities through typed IPC contracts rather
+than reaching into local resources directly.
+
+## Renderer
+
+The renderer owns the user interface:
+
+- Home control surface;
+- task list and task workbench;
+- Decisions and Runs pages;
+- Context, Settings, and capability configuration views;
+- right-panel conversation UI.
+
+The renderer does not directly access SQLite, keychain secrets, provider APIs,
+or shell commands.
+
+## Shared Contracts
+
+`src/shared` contains types and pure helpers used across process boundaries.
+Keep cross-boundary payloads explicit and serializable.
+
+## Core Domain Objects
+
+- Task
+- Decision
+- Run
+- Run step
+- Run checkpoint
+- Artifact
+- Source context
+- Process template
+- Blocker
+- Task dependency
+- Completion criterion
+- Work habit
+
+## Local-First Data Model
+
+Taskplane stores application data locally. Non-sensitive configuration is stored
+in a local config file. Secrets such as provider API keys are stored in the OS
+keychain.
+
+The project is designed so important work state belongs to the task rather than
+to a transient chat transcript.
