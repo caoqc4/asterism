@@ -35,8 +35,13 @@ agents are listed separately as deferred runtime work.
   captured record.
 - Switching into a task context explains that Taskplane rebuilds context from
   task memory, execution records, key sources, and work habits.
-- Session refresh preserves selected decisions, preference changes, and open
-  questions without saving full chat text as long-term memory.
+- Automatic context clearing preserves the same task conversation and must only
+  clear after a specific enough handoff has been archived.
+- Manual clearing archives the current conversation before clearing, and lets
+  the user add missing facts if the handoff is too generic.
+- User-initiated new conversation starts a new free discussion space; it should
+  not imply continuation of the old task conversation unless the user explicitly
+  binds or mentions that task again.
 
 ## Tasks
 
@@ -154,4 +159,3 @@ These should not block frontend redesign acceptance:
    Activity and Context learning surfaces.
 9. Review pending Decisions and confirm impact/reversibility cues are readable.
 10. Open Context and confirm pending habits do not apply until approved.
-
