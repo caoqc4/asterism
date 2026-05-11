@@ -12,6 +12,7 @@ export type TaskPlanningPromptSurface = 'capture' | 'panel';
 export type TaskAttributeRecord = {
   taskId: string;
   type: TaskExecutionType;
+  typeConfirmed?: boolean;
   parentTaskId: string | null;
   childTaskIds: string[];
   commitment: string | null;
@@ -54,6 +55,7 @@ export function saveTaskAttributes(
   const next: TaskAttributeRecord = {
     taskId,
     type: patch.type ?? existing?.type ?? 'simple',
+    typeConfirmed: patch.typeConfirmed ?? (patch.type !== undefined ? true : existing?.typeConfirmed ?? false),
     parentTaskId: patch.parentTaskId !== undefined ? patch.parentTaskId ?? null : existing?.parentTaskId ?? null,
     childTaskIds: patch.childTaskIds ?? existing?.childTaskIds ?? [],
     commitment: patch.commitment !== undefined ? normalizeText(patch.commitment) : existing?.commitment ?? null,
@@ -86,6 +88,7 @@ export function moveTaskToProject(taskId: string, projectId: string | null): {
     previousProject = {
       taskId: previousProjectId,
       type: previous?.type ?? 'project',
+      typeConfirmed: previous?.typeConfirmed ?? true,
       parentTaskId: previous?.parentTaskId ?? null,
       childTaskIds: (previous?.childTaskIds ?? []).filter((id) => id !== taskId),
       commitment: previous?.commitment ?? null,
@@ -102,6 +105,7 @@ export function moveTaskToProject(taskId: string, projectId: string | null): {
     nextProject = {
       taskId: projectId,
       type: 'project',
+      typeConfirmed: true,
       parentTaskId: project?.parentTaskId ?? null,
       childTaskIds: childIds.includes(taskId) ? childIds : [...childIds, taskId],
       commitment: project?.commitment ?? null,
@@ -115,6 +119,7 @@ export function moveTaskToProject(taskId: string, projectId: string | null): {
   const task: TaskAttributeRecord = {
     taskId,
     type: existing?.type ?? 'simple',
+    typeConfirmed: existing?.typeConfirmed ?? false,
     parentTaskId: projectId && projectId !== taskId ? projectId : null,
     childTaskIds: existing?.childTaskIds ?? [],
     commitment: existing?.commitment ?? null,
@@ -134,7 +139,7 @@ export function inferTaskExecutionType(title: string): TaskExecutionType {
   const normalized = title.toLowerCase();
   if (/每(日|天|周|月)|daily|weekly|monthly|定期|定时|周期/.test(normalized)) return 'scheduled';
   if (/收到|当.+时|触发|监听|监控|邮件|gmail|webhook|event/.test(normalized)) return 'event';
-  if (/项目|上线|重构|完整|方案|计划|campaign|project/.test(normalized)) return 'project';
+  if (/项目|开发|小程序|软件|应用|app|上线|重构|完整|方案|计划|campaign|project/.test(normalized)) return 'project';
   return 'simple';
 }
 

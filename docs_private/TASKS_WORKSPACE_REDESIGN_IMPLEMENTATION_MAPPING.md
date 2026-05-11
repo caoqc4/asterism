@@ -17,8 +17,15 @@ as the execution checklist.
 
 ## Summary
 
-The core v1 behavior described by the three optimization documents is now
-implemented.
+The core v1 workspace shell described by the three optimization documents is
+now implemented. The Tasks page has the intended navigation shape, selected
+object model, task-file access, right-panel relationship, and safety rules.
+
+The selected-task management surface should not be considered final merely
+because the first structural version exists. Task management is a core product
+capability, so its detailed layout should continue to be evaluated against the
+mature task-management skeleton documented in
+[NAVIGATION_AND_TASKS_VIEW_REFINEMENT_DECISION.md](NAVIGATION_AND_TASKS_VIEW_REFINEMENT_DECISION.md).
 
 The main product shift is complete:
 
@@ -33,9 +40,13 @@ The main product shift is complete:
 - right-panel context clearing, new conversation, task binding, phase closeout,
   and task-file write proposals are separated into distinct user actions.
 
-The remaining gaps are larger runtime or modeling work that still belongs to
-the same product direction, but should be designed and accepted separately from
-the completed v1 workspace adjustment.
+The remaining gaps are split into two kinds:
+
+- task-management detail-layout refinements that should be product-designed
+  before more implementation;
+- larger runtime or modeling work that still belongs to the same product
+  direction, but should be designed and accepted separately from the completed
+  v1 workspace shell.
 
 ## Status Legend
 
@@ -59,13 +70,135 @@ the completed v1 workspace adjustment.
 | Task Files shows current selected task's file tree | Done | Switching tasks refreshes the Task Files group for that task. |
 | Selected object controls third column | Done | Task list, concrete task, and file all have distinct workspace headers and bodies. |
 | Task-list views are Default Sort, All List, Timeline | Done | `Priority Lane` was removed from user-facing tab naming. |
-| Concrete task views are Overview, Run, Timeline | Done | Task management and execution records are available inside Tasks. |
+| Concrete task views are Task Management and Timeline | Done | `Run` is no longer exposed as a task-level tab; execution remains available through the task workbench, while the selected task timeline summarizes task-local history. |
+| Task detail workspace follows mature task-management layout | V1 Improved | Task Management now has identity, progression, structure, context, and history layers, with primary action ordering and compact history/context behavior aligned to the accepted v1 rules. |
 | File view replaces task navigation with file header | Done | File header supports path/name display, dirty indicator, save, rename, move, delete, and return. |
 | Unsaved file switching guard | Done | Switching file/task/task-management prompts Save / Discard / Cancel. |
 | Risk and waiting age are not first-level filters | Done | They remain task signals rather than primary navigation groups. |
 | Committed removed from v1 navigation/filtering | Done | Commitment is not exposed as a first-version filter. |
 | Decisions remains approval queue, not priority board | Done | Decisions routes pending approvals back to task workspace. |
 | Brief remains attention surface | Done | Brief continues to answer what needs attention now. |
+
+## Task Management Detail Layout Assessment
+
+This section maps the current selected-task surface against the mature task
+management skeleton documented in the navigation decision note. It is not an
+implementation checklist yet; it is a product-layout assessment to prevent the
+core Tasks module from moving too quickly.
+
+### Baseline Skeleton
+
+The product skeleton is:
+
+```text
+Task Detail
+  Identity
+  Progression
+  Structure
+  Context
+  History
+```
+
+The current implementation has these layers in code, but that only proves the
+surface has the correct first structure. It does not yet prove the information
+hierarchy, interaction rhythm, or visual density are mature enough.
+
+### Current Fit
+
+| Layer | Current Fit | Assessment |
+| --- | --- | --- |
+| Identity | Present | Title, lane, type, status, and parent/subtask hints are visible. Needs layout review to ensure the title remains the strongest first-read element and metadata does not feel like scattered tags. |
+| Progression | Present | Why-now, next step, waiting/decision state, planning, workbench, defer, complete, and more actions exist. Needs clearer ordering between "primary next action" and secondary task-state controls. |
+| Structure | Present | Project progress, completion criteria, schedule, trigger, and commitment are represented. Needs better rules for when structure is expanded, summarized, or hidden for simple tasks. |
+| Context | Present | Task files, sources, artifacts, and task-file entry points are summarized. Needs product review to decide whether `Task.md` recovery summary should be shown as content, metadata, or only as a file-tree entry. |
+| History | Present | Recent activity preview exists and full current-task history lives in Timeline. Needs better event copy and payload summarization so it reads like useful history instead of raw audit data. |
+
+### Layout And Interaction Questions Before More Code
+
+- Should Progression be the visual anchor after the task title, or should
+  Identity and Progression be merged into a compact header like Linear?
+- Should project tasks show child-task progress inline in Task Management, or
+  should child tasks remain primarily in the task-type/resource explorer?
+- Should simple tasks without completion criteria show an empty-state prompt,
+  or should that section collapse until criteria exist?
+- Should Context show actual `Task.md` summary content, or only file/source
+  references to avoid duplicating the file editor?
+- Should History show only event labels, or should it show short human
+  summaries generated from payloads?
+- Should sections be collapsible in v1, or should v1 keep all five sections
+  visible and rely on compact summaries?
+
+### Recommended Next Product Pass
+
+Before changing more code, run a focused Task Management layout pass. The
+navigation decision note now defines three examples for this pass:
+
+1. Define the ideal selected-task page for three task examples:
+   - one-off task with no files;
+   - project task with child tasks;
+   - coding/agent task with task files, sources, artifacts, and records.
+2. For each example, decide what appears in each of the five layers.
+3. Decide which sections collapse, summarize, or disappear when empty.
+4. Decide the exact top action order: plan, open workbench, defer, complete,
+   decision, more.
+5. Update this mapping with accepted layout rules before another implementation
+   pass.
+
+### Accepted Layout Rules From The Product Pass
+
+These rules are now accepted as the basis for the next implementation pass:
+
+1. Identity is always visible.
+2. Progression is always visible and should be visually prominent.
+3. Structure is visible when it contains project progress, completion criteria,
+   schedule/trigger settings, or meaningful decomposition state; otherwise it
+   should collapse or become a subtle prompt.
+4. Context is visible when files, sources, artifacts, or important records
+   exist; otherwise it should remain compact.
+5. History is visible but compact; full current-task history belongs in
+   Timeline.
+6. Empty sections should not visually compete with real task information.
+7. `Task.md` and Task Records are accessible from the Task Files tree; Task
+   Management may summarize them but should not duplicate the full file editor.
+8. Coding/agent tasks should feel like task management connected to a workbench
+   and task folder, not like an embedded terminal clone.
+
+Primary action priority:
+
+1. Decision blocking progress: `Go to Decision`.
+2. Project needs decomposition: `Generate / Review Decomposition`.
+3. Clear execution next step: `Open Workbench`.
+4. Needs clarification: `Plan`.
+
+Secondary actions:
+
+- defer;
+- complete;
+- more actions;
+- dependency resolution when dependency-ready.
+
+### Implementation Pass Against Accepted Rules
+
+| Rule / Gap | Status | Notes |
+| --- | --- | --- |
+| Progression should be the visual anchor after the title. | V1 Improved | The title now leads the Identity layer, metadata follows it, and Progression uses a next-step/action strip so the primary action is read with the next step instead of competing with secondary controls. |
+| Structure should collapse/summarize based on task type and emptiness. | V1 Improved | Simple tasks without structure now use a compact prompt; project, criteria, schedule, trigger, and commitment content still expand the section. |
+| Context should not duplicate the file editor. | V1 Improved | Default `Task.md` / `Task Records` stay in the file tree; Task Management now uses one compact context-object list for files, sources, and artifacts instead of duplicating sources in a separate section. |
+| History should read less like raw audit data. | V1 Improved | Event labels and short payload summaries are shown in Task Management and Timeline; run-count copy is kept compact so the History layer does not repeat itself. More semantic summaries can be added later. |
+| Primary action ordering should follow accepted priority rules. | V1 Improved | Task detail primary action now prioritizes Decision, then Project Decomposition, then Workbench readiness, then Plan. Workbench is no longer chosen from `nextStep` alone. |
+| Project decomposition should be reviewed before child task creation. | V1 Improved | Task detail uses `审阅拆解草稿` when a draft exists; creation stays inside the reviewed draft area as `确认创建子任务`. |
+| Long task-type groups should disclose hidden items. | V1 Improved | Task type groups show a "还有 N 个，点击查看全部" affordance after the first 12 visible tasks. |
+| AI-inferred task type should not override confirmed user intent. | V1 Improved | Task attributes now track whether the type has been confirmed. Legacy unconfirmed `simple` tasks can still be migrated by title inference, while confirmed types remain stable. |
+
+Remaining review:
+
+- verify the new visual hierarchy in real manual testing across small screens
+  and the right AI panel open/closed states;
+- decide whether project decomposition controls in Task Management should
+  become richer or remain a compact bridge into project/list views after manual
+  testing;
+- decide whether History should eventually summarize task records and phase
+  closeouts, not only timeline events.
 
 ## Task Files And Agent Memory Mapping
 
@@ -191,11 +324,15 @@ tasks, but is not required for v1.
 
 ## Current Conclusion
 
-The explicit v1 adjustments from the three optimization documents are
-materially implemented.
+The explicit v1 workspace shell adjustments from the three optimization
+documents are materially implemented.
 
-The remaining work is not another round of layout cleanup. The next meaningful
-product capability should be chosen deliberately from the remaining items
-above, with the strongest candidate being a more complete agent-file-writing workflow:
-multi-file proposals, diff review, overwrite policy, and stronger task-file
-tool permissions.
+The selected-task management surface should remain under design review. It has
+the correct initial five-layer structure, but task management is core enough
+that the next step should be a focused layout and interaction pass before more
+code is changed.
+
+After the task-management layout is accepted, the next larger product
+capability can be chosen deliberately from the remaining items above. A strong
+candidate is the agent-file-writing workflow: multi-file proposals, diff
+review, overwrite policy, and stronger task-file tool permissions.

@@ -1879,7 +1879,7 @@ function TaskEditPanel({
           ))}
         </div>
         <span className="task-edit-hint">
-          任务类型、周期和触发条件属于任务属性；实际执行记录仍保留在执行 Tab。
+          任务类型、周期和触发条件属于任务属性；实际执行记录仍保留在任务工作台。
         </span>
         {attrs?.parentTaskId && type === 'project' && (
           <span className="task-edit-hint strong">
@@ -1964,6 +1964,7 @@ function TaskEditPanel({
           onClick={() => {
             onSaveAttrs({
               type,
+              typeConfirmed: true,
               commitment,
               schedule: type === 'scheduled' ? schedule : null,
               trigger: type === 'event' ? trigger : null,

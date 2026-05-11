@@ -155,23 +155,20 @@ primary tab should describe the user-visible behavior.
 ### Task Header
 
 When a concrete task is selected, the main workspace should show the task
-management and execution surface. Suggested task-level views:
+management surface and its task-local history. First-version task-level views:
 
 ```text
-Overview
-Run
+Task Management
 Timeline
 ```
 
-Overview covers task status, summary, next step, blockers, dependencies,
-subtasks, key files, and pending decisions.
+Task Management covers identity, progress, next step, blockers, dependencies,
+subtasks, completion criteria, compact context, key files, and pending
+decisions. This is the default view every time a task is selected.
 
-Run covers structured Agent execution records: active run state, steps, output,
-self-checks, failures, retry/recovery, and checkpoints. The right AI panel can
-summarize or discuss execution, but the detailed execution record should remain
-structured in the task workspace.
-
-Timeline covers the task activity history.
+Timeline covers the task activity history for the selected task. Do not expose
+`Run` as a first-version task-level tab; structured execution belongs in the
+Workbench, with task-local summaries or links surfaced here when useful.
 
 ### File Header
 
@@ -297,7 +294,8 @@ top-level pages:
 - generated documents appear under Task Files for that task;
 - task state, phase closeout, and follow-up decomposition happen in the task
   management workspace;
-- detailed execution records appear under the selected task's Run view;
+- detailed execution records remain available through the task workbench and
+  selected task timeline, not through a first-version `Run` tab;
 - later implementation subtasks appear under Tasks, not as disconnected chat
   history.
 
@@ -331,6 +329,495 @@ implementation decomposition -> confirmed subtasks -> execution and acceptance
 
 This is a core validation path for the redesigned Tasks workspace.
 
+## Task Detail Workspace Layout
+
+The selected-task workspace should borrow from mature task-management products
+before adding Taskplane-specific AI and task-file behavior.
+
+### Research Scope
+
+The Tasks workspace is a core product surface, so its default layout should be
+derived from mature task-management behavior before adding Taskplane-specific
+AI behavior.
+
+Reference sources checked during design:
+
+- Todoist task view and compact task workflow:
+  <https://todoist.com/help/articles/use-the-task-view-to-manage-tasks-in-todoist>
+- Todoist new task view notes:
+  <https://www.todoist.com/inspiration/todoist-new-task-view>
+- Asana task dependencies:
+  <https://help.asana.com/s/article/task-dependencies>
+- Asana task types and follow-up/subtask behavior:
+  <https://help.asana.com/s/article/different-types-of-tasks>
+- Linear issue assignment and activity:
+  <https://linear.app/docs/assigning-issues>
+- ClickUp task view overview:
+  <https://help.clickup.com/hc/en-us/articles/10552031987735-Task-View-3-0-overview>
+
+### Mature Product Observations
+
+#### Todoist
+
+Todoist's strength is low-friction task capture and lightweight task detail.
+The product keeps the task surface compact: task title and immediate properties
+remain primary; comments, attachments, activity, and subtasks exist but should
+not overwhelm the user's next action.
+
+Useful principles for Taskplane:
+
+- keep the default selected-task surface fast to scan;
+- let simple tasks remain simple;
+- avoid making every task look like a project management dossier;
+- support compact/narrow layouts without losing the task's next action.
+
+Taskplane should not copy Todoist's minimalism completely, because Taskplane
+tasks also need task files, AI workbench access, records, and verification
+signals.
+
+#### Asana
+
+Asana's strength is structured collaborative work. Its task model makes
+dependencies, blockers, subtasks, followers/collaborators, and project context
+visible. Its dependency model distinguishes "blocked by" and "blocking" so
+users can understand sequencing and responsibility.
+
+Useful principles for Taskplane:
+
+- expose blockers and dependencies as first-class task-management signals;
+- treat subtasks as structured work, not just indented text;
+- keep project structure visible where it affects execution;
+- separate task management fields from discussion/history.
+
+Taskplane should not fully copy Asana's team-collaboration density in v1,
+because Taskplane is currently optimized for an AI-assisted personal/agentic
+workflow rather than a full team workspace.
+
+#### Linear
+
+Linear's strength is a restrained issue detail surface. It keeps status,
+assignment, labels, project metadata, and activity legible without turning the
+issue page into a heavy dashboard. Activity is important, but it is not the
+main editing surface.
+
+Useful principles for Taskplane:
+
+- make status/type/priority signals compact and consistent;
+- preserve a quiet issue/task detail feel;
+- put activity in a readable history surface rather than forcing users to
+  manage the task through raw logs;
+- keep agent/delegation state close to the issue when it affects ownership.
+
+Taskplane should adapt Linear's restraint, but add more explicit task files and
+AI workbench entry because Taskplane's core workflow includes AI-generated
+records and artifacts.
+
+#### ClickUp
+
+ClickUp's strength is completeness. Its task view can include fields,
+description, attachments, subtasks, action items, comments, activity,
+relationships, integrations, and AI-assisted task behavior. This proves that a
+task can become the container for many work objects, but it also creates a v1
+complexity risk.
+
+Useful principles for Taskplane:
+
+- task files, sources, artifacts, and execution records can legitimately live
+  under the task;
+- activity and comments/history need a clear place;
+- relationships/integrations should be visible when they affect the current
+  task;
+- sections may be collapsible or progressively disclosed.
+
+Taskplane should not copy ClickUp's surface area wholesale. ClickUp is a
+capability reference, not the default density target.
+
+### Product Logic Synthesized From Mature Tools
+
+Across the mature tools, task management has a stable workflow:
+
+1. Capture or select a task.
+2. Understand what the task is.
+3. Understand why it matters now and whether anything blocks it.
+4. Decide the next action.
+5. If the task is large, break it into structured work.
+6. Attach or inspect context needed for execution.
+7. Execute, update state, and preserve history.
+8. Return to the task list with the task's state clearer than before.
+
+The product surface should therefore answer four questions in order:
+
+1. What is this task?
+2. What should happen next?
+3. What structure or context is needed to do it?
+4. What has already happened?
+
+This ordering is more important than copying a specific UI from Todoist,
+Asana, Linear, or ClickUp.
+
+### Base Functional Skeleton
+
+The mature baseline for a selected task is:
+
+```text
+Task Detail
+  Identity
+  Progression
+  Structure
+  Context
+  History
+```
+
+Definitions:
+
+- Identity: title, type, state, lane/priority, parent/project relationship.
+- Progression: next step, blocker, waiting state, decision need, primary action.
+- Structure: subtasks, dependencies, checklists, completion criteria,
+  decomposition state.
+- Context: notes, sources, files, artifacts, links, attachments, task summary.
+- History: comments, activity, state transitions, execution summaries.
+
+This skeleton is the default product logic. It should exist before AI-specific
+features are introduced.
+
+### Base Layout Skeleton
+
+The selected-task workspace should use a three-area relationship:
+
+```text
+Zone 1: product navigation
+Zone 2: task resource explorer
+Zone 3: selected object workspace
+Zone 4: global AI discussion panel
+```
+
+For the Tasks page:
+
+- Zone 2 is not a mode switch. It is a resource explorer containing task
+  filters, task-type groupings, and the selected task's file tree.
+- Zone 3 changes by selected object:
+  - selecting a task shows Task Management or Timeline;
+  - selecting a file shows the file editor/preview;
+  - selecting a task-list lens shows task list views.
+- Zone 4 remains the global AI discussion entry and should not be duplicated
+  inside the task detail layout.
+
+Task Management layout:
+
+```text
+Header / tabs: Task Management | Timeline
+
+Identity
+  title
+  type/state/lane/parent signals
+
+Progression
+  why now
+  next step
+  waiting/blocker/decision signal
+  primary action
+  secondary actions
+
+Structure
+  project decomposition or child progress
+  completion criteria/checks
+  schedule/trigger for non-manual tasks
+
+Context
+  Task.md / task summary
+  task files
+  sources
+  artifacts
+
+History
+  short recent activity preview
+```
+
+Timeline layout:
+
+```text
+Identity summary
+Task-local activity stream
+Run and state summaries when present
+```
+
+File layout:
+
+```text
+File header
+Path / dirty state / actions
+Editor or read-only preview
+```
+
+### Taskplane-Specific Extension Rules
+
+Taskplane should combine the reference products as:
+
+- Todoist's lightness;
+- Linear's restraint;
+- Asana's structure for projects and dependencies;
+- only selective ClickUp-style completeness where task files, artifacts, and
+  execution evidence genuinely need a surface.
+
+Taskplane-specific features should extend the base skeleton as follows:
+
+- AI planning belongs in Progression because it helps decide the next action.
+- AI project decomposition belongs in Structure because it creates task
+  structure.
+- Task files belong in Context because they are durable task context and work
+  products.
+- Source contexts and artifacts belong in Context, projected as task files when
+  useful.
+- Execution runs belong in History and Workbench, not as a default v1 task
+  detail tab.
+- Decisions belong in Progression when they block the task, and in the
+  Decisions page when they need cross-task prioritization.
+- Agent operating principles are not task content. They remain product-level
+  read-only execution rules.
+
+This means Taskplane does not add features by creating more top-level pages or
+task-level tabs first. It adds features by asking which mature task-management
+layer the capability belongs to.
+
+The selected-task workspace uses two task-level tabs:
+
+```text
+Task Management / Timeline
+```
+
+In Chinese UI:
+
+```text
+任务管理 / 时间线
+```
+
+Do not expose `Run` as a task-level tab in v1. `Run` is an internal execution
+record concept. Execution should be reached through the task workbench, while
+the selected task timeline may summarize execution events.
+
+### Task Management Skeleton
+
+The default selected-task tab is always Task Management. Switching to another
+task returns to Task Management, even if the previous task was on Timeline.
+
+The page should be organized as a mature task detail surface:
+
+1. Identity layer
+   - title;
+   - task type;
+   - status / lane / risk signals;
+   - project or parent-task relationship.
+2. Progression layer
+   - next step;
+   - waiting, blocked, or decision state;
+   - main action: open workbench;
+   - secondary actions: plan, defer, complete, more.
+3. Structure layer
+   - project tasks: child tasks, decomposition draft, progress;
+   - simple tasks: completion criteria and checks;
+   - scheduled/event tasks: cadence or trigger condition.
+4. Context layer
+   - concise `Task.md` recovery summary;
+   - key sources;
+   - important task files;
+   - recent artifacts.
+5. History layer
+   - only a short recent activity summary;
+   - full current-task history belongs in the Timeline tab.
+
+The Task Management tab answers: "what is this task, and how should I move it
+forward now?"
+
+The Timeline tab answers: "what has happened inside this task?"
+
+### Task Example Layouts
+
+The five-layer skeleton should be validated against concrete task examples
+before the implementation is treated as final.
+
+#### Example A: One-Off Task With No Files
+
+Example:
+
+```text
+Task: Reply to vendor pricing email
+Type: one-off
+State: waiting / running
+Files: none
+```
+
+Expected layout:
+
+1. Identity
+   - task title;
+   - one-off task type;
+   - current state and lane;
+   - no project metadata unless it belongs to a parent.
+2. Progression
+   - next step is the main content after the title;
+   - waiting/blocker/decision state appears only if present;
+   - primary action should be "plan" or "open workbench" depending on whether
+     the next step is clear;
+   - defer, complete, and more are secondary controls.
+3. Structure
+   - collapse or show a light empty state when there are no completion
+     criteria;
+   - do not force a project-style structure onto a simple task.
+4. Context
+   - show a compact empty state: no task files yet;
+   - `Task.md` remains accessible from the file tree, but the task detail does
+     not need to duplicate empty file content.
+5. History
+   - show only the latest 1-3 human-readable events;
+   - if there is no history, this section should be visually quiet.
+
+Design rule:
+
+For simple tasks, Task Management should feel closer to Todoist/Linear than
+Asana/ClickUp. It should not look heavy just because Taskplane has powerful
+AI and file capabilities.
+
+#### Example B: Project Task With Child Tasks
+
+Example:
+
+```text
+Task: Launch mini program MVP
+Type: project
+State: running
+Files: Task.md, Task Records/, product notes, design notes
+Children: several child tasks
+```
+
+Expected layout:
+
+1. Identity
+   - project title;
+   - project task type;
+   - current project state;
+   - project/parent relationship if nested later, though v1 should avoid deep
+     hierarchy.
+2. Progression
+   - show the current project-level next step;
+   - if the project needs decomposition, make the decomposition action primary;
+   - if child tasks already exist, make "open workbench" or "continue planning"
+     primary depending on whether execution has begun.
+3. Structure
+   - child task progress is important and should be visible;
+   - decomposition draft belongs here, not in Context or History;
+   - child tasks should be summarized in Task Management, while detailed
+     browsing remains available in Zone 2 and list views.
+4. Context
+   - show important files and sources that explain the project;
+   - show artifacts only as a compact summary unless the user selects a file.
+5. History
+   - show recent project-level changes;
+   - full child-task execution history should remain on each child task, not
+     flood the parent project detail.
+
+Design rule:
+
+For project tasks, Asana-style structure matters, but ClickUp-style density
+should still be avoided. The user should understand project progress and the
+next structural action without scrolling through every child detail.
+
+#### Example C: Coding / Agent Task With Files And Records
+
+Example:
+
+```text
+Task: Redesign task management detail layout
+Type: project or one-off depending on scope
+State: running
+Files: Task.md, Task Records/, implementation mapping, source files, artifacts
+Agent work: discussion, document generation, implementation, verification
+```
+
+Expected layout:
+
+1. Identity
+   - task title;
+   - task type;
+   - current execution state;
+   - any parent/project relationship.
+2. Progression
+   - next action should be explicit: discuss design, update docs, implement,
+     verify, or close phase;
+   - if a decision is needed, "go to decision" becomes primary;
+   - if execution is ready, "open workbench" becomes primary.
+3. Structure
+   - completion criteria and verification checks are important;
+   - if this is a project, show child task progress;
+   - if this is a one-off coding task, avoid fake child structure and rely on
+     completion criteria plus task records.
+4. Context
+   - this is where Taskplane differs most from standard task tools;
+   - show `Task.md`, Task Records, important files, sources, and artifacts as
+     task context;
+   - do not duplicate the full file editor in Task Management;
+   - selecting any concrete file in Zone 2 should switch Zone 3 to file view.
+5. History
+   - show recent readable events;
+   - full execution logs and run details remain in the workbench or timeline;
+   - phase closeout and handoff records should be discoverable through Task
+     Records.
+
+Design rule:
+
+For coding/agent tasks, Taskplane should feel like a task manager connected to
+a workbench and task folder, not like a terminal clone inside the task detail.
+
+### Section Visibility Rules
+
+Default v1 behavior should be:
+
+- Identity is always visible.
+- Progression is always visible and should be visually prominent.
+- Structure is visible when it contains project progress, completion criteria,
+  schedule/trigger settings, or meaningful decomposition state; otherwise it
+  can collapse to a subtle prompt.
+- Context is visible when files, sources, artifacts, or important records exist;
+  otherwise it should remain compact.
+- History is visible but compact; full history belongs in Timeline.
+
+Empty sections should not compete with real task information. They may show a
+small prompt only when that prompt helps the task move forward.
+
+### Action Priority Rules
+
+Primary action order:
+
+1. If a decision blocks progress: `Go to Decision`.
+2. If project decomposition is needed: `Generate / Review Decomposition`.
+3. If the task has a clear next execution step: `Open Workbench`.
+4. If the task needs clarification: `Plan`.
+
+Secondary actions:
+
+- defer;
+- complete;
+- more actions;
+- dependency resolution when dependency-ready.
+
+Do not make all actions visually equal. The selected task should always have a
+clear next primary action.
+
+### Layout Principles
+
+- The task detail should feel like a structured task-management page, not a
+  log viewer or an AI control console.
+- Use section headings, compact rows, and subtle dividers before introducing
+  heavy cards.
+- Highlight only urgent or decision-driving information, such as blockers,
+  waiting states, missing decisions, and next-step actions.
+- Task files are summarized in Task Management but opened from the Task Files
+  tree as their own selected-object file view.
+- Activity should not dominate Task Management. Show a short activity preview
+  there and keep the full activity stream in Timeline.
+- AI appears through task actions: plan, decompose, execute in workbench,
+  summarize, record, and propose file writes. AI should not become its own
+  visual layer competing with task management.
+
 ## Acceptance Notes
 
 - The `Priority Lane` tab is renamed to `Default Sort`.
@@ -345,7 +832,11 @@ This is a core validation path for the redesigned Tasks workspace.
   Task Files groups.
 - New Task lives in the Task Resource Explorer header.
 - The main workspace header is object-driven: task-list views, task-level
-  views, or file header/tabs.
+  `任务管理 / 时间线` tabs, or file header/tabs.
+- Selected tasks default to Task Management. Switching between concrete tasks
+  resets the selected-task tab to Task Management.
+- `Run` is not exposed as a first-version task-level tab; execution records are
+  reached through the task workbench and summarized in task history surfaces.
 - Unsaved file edits block task/file/object switches until the user saves,
   discards, or cancels.
 - Risk and waiting age are badges or ranking signals, not first-level filters

@@ -4,6 +4,7 @@ import {
   buildProjectDecompositionGuidance,
   buildProjectDecompositionPrompt,
   buildTaskPlanningPrompt,
+  inferTaskExecutionType,
 } from './taskAttributes';
 
 describe('buildProjectDecompositionPrompt', () => {
@@ -41,5 +42,12 @@ describe('buildTaskPlanningPrompt', () => {
     expect(scheduled.label).toBe('确认周期与节奏');
     expect(scheduled.prompt).toContain('周期');
     expect(scheduled.prompt).toContain('第一次执行前');
+  });
+});
+
+describe('inferTaskExecutionType', () => {
+  it('treats software development goals as project work', () => {
+    expect(inferTaskExecutionType('开发小程序')).toBe('project');
+    expect(inferTaskExecutionType('开发一个内部应用')).toBe('project');
   });
 });

@@ -5,7 +5,7 @@ import type { SourceContextRecord } from '@shared/types/source-context';
 import type { ArtifactRecord } from '@shared/types/artifact';
 import type { TaskFileRecord } from '@shared/types/task-file';
 import type { DecisionRecord } from '@shared/types/decision';
-import type { RunDetailRecord, RunRecord, RunType } from '@shared/types/run';
+import type { RunRecord } from '@shared/types/run';
 import { isUnconfirmedPanelCaptureRecord } from '@shared/panel-capture';
 import { selectApplicableWorkHabits as selectApplicableWorkHabitsFromList } from '@shared/work-habit-rules';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
@@ -42,7 +42,7 @@ type Lane = 'escalate' | 'unblock' | 'continue' | 'clarify' | 'steady';
 type TaskStatus = 'running' | 'waiting' | 'blocked' | 'idle' | 'done';
 type TaskType = TaskExecutionType;
 type ViewMode = 'lane' | 'list' | 'timeline';
-type TaskViewMode = 'overview' | 'run' | 'timeline';
+type TaskDetailViewMode = 'manage' | 'timeline';
 type CapturedTaskSummary = { id: string; title: string; type: TaskType };
 type SelectedObject = 'task-list' | 'task' | 'file';
 type VirtualTaskFile = {
@@ -102,11 +102,11 @@ type Lens =
   | 'all'
   | 'running' | 'waiting' | 'blocked'
   | 'needsDecision'
-  | 'project' | 'scheduled' | 'event'
+  | 'simple' | 'project' | 'scheduled' | 'event'
   | 'done'
   | `project:${string}`;
 
-type ExplorerGroup = 'status' | 'type' | 'tasks' | 'files';
+type ExplorerGroup = 'status' | 'type' | 'files';
 
 const DEFER_OPTIONS = [
   { label: '明天', value: 'tomorrow' },
@@ -175,12 +175,16 @@ const RISK_OPTIONS: Array<{ label: string; value: TaskRiskLevel }> = [
 ];
 
 function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): Task {
+  const inferredType = inferTaskExecutionType(r.title);
+  const type = attrs?.type && (attrs.typeConfirmed || attrs.type !== 'simple' || inferredType === 'simple')
+    ? attrs.type
+    : inferredType;
   return {
     id: r.id,
     title: r.title,
     lane: derivelane(r),
     status: deriveStatus(r),
-    type: attrs?.type ?? 'simple',
+    type,
     parentTaskId: attrs?.parentTaskId ?? undefined,
     childTaskIds: attrs?.childTaskIds ?? [],
     whyNow: r.summary ?? undefined,
@@ -217,11 +221,10 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
   const [loading, setLoading] = useState(false);
   const [lens, setLens] = useState<Lens>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('lane');
-  const [taskViewMode, setTaskViewMode] = useState<TaskViewMode>('overview');
+  const [taskDetailViewMode, setTaskDetailViewMode] = useState<TaskDetailViewMode>('manage');
   const [openGroups, setOpenGroups] = useState<Record<ExplorerGroup, boolean>>({
     status: true,
     type: true,
-    tasks: true,
     files: true,
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -237,9 +240,6 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
   const [selectedSources, setSelectedSources] = useState<SourceContextRecord[]>([]);
   const [selectedArtifacts, setSelectedArtifacts] = useState<ArtifactRecord[]>([]);
   const [selectedRuns, setSelectedRuns] = useState<RunRecord[]>([]);
-  const [selectedRunDetail, setSelectedRunDetail] = useState<RunDetailRecord | null>(null);
-  const [runInstructions, setRunInstructions] = useState('');
-  const [startingRun, setStartingRun] = useState(false);
   const [pendingDecisions, setPendingDecisions] = useState<DecisionRecord[]>([]);
   const [deferOpenId, setDeferOpenId] = useState<string | null>(null);
   const [deferConflict, setDeferConflict] = useState<{ task: Task; option: string; count: number } | null>(null);
@@ -260,6 +260,11 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
   const [capturedTask, setCapturedTask] = useState<CapturedTaskSummary | null>(null);
 
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectedIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
 
   function reloadTasks() {
     window.api?.listTasks().then((records) => {
@@ -295,7 +300,6 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
   function reloadRunsForTask(taskId: string | null = selectedId) {
     if (!taskId || !window.api?.listRuns) {
       setSelectedRuns([]);
-      setSelectedRunDetail(null);
       return;
     }
     window.api.listRuns()
@@ -304,19 +308,28 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
           .filter((run) => run.taskId === taskId)
           .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
         setSelectedRuns(taskRuns);
-        const firstRunId = taskRuns[0]?.id;
-        if (!firstRunId || !window.api?.getRunDetail) {
-          setSelectedRunDetail(null);
-          return;
-        }
-        window.api.getRunDetail(firstRunId)
-          .then((detail) => setSelectedRunDetail(detail))
-          .catch(() => setSelectedRunDetail(null));
       })
       .catch(() => {
         setSelectedRuns([]);
-        setSelectedRunDetail(null);
       });
+  }
+
+  function reloadTaskDetailForTask(taskId: string, isCancelled: () => boolean = () => false) {
+    if (!window.api?.getTaskDetail) return;
+    window.api.getTaskDetail(taskId)
+      .then((detail) => {
+        if (isCancelled()) return;
+        setSelectedTaskDetail(detail);
+        const keySources = (detail?.sourceContexts ?? [])
+          .filter((source) => source.status === 'active')
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+          .slice(0, 8);
+        setSelectedSources(keySources);
+        setSelectedArtifacts(mergeTaskArtifacts(taskId, detail?.artifacts ?? []));
+      })
+      .catch(() => {});
+    reloadTaskFilesForTask(taskId);
+    reloadRunsForTask(taskId);
   }
 
   // Load real tasks from backend when available
@@ -336,7 +349,12 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
     const unsub = window.api.subscribeToEvents((event) => {
       if (event.type === 'task.changed') {
         reloadTasks();
-        if (event.entityId) reloadTaskFilesForTask(event.entityId);
+        if (event.entityId) {
+          reloadTaskFilesForTask(event.entityId);
+          if (event.entityId === selectedIdRef.current) {
+            reloadTaskDetailForTask(event.entityId);
+          }
+        }
       }
       if (event.type === 'run.changed') reloadRunsForTask();
       if (event.type === 'decision.changed') reloadPendingDecisions();
@@ -349,12 +367,19 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
   }, [showCapture]);
 
   const projectParents = allTasks.filter((task) => task.type === 'project' && !task.parentTaskId);
+  const taskTypeGroups: Array<{ type: TaskType; label: string; lens: Lens; tasks: Task[] }> = [
+    { type: 'simple', label: '一次性任务', lens: 'simple', tasks: allTasks.filter((task) => task.type === 'simple') },
+    { type: 'project', label: '项目型', lens: 'project', tasks: allTasks.filter((task) => task.type === 'project' && !task.parentTaskId) },
+    { type: 'scheduled', label: '定时任务', lens: 'scheduled', tasks: allTasks.filter((task) => task.type === 'scheduled') },
+    { type: 'event', label: '事件触发', lens: 'event', tasks: allTasks.filter((task) => task.type === 'event') },
+  ];
   const filtered = allTasks.filter((t) => {
     if (lens === 'all') return true;
     if (lens === 'running') return t.status === 'running';
     if (lens === 'waiting') return t.status === 'waiting';
     if (lens === 'blocked') return t.status === 'blocked';
     if (lens === 'needsDecision') return pendingDecisions.some((decision) => decision.taskId === t.id);
+    if (lens === 'simple') return t.type === 'simple';
     if (lens === 'project') return t.type === 'project';
     if (lens === 'scheduled') return t.type === 'scheduled';
     if (lens === 'event') return t.type === 'event';
@@ -391,33 +416,9 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
     setSelectedSources([]);
     setSelectedArtifacts([]);
     setSelectedRuns([]);
-    setSelectedRunDetail(null);
     if (!selectedId || !window.api?.getTaskDetail) return;
 
-    window.api.getTaskDetail(selectedId)
-      .then((detail) => {
-        if (cancelled) return;
-        setSelectedTaskDetail(detail);
-        const keySources = (detail?.sourceContexts ?? [])
-          .filter((source) => source.status === 'active')
-          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-          .slice(0, 8);
-        setSelectedSources(keySources);
-        setSelectedArtifacts(mergeTaskArtifacts(selectedId, detail?.artifacts ?? []));
-      })
-      .catch(() => {});
-    if (window.api.listTaskFiles) {
-      window.api.listTaskFiles(selectedId)
-        .then((files) => {
-          if (cancelled) return;
-          setLocalTaskFiles((current) => ({
-            ...current,
-            [selectedId]: files.map(taskFileRecordToLocalRecord),
-          }));
-        })
-        .catch(() => {});
-    }
-    reloadRunsForTask(selectedId);
+    reloadTaskDetailForTask(selectedId, () => cancelled);
 
     return () => { cancelled = true; };
   }, [selectedId]);
@@ -547,7 +548,20 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
       setFileDirty(false);
       setFileDraft('');
       setSelectedObject(id ? 'task' : 'task-list');
-      setTaskViewMode('overview');
+      setTaskDetailViewMode('manage');
+      setDeferOpenId(null);
+    });
+  }
+
+  function selectLens(nextLens: Lens) {
+    runObjectSwitch(() => {
+      setLens(nextLens);
+      setSelectedId(null);
+      setSelectedFileId(null);
+      setFileDirty(false);
+      setFileDraft('');
+      setSelectedObject('task-list');
+      setTaskDetailViewMode('manage');
       setDeferOpenId(null);
     });
   }
@@ -556,26 +570,6 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
     if (!focusTaskId || focusTaskId === selectedId) return;
     selectTask(focusTaskId);
   }, [focusTaskId, selectedId]);
-
-  async function startTaskRun(type: RunType = 'agent') {
-    if (!selectedTask || startingRun || !window.api?.triggerRun) return;
-    setStartingRun(true);
-    try {
-      const run = await window.api.triggerRun({
-        taskId: selectedTask.id,
-        type,
-        instructions: runInstructions.trim() || undefined,
-      });
-      setRunInstructions('');
-      setSelectedRuns((current) => [run, ...current.filter((item) => item.id !== run.id)]);
-      if (window.api?.getRunDetail) {
-        const detail = await window.api.getRunDetail(run.id).catch(() => null);
-        setSelectedRunDetail(detail);
-      }
-    } finally {
-      setStartingRun(false);
-    }
-  }
 
   function handleRowClick(id: string) {
     if (clickTimer.current) clearTimeout(clickTimer.current);
@@ -1059,6 +1053,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
         const draftSubtask = draft.subtasks.find((subtask) => subtask.title === child.title);
         const childAttrs = saveTaskAttributes(child.id, {
           type: 'simple',
+          typeConfirmed: true,
           parentTaskId: project.id,
         });
         const dependencyTitle = draftSubtask?.dependency?.trim() ?? '';
@@ -1126,6 +1121,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
         const plannedRecord = await window.api.transitionTask({ id: record.id, nextState: 'planned' });
         const attrs = saveTaskAttributes(newId, {
           type: selectedType,
+          typeConfirmed: true,
           commitment: captureCommitment,
           schedule: defaultScheduleForType(selectedType),
           trigger: defaultTriggerForType(selectedType),
@@ -1135,6 +1131,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
         newId = `t-${Date.now()}`;
         const attrs = saveTaskAttributes(newId, {
           type: selectedType,
+          typeConfirmed: true,
           commitment: captureCommitment,
           schedule: defaultScheduleForType(selectedType),
           trigger: defaultTriggerForType(selectedType),
@@ -1175,47 +1172,53 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
         <ExplorerGroupHeader label="执行状态" open={openGroups.status} onClick={() => toggleGroup('status')} />
         {openGroups.status && (
           <>
-            <LensItem label="全部" active={lens === 'all'} onClick={() => setLens('all')} count={allTasks.length} />
-            <LensItem label="Running" active={lens === 'running'} onClick={() => setLens('running')}
+            <LensItem label="全部任务" active={lens === 'all'} onClick={() => selectLens('all')} count={allTasks.length} icon="•" />
+            <LensItem label="Running" active={lens === 'running'} onClick={() => selectLens('running')}
               dot="running" count={allTasks.filter(t => t.status === 'running').length} />
-            <LensItem label="Waiting" active={lens === 'waiting'} onClick={() => setLens('waiting')}
+            <LensItem label="Waiting" active={lens === 'waiting'} onClick={() => selectLens('waiting')}
               dot="waiting" count={allTasks.filter(t => t.status === 'waiting').length} />
-            <LensItem label="Blocked" active={lens === 'blocked'} onClick={() => setLens('blocked')}
+            <LensItem label="Blocked" active={lens === 'blocked'} onClick={() => selectLens('blocked')}
               dot="risk" count={allTasks.filter(t => t.status === 'blocked').length} />
-            <LensItem label="Needs Decision" active={lens === 'needsDecision'} onClick={() => setLens('needsDecision')} icon="?"
+            <LensItem label="Needs Decision" active={lens === 'needsDecision'} onClick={() => selectLens('needsDecision')} icon="?"
               count={pendingDecisions.length} />
-            <LensItem label="Completed / Archived" active={lens === 'done'} onClick={() => setLens('done')} icon="▣"
+            <LensItem label="Completed / Archived" active={lens === 'done'} onClick={() => selectLens('done')} icon="▣"
               count={allTasks.filter(t => t.status === 'done').length} />
           </>
         )}
 
         <ExplorerGroupHeader label="任务类型" open={openGroups.type} onClick={() => toggleGroup('type')} />
         {openGroups.type && (
-          <>
-            <LensItem label="项目型" active={lens === 'project'} onClick={() => setLens('project')} icon="▰"
-              count={projectParents.length} />
-            <LensItem label="定时任务" active={lens === 'scheduled'} onClick={() => setLens('scheduled')} icon="↻"
-              count={allTasks.filter(t => t.type === 'scheduled').length} />
-            <LensItem label="事件触发" active={lens === 'event'} onClick={() => setLens('event')} icon="⚡"
-              count={allTasks.filter(t => t.type === 'event').length} />
-          </>
-        )}
-
-        <ExplorerGroupHeader label="任务列表" open={openGroups.tasks} onClick={() => toggleGroup('tasks')} />
-        {openGroups.tasks && (
-          <div className="task-explorer-list">
-            {filtered.slice(0, 18).map((task) => (
-              <button
-                key={task.id}
-                className={`task-explorer-task${selectedId === task.id && selectedObject !== 'file' ? ' active' : ''}`}
-                onClick={() => selectTask(task.id)}
-                title={task.title}
-              >
-                <span className={`dot ${statusDot(task.status)}`} />
-                <span>↳ {task.title}</span>
-              </button>
+          <div className="task-type-tree">
+            {taskTypeGroups.map((group) => (
+              <div className="task-type-group" key={group.type}>
+                <LensItem
+                  label={group.label}
+                  active={lens === group.lens}
+                  onClick={() => selectLens(group.lens)}
+                  icon={group.type === 'simple' ? '•' : group.type === 'project' ? '▰' : group.type === 'scheduled' ? '↻' : '⚡'}
+                  count={group.tasks.length}
+                />
+                {group.tasks.length > 0 && (
+                  <div className="task-type-children">
+                    {group.tasks.slice(0, 12).map((task) => (
+                      <TaskExplorerTreeItem
+                        key={task.id}
+                        task={task}
+                        allTasks={allTasks}
+                        selectedId={selectedId}
+                        selectedObject={selectedObject}
+                        onSelect={selectTask}
+                      />
+                    ))}
+                  </div>
+                )}
+                {group.tasks.length > 12 && (
+                  <button className="task-type-more" onClick={() => selectLens(group.lens)}>
+                    还有 {group.tasks.length - 12} 个，点击查看全部
+                  </button>
+                )}
+              </div>
             ))}
-            {filtered.length === 0 && <div className="task-explorer-empty">当前筛选无任务</div>}
           </div>
         )}
 
@@ -1274,24 +1277,18 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
             />
           ) : selectedObject === 'task' && selectedTask ? (
             <div className="view-switcher">
-              <button
-                className={`view-btn${taskViewMode === 'overview' ? ' active' : ''}`}
-                onClick={() => setTaskViewMode('overview')}
-              >
-                Overview
-              </button>
-              <button
-                className={`view-btn${taskViewMode === 'run' ? ' active' : ''}`}
-                onClick={() => setTaskViewMode('run')}
-              >
-                Run
-              </button>
-              <button
-                className={`view-btn${taskViewMode === 'timeline' ? ' active' : ''}`}
-                onClick={() => setTaskViewMode('timeline')}
-              >
-                Timeline
-              </button>
+              {([
+                ['manage', '任务管理'],
+                ['timeline', '时间线'],
+              ] as Array<[TaskDetailViewMode, string]>).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  className={`view-btn${taskDetailViewMode === mode ? ' active' : ''}`}
+                  onClick={() => setTaskDetailViewMode(mode)}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           ) : (
             <div className="view-switcher">
@@ -1423,26 +1420,23 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
                 setFileDirty(value !== selectedFile.content);
               }}
             />
-          ) : selectedObject === 'task' && selectedTask && taskViewMode === 'run' ? (
-            <TaskRunWorkspace
-              task={selectedTask}
-              runs={selectedRuns}
-              latestRunDetail={selectedRunDetail}
-              instructions={runInstructions}
-              starting={startingRun}
-              onInstructionsChange={setRunInstructions}
-              onStartRun={() => void startTaskRun('agent')}
-              onOpenLegacyWorkbench={() => onOpenWorkbench(selectedTask.id)}
-            />
-          ) : selectedObject === 'task' && selectedTask && taskViewMode === 'timeline' ? (
-            <TaskActivityWorkspace
+          ) : selectedObject === 'task' && selectedTask && taskDetailViewMode === 'timeline' ? (
+            <TaskTimelineView
               task={selectedTask}
               timeline={selectedTaskDetail?.timeline ?? []}
-              runs={selectedRuns}
+              runCount={selectedRuns.length}
             />
           ) : selectedObject === 'task' && selectedTask ? (
             <TaskPreview
               task={selectedTask}
+              childTasks={allTasks.filter((candidate) => candidate.parentTaskId === selectedTask.id)}
+              completionCriteria={selectedTaskDetail?.completionCriteria ?? []}
+              taskFiles={taskFiles}
+              artifactCount={selectedArtifacts.length}
+              projectDraft={projectDraft?.projectId === selectedTask.id ? projectDraft.result : null}
+              projectBusy={projectDecomposingId === selectedTask.id}
+              projectCreating={projectCreatingChildrenId === selectedTask.id}
+              projectError={projectDecompositionError}
               keySources={selectedSources.slice(0, 3)}
               hasPendingDecision={selectedHasDecision}
               planningLabel={selectedTaskPlanningPrompt?.label ?? '规划讨论'}
@@ -1450,7 +1444,9 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
                 if (!selectedTaskPlanningPrompt) return;
                 onOpenPanel(selectedTask.id, selectedTaskPlanningPrompt.prompt, selectedTask.title);
               }}
-              onOpenWorkbench={() => setTaskViewMode('run')}
+              activityTimeline={selectedTaskDetail?.timeline ?? []}
+              runCount={selectedRuns.length}
+              onOpenWorkbench={() => onOpenWorkbench(selectedTask.id)}
               onOpenDecision={onOpenDecision}
               deferOpen={deferOpenId === selectedTask.id}
               onDeferToggle={() => setDeferOpenId((prev) => (prev === selectedTask.id ? null : selectedTask.id))}
@@ -1458,6 +1454,11 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
               onComplete={() => setCompletionCheckTask(selectedTask)}
               onMore={(event) => handleContextMenu(event, selectedTask.id)}
               onResolveDependency={() => resolveReadyDependency(selectedTask)}
+              onGenerateDecomposition={() => generateProjectDecomposition(selectedTask)}
+              onCreateDraftChildren={() => createProjectChildren(selectedTask)}
+              onDiscardDraft={() => setProjectDraft((current) => (
+                current?.projectId === selectedTask.id ? null : current
+              ))}
             />
           ) : lens === 'project' ? (
             <ProjectTreeView
@@ -1898,132 +1899,48 @@ function FileWorkspace({
   );
 }
 
-function TaskRunWorkspace({
-  task,
-  runs,
-  latestRunDetail,
-  instructions,
-  starting,
-  onInstructionsChange,
-  onStartRun,
-  onOpenLegacyWorkbench,
-}: {
-  task: Task;
-  runs: RunRecord[];
-  latestRunDetail: RunDetailRecord | null;
-  instructions: string;
-  starting: boolean;
-  onInstructionsChange: (value: string) => void;
-  onStartRun: () => void;
-  onOpenLegacyWorkbench: () => void;
-}) {
-  const latest = latestRunDetail ?? runs[0] ?? null;
-  const latestSteps = latestRunDetail?.steps ?? [];
-
-  return (
-    <div className="task-run-workspace">
-      <div className="task-run-head">
-        <div>
-          <span className="preview-label">任务执行</span>
-          <h3>{task.title}</h3>
-          <p>Run 记录保留在当前任务下，右侧 AI 面板负责讨论，结构化执行过程在这里查看和启动。</p>
-        </div>
-        <button className="btn sm ghost" onClick={onOpenLegacyWorkbench}>打开完整工作台</button>
-      </div>
-
-      <div className="task-run-launch">
-        <textarea
-          value={instructions}
-          onChange={(event) => onInstructionsChange(event.target.value)}
-          placeholder="给 AI 的执行指令，留空则按任务上下文生成下一步"
-          rows={3}
-        />
-        <button className={`btn primary${starting ? ' disabled' : ''}`} onClick={onStartRun} disabled={starting}>
-          {starting ? '启动中...' : '启动 Run'}
-        </button>
-      </div>
-
-      <div className="task-run-grid">
-        <div className="task-run-panel">
-          <div className="task-run-panel-title">最近 Run</div>
-          {runs.length === 0 ? (
-            <p className="muted">暂无执行记录。可以先启动一轮 Run，或在右侧面板继续讨论方案。</p>
-          ) : (
-            <div className="task-run-list">
-              {runs.slice(0, 6).map((run) => (
-                <div key={run.id} className={`task-run-item${run.id === latest?.id ? ' active' : ''}`}>
-                  <div>
-                    <strong>{run.type === 'agent' ? 'Agent Run' : run.type}</strong>
-                    <span>{run.instructions ?? '按任务上下文推进'}</span>
-                  </div>
-                  <small>{run.status} · {formatIsoDate(run.updatedAt)}</small>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="task-run-panel">
-          <div className="task-run-panel-title">执行步骤</div>
-          {latestSteps.length === 0 ? (
-            <p className="muted">最近 Run 暂无步骤详情。完整执行证据仍可从旧工作台查看。</p>
-          ) : (
-            <div className="task-run-step-list">
-              {latestSteps.slice(0, 8).map((step) => (
-                <div key={step.id} className="task-run-step">
-                  <span className={`dot ${step.status === 'failed' ? 'risk' : step.status === 'completed' ? 'completed' : 'running'}`} />
-                  <div>
-                    <strong>{step.title}</strong>
-                    <small>{step.kind} · {step.status}</small>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TaskActivityWorkspace({
+function TaskTimelineView({
   task,
   timeline,
-  runs,
+  runCount,
 }: {
   task: Task;
   timeline: TimelineEventRecord[];
-  runs: RunRecord[];
+  runCount: number;
 }) {
   const ordered = [...timeline].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return (
-    <div className="task-activity-workspace">
-      <div className="task-run-head">
-        <div>
-          <span className="preview-label">任务时间线</span>
-          <h3>{task.title}</h3>
-          <p>这里显示当前任务的活动记录。跨任务时间线仍在任务列表的 Timeline 视角查看。</p>
+    <div className="task-timeline-workspace">
+      <div className="task-preview-head">
+        <span className={`tag lane-${task.lane}`}>{LANE_LABELS[task.lane]}</span>
+        <h3 className="task-preview-title">{task.title}</h3>
+        <div className="task-preview-type-row">
+          <span className="tag">{TASK_TYPE_LABELS[task.type]}</span>
+          {runCount > 0 && <span className="preview-type-hint">{runCount} 条执行记录</span>}
         </div>
-        <span className="tag">{runs.length} Runs</span>
       </div>
-      {ordered.length === 0 ? (
-        <div className="tasks-empty">
-          <p>当前任务还没有活动记录。</p>
-        </div>
-      ) : (
-        <div className="task-activity-list">
-          {ordered.map((event) => (
-            <div key={event.id} className="task-activity-item">
-              <span>{formatIsoDate(event.createdAt)}</span>
-              <div>
-                <strong>{event.type}</strong>
-                {event.payload && <p>{event.payload}</p>}
+
+      <div className="preview-section">
+        <div className="preview-label">时间线</div>
+        {ordered.length === 0 ? (
+          <div className="tasks-empty compact">
+            <p>当前任务还没有活动记录。</p>
+          </div>
+        ) : (
+          <div className="task-timeline-list">
+            {ordered.map((event) => (
+              <div key={event.id} className="task-timeline-item">
+                <span className="task-timeline-time">{formatIsoDate(event.createdAt)}</span>
+                <div>
+                  <strong>{formatTimelineEventType(event.type)}</strong>
+                  {summarizeTimelinePayload(event) && <p>{summarizeTimelinePayload(event)}</p>}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -2032,6 +1949,56 @@ function formatIsoDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function formatTimelineEventType(type: string): string {
+  const labels: Record<string, string> = {
+    'task.created': '任务已创建',
+    'task.updated': '任务信息已更新',
+    'task.transitioned': '任务状态已变化',
+    'completion_criteria.created': '完成标准已添加',
+    'completion_criteria.satisfied': '完成标准已满足',
+    'completion_check.recorded': '完成检查已记录',
+    'decision.created': '拍板项已创建',
+    'run.started': '执行已启动',
+    'run.completed': '执行已完成',
+    'artifact.created': '产物已生成',
+    'source_context.created': '来源已记录',
+  };
+  return labels[type] ?? type.replace(/[._-]+/g, ' ');
+}
+
+function formatTaskStatus(status: TaskStatus): string {
+  if (status === 'running') return 'Running';
+  if (status === 'waiting') return 'Waiting';
+  if (status === 'blocked') return 'Blocked';
+  if (status === 'done') return 'Completed';
+  return 'Idle';
+}
+
+function summarizeTimelinePayload(event: TimelineEventRecord): string | null {
+  if (!event.payload) return null;
+  try {
+    const parsed = JSON.parse(event.payload) as Record<string, unknown>;
+    if (event.type === 'task.transitioned') {
+      const from = typeof parsed.from === 'string' ? parsed.from : null;
+      const to = typeof parsed.to === 'string' ? parsed.to : null;
+      if (from && to) return `${from} → ${to}`;
+    }
+    if (event.type === 'task.created' && typeof parsed.title === 'string') {
+      return `创建「${parsed.title}」`;
+    }
+    if (event.type === 'task.updated') {
+      const fields = Object.keys(parsed).filter((key) => parsed[key] != null);
+      if (fields.length > 0) return `更新 ${fields.slice(0, 3).join(', ')}`;
+    }
+    if (event.type.startsWith('completion_criteria') && typeof parsed.text === 'string') {
+      return parsed.text;
+    }
+  } catch {
+    return event.payload.length > 96 ? `${event.payload.slice(0, 96)}…` : event.payload;
+  }
+  return event.payload.length > 96 ? `${event.payload.slice(0, 96)}…` : event.payload;
 }
 
 /* ─── Timeline view ─── */
@@ -2091,6 +2058,54 @@ function LensItem({ label, active, onClick, count, dot, icon }: LensItemProps) {
         <span className="lens-count">{count}</span>
       )}
     </button>
+  );
+}
+
+function TaskExplorerTreeItem({
+  task,
+  allTasks,
+  selectedId,
+  selectedObject,
+  onSelect,
+}: {
+  task: Task;
+  allTasks: Task[];
+  selectedId: string | null;
+  selectedObject: SelectedObject;
+  onSelect: (id: string) => void;
+}) {
+  const children = allTasks
+    .filter((candidate) => candidate.parentTaskId === task.id)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+
+  return (
+    <div className="task-type-node">
+      <button
+        className={`task-explorer-task${selectedId === task.id && selectedObject !== 'file' ? ' active' : ''}`}
+        aria-label={task.title}
+        onClick={() => onSelect(task.id)}
+        title={task.title}
+      >
+        <span className={`dot ${statusDot(task.status)}`} />
+        <span className="task-explorer-title-visual" data-title={task.title} aria-hidden="true" />
+      </button>
+      {children.length > 0 && (
+        <div className="task-type-children nested">
+          {children.map((child) => (
+            <button
+              key={child.id}
+              className={`task-explorer-task child${selectedId === child.id && selectedObject !== 'file' ? ' active' : ''}`}
+              aria-label={child.title}
+              onClick={() => onSelect(child.id)}
+              title={child.title}
+            >
+              <span className={`dot ${statusDot(child.status)}`} />
+              <span className="task-explorer-title-visual" data-title={child.title} aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -2277,7 +2292,7 @@ function ProjectDecompositionPanel({
                 放弃草稿
               </button>
               <button className={`btn sm primary${creating ? ' disabled' : ''}`} onClick={onCreate} disabled={creating}>
-                {creating ? '创建中…' : '创建这些子任务'}
+                {creating ? '创建中…' : '确认创建子任务'}
               </button>
             </div>
           </div>
@@ -2401,7 +2416,17 @@ function statusDot(status: TaskStatus): string {
 
 interface TaskPreviewProps {
   task: Task;
+  childTasks: Task[];
+  completionCriteria: TaskDetail['completionCriteria'];
+  taskFiles: VirtualTaskFile[];
+  artifactCount: number;
+  projectDraft: ProjectDecompositionResult | null;
+  projectBusy: boolean;
+  projectCreating: boolean;
+  projectError: string | null;
   keySources: SourceContextRecord[];
+  activityTimeline: TimelineEventRecord[];
+  runCount: number;
   hasPendingDecision: boolean;
   planningLabel: string;
   onOpenPanel: () => void;
@@ -2413,11 +2438,24 @@ interface TaskPreviewProps {
   onComplete: () => void;
   onMore: (event: React.MouseEvent) => void;
   onResolveDependency: () => void;
+  onGenerateDecomposition: () => void;
+  onCreateDraftChildren: () => void;
+  onDiscardDraft: () => void;
 }
 
 function TaskPreview({
   task,
+  childTasks,
+  completionCriteria,
+  taskFiles,
+  artifactCount,
+  projectDraft,
+  projectBusy,
+  projectCreating,
+  projectError,
   keySources,
+  activityTimeline,
+  runCount,
   hasPendingDecision,
   planningLabel,
   onOpenPanel,
@@ -2429,119 +2467,307 @@ function TaskPreview({
   onComplete,
   onMore,
   onResolveDependency,
+  onGenerateDecomposition,
+  onCreateDraftChildren,
+  onDiscardDraft,
 }: TaskPreviewProps) {
+  const draftPanelRef = useRef<HTMLDivElement | null>(null);
+  const recentActivity = [...activityTimeline]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 3);
+  const visibleContextFiles = taskFiles
+    .filter((file) => !['records_folder', 'local_folder', 'task_record'].includes(file.kind))
+    .slice(0, 4);
+  const hasNonDefaultTaskFiles = taskFiles.some((file) => !['records_folder', 'local_folder', 'task_record'].includes(file.kind));
+  const contextObjectCount = visibleContextFiles.length + Math.max(0, artifactCount - visibleContextFiles.filter((file) => file.kind === 'artifact').length);
+  const completedCriteria = completionCriteria.filter((criterion) => criterion.status === 'satisfied').length;
+  const completedChildren = childTasks.filter((child) => child.status === 'done').length;
+  const needsProjectDecomposition = task.type === 'project' && childTasks.length === 0;
+  const hasContextContent = visibleContextFiles.length > 0 || keySources.length > 0 || artifactCount > 0;
+  const readyForWorkbench = Boolean(task.nextStep)
+    && !task.waitingOn
+    && task.status !== 'blocked'
+    && task.status !== 'waiting'
+    && (completionCriteria.length > 0 || hasContextContent || hasNonDefaultTaskFiles || runCount > 0 || task.type === 'scheduled' || task.type === 'event');
+  const hasStructureContent = task.type === 'project'
+    || completionCriteria.length > 0
+    || Boolean(task.schedule)
+    || Boolean(task.trigger)
+    || Boolean(task.commitment);
+  const primaryAction = hasPendingDecision
+    ? {
+        label: '去拍板 →',
+        onClick: onOpenDecision,
+        disabled: false,
+        tone: 'decision' as const,
+      }
+    : needsProjectDecomposition
+      ? {
+          label: projectDraft
+            ? '审阅拆解草稿 →'
+            : projectBusy ? '生成中…' : '生成拆解草稿 →',
+          onClick: projectDraft ? () => draftPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) : onGenerateDecomposition,
+          disabled: projectBusy,
+          tone: 'decompose' as const,
+        }
+      : readyForWorkbench
+        ? {
+            label: '打开工作台 →',
+            onClick: onOpenWorkbench,
+            disabled: false,
+            tone: 'workbench' as const,
+          }
+        : {
+            label: `${planningLabel} →`,
+            onClick: onOpenPanel,
+            disabled: false,
+            tone: 'plan' as const,
+          };
+  const showPlanSecondary = primaryAction.onClick !== onOpenPanel;
+  const showWorkbenchSecondary = primaryAction.onClick !== onOpenWorkbench
+    && !hasPendingDecision
+    && !needsProjectDecomposition
+    && (completionCriteria.length > 0 || hasContextContent || hasNonDefaultTaskFiles || runCount > 0);
+
   return (
     <div className="task-preview-inner">
-      <div className="task-preview-head">
-        <span className={`tag lane-${task.lane}`}>{LANE_LABELS[task.lane]}</span>
-        <h3 className="task-preview-title">{task.title}</h3>
-        <div className="task-preview-type-row">
-          <span className="tag">{TASK_TYPE_LABELS[task.type]}</span>
-          {task.type === 'project' && <span className="preview-type-hint">可在项目型 Lens 查看</span>}
-          {task.type === 'scheduled' && <span className="preview-type-hint">周期触发</span>}
-          {task.type === 'event' && <span className="preview-type-hint">监听外部条件</span>}
+      <section className="task-detail-layer identity">
+        <div className="task-preview-head">
+          <h3 className="task-preview-title">{task.title}</h3>
+          <div className="task-preview-type-row">
+            <span className={`tag lane-${task.lane}`}>{LANE_LABELS[task.lane]}</span>
+            <span className="tag">{TASK_TYPE_LABELS[task.type]}</span>
+            <span className="tag subtle">{formatTaskStatus(task.status)}</span>
+            {task.parentTaskId && <span className="preview-type-hint">子任务</span>}
+            {task.type === 'project' && <span className="preview-type-hint">可在项目型 Lens 查看</span>}
+            {task.type === 'scheduled' && <span className="preview-type-hint">周期触发</span>}
+            {task.type === 'event' && <span className="preview-type-hint">监听外部条件</span>}
+          </div>
         </div>
-      </div>
+      </section>
 
-      {task.whyNow && (
-        <div className="preview-section">
-          <div className="preview-label">为什么现在</div>
+      <section className="task-detail-layer progression">
+        <div className="task-detail-layer-head">
+          <span className="preview-label">推进</span>
+          {hasPendingDecision && <span className="task-detail-alert">等待拍板</span>}
+        </div>
+
+        {task.whyNow && (
           <div className={`why-now${task.lane === 'escalate' ? ' risk' : task.lane === 'unblock' ? ' waiting' : ''}`}>
             {task.whyNow}
           </div>
-        </div>
-      )}
+        )}
 
-      {task.nextStep && (
-        <div className="preview-section">
-          <div className="preview-label">下一步</div>
-          <p className="preview-text">{task.nextStep}</p>
-        </div>
-      )}
+        <div className="task-detail-action-strip">
+          <div className="task-detail-next-step">
+            <span>下一步</span>
+            <p>{task.nextStep || '等待补充下一步行动。'}</p>
+          </div>
 
-      {task.waitingOn && (
-        <div className="preview-section">
+          <button
+            className={`btn primary task-primary-action ${primaryAction.tone}`}
+            onClick={primaryAction.onClick}
+            disabled={primaryAction.disabled}
+          >
+            {primaryAction.label}
+          </button>
+        </div>
+
+        {task.waitingOn && (
           <div className="preview-chip">
             <span className="dot waiting" />
             {task.waitingOn}
           </div>
-        </div>
-      )}
+        )}
 
-      {task.schedule && (
-        <div className="preview-section">
-          <div className="preview-label">定时配置</div>
-          <div className="preview-chip">
-            <span>🔁</span>
-            <span>{task.schedule}</span>
+        <div className="task-detail-primary-actions">
+          {showPlanSecondary && (
+            <button className="btn ghost" onClick={onOpenPanel}>
+              {planningLabel} →
+            </button>
+          )}
+          {showWorkbenchSecondary && (
+            <button className="btn ghost" onClick={onOpenWorkbench}>
+              打开工作台 →
+            </button>
+          )}
+        </div>
+
+        <div className="preview-task-actions">
+          {task.dependencyReady && task.dependencyId && (
+            <button className="btn sm" onClick={onResolveDependency}>解除依赖</button>
+          )}
+          <div className="preview-defer-action">
+            <button className="btn sm ghost" onClick={onDeferToggle}>延后 ▾</button>
+            {deferOpen && (
+              <div className="defer-menu">
+                {DEFER_OPTIONS.map((opt) => (
+                  <button key={opt.value} className="defer-option" onClick={() => onDeferSelect(opt.value)}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <p className="preview-config-note">周期配置保存在任务属性中，每次触发会在执行记录里形成独立 Run。</p>
+          <button className="btn sm" onClick={onComplete}>完成</button>
+          <button className="btn sm ghost" onClick={onMore} style={{ padding: '3px 6px' }}>⋯</button>
         </div>
-      )}
+      </section>
 
-      {task.trigger && (
-        <div className="preview-section">
-          <div className="preview-label">触发条件</div>
+      <section className={`task-detail-layer structure${hasStructureContent ? '' : ' quiet'}`}>
+        <div className="task-detail-layer-head">
+          <span className="preview-label">结构</span>
+          {!hasStructureContent && <span className="preview-type-hint">按需建立</span>}
+        </div>
+
+        {task.type === 'project' ? (
+          <>
+            <div className="task-detail-grid">
+              <div className="task-detail-stat">
+                <strong>{completedChildren}/{childTasks.length}</strong>
+                <span>子任务完成</span>
+              </div>
+              <div className="task-detail-stat">
+                <strong>{completionCriteria.length}</strong>
+                <span>完成标准</span>
+              </div>
+            </div>
+            {childTasks.length === 0 && (
+              <p className="preview-config-note">等待 AI 根据项目目标拆解子任务；先生成草稿，确认后再创建真实子任务。</p>
+            )}
+            {projectDraft && (
+              <div ref={draftPanelRef} className="task-detail-project-draft">
+                <div className="task-detail-project-draft-head">
+                  <strong>AI 拆解草稿</strong>
+                  <span>{projectDraft.subtasks.length} 个建议子任务</span>
+                </div>
+                <div className="task-detail-project-draft-list">
+                  {projectDraft.subtasks.slice(0, 3).map((subtask) => (
+                    <div key={`${task.id}-${subtask.title}`} className="task-detail-project-draft-item">
+                      <strong>{subtask.title}</strong>
+                      <span>{subtask.summary}</span>
+                      <small>验收：{subtask.acceptanceCriteria}</small>
+                      {subtask.dependency && <small>依赖：{subtask.dependency}</small>}
+                    </div>
+                  ))}
+                </div>
+                <div className="task-detail-project-draft-review">
+                  <span>拆解自检</span>
+                  <p>{projectDraft.review}</p>
+                  <small>{projectDraft.nextStep}</small>
+                </div>
+                <div className="task-detail-project-draft-actions">
+                  <button className="btn sm ghost" onClick={onGenerateDecomposition} disabled={projectBusy || projectCreating}>
+                    {projectBusy ? '生成中…' : '重新生成'}
+                  </button>
+                  <button className="btn sm ghost" onClick={onDiscardDraft} disabled={projectCreating}>放弃草稿</button>
+                  <button className={`btn sm primary${projectCreating ? ' disabled' : ''}`} onClick={onCreateDraftChildren} disabled={projectCreating}>
+                    {projectCreating ? '创建中…' : '确认创建子任务'}
+                  </button>
+                </div>
+              </div>
+            )}
+            {projectError && (
+              <div className="project-draft-error">{projectError}</div>
+            )}
+          </>
+        ) : completionCriteria.length > 0 ? (
+          <>
+            <div className="task-detail-grid">
+              <div className="task-detail-stat">
+                <strong>{completedCriteria}/{completionCriteria.length}</strong>
+                <span>完成标准满足</span>
+              </div>
+              <div className="task-detail-stat">
+                <strong>{runCount}</strong>
+                <span>执行记录</span>
+              </div>
+            </div>
+            <div className="task-detail-criteria-list">
+              {completionCriteria.slice(0, 3).map((criterion) => (
+                <div key={criterion.id} className={`task-detail-criterion ${criterion.status}`}>
+                  <span>{criterion.status === 'satisfied' ? '✓' : '○'}</span>
+                  <p>{criterion.text}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="preview-config-note compact">暂无完成标准；需要验收标准时可在工作台补充。</p>
+        )}
+
+        {task.schedule && (
+          <>
+            <div className="preview-chip">
+              <span>↻</span>
+              <span>{task.schedule}</span>
+            </div>
+            <p className="preview-config-note">周期配置保存在任务属性中，每次触发会在执行记录里形成独立 Run。</p>
+          </>
+        )}
+        {task.trigger && (
+          <>
+            <div className="preview-chip">
+              <span>⚡</span>
+              <span>{task.trigger}</span>
+            </div>
+            <p className="preview-config-note">事件触发任务是一条持续监听规则，触发结果会追加到任务产物和执行记录，不会自动新建散乱任务。</p>
+          </>
+        )}
+        {task.commitment && (
           <div className="preview-chip">
-            <span>⚡</span>
-            <span>{task.trigger}</span>
+            <span>交付</span>
+            <span>{task.commitment}</span>
           </div>
-          <p className="preview-config-note">事件触发任务是一条持续监听规则，触发结果会追加到任务产物和执行记录，不会自动新建散乱任务。</p>
-        </div>
-      )}
+        )}
+      </section>
 
-      {task.commitment && (
-        <div className="preview-section">
-          <div className="preview-label">交付备注</div>
-          <div className="preview-chip">
-            <span>🤝</span>
-            <span style={{ marginLeft: 4 }}>{task.commitment}</span>
-          </div>
+      <section className={`task-detail-layer context${hasContextContent ? '' : ' quiet'}`}>
+        <div className="task-detail-layer-head">
+          <span className="preview-label">上下文</span>
+          <span className="preview-type-hint">
+            {hasContextContent ? `${contextObjectCount} 个上下文项目` : 'Task.md 可打开'}
+          </span>
         </div>
-      )}
 
-      {keySources.length > 0 && (
-        <div className="preview-section">
-          <div className="preview-label">关键来源</div>
-          <div className="preview-sources">
-            {keySources.map((source) => (
-              <div key={source.id} className="preview-source-item">
-                {source.title}
+        <div className="task-detail-file-list">
+          {visibleContextFiles.length > 0 ? visibleContextFiles.map((file) => (
+            <div key={file.id} className="task-detail-file-item">
+              <span>{file.kind === 'artifact' ? '产物' : file.kind === 'source' ? '来源' : '文件'}</span>
+              <strong>{file.name}</strong>
+            </div>
+          )) : (
+            <p className="preview-config-note compact">Task.md 和 Task Records 在左侧任务文件树中打开；当前没有额外来源或产物。</p>
+          )}
+        </div>
+
+        {hasContextContent && (
+          <p className="preview-config-note">来源、产物和记录会投影到任务文件；完整读写从左侧任务文件树进入。</p>
+        )}
+      </section>
+
+      <section className="task-detail-layer history">
+        <div className="task-detail-layer-head">
+          <span className="preview-label">活动记录</span>
+          {runCount > 0 && <span className="preview-type-hint">{runCount} 条执行记录</span>}
+        </div>
+        {recentActivity.length === 0 ? (
+          <p className="preview-config-note">当前任务暂无活动记录。执行过程和详细证据可从工作台查看。</p>
+        ) : (
+          <div className="preview-activity-list">
+            {recentActivity.map((event) => (
+              <div key={event.id} className="preview-activity-item">
+                <span>{formatIsoDate(event.createdAt)}</span>
+                <div>
+                  <strong>{formatTimelineEventType(event.type)}</strong>
+                  {summarizeTimelinePayload(event) && <p>{summarizeTimelinePayload(event)}</p>}
+                </div>
               </div>
             ))}
           </div>
-          <p className="preview-config-note">预览只展示最近更新的 3 条关键来源；完整来源在任务工作台管理。</p>
-        </div>
-      )}
-
-      <div className="preview-task-actions">
-        {task.dependencyReady && task.dependencyId && (
-          <button className="btn sm" onClick={onResolveDependency}>解除依赖</button>
         )}
-        <div className="preview-defer-action">
-          <button className="btn sm ghost" onClick={onDeferToggle}>延后 ▾</button>
-          {deferOpen && (
-            <div className="defer-menu">
-              {DEFER_OPTIONS.map((opt) => (
-                <button key={opt.value} className="defer-option" onClick={() => onDeferSelect(opt.value)}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        <button className="btn sm" onClick={onComplete}>完成</button>
-        <button className="btn sm ghost" onClick={onMore} style={{ padding: '3px 6px' }}>⋯</button>
-      </div>
-
-      <div className="preview-actions">
-        <button className="btn ghost" onClick={onOpenPanel}>
-          {planningLabel} →
-        </button>
-        <button className="btn primary" onClick={hasPendingDecision ? onOpenDecision : onOpenWorkbench}>
-          {hasPendingDecision ? '去拍板 →' : '打开工作台 →'}
-        </button>
-      </div>
+        {runCount > 0 && recentActivity.length > 0 && <p className="preview-config-note">完整执行过程在工作台查看。</p>}
+      </section>
     </div>
   );
 }

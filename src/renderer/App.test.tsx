@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import type { HomeBriefData } from '@shared/types/brief';
@@ -1425,8 +1425,8 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(await screen.findByText('董事会材料修订'));
-    expect(await screen.findByText('关键来源')).toBeTruthy();
-    expect(await screen.findByText('董事会反馈邮件')).toBeTruthy();
+    expect(await screen.findByText(/来源、产物和记录会投影到任务文件/)).toBeTruthy();
+    expect((await screen.findAllByText(/董事会反馈邮件/)).length).toBeGreaterThan(0);
     expect(await screen.findByRole('button', { name: /去拍板/ })).toBeTruthy();
     await user.click(await screen.findByRole('button', { name: '完成' }));
     expect(await screen.findByText('完成确认')).toBeTruthy();
@@ -1592,11 +1592,10 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(await screen.findByText('董事会材料修订'));
-    expect(await screen.findByText('财务复核')).toBeTruthy();
-    expect(screen.getByText('法务意见')).toBeTruthy();
-    expect(screen.getByText('CEO 批注')).toBeTruthy();
-    expect(screen.getByText(/预览只展示最近更新的 3 条关键来源/)).toBeTruthy();
-    expect(screen.queryByText('董事会反馈邮件')).toBeNull();
+    expect((await screen.findAllByText(/财务复核/)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/法务意见/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/CEO 批注/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/来源、产物和记录会投影到任务文件/)).toBeTruthy();
     await user.click(await screen.findByRole('button', { name: /去拍板/ }));
 
     expect(await screen.findByText('是否批准本轮材料修改方案')).toBeTruthy();
@@ -1703,8 +1702,8 @@ describe('App redesign v1', () => {
     await user.click(screen.getAllByRole('button', { name: '要求补充信息' })[0]!);
     expect((await screen.findAllByText('董事会材料修订')).length).toBeGreaterThan(0);
     await user.click(screen.getAllByRole('button', { name: '查看任务' })[0]!);
-    expect(await screen.findByRole('button', { name: 'Overview' })).toBeTruthy();
-    expect(await screen.findByRole('button', { name: 'Run' })).toBeTruthy();
+    expect(await screen.findByText('活动记录')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Run' })).toBeNull();
     await user.click(screen.getAllByRole('button', { name: /Decisions/ })[0]!);
     await user.click(await screen.findByText('是否批准本轮材料修改方案'));
     await user.click((await screen.findAllByRole('button', { name: '选择此方案' }))[0]!);
@@ -1829,9 +1828,7 @@ describe('App redesign v1', () => {
     expect(screen.queryByRole('button', { name: /已承诺/ })).toBeNull();
     expect((await screen.findAllByText('每周一准备经营周报')).length).toBeGreaterThan(0);
 
-    await user.click(screen.getByRole('button', { name: 'Run' }));
-    expect(await screen.findByText('任务执行')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '打开完整工作台' }));
+    await user.click(screen.getByRole('button', { name: '打开工作台 →' }));
     expect(await screen.findByText('定时任务')).toBeTruthy();
     expect(screen.getByText('定时执行')).toBeTruthy();
     expect(screen.getByText(/每次触发会在这里形成一条独立 Run 实例/)).toBeTruthy();
@@ -1856,9 +1853,7 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /事件触发/ }));
     await user.click(await screen.findByText('收到品牌合作邮件时跟进'));
     expect(await screen.findByText(/追加到任务产物和执行记录/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: 'Run' }));
-    expect(await screen.findByText('任务执行')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '打开完整工作台' }));
+    await user.click(screen.getByRole('button', { name: '打开工作台 →' }));
     expect(await screen.findByText('事件监听')).toBeTruthy();
     expect(screen.getByText('等待触发')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /外部信号更新时/ }));
@@ -1895,7 +1890,7 @@ describe('App redesign v1', () => {
     expect(screen.queryByText('明确范围：官网改版项目')).toBeNull();
     expect(harness.api.createTask).toHaveBeenCalledTimes(1);
 
-    await user.click(screen.getByRole('button', { name: '生成拆解草稿' }));
+    await user.click(screen.getByRole('button', { name: /生成拆解草稿/ }));
     expect(await screen.findByText('确认官网改版范围')).toBeTruthy();
     expect(screen.getByText('拆解自检')).toBeTruthy();
     expect(screen.getByText('大块任务')).toBeTruthy();
@@ -1909,15 +1904,16 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/最多保持项目 → 子任务两层/)).toBeTruthy();
     expect(screen.getByRole('button', { name: '重新生成' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '放弃草稿' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '确认创建子任务' })).toBeTruthy();
     expect(harness.api.decomposeProject).toHaveBeenCalledWith(expect.objectContaining({
       taskId: 'task_created',
       instructions: expect.stringContaining('最多两层'),
     }));
     await user.click(screen.getByRole('button', { name: '放弃草稿' }));
     expect(screen.queryByText('AI 拆解草稿')).toBeNull();
-    await user.click(screen.getByRole('button', { name: '生成拆解草稿' }));
+    await user.click(screen.getByRole('button', { name: /生成拆解草稿/ }));
     expect(await screen.findByText('AI 拆解草稿')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '创建这些子任务' }));
+    await user.click(screen.getByRole('button', { name: '确认创建子任务' }));
     await waitFor(() => {
       expect(harness.api.transitionTask).toHaveBeenCalledWith({
         id: 'task_created_1',
@@ -2046,34 +2042,149 @@ describe('App redesign v1', () => {
     expect(screen.getByText('选择任务后显示文件')).toBeTruthy();
   });
 
-  it('keeps task Run and Timeline views inside the unified Tasks workspace', async () => {
+  it('keeps task management and task timeline as task-level tabs without exposing Run', async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(await screen.findByRole('button', { name: /董事会材料修订/ }));
-    await user.click(screen.getByRole('button', { name: 'Run' }));
 
-    expect(await screen.findByText('任务执行')).toBeTruthy();
-    expect(screen.getByText(/结构化执行过程在这里查看和启动/)).toBeTruthy();
-    expect(screen.getByText('最近 Run')).toBeTruthy();
-    expect(screen.getByText('执行步骤')).toBeTruthy();
-    expect(await screen.findByText('整理反馈')).toBeTruthy();
-    await user.type(screen.getByPlaceholderText(/给 AI 的执行指令/), '请整理 CFO 反馈');
-    await user.click(screen.getByRole('button', { name: '启动 Run' }));
+    expect(await screen.findByRole('button', { name: '任务管理' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '时间线' })).toBeTruthy();
+    expect(await screen.findByText('活动记录')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Overview' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Run' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Timeline' })).toBeNull();
+    expect(screen.getByText('任务信息已更新')).toBeTruthy();
+    expect(screen.getByText(/1 条执行记录/)).toBeTruthy();
 
+    await user.click(screen.getByRole('button', { name: '时间线' }));
+    expect(screen.getByRole('button', { name: '时间线' }).className).toContain('active');
+    expect(screen.getByText('任务信息已更新')).toBeTruthy();
+
+    await user.click(await screen.findByRole('button', { name: /合同盖章跟进/ }));
+    expect(await screen.findByText('活动记录')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '任务管理' }).className).toContain('active');
+  });
+
+  it('respects a confirmed simple task type even when the title looks like a project', async () => {
+    const task = buildTask({
+      id: 'task_confirmed_simple_type',
+      title: '开发一个一次性演示说明',
+      state: 'planned',
+    });
+    harness.tasks.unshift(task);
+    harness.details[task.id] = buildTaskDetail(task);
+    saveTaskAttributes(task.id, { type: 'simple', typeConfirmed: true });
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+
+    await screen.findByRole('button', { name: /一次性任务/ });
+    await user.click(screen.getByRole('button', { name: /项目型/ }));
+    const taskWorkspace = document.querySelector('.task-list') as HTMLElement;
+    expect(within(taskWorkspace).queryByText('开发一个一次性演示说明')).toBeNull();
+    await user.click(screen.getByRole('button', { name: /一次性任务/ }));
+    await user.click(screen.getByRole('button', { name: /开发一个一次性演示说明/ }));
+    expect(await screen.findByText('一次性')).toBeTruthy();
+  });
+
+  it('keeps project decomposition creation inside the reviewed draft from task management', async () => {
+    const project = buildTask({
+      id: 'task_project_review',
+      title: '改版项目',
+      state: 'planned',
+      nextStep: '拆解项目结构',
+    });
+    harness.tasks.unshift(project);
+    harness.details[project.id] = {
+      ...buildTaskDetail(project),
+      completionCriteria: [],
+      sourceContexts: [],
+      artifacts: [],
+    };
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(screen.getByRole('button', { name: /项目型/ }));
+    await user.click(await screen.findByRole('button', { name: '改版项目' }));
+
+    await user.click(await screen.findByRole('button', { name: /生成拆解草稿/ }));
+    expect(await screen.findByRole('button', { name: /审阅拆解草稿/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /创建这些子任务/ })).toBeNull();
+    expect(screen.getByText(/验收：范围清单被确认/)).toBeTruthy();
+    expect(screen.getByText(/依赖：确认官网改版范围/)).toBeTruthy();
+    expect(screen.getByText(/子任务保持大块、边界清楚/)).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '确认创建子任务' }));
     await waitFor(() => {
-      expect(harness.api.triggerRun).toHaveBeenCalledWith({
-        taskId: 'task_risk',
-        type: 'agent',
-        instructions: '请整理 CFO 反馈',
+      expect(harness.api.transitionTask).toHaveBeenCalledWith({
+        id: 'task_created_1',
+        nextState: 'planned',
       });
     });
+  });
 
-    await user.click(screen.getByRole('button', { name: 'Timeline' }));
-    expect(await screen.findByText('任务时间线')).toBeTruthy();
-    expect(screen.getByText(/跨任务时间线仍在任务列表的 Timeline 视角查看/)).toBeTruthy();
-    expect(screen.getByText('task.updated')).toBeTruthy();
+  it('uses Plan as the primary action until an ordinary task has execution context', async () => {
+    const task = buildTask({
+      id: 'task_plain_plan',
+      title: '整理一段说明',
+      state: 'planned',
+      nextStep: '写出说明初稿',
+    });
+    harness.tasks.unshift(task);
+    harness.details[task.id] = {
+      ...buildTaskDetail(task),
+      completionCriteria: [],
+      sourceContexts: [],
+      artifacts: [],
+    };
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByRole('button', { name: '整理一段说明' }));
+    expect(await screen.findByRole('button', { name: /规划下一步/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '打开工作台 →' })).toBeNull();
+
+    harness.details[task.id] = {
+      ...harness.details[task.id]!,
+      completionCriteria: [{
+        id: 'criterion_plain',
+        taskId: task.id,
+        text: '说明初稿完成',
+        verificationResponsibility: 'unknown',
+        verificationResponsibilityLabel: null,
+        status: 'open',
+        createdAt: now,
+        updatedAt: now,
+        satisfiedAt: null,
+      }],
+    };
+    harness.emit('task.changed', task.id);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '打开工作台 →' })).toBeTruthy();
+    });
+  });
+
+  it('clears the selected task when switching task explorer lenses', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByRole('button', { name: /董事会材料修订/ }));
+    expect(await screen.findByText('活动记录')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: /全部任务/ }));
+
+    expect(screen.queryByText('活动记录')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Default Sort' })).toBeTruthy();
+    expect(screen.getByText('选择任务后显示文件')).toBeTruthy();
   });
 
   it('persists task file workspace drafts across remounts', async () => {
