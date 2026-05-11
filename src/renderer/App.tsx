@@ -1,11 +1,11 @@
 import { useState, useCallback, useEffect, type ReactNode } from 'react';
 import { getRouteFromHash, setRoute, type AppRoute } from './lib/router';
 import { BriefPage } from './pages/BriefPage';
-import { TasksPage } from './pages/TasksPage';
+import { TasksPage, type TaskWorkspaceSelectionContext } from './pages/TasksPage';
 import { WorkbenchPage } from './pages/WorkbenchPage';
 import { DecisionsPage } from './pages/DecisionsPage';
-import { ContextPage } from './pages/ContextPage';
 import { ConnectionsPage } from './pages/ConnectionsPage';
+import { WorkHabitsPage } from './pages/WorkHabitsPage';
 import { SkillsPage } from './pages/SkillsPage';
 import { ModelPage } from './pages/ModelPage';
 import { McpPage } from './pages/McpPage';
@@ -16,11 +16,11 @@ const ROUTE_LABELS: Record<AppRoute, string> = {
   brief: 'Brief',
   tasks: 'Tasks',
   decisions: 'Decisions',
-  context: 'Context',
+  'work-habits': 'Work Habits',
   skills: 'Skills',
   mcp: 'MCP',
   model: 'Model',
-  connections: 'Connections',
+  connections: 'External Access',
   settings: 'Settings',
 };
 
@@ -31,14 +31,25 @@ export function App() {
   const [panelTaskId, setPanelTaskId] = useState<string | null>(null);
   const [panelTaskTitle, setPanelTaskTitle] = useState<string | null>(null);
   const [panelDraftPrompt, setPanelDraftPrompt] = useState<string | null>(null);
+  const [panelSelectedFile, setPanelSelectedFile] = useState<TaskWorkspaceSelectionContext['selectedFile']>(null);
+  const [workspaceSelection, setWorkspaceSelection] = useState<TaskWorkspaceSelectionContext>({
+    taskId: null,
+    taskTitle: null,
+    selectedFile: null,
+  });
   const [workbenchTaskId, setWorkbenchTaskId] = useState<string | null>(null);
   const [workbenchOrigin, setWorkbenchOrigin] = useState<AppRoute>('tasks');
+  const [taskFocusId, setTaskFocusId] = useState<string | null>(null);
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
 
   const navigate = useCallback((r: AppRoute) => {
     setRouteState(r);
     setRoute(r);
     setWorkbenchTaskId(null);
+    setTaskFocusId(null);
+    if (r !== 'tasks') {
+      setWorkspaceSelection({ taskId: null, taskTitle: null, selectedFile: null });
+    }
   }, []);
 
   const openWorkbench = useCallback((taskId: string) => {
@@ -50,13 +61,21 @@ export function App() {
     setWorkbenchTaskId(null);
   }, []);
 
+  const openTaskInTasks = useCallback((taskId: string) => {
+    setWorkbenchTaskId(null);
+    setRouteState('tasks');
+    setRoute('tasks');
+    setTaskFocusId(taskId);
+  }, []);
+
   const openPanelForTask = useCallback((taskId: string, draftPrompt?: string, taskTitle?: string) => {
     setPanelTaskId(taskId);
     setPanelTaskTitle(taskTitle ?? null);
     setPanelDraftPrompt(draftPrompt ?? null);
+    setPanelSelectedFile(workspaceSelection.taskId === taskId ? workspaceSelection.selectedFile : null);
     setPanelOpen(true);
     setPanelSuspended(false);
-  }, []);
+  }, [workspaceSelection]);
 
   const openPanelGlobal = useCallback(() => {
     if (panelSuspended) {
@@ -64,9 +83,11 @@ export function App() {
       setPanelSuspended(false);
       return;
     }
-    setPanelTaskId(null);
+    setPanelTaskId(workspaceSelection.taskId);
+    setPanelTaskTitle(workspaceSelection.taskTitle);
+    setPanelSelectedFile(workspaceSelection.selectedFile);
     setPanelOpen(true);
-  }, [panelSuspended]);
+  }, [panelSuspended, workspaceSelection]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -82,6 +103,14 @@ export function App() {
   useEffect(() => {
     window.api?.getAiConfigStatus().then((s) => setAiConfigured(s.configured)).catch(() => setAiConfigured(false));
   }, []);
+
+  useEffect(() => {
+    if (route !== 'tasks' || !panelOpen || panelSuspended) return;
+    setPanelSelectedFile(workspaceSelection.selectedFile);
+    if (!workspaceSelection.taskId || workspaceSelection.taskId === panelTaskId) return;
+    setPanelTaskId(workspaceSelection.taskId);
+    setPanelTaskTitle(workspaceSelection.taskTitle);
+  }, [panelOpen, panelSuspended, panelTaskId, route, workspaceSelection]);
 
   return (
     <div className={`app${panelOpen ? ' panel-open' : ''}`}>
@@ -128,16 +157,18 @@ export function App() {
                   onOpenPanel={openPanelForTask}
                   onOpenWorkbench={openWorkbench}
                   onOpenDecision={() => navigate('decisions')}
+                  onSelectionContextChange={setWorkspaceSelection}
+                  focusTaskId={taskFocusId}
                 />
               )}
               {route === 'decisions' && (
                 <DecisionsPage
                   onOpenPanel={openPanelForTask}
-                  onOpenWorkbench={openWorkbench}
+                  onOpenTask={openTaskInTasks}
                 />
               )}
-              {route === 'context' && <ContextPage onOpenConnections={() => navigate('connections')} />}
               {route === 'connections' && <ConnectionsPage />}
+              {route === 'work-habits' && <WorkHabitsPage />}
               {route === 'skills' && <SkillsPage />}
               {route === 'mcp' && <McpPage />}
               {route === 'model' && <ModelPage />}
@@ -151,6 +182,7 @@ export function App() {
           taskId={panelTaskId}
           taskTitleHint={panelTaskTitle}
           draftPrompt={panelDraftPrompt}
+          selectedFile={panelSelectedFile}
           hidden={!panelOpen}
           onTaskCaptured={(taskId) => setPanelTaskId(taskId)}
           onClose={(hasSession) => {
@@ -161,6 +193,7 @@ export function App() {
             setPanelTaskId(null);
             setPanelTaskTitle(null);
             setPanelDraftPrompt(null);
+            setPanelSelectedFile(null);
           }}
         />
       )}
@@ -214,14 +247,14 @@ function Sidebar({ route, onNavigate }: SidebarProps) {
         <NavItem icon={<IconBrief />} label="Brief" active={route === 'brief'} onClick={() => onNavigate('brief')} />
         <NavItem icon={<IconTasks />} label="Tasks" active={route === 'tasks'} onClick={() => onNavigate('tasks')} />
         <NavItem icon={<IconDecisions />} label="Decisions" active={route === 'decisions'} onClick={() => onNavigate('decisions')} />
-        <NavItem icon={<IconContext />} label="Context" active={route === 'context'} onClick={() => onNavigate('context')} />
 
         <div className="nav-divider" />
         <div className="nav-zone-label">Capabilities</div>
-        <NavItem icon={<IconConnections />} label="Connections" active={route === 'connections'} onClick={() => onNavigate('connections')} />
+        <NavItem icon={<IconConnections />} label="External Access" active={route === 'connections'} onClick={() => onNavigate('connections')} />
         <NavItem icon={<IconSkills />} label="Skills" active={route === 'skills'} onClick={() => onNavigate('skills')} />
         <NavItem icon={<IconMcp />} label="MCP" active={route === 'mcp'} onClick={() => onNavigate('mcp')} />
         <NavItem icon={<IconModel />} label="Model" active={route === 'model'} onClick={() => onNavigate('model')} />
+        <NavItem icon={<IconContext />} label="Work Habits" active={route === 'work-habits'} onClick={() => onNavigate('work-habits')} />
         <NavItem icon={<IconSettings />} label="Settings" active={route === 'settings'} onClick={() => onNavigate('settings')} />
       </nav>
 

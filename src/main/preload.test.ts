@@ -57,6 +57,13 @@ function getExposedApi() {
     createSourceContext: (input: unknown) => Promise<unknown>;
     updateSourceContext: (input: unknown) => Promise<unknown>;
     archiveSourceContext: (id: string) => Promise<unknown>;
+    createManualArtifact: (input: unknown) => Promise<unknown>;
+    updateArtifact: (input: unknown) => Promise<unknown>;
+    deleteArtifact: (id: string) => Promise<unknown>;
+    listTaskFiles: (taskId: string) => Promise<unknown>;
+    createTaskFile: (input: unknown) => Promise<unknown>;
+    updateTaskFile: (input: unknown) => Promise<unknown>;
+    deleteTaskFile: (id: string) => Promise<unknown>;
     createProcessTemplate: (input: unknown) => Promise<unknown>;
     updateProcessTemplate: (input: unknown) => Promise<unknown>;
     archiveProcessTemplate: (id: string) => Promise<unknown>;
@@ -147,6 +154,25 @@ describe('preload bridge', () => {
       id: 'source_context_1',
       note: 'Updated note',
     };
+    const createManualArtifactInput = {
+      taskId: 'task_1',
+      title: 'notes.md',
+      content: 'Manual note',
+    };
+    const updateArtifactInput = {
+      id: 'artifact_1',
+      title: 'notes-final.md',
+    };
+    const createTaskFileInput = {
+      taskId: 'task_1',
+      name: 'notes.md',
+      kind: 'file',
+      content: 'Task note',
+    };
+    const updateTaskFileInput = {
+      id: 'task_file_1',
+      content: 'Updated task note',
+    };
     const createProcessTemplateInput = {
       title: 'Outreach skill',
       kind: 'skill',
@@ -221,6 +247,13 @@ describe('preload bridge', () => {
     await api.createSourceContext(createSourceContextInput);
     await api.updateSourceContext(updateSourceContextInput);
     await api.archiveSourceContext('source_context_1');
+    await api.createManualArtifact(createManualArtifactInput);
+    await api.updateArtifact(updateArtifactInput);
+    await api.deleteArtifact('artifact_1');
+    await api.listTaskFiles('task_1');
+    await api.createTaskFile(createTaskFileInput);
+    await api.updateTaskFile(updateTaskFileInput);
+    await api.deleteTaskFile('task_file_1');
     await api.createProcessTemplate(createProcessTemplateInput);
     await api.updateProcessTemplate(updateProcessTemplateInput);
     await api.archiveProcessTemplate('process_template_1');
@@ -270,6 +303,13 @@ describe('preload bridge', () => {
       ['sourceContext:create', createSourceContextInput],
       ['sourceContext:update', updateSourceContextInput],
       ['sourceContext:archive', 'source_context_1'],
+      ['artifact:createManual', createManualArtifactInput],
+      ['artifact:update', updateArtifactInput],
+      ['artifact:delete', 'artifact_1'],
+      ['taskFile:list', 'task_1'],
+      ['taskFile:create', createTaskFileInput],
+      ['taskFile:update', updateTaskFileInput],
+      ['taskFile:delete', 'task_file_1'],
       ['processTemplate:create', createProcessTemplateInput],
       ['processTemplate:update', updateProcessTemplateInput],
       ['processTemplate:archive', 'process_template_1'],

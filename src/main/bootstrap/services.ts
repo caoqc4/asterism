@@ -12,6 +12,7 @@ import { RunVerificationRepository } from '../db/repositories/run-verification-r
 import { SandboxPatchPromotionRepository } from '../db/repositories/sandbox-patch-promotion-repository.js';
 import { ProcessTemplateRepository } from '../db/repositories/process-template-repository.js';
 import { SourceContextRepository } from '../db/repositories/source-context-repository.js';
+import { TaskFileRepository } from '../db/repositories/task-file-repository.js';
 import { TaskDependencyRepository } from '../db/repositories/task-dependency-repository.js';
 import { TaskRepository } from '../db/repositories/task-repository.js';
 import { TaskProcessBindingRepository } from '../db/repositories/task-process-binding-repository.js';
@@ -51,6 +52,7 @@ const blockerRepository = new BlockerRepository();
 const completionCriteriaRepository = new CompletionCriteriaRepository();
 const taskDependencyRepository = new TaskDependencyRepository();
 const sourceContextRepository = new SourceContextRepository();
+const taskFileRepository = new TaskFileRepository();
 const processTemplateRepository = new ProcessTemplateRepository();
 const taskProcessBindingRepository = new TaskProcessBindingRepository();
 const briefSnapshotRepository = new BriefSnapshotRepository();
@@ -86,6 +88,7 @@ const taskService = new TaskService(
   blockerRepository,
   taskDependencyRepository,
   completionCriteriaRepository,
+  taskFileRepository,
 );
 const agentToolRegistry = new AgentToolRegistry(
   artifactRepository,
@@ -188,6 +191,7 @@ const services = {
   taskDependencyRepository,
   artifactRepository,
   sourceContextRepository,
+  taskFileRepository,
   processTemplateRepository,
   taskProcessBindingRepository,
   appConfigService,

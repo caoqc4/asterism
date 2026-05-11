@@ -95,7 +95,7 @@ function buildResumeSignals(params: {
   if (!detail) return [];
 
   const signals: ResumeSignal[] = [
-    { label: `Priority Lane · ${LANE_LABELS[deriveLane(detail)] ?? deriveLane(detail)}` },
+    { label: `Default Sort · ${LANE_LABELS[deriveLane(detail)] ?? deriveLane(detail)}` },
   ];
   const keySources = detail.sourceContexts.filter((source) => source.isKey).length;
   const completedCriteria = detail.completionCriteria.filter((criterion) => Boolean(criterion.satisfiedAt)).length;
@@ -269,7 +269,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
         : detail.nextStep
           ? `下一步建议：${detail.nextStep}`
           : taskAttrs?.commitment
-            ? `下一步建议：围绕承诺「${taskAttrs.commitment}」补齐交付计划。`
+            ? `下一步建议：围绕交付备注「${taskAttrs.commitment}」补齐交付计划。`
             : '下一步建议：补充任务摘要和完成标准，然后启动 Run。';
 
     setGeneratedResume({
@@ -1260,7 +1260,7 @@ function ArtifactsTab({ taskId, artifacts, taskAttrs }: {
         nextTitle,
         nextContent,
       });
-      setEditLearningNotice('已把本次产物改动方向写入任务记忆；明显偏好会在任务完成或复盘时归纳到 Context。');
+      setEditLearningNotice('已把本次产物改动方向写入任务记忆；明显偏好会在任务完成或复盘时归纳到 Work Habits。');
     } else if (editingMode === 'rename') {
       setEditLearningNotice('已保存产物名称；正文未变化，不生成自学习观察信号。');
     } else {
@@ -1794,7 +1794,7 @@ function SopExtractModal({
             <p>
               保存后会写入流程模板并挂到当前任务
               {selfLearnEnabled
-                ? '，同时写入 Context 的工作习惯记录，后续类似任务可作为默认流程参考。'
+                ? '，同时写入 Work Habits 的工作习惯记录，后续类似任务可作为默认流程参考。'
                 : '；自学习已关闭，不会生成新的工作习惯记录。'}
             </p>
           </div>
@@ -1935,14 +1935,14 @@ function TaskEditPanel({
         />
       </div>
       <div className="task-edit-row">
-        <label className="task-edit-label">已承诺</label>
+        <label className="task-edit-label">交付备注</label>
         <input
           className="settings-input"
           value={commitment}
           placeholder="例：向客户承诺 3/20 前交付初稿"
           onChange={(e) => setCommitment(e.target.value)}
         />
-        <span className="settings-hint">填写后任务出现在「已承诺」视角，AI 将其视为高优先级</span>
+        <span className="settings-hint">作为任务交付约束保留在任务属性中；v1 不提供单独承诺视角。</span>
       </div>
       <div className="task-edit-row">
         <label className="task-edit-label">风险等级</label>

@@ -232,6 +232,17 @@ function bootstrapTables(connection: Database.Database): void {
       archived_at TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS task_files (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      path TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS process_templates (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,

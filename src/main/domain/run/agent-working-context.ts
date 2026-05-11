@@ -5,6 +5,7 @@ import type {
 } from '../../../shared/types/agent-execution.js';
 import type { CreateRunInput, RunRecord } from '../../../shared/types/run.js';
 import type { TaskDetail, TimelineEventRecord } from '../../../shared/types/task.js';
+import { TASKPLANE_AGENT_PRINCIPLES } from '../../../shared/agent-principles.js';
 import { deriveTaskDetailPriorityLane } from '../../../shared/working-context/priority-lanes.js';
 import {
   formatTaskTimelineEventSummary,
@@ -18,6 +19,7 @@ import {
 const RECENT_TIMELINE_LIMIT = 6;
 const SOURCE_CONTEXT_LIMIT = 3;
 const ARTIFACT_LIMIT = 5;
+const TASK_FILE_LIMIT = 6;
 const SOURCE_PREVIEW_LIMIT = 240;
 
 export const DEFAULT_AGENT_POLICY: AgentPolicy = {
@@ -74,6 +76,7 @@ export function buildAgentWorkingContext(task: TaskDetail): AgentWorkingContext 
   const selectedSources = selectAgentSourceContexts(task);
 
   return {
+    productPrinciples: TASKPLANE_AGENT_PRINCIPLES,
     task: {
       id: task.id,
       title: task.title,
@@ -124,6 +127,16 @@ export function buildAgentWorkingContext(task: TaskDetail): AgentWorkingContext 
         kind: artifact.kind,
         sourceType: artifact.sourceType,
         updatedAt: artifact.updatedAt,
+        contentPreview: preview(artifact.content),
+      })),
+    taskFiles: [...(task.taskFiles ?? [])]
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, TASK_FILE_LIMIT)
+      .map((file) => ({
+        path: file.path,
+        kind: file.kind,
+        updatedAt: file.updatedAt,
+        contentPreview: file.kind === 'file' ? preview(file.content) : null,
       })),
     processTemplates: task.processTemplates.map((template) => ({
       id: template.id,
@@ -170,6 +183,8 @@ export function formatAgentRunRequestForStep(request: AgentRunRequest): string {
     `Run 模式：${request.mode}`,
     `目标：${request.goal}`,
     request.instructions ? `附加要求：${request.instructions}` : '附加要求：无',
+    '产品原则：read-only',
+    request.context.productPrinciples,
     `任务状态：${request.context.task.state}`,
     `优先级语义：${request.context.priorityLane}`,
     `完成标准：${request.context.completion.satisfied}/${request.context.completion.total}`,

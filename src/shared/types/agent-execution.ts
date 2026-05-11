@@ -38,6 +38,7 @@ export type AgentPolicy = {
 };
 
 export type AgentWorkingContext = {
+  productPrinciples: string;
   task: {
     id: string;
     title: string;
@@ -76,6 +77,13 @@ export type AgentWorkingContext = {
     kind: string;
     sourceType: string;
     updatedAt: string;
+    contentPreview: string | null;
+  }>;
+  taskFiles: Array<{
+    path: string;
+    kind: string;
+    updatedAt: string;
+    contentPreview: string | null;
   }>;
   processTemplates: Array<{
     id: string;

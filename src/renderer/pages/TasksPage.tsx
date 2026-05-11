@@ -1,8 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { ProjectDecompositionResult } from '@shared/types/ipc';
-import type { TaskListItemRecord, TaskRiskLevel, TaskState } from '@shared/types/task';
+import type { TaskDetail, TaskListItemRecord, TaskRiskLevel, TaskState, TimelineEventRecord, UpdateTaskInput } from '@shared/types/task';
 import type { SourceContextRecord } from '@shared/types/source-context';
+import type { ArtifactRecord } from '@shared/types/artifact';
+import type { TaskFileRecord } from '@shared/types/task-file';
 import type { DecisionRecord } from '@shared/types/decision';
+import type { RunDetailRecord, RunRecord, RunType } from '@shared/types/run';
 import { isUnconfirmedPanelCaptureRecord } from '@shared/panel-capture';
 import { selectApplicableWorkHabits as selectApplicableWorkHabitsFromList } from '@shared/work-habit-rules';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
@@ -19,12 +22,51 @@ import {
   type TaskExecutionType,
 } from '../lib/taskAttributes';
 import { getPersistedWorkHabitStorageSnapshot, type WorkHabitRecord } from '../lib/workHabits';
+import {
+  createManualArtifact,
+  deleteArtifactWorkspace,
+  mergeTaskArtifacts,
+  updateArtifactWorkspace,
+} from '../lib/artifactWorkspace';
+import {
+  createLocalTaskFile,
+  deleteLocalTaskFile,
+  loadLocalTaskFiles,
+  loadTaskFileContentOverrides,
+  updateLocalTaskFile,
+  updateTaskFileContentOverride,
+  type LocalTaskFileRecord,
+} from '../lib/taskFileWorkspace';
 
 type Lane = 'escalate' | 'unblock' | 'continue' | 'clarify' | 'steady';
 type TaskStatus = 'running' | 'waiting' | 'blocked' | 'idle' | 'done';
 type TaskType = TaskExecutionType;
 type ViewMode = 'lane' | 'list' | 'timeline';
+type TaskViewMode = 'overview' | 'run' | 'timeline';
 type CapturedTaskSummary = { id: string; title: string; type: TaskType };
+type SelectedObject = 'task-list' | 'task' | 'file';
+type VirtualTaskFile = {
+  id: string;
+  taskId: string;
+  name: string;
+  path: string;
+  kind: 'task_record' | 'records_folder' | 'source' | 'artifact' | 'local_file' | 'local_folder';
+  content: string;
+  editable: boolean;
+  sourceId?: string;
+  artifactId?: string;
+};
+type PendingFileSwitch = (() => void) | null;
+export type TaskWorkspaceSelectionContext = {
+  taskId: string | null;
+  taskTitle: string | null;
+  selectedFile: {
+    path: string;
+    kind: string;
+    dirty?: boolean;
+    contentPreview: string | null;
+  } | null;
+};
 
 interface Task {
   id: string;
@@ -59,9 +101,12 @@ const LANE_ORDER: Lane[] = ['escalate', 'unblock', 'continue', 'clarify', 'stead
 type Lens =
   | 'all'
   | 'running' | 'waiting' | 'blocked'
+  | 'needsDecision'
   | 'project' | 'scheduled' | 'event'
-  | 'committed' | 'done'
+  | 'done'
   | `project:${string}`;
+
+type ExplorerGroup = 'status' | 'type' | 'tasks' | 'files';
 
 const DEFER_OPTIONS = [
   { label: '明天', value: 'tomorrow' },
@@ -163,15 +208,38 @@ interface TasksPageProps {
   onOpenPanel: (taskId: string, draftPrompt?: string, taskTitle?: string) => void;
   onOpenWorkbench: (taskId: string) => void;
   onOpenDecision: () => void;
+  onSelectionContextChange?: (context: TaskWorkspaceSelectionContext) => void;
+  focusTaskId?: string | null;
 }
 
-export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: TasksPageProps) {
+export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSelectionContextChange, focusTaskId = null }: TasksPageProps) {
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [lens, setLens] = useState<Lens>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('lane');
+  const [taskViewMode, setTaskViewMode] = useState<TaskViewMode>('overview');
+  const [openGroups, setOpenGroups] = useState<Record<ExplorerGroup, boolean>>({
+    status: true,
+    type: true,
+    tasks: true,
+    files: true,
+  });
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedObject, setSelectedObject] = useState<SelectedObject>('task-list');
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+  const [fileDraft, setFileDraft] = useState('');
+  const [fileDirty, setFileDirty] = useState(false);
+  const [fileSearch, setFileSearch] = useState('');
+  const [fileContentOverrides, setFileContentOverrides] = useState<Record<string, string>>(() => loadTaskFileContentOverrides());
+  const [localTaskFiles, setLocalTaskFiles] = useState<Record<string, LocalTaskFileRecord[]>>(() => loadLocalTaskFiles());
+  const [pendingFileSwitch, setPendingFileSwitch] = useState<PendingFileSwitch>(null);
+  const [selectedTaskDetail, setSelectedTaskDetail] = useState<TaskDetail | null>(null);
   const [selectedSources, setSelectedSources] = useState<SourceContextRecord[]>([]);
+  const [selectedArtifacts, setSelectedArtifacts] = useState<ArtifactRecord[]>([]);
+  const [selectedRuns, setSelectedRuns] = useState<RunRecord[]>([]);
+  const [selectedRunDetail, setSelectedRunDetail] = useState<RunDetailRecord | null>(null);
+  const [runInstructions, setRunInstructions] = useState('');
+  const [startingRun, setStartingRun] = useState(false);
   const [pendingDecisions, setPendingDecisions] = useState<DecisionRecord[]>([]);
   const [deferOpenId, setDeferOpenId] = useState<string | null>(null);
   const [deferConflict, setDeferConflict] = useState<{ task: Task; option: string; count: number } | null>(null);
@@ -212,6 +280,45 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
       .catch(() => {});
   }
 
+  function reloadTaskFilesForTask(taskId: string) {
+    if (!window.api?.listTaskFiles) return;
+    window.api.listTaskFiles(taskId)
+      .then((files) => {
+        setLocalTaskFiles((current) => ({
+          ...current,
+          [taskId]: files.map(taskFileRecordToLocalRecord),
+        }));
+      })
+      .catch(() => {});
+  }
+
+  function reloadRunsForTask(taskId: string | null = selectedId) {
+    if (!taskId || !window.api?.listRuns) {
+      setSelectedRuns([]);
+      setSelectedRunDetail(null);
+      return;
+    }
+    window.api.listRuns()
+      .then((runs) => {
+        const taskRuns = runs
+          .filter((run) => run.taskId === taskId)
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+        setSelectedRuns(taskRuns);
+        const firstRunId = taskRuns[0]?.id;
+        if (!firstRunId || !window.api?.getRunDetail) {
+          setSelectedRunDetail(null);
+          return;
+        }
+        window.api.getRunDetail(firstRunId)
+          .then((detail) => setSelectedRunDetail(detail))
+          .catch(() => setSelectedRunDetail(null));
+      })
+      .catch(() => {
+        setSelectedRuns([]);
+        setSelectedRunDetail(null);
+      });
+  }
+
   // Load real tasks from backend when available
   useEffect(() => {
     if (!window.api) return;
@@ -227,7 +334,11 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
     reloadWorkHabits();
 
     const unsub = window.api.subscribeToEvents((event) => {
-      if (event.type === 'task.changed') reloadTasks();
+      if (event.type === 'task.changed') {
+        reloadTasks();
+        if (event.entityId) reloadTaskFilesForTask(event.entityId);
+      }
+      if (event.type === 'run.changed') reloadRunsForTask();
       if (event.type === 'decision.changed') reloadPendingDecisions();
     });
     return () => unsub?.();
@@ -243,10 +354,10 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
     if (lens === 'running') return t.status === 'running';
     if (lens === 'waiting') return t.status === 'waiting';
     if (lens === 'blocked') return t.status === 'blocked';
+    if (lens === 'needsDecision') return pendingDecisions.some((decision) => decision.taskId === t.id);
     if (lens === 'project') return t.type === 'project';
     if (lens === 'scheduled') return t.type === 'scheduled';
     if (lens === 'event') return t.type === 'event';
-    if (lens === 'committed') return !!t.commitment;
     if (lens === 'done') return t.status === 'done';
     if (lens.startsWith('project:')) {
       const projectId = lens.slice('project:'.length);
@@ -255,7 +366,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
     return true;
   });
 
-  const selectedTask = filtered.find((t) => t.id === selectedId) ?? null;
+  const selectedTask = allTasks.find((t) => t.id === selectedId) ?? null;
   const selectedHasDecision = Boolean(selectedTask && pendingDecisions.some((decision) => decision.taskId === selectedTask.id));
   const selectedTaskPlanningPrompt = selectedTask
     ? buildTaskPlanningPrompt(selectedTask.title, selectedTask.type, 'panel')
@@ -276,34 +387,477 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
 
   useEffect(() => {
     let cancelled = false;
+    setSelectedTaskDetail(null);
     setSelectedSources([]);
+    setSelectedArtifacts([]);
+    setSelectedRuns([]);
+    setSelectedRunDetail(null);
     if (!selectedId || !window.api?.getTaskDetail) return;
 
     window.api.getTaskDetail(selectedId)
       .then((detail) => {
         if (cancelled) return;
+        setSelectedTaskDetail(detail);
         const keySources = (detail?.sourceContexts ?? [])
-          .filter((source) => source.status === 'active' && source.isKey)
+          .filter((source) => source.status === 'active')
           .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-          .slice(0, 3);
+          .slice(0, 8);
         setSelectedSources(keySources);
+        setSelectedArtifacts(mergeTaskArtifacts(selectedId, detail?.artifacts ?? []));
       })
       .catch(() => {});
+    if (window.api.listTaskFiles) {
+      window.api.listTaskFiles(selectedId)
+        .then((files) => {
+          if (cancelled) return;
+          setLocalTaskFiles((current) => ({
+            ...current,
+            [selectedId]: files.map(taskFileRecordToLocalRecord),
+          }));
+        })
+        .catch(() => {});
+    }
+    reloadRunsForTask(selectedId);
 
     return () => { cancelled = true; };
   }, [selectedId]);
 
+  function runObjectSwitch(action: () => void) {
+    if (!fileDirty) {
+      action();
+      return;
+    }
+    setPendingFileSwitch(() => action);
+  }
+
+  async function saveFileDraft() {
+    if (!selectedFile) return;
+    const nextContent = fileDraft;
+    setFileContentOverrides((current) => ({ ...current, [selectedFile.id]: nextContent }));
+    if (selectedFile.kind === 'task_record' || selectedFile.kind === 'local_file') {
+      updateTaskFileContentOverride(selectedFile.id, nextContent);
+    }
+    if (selectedFile.kind === 'task_record' && window.api?.updateTask) {
+      const patch = parseTaskRecordPatch(nextContent);
+      if (patch.summary !== undefined || patch.nextStep !== undefined) {
+        const updated = await window.api.updateTask({
+          id: selectedFile.taskId,
+          ...patch,
+        }).catch(() => null);
+        if (updated) {
+          setAllTasks((current) => current.map((task) => (
+            task.id === selectedFile.taskId
+              ? {
+                  ...task,
+                  whyNow: updated.summary ?? undefined,
+                  nextStep: updated.nextStep ?? undefined,
+                  updatedAt: formatDate(updated.updatedAt),
+                }
+              : task
+          )));
+          setSelectedTaskDetail((current) => (
+            current?.id === selectedFile.taskId
+              ? {
+                  ...current,
+                  summary: updated.summary,
+                  nextStep: updated.nextStep,
+                  updatedAt: updated.updatedAt,
+                }
+              : current
+          ));
+        }
+      }
+      if (window.api.createTaskFile && window.api.updateTaskFile) {
+        const existingTaskRecord = (localTaskFiles[selectedFile.taskId] ?? []).find(isPersistedTaskRecordFile);
+        const persisted = existingTaskRecord
+          ? await window.api.updateTaskFile({ id: existingTaskRecord.id, content: nextContent }).catch(() => null)
+          : await window.api.createTaskFile({
+            taskId: selectedFile.taskId,
+            name: 'Task.md',
+            path: 'Task.md',
+            kind: 'file',
+            content: nextContent,
+          }).catch(() => null);
+        if (persisted) {
+          const nextFile = taskFileRecordToLocalRecord(persisted);
+          setLocalTaskFiles((current) => {
+            const withoutOld = (current[selectedFile.taskId] ?? []).filter((file) => file.id !== nextFile.id);
+            return {
+              ...current,
+              [selectedFile.taskId]: [nextFile, ...withoutOld],
+            };
+          });
+        }
+      }
+    }
+    if (selectedFile.kind === 'source' && selectedFile.sourceId && window.api?.updateSourceContext) {
+      await window.api.updateSourceContext({ id: selectedFile.sourceId, content: nextContent }).catch(() => undefined);
+    }
+    if (selectedFile.kind === 'artifact' && selectedFile.artifactId) {
+      if (window.api?.updateArtifact) {
+        const updated = await window.api.updateArtifact({ id: selectedFile.artifactId, content: nextContent }).catch(() => null);
+        if (updated) {
+          setSelectedArtifacts((current) => mergeTaskArtifacts(selectedFile.taskId, current.map((artifact) => (
+            artifact.id === updated.id ? updated : artifact
+          ))));
+        }
+      } else {
+        updateArtifactWorkspace(selectedFile.artifactId, { content: nextContent });
+      }
+    }
+    if (selectedFile.kind === 'local_file') {
+      const persisted = window.api?.updateTaskFile
+        ? await window.api.updateTaskFile({ id: selectedFile.id, content: nextContent }).catch(() => null)
+        : null;
+      if (!persisted) {
+        updateLocalTaskFile(selectedFile.taskId, selectedFile.id, { content: nextContent });
+      }
+      const nextFile: LocalTaskFileRecord = persisted
+        ? taskFileRecordToLocalRecord(persisted)
+        : { ...selectedFile, kind: 'local_file', content: nextContent, updatedAt: new Date().toISOString() };
+      setLocalTaskFiles((current) => ({
+        ...current,
+        [selectedFile.taskId]: (current[selectedFile.taskId] ?? []).map((file) => (
+          file.id === selectedFile.id ? { ...file, ...nextFile } : file
+        )),
+      }));
+    }
+    setFileDirty(false);
+  }
+
+  async function saveAndContinueSwitch() {
+    const next = pendingFileSwitch;
+    await saveFileDraft();
+    setPendingFileSwitch(null);
+    next?.();
+  }
+
+  function discardAndContinueSwitch() {
+    const next = pendingFileSwitch;
+    setFileDirty(false);
+    setFileDraft(selectedFile?.content ?? '');
+    setPendingFileSwitch(null);
+    next?.();
+  }
+
+  function selectTask(id: string | null) {
+    runObjectSwitch(() => {
+      setSelectedId(id);
+      setSelectedFileId(null);
+      setFileDirty(false);
+      setFileDraft('');
+      setSelectedObject(id ? 'task' : 'task-list');
+      setTaskViewMode('overview');
+      setDeferOpenId(null);
+    });
+  }
+
+  useEffect(() => {
+    if (!focusTaskId || focusTaskId === selectedId) return;
+    selectTask(focusTaskId);
+  }, [focusTaskId, selectedId]);
+
+  async function startTaskRun(type: RunType = 'agent') {
+    if (!selectedTask || startingRun || !window.api?.triggerRun) return;
+    setStartingRun(true);
+    try {
+      const run = await window.api.triggerRun({
+        taskId: selectedTask.id,
+        type,
+        instructions: runInstructions.trim() || undefined,
+      });
+      setRunInstructions('');
+      setSelectedRuns((current) => [run, ...current.filter((item) => item.id !== run.id)]);
+      if (window.api?.getRunDetail) {
+        const detail = await window.api.getRunDetail(run.id).catch(() => null);
+        setSelectedRunDetail(detail);
+      }
+    } finally {
+      setStartingRun(false);
+    }
+  }
+
   function handleRowClick(id: string) {
     if (clickTimer.current) clearTimeout(clickTimer.current);
     clickTimer.current = setTimeout(() => {
-      setSelectedId((prev) => (prev === id ? null : id));
-      setDeferOpenId(null);
+      selectTask(selectedId === id ? null : id);
     }, 180);
   }
 
   function handleRowDoubleClick(id: string) {
     if (clickTimer.current) clearTimeout(clickTimer.current);
     onOpenWorkbench(id);
+  }
+
+  const persistedSelectedTaskFiles = selectedTask ? localTaskFiles[selectedTask.id] ?? [] : [];
+  const persistedTaskRecord = persistedSelectedTaskFiles.find(isPersistedTaskRecordFile) ?? null;
+  const visiblePersistedTaskFiles = persistedSelectedTaskFiles.filter((file) => !isPersistedTaskRecordFile(file));
+  const taskFiles = selectedTask
+    ? applyFileOverrides([
+      ...buildVirtualTaskFiles(selectedTask, selectedSources, selectedArtifacts, persistedTaskRecord?.content),
+      ...visiblePersistedTaskFiles,
+    ], fileContentOverrides)
+    : [];
+  const selectedFile = taskFiles.find((file) => file.id === selectedFileId) ?? null;
+
+  useEffect(() => {
+    const selectedFileContext = selectedObject === 'file' && selectedFile
+      ? {
+          path: selectedFile.path,
+          kind: selectedFile.kind,
+          dirty: fileDirty,
+          contentPreview: truncateFileContext(fileDirty ? fileDraft : selectedFile.content),
+        }
+      : null;
+    onSelectionContextChange?.({
+      taskId: selectedTask?.id ?? null,
+      taskTitle: selectedTask?.title ?? null,
+      selectedFile: selectedFileContext,
+    });
+  }, [
+    fileDirty,
+    fileDraft,
+    onSelectionContextChange,
+    selectedFile?.content,
+    selectedFile?.kind,
+    selectedFile?.path,
+    selectedObject,
+    selectedTask?.id,
+    selectedTask?.title,
+  ]);
+
+  function selectTaskFile(file: VirtualTaskFile) {
+    if (file.kind === 'records_folder' || file.kind === 'local_folder') return;
+    runObjectSwitch(() => {
+      setSelectedId(file.taskId);
+      setSelectedFileId(file.id);
+      setSelectedObject('file');
+      setFileDraft(file.content);
+      setFileDirty(false);
+    });
+  }
+
+  function returnToTaskWorkspace() {
+    runObjectSwitch(() => {
+      setSelectedObject(selectedId ? 'task' : 'task-list');
+      setSelectedFileId(null);
+      setFileDraft('');
+      setFileDirty(false);
+    });
+  }
+
+  async function createTaskFile(kind: 'file' | 'folder') {
+    if (!selectedTask) return;
+    const fallbackName = kind === 'file' ? 'notes.md' : 'drafts/';
+    const rawName = window.prompt(kind === 'file' ? '新建文件名' : '新建文件夹名', fallbackName)?.trim();
+    if (!rawName) return;
+    const normalizedName = kind === 'folder' && !rawName.endsWith('/') ? `${rawName}/` : rawName;
+    const persisted = window.api?.createTaskFile
+      ? await window.api.createTaskFile({
+        taskId: selectedTask.id,
+        name: normalizedName,
+        kind,
+        content: '',
+      }).catch(() => null)
+      : null;
+    const file = persisted
+      ? taskFileRecordToLocalRecord(persisted)
+      : createLocalTaskFile({
+        taskId: selectedTask.id,
+        name: normalizedName,
+        kind: kind === 'file' ? 'local_file' : 'local_folder',
+      });
+    setLocalTaskFiles((current) => ({
+      ...current,
+      [selectedTask.id]: [file, ...(current[selectedTask.id] ?? [])],
+    }));
+    if (kind === 'file') {
+      selectTaskFile(file);
+    }
+  }
+
+  async function createTaskRecordFile() {
+    if (!selectedTask) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const fallbackName = `${today}-record.md`;
+    const rawName = window.prompt('新建任务记录', fallbackName)?.trim();
+    if (!rawName) return;
+    const normalizedName = rawName.endsWith('.md') ? rawName : `${rawName}.md`;
+    const recordPath = normalizedName.includes('/')
+      ? normalizedName
+      : `Task Records/${normalizedName}`;
+    const displayName = recordPath.split('/').filter(Boolean).at(-1) ?? normalizedName;
+    const content = [
+      `# Record: ${displayName.replace(/\.md$/i, '')}`,
+      '',
+      '## Trigger',
+      '',
+      '## Summary',
+      '',
+      '## Confirmed',
+      '',
+      '## Open',
+      '',
+      '## Next',
+      '',
+      '## Links',
+      '',
+    ].join('\n');
+    const persisted = window.api?.createTaskFile
+      ? await window.api.createTaskFile({
+        taskId: selectedTask.id,
+        name: displayName,
+        path: recordPath,
+        kind: 'file',
+        content,
+      }).catch(() => null)
+      : null;
+    const file = persisted
+      ? taskFileRecordToLocalRecord(persisted)
+      : createLocalTaskFile({
+        taskId: selectedTask.id,
+        name: displayName,
+        kind: 'local_file',
+        content,
+      });
+    const nextFile = persisted ? file : { ...file, path: recordPath };
+    setLocalTaskFiles((current) => ({
+      ...current,
+      [selectedTask.id]: [nextFile, ...(current[selectedTask.id] ?? [])],
+    }));
+    selectTaskFile(nextFile);
+  }
+
+  async function createArtifactFile() {
+    if (!selectedTask) return;
+    const title = window.prompt('新建产物文件名', 'notes.md')?.trim();
+    if (!title) return;
+    const artifact = window.api?.createManualArtifact
+      ? await window.api.createManualArtifact({ taskId: selectedTask.id, title, content: '' }).catch(() => null)
+      : null;
+    const fallbackArtifact = artifact ?? createManualArtifact({ taskId: selectedTask.id, title, content: '' });
+    setSelectedArtifacts((current) => mergeTaskArtifacts(selectedTask.id, [fallbackArtifact, ...current]));
+    const file = artifactToVirtualFile(fallbackArtifact);
+    selectTaskFile(file);
+  }
+
+  async function renameSelectedFile() {
+    if (!selectedFile) return;
+    const nextName = window.prompt('重命名', selectedFile.name)?.trim();
+    if (!nextName || nextName === selectedFile.name) return;
+    if (selectedFile.kind === 'artifact' && selectedFile.artifactId) {
+      if (window.api?.updateArtifact) {
+        const updated = await window.api.updateArtifact({ id: selectedFile.artifactId, title: nextName }).catch(() => null);
+        if (updated) {
+          setSelectedArtifacts((current) => mergeTaskArtifacts(selectedFile.taskId, current.map((artifact) => (
+            artifact.id === updated.id ? updated : artifact
+          ))));
+        }
+      } else {
+        updateArtifactWorkspace(selectedFile.artifactId, { title: nextName });
+        setSelectedArtifacts((current) => mergeTaskArtifacts(selectedFile.taskId, current));
+      }
+      return;
+    }
+    if (selectedFile.kind !== 'local_file' && selectedFile.kind !== 'local_folder') return;
+    const normalizedName = selectedFile.kind === 'local_folder' && !nextName.endsWith('/') ? `${nextName}/` : nextName;
+    const persisted = window.api?.updateTaskFile
+      ? await window.api.updateTaskFile({ id: selectedFile.id, name: normalizedName, path: normalizedName }).catch(() => null)
+      : null;
+    if (!persisted) {
+      updateLocalTaskFile(selectedFile.taskId, selectedFile.id, { name: normalizedName, path: normalizedName });
+    }
+    const nextFile: LocalTaskFileRecord = persisted
+      ? taskFileRecordToLocalRecord(persisted)
+      : {
+        ...selectedFile,
+        kind: selectedFile.kind,
+        name: normalizedName,
+        path: normalizedName,
+        updatedAt: new Date().toISOString(),
+      };
+    setLocalTaskFiles((current) => ({
+      ...current,
+      [selectedFile.taskId]: (current[selectedFile.taskId] ?? []).map((file) => (
+        file.id === selectedFile.id ? { ...file, ...nextFile } : file
+      )),
+    }));
+  }
+
+  async function moveSelectedFile() {
+    if (!selectedFile || selectedFile.kind === 'task_record' || selectedFile.kind === 'source') return;
+    const nextPath = window.prompt('移动到路径', selectedFile.path)?.trim();
+    if (!nextPath || nextPath === selectedFile.path) return;
+    const nextName = nextPath.split('/').filter(Boolean).at(-1) ?? selectedFile.name;
+    if (selectedFile.kind === 'artifact' && selectedFile.artifactId) {
+      if (window.api?.updateArtifact) {
+        const updated = await window.api.updateArtifact({ id: selectedFile.artifactId, title: nextName }).catch(() => null);
+        if (updated) {
+          setSelectedArtifacts((current) => mergeTaskArtifacts(selectedFile.taskId, current.map((artifact) => (
+            artifact.id === updated.id ? updated : artifact
+          ))));
+        }
+      } else {
+        updateArtifactWorkspace(selectedFile.artifactId, { title: nextName });
+        setSelectedArtifacts((current) => mergeTaskArtifacts(selectedFile.taskId, current));
+      }
+      return;
+    }
+    if (selectedFile.kind !== 'local_file' && selectedFile.kind !== 'local_folder') return;
+    const normalizedPath = selectedFile.kind === 'local_folder' && !nextPath.endsWith('/') ? `${nextPath}/` : nextPath;
+    const persisted = window.api?.updateTaskFile
+      ? await window.api.updateTaskFile({ id: selectedFile.id, name: nextName, path: normalizedPath }).catch(() => null)
+      : null;
+    if (!persisted) {
+      updateLocalTaskFile(selectedFile.taskId, selectedFile.id, { name: nextName, path: normalizedPath });
+    }
+    const nextFile: LocalTaskFileRecord = persisted
+      ? taskFileRecordToLocalRecord(persisted)
+      : {
+        ...selectedFile,
+        kind: selectedFile.kind,
+        name: nextName,
+        path: normalizedPath,
+        updatedAt: new Date().toISOString(),
+      };
+    setLocalTaskFiles((current) => ({
+      ...current,
+      [selectedFile.taskId]: (current[selectedFile.taskId] ?? []).map((file) => (
+        file.id === selectedFile.id ? { ...file, ...nextFile } : file
+      )),
+    }));
+  }
+
+  async function deleteSelectedFile() {
+    if (!selectedFile || selectedFile.kind === 'task_record' || selectedFile.kind === 'source') return;
+    if (!window.confirm(`删除 ${selectedFile.name}？`)) return;
+    if (selectedFile.kind === 'artifact' && selectedFile.artifactId) {
+      if (window.api?.deleteArtifact) {
+        const deleted = await window.api.deleteArtifact(selectedFile.artifactId).catch(() => null);
+        if (deleted) {
+          setSelectedArtifacts((current) => mergeTaskArtifacts(selectedFile.taskId, current.filter((artifact) => artifact.id !== deleted.id)));
+        }
+      } else {
+        deleteArtifactWorkspace(selectedFile.artifactId);
+        setSelectedArtifacts((current) => mergeTaskArtifacts(selectedFile.taskId, current));
+      }
+    }
+    if (selectedFile.kind === 'local_file' || selectedFile.kind === 'local_folder') {
+      const deleted = window.api?.deleteTaskFile
+        ? await window.api.deleteTaskFile(selectedFile.id).catch(() => null)
+        : null;
+      if (!deleted) {
+        deleteLocalTaskFile(selectedFile.taskId, selectedFile.id);
+      }
+      setLocalTaskFiles((current) => ({
+        ...current,
+        [selectedFile.taskId]: (current[selectedFile.taskId] ?? []).filter((file) => file.id !== selectedFile.id),
+      }));
+    }
+    setSelectedObject('task');
+    setSelectedFileId(null);
+    setFileDraft('');
+    setFileDirty(false);
   }
 
   function handleContextMenu(e: React.MouseEvent, taskId: string) {
@@ -313,6 +867,10 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
   }
 
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
+
+  function toggleGroup(group: ExplorerGroup) {
+    setOpenGroups((current) => ({ ...current, [group]: !current[group] }));
+  }
 
   async function transitionWithPlanningHop(task: Task, nextState: TaskState, waitingReason?: string | null) {
     if (!window.api) return;
@@ -603,73 +1161,151 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
 
   return (
     <div className="tasks-page" onClick={closeContextMenu}>
-      {/* Lenses Rail */}
-      <aside className="lenses-rail">
-        <LensItem label="全部" active={lens === 'all'} onClick={() => setLens('all')}
-          count={allTasks.length} />
-
-        <div className="lens-group-label">执行状态</div>
-        <LensItem label="Running" active={lens === 'running'} onClick={() => setLens('running')}
-          dot="running" count={allTasks.filter(t => t.status === 'running').length} />
-        <LensItem label="等待中 7d+" active={lens === 'waiting'} onClick={() => setLens('waiting')}
-          dot="waiting" count={allTasks.filter(t => t.status === 'waiting').length} />
-        <LensItem label="有风险" active={lens === 'blocked'} onClick={() => setLens('blocked')}
-          dot="risk" count={allTasks.filter(t => t.status === 'blocked').length} />
-
-        <div className="lens-group-label">任务类型</div>
-        <LensItem label="项目型" active={lens === 'project'} onClick={() => setLens('project')} icon="📁"
-          count={projectParents.length} />
-        <LensItem label="定时任务" active={lens === 'scheduled'} onClick={() => setLens('scheduled')} icon="🔁"
-          count={allTasks.filter(t => t.type === 'scheduled').length} />
-        <LensItem label="事件触发" active={lens === 'event'} onClick={() => setLens('event')} icon="⚡"
-          count={allTasks.filter(t => t.type === 'event').length} />
-
-        {projectParents.length > 0 && (
-          <>
-            <div className="lens-group-label">归属</div>
-            {projectParents.map((project) => (
-              <LensItem
-                key={project.id}
-                label={project.title}
-                active={lens === `project:${project.id}`}
-                onClick={() => setLens(`project:${project.id}`)}
-                icon="□"
-                count={allTasks.filter((task) => task.parentTaskId === project.id).length}
-              />
-            ))}
-          </>
-        )}
-
-        <div className="lens-group-label" style={{ marginTop: 'auto' }}>特殊视角</div>
-        <LensItem label="已承诺" active={lens === 'committed'} onClick={() => setLens('committed')} icon="🤝"
-          count={allTasks.filter(t => !!t.commitment).length} />
-        <LensItem label="已完成 / 归档" active={lens === 'done'} onClick={() => setLens('done')} icon="🗄"
-          count={allTasks.filter(t => t.status === 'done').length} />
-      </aside>
-
-      {/* Task list */}
-      <div className="tasks-main">
-        {/* View mode switcher */}
-        <div className="tasks-toolbar">
-          <div className="view-switcher">
-            {(['lane', 'list', 'timeline'] as ViewMode[]).map((m) => (
-              <button
-                key={m}
-                className={`view-btn${viewMode === m ? ' active' : ''}`}
-                onClick={() => setViewMode(m)}
-              >
-                {m === 'lane' ? 'Priority Lane' : m === 'list' ? '列表' : '时间线'}
-              </button>
-            ))}
-          </div>
-          <button className="btn sm primary" style={{ marginLeft: 'auto' }} onClick={() => {
+      <aside className="lenses-rail task-resource-explorer">
+        <div className="task-explorer-head">
+          <span>Tasks</span>
+          <button className="icon-btn" aria-label="+ 新建任务" title="新建任务" onClick={() => {
             setShowCapture((visible) => {
               if (visible) resetCaptureDraft();
               return !visible;
             });
-          }}>
-            + 新建任务
-          </button>
+          }}>+</button>
+        </div>
+
+        <ExplorerGroupHeader label="执行状态" open={openGroups.status} onClick={() => toggleGroup('status')} />
+        {openGroups.status && (
+          <>
+            <LensItem label="全部" active={lens === 'all'} onClick={() => setLens('all')} count={allTasks.length} />
+            <LensItem label="Running" active={lens === 'running'} onClick={() => setLens('running')}
+              dot="running" count={allTasks.filter(t => t.status === 'running').length} />
+            <LensItem label="Waiting" active={lens === 'waiting'} onClick={() => setLens('waiting')}
+              dot="waiting" count={allTasks.filter(t => t.status === 'waiting').length} />
+            <LensItem label="Blocked" active={lens === 'blocked'} onClick={() => setLens('blocked')}
+              dot="risk" count={allTasks.filter(t => t.status === 'blocked').length} />
+            <LensItem label="Needs Decision" active={lens === 'needsDecision'} onClick={() => setLens('needsDecision')} icon="?"
+              count={pendingDecisions.length} />
+            <LensItem label="Completed / Archived" active={lens === 'done'} onClick={() => setLens('done')} icon="▣"
+              count={allTasks.filter(t => t.status === 'done').length} />
+          </>
+        )}
+
+        <ExplorerGroupHeader label="任务类型" open={openGroups.type} onClick={() => toggleGroup('type')} />
+        {openGroups.type && (
+          <>
+            <LensItem label="项目型" active={lens === 'project'} onClick={() => setLens('project')} icon="▰"
+              count={projectParents.length} />
+            <LensItem label="定时任务" active={lens === 'scheduled'} onClick={() => setLens('scheduled')} icon="↻"
+              count={allTasks.filter(t => t.type === 'scheduled').length} />
+            <LensItem label="事件触发" active={lens === 'event'} onClick={() => setLens('event')} icon="⚡"
+              count={allTasks.filter(t => t.type === 'event').length} />
+          </>
+        )}
+
+        <ExplorerGroupHeader label="任务列表" open={openGroups.tasks} onClick={() => toggleGroup('tasks')} />
+        {openGroups.tasks && (
+          <div className="task-explorer-list">
+            {filtered.slice(0, 18).map((task) => (
+              <button
+                key={task.id}
+                className={`task-explorer-task${selectedId === task.id && selectedObject !== 'file' ? ' active' : ''}`}
+                onClick={() => selectTask(task.id)}
+                title={task.title}
+              >
+                <span className={`dot ${statusDot(task.status)}`} />
+                <span>↳ {task.title}</span>
+              </button>
+            ))}
+            {filtered.length === 0 && <div className="task-explorer-empty">当前筛选无任务</div>}
+          </div>
+        )}
+
+        <ExplorerGroupHeader label="任务文件" open={openGroups.files} onClick={() => toggleGroup('files')} />
+        {openGroups.files && (
+          <>
+            {selectedTask && (
+              <div className="task-file-tools">
+                <input
+                  className="task-file-search"
+                  value={fileSearch}
+                  onChange={(event) => setFileSearch(event.target.value)}
+                  placeholder="搜索文件"
+                />
+                <div className="task-file-tool-row">
+                  <button className="btn sm ghost" onClick={() => void createTaskFile('file')}>文件</button>
+                  <button className="btn sm ghost" onClick={() => void createTaskFile('folder')}>文件夹</button>
+                  <button className="btn sm ghost" onClick={() => void createTaskRecordFile()}>记录</button>
+                  <button className="btn sm ghost" onClick={createArtifactFile}>产物</button>
+                </div>
+              </div>
+            )}
+            <div className="task-file-tree">
+              {!selectedTask && <div className="task-explorer-empty">选择任务后显示文件</div>}
+              {selectedTask && taskFiles.filter((file) => (
+                !fileSearch.trim()
+                || file.path.toLowerCase().includes(fileSearch.trim().toLowerCase())
+              )).map((file) => (
+                <button
+                  key={file.id}
+                  className={`task-file-item${selectedFileId === file.id ? ' active' : ''}${file.kind === 'records_folder' || file.kind === 'local_folder' ? ' folder' : ''}`}
+                  onClick={() => selectTaskFile(file)}
+                  disabled={file.kind === 'records_folder' || file.kind === 'local_folder'}
+                  title={file.path}
+                >
+                  <span>{file.kind === 'records_folder' || file.kind === 'local_folder' ? '▸' : file.kind === 'source' ? '◇' : file.kind === 'artifact' ? '◆' : '•'}</span>
+                  <span>{file.name}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </aside>
+
+      <div className="tasks-main">
+        <div className="tasks-toolbar">
+          {selectedObject === 'file' && selectedFile ? (
+            <FileHeader
+              file={selectedFile}
+              dirty={fileDirty}
+              onBack={returnToTaskWorkspace}
+              onSave={saveFileDraft}
+              onRename={renameSelectedFile}
+              onMove={moveSelectedFile}
+              onDelete={deleteSelectedFile}
+            />
+          ) : selectedObject === 'task' && selectedTask ? (
+            <div className="view-switcher">
+              <button
+                className={`view-btn${taskViewMode === 'overview' ? ' active' : ''}`}
+                onClick={() => setTaskViewMode('overview')}
+              >
+                Overview
+              </button>
+              <button
+                className={`view-btn${taskViewMode === 'run' ? ' active' : ''}`}
+                onClick={() => setTaskViewMode('run')}
+              >
+                Run
+              </button>
+              <button
+                className={`view-btn${taskViewMode === 'timeline' ? ' active' : ''}`}
+                onClick={() => setTaskViewMode('timeline')}
+              >
+                Timeline
+              </button>
+            </div>
+          ) : (
+            <div className="view-switcher">
+              {(['lane', 'list', 'timeline'] as ViewMode[]).map((m) => (
+                <button
+                  key={m}
+                  className={`view-btn${viewMode === m ? ' active' : ''}`}
+                  onClick={() => setViewMode(m)}
+                >
+                  {m === 'lane' ? 'Default Sort' : m === 'list' ? 'All List' : 'Timeline'}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Capture form */}
@@ -714,7 +1350,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
               ))}
               <input
                 className="capture-commitment-input"
-                placeholder="已承诺时间或对象（可选）"
+                placeholder="交付备注（可选）"
                 value={captureCommitment}
                 onChange={(e) => setCaptureCommitment(e.target.value)}
               />
@@ -776,9 +1412,54 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
           </div>
         )}
 
-        {/* Task rows */}
         <div className="task-list">
-          {lens === 'project' ? (
+          {selectedObject === 'file' && selectedFile ? (
+            <FileWorkspace
+              file={selectedFile}
+              draft={fileDraft}
+              dirty={fileDirty}
+              onChange={(value) => {
+                setFileDraft(value);
+                setFileDirty(value !== selectedFile.content);
+              }}
+            />
+          ) : selectedObject === 'task' && selectedTask && taskViewMode === 'run' ? (
+            <TaskRunWorkspace
+              task={selectedTask}
+              runs={selectedRuns}
+              latestRunDetail={selectedRunDetail}
+              instructions={runInstructions}
+              starting={startingRun}
+              onInstructionsChange={setRunInstructions}
+              onStartRun={() => void startTaskRun('agent')}
+              onOpenLegacyWorkbench={() => onOpenWorkbench(selectedTask.id)}
+            />
+          ) : selectedObject === 'task' && selectedTask && taskViewMode === 'timeline' ? (
+            <TaskActivityWorkspace
+              task={selectedTask}
+              timeline={selectedTaskDetail?.timeline ?? []}
+              runs={selectedRuns}
+            />
+          ) : selectedObject === 'task' && selectedTask ? (
+            <TaskPreview
+              task={selectedTask}
+              keySources={selectedSources.slice(0, 3)}
+              hasPendingDecision={selectedHasDecision}
+              planningLabel={selectedTaskPlanningPrompt?.label ?? '规划讨论'}
+              onOpenPanel={() => {
+                if (!selectedTaskPlanningPrompt) return;
+                onOpenPanel(selectedTask.id, selectedTaskPlanningPrompt.prompt, selectedTask.title);
+              }}
+              onOpenWorkbench={() => setTaskViewMode('run')}
+              onOpenDecision={onOpenDecision}
+              deferOpen={deferOpenId === selectedTask.id}
+              onDeferToggle={() => setDeferOpenId((prev) => (prev === selectedTask.id ? null : selectedTask.id))}
+              onDeferSelect={(option) => deferTask(selectedTask, option)}
+              onComplete={() => setCompletionCheckTask(selectedTask)}
+              onMore={(event) => handleContextMenu(event, selectedTask.id)}
+              onResolveDependency={() => resolveReadyDependency(selectedTask)}
+            />
+          ) : lens === 'project' ? (
             <ProjectTreeView
               projects={projectParents}
               tasks={allTasks}
@@ -860,34 +1541,16 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
               />
             ))
           )}
-          {filtered.length === 0 && !loading && (
+          {selectedObject === 'task-list' && filtered.length === 0 && !loading && (
             <div className="tasks-empty">
               {allTasks.length === 0
-                ? <><p>还没有任何任务。</p><p className="muted" style={{ marginTop: 4, fontSize: 12 }}>点击「新建任务」开始捕获你的第一个任务。</p></>
+                ? <><p>还没有任何任务。</p><p className="muted" style={{ marginTop: 4, fontSize: 12 }}>点击左侧「+」开始捕获你的第一个任务。</p></>
                 : <p>当前视角下没有任务。</p>
               }
             </div>
           )}
         </div>
       </div>
-
-      {/* Right preview panel */}
-      {selectedTask && (
-        <div className="task-preview">
-          <TaskPreview
-            task={selectedTask}
-            keySources={selectedSources}
-            hasPendingDecision={selectedHasDecision}
-            planningLabel={selectedTaskPlanningPrompt?.label ?? '规划讨论'}
-            onOpenPanel={() => {
-              if (!selectedTaskPlanningPrompt) return;
-              onOpenPanel(selectedTask.id, selectedTaskPlanningPrompt.prompt, selectedTask.title);
-            }}
-            onOpenWorkbench={() => onOpenWorkbench(selectedTask.id)}
-            onOpenDecision={onOpenDecision}
-          />
-        </div>
-      )}
 
       {/* Context menu */}
       {contextMenu && (
@@ -966,8 +1629,409 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision }: Task
           }}
         />
       )}
+
+      {pendingFileSwitch && (
+        <div className="modal-backdrop" onClick={() => setPendingFileSwitch(null)}>
+          <div className="modal" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-head">
+              <h3>文件有未保存修改</h3>
+            </div>
+            <div className="modal-body">
+              <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6 }}>
+                先保存、放弃修改，或取消本次切换。
+              </p>
+            </div>
+            <div className="modal-foot">
+              <button className="btn sm" onClick={() => setPendingFileSwitch(null)}>取消</button>
+              <button className="btn sm ghost" onClick={discardAndContinueSwitch}>放弃修改</button>
+              <button className="btn sm primary" onClick={() => void saveAndContinueSwitch()}>保存并继续</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function buildVirtualTaskFiles(
+  task: Task,
+  sources: SourceContextRecord[],
+  artifacts: ArtifactRecord[],
+  persistedTaskRecordContent?: string,
+): VirtualTaskFile[] {
+  const taskRecord = persistedTaskRecordContent ?? [
+    '# Task',
+    '',
+    '## Goal',
+    task.title,
+    '',
+    '## Current Progress',
+    task.whyNow ?? 'No summary recorded yet.',
+    '',
+    '## Key Context',
+    sources.length ? sources.map((source) => `- ${source.title}${source.note ? `: ${source.note}` : ''}`).join('\n') : 'No key files or sources linked yet.',
+    '',
+    '## Decisions',
+    'No durable decisions recorded in this task file yet.',
+    '',
+    '## Constraints',
+    task.waitingOn ?? 'No active constraint recorded.',
+    '',
+    '## Open Questions',
+    'No open questions recorded yet.',
+    '',
+    '## Next Step',
+    task.nextStep ?? 'Clarify the next step.',
+    '',
+    '## Important Files',
+    sources.length ? sources.map((source) => `- ${source.title}`).join('\n') : 'No important files linked yet.',
+    '',
+    '## Recent Records',
+    'Task Records/ is ready for durable handoffs and milestone notes.',
+    '',
+  ].join('\n');
+
+  return [
+    {
+      id: `${task.id}:task-md`,
+      taskId: task.id,
+      name: 'Task.md',
+      path: 'Task.md',
+      kind: 'task_record',
+      content: taskRecord,
+      editable: true,
+    },
+    {
+      id: `${task.id}:records`,
+      taskId: task.id,
+      name: 'Task Records/',
+      path: 'Task Records/',
+      kind: 'records_folder',
+      content: '',
+      editable: false,
+    },
+    ...sources.map((source) => sourceToVirtualFile(task.id, source)),
+    ...artifacts.map(artifactToVirtualFile),
+  ];
+}
+
+function parseTaskRecordPatch(content: string): Pick<UpdateTaskInput, 'summary' | 'nextStep'> {
+  const summary = normalizeTaskRecordSection(readMarkdownSection(content, 'Current Progress'), [
+    'No summary recorded yet.',
+  ]);
+  const nextStep = normalizeTaskRecordSection(readMarkdownSection(content, 'Next Step'), [
+    'Clarify the next step.',
+  ]);
+  const patch: Pick<UpdateTaskInput, 'summary' | 'nextStep'> = {};
+  if (summary !== undefined) patch.summary = summary;
+  if (nextStep !== undefined) patch.nextStep = nextStep;
+  return patch;
+}
+
+function readMarkdownSection(content: string, heading: string): string | undefined {
+  const expectedHeading = `## ${heading.toLowerCase()}`;
+  const lines = content.replace(/\r\n/g, '\n').split('\n');
+  const start = lines.findIndex((line) => line.trim().toLowerCase() === expectedHeading);
+  if (start === -1) return undefined;
+
+  const section: string[] = [];
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index] ?? '';
+    if (/^##\s+/.test(line.trim())) break;
+    section.push(line);
+  }
+  return section.join('\n').trim();
+}
+
+function normalizeTaskRecordSection(value: string | undefined, placeholders: string[]): string | null | undefined {
+  if (value === undefined) return undefined;
+  const normalized = value.trim();
+  if (!normalized || placeholders.includes(normalized)) return null;
+  return normalized;
+}
+
+function artifactToVirtualFile(artifact: ArtifactRecord): VirtualTaskFile {
+  return {
+    id: `${artifact.taskId}:artifact:${artifact.id}`,
+    taskId: artifact.taskId,
+    name: artifact.title,
+    path: `Artifacts/${artifact.title}`,
+    kind: 'artifact',
+    artifactId: artifact.id,
+    content: artifact.content,
+    editable: artifact.kind === 'note' || artifact.title.endsWith('.md') || artifact.title.endsWith('.txt'),
+  };
+}
+
+function applyFileOverrides(files: VirtualTaskFile[], overrides: Record<string, string>): VirtualTaskFile[] {
+  return files.map((file) => overrides[file.id] == null ? file : { ...file, content: overrides[file.id] });
+}
+
+function taskFileRecordToLocalRecord(record: TaskFileRecord): LocalTaskFileRecord {
+  return {
+    id: record.id,
+    taskId: record.taskId,
+    name: record.name,
+    path: record.path,
+    kind: record.kind === 'folder' ? 'local_folder' : 'local_file',
+    content: record.content,
+    editable: record.kind === 'file',
+    updatedAt: record.updatedAt,
+  };
+}
+
+function isPersistedTaskRecordFile(file: LocalTaskFileRecord): boolean {
+  return file.path === 'Task.md';
+}
+
+function truncateFileContext(value: string, limit = 1600): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.length > limit ? `${trimmed.slice(0, limit)}...` : trimmed;
+}
+
+function sourceToVirtualFile(taskId: string, source: SourceContextRecord): VirtualTaskFile {
+  const isTaskRecord = source.title === '会话刷新前保全'
+    || source.title === '阶段收尾记录'
+    || source.note?.startsWith('任务记录：');
+  return {
+    id: `${taskId}:source:${source.id}`,
+    taskId,
+    name: `${source.title}.md`,
+    path: isTaskRecord ? `Task Records/${source.title}.md` : `Sources/${source.title}.md`,
+    kind: 'source',
+    sourceId: source.id,
+    content: [
+      `# ${source.title}`,
+      '',
+      source.uri ? `URI: ${source.uri}` : null,
+      source.note ? `Note: ${source.note}` : null,
+      '',
+      source.content ?? 'No content captured for this source yet.',
+      '',
+    ].filter(Boolean).join('\n'),
+    editable: true,
+  };
+}
+
+function FileHeader({
+  file,
+  dirty,
+  onBack,
+  onSave,
+  onRename,
+  onMove,
+  onDelete,
+}: {
+  file: VirtualTaskFile;
+  dirty: boolean;
+  onBack: () => void;
+  onSave: () => void | Promise<void>;
+  onRename: () => void;
+  onMove: () => void;
+  onDelete: () => void;
+}) {
+  const immutableFile = file.kind === 'task_record' || file.kind === 'source';
+  return (
+    <div className="file-workspace-header">
+      <button className="btn sm ghost" onClick={onBack}>返回任务</button>
+      <div className="file-tab active">
+        <span>{file.name}</span>
+        {dirty && <span className="file-dirty">•</span>}
+      </div>
+      <span className="file-path">{file.path}</span>
+      <button className="btn sm ghost" onClick={onRename} disabled={immutableFile}>重命名</button>
+      <button className="btn sm ghost" onClick={onMove} disabled={immutableFile}>移动</button>
+      <button className="btn sm ghost" onClick={onDelete} disabled={immutableFile}>删除</button>
+      <button className="btn sm primary" onClick={() => void onSave()} disabled={!dirty}>保存</button>
+    </div>
+  );
+}
+
+function ExplorerGroupHeader({
+  label,
+  open,
+  onClick,
+}: {
+  label: string;
+  open: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button className="lens-group-toggle" onClick={onClick} aria-expanded={open}>
+      <span>{open ? '▾' : '▸'}</span>
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function FileWorkspace({
+  file,
+  draft,
+  dirty,
+  onChange,
+}: {
+  file: VirtualTaskFile;
+  draft: string;
+  dirty: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="file-workspace">
+      <div className="file-workspace-meta">
+        <span>{file.kind === 'task_record' ? 'Primary task record' : file.kind === 'source' ? 'Projected source context' : file.kind === 'artifact' ? 'Projected artifact' : 'Task file'}</span>
+        <span>{file.editable ? (dirty ? 'Unsaved changes' : 'Saved') : 'Read-only preview'}</span>
+      </div>
+      {!file.editable && (
+        <div className="file-readonly-note">
+          此文件当前仅支持只读预览；非文本或受保护文件不会在 v1 中强制内联编辑。
+        </div>
+      )}
+      <textarea
+        className="file-editor"
+        value={draft}
+        onChange={(event) => onChange(event.target.value)}
+        readOnly={!file.editable}
+        spellCheck={false}
+      />
+    </div>
+  );
+}
+
+function TaskRunWorkspace({
+  task,
+  runs,
+  latestRunDetail,
+  instructions,
+  starting,
+  onInstructionsChange,
+  onStartRun,
+  onOpenLegacyWorkbench,
+}: {
+  task: Task;
+  runs: RunRecord[];
+  latestRunDetail: RunDetailRecord | null;
+  instructions: string;
+  starting: boolean;
+  onInstructionsChange: (value: string) => void;
+  onStartRun: () => void;
+  onOpenLegacyWorkbench: () => void;
+}) {
+  const latest = latestRunDetail ?? runs[0] ?? null;
+  const latestSteps = latestRunDetail?.steps ?? [];
+
+  return (
+    <div className="task-run-workspace">
+      <div className="task-run-head">
+        <div>
+          <span className="preview-label">任务执行</span>
+          <h3>{task.title}</h3>
+          <p>Run 记录保留在当前任务下，右侧 AI 面板负责讨论，结构化执行过程在这里查看和启动。</p>
+        </div>
+        <button className="btn sm ghost" onClick={onOpenLegacyWorkbench}>打开完整工作台</button>
+      </div>
+
+      <div className="task-run-launch">
+        <textarea
+          value={instructions}
+          onChange={(event) => onInstructionsChange(event.target.value)}
+          placeholder="给 AI 的执行指令，留空则按任务上下文生成下一步"
+          rows={3}
+        />
+        <button className={`btn primary${starting ? ' disabled' : ''}`} onClick={onStartRun} disabled={starting}>
+          {starting ? '启动中...' : '启动 Run'}
+        </button>
+      </div>
+
+      <div className="task-run-grid">
+        <div className="task-run-panel">
+          <div className="task-run-panel-title">最近 Run</div>
+          {runs.length === 0 ? (
+            <p className="muted">暂无执行记录。可以先启动一轮 Run，或在右侧面板继续讨论方案。</p>
+          ) : (
+            <div className="task-run-list">
+              {runs.slice(0, 6).map((run) => (
+                <div key={run.id} className={`task-run-item${run.id === latest?.id ? ' active' : ''}`}>
+                  <div>
+                    <strong>{run.type === 'agent' ? 'Agent Run' : run.type}</strong>
+                    <span>{run.instructions ?? '按任务上下文推进'}</span>
+                  </div>
+                  <small>{run.status} · {formatIsoDate(run.updatedAt)}</small>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="task-run-panel">
+          <div className="task-run-panel-title">执行步骤</div>
+          {latestSteps.length === 0 ? (
+            <p className="muted">最近 Run 暂无步骤详情。完整执行证据仍可从旧工作台查看。</p>
+          ) : (
+            <div className="task-run-step-list">
+              {latestSteps.slice(0, 8).map((step) => (
+                <div key={step.id} className="task-run-step">
+                  <span className={`dot ${step.status === 'failed' ? 'risk' : step.status === 'completed' ? 'completed' : 'running'}`} />
+                  <div>
+                    <strong>{step.title}</strong>
+                    <small>{step.kind} · {step.status}</small>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TaskActivityWorkspace({
+  task,
+  timeline,
+  runs,
+}: {
+  task: Task;
+  timeline: TimelineEventRecord[];
+  runs: RunRecord[];
+}) {
+  const ordered = [...timeline].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  return (
+    <div className="task-activity-workspace">
+      <div className="task-run-head">
+        <div>
+          <span className="preview-label">任务时间线</span>
+          <h3>{task.title}</h3>
+          <p>这里显示当前任务的活动记录。跨任务时间线仍在任务列表的 Timeline 视角查看。</p>
+        </div>
+        <span className="tag">{runs.length} Runs</span>
+      </div>
+      {ordered.length === 0 ? (
+        <div className="tasks-empty">
+          <p>当前任务还没有活动记录。</p>
+        </div>
+      ) : (
+        <div className="task-activity-list">
+          {ordered.map((event) => (
+            <div key={event.id} className="task-activity-item">
+              <span>{formatIsoDate(event.createdAt)}</span>
+              <div>
+                <strong>{event.type}</strong>
+                {event.payload && <p>{event.payload}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatIsoDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
 /* ─── Timeline view ─── */
@@ -1343,9 +2407,29 @@ interface TaskPreviewProps {
   onOpenPanel: () => void;
   onOpenWorkbench: () => void;
   onOpenDecision: () => void;
+  deferOpen: boolean;
+  onDeferToggle: () => void;
+  onDeferSelect: (opt: string) => void;
+  onComplete: () => void;
+  onMore: (event: React.MouseEvent) => void;
+  onResolveDependency: () => void;
 }
 
-function TaskPreview({ task, keySources, hasPendingDecision, planningLabel, onOpenPanel, onOpenWorkbench, onOpenDecision }: TaskPreviewProps) {
+function TaskPreview({
+  task,
+  keySources,
+  hasPendingDecision,
+  planningLabel,
+  onOpenPanel,
+  onOpenWorkbench,
+  onOpenDecision,
+  deferOpen,
+  onDeferToggle,
+  onDeferSelect,
+  onComplete,
+  onMore,
+  onResolveDependency,
+}: TaskPreviewProps) {
   return (
     <div className="task-preview-inner">
       <div className="task-preview-head">
@@ -1408,7 +2492,7 @@ function TaskPreview({ task, keySources, hasPendingDecision, planningLabel, onOp
 
       {task.commitment && (
         <div className="preview-section">
-          <div className="preview-label">已承诺</div>
+          <div className="preview-label">交付备注</div>
           <div className="preview-chip">
             <span>🤝</span>
             <span style={{ marginLeft: 4 }}>{task.commitment}</span>
@@ -1429,6 +2513,26 @@ function TaskPreview({ task, keySources, hasPendingDecision, planningLabel, onOp
           <p className="preview-config-note">预览只展示最近更新的 3 条关键来源；完整来源在任务工作台管理。</p>
         </div>
       )}
+
+      <div className="preview-task-actions">
+        {task.dependencyReady && task.dependencyId && (
+          <button className="btn sm" onClick={onResolveDependency}>解除依赖</button>
+        )}
+        <div className="preview-defer-action">
+          <button className="btn sm ghost" onClick={onDeferToggle}>延后 ▾</button>
+          {deferOpen && (
+            <div className="defer-menu">
+              {DEFER_OPTIONS.map((opt) => (
+                <button key={opt.value} className="defer-option" onClick={() => onDeferSelect(opt.value)}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <button className="btn sm" onClick={onComplete}>完成</button>
+        <button className="btn sm ghost" onClick={onMore} style={{ padding: '3px 6px' }}>⋯</button>
+      </div>
 
       <div className="preview-actions">
         <button className="btn ghost" onClick={onOpenPanel}>

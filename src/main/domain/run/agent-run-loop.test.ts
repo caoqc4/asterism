@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { AgentRunRequest, AgentSessionEvent } from '../../../shared/types/agent-execution.js';
 import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
+import { TASKPLANE_AGENT_PRINCIPLES } from '../../../shared/agent-principles.js';
 import { normalizeProviderNativeToolCalls } from '../../../shared/provider-native-tool-call-adapter.js';
 import { AgentRunLoop } from './agent-run-loop.js';
 
@@ -68,6 +69,7 @@ function buildRequest(): AgentRunRequest {
     mode: 'agent',
     applicableWorkHabits: [],
     context: {
+      productPrinciples: TASKPLANE_AGENT_PRINCIPLES,
       task: {
         id: 'task_1',
         title: 'Task 1',

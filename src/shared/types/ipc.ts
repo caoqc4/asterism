@@ -12,6 +12,12 @@ export type ChatInput = {
   messages: ChatMessage[];
   taskId?: string | null;
   workHabits?: string[];
+  selectedFile?: {
+    path: string;
+    kind: string;
+    dirty?: boolean;
+    contentPreview: string | null;
+  } | null;
 };
 
 export type ChatResponse = {
@@ -62,6 +68,16 @@ import type {
   DraftDecisionInput,
 } from './decision.js';
 import type { AppEvent } from './events.js';
+import type {
+  ArtifactRecord,
+  CreateManualArtifactInput,
+  UpdateArtifactInput,
+} from './artifact.js';
+import type {
+  CreateTaskFileInput,
+  TaskFileRecord,
+  UpdateTaskFileInput,
+} from './task-file.js';
 import type {
   AppliedProcessTemplateRecord,
   ApplyProcessTemplateInput,
@@ -138,6 +154,13 @@ export type ElectronApi = {
   createSourceContext: (input: CreateSourceContextInput) => Promise<SourceContextRecord>;
   updateSourceContext: (input: UpdateSourceContextInput) => Promise<SourceContextRecord>;
   archiveSourceContext: (id: string) => Promise<SourceContextRecord>;
+  createManualArtifact: (input: CreateManualArtifactInput) => Promise<ArtifactRecord>;
+  updateArtifact: (input: UpdateArtifactInput) => Promise<ArtifactRecord>;
+  deleteArtifact: (id: string) => Promise<ArtifactRecord>;
+  listTaskFiles: (taskId: string) => Promise<TaskFileRecord[]>;
+  createTaskFile: (input: CreateTaskFileInput) => Promise<TaskFileRecord>;
+  updateTaskFile: (input: UpdateTaskFileInput) => Promise<TaskFileRecord>;
+  deleteTaskFile: (id: string) => Promise<TaskFileRecord>;
   createProcessTemplate: (input: CreateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
   updateProcessTemplate: (input: UpdateProcessTemplateInput) => Promise<ProcessTemplateRecord>;
   archiveProcessTemplate: (id: string) => Promise<ProcessTemplateRecord>;

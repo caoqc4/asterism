@@ -5,11 +5,13 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { AgentPolicy, AgentWorkingContext } from '../../../shared/types/agent-execution.js';
 import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
+import { TASKPLANE_AGENT_PRINCIPLES } from '../../../shared/agent-principles.js';
 import { makeTempDir } from '../../test-utils.js';
 import { AgentToolRegistry } from './agent-tool-registry.js';
 
 function buildWorkingContext(): AgentWorkingContext {
   return {
+    productPrinciples: TASKPLANE_AGENT_PRINCIPLES,
     task: {
       id: 'task_1',
       title: 'Inspect agent context',
@@ -44,6 +46,7 @@ function buildWorkingContext(): AgentWorkingContext {
         kind: 'note',
         sourceType: 'run',
         updatedAt: '2026-01-01T02:00:00.000Z',
+        contentPreview: 'Artifact note content',
       },
     ],
     processTemplates: [
@@ -1505,6 +1508,56 @@ describe('AgentToolRegistry', () => {
           input: expect.stringContaining('Files: notes.md'),
         }),
       );
+    } finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects workspace patches that try to modify product Agent principles', async () => {
+    const tempRoot = makeTempDir('taskplane-agent-principles-write-guard-');
+
+    try {
+      fs.mkdirSync(path.join(tempRoot, 'src/shared'), { recursive: true });
+      fs.writeFileSync(path.join(tempRoot, 'src/shared/agent-principles.ts'), 'export const value = 1;\n');
+      const runStepRepository = buildRunStepRepositoryMock();
+      const registry = new AgentToolRegistry(
+        {} as never,
+        runStepRepository as never,
+        undefined,
+        null,
+        () => tempRoot,
+      );
+
+      const result = await registry.execute(
+        'workspace.write_patch',
+        {
+          summary: 'Change product principles',
+          expectedFiles: ['src/shared/agent-principles.ts'],
+          patch: [
+            '*** Begin Patch',
+            '*** Update File: src/shared/agent-principles.ts',
+            '@@',
+            '-export const value = 1;',
+            '+export const value = 2;',
+            '*** End Patch',
+          ].join('\n'),
+        },
+        { runId: 'run_1', taskId: 'task_1' },
+        {
+          maxSteps: 8,
+          maxWallTimeMs: 120_000,
+          allowNetwork: false,
+          allowLocalWorkspaceRead: false,
+          allowLocalFileWrite: true,
+          confirmationRequiredRisks: [],
+        },
+      );
+
+      expect(result).toMatchObject({
+        success: false,
+        error: 'workspace.write_patch cannot modify read-only product principles: src/shared/agent-principles.ts',
+      });
+      expect(fs.readFileSync(path.join(tempRoot, 'src/shared/agent-principles.ts'), 'utf8')).toBe('export const value = 1;\n');
     } finally {
       fs.rmSync(tempRoot, { recursive: true, force: true });
     }

@@ -12,6 +12,7 @@ import {
 import { buildTaskPlanningPrompt, getTaskAttributes, type TaskExecutionType } from '../lib/taskAttributes';
 
 type MessageRole = 'user' | 'assistant';
+type ContextStrategy = 'auto' | 'manual' | 'reminder';
 
 interface Message {
   id: string;
@@ -23,6 +24,16 @@ interface Message {
 interface PendingCtxSwitch {
   taskId: string;
   taskTitle: string;
+}
+
+interface ManualRefreshReady {
+  taskName: string | null;
+}
+
+interface TaskFileWriteProposal {
+  path: string;
+  summary: string;
+  content: string;
 }
 
 function taskTitle(taskId: string | null, cache: Record<string, string>): string | null {
@@ -71,6 +82,15 @@ const USER_CORRECTION_PATTERNS = [
   /改成/,
   /别.*要/,
   /不要.*要/,
+];
+const GENERIC_HANDOFF_PATTERNS = [
+  /^下一步怎么推进$/,
+  /^怎么推进$/,
+  /^总结一下现在的状态$/,
+  /^有什么风险需要注意$/,
+  /^先看风险$/,
+  /^再看来源$/,
+  /^最后看下一步$/,
 ];
 
 function buildTaskTypeReviewPrompt(taskName: string): string {
@@ -152,13 +172,12 @@ async function preserveSessionRefreshMemory(params: {
   taskId: string;
   taskTitle: string;
   messages: Message[];
-}): Promise<void> {
-  if (!window.api?.createSourceContext) return;
+}): Promise<boolean> {
   const userMessages = params.messages
     .filter((message) => message.role === 'user')
     .map((message) => message.text.trim())
     .filter(Boolean);
-  if (userMessages.length === 0) return;
+  if (userMessages.length === 0 || !hasSpecificHandoffSignal(userMessages)) return false;
 
   const recentFocus = userMessages.slice(-3).map((message) => truncateMemoryLine(message));
   const preferenceSignals = userMessages
@@ -166,40 +185,311 @@ async function preserveSessionRefreshMemory(params: {
     .slice(-2)
     .map((message) => truncateMemoryLine(message));
   const lastQuestion = recentFocus.at(-1) ?? '暂无';
+  const content = [
+    '# Record: 会话刷新前保全',
+    '',
+    '## Trigger',
+    '刷新任务会话前，AI 判断当前讨论包含足够具体的可恢复信号。',
+    '',
+    '## Summary',
+    `任务：${params.taskTitle}`,
+    `用户消息数：${userMessages.length}`,
+    `最近关注：${recentFocus.join(' / ')}`,
+    '',
+    '## Confirmed',
+    `- 偏好变化候选：${preferenceSignals.length ? preferenceSignals.join(' / ') : '暂无明显候选'}`,
+    '',
+    '## Open',
+    `- 未解决问题候选：${lastQuestion}`,
+    '',
+    '## Next',
+    '- 刷新后继续围绕当前任务推进，避免依赖长聊天窗口恢复上下文。',
+    '',
+    '## Links',
+    '- 用途：刷新会话前的保全式学习提取，只保存精选信号，不保存完整聊天全文。',
+  ].join('\n');
 
-  await window.api.createSourceContext({
+  const sourceWritten = window.api?.createSourceContext
+    ? await window.api.createSourceContext({
+      taskId: params.taskId,
+      title: '会话刷新前保全',
+      kind: 'note',
+      isKey: false,
+      content,
+      note: '自学习观察：会话刷新前保全关键决策、偏好变化和未解决问题。',
+    }).then(() => true).catch(() => false)
+    : false;
+  const fileWritten = await writeTaskRecordFile({
     taskId: params.taskId,
-    title: '会话刷新前保全',
+    title: 'context-refresh-handoff',
+    content,
+  });
+  return sourceWritten || fileWritten;
+}
+
+function hasSpecificHandoffSignal(userMessages: string[]): boolean {
+  const recent = userMessages.slice(-5).map((message) => truncateMemoryLine(message, 160));
+  const normalized = recent
+    .map(normalizeUserMessage)
+    .filter(Boolean)
+    .filter((message) => !GENERIC_HANDOFF_PATTERNS.some((pattern) => pattern.test(message)));
+  const unique = new Set(normalized);
+  const combined = recent.join(' ');
+
+  return unique.size >= 2
+    || combined.length >= 48
+    || /[A-Za-z]{3,}|[0-9]|\.md|\.ts|\.tsx|Playwright|MCP|API|RAG|任务拆解|验收|实现|优化文档/.test(combined);
+}
+
+async function preservePhaseCloseoutRecord(params: {
+  taskId: string;
+  taskTitle: string;
+  messages: Message[];
+}): Promise<void> {
+  const meaningfulMessages = params.messages
+    .filter((message) => message.role === 'user' || message.role === 'assistant')
+    .map((message) => ({
+      role: message.role,
+      text: truncateMemoryLine(message.text, 120),
+    }))
+    .filter((message) => message.text);
+  if (meaningfulMessages.length === 0) return;
+
+  const userMessages = meaningfulMessages.filter((message) => message.role === 'user');
+  const assistantMessages = meaningfulMessages.filter((message) => message.role === 'assistant');
+  const confirmed = userMessages.slice(-3).map((message) => `- ${message.text}`);
+  const open = userMessages
+    .filter((message) => /？|\?|怎么|是否|需要|风险|下一步/.test(message.text))
+    .slice(-3)
+    .map((message) => `- ${message.text}`);
+  const next = assistantMessages.slice(-2).map((message) => `- ${message.text}`);
+  const content = [
+    '# Record: 阶段收尾',
+    '',
+    '## Trigger',
+    '用户或 AI 判断当前任务讨论已形成可持久化阶段记录。',
+    '',
+    '## Summary',
+    `任务：${params.taskTitle}`,
+    `消息数：${meaningfulMessages.length}`,
+    '',
+    '## Confirmed',
+    confirmed.length ? confirmed.join('\n') : '- 暂无明确确认项。',
+    '',
+    '## Open',
+    open.length ? open.join('\n') : '- 暂无明确未解决问题。',
+    '',
+    '## Next',
+    next.length ? next.join('\n') : '- 可继续拆解下一步执行任务、实现任务和验收任务。',
+    '',
+    '## Links',
+    '- 来自右侧任务讨论面板的阶段收尾动作。',
+  ].join('\n');
+
+  await window.api?.createSourceContext?.({
+    taskId: params.taskId,
+    title: '阶段收尾记录',
     kind: 'note',
     isKey: false,
-    content: [
-      `任务：${params.taskTitle}`,
-      `用户消息数：${userMessages.length}`,
-      `最近关注：${recentFocus.join(' / ')}`,
-      `偏好变化候选：${preferenceSignals.length ? preferenceSignals.join(' / ') : '暂无明显候选'}`,
-      `未解决问题候选：${lastQuestion}`,
-      '用途：刷新会话前的保全式学习提取，只保存精选信号，不保存完整聊天全文。',
-    ].join('\n'),
-    note: '自学习观察：会话刷新前保全关键决策、偏好变化和未解决问题。',
+    content,
+    note: '任务记录：阶段收尾、后续拆解和执行交接。',
+  }).catch(() => undefined);
+  await writeTaskRecordFile({
+    taskId: params.taskId,
+    title: 'phase-closeout',
+    content,
+  });
+}
+
+function truncateMemoryLine(value: string, limit = 80): string {
+  const singleLine = value.replace(/\s+/g, ' ').trim();
+  return singleLine.length > limit ? `${singleLine.slice(0, limit)}...` : singleLine;
+}
+
+function slugFilePart(value: string): string {
+  const ascii = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return ascii.slice(0, 36) || 'task';
+}
+
+function normalizeTaskFilePath(value: string): string {
+  return value
+    .replace(/\\/g, '/')
+    .split('/')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join('/');
+}
+
+function buildTaskFileWriteProposal(params: {
+  taskTitle: string;
+  messages: Message[];
+  selectedFilePath?: string | null;
+}): TaskFileWriteProposal {
+  const today = new Date().toISOString().slice(0, 10);
+  const recent = params.messages
+    .filter((message) => message.role === 'user' || message.role === 'assistant')
+    .filter((message) => message.id !== 'm0')
+    .slice(-8);
+  const userFocus = recent
+    .filter((message) => message.role === 'user')
+    .slice(-3)
+    .map((message) => truncateMemoryLine(message.text, 120));
+  const path = `${today}-${slugFilePart(params.taskTitle)}-discussion.md`;
+  const content = [
+    `# ${params.taskTitle} Discussion Notes`,
+    '',
+    '## Source',
+    '- Created from the right-panel task discussion after user confirmation.',
+    params.selectedFilePath ? `- Selected file context: ${params.selectedFilePath}` : null,
+    '',
+    '## Summary',
+    userFocus.length ? userFocus.map((item) => `- ${item}`).join('\n') : '- No focused user message captured yet.',
+    '',
+    '## Conversation Notes',
+    ...recent.map((message) => `- ${message.role === 'user' ? 'User' : 'AI'}: ${truncateMemoryLine(message.text, 180)}`),
+    '',
+    '## Next',
+    '- Review this draft and decide whether it should become a task record, working document, or implementation input.',
+    '',
+  ].filter((line): line is string => line !== null).join('\n');
+  return {
+    path,
+    summary: userFocus[0] ?? '从当前任务讨论生成 Markdown 草稿。',
+    content,
+  };
+}
+
+function buildMinimalTaskRecord(taskName: string, importantFilePath: string): string {
+  return [
+    '# Task',
+    '',
+    '## Goal',
+    taskName,
+    '',
+    '## Current Progress',
+    'No summary recorded yet.',
+    '',
+    '## Key Context',
+    'No key files or sources linked yet.',
+    '',
+    '## Decisions',
+    'No durable decisions recorded in this task file yet.',
+    '',
+    '## Constraints',
+    'No active constraint recorded.',
+    '',
+    '## Open Questions',
+    'No open questions recorded yet.',
+    '',
+    '## Next Step',
+    'Clarify the next step.',
+    '',
+    '## Important Files',
+    `- ${importantFilePath}`,
+    '',
+    '## Recent Records',
+    'Task Records/ is ready for durable handoffs and milestone notes.',
+    '',
+  ].join('\n');
+}
+
+function appendImportantFileToTaskRecord(content: string, filePath: string): string {
+  if (content.includes(filePath)) return content;
+  const marker = '## Important Files';
+  const lines = content.replace(/\r\n/g, '\n').split('\n');
+  const start = lines.findIndex((line) => line.trim() === marker);
+  if (start === -1) {
+    return [
+      content.trimEnd(),
+      '',
+      marker,
+      `- ${filePath}`,
+      '',
+    ].join('\n');
+  }
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^##\s+/.test(lines[index]?.trim() ?? '')) {
+      end = index;
+      break;
+    }
+  }
+  const before = lines.slice(0, end);
+  const after = lines.slice(end);
+  const existingSection = lines.slice(start + 1, end).map((line) => line.trim()).filter(Boolean);
+  const placeholders = new Set(['No important files linked yet.', '暂无']);
+  const cleanedBefore = placeholders.has(existingSection.join('\n'))
+    ? lines.slice(0, start + 1)
+    : before;
+  return [
+    ...cleanedBefore,
+    `- ${filePath}`,
+    ...after,
+  ].join('\n');
+}
+
+async function referenceTaskFileFromTaskRecord(params: {
+  taskId: string;
+  taskName: string;
+  filePath: string;
+}): Promise<void> {
+  if (!window.api?.listTaskFiles || !window.api.createTaskFile || !window.api.updateTaskFile) return;
+  const files = await window.api.listTaskFiles(params.taskId).catch(() => []);
+  const taskRecord = files.find((file) => file.path === 'Task.md');
+  if (taskRecord) {
+    await window.api.updateTaskFile({
+      id: taskRecord.id,
+      content: appendImportantFileToTaskRecord(taskRecord.content, params.filePath),
+    }).catch(() => undefined);
+    return;
+  }
+  await window.api.createTaskFile({
+    taskId: params.taskId,
+    name: 'Task.md',
+    path: 'Task.md',
+    kind: 'file',
+    content: buildMinimalTaskRecord(params.taskName, params.filePath),
   }).catch(() => undefined);
 }
 
-function truncateMemoryLine(value: string): string {
-  const singleLine = value.replace(/\s+/g, ' ').trim();
-  return singleLine.length > 80 ? `${singleLine.slice(0, 80)}...` : singleLine;
+async function writeTaskRecordFile(params: {
+  taskId: string;
+  title: string;
+  content: string;
+}): Promise<boolean> {
+  if (!window.api?.createTaskFile) return false;
+  const today = new Date().toISOString().slice(0, 10);
+  const name = `${today}-${params.title}.md`;
+  return window.api.createTaskFile({
+    taskId: params.taskId,
+    name,
+    path: `Task Records/${name}`,
+    kind: 'file',
+    content: params.content,
+  }).then(() => true).catch(() => false);
 }
 
 interface RightPanelProps {
   taskId: string | null;
   taskTitleHint?: string | null;
   draftPrompt?: string | null;
+  selectedFile?: {
+    path: string;
+    kind: string;
+    dirty?: boolean;
+    contentPreview: string | null;
+  } | null;
   hidden?: boolean;
   onTaskCaptured?: (taskId: string) => void;
   onClose: (hasSession: boolean) => void;
   onClearTask: () => void;
 }
 
-export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, hidden = false, onTaskCaptured, onClose, onClearTask }: RightPanelProps) {
+export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, selectedFile = null, hidden = false, onTaskCaptured, onClose, onClearTask }: RightPanelProps) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(taskId);
   const [titleCache, setTitleCache] = useState<Record<string, string>>({});
   const [messages, setMessages] = useState<Message[]>([]);
@@ -207,6 +497,8 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
   const [fullScreen, setFullScreen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [sessionRefreshDismissed, setSessionRefreshDismissed] = useState(false);
+  const [contextStrategy, setContextStrategy] = useState<ContextStrategy>('auto');
+  const [manualRefreshReady, setManualRefreshReady] = useState<ManualRefreshReady | null>(null);
   const [compressionThreshold, setCompressionThreshold] = useState<number>(
     CONTEXT_COMPRESSION_THRESHOLD.default,
   );
@@ -215,6 +507,12 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
   const [pendingCapturedTaskId, setPendingCapturedTaskId] = useState<string | null>(null);
   const [abandonConfirmOpen, setAbandonConfirmOpen] = useState(false);
   const [abandoningCapturedTask, setAbandoningCapturedTask] = useState(false);
+  const [phaseCloseoutSaved, setPhaseCloseoutSaved] = useState(false);
+  const [savingPhaseCloseout, setSavingPhaseCloseout] = useState(false);
+  const [creatingFollowupTasks, setCreatingFollowupTasks] = useState(false);
+  const [followupTasksCreated, setFollowupTasksCreated] = useState(false);
+  const [taskFileProposal, setTaskFileProposal] = useState<TaskFileWriteProposal | null>(null);
+  const [savingTaskFileProposal, setSavingTaskFileProposal] = useState(false);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -259,6 +557,7 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
     if (taskId === null) {
       setActiveTaskId(null);
       setPendingSwitch(null);
+      setManualRefreshReady(null);
       return;
     }
     // Fetch title if not cached, then propose soft context switch
@@ -284,6 +583,10 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
     setActiveTaskId(pendingSwitch.taskId);
     setPendingSwitch(null);
     setSessionRefreshDismissed(false);
+    setManualRefreshReady(null);
+    setPhaseCloseoutSaved(false);
+    setFollowupTasksCreated(false);
+    setTaskFileProposal(null);
     appendSysMsg(`已切换到任务：**${pendingSwitch.taskTitle}**`);
   }
 
@@ -299,19 +602,82 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
     ]);
   }
 
-  async function startFreshSession() {
+  async function archiveTaskConversationIfNeeded() {
     const taskName = title ?? (activeTaskId ? titleCache[activeTaskId] ?? activeTaskId : null);
-    if (activeTaskId && messages.some((message) => message.role === 'user')) {
-      await preserveSessionRefreshMemory({
+    const userMessages = messages
+      .filter((message) => message.role === 'user')
+      .map((message) => message.text.trim())
+      .filter(Boolean);
+    let archived = false;
+    if (activeTaskId && userMessages.length > 0) {
+      archived = await preserveSessionRefreshMemory({
         taskId: activeTaskId,
         taskTitle: taskName ?? activeTaskId,
         messages,
       });
     }
+    return {
+      taskName,
+      archived,
+      userMessageCount: userMessages.length,
+      recentFocus: userMessages.slice(-3).map((message) => truncateMemoryLine(message, 80)),
+    };
+  }
+
+  function clearTaskSessionAfterArchive(taskName: string | null) {
     setMessages(taskName ? [makeWelcomeMessage(taskName)] : []);
     setHistoryOpen(false);
     setSessionRefreshDismissed(false);
+    setManualRefreshReady(null);
     setInput('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+  }
+
+  function handleMissingRefreshArchive() {
+    if (activeTaskId) {
+      appendSysMsg('这次刷新前的保全信息还不够具体，暂不清理当前任务会话。请先补充已确认结论、候选方案、未解决问题或下一步动作。');
+      setSessionRefreshDismissed(true);
+    }
+  }
+
+  async function refreshTaskSession() {
+    const { taskName, archived } = await archiveTaskConversationIfNeeded();
+    if (activeTaskId && !archived) {
+      handleMissingRefreshArchive();
+      return;
+    }
+    clearTaskSessionAfterArchive(taskName);
+  }
+
+  async function prepareManualTaskSessionRefresh() {
+    const { taskName, archived, userMessageCount, recentFocus } = await archiveTaskConversationIfNeeded();
+    if (activeTaskId && !archived) {
+      handleMissingRefreshArchive();
+      return;
+    }
+    setManualRefreshReady({ taskName });
+    appendSysMsg([
+      '已整理并归档当前任务讨论的关键记录。',
+      `归档摘要：用户消息 ${userMessageCount} 条；最近关注：${recentFocus.length ? recentFocus.join(' / ') : '暂无' }。`,
+      '请检查是否还要补充事实；确认无误后再刷新任务会话。',
+    ].join('\n'));
+  }
+
+  async function startNewConversation() {
+    await archiveTaskConversationIfNeeded();
+    setMessages([]);
+    setActiveTaskId(null);
+    setPendingSwitch(null);
+    setPendingCapturedTaskId(null);
+    setAbandonConfirmOpen(false);
+    setHistoryOpen(false);
+    setSessionRefreshDismissed(false);
+    setManualRefreshReady(null);
+    setPhaseCloseoutSaved(false);
+    setFollowupTasksCreated(false);
+    setTaskFileProposal(null);
+    setInput('');
+    onClearTask();
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   }
 
@@ -362,6 +728,136 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
     }
   }
 
+  async function closeoutCurrentPhase() {
+    if (!activeTaskId || savingPhaseCloseout) return;
+    const taskName = title ?? titleCache[activeTaskId] ?? activeTaskId;
+    setSavingPhaseCloseout(true);
+    try {
+      await preservePhaseCloseoutRecord({
+        taskId: activeTaskId,
+        taskTitle: taskName,
+        messages,
+      });
+      setPhaseCloseoutSaved(true);
+      setFollowupTasksCreated(false);
+      appendSysMsg('已保存阶段收尾记录到任务记忆。是否要根据这次收尾拆解下一步执行任务、实现任务和验收任务？');
+    } finally {
+      setSavingPhaseCloseout(false);
+    }
+  }
+
+  async function createFollowupTasksFromCloseout() {
+    if (!activeTaskId || creatingFollowupTasks || !window.api?.createTask) return;
+    const taskName = title ?? titleCache[activeTaskId] ?? activeTaskId;
+    setCreatingFollowupTasks(true);
+    try {
+      const drafts = [
+        {
+          title: `拆解下一步：${taskName}`,
+          summary: `基于「${taskName}」的阶段收尾记录，梳理下一阶段执行任务、边界、依赖和验收口径。`,
+        },
+        {
+          title: `实现调整：${taskName}`,
+          summary: `基于「${taskName}」的阶段收尾记录，执行已确认的产品和实现调整。`,
+        },
+        {
+          title: `验收回归：${taskName}`,
+          summary: `基于「${taskName}」的阶段收尾记录，完成验收、回归测试和残余风险记录。`,
+        },
+      ];
+      const created = await Promise.all(drafts.map(async (draft) => {
+        const task = await window.api!.createTask(draft);
+        await window.api?.transitionTask({ id: task.id, nextState: 'planned' }).catch(() => undefined);
+        const sourceContent = [
+          '# Record: 后续任务来源',
+          '',
+          '## Trigger',
+          '由父任务阶段收尾后，经用户确认创建。',
+          '',
+          '## Summary',
+          `父任务：${taskName}`,
+          `后续任务：${draft.title}`,
+          '',
+          '## Confirmed',
+          '- 该任务应读取父任务的阶段收尾记录、相关任务文件和产出文档后再执行。',
+          '',
+          '## Open',
+          '- 执行前仍需确认范围、验收口径和是否需要拆成更小步骤。',
+          '',
+          '## Next',
+          '- 先完成任务范围确认，再进入执行或验收。',
+          '',
+          '## Links',
+          '- 来源：父任务阶段收尾记录。',
+        ].join('\n');
+        await window.api?.createSourceContext?.({
+          taskId: task.id,
+          title: '后续任务来源',
+          kind: 'note',
+          isKey: true,
+          content: sourceContent,
+          note: `由「${taskName}」阶段收尾创建。`,
+        }).catch(() => undefined);
+        await writeTaskRecordFile({
+          taskId: task.id,
+          title: 'followup-source',
+          content: sourceContent,
+        });
+        return task;
+      }));
+      setFollowupTasksCreated(true);
+      appendSysMsg(`已创建 ${created.length} 条后续任务：拆解下一步、实现调整、验收回归。它们已进入 Tasks，执行前仍应逐条确认范围。`);
+    } finally {
+      setCreatingFollowupTasks(false);
+    }
+  }
+
+  function proposeTaskFileWrite() {
+    if (!activeTaskId) return;
+    const taskName = title ?? titleCache[activeTaskId] ?? activeTaskId;
+    setTaskFileProposal(buildTaskFileWriteProposal({
+      taskTitle: taskName,
+      messages,
+      selectedFilePath: selectedFile?.path ?? null,
+    }));
+  }
+
+  async function confirmTaskFileWrite() {
+    if (!activeTaskId || !taskFileProposal || savingTaskFileProposal || !window.api?.createTaskFile) return;
+    const path = normalizeTaskFilePath(taskFileProposal.path);
+    if (!path || !/\.(md|txt)$/i.test(path)) {
+      appendSysMsg('任务文件写入已暂停：当前 v1 只允许新建 .md 或 .txt 文件。');
+      return;
+    }
+    setSavingTaskFileProposal(true);
+    try {
+      const existing = window.api.listTaskFiles
+        ? await window.api.listTaskFiles(activeTaskId).catch(() => [])
+        : [];
+      if (existing.some((file) => file.path === path)) {
+        appendSysMsg(`任务文件写入已暂停：\`${path}\` 已存在。请换一个文件名后再确认写入。`);
+        return;
+      }
+      const name = path.split('/').filter(Boolean).at(-1) ?? path;
+      await window.api.createTaskFile({
+        taskId: activeTaskId,
+        name,
+        path,
+        kind: 'file',
+        content: taskFileProposal.content,
+      });
+      await referenceTaskFileFromTaskRecord({
+        taskId: activeTaskId,
+        taskName: title ?? titleCache[activeTaskId] ?? activeTaskId,
+        filePath: path,
+      });
+      setTaskFileProposal(null);
+      appendSysMsg(`已写入任务文件：\`${path}\`。`);
+    } finally {
+      setSavingTaskFileProposal(false);
+    }
+  }
+
   async function abandonCapturedTask() {
     if (!activeTaskId || pendingCapturedTaskId !== activeTaskId || abandoningCapturedTask) return;
     if (!abandonConfirmOpen) {
@@ -374,6 +870,7 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
       setPendingCapturedTaskId(null);
       setAbandonConfirmOpen(false);
       setActiveTaskId(null);
+      setManualRefreshReady(null);
       onClearTask();
       appendSysMsg('已放弃这条待确认任务，当前会话已回到全局。');
     } catch {
@@ -406,6 +903,8 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
   async function send() {
     const text = input.trim();
     if (!text || thinking) return;
+    setManualRefreshReady(null);
+    setTaskFileProposal(null);
 
     const userMsg: Message = { id: nextId(), role: 'user', text, ts: now() };
     const historyForAI: ChatMessage[] = [
@@ -435,6 +934,7 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
           messages: historyForAI,
           taskId: activeTaskId,
           workHabits: appliedHabits,
+          selectedFile,
         });
         if (selectedHabits.length > 0) {
           const habitIds = selectedHabits.map((habit) => habit.id);
@@ -462,8 +962,23 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
   const sessionRefreshSuggestion = activeTaskId && !sessionRefreshDismissed
     ? shouldSuggestSessionRefresh(messages, compressionThreshold)
     : null;
+  const canManuallyRefreshTaskSession = Boolean(
+    activeTaskId
+    && contextStrategy === 'manual'
+    && messages.some((message) => message.role === 'user')
+  );
   const canCaptureGlobalConversation = Boolean(
     !activeTaskId
+    && messages.some((message) => message.role === 'user')
+  );
+  const canCloseoutActiveTaskPhase = Boolean(
+    activeTaskId
+    && !phaseCloseoutSaved
+    && messages.some((message) => message.role === 'user')
+  );
+  const canProposeTaskFileWrite = Boolean(
+    activeTaskId
+    && !taskFileProposal
     && messages.some((message) => message.role === 'user')
   );
   const taskPlanningPrompt = activeAttrs?.type && title
@@ -492,7 +1007,7 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
       <div className="panel-header">
         <div className="panel-header-ctx">
           {activeTaskId ? (
-            <button className="panel-ctx-tag" onClick={onClearTask} title="清除任务上下文">
+            <button className="panel-ctx-tag" onClick={onClearTask} title="离开任务上下文">
               <IconTask />
               <span>{title ?? activeTaskId}</span>
               <span className="ctx-tag-x">×</span>
@@ -534,9 +1049,9 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
                 <strong>{messages.length}</strong>
               </div>
               <div className="panel-history-note">
-                当前会话只是临时工作内存；开始新会话会从任务记忆种子继续，不默认加载旧聊天。
+                当前会话只是临时工作内存；开始新会话会先归档有用任务信号，然后回到全局讨论。
               </div>
-              <button className="btn sm ghost" onClick={() => void startFreshSession()}>
+              <button className="btn sm ghost" onClick={() => void startNewConversation()}>
                 开始新会话
               </button>
             </div>
@@ -581,14 +1096,18 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
           </div>
         )}
 
-        {sessionRefreshSuggestion && (
+        {sessionRefreshSuggestion && contextStrategy !== 'manual' && (
           <div className="panel-refresh-suggestion">
             <div className="panel-refresh-text">
-              这个任务的讨论已经有点长了，重要信息会从任务记忆继续带入。开始新会话前会先保全关键决策、偏好变化和未解决问题；只保存精选信号，不保存完整聊天全文。
+              {contextStrategy === 'reminder'
+                ? '这个任务的讨论已经有点长了。当前为仅提醒模式，不会提供会话刷新动作；需要清理时可切回自动检查或手动确认。'
+                : '这个任务的讨论已经有点长了，可以刷新当前任务会话。刷新前会先保全关键决策、偏好变化和未解决问题；只保存精选信号，不保存完整聊天全文。'}
             </div>
             <div className="panel-refresh-reason">{sessionRefreshSuggestion.reason}</div>
             <div className="panel-refresh-actions">
-              <button className="btn sm primary" onClick={() => void startFreshSession()}>开始新会话</button>
+              {contextStrategy === 'auto' && (
+                <button className="btn sm primary" onClick={() => void refreshTaskSession()}>刷新任务会话</button>
+              )}
               <button className="btn sm ghost" onClick={() => setSessionRefreshDismissed(true)}>继续当前会话</button>
             </div>
           </div>
@@ -605,6 +1124,85 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
               disabled={capturingTask}
             >
               {capturingTask ? '捕获中…' : '捕获为任务'}
+            </button>
+          </div>
+        )}
+
+        {canCloseoutActiveTaskPhase && (
+          <div className="panel-capture-suggestion">
+            <div className="panel-capture-text">
+              这段任务讨论可以收成阶段记录，后续可基于记录继续拆解执行任务。
+            </div>
+            <button
+              className={`btn sm primary${savingPhaseCloseout ? ' disabled' : ''}`}
+              onClick={() => void closeoutCurrentPhase()}
+              disabled={savingPhaseCloseout}
+            >
+              {savingPhaseCloseout ? '保存中…' : '收尾本阶段'}
+            </button>
+          </div>
+        )}
+
+        {canProposeTaskFileWrite && (
+          <div className="panel-capture-suggestion">
+            <div className="panel-capture-text">
+              这段讨论可以先生成任务文件写入提案，确认后再新建 Markdown 文件。
+            </div>
+            <button className="btn sm ghost" onClick={proposeTaskFileWrite}>
+              生成文件提案
+            </button>
+          </div>
+        )}
+
+        {taskFileProposal && (
+          <div className="panel-file-proposal">
+            <div className="panel-file-proposal-head">
+              <strong>任务文件写入提案</strong>
+              <span>新建文件，不覆盖现有文件</span>
+            </div>
+            <input
+              className="panel-file-proposal-path"
+              value={taskFileProposal.path}
+              onChange={(event) => setTaskFileProposal((proposal) => (
+                proposal ? { ...proposal, path: event.target.value } : proposal
+              ))}
+              aria-label="任务文件路径"
+            />
+            <div className="panel-refresh-reason">{taskFileProposal.summary}</div>
+            <textarea
+              className="panel-file-proposal-content"
+              value={taskFileProposal.content}
+              onChange={(event) => setTaskFileProposal((proposal) => (
+                proposal ? { ...proposal, content: event.target.value } : proposal
+              ))}
+              aria-label="任务文件内容"
+            />
+            <div className="panel-refresh-actions">
+              <button className="btn sm ghost" onClick={() => setTaskFileProposal(null)}>
+                放弃
+              </button>
+              <button
+                className={`btn sm primary${savingTaskFileProposal ? ' disabled' : ''}`}
+                onClick={() => void confirmTaskFileWrite()}
+                disabled={savingTaskFileProposal}
+              >
+                {savingTaskFileProposal ? '写入中…' : '确认写入文件'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeTaskId && phaseCloseoutSaved && !followupTasksCreated && (
+          <div className="panel-capture-suggestion">
+            <div className="panel-capture-text">
+              阶段记录已保存。可以基于这份记录创建三条后续任务：拆解下一步、实现调整、验收回归。
+            </div>
+            <button
+              className={`btn sm primary${creatingFollowupTasks ? ' disabled' : ''}`}
+              onClick={() => void createFollowupTasksFromCloseout()}
+              disabled={creatingFollowupTasks}
+            >
+              {creatingFollowupTasks ? '创建中…' : '创建后续任务'}
             </button>
           </div>
         )}
@@ -649,6 +1247,47 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, h
           <div className="panel-task-chip">
             <IconTask style={{ width: 10, height: 10 }} />
             {title ?? activeTaskId}
+          </div>
+        )}
+        <div className="panel-context-strategy" aria-label="上下文策略">
+          {([
+            ['auto', '自动检查'],
+            ['manual', '手动确认'],
+            ['reminder', '仅提醒'],
+          ] as const).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={`panel-context-strategy-btn${contextStrategy === value ? ' active' : ''}`}
+              onClick={() => {
+                setContextStrategy(value);
+                setSessionRefreshDismissed(false);
+                setManualRefreshReady(null);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {canManuallyRefreshTaskSession && (
+          <div className="panel-manual-refresh">
+            <span>
+              {manualRefreshReady
+                ? '已归档关键记录；可以继续补充，或确认刷新当前任务会话。'
+                : '手动确认模式：先整理归档，再由你确认是否清理会话。'}
+            </span>
+            <button
+              className="btn sm ghost"
+              onClick={() => {
+                if (manualRefreshReady) {
+                  clearTaskSessionAfterArchive(manualRefreshReady.taskName);
+                  return;
+                }
+                void prepareManualTaskSessionRefresh();
+              }}
+            >
+              {manualRefreshReady ? '确认刷新' : '整理归档'}
+            </button>
           </div>
         )}
         {activeTaskId && !input.trim() && (taskTypeReviewPrompt || taskPlanningPrompt) && (
@@ -740,7 +1379,7 @@ function generateReply(input: string, taskId: string | null): string {
   if (lower.includes('下一步') || lower.includes('怎么')) {
     return taskId
       ? `建议下一步：\n\n1. 确认目标方向（5 分钟）\n2. 启动 Run，让 AI 完成初稿\n3. 审核输出后决策下一步行动`
-      : `建议按 Priority Lane 顺序处理：先解决 Escalate 任务，再处理 Unblock 项。`;
+      : `建议按 Tasks 默认排序处理：先解决 Escalate 任务，再处理 Unblock 项。`;
   }
   if (lower.includes('总结') || lower.includes('摘要')) {
     return `好的，我来整理一下当前任务的关键信息：\n\n**目标**：完成核心交付物\n**当前阻塞**：等待用户决策\n**下次行动**：拍板后可立即继续\n\n需要我展开某个部分吗？`;

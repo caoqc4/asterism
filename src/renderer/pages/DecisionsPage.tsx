@@ -83,10 +83,10 @@ function formatDecisionDate(value: string): string {
 
 interface DecisionsPageProps {
   onOpenPanel: (taskId: string) => void;
-  onOpenWorkbench: (taskId: string) => void;
+  onOpenTask: (taskId: string) => void;
 }
 
-export function DecisionsPage({ onOpenPanel, onOpenWorkbench }: DecisionsPageProps) {
+export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -175,7 +175,7 @@ export function DecisionsPage({ onOpenPanel, onOpenWorkbench }: DecisionsPagePro
               onToggle={() => toggleExpand(d.id)}
               onDecide={(action) => decide(d.id, action)}
               onOpenPanel={() => onOpenPanel(d.taskId)}
-              onOpenWorkbench={() => onOpenWorkbench(d.taskId)}
+              onOpenTask={() => onOpenTask(d.taskId)}
             />
           ))}
         </section>
@@ -198,7 +198,7 @@ export function DecisionsPage({ onOpenPanel, onOpenWorkbench }: DecisionsPagePro
               onToggle={() => toggleExpand(d.id)}
               onDecide={(action) => decide(d.id, action)}
               onOpenPanel={() => onOpenPanel(d.taskId)}
-              onOpenWorkbench={() => onOpenWorkbench(d.taskId)}
+              onOpenTask={() => onOpenTask(d.taskId)}
             />
           ))}
         </section>
@@ -227,10 +227,10 @@ interface DecisionCardProps {
   onToggle: () => void;
   onDecide: (action?: 'approve' | 'defer' | 'cancel') => void;
   onOpenPanel: () => void;
-  onOpenWorkbench: () => void;
+  onOpenTask: () => void;
 }
 
-function DecisionCard({ decision: d, onToggle, onDecide, onOpenPanel, onOpenWorkbench }: DecisionCardProps) {
+function DecisionCard({ decision: d, onToggle, onDecide, onOpenPanel, onOpenTask }: DecisionCardProps) {
   return (
     <div className={`dec-card${d.expanded ? ' expanded' : ''}`}>
       {/* Card header */}
@@ -306,7 +306,7 @@ function DecisionCard({ decision: d, onToggle, onDecide, onOpenPanel, onOpenWork
           <div className="dec-actions">
             <button className="btn sm ghost" onClick={onOpenPanel}>修改后批准</button>
             <button className="btn sm ghost" onClick={onOpenPanel}>要求补充信息</button>
-            <button className="btn sm ghost" onClick={onOpenWorkbench}>查看任务详情</button>
+            <button className="btn sm ghost" onClick={onOpenTask}>查看任务</button>
           </div>
         </div>
       )}

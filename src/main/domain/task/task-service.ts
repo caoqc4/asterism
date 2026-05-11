@@ -41,6 +41,7 @@ import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
 import { CompletionCriteriaRepository } from '../../db/repositories/completion-criteria-repository.js';
 import { ProcessTemplateRepository } from '../../db/repositories/process-template-repository.js';
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
+import { TaskFileRepository } from '../../db/repositories/task-file-repository.js';
 import { TaskDependencyRepository } from '../../db/repositories/task-dependency-repository.js';
 import { TaskProcessBindingRepository } from '../../db/repositories/task-process-binding-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
@@ -78,6 +79,7 @@ export class TaskService {
     private readonly blockerRepository: BlockerRepository | null = null,
     private readonly taskDependencyRepository: TaskDependencyRepository | null = null,
     private readonly completionCriteriaRepository: CompletionCriteriaRepository | null = null,
+    private readonly taskFileRepository: TaskFileRepository | null = null,
   ) {}
 
   private async syncWaitingItem(
@@ -289,6 +291,17 @@ export class TaskService {
     return {
       ...detail,
       sourceContexts,
+    };
+  }
+
+  private async attachTaskFiles(detail: TaskDetailBase): Promise<TaskDetailBase> {
+    const taskFiles = this.taskFileRepository
+      ? await this.taskFileRepository.listForTask(detail.id)
+      : [];
+
+    return {
+      ...detail,
+      taskFiles,
     };
   }
 
@@ -590,10 +603,12 @@ export class TaskService {
     }
 
     const enriched = await this.attachProcessTemplates(
-      await this.attachSourceContexts(
-        await this.attachCompletionCriteria(
-          await this.attachArtifacts(
-            await this.attachDetailDependencyReevaluation(await this.attachDetailWaitingItem(detail)),
+      await this.attachTaskFiles(
+        await this.attachSourceContexts(
+          await this.attachCompletionCriteria(
+            await this.attachArtifacts(
+              await this.attachDetailDependencyReevaluation(await this.attachDetailWaitingItem(detail)),
+            ),
           ),
         ),
       ),

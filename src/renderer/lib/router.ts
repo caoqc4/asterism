@@ -1,10 +1,11 @@
-export type AppRoute = 'brief' | 'tasks' | 'decisions' | 'context' | 'skills' | 'mcp' | 'model' | 'connections' | 'settings';
+export type AppRoute = 'brief' | 'tasks' | 'decisions' | 'work-habits' | 'skills' | 'mcp' | 'model' | 'connections' | 'settings';
 
-const validRoutes = new Set<AppRoute>(['brief', 'tasks', 'decisions', 'context', 'skills', 'mcp', 'model', 'connections', 'settings']);
+const validRoutes = new Set<AppRoute>(['brief', 'tasks', 'decisions', 'work-habits', 'skills', 'mcp', 'model', 'connections', 'settings']);
 
 export function getRouteFromHash(): AppRoute {
   const hash = window.location.hash;
-  const normalized = hash.replace(/^#\/?/, '') as AppRoute;
+  const raw = hash.replace(/^#\/?/, '');
+  const normalized = (raw === 'context' ? 'tasks' : raw) as AppRoute;
   return validRoutes.has(normalized) ? normalized : 'brief';
 }
 

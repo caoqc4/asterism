@@ -1,3 +1,5 @@
+import { TASKPLANE_AGENT_PRINCIPLES } from '@shared/agent-principles';
+
 export type TaskExecutionType = 'simple' | 'project' | 'scheduled' | 'event';
 
 export type TaskPlanningPrompt = {
@@ -149,6 +151,11 @@ export function defaultTriggerForType(type: TaskExecutionType): string | null {
 export function buildProjectDecompositionGuidance(projectTitle: string): string {
   const shortTitle = projectTitle.replace(/[。.!！?？]+$/g, '').trim() || '这个项目';
   return [
+    '请先遵守 Taskplane Agent Operating Principles，再进行项目拆解。',
+    '',
+    'Operating Principles:',
+    TASKPLANE_AGENT_PRINCIPLES,
+    '',
     `请把「${shortTitle}」拆解成父任务和子任务结构。`,
     '',
     '流程要求：',

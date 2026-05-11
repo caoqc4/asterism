@@ -90,6 +90,9 @@ const WORKSPACE_PATCH_MAX_BYTES = 40_000;
 const WORKSPACE_COMMAND_OUTPUT_LIMIT = 20_000;
 const WORKSPACE_COMMAND_DEFAULT_TIMEOUT_MS = 120_000;
 const WORKSPACE_COMMAND_MAX_TIMEOUT_MS = 300_000;
+const PRODUCT_PRINCIPLES_PROTECTED_FILES = new Set([
+  'src/shared/agent-principles.ts',
+]);
 const sourceContextKinds = new Set<SourceContextKind>(['link', 'doc', 'issue', 'pr', 'website_list', 'note']);
 const WORKSPACE_COMMAND_ALLOWED_SCRIPTS = new Set([
   'test',
@@ -434,6 +437,14 @@ function getPatchTouchedFiles(operations: ParsedPatchOperation[]): string[] {
   return [...new Set(operations.map((operation) => operation.file))];
 }
 
+function assertNoProtectedProductPrincipleWrites(files: string[]): void {
+  const protectedFile = files.find((file) => PRODUCT_PRINCIPLES_PROTECTED_FILES.has(file));
+
+  if (protectedFile) {
+    throw new Error(`workspace.write_patch cannot modify read-only product principles: ${protectedFile}`);
+  }
+}
+
 async function buildWorkspacePatchPreview(params: {
   input: WorkspaceWritePatchInput;
   workspaceRoot: string;
@@ -445,6 +456,8 @@ async function buildWorkspacePatchPreview(params: {
   if (!operations.length) {
     throw new Error('workspace.write_patch patch does not contain any file operation.');
   }
+
+  assertNoProtectedProductPrincipleWrites(touchedFiles);
 
   for (const file of touchedFiles) {
     if (!expected.has(file)) {
@@ -473,6 +486,8 @@ async function applyWorkspacePatch(params: {
     content: string;
     ensureDirectory: boolean;
   }> = [];
+
+  assertNoProtectedProductPrincipleWrites(touchedFiles);
 
   for (const file of touchedFiles) {
     if (!expected.has(file)) {
@@ -562,7 +577,8 @@ function formatWorkingContextSummary(context: AgentWorkingContext): string {
     `阻塞项：${context.blockers.map((item) => item.title).join('；') || '无'}`,
     `依赖项：${context.dependencies.map((item) => item.title).join('；') || '无'}`,
     `关键来源：${context.sources.filter((item) => item.isKey).map((item) => item.title).join('；') || '无'}`,
-    `工作产物：${context.artifacts.map((item) => `${item.title} (${item.kind})`).join('；') || '无'}`,
+    `工作产物：${context.artifacts.map((item) => `${item.title} (${item.kind})${item.contentPreview ? `：${item.contentPreview}` : ''}`).join('；') || '无'}`,
+    `任务文件：${(context.taskFiles ?? []).map((item) => `${item.path} (${item.kind})${item.contentPreview ? `：${item.contentPreview}` : ''}`).join('；') || '无'}`,
     `方法模板：${context.processTemplates.map((item) => item.title).join('；') || '无'}`,
   ].join('\n');
 }
@@ -632,7 +648,7 @@ function formatCompletionEvidenceReview(context: AgentWorkingContext): string {
     artifacts.length
       ? [
           '可复核工作产物：',
-          ...artifacts.map((artifact, index) => `${index + 1}. ${artifact.title} (${artifact.kind}) · ${artifact.sourceType} · ${artifact.updatedAt}`),
+          ...artifacts.map((artifact, index) => `${index + 1}. ${artifact.title} (${artifact.kind}) · ${artifact.sourceType} · ${artifact.updatedAt}${artifact.contentPreview ? ` · ${artifact.contentPreview}` : ''}`),
         ].join('\n')
       : '可复核工作产物：暂无。',
     context.task.riskLevel === 'none'

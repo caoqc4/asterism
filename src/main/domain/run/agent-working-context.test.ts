@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { TaskDetail } from '../../../shared/types/task.js';
+import { TASKPLANE_AGENT_PRINCIPLES } from '../../../shared/agent-principles.js';
 import { buildAgentRunRequest, buildAgentWorkingContext, formatAgentRunRequestForStep } from './agent-working-context.js';
 
 type SourceContext = TaskDetail['sourceContexts'][number];
@@ -156,6 +157,7 @@ describe('agent working context', () => {
     const task = buildTaskDetail();
     const context = buildAgentWorkingContext(task);
 
+    expect(context.productPrinciples).toBe(TASKPLANE_AGENT_PRINCIPLES);
     expect(context.task.title).toBe('Agent context task');
     expect(context.priorityLane).toBe('escalate_now');
     expect(context.completion).toMatchObject({
@@ -170,6 +172,7 @@ describe('agent working context', () => {
       'qa_screenshot.png',
       'launch_note.md',
     ]);
+    expect(context.artifacts[1]?.contentPreview).toBe('Draft launch note');
     expect(context.processTemplates[0]).toMatchObject({ title: 'Launch writing skill' });
     expect(context.recentTimeline[0]).toMatchObject({
       type: 'task.created',
@@ -235,6 +238,8 @@ describe('agent working context', () => {
     expect(formatAgentRunRequestForStep(request)).toContain('可用产物：2');
     expect(formatAgentRunRequestForStep(request)).toContain('可用方法模板：1');
     expect(formatAgentRunRequestForStep(request)).toContain('适用工作习惯：1');
+    expect(formatAgentRunRequestForStep(request)).toContain('产品原则：read-only');
+    expect(formatAgentRunRequestForStep(request)).toContain('Do not store full chat transcripts');
     expect(formatAgentRunRequestForStep(request)).toContain(
       '- 对外材料发布前先做一次事实核对（范围：全局；例：公告初稿）',
     );

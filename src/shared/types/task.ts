@@ -7,6 +7,7 @@ import type {
 } from './process-template.js';
 import type { SourceContextRecord } from './source-context.js';
 import type { TaskDependencyRecord } from './task-dependency.js';
+import type { TaskFileRecord } from './task-file.js';
 import type { WaitingItemRecord } from './waiting-item.js';
 
 export type TaskState =
@@ -111,6 +112,7 @@ export type TaskDetailBase = TaskRecord & {
   artifacts: ArtifactRecord[];
   completionCriteria: CompletionCriteriaRecord[];
   sourceContexts: SourceContextRecord[];
+  taskFiles?: TaskFileRecord[];
   processTemplates: AppliedProcessTemplateRecord[];
   availableProcessTemplates: ProcessTemplateRecord[];
   timeline: TimelineEventRecord[];

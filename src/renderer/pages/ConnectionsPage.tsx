@@ -43,8 +43,8 @@ export function ConnectionsPage() {
   return (
     <div className="connections-page">
       <div className="connections-head">
-        <h2 className="connections-title">Connections</h2>
-        <p className="connections-subtitle">AI 可感知的外部信号源 — 授权后只处理相关新信号</p>
+        <h2 className="connections-title">External Access</h2>
+        <p className="connections-subtitle">外部账号与数据源授权 — 授权后只处理相关新信号</p>
       </div>
 
       {/* Connected sources */}

@@ -228,4 +228,89 @@ export class ArtifactRepository {
     const [created] = await db.select().from(artifacts).where(eq(artifacts.id, id)).limit(1);
     return toRecord(created);
   }
+
+  async createManualNote(params: {
+    taskId: string;
+    title: string;
+    content: string;
+  }): Promise<ArtifactRecord> {
+    const db = initDatabase();
+    const id = generateId('artifact');
+    const timestamp = nowIso();
+    const title = params.title.trim();
+
+    await db.insert(artifacts).values({
+      id,
+      taskId: params.taskId,
+      sourceType: 'manual',
+      sourceId: 'task_files',
+      kind: 'note',
+      title,
+      content: params.content,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    });
+
+    await db.insert(timelineEvents).values({
+      id: generateId('timeline'),
+      taskId: params.taskId,
+      type: 'artifact.created',
+      payload: JSON.stringify({
+        artifactId: id,
+        sourceType: 'manual',
+        sourceId: 'task_files',
+        kind: 'note',
+        title,
+      }),
+      createdAt: timestamp,
+    });
+
+    const [created] = await db.select().from(artifacts).where(eq(artifacts.id, id)).limit(1);
+    return toRecord(created);
+  }
+
+  async update(input: {
+    id: string;
+    title?: string;
+    content?: string;
+  }): Promise<ArtifactRecord> {
+    const db = initDatabase();
+    const [current] = await db
+      .select()
+      .from(artifacts)
+      .where(eq(artifacts.id, input.id))
+      .limit(1);
+
+    if (!current) {
+      throw new Error(`Artifact not found: ${input.id}`);
+    }
+
+    await db
+      .update(artifacts)
+      .set({
+        title: input.title?.trim() || current.title,
+        content: input.content ?? current.content,
+        updatedAt: nowIso(),
+      })
+      .where(eq(artifacts.id, input.id));
+
+    const [updated] = await db.select().from(artifacts).where(eq(artifacts.id, input.id)).limit(1);
+    return toRecord(updated);
+  }
+
+  async delete(id: string): Promise<ArtifactRecord> {
+    const db = initDatabase();
+    const [current] = await db
+      .select()
+      .from(artifacts)
+      .where(eq(artifacts.id, id))
+      .limit(1);
+
+    if (!current) {
+      throw new Error(`Artifact not found: ${id}`);
+    }
+
+    await db.delete(artifacts).where(eq(artifacts.id, id));
+    return toRecord(current);
+  }
 }

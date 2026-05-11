@@ -198,6 +198,17 @@ export const sourceContexts = sqliteTable('source_contexts', {
   archivedAt: text('archived_at'),
 });
 
+export const taskFiles = sqliteTable('task_files', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull(),
+  name: text('name').notNull(),
+  path: text('path').notNull(),
+  kind: text('kind').notNull(),
+  content: text('content').notNull().default(''),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
 export const processTemplates = sqliteTable('process_templates', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),

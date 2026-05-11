@@ -11,6 +11,9 @@ describe('buildProjectDecompositionPrompt', () => {
     const prompt = buildProjectDecompositionPrompt('官网改版项目');
 
     expect(prompt).toContain('根据项目边界决定子任务数量');
+    expect(prompt).toContain('Taskplane Agent Operating Principles');
+    expect(prompt).toContain('## Task Creation Protocol');
+    expect(prompt).toContain('Subtasks remain drafts until the user confirms creation.');
     expect(prompt).toContain('不要为凑数量拆任务');
     expect(prompt).toContain('复杂子任务应升级为项目型');
     expect(prompt).not.toContain('给出 3-7 个子任务');

@@ -23,6 +23,8 @@ import type {
 import type { CreateCodeAgentRunInput, CreateRunInput } from '../../shared/types/run.js';
 import type { AiConfigInput, FeatureFlags } from '../../shared/types/settings.js';
 import type { OperatorStartedRunRequest } from '../../shared/types/operator-started-run.js';
+import type { CreateManualArtifactInput, UpdateArtifactInput } from '../../shared/types/artifact.js';
+import type { CreateTaskFileInput, UpdateTaskFileInput } from '../../shared/types/task-file.js';
 import type {
   CreateSourceContextInput,
   SourceContextRecord,
@@ -56,6 +58,7 @@ import {
   selectApplicableWorkHabits,
   summarizeWorkHabitsForPrompt,
 } from '../../shared/work-habit-rules.js';
+import { TASKPLANE_AGENT_PRINCIPLES } from '../../shared/agent-principles.js';
 
 const PING_CHANNEL = 'app:ping';
 
@@ -338,6 +341,50 @@ export function registerIpcHandlers(): void {
     return archived;
   });
 
+  ipcMain.handle('artifact:createManual', async (_event, input: CreateManualArtifactInput) => {
+    const created = await getServices().artifactRepository.createManualNote({
+      taskId: input.taskId,
+      title: input.title,
+      content: input.content ?? '',
+    });
+    emitAppEvent('task.changed', created.taskId);
+    return created;
+  });
+
+  ipcMain.handle('artifact:update', async (_event, input: UpdateArtifactInput) => {
+    const updated = await getServices().artifactRepository.update(input);
+    emitAppEvent('task.changed', updated.taskId);
+    return updated;
+  });
+
+  ipcMain.handle('artifact:delete', async (_event, id: string) => {
+    const deleted = await getServices().artifactRepository.delete(id);
+    emitAppEvent('task.changed', deleted.taskId);
+    return deleted;
+  });
+
+  ipcMain.handle('taskFile:list', async (_event, taskId: string) => {
+    return getServices().taskFileRepository.listForTask(taskId);
+  });
+
+  ipcMain.handle('taskFile:create', async (_event, input: CreateTaskFileInput) => {
+    const created = await getServices().taskFileRepository.create(input);
+    emitAppEvent('task.changed', created.taskId);
+    return created;
+  });
+
+  ipcMain.handle('taskFile:update', async (_event, input: UpdateTaskFileInput) => {
+    const updated = await getServices().taskFileRepository.update(input);
+    emitAppEvent('task.changed', updated.taskId);
+    return updated;
+  });
+
+  ipcMain.handle('taskFile:delete', async (_event, id: string) => {
+    const deleted = await getServices().taskFileRepository.delete(id);
+    emitAppEvent('task.changed', deleted.taskId);
+    return deleted;
+  });
+
   ipcMain.handle('processTemplate:create', async (_event, input: CreateProcessTemplateInput) => {
     return getServices().taskService.createProcessTemplate(input);
   });
@@ -445,8 +492,15 @@ export function registerIpcHandlers(): void {
       .map((artifact) => `${artifact.title} (${artifact.kind})`)
         .join(', ')
       : 'none';
+    const selectedFileContext = input.selectedFile
+      ? [
+          `Selected file: ${input.selectedFile.path} (${input.selectedFile.kind})${input.selectedFile.dirty ? ' [unsaved edits]' : ''}`,
+          `Selected file preview: ${input.selectedFile.contentPreview ?? 'none'}`,
+        ].join('\n')
+      : 'Selected file: none';
     const taskContext = task
       ? [
+          `Agent principles:\n${TASKPLANE_AGENT_PRINCIPLES}`,
           `Task title: ${task.title}`,
           `State: ${task.state}`,
           `Risk: ${task.riskLevel}${task.riskNote ? ` (${task.riskNote})` : ''}`,
@@ -459,6 +513,7 @@ export function registerIpcHandlers(): void {
           `Completion criteria: ${completionCriteria}`,
           `Recent artifacts: ${recentArtifacts}`,
           `Key sources: ${keySources.map((s) => s.title).join(', ') || 'none'}`,
+          selectedFileContext,
           `Recent activity: ${task.timeline.slice(-5).map((e) => `${e.type}${e.payload ? `=${e.payload}` : ''}`).join(' / ') || 'none'}`,
         ].join('\n')
       : null;
@@ -468,8 +523,8 @@ export function registerIpcHandlers(): void {
 
     const behaviorContext = formatAiBehaviorPreferences(config.featureFlags);
     const systemPrompt = input.taskId
-      ? `You are a helpful AI assistant inside Taskplane, a task management tool. The user is asking about a specific task. Use the persisted task context below as the source of truth. Treat applicable confirmed work habits as user preferences and quality criteria, but do not mention them unless relevant. Help them understand status, next steps, and risks. Reply in the same language as the user's message (Chinese or English).${behaviorContext}\n\n${taskContext ?? `Task ID: ${input.taskId}`}${workHabitContext}`
-      : `You are a helpful AI assistant inside Taskplane, a task management tool. You have a global view of all tasks. Treat applicable confirmed work habits as user preferences and quality criteria, but do not mention them unless relevant. Help the user prioritize, plan, and think through their work. Reply in the same language as the user's message (Chinese or English).${behaviorContext}${workHabitContext}`;
+      ? `You are a helpful AI assistant inside Taskplane, a task management tool. The user is asking about a specific task. Use the persisted task context below as the source of truth. Treat applicable confirmed work habits as user preferences and quality criteria, but do not mention them unless relevant. Help them understand status, next steps, and risks. Reply in the same language as the user's message (Chinese or English).${behaviorContext}\n\n${taskContext ?? `Agent principles:\n${TASKPLANE_AGENT_PRINCIPLES}\n\nTask ID: ${input.taskId}`}${workHabitContext}`
+      : `You are a helpful AI assistant inside Taskplane, a task management tool. You have a global view of all tasks. Follow these read-only product principles when task work becomes durable:\n${TASKPLANE_AGENT_PRINCIPLES}\n\nTreat applicable confirmed work habits as user preferences and quality criteria, but do not mention them unless relevant. Help the user prioritize, plan, and think through their work. Reply in the same language as the user's message (Chinese or English).${behaviorContext}${workHabitContext}`;
 
     const result = await generateText({
       model,
@@ -508,6 +563,8 @@ export function registerIpcHandlers(): void {
       model,
       system: [
         'You are Taskplane project decomposition planner.',
+        'Read and follow these read-only Taskplane Agent Operating Principles before planning or creating task drafts:',
+        TASKPLANE_AGENT_PRINCIPLES,
         'Return only one valid JSON object. Do not wrap it in markdown.',
         'The JSON shape must be:',
         '{',

@@ -110,4 +110,33 @@ describe('ArtifactRepository integration', () => {
     expect(runArtifacts.map((item) => item.id)).toEqual([artifact.id]);
     expect(detail?.timeline.map((event) => event.type)).toContain('artifact.created');
   });
+
+  it('creates, updates, and deletes a manual task-file artifact', async () => {
+    const task = await taskRepository.create({ title: 'Maintain task files' });
+
+    const artifact = await artifactRepository.createManualNote({
+      taskId: task.id,
+      title: 'notes.md',
+      content: '# Notes',
+    });
+
+    expect(artifact.sourceType).toBe('manual');
+    expect(artifact.sourceId).toBe('task_files');
+    expect(artifact.kind).toBe('note');
+
+    const updated = await artifactRepository.update({
+      id: artifact.id,
+      title: 'notes-final.md',
+      content: '# Final notes',
+    });
+    expect(updated.title).toBe('notes-final.md');
+    expect(updated.content).toBe('# Final notes');
+
+    const deleted = await artifactRepository.delete(artifact.id);
+    expect(deleted.id).toBe(artifact.id);
+    expect(await artifactRepository.findById(artifact.id)).toBeNull();
+    expect(await artifactRepository.listRecentForTask(task.id)).toEqual([]);
+    const detail = await taskRepository.getDetail(task.id);
+    expect(detail?.timeline.map((event) => event.type)).toContain('artifact.created');
+  });
 });

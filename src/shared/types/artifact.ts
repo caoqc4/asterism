@@ -1,6 +1,6 @@
 export type ArtifactKind = 'run_output' | 'note' | 'patch' | 'browser_evidence';
 
-export type ArtifactSourceType = 'run';
+export type ArtifactSourceType = 'run' | 'manual';
 
 export type ArtifactRecord = {
   id: string;
@@ -12,4 +12,17 @@ export type ArtifactRecord = {
   content: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type CreateManualArtifactInput = {
+  taskId: string;
+  title: string;
+  content?: string;
+  kind?: Extract<ArtifactKind, 'note'>;
+};
+
+export type UpdateArtifactInput = {
+  id: string;
+  title?: string;
+  content?: string;
 };

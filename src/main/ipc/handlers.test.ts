@@ -100,6 +100,9 @@ const {
     },
     artifactRepository: {
       createPatchFromRun: vi.fn(),
+      createManualNote: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
   },
 }));
@@ -491,6 +494,9 @@ describe('registerIpcHandlers', () => {
 
     const system = generateTextMock.mock.calls[0]?.[0]?.system as string;
     const prompt = generateTextMock.mock.calls[0]?.[0]?.prompt as string;
+    expect(system).toContain('Taskplane Agent Operating Principles');
+    expect(system).toContain('## Task Creation Protocol');
+    expect(system).toContain('Subtasks remain drafts until the user confirms creation.');
     expect(system).toContain('Choose the number of subtasks from the actual project boundaries');
     expect(system).toContain('do not split just to hit a number');
     expect(system).toContain('Use applicable confirmed work habits and SOP templates as reference context');

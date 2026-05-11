@@ -213,10 +213,6 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
 
   const runningCount = tasks.filter((t) => t.status === 'running').length;
   const waitingCount = tasks.filter((t) => t.status === 'waiting').length;
-  const taskAttributes = loadTaskAttributes();
-  const committedTaskCount = briefData
-    ? briefData.recentTasks.filter((task) => taskAttributes[task.id]?.commitment).length
-    : 0;
   const recentBriefSnapshots = briefData?.recentBriefSnapshots ?? [];
 
   return (
@@ -256,12 +252,6 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
             等待中: {briefData?.waitingTaskCount ?? waitingCount}
           </div>
         )}
-        {committedTaskCount > 0 && (
-          <div className="stat-chip">
-            <span className="dot" />
-            本周承诺: {committedTaskCount}
-          </div>
-        )}
         {(briefData?.activeTaskCount ?? 0) > 0 && (
           <div className="stat-chip">
             <span className="dot" />
@@ -274,12 +264,12 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
       <div className="brief-section">
         <div className="brief-section-label">内部信息</div>
         <div className="brief-section-note">
-          按共享 Priority Lane 排序；这里不是单独看板，拖拽只调整今日顺序。
+          按 Tasks 的默认排序信号排列；这里不是单独看板，拖拽只调整今日顺序。
         </div>
         <div className="focus-list">
           {orderAdjusted && (
             <div className="focus-order-note">
-              今日顺序已调整，仅今天有效；Priority Lane 不会被改写。
+              今日顺序已调整，仅今天有效；Tasks 默认排序不会被改写。
             </div>
           )}
           {tasks.map((task) => (
@@ -336,7 +326,7 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
             <div className="brief-empty">
               <p>暂无外部信号。</p>
               <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>
-                在 Connections 连接邮件或日历后，AI 会提取需要跟进的信号，并等待你确认是否长成任务。
+                在 External Access 授权邮件或日历后，AI 会提取需要跟进的信号，并等待你确认是否长成任务。
               </p>
             </div>
           )}
