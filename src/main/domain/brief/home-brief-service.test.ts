@@ -340,15 +340,15 @@ describe('HomeBriefService', () => {
     expect(homeData.highRiskTasks.map((task) => task.id)).toEqual(['task_risk']);
     expect(homeData.missingNextStepTasks.map((task) => task.id)).toEqual(['task_missing']);
     expect(homeData.recommendedActions.map((action) => action.id)).toEqual([
-      'risk:task_risk',
       'decision:decision_1',
+      'risk:task_risk',
       'artifact:artifact_1',
-      'waiting:task_waiting',
       'next-step:task_missing',
+      'waiting:task_waiting',
     ]);
     expect(homeData.recommendedActions.map((action) => action.lane)).toEqual([
-      'escalate_now',
       'unblock_or_decide',
+      'escalate_now',
       'continue_or_review',
       'clarify',
       'clarify',
@@ -565,6 +565,87 @@ describe('HomeBriefService', () => {
     expect(homeData.priorityLede).toBe(
       '当前最值得先处理的是依赖刚解除或上游任务刚就绪的任务；首页会优先提示重新判断是否解除依赖，再回到普通执行结果、产物和来源复核。 当前推进责任：当前主要由上游任务“Publish partner list”推进',
     );
+  });
+
+  it('orders dependency recommendations from upstream to downstream within the same priority lane', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-04T00:00:00.000Z'));
+
+    const rootTask = buildTask({
+      id: 'task_root',
+      title: '需求分析',
+      state: 'planned',
+      nextStep: '确认需求',
+      updatedAt: '2026-01-03T00:00:00.000Z',
+    });
+    const middleTask = buildTask({
+      id: 'task_middle',
+      title: '前后端开发',
+      state: 'planned',
+      nextStep: '开发联调',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    });
+    const leafTask = buildTask({
+      id: 'task_leaf',
+      title: '测试发布',
+      state: 'planned',
+      nextStep: '测试上线',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    const middleDependency = buildTaskDependency({
+      id: 'dependency_middle',
+      taskId: middleTask.id,
+      blockedByTaskId: rootTask.id,
+      blockedByTaskTitle: rootTask.title,
+      createdAt: '2026-01-02T00:00:00.000Z',
+    });
+    const leafDependency = buildTaskDependency({
+      id: 'dependency_leaf',
+      taskId: leafTask.id,
+      blockedByTaskId: middleTask.id,
+      blockedByTaskTitle: middleTask.title,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+
+    const service = new HomeBriefService(
+      {
+        list: vi.fn().mockResolvedValue([leafTask, middleTask, rootTask]),
+        getDetail: vi.fn().mockResolvedValue(buildTimelineDetail([])),
+      } as never,
+      {
+        getActiveForTask: vi.fn().mockResolvedValue(null),
+      } as never,
+      null,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        list: vi.fn().mockResolvedValue([]),
+      } as never,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      null,
+      {
+        listRecent: vi.fn().mockResolvedValue([]),
+      } as never,
+      () => null,
+      null,
+      {
+        listActiveForTasks: vi.fn().mockResolvedValue([leafDependency, middleDependency]),
+      } as never,
+    );
+
+    const homeData = await service.getHomeData();
+
+    expect(homeData.recommendedActions.map((action) => action.id)).toEqual([
+      'task-dependency:dependency_middle',
+    ]);
+    expect(homeData.recommendedActions[0]).toMatchObject({
+      label: '先推动上游任务：需求分析',
+      taskId: rootTask.id,
+      reason: '任务“前后端开发”当前依赖上游任务“需求分析”先完成。',
+    });
   });
 
   it('returns a steady-state recommendation when there is no urgent work', async () => {

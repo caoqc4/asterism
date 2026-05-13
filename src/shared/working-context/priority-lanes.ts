@@ -190,7 +190,7 @@ export function deriveTaskPriorityLaneMap(params: {
   }
 
   for (const decision of params.decisions) {
-    if (decision.status === 'pending') {
+    if (decision.status === 'pending' && decision.taskId) {
       assignLane(decision.taskId, 'unblock_or_decide');
     }
   }

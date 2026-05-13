@@ -965,6 +965,10 @@ export class TaskService {
       kind: created.kind,
       isKey: created.isKey,
       uri: created.uri,
+      capturedAt: created.capturedAt,
+      runId: created.runId ?? null,
+      batchId: created.batchId ?? null,
+      sourceRole: created.sourceRole ?? 'raw',
     });
 
     return created;
@@ -983,6 +987,10 @@ export class TaskService {
       kind: updated.kind,
       isKey: updated.isKey,
       uri: updated.uri,
+      capturedAt: updated.capturedAt,
+      runId: updated.runId ?? null,
+      batchId: updated.batchId ?? null,
+      sourceRole: updated.sourceRole ?? 'raw',
     });
 
     return updated;

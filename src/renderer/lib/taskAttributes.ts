@@ -1,6 +1,17 @@
 import { TASKPLANE_AGENT_PRINCIPLES } from '@shared/agent-principles';
 
-export type TaskExecutionType = 'simple' | 'project' | 'scheduled' | 'event';
+export type TaskExecutionType = 'simple' | 'project' | 'scheduled' | 'event' | 'routine';
+
+export type TaskOwner = 'user' | 'system';
+
+export type TaskVisibility = 'visible' | 'hidden';
+
+export type TaskTypeProfile = {
+  primaryType: TaskExecutionType;
+  facets: TaskExecutionType[];
+  owner: TaskOwner;
+  visibility: TaskVisibility;
+};
 
 export type TaskPlanningPrompt = {
   label: string;
@@ -12,6 +23,9 @@ export type TaskPlanningPromptSurface = 'capture' | 'panel';
 export type TaskAttributeRecord = {
   taskId: string;
   type: TaskExecutionType;
+  facets?: TaskExecutionType[];
+  owner?: TaskOwner;
+  visibility?: TaskVisibility;
   typeConfirmed?: boolean;
   parentTaskId: string | null;
   childTaskIds: string[];
@@ -52,9 +66,13 @@ export function saveTaskAttributes(
 ): TaskAttributeRecord {
   const all = loadTaskAttributes();
   const existing = all[taskId];
+  const type = patch.type ?? existing?.type ?? 'simple';
   const next: TaskAttributeRecord = {
     taskId,
-    type: patch.type ?? existing?.type ?? 'simple',
+    type,
+    facets: normalizeTaskTypeFacets(patch.facets ?? existing?.facets, type),
+    owner: patch.owner ?? existing?.owner ?? 'user',
+    visibility: patch.visibility ?? existing?.visibility ?? 'visible',
     typeConfirmed: patch.typeConfirmed ?? (patch.type !== undefined ? true : existing?.typeConfirmed ?? false),
     parentTaskId: patch.parentTaskId !== undefined ? patch.parentTaskId ?? null : existing?.parentTaskId ?? null,
     childTaskIds: patch.childTaskIds ?? existing?.childTaskIds ?? [],
@@ -88,6 +106,9 @@ export function moveTaskToProject(taskId: string, projectId: string | null): {
     previousProject = {
       taskId: previousProjectId,
       type: previous?.type ?? 'project',
+      facets: normalizeTaskTypeFacets(previous?.facets, previous?.type ?? 'project'),
+      owner: previous?.owner ?? 'user',
+      visibility: previous?.visibility ?? 'visible',
       typeConfirmed: previous?.typeConfirmed ?? true,
       parentTaskId: previous?.parentTaskId ?? null,
       childTaskIds: (previous?.childTaskIds ?? []).filter((id) => id !== taskId),
@@ -105,6 +126,9 @@ export function moveTaskToProject(taskId: string, projectId: string | null): {
     nextProject = {
       taskId: projectId,
       type: 'project',
+      facets: normalizeTaskTypeFacets(project?.facets, 'project'),
+      owner: project?.owner ?? 'user',
+      visibility: project?.visibility ?? 'visible',
       typeConfirmed: true,
       parentTaskId: project?.parentTaskId ?? null,
       childTaskIds: childIds.includes(taskId) ? childIds : [...childIds, taskId],
@@ -119,6 +143,9 @@ export function moveTaskToProject(taskId: string, projectId: string | null): {
   const task: TaskAttributeRecord = {
     taskId,
     type: existing?.type ?? 'simple',
+    facets: normalizeTaskTypeFacets(existing?.facets, existing?.type ?? 'simple'),
+    owner: existing?.owner ?? 'user',
+    visibility: existing?.visibility ?? 'visible',
     typeConfirmed: existing?.typeConfirmed ?? false,
     parentTaskId: projectId && projectId !== taskId ? projectId : null,
     childTaskIds: existing?.childTaskIds ?? [],
@@ -135,12 +162,63 @@ export function moveTaskToProject(taskId: string, projectId: string | null): {
   return { task, previousProject, nextProject };
 }
 
+export function normalizeTaskTypeFacets(
+  facets: TaskExecutionType[] | undefined,
+  primaryType: TaskExecutionType,
+): TaskExecutionType[] {
+  const ordered: TaskExecutionType[] = [primaryType];
+  for (const facet of facets ?? []) {
+    if (!ordered.includes(facet)) ordered.push(facet);
+  }
+  return ordered;
+}
+
+export function buildTaskTypeProfile(
+  primaryType: TaskExecutionType,
+  facets: TaskExecutionType[] = [],
+  options: Partial<Pick<TaskTypeProfile, 'owner' | 'visibility'>> = {},
+): TaskTypeProfile {
+  return {
+    primaryType,
+    facets: normalizeTaskTypeFacets(facets, primaryType),
+    owner: options.owner ?? 'user',
+    visibility: options.visibility ?? 'visible',
+  };
+}
+
 export function inferTaskExecutionType(title: string): TaskExecutionType {
   const normalized = title.toLowerCase();
   if (/每(日|天|周|月)|daily|weekly|monthly|定期|定时|周期/.test(normalized)) return 'scheduled';
   if (/收到|当.+时|触发|监听|监控|邮件|gmail|webhook|event/.test(normalized)) return 'event';
+  if (/常设|常规|日常|长期|持续|运营|维护|管理|知识库|笔记|routine|ongoing|evergreen/.test(normalized)) return 'routine';
   if (/项目|开发|小程序|软件|应用|app|上线|重构|完整|方案|计划|campaign|project/.test(normalized)) return 'project';
   return 'simple';
+}
+
+export function inferTaskTypeProfile(title: string): TaskTypeProfile {
+  const normalized = title.toLowerCase();
+  const hasProject = /项目|开发|小程序|软件|应用|app|上线|重构|完整|方案|计划|campaign|project/.test(normalized);
+  const hasScheduled = /每(日|天|周|月)|daily|weekly|monthly|定期|定时|周期|早报|日报|周报|月报/.test(normalized);
+  const hasEvent = /收到|当.+时|触发|监听|监控|邮件|gmail|webhook|event|更新时|有新/.test(normalized);
+  const hasRoutine = /常设|常规|日常|长期|持续|运营|维护|管理|知识库|笔记|资讯|新闻|信息跟踪|订阅|routine|ongoing|evergreen/.test(
+    normalized,
+  );
+
+  const primaryType: TaskExecutionType = hasProject
+    ? 'project'
+    : hasRoutine
+      ? 'routine'
+      : hasScheduled
+        ? 'scheduled'
+        : hasEvent
+          ? 'event'
+          : 'simple';
+  const facets: TaskExecutionType[] = [];
+  if (hasRoutine) facets.push('routine');
+  if (hasProject) facets.push('project');
+  if (hasScheduled) facets.push('scheduled');
+  if (hasEvent) facets.push('event');
+  return buildTaskTypeProfile(primaryType, facets);
 }
 
 export function defaultScheduleForType(type: TaskExecutionType): string | null {
@@ -209,6 +287,16 @@ export function buildTaskPlanningPrompt(
       prompt: [
         `请继续规划「${taskTitle}」这条事件触发任务。`,
         '先确认它是否应该保持为事件触发任务，再帮我梳理监听来源、触发条件、触发后写入哪里，以及什么情况下需要推到 Brief。',
+      ].join('\n'),
+    };
+  }
+  if (type === 'routine') {
+    return {
+      label: '规划常设维护',
+      prompt: [
+        `请继续规划「${taskTitle}」这条常设任务。`,
+        '先确认它长期存在的目的、维护范围、触发/检查节奏、记录位置和什么情况下需要推到 Brief。',
+        '如果它包含阶段性建设工作，请建议是否拆出一个项目型任务；如果只是日常维护，请保持为常设任务。',
       ].join('\n'),
     };
   }

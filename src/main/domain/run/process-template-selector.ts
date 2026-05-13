@@ -23,7 +23,7 @@ export type ProcessTemplateSelectionResult = {
 function selectPromptKeySources(task: TaskDetail) {
   return task.sourceContexts
     .filter((item) => item.status === 'active' && item.isKey)
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .sort((a, b) => (b.capturedAt ?? b.updatedAt).localeCompare(a.capturedAt ?? a.updatedAt))
     .slice(0, 3);
 }
 

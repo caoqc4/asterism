@@ -2,6 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import type { HomeBriefData } from '@shared/types/brief';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import { loadTaskAttributes } from '../lib/taskAttributes';
+import {
+  recordBriefRecommendationOrderAdjustment,
+  recordBriefRecommendationSnapshot,
+} from '../lib/briefRecommendationRecords';
 
 type Lane = 'escalate' | 'unblock' | 'continue' | 'clarify' | 'steady';
 
@@ -12,7 +16,9 @@ interface FocusTask {
   whyNow: string;
   action: string;
   state?: HomeBriefData['recentTasks'][number]['state'];
-  status?: 'running' | 'waiting' | 'blocked';
+  status?: 'running' | 'waiting' | 'blocked' | 'clarify' | 'progressing';
+  parentTaskId?: string | null;
+  parentTitle?: string | null;
 }
 
 interface ExternalSignal {
@@ -23,11 +29,11 @@ interface ExternalSignal {
 }
 
 const LANE_LABELS: Record<Lane, string> = {
-  escalate: 'Escalate now',
-  unblock:  'Unblock or decide',
-  continue: 'Continue or review',
-  clarify:  'Clarify',
-  steady:   'Steady',
+  escalate: '优先处理',
+  unblock:  '解除阻塞',
+  continue: '继续推进',
+  clarify:  '待明确',
+  steady:   '平稳推进',
 };
 
 const DEFER_OPTIONS = [
@@ -59,7 +65,25 @@ function statusFromBriefTask(task: HomeBriefData['recentTasks'][number] | undefi
   if (!task) return undefined;
   if (task.state === 'running') return 'running';
   if (task.state === 'waiting_external') return 'waiting';
-  if (task.activeBlocker) return 'blocked';
+  if (task.activeBlocker || task.activeDependency) return 'blocked';
+  if (task.state === 'captured') return 'clarify';
+  if (task.state === 'planned' || task.state === 'triaged') return 'progressing';
+  return undefined;
+}
+
+function statusFromRecommendedAction(action: HomeBriefData['recommendedActions'][number]): FocusTask['status'] {
+  if (action.id.startsWith('blocker:') || action.id.startsWith('source-context:blocker:')) return 'blocked';
+  if (action.id.startsWith('waiting:')) return 'waiting';
+  if (action.id.startsWith('next-step:') || action.id.startsWith('source-context:next-step:')) return 'clarify';
+  if (
+    action.id.startsWith('task-dependency:')
+    || action.id.startsWith('artifact:')
+    || action.id.startsWith('source-context:')
+    || action.id.startsWith('completion-ready:')
+    || action.id.startsWith('near-completion:')
+  ) {
+    return 'progressing';
+  }
   return undefined;
 }
 
@@ -83,28 +107,86 @@ function actionPromptFromTask(task: FocusTask): string | undefined {
   return undefined;
 }
 
+function focusStatusLabel(task: FocusTask): string {
+  if (task.status === 'blocked') return '有阻塞';
+  if (task.status === 'waiting') return '等待中';
+  if (task.status === 'clarify' || task.lane === 'clarify') return '待明确';
+  if (task.status === 'running' || task.status === 'progressing') return '推进中';
+  if (task.lane === 'steady') return '平稳推进';
+  return LANE_LABELS[task.lane];
+}
+
+function focusStatusTone(task: FocusTask): Lane {
+  if (task.status === 'blocked') return 'unblock';
+  if (task.status === 'waiting' || task.status === 'clarify' || task.lane === 'clarify') return 'clarify';
+  if (task.lane === 'steady') return 'steady';
+  if (task.lane === 'escalate') return 'escalate';
+  return 'continue';
+}
+
+function titleFromRecommendedAction(action: HomeBriefData['recommendedActions'][number]): string {
+  const [, title] = action.label.split('：');
+  return title?.trim() || action.taskId || action.id;
+}
+
 function focusTasksFromBriefData(data: HomeBriefData): FocusTask[] {
+  const taskAttrs = loadTaskAttributes();
+  const titleById = new Map<string, string>();
+  for (const task of data.recentTasks) {
+    titleById.set(task.id, task.title);
+  }
+  for (const action of data.recommendedActions) {
+    if (action.taskId && !titleById.has(action.taskId)) {
+      titleById.set(action.taskId, titleFromRecommendedAction(action));
+    }
+  }
+
   const seen = new Set<string>();
-  return data.recommendedActions
+  const candidates = data.recommendedActions
     .filter((a) => {
       if (!a.taskId || seen.has(a.taskId)) return false;
       seen.add(a.taskId);
       return true;
     })
-    .slice(0, 5)
     .map((a) => {
       const task = data.recentTasks.find((t) => t.id === a.taskId);
-      const status = statusFromBriefTask(task);
+      const status = statusFromBriefTask(task) ?? statusFromRecommendedAction(a);
+      const attrs = taskAttrs[a.taskId!];
+      const parentTaskId = attrs?.parentTaskId ?? null;
       return {
         id: a.taskId!,
-        title: task?.title ?? a.taskId!,
+        title: task?.title ?? titleById.get(a.taskId!) ?? titleFromRecommendedAction(a),
         lane: laneFromPriorityLane(a.lane),
         whyNow: a.reason,
         action: actionLabelFromStatus(status, a.label),
         state: task?.state,
         status,
+        parentTaskId,
+        parentTitle: parentTaskId ? titleById.get(parentTaskId) ?? null : null,
       };
     });
+
+  const visibleChildParentIds = new Set(
+    candidates
+      .map((task) => task.parentTaskId)
+      .filter((parentTaskId): parentTaskId is string => Boolean(parentTaskId)),
+  );
+
+  return candidates
+    .filter((task) => {
+      const attrs = taskAttrs[task.id];
+      const isProjectParentWithVisibleChild =
+        !task.parentTaskId &&
+        (attrs?.childTaskIds?.length ?? 0) > 0 &&
+        visibleChildParentIds.has(task.id);
+
+      if (!isProjectParentWithVisibleChild) {
+        return true;
+      }
+
+      return task.lane === 'escalate' || task.lane === 'unblock';
+    })
+    .slice(0, 5);
 }
 
 export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPageProps) {
@@ -119,8 +201,14 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
   useEffect(() => {
     if (!window.api) { setLoading(false); return; }
     window.api.getHomeBrief().then((data) => {
+      const focusTasks = focusTasksFromBriefData(data);
+      recordBriefRecommendationSnapshot({
+        recommendedTasks: focusTasks.map((task) => ({ id: task.id, title: task.title })),
+        reasonCount: data.recommendedActions.length,
+        source: 'brief_open',
+      });
       setBriefData(data);
-      setTasks(focusTasksFromBriefData(data));
+      setTasks(focusTasks);
       setOrderAdjusted(false);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
@@ -156,6 +244,11 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
       const [item] = next.splice(fromIdx, 1);
       if (!item) return prev;
       next.splice(toIdx, 0, item);
+      recordBriefRecommendationOrderAdjustment({
+        fromTaskId: from,
+        toTaskId: to,
+        orderedTasks: next.map((task) => ({ id: task.id, title: task.title })),
+      });
       return next;
     });
     setOrderAdjusted(true);
@@ -243,7 +336,7 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
         {(briefData?.recentRunCount ?? runningCount) > 0 && (
           <div className="stat-chip">
             <span className="dot running" />
-            Running: {briefData?.recentRunCount ?? runningCount}
+            运行中: {briefData?.recentRunCount ?? runningCount}
           </div>
         )}
         {(briefData?.waitingTaskCount ?? waitingCount) > 0 && (
@@ -264,7 +357,7 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
       <div className="brief-section">
         <div className="brief-section-label">内部信息</div>
         <div className="brief-section-note">
-          按 Tasks 的默认排序信号排列；这里不是单独看板，拖拽只调整今日顺序。
+          按 Tasks 的优先处理信号排列；这里不是单独看板，拖拽只调整今日顺序。
         </div>
         <div className="focus-list">
           {orderAdjusted && (
@@ -494,8 +587,8 @@ function FocusCard({
       {/* Card body */}
       <div className="focus-body">
         <div className="focus-top">
-          <span className={`tag lane-${task.lane}`}>
-            {LANE_LABELS[task.lane]}
+          <span className={`tag lane-${focusStatusTone(task)}`}>
+            {focusStatusLabel(task)}
           </span>
           {task.status === 'running' && (
             <span className="dot running" style={{ marginLeft: 6 }} />
@@ -508,6 +601,9 @@ function FocusCard({
           )}
         </div>
         <div className="focus-title">{task.title}</div>
+        {task.parentTitle && (
+          <div className="focus-parent">所属项目：{task.parentTitle}</div>
+        )}
         <div className={whyNowClass}>{task.whyNow}</div>
       </div>
 

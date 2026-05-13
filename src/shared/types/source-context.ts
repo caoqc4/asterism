@@ -2,6 +2,8 @@ export type SourceContextKind = 'link' | 'doc' | 'issue' | 'pr' | 'website_list'
 
 export type SourceContextStatus = 'active' | 'archived';
 
+export type SourceContextRole = 'raw' | 'digest' | 'stable_reference';
+
 export type SourceContextRecord = {
   id: string;
   taskId: string;
@@ -12,6 +14,10 @@ export type SourceContextRecord = {
   content: string | null;
   note: string | null;
   status: SourceContextStatus;
+  capturedAt?: string;
+  runId?: string | null;
+  batchId?: string | null;
+  sourceRole?: SourceContextRole;
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
@@ -25,6 +31,10 @@ export type CreateSourceContextInput = {
   uri?: string | null;
   content?: string | null;
   note?: string | null;
+  capturedAt?: string | null;
+  runId?: string | null;
+  batchId?: string | null;
+  sourceRole?: SourceContextRole;
 };
 
 export type UpdateSourceContextInput = {

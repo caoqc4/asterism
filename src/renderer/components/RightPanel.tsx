@@ -62,6 +62,7 @@ const TASK_TYPE_HABIT_LABELS: Record<TaskExecutionType, string> = {
   project:   '项目型',
   scheduled: '定时任务',
   event:     '事件触发',
+  routine:   '常设任务',
 };
 
 const MIN_SESSION_REFRESH_MESSAGE_LIMIT = 3;
@@ -95,7 +96,7 @@ const GENERIC_HANDOFF_PATTERNS = [
 
 function buildTaskTypeReviewPrompt(taskName: string): string {
   return [
-    `请判断「${taskName}」更适合哪种任务类型：一次性 / 定时重复 / 事件触发 / 项目型。`,
+    `请判断「${taskName}」更适合哪种任务类型：一次性 / 定时重复 / 事件触发 / 项目型 / 常设任务。`,
     '请先说明判断理由，再给出建议类型。',
     '如果是项目型，请只给高层级拆解方向，不要直接生成真实子任务；如果不是项目型，请说明下一步需要补齐什么上下文。',
   ].join('\n');
@@ -477,6 +478,7 @@ interface RightPanelProps {
   taskId: string | null;
   taskTitleHint?: string | null;
   draftPrompt?: string | null;
+  autoSendDraftPrompt?: boolean;
   selectedFile?: {
     path: string;
     kind: string;
@@ -489,7 +491,17 @@ interface RightPanelProps {
   onClearTask: () => void;
 }
 
-export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, selectedFile = null, hidden = false, onTaskCaptured, onClose, onClearTask }: RightPanelProps) {
+export function RightPanel({
+  taskId,
+  taskTitleHint = null,
+  draftPrompt = null,
+  autoSendDraftPrompt = false,
+  selectedFile = null,
+  hidden = false,
+  onTaskCaptured,
+  onClose,
+  onClearTask,
+}: RightPanelProps) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(taskId);
   const [titleCache, setTitleCache] = useState<Record<string, string>>({});
   const [messages, setMessages] = useState<Message[]>([]);
@@ -517,6 +529,7 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, s
   const [thinking, setThinking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastAutoSentDraftPromptRef = useRef<string | null>(null);
 
   // Fetch task title and seed welcome message when panel first opens with a task
   useEffect(() => {
@@ -546,14 +559,24 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, s
   }, []);
 
   useEffect(() => {
-    if (!draftPrompt || !taskId || taskId !== activeTaskId) return;
+    if (!draftPrompt || taskId !== activeTaskId) return;
+    if (autoSendDraftPrompt) {
+      const key = `${taskId ?? 'global'}:${draftPrompt}`;
+      if (lastAutoSentDraftPromptRef.current === key) return;
+      lastAutoSentDraftPromptRef.current = key;
+      void send(draftPrompt);
+      return;
+    }
     setInput(draftPrompt);
     textareaRef.current?.focus();
-  }, [activeTaskId, draftPrompt, taskId]);
+  }, [activeTaskId, autoSendDraftPrompt, draftPrompt, taskId]);
 
   // When taskId changes from outside (e.g. clicking a different task)
   useEffect(() => {
-    if (taskId === activeTaskId) return;
+    if (taskId === activeTaskId) {
+      setPendingSwitch((current) => current ? null : current);
+      return;
+    }
     if (taskId === null) {
       setActiveTaskId(null);
       setPendingSwitch(null);
@@ -576,7 +599,7 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, s
       if (title) setPendingSwitch({ taskId, taskTitle: title });
     };
     void fetchAndPropose();
-  }, [taskId]);
+  }, [activeTaskId, taskId, taskTitleHint, titleCache]);
 
   function confirmSwitch() {
     if (!pendingSwitch) return;
@@ -900,8 +923,8 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, s
     }
   }
 
-  async function send() {
-    const text = input.trim();
+  async function send(forcedText?: string) {
+    const text = (forcedText ?? input).trim();
     if (!text || thinking) return;
     setManualRefreshReady(null);
     setTaskFileProposal(null);
@@ -1323,7 +1346,7 @@ export function RightPanel({ taskId, taskTitleHint = null, draftPrompt = null, s
           <span className="panel-hint muted">⏎ 发送  ⇧⏎ 换行</span>
           <button
             className={`btn sm primary${!input.trim() || thinking ? ' disabled' : ''}`}
-            onClick={send}
+            onClick={() => void send()}
             disabled={!input.trim() || thinking}
           >
             发送

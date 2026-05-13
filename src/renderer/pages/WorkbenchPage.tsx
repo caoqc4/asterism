@@ -55,14 +55,21 @@ const TASK_TYPE_LABELS: Record<TaskExecutionType, string> = {
   project:   '项目型',
   scheduled: '定时任务',
   event:     '事件触发',
+  routine:   '常设任务',
 };
 
+function formatTaskTypeForWorkbench(attrs: TaskAttributeRecord | null): string {
+  if (!attrs) return '一次性';
+  if (attrs.parentTaskId) return attrs.type === 'project' ? '子项目型' : '项目子任务';
+  return TASK_TYPE_LABELS[attrs.type];
+}
+
 const LANE_LABELS: Record<string, string> = {
-  escalate: 'Escalate now',
-  unblock:  'Unblock or decide',
-  continue: 'Continue or review',
-  clarify:  'Clarify',
-  steady:   'Steady',
+  escalate: '优先处理',
+  unblock:  '解除阻塞',
+  continue: '继续推进',
+  clarify:  '待明确',
+  steady:   '平稳推进',
 };
 
 function deriveLane(detail: TaskDetail): string {
@@ -95,7 +102,7 @@ function buildResumeSignals(params: {
   if (!detail) return [];
 
   const signals: ResumeSignal[] = [
-    { label: `Default Sort · ${LANE_LABELS[deriveLane(detail)] ?? deriveLane(detail)}` },
+    { label: `默认排序 · ${LANE_LABELS[deriveLane(detail)] ?? deriveLane(detail)}` },
   ];
   const keySources = detail.sourceContexts.filter((source) => source.isKey).length;
   const completedCriteria = detail.completionCriteria.filter((criterion) => Boolean(criterion.satisfiedAt)).length;
@@ -246,7 +253,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
     const recentRun = activeRun ?? runs[0] ?? null;
     const recentRunCheck = recentRun ? evaluateRunSelfCheck(recentRun, activeRunDetail) : null;
     const keySources = selectRecentKeySources(detail.sourceContexts, 2);
-    const typeLabel = taskAttrs ? TASK_TYPE_LABELS[taskAttrs.type] : '一次性';
+    const typeLabel = formatTaskTypeForWorkbench(taskAttrs);
     const statusLabel = status === 'running'
       ? '正在执行'
       : status === 'waiting'
@@ -418,7 +425,7 @@ export function WorkbenchPage({ taskId, onBack, onOpenPanel }: WorkbenchPageProp
 
       {taskAttrs && (taskAttrs.type !== 'simple' || taskAttrs.parentTaskId || taskAttrs.commitment) && (
         <div className="workbench-config-strip">
-          <span className="tag">{TASK_TYPE_LABELS[taskAttrs.type]}</span>
+          <span className="tag">{formatTaskTypeForWorkbench(taskAttrs)}</span>
           {taskAttrs.type === 'event' && <span className="workbench-config-status">等待触发</span>}
           {currentProject && <button className="workbench-config-pill" onClick={() => setShowEditPanel(true)}>📁 {currentProject.title}</button>}
           {taskAttrs.schedule && <button className="workbench-config-pill" onClick={() => setShowEditPanel(true)}>🔁 {taskAttrs.schedule} ▾</button>}
@@ -1119,7 +1126,9 @@ function SourcesTab({
   }
 
   const keySourceCount = sources.filter((source) => source.isKey).length;
-  const latestSource = [...sources].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null;
+  const latestSource = [...sources].sort((a, b) =>
+    (b.capturedAt ?? b.updatedAt).localeCompare(a.capturedAt ?? a.updatedAt)
+  )[0] ?? null;
 
   return (
     <div className="tab-content">
@@ -1134,7 +1143,7 @@ function SourcesTab({
             <span>关键来源</span>
           </div>
           <div className="source-summary-note">
-            <span>最近更新：{latestSource ? formatDate(latestSource.updatedAt) : '暂无'}</span>
+            <span>最近采集：{latestSource ? formatDate(latestSource.capturedAt ?? latestSource.updatedAt) : '暂无'}</span>
             <span>AI 上下文优先读取最多 3 条关键来源。</span>
             {keySourceCount > 3 && (
               <span>已标记 {keySourceCount} 条关键来源；最近更新的 3 条会优先进入 AI 上下文。</span>
@@ -1153,7 +1162,7 @@ function SourcesTab({
           {s.isKey && <span className="tag lane-escalate">关键</span>}
           <span className="source-label">{s.title}</span>
           {s.uri && <a className="source-uri muted" href={s.uri} target="_blank" rel="noreferrer">{s.uri.slice(0, 40)}…</a>}
-          <span className="muted" style={{ marginLeft: 'auto', flexShrink: 0 }}>{formatDate(s.updatedAt)}</span>
+          <span className="muted" style={{ marginLeft: 'auto', flexShrink: 0 }}>{formatDate(s.capturedAt ?? s.updatedAt)}</span>
           <button
             className="btn sm ghost"
             disabled={savingSourceId === s.id}
@@ -1868,7 +1877,7 @@ function TaskEditPanel({
       <div className="task-edit-row">
         <label className="task-edit-label">任务类型</label>
         <div className="task-edit-risk-row">
-          {(['simple', 'project', 'scheduled', 'event'] as TaskExecutionType[]).map((item) => (
+          {(['simple', 'project', 'scheduled', 'event', 'routine'] as TaskExecutionType[]).map((item) => (
             <button
               key={item}
               className={`task-edit-risk-btn${type === item ? ' active' : ''}`}

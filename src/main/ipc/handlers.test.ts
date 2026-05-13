@@ -401,7 +401,8 @@ describe('registerIpcHandlers', () => {
     });
 
     const system = generateTextMock.mock.calls[0]?.[0]?.system as string;
-    expect(system).toContain('Key sources: 财务复核, 法务意见, CEO 批注');
+    expect(system).toContain('Key sources: 财务复核 (captured=2026-01-04T00:00:00.000Z, role=raw): no summary / 法务意见');
+    expect(system).toContain('Source freshness rule: prefer current-run, selected, key, or recently captured sources');
     expect(system).toContain('Completion criteria: open: 确认最终材料 / satisfied: 更新现金流页');
     expect(system).toContain('Recent artifacts: cashflow.png (browser_evidence), report_v1.md (note)');
     expect(system).not.toContain('旧邮件');
@@ -501,7 +502,8 @@ describe('registerIpcHandlers', () => {
     expect(system).toContain('do not split just to hit a number');
     expect(system).toContain('Use applicable confirmed work habits and SOP templates as reference context');
     expect(system).not.toContain('Create 3 to 7 subtasks');
-    expect(prompt).toContain('Key sources: 财务复核: finance / 法务意见: legal / CEO 批注: ceo');
+    expect(prompt).toContain('Key sources: 财务复核 (captured=2026-01-04T00:00:00.000Z, role=raw): finance / 法务意见');
+    expect(prompt).toContain('Source freshness rule: prefer current-run, selected, key, or recently captured sources');
     expect(prompt).toContain('Applicable confirmed work habits: 「董事会材料修订」流程模板');
     expect(prompt).not.toContain('待确认规则不进入拆解提示');
     expect(prompt).not.toContain('旧邮件');

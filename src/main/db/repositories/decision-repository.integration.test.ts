@@ -65,6 +65,40 @@ describe('DecisionRepository integration', () => {
     expect(decisionCreatedEvent?.payload).toContain('"sourceType":"agent_checkpoint"');
   });
 
+  it('creates and handles a global decision without a task timeline event', async () => {
+    const created = await decisionRepository.create({
+      title: 'Approve external connector write access',
+      scope: 'external_access',
+      kind: 'external_write',
+      sourceType: 'external_access',
+      sourceLabel: 'Gmail connector',
+      context: {
+        whyNow: 'The agent needs permission before writing outside the workspace.',
+        ifDeferred: 'The external action remains paused.',
+      },
+      options: [
+        { id: 'approve', label: 'Approve once', description: 'Allow this write once.' },
+        { id: 'defer', label: 'Ask later', description: 'Keep the request pending.' },
+      ],
+      recommendation: {
+        optionId: 'approve',
+        label: 'Approve once',
+        reason: 'The action is scoped and reversible.',
+      },
+    });
+
+    expect(created.taskId).toBeNull();
+    expect(created.scope).toBe('external_access');
+    expect(created.kind).toBe('external_write');
+    expect(created.context?.whyNow).toContain('permission');
+    expect(created.options?.map((option) => option.label)).toEqual(['Approve once', 'Ask later']);
+    expect(created.recommendation?.label).toBe('Approve once');
+
+    const approved = await decisionRepository.act({ id: created.id, action: 'approve' });
+    expect(approved.status).toBe('approved');
+    expect(approved.taskId).toBeNull();
+  });
+
   it('maps approve/defer/cancel actions to the expected statuses', async () => {
     const task = await taskRepository.create({
       title: 'Resolve approval path',

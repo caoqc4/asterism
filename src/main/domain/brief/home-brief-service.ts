@@ -44,6 +44,11 @@ import { comparePriorityLaneContext, comparePriorityLanes, deriveTaskPriorityLan
 import { getResponsibilitySummary } from '../../../shared/working-context/responsibility.js';
 import { parseTimelinePayload } from '../../../shared/working-context/timeline.js';
 import { isUnconfirmedPanelCaptureRecord } from '../../../shared/panel-capture.js';
+import {
+  comparePriorityRecommendations,
+  type PriorityRecommendationCandidate,
+  type PriorityRecommendationTaskSignal,
+} from '../../../shared/priority-recommendation-ranking.js';
 
 type InternalRecommendedAction = RecommendedAction & {
   lane: PriorityLane;
@@ -59,13 +64,61 @@ type DependencyReevaluationRecord = {
   updatedAt: string;
 };
 
-const LANE_ORDER: Record<PriorityLane, number> = {
-  escalate_now: 0,
-  unblock_or_decide: 1,
-  continue_or_review: 2,
-  clarify: 3,
-  steady: 4,
-};
+function resolveActionableDependencyTarget(
+  task: HomeTaskSliceRecord,
+  taskById: Map<string, HomeTaskSliceRecord>,
+): HomeTaskSliceRecord | null {
+  const dependency = task.activeDependency;
+
+  if (!dependency?.blockedByTaskId) {
+    return null;
+  }
+
+  const visited = new Set<string>([task.id]);
+  let target = taskById.get(dependency.blockedByTaskId) ?? null;
+
+  while (target?.activeDependency?.blockedByTaskId) {
+    if (visited.has(target.id)) {
+      return target;
+    }
+
+    visited.add(target.id);
+    target = taskById.get(target.activeDependency.blockedByTaskId) ?? target;
+
+    if (visited.has(target.id)) {
+      return target;
+    }
+  }
+
+  return target;
+}
+
+function actionableDependencyDistance(
+  task: HomeTaskSliceRecord,
+  taskById: Map<string, HomeTaskSliceRecord>,
+): number {
+  const dependency = task.activeDependency;
+
+  if (!dependency?.blockedByTaskId) {
+    return 0;
+  }
+
+  const visited = new Set<string>([task.id]);
+  let distance = 1;
+  let current = taskById.get(dependency.blockedByTaskId) ?? null;
+
+  while (current?.activeDependency?.blockedByTaskId) {
+    if (visited.has(current.id)) {
+      return distance;
+    }
+
+    visited.add(current.id);
+    distance += 1;
+    current = taskById.get(current.activeDependency.blockedByTaskId) ?? null;
+  }
+
+  return distance;
+}
 
 function pickRunVerification(
   runId: string,
@@ -95,6 +148,7 @@ function buildRecommendedActions(params: {
   const actions: InternalRecommendedAction[] = [];
   const taskById = new Map(params.activeTasks.map((task) => [task.id, task]));
   const blockedTaskIds = new Set<string>();
+  const dependencyTargetTaskIds = new Set<string>();
   const missingNextStepTaskIds = new Set(params.missingNextStepTasks.map((task) => task.id));
   let order = 0;
   const compareBlockedTasks = (left: HomeTaskSliceRecord, right: HomeTaskSliceRecord) =>
@@ -122,7 +176,7 @@ function buildRecommendedActions(params: {
   }
 
   for (const decision of params.pendingDecisions) {
-    blockedTaskIds.add(decision.taskId);
+    if (decision.taskId) blockedTaskIds.add(decision.taskId);
     actions.push({
       id: `decision:${decision.id}`,
       label: `尽快拍板：${decision.title}`,
@@ -139,7 +193,18 @@ function buildRecommendedActions(params: {
     });
   }
 
-  for (const task of params.dependencyTasks) {
+  const dependencyTasksByActionability = [...params.dependencyTasks].sort((left, right) => {
+    const distanceDiff =
+      actionableDependencyDistance(left, taskById) - actionableDependencyDistance(right, taskById);
+
+    if (distanceDiff !== 0) {
+      return distanceDiff;
+    }
+
+    return (left.activeDependency?.createdAt ?? '').localeCompare(right.activeDependency?.createdAt ?? '');
+  });
+
+  for (const task of dependencyTasksByActionability) {
     if (!task.activeDependency || blockedTaskIds.has(task.id)) {
       continue;
     }
@@ -147,13 +212,29 @@ function buildRecommendedActions(params: {
     blockedTaskIds.add(task.id);
     const dependencyReevaluation = params.dependencyReevaluationByTaskId.get(task.id);
     const staleDependency = isStaleDependency(task.activeDependency.createdAt);
+    const actionableTarget = staleDependency || dependencyReevaluation
+      ? null
+      : resolveActionableDependencyTarget(task, taskById);
+    const dependencyTargetTaskId = actionableTarget?.id ?? task.activeDependency.blockedByTaskId;
+
+    if (!staleDependency && !dependencyReevaluation && dependencyTargetTaskIds.has(dependencyTargetTaskId)) {
+      continue;
+    }
+
+    if (!staleDependency && !dependencyReevaluation) {
+      dependencyTargetTaskIds.add(dependencyTargetTaskId);
+    }
+
+    const dependencyTargetTitle = actionableTarget?.title
+      ?? task.activeDependency.blockedByTaskTitle
+      ?? '未命名上游任务';
     actions.push({
       id: `task-dependency:${task.activeDependency.id}`,
       label: staleDependency
         ? `优先升级依赖链路：${task.title}`
         : dependencyReevaluation
         ? `重新判断依赖：${task.title}`
-        : `先推动上游任务：${task.activeDependency.blockedByTaskTitle ?? task.title}`,
+        : `先推动上游任务：${dependencyTargetTitle}`,
       reason: staleDependency
         ? `任务“${task.title}”已依赖上游任务“${
             task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'
@@ -162,16 +243,16 @@ function buildRecommendedActions(params: {
         ? dependencyReevaluation.status === 'upstream_ready'
           ? `上游任务“${dependencyReevaluation.upstreamTaskTitle}”已完成，可重新判断任务“${task.title}”是否解除依赖并继续推进。`
           : `上游任务“${dependencyReevaluation.upstreamTaskTitle}”刚解除关键阻塞，可重新判断任务“${task.title}”是否恢复推进。`
-        : `任务“${task.title}”当前依赖上游任务“${
-            task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'
-          }”先完成。`,
+        : actionableTarget?.id === task.activeDependency.blockedByTaskId
+        ? `任务“${task.title}”当前依赖上游任务“${dependencyTargetTitle}”先完成。`
+        : `任务“${task.title}”当前处在依赖链下游，需要先完成最上游可推进任务“${dependencyTargetTitle}”。`,
       responsibilitySummary: getResponsibilitySummary({
         kind: 'upstream_task',
-        label: task.activeDependency.blockedByTaskTitle,
+        label: dependencyTargetTitle,
         audience: 'home',
         subject: 'dependency',
       }),
-      taskId: staleDependency || dependencyReevaluation ? task.id : task.activeDependency.blockedByTaskId,
+      taskId: staleDependency || dependencyReevaluation ? task.id : dependencyTargetTaskId,
       priority: staleDependency ? 'high' : 'medium',
       lane: staleDependency ? 'escalate_now' : dependencyReevaluation ? 'continue_or_review' : 'unblock_or_decide',
       order: order++,
@@ -182,7 +263,7 @@ function buildRecommendedActions(params: {
           ? `优先推动上游任务“${task.activeDependency.blockedByTaskTitle ?? '未命名上游任务'}”，并重新判断是否解除对“${task.title}”的依赖。`
           : dependencyReevaluation
           ? `基于上游任务进展重新判断是否解除依赖：${dependencyReevaluation.upstreamTaskTitle}`
-          : `先完成这条上游任务，以解除对“${task.title}”的依赖。`,
+          : `先完成上游任务“${dependencyTargetTitle}”，以解除对“${task.title}”的依赖链。`,
       },
     });
   }
@@ -424,23 +505,11 @@ function buildRecommendedActions(params: {
   }
 
   return actions
-    .sort((left, right) => {
-      const laneDiff = LANE_ORDER[left.lane] - LANE_ORDER[right.lane];
-
-      if (laneDiff !== 0) {
-        return laneDiff;
-      }
-
-      const priorityDiff =
-        (left.priority === 'high' ? 0 : left.priority === 'medium' ? 1 : 2) -
-        (right.priority === 'high' ? 0 : right.priority === 'medium' ? 1 : 2);
-
-      if (priorityDiff !== 0) {
-        return priorityDiff;
-      }
-
-      return left.order - right.order;
-    })
+    .sort((left, right) => comparePriorityRecommendations(
+      left as PriorityRecommendationCandidate,
+      right as PriorityRecommendationCandidate,
+      taskById as Map<string, PriorityRecommendationTaskSignal>,
+    ))
     .slice(0, 5)
     .map(({ order: _order, ...action }) => action);
 }
@@ -700,10 +769,14 @@ export class HomeBriefService {
     const activeTaskIds = new Set(params.tasks.map((task) => task.id));
 
     const approvedDecisions = [...params.decisions]
-      .filter((decision) => decision.status === 'approved' && activeTaskIds.has(decision.taskId))
+      .filter((decision): decision is DecisionRecord & { taskId: string } => {
+        if (decision.status !== 'approved' || !decision.taskId) return false;
+        return activeTaskIds.has(decision.taskId);
+      })
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
 
     for (const decision of approvedDecisions) {
+      if (!decision.taskId) continue;
       if (!evidenceByTaskId.has(decision.taskId)) {
         evidenceByTaskId.set(decision.taskId, {
           sourceType: 'decision',
@@ -1241,15 +1314,15 @@ export class HomeBriefService {
     };
 
     const decisionEvents: HomeActivityRecord[] = decisions
-      .filter((decision) => decision.status !== 'pending')
+      .filter((decision) => decision.status !== 'pending' && Boolean(decision.taskId))
       .map((decision) => ({
         id: `decision:${decision.id}`,
         sourceType: 'decision',
         sourceId: decision.id,
         lane: getDecisionLane(decision.status),
         responsibilitySummary: null,
-        taskId: decision.taskId,
-        taskTitle: taskTitleById.get(decision.taskId) ?? decision.taskId,
+        taskId: decision.taskId!,
+        taskTitle: taskTitleById.get(decision.taskId!) ?? decision.taskId!,
         title: decision.title,
         status: decision.status,
         updatedAt: decision.updatedAt,
@@ -1469,7 +1542,7 @@ export class HomeBriefService {
     const activeTasks = workflowTasks.filter((task) => !['completed', 'archived'].includes(task.state));
     const completedTasks = workflowTasks.filter((task) => task.state === 'completed');
     const pendingDecisions = decisions.filter(
-      (decision) => decision.status === 'pending' && !unconfirmedPanelCaptureTaskIds.has(decision.taskId),
+      (decision) => decision.status === 'pending' && (!decision.taskId || !unconfirmedPanelCaptureTaskIds.has(decision.taskId)),
     );
     const waitingTasks = workflowTasks.filter(
       (task) =>
@@ -1617,7 +1690,7 @@ export class HomeBriefService {
       .filter((task) => !dependencyRecoveryTaskIds.has(task.id))
       .map((task) => task.id);
     const unblockOrDecideTaskCount = new Set([
-      ...pendingDecisions.map((decision) => decision.taskId),
+      ...pendingDecisions.map((decision) => decision.taskId).filter((taskId): taskId is string => Boolean(taskId)),
       ...blockerTasks.map((task) => task.id),
       ...unresolvedDependencyTaskIds,
       ...blockerReevaluationTaskIds,

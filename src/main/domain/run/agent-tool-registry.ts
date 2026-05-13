@@ -10,7 +10,7 @@ import type {
   AgentWorkingContext,
 } from '../../../shared/types/agent-execution.js';
 import type { DecisionDraftRecord, DraftDecisionInput } from '../../../shared/types/decision.js';
-import type { SourceContextKind } from '../../../shared/types/source-context.js';
+import type { SourceContextKind, SourceContextRole } from '../../../shared/types/source-context.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import type { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
@@ -60,6 +60,9 @@ type SourceContextCreateInput = {
   uri?: string | null;
   content?: string | null;
   note?: string | null;
+  capturedAt?: string | null;
+  batchId?: string | null;
+  sourceRole?: SourceContextRole;
 };
 
 type WorkspaceReadFileInput = {
@@ -94,6 +97,7 @@ const PRODUCT_PRINCIPLES_PROTECTED_FILES = new Set([
   'src/shared/agent-principles.ts',
 ]);
 const sourceContextKinds = new Set<SourceContextKind>(['link', 'doc', 'issue', 'pr', 'website_list', 'note']);
+const sourceContextRoles = new Set<SourceContextRole>(['raw', 'digest', 'stable_reference']);
 const WORKSPACE_COMMAND_ALLOWED_SCRIPTS = new Set([
   'test',
   'lint',
@@ -198,6 +202,10 @@ function parseSourceContextCreateInput(input: unknown): Required<Pick<SourceCont
     throw new Error(`source_context.create received unsupported kind: ${kind}`);
   }
 
+  if (candidate.sourceRole !== undefined && !sourceContextRoles.has(candidate.sourceRole)) {
+    throw new Error(`source_context.create received unsupported sourceRole: ${candidate.sourceRole}`);
+  }
+
   return {
     title,
     kind,
@@ -205,6 +213,9 @@ function parseSourceContextCreateInput(input: unknown): Required<Pick<SourceCont
     uri: candidate.uri,
     content: candidate.content,
     note: candidate.note,
+    capturedAt: candidate.capturedAt,
+    batchId: candidate.batchId,
+    sourceRole: candidate.sourceRole,
   };
 }
 
@@ -1189,6 +1200,10 @@ export class AgentToolRegistry {
           uri: parsed.uri,
           content: parsed.content,
           note: parsed.note,
+          capturedAt: parsed.capturedAt,
+          runId: context.runId,
+          batchId: parsed.batchId ?? `run:${context.runId}`,
+          sourceRole: parsed.sourceRole ?? 'raw',
         });
 
         return {

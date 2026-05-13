@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildTaskTypeProfile,
   buildProjectDecompositionGuidance,
   buildProjectDecompositionPrompt,
   buildTaskPlanningPrompt,
   inferTaskExecutionType,
+  inferTaskTypeProfile,
 } from './taskAttributes';
 
 describe('buildProjectDecompositionPrompt', () => {
@@ -35,6 +37,7 @@ describe('buildTaskPlanningPrompt', () => {
     const captureProject = buildTaskPlanningPrompt('官网改版项目', 'project');
     const panelProject = buildTaskPlanningPrompt('官网改版项目', 'project', 'panel');
     const scheduled = buildTaskPlanningPrompt('经营周报', 'scheduled', 'panel');
+    const routine = buildTaskPlanningPrompt('知识库整理', 'routine', 'panel');
 
     expect(captureProject.label).toBe('让 AI 拆解并检查');
     expect(panelProject.label).toBe('拆解项目结构');
@@ -42,6 +45,8 @@ describe('buildTaskPlanningPrompt', () => {
     expect(scheduled.label).toBe('确认周期与节奏');
     expect(scheduled.prompt).toContain('周期');
     expect(scheduled.prompt).toContain('第一次执行前');
+    expect(routine.label).toBe('规划常设维护');
+    expect(routine.prompt).toContain('长期存在的目的');
   });
 });
 
@@ -49,5 +54,33 @@ describe('inferTaskExecutionType', () => {
   it('treats software development goals as project work', () => {
     expect(inferTaskExecutionType('开发小程序')).toBe('project');
     expect(inferTaskExecutionType('开发一个内部应用')).toBe('project');
+  });
+
+  it('treats ongoing knowledge and operations work as routine tasks', () => {
+    expect(inferTaskExecutionType('知识库整理')).toBe('routine');
+    expect(inferTaskExecutionType('日常笔记管理')).toBe('routine');
+  });
+});
+
+describe('task type profiles', () => {
+  it('keeps one primary type while allowing composite facets', () => {
+    const profile = buildTaskTypeProfile('routine', ['scheduled', 'event'], {
+      owner: 'system',
+      visibility: 'hidden',
+    });
+
+    expect(profile).toEqual({
+      primaryType: 'routine',
+      facets: ['routine', 'scheduled', 'event'],
+      owner: 'system',
+      visibility: 'hidden',
+    });
+  });
+
+  it('infers news tracking as routine work with scheduled and event-triggered facets', () => {
+    const profile = inferTaskTypeProfile('每日监控新闻资讯更新');
+
+    expect(profile.primaryType).toBe('routine');
+    expect(profile.facets).toEqual(['routine', 'scheduled', 'event']);
   });
 });

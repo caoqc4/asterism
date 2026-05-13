@@ -260,17 +260,31 @@ export class DecisionService {
   }
 
   async create(input: CreateDecisionInput): Promise<DecisionRecord> {
-    const task = await this.taskService.getDetail(input.taskId);
+    const taskId = input.taskId?.trim() || null;
+    const requiresTask = (input.scope ?? (taskId ? 'task' : 'global')) === 'task';
 
-    if (!task) {
-      throw new Error(`Task not found: ${input.taskId}`);
+    if (requiresTask && !taskId) {
+      throw new Error('Task-scoped Decision requires taskId.');
     }
 
-    return this.decisionRepository.create(input);
+    if (taskId) {
+      const task = await this.taskService.getDetail(taskId);
+
+      if (!task) {
+        throw new Error(`Task not found: ${taskId}`);
+      }
+    }
+
+    return this.decisionRepository.create({ ...input, taskId });
   }
 
   async act(input: DecisionActionInput): Promise<DecisionRecord> {
     const updated = await this.decisionRepository.act(input);
+
+    if (!updated.taskId) {
+      await this.settleLinkedCheckpoint(updated, input.action);
+      return updated;
+    }
 
     if (input.action === 'approve') {
       await this.taskService.annotateDecisionApproved(updated.taskId, updated.title, updated.id);
@@ -406,7 +420,7 @@ export class DecisionService {
       toolInput,
       {
         runId: checkpoint.runId,
-        taskId: decision.taskId,
+        taskId: decision.taskId ?? '',
         sessionId: checkpointAgentSessionId,
       },
       {
@@ -461,12 +475,14 @@ export class DecisionService {
       result.output ?? result.summary,
       'system',
     );
-    await this.taskService.annotateRunCompleted(
-      decision.taskId,
-      run?.type ?? 'agent',
-      Boolean((result.output ?? result.summary).trim()),
-      checkpoint.runId,
-    );
+    if (decision.taskId) {
+      await this.taskService.annotateRunCompleted(
+        decision.taskId,
+        run?.type ?? 'agent',
+        Boolean((result.output ?? result.summary).trim()),
+        checkpoint.runId,
+      );
+    }
   }
 
   private async settleBrowserControlledResumeCheckpoint(
@@ -556,7 +572,9 @@ export class DecisionService {
       ].join('\n'),
     });
     await this.updateRunResult(runId, 'completed', result.summary, 'system');
-    await this.taskService.annotateRunCompleted(decision.taskId, run?.type ?? 'agent', true, runId);
+    if (decision.taskId) {
+      await this.taskService.annotateRunCompleted(decision.taskId, run?.type ?? 'agent', true, runId);
+    }
   }
 
   private async settlePatchPromotionCheckpoint(
@@ -687,12 +705,14 @@ export class DecisionService {
       result.auditSummary,
       'system',
     );
-    await this.taskService.annotateRunCompleted(
-      decision.taskId,
-      run?.type ?? 'agent',
-      true,
-      runId,
-    );
+    if (decision.taskId) {
+      await this.taskService.annotateRunCompleted(
+        decision.taskId,
+        run?.type ?? 'agent',
+        true,
+        runId,
+      );
+    }
   }
 
   private async updateLatestCheckpointBackedAgentSession(

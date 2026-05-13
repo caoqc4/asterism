@@ -161,6 +161,10 @@ function buildSourceContextRecord(partial: Partial<SourceContextRecord> = {}): S
     content: partial.content ?? null,
     note: partial.note ?? 'Primary doc',
     status: partial.status ?? 'active',
+    capturedAt: partial.capturedAt ?? '2026-01-01T00:00:00.000Z',
+    runId: partial.runId ?? null,
+    batchId: partial.batchId ?? null,
+    sourceRole: partial.sourceRole ?? 'raw',
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
     archivedAt: partial.archivedAt ?? null,
@@ -1570,6 +1574,10 @@ describe('TaskService', () => {
       kind: 'doc',
       isKey: false,
       uri: 'https://example.com/prd',
+      capturedAt: '2026-01-01T00:00:00.000Z',
+      runId: null,
+      batchId: null,
+      sourceRole: 'raw',
     });
     expect(result.id).toBe('source_context_1');
   });

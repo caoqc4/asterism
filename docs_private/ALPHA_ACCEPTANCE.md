@@ -38,10 +38,10 @@ redesign.
 - Confirm Zone 1 shows Brief, Tasks, and Decisions, while Work Habits appears
   under Capabilities and Context is not a first-level Work page.
 - Open Tasks and confirm the second column is a Task Resource Explorer with
-  collapsible Execution Status, Task Type, and Task Files groups.
+  collapsible Execution Queue, Task Type, and Task Files groups.
 - Create a task from the explorer header and confirm the third column shows the
   task workspace, not a separate task-detail page.
-- Select another task through Execution Status or Task Type and confirm Task
+- Select another task through Execution Queue or Task Type and confirm Task
   Files switches to that task's file tree.
 - Open `Task.md` and confirm the third column switches from task management to
   file editing/preview while the right AI panel remains bound to the task.

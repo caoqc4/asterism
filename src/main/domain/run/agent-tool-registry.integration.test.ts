@@ -237,6 +237,7 @@ describe('AgentToolRegistry integration', () => {
         kind: 'note',
         isKey: true,
         note: 'Owner prefers a shorter final draft',
+        capturedAt: '2026-05-13T09:00:00.000Z',
       },
       { runId: 'run_integration_3', taskId: task.id },
     );
@@ -254,6 +255,10 @@ describe('AgentToolRegistry integration', () => {
         kind: 'note',
         isKey: true,
         note: 'Owner prefers a shorter final draft',
+        capturedAt: '2026-05-13T09:00:00.000Z',
+        runId: 'run_integration_3',
+        batchId: 'run:run_integration_3',
+        sourceRole: 'raw',
       }),
     ]);
     expect(detail?.timeline.some((event) =>

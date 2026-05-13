@@ -63,7 +63,7 @@ function buildPrompt(
             '    { "tool": "task.update_next_step", "input": { "nextStep": "新的下一步" } },',
             '    { "tool": "task.create_completion_criterion", "input": { "text": "新的完成标准" } },',
             '    { "tool": "task.review_completion_evidence" },',
-            '    { "tool": "source_context.create", "input": { "title": "来源标题", "kind": "note", "note": "来源摘要" } },',
+            '    { "tool": "source_context.create", "input": { "title": "来源标题", "kind": "note", "note": "来源摘要", "sourceRole": "raw" } },',
             '    { "tool": "decision.draft", "input": { "note": "需要拍板的问题" } },',
           ]
         : [];

@@ -117,11 +117,14 @@ function buildAppliedTemplate(
 }
 
 function buildDecisionRecord(partial: Partial<DecisionRecord> = {}): DecisionRecord {
+  const taskId = Object.prototype.hasOwnProperty.call(partial, 'taskId') ? partial.taskId! : 'task_1';
   return {
     id: partial.id ?? 'decision_1',
-    taskId: partial.taskId ?? 'task_1',
+    taskId,
     title: partial.title ?? 'Need approval',
     status: partial.status ?? 'pending',
+    scope: partial.scope ?? (partial.taskId === null ? 'global' : 'task'),
+    kind: partial.kind ?? 'direction_choice',
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
   };
@@ -423,6 +426,45 @@ describe('DecisionService', () => {
       }),
     ).rejects.toThrow('Task not found: missing_task');
     expect(decisionRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('creates a global decision without looking up a task', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn().mockResolvedValue(buildDecisionRecord({
+        taskId: null,
+        scope: 'external_access',
+        kind: 'external_write',
+      })),
+      act: vi.fn(),
+    };
+    const taskService = {
+      getDetail: vi.fn(),
+      annotateDecisionApproved: vi.fn(),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+    );
+
+    const result = await service.create({
+      taskId: null,
+      title: 'Approve connector write',
+      scope: 'external_access',
+      kind: 'external_write',
+    });
+
+    expect(taskService.getDetail).not.toHaveBeenCalled();
+    expect(decisionRepository.create).toHaveBeenCalledWith({
+      taskId: null,
+      title: 'Approve connector write',
+      scope: 'external_access',
+      kind: 'external_write',
+    });
+    expect(result.taskId).toBeNull();
   });
 
   it('passes actions straight through to the repository', async () => {

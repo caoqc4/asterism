@@ -47,6 +47,8 @@ describe('SourceContextRepository integration', () => {
 
     expect(created.status).toBe('active');
     expect(created.isKey).toBe(false);
+    expect(created.capturedAt).toBe(created.createdAt);
+    expect(created.sourceRole).toBe('raw');
     expect(updated.isKey).toBe(true);
     expect(updated.note).toBe('Updated note');
     expect(updated.content).toBe('Key product assumptions');
@@ -56,6 +58,38 @@ describe('SourceContextRepository integration', () => {
     expect(archived.status).toBe('archived');
     expect(archived.archivedAt).toBeTruthy();
     expect(activeAfterArchive).toHaveLength(0);
+  });
+
+  it('stores source capture metadata for run-scoped source batches', async () => {
+    const task = await taskRepository.create({ title: 'Archive daily source batch' });
+
+    const created = await sourceContextRepository.create({
+      taskId: task.id,
+      title: 'Morning source digest',
+      kind: 'note',
+      isKey: true,
+      capturedAt: '2026-05-13T08:30:00.000Z',
+      runId: 'run_daily_1',
+      batchId: 'daily:2026-05-13',
+      sourceRole: 'digest',
+      note: 'Summarized sources from the morning batch',
+    });
+
+    const listed = await sourceContextRepository.listActiveForTask(task.id);
+
+    expect(created).toMatchObject({
+      capturedAt: '2026-05-13T08:30:00.000Z',
+      runId: 'run_daily_1',
+      batchId: 'daily:2026-05-13',
+      sourceRole: 'digest',
+    });
+    expect(listed[0]).toMatchObject({
+      title: 'Morning source digest',
+      capturedAt: '2026-05-13T08:30:00.000Z',
+      runId: 'run_daily_1',
+      batchId: 'daily:2026-05-13',
+      sourceRole: 'digest',
+    });
   });
 
   it('lists key source context items before newer non-key items', async () => {

@@ -554,6 +554,10 @@ describe('AgentToolRegistry', () => {
       uri: undefined,
       content: 'Owner wants a shorter draft',
       note: 'Use this as the next source',
+      capturedAt: undefined,
+      runId: 'run_1',
+      batchId: 'run:run_1',
+      sourceRole: 'raw',
     });
     expect(runStepRepository.create).toHaveBeenLastCalledWith(
       expect.objectContaining({

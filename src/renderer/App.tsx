@@ -31,6 +31,8 @@ export function App() {
   const [panelTaskId, setPanelTaskId] = useState<string | null>(null);
   const [panelTaskTitle, setPanelTaskTitle] = useState<string | null>(null);
   const [panelDraftPrompt, setPanelDraftPrompt] = useState<string | null>(null);
+  const [panelAutoSendDraftPrompt, setPanelAutoSendDraftPrompt] = useState(false);
+  const [panelSessionKey, setPanelSessionKey] = useState(0);
   const [panelSelectedFile, setPanelSelectedFile] = useState<TaskWorkspaceSelectionContext['selectedFile']>(null);
   const [workspaceSelection, setWorkspaceSelection] = useState<TaskWorkspaceSelectionContext>({
     taskId: null,
@@ -68,11 +70,13 @@ export function App() {
     setTaskFocusId(taskId);
   }, []);
 
-  const openPanelForTask = useCallback((taskId: string, draftPrompt?: string, taskTitle?: string) => {
+  const openPanelForTask = useCallback((taskId: string, draftPrompt?: string, taskTitle?: string, autoSendDraftPrompt = false, forceTaskBinding = false) => {
     setPanelTaskId(taskId);
     setPanelTaskTitle(taskTitle ?? null);
     setPanelDraftPrompt(draftPrompt ?? null);
+    setPanelAutoSendDraftPrompt(autoSendDraftPrompt);
     setPanelSelectedFile(workspaceSelection.taskId === taskId ? workspaceSelection.selectedFile : null);
+    if (forceTaskBinding) setPanelSessionKey((current) => current + 1);
     setPanelOpen(true);
     setPanelSuspended(false);
   }, [workspaceSelection]);
@@ -85,6 +89,8 @@ export function App() {
     }
     setPanelTaskId(workspaceSelection.taskId);
     setPanelTaskTitle(workspaceSelection.taskTitle);
+    setPanelDraftPrompt(null);
+    setPanelAutoSendDraftPrompt(false);
     setPanelSelectedFile(workspaceSelection.selectedFile);
     setPanelOpen(true);
   }, [panelSuspended, workspaceSelection]);
@@ -147,7 +153,7 @@ export function App() {
             <>
               {route === 'brief' && (
                 <BriefPage
-                  onOpenTask={openWorkbench}
+                  onOpenTask={openTaskInTasks}
                   onOpenDecision={() => navigate('decisions')}
                   onOpenPanel={openPanelForTask}
                 />
@@ -179,9 +185,11 @@ export function App() {
       </div>
       {(panelOpen || panelSuspended) && (
         <RightPanel
+          key={panelSessionKey}
           taskId={panelTaskId}
           taskTitleHint={panelTaskTitle}
           draftPrompt={panelDraftPrompt}
+          autoSendDraftPrompt={panelAutoSendDraftPrompt}
           selectedFile={panelSelectedFile}
           hidden={!panelOpen}
           onTaskCaptured={(taskId) => setPanelTaskId(taskId)}

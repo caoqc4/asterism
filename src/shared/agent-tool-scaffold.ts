@@ -251,7 +251,7 @@ export const AGENT_TOOL_SCAFFOLD_DESCRIPTORS = [
     artifactKinds: ['none'],
     checkpointKind: 'tool_permission',
     credentialPolicy: 'none',
-    summary: 'Create task source context through Taskplane services.',
+    summary: 'Create timestamped task source context through Taskplane services.',
   },
   {
     id: 'decision.draft',

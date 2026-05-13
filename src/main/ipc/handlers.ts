@@ -86,8 +86,20 @@ function readString(value: unknown, fallback = ''): string {
 function selectPromptKeySources(sourceContexts: SourceContextRecord[], maxItems = 3): SourceContextRecord[] {
   return sourceContexts
     .filter((source) => source.status === 'active' && source.isKey)
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .sort((a, b) => (b.capturedAt ?? b.updatedAt).localeCompare(a.capturedAt ?? a.updatedAt))
     .slice(0, maxItems);
+}
+
+function formatPromptSource(source: SourceContextRecord): string {
+  const captured = source.capturedAt ?? source.createdAt ?? source.updatedAt;
+  const scope = [
+    `captured=${captured}`,
+    source.runId ? `run=${source.runId}` : null,
+    source.batchId ? `batch=${source.batchId}` : null,
+    `role=${source.sourceRole ?? 'raw'}`,
+  ].filter(Boolean).join(', ');
+  const body = source.note ?? source.content ?? source.uri ?? 'no summary';
+  return `${source.title} (${scope}): ${body}`;
 }
 
 function formatAiBehaviorPreferences(featureFlags: FeatureFlags): string {
@@ -420,14 +432,14 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('decision:create', async (_event, input: CreateDecisionInput) => {
     const created = await getServices().decisionService.create(input);
     emitAppEvent('decision.changed', created.id);
-    emitAppEvent('task.changed', created.taskId);
+    if (created.taskId) emitAppEvent('task.changed', created.taskId);
     return created;
   });
 
   ipcMain.handle('decision:act', async (_event, input: DecisionActionInput) => {
     const updated = await getServices().decisionService.act(input);
     emitAppEvent('decision.changed', updated.id);
-    emitAppEvent('task.changed', updated.taskId);
+    if (updated.taskId) emitAppEvent('task.changed', updated.taskId);
     return updated;
   });
 
@@ -512,7 +524,8 @@ export function registerIpcHandlers(): void {
           `Suggested move: ${task.resumeCard.nextSuggestedMove}`,
           `Completion criteria: ${completionCriteria}`,
           `Recent artifacts: ${recentArtifacts}`,
-          `Key sources: ${keySources.map((s) => s.title).join(', ') || 'none'}`,
+          `Key sources: ${keySources.map(formatPromptSource).join(' / ') || 'none'}`,
+          'Source freshness rule: prefer current-run, selected, key, or recently captured sources; do not treat older sources as current evidence unless they are stable references or explicitly selected.',
           selectedFileContext,
           `Recent activity: ${task.timeline.slice(-5).map((e) => `${e.type}${e.payload ? `=${e.payload}` : ''}`).join(' / ') || 'none'}`,
         ].join('\n')
@@ -593,7 +606,8 @@ export function registerIpcHandlers(): void {
         `Summary: ${task.summary ?? 'none'}`,
         `Next step: ${task.nextStep ?? 'none'}`,
         `Risk: ${task.riskLevel}${task.riskNote ? ` (${task.riskNote})` : ''}`,
-        `Key sources: ${keySources.map((source) => `${source.title}: ${source.note ?? source.content ?? source.uri ?? ''}`).join(' / ') || 'none'}`,
+        `Key sources: ${keySources.map(formatPromptSource).join(' / ') || 'none'}`,
+        'Source freshness rule: prefer current-run, selected, key, or recently captured sources; do not treat older sources as current evidence unless they are stable references or explicitly selected.',
         `Applicable confirmed work habits: ${applicableWorkHabitSummaries.join(' / ') || 'none'}`,
         `Recent activity: ${task.timeline.slice(-5).map((event) => `${event.type}${event.payload ? `=${event.payload}` : ''}`).join(' / ') || 'none'}`,
         input.instructions?.trim() ? `User instructions: ${input.instructions.trim()}` : 'User instructions: none',

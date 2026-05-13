@@ -126,6 +126,10 @@ function renderSourceContextSnapshot(sourceContext: SourceContextRecord): string
   return [
     `title: ${sourceContext.title}`,
     `kind: ${sourceContext.kind}`,
+    `capturedAt: ${sourceContext.capturedAt ?? sourceContext.createdAt ?? sourceContext.updatedAt}`,
+    sourceContext.runId ? `runId: ${sourceContext.runId}` : null,
+    sourceContext.batchId ? `batchId: ${sourceContext.batchId}` : null,
+    `sourceRole: ${sourceContext.sourceRole ?? 'raw'}`,
     sourceContext.uri ? `uri: ${sourceContext.uri}` : null,
     sourceContext.note ? `note:\n${sourceContext.note}` : null,
     sourceContext.content ? `content:\n${sourceContext.content}` : null,

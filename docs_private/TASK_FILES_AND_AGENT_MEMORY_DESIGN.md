@@ -210,13 +210,13 @@ Zone navigation | Task Resource Explorer | Selected Object Workspace | AI Panel
 The second column is a Task Resource Explorer with collapsible groups such as:
 
 ```text
-Execution Status
+Execution Queue
 Task Type
 Task Files
 ```
 
 The Task Files group shows the file tree for the currently selected task. When
-the user selects a different task through Execution Status or Task Type, the
+the user selects a different task through Execution Queue or Task Type, the
 Task Files group should switch to that task's files.
 
 `Task.md` and `Task Records/` should appear as ordinary file-tree items in v1.

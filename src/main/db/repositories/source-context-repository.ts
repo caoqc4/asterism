@@ -2,6 +2,7 @@ import { and, desc, eq, inArray } from 'drizzle-orm';
 
 import type {
   CreateSourceContextInput,
+  SourceContextRole,
   SourceContextRecord,
   UpdateSourceContextInput,
 } from '../../../shared/types/source-context.js';
@@ -20,6 +21,7 @@ function sortSourceContexts(rows: SourceContextRecord[]): SourceContextRecord[] 
 }
 
 function toRecord(row: typeof sourceContexts.$inferSelect): SourceContextRecord {
+  const sourceRole = row.sourceRole as SourceContextRole | null;
   return {
     id: row.id,
     taskId: row.taskId,
@@ -30,6 +32,10 @@ function toRecord(row: typeof sourceContexts.$inferSelect): SourceContextRecord 
     content: row.content,
     note: row.note,
     status: row.status as SourceContextRecord['status'],
+    capturedAt: row.capturedAt ?? row.createdAt,
+    runId: row.runId,
+    batchId: row.batchId,
+    sourceRole: sourceRole ?? 'raw',
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     archivedAt: row.archivedAt,
@@ -72,6 +78,8 @@ export class SourceContextRepository {
     const db = initDatabase();
     const timestamp = nowIso();
     const id = generateId('source_context');
+    const runId = normalizeValue(input.runId);
+    const capturedAt = normalizeValue(input.capturedAt) ?? timestamp;
 
     await db.insert(sourceContexts).values({
       id,
@@ -83,6 +91,10 @@ export class SourceContextRepository {
       content: normalizeValue(input.content),
       note: normalizeValue(input.note),
       status: 'active',
+      capturedAt,
+      runId,
+      batchId: normalizeValue(input.batchId) ?? (runId ? `run:${runId}` : null),
+      sourceRole: input.sourceRole ?? 'raw',
       createdAt: timestamp,
       updatedAt: timestamp,
       archivedAt: null,

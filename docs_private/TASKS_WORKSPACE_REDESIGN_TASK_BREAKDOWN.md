@@ -25,7 +25,7 @@ After the redesign:
 - Work Habits is a first-level Zone 2 capability page.
 - Connections is renamed External Access.
 - Tasks becomes the unified task workspace.
-- The second column is a Task Resource Explorer with Execution Status, Task
+- The second column is a Task Resource Explorer with Execution Queue, Task
   Type, and Task Files groups.
 - The third column is object-driven: task list, task management, or file
   editor/preview.
@@ -67,10 +67,10 @@ Scope:
 - Add a Tasks explorer header with a New Task action.
 - Move New Task out of the third-column workspace header.
 - Add collapsible groups:
-  - Execution Status
+  - Execution Queue
   - Task Type
   - Task Files
-- Execution Status groups tasks by current state.
+- Execution Queue groups tasks by actionability and current execution state.
 - Task Type groups tasks by task classification.
 - Task Files shows the current selected task's file tree.
 - Selecting a task updates the current task and refreshes Task Files.
@@ -78,7 +78,7 @@ Scope:
 
 Acceptance:
 
-- Users can select tasks through Execution Status or Task Type.
+- Users can select tasks through Execution Queue or Task Type.
 - Selecting a task changes the third column to the task workspace.
 - The Task Files group follows the selected task.
 - The explorer does not require a separate task/file mode switch.

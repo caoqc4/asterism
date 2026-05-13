@@ -57,9 +57,14 @@ function bootstrapTables(connection: Database.Database): void {
       task_id TEXT NOT NULL,
       title TEXT NOT NULL,
       status TEXT NOT NULL,
+      scope TEXT NOT NULL DEFAULT 'task',
+      kind TEXT NOT NULL DEFAULT 'direction_choice',
       source_type TEXT,
       source_id TEXT,
       source_label TEXT,
+      context TEXT,
+      options TEXT,
+      recommendation TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -227,6 +232,10 @@ function bootstrapTables(connection: Database.Database): void {
       content TEXT,
       note TEXT,
       status TEXT NOT NULL DEFAULT 'active',
+      captured_at TEXT,
+      run_id TEXT,
+      batch_id TEXT,
+      source_role TEXT NOT NULL DEFAULT 'raw',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       archived_at TEXT
@@ -289,6 +298,11 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'decision_requests', 'source_type', 'TEXT');
   ensureColumn(connection, 'decision_requests', 'source_id', 'TEXT');
   ensureColumn(connection, 'decision_requests', 'source_label', 'TEXT');
+  ensureColumn(connection, 'decision_requests', 'scope', "TEXT NOT NULL DEFAULT 'task'");
+  ensureColumn(connection, 'decision_requests', 'kind', "TEXT NOT NULL DEFAULT 'direction_choice'");
+  ensureColumn(connection, 'decision_requests', 'context', 'TEXT');
+  ensureColumn(connection, 'decision_requests', 'options', 'TEXT');
+  ensureColumn(connection, 'decision_requests', 'recommendation', 'TEXT');
   ensureColumn(connection, 'tasks', 'next_step', 'TEXT');
   ensureColumn(connection, 'tasks', 'waiting_reason', 'TEXT');
   ensureColumn(connection, 'tasks', 'risk_level', "TEXT NOT NULL DEFAULT 'none'");
@@ -324,6 +338,10 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'source_contexts', 'note', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'is_key', "TEXT NOT NULL DEFAULT 'false'");
   ensureColumn(connection, 'source_contexts', 'status', "TEXT NOT NULL DEFAULT 'active'");
+  ensureColumn(connection, 'source_contexts', 'captured_at', 'TEXT');
+  ensureColumn(connection, 'source_contexts', 'run_id', 'TEXT');
+  ensureColumn(connection, 'source_contexts', 'batch_id', 'TEXT');
+  ensureColumn(connection, 'source_contexts', 'source_role', "TEXT NOT NULL DEFAULT 'raw'");
   ensureColumn(connection, 'source_contexts', 'updated_at', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'archived_at', 'TEXT');
   ensureColumn(connection, 'process_templates', 'summary', 'TEXT');

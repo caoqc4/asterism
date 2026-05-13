@@ -10,6 +10,7 @@ redesign against the three testing discussion notes:
 - [NAVIGATION_AND_TASKS_VIEW_REFINEMENT_DECISION.md](NAVIGATION_AND_TASKS_VIEW_REFINEMENT_DECISION.md)
 - [TASK_FILES_AND_AGENT_MEMORY_DESIGN.md](TASK_FILES_AND_AGENT_MEMORY_DESIGN.md)
 - [CONTEXT_CLEAR_AND_NEW_CONVERSATION_DECISION.md](CONTEXT_CLEAR_AND_NEW_CONVERSATION_DECISION.md)
+- [COMPOSITE_TASK_TYPE_FRAMEWORK_DESIGN.md](COMPOSITE_TASK_TYPE_FRAMEWORK_DESIGN.md)
 
 It also uses
 [TASKS_WORKSPACE_REDESIGN_TASK_BREAKDOWN.md](TASKS_WORKSPACE_REDESIGN_TASK_BREAKDOWN.md)
@@ -48,6 +49,13 @@ The remaining gaps are split into two kinds:
   direction, but should be designed and accepted separately from the completed
   v1 workspace shell.
 
+Composite task typing now has a separate design rule. It keeps the five base
+task types and introduces Task Type Profiles with one primary type plus
+additional facets. This is the intended foundation for system-managed Brief
+recommendation ranking and for user tasks such as news tracking or
+knowledge-base maintenance that combine routine, scheduled, event-triggered, or
+project behavior.
+
 ## Status Legend
 
 - `Done`: implemented and covered by tests or direct verification.
@@ -65,13 +73,15 @@ The remaining gaps are split into two kinds:
 | Work Habits becomes Zone 2 capability page | Done | Work Habits has its own Capabilities entry and manages learned/cross-task rules. |
 | Connections renamed External Access | Done | Sidebar and page copy now use External Access; MCP remains MCP. |
 | Tasks becomes unified task workspace | Done | Tasks uses resource explorer + selected-object workspace + right AI panel. |
-| Task Resource Explorer has Execution Status, Task Type, Task Files | Done | Groups are collapsible and do not require a separate task/file mode switch. |
+| Task Resource Explorer has Execution Queue, Task Type, Task Files | V1 Improved | Groups are collapsible and do not require a separate task/file mode switch. Execution Queue is now positioned as an actionability view; Task Type remains structural classification. |
+| Task Type uses five base types with composite facets | V1 Improved | UI groups by primary type and adds a cross-cutting Composite lens for tasks with more than one facet. Composite Task Type Profiles are now the bridge to the system-managed Brief task. |
 | New Task action belongs in Task Resource Explorer header | Done | Task creation is no longer in the third-column workspace header. |
 | Task Files shows current selected task's file tree | Done | Switching tasks refreshes the Task Files group for that task. |
 | Selected object controls third column | Done | Task list, concrete task, and file all have distinct workspace headers and bodies. |
-| Task-list views are Default Sort, All List, Timeline | Done | `Priority Lane` was removed from user-facing tab naming. |
-| Concrete task views are Task Management and Timeline | Done | `Run` is no longer exposed as a task-level tab; execution remains available through the task workbench, while the selected task timeline summarizes task-local history. |
-| Task detail workspace follows mature task-management layout | V1 Improved | Task Management now has identity, progression, structure, context, and history layers, with primary action ordering and compact history/context behavior aligned to the accepted v1 rules. |
+| Task-list views are 优先处理, 任务目录, 活动记录 | V1 Improved | `Priority Lane` and the flat `全部列表` wording were replaced with clearer view responsibilities: action queue, structured directory, and activity history. |
+| 优先处理 behaves as an execution queue | V1 Improved | Queue rows are ranked by actionability first, then available time signals, impact, and intent fallbacks. V1 uses scheduled/event/recent timestamps until explicit due/start fields exist. Rows now keep parent context clear and reduce repeated status text. |
+| Concrete task views are Task Management and Activity Log | Done | `Run` is no longer exposed as a task-level tab; execution remains available through the task workbench, while Activity Log shows selected-task history. |
+| Task detail workspace follows mature task-management layout | V1 Improved | Task Management now focuses on identity, progression, and structure; nearby task files and activity history stay in their own surfaces. |
 | File view replaces task navigation with file header | Done | File header supports path/name display, dirty indicator, save, rename, move, delete, and return. |
 | Unsaved file switching guard | Done | Switching file/task/task-management prompts Save / Discard / Cancel. |
 | Risk and waiting age are not first-level filters | Done | They remain task signals rather than primary navigation groups. |
@@ -183,10 +193,10 @@ Secondary actions:
 | --- | --- | --- |
 | Progression should be the visual anchor after the title. | V1 Improved | The title now leads the Identity layer, metadata follows it, and Progression uses a next-step/action strip so the primary action is read with the next step instead of competing with secondary controls. |
 | Structure should collapse/summarize based on task type and emptiness. | V1 Improved | Simple tasks without structure now use a compact prompt; project, criteria, schedule, trigger, and commitment content still expand the section. |
-| Context should not duplicate the file editor. | V1 Improved | Default `Task.md` / `Task Records` stay in the file tree; Task Management now uses one compact context-object list for files, sources, and artifacts instead of duplicating sources in a separate section. |
-| History should read less like raw audit data. | V1 Improved | Event labels and short payload summaries are shown in Task Management and Timeline; run-count copy is kept compact so the History layer does not repeat itself. More semantic summaries can be added later. |
+| Context should not duplicate the file editor. | V1 Improved | Default `Task.md` / `Task Records`, sources, artifacts, and user files stay in the Task Files tree beside the task detail; Task Management no longer repeats them. |
+| History should read less like raw audit data. | V1 Improved | Task Management no longer embeds activity previews; selected-task history lives in Activity Log with event labels and short payload summaries. More semantic summaries can be added later. |
 | Primary action ordering should follow accepted priority rules. | V1 Improved | Task detail primary action now prioritizes Decision, then Project Decomposition, then Workbench readiness, then Plan. Workbench is no longer chosen from `nextStep` alone. |
-| Project decomposition should be reviewed before child task creation. | V1 Improved | Task detail uses `审阅拆解草稿` when a draft exists; creation stays inside the reviewed draft area as `确认创建子任务`. |
+| Project decomposition should be reviewed before child task creation. | V1 Improved | The first project-decomposition action opens the task-bound AI panel and auto-sends the decomposition prompt, so users can refine the plan conversationally before any child tasks are created. Existing reviewed drafts can still support later structured confirmation. |
 | Long task-type groups should disclose hidden items. | V1 Improved | Task type groups show a "还有 N 个，点击查看全部" affordance after the first 12 visible tasks. |
 | AI-inferred task type should not override confirmed user intent. | V1 Improved | Task attributes now track whether the type has been confirmed. Legacy unconfirmed `simple` tasks can still be migrated by title inference, while confirmed types remain stable. |
 
@@ -219,6 +229,7 @@ Remaining review:
 | Task Records created for handoffs and phase closeouts | Done | Context-refresh, phase-closeout, follow-up-source, and manual task records write into `Task Records/`. |
 | Agent principles read before task execution | Done | Agent principles are injected into AI chat, project decomposition, and agent working context. |
 | Agent principles read-only | Done | Workspace patch tooling rejects edits to the product principles source. |
+| Task-level closeout and next-task evaluation governed by principles | Done | The product principles now define next-task evaluation as a post-task-level action after verification, not a separate execution protocol. |
 | No full chat transcript by default | Done | Records preserve compact summaries and selected signals, not full transcripts. |
 | Cross-task preferences go to Work Habits, not task files | Done | Work Habits is separated and included in Agent principles. |
 | RAG/embeddings not introduced by default | Done | Current implementation relies on structured data, task files, selected files, and ordinary context assembly. |
@@ -250,6 +261,8 @@ Remaining review:
 | Phase closeout creates durable handoff | Done | `收尾本阶段` writes phase closeout records. |
 | Phase closeout asks whether to decompose follow-up work | Done | After closeout, the right panel offers follow-up task creation. |
 | Follow-up tasks retain source links | Done | Created follow-up tasks get `后续任务来源` source context and `Task Records/*-followup-source.md`. |
+| Next-task evaluation belongs after task-level verification | Done | Product principles require verification first, then classify closeout as complete, confirm-before-complete, pause-with-handoff, or continue-current-task before switching. |
+| Project child completion can hand off to next child task | Done | After a project child task completes, Tasks can recommend the next unfinished child in recorded execution order, write a completion handoff Task Record, and rebuild the AI panel on the next task after user confirmation. |
 | Subtasks require user confirmation | Done | Project decomposition and captured tasks require confirmation before entering real task flow. |
 
 ## Verification Mapping
@@ -269,6 +282,8 @@ Implemented coverage includes:
 - manual confirmation and reminder-only modes;
 - new conversation global/unbound semantics;
 - phase closeout and follow-up task creation;
+- task-level closeout and next-task evaluation principles;
+- project child completion handoff to the next recorded child task;
 - Agent principles prompt/context injection and read-only protection.
 
 Current verification gate:

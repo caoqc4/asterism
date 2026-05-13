@@ -65,7 +65,7 @@ function recentTimeline(events: TimelineEventRecord[]): AgentWorkingContext['rec
 function selectAgentSourceContexts(task: TaskDetail): TaskDetail['sourceContexts'] {
   const activeSources = task.sourceContexts
     .filter((source) => source.status === 'active')
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    .sort((a, b) => (b.capturedAt ?? b.updatedAt).localeCompare(a.capturedAt ?? a.updatedAt));
   const keySources = activeSources.filter((source) => source.isKey);
 
   return (keySources.length ? keySources : activeSources).slice(0, SOURCE_CONTEXT_LIMIT);

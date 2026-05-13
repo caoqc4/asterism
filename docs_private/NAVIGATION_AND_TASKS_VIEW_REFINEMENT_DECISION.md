@@ -20,6 +20,15 @@ covers the task-folder and Agent memory model. This document defines how that
 model is surfaced in the app shell: Task Files should be integrated into Tasks
 rather than kept as a separate Zone 1 page.
 
+[BRIEF_RECOMMENDATION_RANKING_DESIGN.md](BRIEF_RECOMMENDATION_RANKING_DESIGN.md)
+defines the product-level rules for how Brief chooses, ranks, and displays task
+recommendations. This document only summarizes the navigation relationship.
+
+[COMPOSITE_TASK_TYPE_FRAMEWORK_DESIGN.md](COMPOSITE_TASK_TYPE_FRAMEWORK_DESIGN.md)
+defines how tasks can combine multiple task-type behaviors through a primary
+type plus type facets. This document should use that framework when describing
+task-type navigation.
+
 ## Principles
 
 Use first-principles and razor-based simplification:
@@ -50,6 +59,27 @@ The first-principles split is:
 - Tasks answers "how do I manage, execute, and inspect this task?"
 - Decisions answers "what is waiting for my approval or rejection?"
 
+User-facing task types include one-off, project, scheduled, event-triggered, and
+routine tasks. Routine tasks cover long-lived work such as knowledge-base
+maintenance, note organization, ongoing operations, and other persistent
+responsibilities that are not tied to a fixed schedule or a single completion
+event.
+
+Some tasks may be composite, such as routine information tracking that is also
+scheduled and event-triggered. The Tasks explorer should still group by one
+primary type by default. Additional task-type facets should influence behavior
+and detail display without duplicating the same task across every visible type
+group.
+
+### Brief Recommendation Display Rules
+
+Brief is an attention surface, not a project tree or another task-management
+view. It should show the most actionable task node, explain why now, and keep
+parent/child/project context lightweight. The detailed ranking, parent-child
+deduplication, dependency-chain, time-aware, progress-aware, and habit-aware
+rules live in
+[BRIEF_RECOMMENDATION_RANKING_DESIGN.md](BRIEF_RECOMMENDATION_RANKING_DESIGN.md).
+
 ## Tasks Workspace Layout
 
 Tasks should become the unified task workspace rather than a task-list page
@@ -70,17 +100,29 @@ content.
 Recommended collapsible groups:
 
 ```text
-Execution Status
+Execution Queue
 Task Type
 Task Files
 ```
 
 These are different ways into the same task resource space:
 
-- Execution Status groups tasks by current work state.
+- Execution Queue groups tasks by actionability and current execution state. It
+  is an execution view, not just a property filter.
 - Task Type groups tasks by project, scheduled, event-triggered, and other task
-  classifications.
+  classifications. It is the task's structural classification and retrieval
+  path.
 - Task Files shows the current selected task's file tree.
+
+The distinction is important:
+
+- Task Type answers "what kind of task is this, and where would I file it?"
+- Execution Queue answers "what can or should be acted on now?"
+
+This mirrors mature task managers that separate structural organization from
+execution views. Projects, areas, labels, or issue types provide context and
+retrieval; today lists, filters, active views, blocked views, and saved views
+provide execution focus.
 
 Selection rules:
 
@@ -134,23 +176,86 @@ still keeping their interactions distinct.
 
 When the selected object is the task list, the top views should be:
 
-- Default Sort
-- All List
-- Timeline
+- 优先处理
+- 任务目录
+- 活动记录
 
-These replace the less clear `Priority Lane / List / Timeline` wording.
+These replace the less clear `Priority Lane / List / Timeline` wording. V1
+should use Chinese user-facing labels consistently; English labels may be
+reintroduced later as a product-wide localization pass.
 
 Intended semantics:
 
-- **Default Sort** answers "what should I look at first?" It uses Taskplane's
-  default ordering and priority signals without exposing an internal lane model.
-- **All List** answers "what tasks do I have?" It is the stable full task list.
-- **Timeline** answers "what changed recently?" It shows task activity over
+- **优先处理** answers "what should I act on first?" It is an
+  execution queue. It should show the most actionable nodes, usually subtasks,
+  with parent/project context as secondary information. A parent project should
+  appear here only when the parent itself needs action, such as decomposition,
+  clarification, a decision, or a blocker.
+- **任务目录** answers "what tasks do I have and how are they structured?" It is
+  a directory view. It should group by parent/root task and show child tasks
+  underneath, rather than flattening parent and child tasks into one list.
+- **活动记录** answers "what changed recently?" It shows task activity over
   time.
 
 The previous `Priority Lane` name should not remain user-facing in v1. Priority
 lane can remain an internal model or explanation detail where useful, but the
 primary tab should describe the user-visible behavior.
+
+The previous `全部列表` name is too broad after the Task Files merge. `任务目录`
+better signals that the view is a structured task directory, not another
+execution recommendation list.
+
+### Execution Queue Sorting And Layout
+
+The `优先处理` view should not be a decorative grouping of lane labels. It should
+behave like an action queue. Mature products provide the reference pattern:
+Today / Upcoming / My Tasks / Active Issues views combine date, priority,
+status, project context, and manual order into a focused list. Taskplane should
+use the same idea, but explain the recommendation in task language. It should
+also follow the same recommendation philosophy as
+[BRIEF_RECOMMENDATION_RANKING_DESIGN.md](BRIEF_RECOMMENDATION_RANKING_DESIGN.md):
+actionability comes before abstract priority, and parent/child duplicates should
+be collapsed unless the parent has its own distinct action.
+
+Recommended v1 ordering:
+
+1. User decision or approval that can unlock work.
+2. A task that can unblock downstream work.
+3. A task with a clear next step and no active blocker.
+4. A task that needs clarification before execution.
+5. A task waiting on external input or timing.
+
+Within the same actionability band, use these tie-breakers:
+
+- time pressure: due today, overdue, scheduled/event trigger reached,
+  scheduled/event tasks, or recently surfaced work;
+- impact: number of downstream tasks blocked, task risk, and parent/project
+  priority;
+- user intent: manual order changes, recent opens, recent right-panel
+  discussion, and learned work habits;
+- fallback: updated time, then created time.
+
+V1 should implement the available subset honestly: actionability first, then
+scheduled/event signals, recent update/create time, lane, and updated time.
+Richer calendar ordering such as due date, start date, duration, or remaining
+time requires explicit task fields before it becomes a user-facing promise.
+
+The queue row should be more informative than the directory row:
+
+```text
+[1] Task title
+    Status color block
+    Parent/project context above the title
+    Recommendation reason + next step
+    Primary action
+```
+
+Do not make the queue look like a full project directory. It should display the
+next actionable node and enough context to explain why it appears here. Avoid
+repeating lane/status tags when the selected Execution Queue lens already
+communicates the state. Use compact visual status markers for scanability and
+put parent/project context before the title so users can orient before reading
+the task name.
 
 ### Task Header
 
@@ -188,31 +293,54 @@ Recommended behavior:
 This follows the same object-driven model as editors like VS Code and Obsidian:
 the header belongs to the selected object.
 
-## Tasks Page Filters
+## Tasks Page Filters And Lists
 
-The left-side task filters should focus on high-signal retrieval.
+The left-side task filters should focus on high-signal retrieval, but they
+should not collapse task classification and execution focus into the same
+mental model.
 
 Recommended v1 structure:
 
 ```text
-All
+Execution Queue
+- 当前建议
+- 推进中
+- 等待中
+- 有阻塞
+- 待拍板
+- 已完成 / 已归档
 
-Status
-- Running
-- Waiting
-- Blocked
-- Needs Decision
-- Completed / Archived
-
-Type
-- Project
-- Scheduled
-- Event Triggered
+Task Type
+- 一次性任务
+- 项目型
+- 定时任务
+- 事件触发
+- 常设任务
+- 复合任务
 ```
 
 In the updated Tasks workspace, these filters are expressed through the
-Execution Status and Task Type explorer groups rather than as separate Zone 1
+Execution Queue and Task Type explorer groups rather than as separate Zone 1
 navigation.
+
+`All Tasks` should not be a child of Execution Queue because it is not an
+execution state. The full task inventory belongs to the `任务目录` view in the
+third column.
+
+Display rules:
+
+- selecting an Execution Queue item defaults the third column to `优先处理` and
+  shows a queue of actionable task nodes;
+- `推进中` is a product-level executable view, not a raw `running` database
+  state. It includes tasks that are running or have a clear next step without an
+  active blocker or waiting condition. Its count should match the actionable
+  queue nodes shown in the third column, not double-count parent and child tasks
+  when the child task is the actual executable node.
+- selecting a Task Type item defaults the third column to `任务目录` and shows
+  parent/root tasks with child tasks nested under them;
+- selecting a concrete task still opens the task-management workspace;
+- switching between task-list views does not change the current task unless the
+  user selects a task row.
 
 Signals such as risk and long waiting age should not be first-level filters in
 v1 unless real usage proves they are frequent retrieval paths.
@@ -582,23 +710,23 @@ layer the capability belongs to.
 The selected-task workspace uses two task-level tabs:
 
 ```text
-Task Management / Timeline
+Task Management / Activity Log
 ```
 
 In Chinese UI:
 
 ```text
-任务管理 / 时间线
+任务管理 / 活动记录
 ```
 
 Do not expose `Run` as a task-level tab in v1. `Run` is an internal execution
 record concept. Execution should be reached through the task workbench, while
-the selected task timeline may summarize execution events.
+the selected task Activity Log shows task-local changes and execution events.
 
 ### Task Management Skeleton
 
 The default selected-task tab is always Task Management. Switching to another
-task returns to Task Management, even if the previous task was on Timeline.
+task returns to Task Management, even if the previous task was on Activity Log.
 
 The page should be organized as a mature task detail surface:
 
@@ -610,25 +738,35 @@ The page should be organized as a mature task detail surface:
 2. Progression layer
    - next step;
    - waiting, blocked, or decision state;
-   - main action: open workbench;
+   - main action: choose the single next action for the current stage;
    - secondary actions: plan, defer, complete, more.
 3. Structure layer
    - project tasks: child tasks, decomposition draft, progress;
    - simple tasks: completion criteria and checks;
    - scheduled/event tasks: cadence or trigger condition.
-4. Context layer
-   - concise `Task.md` recovery summary;
-   - key sources;
-   - important task files;
-   - recent artifacts.
-5. History layer
-   - only a short recent activity summary;
-   - full current-task history belongs in the Timeline tab.
+4. Task file access
+   - task files remain visible in the Task Files resource explorer;
+   - Task Management should not duplicate that file tree.
+5. Activity history
+   - full current-task history belongs in the Activity Log tab;
+   - Task Management should not embed a repeated activity preview.
 
 The Task Management tab answers: "what is this task, and how should I move it
 forward now?"
 
-The Timeline tab answers: "what has happened inside this task?"
+The Activity Log tab answers: "what has happened inside this task?"
+
+For a newly created project task with no child tasks and no decomposition draft,
+Task Management should behave like a task empty state:
+
+- use user-facing status language such as `待明确`, `项目型`, and `未开始`
+  instead of internal labels such as `Clarify` or `Idle`;
+- make the primary action open the task-bound AI panel and start the
+  decomposition discussion there;
+- explain that the AI-panel discussion comes before creating real child tasks
+  and completion criteria;
+- keep defer, complete, and more actions visually secondary;
+- show project structure as the expected result area, not as the main action.
 
 ### Task Example Layouts
 
@@ -810,29 +948,31 @@ clear next primary action.
   heavy cards.
 - Highlight only urgent or decision-driving information, such as blockers,
   waiting states, missing decisions, and next-step actions.
-- Task files are summarized in Task Management but opened from the Task Files
-  tree as their own selected-object file view.
-- Activity should not dominate Task Management. Show a short activity preview
-  there and keep the full activity stream in Timeline.
+- Task files are opened from the Task Files tree as their own selected-object
+  file view; Task Management should not repeat the nearby file tree.
+- Activity should not dominate Task Management. Keep the full activity stream
+  in Activity Log.
 - AI appears through task actions: plan, decompose, execute in workbench,
   summarize, record, and propose file writes. AI should not become its own
   visual layer competing with task management.
 
 ## Acceptance Notes
 
-- The `Priority Lane` tab is renamed to `Default Sort`.
-- The list tab is named `All List`.
-- Timeline remains as the activity-based view.
+- The `Priority Lane` tab is renamed to `优先处理`; it is the
+  actionability-ranked execution queue.
+- The list tab is named `任务目录` and renders parent/child structure instead of
+  a flat duplicate of the default queue.
+- `活动记录` is the activity-based view.
 - Zone 1 / Work is reduced to Brief, Tasks, and Decisions.
 - Context is removed as a first-level Zone 1 page after its responsibilities are
   split.
 - Task Files is integrated into Tasks through the Task Resource Explorer and
   selected-object workspace.
-- The Task Resource Explorer uses collapsible Execution Status, Task Type, and
+- The Task Resource Explorer uses collapsible Execution Queue, Task Type, and
   Task Files groups.
 - New Task lives in the Task Resource Explorer header.
 - The main workspace header is object-driven: task-list views, task-level
-  `任务管理 / 时间线` tabs, or file header/tabs.
+  `任务管理 / 活动记录` tabs, or file header/tabs.
 - Selected tasks default to Task Management. Switching between concrete tasks
   resets the selected-task tab to Task Management.
 - `Run` is not exposed as a first-version task-level tab; execution records are
