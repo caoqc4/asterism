@@ -175,6 +175,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'runtime-verification has first-pass pre_step and post_step modes for execution permission and durable-change recovery notes.',
       'pre_step runtime verification can consume RuntimeCapabilitySnapshot when an execution explicitly requires model execution or workspace verification.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through pre_step verification.',
+      'DecisionService approve/defer/cancel actions pass through decision_action pre-step verification at the service boundary.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService also pass target-task readiness through subtask_start before run creation.',
       'Persisted Run step verification now uses post_step verification.',
       'runtime-step-effect-evaluator feeds post_step verification with durable-change and recovery-note signals.',

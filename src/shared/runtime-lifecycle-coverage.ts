@@ -213,7 +213,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     coveredBy: [
       'Decision model supports scope, kind, context, options, recommendation, sourceType, and sourceId.',
       'Checkpointed risky tools create Decisions and resume only after approval.',
-      'Decision actions pass through runtime-action-evaluator.',
+      'Decision actions pass through runtime-action-evaluator at the service boundary and in the Decisions page.',
       'decision-effect-evaluator summarizes pending, approved, deferred, and cancelled decisions for verification consumers.',
       'Approved checkpoint Decisions recheck target-task readiness with subtask_start before resuming tool, browser, or patch-promotion execution.',
       'Decisions page approve/defer/cancel actions use shared decision action guards backed by pre_step and post_step verification.',

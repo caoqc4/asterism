@@ -45,6 +45,7 @@ import {
   type DecisionProcessTemplateSelectionResult,
 } from './process-template-selector.js';
 import { normalizeCreateDecisionInput } from '../../../shared/runtime-surface-routing.js';
+import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import { deriveTaskDetailPriorityLane, getPriorityLanePromptGuidance } from '../../../shared/working-context/priority-lanes.js';
 
@@ -321,6 +322,19 @@ export class DecisionService {
   }
 
   async act(input: DecisionActionInput): Promise<DecisionRecord> {
+    const actionEvaluation = evaluateRuntimeAction({
+      action: 'decision_action',
+      decisionAction: input.action,
+    });
+    const preStepVerification = evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: actionEvaluation,
+      confirmationSatisfied: true,
+    });
+    if (!preStepVerification.canProceed) {
+      throw new Error(preStepVerification.detail);
+    }
+
     const updated = await this.decisionRepository.act(input);
 
     if (!updated.taskId) {
