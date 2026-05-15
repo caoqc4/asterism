@@ -351,6 +351,27 @@ describe('runtime handoff', () => {
     expect(result.toTaskId).toBe(null);
   });
 
+  it('blocks run resume when task memory guidance is still pending', () => {
+    const result = evaluateRuntimeHandoff({
+      intent: 'resume_run',
+      fromTaskId: 'task-1',
+      taskMemoryGuidance: {
+        latestGuidanceAt: '2026-05-15T01:00:00.000Z',
+        outcome: 'pending',
+        pendingTargets: ['task_md'],
+        reason: '最新任务记忆建议仍缺少对应写入：Task.md。',
+        targets: ['task_md'],
+      },
+    });
+
+    expect(result.canProceed).toBe(false);
+    expect(result.action).toBe('block');
+    expect(result.autoContextClear).toMatchObject({
+      outcome: 'needs_memory_write',
+      reason: '最新任务记忆建议仍缺少对应写入：Task.md。',
+    });
+  });
+
   it('builds a reusable manual refresh preview from the handoff result', () => {
     const handoff = evaluateRuntimeHandoff({
       intent: 'manual_context_refresh',

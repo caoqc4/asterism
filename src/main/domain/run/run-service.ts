@@ -305,6 +305,7 @@ export class RunService {
     const handoff = evaluateRuntimeHandoff({
       intent: 'resume_run',
       fromTaskId: run.taskId,
+      taskMemoryGuidance: run.taskMemoryGuidance,
     });
     if (!handoff.canProceed) {
       throw new Error(handoff.reason);

@@ -75,4 +75,10 @@ describe('runtime lifecycle coverage matrix', () => {
 
     expect(text).toContain('Phase closeout requires TaskMemoryCoverageEvaluation and pending TaskMemoryGuidanceState checks');
   });
+
+  it('tracks pending-memory checks for paused run resume', () => {
+    const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
+
+    expect(text).toContain('Run resume passes through runtime action evaluation and pending TaskMemoryGuidanceState checks');
+  });
 });

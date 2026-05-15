@@ -368,6 +368,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeHandoff context refresh, leave-context, and global-conversation paths consume AutoContextClearReadiness before clearing task chat.',
       'RuntimeHandoff task-switch checks TaskMemoryCoverageEvaluation before leaving the previous task context, and also blocks unresolved TaskMemoryGuidanceState through AutoContextClearReadiness.',
       'RightPanel phase closeout consumes TaskMemoryCoverageEvaluation and pending TaskMemoryGuidanceState so handoff signals and task-memory suggestions must be written before chat refresh or next-task handoff.',
+      'Paused Run resume consumes pending TaskMemoryGuidanceState before executing checkpoint tools.',
       'Task completion modal consumes TaskMemoryCoverageEvaluation for completion evidence and memory sufficiency.',
       'TaskService direct transitions into running consume TaskMemoryCoverageEvaluation for task-start memory sufficiency.',
       'RuntimeHandoffPreview represents manual refresh/archive preview as reusable runtime data instead of RightPanel-only text assembly.',

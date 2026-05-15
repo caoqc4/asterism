@@ -264,6 +264,7 @@ function buildPausedRunServiceWithPayload(payload: unknown) {
   return {
     agentToolRegistry,
     runCheckpointRepository,
+    runStepRepository,
     service,
     taskService,
   };
@@ -1323,6 +1324,46 @@ describe('RunService', () => {
 
     await expect(service.continuePausedRun('run_1')).rejects.toThrow(
       '仍有阻塞、依赖或等待状态',
+    );
+
+    expect(agentToolRegistry.execute).not.toHaveBeenCalled();
+    expect(runCheckpointRepository.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('blocks paused run continuation when task memory guidance is still pending', async () => {
+    const {
+      agentToolRegistry,
+      runCheckpointRepository,
+      runStepRepository,
+      service,
+    } = buildPausedRunServiceWithPayload({
+      version: 1,
+      kind: 'resume',
+      reason: '等待补齐任务记忆。',
+      runId: 'run_1',
+      nextTool: 'artifact.create_note',
+      nextInput: {
+        title: 'Recovered note',
+        content: 'Recovered note',
+      },
+      taskId: 'task_1',
+    });
+    runStepRepository.listForRun.mockResolvedValue([{
+      id: 'run_step_memory',
+      runId: 'run_1',
+      index: 1,
+      kind: 'final',
+      status: 'completed',
+      title: '任务记忆建议',
+      input: null,
+      output: '- Task.md update recommended: next_step',
+      error: null,
+      createdAt: '2026-01-01T00:01:00.000Z',
+      updatedAt: '2026-01-01T00:01:00.000Z',
+    }]);
+
+    await expect(service.continuePausedRun('run_1')).rejects.toThrow(
+      '最新任务记忆建议仍缺少对应写入：Task.md。',
     );
 
     expect(agentToolRegistry.execute).not.toHaveBeenCalled();

@@ -93,4 +93,10 @@ describe('agent principles compliance matrix', () => {
 
     expect(text).toContain('phase closeout consumes TaskMemoryCoverageEvaluation and pending TaskMemoryGuidanceState');
   });
+
+  it('records that paused run resume uses the same pending-memory boundary', () => {
+    const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
+
+    expect(text).toContain('Paused Run resume consumes pending TaskMemoryGuidanceState');
+  });
 });
