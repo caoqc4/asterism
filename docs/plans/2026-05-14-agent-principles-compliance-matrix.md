@@ -19,9 +19,9 @@ Current status is intentionally conservative:
 
 - Fully implemented: none.
 - Partially implemented: most core runtime areas.
-- Missing: subagent product-runtime compliance.
+- Missing: none tracked as fully absent, though every section still has known gaps.
 
-The current runtime deepening work has made meaningful progress on information routing, context clearing, task closeout, run verification, and confirmation boundaries. It has not yet fully enforced required read order, Task.md update policy, project-level verification, source freshness, or subagent handoff requirements.
+The current runtime deepening work has made meaningful progress on information routing, context clearing, task closeout, run verification, confirmation boundaries, and subagent handoff boundaries. It has not yet fully enforced required read order, Task.md update policy, project-level verification, source freshness, or product entry-point wiring for subagent handoffs.
 
 ## Highest Priority Gaps
 
@@ -53,8 +53,8 @@ The current runtime deepening work has made meaningful progress on information r
 3. Source freshness and traceability need runtime scoring.
    Source materials have metadata, but freshness, credibility, duplication, sensitivity, and inclusion/exclusion reasons are not yet first-class runtime checks.
 
-4. Subagent protocol needs a product-runtime object.
-   The principles define scope and handoff rules, but there is no `SubagentHandoffEvaluation` or equivalent yet.
+4. Subagent protocol needs product entry-point wiring.
+   A shared `SubagentHandoffEvaluation` now verifies inherited principles, task context, scope, allowed actions/files, confirmation boundaries, and handoff completeness. The remaining gap is wiring it into a future product delegation surface before any subagent result can update task memory or files.
 
 ### P2
 

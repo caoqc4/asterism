@@ -34,7 +34,8 @@ describe('agent principles compliance matrix', () => {
 
     expect(summary.implemented).toBe(0);
     expect(summary.partial).toBeGreaterThan(0);
-    expect(summary.missing).toBeGreaterThan(0);
+    expect(summary.missing).toBe(0);
+    expect(AGENT_PRINCIPLES_COMPLIANCE.some((item) => item.gaps.length > 0)).toBe(true);
     expect(AGENT_PRINCIPLES_COMPLIANCE.some((item) => (
       item.section === 'Verification Protocol' &&
       item.gaps.some((gap) => gap.includes('Project-level verification'))

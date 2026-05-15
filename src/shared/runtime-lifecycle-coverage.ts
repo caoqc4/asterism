@@ -253,6 +253,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'runtime-handoff now provides a shared RuntimeHandoff and RuntimeResumePlan evaluator for context refresh, task switching, phase closeout, and run resume planning.',
       'RightPanel context refresh, manual refresh, global conversation reset, leave-task-context, task switch confirmation, and phase-closeout handoff now consume RuntimeHandoff results.',
       'RunService paused-run continuation now consumes RuntimeHandoff and RuntimeResumePlan before checkpoint resume execution.',
+      'SubagentHandoffEvaluation now models subagent scope, inherited-principles, confirmation-boundary, and handoff-completeness checks before future subagent results can be integrated.',
       'runtime-event-record now projects persisted timeline events, Runs, Run steps, Task Records, Decisions without timeline coverage, and runtime resume projections into a shared RuntimeEventRecord audit stream.',
       'Activity/audit projection is modeled by RuntimeEventRecord; Tasks activity consumes it and retained Run-side views should follow it.',
       'RuntimeEventRecord now has replay-oriented grouping for handoff, project structure changes, execution recovery, Decisions, durable records, source context, and task state changes.',
@@ -266,6 +267,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'RuntimeHandoff is now shared across RightPanel context clear, phase closeout, task switch flows, RunService checkpoint resume, and RuntimeEventRecord projection.',
       'Successor-task handoff outside parent-child hierarchy now has closeout and replay metadata.',
+      'Subagent handoff has a shared evaluator, but it is not wired to a product delegation entry point because that surface is not active yet.',
       'Follow-up proposal gating exists in the shared closeout evaluator and RightPanel task-context capture consumes it; other retained creation entry points still need the same boundary when they create follow-up tasks from task context.',
       'Replay grouping exists in shared runtime data but is not yet consumed by retained activity surfaces.',
     ],

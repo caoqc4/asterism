@@ -290,16 +290,18 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
   },
   {
     section: 'Subagent Protocol',
-    status: 'missing',
+    status: 'partial',
     priority: 'p1',
     implementedBy: [
       'Product principles include the required subagent boundaries.',
+      'SubagentHandoffEvaluation verifies inherited principles, task context, narrow scope, allowed action/file scope, confirmation boundaries, and handoff completeness before main-Agent integration.',
     ],
     gaps: [
-      'No product runtime object verifies subagent scope, inherited principles, output contract, or handoff completeness.',
+      'SubagentHandoffEvaluation exists as a shared runtime object, but no retained product entry point exposes subagent delegation yet.',
+      'Subagent handoff evaluation is not yet persisted into task memory or RuntimeEventRecord because subagent delegation is not a product action surface yet.',
     ],
     nextVerification: [
-      'Add SubagentHandoffEvaluation before exposing subagent delegation as a product action.',
+      'When subagent delegation becomes a product action, route every subagent result through SubagentHandoffEvaluation before task memory, file writes, or user-facing handoff.',
     ],
   },
   {

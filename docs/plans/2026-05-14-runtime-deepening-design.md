@@ -555,6 +555,7 @@ Implemented:
 - RightPanel Task.md important-file references now consume `TaskMdUpdateNeedEvaluation` before creating or updating `Task.md`.
 - TasksPage direct `Task.md` saves now consume `TaskMdUpdateNeedEvaluation`, and manual Task Record creation consumes `TaskRecordWorthinessEvaluation`.
 - AgentToolRegistry durable tool results now expose `recoveryGuidance` from `TaskMdUpdateNeedEvaluation` and `TaskRecordWorthinessEvaluation`, without silently mutating `Task.md`.
+- Added `SubagentHandoffEvaluation` as a data-only runtime boundary for future subagent delegation: it checks inherited principles, task context, assigned scope, allowed action/file scope, confirmation-boundary violations, and handoff completeness before main-Agent integration.
 - Legacy WorkbenchPage has been retired from active renderer code and should not receive new runtime-deepening implementation. Its responsibilities are covered by TasksPage, RightPanel, Runs/activity projections, and Decisions.
 
 Remaining:
