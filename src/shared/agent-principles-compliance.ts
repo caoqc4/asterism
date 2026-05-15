@@ -148,11 +148,12 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Product principles define a lightweight subtask start evaluation before entering or executing a subtask.',
       'SubtaskStartEvaluation provides a shared runtime object for target task boundary, blockers/dependencies, pending decisions, handoff review, context cleanliness, and context sufficiency.',
       'RuntimeContextAssemblyGate, RuntimeHandoff, RuntimeResumePlan, and runtime verification already provide pieces of task-bound context refresh, handoff, and pre-step checks.',
+      'runtime-verification exposes subtask_start mode so subtask start readiness can be evaluated through the same verification surface as execution and closeout checks.',
       'Project decomposition and task closeout flows already prefer existing child tasks and handoffs instead of creating generic follow-up tasks.',
     ],
     gaps: [
-      'SubtaskStartEvaluation exists as a shared evaluator, but retained task-entry and execution paths do not yet consume it before every subtask start.',
-      'Context cleanliness and context sufficiency are now represented in one runtime verdict, but UI and provider-visible execution starts still need to route through that verdict.',
+      'SubtaskStartEvaluation exists as a shared evaluator and runtime-verification mode, but retained task-entry and execution paths do not yet consume it before every subtask start.',
+      'Context cleanliness and context sufficiency are now represented in one runtime verdict, but UI and provider-visible execution starts still need to call that verdict.',
     ],
     nextVerification: [
       'Route subtask handoff, explicit task-enter actions, and task-bound execution start through SubtaskStartEvaluation before provider-visible execution.',
@@ -276,7 +277,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     status: 'partial',
     priority: 'p0',
     implementedBy: [
-      'runtime-verification normalizes run, run_step, pre_step, post_step, task_closeout, project, and context_clear checks.',
+      'runtime-verification normalizes run, run_step, pre_step, post_step, subtask_start, task_closeout, project, and context_clear checks.',
       'Run verification persistence, completion modal, project completion checks, phase closeout, and context clearing consume runtime verification.',
     ],
     gaps: [

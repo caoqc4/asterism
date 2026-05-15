@@ -233,7 +233,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     priority: 'p0',
     scope: 'agent_runtime',
     coveredBy: [
-      'runtime-verification covers run, run_step, pre_step, post_step, task_closeout, project, and context_clear.',
+      'runtime-verification covers run, run_step, pre_step, post_step, subtask_start, task_closeout, project, and context_clear.',
       'Task completion modal, project completion checks, RightPanel phase closeout, and Run verification persistence consume runtime-verification.',
       'Project detail surfaces display project verification next to the child task structure.',
       'Project verification includes artifact/source evidence counts and Decision effect summaries.',

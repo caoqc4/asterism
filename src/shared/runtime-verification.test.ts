@@ -44,6 +44,10 @@ function buildTask(partial: Partial<TaskListItemRecord> = {}): TaskListItemRecor
     id: partial.id ?? 'task_1',
     title: partial.title ?? '开发小程序',
     summary: partial.summary ?? null,
+    taskType: partial.taskType,
+    taskFacets: partial.taskFacets,
+    parentTaskId: partial.parentTaskId,
+    childTaskIds: partial.childTaskIds,
     state: partial.state ?? 'planned',
     nextStep: partial.nextStep ?? null,
     waitingReason: partial.waitingReason ?? null,
@@ -239,6 +243,63 @@ describe('runtime verification', () => {
       canProceed: false,
       shouldPersistTaskRecord: true,
       suggestedNextAction: 'handoff',
+    });
+  });
+
+  it('normalizes subtask-start readiness into runtime verification', () => {
+    expect(evaluateRuntimeVerification({
+      mode: 'subtask_start',
+      targetTask: buildTask({ id: 'child_1', parentTaskId: 'parent_1' }),
+      parentTask: buildTask({ id: 'parent_1', title: '开发小程序' }),
+      expectedParentTaskId: 'parent_1',
+      contextSignals: {
+        activeTaskId: 'child_1',
+        inputPromptTaskId: 'child_1',
+      },
+      availableContext: {
+        taskState: true,
+        taskMd: true,
+        completionCriteria: true,
+        nextStep: true,
+        parentConstraints: true,
+      },
+    })).toMatchObject({
+      mode: 'subtask_start',
+      tone: 'pass',
+      canProceed: true,
+      suggestedNextAction: 'continue',
+      subtaskStart: {
+        outcome: 'ready_to_start',
+        contextClean: true,
+        contextSufficient: true,
+      },
+    });
+  });
+
+  it('requires context refresh before a subtask starts from stale runtime state', () => {
+    expect(evaluateRuntimeVerification({
+      mode: 'subtask_start',
+      targetTask: buildTask({ id: 'child_1', parentTaskId: 'parent_1' }),
+      expectedParentTaskId: 'parent_1',
+      contextSignals: {
+        activeTaskId: 'parent_1',
+        inputPromptTaskId: 'parent_1',
+      },
+      availableContext: {
+        taskState: true,
+        taskMd: true,
+        completionCriteria: true,
+        nextStep: true,
+      },
+    })).toMatchObject({
+      mode: 'subtask_start',
+      tone: 'fail',
+      canProceed: false,
+      suggestedNextAction: 'inspect',
+      subtaskStart: {
+        outcome: 'needs_context_refresh',
+        contextClean: false,
+      },
     });
   });
 

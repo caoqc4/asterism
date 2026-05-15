@@ -11,6 +11,11 @@ import {
   type RuntimeCapabilitySnapshot,
 } from './runtime-capability-snapshot.js';
 import type { RuntimeActionEvaluation } from './runtime-action-evaluator.js';
+import {
+  evaluateSubtaskStart,
+  type SubtaskStartEvaluation,
+  type SubtaskStartEvaluationInput,
+} from './subtask-start-evaluator.js';
 import type { RunDetailRecord, RunRecord, RunStepRecord } from './types/run.js';
 import type { TaskDetail, TaskListItemRecord } from './types/task.js';
 
@@ -19,6 +24,7 @@ export type RuntimeVerificationMode =
   | 'run_step'
   | 'pre_step'
   | 'post_step'
+  | 'subtask_start'
   | 'task_closeout'
   | 'project'
   | 'context_clear';
@@ -43,6 +49,7 @@ export type RuntimeVerificationResult = {
     | 'complete'
     | 'inspect';
   taskCloseout?: TaskCloseoutEvaluation;
+  subtaskStart?: SubtaskStartEvaluation;
   project?: RuntimeProjectVerification;
 };
 
@@ -97,6 +104,9 @@ export type RuntimeVerificationInput =
       hasRecoveryNote?: boolean;
       applicableWorkHabitCount?: number;
     }
+  | ({
+      mode: 'subtask_start';
+    } & SubtaskStartEvaluationInput)
   | ({
       mode: 'task_closeout';
     } & TaskCloseoutEvaluatorInput)
@@ -283,7 +293,50 @@ export function evaluateRuntimeVerification(input: RuntimeVerificationInput): Ru
           ? 'continue'
           : check.tone === 'pending'
             ? 'inspect'
-            : 'confirm',
+          : 'confirm',
+      };
+    }
+    case 'subtask_start': {
+      const subtaskStart = evaluateSubtaskStart(input);
+      const tone: RuntimeVerificationTone = subtaskStart.outcome === 'ready_to_start'
+        ? 'pass'
+        : subtaskStart.outcome === 'blocked_by_dependency'
+          || subtaskStart.outcome === 'needs_parent_decision'
+          || subtaskStart.outcome === 'needs_handoff_review'
+          ? 'warn'
+          : 'fail';
+      return {
+        mode: input.mode,
+        tone,
+        label: subtaskStart.outcome === 'ready_to_start'
+          ? '子任务启动检查通过'
+          : subtaskStart.outcome === 'needs_context_refresh'
+            ? '子任务启动前需刷新上下文'
+            : subtaskStart.outcome === 'insufficient_context'
+              ? '子任务启动前上下文不足'
+              : subtaskStart.outcome === 'wrong_task_boundary'
+                ? '子任务启动边界不正确'
+                : subtaskStart.outcome === 'needs_parent_decision'
+                  ? '子任务启动前需拍板'
+                  : subtaskStart.outcome === 'needs_handoff_review'
+                    ? '子任务启动前需复核交接'
+                    : '子任务启动前仍有阻塞',
+        detail: subtaskStart.reason,
+        source: 'lightweight_rule_engine',
+        canProceed: subtaskStart.canStart,
+        requiresUserConfirmation: subtaskStart.outcome === 'needs_parent_decision'
+          || subtaskStart.outcome === 'needs_handoff_review',
+        shouldPersistTaskRecord: subtaskStart.outcome === 'needs_handoff_review',
+        suggestedNextAction: subtaskStart.outcome === 'ready_to_start'
+          ? 'continue'
+          : subtaskStart.outcome === 'blocked_by_dependency'
+            ? 'wait'
+            : subtaskStart.outcome === 'needs_parent_decision'
+              ? 'confirm'
+              : subtaskStart.outcome === 'needs_handoff_review'
+                ? 'handoff'
+                : 'inspect',
+        subtaskStart,
       };
     }
     case 'task_closeout': {
