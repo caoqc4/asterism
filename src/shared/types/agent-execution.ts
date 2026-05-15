@@ -250,6 +250,11 @@ export type AgentToolResult = {
   output?: string | null;
   artifactId?: string | null;
   recoveryGuidance?: string[];
+  recoveryGuidanceItems?: Array<{
+    target: 'task_md' | 'task_record';
+    message: string;
+    reason: string;
+  }>;
   checkpointId?: string | null;
   checkpointKind?: RunCheckpointKind | null;
   checkpointEvent?: Extract<AgentSessionEvent, { type: 'checkpoint.created' }> | null;

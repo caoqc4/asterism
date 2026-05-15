@@ -76,10 +76,11 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RightPanel Task.md important-file references consume TaskMdUpdateNeedEvaluation before persistence.',
       'TasksPage direct Task.md saves consume TaskMdUpdateNeedEvaluation before persistence.',
       'TasksPage manual Task Record creation consumes TaskRecordWorthinessEvaluation before persistence.',
-      'AgentToolRegistry durable tool results expose recoveryGuidance from TaskMdUpdateNeedEvaluation and TaskRecordWorthinessEvaluation without silently mutating Task.md.',
+      'RuntimeRecoveryGuidance centralizes structured Task.md and Task Record recovery recommendations while preserving legacy guidance messages.',
+      'AgentToolRegistry durable tool results expose recoveryGuidanceItems and legacy recoveryGuidance from RuntimeRecoveryGuidance without silently mutating Task.md.',
     ],
     gaps: [
-      'TaskMdUpdateNeedEvaluation exists and covers RightPanel important-file references, TasksPage direct Task.md saves, and AgentToolRegistry recovery guidance, but not every durable write asks whether Task.md also needs an update.',
+      'TaskMdUpdateNeedEvaluation exists and covers RightPanel important-file references, TasksPage direct Task.md saves, and AgentToolRegistry recovery guidance through RuntimeRecoveryGuidance, but not every durable write asks whether Task.md also needs an update.',
       'TaskRecordWorthinessEvaluation is consumed by RightPanel context-refresh/phase-closeout writes, TasksPage manual Task Record creation, and AgentToolRegistry recovery guidance, but remaining write paths still need to consume it consistently.',
     ],
     nextVerification: [

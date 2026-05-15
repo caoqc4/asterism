@@ -379,6 +379,11 @@ describe('AgentToolRegistry', () => {
       summary: '已更新任务下一步：Review the agent output with the owner',
       output: 'Review the agent output with the owner',
       recoveryGuidance: ['Task.md update recommended: next_step'],
+      recoveryGuidanceItems: [{
+        target: 'task_md',
+        message: 'Task.md update recommended: next_step',
+        reason: 'next_step',
+      }],
     });
     expect(taskService.update).toHaveBeenCalledWith({
       id: 'task_1',
@@ -554,6 +559,18 @@ describe('AgentToolRegistry', () => {
         'Task.md update recommended: durable_state_change',
         'Task Record may be useful: external_signal',
       ],
+      recoveryGuidanceItems: [
+        {
+          target: 'task_md',
+          message: 'Task.md update recommended: durable_state_change',
+          reason: 'durable_state_change',
+        },
+        {
+          target: 'task_record',
+          message: 'Task Record may be useful: external_signal',
+          reason: 'external_signal',
+        },
+      ],
     });
     expect(taskService.createSourceContext).toHaveBeenCalledWith({
       taskId: 'task_1',
@@ -648,6 +665,11 @@ describe('AgentToolRegistry', () => {
       summary: '已创建完成标准：Owner has reviewed the final draft',
       output: 'Owner has reviewed the final draft',
       recoveryGuidance: ['Task.md update recommended: durable_state_change'],
+      recoveryGuidanceItems: [{
+        target: 'task_md',
+        message: 'Task.md update recommended: durable_state_change',
+        reason: 'durable_state_change',
+      }],
     });
     expect(taskService.createCompletionCriteria).toHaveBeenCalledWith({
       taskId: 'task_1',
@@ -803,6 +825,11 @@ describe('AgentToolRegistry', () => {
       artifactId: 'artifact_1',
       output: 'Captured note',
       recoveryGuidance: ['Task.md update recommended: important_file'],
+      recoveryGuidanceItems: [{
+        target: 'task_md',
+        message: 'Task.md update recommended: important_file',
+        reason: 'important_file',
+      }],
     });
     expect(artifactRepository.createNoteFromRun).toHaveBeenCalledWith({
       taskId: 'task_1',

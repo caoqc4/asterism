@@ -11,8 +11,7 @@ import type {
 } from '../../../shared/types/agent-execution.js';
 import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
-import { evaluateTaskMdUpdateNeed } from '../../../shared/task-md-update-need.js';
-import { evaluateTaskRecordWorthiness } from '../../../shared/task-record-worthiness.js';
+import { buildRuntimeRecoveryGuidance } from '../../../shared/runtime-recovery-guidance.js';
 import type { DecisionDraftRecord, DraftDecisionInput } from '../../../shared/types/decision.js';
 import type { RunStepRecord } from '../../../shared/types/run.js';
 import type { SourceContextKind, SourceContextRole } from '../../../shared/types/source-context.js';
@@ -684,36 +683,33 @@ function withRuntimeRecoveryGuidance(
 ): AgentToolResult {
   if (!durableAgentTools.has(name) || !result.success) return result;
   const text = [result.summary, result.output].filter(Boolean).join('\n');
-  const guidance: string[] = [];
 
   const taskMdReason = name === 'task.update_next_step'
     ? 'next_step'
     : name === 'artifact.create_note'
       ? 'important_file'
       : 'durable_state_change';
-  const taskMdUpdate = evaluateTaskMdUpdateNeed({
-    changeText: text,
+  const guidance = buildRuntimeRecoveryGuidance({
+    text,
     hasTaskContext: Boolean(context.taskId),
     importantFilePath: name === 'artifact.create_note' ? result.artifactId ?? result.summary : null,
     producedDurableChange: true,
-    reasonHint: taskMdReason,
+    taskMdReasonHint: taskMdReason,
+    taskRecordReasonHint: name === 'source_context.create' ? 'external_signal' : null,
+    includeTaskRecord: name === 'source_context.create',
   });
-  if (taskMdUpdate.shouldUpdateTaskMd) {
-    guidance.push(`Task.md update recommended: ${taskMdUpdate.reason}`);
-  }
 
-  if (name === 'source_context.create') {
-    const taskRecord = evaluateTaskRecordWorthiness({
-      text,
-      hasTaskContext: Boolean(context.taskId),
-      reasonHint: 'external_signal',
-    });
-    if (taskRecord.shouldCreateTaskRecord) {
-      guidance.push(`Task Record may be useful: ${taskRecord.reason}`);
-    }
-  }
-
-  return guidance.length ? { ...result, recoveryGuidance: guidance } : result;
+  return guidance.items.length
+    ? {
+        ...result,
+        recoveryGuidance: guidance.messages,
+        recoveryGuidanceItems: guidance.items.map((item) => ({
+          target: item.target,
+          message: item.message,
+          reason: item.evaluation.reason,
+        })),
+      }
+    : result;
 }
 
 function isPotentialCompletionEvidence(event: AgentWorkingContext['recentTimeline'][number]): boolean {
