@@ -316,12 +316,13 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Context clear actions require specific handoff signals before clearing active task discussions.',
       'RightPanel distinguishes refresh, manual refresh, leave task context, and new conversation.',
       'Context clear now combines runtime action evaluation with context-clear runtime verification.',
+      'RuntimeHandoffPreview represents manual refresh/archive preview as reusable runtime data instead of RightPanel-only text assembly.',
     ],
     gaps: [
-      'Manual clear preview is still UI-local and not represented as a reusable RuntimeHandoff object.',
+      'Manual refresh preview is shared, but RightPanel context state transitions still live in separate component state values instead of one reducer/store.',
     ],
     nextVerification: [
-      'Move manual clear preview behind the shared RuntimeHandoff shape.',
+      'When UI state work is allowed, move RightPanel task context transitions behind a small reducer backed by RuntimeContextSnapshot and RuntimeHandoff.',
     ],
   },
   {
