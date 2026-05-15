@@ -38,6 +38,7 @@ describe('TaskDependencyRepository integration', () => {
       reason: 'Need the approved partner list before drafting outreach.',
     });
 
+    const fetched = await taskDependencyRepository.get(created.id);
     const activeBeforeResolve = await taskDependencyRepository.getActiveForTask(blockedTask.id);
     const resolved = await taskDependencyRepository.resolve(created.id);
     const activeAfterResolve = await taskDependencyRepository.getActiveForTask(blockedTask.id);
@@ -45,6 +46,7 @@ describe('TaskDependencyRepository integration', () => {
     expect(created.status).toBe('active');
     expect(created.blockedByTaskTitle).toBe('Publish partner list');
     expect(updated.reason).toBe('Need the approved partner list before drafting outreach.');
+    expect(fetched?.id).toBe(created.id);
     expect(activeBeforeResolve?.id).toBe(created.id);
     expect(resolved.status).toBe('resolved');
     expect(resolved.resolvedAt).toBeTruthy();

@@ -77,6 +77,28 @@ export class TaskDependencyRepository {
     return rows.map(toRecord);
   }
 
+  async get(id: string): Promise<TaskDependencyRecord | null> {
+    const db = initDatabase();
+    const [row] = await db
+      .select({
+        id: taskDependencies.id,
+        taskId: taskDependencies.taskId,
+        blockedByTaskId: taskDependencies.blockedByTaskId,
+        reason: taskDependencies.reason,
+        status: taskDependencies.status,
+        createdAt: taskDependencies.createdAt,
+        updatedAt: taskDependencies.updatedAt,
+        resolvedAt: taskDependencies.resolvedAt,
+        blockedByTaskTitle: tasks.title,
+      })
+      .from(taskDependencies)
+      .leftJoin(tasks, eq(tasks.id, taskDependencies.blockedByTaskId))
+      .where(eq(taskDependencies.id, id))
+      .limit(1);
+
+    return row ? toRecord(row) : null;
+  }
+
   async create(input: CreateTaskDependencyInput): Promise<TaskDependencyRecord> {
     const db = initDatabase();
     const timestamp = nowIso();
@@ -146,28 +168,12 @@ export class TaskDependencyRepository {
   }
 
   private async getOrThrow(id: string): Promise<TaskDependencyRecord> {
-    const db = initDatabase();
-    const [row] = await db
-      .select({
-        id: taskDependencies.id,
-        taskId: taskDependencies.taskId,
-        blockedByTaskId: taskDependencies.blockedByTaskId,
-        reason: taskDependencies.reason,
-        status: taskDependencies.status,
-        createdAt: taskDependencies.createdAt,
-        updatedAt: taskDependencies.updatedAt,
-        resolvedAt: taskDependencies.resolvedAt,
-        blockedByTaskTitle: tasks.title,
-      })
-      .from(taskDependencies)
-      .leftJoin(tasks, eq(tasks.id, taskDependencies.blockedByTaskId))
-      .where(eq(taskDependencies.id, id))
-      .limit(1);
+    const record = await this.get(id);
 
-    if (!row) {
+    if (!record) {
       throw new Error(`Task dependency not found: ${id}`);
     }
 
-    return toRecord(row);
+    return record;
   }
 }

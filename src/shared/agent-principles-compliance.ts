@@ -160,6 +160,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Tasks file actions use durable panel action guards backed by pre_step and post_step verification.',
       'Tasks file content saves, project decomposition writes, and completion criteria creation now use renderer runtime guards before durable persistence.',
       'TaskService completion criteria creation and updates use CompletionCriteriaEvaluation before durable persistence.',
+      'TaskService dependency creation and updates use TaskDependencyBoundaryEvaluation before durable persistence.',
       'AgentToolRegistry task/source/artifact durable tools use pre_step and post_step runtime verification.',
       'RightPanel internal phase/context record writes use durable panel action guards.',
       'RightPanel task capture, captured-task confirmation, and captured-task abandonment use runtime verification guards.',

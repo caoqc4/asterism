@@ -19,6 +19,7 @@ import type {
   TaskDependencyRecord,
   UpdateTaskDependencyInput,
 } from '../../../shared/types/task-dependency.js';
+import { evaluateTaskDependencyBoundary } from '../../../shared/task-dependency-evaluator.js';
 import type {
   CreateTaskInput,
   RecordTaskCompletionCheckInput,
@@ -1565,6 +1566,13 @@ export class TaskService {
   }
 
   async createTaskDependency(input: CreateTaskDependencyInput): Promise<TaskDependencyRecord> {
+    const boundary = evaluateTaskDependencyBoundary({
+      taskId: input.taskId,
+      blockedByTaskId: input.blockedByTaskId,
+    });
+    if (!boundary.allowed) {
+      throw new Error(boundary.summary);
+    }
     await this.getExistingTaskOrThrow(input.taskId);
     await this.getExistingTaskOrThrow(input.blockedByTaskId);
 
@@ -1599,6 +1607,18 @@ export class TaskService {
   async updateTaskDependency(input: UpdateTaskDependencyInput): Promise<TaskDependencyRecord> {
     if (!this.taskDependencyRepository) {
       throw new Error('Task dependency repository is not configured');
+    }
+
+    const current = await this.taskDependencyRepository.get(input.id);
+    if (!current) {
+      throw new Error(`Task dependency not found: ${input.id}`);
+    }
+    const boundary = evaluateTaskDependencyBoundary({
+      taskId: current.taskId,
+      blockedByTaskId: input.blockedByTaskId ?? current.blockedByTaskId,
+    });
+    if (!boundary.allowed) {
+      throw new Error(boundary.summary);
     }
 
     if (input.blockedByTaskId) {

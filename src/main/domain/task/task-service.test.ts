@@ -1344,6 +1344,89 @@ describe('TaskService', () => {
     expect(resolved.status).toBe('resolved');
   });
 
+  it('blocks self task dependencies before persistence', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const dependencies = {
+      getActiveForTask: vi.fn(),
+      create: vi.fn(),
+      get: vi.fn(),
+      update: vi.fn(),
+      resolve: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      null,
+      dependencies as never,
+    );
+
+    await expect(service.createTaskDependency({
+      taskId: 'task_1',
+      blockedByTaskId: 'task_1',
+    })).rejects.toThrow('任务不能依赖自己');
+    expect(repository.getDetail).not.toHaveBeenCalled();
+    expect(dependencies.create).not.toHaveBeenCalled();
+  });
+
+  it('blocks dependency updates that would make a task depend on itself', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const dependencies = {
+      getActiveForTask: vi.fn(),
+      create: vi.fn(),
+      get: vi.fn().mockResolvedValue(buildTaskDependencyRecord({
+        id: 'task_dependency_1',
+        taskId: 'task_1',
+        blockedByTaskId: 'task_upstream',
+      })),
+      update: vi.fn(),
+      resolve: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      null,
+      dependencies as never,
+    );
+
+    await expect(service.updateTaskDependency({
+      id: 'task_dependency_1',
+      blockedByTaskId: 'task_1',
+    })).rejects.toThrow('任务不能依赖自己');
+    expect(dependencies.update).not.toHaveBeenCalled();
+  });
+
   it('allows valid state transitions', async () => {
     const repository = {
       list: vi.fn(),
