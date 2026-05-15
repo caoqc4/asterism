@@ -53,13 +53,14 @@ export type TaskMemoryCoverageInput = {
 
 export function buildTaskMemoryCoverageInputForTask(
   action: TaskMemoryCoverageAction,
-  task: TaskDetail,
+  task: TaskDetail | TaskDetailBase,
   overrides: Partial<Omit<TaskMemoryCoverageInput, 'action' | 'hasTaskContext'>> = {},
 ): TaskMemoryCoverageInput {
   const taskFiles = task.taskFiles ?? [];
   const hasTaskMd = taskFiles.some((file) => file.kind === 'file' && file.path === 'Task.md');
-  const hasEquivalentRecoverySummary = Boolean(task.summary?.trim() || task.resumeCard?.summary?.trim() || task.title?.trim());
-  const hasNextStep = Boolean(task.nextStep?.trim() || task.resumeCard?.nextSuggestedMove?.trim());
+  const resumeCard = 'resumeCard' in task ? task.resumeCard : null;
+  const hasEquivalentRecoverySummary = Boolean(task.summary?.trim() || resumeCard?.summary?.trim() || task.title?.trim());
+  const hasNextStep = Boolean(task.nextStep?.trim() || resumeCard?.nextSuggestedMove?.trim());
   const sourceContexts = task.sourceContexts ?? [];
   const artifacts = task.artifacts ?? [];
   const timeline = task.timeline ?? [];
@@ -231,4 +232,4 @@ function result(
     reason: options.reason,
   };
 }
-import type { TaskDetail } from './types/task.js';
+import type { TaskDetail, TaskDetailBase } from './types/task.js';

@@ -42,6 +42,10 @@ import type {
 import { evaluateRuntimeTaskCapture } from '../../../shared/runtime-task-capture-evaluator.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import {
+  buildTaskMemoryCoverageInputForTask,
+  evaluateTaskMemoryCoverage,
+} from '../../../shared/task-memory-coverage.js';
+import {
   type AppliedTaskHierarchyManualResolutionResult,
   buildTaskHierarchyRepairPlan,
   buildTaskHierarchyManualReviewPolicy,
@@ -597,6 +601,13 @@ export class TaskService {
 
     if (!verification.canProceed) {
       throw new Error(verification.detail);
+    }
+
+    const memoryCoverage = evaluateTaskMemoryCoverage(
+      buildTaskMemoryCoverageInputForTask('task_start', target),
+    );
+    if (!memoryCoverage.canProceed) {
+      throw new Error(memoryCoverage.reason);
     }
   }
 

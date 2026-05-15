@@ -1639,6 +1639,37 @@ describe('TaskService', () => {
     );
   });
 
+  it('blocks running transition when task memory is not sufficient to start', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('planned'),
+        nextStep: null,
+        resumeCard: {
+          ...buildDetail('planned').resumeCard,
+          nextSuggestedMove: '',
+        },
+      }),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
+
+    await expect(service.transition({
+      id: 'task_1',
+      nextState: 'running',
+    })).rejects.toThrow('任务开始前的恢复信息不足');
+
+    expect(repository.transition).not.toHaveBeenCalled();
+  });
+
   it('rejects invalid state transitions', async () => {
     const repository = {
       list: vi.fn(),

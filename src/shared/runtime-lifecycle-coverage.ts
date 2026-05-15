@@ -199,7 +199,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TasksPage manual Task Record creation now passes through TaskRecordWorthinessEvaluation before creating Task Records files.',
       'RuntimeRecoveryGuidance centralizes structured Task.md and Task Record recovery recommendations, while preserving legacy guidance messages.',
       'AgentToolRegistry durable tool results now expose structured recoveryGuidanceItems plus legacy recoveryGuidance messages from RuntimeRecoveryGuidance without silently mutating Task.md.',
-      'TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes to runtime checks and is now consumed by context-clear, run-start, task-switch, task-completion modal, and RightPanel phase-closeout paths.',
+      'TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes to runtime checks and is now consumed by context-clear, task-start, run-start, task-switch, task-completion modal, and RightPanel phase-closeout paths.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime owns durable data model boundaries and UI labels for files, records, sources, and generated output.',
@@ -207,11 +207,11 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'TaskMdUpdateNeedEvaluation covers RightPanel references, TasksPage Task.md saves, and AgentToolRegistry durable tool guidance through RuntimeRecoveryGuidance; remaining retained durable state changes should consume it through TasksPage, RightPanel, Runs, or Decisions.',
       'Output-reference propagation to Task.md or Task Records is now recommended by tool guidance but not automatically persisted.',
-      'TaskMemoryCoverageEvaluation is wired to context-clear, run-start, task-switch, task-completion modal, and RightPanel phase-closeout checks; task start should consume the same evaluator next.',
+      'TaskMemoryCoverageEvaluation is wired to context-clear, task-start, run-start, task-switch, task-completion modal, and RightPanel phase-closeout checks.',
     ],
     nextImplementation: [
       'Add a confirmed writer for AgentToolRegistry recoveryGuidance through retained TasksPage/RightPanel flows.',
-      'Route task start through TaskMemoryCoverageEvaluation.',
+      'Keep new lifecycle boundaries routed through TaskMemoryCoverageEvaluation before adding direct state changes.',
     ],
   },
   {

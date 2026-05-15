@@ -363,11 +363,12 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeHandoff task-switch checks TaskMemoryCoverageEvaluation before leaving the previous task context.',
       'RightPanel phase closeout consumes TaskMemoryCoverageEvaluation so handoff signals must be written before chat refresh or next-task handoff.',
       'Task completion modal consumes TaskMemoryCoverageEvaluation for completion evidence and memory sufficiency.',
+      'TaskService direct transitions into running consume TaskMemoryCoverageEvaluation for task-start memory sufficiency.',
       'RuntimeHandoffPreview represents manual refresh/archive preview as reusable runtime data instead of RightPanel-only text assembly.',
     ],
     gaps: [
       'Manual refresh preview is shared, but RightPanel context state transitions still live in separate component state values instead of one reducer/store.',
-      'TaskMemoryCoverageEvaluation is not yet consumed by every task start path.',
+      'New lifecycle boundaries must continue to opt into TaskMemoryCoverageEvaluation instead of bypassing the shared evaluator.',
     ],
     nextVerification: [
       'When UI state work is allowed, move RightPanel task context transitions behind a small reducer backed by RuntimeContextSnapshot and RuntimeHandoff.',
