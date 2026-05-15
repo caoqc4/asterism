@@ -1,5 +1,6 @@
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import { evaluateRuntimeStepEffect } from '../../../shared/runtime-step-effect-evaluator.js';
+import type { TaskMemoryGuidanceState } from '../../../shared/task-memory-guidance-state.js';
 import type { RunDetailRecord, RunRecord } from '../../../shared/types/run.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import type { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
@@ -67,8 +68,11 @@ export async function persistTerminalRunVerifications(params: {
   runVerificationRepository: RunVerificationWriter | null;
   applicableWorkHabitSummaries?: string[];
   includeRunLevel?: boolean;
+  steps?: Awaited<ReturnType<RunStepReader['listForRun']>>;
+  taskMemoryGuidance?: TaskMemoryGuidanceState | null;
 }): Promise<void> {
   if (!params.runVerificationRepository) return;
+  const steps = params.steps ?? await params.runStepRepository.listForRun(params.run.id);
 
   await persistLightweightRunVerifications(
     {
@@ -76,7 +80,8 @@ export async function persistTerminalRunVerifications(params: {
       agentSessions: [],
       artifacts: [],
       checkpoints: [],
-      steps: await params.runStepRepository.listForRun(params.run.id),
+      steps,
+      taskMemoryGuidance: params.taskMemoryGuidance ?? undefined,
     },
     params.runVerificationRepository,
     {

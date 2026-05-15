@@ -661,6 +661,94 @@ describe('RunService', () => {
     expect(result.status).toBe('completed');
   });
 
+  it('persists terminal run warning for pending task memory guidance immediately after completion', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn(),
+      create: vi.fn().mockResolvedValue(buildRunRecord('pending')),
+      updateResult: vi.fn().mockResolvedValue({
+        ...buildRunRecord('completed'),
+        output: 'Generated output',
+        outputSource: 'ai',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildTaskDetail('running'),
+        taskFiles: [],
+      }),
+      transitionIfAllowed: vi.fn(),
+      annotateRunCompleted: vi.fn().mockResolvedValue(buildTaskRecord('running')),
+      annotateRunFailed: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
+    };
+    const runStepRepository = {
+      ...buildRunStepRepositoryMock(),
+      listForRun: vi.fn().mockResolvedValue([{
+        id: 'run_step_memory',
+        runId: 'run_1',
+        index: 4,
+        kind: 'plan',
+        status: 'completed',
+        title: '任务记忆建议',
+        input: null,
+        output: '- Task Record may be useful: context_archive',
+        error: null,
+        createdAt: '2026-01-01T00:03:00.000Z',
+        updatedAt: '2026-01-01T00:03:00.000Z',
+      }]),
+    };
+    const runVerificationRepository = {
+      upsert: vi.fn(),
+      listForRun: vi.fn(),
+    };
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      buildArtifactRepositoryMock({
+        createFromRun: vi.fn().mockResolvedValue(buildArtifactRecord()),
+      }) as never,
+      {
+        resolveRuntimeConfig: vi.fn().mockResolvedValue({
+          provider: 'anthropic',
+          model: 'claude-3-5-sonnet-latest',
+          apiKey: 'secret',
+        }),
+      } as never,
+      {
+        execute: vi.fn().mockResolvedValue('Generated output'),
+      } as never,
+      {
+        select: vi.fn().mockResolvedValue({
+          shouldUse: false,
+          selectedTemplates: [],
+          reason: 'No template needed.',
+        }),
+      } as never,
+      runStepRepository as never,
+      null,
+      { listForRun: vi.fn().mockResolvedValue([]) } as never,
+      { listForRun: vi.fn().mockResolvedValue([]) } as never,
+      runVerificationRepository as never,
+    );
+
+    await service.trigger({
+      taskId: 'task_1',
+      type: 'draft',
+      instructions: 'Please draft this',
+    });
+
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_1',
+      targetType: 'run',
+      targetId: 'run_1',
+      tone: 'warn',
+      label: 'Run 任务记忆待处理',
+      detail: '最新任务记忆建议仍缺少对应写入：Task Record。',
+    }));
+  });
+
   it('blocks run start when the target task cannot start', async () => {
     const runRepository = {
       list: vi.fn(),

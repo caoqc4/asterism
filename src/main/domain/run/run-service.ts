@@ -13,7 +13,10 @@ import {
 import { buildRuntimeResumePlan, evaluateRuntimeHandoff } from '../../../shared/runtime-handoff.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from '../../../shared/task-memory-coverage.js';
-import { evaluateTaskMemoryGuidanceState } from '../../../shared/task-memory-guidance-state.js';
+import {
+  evaluateTaskMemoryGuidanceState,
+  type TaskMemoryGuidanceState,
+} from '../../../shared/task-memory-guidance-state.js';
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type {
   CreateRunInput,
@@ -87,22 +90,7 @@ export class RunService {
     }
 
     const steps = await this.runStepRepository.listForRun(runId);
-    const taskDetailReader = (this.taskService as Partial<Pick<TaskService, 'getDetail'>>).getDetail;
-    const taskDetail = typeof taskDetailReader === 'function'
-      ? await Promise.resolve(taskDetailReader.call(this.taskService, run.taskId)).catch(() => null)
-      : null;
-    const taskMemoryGuidance = evaluateTaskMemoryGuidanceState({
-      guidanceSignals: steps,
-      memoryWrites: (taskDetail?.taskFiles ?? [])
-        .filter((file) => file.path === 'Task.md' || file.path.startsWith('Task Records/'))
-        .map((file) => ({
-          createdAt: file.updatedAt,
-          path: file.path,
-          status: 'completed',
-          target: file.path === 'Task.md' ? 'task_md' : 'task_record',
-          title: file.name,
-        })),
-    });
+    const taskMemoryGuidance = await this.buildTaskMemoryGuidance(run.taskId, steps);
     const detail = {
       ...run,
       artifacts: await this.artifactRepository.listForRun(runId),
@@ -261,6 +249,28 @@ export class RunService {
     return failed;
   }
 
+  private async buildTaskMemoryGuidance(
+    taskId: string,
+    steps: Awaited<ReturnType<RunStepRepository['listForRun']>>,
+  ): Promise<TaskMemoryGuidanceState> {
+    const taskDetailReader = (this.taskService as Partial<Pick<TaskService, 'getDetail'>>).getDetail;
+    const taskDetail = typeof taskDetailReader === 'function'
+      ? await Promise.resolve(taskDetailReader.call(this.taskService, taskId)).catch(() => null)
+      : null;
+    return evaluateTaskMemoryGuidanceState({
+      guidanceSignals: steps,
+      memoryWrites: (taskDetail?.taskFiles ?? [])
+        .filter((file) => file.path === 'Task.md' || file.path.startsWith('Task Records/'))
+        .map((file) => ({
+          createdAt: file.updatedAt,
+          path: file.path,
+          status: 'completed',
+          target: file.path === 'Task.md' ? 'task_md' : 'task_record',
+          title: file.name,
+        })),
+    });
+  }
+
   private assertRunOutputArtifactWriteAllowed(run: RunRecord, output: string): void {
     assertRunArtifactWriteAllowed({
       runId: run.id,
@@ -409,12 +419,16 @@ export class RunService {
     run: RunRecord,
     applicableWorkHabitSummaries: string[] = [],
   ): Promise<void> {
+    const steps = await this.runStepRepository.listForRun(run.id);
+    const taskMemoryGuidance = await this.buildTaskMemoryGuidance(run.taskId, steps);
     await persistTerminalRunVerifications({
       run,
       runStepRepository: this.runStepRepository,
       runVerificationRepository: this.runVerificationRepository,
       applicableWorkHabitSummaries,
       includeRunLevel: await this.shouldPersistRunLevelSelfCheck(),
+      steps,
+      taskMemoryGuidance,
     });
   }
 
