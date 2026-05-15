@@ -141,6 +141,24 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
   },
   {
+    section: 'Subtask Start Evaluation',
+    status: 'partial',
+    priority: 'p0',
+    implementedBy: [
+      'Product principles define a lightweight subtask start evaluation before entering or executing a subtask.',
+      'RuntimeContextAssemblyGate, RuntimeHandoff, RuntimeResumePlan, and runtime verification already provide pieces of task-bound context refresh, handoff, and pre-step checks.',
+      'Project decomposition and task closeout flows already prefer existing child tasks and handoffs instead of creating generic follow-up tasks.',
+    ],
+    gaps: [
+      'No shared SubtaskStartEvaluation object yet evaluates target subtask readiness, parent alignment, previous handoff, direct sibling dependencies, context cleanliness, and context sufficiency as one required boundary.',
+      'Context cleanliness and context sufficiency are defined in the principles, but retained task-entry and execution paths do not yet expose one structured verdict before every subtask start.',
+    ],
+    nextVerification: [
+      'Add shared SubtaskStartEvaluation with outcomes for ready_to_start, needs_context_refresh, insufficient_context, blocked_by_dependency, needs_parent_decision, needs_handoff_review, and wrong_task_boundary.',
+      'Route subtask handoff, explicit task-enter actions, and task-bound execution start through SubtaskStartEvaluation before provider-visible execution.',
+    ],
+  },
+  {
     section: 'Execution Protocol',
     status: 'partial',
     priority: 'p0',

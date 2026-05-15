@@ -28,6 +28,10 @@ describe('Taskplane Agent product principles', () => {
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('assign one primary type and preserve secondary type facets');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('## Project And Subtask Protocol');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Subtasks remain drafts until the user confirms creation.');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('## Subtask Start Evaluation');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Check context cleanliness before context sufficiency.');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Context cleanliness means the runtime is not contaminated');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Context sufficiency means the target subtask has enough correct task state');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('## Execution Protocol');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Task.md, the primary recovery file');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('## Task Records Rules');

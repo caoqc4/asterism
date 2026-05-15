@@ -11,6 +11,7 @@ const requiredSections = [
   'Information Routing Protocol',
   'Task Creation Protocol',
   'Project And Subtask Protocol',
+  'Subtask Start Evaluation',
   'Execution Protocol',
   'Task.md Rules',
   'Task Records Rules',
