@@ -23,6 +23,27 @@ export type TaskHierarchyConsistencyEvaluation = {
   summary: string;
 };
 
+export type TaskHierarchyRepairActionKind =
+  | 'add_parent_child_link'
+  | 'set_child_parent'
+  | 'manual_review';
+
+export type TaskHierarchyRepairAction = {
+  kind: TaskHierarchyRepairActionKind;
+  taskId: string;
+  relatedTaskId?: string | null;
+  safeToApply: boolean;
+  reason: string;
+};
+
+export type TaskHierarchyRepairPlan = {
+  canAutoApplyAll: boolean;
+  actions: TaskHierarchyRepairAction[];
+  safeActionCount: number;
+  manualReviewCount: number;
+  summary: string;
+};
+
 function issue(params: TaskHierarchyConsistencyIssue): TaskHierarchyConsistencyIssue {
   return params;
 }
@@ -87,7 +108,9 @@ export function evaluateTaskHierarchyConsistency(
           code: 'missing_parent_backlink',
           taskId: child.id,
           relatedTaskId: parent.id,
-          message: `子任务「${child.title}」缺少指向父任务「${parent.title}」的 parentTaskId。`,
+          message: child.parentTaskId
+            ? `子任务「${child.title}」已指向其他父任务，不能直接归到「${parent.title}」。`
+            : `子任务「${child.title}」缺少指向父任务「${parent.title}」的 parentTaskId。`,
         }));
       }
     }
@@ -135,5 +158,59 @@ export function evaluateTaskHierarchyConsistency(
     summary: issues.length
       ? `任务层级存在 ${issues.length} 个一致性问题。`
       : '任务层级关系一致。',
+  };
+}
+
+export function buildTaskHierarchyRepairPlan(tasks: TaskHierarchyNode[]): TaskHierarchyRepairPlan {
+  const tasksById = new Map(tasks.map((task) => [task.id, task]));
+  const evaluation = evaluateTaskHierarchyConsistency(tasks);
+  const actions: TaskHierarchyRepairAction[] = evaluation.issues.map((item) => {
+    const task = tasksById.get(item.taskId);
+    const relatedTask = item.relatedTaskId ? tasksById.get(item.relatedTaskId) : null;
+
+    if (item.code === 'missing_parent_child_link' && task && relatedTask) {
+      return {
+        kind: 'add_parent_child_link',
+        taskId: item.taskId,
+        relatedTaskId: item.relatedTaskId,
+        safeToApply: true,
+        reason: `可把「${relatedTask.title}」加入父任务「${task.title}」的子任务列表。`,
+      };
+    }
+
+    if (
+      item.code === 'missing_parent_backlink'
+      && task
+      && relatedTask
+      && !task.parentTaskId
+    ) {
+      return {
+        kind: 'set_child_parent',
+        taskId: item.taskId,
+        relatedTaskId: item.relatedTaskId,
+        safeToApply: true,
+        reason: `可把「${task.title}」的父任务设为「${relatedTask.title}」。`,
+      };
+    }
+
+    return {
+      kind: 'manual_review',
+      taskId: item.taskId,
+      relatedTaskId: item.relatedTaskId,
+      safeToApply: false,
+      reason: item.message,
+    };
+  });
+  const safeActionCount = actions.filter((item) => item.safeToApply).length;
+  const manualReviewCount = actions.length - safeActionCount;
+
+  return {
+    canAutoApplyAll: actions.length > 0 && manualReviewCount === 0,
+    actions,
+    safeActionCount,
+    manualReviewCount,
+    summary: actions.length
+      ? `可安全修复 ${safeActionCount} 项，需人工确认 ${manualReviewCount} 项。`
+      : '任务层级关系一致，无需修复。',
   };
 }
