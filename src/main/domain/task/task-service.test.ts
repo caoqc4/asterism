@@ -2694,4 +2694,52 @@ describe('TaskService', () => {
     );
     expect(satisfied.status).toBe('satisfied');
   });
+
+  it('blocks generic or duplicate completion criteria before persistence', async () => {
+    const repository = {
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const completionCriteriaRepository = {
+      listForTask: vi.fn().mockResolvedValue([
+        buildCompletionCriteriaRecord({
+          id: 'criteria_existing',
+          text: '用户确认验收清单。',
+        }),
+      ]),
+      create: vi.fn(),
+      get: vi.fn(),
+      update: vi.fn(),
+      satisfy: vi.fn(),
+      reopen: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      completionCriteriaRepository as never,
+    );
+
+    await expect(service.createCompletionCriteria({
+      taskId: 'task_1',
+      text: '完成后能明确验收。',
+    })).rejects.toThrow('完成标准过于泛化');
+    await expect(service.createCompletionCriteria({
+      taskId: 'task_1',
+      text: '用户确认验收清单',
+    })).rejects.toThrow('已有未满足完成标准');
+    expect(completionCriteriaRepository.create).not.toHaveBeenCalled();
+  });
 });

@@ -159,6 +159,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Tasks special mutation paths for Task.md sync, risk updates, project moves, and project parent updates use shared mutation guards.',
       'Tasks file actions use durable panel action guards backed by pre_step and post_step verification.',
       'Tasks file content saves, project decomposition writes, and completion criteria creation now use renderer runtime guards before durable persistence.',
+      'TaskService completion criteria creation and updates use CompletionCriteriaEvaluation before durable persistence.',
       'AgentToolRegistry task/source/artifact durable tools use pre_step and post_step runtime verification.',
       'RightPanel internal phase/context record writes use durable panel action guards.',
       'RightPanel task capture, captured-task confirmation, and captured-task abandonment use runtime verification guards.',
@@ -193,7 +194,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Important created/modified files are not always referenced from Task.md or a Task Record.',
     ],
     nextVerification: [
-      'Add TaskMdUpdateNeed evaluator for goal/scope/progress/decision/blocker/next-step/file-reference changes.',
+      'Keep TaskMdUpdateNeed coverage for goal/scope/progress/decision/blocker/next-step/file-reference changes as new write paths are added.',
     ],
   },
   {

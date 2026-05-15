@@ -38,6 +38,7 @@ describe('CompletionCriteriaRepository integration', () => {
 
     const satisfied = await completionCriteriaRepository.satisfy(created.id);
     const reopened = await completionCriteriaRepository.reopen(created.id);
+    const fetched = await completionCriteriaRepository.get(created.id);
     const criteria = await completionCriteriaRepository.listForTask(task.id);
 
     expect(created.status).toBe('open');
@@ -46,6 +47,7 @@ describe('CompletionCriteriaRepository integration', () => {
     expect(satisfied.satisfiedAt).toBeTruthy();
     expect(reopened.status).toBe('open');
     expect(reopened.satisfiedAt).toBeNull();
+    expect(fetched?.id).toBe(created.id);
     expect(criteria).toHaveLength(1);
   });
 

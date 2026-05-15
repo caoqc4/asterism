@@ -150,6 +150,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Tasks file actions for create, rename, move, delete, source key toggles, source archive, and artifact creation now use durable panel action guards.',
       'Tasks file content saves for Task.md/Task Records, task files, sources, and artifacts now use durable panel action guards plus post-step completion checks.',
       'Tasks project decomposition confirmation now guards child task creation, child planning transitions, dependency creation, parent updates, task records, and completion criteria writes.',
+      'TaskService completion criteria creation and updates now reject empty, generic, or duplicate open completion criteria before persistence.',
       'AgentToolRegistry task/source/artifact durable tools now use pre_step and post_step runtime verification.',
       'RightPanel session refresh, phase closeout, and Task.md reference writes now guard their internal source/task-record persistence.',
       'RightPanel task capture, captured-task confirmation, and captured-task abandonment now use runtime verification guards.',

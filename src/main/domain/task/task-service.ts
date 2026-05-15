@@ -13,6 +13,7 @@ import type {
   CreateCompletionCriteriaInput,
   UpdateCompletionCriteriaInput,
 } from '../../../shared/types/completion-criteria.js';
+import { evaluateCompletionCriteria } from '../../../shared/completion-criteria-evaluator.js';
 import type {
   CreateTaskDependencyInput,
   TaskDependencyRecord,
@@ -1471,6 +1472,14 @@ export class TaskService {
     if (!this.completionCriteriaRepository) {
       throw new Error('Completion criteria repository is not configured');
     }
+    const existingCriteria = await this.completionCriteriaRepository.listForTask(input.taskId);
+    const evaluation = evaluateCompletionCriteria({
+      text: input.text,
+      existingCriteria,
+    });
+    if (!evaluation.allowed) {
+      throw new Error(evaluation.summary);
+    }
 
     const created = await this.completionCriteriaRepository.create(input);
 
@@ -1488,6 +1497,19 @@ export class TaskService {
   ): Promise<CompletionCriteriaRecord> {
     if (!this.completionCriteriaRepository) {
       throw new Error('Completion criteria repository is not configured');
+    }
+    const current = await this.completionCriteriaRepository.get(input.id);
+    if (!current) {
+      throw new Error(`Completion criteria not found: ${input.id}`);
+    }
+    const existingCriteria = await this.completionCriteriaRepository.listForTask(current.taskId);
+    const evaluation = evaluateCompletionCriteria({
+      text: input.text,
+      existingCriteria,
+      excludeCriteriaId: input.id,
+    });
+    if (!evaluation.allowed) {
+      throw new Error(evaluation.summary);
     }
 
     const updated = await this.completionCriteriaRepository.update(input);

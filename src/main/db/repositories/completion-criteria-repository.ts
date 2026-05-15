@@ -66,6 +66,17 @@ export class CompletionCriteriaRepository {
     return rows.map(toRecord);
   }
 
+  async get(id: string): Promise<CompletionCriteriaRecord | null> {
+    const db = initDatabase();
+    const [row] = await db
+      .select()
+      .from(completionCriteria)
+      .where(eq(completionCriteria.id, id))
+      .limit(1);
+
+    return row ? toRecord(row) : null;
+  }
+
   async create(input: CreateCompletionCriteriaInput): Promise<CompletionCriteriaRecord> {
     const db = initDatabase();
     const timestamp = nowIso();
@@ -168,17 +179,12 @@ export class CompletionCriteriaRepository {
   }
 
   private async getOrThrow(id: string): Promise<CompletionCriteriaRecord> {
-    const db = initDatabase();
-    const [row] = await db
-      .select()
-      .from(completionCriteria)
-      .where(eq(completionCriteria.id, id))
-      .limit(1);
+    const record = await this.get(id);
 
-    if (!row) {
+    if (!record) {
       throw new Error(`Completion criteria not found: ${id}`);
     }
 
-    return toRecord(row);
+    return record;
   }
 }
