@@ -2255,8 +2255,10 @@ function resetCaptureDraft() {
       const selectedType = captureType;
       const selectedFacets = normalizeTaskTypeFacets(captureFacets, selectedType);
       if (window.api) {
+        const summary = captureCommitment.trim();
         const record = await window.api.createTask({
           title,
+          summary: summary || undefined,
           taskType: selectedType,
           taskFacets: selectedFacets,
         });

@@ -2085,12 +2085,19 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: /Tasks/ }));
     await user.click(await screen.findByRole('button', { name: '+ 新建任务' }));
     await user.type(await screen.findByPlaceholderText(/任务标题/), '官网改版项目');
+    await user.type(await screen.findByPlaceholderText(/交付备注/), '围绕首页、案例页和转化路径完成改版。');
     expect(screen.getByRole('button', { name: '项目型' }).className).toContain('active');
     expect(screen.getAllByText(/类型由 AI 根据标题预判/).length).toBeGreaterThan(0);
     expect(screen.getByText(/点击创建即确认当前建议/)).toBeTruthy();
     expect(screen.getAllByText(/确认后才创建真实子任务/).length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: '创建' }));
     await waitFor(() => {
+      expect(harness.api.createTask).toHaveBeenCalledWith({
+        title: '官网改版项目',
+        summary: '围绕首页、案例页和转化路径完成改版。',
+        taskType: 'project',
+        taskFacets: ['project'],
+      });
       expect(harness.api.transitionTask).toHaveBeenCalledWith({
         id: 'task_created',
         nextState: 'planned',

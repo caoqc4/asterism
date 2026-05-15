@@ -101,6 +101,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'runtime-task-capture-evaluator blocks duplicate open-task captures and generic title-only candidates before persistence.',
       'runtime-task-capture-evaluator blocks generic phase-template task titles, generic phase-template child titles, and child titles that only repeat the parent.',
       'TasksPage explicit task creation and RightPanel conversation capture consume the shared task-capture evaluator.',
+      'TasksPage explicit task creation forwards the same task summary used by the capture evaluator to the service boundary.',
       'TaskService.create enforces the same duplicate/generic task-capture evaluator before repository persistence.',
       'TaskService.update reuses the same evaluator for title changes and parent moves, preventing duplicate sibling tasks.',
       'Project decomposition creates draft subtasks before real child task creation.',
