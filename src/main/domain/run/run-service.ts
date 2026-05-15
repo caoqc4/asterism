@@ -17,6 +17,7 @@ import type {
   CreateRunInput,
   RunDetailRecord,
   RunRecord,
+  RunStepRecord,
 } from '../../../shared/types/run.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
 import {
@@ -187,6 +188,7 @@ export class RunService {
     if (result.status === 'completed') {
       const completed = await this.runRepository.updateResult(created.id, 'completed', result.output, 'ai');
       if (result.output?.trim()) {
+        this.assertRunOutputArtifactWriteAllowed(completed, result.output);
         await this.artifactRepository.createFromRun({
           taskId: input.taskId,
           runId: completed.id,
@@ -235,6 +237,32 @@ export class RunService {
     await this.taskService.annotateRunFailed(input.taskId, result.message, failed.id);
     await this.persistTerminalRunVerifications(failed, applicableWorkHabits.summaries);
     return failed;
+  }
+
+  private assertRunOutputArtifactWriteAllowed(run: RunRecord, output: string): void {
+    const timestamp = new Date().toISOString();
+    const verification = evaluateRuntimeVerification({
+      mode: 'post_step',
+      step: {
+        id: `run_output_artifact_${run.id}`,
+        runId: run.id,
+        index: 1,
+        kind: 'artifact',
+        status: 'completed',
+        title: '保存 Run 输出产物',
+        input: null,
+        output,
+        error: null,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      } satisfies RunStepRecord,
+      producedDurableChange: true,
+      hasRecoveryNote: Boolean(output.trim()),
+    });
+
+    if (!verification.canProceed) {
+      throw new Error(verification.detail);
+    }
   }
 
   private async readRuntimeCapabilitySnapshot(): Promise<RuntimeCapabilitySnapshot | null> {

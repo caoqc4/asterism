@@ -182,6 +182,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Main IPC task-file and manual-artifact write boundaries pass task_mutation through pre-step verification before repository writes.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService also pass target-task readiness through subtask_start before run creation.',
       'Persisted Run step verification now uses post_step verification.',
+      'RunService checks completed Run output artifact writes with post_step durable-change verification before persisting generated output.',
       'runtime-step-effect-evaluator feeds post_step verification with durable-change and recovery-note signals.',
       'RightPanel phase closeout uses pre_step and post_step verification around task-record persistence.',
       'RightPanel task file proposal confirmation uses pre_step and post_step verification around durable file writes.',
