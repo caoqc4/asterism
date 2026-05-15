@@ -147,6 +147,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Run verification persistence now writes step verifications through post_step verification.',
       'runtime-step-effect-evaluator infers durable step changes and recovery-note presence before post_step verification.',
       'RunService checks completed Run output artifact writes with post_step durable-change verification before persisting generated output.',
+      'Sandbox patch review and browser evidence persisters check artifact writes with post_step durable-change verification before persisting generated evidence artifacts.',
       'RightPanel phase closeout now passes through pre_step before saving and post_step before quality-check handoff.',
       'RightPanel task file proposal confirmation now passes through pre_step and post_step verification.',
       'TaskService transition and transitionIfAllowed guard task_state_transition at the service boundary.',

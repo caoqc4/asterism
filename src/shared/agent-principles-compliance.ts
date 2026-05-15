@@ -183,6 +183,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RunService, CodeAgentRunService, and OperatorStartedRunService also pass target-task readiness through subtask_start before run creation.',
       'Persisted Run step verification now uses post_step verification.',
       'RunService checks completed Run output artifact writes with post_step durable-change verification before persisting generated output.',
+      'Sandbox patch review and browser evidence persisters check artifact writes with post_step durable-change verification before persisting generated evidence artifacts.',
       'runtime-step-effect-evaluator feeds post_step verification with durable-change and recovery-note signals.',
       'RightPanel phase closeout uses pre_step and post_step verification around task-record persistence.',
       'RightPanel task file proposal confirmation uses pre_step and post_step verification around durable file writes.',

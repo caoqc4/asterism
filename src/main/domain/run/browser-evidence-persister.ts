@@ -7,6 +7,7 @@ import type {
 import type { RunStepRecord } from '../../../shared/types/run.js';
 import type { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
+import { assertRunArtifactWriteAllowed } from './run-artifact-write-guard.js';
 
 export type BrowserEvidenceArtifactContent = {
   artifacts: BrowserEvidenceArtifact[];
@@ -48,6 +49,10 @@ export class BrowserEvidencePersister {
     runId: string;
     taskId: string;
   }): Promise<PersistBrowserEvidenceResult> {
+    const content = JSON.stringify(buildBrowserEvidenceArtifactContent({
+      request: params.request,
+      result: params.result,
+    }), null, 2);
     const captureStep = await this.runStepRepository.create({
       runId: params.runId,
       kind: 'tool_result',
@@ -56,14 +61,17 @@ export class BrowserEvidencePersister {
       input: params.request.url,
       output: params.result.summary,
     });
+    assertRunArtifactWriteAllowed({
+      runId: params.runId,
+      title: 'record browser evidence artifact',
+      input: params.result.artifacts.map((artifactItem) => artifactItem.kind).join(', '),
+      output: content,
+    });
     const artifact = await this.artifactRepository.createBrowserEvidenceFromRun({
       taskId: params.taskId,
       runId: params.runId,
       title: 'Browser evidence',
-      content: JSON.stringify(buildBrowserEvidenceArtifactContent({
-        request: params.request,
-        result: params.result,
-      }), null, 2),
+      content,
     });
     const artifactStep = await this.runStepRepository.create({
       runId: params.runId,

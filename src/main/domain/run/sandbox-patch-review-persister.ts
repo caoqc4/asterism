@@ -13,6 +13,7 @@ import type {
   AgentCheckpointRecorder,
 } from './agent-checkpoint-recorder.js';
 import type { LocalContainerSandboxPatchReviewPreparation } from './local-container-sandbox-backend.js';
+import { assertRunArtifactWriteAllowed } from './run-artifact-write-guard.js';
 
 export type PersistSandboxPatchReviewResult = {
   artifact: ArtifactRecord;
@@ -65,11 +66,18 @@ export class SandboxPatchReviewPersister {
       input: preparation.checkRun.results.map((result) => result.script).join(', '),
       output: preparation.checkRun.summary,
     });
+    const artifactContent = JSON.stringify(buildSandboxPatchReviewArtifactContent(preparation), null, 2);
+    assertRunArtifactWriteAllowed({
+      runId: params.runId,
+      title: '记录 sandbox patch artifact',
+      input: preparation.artifact.files.join(', '),
+      output: artifactContent,
+    });
     const artifact = await this.artifactRepository.createPatchFromRun({
       taskId: params.taskId,
       runId: params.runId,
       title: preparation.artifact.summary,
-      content: JSON.stringify(buildSandboxPatchReviewArtifactContent(preparation), null, 2),
+      content: artifactContent,
     });
     const artifactStep = await this.runStepRepository.create({
       runId: params.runId,

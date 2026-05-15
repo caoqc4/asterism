@@ -17,7 +17,6 @@ import type {
   CreateRunInput,
   RunDetailRecord,
   RunRecord,
-  RunStepRecord,
 } from '../../../shared/types/run.js';
 import type { TaskDetail } from '../../../shared/types/task.js';
 import {
@@ -41,6 +40,7 @@ import {
   persistTerminalRunVerifications,
 } from './run-verification-service.js';
 import { RunOrchestrator, type RunOrchestrationResult } from './run-orchestrator.js';
+import { assertRunArtifactWriteAllowed } from './run-artifact-write-guard.js';
 import type { WorkHabitService } from '../context/work-habit-service.js';
 
 type ApplicableWorkHabits = {
@@ -240,29 +240,11 @@ export class RunService {
   }
 
   private assertRunOutputArtifactWriteAllowed(run: RunRecord, output: string): void {
-    const timestamp = new Date().toISOString();
-    const verification = evaluateRuntimeVerification({
-      mode: 'post_step',
-      step: {
-        id: `run_output_artifact_${run.id}`,
-        runId: run.id,
-        index: 1,
-        kind: 'artifact',
-        status: 'completed',
-        title: '保存 Run 输出产物',
-        input: null,
-        output,
-        error: null,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      } satisfies RunStepRecord,
-      producedDurableChange: true,
-      hasRecoveryNote: Boolean(output.trim()),
+    assertRunArtifactWriteAllowed({
+      runId: run.id,
+      title: '保存 Run 输出产物',
+      output,
     });
-
-    if (!verification.canProceed) {
-      throw new Error(verification.detail);
-    }
   }
 
   private async readRuntimeCapabilitySnapshot(): Promise<RuntimeCapabilitySnapshot | null> {
