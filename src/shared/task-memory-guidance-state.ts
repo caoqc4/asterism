@@ -118,6 +118,10 @@ export function buildTaskMemoryGuidanceStateForTaskFiles(params: {
   return evaluateTaskMemoryGuidanceState({
     guidanceSignals: params.guidanceSignals,
     memoryWrites: (params.taskFiles ?? [])
+      .map((file) => ({
+        ...file,
+        path: normalizeTaskMemoryPath(file.path),
+      }))
       .filter((file) => file.path === 'Task.md' || Boolean(file.path?.startsWith('Task Records/')))
       .map((file) => ({
         createdAt: file.updatedAt ?? null,
@@ -130,9 +134,14 @@ export function buildTaskMemoryGuidanceStateForTaskFiles(params: {
 }
 
 function inferWriteTarget(write: TaskMemoryWriteSignal): TaskMemoryGuidanceTarget | null {
-  const text = [write.title ?? '', write.path ?? ''].join('\n');
+  const text = [write.title ?? '', normalizeTaskMemoryPath(write.path) ?? ''].join('\n');
   const targets = detectTaskMemoryGuidanceTargets(text);
   return targets[0] ?? null;
+}
+
+function normalizeTaskMemoryPath(path: string | null | undefined): string | null {
+  const normalized = path?.trim().replace(/\\/g, '/') ?? '';
+  return normalized || null;
 }
 
 function isCompletedSignal(signal: { status?: string | null }): boolean {

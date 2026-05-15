@@ -874,6 +874,7 @@ export class DecisionService {
 
     if (
       this.runStepRepository &&
+      typeof this.runStepRepository.listForRun === 'function' &&
       this.runVerificationRepository &&
       (status === 'completed' || status === 'failed')
     ) {

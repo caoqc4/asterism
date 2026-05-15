@@ -158,4 +158,24 @@ describe('task memory guidance state', () => {
       targets: ['task_md', 'task_record'],
     });
   });
+
+  it('normalizes task memory file paths before matching writes', () => {
+    expect(buildTaskMemoryGuidanceStateForTaskFiles({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        output: '- Task Record may be useful: context_archive',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+      taskFiles: [{
+        name: 'context-refresh.md',
+        path: ' Task Records\\context-refresh.md ',
+        updatedAt: '2026-05-15T01:01:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'satisfied',
+      pendingTargets: [],
+      targets: ['task_record'],
+    });
+  });
 });
