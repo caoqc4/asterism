@@ -57,4 +57,12 @@ describe('agent principles compliance matrix', () => {
     expect(text).not.toContain('Workbench write paths');
     expect(text).not.toContain('Implement Decisions workbench');
   });
+
+  it('does not keep completed context assembly work as a future task', () => {
+    const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
+
+    expect(text).toContain('RuntimeContextAssemblyGate requires read-order assembly');
+    expect(text).not.toContain('Add RuntimeContextAssemblyPolicy');
+    expect(text).not.toContain('not yet for every execution boundary');
+  });
 });

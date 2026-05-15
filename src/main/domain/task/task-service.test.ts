@@ -344,6 +344,35 @@ describe('TaskService', () => {
     expect(repository.create).not.toHaveBeenCalled();
   });
 
+  it('blocks generic phase-template task creation before persistence', async () => {
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('running'),
+          id: 'project_1',
+          title: '开发小程序',
+          parentTaskId: null,
+          childTaskIds: ['child_1'],
+        },
+      ]),
+      create: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    await expect(service.create({
+      title: '验收回归：开发小程序',
+      summary: '检查阶段收尾。',
+    })).rejects.toThrow('任务标题像阶段模板');
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+
   it('syncs parent child ids when creating a child task', async () => {
     const created = {
       ...buildRecord('captured'),

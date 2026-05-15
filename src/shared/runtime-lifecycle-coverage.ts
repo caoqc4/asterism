@@ -32,7 +32,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'runtime-action-evaluator includes task_capture.',
       'runtime-intake-evaluator routes candidate input to task, Task Record, task file, Decision, Work Habit, or discussion before capture.',
       'runtime-task-capture-evaluator blocks duplicate open-task captures and generic title-only task candidates before persistence.',
-      'runtime-task-capture-evaluator also blocks generic phase-template child titles and child titles that only repeat the parent.',
+      'runtime-task-capture-evaluator also blocks generic phase-template task titles, generic phase-template child titles, and child titles that only repeat the parent.',
       'TasksPage explicit task creation and RightPanel conversation capture pass task candidates through the shared capture evaluator.',
       'TaskService.create enforces the same task-capture evaluator at the service boundary before repository persistence.',
       'TaskService.update reuses the same evaluator when title or parent scope changes, preventing duplicate siblings during project moves.',
@@ -43,7 +43,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'RightPanel capture uses shared intake routing and TasksPage explicit creation uses the shared task_capture guard, but some retained creation entry points are not fully covered by intake yet.',
-      'Service-level guards now block duplicate open-task captures, generic title-only candidates, generic child phase-template titles, and child titles that repeat the parent; broader semantic duplicate detection remains limited to normalized titles.',
+      'Service-level guards now block duplicate open-task captures, generic title-only candidates, generic phase-template titles, generic child phase-template titles, and child titles that repeat the parent; broader semantic duplicate detection remains limited to normalized titles.',
     ],
     nextImplementation: [
       'Route remaining creation entry points through shared intake checks.',
@@ -101,7 +101,6 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Runtime must handle UI visibility, model visibility, and durable context separately.',
     ],
     gaps: [
-      'RuntimeContextAssemblyPolicy blocks ordinary Run and Code Agent model-producer execution; RuntimeContextAssemblyGate keeps hidden non-model entries out of provider-visible context assembly.',
       'Source freshness, source quality, and selected-file relevance are now represented as first-class inclusion reasons, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points must also pass full context metadata.',
     ],
     nextImplementation: [

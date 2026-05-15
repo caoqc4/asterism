@@ -114,6 +114,23 @@ describe('runtime task capture evaluator', () => {
     });
   });
 
+  it('blocks generic phase-template tasks even when they are not attached to a parent', () => {
+    expect(evaluateRuntimeTaskCapture({
+      title: '验收回归：开发小程序',
+      summary: '检查阶段收尾。',
+      existingTasks: [
+        task({ id: 'project_1', title: '开发小程序' }),
+      ],
+    })).toMatchObject({
+      allowed: false,
+      issues: [
+        {
+          code: 'generic_phase_template',
+        },
+      ],
+    });
+  });
+
   it('blocks child tasks that only repeat the parent title', () => {
     expect(evaluateRuntimeTaskCapture({
       title: '开发小程序',

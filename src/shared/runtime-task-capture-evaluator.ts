@@ -5,6 +5,7 @@ export type RuntimeTaskCaptureIssueCode =
   | 'duplicate_open_task'
   | 'generic_title'
   | 'generic_child_title'
+  | 'generic_phase_template'
   | 'child_title_matches_parent';
 
 export type RuntimeTaskCaptureIssue = {
@@ -91,10 +92,12 @@ export function evaluateRuntimeTaskCapture(params: {
       }));
     }
 
-    if (targetParentTaskId && GENERIC_CHILD_TITLE_PATTERN.test(title)) {
+    if (GENERIC_CHILD_TITLE_PATTERN.test(title)) {
       issues.push(issue({
-        code: 'generic_child_title',
-        message: '子任务标题像阶段模板，不应作为真实子任务创建。请先交接到已有子任务，或提供具体独立目标和验收边界。',
+        code: targetParentTaskId ? 'generic_child_title' : 'generic_phase_template',
+        message: targetParentTaskId
+          ? '子任务标题像阶段模板，不应作为真实子任务创建。请先交接到已有子任务，或提供具体独立目标和验收边界。'
+          : '任务标题像阶段模板，不应作为真实任务创建。请先交接到已有任务，或提供具体独立目标和验收边界。',
       }));
     }
 

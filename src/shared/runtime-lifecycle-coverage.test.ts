@@ -54,4 +54,12 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).not.toContain('Workbench write paths');
     expect(text).not.toContain('Implement Decisions Workbench');
   });
+
+  it('keeps provider-visible context assembly separate from hidden non-model entries', () => {
+    const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
+
+    expect(text).toContain('RuntimeContextAssemblyGate distinguishes provider-visible task execution');
+    expect(text).toContain('providerCall=no and modelExposure=hidden');
+    expect(text).not.toContain('not every execution entry point blocks on it yet');
+  });
 });

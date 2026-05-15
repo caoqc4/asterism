@@ -29,6 +29,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Legacy title-pattern phase follow-up inference is limited to records without a parent field, and Tasks no longer mutates local hierarchy attributes during list loading.',
       'TaskHierarchyConsistencyEvaluation, TaskHierarchyRepairPlan, and manual resolution commands separate diagnostics, safe repair, and explicit human confirmation instead of silently guessing structure.',
       'No default Artifacts/ folder is required; output folders are created only when useful for the task.',
+      'RuntimeTaskCaptureEvaluation blocks generic phase-template task titles even when a faulty flow tries to create them as top-level tasks.',
     ],
     gaps: [
       'Some retained runtime and renderer branches still need review for title-pattern inference, implicit task creation, or local fallback state that can override structured records.',
@@ -61,8 +62,8 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Source freshness and selected-file relevance reasons are represented in the manifest, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points still need to pass full source/file metadata consistently.',
     ],
     nextVerification: [
-      'Add RuntimeContextAssemblyPolicy with ordered required/optional inputs.',
-      'Add tests that task-bound execution manifests include product principles, task state, Task.md when present, and relevant Task Records.',
+      'Keep tests that task-bound execution manifests include product principles, task state, Task.md when present, and relevant Task Records.',
+      'Require any future provider-visible execution boundary to use RuntimeContextAssemblyGate and pass full source/file metadata.',
     ],
   },
   {
@@ -98,7 +99,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TasksPage explicit task creation now passes through the shared task_capture pre-step guard before persistence.',
       'runtime-intake-evaluator classifies user input before task capture as task, Task Record, task file, Decision, Work Habit, or discussion.',
       'runtime-task-capture-evaluator blocks duplicate open-task captures and generic title-only candidates before persistence.',
-      'runtime-task-capture-evaluator blocks generic phase-template child titles and child titles that only repeat the parent.',
+      'runtime-task-capture-evaluator blocks generic phase-template task titles, generic phase-template child titles, and child titles that only repeat the parent.',
       'TasksPage explicit task creation and RightPanel conversation capture consume the shared task-capture evaluator.',
       'TaskService.create enforces the same duplicate/generic task-capture evaluator before repository persistence.',
       'TaskService.update reuses the same evaluator for title changes and parent moves, preventing duplicate sibling tasks.',
