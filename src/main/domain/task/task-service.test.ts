@@ -1516,6 +1516,82 @@ describe('TaskService', () => {
     expect(result.state).toBe('running');
   });
 
+  it('blocks transition to running when the task still has an active blocker', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const blockers = {
+      getActiveForTask: vi.fn().mockResolvedValue(buildBlockerRecord()),
+      create: vi.fn(),
+      get: vi.fn(),
+      update: vi.fn(),
+      resolve: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      blockers as never,
+    );
+
+    await expect(service.transition({
+      id: 'task_1',
+      nextState: 'running',
+    })).rejects.toThrow('仍有阻塞、依赖或等待状态');
+    expect(repository.transition).not.toHaveBeenCalled();
+  });
+
+  it('blocks transitionIfAllowed to running when the task still has an active dependency', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const dependencies = {
+      getActiveForTask: vi.fn().mockResolvedValue(buildTaskDependencyRecord()),
+      create: vi.fn(),
+      get: vi.fn(),
+      update: vi.fn(),
+      resolve: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      null,
+      dependencies as never,
+    );
+
+    await expect(service.transitionIfAllowed('task_1', 'running')).rejects.toThrow(
+      '仍有阻塞、依赖或等待状态',
+    );
+    expect(repository.transition).not.toHaveBeenCalled();
+  });
+
   it('records task completion check results as timeline events', async () => {
     const repository = {
       list: vi.fn(),

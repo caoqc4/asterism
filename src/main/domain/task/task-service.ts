@@ -40,6 +40,7 @@ import type {
   UpdateSourceContextInput,
 } from '../../../shared/types/source-context.js';
 import { evaluateRuntimeTaskCapture } from '../../../shared/runtime-task-capture-evaluator.js';
+import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import {
   type AppliedTaskHierarchyManualResolutionResult,
   buildTaskHierarchyRepairPlan,
@@ -578,6 +579,26 @@ export class TaskService {
     return detail;
   }
 
+  private async assertTaskCanEnterRunning(detail: TaskDetailBase): Promise<void> {
+    const target = await this.attachDetailWaitingItem(detail);
+    const verification = evaluateRuntimeVerification({
+      mode: 'subtask_start',
+      targetTask: target,
+      contextSignals: {
+        activeTaskId: target.id,
+        targetTaskId: target.id,
+      },
+      availableContext: {
+        taskState: true,
+        decisions: true,
+      },
+    });
+
+    if (!verification.canProceed) {
+      throw new Error(verification.detail);
+    }
+  }
+
   private findTaskInList(tasks: TaskRecord[], taskId: string): TaskRecord | null {
     return tasks.find((task) => task.id === taskId) ?? null;
   }
@@ -1034,6 +1055,10 @@ export class TaskService {
       throw new Error('Waiting reason is required when transitioning to waiting_external');
     }
 
+    if (input.nextState === 'running') {
+      await this.assertTaskCanEnterRunning(detail);
+    }
+
     const updated = await this.repository.transition({
       ...input,
       waitingReason:
@@ -1092,6 +1117,10 @@ export class TaskService {
 
     if (!nextStates.includes(nextState)) {
       return null;
+    }
+
+    if (nextState === 'running') {
+      await this.assertTaskCanEnterRunning(detail);
     }
 
     const updated = await this.repository.transition({
