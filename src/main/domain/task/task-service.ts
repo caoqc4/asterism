@@ -798,6 +798,7 @@ export class TaskService {
           ...parent,
           childTaskIds: [...childTaskIds, child.id],
         };
+        this.assertTaskMutationActionAllowed(parent.id);
         await this.repository.update({
           id: parent.id,
           childTaskIds: nextParent.childTaskIds,
@@ -815,6 +816,7 @@ export class TaskService {
           ...child,
           parentTaskId: parent.id,
         };
+        this.assertTaskMutationActionAllowed(child.id);
         await this.repository.update({
           id: child.id,
           parentTaskId: parent.id,
@@ -866,6 +868,7 @@ export class TaskService {
       for (const task of currentTasks) {
         const childTaskIds = task.childTaskIds ?? [];
         if (task.id !== targetParent.id && childTaskIds.includes(child.id)) {
+          this.assertTaskMutationActionAllowed(task.id);
           await this.repository.update({
             id: task.id,
             childTaskIds: childTaskIds.filter((childTaskId) => childTaskId !== child.id),
@@ -874,6 +877,7 @@ export class TaskService {
       }
 
       if (!(targetParent.childTaskIds ?? []).includes(child.id)) {
+        this.assertTaskMutationActionAllowed(targetParent.id);
         await this.repository.update({
           id: targetParent.id,
           childTaskIds: [...(targetParent.childTaskIds ?? []), child.id],
@@ -881,6 +885,7 @@ export class TaskService {
       }
 
       if (child.parentTaskId !== targetParent.id) {
+        this.assertTaskMutationActionAllowed(child.id);
         await this.repository.update({
           id: child.id,
           parentTaskId: targetParent.id,
@@ -896,6 +901,7 @@ export class TaskService {
       if (!parent) {
         throw new Error(`Task not found: ${input.taskId}`);
       }
+      this.assertTaskMutationActionAllowed(parent.id);
       await this.repository.update({
         id: parent.id,
         childTaskIds: (parent.childTaskIds ?? []).filter((childTaskId) => childTaskId !== input.relatedTaskId),
@@ -907,6 +913,7 @@ export class TaskService {
       if (!child) {
         throw new Error(`Task not found: ${input.taskId}`);
       }
+      this.assertTaskMutationActionAllowed(child.id);
       await this.repository.update({
         id: child.id,
         parentTaskId: null,
@@ -918,6 +925,7 @@ export class TaskService {
       if (!task) {
         throw new Error(`Task not found: ${input.taskId}`);
       }
+      this.assertTaskMutationActionAllowed(task.id);
       await this.repository.update({
         id: task.id,
         parentTaskId: task.parentTaskId === task.id ? null : task.parentTaskId,
@@ -933,6 +941,7 @@ export class TaskService {
       if (!parent) {
         throw new Error(`Task not found: ${input.taskId}`);
       }
+      this.assertTaskMutationActionAllowed(parent.id);
       const seenChildIds = new Set<string>();
       await this.repository.update({
         id: parent.id,

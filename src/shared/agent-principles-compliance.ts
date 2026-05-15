@@ -126,6 +126,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Project decomposition generation and confirmation both consult runtime-subtask-evaluator so existing children block another decomposition round before new drafts appear.',
       'Project decomposition generation detects existing children from the full task list, including children linked only by parentTaskId.',
       'TaskService keeps child parentTaskId and parent childTaskIds synchronized when child tasks are created, moved, or changed from the parent child list.',
+      'TaskService safe hierarchy repairs and explicit manual hierarchy resolutions pass parent/child structure writes through task_mutation guards.',
       'runtime-verification has an initial project mode for child completion, blocker/waiting counts, parent criteria, pending decisions, and risk confirmation.',
       'decision-effect-evaluator summarizes pending, approved, deferred, and cancelled decisions for project verification.',
       'Task completion modal uses project verification for project parent completion checks.',
