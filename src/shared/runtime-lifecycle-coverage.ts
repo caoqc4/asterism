@@ -148,6 +148,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'runtime-step-effect-evaluator infers durable step changes and recovery-note presence before post_step verification.',
       'RightPanel phase closeout now passes through pre_step before saving and post_step before quality-check handoff.',
       'RightPanel task file proposal confirmation now passes through pre_step and post_step verification.',
+      'TaskService transition and transitionIfAllowed guard task_state_transition at the service boundary.',
       'Tasks and Brief task state transitions now use shared renderer runtime guards backed by pre_step verification.',
       'Tasks special mutation paths for Task.md sync, risk updates, project moves, and project parent updates now use shared mutation guards.',
       'Tasks file actions for create, rename, move, delete, source key toggles, source archive, and artifact creation now use durable panel action guards.',

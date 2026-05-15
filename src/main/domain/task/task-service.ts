@@ -54,6 +54,7 @@ import {
 } from '../../../shared/task-hierarchy-consistency.js';
 import { normalizeCreateSourceContextInput } from '../../../shared/runtime-surface-routing.js';
 import { assertKnownPanelRuntimeTimelineEventType } from '../../../shared/runtime-panel-events.js';
+import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
 import type { RunType } from '../../../shared/types/run.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
@@ -599,6 +600,26 @@ export class TaskService {
     }
   }
 
+  private assertStateTransitionActionAllowed(params: {
+    taskId: string;
+    nextState: TaskState;
+  }): void {
+    const actionEvaluation = evaluateRuntimeAction({
+      action: 'task_state_transition',
+      fromTaskId: params.taskId,
+      targetTaskState: params.nextState,
+    });
+    const verification = evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: actionEvaluation,
+      confirmationSatisfied: true,
+    });
+
+    if (!verification.canProceed) {
+      throw new Error(verification.detail);
+    }
+  }
+
   private findTaskInList(tasks: TaskRecord[], taskId: string): TaskRecord | null {
     return tasks.find((task) => task.id === taskId) ?? null;
   }
@@ -1048,6 +1069,11 @@ export class TaskService {
       throw new Error(`Invalid transition: ${detail.state} -> ${input.nextState}`);
     }
 
+    this.assertStateTransitionActionAllowed({
+      taskId: input.id,
+      nextState: input.nextState,
+    });
+
     if (
       input.nextState === 'waiting_external' &&
       !(input.waitingReason?.trim() || detail.waitingReason?.trim())
@@ -1118,6 +1144,11 @@ export class TaskService {
     if (!nextStates.includes(nextState)) {
       return null;
     }
+
+    this.assertStateTransitionActionAllowed({
+      taskId: id,
+      nextState,
+    });
 
     if (nextState === 'running') {
       await this.assertTaskCanEnterRunning(detail);
