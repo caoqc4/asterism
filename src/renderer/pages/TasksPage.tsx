@@ -1,12 +1,28 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { ProjectDecompositionResult } from '@shared/types/ipc';
-import type { TaskDetail, TaskListItemRecord, TaskRiskLevel, TaskState, TimelineEventRecord, UpdateTaskInput } from '@shared/types/task';
+import type { TaskDetail, TaskListItemRecord, TaskRiskLevel, TaskState, UpdateTaskInput } from '@shared/types/task';
 import type { SourceContextRecord } from '@shared/types/source-context';
 import type { ArtifactRecord } from '@shared/types/artifact';
 import type { TaskFileRecord } from '@shared/types/task-file';
 import type { DecisionRecord } from '@shared/types/decision';
 import type { RunRecord } from '@shared/types/run';
 import { isUnconfirmedPanelCaptureRecord } from '@shared/panel-capture';
+import { summarizeDecisionEffects } from '@shared/decision-effect-evaluator';
+import type { TaskCloseoutEvaluation } from '@shared/task-closeout-evaluator';
+import { evaluateRuntimeVerification, type RuntimeVerificationResult } from '@shared/runtime-verification';
+import { classifyRuntimeFileSurface, type RuntimeFileSurfaceKind } from '@shared/runtime-surface-routing';
+import { evaluateRuntimeSubtaskDraft } from '@shared/runtime-subtask-evaluator';
+import { evaluateTaskMdUpdateNeed } from '@shared/task-md-update-need';
+import { evaluateTaskRecordWorthiness } from '@shared/task-record-worthiness';
+import type { PanelRuntimeTimelineEventType } from '@shared/runtime-panel-events';
+import { projectRuntimeEvents, type RuntimeEventRecord } from '@shared/runtime-event-record';
+import {
+  effectiveParentTaskId,
+  findNextOpenChildAfter,
+  isTopLevelTask,
+  orderedChildrenForTask,
+  orderedTaskChildren,
+} from '@shared/task-hierarchy';
 import { selectApplicableWorkHabits as selectApplicableWorkHabitsFromList } from '@shared/work-habit-rules';
 import {
   comparePriorityRecommendations,
@@ -14,6 +30,13 @@ import {
   type PriorityRecommendationTaskSignal,
 } from '@shared/priority-recommendation-ranking';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
+import {
+  guardDurablePanelAction,
+  guardTaskCapture,
+  guardTaskMutation,
+  guardTaskStateTransition,
+  verifyDurablePanelActionCompleted,
+} from '../lib/runtimeActionGuards';
 import {
   buildProjectDecompositionGuidance,
   buildTaskPlanningPrompt,
@@ -53,7 +76,7 @@ type TaskDetailViewMode = 'manage' | 'timeline';
 type CapturedTaskSummary = { id: string; title: string; type: TaskType };
 type SelectedObject = 'task-list' | 'task' | 'file';
 type TaskFileFilter = 'all' | 'task' | 'record' | 'ai_output' | 'artifact' | 'source';
-type TaskFileClass = 'task' | 'record' | 'ai_output' | 'artifact' | 'source' | 'file';
+type TaskFileClass = RuntimeFileSurfaceKind;
 type VirtualTaskFile = {
   id: string;
   taskId: string;
@@ -68,6 +91,7 @@ type VirtualTaskFile = {
   sourceNote?: string | null;
   sourceUri?: string | null;
   artifactId?: string;
+  artifactKind?: ArtifactRecord['kind'];
 };
 type RelatedFileCategory = 'task' | 'record' | 'ai_output' | 'artifact' | 'source';
 type RelatedTaskFileItem = {
@@ -93,6 +117,7 @@ type PostCompletionHandoff = {
   completedTask: Task;
   nextTask: Task | null;
   parentTask: Task | null;
+  evaluation: TaskCloseoutEvaluation | null;
 };
 type FileContextMenuState = {
   fileId: string;
@@ -214,43 +239,6 @@ function formatDate(iso: string): string {
   return `更新 ${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
-function orderedProjectChildren(project: Task, allTasks: Task[]): Task[] {
-  const children = allTasks.filter((candidate) => candidate.parentTaskId === project.id);
-  if (project.childTaskIds.length === 0) {
-    return children.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
-  }
-  const childById = new Map(children.map((child) => [child.id, child]));
-  const ordered = project.childTaskIds
-    .map((id) => childById.get(id))
-    .filter((child): child is Task => Boolean(child));
-  const known = new Set(ordered.map((child) => child.id));
-  const unlisted = children
-    .filter((child) => !known.has(child.id))
-    .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
-  return [...ordered, ...unlisted];
-}
-
-function orderedChildTasksForTask(task: Task, allTasks: Task[]): Task[] {
-  return task.type === 'project'
-    ? orderedProjectChildren(task, allTasks)
-    : allTasks
-      .filter((candidate) => candidate.parentTaskId === task.id)
-      .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
-}
-
-function findNextProjectChildAfter(task: Task, allTasks: Task[]): { nextTask: Task | null; parentTask: Task | null } {
-  if (!task.parentTaskId) return { nextTask: null, parentTask: null };
-  const parentTask = allTasks.find((candidate) => candidate.id === task.parentTaskId) ?? null;
-  if (!parentTask) return { nextTask: null, parentTask: null };
-  const siblings = orderedProjectChildren(parentTask, allTasks);
-  const currentIndex = siblings.findIndex((candidate) => candidate.id === task.id);
-  if (currentIndex === -1) return { nextTask: null, parentTask };
-  const nextTask = siblings
-    .slice(currentIndex + 1)
-    .find((candidate) => candidate.id !== task.id && candidate.status !== 'done' && candidate.state !== 'completed' && candidate.state !== 'archived') ?? null;
-  return { nextTask, parentTask };
-}
-
 function isTaskTypeLens(lens: Lens): boolean {
   return lens === 'simple'
     || lens === 'project'
@@ -280,8 +268,9 @@ function isClarifyTask(task: Task): boolean {
 }
 
 function executionQueueItemForTask(task: Task, allTasks: Task[], decisions: DecisionRecord[]): ExecutionQueueItem {
-  const parentTask = task.parentTaskId
-    ? allTasks.find((candidate) => candidate.id === task.parentTaskId) ?? null
+  const parentTaskId = effectiveParentTaskId(task, allTasks);
+  const parentTask = parentTaskId
+    ? allTasks.find((candidate) => candidate.id === parentTaskId) ?? null
     : null;
 
   if (taskHasPendingDecision(task, decisions)) {
@@ -402,15 +391,18 @@ function executionTimeScore(task: Task): number {
 }
 
 function projectChildOrderIndex(task: Task, allTasks: Task[]): number {
-  if (!task.parentTaskId) return Number.POSITIVE_INFINITY;
-  const parent = allTasks.find((candidate) => candidate.id === task.parentTaskId);
+  const parentTaskId = effectiveParentTaskId(task, allTasks);
+  if (!parentTaskId) return Number.POSITIVE_INFINITY;
+  const parent = allTasks.find((candidate) => candidate.id === parentTaskId);
   if (!parent) return Number.POSITIVE_INFINITY;
   const index = parent.childTaskIds.indexOf(task.id);
   return index === -1 ? Number.POSITIVE_INFINITY : index;
 }
 
 function executionQueueFallbackOrder(left: ExecutionQueueItem, right: ExecutionQueueItem, allTasks: Task[]): number {
-  if (left.task.parentTaskId && left.task.parentTaskId === right.task.parentTaskId) {
+  const leftParentId = effectiveParentTaskId(left.task, allTasks);
+  const rightParentId = effectiveParentTaskId(right.task, allTasks);
+  if (leftParentId && leftParentId === rightParentId) {
     const leftProjectOrder = projectChildOrderIndex(left.task, allTasks);
     const rightProjectOrder = projectChildOrderIndex(right.task, allTasks);
     if (leftProjectOrder !== rightProjectOrder) return leftProjectOrder - rightProjectOrder;
@@ -469,13 +461,19 @@ function priorityTaskSignalFromTask(task: Task): PriorityRecommendationTaskSigna
 }
 
 function buildExecutionQueueItems(tasks: Task[], allTasks: Task[], decisions: DecisionRecord[]): ExecutionQueueItem[] {
-  const taskSet = new Set(tasks.map((task) => task.id));
+  const rootTasks = Array.from(
+    new Map(tasks.map((task) => {
+      const root = rootTaskFor(task, allTasks);
+      return [root.id, root] as const;
+    })).values(),
+  );
+  const taskSet = new Set(rootTasks.map((task) => task.id));
   const taskSignalById = new Map(allTasks.map((task) => [task.id, priorityTaskSignalFromTask(task)]));
-  const items = tasks
+  const items = rootTasks
     .filter((task) => {
       if (task.status === 'done') return true;
       const activeChildren = allTasks.filter((candidate) => (
-        candidate.parentTaskId === task.id
+        effectiveParentTaskId(candidate, allTasks) === task.id
         && candidate.status !== 'done'
         && taskSet.has(candidate.id)
       ));
@@ -502,11 +500,13 @@ function buildExecutionQueueItems(tasks: Task[], allTasks: Task[], decisions: De
 function rootTaskFor(task: Task, allTasks: Task[]): Task {
   let current = task;
   const seen = new Set<string>();
-  while (current.parentTaskId && !seen.has(current.id)) {
+  let parentTaskId = effectiveParentTaskId(current, allTasks);
+  while (parentTaskId && !seen.has(current.id)) {
     seen.add(current.id);
-    const parent = allTasks.find((candidate) => candidate.id === current.parentTaskId);
+    const parent = allTasks.find((candidate) => candidate.id === parentTaskId);
     if (!parent) break;
     current = parent;
+    parentTaskId = effectiveParentTaskId(current, allTasks);
   }
   return current;
 }
@@ -533,7 +533,7 @@ function buildTaskDirectoryGroups(tasks: Task[], allTasks: Task[]): TaskDirector
   return [...groups.values()]
     .map((group) => {
       if (group.rootMatches) {
-        const children = orderedChildTasksForTask(group.root, allTasks)
+        const children = orderedChildrenForTask(group.root, allTasks)
           .filter((child) => child.status !== 'done' || candidateIds.has(child.id));
         return {
           ...group,
@@ -602,6 +602,116 @@ function buildNextTaskPrompt(completedTask: Task, nextTask: Task, parentTask: Ta
   ].filter((line): line is string => line !== null).join('\n');
 }
 
+function toTaskListItemRecord(task: Task): TaskListItemRecord {
+  return {
+    id: task.id,
+    title: task.title,
+    summary: task.whyNow ?? null,
+    state: task.state,
+    nextStep: task.nextStep ?? null,
+    waitingReason: task.waitingOn ?? null,
+    riskLevel: task.riskLevel,
+    riskNote: null,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAtIso,
+    activeWaitingItem: null,
+    activeBlocker: task.activeBlockerCreatedAt
+      ? {
+        id: `blocker:${task.id}`,
+        taskId: task.id,
+        title: '当前仍有阻塞项',
+        kind: 'other',
+        detail: null,
+        owner: null,
+        responsibility: null,
+        responsibilityLabel: null,
+        sourceContextId: null,
+        status: 'active',
+        createdAt: task.activeBlockerCreatedAt,
+        updatedAt: task.activeBlockerCreatedAt,
+        resolvedAt: null,
+      }
+      : null,
+    activeDependency: task.dependencyId
+      ? {
+        id: task.dependencyId,
+        taskId: task.id,
+        blockedByTaskId: task.blockedByTaskId ?? '',
+        blockedByTaskTitle: task.waitingOn ?? null,
+        reason: task.waitingOn ?? null,
+        status: 'active',
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAtIso,
+        resolvedAt: null,
+      }
+      : null,
+    dependencyReevaluation: task.dependencyReady && task.dependencyId
+      ? {
+        dependencyId: task.dependencyId,
+        upstreamTaskId: task.blockedByTaskId ?? '',
+        upstreamTaskTitle: task.waitingOn ?? '上游任务',
+        status: 'upstream_ready',
+        updatedAt: task.updatedAtIso,
+      }
+      : null,
+  };
+}
+
+function completionHandoffFromEvaluation(task: Task, allTasks: Task[]): PostCompletionHandoff {
+  const root = rootTaskFor(task, allTasks);
+  const parentTask = root.id !== task.id ? root : null;
+  const record = toTaskListItemRecord(task);
+  const taskDetail = {
+    ...record,
+    artifacts: [],
+    completionCriteria: [],
+    sourceContexts: [],
+    taskFiles: [],
+    processTemplates: [],
+    availableProcessTemplates: [],
+    timeline: [],
+    resumeCard: {
+      summary: task.whyNow ?? '',
+      currentState: task.status,
+      latestChange: { summary: '任务完成确认', action: { label: null, targetType: null, targetId: null } },
+      completionStatus: { total: 0, satisfied: 0, open: 0, summary: '完成确认已通过' },
+      currentBlocker: { blockerId: record.activeBlocker?.id ?? null, title: record.activeBlocker?.title ?? '无', detail: record.activeBlocker?.detail ?? null },
+      currentDependency: record.activeDependency
+        ? {
+          dependencyId: record.activeDependency.id,
+          title: record.activeDependency.blockedByTaskTitle ?? record.activeDependency.blockedByTaskId,
+          detail: record.activeDependency.reason,
+        }
+        : undefined,
+      keySource: { sourceContextId: null, title: '无', detail: null, priorityReason: null },
+      currentMethod: { templateId: null, title: '无', detail: null, selectionReason: null },
+      nextSuggestedMove: task.nextStep ?? '继续推进',
+    },
+  } satisfies TaskDetail;
+  const attrs = loadTaskAttributes();
+  const children = allTasks.filter((candidate) => effectiveParentTaskId(candidate, allTasks) === task.id);
+  const evaluation = evaluateRuntimeVerification({
+    mode: 'task_closeout',
+    intent: 'task_completion',
+    task: taskDetail,
+    childTaskIds: attrs[task.id]?.childTaskIds ?? [],
+    childTasks: children.map(toTaskListItemRecord),
+  }).taskCloseout;
+  if (!evaluation) {
+    throw new Error('任务完成检查未返回任务收尾结论。');
+  }
+  const fallback = findNextOpenChildAfter(task, allTasks);
+  const nextTask = evaluation.nextTaskId
+    ? allTasks.find((candidate) => candidate.id === evaluation.nextTaskId) ?? fallback.nextTask
+    : fallback.nextTask;
+  return {
+    completedTask: task,
+    nextTask,
+    parentTask,
+    evaluation,
+  };
+}
+
 const TASK_TYPE_LABELS: Record<TaskType, string> = {
   simple:    '一次性',
   project:   '项目型',
@@ -650,10 +760,17 @@ const RISK_OPTIONS: Array<{ label: string; value: TaskRiskLevel }> = [
 function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): Task {
   const inferredType = inferTaskExecutionType(r.title);
   const inferredProfile = inferTaskTypeProfile(r.title);
-  const type = attrs?.type && (attrs.typeConfirmed || attrs.type !== 'simple' || inferredType === 'simple')
+  const persistedType = r.taskType && r.taskType !== 'simple' ? r.taskType : null;
+  const type = persistedType
+    ?? (attrs?.type && (attrs.typeConfirmed || attrs.type !== 'simple' || inferredType === 'simple')
     ? attrs.type
-    : inferredProfile.primaryType;
-  const facets = normalizeTaskTypeFacets(attrs?.facets ?? inferredProfile.facets, type);
+    : inferredProfile.primaryType);
+  const facets = normalizeTaskTypeFacets(
+    (r.taskFacets?.length ?? 0) > 1 || r.taskFacets?.[0] !== 'simple'
+      ? r.taskFacets
+      : attrs?.facets ?? inferredProfile.facets,
+    type,
+  );
   return {
     id: r.id,
     title: r.title,
@@ -663,8 +780,8 @@ function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): 
     facets,
     owner: attrs?.owner ?? 'user',
     visibility: attrs?.visibility ?? 'visible',
-    parentTaskId: attrs?.parentTaskId ?? undefined,
-    childTaskIds: attrs?.childTaskIds ?? [],
+    parentTaskId: r.parentTaskId ?? attrs?.parentTaskId ?? undefined,
+    childTaskIds: (r.childTaskIds?.length ?? 0) > 0 ? r.childTaskIds ?? [] : attrs?.childTaskIds ?? [],
     whyNow: r.summary ?? undefined,
     nextStep: r.nextStep ?? undefined,
     riskLevel: r.riskLevel,
@@ -687,19 +804,48 @@ function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): 
   };
 }
 
+function repairTaskAttributesForRecords(records: TaskListItemRecord[]): Record<string, TaskAttributeRecord> {
+  let attrs = loadTaskAttributes();
+  const projectByTitle = new Map<string, TaskListItemRecord>();
+  for (const record of records) {
+    const attr = attrs[record.id];
+    const inferredType = attr?.type ?? inferTaskExecutionType(record.title);
+    if (inferredType === 'project' && !attr?.parentTaskId) {
+      projectByTitle.set(record.title.trim(), record);
+    }
+  }
+
+  let repaired = false;
+  for (const record of records) {
+    const current = attrs[record.id];
+    if (current?.parentTaskId) continue;
+    const match = /^(拆解下一步|实现调整|验收回归)：(.+)$/.exec(record.title.trim());
+    if (!match) continue;
+    const parentTitle = match[2]?.trim();
+    if (!parentTitle) continue;
+    const parent = projectByTitle.get(parentTitle);
+    if (!parent || parent.id === record.id) continue;
+    saveTaskAttributes(record.id, { type: 'simple', typeConfirmed: true });
+    moveTaskToProject(record.id, parent.id);
+    repaired = true;
+  }
+
+  if (repaired) attrs = loadTaskAttributes();
+  return attrs;
+}
+
 function confirmedTaskRecords(records: TaskListItemRecord[]): TaskListItemRecord[] {
   return records.filter((record) => !isUnconfirmedPanelCaptureRecord(record));
 }
 
 interface TasksPageProps {
   onOpenPanel: (taskId: string, draftPrompt?: string, taskTitle?: string, autoSendDraftPrompt?: boolean, forceTaskBinding?: boolean) => void;
-  onOpenWorkbench: (taskId: string) => void;
   onOpenDecision: () => void;
   onSelectionContextChange?: (context: TaskWorkspaceSelectionContext) => void;
   focusTaskId?: string | null;
 }
 
-export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSelectionContextChange, focusTaskId = null }: TasksPageProps) {
+export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChange, focusTaskId = null }: TasksPageProps) {
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [lens, setLens] = useState<Lens>('all');
@@ -728,6 +874,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
   const [selectedSources, setSelectedSources] = useState<SourceContextRecord[]>([]);
   const [selectedArtifacts, setSelectedArtifacts] = useState<ArtifactRecord[]>([]);
   const [selectedRuns, setSelectedRuns] = useState<RunRecord[]>([]);
+  const [allDecisions, setAllDecisions] = useState<DecisionRecord[]>([]);
   const [pendingDecisions, setPendingDecisions] = useState<DecisionRecord[]>([]);
   const [deferOpenId, setDeferOpenId] = useState<string | null>(null);
   const [deferConflict, setDeferConflict] = useState<{ task: Task; option: string; count: number } | null>(null);
@@ -758,8 +905,9 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
 
   function reloadTasks() {
     window.api?.listTasks().then((records) => {
-      const attrs = loadTaskAttributes();
-      setAllTasks(confirmedTaskRecords(records)
+      const confirmedRecords = confirmedTaskRecords(records);
+      const attrs = repairTaskAttributesForRecords(confirmedRecords);
+      setAllTasks(confirmedRecords
         .map((record) => fromRecord(record, attrs[record.id]))
         .filter((task) => task.visibility !== 'hidden'));
     }).catch(() => {});
@@ -767,7 +915,10 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
 
   function reloadPendingDecisions() {
     window.api?.listDecisions?.()
-      .then((decisions) => setPendingDecisions(decisions.filter((decision) => decision.status === 'pending')))
+      .then((decisions) => {
+        setAllDecisions(decisions);
+        setPendingDecisions(decisions.filter((decision) => decision.status === 'pending'));
+      })
       .catch(() => {});
   }
 
@@ -830,8 +981,9 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
     setLoading(true);
     window.api.listTasks()
       .then((records) => {
-        const attrs = loadTaskAttributes();
-        setAllTasks(confirmedTaskRecords(records).map((record) => fromRecord(record, attrs[record.id])));
+        const confirmedRecords = confirmedTaskRecords(records);
+        const attrs = repairTaskAttributesForRecords(confirmedRecords);
+        setAllTasks(confirmedRecords.map((record) => fromRecord(record, attrs[record.id])));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -859,41 +1011,42 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
   }, [showCapture]);
 
   const activeTasks = allTasks.filter((task) => task.status !== 'done');
-  const projectParents = activeTasks.filter((task) => task.type === 'project' && !task.parentTaskId);
+  const projectParents = activeTasks.filter((task) => task.type === 'project' && isTopLevelTask(task, allTasks));
   const taskTypeGroups: Array<{ key: string; label: string; lens: Lens; icon: string; tasks: Task[] }> = [
-    { key: 'simple', label: '一次性任务', lens: 'simple', icon: '•', tasks: activeTasks.filter((task) => task.type === 'simple' && !task.parentTaskId) },
-    { key: 'project', label: '项目型', lens: 'project', icon: '▰', tasks: activeTasks.filter((task) => task.type === 'project' && !task.parentTaskId) },
-    { key: 'scheduled', label: '定时任务', lens: 'scheduled', icon: '↻', tasks: activeTasks.filter((task) => task.type === 'scheduled' && !task.parentTaskId) },
-    { key: 'event', label: '事件触发', lens: 'event', icon: '⚡', tasks: activeTasks.filter((task) => task.type === 'event' && !task.parentTaskId) },
-    { key: 'routine', label: '常设任务', lens: 'routine', icon: '∞', tasks: activeTasks.filter((task) => task.type === 'routine' && !task.parentTaskId) },
-    { key: 'composite', label: '复合任务', lens: 'composite', icon: '◈', tasks: activeTasks.filter((task) => task.facets.length > 1 && !task.parentTaskId) },
+    { key: 'simple', label: '一次性任务', lens: 'simple', icon: '•', tasks: activeTasks.filter((task) => task.type === 'simple' && isTopLevelTask(task, allTasks)) },
+    { key: 'project', label: '项目型', lens: 'project', icon: '▰', tasks: activeTasks.filter((task) => task.type === 'project' && isTopLevelTask(task, allTasks)) },
+    { key: 'scheduled', label: '定时任务', lens: 'scheduled', icon: '↻', tasks: activeTasks.filter((task) => task.type === 'scheduled' && isTopLevelTask(task, allTasks)) },
+    { key: 'event', label: '事件触发', lens: 'event', icon: '⚡', tasks: activeTasks.filter((task) => task.type === 'event' && isTopLevelTask(task, allTasks)) },
+    { key: 'routine', label: '常设任务', lens: 'routine', icon: '∞', tasks: activeTasks.filter((task) => task.type === 'routine' && isTopLevelTask(task, allTasks)) },
+    { key: 'composite', label: '复合任务', lens: 'composite', icon: '◈', tasks: activeTasks.filter((task) => task.facets.length > 1 && isTopLevelTask(task, allTasks)) },
   ];
   const pendingDecisionTaskIds = new Set(pendingDecisions.map((decision) => decision.taskId));
   const tasksWithPendingDecision = allTasks.filter((task) => task.status !== 'done' && pendingDecisionTaskIds.has(task.id));
   const filtered = allTasks.filter((t) => {
     if (lens === 'all') return t.status !== 'done';
-    if (lens === 'running') return isProgressingTask(t) && !t.parentTaskId;
+    if (lens === 'running') return isProgressingTask(t) && isTopLevelTask(t, allTasks);
     if (lens === 'waiting') return t.status === 'waiting';
     if (lens === 'blocked') return t.status === 'blocked';
     if (lens === 'clarify') return isClarifyTask(t);
     if (lens === 'needsDecision') return tasksWithPendingDecision.some((task) => task.id === t.id);
-    if (lens === 'simple') return t.status !== 'done' && t.type === 'simple' && !t.parentTaskId;
-    if (lens === 'project') return t.status !== 'done' && t.type === 'project' && !t.parentTaskId;
-    if (lens === 'scheduled') return t.status !== 'done' && t.type === 'scheduled' && !t.parentTaskId;
-    if (lens === 'event') return t.status !== 'done' && t.type === 'event' && !t.parentTaskId;
-    if (lens === 'routine') return t.status !== 'done' && t.type === 'routine' && !t.parentTaskId;
-    if (lens === 'composite') return t.status !== 'done' && t.facets.length > 1 && !t.parentTaskId;
+    if (lens === 'simple') return t.status !== 'done' && t.type === 'simple' && isTopLevelTask(t, allTasks);
+    if (lens === 'project') return t.status !== 'done' && t.type === 'project' && isTopLevelTask(t, allTasks);
+    if (lens === 'scheduled') return t.status !== 'done' && t.type === 'scheduled' && isTopLevelTask(t, allTasks);
+    if (lens === 'event') return t.status !== 'done' && t.type === 'event' && isTopLevelTask(t, allTasks);
+    if (lens === 'routine') return t.status !== 'done' && t.type === 'routine' && isTopLevelTask(t, allTasks);
+    if (lens === 'composite') return t.status !== 'done' && t.facets.length > 1 && isTopLevelTask(t, allTasks);
     if (lens === 'done') return t.status === 'done';
     if (lens.startsWith('project:')) {
       const projectId = lens.slice('project:'.length);
-      return t.status !== 'done' && (t.id === projectId || t.parentTaskId === projectId);
+      return t.status !== 'done' && (t.id === projectId || effectiveParentTaskId(t, allTasks) === projectId);
     }
     return true;
   });
 
   const selectedTask = allTasks.find((t) => t.id === selectedId) ?? null;
-  const selectedParentTask = selectedTask?.parentTaskId
-    ? allTasks.find((task) => task.id === selectedTask.parentTaskId) ?? null
+  const selectedParentTaskId = selectedTask ? effectiveParentTaskId(selectedTask, allTasks) : null;
+  const selectedParentTask = selectedParentTaskId
+    ? allTasks.find((task) => task.id === selectedParentTaskId) ?? null
     : null;
   const selectedHasDecision = Boolean(selectedTask && pendingDecisions.some((decision) => decision.taskId === selectedTask.id));
   const selectedTaskPlanningPrompt = selectedTask
@@ -929,7 +1082,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
   useEffect(() => {
     if (!selectedTask) return;
     const childIds = allTasks
-      .filter((candidate) => candidate.parentTaskId === selectedTask.id)
+      .filter((candidate) => effectiveParentTaskId(candidate, allTasks) === selectedTask.id)
       .map((child) => child.id);
     childIds.forEach((childId) => {
       if (localTaskFiles[childId] == null) {
@@ -946,6 +1099,18 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
     setPendingFileSwitch(() => action);
   }
 
+  async function recordPanelTimelineEvent(
+    taskId: string,
+    type: PanelRuntimeTimelineEventType,
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    await window.api?.recordTaskTimelineEvent?.({
+      taskId,
+      type,
+      payload,
+    }).catch(() => undefined);
+  }
+
   async function saveFileDraft() {
     if (!selectedFile) return;
     const nextContent = fileDraft;
@@ -956,6 +1121,8 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
     if (selectedFile.kind === 'task_record' && window.api?.updateTask) {
       const patch = parseTaskRecordPatch(nextContent);
       if (patch.summary !== undefined || patch.nextStep !== undefined) {
+        const guard = guardTaskMutation({ taskId: selectedFile.taskId });
+        if (!guard.allowed) return;
         const updated = await window.api.updateTask({
           id: selectedFile.taskId,
           ...patch,
@@ -985,6 +1152,14 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
         }
       }
       if (window.api.createTaskFile && window.api.updateTaskFile) {
+        if (!guardDurablePanelAction({ taskId: selectedFile.taskId, confirmed: true }).allowed) return;
+        const taskMdUpdate = evaluateTaskMdUpdateNeed({
+          changeText: nextContent,
+          hasTaskContext: true,
+          producedDurableChange: true,
+          reasonHint: 'durable_state_change',
+        });
+        if (!taskMdUpdate.shouldUpdateTaskMd) return;
         const existingTaskRecord = (localTaskFiles[selectedFile.taskId] ?? []).find(isPersistedTaskRecordFile);
         const persisted = existingTaskRecord
           ? await window.api.updateTaskFile({ id: existingTaskRecord.id, content: nextContent }).catch(() => null)
@@ -1004,25 +1179,68 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
               [selectedFile.taskId]: [nextFile, ...withoutOld],
             };
           });
+          verifyDurablePanelActionCompleted({
+            title: '保存任务说明',
+            output: `已保存 ${nextFile.path}`,
+          });
+          await recordPanelTimelineEvent(selectedFile.taskId, 'panel.task_file_written', {
+            path: nextFile.path,
+            source: 'tasks_page',
+          });
         }
       }
     }
     if (selectedFile.kind === 'source' && selectedFile.sourceId && window.api?.updateSourceContext) {
-      await window.api.updateSourceContext({ id: selectedFile.sourceId, content: nextContent }).catch(() => undefined);
+      if (!guardDurablePanelAction({ taskId: selectedFile.taskId, confirmed: true }).allowed) return;
+      const updated = await window.api.updateSourceContext({ id: selectedFile.sourceId, content: nextContent }).catch(() => undefined);
+      if (updated) {
+        verifyDurablePanelActionCompleted({
+          title: '保存来源内容',
+          output: `已保存来源：${selectedFile.name}`,
+        });
+        await recordPanelTimelineEvent(selectedFile.taskId, 'panel.source_updated', {
+          sourceId: updated.id,
+          title: updated.title,
+          field: 'content',
+          source: 'tasks_page',
+        });
+      }
     }
     if (selectedFile.kind === 'artifact' && selectedFile.artifactId) {
+      if (!guardDurablePanelAction({ taskId: selectedFile.taskId, confirmed: true }).allowed) return;
       if (window.api?.updateArtifact) {
         const updated = await window.api.updateArtifact({ id: selectedFile.artifactId, content: nextContent }).catch(() => null);
         if (updated) {
           setSelectedArtifacts((current) => mergeTaskArtifacts(selectedFile.taskId, current.map((artifact) => (
             artifact.id === updated.id ? updated : artifact
           ))));
+          verifyDurablePanelActionCompleted({
+            title: '保存产物内容',
+            output: `已保存产物：${updated.title}`,
+          });
+          await recordPanelTimelineEvent(selectedFile.taskId, 'panel.artifact_written', {
+            artifactId: updated.id,
+            title: updated.title,
+            field: 'content',
+            source: 'tasks_page',
+          });
         }
       } else {
         updateArtifactWorkspace(selectedFile.artifactId, { content: nextContent });
+        verifyDurablePanelActionCompleted({
+          title: '保存产物内容',
+          output: `已保存本地产物：${selectedFile.name}`,
+        });
+        await recordPanelTimelineEvent(selectedFile.taskId, 'panel.artifact_written', {
+          artifactId: selectedFile.artifactId,
+          title: selectedFile.name,
+          field: 'content',
+          source: 'tasks_page',
+        });
       }
     }
     if (selectedFile.kind === 'local_file') {
+      if (!guardDurablePanelAction({ taskId: selectedFile.taskId, confirmed: true }).allowed) return;
       const persisted = window.api?.updateTaskFile
         ? await window.api.updateTaskFile({ id: selectedFile.id, content: nextContent }).catch(() => null)
         : null;
@@ -1038,6 +1256,14 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
           file.id === selectedFile.id ? { ...file, ...nextFile } : file
         )),
       }));
+      verifyDurablePanelActionCompleted({
+        title: '保存任务文件',
+        output: `已保存 ${nextFile.path}`,
+      });
+      await recordPanelTimelineEvent(selectedFile.taskId, 'panel.task_file_written', {
+        path: nextFile.path,
+        source: 'tasks_page',
+      });
     }
     setFileDirty(false);
   }
@@ -1060,8 +1286,9 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
   function selectTask(id: string | null, options: { syncLensToTaskType?: boolean } = {}) {
     runObjectSwitch(() => {
       const nextTask = id ? allTasks.find((task) => task.id === id) ?? null : null;
-      const nextParentTask = nextTask?.parentTaskId
-        ? allTasks.find((task) => task.id === nextTask.parentTaskId) ?? null
+      const nextParentTaskId = nextTask ? effectiveParentTaskId(nextTask, allTasks) : null;
+      const nextParentTask = nextParentTaskId
+        ? allTasks.find((task) => task.id === nextParentTaskId) ?? null
         : null;
       if (nextParentTask?.type === 'project') {
         setLens('project');
@@ -1140,9 +1367,45 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
   const selectedFile = taskFiles.find((file) => file.id === selectedFileId) ?? null;
   const contextMenuFile = fileContextMenu ? taskFiles.find((file) => file.id === fileContextMenu.fileId) ?? null : null;
   const directChildTasks = selectedTask
-    ? orderedChildTasksForTask(selectedTask, allTasks)
+    ? orderedChildrenForTask(selectedTask, allTasks)
     : [];
+  const selectedProjectVerification = selectedTask && selectedTaskDetail && selectedTask.type === 'project'
+    ? evaluateRuntimeVerification({
+        mode: 'project',
+        task: selectedTaskDetail,
+        childTasks: directChildTasks.map(toTaskListItemRecord),
+        artifactCount: selectedArtifacts.length,
+        keySourceCount: selectedSources.filter((source) => source.isKey && source.status !== 'archived').length,
+        decisionEffect: summarizeDecisionEffects(allDecisions.filter((decision) => decision.taskId === selectedTask.id)),
+      })
+    : null;
   const relatedFiles = buildRelatedTaskFileItems(taskFiles);
+  const projectedTaskFiles: TaskFileRecord[] = selectedTask
+    ? [
+        ...(selectedTaskDetail?.taskFiles ?? []),
+        ...persistedSelectedTaskFiles
+          .filter((file) => file.kind === 'local_file' || file.kind === 'local_folder')
+          .map((file): TaskFileRecord => ({
+            id: file.id,
+            taskId: file.taskId,
+            name: file.name,
+            path: file.path,
+            kind: file.kind === 'local_folder' ? 'folder' : 'file',
+            content: file.content,
+            createdAt: file.updatedAt,
+            updatedAt: file.updatedAt,
+          })),
+      ].filter((file, index, files) => files.findIndex((candidate) => candidate.id === file.id) === index)
+    : [];
+  const runtimeEvents = selectedTask
+    ? projectRuntimeEvents({
+        taskId: selectedTask.id,
+        timeline: selectedTaskDetail?.timeline ?? [],
+        runs: selectedRuns,
+        taskFiles: projectedTaskFiles,
+        decisions: allDecisions.filter((decision) => decision.taskId === selectedTask.id),
+      })
+    : [];
   const globalExecutionQueueItems = buildExecutionQueueItems(activeTasks, allTasks, pendingDecisions);
   const executionQueueItems = lens === 'all'
     ? globalExecutionQueueItems
@@ -1206,6 +1469,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
     const fallbackName = kind === 'file' ? 'notes.md' : 'drafts/';
     const rawName = window.prompt(kind === 'file' ? '新建文件名' : '新建文件夹名', fallbackName)?.trim();
     if (!rawName) return;
+    if (!guardDurablePanelAction({ taskId: selectedTask.id, confirmed: true }).allowed) return;
     const normalizedName = kind === 'folder' && !rawName.endsWith('/') ? `${rawName}/` : rawName;
     const persisted = window.api?.createTaskFile
       ? await window.api.createTaskFile({
@@ -1229,6 +1493,15 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
     if (kind === 'file') {
       selectTaskFile(file);
     }
+    verifyDurablePanelActionCompleted({
+      title: kind === 'file' ? '创建任务文件' : '创建任务文件夹',
+      output: `已创建 ${normalizedName}`,
+    });
+    await recordPanelTimelineEvent(selectedTask.id, 'panel.task_file_created', {
+      path: file.path,
+      kind,
+      source: 'tasks_page',
+    });
   }
 
   async function createTaskRecordFile() {
@@ -1237,6 +1510,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
     const fallbackName = `${today}-record.md`;
     const rawName = window.prompt('新建任务记录', fallbackName)?.trim();
     if (!rawName) return;
+    if (!guardDurablePanelAction({ taskId: selectedTask.id, confirmed: true }).allowed) return;
     const normalizedName = rawName.endsWith('.md') ? rawName : `${rawName}.md`;
     const recordPath = normalizedName.includes('/')
       ? normalizedName
@@ -1258,6 +1532,12 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
       '## Links',
       '',
     ].join('\n');
+    const worthiness = evaluateTaskRecordWorthiness({
+      text: content,
+      hasTaskContext: true,
+      reasonHint: 'durable_state_change',
+    });
+    if (!worthiness.shouldCreateTaskRecord) return;
     const persisted = window.api?.createTaskFile
       ? await window.api.createTaskFile({
         taskId: selectedTask.id,
@@ -1281,12 +1561,21 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
       [selectedTask.id]: [nextFile, ...(current[selectedTask.id] ?? [])],
     }));
     selectTaskFile(nextFile);
+    verifyDurablePanelActionCompleted({
+      title: '创建任务记录',
+      output: `已创建 ${recordPath}`,
+    });
+    await recordPanelTimelineEvent(selectedTask.id, 'panel.task_record_written', {
+      path: recordPath,
+      source: 'tasks_page',
+    });
   }
 
   async function createArtifactFile() {
     if (!selectedTask) return;
     const title = window.prompt('新建产物文件名', 'notes.md')?.trim();
     if (!title) return;
+    if (!guardDurablePanelAction({ taskId: selectedTask.id, confirmed: true }).allowed) return;
     const artifact = window.api?.createManualArtifact
       ? await window.api.createManualArtifact({ taskId: selectedTask.id, title, content: '' }).catch(() => null)
       : null;
@@ -1294,12 +1583,23 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
     setSelectedArtifacts((current) => mergeTaskArtifacts(selectedTask.id, [fallbackArtifact, ...current]));
     const file = artifactToVirtualFile(fallbackArtifact);
     selectTaskFile(file);
+    verifyDurablePanelActionCompleted({
+      title: '创建产物',
+      output: `已创建产物 ${title}`,
+    });
+    await recordPanelTimelineEvent(selectedTask.id, 'panel.artifact_written', {
+      artifactId: fallbackArtifact.id,
+      title,
+      action: 'created',
+      source: 'tasks_page',
+    });
   }
 
   async function renameFile(file: VirtualTaskFile | null) {
     if (!file) return;
     const nextName = window.prompt('重命名', file.name)?.trim();
     if (!nextName || nextName === file.name) return;
+    if (!guardDurablePanelAction({ taskId: file.taskId, confirmed: true }).allowed) return;
     if (file.kind === 'artifact' && file.artifactId) {
       if (window.api?.updateArtifact) {
         const updated = await window.api.updateArtifact({ id: file.artifactId, title: nextName }).catch(() => null);
@@ -1312,6 +1612,16 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
         updateArtifactWorkspace(file.artifactId, { title: nextName });
         setSelectedArtifacts((current) => mergeTaskArtifacts(file.taskId, current));
       }
+      verifyDurablePanelActionCompleted({
+        title: '重命名产物',
+        output: `已重命名为 ${nextName}`,
+      });
+      await recordPanelTimelineEvent(file.taskId, 'panel.artifact_written', {
+        artifactId: file.artifactId,
+        title: nextName,
+        action: 'renamed',
+        source: 'tasks_page',
+      });
       return;
     }
     if (file.kind !== 'local_file' && file.kind !== 'local_folder') return;
@@ -1337,6 +1647,16 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
         item.id === file.id ? { ...item, ...nextFile } : item
       )),
     }));
+    verifyDurablePanelActionCompleted({
+      title: '重命名任务文件',
+      output: `已重命名为 ${normalizedName}`,
+    });
+    await recordPanelTimelineEvent(file.taskId, 'panel.task_file_moved', {
+      from: file.path,
+      to: nextFile.path,
+      action: 'renamed',
+      source: 'tasks_page',
+    });
   }
 
   async function renameSelectedFile() {
@@ -1347,6 +1667,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
     if (!file || file.kind === 'task_record' || file.kind === 'source') return;
     const nextPath = window.prompt('移动到路径', file.path)?.trim();
     if (!nextPath || nextPath === file.path) return;
+    if (!guardDurablePanelAction({ taskId: file.taskId, confirmed: true }).allowed) return;
     const nextName = nextPath.split('/').filter(Boolean).at(-1) ?? file.name;
     if (file.kind === 'artifact' && file.artifactId) {
       if (window.api?.updateArtifact) {
@@ -1360,6 +1681,16 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
         updateArtifactWorkspace(file.artifactId, { title: nextName });
         setSelectedArtifacts((current) => mergeTaskArtifacts(file.taskId, current));
       }
+      verifyDurablePanelActionCompleted({
+        title: '移动产物',
+        output: `已移动/重命名为 ${nextName}`,
+      });
+      await recordPanelTimelineEvent(file.taskId, 'panel.artifact_written', {
+        artifactId: file.artifactId,
+        title: nextName,
+        action: 'moved',
+        source: 'tasks_page',
+      });
       return;
     }
     if (file.kind !== 'local_file' && file.kind !== 'local_folder') return;
@@ -1385,6 +1716,15 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
         item.id === file.id ? { ...item, ...nextFile } : item
       )),
     }));
+    verifyDurablePanelActionCompleted({
+      title: '移动任务文件',
+      output: `已移动到 ${normalizedPath}`,
+    });
+    await recordPanelTimelineEvent(file.taskId, 'panel.task_file_moved', {
+      from: file.path,
+      to: normalizedPath,
+      source: 'tasks_page',
+    });
   }
 
   async function moveSelectedFile() {
@@ -1394,6 +1734,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
   async function deleteFile(file: VirtualTaskFile | null) {
     if (!file || file.kind === 'task_record' || file.kind === 'source') return;
     if (!window.confirm(`删除 ${file.name}？`)) return;
+    if (!guardDurablePanelAction({ taskId: file.taskId, confirmed: true }).allowed) return;
     if (file.kind === 'artifact' && file.artifactId) {
       if (window.api?.deleteArtifact) {
         const deleted = await window.api.deleteArtifact(file.artifactId).catch(() => null);
@@ -1423,6 +1764,16 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
       setFileDraft('');
       setFileDirty(false);
     }
+    verifyDurablePanelActionCompleted({
+      title: '删除任务文件',
+      output: `已删除 ${file.name}`,
+    });
+    await recordPanelTimelineEvent(file.taskId, file.kind === 'artifact' ? 'panel.artifact_deleted' : 'panel.task_file_deleted', {
+      path: file.path,
+      artifactId: file.artifactId,
+      title: file.name,
+      source: 'tasks_page',
+    });
   }
 
   async function deleteSelectedFile() {
@@ -1433,14 +1784,26 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
     if (!file?.sourceId || !window.api?.updateSourceContext) return;
     const source = selectedSources.find((item) => item.id === file.sourceId);
     if (!source) return;
+    if (!guardDurablePanelAction({ taskId: file.taskId, confirmed: true }).allowed) return;
     const updated = await window.api.updateSourceContext({ id: source.id, isKey: !source.isKey }).catch(() => null);
     if (!updated) return;
     setSelectedSources((current) => current.map((item) => item.id === updated.id ? updated : item));
+    verifyDurablePanelActionCompleted({
+      title: '更新来源标记',
+      output: `${updated.title} 已${updated.isKey ? '设为关键来源' : '取消关键来源'}`,
+    });
+    await recordPanelTimelineEvent(file.taskId, 'panel.source_updated', {
+      sourceId: updated.id,
+      title: updated.title,
+      isKey: updated.isKey,
+      source: 'tasks_page',
+    });
   }
 
   async function archiveSourceFile(file: VirtualTaskFile | null) {
     if (!file?.sourceId || !window.api?.archiveSourceContext) return;
     if (!window.confirm(`归档${taskFileKindLabel(file)} ${file.name}？`)) return;
+    if (!guardDurablePanelAction({ taskId: file.taskId, confirmed: true }).allowed) return;
     const archived = await window.api.archiveSourceContext(file.sourceId).catch(() => null);
     if (!archived) return;
     setSelectedSources((current) => current.filter((item) => item.id !== archived.id));
@@ -1450,6 +1813,15 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
       setFileDraft('');
       setFileDirty(false);
     }
+    verifyDurablePanelActionCompleted({
+      title: '归档来源',
+      output: `已归档 ${file.name}`,
+    });
+    await recordPanelTimelineEvent(file.taskId, 'panel.source_archived', {
+      sourceId: archived.id,
+      title: archived.title,
+      source: 'tasks_page',
+    });
   }
 
   function copyFilePath(file: VirtualTaskFile | null) {
@@ -1490,6 +1862,12 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
 
   async function transitionWithPlanningHop(task: Task, nextState: TaskState, waitingReason?: string | null) {
     if (!window.api) return;
+    const guard = guardTaskStateTransition({
+      taskId: task.id,
+      nextState,
+      confirmationSatisfied: nextState === 'completed' || nextState === 'archived',
+    });
+    if (!guard.allowed) return;
     if ((task.state === 'captured' || task.state === 'triaged') && nextState !== 'archived') {
       await window.api.transitionTask({ id: task.id, nextState: 'planned' });
     }
@@ -1497,10 +1875,10 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
   }
 
   function completeTask(task: Task) {
-    const { nextTask, parentTask } = findNextProjectChildAfter(task, allTasks);
+    const handoff = completionHandoffFromEvaluation(task, allTasks);
     setAllTasks((prev) => prev.filter((t) => t.id !== task.id));
     setSelectedId(null);
-    setPostCompletionHandoff({ completedTask: task, nextTask, parentTask });
+    setPostCompletionHandoff(handoff);
     transitionWithPlanningHop(task, 'completed').catch(() => reloadTasks());
   }
 
@@ -1509,13 +1887,21 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
     const { completedTask, nextTask, parentTask } = postCompletionHandoff;
     const content = buildCompletionHandoffContent(completedTask, nextTask, parentTask);
     const today = new Date().toISOString().slice(0, 10);
-    await window.api?.createTaskFile?.({
+    const handoffRecord = await window.api?.createTaskFile?.({
       taskId: completedTask.id,
       name: `${today}-completion-handoff.md`,
       path: `Task Records/${today}-completion-handoff.md`,
       kind: 'file',
       content,
     }).catch(() => undefined);
+    await recordPanelTimelineEvent(completedTask.id, 'panel.completion_handoff', {
+      nextTaskId: nextTask.id,
+      nextTaskTitle: nextTask.title,
+      parentTaskId: parentTask?.id ?? null,
+      parentTaskTitle: parentTask?.title ?? null,
+      recordPath: handoffRecord?.path ?? `Task Records/${today}-completion-handoff.md`,
+      source: 'tasks_page',
+    });
     setPostCompletionHandoff(null);
     setSelectedId(nextTask.id);
     setSelectedObject('task');
@@ -1562,6 +1948,10 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
         ? { ...task, lane: nextLane, status: riskLevel === 'high' ? 'blocked' : task.status }
         : task
     )));
+    if (!guardTaskMutation({ taskId }).allowed) {
+      reloadTasks();
+      return;
+    }
     window.api?.updateTask({ id: taskId, riskLevel }).catch(() => reloadTasks());
   }
 
@@ -1595,6 +1985,33 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
 
   function moveIntoProject(taskId: string, projectId: string | null) {
     const result = moveTaskToProject(taskId, projectId);
+    if (guardTaskMutation({ taskId }).allowed) {
+      void window.api?.updateTask?.({
+        id: taskId,
+        parentTaskId: result.task.parentTaskId,
+        taskType: result.task.type,
+        taskFacets: result.task.facets,
+        childTaskIds: result.task.childTaskIds,
+      }).catch(() => undefined);
+    }
+    if (result.previousProject) {
+      if (guardTaskMutation({ taskId: result.previousProject.taskId }).allowed) {
+        void window.api?.updateTask?.({
+          id: result.previousProject.taskId,
+          childTaskIds: result.previousProject.childTaskIds,
+        }).catch(() => undefined);
+      }
+    }
+    if (result.nextProject) {
+      if (guardTaskMutation({ taskId: result.nextProject.taskId }).allowed) {
+        void window.api?.updateTask?.({
+          id: result.nextProject.taskId,
+          taskType: 'project',
+          taskFacets: result.nextProject.facets,
+          childTaskIds: result.nextProject.childTaskIds,
+        }).catch(() => undefined);
+      }
+    }
     setContextMenu(null);
     setSelectedId(taskId);
     setAllTasks((prev) => prev.map((task) => {
@@ -1609,6 +2026,13 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
       }
       return task;
     }));
+    void recordPanelTimelineEvent(taskId, 'panel.project_membership_changed', {
+      taskId,
+      previousProjectId: result.previousProject?.taskId ?? null,
+      nextProjectId: result.nextProject?.taskId ?? projectId,
+      parentTaskId: result.task.parentTaskId ?? null,
+      source: 'tasks_page',
+    });
   }
 
   async function resolveReadyDependency(task: Task) {
@@ -1637,6 +2061,15 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
       setProjectDecompositionError('当前版本暂时无法调用 AI 拆解服务。');
       return;
     }
+    const existingStructureEvaluation = evaluateRuntimeSubtaskDraft({
+      parentTask: project,
+      proposedSubtasks: [],
+      existingTasks: allTasks,
+    });
+    if (!existingStructureEvaluation.allowed) {
+      setProjectDecompositionError(existingStructureEvaluation.summary);
+      return;
+    }
     setProjectDecomposingId(project.id);
     setProjectDecompositionError(null);
     try {
@@ -1656,21 +2089,51 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
     if (!window.api || projectCreatingChildrenId) return;
     const draft = projectDraft?.projectId === project.id ? projectDraft.result : null;
     if (!draft) return;
+    const draftEvaluation = evaluateRuntimeSubtaskDraft({
+      parentTask: project,
+      proposedSubtasks: draft.subtasks,
+      existingTasks: allTasks,
+    });
+    if (!draftEvaluation.allowed) {
+      setProjectDecompositionError(draftEvaluation.summary);
+      return;
+    }
+    if (!guardDurablePanelAction({ taskId: project.id, confirmed: true }).allowed) {
+      setProjectDecompositionError('项目拆解写入被 runtime 检查暂停。');
+      return;
+    }
+    if (!guardTaskMutation({ taskId: project.id }).allowed) {
+      setProjectDecompositionError('项目父任务更新被 runtime 检查暂停。');
+      return;
+    }
     setProjectCreatingChildrenId(project.id);
     setProjectDecompositionError(null);
     try {
       const childRecords = await Promise.all(draft.subtasks.map((subtask) => window.api!.createTask({
         title: subtask.title,
         summary: subtask.summary,
+        taskType: 'simple',
+        taskFacets: ['simple'],
+        parentTaskId: project.id,
       })));
+      verifyDurablePanelActionCompleted({
+        title: '创建项目子任务',
+        output: `已为「${project.title}」创建 ${childRecords.length} 个子任务。`,
+      });
       const plannedChildRecords = await Promise.all(childRecords.map((child) => (
-        window.api!.transitionTask({ id: child.id, nextState: 'planned' })
+        guardTaskStateTransition({ taskId: child.id, nextState: 'planned', confirmationSatisfied: true }).allowed
+          ? window.api!.transitionTask({ id: child.id, nextState: 'planned' })
+          : Promise.resolve(child)
       )));
-      await Promise.all(childRecords.map((child, index) => window.api!.createCompletionCriteria({
-        taskId: child.id,
-        text: draft.subtasks[index]?.acceptanceCriteria ?? '完成后能明确验收。',
-        verificationResponsibility: 'unknown',
-      })));
+      await Promise.all(childRecords.map((child, index) => (
+        guardDurablePanelAction({ taskId: child.id, confirmed: true }).allowed
+          ? window.api!.createCompletionCriteria({
+              taskId: child.id,
+              text: draft.subtasks[index]?.acceptanceCriteria ?? '完成后能明确验收。',
+              verificationResponsibility: 'unknown',
+          })
+          : Promise.resolve(null)
+      )));
 
       const childRecordByTitle = new Map(plannedChildRecords.map((child) => [child.title.trim(), child]));
       await Promise.all(draft.subtasks.map((subtask, index) => {
@@ -1680,6 +2143,7 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
           ?? plannedChildRecords.find((child) => dependencyTitle.includes(child.title) || child.title.includes(dependencyTitle));
         const child = plannedChildRecords[index];
         if (!child || !dependency || dependency.id === child.id) return Promise.resolve(null);
+        if (!guardDurablePanelAction({ taskId: child.id, confirmed: true }).allowed) return Promise.resolve(null);
         return window.api!.createTaskDependency({
           taskId: child.id,
           blockedByTaskId: dependency.id,
@@ -1693,33 +2157,55 @@ export function TasksPage({ onOpenPanel, onOpenWorkbench, onOpenDecision, onSele
         id: project.id,
         summary: draft.parentGoal,
         nextStep: draft.nextStep,
+        taskType: 'project',
+        taskFacets: project.facets,
+        childTaskIds: childIds,
       });
-      await window.api.createTaskFile?.({
-        taskId: project.id,
-        name: 'AI 项目拆解自检.md',
-        path: 'Task Records/AI 项目拆解自检.md',
-        kind: 'file',
-        content: [
-          '# Record: AI 项目拆解自检',
-          '',
-          '## Trigger',
-          '用户确认创建项目拆解子任务。',
-          '',
-          '## Summary',
-          draft.review,
-          '',
-          '## Confirmed',
-          `- 已创建 ${draft.subtasks.length} 个子任务。`,
-          '',
-          '## Next',
-          `- ${draft.nextStep}`,
-          '',
-        ].join('\n'),
+      verifyDurablePanelActionCompleted({
+        title: '更新项目结构',
+        output: `项目「${project.title}」已关联 ${childIds.length} 个子任务。`,
       });
-      await window.api.createCompletionCriteria({
-        taskId: project.id,
-        text: `完成并验收 ${draft.subtasks.length} 个项目子任务。`,
-        verificationResponsibility: 'unknown',
+      const projectRecord = await window.api.createTaskFile?.({
+          taskId: project.id,
+          name: 'AI 项目拆解自检.md',
+          path: 'Task Records/AI 项目拆解自检.md',
+          kind: 'file',
+          content: [
+            '# Record: AI 项目拆解自检',
+            '',
+            '## Trigger',
+            '用户确认创建项目拆解子任务。',
+            '',
+            '## Summary',
+            draft.review,
+            '',
+            '## Confirmed',
+            `- 已创建 ${draft.subtasks.length} 个子任务。`,
+            '',
+            '## Next',
+            `- ${draft.nextStep}`,
+            '',
+          ].join('\n'),
+        }).catch(() => null);
+      if (projectRecord) {
+        verifyDurablePanelActionCompleted({
+          title: '保存项目拆解记录',
+          output: '已写入 Task Records/AI 项目拆解自检.md。',
+        });
+      }
+      if (guardDurablePanelAction({ taskId: project.id, confirmed: true }).allowed) {
+        await window.api.createCompletionCriteria({
+          taskId: project.id,
+          text: `完成并验收 ${draft.subtasks.length} 个项目子任务。`,
+          verificationResponsibility: 'unknown',
+        });
+      }
+      await recordPanelTimelineEvent(project.id, 'panel.project_decomposed', {
+        childTaskIds: childIds,
+        childCount: plannedChildRecords.length,
+        nextStep: draft.nextStep,
+        recordPath: projectRecord?.path ?? null,
+        source: 'tasks_page',
       });
       const childTasks = plannedChildRecords.map((child) => {
         const draftSubtask = draft.subtasks.find((subtask) => subtask.title === child.title);
@@ -1784,13 +2270,24 @@ function resetCaptureDraft() {
   async function captureTask() {
     const title = captureTitle.trim();
     if (!title || capturing) return;
+    if (!guardTaskCapture({
+      confirmationSatisfied: true,
+      messageCount: 1,
+      candidateTitle: title,
+      candidateSummary: captureCommitment,
+      existingTasks: allTasks,
+    }).allowed) return;
     setCapturing(true);
     try {
       let newId: string;
       const selectedType = captureType;
       const selectedFacets = normalizeTaskTypeFacets(captureFacets, selectedType);
       if (window.api) {
-        const record = await window.api.createTask({ title });
+        const record = await window.api.createTask({
+          title,
+          taskType: selectedType,
+          taskFacets: selectedFacets,
+        });
         newId = record.id;
         const plannedRecord = await window.api.transitionTask({ id: record.id, nextState: 'planned' });
         const attrs = saveTaskAttributes(newId, {
@@ -2158,7 +2655,7 @@ function resetCaptureDraft() {
             <TaskTimelineView
               task={selectedTask}
               parentTask={selectedParentTask}
-              timeline={selectedTaskDetail?.timeline ?? []}
+              events={runtimeEvents}
               runCount={selectedRuns.length}
               onSelectParent={selectTask}
             />
@@ -2175,6 +2672,7 @@ function resetCaptureDraft() {
               projectBusy={projectDecomposingId === selectedTask.id}
               projectCreating={projectCreatingChildrenId === selectedTask.id}
               projectError={projectDecompositionError}
+              projectVerification={selectedProjectVerification}
               keySources={selectedSources.slice(0, 3)}
               hasPendingDecision={selectedHasDecision}
               planningLabel={selectedTaskPlanningPrompt?.label ?? '规划讨论'}
@@ -2217,7 +2715,7 @@ function resetCaptureDraft() {
               onResolveDependency={resolveReadyDependency}
             />
           ) : viewMode === 'timeline' ? (
-            <TimelineView tasks={filtered} onOpen={onOpenWorkbench} />
+            <TimelineView tasks={filtered} onOpen={selectTask} />
           ) : (
             <TaskDirectoryView
               groups={taskDirectoryGroups}
@@ -2356,14 +2854,14 @@ function resetCaptureDraft() {
               </div>
               {postCompletionHandoff.nextTask ? (
                 <div className="completion-handoff-next">
-                  <span className="completion-check-label">建议下一任务</span>
+                  <span className="completion-check-label">运行时交接建议</span>
                   <strong>{postCompletionHandoff.nextTask.title}</strong>
-                  <p>将保存一条轻量交接记录，并把右侧 AI 面板切换到这项任务。不会自动执行下一任务。</p>
+                  <p>{postCompletionHandoff.evaluation?.reason ?? '将保存一条轻量交接记录，并把右侧 AI 面板切换到这项任务。不会自动执行下一任务。'}</p>
                 </div>
               ) : (
                 <div className="completion-handoff-next quiet">
-                  <span className="completion-check-label">下一任务</span>
-                  <p>当前没有明确的项目后续子任务。可以回到优先处理继续选择。</p>
+                  <span className="completion-check-label">运行时判断</span>
+                  <p>{postCompletionHandoff.evaluation?.reason ?? '当前没有明确的项目后续子任务。可以回到优先处理继续选择。'}</p>
                 </div>
               )}
             </div>
@@ -2511,6 +3009,7 @@ function artifactToVirtualFile(artifact: ArtifactRecord): VirtualTaskFile {
     path: `Artifacts/${artifact.title}`,
     kind: 'artifact',
     artifactId: artifact.id,
+    artifactKind: artifact.kind,
     content: artifact.content,
     editable: artifact.kind === 'note' || artifact.title.endsWith('.md') || artifact.title.endsWith('.txt'),
     updatedAt: artifact.updatedAt,
@@ -2521,24 +3020,20 @@ function isOpenableTaskFile(file: VirtualTaskFile): boolean {
   return file.kind !== 'records_folder' && file.kind !== 'local_folder';
 }
 
+function runtimeSurfaceForFile(file: VirtualTaskFile) {
+  return classifyRuntimeFileSurface({
+    kind: file.kind,
+    path: file.path,
+    name: file.name,
+    sourceRole: file.sourceRole,
+    sourceNote: file.sourceNote,
+    sourceUri: file.sourceUri,
+    artifactKind: file.artifactKind,
+  });
+}
+
 function classifyTaskFile(file: VirtualTaskFile): TaskFileClass {
-  if (file.kind === 'task_record') return 'task';
-  if (isTaskRecordFile(file)) return 'record';
-  if (isAiOutputSourceFile(file)) return 'ai_output';
-  if (file.kind === 'artifact' || file.path.startsWith('Artifacts/')) return 'artifact';
-  if (file.kind === 'source') return 'source';
-  return 'file';
-}
-
-function isTaskRecordFile(file: VirtualTaskFile): boolean {
-  return file.kind === 'records_folder' || file.path.startsWith('Task Records/');
-}
-
-function isAiOutputSourceFile(file: VirtualTaskFile): boolean {
-  if (file.kind !== 'source') return false;
-  if (file.sourceRole === 'digest') return true;
-  const text = `${file.name} ${file.sourceNote ?? ''}`;
-  return /(^|\s)AI(\s|_|-)|自检|复盘|执行摘要|项目拆解|拆解自检/.test(text);
+  return runtimeSurfaceForFile(file).fileClass;
 }
 
 function taskFileCategory(file: VirtualTaskFile): RelatedFileCategory {
@@ -2564,34 +3059,15 @@ function taskFileFilterForFile(file: VirtualTaskFile): Exclude<TaskFileFilter, '
 }
 
 function taskFileKindLabel(file: VirtualTaskFile): string {
-  const classification = classifyTaskFile(file);
-  if (classification === 'task') return '任务说明';
-  if (classification === 'record') return '记录';
-  if (classification === 'ai_output') return 'AI 产出';
-  if (classification === 'source') return '来源材料';
-  if (classification === 'artifact') return '产物';
-  return '文件';
+  return runtimeSurfaceForFile(file).label;
 }
 
 function taskFileNote(file: VirtualTaskFile): string {
-  const classification = classifyTaskFile(file);
-  if (classification === 'task') return '任务目标、进度与下一步';
-  if (classification === 'record') return '任务执行中的沉淀记录';
-  if (classification === 'ai_output') return 'AI 生成的任务上下文';
-  if (classification === 'source') return '关联到任务的来源材料';
-  if (classification === 'artifact') return '任务执行产物';
-  return file.path;
+  return runtimeSurfaceForFile(file).note;
 }
 
 function relatedFileScore(file: VirtualTaskFile): number {
-  const scores: Record<RelatedFileCategory, number> = {
-    task: 0,
-    record: 1,
-    ai_output: 2,
-    artifact: 3,
-    source: 4,
-  };
-  return scores[taskFileCategory(file)];
+  return runtimeSurfaceForFile(file).rank;
 }
 
 function fileTimeValue(file: VirtualTaskFile): number {
@@ -2702,13 +3178,7 @@ function sourceToVirtualFile(taskId: string, source: SourceContextRecord): Virtu
 }
 
 function fileProjectionLabel(file: VirtualTaskFile): string {
-  const classification = classifyTaskFile(file);
-  if (classification === 'task') return 'Primary task record';
-  if (classification === 'record') return 'Projected task record';
-  if (classification === 'ai_output') return 'Projected AI output';
-  if (classification === 'source') return 'Projected source material';
-  if (classification === 'artifact') return 'Projected artifact';
-  return 'Task file';
+  return runtimeSurfaceForFile(file).projectionLabel;
 }
 
 function FileHeader({
@@ -2799,23 +3269,23 @@ function FileWorkspace({
 function TaskTimelineView({
   task,
   parentTask,
-  timeline,
+  events,
   runCount,
   onSelectParent,
 }: {
   task: Task;
   parentTask: Task | null;
-  timeline: TimelineEventRecord[];
+  events: RuntimeEventRecord[];
   runCount: number;
   onSelectParent: (taskId: string) => void;
 }) {
-  const ordered = [...timeline].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const groupedEvents = groupTimelineEventsByDate(ordered);
+  const ordered = [...events].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const groupedEvents = groupRuntimeEventsByDate(ordered);
   const scopeCopy = parentTask
-    ? `当前显示子任务活动记录；父任务「${parentTask.title}」保留项目层汇总。`
+    ? `当前显示子任务活动记录；父任务「${parentTask.title}」保留项目层汇总。活动由任务事件、执行、任务记录和拍板项统一投影。`
     : task.type === 'project'
-      ? '当前显示父任务的项目层活动记录；子任务细节进入对应子任务查看。'
-      : '当前显示此任务自己的活动记录。';
+      ? '当前显示父任务的项目层活动记录；子任务细节进入对应子任务查看。活动由任务事件、执行、任务记录和拍板项统一投影。'
+      : '当前显示此任务自己的活动记录，包含任务事件、执行、任务记录和拍板项。';
 
   return (
     <div className="task-timeline-workspace">
@@ -2850,17 +3320,16 @@ function TaskTimelineView({
                 <div className="task-timeline-date">{group.date}</div>
                 <div className="task-timeline-day-items">
                   {group.events.map((event) => {
-                    const summary = summarizeTimelinePayload(event);
                     return (
                       <div key={event.id} className="task-timeline-item">
-                        <span className={`task-timeline-marker ${timelineEventTone(event.type)}`} />
+                        <span className={`task-timeline-marker ${runtimeEventTone(event)}`} />
                         <span className="task-timeline-time">{formatIsoTime(event.createdAt)}</span>
                         <div className="task-timeline-content">
                           <div className="task-timeline-title-row">
-                            <strong>{formatTimelineEventType(event.type)}</strong>
-                            <span>{formatTimelineEventScope(event.type)}</span>
+                            <strong>{event.title}</strong>
+                            <span>{formatRuntimeEventScope(event)}</span>
                           </div>
-                          {summary && <p>{summary}</p>}
+                          {event.detail && <p>{event.detail}</p>}
                         </div>
                       </div>
                     );
@@ -2875,8 +3344,8 @@ function TaskTimelineView({
   );
 }
 
-function groupTimelineEventsByDate(events: TimelineEventRecord[]): Array<{ date: string; events: TimelineEventRecord[] }> {
-  const grouped = new Map<string, TimelineEventRecord[]>();
+function groupRuntimeEventsByDate(events: RuntimeEventRecord[]): Array<{ date: string; events: RuntimeEventRecord[] }> {
+  const grouped = new Map<string, RuntimeEventRecord[]>();
   for (const event of events) {
     const key = formatTimelineDate(event.createdAt);
     if (!grouped.has(key)) grouped.set(key, []);
@@ -2903,38 +3372,25 @@ function formatIsoDate(iso: string): string {
   return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-function timelineEventTone(type: string): string {
-  if (type.includes('decision') || type.includes('completion_check')) return 'attention';
-  if (type.includes('run') || type.includes('artifact')) return 'execution';
-  if (type.includes('source_context')) return 'context';
-  if (type.includes('completion_criteria')) return 'criteria';
+function runtimeEventTone(event: RuntimeEventRecord): string {
+  if (event.priority === 'p1') return 'attention';
+  if (event.type.includes('decision') || event.type.includes('completion_check')) return 'attention';
+  if (event.sourceType === 'run' || event.sourceType === 'run_step' || event.type.includes('artifact')) return 'execution';
+  if (event.type.includes('source_context') || event.type.includes('context')) return 'context';
+  if (event.type.includes('completion_criteria') || event.type.includes('completion_handoff')) return 'criteria';
   return 'record';
 }
 
-function formatTimelineEventScope(type: string): string {
-  if (type.includes('decision')) return '拍板';
-  if (type.includes('run')) return '执行';
-  if (type.includes('artifact')) return '产物';
-  if (type.includes('source_context')) return '来源';
-  if (type.includes('completion')) return '验收';
+function formatRuntimeEventScope(event: RuntimeEventRecord): string {
+  if (event.sourceType === 'run' || event.sourceType === 'run_step') return '执行';
+  if (event.sourceType === 'task_record') return '记录';
+  if (event.sourceType === 'decision' || event.type.includes('decision')) return '拍板';
+  if (event.sourceType === 'runtime_projection') return '运行时';
+  if (event.type.includes('artifact')) return '产物';
+  if (event.type.includes('source_context') || event.type.includes('source')) return '来源';
+  if (event.type.includes('completion')) return '验收';
+  if (event.type.startsWith('panel.')) return '面板';
   return '任务';
-}
-
-function formatTimelineEventType(type: string): string {
-  const labels: Record<string, string> = {
-    'task.created': '任务已创建',
-    'task.updated': '任务信息已更新',
-    'task.transitioned': '任务状态已变化',
-    'completion_criteria.created': '完成标准已添加',
-    'completion_criteria.satisfied': '完成标准已满足',
-    'completion_check.recorded': '完成检查已记录',
-    'decision.created': '拍板项已创建',
-    'run.started': '执行已启动',
-    'run.completed': '执行已完成',
-    'artifact.created': '产物已生成',
-    'source_context.created': '来源已记录',
-  };
-  return labels[type] ?? type.replace(/[._-]+/g, ' ');
 }
 
 function formatTaskStatus(status: TaskStatus): string {
@@ -2951,31 +3407,6 @@ function formatTaskLaneForDetail(lane: Lane): string {
   if (lane === 'continue') return '继续推进';
   if (lane === 'clarify') return '待明确';
   return '平稳推进';
-}
-
-function summarizeTimelinePayload(event: TimelineEventRecord): string | null {
-  if (!event.payload) return null;
-  try {
-    const parsed = JSON.parse(event.payload) as Record<string, unknown>;
-    if (event.type === 'task.transitioned') {
-      const from = typeof parsed.from === 'string' ? parsed.from : null;
-      const to = typeof parsed.to === 'string' ? parsed.to : null;
-      if (from && to) return `${from} → ${to}`;
-    }
-    if (event.type === 'task.created' && typeof parsed.title === 'string') {
-      return `创建「${parsed.title}」`;
-    }
-    if (event.type === 'task.updated') {
-      const fields = Object.keys(parsed).filter((key) => parsed[key] != null);
-      if (fields.length > 0) return `更新 ${fields.slice(0, 3).join(', ')}`;
-    }
-    if (event.type.startsWith('completion_criteria') && typeof parsed.text === 'string') {
-      return parsed.text;
-    }
-  } catch {
-    return event.payload.length > 96 ? `${event.payload.slice(0, 96)}…` : event.payload;
-  }
-  return event.payload.length > 96 ? `${event.payload.slice(0, 96)}…` : event.payload;
 }
 
 /* ─── Timeline view ─── */
@@ -3342,7 +3773,7 @@ function ProjectTreeView({
   return (
     <div className="project-tree">
       {projects.map((project) => {
-        const children = orderedProjectChildren(project, tasks);
+        const children = orderedTaskChildren(project, tasks);
         const done = children.filter((task) => task.status === 'done').length;
         return (
           <div key={project.id} className="project-group">
@@ -3579,6 +4010,7 @@ interface TaskPreviewProps {
   projectBusy: boolean;
   projectCreating: boolean;
   projectError: string | null;
+  projectVerification: RuntimeVerificationResult | null;
   keySources: SourceContextRecord[];
   runCount: number;
   hasPendingDecision: boolean;
@@ -3611,6 +4043,7 @@ function TaskPreview({
   projectBusy,
   projectCreating,
   projectError,
+  projectVerification,
   keySources,
   runCount,
   hasPendingDecision,
@@ -3634,8 +4067,9 @@ function TaskPreview({
   const [activeRelatedCategory, setActiveRelatedCategory] = useState<RelatedFileCategory>('task');
   const hasNonDefaultTaskFiles = taskFiles.some((file) => !['records_folder', 'local_folder', 'task_record'].includes(file.kind));
   const completedCriteria = completionCriteria.filter((criterion) => criterion.status === 'satisfied').length;
-  const orderedChildren = task.type === 'project' ? orderedProjectChildren(task, childTasks) : childTasks;
+  const orderedChildren = task.type === 'project' ? orderedTaskChildren(task, childTasks) : childTasks;
   const completedChildren = orderedChildren.filter((child) => child.status === 'done').length;
+  const projectVerificationResult = projectVerification?.project ?? null;
   const needsProjectDecomposition = task.type === 'project' && childTasks.length === 0;
   const isFreshProject = needsProjectDecomposition && !projectDraft;
   const hasExecutionContext = keySources.length > 0 || artifactCount > 0 || hasNonDefaultTaskFiles;
@@ -3860,6 +4294,27 @@ function TaskPreview({
             </div>
             {childTasks.length === 0 && (
               <p className="preview-config-note">在 AI 面板确认拆解方案后，这里会显示子任务和完成标准；确认前不会写入真实任务。</p>
+            )}
+            {projectVerificationResult && (
+              <div className={`project-verification-panel ${projectVerification?.tone ?? 'pending'}`}>
+                <div className="project-verification-head">
+                  <span>项目验证</span>
+                  <strong>{projectVerification?.label}</strong>
+                </div>
+                <p>{projectVerification?.detail}</p>
+                <div className="project-verification-metrics">
+                  <span>子任务 {projectVerificationResult.childCompleted}/{projectVerificationResult.childTotal}</span>
+                  {projectVerificationResult.childOpen > 0 && <span>未完成 {projectVerificationResult.childOpen}</span>}
+                  {projectVerificationResult.blockerCount > 0 && <span>阻塞/依赖 {projectVerificationResult.blockerCount}</span>}
+                  {projectVerificationResult.waitingCount > 0 && <span>等待 {projectVerificationResult.waitingCount}</span>}
+                  {projectVerificationResult.criteriaOpen > 0 && <span>父任务标准未满足 {projectVerificationResult.criteriaOpen}</span>}
+                  {projectVerificationResult.decisionEffect && projectVerificationResult.decisionEffect.tone !== 'none' && (
+                    <span>{projectVerificationResult.decisionEffect.effectLabel}</span>
+                  )}
+                  {projectVerificationResult.artifactCount !== null && <span>产出 {projectVerificationResult.artifactCount}</span>}
+                  {projectVerificationResult.keySourceCount !== null && <span>关键来源 {projectVerificationResult.keySourceCount}</span>}
+                </div>
+              </div>
             )}
             {orderedChildren.length > 0 && (
               <div className="project-child-list">

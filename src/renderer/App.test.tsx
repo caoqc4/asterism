@@ -467,6 +467,7 @@ function createMockApi() {
       updatedAt: now,
     })),
     recordTaskCompletionCheck: vi.fn().mockResolvedValue(undefined),
+    recordTaskTimelineEvent: vi.fn().mockResolvedValue(undefined),
     getWorkHabitSnapshot: vi.fn().mockImplementation(async () => ({
       version: 3,
       storage: 'main_db',
@@ -490,6 +491,7 @@ function createMockApi() {
     updateWorkHabit: vi.fn().mockImplementation(async (input) => updateWorkHabit(input.id, input)),
     deleteWorkHabit: vi.fn().mockImplementation(async (id) => deleteWorkHabit(id)),
     createManualWorkHabit: vi.fn().mockImplementation(async (input) => createManualWorkHabit(input)),
+    proposeWorkHabit: vi.fn().mockImplementation(async () => loadWorkHabits()),
     resolveWorkHabitConflict: vi.fn().mockImplementation(async (input) =>
       resolveWorkHabitConflict(input.candidateId, input.decision)),
     recordCompletionOverrideLearningSignal: vi.fn().mockImplementation(async (input) => {
@@ -965,15 +967,14 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('生成投资人更新稿')).toBeTruthy();
   });
 
-  it('prefills waiting Brief focus actions with a follow-up prompt', async () => {
+  it('opens waiting Brief focus actions without exposing internal prompts in the input', async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await user.click(await screen.findByRole('button', { name: /起草跟进/ }));
 
     const input = await screen.findByPlaceholderText(/关于「合同盖章跟进」/) as HTMLTextAreaElement;
-    expect(input.value).toContain('起草一条跟进等待项的消息');
-    expect(input.value).toContain('合同盖章跟进');
+    expect(input.value).toBe('');
   });
 
   it('lets users adjust Brief focus order for today without changing lanes', async () => {
@@ -1146,6 +1147,23 @@ describe('App redesign v1', () => {
     expect(screen.queryByText('准备投资人沟通材料')).toBeNull();
   });
 
+  it('does not offer task capture for underspecified global discussion', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Search or ask/ }));
+    const input = await screen.findByPlaceholderText(/搜索、提问或捕获任务想法/);
+    await user.type(input, '这个方案你怎么看，是否合理？');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: null,
+      }));
+    });
+    expect(screen.queryByRole('button', { name: '捕获为任务' })).toBeNull();
+  });
+
   it('abandons an unconfirmed right-panel capture only after a second confirmation', async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -1272,9 +1290,14 @@ describe('App redesign v1', () => {
 
     await user.click(await screen.findByRole('button', { name: '生成文件提案' }));
     expect(await screen.findByText('任务文件写入提案')).toBeTruthy();
+    expect(await screen.findByText('建议归类：任务文件')).toBeTruthy();
     const pathInput = screen.getByLabelText('任务文件路径') as HTMLInputElement;
     await user.clear(pathInput);
+    await user.type(pathInput, 'Task Records/layout-handoff.md');
+    expect(await screen.findByText('建议归类：任务记录')).toBeTruthy();
+    await user.clear(pathInput);
     await user.type(pathInput, 'docs/layout-notes.md');
+    expect(await screen.findByText('建议归类：任务文件')).toBeTruthy();
     const contentInput = screen.getByLabelText('任务文件内容') as HTMLTextAreaElement;
     expect(contentInput.value).toContain('把三份优化文档的布局结论整理成任务产出文档');
 
@@ -1358,7 +1381,7 @@ describe('App redesign v1', () => {
         kind: 'note',
         isKey: false,
         content: expect.stringContaining('# Record: 阶段收尾'),
-        note: '任务记录：阶段收尾、后续拆解和执行交接。',
+        note: '任务记录：阶段收尾、质量检查和执行交接。',
       }));
       expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
         taskId: 'task_risk',
@@ -1368,43 +1391,127 @@ describe('App redesign v1', () => {
         content: expect.stringContaining('# Record: 阶段收尾'),
       }));
     });
-    expect(await screen.findByText(/是否要根据这次收尾拆解下一步执行任务/)).toBeTruthy();
-    expect(await screen.findByText(/阶段记录已保存/)).toBeTruthy();
+    expect(harness.api.recordTaskCompletionCheck).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_risk',
+      source: 'lightweight_rule_engine',
+      runVerificationLabel: expect.stringContaining('阶段收尾检查'),
+    }));
+    expect((await screen.findAllByText(/质量检查已记录/)).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: '收尾本阶段' })).toBeNull();
-    await user.click(screen.getByRole('button', { name: '创建后续任务' }));
-
-    await waitFor(() => {
-      expect(harness.api.createTask).toHaveBeenCalledWith(expect.objectContaining({
-        title: '拆解下一步：董事会材料修订',
-        summary: expect.stringContaining('阶段收尾记录'),
-      }));
-      expect(harness.api.createTask).toHaveBeenCalledWith(expect.objectContaining({
-        title: '实现调整：董事会材料修订',
-        summary: expect.stringContaining('产品和实现调整'),
-      }));
-      expect(harness.api.createTask).toHaveBeenCalledWith(expect.objectContaining({
-        title: '验收回归：董事会材料修订',
-        summary: expect.stringContaining('回归测试'),
-      }));
-    });
-    expect(harness.api.transitionTask).toHaveBeenCalledWith(expect.objectContaining({
-      id: 'task_created',
-      nextState: 'planned',
-    }));
-    expect(harness.api.createSourceContext).toHaveBeenCalledWith(expect.objectContaining({
-      taskId: 'task_created',
-      title: '后续任务来源',
-      isKey: true,
-      content: expect.stringContaining('父任务：董事会材料修订'),
-    }));
-    expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
-      taskId: 'task_created',
-      name: expect.stringMatching(/^\d{4}-\d{2}-\d{2}-followup-source\.md$/),
-      path: expect.stringMatching(/^Task Records\/\d{4}-\d{2}-\d{2}-followup-source\.md$/),
-      content: expect.stringContaining('来源：父任务阶段收尾记录'),
-    }));
-    expect(await screen.findByText(/已创建 3 条后续任务/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: '创建后续任务' })).toBeNull();
+    expect(harness.api.createTask).not.toHaveBeenCalledWith(expect.objectContaining({
+      title: '拆解下一步：董事会材料修订',
+    }));
+  });
+
+  it('does not create generic phase follow-up tasks when a project already has child tasks', async () => {
+    const firstChild = buildTask({
+      id: 'existing_child_1',
+      title: '整理需求边界',
+      state: 'planned',
+      updatedAt: '2026-01-01T01:00:00.000Z',
+    });
+    const secondChild = buildTask({
+      id: 'existing_child_2',
+      title: '实现核心流程',
+      state: 'planned',
+      updatedAt: '2026-01-01T02:00:00.000Z',
+    });
+    harness.tasks.push(firstChild, secondChild);
+    harness.details[firstChild.id] = buildTaskDetail(firstChild);
+    harness.details[secondChild.id] = buildTaskDetail(secondChild);
+    saveTaskAttributes('task_risk', {
+      type: 'project',
+      typeConfirmed: true,
+      childTaskIds: ['existing_child_1', 'existing_child_2'],
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
+    await user.type(input, '这轮已经收尾，可以拆出后续执行、实现和验收任务');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+    expect(await screen.findByText(/这段任务讨论可以收成阶段记录/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '收尾本阶段' }));
+    expect(await screen.findByText(/现在进入第一项子任务/)).toBeTruthy();
+    expect((await screen.findAllByText(/整理需求边界/)).length).toBeGreaterThan(0);
+    expect(harness.api.transitionTask).toHaveBeenCalledWith({
+      id: 'existing_child_1',
+      nextState: 'running',
+    });
+    expect(screen.queryByRole('button', { name: '创建后续任务' })).toBeNull();
+
+    const attrs = loadTaskAttributes();
+    expect(attrs.task_risk?.childTaskIds).toEqual([
+      'existing_child_1',
+      'existing_child_2',
+    ]);
+    expect(harness.api.createTask).not.toHaveBeenCalledWith(expect.objectContaining({
+      title: '拆解下一步：董事会材料修订',
+    }));
+  });
+
+  it('repairs existing phase follow-up tasks and keeps the explorer/queue at parent-task level', async () => {
+    const project = buildTask({
+      id: 'task_project_repair',
+      title: '开发小程序',
+      state: 'planned',
+      updatedAt: '2026-05-13T12:00:00.000Z',
+    });
+    const followups = [
+      buildTask({ id: 'task_followup_repair_1', title: '拆解下一步：开发小程序', state: 'planned' }),
+      buildTask({ id: 'task_followup_repair_2', title: '实现调整：开发小程序', state: 'planned' }),
+      buildTask({ id: 'task_followup_repair_3', title: '验收回归：开发小程序', state: 'planned' }),
+    ];
+    harness.tasks.unshift(project, ...followups);
+    harness.details[project.id] = buildTaskDetail(project);
+    for (const task of followups) {
+      harness.details[task.id] = buildTaskDetail(task);
+      saveTaskAttributes(task.id, { type: 'project', typeConfirmed: true });
+    }
+    saveTaskAttributes(project.id, {
+      type: 'project',
+      typeConfirmed: true,
+      childTaskIds: ['existing_child_1', 'existing_child_2', 'existing_child_3', 'existing_child_4', 'existing_child_5'],
+    });
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    expect(await screen.findByText('开发小程序')).toBeTruthy();
+
+    const attrs = loadTaskAttributes();
+    expect(attrs.task_project_repair?.childTaskIds).toEqual([
+      'existing_child_1',
+      'existing_child_2',
+      'existing_child_3',
+      'existing_child_4',
+      'existing_child_5',
+      'task_followup_repair_1',
+      'task_followup_repair_2',
+      'task_followup_repair_3',
+    ]);
+    for (const task of followups) {
+      expect(attrs[task.id]).toMatchObject({
+        type: 'simple',
+        typeConfirmed: true,
+        parentTaskId: project.id,
+      });
+    }
+
+    const typeTree = document.querySelector('.task-type-tree') as HTMLElement;
+    expect(within(typeTree).getByRole('button', { name: '开发小程序' })).toBeTruthy();
+    expect(within(typeTree).queryByRole('button', { name: '拆解下一步：开发小程序' })).toBeNull();
+    expect(within(typeTree).queryByRole('button', { name: '实现调整：开发小程序' })).toBeNull();
+    expect(within(typeTree).queryByRole('button', { name: '验收回归：开发小程序' })).toBeNull();
+
+    const queueText = document.querySelector('.execution-queue')?.textContent ?? '';
+    expect(queueText).toContain('开发小程序');
+    expect(queueText).not.toContain('拆解下一步：开发小程序');
+    expect(queueText).not.toContain('实现调整：开发小程序');
+    expect(queueText).not.toContain('验收回归：开发小程序');
   });
 
   it('suggests a fresh task session when recent AI replies stay generic', async () => {
@@ -1712,7 +1819,7 @@ describe('App redesign v1', () => {
     });
   });
 
-  it('keeps project dependency chains in upstream-to-downstream order in the priority queue', async () => {
+  it('keeps project child dependency chains inside the parent instead of duplicating them in the priority queue', async () => {
     const user = userEvent.setup();
     const project = buildTask({
       id: 'task_project_chain',
@@ -1778,10 +1885,10 @@ describe('App redesign v1', () => {
 
     const cards = Array.from(document.querySelectorAll('.execution-queue-card')) as HTMLElement[];
     const orderedTitles = cards.map((card) => card.textContent ?? '').filter((text) => text.includes('小程序'));
-    expect(orderedTitles[0]).toContain('小程序需求分析与功能设计');
-    expect(orderedTitles[1]).toContain('小程序前后端开发与联调');
-    expect(orderedTitles[2]).toContain('小程序测试、安全加固与性能优化');
-    expect(orderedTitles[3]).toContain('小程序上线准备与发布');
+    expect(orderedTitles).toHaveLength(1);
+    expect(orderedTitles[0]).toContain('开发小程序');
+    expect(orderedTitles[0]).not.toContain('小程序需求分析与功能设计');
+    expect(orderedTitles[0]).not.toContain('小程序前后端开发与联调');
   });
 
   it('shows only pending decisions and dispatches formal decision actions', async () => {
@@ -1928,69 +2035,6 @@ describe('App redesign v1', () => {
     });
   });
 
-  it.skip('keeps task type and commitment lenses usable from capture through legacy workbench config', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
-    await user.click(await screen.findByRole('button', { name: '+ 新建任务' }));
-    const captureInput = await screen.findByPlaceholderText(/任务标题/);
-    await user.type(captureInput, '每周一准备经营周报');
-    expect(screen.getByText('AI 建议类型')).toBeTruthy();
-    expect(screen.getByRole('button', { name: '定时' }).className).toContain('active');
-    await user.clear(captureInput);
-    await user.type(captureInput, '官网改版项目');
-    expect(screen.getByRole('button', { name: '项目型' }).className).toContain('active');
-    await user.click(screen.getByRole('button', { name: '一次性' }));
-    expect(screen.getByText('用户确认类型')).toBeTruthy();
-    expect(screen.getByText(/你已确认为一次性任务/)).toBeTruthy();
-    await user.clear(captureInput);
-    await user.type(captureInput, '每周一准备经营周报');
-    expect(screen.getByRole('button', { name: '一次性' }).className).toContain('active');
-    await user.click(screen.getByRole('button', { name: '+ 新建任务' }));
-    await user.click(screen.getByRole('button', { name: '+ 新建任务' }));
-    const reopenedCaptureInput = await screen.findByPlaceholderText(/任务标题/);
-    await user.type(reopenedCaptureInput, '每周一准备经营周报');
-    expect(screen.getByText('AI 建议类型')).toBeTruthy();
-    expect(screen.getByText(/AI 建议为定时任务/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: '定时' }).className).toContain('active');
-    expect(screen.getByText('捕获意图')).toBeTruthy();
-    expect(screen.getByText('确认类型')).toBeTruthy();
-    expect(screen.getByText('创建后推进')).toBeTruthy();
-    expect(screen.getAllByText(/只需要确认或调整建议/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/周期和触发条件可在任务详情中确认/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/定时任务创建后可确认周期与执行节奏/)).toBeTruthy();
-    await user.type(screen.getByPlaceholderText(/交付备注/), '周五 17:00 前发给 CEO');
-    await user.click(screen.getByRole('button', { name: '创建' }));
-    await waitFor(() => {
-      expect(harness.api.transitionTask).toHaveBeenCalledWith({
-        id: 'task_created',
-        nextState: 'planned',
-      });
-    });
-    expect(screen.getByRole('button', { name: /确认周期与节奏/ })).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: /确认周期与节奏/ }));
-    const scheduledInput = screen.getByPlaceholderText(/关于「每周一准备经营周报」/) as HTMLTextAreaElement;
-    expect(scheduledInput.value).toContain('定时任务');
-    expect(scheduledInput.value).toContain('周期');
-    await user.click(screen.getByTitle('关闭面板'));
-    expect(screen.queryByRole('button', { name: /已承诺/ })).toBeNull();
-    expect((await screen.findAllByText('每周一准备经营周报')).length).toBeGreaterThan(0);
-
-    await user.click(screen.getAllByRole('button', { name: /Tasks/ })[0]!);
-    await user.click(await screen.findByRole('button', { name: '+ 新建任务' }));
-    await user.type(await screen.findByPlaceholderText(/任务标题/), '收到品牌合作邮件时跟进');
-    expect(screen.getByRole('button', { name: '事件' }).className).toContain('active');
-    await user.click(screen.getByRole('button', { name: '创建' }));
-    await user.click(screen.getByRole('button', { name: /事件触发/ }));
-    await user.click(await screen.findByText('收到品牌合作邮件时跟进'));
-    expect(await screen.findByText(/追加到任务产物和执行记录/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: /确认触发条件/ }));
-    const eventInput = screen.getByPlaceholderText(/关于「收到品牌合作邮件时跟进」/) as HTMLTextAreaElement;
-    expect(eventInput.value).toContain('事件触发任务');
-    expect(eventInput.value).toContain('监听来源');
-  });
-
   it('creates a project parent task and guides AI decomposition instead of hard-coded subtasks', async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -2033,6 +2077,12 @@ describe('App redesign v1', () => {
         ]),
       }));
     });
+    const chatCalls = vi.mocked(harness.api.chatWithAI!).mock.calls;
+    const lastChatCall = chatCalls[chatCalls.length - 1];
+    const lastChatInput = lastChatCall ? lastChatCall[0] : null;
+    const decompositionMessage = lastChatInput?.messages.at(-1)?.content ?? '';
+    expect(decompositionMessage).not.toContain('Taskplane Agent Operating Principles');
+    expect(decompositionMessage).not.toContain('## Task Creation Protocol');
     expect(await screen.findByText(/我会先给出一版项目拆解方案/)).toBeTruthy();
     expect(screen.queryByText('AI 拆解草稿')).toBeNull();
     expect(harness.api.decomposeProject).not.toHaveBeenCalled();
@@ -2129,6 +2179,21 @@ describe('App redesign v1', () => {
     expect(screen.queryByText('任务信息已更新')).toBeNull();
   });
 
+  it('opens timeline tasks inside Tasks instead of the legacy workbench', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(screen.getByRole('button', { name: '活动记录' }));
+    await user.click(await screen.findByText('董事会材料修订'));
+
+    expect(await screen.findByRole('button', { name: '任务管理' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '任务管理' }).className).toContain('active');
+    expect(screen.queryByText('工作台')).toBeNull();
+    expect(screen.queryByRole('button', { name: '执行' })).toBeNull();
+    expect(screen.getByText(/需要按最新反馈更新董事会材料/)).toBeTruthy();
+  });
+
   it('respects a confirmed simple task type even when the title looks like a project', async () => {
     const task = buildTask({
       id: 'task_confirmed_simple_type',
@@ -2219,6 +2284,75 @@ describe('App redesign v1', () => {
     expect(await within(taskWorkspace).findByText('项目结构')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '活动记录' }));
     expect(await within(taskWorkspace).findByText(/当前显示父任务的项目层活动记录/)).toBeTruthy();
+  });
+
+  it('does not ask to switch panel context back to the selected parent when a child task context is already active', async () => {
+    const project = buildTask({
+      id: 'task_project_panel_parent',
+      title: '开发小程序',
+      state: 'planned',
+      updatedAt: '2026-05-13T12:00:00.000Z',
+    });
+    const child = buildTask({
+      id: 'task_project_panel_child',
+      title: '小程序需求分析与功能设计',
+      state: 'planned',
+      nextStep: '确认需求范围',
+      updatedAt: '2026-05-13T12:01:00.000Z',
+    });
+    const unrelated = buildTask({
+      id: 'task_project_panel_unrelated',
+      title: 'Packaged jump nav check',
+      state: 'waiting_external',
+      updatedAt: '2026-04-24T12:00:00.000Z',
+    });
+    harness.tasks.unshift(child, project, unrelated);
+    harness.details[project.id] = buildTaskDetail(project);
+    harness.details[child.id] = buildTaskDetail(child);
+    harness.details[unrelated.id] = buildTaskDetail(unrelated);
+    saveTaskAttributes(project.id, {
+      type: 'project',
+      typeConfirmed: true,
+      childTaskIds: [child.id],
+    });
+    saveTaskAttributes(child.id, { type: 'simple', typeConfirmed: true, parentTaskId: project.id });
+    saveTaskAttributes(unrelated.id, { type: 'simple', typeConfirmed: true });
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(screen.getByRole('button', { name: /项目型/ }));
+    await user.click(await screen.findByRole('button', { name: '开发小程序' }));
+
+    const taskWorkspace = document.querySelector('.task-list') as HTMLElement;
+    const childList = document.querySelector('.project-child-list') as HTMLElement;
+    await user.click(await within(childList).findByRole('button', { name: /小程序需求分析与功能设计/ }));
+    await user.click(await screen.findByRole('button', { name: /开始执行/ }));
+    expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
+    expect(screen.getByTitle('离开任务上下文').textContent).toContain('小程序需求分析与功能设计');
+
+    await user.click(within(taskWorkspace).getByRole('button', { name: /返回父任务：开发小程序/ }));
+
+    await waitFor(() => {
+      expect(screen.queryByText(/开发小程序.*上下文已可用/)).toBeNull();
+    });
+    expect(screen.getByTitle('离开任务上下文').textContent).toContain('小程序需求分析与功能设计');
+
+    await user.click(screen.getByRole('button', { name: /一次性任务/ }));
+    await user.click(await screen.findByRole('button', { name: /Packaged jump nav check/ }));
+
+    await waitFor(() => {
+      const rightPanelText = document.querySelector('.right-panel')?.textContent ?? '';
+      expect(rightPanelText).toContain('Packaged jump nav check');
+      expect(rightPanelText).toContain('上下文已可用');
+    });
+    expect(screen.getByTitle('离开任务上下文').textContent).toContain('小程序需求分析与功能设计');
+    await user.click(screen.getByRole('button', { name: /切换到此任务/ }));
+    const switchedInput = screen.getByPlaceholderText(/关于「Packaged jump nav check」/) as HTMLTextAreaElement;
+    expect(switchedInput.value).toBe('');
+    expect(screen.getByTitle('离开任务上下文').textContent).toContain('Packaged jump nav check');
+    expect(switchedInput.value).not.toContain('开发小程序');
   });
 
   it('shows only current-node related files in task management', async () => {
@@ -2357,6 +2491,88 @@ describe('App redesign v1', () => {
     });
     expect(await screen.findByText(/已进入下一项任务/)).toBeTruthy();
     expect(screen.queryByText('任务已完成')).toBeNull();
+  });
+
+  it('uses project verification before completing a project parent', async () => {
+    const project = buildTask({
+      id: 'task_project_completion_check',
+      title: '产品发布项目',
+      state: 'planned',
+      updatedAt: '2026-05-13T12:00:00.000Z',
+    });
+    const doneChild = buildTask({
+      id: 'task_project_done_child',
+      title: '1 需求确认',
+      state: 'completed',
+      updatedAt: '2026-05-13T12:01:00.000Z',
+    });
+    const openChild = buildTask({
+      id: 'task_project_open_child',
+      title: '2 发布回归',
+      state: 'planned',
+      updatedAt: '2026-05-13T12:02:00.000Z',
+    });
+    harness.tasks.unshift(openChild, doneChild, project);
+    harness.details[project.id] = {
+      ...buildTaskDetail(project),
+      completionCriteria: [],
+      resumeCard: {
+        ...buildTaskDetail(project).resumeCard,
+        completionStatus: { total: 0, satisfied: 0, open: 0, summary: '项目按子任务验收' },
+      },
+    };
+    harness.details[doneChild.id] = buildTaskDetail(doneChild);
+    harness.details[openChild.id] = buildTaskDetail(openChild);
+    saveTaskAttributes(project.id, {
+      type: 'project',
+      typeConfirmed: true,
+      childTaskIds: [doneChild.id, openChild.id],
+    });
+    saveTaskAttributes(doneChild.id, { type: 'simple', typeConfirmed: true, parentTaskId: project.id });
+    saveTaskAttributes(openChild.id, { type: 'simple', typeConfirmed: true, parentTaskId: project.id });
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(screen.getByRole('button', { name: /项目型/ }));
+    await user.click(await screen.findByRole('button', { name: '产品发布项目' }));
+    expect(await screen.findByText(/项目仍有 1 个未完成子任务/)).toBeTruthy();
+    expect(screen.getByText('项目验证')).toBeTruthy();
+    expect(screen.getByText(/项目检查：仍需推进/)).toBeTruthy();
+
+    await user.click(await screen.findByRole('button', { name: '完成' }));
+
+    expect(await screen.findByText('完成确认')).toBeTruthy();
+    expect(screen.getAllByText(/项目仍有 1 个未完成子任务/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('项目验证').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/子任务 1\/2/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/项目检查：仍需推进/).length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole('button', { name: '标记等待中' }));
+
+    await waitFor(() => {
+      expect(harness.api.recordTaskCompletionCheck).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: project.id,
+        action: 'marked_waiting',
+        criteriaTotal: 2,
+        criteriaSatisfied: 1,
+        criteriaOpen: 1,
+        runVerificationTone: 'pending',
+        runVerificationLabel: '项目检查：仍需推进',
+        runVerificationDetail: expect.stringContaining('项目仍有 1 个未完成子任务'),
+      }));
+      expect(harness.api.transitionTask).toHaveBeenCalledWith({
+        id: project.id,
+        nextState: 'waiting_external',
+        waitingReason: expect.stringContaining('项目仍有 1 个未完成子任务'),
+      });
+    });
+    expect(harness.api.transitionTask).not.toHaveBeenCalledWith({
+      id: project.id,
+      nextState: 'completed',
+      waitingReason: undefined,
+    });
   });
 
   it('opens project decomposition in the right panel from task management', async () => {
@@ -2808,7 +3024,7 @@ describe('App redesign v1', () => {
               {
                 ...buildTaskDetail(sourceOnlyTask).sourceContexts[0]!,
                 title: '阶段收尾记录',
-                note: '任务记录：阶段收尾、后续拆解和执行交接。',
+                note: '任务记录：阶段收尾、质量检查和执行交接。',
                 content: '# Record: 阶段收尾\n\n## Next\n- 拆解实现任务',
               },
             ],
@@ -2977,314 +3193,4 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/达到 3 次才作为待确认提议，确认前不应用/)).toBeTruthy();
   });
 
-  it.skip('invites correction when the legacy workbench resume has thin context signals', async () => {
-    const thinTask = buildTask({ id: 'task_thin', title: '低信号任务' });
-    thinTask.summary = null;
-    thinTask.nextStep = null;
-    harness.tasks.unshift(thinTask);
-    const baseDetail = buildTaskDetail(thinTask);
-    const thinDetail: TaskDetail = {
-      ...baseDetail,
-      artifacts: [],
-      completionCriteria: [],
-      sourceContexts: [],
-      processTemplates: [],
-      availableProcessTemplates: [],
-      timeline: [],
-      resumeCard: {
-        ...baseDetail.resumeCard,
-        summary: '这个任务还没有足够信号，适合先补齐目标。',
-        nextSuggestedMove: '下一步建议：补充任务摘要和完成标准。',
-      },
-    };
-    const originalGetTaskDetail = harness.api.getTaskDetail;
-    vi.mocked(harness.api.getTaskDetail).mockImplementation(async (taskId: string) => (
-      taskId === 'task_thin' ? thinDetail : originalGetTaskDetail(taskId)
-    ));
-
-    const user = userEvent.setup();
-    render(<App />);
-
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
-    await user.dblClick(await screen.findByText('低信号任务'));
-
-    expect(await screen.findByText('信号不足，先补齐目标')).toBeTruthy();
-    expect(screen.getByText(/可通过规划下一步或补充来源纠正这段叙事/)).toBeTruthy();
-  });
-
-  it.skip('opens the legacy task workbench and keeps Runs scoped under the task instead of global navigation', async () => {
-    const user = userEvent.setup();
-    saveTaskAttributes('task_waiting', { type: 'project' });
-    const baseSource = harness.details.task_risk!.sourceContexts[0]!;
-    harness.details.task_risk!.sourceContexts = [
-      baseSource,
-      { ...baseSource, id: 'source_2', title: 'CEO 批注', updatedAt: '2026-01-02T00:00:00.000Z' },
-      { ...baseSource, id: 'source_3', title: '法务意见', updatedAt: '2026-01-03T00:00:00.000Z' },
-      { ...baseSource, id: 'source_4', title: '财务复核', updatedAt: '2026-01-04T00:00:00.000Z' },
-    ];
-    render(<App />);
-
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
-    await user.dblClick(await screen.findByText('董事会材料修订'));
-
-    expect(await screen.findByText('工作台')).toBeTruthy();
-    expect(screen.getByRole('button', { name: '执行' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '来源' })).toBeTruthy();
-    expect(await screen.findByText('完成标准')).toBeTruthy();
-    expect(screen.getByText('0/1')).toBeTruthy();
-    expect(screen.getByText('下一项：确认最终材料')).toBeTruthy();
-    expect(screen.getByLabelText('推进依据')).toBeTruthy();
-    expect(screen.getByText('默认排序 · 优先处理')).toBeTruthy();
-    expect(screen.getByText('关键来源 4')).toBeTruthy();
-    expect(screen.getAllByText('Run 1').length).toBeGreaterThan(0);
-    expect(screen.queryByRole('button', { name: /^Runs$/ })).toBeNull();
-    expect(await screen.findByText('自检查记录')).toBeTruthy();
-    expect(screen.getByText(/Step 检查当前采用轻量规则引擎/)).toBeTruthy();
-    expect(screen.getByText(/对照执行状态、结果记录和已确认工作习惯/)).toBeTruthy();
-    expect(screen.getByText(/失败自动修正上限 2 次/)).toBeTruthy();
-    expect(screen.getByText(/标明轻量规则对照或验证子 Agent 来源/)).toBeTruthy();
-    expect(screen.getAllByText('Run 1').length).toBeGreaterThan(0);
-    await user.click(await screen.findByText(/Run #1 · 已完成/));
-    expect(await screen.findByText('Step 1')).toBeTruthy();
-    expect(await screen.findByText('Run 验证通过')).toBeTruthy();
-    expect(await screen.findAllByText('验证子 Agent')).toHaveLength(2);
-    expect(await screen.findByText('整理反馈')).toBeTruthy();
-    expect(await screen.findByText('检查通过')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: /重新生成/ }));
-    expect(await screen.findByText(/最近 Run 结论：Run 验证通过/)).toBeTruthy();
-
-    await user.click(screen.getByRole('button', { name: '来源' }));
-    expect(await screen.findByText('董事会反馈邮件')).toBeTruthy();
-    expect(screen.getByText('关键来源')).toBeTruthy();
-    expect(screen.getByText('最近采集：1/4')).toBeTruthy();
-    expect(screen.getByText(/AI 上下文优先读取最多 3 条关键来源/)).toBeTruthy();
-    expect(screen.getByText(/已标记 4 条关键来源；最近更新的 3 条会优先进入 AI 上下文/)).toBeTruthy();
-    expect(screen.getByText(/设为关键或归档会影响后续任务上下文/)).toBeTruthy();
-    await user.click(screen.getAllByRole('button', { name: '取消关键' })[0]!);
-    await waitFor(() => {
-      expect(harness.api.updateSourceContext).toHaveBeenCalledWith({
-        id: 'source_1',
-        isKey: false,
-      });
-    });
-    await user.click(screen.getAllByRole('button', { name: '归档' })[0]!);
-    await waitFor(() => {
-      expect(harness.api.archiveSourceContext).toHaveBeenCalledWith('source_1');
-    });
-    expect(await screen.findByText('CEO 批注')).toBeTruthy();
-
-    await user.click(screen.getByRole('button', { name: '产物' }));
-    expect(await screen.findByText('工作文件夹产物')).toBeTruthy();
-    expect(screen.getByText('可内联编辑')).toBeTruthy();
-    expect(screen.getByText(/任务产出的持久存储/)).toBeTruthy();
-    expect(screen.getByText(/仅 Markdown \/ 纯文本内联编辑/)).toBeTruthy();
-    expect(screen.getByText(/其他格式交给系统默认应用/)).toBeTruthy();
-    expect(screen.getAllByText('AI 生成').length).toBeGreaterThan(0);
-    await user.click(await screen.findByText('mockup.png'));
-    expect(screen.queryByRole('button', { name: '编辑' })).toBeNull();
-    await user.click(screen.getByRole('button', { name: '重命名' }));
-    expect(await screen.findByText(/此类产物只在 Taskplane 内重命名/)).toBeTruthy();
-    expect(screen.queryByDisplayValue('binary image placeholder')).toBeNull();
-    await user.click(screen.getByRole('button', { name: '取消' }));
-    await user.click(await screen.findByText('report_v1.md'));
-    expect(await screen.findByText(/需要补现金流页/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '编辑' }));
-    expect(await screen.findByText(/编辑产物会作为自学习观察信号/)).toBeTruthy();
-    const artifactEditor = screen.getByDisplayValue(/需要补现金流页/);
-    await user.clear(artifactEditor);
-    await user.type(artifactEditor, '# 终稿\n\n现金流页已补齐。');
-    await user.click(screen.getByRole('button', { name: '保存' }));
-    expect(await screen.findByText(/已把本次产物改动方向写入任务记忆/)).toBeTruthy();
-    expect(await screen.findByText(/现金流页已补齐/)).toBeTruthy();
-    const sourceContextCallCountAfterContentEdit = vi.mocked(harness.api.createSourceContext).mock.calls.length;
-    expect(harness.api.createSourceContext).toHaveBeenCalledWith(expect.objectContaining({
-      taskId: 'task_risk',
-      title: '产物编辑观察',
-      kind: 'note',
-      isKey: false,
-      content: expect.stringContaining('用途：作为任务完成或复盘时的自学习输入'),
-      note: '自学习观察：用户编辑了 AI 产物。',
-    }));
-    await user.click(screen.getByRole('button', { name: '重命名' }));
-    const titleEditor = screen.getByDisplayValue('report_v1.md');
-    await user.clear(titleEditor);
-    await user.type(titleEditor, 'board_report_final.md');
-    await user.click(screen.getByRole('button', { name: '保存' }));
-    expect(await screen.findByText('board_report_final.md')).toBeTruthy();
-    expect(screen.getByText(/正文未变化，不生成自学习观察信号/)).toBeTruthy();
-    expect(harness.api.createSourceContext).toHaveBeenCalledTimes(sourceContextCallCountAfterContentEdit);
-    await user.click(screen.getByRole('button', { name: '删除' }));
-    expect(await screen.findByText('删除产物')).toBeTruthy();
-    expect(screen.getByText(/不会删除任务、来源或活动时间线/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '确认删除' }));
-    expect(screen.queryByText('board_report_final.md')).toBeNull();
-
-    await user.click(screen.getByRole('button', { name: '活动' }));
-    expect(await screen.findByText('活动记录')).toBeTruthy();
-    expect(screen.getByText('需关注')).toBeTruthy();
-    expect(screen.getByText('最近更新：1/1')).toBeTruthy();
-    expect(screen.getByText(/P1 是阻塞或失败/)).toBeTruthy();
-    expect(screen.getByText(/P2 是等待、决策和完成检查/)).toBeTruthy();
-    expect(screen.getByText(/筛选只影响时间线显示/)).toBeTruthy();
-    expect(screen.getByText(/完成检查覆盖已保留为自学习观察/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: /P2 需关注/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /P3 记录/ })).toBeTruthy();
-    expect(screen.getAllByText('P2').length).toBeGreaterThan(0);
-    expect(screen.getByText('完成检查被用户覆盖：0/1 · Run 验证通过')).toBeTruthy();
-    expect(screen.getByText(/完成检查未通过：仍有 1 条完成标准未满足/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: /P3 记录/ }));
-    expect(screen.getByText('任务信息已更新')).toBeTruthy();
-    expect(screen.queryByText('完成检查被用户覆盖：0/1 · Run 验证通过')).toBeNull();
-    await user.click(screen.getByRole('button', { name: /P2 需关注/ }));
-    expect(screen.getByText('完成检查被用户覆盖：0/1 · Run 验证通过')).toBeTruthy();
-
-    await user.click(screen.getByRole('button', { name: '执行' }));
-    await user.click(screen.getByRole('button', { name: /启动 Run/ }));
-    const runInput = await screen.findByPlaceholderText(/给 AI 的指令/);
-    expect(screen.getByPlaceholderText(/按任务上下文生成下一步/)).toBeTruthy();
-    await user.type(runInput, '请先整理 CFO 反馈再生成修改建议');
-    await user.click(screen.getByRole('button', { name: '启动 Run' }));
-
-    await waitFor(() => {
-      expect(harness.api.triggerRun).toHaveBeenCalledWith({
-        taskId: 'task_risk',
-        type: 'agent',
-        instructions: '请先整理 CFO 反馈再生成修改建议',
-      });
-    });
-
-    await user.click(screen.getByTitle('更多操作'));
-    expect(await screen.findByRole('button', { name: '延期到明天' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '改优先级' })).toBeTruthy();
-    expect(screen.getByText('移至项目')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '合同盖章跟进' }));
-    expect(loadTaskAttributes().task_risk?.parentTaskId).toBe('task_waiting');
-    expect(await screen.findByText('📁 合同盖章跟进')).toBeTruthy();
-    await user.click(screen.getByTitle('更多操作'));
-    await user.click(screen.getByRole('button', { name: '改优先级' }));
-    expect(await screen.findByText('风险等级')).toBeTruthy();
-    expect(screen.getByText(/周期和触发条件属于任务属性/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '项目型' }));
-    expect(screen.getByText(/这个子任务会升级为新的项目型任务/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '中' }));
-    await user.click(screen.getByRole('button', { name: '保存' }));
-    await waitFor(() => {
-      expect(harness.api.updateTask).toHaveBeenCalledWith(expect.objectContaining({
-        id: 'task_risk',
-        riskLevel: 'medium',
-      }));
-    });
-    await user.click(screen.getByTitle('更多操作'));
-    await user.click(screen.getByRole('button', { name: '延期到明天' }));
-    await waitFor(() => {
-      expect(harness.api.transitionTask).toHaveBeenCalledWith({
-        id: 'task_risk',
-        nextState: 'waiting_external',
-        waitingReason: '延后处理：明天',
-      });
-    });
-    await user.click(screen.getByTitle('更多操作'));
-    await user.click(await screen.findByRole('button', { name: '提取流程模板' }));
-    expect(await screen.findByText('提取流程模板')).toBeTruthy();
-    expect(screen.getByText(/只有点击保存才会写入模板/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '+ 新增步骤' }));
-    const sopInputs = screen.getAllByRole('textbox');
-    await user.type(sopInputs[sopInputs.length - 1]!, '复盘本次执行并更新默认流程');
-    await user.click(screen.getByRole('button', { name: '保存为模板' }));
-
-    await waitFor(() => {
-      expect(harness.api.createProcessTemplate).toHaveBeenCalledWith(expect.objectContaining({
-        title: '「董事会材料修订」流程模板',
-        kind: 'sop',
-        tags: ['董事会材料修订'],
-        content: expect.stringContaining('复盘本次执行并更新默认流程'),
-      }));
-      expect(harness.api.createProcessTemplate).toHaveBeenCalledWith(expect.objectContaining({
-        content: expect.stringContaining('收集并确认关键来源：财务复核、法务意见'),
-      }));
-      expect(harness.api.createProcessTemplate).toHaveBeenCalledWith(expect.objectContaining({
-        content: expect.not.stringContaining('董事会反馈邮件'),
-      }));
-      expect(harness.api.applyProcessTemplate).toHaveBeenCalledWith({
-        taskId: 'task_risk',
-        templateId: 'process_template_sop',
-        note: '从任务工作台提取并保存的 SOP 模板',
-      });
-    });
-
-    await user.click(screen.getByRole('button', { name: /Work Habits/ }));
-    expect(await screen.findByText('「董事会材料修订」流程模板')).toBeTruthy();
-    expect(screen.getByText('SOP 提取')).toBeTruthy();
-
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
-    await user.click(await screen.findByRole('button', { name: '+ 新建任务' }));
-    await user.type(await screen.findByPlaceholderText(/任务标题/), '董事会材料修订复盘');
-    expect(await screen.findByText('可参考流程模板')).toBeTruthy();
-    expect(screen.getAllByText('「董事会材料修订」流程模板').length).toBeGreaterThan(0);
-    expect(screen.getByText(/不会自动套用/)).toBeTruthy();
-  });
-
-  it.skip('keeps Step checks visible while hiding Run checks when self-check is disabled in the legacy workbench', async () => {
-    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
-      featureFlags: {
-        enableScheduler: false,
-        enableProviderNativeToolCalls: true,
-        enableSandboxCodingAgent: false,
-        enableSandboxPatchPromotionApply: false,
-        enableSelfCheck: false,
-        enableSelfLearn: true,
-        selfCheckRetryLimit: 2,
-      },
-    }));
-    const user = userEvent.setup();
-    render(<App />);
-
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
-    await user.dblClick(await screen.findByText('董事会材料修订'));
-
-    expect(await screen.findByText('Run 检查已关闭')).toBeTruthy();
-    expect(screen.getByText(/Step 检查当前采用轻量规则引擎/)).toBeTruthy();
-    await user.click(await screen.findByText(/Run #1 · 已完成/));
-    expect(await screen.findByText('Step 1')).toBeTruthy();
-    expect(await screen.findByText('检查通过')).toBeTruthy();
-    expect(screen.getByText(/Step 级轻量对照仍会保留/)).toBeTruthy();
-    expect(screen.queryByText('Run 验证通过')).toBeNull();
-  });
-
-  it.skip('saves SOP templates without creating work habits when self-learn is disabled in the legacy workbench', async () => {
-    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
-      featureFlags: {
-        enableScheduler: false,
-        enableProviderNativeToolCalls: true,
-        enableSandboxCodingAgent: false,
-        enableSandboxPatchPromotionApply: false,
-        enableSelfCheck: true,
-        enableSelfLearn: false,
-        selfCheckRetryLimit: 2,
-      },
-    }));
-    const user = userEvent.setup();
-    render(<App />);
-
-    await user.click(screen.getByRole('button', { name: /Tasks/ }));
-    await user.dblClick(await screen.findByText('董事会材料修订'));
-    await user.click(screen.getByTitle('更多操作'));
-    await user.click(await screen.findByRole('button', { name: '提取流程模板' }));
-
-    expect(await screen.findByText(/自学习已关闭，不会生成新的工作习惯记录/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '保存为模板' }));
-
-    await waitFor(() => {
-      expect(harness.api.createProcessTemplate).toHaveBeenCalledWith(expect.objectContaining({
-        title: '「董事会材料修订」流程模板',
-        kind: 'sop',
-      }));
-      expect(harness.api.applyProcessTemplate).toHaveBeenCalledWith({
-        taskId: 'task_risk',
-        templateId: 'process_template_sop',
-        note: '从任务工作台提取并保存的 SOP 模板',
-      });
-    });
-    expect(harness.api.recordSopTemplateHabit).not.toHaveBeenCalled();
-  });
 });

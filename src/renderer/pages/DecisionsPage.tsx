@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { DecisionRecord } from '@shared/types/decision';
 import type { TaskListItemRecord } from '@shared/types/task';
+import { guardDecisionAction, verifyDecisionActionCompleted } from '../lib/runtimeActionGuards';
 
 type DecisionCategoryKey = 'agent' | 'risk' | 'completion' | 'direction';
 type DecisionFilterKey = 'all' | DecisionCategoryKey;
@@ -260,8 +261,21 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
   }
 
   function decide(id: string, action: 'approve' | 'defer' | 'cancel' = 'approve') {
+    const decision = decisions.find((item) => item.id === id);
+    const guard = guardDecisionAction({
+      action,
+      taskId: decision?.taskId ?? null,
+    });
+    if (!guard.allowed) return;
     setDecisions((prev) => prev.filter((d) => d.id !== id));
-    window.api?.actOnDecision({ id, action }).catch(() => {});
+    window.api?.actOnDecision({ id, action })
+      .then((updated) => {
+        verifyDecisionActionCompleted({
+          title: updated.title,
+          action,
+        });
+      })
+      .catch(() => {});
   }
 
   const normalizedQuery = searchQuery.trim().toLowerCase();

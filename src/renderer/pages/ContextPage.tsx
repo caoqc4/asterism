@@ -38,7 +38,7 @@ function sourceLabel(source: WorkHabitSource): string {
 function learningRouteLabel(source: WorkHabitSource): string {
   if (source === 'silent') return '轻微偏好由系统静默确认，后续可随时停用或删除。';
   if (source === 'proposal') return '显著流程、步骤顺序或工具选择必须由你确认后才应用。';
-  if (source === 'sop') return '完整流程模板只来自你在工作台主动保存的 SOP。';
+  if (source === 'sop') return '完整流程模板只来自任务管理页或 AI 面板中确认保存的 SOP。';
   return '你手动创建的规则默认已确认，可随时编辑、停用或删除。';
 }
 
@@ -262,7 +262,7 @@ export function ContextPage({ onOpenConnections }: { onOpenConnections?: () => v
       <div className="context-page-head">
         <h2 className="context-page-title">Context</h2>
         <p className="context-page-subtitle">AI 的记忆层 — 任务信息与工作习惯在会话间持续保留</p>
-        <p className="context-page-boundary">这里不是文件库；文件和产物在任务工作台管理，AI 的疑问会在右侧对话里提出。</p>
+        <p className="context-page-boundary">这里不是文件库；文件和产物在任务管理页管理，AI 的疑问会在右侧对话里提出。</p>
         <div className="ctx-uncertainty-boundary">
           <div>
             <strong>外部信号不确定</strong>

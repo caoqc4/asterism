@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { evaluateRunSelfCheck, type RunSelfCheckResult } from '@shared/run-self-check';
+import type { TaskCloseoutEvaluation } from '@shared/task-closeout-evaluator';
+import { summarizeDecisionEffects } from '@shared/decision-effect-evaluator';
+import {
+  evaluateRuntimeVerification,
+  type RuntimeProjectVerification,
+  type RuntimeVerificationResult,
+} from '@shared/runtime-verification';
 import type { RunDetailRecord, RunRecord, RunVerificationRecord } from '@shared/types/run';
-import type { TaskDetail } from '@shared/types/task';
+import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import { recordCompletionOverrideLearningSignal } from '../lib/workHabits';
+import { getTaskAttributes } from '../lib/taskAttributes';
+import { orderedChildRecordsForTask } from '../lib/taskHierarchyAdapter';
 
 interface TaskCompletionCheckModalProps {
   taskId: string;
@@ -12,28 +20,58 @@ interface TaskCompletionCheckModalProps {
   onMarkWaiting: (reason: string) => void | Promise<void>;
 }
 
-function verificationToCheck(record: RunVerificationRecord): RunSelfCheckResult {
+function verificationToCheck(record: RunVerificationRecord): RuntimeVerificationResult {
   return {
+    mode: 'run',
     tone: record.tone,
     label: record.label,
     detail: record.detail,
     source: record.source,
+    canProceed: record.tone === 'pass' || record.tone === 'warn',
+    requiresUserConfirmation: record.tone === 'warn' || record.tone === 'fail',
+    shouldPersistTaskRecord: record.tone === 'fail',
+    suggestedNextAction: record.tone === 'pass'
+      ? 'continue'
+      : record.tone === 'pending'
+        ? 'inspect'
+        : 'confirm',
   };
 }
 
-function buildRunCheck(run: RunRecord, detail: RunDetailRecord | null): RunSelfCheckResult {
+function buildRunCheck(run: RunRecord, detail: RunDetailRecord | null): RuntimeVerificationResult {
   const persisted = detail?.verifications?.find((item) => (
     item.targetType === 'run' && item.targetId === run.id
   ));
-  return persisted ? verificationToCheck(persisted) : evaluateRunSelfCheck(run, detail);
+  return persisted ? verificationToCheck(persisted) : evaluateRuntimeVerification({
+    mode: 'run',
+    run,
+    detail,
+  });
 }
 
-function buildWaitingReason(detail: TaskDetail | null, runCheck: RunSelfCheckResult | null): string {
+function buildWaitingReason(detail: TaskDetail | null, runCheck: RuntimeVerificationResult | null): string {
   const openCount = detail?.completionCriteria.filter((item) => item.status === 'open').length ?? 0;
   if (openCount > 0) return `完成检查未通过：仍有 ${openCount} 条完成标准未满足`;
   if (runCheck?.tone === 'fail') return `完成检查未通过：最近 Run 验证失败：${runCheck.detail}`;
   if (runCheck?.tone === 'warn') return `完成检查提醒：最近 Run 需要补验证：${runCheck.detail}`;
   return '完成检查需要补充完成标准';
+}
+
+function isProjectTask(taskId: string, detail: TaskDetail | null): boolean {
+  return detail?.taskType === 'project' || getTaskAttributes(taskId)?.type === 'project';
+}
+
+function projectTrace(project: RuntimeProjectVerification): string[] {
+  return [
+    `子任务 ${project.childCompleted}/${project.childTotal}`,
+    project.childOpen > 0 ? `未完成 ${project.childOpen} 个` : null,
+    project.blockerCount > 0 ? `阻塞/依赖 ${project.blockerCount} 个` : null,
+    project.waitingCount > 0 ? `等待 ${project.waitingCount} 个` : null,
+    project.criteriaOpen > 0 ? `父任务标准未满足 ${project.criteriaOpen} 条` : null,
+    project.pendingDecisionCount > 0 ? `待决策 ${project.pendingDecisionCount}` : null,
+    project.artifactCount !== null ? `产出 ${project.artifactCount}` : null,
+    project.keySourceCount !== null ? `关键来源 ${project.keySourceCount}` : null,
+  ].filter((item): item is string => Boolean(item));
 }
 
 export function TaskCompletionCheckModal({
@@ -44,7 +82,9 @@ export function TaskCompletionCheckModal({
   onMarkWaiting,
 }: TaskCompletionCheckModalProps) {
   const [detail, setDetail] = useState<TaskDetail | null>(null);
-  const [recentRunCheck, setRecentRunCheck] = useState<RunSelfCheckResult | null>(null);
+  const [recentRunCheck, setRecentRunCheck] = useState<RuntimeVerificationResult | null>(null);
+  const [closeoutEvaluation, setCloseoutEvaluation] = useState<TaskCloseoutEvaluation | null>(null);
+  const [projectVerification, setProjectVerification] = useState<RuntimeVerificationResult | null>(null);
   const [selfLearnEnabled, setSelfLearnEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -70,6 +110,39 @@ export function TaskCompletionCheckModal({
 
         setSelfLearnEnabled(status?.featureFlags.enableSelfLearn ?? true);
         setDetail(taskDetail ?? null);
+        if (taskDetail) {
+          const tasks = await window.api?.listTasks?.().catch(() => []) ?? [];
+          const decisions = await window.api?.listDecisions?.().catch(() => []) ?? [];
+          if (!cancelled) {
+            const taskListRecord = tasks.find((task) => task.id === taskId) ?? taskDetail;
+            const childTasks = orderedChildRecordsForTask(taskListRecord, tasks);
+            if (isProjectTask(taskId, taskDetail)) {
+              const decisionEffect = summarizeDecisionEffects(decisions.filter((decision) => decision.taskId === taskId));
+              setProjectVerification(evaluateRuntimeVerification({
+                mode: 'project',
+                task: taskDetail,
+                childTasks: childTasks as TaskListItemRecord[],
+                artifactCount: taskDetail.artifacts.length,
+                keySourceCount: taskDetail.sourceContexts.filter((source) => source.isKey && source.status !== 'archived').length,
+                pendingDecisionCount: decisionEffect.pendingCount,
+                decisionEffect,
+              }));
+              setCloseoutEvaluation(null);
+            } else {
+              setCloseoutEvaluation(evaluateRuntimeVerification({
+                mode: 'task_closeout',
+                intent: 'task_completion',
+                task: taskDetail,
+                childTaskIds: getTaskAttributes(taskId)?.childTaskIds ?? [],
+                childTasks,
+              }).taskCloseout ?? null);
+              setProjectVerification(null);
+            }
+          }
+        } else {
+          setCloseoutEvaluation(null);
+          setProjectVerification(null);
+        }
 
         const recentRun = (runs ?? [])
           .filter((run) => run.taskId === taskId)
@@ -92,20 +165,36 @@ export function TaskCompletionCheckModal({
   const criteria = detail?.completionCriteria ?? [];
   const satisfied = criteria.filter((item) => item.status === 'satisfied');
   const open = criteria.filter((item) => item.status === 'open');
+  const projectResult = projectVerification?.project ?? null;
   const hasRunConcern = recentRunCheck?.tone === 'fail' || recentRunCheck?.tone === 'warn';
-  const hasConcern = open.length > 0 || criteria.length === 0 || hasRunConcern;
+  const hasEvaluationConcern = Boolean(closeoutEvaluation && closeoutEvaluation.outcome !== 'ready_to_complete');
+  const hasProjectConcern = Boolean(projectVerification && !projectVerification.canProceed);
+  const hasCriteriaConcern = !projectVerification && (open.length > 0 || criteria.length === 0);
+  const hasConcern = hasCriteriaConcern || hasRunConcern || hasEvaluationConcern || hasProjectConcern;
   const traceParts = [
     hasConcern ? '覆盖完成' : '检查通过',
-    `完成标准 ${satisfied.length}/${criteria.length}`,
-    open.length > 0 ? `未满足 ${open.length} 条` : null,
+    projectResult
+      ? projectTrace(projectResult).join(' · ')
+      : closeoutEvaluation
+      ? `完成标准 ${closeoutEvaluation.criteriaSatisfied}/${closeoutEvaluation.criteriaTotal}`
+      : `完成标准 ${satisfied.length}/${criteria.length}`,
+    projectResult
+      ? null
+      : closeoutEvaluation?.criteriaOpen
+      ? `未满足 ${closeoutEvaluation.criteriaOpen} 条`
+      : open.length > 0
+        ? `未满足 ${open.length} 条`
+        : null,
     recentRunCheck ? `最近 Run：${recentRunCheck.label}` : '暂无近期 Run 验证',
+    projectVerification ? projectVerification.label : null,
+    closeoutEvaluation ? closeoutEvaluation.runVerificationLabel : null,
   ].filter((part): part is string => Boolean(part));
 
   async function submit(action: 'waiting' | 'complete') {
     if (submitting) return;
     setSubmitting(true);
     try {
-      const reason = buildWaitingReason(detail, recentRunCheck);
+      const reason = projectVerification?.detail ?? closeoutEvaluation?.reason ?? buildWaitingReason(detail, recentRunCheck);
       await window.api?.recordTaskCompletionCheck({
         taskId,
         action: action === 'waiting'
@@ -113,13 +202,13 @@ export function TaskCompletionCheckModal({
           : hasConcern
             ? 'override_completed'
             : 'passed',
-        criteriaTotal: criteria.length,
-        criteriaSatisfied: satisfied.length,
-        criteriaOpen: open.length,
+        criteriaTotal: projectResult?.childTotal ?? closeoutEvaluation?.criteriaTotal ?? criteria.length,
+        criteriaSatisfied: projectResult?.childCompleted ?? closeoutEvaluation?.criteriaSatisfied ?? satisfied.length,
+        criteriaOpen: projectResult?.childOpen ?? closeoutEvaluation?.criteriaOpen ?? open.length,
         reason: hasConcern ? reason : null,
-        runVerificationTone: recentRunCheck?.tone ?? null,
-        runVerificationLabel: recentRunCheck?.label ?? null,
-        runVerificationDetail: recentRunCheck?.detail ?? null,
+        runVerificationTone: recentRunCheck?.tone ?? projectVerification?.tone ?? closeoutEvaluation?.runVerificationTone ?? null,
+        runVerificationLabel: recentRunCheck?.label ?? projectVerification?.label ?? closeoutEvaluation?.runVerificationLabel ?? null,
+        runVerificationDetail: recentRunCheck?.detail ?? projectVerification?.detail ?? closeoutEvaluation?.runVerificationDetail ?? null,
         source: 'task_completion_modal',
       });
 
@@ -131,9 +220,9 @@ export function TaskCompletionCheckModal({
             taskId,
             taskTitle: detail?.title ?? taskTitle,
             reason,
-            runVerificationTone: recentRunCheck?.tone ?? null,
-            runVerificationLabel: recentRunCheck?.label ?? null,
-            runVerificationDetail: recentRunCheck?.detail ?? null,
+            runVerificationTone: recentRunCheck?.tone ?? projectVerification?.tone ?? null,
+            runVerificationLabel: recentRunCheck?.label ?? projectVerification?.label ?? null,
+            runVerificationDetail: recentRunCheck?.detail ?? projectVerification?.detail ?? null,
           };
           if (window.api?.recordCompletionOverrideLearningSignal) {
             await window.api.recordCompletionOverrideLearningSignal(learningSignal);
@@ -166,7 +255,11 @@ export function TaskCompletionCheckModal({
           ) : (
             <>
               <div className={`completion-check-summary${hasConcern ? ' warning' : ''}`}>
-                {criteria.length === 0
+                {projectVerification
+                  ? projectVerification.detail
+                  : closeoutEvaluation && closeoutEvaluation.outcome !== 'ready_to_complete'
+                  ? closeoutEvaluation.reason
+                  : criteria.length === 0
                   ? '尚未定义完成标准。建议先补充完成标准，或由你确认这次可以直接完成。'
                   : hasConcern
                     ? `已满足 ${satisfied.length}/${criteria.length} 条完成标准，仍有 ${open.length} 条未满足。`
@@ -186,6 +279,16 @@ export function TaskCompletionCheckModal({
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {projectResult && (
+                <div className="completion-run-evidence">
+                  <span className="completion-check-label">项目验证</span>
+                  <div className={`completion-run-evidence-line ${projectVerification?.tone ?? 'pending'}`}>
+                    <strong>{projectVerification?.label}</strong>
+                    <span>{projectTrace(projectResult).join(' · ')}</span>
+                  </div>
                 </div>
               )}
 

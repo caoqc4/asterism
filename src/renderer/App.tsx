@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect, type ReactNode } from 'react';
 import { getRouteFromHash, setRoute, type AppRoute } from './lib/router';
 import { BriefPage } from './pages/BriefPage';
 import { TasksPage, type TaskWorkspaceSelectionContext } from './pages/TasksPage';
-import { WorkbenchPage } from './pages/WorkbenchPage';
 import { DecisionsPage } from './pages/DecisionsPage';
 import { ConnectionsPage } from './pages/ConnectionsPage';
 import { WorkHabitsPage } from './pages/WorkHabitsPage';
@@ -11,6 +10,7 @@ import { ModelPage } from './pages/ModelPage';
 import { McpPage } from './pages/McpPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { RightPanel } from './components/RightPanel';
+import { getTaskAttributes } from './lib/taskAttributes';
 
 const ROUTE_LABELS: Record<AppRoute, string> = {
   brief: 'Brief',
@@ -39,32 +39,19 @@ export function App() {
     taskTitle: null,
     selectedFile: null,
   });
-  const [workbenchTaskId, setWorkbenchTaskId] = useState<string | null>(null);
-  const [workbenchOrigin, setWorkbenchOrigin] = useState<AppRoute>('tasks');
   const [taskFocusId, setTaskFocusId] = useState<string | null>(null);
   const [aiConfigured, setAiConfigured] = useState<boolean | null>(null);
 
   const navigate = useCallback((r: AppRoute) => {
     setRouteState(r);
     setRoute(r);
-    setWorkbenchTaskId(null);
     setTaskFocusId(null);
     if (r !== 'tasks') {
       setWorkspaceSelection({ taskId: null, taskTitle: null, selectedFile: null });
     }
   }, []);
 
-  const openWorkbench = useCallback((taskId: string) => {
-    setWorkbenchTaskId(taskId);
-    setWorkbenchOrigin(route);
-  }, [route]);
-
-  const closeWorkbench = useCallback(() => {
-    setWorkbenchTaskId(null);
-  }, []);
-
   const openTaskInTasks = useCallback((taskId: string) => {
-    setWorkbenchTaskId(null);
     setRouteState('tasks');
     setRoute('tasks');
     setTaskFocusId(taskId);
@@ -73,7 +60,7 @@ export function App() {
   const openPanelForTask = useCallback((taskId: string, draftPrompt?: string, taskTitle?: string, autoSendDraftPrompt = false, forceTaskBinding = false) => {
     setPanelTaskId(taskId);
     setPanelTaskTitle(taskTitle ?? null);
-    setPanelDraftPrompt(draftPrompt ?? null);
+    setPanelDraftPrompt(autoSendDraftPrompt ? draftPrompt ?? null : null);
     setPanelAutoSendDraftPrompt(autoSendDraftPrompt);
     setPanelSelectedFile(workspaceSelection.taskId === taskId ? workspaceSelection.selectedFile : null);
     if (forceTaskBinding) setPanelSessionKey((current) => current + 1);
@@ -112,22 +99,28 @@ export function App() {
 
   useEffect(() => {
     if (route !== 'tasks' || !panelOpen || panelSuspended) return;
-    setPanelSelectedFile(workspaceSelection.selectedFile);
+    setPanelSelectedFile(
+      !panelTaskId || workspaceSelection.taskId === panelTaskId
+        ? workspaceSelection.selectedFile
+        : null,
+    );
     if (!workspaceSelection.taskId || workspaceSelection.taskId === panelTaskId) return;
+    const panelTaskParentId = panelTaskId ? getTaskAttributes(panelTaskId)?.parentTaskId ?? null : null;
+    if (panelTaskParentId && workspaceSelection.taskId === panelTaskParentId) return;
     setPanelTaskId(workspaceSelection.taskId);
     setPanelTaskTitle(workspaceSelection.taskTitle);
+    setPanelDraftPrompt(null);
+    setPanelAutoSendDraftPrompt(false);
   }, [panelOpen, panelSuspended, panelTaskId, route, workspaceSelection]);
 
   return (
     <div className={`app${panelOpen ? ' panel-open' : ''}`}>
-      <Sidebar route={workbenchTaskId ? workbenchOrigin : route} onNavigate={navigate} />
+      <Sidebar route={route} onNavigate={navigate} />
       <div className="main">
         <Topbar
-          route={workbenchTaskId ? workbenchOrigin : route}
-          workbenchTaskId={workbenchTaskId}
+          route={route}
           panelOpen={panelOpen}
           panelSuspended={panelSuspended}
-          onBack={closeWorkbench}
           onTogglePanel={() => {
             if (panelOpen) {
               setPanelOpen(false);
@@ -143,44 +136,33 @@ export function App() {
           {aiConfigured === false && (
             <SetupBanner onGoToModel={() => navigate('model')} />
           )}
-          {workbenchTaskId ? (
-            <WorkbenchPage
-              taskId={workbenchTaskId}
-              onBack={closeWorkbench}
-              onOpenPanel={(draftPrompt, taskTitle) => openPanelForTask(workbenchTaskId, draftPrompt, taskTitle)}
+          {route === 'brief' && (
+            <BriefPage
+              onOpenTask={openTaskInTasks}
+              onOpenDecision={() => navigate('decisions')}
+              onOpenPanel={openPanelForTask}
             />
-          ) : (
-            <>
-              {route === 'brief' && (
-                <BriefPage
-                  onOpenTask={openTaskInTasks}
-                  onOpenDecision={() => navigate('decisions')}
-                  onOpenPanel={openPanelForTask}
-                />
-              )}
-              {route === 'tasks' && (
-                <TasksPage
-                  onOpenPanel={openPanelForTask}
-                  onOpenWorkbench={openWorkbench}
-                  onOpenDecision={() => navigate('decisions')}
-                  onSelectionContextChange={setWorkspaceSelection}
-                  focusTaskId={taskFocusId}
-                />
-              )}
-              {route === 'decisions' && (
-                <DecisionsPage
-                  onOpenPanel={openPanelForTask}
-                  onOpenTask={openTaskInTasks}
-                />
-              )}
-              {route === 'connections' && <ConnectionsPage />}
-              {route === 'work-habits' && <WorkHabitsPage />}
-              {route === 'skills' && <SkillsPage />}
-              {route === 'mcp' && <McpPage />}
-              {route === 'model' && <ModelPage />}
-              {route === 'settings' && <SettingsPage />}
-            </>
           )}
+          {route === 'tasks' && (
+            <TasksPage
+              onOpenPanel={openPanelForTask}
+              onOpenDecision={() => navigate('decisions')}
+              onSelectionContextChange={setWorkspaceSelection}
+              focusTaskId={taskFocusId}
+            />
+          )}
+          {route === 'decisions' && (
+            <DecisionsPage
+              onOpenPanel={openPanelForTask}
+              onOpenTask={openTaskInTasks}
+            />
+          )}
+          {route === 'connections' && <ConnectionsPage />}
+          {route === 'work-habits' && <WorkHabitsPage />}
+          {route === 'skills' && <SkillsPage />}
+          {route === 'mcp' && <McpPage />}
+          {route === 'model' && <ModelPage />}
+          {route === 'settings' && <SettingsPage />}
         </div>
       </div>
       {(panelOpen || panelSuspended) && (
@@ -193,6 +175,7 @@ export function App() {
           selectedFile={panelSelectedFile}
           hidden={!panelOpen}
           onTaskCaptured={(taskId) => setPanelTaskId(taskId)}
+          onOpenTask={openTaskInTasks}
           onClose={(hasSession) => {
             setPanelOpen(false);
             setPanelSuspended(hasSession);
@@ -302,30 +285,17 @@ function NavItem({ icon, label, active, badge, hot, onClick }: NavItemProps) {
 
 interface TopbarProps {
   route: AppRoute;
-  workbenchTaskId: string | null;
   panelOpen: boolean;
   panelSuspended: boolean;
-  onBack: () => void;
   onTogglePanel: () => void;
   onOpenGlobalPanel: () => void;
 }
 
-function Topbar({ route, workbenchTaskId, panelOpen, panelSuspended, onBack, onTogglePanel, onOpenGlobalPanel }: TopbarProps) {
+function Topbar({ route, panelOpen, panelSuspended, onTogglePanel, onOpenGlobalPanel }: TopbarProps) {
   return (
     <div className="topbar">
       <div className="topbar-left">
-        {workbenchTaskId ? (
-          <>
-            <button className="topbar-back" onClick={onBack}>
-              <IconChevronLeft />
-              <span className="topbar-back-label">{ROUTE_LABELS[route]}</span>
-            </button>
-            <span className="sep">/</span>
-            <span className="current">工作台</span>
-          </>
-        ) : (
-          <span className="current">{ROUTE_LABELS[route]}</span>
-        )}
+        <span className="current">{ROUTE_LABELS[route]}</span>
       </div>
 
       <div className="topbar-right">
@@ -455,14 +425,6 @@ function IconPanel() {
       <circle cx="5" cy="5" r=".55" fill="currentColor" stroke="none" />
       <circle cx="7" cy="5" r=".55" fill="currentColor" stroke="none" />
       <circle cx="9" cy="5" r=".55" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-function IconChevronLeft() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="9,2 5,7 9,12" />
     </svg>
   );
 }

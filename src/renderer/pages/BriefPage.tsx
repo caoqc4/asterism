@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { HomeBriefData } from '@shared/types/brief';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
 import { loadTaskAttributes } from '../lib/taskAttributes';
+import { guardTaskStateTransition } from '../lib/runtimeActionGuards';
 import {
   recordBriefRecommendationOrderAdjustment,
   recordBriefRecommendationSnapshot,
@@ -280,6 +281,12 @@ export function BriefPage({ onOpenTask, onOpenDecision, onOpenPanel }: BriefPage
 
   async function transitionFocusTask(task: FocusTask, nextState: 'completed' | 'waiting_external', waitingReason?: string) {
     if (!window.api) return;
+    const guard = guardTaskStateTransition({
+      taskId: task.id,
+      nextState,
+      confirmationSatisfied: nextState === 'completed',
+    });
+    if (!guard.allowed) return;
     if (task.state === 'captured' || task.state === 'triaged') {
       await window.api.transitionTask({ id: task.id, nextState: 'planned' });
     }

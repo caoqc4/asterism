@@ -1,15 +1,51 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ChatMessage } from '@shared/types/ipc';
+import type { RunStepRecord } from '@shared/types/run';
 import { selectApplicableWorkHabits as selectApplicableWorkHabitsFromList } from '@shared/work-habit-rules';
 import { CONTEXT_COMPRESSION_THRESHOLD } from '@shared/settings-defaults';
 import { PANEL_CAPTURE_SUMMARY_PREFIX } from '@shared/panel-capture';
+import { evaluateRuntimeAction } from '@shared/runtime-action-evaluator';
+import {
+  evaluateRuntimeIntake,
+  isRuntimeFollowUpTaskProposal,
+  type RuntimeIntakeEvaluation,
+} from '@shared/runtime-intake-evaluator';
+import {
+  buildRuntimeContextAssemblyPolicy,
+  buildRuntimeContextManifest,
+  buildRuntimeContextSnapshot,
+} from '@shared/runtime-context';
+import { buildRuntimeResumePlan, evaluateRuntimeHandoff } from '@shared/runtime-handoff';
+import type { PanelRuntimeTimelineEventType } from '@shared/runtime-panel-events';
+import {
+  evaluateTaskRecordWorthiness,
+  type TaskRecordWorthinessReason,
+} from '@shared/task-record-worthiness';
+import { evaluateTaskMdUpdateNeed } from '@shared/task-md-update-need';
+import { evaluateRuntimeVerification } from '@shared/runtime-verification';
+import {
+  classifyCreateTaskFileSurface,
+  normalizeCreateTaskFileInput,
+  type RuntimeSurfaceKind,
+} from '@shared/runtime-surface-routing';
 import {
   selectApplicableWorkHabits,
   getPersistedWorkHabitStorageSnapshot,
   recordWorkHabitApplications,
   summarizeWorkHabitsForPrompt,
 } from '../lib/workHabits';
-import { buildTaskPlanningPrompt, getTaskAttributes, type TaskExecutionType } from '../lib/taskAttributes';
+import {
+  buildTaskPlanningPrompt,
+  getTaskAttributes,
+  type TaskExecutionType,
+} from '../lib/taskAttributes';
+import {
+  guardDurablePanelAction,
+  guardTaskCapture,
+  guardTaskStateTransition,
+  verifyDurablePanelActionCompleted,
+} from '../lib/runtimeActionGuards';
+import { orderedChildRecordsForTask } from '../lib/taskHierarchyAdapter';
 
 type MessageRole = 'user' | 'assistant';
 type ContextStrategy = 'auto' | 'manual' | 'reminder';
@@ -34,6 +70,8 @@ interface TaskFileWriteProposal {
   path: string;
   summary: string;
   content: string;
+  surface: RuntimeSurfaceKind;
+  surfaceLabel: string;
 }
 
 function taskTitle(taskId: string | null, cache: Record<string, string>): string | null {
@@ -56,6 +94,27 @@ function now() {
 
 let msgCounter = 1;
 function nextId() { return `m${msgCounter++}`; }
+
+function buildPanelRuntimeStep(params: {
+  title: string;
+  output?: string | null;
+  error?: string | null;
+}): RunStepRecord {
+  const timestamp = new Date().toISOString();
+  return {
+    id: `panel_step_${timestamp}`,
+    runId: 'panel_lightweight',
+    index: 1,
+    kind: 'final',
+    status: params.error ? 'failed' : 'completed',
+    title: params.title,
+    input: null,
+    output: params.output ?? null,
+    error: params.error ?? null,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+}
 
 const TASK_TYPE_HABIT_LABELS: Record<TaskExecutionType, string> = {
   simple:    '一次性',
@@ -210,7 +269,8 @@ async function preserveSessionRefreshMemory(params: {
     '- 用途：刷新会话前的保全式学习提取，只保存精选信号，不保存完整聊天全文。',
   ].join('\n');
 
-  const sourceWritten = window.api?.createSourceContext
+  const canWriteSource = guardDurablePanelAction({ taskId: params.taskId, confirmed: true }).allowed;
+  const sourceWritten = canWriteSource && window.api?.createSourceContext
     ? await window.api.createSourceContext({
       taskId: params.taskId,
       title: '会话刷新前保全',
@@ -218,13 +278,28 @@ async function preserveSessionRefreshMemory(params: {
       isKey: false,
       content,
       note: '自学习观察：会话刷新前保全关键决策、偏好变化和未解决问题。',
+      sourceRole: 'digest',
     }).then(() => true).catch(() => false)
     : false;
+  if (sourceWritten) {
+    verifyDurablePanelActionCompleted({
+      title: '保存会话刷新来源',
+      output: '已保存会话刷新前保全。',
+    });
+  }
   const fileWritten = await writeTaskRecordFile({
     taskId: params.taskId,
     title: 'context-refresh-handoff',
     content,
+    reasonHint: 'context_clear_archive',
   });
+  if (sourceWritten || fileWritten) {
+    await recordPanelTimelineEvent(params.taskId, 'panel.context_refreshed', {
+      sourceWritten,
+      fileWritten,
+      userMessageCount: userMessages.length,
+    });
+  }
   return sourceWritten || fileWritten;
 }
 
@@ -246,7 +321,7 @@ async function preservePhaseCloseoutRecord(params: {
   taskId: string;
   taskTitle: string;
   messages: Message[];
-}): Promise<void> {
+}): Promise<{ recordPath: string | null }> {
   const meaningfulMessages = params.messages
     .filter((message) => message.role === 'user' || message.role === 'assistant')
     .map((message) => ({
@@ -254,7 +329,7 @@ async function preservePhaseCloseoutRecord(params: {
       text: truncateMemoryLine(message.text, 120),
     }))
     .filter((message) => message.text);
-  if (meaningfulMessages.length === 0) return;
+  if (meaningfulMessages.length === 0) return { recordPath: null };
 
   const userMessages = meaningfulMessages.filter((message) => message.role === 'user');
   const assistantMessages = meaningfulMessages.filter((message) => message.role === 'assistant');
@@ -281,25 +356,44 @@ async function preservePhaseCloseoutRecord(params: {
     open.length ? open.join('\n') : '- 暂无明确未解决问题。',
     '',
     '## Next',
-    next.length ? next.join('\n') : '- 可继续拆解下一步执行任务、实现任务和验收任务。',
+    next.length ? next.join('\n') : '- 先执行阶段质量检查，再交接到已存在的下一项子任务；如无子任务，再回到规划入口补齐。',
     '',
     '## Links',
     '- 来自右侧任务讨论面板的阶段收尾动作。',
   ].join('\n');
 
-  await window.api?.createSourceContext?.({
-    taskId: params.taskId,
-    title: '阶段收尾记录',
-    kind: 'note',
-    isKey: false,
-    content,
-    note: '任务记录：阶段收尾、后续拆解和执行交接。',
-  }).catch(() => undefined);
-  await writeTaskRecordFile({
+  if (guardDurablePanelAction({ taskId: params.taskId, confirmed: true }).allowed) {
+    const sourceWritten = await window.api?.createSourceContext?.({
+      taskId: params.taskId,
+      title: '阶段收尾记录',
+      kind: 'note',
+      isKey: false,
+      content,
+      note: '任务记录：阶段收尾、质量检查和执行交接。',
+      sourceRole: 'digest',
+    }).then(() => true).catch(() => false);
+    if (sourceWritten) {
+      verifyDurablePanelActionCompleted({
+        title: '保存阶段收尾来源',
+        output: '已保存阶段收尾记录。',
+      });
+    }
+  }
+  const recordWritten = await writeTaskRecordFile({
     taskId: params.taskId,
     title: 'phase-closeout',
     content,
+    reasonHint: 'phase_closeout',
   });
+  if (recordWritten) {
+    await recordPanelTimelineEvent(params.taskId, 'panel.phase_closeout', {
+      recordPath: `Task Records/${new Date().toISOString().slice(0, 10)}-phase-closeout.md`,
+      messageCount: meaningfulMessages.length,
+    });
+  }
+  return {
+    recordPath: recordWritten ? `Task Records/${new Date().toISOString().slice(0, 10)}-phase-closeout.md` : null,
+  };
 }
 
 function truncateMemoryLine(value: string, limit = 80): string {
@@ -325,12 +419,47 @@ function normalizeTaskFilePath(value: string): string {
     .join('/');
 }
 
+function taskFileProposalSurfaceLabel(surface: RuntimeSurfaceKind): string {
+  if (surface === 'task_state') return '任务说明';
+  if (surface === 'task_record') return '任务记录';
+  if (surface === 'artifact') return '产物';
+  if (surface === 'ai_output') return 'AI 产出';
+  return '任务文件';
+}
+
+function classifyTaskFileProposal(path: string): Pick<TaskFileWriteProposal, 'surface' | 'surfaceLabel'> {
+  const normalizedPath = normalizeTaskFilePath(path);
+  const name = normalizedPath.split('/').filter(Boolean).at(-1) ?? normalizedPath;
+  const surface = classifyCreateTaskFileSurface({
+    taskId: 'proposal',
+    name,
+    path: normalizedPath,
+    kind: 'file',
+  });
+  return {
+    surface,
+    surfaceLabel: taskFileProposalSurfaceLabel(surface),
+  };
+}
+
+function buildTaskFileProposalPath(params: {
+  taskTitle: string;
+  userFocus: string[];
+}): string {
+  const today = new Date().toISOString().slice(0, 10);
+  const titleSlug = slugFilePart(params.taskTitle);
+  const focus = params.userFocus.join(' ');
+  if (/记录|收尾|复盘|交接|保全|checkpoint|handoff|record/i.test(focus)) {
+    return `Task Records/${today}-${titleSlug}-discussion.md`;
+  }
+  return `${today}-${titleSlug}-discussion.md`;
+}
+
 function buildTaskFileWriteProposal(params: {
   taskTitle: string;
   messages: Message[];
   selectedFilePath?: string | null;
 }): TaskFileWriteProposal {
-  const today = new Date().toISOString().slice(0, 10);
   const recent = params.messages
     .filter((message) => message.role === 'user' || message.role === 'assistant')
     .filter((message) => message.id !== 'm0')
@@ -339,7 +468,11 @@ function buildTaskFileWriteProposal(params: {
     .filter((message) => message.role === 'user')
     .slice(-3)
     .map((message) => truncateMemoryLine(message.text, 120));
-  const path = `${today}-${slugFilePart(params.taskTitle)}-discussion.md`;
+  const path = buildTaskFileProposalPath({
+    taskTitle: params.taskTitle,
+    userFocus,
+  });
+  const surface = classifyTaskFileProposal(path);
   const content = [
     `# ${params.taskTitle} Discussion Notes`,
     '',
@@ -361,6 +494,7 @@ function buildTaskFileWriteProposal(params: {
     path,
     summary: userFocus[0] ?? '从当前任务讨论生成 Markdown 草稿。',
     content,
+    ...surface,
   };
 }
 
@@ -439,39 +573,92 @@ async function referenceTaskFileFromTaskRecord(params: {
   filePath: string;
 }): Promise<void> {
   if (!window.api?.listTaskFiles || !window.api.createTaskFile || !window.api.updateTaskFile) return;
+  if (!guardDurablePanelAction({ taskId: params.taskId, confirmed: true }).allowed) return;
   const files = await window.api.listTaskFiles(params.taskId).catch(() => []);
   const taskRecord = files.find((file) => file.path === 'Task.md');
   if (taskRecord) {
-    await window.api.updateTaskFile({
+    const updateNeed = evaluateTaskMdUpdateNeed({
+      hasTaskContext: true,
+      existingTaskMdContent: taskRecord.content,
+      importantFilePath: params.filePath,
+      reasonHint: 'important_file',
+    });
+    if (!updateNeed.shouldUpdateTaskMd) return;
+    const updated = await window.api.updateTaskFile({
       id: taskRecord.id,
       content: appendImportantFileToTaskRecord(taskRecord.content, params.filePath),
-    }).catch(() => undefined);
+    }).catch(() => null);
+    if (updated) {
+      verifyDurablePanelActionCompleted({
+        title: '更新任务说明引用',
+        output: `已在 Task.md 引用 ${params.filePath}。`,
+      });
+    }
     return;
   }
-  await window.api.createTaskFile({
+  const createNeed = evaluateTaskMdUpdateNeed({
+    hasTaskContext: true,
+    importantFilePath: params.filePath,
+    reasonHint: 'important_file',
+  });
+  if (!createNeed.shouldUpdateTaskMd) return;
+  const created = await window.api.createTaskFile({
     taskId: params.taskId,
     name: 'Task.md',
     path: 'Task.md',
     kind: 'file',
     content: buildMinimalTaskRecord(params.taskName, params.filePath),
-  }).catch(() => undefined);
+  }).catch(() => null);
+  if (created) {
+    verifyDurablePanelActionCompleted({
+      title: '创建任务说明引用',
+      output: `已创建 Task.md 并引用 ${params.filePath}。`,
+    });
+  }
 }
 
 async function writeTaskRecordFile(params: {
   taskId: string;
   title: string;
   content: string;
+  reasonHint: TaskRecordWorthinessReason;
 }): Promise<boolean> {
   if (!window.api?.createTaskFile) return false;
+  if (!guardDurablePanelAction({ taskId: params.taskId, confirmed: true }).allowed) return false;
+  const worthiness = evaluateTaskRecordWorthiness({
+    text: params.content,
+    hasTaskContext: true,
+    reasonHint: params.reasonHint,
+  });
+  if (!worthiness.shouldCreateTaskRecord) return false;
   const today = new Date().toISOString().slice(0, 10);
   const name = `${today}-${params.title}.md`;
-  return window.api.createTaskFile({
+  const created = await window.api.createTaskFile({
     taskId: params.taskId,
     name,
     path: `Task Records/${name}`,
     kind: 'file',
     content: params.content,
   }).then(() => true).catch(() => false);
+  if (created) {
+    verifyDurablePanelActionCompleted({
+      title: '写入任务记录',
+      output: `已写入 Task Records/${name}。`,
+    });
+  }
+  return created;
+}
+
+async function recordPanelTimelineEvent(
+  taskId: string,
+  type: PanelRuntimeTimelineEventType,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  await window.api?.recordTaskTimelineEvent?.({
+    taskId,
+    type,
+    payload,
+  }).catch(() => undefined);
 }
 
 interface RightPanelProps {
@@ -487,6 +674,7 @@ interface RightPanelProps {
   } | null;
   hidden?: boolean;
   onTaskCaptured?: (taskId: string) => void;
+  onOpenTask?: (taskId: string) => void;
   onClose: (hasSession: boolean) => void;
   onClearTask: () => void;
 }
@@ -499,6 +687,7 @@ export function RightPanel({
   selectedFile = null,
   hidden = false,
   onTaskCaptured,
+  onOpenTask,
   onClose,
   onClearTask,
 }: RightPanelProps) {
@@ -520,9 +709,8 @@ export function RightPanel({
   const [abandonConfirmOpen, setAbandonConfirmOpen] = useState(false);
   const [abandoningCapturedTask, setAbandoningCapturedTask] = useState(false);
   const [phaseCloseoutSaved, setPhaseCloseoutSaved] = useState(false);
+  const [phaseCloseoutNotice, setPhaseCloseoutNotice] = useState<string | null>(null);
   const [savingPhaseCloseout, setSavingPhaseCloseout] = useState(false);
-  const [creatingFollowupTasks, setCreatingFollowupTasks] = useState(false);
-  const [followupTasksCreated, setFollowupTasksCreated] = useState(false);
   const [taskFileProposal, setTaskFileProposal] = useState<TaskFileWriteProposal | null>(null);
   const [savingTaskFileProposal, setSavingTaskFileProposal] = useState(false);
   const [input, setInput] = useState('');
@@ -559,16 +747,11 @@ export function RightPanel({
   }, []);
 
   useEffect(() => {
-    if (!draftPrompt || taskId !== activeTaskId) return;
-    if (autoSendDraftPrompt) {
-      const key = `${taskId ?? 'global'}:${draftPrompt}`;
-      if (lastAutoSentDraftPromptRef.current === key) return;
-      lastAutoSentDraftPromptRef.current = key;
-      void send(draftPrompt);
-      return;
-    }
-    setInput(draftPrompt);
-    textareaRef.current?.focus();
+    if (!autoSendDraftPrompt || !draftPrompt || taskId !== activeTaskId) return;
+    const key = `${taskId ?? 'global'}:${draftPrompt}`;
+    if (lastAutoSentDraftPromptRef.current === key) return;
+    lastAutoSentDraftPromptRef.current = key;
+    void send(draftPrompt);
   }, [activeTaskId, autoSendDraftPrompt, draftPrompt, taskId]);
 
   // When taskId changes from outside (e.g. clicking a different task)
@@ -587,7 +770,9 @@ export function RightPanel({
     const fetchAndPropose = async () => {
       let title = taskTitleHint ?? titleCache[taskId];
       if (taskTitleHint) {
-        setTitleCache((prev) => ({ ...prev, [taskId]: taskTitleHint }));
+        setTitleCache((prev) => (
+          prev[taskId] === taskTitleHint ? prev : { ...prev, [taskId]: taskTitleHint }
+        ));
       }
       if (!title && window.api) {
         const d = await window.api.getTaskDetail(taskId).catch(() => null);
@@ -601,19 +786,60 @@ export function RightPanel({
     void fetchAndPropose();
   }, [activeTaskId, taskId, taskTitleHint, titleCache]);
 
-  function confirmSwitch() {
-    if (!pendingSwitch) return;
-    setActiveTaskId(pendingSwitch.taskId);
+  function applyTaskContext(nextTaskId: string, nextTitle: string, options: { addMessage?: boolean } = {}) {
+    setActiveTaskId(nextTaskId);
+    setTitleCache((current) => ({ ...current, [nextTaskId]: nextTitle }));
     setPendingSwitch(null);
     setSessionRefreshDismissed(false);
     setManualRefreshReady(null);
     setPhaseCloseoutSaved(false);
-    setFollowupTasksCreated(false);
+    setPhaseCloseoutNotice(null);
     setTaskFileProposal(null);
-    appendSysMsg(`已切换到任务：**${pendingSwitch.taskTitle}**`);
+    setInput('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    if (options.addMessage !== false) {
+      appendSysMsg(`已切换到任务：**${nextTitle}**`);
+    }
   }
 
-  function dismissSwitch() {
+  async function confirmSwitch() {
+    if (!pendingSwitch) return;
+    const fromTaskId = activeTaskId;
+    const targetSwitch = pendingSwitch;
+    const { archived, hasSpecificSignal, userMessageCount } = await archiveTaskConversationIfNeeded();
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'switch_task',
+      fromTaskId,
+      toTaskId: targetSwitch.taskId,
+      messageCount: userMessageCount,
+      hasSpecificHandoffSignal: hasSpecificSignal,
+      archived,
+    });
+    if (!handoff.canProceed) {
+      handleMissingRefreshArchive(handoff.reason);
+      return;
+    }
+    if (fromTaskId) {
+      await recordPanelTimelineEvent(fromTaskId, 'panel.context_switch_accepted', {
+        toTaskId: targetSwitch.taskId,
+        toTaskTitle: targetSwitch.taskTitle,
+        archived,
+        messageCount: userMessageCount,
+        reason: handoff.reason,
+      });
+    }
+    applyTaskContext(targetSwitch.taskId, targetSwitch.taskTitle);
+  }
+
+  async function dismissSwitch() {
+    const dismissedSwitch = pendingSwitch;
+    if (activeTaskId && dismissedSwitch) {
+      await recordPanelTimelineEvent(activeTaskId, 'panel.context_switch_dismissed', {
+        toTaskId: dismissedSwitch.taskId,
+        toTaskTitle: dismissedSwitch.taskTitle,
+        reason: '用户选择保留当前上下文。',
+      });
+    }
     setPendingSwitch(null);
     onClearTask();
   }
@@ -631,6 +857,7 @@ export function RightPanel({
       .filter((message) => message.role === 'user')
       .map((message) => message.text.trim())
       .filter(Boolean);
+    const hasSpecificSignal = hasSpecificHandoffSignal(userMessages);
     let archived = false;
     if (activeTaskId && userMessages.length > 0) {
       archived = await preserveSessionRefreshMemory({
@@ -642,6 +869,7 @@ export function RightPanel({
     return {
       taskName,
       archived,
+      hasSpecificSignal,
       userMessageCount: userMessages.length,
       recentFocus: userMessages.slice(-3).map((message) => truncateMemoryLine(message, 80)),
     };
@@ -656,26 +884,50 @@ export function RightPanel({
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   }
 
-  function handleMissingRefreshArchive() {
+  function handleMissingRefreshArchive(reason?: string | null) {
     if (activeTaskId) {
-      appendSysMsg('这次刷新前的保全信息还不够具体，暂不清理当前任务会话。请先补充已确认结论、候选方案、未解决问题或下一步动作。');
+      appendSysMsg([
+        '这次刷新前的保全信息还不够具体，暂不清理当前任务会话。',
+        reason && reason !== '任务会话缺少可恢复信号，暂不应清理。' ? reason : null,
+        '请先补充已确认结论、候选方案、未解决问题或下一步动作。',
+      ].filter(Boolean).join(' '));
       setSessionRefreshDismissed(true);
     }
   }
 
   async function refreshTaskSession() {
-    const { taskName, archived } = await archiveTaskConversationIfNeeded();
-    if (activeTaskId && !archived) {
-      handleMissingRefreshArchive();
+    const { taskName, archived, hasSpecificSignal, userMessageCount } = await archiveTaskConversationIfNeeded();
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'context_refresh',
+      fromTaskId: activeTaskId,
+      messageCount: userMessageCount,
+      hasSpecificHandoffSignal: hasSpecificSignal,
+      archived,
+    });
+    if (!handoff.canProceed) {
+      handleMissingRefreshArchive(handoff.reason);
       return;
     }
     clearTaskSessionAfterArchive(taskName);
   }
 
   async function prepareManualTaskSessionRefresh() {
-    const { taskName, archived, userMessageCount, recentFocus } = await archiveTaskConversationIfNeeded();
-    if (activeTaskId && !archived) {
-      handleMissingRefreshArchive();
+    const {
+      taskName,
+      archived,
+      hasSpecificSignal,
+      userMessageCount,
+      recentFocus,
+    } = await archiveTaskConversationIfNeeded();
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'manual_context_refresh',
+      fromTaskId: activeTaskId,
+      messageCount: userMessageCount,
+      hasSpecificHandoffSignal: hasSpecificSignal,
+      archived,
+    });
+    if (!handoff.canProceed) {
+      handleMissingRefreshArchive(handoff.reason);
       return;
     }
     setManualRefreshReady({ taskName });
@@ -687,7 +939,18 @@ export function RightPanel({
   }
 
   async function startNewConversation() {
-    await archiveTaskConversationIfNeeded();
+    const { archived, hasSpecificSignal, userMessageCount } = await archiveTaskConversationIfNeeded();
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'start_global_conversation',
+      fromTaskId: activeTaskId,
+      messageCount: userMessageCount,
+      hasSpecificHandoffSignal: hasSpecificSignal,
+      archived,
+    });
+    if (!handoff.canProceed) {
+      handleMissingRefreshArchive(handoff.reason);
+      return;
+    }
     setMessages([]);
     setActiveTaskId(null);
     setPendingSwitch(null);
@@ -697,7 +960,32 @@ export function RightPanel({
     setSessionRefreshDismissed(false);
     setManualRefreshReady(null);
     setPhaseCloseoutSaved(false);
-    setFollowupTasksCreated(false);
+    setPhaseCloseoutNotice(null);
+    setTaskFileProposal(null);
+    setInput('');
+    onClearTask();
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+  }
+
+  async function leaveTaskContext() {
+    const { archived, hasSpecificSignal, userMessageCount } = await archiveTaskConversationIfNeeded();
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'leave_task_context',
+      fromTaskId: activeTaskId,
+      messageCount: userMessageCount,
+      hasSpecificHandoffSignal: hasSpecificSignal,
+      archived,
+    });
+    if (!handoff.canProceed) {
+      handleMissingRefreshArchive(handoff.reason);
+      return;
+    }
+    setActiveTaskId(null);
+    setPendingSwitch(null);
+    setManualRefreshReady(null);
+    setSessionRefreshDismissed(false);
+    setPhaseCloseoutSaved(false);
+    setPhaseCloseoutNotice(null);
     setTaskFileProposal(null);
     setInput('');
     onClearTask();
@@ -714,14 +1002,111 @@ export function RightPanel({
     return firstLine.length > 42 ? `${firstLine.slice(0, 42)}…` : firstLine;
   }
 
+  function describeIntakeRedirect(evaluation: RuntimeIntakeEvaluation): string {
+    switch (evaluation.outcome) {
+      case 'create_task_record':
+        return '这更像当前任务记录/交接信息，应写入任务记录，而不是新建任务。';
+      case 'propose_task_file':
+        return '这更像任务文件或输出写入请求，应先生成写入提案，而不是直接捕获为任务。';
+      case 'surface_decision':
+        return '这更像需要拍板的事项，先不要直接捕获为任务。可以进入 Decisions 确认，或继续补充判断上下文。';
+      case 'propose_work_habit':
+        return '这更像跨任务工作习惯，应走工作习惯确认，而不是创建任务。';
+      case 'continue_discussion':
+        return evaluation.reason;
+      case 'create_task':
+        return evaluation.reason;
+    }
+  }
+
   async function captureGlobalConversationAsTask() {
     const lastUserText = getLastUserMessage();
     if (!lastUserText || capturingTask || !window.api?.createTask) return;
+    const intakeEvaluation = evaluateRuntimeIntake({
+      text: lastUserText,
+      hasTaskContext: Boolean(activeTaskId),
+      source: activeTaskId ? 'task_chat' : 'global_chat',
+    });
+    if (intakeEvaluation.outcome !== 'create_task' || !intakeEvaluation.allowed) {
+      appendSysMsg(describeIntakeRedirect(intakeEvaluation));
+      return;
+    }
+    const candidateTitle = intakeEvaluation.title ?? deriveCapturedTaskTitle(lastUserText);
+    const existingTasks = await (window.api?.listTasks?.().catch(() => []) ?? Promise.resolve([]));
+    const captureGuard = guardTaskCapture({
+      fromTaskId: activeTaskId,
+      messageCount: 1,
+      confirmationSatisfied: true,
+      candidateTitle,
+      candidateSummary: lastUserText,
+      existingTasks,
+    });
+    if (!captureGuard.allowed) {
+      appendSysMsg(`捕获任务已暂停：${captureGuard.reason}`);
+      return;
+    }
+    const actionEvaluation = evaluateRuntimeAction({
+      action: 'task_capture',
+      fromTaskId: activeTaskId,
+      messageCount: 1,
+    });
+    const preStepVerification = evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: actionEvaluation,
+      hasRequiredContext: true,
+      confirmationSatisfied: true,
+    });
+    if (!preStepVerification.canProceed) {
+      appendSysMsg(`捕获任务已暂停：${preStepVerification.detail}`);
+      return;
+    }
+    if (activeTaskId && isRuntimeFollowUpTaskProposal(lastUserText)) {
+      const [taskDetail, tasks] = await Promise.all([
+        window.api?.getTaskDetail?.(activeTaskId).catch(() => null) ?? Promise.resolve(null),
+        Promise.resolve(existingTasks),
+      ]);
+      if (taskDetail) {
+        const taskAttrs = getTaskAttributes(activeTaskId);
+        const childAttrsByTaskId = Object.fromEntries(
+          tasks.map((task) => [task.id, getTaskAttributes(task.id)]),
+        );
+        const taskListRecord = tasks.find((task) => task.id === activeTaskId) ?? taskDetail;
+        const orderedChildren = orderedChildRecordsForTask(taskListRecord, tasks, childAttrsByTaskId);
+        const closeoutVerification = evaluateRuntimeVerification({
+          mode: 'task_closeout',
+          intent: 'phase_closeout',
+          task: taskDetail,
+          childTaskIds: taskAttrs?.childTaskIds ?? [],
+          childTasks: orderedChildren,
+          proposedFollowUpTasks: [{
+            title: candidateTitle,
+            summary: lastUserText,
+            evidence: [lastUserText],
+          }],
+        });
+        const closeout = closeoutVerification.taskCloseout;
+        if (
+          closeout?.outcome === 'handoff_to_existing_child'
+          || closeout?.outcome === 'handoff_to_existing_successor'
+        ) {
+          appendSysMsg(`后续任务创建已暂停：${closeout.reason} 请优先交接到已有任务，避免重复创建。`);
+          return;
+        }
+        if (closeout?.outcome === 'needs_follow_up_confirmation' && !closeout.followUpProposalAllowed) {
+          appendSysMsg(`后续任务创建已暂停：${closeout.reason}`);
+          return;
+        }
+      }
+    }
     setCapturingTask(true);
     try {
       const created = await window.api.createTask({
-        title: deriveCapturedTaskTitle(lastUserText),
+        title: candidateTitle,
         summary: `${PANEL_CAPTURE_SUMMARY_PREFIX}${lastUserText}`,
+      });
+      verifyDurablePanelActionCompleted({
+        title: '捕获任务',
+        output: `已捕获任务：${created.title}`,
       });
       setActiveTaskId(created.id);
       setPendingCapturedTaskId(created.id);
@@ -738,6 +1123,15 @@ export function RightPanel({
 
   async function confirmCapturedTask() {
     if (!activeTaskId || pendingCapturedTaskId !== activeTaskId || confirmingCapturedTask) return;
+    const guard = guardTaskStateTransition({
+      taskId: activeTaskId,
+      nextState: 'planned',
+      confirmationSatisfied: true,
+    });
+    if (!guard.allowed) {
+      appendSysMsg(`确认任务已暂停：${guard.reason}`);
+      return;
+    }
     setConfirmingCapturedTask(true);
     try {
       await window.api?.transitionTask({ id: activeTaskId, nextState: 'planned' });
@@ -754,84 +1148,149 @@ export function RightPanel({
   async function closeoutCurrentPhase() {
     if (!activeTaskId || savingPhaseCloseout) return;
     const taskName = title ?? titleCache[activeTaskId] ?? activeTaskId;
+    const closeoutTaskId = activeTaskId;
+    const userMessageCount = messages.filter((message) => message.role === 'user').length;
+    const actionEvaluation = evaluateRuntimeAction({
+      action: 'phase_closeout',
+      fromTaskId: closeoutTaskId,
+      messageCount: userMessageCount,
+    });
+    const preStepVerification = evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: actionEvaluation,
+      hasRequiredContext: true,
+    });
+    if (!preStepVerification.canProceed) {
+      appendSysMsg(`阶段收尾已暂停：${preStepVerification.detail}`);
+      return;
+    }
     setSavingPhaseCloseout(true);
     try {
-      await preservePhaseCloseoutRecord({
-        taskId: activeTaskId,
+      const preserved = await preservePhaseCloseoutRecord({
+        taskId: closeoutTaskId,
         taskTitle: taskName,
         messages,
       });
+      const postStepVerification = evaluateRuntimeVerification({
+        mode: 'post_step',
+        step: buildPanelRuntimeStep({
+          title: '阶段收尾记录',
+          output: preserved.recordPath ? `已写入任务记录：${preserved.recordPath}` : null,
+          error: preserved.recordPath ? null : '阶段收尾任务记录写入失败。',
+        }),
+        producedDurableChange: true,
+        hasTaskRecord: Boolean(preserved.recordPath),
+        hasRecoveryNote: Boolean(preserved.recordPath),
+      });
+      if (!postStepVerification.canProceed) {
+        setPhaseCloseoutNotice(`阶段收尾已暂停：${postStepVerification.detail}`);
+        appendSysMsg(`阶段收尾已暂停：${postStepVerification.detail}`);
+        return;
+      }
+      if (preserved.recordPath) {
+        await referenceTaskFileFromTaskRecord({
+          taskId: closeoutTaskId,
+          taskName,
+          filePath: preserved.recordPath,
+        });
+      }
+      const [taskDetail, tasks] = await Promise.all([
+        window.api?.getTaskDetail?.(closeoutTaskId).catch(() => null) ?? Promise.resolve(null),
+        window.api?.listTasks?.().catch(() => []) ?? Promise.resolve([]),
+      ]);
+      if (!taskDetail) {
+        setPhaseCloseoutSaved(true);
+        setPhaseCloseoutNotice('阶段记录已保存，但暂时没有读取到完整任务详情。请回到任务详情确认状态后再继续交接。');
+        setMessages([
+          {
+            id: nextId(),
+            role: 'assistant',
+            text: `已保存「${taskName}」的阶段收尾记录，但暂时没有读取到完整任务详情。请回到任务详情确认状态后再继续交接。`,
+            ts: now(),
+          },
+        ]);
+        return;
+      }
+      const taskAttrs = getTaskAttributes(closeoutTaskId);
+      const childAttrsByTaskId = Object.fromEntries(
+        tasks.map((task) => [task.id, getTaskAttributes(task.id)]),
+      );
+      const taskListRecord = tasks.find((task) => task.id === closeoutTaskId) ?? taskDetail;
+      const orderedChildren = orderedChildRecordsForTask(taskListRecord, tasks, childAttrsByTaskId);
+      const evaluation = evaluateRuntimeVerification({
+        mode: 'task_closeout',
+        intent: 'phase_closeout',
+        task: taskDetail,
+        childTaskIds: taskAttrs?.childTaskIds ?? [],
+        childTasks: orderedChildren,
+      }).taskCloseout;
+      if (!evaluation) {
+        throw new Error('阶段收尾检查未返回任务收尾结论。');
+      }
+      const handoff = evaluateRuntimeHandoff({
+        intent: 'phase_closeout',
+        fromTaskId: closeoutTaskId,
+        closeout: evaluation,
+        recordPath: preserved.recordPath,
+      });
+      if (!handoff.canProceed) {
+        setPhaseCloseoutNotice(`阶段收尾已暂停：${handoff.reason}`);
+        appendSysMsg(`阶段收尾已暂停：${handoff.reason}`);
+        return;
+      }
+      const resumePlan = buildRuntimeResumePlan(handoff);
+      await window.api?.recordTaskCompletionCheck?.({
+        taskId: closeoutTaskId,
+        action: 'passed',
+        criteriaTotal: evaluation.criteriaTotal,
+        criteriaSatisfied: evaluation.criteriaSatisfied,
+        criteriaOpen: evaluation.criteriaOpen,
+        reason: `阶段收尾自动检查：${evaluation.reason}`,
+        runVerificationTone: evaluation.runVerificationTone,
+        runVerificationLabel: evaluation.runVerificationLabel,
+        runVerificationDetail: evaluation.runVerificationDetail,
+        source: 'lightweight_rule_engine',
+      }).catch(() => undefined);
       setPhaseCloseoutSaved(true);
-      setFollowupTasksCreated(false);
-      appendSysMsg('已保存阶段收尾记录到任务记忆。是否要根据这次收尾拆解下一步执行任务、实现任务和验收任务？');
+      setPhaseCloseoutNotice(`阶段记录已保存，质量检查已记录，会话已刷新。${evaluation.reason}`);
+      const nextTask = evaluation.nextTaskId
+        ? tasks.find((task) => task.id === evaluation.nextTaskId) ?? null
+        : null;
+      if (handoff.action === 'handoff_to_task' && nextTask) {
+        applyTaskContext(nextTask.id, nextTask.title, { addMessage: false });
+        setPendingSwitch(null);
+        setSessionRefreshDismissed(false);
+        setManualRefreshReady(null);
+        setPhaseCloseoutSaved(false);
+        setPhaseCloseoutNotice(null);
+        setMessages([
+          makeWelcomeMessage(nextTask.title),
+          {
+            id: nextId(),
+            role: 'assistant',
+            text: `已完成「${taskName}」的阶段收尾：阶段记录已保存，质量检查已记录，本阶段会话已刷新。现在进入第一项子任务：**${nextTask.title}**。${resumePlan.nextAction}`,
+            ts: now(),
+          },
+        ]);
+        if (nextTask.state === 'captured' || nextTask.state === 'triaged') {
+          await window.api?.transitionTask?.({ id: nextTask.id, nextState: 'planned' }).catch(() => undefined);
+        }
+        if (nextTask.state !== 'running' && nextTask.state !== 'waiting_external') {
+          await window.api?.transitionTask?.({ id: nextTask.id, nextState: 'running' }).catch(() => undefined);
+        }
+        onOpenTask?.(nextTask.id);
+        return;
+      }
+      setMessages([
+        {
+          id: nextId(),
+          role: 'assistant',
+          text: `已完成「${taskName}」的阶段收尾：阶段记录已保存，质量检查已记录，本阶段会话已刷新。${resumePlan.summary}`,
+          ts: now(),
+        },
+      ]);
     } finally {
       setSavingPhaseCloseout(false);
-    }
-  }
-
-  async function createFollowupTasksFromCloseout() {
-    if (!activeTaskId || creatingFollowupTasks || !window.api?.createTask) return;
-    const taskName = title ?? titleCache[activeTaskId] ?? activeTaskId;
-    setCreatingFollowupTasks(true);
-    try {
-      const drafts = [
-        {
-          title: `拆解下一步：${taskName}`,
-          summary: `基于「${taskName}」的阶段收尾记录，梳理下一阶段执行任务、边界、依赖和验收口径。`,
-        },
-        {
-          title: `实现调整：${taskName}`,
-          summary: `基于「${taskName}」的阶段收尾记录，执行已确认的产品和实现调整。`,
-        },
-        {
-          title: `验收回归：${taskName}`,
-          summary: `基于「${taskName}」的阶段收尾记录，完成验收、回归测试和残余风险记录。`,
-        },
-      ];
-      const created = await Promise.all(drafts.map(async (draft) => {
-        const task = await window.api!.createTask(draft);
-        await window.api?.transitionTask({ id: task.id, nextState: 'planned' }).catch(() => undefined);
-        const sourceContent = [
-          '# Record: 后续任务来源',
-          '',
-          '## Trigger',
-          '由父任务阶段收尾后，经用户确认创建。',
-          '',
-          '## Summary',
-          `父任务：${taskName}`,
-          `后续任务：${draft.title}`,
-          '',
-          '## Confirmed',
-          '- 该任务应读取父任务的阶段收尾记录、相关任务文件和产出文档后再执行。',
-          '',
-          '## Open',
-          '- 执行前仍需确认范围、验收口径和是否需要拆成更小步骤。',
-          '',
-          '## Next',
-          '- 先完成任务范围确认，再进入执行或验收。',
-          '',
-          '## Links',
-          '- 来源：父任务阶段收尾记录。',
-        ].join('\n');
-        await window.api?.createSourceContext?.({
-          taskId: task.id,
-          title: '后续任务来源',
-          kind: 'note',
-          isKey: true,
-          content: sourceContent,
-          note: `由「${taskName}」阶段收尾创建。`,
-        }).catch(() => undefined);
-        await writeTaskRecordFile({
-          taskId: task.id,
-          title: 'followup-source',
-          content: sourceContent,
-        });
-        return task;
-      }));
-      setFollowupTasksCreated(true);
-      appendSysMsg(`已创建 ${created.length} 条后续任务：拆解下一步、实现调整、验收回归。它们已进入 Tasks，执行前仍应逐条确认范围。`);
-    } finally {
-      setCreatingFollowupTasks(false);
     }
   }
 
@@ -847,9 +1306,31 @@ export function RightPanel({
 
   async function confirmTaskFileWrite() {
     if (!activeTaskId || !taskFileProposal || savingTaskFileProposal || !window.api?.createTaskFile) return;
-    const path = normalizeTaskFilePath(taskFileProposal.path);
+    const normalizedInput = normalizeCreateTaskFileInput({
+      taskId: activeTaskId,
+      name: normalizeTaskFilePath(taskFileProposal.path).split('/').filter(Boolean).at(-1) ?? taskFileProposal.path,
+      path: taskFileProposal.path,
+      kind: 'file',
+      content: taskFileProposal.content,
+    });
+    const path = normalizedInput.path ?? normalizedInput.name;
     if (!path || !/\.(md|txt)$/i.test(path)) {
       appendSysMsg('任务文件写入已暂停：当前 v1 只允许新建 .md 或 .txt 文件。');
+      return;
+    }
+    const actionEvaluation = evaluateRuntimeAction({
+      action: 'task_file_write_proposal',
+      fromTaskId: activeTaskId,
+      messageCount: messages.filter((message) => message.role === 'user').length,
+    });
+    const preStepVerification = evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: actionEvaluation,
+      hasRequiredContext: true,
+      confirmationSatisfied: true,
+    });
+    if (!preStepVerification.canProceed) {
+      appendSysMsg(`任务文件写入已暂停：${preStepVerification.detail}`);
       return;
     }
     setSavingTaskFileProposal(true);
@@ -861,18 +1342,31 @@ export function RightPanel({
         appendSysMsg(`任务文件写入已暂停：\`${path}\` 已存在。请换一个文件名后再确认写入。`);
         return;
       }
-      const name = path.split('/').filter(Boolean).at(-1) ?? path;
       await window.api.createTaskFile({
+        ...normalizedInput,
         taskId: activeTaskId,
-        name,
-        path,
-        kind: 'file',
-        content: taskFileProposal.content,
       });
       await referenceTaskFileFromTaskRecord({
         taskId: activeTaskId,
         taskName: title ?? titleCache[activeTaskId] ?? activeTaskId,
         filePath: path,
+      });
+      const postStepVerification = evaluateRuntimeVerification({
+        mode: 'post_step',
+        step: buildPanelRuntimeStep({
+          title: '任务文件写入',
+          output: `已写入任务文件：${path}`,
+        }),
+        producedDurableChange: true,
+        hasRecoveryNote: true,
+      });
+      if (!postStepVerification.canProceed) {
+        appendSysMsg(`任务文件已写入，但后置检查提示：${postStepVerification.detail}`);
+      }
+      await recordPanelTimelineEvent(activeTaskId, 'panel.task_file_written', {
+        path,
+        surface: taskFileProposal.surface,
+        surfaceLabel: taskFileProposal.surfaceLabel,
       });
       setTaskFileProposal(null);
       appendSysMsg(`已写入任务文件：\`${path}\`。`);
@@ -885,6 +1379,15 @@ export function RightPanel({
     if (!activeTaskId || pendingCapturedTaskId !== activeTaskId || abandoningCapturedTask) return;
     if (!abandonConfirmOpen) {
       setAbandonConfirmOpen(true);
+      return;
+    }
+    const guard = guardTaskStateTransition({
+      taskId: activeTaskId,
+      nextState: 'archived',
+      confirmationSatisfied: true,
+    });
+    if (!guard.allowed) {
+      appendSysMsg(`放弃任务已暂停：${guard.reason}`);
       return;
     }
     setAbandoningCapturedTask(true);
@@ -982,6 +1485,40 @@ export function RightPanel({
 
   const title = taskTitle(activeTaskId, titleCache);
   const activeAttrs = activeTaskId ? getTaskAttributes(activeTaskId) : null;
+  const userMessageTexts = messages
+    .filter((message) => message.role === 'user')
+    .map((message) => message.text.trim())
+    .filter(Boolean);
+  const latestUserMessageText = getLastUserMessage();
+  const latestIntakeEvaluation = latestUserMessageText
+    ? evaluateRuntimeIntake({
+        text: latestUserMessageText,
+        hasTaskContext: Boolean(activeTaskId),
+        source: activeTaskId ? 'task_chat' : 'global_chat',
+      })
+    : null;
+  const hasSpecificConversationSignal = hasSpecificHandoffSignal(userMessageTexts);
+  const runtimeContextManifest = buildRuntimeContextManifest({
+    task: activeTaskId
+      ? {
+          id: activeTaskId,
+          title: title ?? activeTaskId,
+        }
+      : null,
+    selectedFile,
+  });
+  const runtimeContextSnapshot = buildRuntimeContextSnapshot({
+    task: activeTaskId
+      ? {
+          id: activeTaskId,
+          title: title ?? activeTaskId,
+        }
+      : null,
+    selectedFile,
+  });
+  const runtimeContextAssemblyPolicy = buildRuntimeContextAssemblyPolicy({
+    manifest: runtimeContextManifest,
+  });
   const sessionRefreshSuggestion = activeTaskId && !sessionRefreshDismissed
     ? shouldSuggestSessionRefresh(messages, compressionThreshold)
     : null;
@@ -991,19 +1528,40 @@ export function RightPanel({
     && messages.some((message) => message.role === 'user')
   );
   const canCaptureGlobalConversation = Boolean(
-    !activeTaskId
-    && messages.some((message) => message.role === 'user')
+    evaluateRuntimeAction({
+      action: 'task_capture',
+      fromTaskId: activeTaskId,
+      messageCount: userMessageTexts.length,
+    }).allowed
+    && latestIntakeEvaluation?.outcome === 'create_task'
+    && latestIntakeEvaluation.allowed
   );
-  const canCloseoutActiveTaskPhase = Boolean(
-    activeTaskId
-    && !phaseCloseoutSaved
-    && messages.some((message) => message.role === 'user')
-  );
-  const canProposeTaskFileWrite = Boolean(
-    activeTaskId
-    && !taskFileProposal
-    && messages.some((message) => message.role === 'user')
-  );
+  const phaseCloseoutEvaluation = evaluateRuntimeAction({
+    action: 'phase_closeout',
+    fromTaskId: activeTaskId,
+    messageCount: userMessageTexts.length,
+  });
+  const phaseCloseoutPreStep = evaluateRuntimeVerification({
+    mode: 'pre_step',
+    action: phaseCloseoutEvaluation,
+    hasRequiredContext: Boolean(activeTaskId),
+  });
+  const taskFileWriteEvaluation = evaluateRuntimeAction({
+    action: 'task_file_write_proposal',
+    fromTaskId: activeTaskId,
+    messageCount: userMessageTexts.length,
+  });
+  const contextSwitchEvaluation = pendingSwitch
+    ? evaluateRuntimeAction({
+        action: 'context_switch',
+        fromTaskId: activeTaskId,
+        targetTaskId: pendingSwitch.taskId,
+        messageCount: userMessageTexts.length,
+        hasSpecificHandoffSignal: hasSpecificConversationSignal,
+      })
+    : null;
+  const canCloseoutActiveTaskPhase = Boolean(!phaseCloseoutSaved && phaseCloseoutPreStep.canProceed);
+  const canProposeTaskFileWrite = Boolean(!taskFileProposal && taskFileWriteEvaluation.allowed);
   const taskPlanningPrompt = activeAttrs?.type && title
     ? buildTaskPlanningPrompt(title, activeAttrs.type, 'panel')
     : null;
@@ -1030,7 +1588,7 @@ export function RightPanel({
       <div className="panel-header">
         <div className="panel-header-ctx">
           {activeTaskId ? (
-            <button className="panel-ctx-tag" onClick={onClearTask} title="离开任务上下文">
+            <button className="panel-ctx-tag" onClick={() => void leaveTaskContext()} title="离开任务上下文">
               <IconTask />
               <span>{title ?? activeTaskId}</span>
               <span className="ctx-tag-x">×</span>
@@ -1111,10 +1669,11 @@ export function RightPanel({
             </div>
             <div className="panel-ctx-switch-note">
               不会中断当前对话；上下文切换由你确认。
+              {contextSwitchEvaluation?.reason ? ` ${contextSwitchEvaluation.reason}` : ''}
             </div>
             <div className="panel-ctx-switch-actions">
               <button className="btn sm primary" onClick={confirmSwitch}>切换到此任务</button>
-              <button className="btn sm ghost" onClick={dismissSwitch}>保持全局</button>
+              <button className="btn sm ghost" onClick={() => void dismissSwitch()}>保持全局</button>
             </div>
           </div>
         )}
@@ -1154,7 +1713,7 @@ export function RightPanel({
         {canCloseoutActiveTaskPhase && (
           <div className="panel-capture-suggestion">
             <div className="panel-capture-text">
-              这段任务讨论可以收成阶段记录，后续可基于记录继续拆解执行任务。
+              这段任务讨论可以收成阶段记录，用于质量检查、完成判断和上下文清理。
             </div>
             <button
               className={`btn sm primary${savingPhaseCloseout ? ' disabled' : ''}`}
@@ -1187,10 +1746,19 @@ export function RightPanel({
               className="panel-file-proposal-path"
               value={taskFileProposal.path}
               onChange={(event) => setTaskFileProposal((proposal) => (
-                proposal ? { ...proposal, path: event.target.value } : proposal
+                proposal
+                  ? {
+                      ...proposal,
+                      path: event.target.value,
+                      ...classifyTaskFileProposal(event.target.value),
+                    }
+                  : proposal
               ))}
               aria-label="任务文件路径"
             />
+            <div className="panel-file-proposal-surface">
+              建议归类：{taskFileProposal.surfaceLabel}
+            </div>
             <div className="panel-refresh-reason">{taskFileProposal.summary}</div>
             <textarea
               className="panel-file-proposal-content"
@@ -1215,18 +1783,11 @@ export function RightPanel({
           </div>
         )}
 
-        {activeTaskId && phaseCloseoutSaved && !followupTasksCreated && (
+        {activeTaskId && phaseCloseoutSaved && (
           <div className="panel-capture-suggestion">
             <div className="panel-capture-text">
-              阶段记录已保存。可以基于这份记录创建三条后续任务：拆解下一步、实现调整、验收回归。
+              {phaseCloseoutNotice ?? '阶段记录已保存，质量检查已记录，会话已刷新。'}
             </div>
-            <button
-              className={`btn sm primary${creatingFollowupTasks ? ' disabled' : ''}`}
-              onClick={() => void createFollowupTasksFromCloseout()}
-              disabled={creatingFollowupTasks}
-            >
-              {creatingFollowupTasks ? '创建中…' : '创建后续任务'}
-            </button>
           </div>
         )}
 
@@ -1272,6 +1833,12 @@ export function RightPanel({
             {title ?? activeTaskId}
           </div>
         )}
+        <div
+          className="panel-context-manifest"
+          title={`${runtimeContextSnapshot.summary} / ${runtimeContextAssemblyPolicy.summary}`}
+        >
+          {runtimeContextManifest.userFacingSummary}
+        </div>
         <div className="panel-context-strategy" aria-label="上下文策略">
           {([
             ['auto', '自动检查'],
