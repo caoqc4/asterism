@@ -85,6 +85,9 @@ export type DecisionDraftRecord = {
   taskId: string;
   title: string;
   rationale: string;
+  suggestedScope: DecisionScope;
+  suggestedKind: DecisionKind;
+  suggestedSourceType: DecisionSourceType;
   source: 'ai' | 'fallback';
   selectedTemplateIds: string[];
   selectedTemplateTitles: string[];

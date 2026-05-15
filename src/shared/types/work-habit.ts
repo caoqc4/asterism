@@ -38,6 +38,14 @@ export type CreateManualWorkHabitInput = {
   examples?: string;
 };
 
+export type CreateWorkHabitProposalInput = {
+  rule: string;
+  scope?: WorkHabitScope;
+  scopeLabel?: string;
+  examples?: string;
+  taskTitle?: string | null;
+};
+
 export type UpdateWorkHabitInput = {
   id: string;
   rule?: string;

@@ -1,5 +1,6 @@
 import type { AgentSessionRecord } from './agent-execution.js';
 import type { ArtifactRecord } from './artifact.js';
+import type { RuntimeEventRecord, RuntimeReplayGroup } from '../runtime-event-record.js';
 
 export type RunType = 'draft' | 'summarize' | 'agent';
 
@@ -46,6 +47,8 @@ export type RunDetailRecord = RunRecord & {
   checkpoints?: RunCheckpointRecord[];
   agentSessions?: AgentSessionRecord[];
   verifications?: RunVerificationRecord[];
+  runtimeEvents?: RuntimeEventRecord[];
+  runtimeReplayGroups?: RuntimeReplayGroup[];
 };
 
 export type RunCheckpointRecord = {

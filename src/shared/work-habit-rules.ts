@@ -1,6 +1,7 @@
 import type {
   CompletionOverrideLearningSignalInput,
   CreateManualWorkHabitInput,
+  CreateWorkHabitProposalInput,
   ResolveWorkHabitConflictInput,
   SopTemplateHabitInput,
   UpdateWorkHabitInput,
@@ -114,6 +115,45 @@ export function createManualWorkHabitInList(
       createdAt: now,
       lastAppliedAt: null,
       applicationCount: 0,
+    },
+    ...habits,
+  ];
+}
+
+export function createWorkHabitProposalInList(
+  habits: WorkHabitRecord[],
+  input: CreateWorkHabitProposalInput & Required<Pick<CreateWorkHabitProposalInput, 'scope' | 'scopeLabel'>>,
+  now = new Date().toISOString(),
+): WorkHabitRecord[] {
+  const rule = input.rule.trim();
+  if (!rule) return habits;
+
+  const id = `habit_proposal_${stableHabitKey(rule, input.scope, input.scopeLabel)}`;
+  const examples = input.examples?.trim() || '运行时识别的跨任务偏好候选';
+  const existing = habits.find((habit) => habit.id === id);
+
+  if (existing) {
+    return habits.map((habit) => habit.id === id ? {
+      ...habit,
+      examples,
+      status: habit.status === 'disabled' ? habit.status : 'pending',
+      lastAppliedAt: now,
+      applicationCount: habit.applicationCount + 1,
+    } : habit);
+  }
+
+  return [
+    {
+      id,
+      rule,
+      source: 'proposal',
+      scope: input.scope,
+      scopeLabel: input.scopeLabel.trim() || scopeFallbackLabel(input.scope),
+      status: 'pending',
+      examples,
+      createdAt: now,
+      lastAppliedAt: now,
+      applicationCount: 1,
     },
     ...habits,
   ];
@@ -350,6 +390,13 @@ function scopeFallbackLabel(scope: WorkHabitScope): string {
   if (scope === 'project') return '项目';
   if (scope === 'task_type') return '任务类型';
   return '全局';
+}
+
+function stableHabitKey(rule: string, scope: WorkHabitScope, scopeLabel: string): string {
+  return normalizeRule(`${scope}:${scopeLabel}:${rule}`)
+    .replace(/[^a-z0-9\u4e00-\u9fa5]+/gi, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 48) || 'candidate';
 }
 
 function normalizeRule(value: string): string {

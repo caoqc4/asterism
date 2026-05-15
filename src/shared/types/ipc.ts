@@ -97,6 +97,7 @@ import type {
 import type {
   CompletionOverrideLearningSignalInput,
   CreateManualWorkHabitInput,
+  CreateWorkHabitProposalInput,
   ImportLegacyWorkHabitsInput,
   RecordWorkHabitApplicationsInput,
   ResolveWorkHabitConflictInput,
@@ -108,6 +109,7 @@ import type {
 import type {
   CreateTaskInput,
   RecordTaskCompletionCheckInput,
+  RecordTaskTimelineEventInput,
   TaskDetail,
   TaskListItemRecord,
   TaskRecord,
@@ -126,11 +128,13 @@ export type ElectronApi = {
   updateTask: (input: UpdateTaskInput) => Promise<TaskListItemRecord>;
   transitionTask: (input: TransitionTaskInput) => Promise<TaskListItemRecord>;
   recordTaskCompletionCheck: (input: RecordTaskCompletionCheckInput) => Promise<void>;
+  recordTaskTimelineEvent: (input: RecordTaskTimelineEventInput) => Promise<void>;
   getWorkHabitSnapshot: () => Promise<WorkHabitStorageSnapshot>;
   importLegacyWorkHabits: (input: ImportLegacyWorkHabitsInput) => Promise<WorkHabitStorageSnapshot>;
   updateWorkHabit: (input: UpdateWorkHabitInput) => Promise<WorkHabitRecord[]>;
   deleteWorkHabit: (id: string) => Promise<WorkHabitRecord[]>;
   createManualWorkHabit: (input: CreateManualWorkHabitInput) => Promise<WorkHabitRecord[]>;
+  proposeWorkHabit: (input: CreateWorkHabitProposalInput) => Promise<WorkHabitRecord[]>;
   resolveWorkHabitConflict: (input: ResolveWorkHabitConflictInput) => Promise<WorkHabitRecord[]>;
   recordCompletionOverrideLearningSignal: (
     input: CompletionOverrideLearningSignalInput,

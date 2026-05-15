@@ -21,10 +21,16 @@ export type TaskState =
 
 export type TaskRiskLevel = 'none' | 'low' | 'medium' | 'high';
 
+export type TaskExecutionType = 'simple' | 'project' | 'scheduled' | 'event' | 'routine';
+
 export type TaskRecord = {
   id: string;
   title: string;
   summary: string | null;
+  taskType?: TaskExecutionType;
+  taskFacets?: TaskExecutionType[];
+  parentTaskId?: string | null;
+  childTaskIds?: string[];
   state: TaskState;
   nextStep: string | null;
   waitingReason: string | null;
@@ -133,12 +139,20 @@ export type TimelineEventRecord = {
 export type CreateTaskInput = {
   title: string;
   summary?: string;
+  taskType?: TaskExecutionType;
+  taskFacets?: TaskExecutionType[];
+  parentTaskId?: string | null;
+  childTaskIds?: string[];
 };
 
 export type UpdateTaskInput = {
   id: string;
   title?: string;
   summary?: string | null;
+  taskType?: TaskExecutionType;
+  taskFacets?: TaskExecutionType[];
+  parentTaskId?: string | null;
+  childTaskIds?: string[];
   nextStep?: string | null;
   waitingReason?: string | null;
   riskLevel?: TaskRiskLevel;
@@ -168,4 +182,10 @@ export type RecordTaskCompletionCheckInput = {
   runVerificationDetail?: string | null;
   source?: 'task_completion_modal' | 'lightweight_rule_engine' | 'ai_verifier';
   checkedAt?: string;
+};
+
+export type RecordTaskTimelineEventInput = {
+  taskId: string;
+  type: string;
+  payload?: Record<string, unknown>;
 };

@@ -1,0 +1,53 @@
+export const PANEL_RUNTIME_TIMELINE_EVENT_TYPES = [
+  'panel.context_refreshed',
+  'panel.context_switch_accepted',
+  'panel.context_switch_dismissed',
+  'panel.phase_closeout',
+  'panel.task_file_written',
+  'panel.task_file_created',
+  'panel.task_file_moved',
+  'panel.task_file_deleted',
+  'panel.task_record_written',
+  'panel.source_updated',
+  'panel.source_archived',
+  'panel.artifact_written',
+  'panel.artifact_deleted',
+  'panel.project_decomposed',
+  'panel.project_membership_changed',
+  'panel.completion_handoff',
+] as const;
+
+export type PanelRuntimeTimelineEventType = typeof PANEL_RUNTIME_TIMELINE_EVENT_TYPES[number];
+
+const PANEL_RUNTIME_TIMELINE_EVENT_TYPE_SET = new Set<string>(PANEL_RUNTIME_TIMELINE_EVENT_TYPES);
+
+export function isPanelRuntimeTimelineEventType(type: string): type is PanelRuntimeTimelineEventType {
+  return PANEL_RUNTIME_TIMELINE_EVENT_TYPE_SET.has(type);
+}
+
+export function assertKnownPanelRuntimeTimelineEventType(type: string): void {
+  if (type.startsWith('panel.') && !isPanelRuntimeTimelineEventType(type)) {
+    throw new Error(`Unknown panel runtime timeline event type: ${type}`);
+  }
+}
+
+export function getPanelRuntimeTimelineEventTitle(type: PanelRuntimeTimelineEventType): string {
+  switch (type) {
+    case 'panel.context_refreshed': return '任务会话已刷新';
+    case 'panel.context_switch_accepted': return '任务上下文切换已确认';
+    case 'panel.context_switch_dismissed': return '任务上下文切换已取消';
+    case 'panel.phase_closeout': return '阶段收尾已记录';
+    case 'panel.task_file_written': return '任务面板写入文件';
+    case 'panel.task_file_created': return '任务面板创建文件';
+    case 'panel.task_file_moved': return '任务面板移动文件';
+    case 'panel.task_file_deleted': return '任务面板删除文件';
+    case 'panel.task_record_written': return '任务记录已写入';
+    case 'panel.source_updated': return '来源上下文已更新';
+    case 'panel.source_archived': return '来源上下文已归档';
+    case 'panel.artifact_written': return '任务产物已写入';
+    case 'panel.artifact_deleted': return '任务产物已删除';
+    case 'panel.project_decomposed': return '项目拆解已确认';
+    case 'panel.project_membership_changed': return '任务项目归属已更新';
+    case 'panel.completion_handoff': return '任务完成交接已记录';
+  }
+}

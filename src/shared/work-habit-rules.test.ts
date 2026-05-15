@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  createWorkHabitProposalInList,
   findWorkHabitConflict,
   recordWorkHabitApplicationsInList,
   selectApplicableWorkHabits,
@@ -111,6 +112,23 @@ describe('work habit rules', () => {
     expect(findWorkHabitConflict(pending, [confirmed, pending])).toMatchObject({
       candidate: { id: 'habit_pending' },
       confirmed: { id: 'habit_1' },
+    });
+  });
+
+  it('creates pending work habit proposals without confirming them', () => {
+    const habits = createWorkHabitProposalInList([], {
+      rule: '类似任务以后先内部评审再对外发送',
+      scope: 'task_type',
+      scopeLabel: '外部沟通',
+      examples: '用户在任务讨论中反复纠正发送前要评审',
+    }, '2026-05-14T00:00:00.000Z');
+
+    expect(habits[0]).toMatchObject({
+      source: 'proposal',
+      status: 'pending',
+      scope: 'task_type',
+      scopeLabel: '外部沟通',
+      applicationCount: 1,
     });
   });
 });

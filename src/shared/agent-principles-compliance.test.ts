@@ -1,0 +1,58 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  AGENT_PRINCIPLES_COMPLIANCE,
+  summarizeAgentPrinciplesCompliance,
+} from './agent-principles-compliance.js';
+
+const requiredSections = [
+  'Required Read Order',
+  'Information Routing Protocol',
+  'Task Creation Protocol',
+  'Project And Subtask Protocol',
+  'Execution Protocol',
+  'Task.md Rules',
+  'Task Records Rules',
+  'Source Materials Protocol',
+  'Working Files And Outputs',
+  'Verification Protocol',
+  'Task-Level Closeout And Next-Task Evaluation',
+  'Subagent Protocol',
+  'Context Clearing And New Conversations',
+  'Work Habits Boundary',
+  'Decisions, Confirmation, And Self-Check',
+];
+
+describe('agent principles compliance matrix', () => {
+  it('tracks every major operating-principles section', () => {
+    expect(AGENT_PRINCIPLES_COMPLIANCE.map((item) => item.section)).toEqual(requiredSections);
+  });
+
+  it('does not claim full compliance while known gaps remain', () => {
+    const summary = summarizeAgentPrinciplesCompliance();
+
+    expect(summary.implemented).toBe(0);
+    expect(summary.partial).toBeGreaterThan(0);
+    expect(summary.missing).toBeGreaterThan(0);
+    expect(AGENT_PRINCIPLES_COMPLIANCE.some((item) => (
+      item.section === 'Verification Protocol' &&
+      item.gaps.some((gap) => gap.includes('Project-level verification'))
+    ))).toBe(true);
+  });
+
+  it('keeps each item actionable', () => {
+    for (const item of AGENT_PRINCIPLES_COMPLIANCE) {
+      expect(item.implementedBy.length).toBeGreaterThan(0);
+      expect(item.gaps.length).toBeGreaterThan(0);
+      expect(item.nextVerification.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('does not route future runtime work into the legacy WorkbenchPage', () => {
+    const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
+
+    expect(text).toContain('Legacy WorkbenchPage has been removed from the active renderer entry set');
+    expect(text).not.toContain('Workbench write paths');
+    expect(text).not.toContain('Implement Decisions workbench');
+  });
+});

@@ -1,5 +1,6 @@
 import type { PriorityLane } from './brief.js';
 import type { RunCheckpointKind, RunType } from './run.js';
+import type { SourceContextRole, SourceContextStatus } from './source-context.js';
 import type { TaskRiskLevel, TaskState } from './task.js';
 
 export type AgentRunMode = RunType;
@@ -66,11 +67,19 @@ export type AgentWorkingContext = {
     detail: string | null;
   }>;
   sources: Array<{
+    capturedAt?: string | null;
+    createdAt?: string | null;
+    id?: string;
     title: string;
     kind: string;
     isKey: boolean;
     note: string | null;
     contentPreview: string | null;
+    runId?: string | null;
+    selected?: boolean;
+    sourceRole?: SourceContextRole | null;
+    status?: SourceContextStatus | string | null;
+    updatedAt?: string | null;
   }>;
   artifacts: Array<{
     title: string;
@@ -240,6 +249,7 @@ export type AgentToolResult = {
   summary: string;
   output?: string | null;
   artifactId?: string | null;
+  recoveryGuidance?: string[];
   checkpointId?: string | null;
   checkpointKind?: RunCheckpointKind | null;
   checkpointEvent?: Extract<AgentSessionEvent, { type: 'checkpoint.created' }> | null;
