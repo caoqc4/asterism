@@ -227,6 +227,12 @@ export function registerIpcHandlers(): void {
     return getServices().taskService.getHierarchyConsistency();
   });
 
+  ipcMain.handle('task:applySafeHierarchyRepairs', async () => {
+    const result = await getServices().taskService.applySafeHierarchyRepairs();
+    emitAppEvent('task.changed');
+    return result;
+  });
+
   ipcMain.handle('task:create', async (_event, input: CreateTaskInput) => {
     const created = await getServices().taskService.create(input);
     emitAppEvent('task.changed', created.id);

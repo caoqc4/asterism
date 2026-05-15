@@ -28,6 +28,7 @@ const {
     taskService: {
       list: vi.fn(),
       getHierarchyConsistency: vi.fn(),
+      applySafeHierarchyRepairs: vi.fn(),
       create: vi.fn(),
       getDetail: vi.fn(),
       update: vi.fn(),
@@ -213,6 +214,35 @@ describe('registerIpcHandlers', () => {
       consistent: false,
       issueCount: 1,
     });
+  });
+
+  it('applies safe hierarchy repairs through IPC and emits a task change', async () => {
+    servicesMock.taskService.applySafeHierarchyRepairs.mockResolvedValue({
+      appliedActionCount: 1,
+      skippedManualReviewCount: 0,
+      before: {
+        canAutoApplyAll: true,
+        actions: [],
+        safeActionCount: 1,
+        manualReviewCount: 0,
+        summary: '可安全修复 1 项，需人工确认 0 项。',
+      },
+      after: {
+        canAutoApplyAll: false,
+        actions: [],
+        safeActionCount: 0,
+        manualReviewCount: 0,
+        summary: '任务层级关系一致，无需修复。',
+      },
+      summary: '已应用 1 项安全层级修复，保留 0 项人工确认。',
+    });
+
+    const handler = getRegisteredHandler<[], unknown>('task:applySafeHierarchyRepairs');
+
+    await expect(handler({})).resolves.toMatchObject({
+      appliedActionCount: 1,
+    });
+    expect(emitAppEventMock).toHaveBeenCalledWith('task.changed');
   });
 
   it('runs the sandbox backend probe only through the explicit settings channel', async () => {

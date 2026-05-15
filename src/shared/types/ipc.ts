@@ -116,7 +116,10 @@ import type {
   TransitionTaskInput,
   UpdateTaskInput,
 } from './task.js';
-import type { TaskHierarchyConsistencyEvaluation } from '../task-hierarchy-consistency.js';
+import type {
+  AppliedTaskHierarchyRepairResult,
+  TaskHierarchyConsistencyEvaluation,
+} from '../task-hierarchy-consistency.js';
 
 export type ElectronApi = {
   ping: () => Promise<PingResponse>;
@@ -125,6 +128,7 @@ export type ElectronApi = {
   probeSandboxBackend?: () => Promise<AgentSandboxBackendStatus>;
   listTasks: () => Promise<TaskListItemRecord[]>;
   getTaskHierarchyConsistency: () => Promise<TaskHierarchyConsistencyEvaluation>;
+  applySafeTaskHierarchyRepairs: () => Promise<AppliedTaskHierarchyRepairResult>;
   createTask: (input: CreateTaskInput) => Promise<TaskListItemRecord>;
   getTaskDetail: (taskId: string) => Promise<TaskDetail | null>;
   updateTask: (input: UpdateTaskInput) => Promise<TaskListItemRecord>;

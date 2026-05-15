@@ -44,6 +44,14 @@ export type TaskHierarchyRepairPlan = {
   summary: string;
 };
 
+export type AppliedTaskHierarchyRepairResult = {
+  before: TaskHierarchyRepairPlan;
+  after: TaskHierarchyRepairPlan;
+  appliedActionCount: number;
+  skippedManualReviewCount: number;
+  summary: string;
+};
+
 function issue(params: TaskHierarchyConsistencyIssue): TaskHierarchyConsistencyIssue {
   return params;
 }
@@ -163,12 +171,31 @@ export function evaluateTaskHierarchyConsistency(
 
 export function buildTaskHierarchyRepairPlan(tasks: TaskHierarchyNode[]): TaskHierarchyRepairPlan {
   const tasksById = new Map(tasks.map((task) => [task.id, task]));
+  const listedParentByChildId = new Map<string, string>();
+  for (const task of tasks) {
+    for (const childTaskId of task.childTaskIds ?? []) {
+      if (!listedParentByChildId.has(childTaskId)) {
+        listedParentByChildId.set(childTaskId, task.id);
+      }
+    }
+  }
   const evaluation = evaluateTaskHierarchyConsistency(tasks);
   const actions: TaskHierarchyRepairAction[] = evaluation.issues.map((item) => {
     const task = tasksById.get(item.taskId);
     const relatedTask = item.relatedTaskId ? tasksById.get(item.relatedTaskId) : null;
 
     if (item.code === 'missing_parent_child_link' && task && relatedTask) {
+      const listedParentId = listedParentByChildId.get(relatedTask.id);
+      if (listedParentId && listedParentId !== task.id) {
+        return {
+          kind: 'manual_review',
+          taskId: item.taskId,
+          relatedTaskId: item.relatedTaskId,
+          safeToApply: false,
+          reason: `子任务「${relatedTask.title}」已被其他父任务列出，需要人工确认唯一父任务。`,
+        };
+      }
+
       return {
         kind: 'add_parent_child_link',
         taskId: item.taskId,

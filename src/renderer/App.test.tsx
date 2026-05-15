@@ -428,6 +428,31 @@ function createMockApi() {
       featureFlags: input.featureFlags,
     })),
     listTasks: vi.fn().mockResolvedValue(tasks),
+    getTaskHierarchyConsistency: vi.fn().mockResolvedValue({
+      consistent: true,
+      issues: [],
+      issueCount: 0,
+      summary: '任务层级关系一致。',
+    }),
+    applySafeTaskHierarchyRepairs: vi.fn().mockResolvedValue({
+      before: {
+        canAutoApplyAll: false,
+        actions: [],
+        safeActionCount: 0,
+        manualReviewCount: 0,
+        summary: '任务层级关系一致，无需修复。',
+      },
+      after: {
+        canAutoApplyAll: false,
+        actions: [],
+        safeActionCount: 0,
+        manualReviewCount: 0,
+        summary: '任务层级关系一致，无需修复。',
+      },
+      appliedActionCount: 0,
+      skippedManualReviewCount: 0,
+      summary: '已应用 0 项安全层级修复，保留 0 项人工确认。',
+    }),
     createTask: vi.fn().mockImplementation(async (input) => {
       const created = buildTask({
         id: createCounter === 0 ? 'task_created' : `task_created_${createCounter}`,

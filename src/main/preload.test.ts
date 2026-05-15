@@ -33,6 +33,8 @@ function getExposedApi() {
     setAiConfig: (input: unknown) => Promise<unknown>;
     probeSandboxBackend: () => Promise<unknown>;
     listTasks: () => Promise<unknown>;
+    getTaskHierarchyConsistency: () => Promise<unknown>;
+    applySafeTaskHierarchyRepairs: () => Promise<unknown>;
     createTask: (input: unknown) => Promise<unknown>;
     getTaskDetail: (taskId: string) => Promise<unknown>;
     updateTask: (input: unknown) => Promise<unknown>;
@@ -227,6 +229,7 @@ describe('preload bridge', () => {
     await api.probeSandboxBackend();
     await api.listTasks();
     await api.getTaskHierarchyConsistency();
+    await api.applySafeTaskHierarchyRepairs();
     await api.createTask(createTaskInput);
     await api.getTaskDetail('task_1');
     await api.updateTask(updateTaskInput);
@@ -286,6 +289,7 @@ describe('preload bridge', () => {
       ['settings:probeSandboxBackend'],
       ['task:list'],
       ['task:getHierarchyConsistency'],
+      ['task:applySafeHierarchyRepairs'],
       ['task:create', createTaskInput],
       ['task:getDetail', 'task_1'],
       ['task:update', updateTaskInput],

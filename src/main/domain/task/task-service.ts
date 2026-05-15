@@ -38,7 +38,9 @@ import type {
 } from '../../../shared/types/source-context.js';
 import { evaluateRuntimeTaskCapture } from '../../../shared/runtime-task-capture-evaluator.js';
 import {
+  buildTaskHierarchyRepairPlan,
   evaluateTaskHierarchyConsistency,
+  type AppliedTaskHierarchyRepairResult,
   type TaskHierarchyConsistencyEvaluation,
 } from '../../../shared/task-hierarchy-consistency.js';
 import { normalizeCreateSourceContextInput } from '../../../shared/runtime-surface-routing.js';
@@ -705,6 +707,62 @@ export class TaskService {
 
   async getHierarchyConsistency(): Promise<TaskHierarchyConsistencyEvaluation> {
     return evaluateTaskHierarchyConsistency(await this.repository.list());
+  }
+
+  async applySafeHierarchyRepairs(): Promise<AppliedTaskHierarchyRepairResult> {
+    const currentTasks = await this.repository.list();
+    const before = buildTaskHierarchyRepairPlan(currentTasks);
+    const tasksById = new Map(currentTasks.map((task) => [task.id, task]));
+    let appliedActionCount = 0;
+
+    for (const action of before.actions) {
+      if (!action.safeToApply || !action.relatedTaskId) continue;
+
+      if (action.kind === 'add_parent_child_link') {
+        const parent = tasksById.get(action.taskId);
+        const child = tasksById.get(action.relatedTaskId);
+        if (!parent || !child || child.parentTaskId !== parent.id) continue;
+        const childTaskIds = parent.childTaskIds ?? [];
+        if (childTaskIds.includes(child.id)) continue;
+        const nextParent = {
+          ...parent,
+          childTaskIds: [...childTaskIds, child.id],
+        };
+        await this.repository.update({
+          id: parent.id,
+          childTaskIds: nextParent.childTaskIds,
+        });
+        tasksById.set(parent.id, nextParent);
+        appliedActionCount += 1;
+        continue;
+      }
+
+      if (action.kind === 'set_child_parent') {
+        const child = tasksById.get(action.taskId);
+        const parent = tasksById.get(action.relatedTaskId);
+        if (!child || !parent || child.parentTaskId || !(parent.childTaskIds ?? []).includes(child.id)) continue;
+        const nextChild = {
+          ...child,
+          parentTaskId: parent.id,
+        };
+        await this.repository.update({
+          id: child.id,
+          parentTaskId: parent.id,
+        });
+        tasksById.set(child.id, nextChild);
+        appliedActionCount += 1;
+      }
+    }
+
+    const after = buildTaskHierarchyRepairPlan(await this.repository.list());
+
+    return {
+      before,
+      after,
+      appliedActionCount,
+      skippedManualReviewCount: before.manualReviewCount,
+      summary: `已应用 ${appliedActionCount} 项安全层级修复，保留 ${before.manualReviewCount} 项人工确认。`,
+    };
   }
 
   async create(input: CreateTaskInput): Promise<TaskListItemRecord> {

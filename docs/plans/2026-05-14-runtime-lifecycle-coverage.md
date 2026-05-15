@@ -61,7 +61,7 @@ Strongest areas:
 - service-level child task capture now blocks generic phase-template titles and parent-title repeats.
 - project decomposition generation checks the full task list for existing children, including `parentTaskId` links.
 - task creation, parent moves, and parent-side child list updates keep `parentTaskId` and parent `childTaskIds` synchronized at the service boundary.
-- hierarchy consistency diagnostics can find old parent/child mismatches through the service/IPC boundary, and can produce a non-mutating repair plan that separates safe actions from manual-review items.
+- hierarchy consistency diagnostics can find old parent/child mismatches through the service/IPC boundary, can produce a non-mutating repair plan, and can apply only revalidated safe repairs while leaving conflicts for manual review.
 - ordinary task files stay in the task-file class instead of being projected as artifacts.
 
 Weakest areas:
@@ -73,7 +73,7 @@ Weakest areas:
 - Decision judgment-center effect presentation after approval/defer/cancel;
 - Decisions judgment center;
 - unified runtime handoff shape;
-- legacy local task hierarchy attributes and old inconsistent relationship records still need a confirmed cleanup/repair apply path after the database relationship becomes authoritative.
+- legacy local task hierarchy attributes and manual-review hierarchy conflicts still need explicit cleanup/resolution policy after the database relationship becomes authoritative.
 - capability state in context/action evaluation;
 - activity timeline as a complete runtime audit projection.
 

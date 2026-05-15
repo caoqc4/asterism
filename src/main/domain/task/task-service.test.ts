@@ -446,6 +446,94 @@ describe('TaskService', () => {
     });
   });
 
+  it('applies only safe task hierarchy repairs', async () => {
+    const project = {
+      ...buildRecord('running'),
+      id: 'project_1',
+      title: '项目一',
+      childTaskIds: ['child_missing_parent'],
+    };
+    const childMissingParent = {
+      ...buildRecord('running'),
+      id: 'child_missing_parent',
+      title: '需求分析',
+      parentTaskId: null,
+      childTaskIds: [],
+    };
+    const childMissingParentLink = {
+      ...buildRecord('running'),
+      id: 'child_missing_parent_link',
+      title: '实现开发',
+      parentTaskId: 'project_1',
+      childTaskIds: [],
+    };
+    const unrelatedParent = {
+      ...buildRecord('running'),
+      id: 'project_2',
+      title: '项目二',
+      childTaskIds: ['conflicted_child'],
+    };
+    const conflictedChild = {
+      ...buildRecord('running'),
+      id: 'conflicted_child',
+      title: '冲突子任务',
+      parentTaskId: 'project_1',
+      childTaskIds: [],
+    };
+    const repository = {
+      list: vi.fn()
+        .mockResolvedValueOnce([
+          project,
+          childMissingParent,
+          childMissingParentLink,
+          unrelatedParent,
+          conflictedChild,
+        ])
+        .mockResolvedValueOnce([
+          {
+            ...project,
+            childTaskIds: ['child_missing_parent', 'child_missing_parent_link'],
+          },
+          {
+            ...childMissingParent,
+            parentTaskId: 'project_1',
+          },
+          childMissingParentLink,
+          unrelatedParent,
+          conflictedChild,
+        ]),
+      create: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    await expect(service.applySafeHierarchyRepairs()).resolves.toMatchObject({
+      appliedActionCount: 2,
+      skippedManualReviewCount: 2,
+      before: {
+        safeActionCount: 2,
+        manualReviewCount: 2,
+      },
+      after: {
+        safeActionCount: 0,
+      },
+    });
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'child_missing_parent',
+      parentTaskId: 'project_1',
+    });
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'project_1',
+      childTaskIds: ['child_missing_parent', 'child_missing_parent_link'],
+    });
+  });
+
   it('builds a task resume card from current signals, materials, methods, and timeline', async () => {
     const repository = {
       list: vi.fn(),
