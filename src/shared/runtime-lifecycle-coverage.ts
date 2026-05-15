@@ -207,7 +207,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'TaskMdUpdateNeedEvaluation covers RightPanel references, TasksPage Task.md saves, and AgentToolRegistry durable tool guidance through RuntimeRecoveryGuidance; remaining retained durable state changes should consume it through TasksPage, RightPanel, Runs, or Decisions.',
       'Output-reference propagation to Task.md or Task Records is now recommended by tool guidance but not automatically persisted.',
-      'TaskMemoryCoverageEvaluation is wired to context-clear, task-start, run-start, task-switch, task-completion modal, and RightPanel phase-closeout checks.',
+      'TaskMemoryCoverageEvaluation is wired to current lifecycle boundaries; future task lifecycle boundaries must opt into the same evaluator instead of adding direct state changes.',
     ],
     nextImplementation: [
       'Add a confirmed writer for AgentToolRegistry recoveryGuidance through retained TasksPage/RightPanel flows.',

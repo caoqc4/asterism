@@ -543,7 +543,7 @@ Avoid:
 
 Runtime evaluators should gradually converge on a shared
 `TaskMemoryCoverageEvaluation` that can be used before context clearing, task
-switching, phase closeout, task completion, and run start.
+start, task switching, phase closeout, task completion, and run start.
 
 UI may display Task Dynamics as structured task replay, but that display is not
 required for this memory contract to hold. The contract is about durable task
