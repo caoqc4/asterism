@@ -1,5 +1,6 @@
 import { evaluateRuntimeAction } from './runtime-action-evaluator.js';
 import { evaluateRuntimeVerification, type RuntimeVerificationResult } from './runtime-verification.js';
+import { evaluateTaskMemoryCoverage } from './task-memory-coverage.js';
 import type { SubtaskStartEvaluationInput } from './subtask-start-evaluator.js';
 import type { TaskCloseoutEvaluation } from './task-closeout-evaluator.js';
 
@@ -95,6 +96,16 @@ export function evaluateRuntimeHandoff(input: BaseInput & {
         notice: '已在当前任务上下文中。',
       };
     }
+    const memoryCoverage = evaluateTaskMemoryCoverage({
+      action: 'task_switch',
+      hasTaskContext: Boolean(fromTaskId),
+      chatMessageCount: messageCount,
+      hasSpecificHandoffSignal,
+      memoryWriteCompleted: archived,
+    });
+    if (!memoryCoverage.canProceed) {
+      return blocked(input, memoryCoverage.reason);
+    }
     if (fromTaskId && messageCount > 0 && !archived) {
       return {
         ...base(input, hasSpecificHandoffSignal ? 'block' : 'prompt_switch'),
@@ -166,6 +177,7 @@ export function evaluateRuntimeHandoff(input: BaseInput & {
     hasTaskContext: Boolean(fromTaskId),
     messageCount,
     hasSpecificHandoffSignal,
+    memoryWriteCompleted: archived,
   });
   if (!verification.canProceed) return blocked(input, verification.detail);
 

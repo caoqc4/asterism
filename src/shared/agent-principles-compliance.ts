@@ -49,6 +49,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'buildAgentWorkingContext and buildRuntimeContextManifest project task state, sources with freshness metadata, artifacts, files, timeline, and work habits.',
       'RuntimeCapabilitySnapshot can be included in RuntimeContextManifest so model, workspace, flags, and tool scaffold state become explicit context assembly inputs.',
       'RunService and CodeAgentRunService pass RuntimeCapabilitySnapshot into run_start pre-step verification for model/workspace capability checks.',
+      'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through TaskMemoryCoverageEvaluation before execution.',
       'SourceFreshnessEvaluation classifies source materials as include, caution, or exclude, and RuntimeContextManifest can carry source inclusion decisions and reasons.',
       'SelectedFileRelevanceEvaluation classifies selected files as include, caution, or exclude, and RuntimeContextManifest can carry selected-file relevance reasons.',
       'buildRuntimeContextAssemblyPolicy evaluates product principles, task state, Task.md, Task Records, selected file, structured signals, and work habits against the required read order.',
@@ -240,7 +241,9 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Runtime action evaluator distinguishes task_record surfaces from timeline and ui-only actions.',
       'TaskRecordWorthinessEvaluation provides shared reasons for when a Task Record should or should not be created.',
       'RightPanel context-refresh and phase-closeout Task Record writes are gated by TaskRecordWorthinessEvaluation.',
+      'RightPanel phase closeout also checks TaskMemoryCoverageEvaluation after record persistence before refreshing context or handing off.',
       'TasksPage manual Task Record creation is gated by TaskRecordWorthinessEvaluation.',
+      'Task completion modal checks TaskMemoryCoverageEvaluation before treating completion as clean; insufficient memory becomes a recorded override concern.',
       'AgentToolRegistry source-context writes can recommend Task Record creation through recoveryGuidance when the write represents an external signal.',
     ],
     gaps: [
@@ -356,13 +359,19 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Context clear actions require specific handoff signals before clearing active task discussions.',
       'RightPanel distinguishes refresh, manual refresh, leave task context, and new conversation.',
       'Context clear now combines runtime action evaluation with context-clear runtime verification.',
+      'TaskMemoryCoverageEvaluation enforces the Task Memory Spec outcomes for context clearing before chat context can be discarded.',
+      'RuntimeHandoff task-switch checks TaskMemoryCoverageEvaluation before leaving the previous task context.',
+      'RightPanel phase closeout consumes TaskMemoryCoverageEvaluation so handoff signals must be written before chat refresh or next-task handoff.',
+      'Task completion modal consumes TaskMemoryCoverageEvaluation for completion evidence and memory sufficiency.',
       'RuntimeHandoffPreview represents manual refresh/archive preview as reusable runtime data instead of RightPanel-only text assembly.',
     ],
     gaps: [
       'Manual refresh preview is shared, but RightPanel context state transitions still live in separate component state values instead of one reducer/store.',
+      'TaskMemoryCoverageEvaluation is not yet consumed by every task start path.',
     ],
     nextVerification: [
       'When UI state work is allowed, move RightPanel task context transitions behind a small reducer backed by RuntimeContextSnapshot and RuntimeHandoff.',
+      'Route the remaining task lifecycle boundaries through TaskMemoryCoverageEvaluation without adding extra UI steps.',
     ],
   },
   {

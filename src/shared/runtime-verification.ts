@@ -12,6 +12,10 @@ import {
 } from './runtime-capability-snapshot.js';
 import type { RuntimeActionEvaluation } from './runtime-action-evaluator.js';
 import {
+  evaluateTaskMemoryCoverage,
+  type TaskMemoryCoverageEvaluation,
+} from './task-memory-coverage.js';
+import {
   evaluateSubtaskStart,
   type SubtaskStartEvaluation,
   type SubtaskStartEvaluationInput,
@@ -51,6 +55,7 @@ export type RuntimeVerificationResult = {
   taskCloseout?: TaskCloseoutEvaluation;
   subtaskStart?: SubtaskStartEvaluation;
   project?: RuntimeProjectVerification;
+  taskMemoryCoverage?: TaskMemoryCoverageEvaluation;
 };
 
 export type RuntimeProjectVerification = {
@@ -93,6 +98,7 @@ export type RuntimeVerificationInput =
       hasRequiredContext?: boolean;
       hasPendingDecision?: boolean;
       confirmationSatisfied?: boolean;
+      taskMemoryCoverage?: TaskMemoryCoverageEvaluation | null;
       requiresModelExecution?: boolean;
       requiresWorkspaceVerification?: boolean;
     }
@@ -124,6 +130,7 @@ export type RuntimeVerificationInput =
       hasTaskContext: boolean;
       messageCount: number;
       hasSpecificHandoffSignal: boolean;
+      memoryWriteCompleted?: boolean;
     };
 
 export function evaluateRuntimeVerification(input: RuntimeVerificationInput): RuntimeVerificationResult {
@@ -206,6 +213,26 @@ export function evaluateRuntimeVerification(input: RuntimeVerificationInput): Ru
           requiresUserConfirmation: true,
           shouldPersistTaskRecord: false,
           suggestedNextAction: 'confirm',
+        };
+      }
+      if (input.taskMemoryCoverage && !input.taskMemoryCoverage.canProceed) {
+        return {
+          mode: input.mode,
+          tone: input.taskMemoryCoverage.outcome === 'blocked' ? 'fail' : 'warn',
+          label: input.taskMemoryCoverage.outcome === 'blocked'
+            ? '执行前任务记忆阻塞'
+            : '执行前任务记忆不足',
+          detail: input.taskMemoryCoverage.reason,
+          source: 'lightweight_rule_engine',
+          canProceed: false,
+          requiresUserConfirmation: input.taskMemoryCoverage.requiresUserClarification,
+          shouldPersistTaskRecord: input.taskMemoryCoverage.recommendedWrites.includes('task_record'),
+          suggestedNextAction: input.taskMemoryCoverage.outcome === 'needs_memory_write'
+            ? 'handoff'
+            : input.taskMemoryCoverage.outcome === 'blocked'
+              ? 'inspect'
+              : 'confirm',
+          taskMemoryCoverage: input.taskMemoryCoverage,
         };
       }
       if (input.requiresModelExecution && input.capabilities && !capabilitySnapshotAllowsModelExecution(input.capabilities)) {
@@ -407,20 +434,30 @@ export function evaluateRuntimeVerification(input: RuntimeVerificationInput): Ru
       };
     }
     case 'context_clear': {
+      const coverage = evaluateTaskMemoryCoverage({
+        action: 'context_clear',
+        hasTaskContext: input.hasTaskContext,
+        chatMessageCount: input.messageCount,
+        hasSpecificHandoffSignal: input.hasSpecificHandoffSignal,
+        memoryWriteCompleted: input.memoryWriteCompleted,
+      });
       const hasActiveDiscussion = input.hasTaskContext && input.messageCount > 0;
-      const canProceed = !hasActiveDiscussion || input.hasSpecificHandoffSignal;
+      const canProceed = coverage.canProceed;
       return {
         mode: input.mode,
         tone: canProceed ? 'pass' : 'warn',
         label: canProceed ? '上下文清理检查通过' : '上下文清理需保全',
-        detail: canProceed
-          ? '当前上下文可以清理或切换。'
-          : '当前任务会话仍缺少可恢复的交接信息，暂不建议清理。',
+        detail: coverage.reason,
         source: 'lightweight_rule_engine',
         canProceed,
         requiresUserConfirmation: hasActiveDiscussion,
-        shouldPersistTaskRecord: hasActiveDiscussion && input.hasSpecificHandoffSignal,
-        suggestedNextAction: canProceed ? 'continue' : 'wait',
+        shouldPersistTaskRecord: coverage.recommendedWrites.includes('task_record'),
+        suggestedNextAction: coverage.outcome === 'needs_memory_write'
+          ? 'handoff'
+          : canProceed
+            ? 'continue'
+            : 'wait',
+        taskMemoryCoverage: coverage,
       };
     }
   }

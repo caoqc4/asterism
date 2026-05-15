@@ -12,6 +12,7 @@ import {
 import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
 import { buildRuntimeCapabilitySnapshot } from '../../../shared/runtime-capability-snapshot.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
+import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from '../../../shared/task-memory-coverage.js';
 import {
   buildRuntimeContextAssemblyPolicy,
   buildRuntimeContextManifest,
@@ -107,6 +108,10 @@ export class CodeAgentRunService {
       mode: 'pre_step',
       action: actionEvaluation,
       capabilities: buildRuntimeCapabilitySnapshot({ aiStatus }),
+      taskMemoryCoverage: evaluateTaskMemoryCoverage(buildTaskMemoryCoverageInputForTask('run_start', task, {
+        hasBlocker: false,
+        hasNextStep: Boolean(task.nextStep?.trim() || task.resumeCard?.nextSuggestedMove?.trim() || input.patchIntent?.trim()),
+      })),
       requiresModelExecution: input.useModelProducer === true,
       requiresWorkspaceVerification: true,
     });

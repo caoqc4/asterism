@@ -20,6 +20,7 @@ import type {
 import { evaluateRuntimeContextAssemblyGate } from '../../../shared/runtime-context-assembly-gate.js';
 import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
+import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from '../../../shared/task-memory-coverage.js';
 import type { RunRepository } from '../../db/repositories/run-repository.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import type { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
@@ -106,6 +107,10 @@ export class OperatorStartedRunService {
     const preStepVerification = evaluateRuntimeVerification({
       mode: 'pre_step',
       action: actionEvaluation,
+      taskMemoryCoverage: evaluateTaskMemoryCoverage(buildTaskMemoryCoverageInputForTask('run_start', task, {
+        hasBlocker: false,
+        hasNextStep: Boolean(task.nextStep?.trim() || task.resumeCard?.nextSuggestedMove?.trim() || request.reason.trim()),
+      })),
     });
     if (!preStepVerification.canProceed) {
       throw new Error(preStepVerification.detail);

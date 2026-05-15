@@ -146,6 +146,37 @@ describe('runtime verification', () => {
     });
   });
 
+  it('blocks pre-step execution when task memory coverage is insufficient', () => {
+    expect(evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: evaluateRuntimeAction({
+        action: 'run_start',
+        fromTaskId: 'task_1',
+      }),
+      taskMemoryCoverage: {
+        action: 'run_start',
+        outcome: 'needs_user_clarification',
+        canProceed: false,
+        canClearContext: false,
+        canStartExecution: false,
+        requiresUserClarification: true,
+        recommendedWrites: [],
+        missing: ['缺少明确下一步。'],
+        reason: '任务开始前的恢复信息不足，应先补齐最小上下文再执行。',
+      },
+    })).toMatchObject({
+      mode: 'pre_step',
+      tone: 'warn',
+      label: '执行前任务记忆不足',
+      canProceed: false,
+      requiresUserConfirmation: true,
+      suggestedNextAction: 'confirm',
+      taskMemoryCoverage: {
+        outcome: 'needs_user_clarification',
+      },
+    });
+  });
+
   it('blocks model-required pre-step execution when model capability is missing', () => {
     expect(evaluateRuntimeVerification({
       mode: 'pre_step',

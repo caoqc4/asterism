@@ -12,6 +12,7 @@ import {
 } from '../../../shared/runtime-event-record.js';
 import { buildRuntimeResumePlan, evaluateRuntimeHandoff } from '../../../shared/runtime-handoff.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
+import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from '../../../shared/task-memory-coverage.js';
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type {
   CreateRunInput,
@@ -115,6 +116,11 @@ export class RunService {
   }
 
   async trigger(input: CreateRunInput): Promise<RunRecord> {
+    const task = await this.taskService.getDetail(input.taskId);
+
+    if (!task) {
+      throw new Error(`Task not found: ${input.taskId}`);
+    }
     const actionEvaluation = evaluateRuntimeAction({
       action: 'run_start',
       fromTaskId: input.taskId,
@@ -124,16 +130,14 @@ export class RunService {
       mode: 'pre_step',
       action: actionEvaluation,
       capabilities,
+      taskMemoryCoverage: evaluateTaskMemoryCoverage(buildTaskMemoryCoverageInputForTask('run_start', task, {
+        hasBlocker: false,
+        hasNextStep: Boolean(task.nextStep?.trim() || task.resumeCard?.nextSuggestedMove?.trim() || input.instructions?.trim()),
+      })),
       requiresModelExecution: true,
     });
     if (!preStepVerification.canProceed) {
       throw new Error(preStepVerification.detail);
-    }
-
-    const task = await this.taskService.getDetail(input.taskId);
-
-    if (!task) {
-      throw new Error(`Task not found: ${input.taskId}`);
     }
     const startVerification = evaluateRuntimeVerification({
       mode: 'subtask_start',

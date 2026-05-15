@@ -2516,7 +2516,7 @@ function resetCaptureDraft() {
             <div className="view-switcher">
               {([
                 ['manage', '任务管理'],
-                ['timeline', '活动记录'],
+                ['timeline', '任务动态'],
               ] as Array<[TaskDetailViewMode, string]>).map(([mode, label]) => (
                 <button
                   key={mode}
@@ -2535,7 +2535,7 @@ function resetCaptureDraft() {
                   className={`view-btn${viewMode === m ? ' active' : ''}`}
                   onClick={() => setViewMode(m)}
                 >
-                  {m === 'lane' ? '优先处理' : m === 'list' ? '任务目录' : '活动记录'}
+                  {m === 'lane' ? '优先处理' : m === 'list' ? '任务目录' : '任务动态'}
                 </button>
               ))}
             </div>
@@ -3296,10 +3296,10 @@ function TaskTimelineView({
   const ordered = [...events].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const groupedEvents = groupRuntimeEventsByDate(ordered);
   const scopeCopy = parentTask
-    ? `当前显示子任务活动记录；父任务「${parentTask.title}」保留项目层汇总。活动由任务事件、执行、任务记录和拍板项统一投影。`
+    ? `当前显示子任务动态；父任务「${parentTask.title}」保留项目层汇总。任务动态由任务事件、执行、任务记录和拍板项统一投影。`
     : task.type === 'project'
-      ? '当前显示父任务的项目层活动记录；子任务细节进入对应子任务查看。活动由任务事件、执行、任务记录和拍板项统一投影。'
-      : '当前显示此任务自己的活动记录，包含任务事件、执行、任务记录和拍板项。';
+      ? '当前显示父任务的项目层任务动态；子任务细节进入对应子任务查看。任务动态由任务事件、执行、任务记录和拍板项统一投影。'
+      : '当前显示此任务自己的任务动态，包含任务事件、执行、任务记录和拍板项。';
 
   return (
     <div className="task-timeline-workspace">
@@ -3321,11 +3321,11 @@ function TaskTimelineView({
       </div>
 
       <div className="preview-section">
-        <div className="preview-label">活动记录</div>
+        <div className="preview-label">任务动态</div>
         <p className="preview-config-note compact">{scopeCopy}</p>
         {ordered.length === 0 ? (
           <div className="tasks-empty compact">
-            <p>当前任务还没有活动记录。</p>
+            <p>当前任务还没有任务动态。</p>
           </div>
         ) : (
           <div className="task-timeline-list">
@@ -4101,7 +4101,7 @@ function TaskPreview({
     || Boolean(task.commitment);
   const primaryAction = isCompletedTask
     ? {
-        label: '查看活动记录 →',
+        label: '查看任务动态 →',
         onClick: onShowActivity,
           disabled: false,
         tone: 'plan' as const,
@@ -4265,7 +4265,7 @@ function TaskPreview({
         )}
 
         {isCompletedTask ? (
-          <p className="preview-config-note compact">已完成任务不再显示延后、完成等推进动作；需要继续处理时，可从活动记录或任务文件回溯上下文后创建后续任务。</p>
+          <p className="preview-config-note compact">已完成任务不再显示延后、完成等推进动作；需要继续处理时，可从任务动态或任务文件回溯上下文后创建后续任务。</p>
         ) : (
         <div className="preview-task-actions">
           {task.dependencyReady && task.dependencyId && (

@@ -6,6 +6,10 @@ import {
   type RuntimeProjectVerification,
   type RuntimeVerificationResult,
 } from '@shared/runtime-verification';
+import {
+  buildTaskMemoryCoverageInputForTask,
+  evaluateTaskMemoryCoverage,
+} from '@shared/task-memory-coverage';
 import type { RunDetailRecord, RunRecord, RunVerificationRecord } from '@shared/types/run';
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import { recordCompletionOverrideLearningSignal } from '../lib/workHabits';
@@ -172,10 +176,16 @@ export function TaskCompletionCheckModal({
   const open = criteria.filter((item) => item.status === 'open');
   const projectResult = projectVerification?.project ?? null;
   const hasRunConcern = recentRunCheck?.tone === 'fail' || recentRunCheck?.tone === 'warn';
+  const taskMemoryCoverage = detail
+    ? evaluateTaskMemoryCoverage(buildTaskMemoryCoverageInputForTask('task_completion', detail, {
+      hasRecentRunEvidence: Boolean(recentRunCheck && recentRunCheck.tone !== 'fail'),
+    }))
+    : null;
   const hasEvaluationConcern = Boolean(closeoutEvaluation && closeoutEvaluation.outcome !== 'ready_to_complete');
   const hasProjectConcern = Boolean(projectVerification && !projectVerification.canProceed);
   const hasCriteriaConcern = !projectVerification && (open.length > 0 || criteria.length === 0);
-  const hasConcern = hasCriteriaConcern || hasRunConcern || hasEvaluationConcern || hasProjectConcern;
+  const hasMemoryConcern = Boolean(taskMemoryCoverage && !taskMemoryCoverage.canProceed);
+  const hasConcern = hasCriteriaConcern || hasRunConcern || hasEvaluationConcern || hasProjectConcern || hasMemoryConcern;
   const traceParts = [
     hasConcern ? '覆盖完成' : '检查通过',
     projectResult
@@ -193,13 +203,17 @@ export function TaskCompletionCheckModal({
     recentRunCheck ? `最近 Run：${recentRunCheck.label}` : '暂无近期 Run 验证',
     projectVerification ? projectVerification.label : null,
     closeoutEvaluation ? closeoutEvaluation.runVerificationLabel : null,
+    hasMemoryConcern ? `任务记忆：${taskMemoryCoverage?.reason}` : null,
   ].filter((part): part is string => Boolean(part));
 
   async function submit(action: 'waiting' | 'complete') {
     if (submitting) return;
     setSubmitting(true);
     try {
-      const reason = projectVerification?.detail ?? closeoutEvaluation?.reason ?? buildWaitingReason(detail, recentRunCheck);
+      const reason = projectVerification?.detail
+        ?? closeoutEvaluation?.reason
+        ?? taskMemoryCoverage?.reason
+        ?? buildWaitingReason(detail, recentRunCheck);
       await window.api?.recordTaskCompletionCheck({
         taskId,
         action: action === 'waiting'
@@ -264,6 +278,8 @@ export function TaskCompletionCheckModal({
                   ? projectVerification.detail
                   : closeoutEvaluation && closeoutEvaluation.outcome !== 'ready_to_complete'
                   ? closeoutEvaluation.reason
+                  : hasMemoryConcern
+                    ? taskMemoryCoverage?.reason
                   : criteria.length === 0
                   ? '尚未定义完成标准。建议先补充完成标准，或由你确认这次可以直接完成。'
                   : hasConcern
@@ -314,7 +330,7 @@ export function TaskCompletionCheckModal({
                   <p>建议先标记为等待中，等完成标准或 Run 验证结论补齐后再完成；检查建议不阻断操作，你也可以覆盖检查结论，直接完成。</p>
                   <p className="completion-check-trace">将记录：{traceParts.join(' · ')}</p>
                   <p>
-                    覆盖会写入任务活动记录
+                    覆盖会写入任务动态
                     {selfLearnEnabled ? '，并作为后续工作习惯提议的学习信号。' : '；自学习已关闭，不会生成新的工作习惯提议。'}
                   </p>
                   <p>这是用户确认后的完成判断，不会被视为系统异常。</p>

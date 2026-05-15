@@ -2035,7 +2035,7 @@ describe('App redesign v1', () => {
     await user.click(screen.getAllByRole('button', { name: '要求补充信息' })[0]!);
     expect((await screen.findAllByText('董事会材料修订')).length).toBeGreaterThan(0);
     await user.click(screen.getAllByRole('button', { name: '查看任务' })[0]!);
-    expect(await screen.findByText('活动记录')).toBeTruthy();
+    expect(await screen.findByText('任务动态')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Run' })).toBeNull();
     await user.click(screen.getAllByRole('button', { name: /Decisions/ })[0]!);
     await user.click(await screen.findByText('是否批准本轮材料修改方案'));
@@ -2258,7 +2258,7 @@ describe('App redesign v1', () => {
     await user.click(await screen.findByRole('button', { name: /董事会材料修订/ }));
 
     expect(await screen.findByRole('button', { name: '任务管理' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '活动记录' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '任务动态' })).toBeTruthy();
     expect(await screen.findByRole('button', { name: /去拍板/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Overview' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Run' })).toBeNull();
@@ -2266,8 +2266,8 @@ describe('App redesign v1', () => {
     expect(screen.queryByText('任务信息已更新')).toBeNull();
     expect(screen.queryByText(/1 条执行记录/)).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: '活动记录' }));
-    expect(screen.getByRole('button', { name: '活动记录' }).className).toContain('active');
+    await user.click(screen.getByRole('button', { name: '任务动态' }));
+    expect(screen.getByRole('button', { name: '任务动态' }).className).toContain('active');
     expect(screen.getByText(/1 条执行记录/)).toBeTruthy();
     expect(screen.getByText('任务信息已更新')).toBeTruthy();
 
@@ -2282,7 +2282,7 @@ describe('App redesign v1', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /Tasks/ }));
-    await user.click(screen.getByRole('button', { name: '活动记录' }));
+    await user.click(screen.getByRole('button', { name: '任务动态' }));
     await user.click(await screen.findByText('董事会材料修订'));
 
     expect(await screen.findByRole('button', { name: '任务管理' })).toBeTruthy();
@@ -2375,13 +2375,13 @@ describe('App redesign v1', () => {
     expect(screen.getByRole('button', { name: '上线项目' }).className).toContain('parent-active');
     expect(within(taskWorkspace).getByRole('button', { name: /返回父任务：上线项目/ })).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: '活动记录' }));
-    expect(await within(taskWorkspace).findByText(/当前显示子任务活动记录/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '任务动态' }));
+    expect(await within(taskWorkspace).findByText(/当前显示子任务动态/)).toBeTruthy();
 
     await user.click(within(taskWorkspace).getByRole('button', { name: /返回父任务：上线项目/ }));
     expect(await within(taskWorkspace).findByText('项目结构')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '活动记录' }));
-    expect(await within(taskWorkspace).findByText(/当前显示父任务的项目层活动记录/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '任务动态' }));
+    expect(await within(taskWorkspace).findByText(/当前显示父任务的项目层任务动态/)).toBeTruthy();
   });
 
   it('does not ask to switch panel context back to the selected parent when a child task context is already active', async () => {

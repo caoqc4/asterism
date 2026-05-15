@@ -11,7 +11,9 @@ describe('Taskplane Agent product principles', () => {
     expect(TASKPLANE_AGENT_PRINCIPLES_ID).toBe('taskplane.agent-operating-principles.v1');
     expect(TASKPLANE_AGENT_PRINCIPLES_TITLE).toBe('Taskplane Agent Operating Principles');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Write policy: read-only for Agents and ordinary task execution');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Required reference: docs/specs/task-memory-spec.md');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('before creating tasks, executing tasks, updating task memory, clearing context, delegating subagents, or closing work');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Agents must follow the Task Memory Spec');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('## First Principles And Simplicity');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('identify the real object being managed');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Prefer explicit structured state over title patterns');
@@ -54,6 +56,7 @@ describe('Taskplane Agent product principles', () => {
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Do not blindly carry task A chat history into task B.');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('## Subagent Protocol');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Subagents must inherit these operating principles');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Chat context is temporary working memory, not the authoritative task memory.');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Manual clearing must archive useful task signals before clearing');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Reminder-only mode should warn about long or repetitive context without clearing automatically.');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Leaving task context, clearing context, and starting a new conversation are separate actions');

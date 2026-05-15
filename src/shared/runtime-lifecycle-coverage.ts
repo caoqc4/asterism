@@ -87,6 +87,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RuntimeCapabilitySnapshot summarizes model, workspace checks, feature flags, and tool scaffold state, and RuntimeContextManifest can include it as a capability context item.',
       'pre_step runtime verification can consume RuntimeCapabilitySnapshot when an execution explicitly requires model execution or workspace verification.',
       'RunService run_start passes RuntimeCapabilitySnapshot for model execution checks, and CodeAgentRunService passes it for model/workspace capability checks.',
+      'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through TaskMemoryCoverageEvaluation before execution.',
       'SourceFreshnessEvaluation classifies source materials as include, caution, or exclude, and RuntimeContextManifest can attach inclusion decisions and reasons to source context items.',
       'SourceMaterialQualityEvaluation classifies traceability, credibility, duplication, and sensitivity; RuntimeContextManifest combines it with freshness before including source context content.',
       'AgentWorkingContext retains source uri metadata so source-quality traceability checks can use original source locations when available.',
@@ -198,6 +199,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TasksPage manual Task Record creation now passes through TaskRecordWorthinessEvaluation before creating Task Records files.',
       'RuntimeRecoveryGuidance centralizes structured Task.md and Task Record recovery recommendations, while preserving legacy guidance messages.',
       'AgentToolRegistry durable tool results now expose structured recoveryGuidanceItems plus legacy recoveryGuidance messages from RuntimeRecoveryGuidance without silently mutating Task.md.',
+      'TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes to runtime checks and is now consumed by context-clear, run-start, task-switch, task-completion modal, and RightPanel phase-closeout paths.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime owns durable data model boundaries and UI labels for files, records, sources, and generated output.',
@@ -205,9 +207,11 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'TaskMdUpdateNeedEvaluation covers RightPanel references, TasksPage Task.md saves, and AgentToolRegistry durable tool guidance through RuntimeRecoveryGuidance; remaining retained durable state changes should consume it through TasksPage, RightPanel, Runs, or Decisions.',
       'Output-reference propagation to Task.md or Task Records is now recommended by tool guidance but not automatically persisted.',
+      'TaskMemoryCoverageEvaluation is wired to context-clear, run-start, task-switch, task-completion modal, and RightPanel phase-closeout checks; task start should consume the same evaluator next.',
     ],
     nextImplementation: [
       'Add a confirmed writer for AgentToolRegistry recoveryGuidance through retained TasksPage/RightPanel flows.',
+      'Route task start through TaskMemoryCoverageEvaluation.',
     ],
   },
   {
@@ -246,6 +250,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Task completion modal, project completion checks, RightPanel phase closeout, and Run verification persistence consume runtime-verification.',
       'Project detail surfaces display project verification next to the child task structure.',
       'Project verification includes artifact/source evidence counts and Decision effect summaries.',
+      'RightPanel phase closeout also checks TaskMemoryCoverageEvaluation after writing the phase record and before refreshing or handing off.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime must verify not only Agent completion, but user-triggered state changes, project progress, and UI context transitions.',
@@ -267,8 +272,10 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Context clearing requires specific handoff signals.',
       'Run resume passes through runtime action evaluation.',
       'Phase closeout writes Task Records and can hand off to existing child tasks.',
+      'Phase closeout requires TaskMemoryCoverageEvaluation to pass before chat refresh or next-task handoff.',
       'Task closeout evaluation can hand off to existing successors when no child task is available, and new follow-up proposals require evidence plus confirmation instead of automatic creation.',
       'runtime-handoff now provides a shared RuntimeHandoff and RuntimeResumePlan evaluator for context refresh, task switching, phase closeout, and run resume planning.',
+      'Task switch handoff consumes TaskMemoryCoverageEvaluation before leaving the previous task context.',
       'RuntimeResumePlan can include a subtask_start gate when phase closeout hands off to a child or successor task and target context is provided.',
       'RuntimeHandoffPreview now turns handoff plus archive snapshot data into reusable manual-refresh preview text instead of leaving the archive preview assembled only in RightPanel.',
       'RightPanel context refresh, manual refresh, global conversation reset, leave-task-context, task switch confirmation, and phase-closeout handoff now consume RuntimeHandoff results.',

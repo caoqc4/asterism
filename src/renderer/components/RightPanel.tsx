@@ -26,6 +26,7 @@ import {
   evaluateTaskRecordWorthiness,
   type TaskRecordWorthinessReason,
 } from '@shared/task-record-worthiness';
+import { evaluateTaskMemoryCoverage } from '@shared/task-memory-coverage';
 import { evaluateTaskMdUpdateNeed } from '@shared/task-md-update-need';
 import { evaluateRuntimeVerification } from '@shared/runtime-verification';
 import {
@@ -1197,6 +1198,22 @@ export function RightPanel({
         taskTitle: taskName,
         messages,
       });
+      const phaseCloseoutMemory = evaluateTaskMemoryCoverage({
+        action: 'phase_closeout',
+        hasTaskContext: true,
+        chatMessageCount: messages.filter((message) => message.role === 'user' || message.role === 'assistant').length,
+        hasSpecificHandoffSignal: hasSpecificHandoffSignal(
+          messages
+            .filter((message) => message.role === 'user')
+            .map((message) => message.text),
+        ),
+        memoryWriteCompleted: Boolean(preserved.recordPath),
+      });
+      if (!phaseCloseoutMemory.canProceed) {
+        setPhaseCloseoutNotice(`阶段收尾已暂停：${phaseCloseoutMemory.reason}`);
+        appendSysMsg(`阶段收尾已暂停：${phaseCloseoutMemory.reason}`);
+        return;
+      }
       const postStepVerification = evaluateRuntimeVerification({
         mode: 'post_step',
         step: buildPanelRuntimeStep({
@@ -2035,7 +2052,7 @@ function generateReply(input: string, taskId: string | null): string {
   const lower = input.toLowerCase();
   if (lower.includes('状态') || lower.includes('情况')) {
     return taskId
-      ? `当前任务处于正常推进中。根据最近的活动记录，上一次 Run 已完成主要步骤，等待你的进一步指令。\n\n建议下一步：确认输出方向后启动新 Run。`
+      ? `当前任务处于正常推进中。根据最近的任务动态，上一次 Run 已完成主要步骤，等待你的进一步指令。\n\n建议下一步：确认输出方向后启动新 Run。`
       : `从全局来看，今日有 3 件高优先级事项待处理，其中 1 件已在 Running 状态。`;
   }
   if (lower.includes('风险') || lower.includes('问题')) {
