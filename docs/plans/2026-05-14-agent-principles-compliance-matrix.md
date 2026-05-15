@@ -50,8 +50,8 @@ The current runtime deepening work has made meaningful progress on information r
 2. Task Record worthiness is not centralized.
    Context clearing and phase closeout behave better, but user corrections, option comparisons, failure reviews, and external signals need a shared evaluator.
 
-3. Source freshness and traceability need runtime scoring.
-   Source materials have metadata, but freshness, credibility, duplication, sensitivity, and inclusion/exclusion reasons are not yet first-class runtime checks.
+3. Source ingestion needs richer connector signals.
+   Freshness and source-quality checks now exist as shared runtime evaluators, and RuntimeContextManifest combines them into inclusion metadata. The remaining gap is passing explicit credibility, duplicate, and sensitivity signals from future connector ingestion paths.
 
 4. Subagent protocol needs product entry-point wiring.
    A shared `SubagentHandoffEvaluation` now verifies inherited principles, task context, scope, allowed actions/files, confirmation boundaries, and handoff completeness. The remaining gap is wiring it into a future product delegation surface before any subagent result can update task memory or files.

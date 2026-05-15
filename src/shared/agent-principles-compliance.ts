@@ -218,13 +218,16 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     implementedBy: [
       'Source contexts carry kind, role, capturedAt, runId, and batch metadata.',
       'Source creation normalizes missing source roles through shared routing.',
+      'SourceFreshnessEvaluation scores archived, selected, current-run, key, stable, recent, stale, and undated sources.',
+      'SourceMaterialQualityEvaluation scores traceability, credibility, duplication, and sensitivity before source material is included in runtime context.',
+      'RuntimeContextManifest combines source freshness and quality decisions into source-context inclusion metadata.',
     ],
     gaps: [
-      'Freshness, credibility, duplication, sensitivity, and traceability are not yet scored by a shared evaluator.',
-      'Context manifests do not explain why stale sources were included or excluded.',
+      'Source material quality checks are shared and represented in context manifests, but source creation flows do not yet collect explicit credibility or duplicate signals from every connector.',
+      'Source inclusion metadata is data-level only; retained UI surfaces do not yet expose full source-quality explanations.',
     ],
     nextVerification: [
-      'Add SourceFreshnessEvaluation and include/exclude reasons in RuntimeContextManifest.',
+      'Pass explicit credibility, duplicate, and sensitivity signals from future connector ingestion paths into SourceMaterialQualityEvaluation.',
     ],
   },
   {

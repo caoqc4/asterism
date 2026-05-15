@@ -548,6 +548,7 @@ Implemented:
 - `pre_step` runtime verification can now consume `RuntimeCapabilitySnapshot` when an execution explicitly requires model execution or workspace verification.
 - `RunService` now passes `RuntimeCapabilitySnapshot` into run-start pre-step checks for model execution, and `CodeAgentRunService` passes it for model/workspace capability checks.
 - Added `SourceFreshnessEvaluation`; `RuntimeContextManifest` can now carry source inclusion decisions and reasons such as selected, current-run, key, stable reference, recent, stale, archived, or undated.
+- Added `SourceMaterialQualityEvaluation`; `RuntimeContextManifest` now combines freshness with traceability, credibility, duplicate, and sensitivity checks before including source context content.
 - Added `SelectedFileRelevanceEvaluation`; `RuntimeContextManifest` can now carry selected-file relevance reasons such as Task.md, Task Record, explicit selected file, generated output, empty preview, or archived path.
 - `AgentWorkingContext` now retains source id/status/capturedAt/run/sourceRole metadata so ordinary Run context manifests can evaluate source freshness instead of relying only on title-level summaries.
 - Code Agent model-producer preflight now passes selected source-context metadata into `RuntimeContextManifest`, so source freshness/relevance is evaluated before execution rather than only in the provider-visible manifest.

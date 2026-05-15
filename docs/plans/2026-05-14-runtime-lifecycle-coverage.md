@@ -69,6 +69,7 @@ Strongest areas:
 - RuntimeHandoffPreview now centralizes manual refresh/archive preview generation from the shared handoff result plus archive snapshot, while preserving the existing RightPanel layout.
 - RuntimeRecoveryGuidance now centralizes structured Task.md / Task Record recovery recommendations for durable Agent tools, while preserving the existing legacy guidance strings.
 - RuntimeIntakeEvaluation now has regression coverage for task-specific user corrections going to Task Records versus cross-task corrections going to Work Habit proposals.
+- SourceMaterialQualityEvaluation now combines with SourceFreshnessEvaluation in RuntimeContextManifest, so source inclusion can account for freshness, traceability, credibility, duplication, and sensitivity.
 - ordinary task files stay in the task-file class instead of being projected as artifacts.
 
 Weakest areas:

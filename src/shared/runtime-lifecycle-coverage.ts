@@ -87,6 +87,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'pre_step runtime verification can consume RuntimeCapabilitySnapshot when an execution explicitly requires model execution or workspace verification.',
       'RunService run_start passes RuntimeCapabilitySnapshot for model execution checks, and CodeAgentRunService passes it for model/workspace capability checks.',
       'SourceFreshnessEvaluation classifies source materials as include, caution, or exclude, and RuntimeContextManifest can attach inclusion decisions and reasons to source context items.',
+      'SourceMaterialQualityEvaluation classifies traceability, credibility, duplication, and sensitivity; RuntimeContextManifest combines it with freshness before including source context content.',
       'SelectedFileRelevanceEvaluation classifies selected files as include, caution, or exclude, and RuntimeContextManifest can attach selected-file relevance reasons.',
       'RunOrchestrator blocks model execution when runtime context assembly is missing required inputs.',
       'CodeAgentRunService blocks model-producer execution when required task recovery context is missing and passes selected source-context metadata into RuntimeContextManifest before execution.',
@@ -98,7 +99,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'RuntimeContextAssemblyPolicy blocks ordinary Run and Code Agent model-producer execution, but not every execution entry point blocks on it yet.',
-      'Source freshness and selected-file relevance are now represented as first-class inclusion reasons, ordinary Run working context and Code Agent model-producer runs pass source metadata, but not every retained execution entry point passes full context metadata yet.',
+      'Source freshness, source quality, and selected-file relevance are now represented as first-class inclusion reasons, ordinary Run working context and Code Agent model-producer runs pass source metadata, but not every retained execution entry point passes full context metadata yet.',
     ],
     nextImplementation: [
       'Pass full source and selected-file metadata into RuntimeContextManifest from retained execution entry points.',

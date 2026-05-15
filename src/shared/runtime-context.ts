@@ -1,7 +1,17 @@
 import type { AgentWorkingContext } from './types/agent-execution.js';
 import type { RuntimeCapabilitySnapshot } from './runtime-capability-snapshot.js';
 import { evaluateSelectedFileRelevance, type SelectedFileRelevanceReason } from './selected-file-relevance.js';
-import { evaluateSourceFreshness, type SourceFreshnessDecision, type SourceFreshnessReason } from './source-freshness-evaluator.js';
+import {
+  evaluateSourceFreshness,
+  type SourceFreshnessDecision,
+  type SourceFreshnessEvaluation,
+  type SourceFreshnessReason,
+} from './source-freshness-evaluator.js';
+import {
+  evaluateSourceMaterialQuality,
+  type SourceMaterialQualityEvaluation,
+  type SourceMaterialQualityReason,
+} from './source-material-quality-evaluator.js';
 import type { SourceContextRole, SourceContextStatus } from './types/source-context.js';
 import type { TaskState } from './types/task.js';
 
@@ -20,7 +30,7 @@ export type RuntimeContextManifestItem = {
   contentIncluded: boolean;
   id: string;
   inclusionDecision?: SourceFreshnessDecision | null;
-  inclusionReason?: SourceFreshnessReason | SelectedFileRelevanceReason | null;
+  inclusionReason?: SourceFreshnessReason | SourceMaterialQualityReason | SelectedFileRelevanceReason | null;
   kind: RuntimeContextManifestItemKind;
   label: string;
   note?: string | null;
@@ -112,6 +122,7 @@ type RuntimeContextSourceContext = {
   status?: SourceContextStatus | string | null;
   title: string;
   updatedAt?: string | null;
+  uri?: string | null;
 };
 
 export function buildRuntimeContextSnapshot(params: {
@@ -143,6 +154,24 @@ export function buildRuntimeContextSnapshot(params: {
     isTaskBound: Boolean(task),
     summary,
   };
+}
+
+function combineSourceInclusion(
+  freshnessDecision: SourceFreshnessDecision,
+  qualityDecision: SourceFreshnessDecision,
+): SourceFreshnessDecision {
+  if (freshnessDecision === 'exclude' || qualityDecision === 'exclude') return 'exclude';
+  if (freshnessDecision === 'caution' || qualityDecision === 'caution') return 'caution';
+  return 'include';
+}
+
+function sourceInclusionReason(
+  freshness: SourceFreshnessEvaluation,
+  quality: SourceMaterialQualityEvaluation,
+): SourceFreshnessReason | SourceMaterialQualityReason {
+  if (freshness.decision === 'exclude') return freshness.reason;
+  if (quality.decision !== 'include') return quality.reason;
+  return freshness.reason;
 }
 
 export function buildRuntimeContextManifest(params: {
@@ -206,14 +235,26 @@ export function buildRuntimeContextManifest(params: {
           title: source.title,
           updatedAt: source.updatedAt,
         });
+        const quality = evaluateSourceMaterialQuality({
+          content: source.contentPreview,
+          isKey: source.isKey,
+          kind: source.kind,
+          note: source.note,
+          selected: source.selected,
+          sourceRole: source.sourceRole,
+          status: source.status,
+          title: source.title,
+        });
+        const inclusionDecision = combineSourceInclusion(freshness.decision, quality.decision);
+        const inclusionReason = sourceInclusionReason(freshness, quality);
         return {
-          contentIncluded: Boolean(source.contentPreview) && freshness.decision !== 'exclude',
+          contentIncluded: Boolean(source.contentPreview) && inclusionDecision !== 'exclude',
           id: source.id ?? source.title,
-          inclusionDecision: freshness.decision,
-          inclusionReason: freshness.reason,
+          inclusionDecision,
+          inclusionReason,
           kind: 'source_context' as const,
           label: source.title,
-          note: [source.isKey ? 'key' : source.kind, freshness.reason].filter(Boolean).join(' / '),
+          note: [source.isKey ? 'key' : source.kind, freshness.reason, quality.reason].filter(Boolean).join(' / '),
         };
       }),
       ...workingContext.artifacts.map((artifact) => ({
@@ -262,14 +303,27 @@ export function buildRuntimeContextManifest(params: {
           title: source.title,
           updatedAt: source.updatedAt,
         });
+        const quality = evaluateSourceMaterialQuality({
+          content: source.contentPreview,
+          isKey: source.isKey,
+          kind: source.kind,
+          note: source.note,
+          selected: source.selected,
+          sourceRole: source.sourceRole,
+          status: source.status,
+          title: source.title,
+          uri: source.uri,
+        });
+        const inclusionDecision = combineSourceInclusion(freshness.decision, quality.decision);
+        const inclusionReason = sourceInclusionReason(freshness, quality);
         return {
-          contentIncluded: Boolean(source.contentPreview) && freshness.decision !== 'exclude',
+          contentIncluded: Boolean(source.contentPreview) && inclusionDecision !== 'exclude',
           id: source.id,
-          inclusionDecision: freshness.decision,
-          inclusionReason: freshness.reason,
+          inclusionDecision,
+          inclusionReason,
           kind: 'source_context' as const,
           label: source.title,
-          note: [source.isKey ? 'key' : source.kind ?? null, freshness.reason].filter(Boolean).join(' / '),
+          note: [source.isKey ? 'key' : source.kind ?? null, freshness.reason, quality.reason].filter(Boolean).join(' / '),
         };
       }),
     );

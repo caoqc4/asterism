@@ -239,8 +239,9 @@ describe('runtime context manifest', () => {
         {
           id: 'source_recent',
           title: '近期来源',
-          kind: 'note',
+          kind: 'doc',
           contentPreview: 'recent',
+          uri: 'https://example.com/recent',
           updatedAt: '2026-05-14T00:00:00.000Z',
         },
         {
@@ -279,6 +280,41 @@ describe('runtime context manifest', () => {
       inclusionReason: 'explicitly_selected',
     });
     expect(formatRuntimeContextManifestForStep(manifest)).toContain('include=exclude:reason=stale');
+  });
+
+  it('combines source freshness with quality checks before including source context', () => {
+    const manifest = buildRuntimeContextManifest({
+      sourceContexts: [
+        {
+          id: 'source_sensitive',
+          title: '敏感来源',
+          kind: 'doc',
+          contentPreview: 'api_key=secret',
+          uri: 'https://example.com/private',
+          updatedAt: '2026-05-14T00:00:00.000Z',
+        },
+        {
+          id: 'source_untraceable',
+          title: '无追溯备注',
+          kind: 'note',
+          contentPreview: '客户似乎改变想法',
+          updatedAt: '2026-05-14T00:00:00.000Z',
+        },
+      ],
+      task: { id: 'task_1', title: 'Launch task', state: 'running' },
+      taskFiles: [{ path: 'Task.md', kind: 'file', contentPreview: '# Task' }],
+    });
+
+    expect(manifest.items.find((item) => item.id === 'source_sensitive')).toMatchObject({
+      contentIncluded: true,
+      inclusionDecision: 'caution',
+      inclusionReason: 'sensitive',
+    });
+    expect(manifest.items.find((item) => item.id === 'source_untraceable')).toMatchObject({
+      contentIncluded: true,
+      inclusionDecision: 'caution',
+      inclusionReason: 'missing_trace',
+    });
   });
 
   it('adds selected-file relevance reasons to manifest selected files', () => {
