@@ -8,6 +8,7 @@ import type {
   CreateBlockerInput,
   UpdateBlockerInput,
 } from '../../../shared/types/blocker.js';
+import { evaluateBlockerBoundary } from '../../../shared/blocker-evaluator.js';
 import type {
   CompletionCriteriaRecord,
   CreateCompletionCriteriaInput,
@@ -1394,6 +1395,12 @@ export class TaskService {
     if (!this.blockerRepository) {
       throw new Error('Blocker repository is not configured');
     }
+    const blockerBoundary = evaluateBlockerBoundary({
+      title: input.title,
+    });
+    if (!blockerBoundary.allowed) {
+      throw new Error(blockerBoundary.summary);
+    }
 
     const existing = await this.blockerRepository.getActiveForTask(input.taskId);
     const blocker = existing
@@ -1427,6 +1434,14 @@ export class TaskService {
   async updateBlocker(input: UpdateBlockerInput): Promise<BlockerRecord> {
     if (!this.blockerRepository) {
       throw new Error('Blocker repository is not configured');
+    }
+    if (input.title !== undefined) {
+      const blockerBoundary = evaluateBlockerBoundary({
+        title: input.title,
+      });
+      if (!blockerBoundary.allowed) {
+        throw new Error(blockerBoundary.summary);
+      }
     }
 
     const blocker = await this.blockerRepository.update(input);

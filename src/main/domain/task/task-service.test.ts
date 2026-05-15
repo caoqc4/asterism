@@ -1266,6 +1266,49 @@ describe('TaskService', () => {
     expect(resolved.status).toBe('resolved');
   });
 
+  it('blocks empty blocker titles before persistence', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const blockers = {
+      getActiveForTask: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      resolve: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      blockers as never,
+    );
+
+    await expect(service.createBlocker({
+      taskId: 'task_1',
+      title: ' ',
+      kind: 'other',
+    })).rejects.toThrow('阻塞项缺少标题');
+    await expect(service.updateBlocker({
+      id: 'blocker_1',
+      title: '',
+    })).rejects.toThrow('阻塞项缺少标题');
+    expect(blockers.create).not.toHaveBeenCalled();
+    expect(blockers.update).not.toHaveBeenCalled();
+  });
+
   it('creates and resolves task dependency objects with task timeline events', async () => {
     const repository = {
       list: vi.fn(),
