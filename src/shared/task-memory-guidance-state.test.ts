@@ -15,6 +15,14 @@ describe('task memory guidance state', () => {
     ].join('\n'))).toEqual(['task_md', 'task_record']);
   });
 
+  it('detects product task-record terms used by closeout and context refresh flows', () => {
+    expect(detectTaskMemoryGuidanceTargets([
+      '请写入阶段收尾记录，保留质量检查结论。',
+      '需要生成交接记录后再清理上下文。',
+      '会话刷新记录已准备好。',
+    ].join('\n'))).toEqual(['task_record']);
+  });
+
   it('returns none when no guidance signal exists', () => {
     expect(evaluateTaskMemoryGuidanceState({
       guidanceSignals: [],

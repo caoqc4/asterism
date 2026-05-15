@@ -93,7 +93,9 @@ export function evaluateTaskMemoryGuidanceState(params: {
 export function detectTaskMemoryGuidanceTargets(text: string): TaskMemoryGuidanceTarget[] {
   const targets: TaskMemoryGuidanceTarget[] = [];
   if (/Task\.md|task_md|任务摘要|主恢复文件/i.test(text)) targets.push('task_md');
-  if (/Task Record|Task Records|task_record|任务记录|阶段记录/i.test(text)) targets.push('task_record');
+  if (/Task Record|Task Records|task_record|任务记录|阶段记录|阶段收尾记录|收尾记录|交接记录|上下文清理记录|会话刷新记录|context[-_ ]?refresh|closeout|handoff/i.test(text)) {
+    targets.push('task_record');
+  }
   return uniqueTargets(targets);
 }
 
