@@ -139,6 +139,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass through run_start evaluation.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService now pass run_start through pre_step verification before creating/executing work.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService run subtask_start target-readiness checks before creating ordinary, Code Agent, or operator-started runs.',
+      'RunService paused-run continuation validates resume checkpoint eligibility before rechecking target-task readiness with subtask_start.',
       'TaskService guards direct transitions into running with the same subtask_start target-readiness check.',
       'Runs and run steps store plan, model, tool, checkpoint, failure, and final events.',
       'AgentToolRegistry gates risky commands and writes.',
@@ -166,7 +167,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Runtime must decide whether execution is panel-lightweight, Run-backed, Code Agent, operator-started browser QA, or future scheduled/event execution.',
     ],
     gaps: [
-      'pre_step, post_step, and subtask_start verification exist as shared evaluators; run_start, run creation target-readiness, direct running transitions, persisted step checks, phase closeout, task capture, task file proposal confirmation, primary task state transitions, Tasks file actions/content saves, project decomposition writes, and AgentToolRegistry durable tools are wired, but not every retained execution surface yet.',
+      'pre_step, post_step, and subtask_start verification exist as shared evaluators; run_start, run creation target-readiness, paused-run continuation, direct running transitions, persisted step checks, phase closeout, task capture, task file proposal confirmation, primary task state transitions, Tasks file actions/content saves, project decomposition writes, and AgentToolRegistry durable tools are wired, but not every retained execution surface yet.',
       'Core task update and transition paths already write repository timeline events, Tasks activity presents RuntimeEventRecord projections, and Run detail exposes RuntimeEventRecord replay data.',
       'Legacy WorkbenchPage has been removed from the active renderer entry set; its retained responsibilities are covered by TasksPage, RightPanel, Runs, Activity, and Decisions surfaces.',
     ],

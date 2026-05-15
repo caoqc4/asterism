@@ -217,7 +217,7 @@ function buildPausedRunServiceWithPayload(payload: unknown) {
     updateResult: vi.fn(),
   };
   const taskService = {
-    getDetail: vi.fn(),
+    getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
     transitionIfAllowed: vi.fn(),
     annotateRunCompleted: vi.fn(),
     annotateRunFailed: vi.fn(),
@@ -265,6 +265,7 @@ function buildPausedRunServiceWithPayload(payload: unknown) {
     agentToolRegistry,
     runCheckpointRepository,
     service,
+    taskService,
   };
 }
 
@@ -866,7 +867,7 @@ describe('RunService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       transitionIfAllowed: vi.fn(),
       annotateRunCompleted: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateRunFailed: vi.fn(),
@@ -1075,6 +1076,51 @@ describe('RunService', () => {
     expect(result.status).toBe('completed');
   });
 
+  it('blocks paused run continuation when the target task cannot resume execution', async () => {
+    const {
+      agentToolRegistry,
+      runCheckpointRepository,
+      service,
+      taskService,
+    } = buildPausedRunServiceWithPayload({
+      version: 1,
+      kind: 'resume',
+      reason: '等待先解除阻塞。',
+      runId: 'run_1',
+      nextTool: 'artifact.create_note',
+      nextInput: {
+        title: 'Recovered note',
+        content: 'Recovered note',
+      },
+      taskId: 'task_1',
+    });
+    taskService.getDetail.mockResolvedValue({
+      ...buildTaskDetail('running'),
+      activeBlocker: {
+        id: 'blocker_1',
+        taskId: 'task_1',
+        title: '等待评审',
+        kind: 'approval',
+        detail: null,
+        owner: null,
+        responsibility: null,
+        responsibilityLabel: null,
+        sourceContextId: null,
+        status: 'active',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      },
+    });
+
+    await expect(service.continuePausedRun('run_1')).rejects.toThrow(
+      '仍有阻塞、依赖或等待状态',
+    );
+
+    expect(agentToolRegistry.execute).not.toHaveBeenCalled();
+    expect(runCheckpointRepository.updateStatus).not.toHaveBeenCalled();
+  });
+
   it('marks the paused agent session failed when resume execution fails', async () => {
     const runRepository = {
       list: vi.fn(),
@@ -1094,7 +1140,7 @@ describe('RunService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       transitionIfAllowed: vi.fn(),
       annotateRunCompleted: vi.fn(),
       annotateRunFailed: vi.fn(),

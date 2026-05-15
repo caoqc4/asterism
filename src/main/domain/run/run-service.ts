@@ -302,6 +302,25 @@ export class RunService {
     }
 
     const { checkpoint, payload } = eligibility;
+    const targetTask = await this.taskService.getDetail(run.taskId);
+    if (!targetTask) {
+      throw new Error(`Task not found: ${run.taskId}`);
+    }
+    const startVerification = evaluateRuntimeVerification({
+      mode: 'subtask_start',
+      targetTask,
+      contextSignals: {
+        activeTaskId: targetTask.id,
+        targetTaskId: targetTask.id,
+      },
+      availableContext: {
+        taskState: true,
+        decisions: true,
+      },
+    });
+    if (!startVerification.canProceed) {
+      throw new Error(startVerification.detail);
+    }
 
     const result = await this.agentToolRegistry.execute(
       payload.nextTool,
