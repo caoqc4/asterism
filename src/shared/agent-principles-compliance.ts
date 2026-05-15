@@ -150,14 +150,15 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeContextAssemblyGate, RuntimeHandoff, RuntimeResumePlan, and runtime verification already provide pieces of task-bound context refresh, handoff, and pre-step checks.',
       'runtime-verification exposes subtask_start mode so subtask start readiness can be evaluated through the same verification surface as execution and closeout checks.',
       'RuntimeResumePlan can carry an optional subtask_start verdict for phase-closeout handoff to a child or successor task before entering the target task.',
+      'RunService and CodeAgentRunService run subtask_start target-readiness checks before creating provider-visible or code-agent work.',
       'Project decomposition and task closeout flows already prefer existing child tasks and handoffs instead of creating generic follow-up tasks.',
     ],
     gaps: [
-      'SubtaskStartEvaluation exists as a shared evaluator, runtime-verification mode, and optional RuntimeResumePlan gate, but retained task-entry and execution paths do not yet pass target task details through it before every subtask start.',
-      'Context cleanliness and context sufficiency are now represented in one runtime verdict, but UI and provider-visible execution starts still need to provide the input signals for that verdict.',
+      'SubtaskStartEvaluation now guards phase-closeout handoff, completion handoff, ordinary Run starts, and Code Agent starts, but some retained task-entry paths still need to pass full parent/handoff/context signals before every subtask start.',
+      'Context cleanliness and context sufficiency are represented in one runtime verdict, but run-start service checks currently use a deliberately minimal target-readiness input to avoid overblocking older tasks.',
     ],
     nextVerification: [
-      'Route subtask handoff, explicit task-enter actions, and task-bound execution start through SubtaskStartEvaluation before provider-visible execution.',
+      'Route remaining explicit task-enter actions through SubtaskStartEvaluation before provider-visible execution.',
     ],
   },
   {
@@ -171,6 +172,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'runtime-verification has first-pass pre_step and post_step modes for execution permission and durable-change recovery notes.',
       'pre_step runtime verification can consume RuntimeCapabilitySnapshot when an execution explicitly requires model execution or workspace verification.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through pre_step verification.',
+      'RunService and CodeAgentRunService also pass target-task readiness through subtask_start before run creation.',
       'Persisted Run step verification now uses post_step verification.',
       'runtime-step-effect-evaluator feeds post_step verification with durable-change and recovery-note signals.',
       'RightPanel phase closeout uses pre_step and post_step verification around task-record persistence.',

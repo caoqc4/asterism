@@ -540,6 +540,60 @@ describe('RunService', () => {
     expect(result.status).toBe('completed');
   });
 
+  it('blocks run start when the target task cannot start', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn(),
+      create: vi.fn().mockResolvedValue(buildRunRecord('pending')),
+      updateResult: vi.fn(),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildTaskDetail('planned'),
+        activeBlocker: {
+          id: 'blocker_1',
+          taskId: 'task_1',
+          title: '等待评审',
+          kind: 'approval',
+          detail: null,
+          owner: null,
+          responsibility: null,
+          responsibilityLabel: null,
+          sourceContextId: null,
+          status: 'active',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          resolvedAt: null,
+        },
+      }),
+      transitionIfAllowed: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+      annotateRunFailed: vi.fn(),
+      annotateProcessTemplateSelected: vi.fn(),
+      annotateProcessTemplateSkipped: vi.fn(),
+    };
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      buildArtifactRepositoryMock() as never,
+      {} as never,
+      {} as never,
+      undefined,
+      buildRunStepRepositoryMock() as never,
+      null,
+      { listForRun: vi.fn().mockResolvedValue([]) } as never,
+      { listForRun: vi.fn().mockResolvedValue([]) } as never,
+    );
+
+    await expect(service.trigger({
+      taskId: 'task_1',
+      type: 'draft',
+      instructions: 'Please draft this',
+    })).rejects.toThrow('仍有阻塞、依赖或等待状态');
+    expect(runRepository.create).not.toHaveBeenCalled();
+    expect(taskService.transitionIfAllowed).not.toHaveBeenCalled();
+  });
+
   it('keeps step checks but skips run-level verification when self-check is disabled', async () => {
     const runRepository = {
       list: vi.fn(),

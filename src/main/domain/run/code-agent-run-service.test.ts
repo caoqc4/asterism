@@ -296,6 +296,36 @@ describe('CodeAgentRunService', () => {
     expect(result).toBe(failedRun);
   });
 
+  it('blocks code-agent run start when the target task cannot start', async () => {
+    taskService.getDetail.mockResolvedValue({
+      ...buildTask(),
+      activeBlocker: {
+        id: 'blocker_1',
+        taskId: 'task_1',
+        title: '等待评审',
+        kind: 'approval',
+        detail: null,
+        owner: null,
+        responsibility: null,
+        responsibilityLabel: null,
+        sourceContextId: null,
+        status: 'active',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      },
+    });
+
+    await expect(createService().trigger({
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      taskId: 'task_1',
+    })).rejects.toThrow('仍有阻塞、依赖或等待状态');
+    expect(runRepository.create).not.toHaveBeenCalled();
+    expect(runStepRepository.create).not.toHaveBeenCalled();
+  });
+
   it('blocks model-backed runs before provider config resolution when selected context is invalid', async () => {
     process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
     process.env.TASKPLANE_CODE_AGENT_CONTEXT_FILES = '../escape.md';
