@@ -10,6 +10,7 @@ import {
   buildTaskMemoryCoverageInputForTask,
   evaluateTaskMemoryCoverage,
 } from '@shared/task-memory-coverage';
+import { selectBlockingTaskMemoryGuidance } from '@shared/task-memory-guidance-state';
 import type { RunDetailRecord, RunRecord, RunVerificationRecord } from '@shared/types/run';
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import { recordCompletionOverrideLearningSignal } from '../lib/workHabits';
@@ -47,6 +48,13 @@ function verificationToCheck(record: RunVerificationRecord): RuntimeVerification
 }
 
 function buildRunCheck(run: RunRecord, detail: RunDetailRecord | null): RuntimeVerificationResult {
+  if (detail?.taskMemoryGuidance?.outcome === 'pending') {
+    return evaluateRuntimeVerification({
+      mode: 'run',
+      run,
+      detail,
+    });
+  }
   const persisted = detail?.verifications?.find((item) => (
     item.targetType === 'run' && item.targetId === run.id
   ));
@@ -153,11 +161,24 @@ export function TaskCompletionCheckModal({
           setProjectVerification(null);
         }
 
-        const recentRun = (runs ?? [])
+        const taskRuns = (runs ?? [])
           .filter((run) => run.taskId === taskId)
-          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null;
-        if (recentRun && window.api?.getRunDetail) {
-          const runDetail = await window.api.getRunDetail(recentRun.id).catch(() => null);
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+        const recentRun = taskRuns[0] ?? null;
+        const api = window.api;
+        if (recentRun && api) {
+          const runDetails = await Promise.all(
+            taskRuns.map((run) => api.getRunDetail(run.id).catch(() => null)),
+          );
+          const blockingGuidance = selectBlockingTaskMemoryGuidance(
+            runDetails.map((runDetail) => runDetail?.taskMemoryGuidance),
+          );
+          const runDetail = blockingGuidance
+            ? {
+              ...(runDetails.find((detail) => detail?.taskMemoryGuidance === blockingGuidance) ?? recentRun),
+              taskMemoryGuidance: blockingGuidance,
+            }
+            : runDetails[0] ?? null;
           if (!cancelled) setRecentRunCheck(buildRunCheck(recentRun, runDetail));
         } else {
           setRecentRunCheck(null);

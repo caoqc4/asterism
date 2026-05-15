@@ -1769,6 +1769,39 @@ describe('App redesign v1', () => {
     expect((await screen.findAllByText('已确认')).length).toBeGreaterThan(0);
   });
 
+  it('surfaces pending task memory guidance from older runs during completion checks', async () => {
+    const user = userEvent.setup();
+    const pendingGuidance: TaskMemoryGuidanceState = {
+      latestGuidanceAt: now,
+      outcome: 'pending',
+      pendingTargets: ['task_record'],
+      reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
+      targets: ['task_record'],
+    };
+    harness.runs.push(buildRun({
+      id: 'run_newer_without_guidance',
+      taskId: 'task_risk',
+      updatedAt: '2026-01-01T00:05:00.000Z',
+    }));
+    harness.api.getRunDetail = vi.fn().mockImplementation(async (runId) => {
+      const run = harness.runs.find((item) => item.id === runId);
+      if (!run) return null;
+      return buildRunDetail(run, {
+        taskMemoryGuidance: run.id === 'run_newer_without_guidance' ? undefined : pendingGuidance,
+      });
+    });
+    window.api = harness.api;
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByText('董事会材料修订'));
+    await user.click(await screen.findByRole('button', { name: '完成' }));
+
+    expect(await screen.findByText('完成确认')).toBeTruthy();
+    expect(screen.getAllByText(/Run 任务记忆待处理/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/最新任务记忆建议仍缺少对应写入：Task Record/)).toBeTruthy();
+  });
+
   it('does not create completion-override habit proposals when self-learn is disabled', async () => {
     vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
       featureFlags: {
