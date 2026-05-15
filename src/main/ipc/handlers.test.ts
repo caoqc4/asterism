@@ -960,6 +960,68 @@ describe('registerIpcHandlers', () => {
     expect(emitAppEventMock).not.toHaveBeenCalled();
   });
 
+  it('blocks task-file updates when the file binding cannot be resolved', async () => {
+    servicesMock.taskFileRepository.findById.mockResolvedValueOnce(null);
+
+    const handler = getRegisteredHandler<
+      [{ id: string; content: string }],
+      unknown
+    >('taskFile:update');
+
+    await expect(handler({}, {
+      id: 'missing_file',
+      content: 'updated notes',
+    })).rejects.toThrow('Task file not found: missing_file');
+
+    expect(servicesMock.taskFileRepository.update).not.toHaveBeenCalled();
+    expect(emitAppEventMock).not.toHaveBeenCalled();
+  });
+
+  it('blocks task-file deletion when the file binding cannot be resolved', async () => {
+    servicesMock.taskFileRepository.findById.mockResolvedValueOnce(null);
+
+    const handler = getRegisteredHandler<
+      [string],
+      unknown
+    >('taskFile:delete');
+
+    await expect(handler({}, 'missing_file')).rejects.toThrow('Task file not found: missing_file');
+
+    expect(servicesMock.taskFileRepository.delete).not.toHaveBeenCalled();
+    expect(emitAppEventMock).not.toHaveBeenCalled();
+  });
+
+  it('blocks artifact updates when the artifact binding cannot be resolved', async () => {
+    servicesMock.artifactRepository.findById.mockResolvedValueOnce(null);
+
+    const handler = getRegisteredHandler<
+      [{ id: string; content: string }],
+      unknown
+    >('artifact:update');
+
+    await expect(handler({}, {
+      id: 'missing_artifact',
+      content: 'updated output',
+    })).rejects.toThrow('Artifact not found: missing_artifact');
+
+    expect(servicesMock.artifactRepository.update).not.toHaveBeenCalled();
+    expect(emitAppEventMock).not.toHaveBeenCalled();
+  });
+
+  it('blocks artifact deletion when the artifact binding cannot be resolved', async () => {
+    servicesMock.artifactRepository.findById.mockResolvedValueOnce(null);
+
+    const handler = getRegisteredHandler<
+      [string],
+      unknown
+    >('artifact:delete');
+
+    await expect(handler({}, 'missing_artifact')).rejects.toThrow('Artifact not found: missing_artifact');
+
+    expect(servicesMock.artifactRepository.delete).not.toHaveBeenCalled();
+    expect(emitAppEventMock).not.toHaveBeenCalled();
+  });
+
   it('imports legacy work habits without emitting task events', async () => {
     servicesMock.workHabitService.importLegacy.mockResolvedValue({
       version: 3,

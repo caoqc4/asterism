@@ -426,9 +426,10 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('artifact:update', async (_event, input: UpdateArtifactInput) => {
     const existing = await getServices().artifactRepository.findById(input.id);
-    if (existing) {
-      await assertTaskBoundMutationAllowed(existing.taskId);
+    if (!existing) {
+      throw new Error(`Artifact not found: ${input.id}`);
     }
+    await assertTaskBoundMutationAllowed(existing.taskId);
     const updated = await getServices().artifactRepository.update(input);
     emitAppEvent('task.changed', updated.taskId);
     return updated;
@@ -436,9 +437,10 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('artifact:delete', async (_event, id: string) => {
     const existing = await getServices().artifactRepository.findById(id);
-    if (existing) {
-      await assertTaskBoundMutationAllowed(existing.taskId);
+    if (!existing) {
+      throw new Error(`Artifact not found: ${id}`);
     }
+    await assertTaskBoundMutationAllowed(existing.taskId);
     const deleted = await getServices().artifactRepository.delete(id);
     emitAppEvent('task.changed', deleted.taskId);
     return deleted;
@@ -457,9 +459,10 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('taskFile:update', async (_event, input: UpdateTaskFileInput) => {
     const existing = await getServices().taskFileRepository.findById(input.id);
-    if (existing) {
-      await assertTaskBoundMutationAllowed(existing.taskId);
+    if (!existing) {
+      throw new Error(`Task file not found: ${input.id}`);
     }
+    await assertTaskBoundMutationAllowed(existing.taskId);
     const updated = await getServices().taskFileRepository.update(input);
     emitAppEvent('task.changed', updated.taskId);
     return updated;
@@ -467,9 +470,10 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('taskFile:delete', async (_event, id: string) => {
     const existing = await getServices().taskFileRepository.findById(id);
-    if (existing) {
-      await assertTaskBoundMutationAllowed(existing.taskId);
+    if (!existing) {
+      throw new Error(`Task file not found: ${id}`);
     }
+    await assertTaskBoundMutationAllowed(existing.taskId);
     const deleted = await getServices().taskFileRepository.delete(id);
     emitAppEvent('task.changed', deleted.taskId);
     return deleted;
