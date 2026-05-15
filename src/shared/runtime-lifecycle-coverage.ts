@@ -201,6 +201,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'AgentToolRegistry durable tool results now expose structured recoveryGuidanceItems plus legacy recoveryGuidance messages from RuntimeRecoveryGuidance without silently mutating Task.md.',
       'AgentToolRegistry persists recoveryGuidanceItems as a separate Run Step so task-memory recommendations remain auditable without silently mutating Task.md or Task Records.',
       'TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes to runtime checks and is now consumed by context-clear, task-start, run-start, task-switch, task-completion modal, and RightPanel phase-closeout paths.',
+      'AutoContextClearReadiness wraps TaskMemoryCoverageEvaluation into safe_to_clear, needs_memory_write, needs_user_decision, keep_context, and not_applicable outcomes without introducing a hard message-count rule.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime owns durable data model boundaries and UI labels for files, records, sources, and generated output.',
@@ -213,6 +214,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     nextImplementation: [
       'Add a confirmed writer for persisted AgentToolRegistry recoveryGuidance through retained TasksPage/RightPanel flows.',
       'Keep new lifecycle boundaries routed through TaskMemoryCoverageEvaluation before adding direct state changes.',
+      'Keep automatic context clearing as runtime readiness data until a retained UI or scheduler explicitly consumes it.',
     ],
   },
   {

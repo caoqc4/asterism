@@ -545,6 +545,11 @@ Runtime evaluators should gradually converge on a shared
 `TaskMemoryCoverageEvaluation` that can be used before context clearing, task
 start, task switching, phase closeout, task completion, and run start.
 
+Automatic context clearing should consume a runtime readiness verdict derived
+from task memory coverage. It should not use a fixed message-count rule. Message
+count may trigger inspection, but clearing is allowed only when the verdict says
+the current task chat can be discarded without reducing task recovery quality.
+
 UI may display Task Dynamics as structured task replay, but that display is not
 required for this memory contract to hold. The contract is about durable task
 recovery first and presentation second.

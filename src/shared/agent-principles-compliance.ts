@@ -362,6 +362,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RightPanel distinguishes refresh, manual refresh, leave task context, and new conversation.',
       'Context clear now combines runtime action evaluation with context-clear runtime verification.',
       'TaskMemoryCoverageEvaluation enforces the Task Memory Spec outcomes for context clearing before chat context can be discarded.',
+      'AutoContextClearReadiness turns memory coverage into automatic-clear readiness outcomes without using a hard message-count rule.',
       'RuntimeHandoff task-switch checks TaskMemoryCoverageEvaluation before leaving the previous task context.',
       'RightPanel phase closeout consumes TaskMemoryCoverageEvaluation so handoff signals must be written before chat refresh or next-task handoff.',
       'Task completion modal consumes TaskMemoryCoverageEvaluation for completion evidence and memory sufficiency.',
@@ -371,10 +372,12 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     gaps: [
       'Manual refresh preview is shared, but RightPanel context state transitions still live in separate component state values instead of one reducer/store.',
       'New lifecycle boundaries must continue to opt into TaskMemoryCoverageEvaluation instead of bypassing the shared evaluator.',
+      'Automatic context clearing readiness exists as runtime data only; no retained UI or scheduler consumes it yet.',
     ],
     nextVerification: [
       'When UI state work is allowed, move RightPanel task context transitions behind a small reducer backed by RuntimeContextSnapshot and RuntimeHandoff.',
       'Route any new task lifecycle boundary through TaskMemoryCoverageEvaluation without adding extra UI steps.',
+      'When automatic clearing is productized, consume AutoContextClearReadiness rather than reintroducing fixed-round clearing.',
     ],
   },
   {
