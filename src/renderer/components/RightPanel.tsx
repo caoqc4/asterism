@@ -833,6 +833,7 @@ export function RightPanel({
     const fromTaskId = activeTaskId;
     const targetSwitch = pendingSwitch;
     const { archived, hasSpecificSignal, userMessageCount } = await archiveTaskConversationIfNeeded();
+    const taskMemoryGuidance = await getBlockingTaskMemoryGuidance(fromTaskId);
     const handoff = evaluateRuntimeHandoff({
       intent: 'switch_task',
       fromTaskId,
@@ -840,6 +841,7 @@ export function RightPanel({
       messageCount: userMessageCount,
       hasSpecificHandoffSignal: hasSpecificSignal,
       archived,
+      taskMemoryGuidance,
     });
     if (!handoff.canProceed) {
       handleMissingRefreshArchive(handoff.reason);

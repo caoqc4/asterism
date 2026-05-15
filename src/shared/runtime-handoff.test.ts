@@ -153,6 +153,31 @@ describe('runtime handoff', () => {
     expect(result.requiresUserConfirmation).toBe(true);
   });
 
+  it('blocks task switch when task memory guidance is still pending', () => {
+    const result = evaluateRuntimeHandoff({
+      intent: 'switch_task',
+      fromTaskId: 'task-1',
+      toTaskId: 'task-2',
+      messageCount: 1,
+      hasSpecificHandoffSignal: false,
+      archived: true,
+      taskMemoryGuidance: {
+        latestGuidanceAt: '2026-05-15T01:00:00.000Z',
+        outcome: 'pending',
+        pendingTargets: ['task_record'],
+        reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
+        targets: ['task_record'],
+      },
+    });
+
+    expect(result.canProceed).toBe(false);
+    expect(result.action).toBe('block');
+    expect(result.autoContextClear).toMatchObject({
+      outcome: 'needs_memory_write',
+      reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
+    });
+  });
+
   it('requires archive before replaying a high-signal task-to-task handoff', () => {
     const blocked = evaluateRuntimeHandoff({
       intent: 'switch_task',

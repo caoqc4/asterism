@@ -107,6 +107,31 @@ export function evaluateRuntimeHandoff(input: BaseInput & {
         notice: '已在当前任务上下文中。',
       };
     }
+    if (
+      input.hasOpenDecision
+      || input.hasBlocker
+      || input.hasPendingRecoveryGuidance
+      || input.shortTermReasoningActive
+      || input.taskMemoryGuidance?.outcome === 'pending'
+    ) {
+      const autoContextClear = evaluateAutoContextClearReadiness({
+        hasTaskContext: Boolean(fromTaskId),
+        chatMessageCount: messageCount,
+        hasSpecificHandoffSignal,
+        memoryWriteCompleted: archived,
+        hasOpenDecision: input.hasOpenDecision,
+        hasBlocker: input.hasBlocker,
+        hasPendingRecoveryGuidance: input.hasPendingRecoveryGuidance,
+        shortTermReasoningActive: input.shortTermReasoningActive,
+        taskMemoryGuidance: input.taskMemoryGuidance,
+      });
+      if (!autoContextClear.shouldAutoClear && autoContextClear.outcome !== 'not_applicable') {
+        return {
+          ...blocked(input, autoContextClear.reason),
+          autoContextClear,
+        };
+      }
+    }
     const memoryCoverage = evaluateTaskMemoryCoverage({
       action: 'task_switch',
       hasTaskContext: Boolean(fromTaskId),
