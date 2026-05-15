@@ -285,6 +285,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskHierarchyConsistencyEvaluation can diagnose historical hierarchy mismatches before a repair flow mutates old records, and TaskService exposes the diagnostics through IPC.',
       'TaskHierarchyRepairPlan can turn diagnostics into non-mutating safe repair actions or manual-review items before any confirmed maintenance writer exists.',
       'TaskService.applySafeHierarchyRepairs applies only revalidated safe TaskHierarchyRepairPlan actions through the service/IPC boundary and leaves manual-review items untouched.',
+      'TaskHierarchyManualReviewPolicy explains conflicting parentage, missing records, self references, and duplicate references before any human-confirmed resolution UI exists.',
       'runtime-subtask-evaluator blocks duplicate, generic, parent-overlapping, or underspecified project child drafts before creation.',
       'Project decomposition generation and confirmation both consult runtime-subtask-evaluator, so existing children block another decomposition round before a new draft appears.',
       'Project decomposition generation now detects existing children from the full task list, including children linked only by parentTaskId.',
@@ -294,12 +295,12 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Some task structure still relies on renderer-local attributes.',
-      'Project progress and child ordering are closer to data-authoritative, but legacy local attributes still need migration cleanup and manual-review hierarchy conflicts still need an explicit resolution policy.',
+      'Project progress and child ordering are closer to data-authoritative, but legacy local attributes still need migration cleanup and manual-review hierarchy conflicts still need a confirmed resolution surface.',
       'Subtask draft evaluation is enforced for project decomposition generation and confirmation, but not yet every future child-task creation path.',
     ],
     nextImplementation: [
       'Finish Package F data model migration cleanup.',
-      'Define explicit manual-review policies for conflicting parentage, missing records, and self links.',
+      'Add a confirmed resolution surface or maintenance command for TaskHierarchyManualReviewPolicy items.',
     ],
   },
   {

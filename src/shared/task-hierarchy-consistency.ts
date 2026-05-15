@@ -52,6 +52,26 @@ export type AppliedTaskHierarchyRepairResult = {
   summary: string;
 };
 
+export type TaskHierarchyManualReviewReason =
+  | 'conflicting_parentage'
+  | 'missing_record'
+  | 'self_reference'
+  | 'duplicate_reference'
+  | 'ambiguous_relationship';
+
+export type TaskHierarchyManualReviewItem = {
+  issue: TaskHierarchyConsistencyIssue;
+  reason: TaskHierarchyManualReviewReason;
+  decisionQuestion: string;
+  recommendedResolution: string;
+};
+
+export type TaskHierarchyManualReviewPolicy = {
+  required: boolean;
+  items: TaskHierarchyManualReviewItem[];
+  summary: string;
+};
+
 function issue(params: TaskHierarchyConsistencyIssue): TaskHierarchyConsistencyIssue {
   return params;
 }
@@ -239,5 +259,88 @@ export function buildTaskHierarchyRepairPlan(tasks: TaskHierarchyNode[]): TaskHi
     summary: actions.length
       ? `可安全修复 ${safeActionCount} 项，需人工确认 ${manualReviewCount} 项。`
       : '任务层级关系一致，无需修复。',
+  };
+}
+
+export function buildTaskHierarchyManualReviewPolicy(
+  tasks: TaskHierarchyNode[],
+): TaskHierarchyManualReviewPolicy {
+  const plan = buildTaskHierarchyRepairPlan(tasks);
+  const manualActions = plan.actions.filter((item) => !item.safeToApply);
+  const issueByKey = new Map(
+    evaluateTaskHierarchyConsistency(tasks).issues.map((item) => [
+      `${item.code}:${item.taskId}:${item.relatedTaskId ?? ''}`,
+      item,
+    ]),
+  );
+  const items: TaskHierarchyManualReviewItem[] = manualActions.map((action) => {
+    const issue = issueByKey.get(`missing_parent_child_link:${action.taskId}:${action.relatedTaskId ?? ''}`)
+      ?? issueByKey.get(`missing_parent_backlink:${action.taskId}:${action.relatedTaskId ?? ''}`)
+      ?? issueByKey.get(`child_listed_under_multiple_parents:${action.taskId}:${action.relatedTaskId ?? ''}`)
+      ?? issueByKey.get(`duplicate_child_id:${action.taskId}:${action.relatedTaskId ?? ''}`)
+      ?? issueByKey.get(`missing_child_record:${action.taskId}:${action.relatedTaskId ?? ''}`)
+      ?? issueByKey.get(`missing_parent_record:${action.taskId}:${action.relatedTaskId ?? ''}`)
+      ?? issueByKey.get(`self_child:${action.taskId}:${action.relatedTaskId ?? ''}`)
+      ?? {
+        code: 'missing_parent_child_link' as const,
+        taskId: action.taskId,
+        relatedTaskId: action.relatedTaskId,
+        message: action.reason,
+      };
+
+    if (issue.code === 'missing_child_record' || issue.code === 'missing_parent_record') {
+      return {
+        issue,
+        reason: 'missing_record',
+        decisionQuestion: '缺失的任务记录是否应恢复，还是应移除这条层级引用？',
+        recommendedResolution: '先确认缺失记录来源；无法恢复时再移除悬空引用。',
+      };
+    }
+
+    if (issue.code === 'self_child') {
+      return {
+        issue,
+        reason: 'self_reference',
+        decisionQuestion: '这个任务是否被错误地指向了自己？',
+        recommendedResolution: '移除自引用，并重新选择真实父任务或子任务。',
+      };
+    }
+
+    if (issue.code === 'duplicate_child_id') {
+      return {
+        issue,
+        reason: 'duplicate_reference',
+        decisionQuestion: '重复的子任务引用是否只是重复写入？',
+        recommendedResolution: '保留一条引用，删除重复项。',
+      };
+    }
+
+    if (
+      issue.code === 'child_listed_under_multiple_parents'
+      || issue.code === 'missing_parent_backlink'
+      || issue.code === 'missing_parent_child_link'
+    ) {
+      return {
+        issue,
+        reason: 'conflicting_parentage',
+        decisionQuestion: '这个子任务唯一应该归属哪个父任务？',
+        recommendedResolution: '确认唯一父任务后，同步 parentTaskId 与父任务 childTaskIds。',
+      };
+    }
+
+    return {
+      issue,
+      reason: 'ambiguous_relationship',
+      decisionQuestion: '这条层级关系应该保留、移动还是删除？',
+      recommendedResolution: '人工确认任务关系后再执行维护。',
+    };
+  });
+
+  return {
+    required: items.length > 0,
+    items,
+    summary: items.length
+      ? `有 ${items.length} 个层级关系需要人工确认。`
+      : '没有需要人工确认的层级关系。',
   };
 }

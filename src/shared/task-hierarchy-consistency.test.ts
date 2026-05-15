@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildTaskHierarchyManualReviewPolicy,
   buildTaskHierarchyRepairPlan,
   evaluateTaskHierarchyConsistency,
 } from './task-hierarchy-consistency.js';
@@ -125,5 +126,36 @@ describe('task hierarchy consistency', () => {
       'manual_review',
       'manual_review',
     ]);
+  });
+
+  it('explains manual-review policy for conflicting and missing hierarchy records', () => {
+    const result = buildTaskHierarchyManualReviewPolicy([
+      task({ id: 'project_1', title: '开发小程序', childTaskIds: ['missing_child'] }),
+      task({ id: 'project_2', title: '运营计划', childTaskIds: ['child_1'] }),
+      task({ id: 'child_1', title: '需求分析', parentTaskId: 'project_1' }),
+      task({ id: 'loop', title: '循环任务', parentTaskId: 'loop' }),
+    ]);
+
+    expect(result.required).toBe(true);
+    expect(result.items.map((item) => item.reason)).toEqual([
+      'missing_record',
+      'conflicting_parentage',
+      'conflicting_parentage',
+      'self_reference',
+    ]);
+    expect(result.items[1]?.decisionQuestion).toBe('这个子任务唯一应该归属哪个父任务？');
+  });
+
+  it('does not require manual-review policy for clean hierarchy records', () => {
+    const result = buildTaskHierarchyManualReviewPolicy([
+      task({ id: 'project_1', title: '开发小程序', childTaskIds: ['child_1'] }),
+      task({ id: 'child_1', title: '需求分析', parentTaskId: 'project_1' }),
+    ]);
+
+    expect(result).toMatchObject({
+      required: false,
+      items: [],
+      summary: '没有需要人工确认的层级关系。',
+    });
   });
 });
