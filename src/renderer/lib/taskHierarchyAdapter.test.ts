@@ -4,7 +4,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { TaskListItemRecord } from '@shared/types/task';
 import { saveTaskAttributes } from './taskAttributes';
-import { orderedChildRecordsForTask } from './taskHierarchyAdapter';
+import {
+  authoritativeChildTaskIds,
+  authoritativeParentTaskId,
+  authoritativeTaskFacets,
+  authoritativeTaskType,
+  orderedChildRecordsForTask,
+} from './taskHierarchyAdapter';
 
 const now = '2026-01-01T00:00:00.000Z';
 
@@ -20,6 +26,10 @@ function task(partial: Partial<TaskListItemRecord>): TaskListItemRecord {
     riskNote: partial.riskNote ?? null,
     createdAt: partial.createdAt ?? now,
     updatedAt: partial.updatedAt ?? now,
+    taskType: partial.taskType,
+    taskFacets: partial.taskFacets,
+    parentTaskId: partial.parentTaskId,
+    childTaskIds: partial.childTaskIds,
     activeWaitingItem: partial.activeWaitingItem ?? null,
     activeBlocker: partial.activeBlocker ?? null,
     activeDependency: partial.activeDependency ?? null,
@@ -54,5 +64,45 @@ describe('task hierarchy adapter', () => {
       first.id,
       third.id,
     ]);
+  });
+
+  it('keeps persisted hierarchy fields authoritative over stale renderer attributes', () => {
+    const record = task({
+      id: 'task_1',
+      taskType: 'simple',
+      taskFacets: ['simple'],
+      parentTaskId: null,
+      childTaskIds: [],
+    });
+    saveTaskAttributes(record.id, {
+      type: 'project',
+      facets: ['project'],
+      typeConfirmed: true,
+      parentTaskId: 'stale_parent',
+      childTaskIds: ['stale_child'],
+    });
+    const attrs = saveTaskAttributes(record.id, {});
+
+    expect(authoritativeTaskType(record, attrs)).toBe('simple');
+    expect(authoritativeTaskFacets(record, attrs)).toEqual(['simple']);
+    expect(authoritativeParentTaskId(record, attrs)).toBeNull();
+    expect(authoritativeChildTaskIds(record, attrs)).toEqual([]);
+  });
+
+  it('uses renderer attributes only when persisted hierarchy fields are absent', () => {
+    const record = task({ id: 'legacy_task' });
+    saveTaskAttributes(record.id, {
+      type: 'project',
+      facets: ['project'],
+      typeConfirmed: true,
+      parentTaskId: 'legacy_parent',
+      childTaskIds: ['legacy_child'],
+    });
+    const attrs = saveTaskAttributes(record.id, {});
+
+    expect(authoritativeTaskType(record, attrs)).toBe('project');
+    expect(authoritativeTaskFacets(record, attrs)).toEqual(['project']);
+    expect(authoritativeParentTaskId(record, attrs)).toBe('legacy_parent');
+    expect(authoritativeChildTaskIds(record, attrs)).toEqual(['legacy_child']);
   });
 });

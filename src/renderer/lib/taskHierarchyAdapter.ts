@@ -1,19 +1,50 @@
 import { orderedTaskChildren, type TaskHierarchyNode } from '@shared/task-hierarchy';
-import type { TaskListItemRecord } from '@shared/types/task';
+import type { TaskExecutionType, TaskListItemRecord } from '@shared/types/task';
 import { getTaskAttributes, loadTaskAttributes, type TaskAttributeRecord } from './taskAttributes';
 
 export type TaskHierarchyRecord = TaskListItemRecord & TaskHierarchyNode;
+
+export function authoritativeTaskType(
+  task: TaskListItemRecord,
+  attrs: TaskAttributeRecord | null | undefined,
+): TaskExecutionType | null {
+  return task.taskType ?? attrs?.type ?? null;
+}
+
+export function authoritativeTaskFacets(
+  task: TaskListItemRecord,
+  attrs: TaskAttributeRecord | null | undefined,
+): TaskExecutionType[] | null {
+  return task.taskFacets !== undefined ? task.taskFacets : attrs?.facets ?? null;
+}
+
+export function authoritativeParentTaskId(
+  task: TaskListItemRecord,
+  attrs: TaskAttributeRecord | null | undefined,
+): string | null {
+  return task.parentTaskId !== undefined ? task.parentTaskId ?? null : attrs?.parentTaskId ?? null;
+}
+
+export function authoritativeChildTaskIds(
+  task: TaskListItemRecord,
+  attrs: TaskAttributeRecord | null | undefined,
+): string[] {
+  return task.childTaskIds !== undefined ? task.childTaskIds ?? [] : attrs?.childTaskIds ?? [];
+}
 
 export function taskHierarchyNodesFromList(
   tasks: TaskListItemRecord[],
   attrsByTaskId: Record<string, TaskAttributeRecord | null | undefined> = loadTaskAttributes(),
 ): TaskHierarchyRecord[] {
-  return tasks.map((task) => ({
-    ...task,
-    type: task.taskType && task.taskType !== 'simple' ? task.taskType : attrsByTaskId[task.id]?.type ?? task.taskType ?? 'simple',
-    parentTaskId: task.parentTaskId ?? attrsByTaskId[task.id]?.parentTaskId ?? null,
-    childTaskIds: (task.childTaskIds?.length ?? 0) > 0 ? task.childTaskIds ?? [] : attrsByTaskId[task.id]?.childTaskIds ?? [],
-  }));
+  return tasks.map((task) => {
+    const attrs = attrsByTaskId[task.id] ?? null;
+    return {
+      ...task,
+      type: authoritativeTaskType(task, attrs) ?? 'simple',
+      parentTaskId: authoritativeParentTaskId(task, attrs),
+      childTaskIds: authoritativeChildTaskIds(task, attrs),
+    };
+  });
 }
 
 export function hierarchyParentNodeForTask(
@@ -23,10 +54,10 @@ export function hierarchyParentNodeForTask(
   return {
     id: task.id,
     title: task.title,
-    type: task.taskType && task.taskType !== 'simple' ? task.taskType : attrs?.type ?? task.taskType ?? 'simple',
+    type: authoritativeTaskType(task, attrs) ?? 'simple',
     state: task.state,
-    parentTaskId: task.parentTaskId ?? attrs?.parentTaskId ?? null,
-    childTaskIds: (task.childTaskIds?.length ?? 0) > 0 ? task.childTaskIds ?? [] : attrs?.childTaskIds ?? [],
+    parentTaskId: authoritativeParentTaskId(task, attrs),
+    childTaskIds: authoritativeChildTaskIds(task, attrs),
     updatedAt: task.updatedAt,
   };
 }

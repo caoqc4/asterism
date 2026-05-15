@@ -67,6 +67,12 @@ import {
   updateTaskFileContentOverride,
   type LocalTaskFileRecord,
 } from '../lib/taskFileWorkspace';
+import {
+  authoritativeChildTaskIds,
+  authoritativeParentTaskId,
+  authoritativeTaskFacets,
+  authoritativeTaskType,
+} from '../lib/taskHierarchyAdapter';
 
 type Lane = 'escalate' | 'unblock' | 'continue' | 'clarify' | 'steady';
 type TaskStatus = 'running' | 'waiting' | 'blocked' | 'idle' | 'done';
@@ -760,17 +766,10 @@ const RISK_OPTIONS: Array<{ label: string; value: TaskRiskLevel }> = [
 ];
 
 function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): Task {
-  const inferredType = inferTaskExecutionType(r.title);
   const inferredProfile = inferTaskTypeProfile(r.title);
-  const persistedType = r.taskType && r.taskType !== 'simple' ? r.taskType : null;
-  const type = persistedType
-    ?? (attrs?.type && (attrs.typeConfirmed || attrs.type !== 'simple' || inferredType === 'simple')
-    ? attrs.type
-    : inferredProfile.primaryType);
+  const type = authoritativeTaskType(r, attrs) ?? inferredProfile.primaryType;
   const facets = normalizeTaskTypeFacets(
-    (r.taskFacets?.length ?? 0) > 1 || r.taskFacets?.[0] !== 'simple'
-      ? r.taskFacets
-      : attrs?.facets ?? inferredProfile.facets,
+    authoritativeTaskFacets(r, attrs) ?? inferredProfile.facets,
     type,
   );
   return {
@@ -782,8 +781,8 @@ function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): 
     facets,
     owner: attrs?.owner ?? 'user',
     visibility: attrs?.visibility ?? 'visible',
-    parentTaskId: r.parentTaskId ?? attrs?.parentTaskId ?? undefined,
-    childTaskIds: (r.childTaskIds?.length ?? 0) > 0 ? r.childTaskIds ?? [] : attrs?.childTaskIds ?? [],
+    parentTaskId: authoritativeParentTaskId(r, attrs) ?? undefined,
+    childTaskIds: authoritativeChildTaskIds(r, attrs),
     whyNow: r.summary ?? undefined,
     nextStep: r.nextStep ?? undefined,
     riskLevel: r.riskLevel,
