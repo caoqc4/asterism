@@ -14,6 +14,7 @@ import type { AiConfigStatus } from '@shared/types/settings';
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import type { TaskDependencyRecord } from '@shared/types/task-dependency';
 import type { TaskFileRecord } from '@shared/types/task-file';
+import type { TaskMemoryGuidanceState } from '@shared/task-memory-guidance-state';
 import { App } from './App';
 import {
   createManualWorkHabit,
@@ -270,7 +271,10 @@ function buildRun(partial: Partial<RunRecord> = {}): RunRecord {
   };
 }
 
-function buildRunDetail(run: RunRecord): RunDetailRecord {
+function buildRunDetail(
+  run: RunRecord,
+  partial: Partial<Pick<RunDetailRecord, 'taskMemoryGuidance'>> = {},
+): RunDetailRecord {
   return {
     ...run,
     artifacts: [],
@@ -316,6 +320,7 @@ function buildRunDetail(run: RunRecord): RunDetailRecord {
         updatedAt: now,
       },
     ],
+    ...partial,
   };
 }
 
@@ -766,6 +771,7 @@ function createMockApi() {
     tasks,
     details,
     decisions,
+    runs,
     taskFiles,
     emit: (type: Parameters<NonNullable<typeof subscriber>>[0]['type'], entityId?: string) => {
       subscriber?.({ type, entityId, at: now });
@@ -1327,6 +1333,38 @@ describe('App redesign v1', () => {
     await user.click(screen.getByRole('button', { name: '确认刷新' }));
     expect(await screen.findByText(/已切换到任务上下文/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: '确认刷新' })).toBeNull();
+  });
+
+  it('blocks right-panel session refresh while latest task memory guidance is pending', async () => {
+    const user = userEvent.setup();
+    const pendingGuidance: TaskMemoryGuidanceState = {
+      latestGuidanceAt: now,
+      outcome: 'pending',
+      pendingTargets: ['task_record'],
+      reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
+      targets: ['task_record'],
+    };
+    harness.api.getRunDetail = vi.fn().mockImplementation(async (runId) => {
+      const run = harness.runs.find((item) => item.id === runId);
+      return run ? buildRunDetail(run, { taskMemoryGuidance: pendingGuidance }) : null;
+    });
+    window.api = harness.api;
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
+    for (let i = 0; i < 3; i += 1) {
+      await user.type(input, '这轮先保留 Playwright 作为动态页面候选');
+      await user.click(screen.getByRole('button', { name: '发送' }));
+      await waitFor(() => {
+        expect(harness.api.chatWithAI).toHaveBeenCalledTimes(i + 1);
+      });
+    }
+
+    await user.click(await screen.findByRole('button', { name: '刷新任务会话' }));
+
+    expect(await screen.findByText(/最新任务记忆建议仍缺少对应写入：Task Record/)).toBeTruthy();
+    expect(await screen.findByPlaceholderText(/关于「董事会材料修订」/)).toBeTruthy();
   });
 
   it('creates a task-file write proposal before writing discussion notes', async () => {
