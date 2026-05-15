@@ -31,10 +31,11 @@ than reaching into local resources directly.
 The renderer owns the user interface:
 
 - Home control surface;
-- task list and task workbench;
-- Decisions and Runs pages;
+- task management views for priority handling, task directory, task detail, task files, and activity;
+- right-panel task conversation and runtime handoff UI;
+- Decisions judgment inbox and retained Runs/activity projections;
 - Context, Settings, and capability configuration views;
-- right-panel conversation UI.
+- no separate task workspace entry: task context, files, execution handoff, and AI collaboration are handled by Tasks plus the right panel.
 
 The renderer does not directly access SQLite, keychain secrets, provider APIs,
 or shell commands.
