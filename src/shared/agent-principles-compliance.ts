@@ -150,7 +150,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeContextAssemblyGate, RuntimeHandoff, RuntimeResumePlan, and runtime verification already provide pieces of task-bound context refresh, handoff, and pre-step checks.',
       'runtime-verification exposes subtask_start mode so subtask start readiness can be evaluated through the same verification surface as execution and closeout checks.',
       'RuntimeResumePlan can carry an optional subtask_start verdict for phase-closeout handoff to a child or successor task before entering the target task.',
-      'RunService and CodeAgentRunService run subtask_start target-readiness checks before creating provider-visible or code-agent work.',
+      'RunService, CodeAgentRunService, and OperatorStartedRunService run subtask_start target-readiness checks before creating task-bound work.',
       'Project decomposition and task closeout flows already prefer existing child tasks and handoffs instead of creating generic follow-up tasks.',
     ],
     gaps: [
@@ -172,7 +172,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'runtime-verification has first-pass pre_step and post_step modes for execution permission and durable-change recovery notes.',
       'pre_step runtime verification can consume RuntimeCapabilitySnapshot when an execution explicitly requires model execution or workspace verification.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through pre_step verification.',
-      'RunService and CodeAgentRunService also pass target-task readiness through subtask_start before run creation.',
+      'RunService, CodeAgentRunService, and OperatorStartedRunService also pass target-task readiness through subtask_start before run creation.',
       'Persisted Run step verification now uses post_step verification.',
       'runtime-step-effect-evaluator feeds post_step verification with durable-change and recovery-note signals.',
       'RightPanel phase closeout uses pre_step and post_step verification around task-record persistence.',

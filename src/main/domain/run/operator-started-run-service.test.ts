@@ -177,6 +177,47 @@ describe('OperatorStartedRunService', () => {
     expect(runRepository.create).not.toHaveBeenCalled();
   });
 
+  it('blocks operator-started run start when the target task cannot start', async () => {
+    const runRepository = buildRunRepositoryMock();
+    const taskService = buildTaskServiceMock();
+    taskService.getDetail.mockResolvedValue({
+      id: 'task_1',
+      title: 'Task 1',
+      activeBlocker: {
+        id: 'blocker_1',
+        taskId: 'task_1',
+        title: '等待评审',
+        kind: 'approval',
+        detail: null,
+        owner: null,
+        responsibility: null,
+        responsibilityLabel: null,
+        sourceContextId: null,
+        status: 'active',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      },
+    });
+    const service = new OperatorStartedRunService(
+      runRepository,
+      taskService,
+      buildRunStepRepositoryMock(),
+      {
+        persistCaptured: vi.fn(),
+      },
+      vi.fn(),
+      vi.fn(),
+    );
+
+    await expect(service.trigger(buildDefaultOperatorStartedRunRequest({
+      kind: 'browser_evidence_smoke',
+      taskId: 'task_1',
+    }))).rejects.toThrow('仍有阻塞、依赖或等待状态');
+
+    expect(runRepository.create).not.toHaveBeenCalled();
+  });
+
   it('runs controlled browser local QA through RunSteps without model exposure', async () => {
     const fixture = buildBrowserControlledInteractionLocalQaFixture({
       origin: 'http://127.0.0.1:5173',

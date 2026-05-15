@@ -82,6 +82,21 @@ export class OperatorStartedRunService {
     if (!task) {
       throw new Error(`Task not found: ${request.taskId}`);
     }
+    const startVerification = evaluateRuntimeVerification({
+      mode: 'subtask_start',
+      targetTask: task,
+      contextSignals: {
+        activeTaskId: task.id,
+        targetTaskId: task.id,
+      },
+      availableContext: {
+        taskState: true,
+        decisions: true,
+      },
+    });
+    if (!startVerification.canProceed) {
+      throw new Error(startVerification.detail);
+    }
 
     const actionEvaluation = evaluateRuntimeAction({
       action: 'run_start',

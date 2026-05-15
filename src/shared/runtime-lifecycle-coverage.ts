@@ -138,7 +138,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     coveredBy: [
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass through run_start evaluation.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService now pass run_start through pre_step verification before creating/executing work.',
-      'RunService and CodeAgentRunService run subtask_start target-readiness checks before creating ordinary or Code Agent runs.',
+      'RunService, CodeAgentRunService, and OperatorStartedRunService run subtask_start target-readiness checks before creating ordinary, Code Agent, or operator-started runs.',
       'Runs and run steps store plan, model, tool, checkpoint, failure, and final events.',
       'AgentToolRegistry gates risky commands and writes.',
       'runtime-verification has first-pass pre_step and post_step modes for action permission, pending decisions, required context, and durable-change recovery notes.',
