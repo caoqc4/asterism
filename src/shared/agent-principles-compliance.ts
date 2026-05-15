@@ -327,12 +327,13 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     priority: 'p2',
     implementedBy: [
       'Work habit proposals use shared routing and confirmation/learning flows instead of writing directly to task files.',
+      'RuntimeIntakeEvaluation distinguishes task-specific user corrections, which should become Task Records, from cross-task corrections, which should become Work Habit proposals.',
     ],
     gaps: [
-      'Not every user correction is evaluated for task-specific vs cross-task habit routing.',
+      'RuntimeIntakeEvaluation covers the main task-specific vs cross-task correction boundary, but downstream Work Habit persistence still depends on the confirmation flow.',
     ],
     nextVerification: [
-      'Add user-correction routing tests across Task Record, Task.md, and Work Habit proposal outcomes.',
+      'Keep user-correction routing tests in place when adding new intake surfaces or Work Habit entry points.',
     ],
   },
   {

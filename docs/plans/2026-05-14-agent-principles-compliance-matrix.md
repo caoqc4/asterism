@@ -58,8 +58,8 @@ The current runtime deepening work has made meaningful progress on information r
 
 ### P2
 
-1. Work Habit boundary should catch more user corrections.
-   Work Habit proposals exist, but not every correction is routed through task-specific vs cross-task evaluation.
+1. Work Habit boundary should remain confirmation-based.
+   Runtime intake now covers the main boundary between task-specific corrections, which should become Task Records, and cross-task corrections, which should become Work Habit proposals. The remaining gap is preserving that boundary as more intake surfaces are added.
 
 ## Implementation Direction
 

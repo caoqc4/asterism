@@ -68,6 +68,7 @@ Strongest areas:
 - PriorityAttentionProjection now centralizes shared priority ordering plus optional display limits, so Tasks can use the full queue while Brief uses the same ordered queue as a capped attention summary.
 - RuntimeHandoffPreview now centralizes manual refresh/archive preview generation from the shared handoff result plus archive snapshot, while preserving the existing RightPanel layout.
 - RuntimeRecoveryGuidance now centralizes structured Task.md / Task Record recovery recommendations for durable Agent tools, while preserving the existing legacy guidance strings.
+- RuntimeIntakeEvaluation now has regression coverage for task-specific user corrections going to Task Records versus cross-task corrections going to Work Habit proposals.
 - ordinary task files stay in the task-file class instead of being projected as artifacts.
 
 Weakest areas:

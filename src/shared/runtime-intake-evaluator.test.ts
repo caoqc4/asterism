@@ -58,6 +58,39 @@ describe('runtime intake evaluator', () => {
     });
   });
 
+  it('routes task-specific user corrections to Task Records instead of Work Habits', () => {
+    expect(evaluateRuntimeIntake({
+      text: '我提醒下，这个任务的验收标准应该以用户确认的设计稿为准。',
+      source: 'task_chat',
+    })).toMatchObject({
+      outcome: 'create_task_record',
+      allowed: false,
+      suggestedSurface: 'task_record',
+    });
+  });
+
+  it('keeps explicit approval questions in Decisions even when phrased as a reminder', () => {
+    expect(evaluateRuntimeIntake({
+      text: '我提醒下，这个风险是否允许继续推进，需要拍板。',
+      source: 'task_chat',
+    })).toMatchObject({
+      outcome: 'surface_decision',
+      allowed: false,
+      suggestedSurface: 'decision',
+    });
+  });
+
+  it('keeps cross-task corrections in the Work Habit proposal path', () => {
+    expect(evaluateRuntimeIntake({
+      text: '下次所有任务都不要把阶段收尾理解成拆解新任务。',
+      source: 'task_chat',
+    })).toMatchObject({
+      outcome: 'propose_work_habit',
+      allowed: false,
+      suggestedSurface: 'work_habit',
+    });
+  });
+
   it('routes task-context document writes to task file proposals', () => {
     expect(evaluateRuntimeIntake({
       text: '把这段讨论生成 Markdown 文件提案',

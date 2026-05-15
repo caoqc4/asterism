@@ -48,6 +48,8 @@ const STRONG_DECISION_PATTERN = /待拍板|拍板|决策|批准|审批|要不要
 const WORK_HABIT_PATTERN = /以后|每次|总是|默认|习惯|偏好|规则|原则|规范|不要再|统一|所有任务|类似任务|下次|work habit|preference/i;
 const TASK_FILE_PATTERN = /写成文档|生成文件|保存为|写入文件|生成.*Markdown|生成.*md|报告|草稿|提案|导出|file proposal|markdown file|write .*file/i;
 const FOLLOW_UP_TASK_PATTERN = /后续任务|下一项任务|下一任务|follow[- ]?up task|successor task/i;
+const TASK_CORRECTION_PATTERN = /我提醒|纠正|更正|不是这样|应该是|应当|改成|以.*为准|correction|correct/i;
+const EXPLICIT_APPROVAL_PATTERN = /待拍板|拍板|批准|审批|要不要|选哪个|是否允许|approve|approval|decide|choose/i;
 
 function normalizeText(text: string): string {
   return text.replace(/\s+/g, ' ').trim();
@@ -104,6 +106,25 @@ export function evaluateRuntimeIntake(params: {
       reason: '这更像跨任务工作习惯或执行偏好，应走工作习惯确认，而不是直接创建任务。',
       requiresConfirmation: true,
       suggestedSurface: 'work_habit',
+      missing: [],
+    });
+  }
+
+  if (
+    hasTaskContext
+    && TASK_CORRECTION_PATTERN.test(normalized)
+    && !EXPLICIT_TASK_PATTERN.test(normalized)
+    && !EXPLICIT_APPROVAL_PATTERN.test(normalized)
+  ) {
+    return buildEvaluation({
+      text,
+      outcome: 'create_task_record',
+      allowed: false,
+      confidence: 'medium',
+      title,
+      reason: '这更像当前任务内的纠正或恢复性上下文，应写入任务记录，而不是升级为拍板或新建任务。',
+      requiresConfirmation: false,
+      suggestedSurface: 'task_record',
       missing: [],
     });
   }
