@@ -252,6 +252,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Phase closeout writes Task Records and can hand off to existing child tasks.',
       'Task closeout evaluation can hand off to existing successors when no child task is available, and new follow-up proposals require evidence plus confirmation instead of automatic creation.',
       'runtime-handoff now provides a shared RuntimeHandoff and RuntimeResumePlan evaluator for context refresh, task switching, phase closeout, and run resume planning.',
+      'RuntimeHandoffPreview now turns handoff plus archive snapshot data into reusable manual-refresh preview text instead of leaving the archive preview assembled only in RightPanel.',
       'RightPanel context refresh, manual refresh, global conversation reset, leave-task-context, task switch confirmation, and phase-closeout handoff now consume RuntimeHandoff results.',
       'RunService paused-run continuation now consumes RuntimeHandoff and RuntimeResumePlan before checkpoint resume execution.',
       'SubagentHandoffEvaluation now models subagent scope, inherited-principles, confirmation-boundary, and handoff-completeness checks before future subagent results can be integrated.',
@@ -266,7 +267,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Runtime must distinguish pause, refresh, leave context, switch task, resume paused run, and start new global conversation.',
     ],
     gaps: [
-      'RuntimeHandoff is now shared across RightPanel context clear, phase closeout, task switch flows, RunService checkpoint resume, and RuntimeEventRecord projection.',
+      'RuntimeHandoff is now shared across RightPanel context clear, manual refresh preview, phase closeout, task switch flows, RunService checkpoint resume, and RuntimeEventRecord projection.',
       'Successor-task handoff outside parent-child hierarchy now has closeout and replay metadata.',
       'Subagent handoff has a shared evaluator, but it is not wired to a product delegation entry point because that surface is not active yet.',
       'Follow-up proposal gating exists in the shared closeout evaluator and RightPanel task-context capture consumes it; other retained creation entry points still need the same boundary when they create follow-up tasks from task context.',

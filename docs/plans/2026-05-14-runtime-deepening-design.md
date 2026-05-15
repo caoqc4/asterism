@@ -522,6 +522,7 @@ Implemented:
 - RightPanel session refresh, phase closeout, and Task.md reference writes now guard their internal source/task-record persistence.
 - Added shared `RuntimeHandoff` and `RuntimeResumePlan` evaluation for context refresh, task switch, phase closeout, and run resume planning.
 - RightPanel now consumes `RuntimeHandoff` for task-session refresh, manual refresh, global reset, leave-context, task switch confirmation, and phase-closeout child handoff.
+- Added `RuntimeHandoffPreview` so manual refresh/archive preview text is generated from the shared handoff result and archive snapshot instead of being assembled only in RightPanel.
 - RunService paused-run continuation now consumes `RuntimeHandoff` and `RuntimeResumePlan` before executing checkpoint resume tools.
 - Added shared `RuntimeEventRecord` projection for timeline events, Runs, Run steps, Task Records, Decisions without timeline coverage, and runtime resume projections.
 - `RuntimeEventRecord` is now the shared activity/audit projection; Tasks activity consumes it, and retained Run-side views should follow the same projection instead of legacy Workbench-specific activity logic.

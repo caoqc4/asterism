@@ -66,6 +66,7 @@ Strongest areas:
 - legacy title-pattern phase follow-up inference is now limited to objects without a parent field, and Tasks no longer mutates local hierarchy attributes during list loading.
 - Brief focus projection, RightPanel closeout checks, and task completion checks now share the same persisted-field hierarchy authority instead of reading local task attributes directly.
 - PriorityAttentionProjection now centralizes shared priority ordering plus optional display limits, so Tasks can use the full queue while Brief uses the same ordered queue as a capped attention summary.
+- RuntimeHandoffPreview now centralizes manual refresh/archive preview generation from the shared handoff result plus archive snapshot, while preserving the existing RightPanel layout.
 - ordinary task files stay in the task-file class instead of being projected as artifacts.
 
 Weakest areas:

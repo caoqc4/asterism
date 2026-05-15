@@ -15,7 +15,11 @@ import {
   buildRuntimeContextManifest,
   buildRuntimeContextSnapshot,
 } from '@shared/runtime-context';
-import { buildRuntimeResumePlan, evaluateRuntimeHandoff } from '@shared/runtime-handoff';
+import {
+  buildRuntimeHandoffPreview,
+  buildRuntimeResumePlan,
+  evaluateRuntimeHandoff,
+} from '@shared/runtime-handoff';
 import type { PanelRuntimeTimelineEventType } from '@shared/runtime-panel-events';
 import {
   evaluateTaskRecordWorthiness,
@@ -933,11 +937,16 @@ export function RightPanel({
       handleMissingRefreshArchive(handoff.reason);
       return;
     }
+    const preview = buildRuntimeHandoffPreview(handoff, {
+      archived,
+      messageCount: userMessageCount,
+      recentFocus,
+    });
     setManualRefreshReady({ taskName });
     appendSysMsg([
-      '已整理并归档当前任务讨论的关键记录。',
-      `归档摘要：用户消息 ${userMessageCount} 条；最近关注：${recentFocus.length ? recentFocus.join(' / ') : '暂无' }。`,
-      '请检查是否还要补充事实；确认无误后再刷新任务会话。',
+      preview.title,
+      preview.detail,
+      preview.nextAction,
     ].join('\n'));
   }
 

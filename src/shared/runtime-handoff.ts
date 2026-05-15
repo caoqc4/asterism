@@ -44,6 +44,20 @@ export type RuntimeResumePlan = {
   summary: string;
 };
 
+export type RuntimeHandoffArchiveSnapshot = {
+  archived: boolean;
+  messageCount: number;
+  recentFocus?: string[];
+  recordPath?: string | null;
+};
+
+export type RuntimeHandoffPreview = {
+  canPreview: boolean;
+  title: string;
+  detail: string;
+  nextAction: string;
+};
+
 type BaseInput = {
   archived?: boolean;
   fromTaskId?: string | null;
@@ -186,6 +200,40 @@ export function buildRuntimeResumePlan(handoff: RuntimeHandoff): RuntimeResumePl
         ? '从 checkpoint 恢复前重新装配上下文。'
         : '刷新当前任务上下文。',
     summary: `${handoff.notice} ${handoff.reason}`.trim(),
+  };
+}
+
+export function buildRuntimeHandoffPreview(
+  handoff: RuntimeHandoff,
+  snapshot: RuntimeHandoffArchiveSnapshot,
+): RuntimeHandoffPreview {
+  if (!handoff.canProceed) {
+    return {
+      canPreview: false,
+      title: '上下文暂不能安全交接。',
+      detail: handoff.reason,
+      nextAction: handoff.requiresArchive
+        ? '请先补充可恢复的结论、候选方案、未决问题或下一步动作。'
+        : '请先处理阻断条件。',
+    };
+  }
+
+  const focus = snapshot.recentFocus?.filter((item) => item.trim()) ?? [];
+  const archiveSummary = snapshot.archived
+    ? `归档摘要：用户消息 ${snapshot.messageCount} 条；最近关注：${focus.length ? focus.join(' / ') : '暂无'}。`
+    : snapshot.messageCount > 0
+      ? `本次没有形成需要归档的关键记录；用户消息 ${snapshot.messageCount} 条。`
+      : '当前没有需要归档的任务讨论。';
+
+  return {
+    canPreview: true,
+    title: handoff.intent === 'manual_context_refresh'
+      ? '已整理并归档当前任务讨论的关键记录。'
+      : handoff.notice,
+    detail: snapshot.recordPath ? `${archiveSummary} 记录：${snapshot.recordPath}` : archiveSummary,
+    nextAction: handoff.intent === 'manual_context_refresh'
+      ? '请检查是否还要补充事实；确认无误后再刷新任务会话。'
+      : buildRuntimeResumePlan(handoff).nextAction,
   };
 }
 

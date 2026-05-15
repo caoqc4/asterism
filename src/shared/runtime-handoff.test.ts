@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildRuntimeResumePlan, evaluateRuntimeHandoff } from './runtime-handoff.js';
+import {
+  buildRuntimeHandoffPreview,
+  buildRuntimeResumePlan,
+  evaluateRuntimeHandoff,
+} from './runtime-handoff.js';
 import type { TaskCloseoutEvaluation } from './task-closeout-evaluator.js';
 
 function closeout(overrides: Partial<TaskCloseoutEvaluation> = {}): TaskCloseoutEvaluation {
@@ -140,5 +144,45 @@ describe('runtime handoff', () => {
     expect(result.canProceed).toBe(true);
     expect(result.action).toBe('clear_same_task');
     expect(result.toTaskId).toBe(null);
+  });
+
+  it('builds a reusable manual refresh preview from the handoff result', () => {
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'manual_context_refresh',
+      fromTaskId: 'task-1',
+      messageCount: 2,
+      hasSpecificHandoffSignal: true,
+      archived: true,
+    });
+
+    expect(buildRuntimeHandoffPreview(handoff, {
+      archived: true,
+      messageCount: 2,
+      recentFocus: ['确认方案 A', '遗留风险 B'],
+      recordPath: 'Task Records/context-refresh.md',
+    })).toEqual({
+      canPreview: true,
+      title: '已整理并归档当前任务讨论的关键记录。',
+      detail: '归档摘要：用户消息 2 条；最近关注：确认方案 A / 遗留风险 B。 记录：Task Records/context-refresh.md',
+      nextAction: '请检查是否还要补充事实；确认无误后再刷新任务会话。',
+    });
+  });
+
+  it('explains why a blocked handoff cannot be previewed as ready', () => {
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'context_refresh',
+      fromTaskId: 'task-1',
+      messageCount: 2,
+      hasSpecificHandoffSignal: true,
+      archived: false,
+    });
+
+    expect(buildRuntimeHandoffPreview(handoff, {
+      archived: false,
+      messageCount: 2,
+    })).toMatchObject({
+      canPreview: false,
+      title: '上下文暂不能安全交接。',
+    });
   });
 });
