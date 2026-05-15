@@ -14,7 +14,7 @@ import { buildRuntimeResumePlan, evaluateRuntimeHandoff } from '../../../shared/
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from '../../../shared/task-memory-coverage.js';
 import {
-  evaluateTaskMemoryGuidanceState,
+  buildTaskMemoryGuidanceStateForTaskFiles,
   type TaskMemoryGuidanceState,
 } from '../../../shared/task-memory-guidance-state.js';
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
@@ -257,17 +257,9 @@ export class RunService {
     const taskDetail = typeof taskDetailReader === 'function'
       ? await Promise.resolve(taskDetailReader.call(this.taskService, taskId)).catch(() => null)
       : null;
-    return evaluateTaskMemoryGuidanceState({
+    return buildTaskMemoryGuidanceStateForTaskFiles({
       guidanceSignals: steps,
-      memoryWrites: (taskDetail?.taskFiles ?? [])
-        .filter((file) => file.path === 'Task.md' || file.path.startsWith('Task Records/'))
-        .map((file) => ({
-          createdAt: file.updatedAt,
-          path: file.path,
-          status: 'completed',
-          target: file.path === 'Task.md' ? 'task_md' : 'task_record',
-          title: file.name,
-        })),
+      taskFiles: taskDetail?.taskFiles,
     });
   }
 

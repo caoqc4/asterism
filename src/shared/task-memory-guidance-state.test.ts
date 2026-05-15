@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildTaskMemoryGuidanceStateForTaskFiles,
   detectTaskMemoryGuidanceTargets,
   evaluateTaskMemoryGuidanceState,
   selectBlockingTaskMemoryGuidance,
@@ -115,6 +116,38 @@ describe('task memory guidance state', () => {
     ])).toMatchObject({
       latestGuidanceAt: '2026-05-15T01:02:00.000Z',
       reason: '新建议待处理',
+    });
+  });
+
+  it('builds memory guidance state from task files', () => {
+    expect(buildTaskMemoryGuidanceStateForTaskFiles({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        output: '- Task.md update recommended: next_step\n- Task Record may be useful: context_archive',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+      taskFiles: [
+        {
+          name: 'Task.md',
+          path: 'Task.md',
+          updatedAt: '2026-05-15T01:01:00.000Z',
+        },
+        {
+          name: '阶段收尾记录.md',
+          path: 'Task Records/阶段收尾记录.md',
+          updatedAt: '2026-05-15T01:02:00.000Z',
+        },
+        {
+          name: 'AI 产出.md',
+          path: 'AI Outputs/AI 产出.md',
+          updatedAt: '2026-05-15T01:02:00.000Z',
+        },
+      ],
+    })).toMatchObject({
+      outcome: 'satisfied',
+      pendingTargets: [],
+      targets: ['task_md', 'task_record'],
     });
   });
 });

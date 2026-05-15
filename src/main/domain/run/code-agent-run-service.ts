@@ -13,6 +13,7 @@ import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.
 import { buildRuntimeCapabilitySnapshot } from '../../../shared/runtime-capability-snapshot.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from '../../../shared/task-memory-coverage.js';
+import { buildTaskMemoryGuidanceStateForTaskFiles } from '../../../shared/task-memory-guidance-state.js';
 import {
   buildRuntimeContextAssemblyPolicy,
   buildRuntimeContextManifest,
@@ -454,10 +455,17 @@ export class CodeAgentRunService {
       : await this.runRepository.updateResult(runId, status, output, outputSource, failureReason);
 
     if (status === 'completed' || status === 'failed') {
+      const steps = await this.runStepRepository.listForRun(updated.id);
+      const taskDetail = await this.taskService.getDetail(updated.taskId).catch(() => null);
       await persistTerminalRunVerifications({
         run: updated,
         runStepRepository: this.runStepRepository,
         runVerificationRepository: this.runVerificationRepository,
+        steps,
+        taskMemoryGuidance: buildTaskMemoryGuidanceStateForTaskFiles({
+          guidanceSignals: steps,
+          taskFiles: taskDetail?.taskFiles,
+        }),
       });
     }
 

@@ -21,6 +21,7 @@ import { evaluateRuntimeContextAssemblyGate } from '../../../shared/runtime-cont
 import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from '../../../shared/task-memory-coverage.js';
+import { buildTaskMemoryGuidanceStateForTaskFiles } from '../../../shared/task-memory-guidance-state.js';
 import type { RunRepository } from '../../db/repositories/run-repository.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import type { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
@@ -253,10 +254,17 @@ export class OperatorStartedRunService {
       : await this.runRepository.updateResult(runId, status, output, outputSource, failureReason);
 
     if (status === 'completed' || status === 'failed') {
+      const steps = await this.runStepRepository.listForRun(updated.id);
+      const taskDetail = await this.taskService.getDetail(updated.taskId).catch(() => null);
       await persistTerminalRunVerifications({
         run: updated,
         runStepRepository: this.runStepRepository,
         runVerificationRepository: this.runVerificationRepository,
+        steps,
+        taskMemoryGuidance: buildTaskMemoryGuidanceStateForTaskFiles({
+          guidanceSignals: steps,
+          taskFiles: taskDetail?.taskFiles,
+        }),
       });
     }
 

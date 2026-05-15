@@ -24,6 +24,12 @@ export type TaskMemoryGuidanceState = {
   targets: TaskMemoryGuidanceTarget[];
 };
 
+export type TaskMemoryFileSignal = {
+  name?: string | null;
+  path?: string | null;
+  updatedAt?: string | null;
+};
+
 const COMPLETED_OR_UNKNOWN = new Set([undefined, null, '', 'completed']);
 const FAILED_STATUSES = new Set(['failed', 'skipped', 'cancelled']);
 
@@ -101,6 +107,24 @@ export function selectBlockingTaskMemoryGuidance(
   return pending.reduce((current, state) => (
     compareOptionalIso(state.latestGuidanceAt, current.latestGuidanceAt) > 0 ? state : current
   ));
+}
+
+export function buildTaskMemoryGuidanceStateForTaskFiles(params: {
+  guidanceSignals: TaskMemoryGuidanceSignal[];
+  taskFiles?: TaskMemoryFileSignal[] | null;
+}): TaskMemoryGuidanceState {
+  return evaluateTaskMemoryGuidanceState({
+    guidanceSignals: params.guidanceSignals,
+    memoryWrites: (params.taskFiles ?? [])
+      .filter((file) => file.path === 'Task.md' || Boolean(file.path?.startsWith('Task Records/')))
+      .map((file) => ({
+        createdAt: file.updatedAt ?? null,
+        path: file.path ?? null,
+        status: 'completed',
+        target: file.path === 'Task.md' ? 'task_md' : 'task_record',
+        title: file.name ?? file.path ?? null,
+      })),
+  });
 }
 
 function inferWriteTarget(write: TaskMemoryWriteSignal): TaskMemoryGuidanceTarget | null {

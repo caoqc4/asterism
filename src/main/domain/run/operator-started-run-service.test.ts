@@ -148,6 +148,74 @@ describe('OperatorStartedRunService', () => {
     expect(failed.status).toBe('failed');
   });
 
+  it('persists task-memory guidance warnings for terminal operator-started runs', async () => {
+    const fixture = buildBrowserEvidenceRunnerSmokeFixture({
+      origin: 'http://127.0.0.1:4173',
+    });
+    const runRepository = buildRunRepositoryMock();
+    const taskService = buildTaskServiceMock();
+    const runStepRepository = buildRunStepRepositoryMock();
+    const runVerificationRepository = {
+      upsert: vi.fn(),
+    };
+    taskService.getDetail.mockResolvedValue({
+      id: 'task_1',
+      summary: 'Task recovery summary.',
+      nextStep: 'Run operator-started evidence capture.',
+      taskFiles: [],
+      title: 'Task 1',
+    });
+    runStepRepository.listForRun.mockResolvedValue([{
+      createdAt: '2026-04-27T00:01:00.000Z',
+      error: null,
+      id: 'run_step_memory',
+      index: 1,
+      input: null,
+      kind: 'final',
+      output: '- Task.md update recommended: next_step',
+      runId: 'run_operator_1',
+      status: 'completed',
+      title: '任务记忆建议',
+      updatedAt: '2026-04-27T00:01:00.000Z',
+    }]);
+    const service = new OperatorStartedRunService(
+      runRepository,
+      taskService,
+      runStepRepository,
+      {
+        persistCaptured: vi.fn().mockResolvedValue({
+          artifact: {
+            id: 'artifact_browser_1',
+          },
+        }),
+      },
+      vi.fn().mockResolvedValue({
+        browserRequest: fixture.request,
+        result: {
+          artifacts: [],
+          status: 'captured',
+          summary: 'Browser evidence captured.',
+        },
+      }),
+      vi.fn(),
+      runVerificationRepository,
+    );
+
+    await service.trigger(buildDefaultOperatorStartedRunRequest({
+      kind: 'browser_evidence_smoke',
+      taskId: 'task_1',
+    }));
+
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_operator_1',
+      targetType: 'run',
+      targetId: 'run_operator_1',
+      tone: 'warn',
+      label: 'Run 任务记忆待处理',
+      detail: '最新任务记忆建议仍缺少对应写入：Task.md。',
+    }));
+  });
+
   it('rejects invalid or unsupported operator-started requests before creating a run', async () => {
     const runRepository = buildRunRepositoryMock();
     const service = new OperatorStartedRunService(

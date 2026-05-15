@@ -209,6 +209,74 @@ describe('CodeAgentRunService', () => {
     runRepository.create.mockResolvedValue(buildRunningRun());
   });
 
+  it('persists task-memory guidance warnings for terminal code-agent runs', async () => {
+    const completedRun = {
+      ...buildRunningRun(),
+      status: 'completed',
+      output: 'preview completed',
+      outputSource: 'system',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    };
+    taskService.getDetail
+      .mockResolvedValueOnce(buildTask())
+      .mockResolvedValue({
+        ...buildTask(),
+        taskFiles: [],
+      });
+    runRepository.updateResult.mockResolvedValue(completedRun);
+    runStepRepository.listForRun.mockResolvedValue([{
+      createdAt: '2026-01-01T00:01:00.000Z',
+      error: null,
+      id: 'run_step_memory',
+      index: 1,
+      input: null,
+      kind: 'final',
+      output: '- Task Record may be useful: context_archive',
+      runId: 'run_code_agent_1',
+      status: 'completed',
+      title: '任务记忆建议',
+      updatedAt: '2026-01-01T00:01:00.000Z',
+    }]);
+    executionService.run.mockResolvedValue({
+      preview: {
+        preview: {
+          preview: {
+            events: [],
+            plan: {
+              status: 'blocked',
+            },
+            sessionMetadata: '',
+            sessionSummary: 'producer completed',
+            source: {
+              requestedScripts: ['test'],
+            },
+            status: 'preview_ready',
+            steps: [],
+          },
+        },
+        status: 'previewed',
+      },
+      status: 'completed',
+      summary: 'preview completed',
+    });
+
+    await createService().trigger({
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      taskId: 'task_1',
+    });
+
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      runId: 'run_code_agent_1',
+      targetType: 'run',
+      targetId: 'run_code_agent_1',
+      tone: 'warn',
+      label: 'Run 任务记忆待处理',
+      detail: '最新任务记忆建议仍缺少对应写入：Task Record。',
+    }));
+  });
+
   it('keeps local diagnostic previews no-provider by default', async () => {
     process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
     const failedRun = buildFailedRun('Fake preview blocked', 'fake blocked');
