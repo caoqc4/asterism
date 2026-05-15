@@ -74,17 +74,18 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TasksPage explicit task creation now passes through the shared task_capture pre-step guard before persistence.',
       'runtime-intake-evaluator classifies user input before task capture as task, Task Record, task file, Decision, Work Habit, or discussion.',
       'runtime-task-capture-evaluator blocks duplicate open-task captures and generic title-only candidates before persistence.',
+      'runtime-task-capture-evaluator blocks generic phase-template child titles and child titles that only repeat the parent.',
       'TasksPage explicit task creation and RightPanel conversation capture consume the shared task-capture evaluator.',
       'TaskService.create enforces the same duplicate/generic task-capture evaluator before repository persistence.',
       'TaskService.update reuses the same evaluator for title changes and parent moves, preventing duplicate sibling tasks.',
       'Project decomposition creates draft subtasks before real child task creation.',
     ],
     gaps: [
-      'RightPanel capture uses the shared intake evaluator and TasksPage explicit creation uses the shared task_capture guard; both now consume duplicate/generic candidate checks, but not every task creation entry point is routed through intake yet.',
-      'Subtask creation still needs a stronger shared confirmation boundary and duplicate/broadness checks below renderer UI.',
+      'RightPanel capture uses the shared intake evaluator and TasksPage explicit creation uses the shared task_capture guard; both now consume duplicate/generic candidate checks, but some retained creation entry points are not routed through intake yet.',
+      'Subtask creation has service-level generic child guards, but still needs a stronger shared confirmation boundary for every retained child-task creation path.',
     ],
     nextVerification: [
-      'Route project decomposition and other task creation entry points through RuntimeIntakeEvaluation or a stricter child-task evaluator.',
+      'Route remaining task creation entry points through RuntimeIntakeEvaluation or a stricter child-task evaluator.',
     ],
   },
   {
@@ -97,6 +98,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Task closeout evaluation can hand off to an existing successor when no child is available, and new follow-up proposals require evidence and confirmation instead of being created during closeout.',
       'runtime-subtask-evaluator blocks duplicate, generic, parent-overlapping, or underspecified subtask drafts before confirmed child creation.',
       'Project decomposition generation and confirmation both consult runtime-subtask-evaluator so existing children block another decomposition round before new drafts appear.',
+      'Project decomposition generation detects existing children from the full task list, including children linked only by parentTaskId.',
       'runtime-verification has an initial project mode for child completion, blocker/waiting counts, parent criteria, pending decisions, and risk confirmation.',
       'decision-effect-evaluator summarizes pending, approved, deferred, and cancelled decisions for project verification.',
       'Task completion modal uses project verification for project parent completion checks.',
@@ -104,11 +106,11 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
     gaps: [
       'Project-level verification includes artifact/source counts and Decision effect summaries, but other project state transitions still need to consume it.',
-      'Subtask draft evaluation exists for project decomposition generation and confirmed project child creation, but other child-task creation paths still need to consume it.',
+      'Subtask draft evaluation exists for project decomposition generation and confirmed project child creation, while service-level capture guards cover generic child-title mistakes; remaining child-task paths still need a common confirmation boundary.',
     ],
     nextVerification: [
       'Route remaining project state transitions through project verification.',
-      'Route every child-task creation path through runtime-subtask-evaluator.',
+      'Route every child-task creation path through a shared confirmation boundary backed by runtime-subtask-evaluator or runtime-task-capture-evaluator.',
     ],
   },
   {

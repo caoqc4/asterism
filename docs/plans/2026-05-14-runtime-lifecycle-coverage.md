@@ -58,11 +58,13 @@ Strongest areas:
 - Decision/checkpoint boundaries for risky tools;
 - early task hierarchy model migration;
 - first-pass project child draft validation before confirmed subtask creation.
+- service-level child task capture now blocks generic phase-template titles and parent-title repeats.
+- project decomposition generation checks the full task list for existing children, including `parentTaskId` links.
 
 Weakest areas:
 
-- full task intake and pre-create evaluation across every creation entry point;
-- child-task creation paths beyond project decomposition;
+- full task intake and pre-create evaluation across every retained creation entry point;
+- a single confirmation boundary for all child-task creation paths beyond project decomposition;
 - full context snapshot ownership;
 - source freshness and context inclusion reasons;
 - Decision judgment-center effect presentation after approval/defer/cancel;

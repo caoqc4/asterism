@@ -32,6 +32,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'runtime-action-evaluator includes task_capture.',
       'runtime-intake-evaluator routes candidate input to task, Task Record, task file, Decision, Work Habit, or discussion before capture.',
       'runtime-task-capture-evaluator blocks duplicate open-task captures and generic title-only task candidates before persistence.',
+      'runtime-task-capture-evaluator also blocks generic phase-template child titles and child titles that only repeat the parent.',
       'TasksPage explicit task creation and RightPanel conversation capture pass task candidates through the shared capture evaluator.',
       'TaskService.create enforces the same task-capture evaluator at the service boundary before repository persistence.',
       'TaskService.update reuses the same evaluator when title or parent scope changes, preventing duplicate siblings during project moves.',
@@ -41,11 +42,11 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'The UI must distinguish capture, draft, confirm, and enter-task states.',
     ],
     gaps: [
-      'RightPanel capture uses shared intake routing and TasksPage explicit creation uses the shared task_capture guard, but decomposition and other creation entry points are not fully covered by intake yet.',
-      'Service-level guards now block duplicate open-task captures and generic title-only candidates; broader semantic duplicate detection remains limited to normalized titles.',
+      'RightPanel capture uses shared intake routing and TasksPage explicit creation uses the shared task_capture guard, but some retained creation entry points are not fully covered by intake yet.',
+      'Service-level guards now block duplicate open-task captures, generic title-only candidates, generic child phase-template titles, and child titles that repeat the parent; broader semantic duplicate detection remains limited to normalized titles.',
     ],
     nextImplementation: [
-      'Route project decomposition and additional creation entry points through shared intake checks.',
+      'Route remaining creation entry points through shared intake checks.',
       'Extend duplicate detection beyond exact normalized titles when enough semantic context is available.',
     ],
   },
@@ -281,6 +282,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Task hierarchy helpers keep parent/child views and priority recommendations from duplicating children into top-level lists.',
       'runtime-subtask-evaluator blocks duplicate, generic, parent-overlapping, or underspecified project child drafts before creation.',
       'Project decomposition generation and confirmation both consult runtime-subtask-evaluator, so existing children block another decomposition round before a new draft appears.',
+      'Project decomposition generation now detects existing children from the full task list, including children linked only by parentTaskId.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime must keep directory views, priority lists, detail pages, and project progress consistent.',
