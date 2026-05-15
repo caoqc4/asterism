@@ -922,6 +922,44 @@ describe('registerIpcHandlers', () => {
     expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
   });
 
+  it('blocks task-file creation when the task binding cannot be resolved', async () => {
+    servicesMock.taskService.getDetail.mockResolvedValueOnce(null);
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; name: string; path: string; kind: 'task_record'; content: string }],
+      unknown
+    >('taskFile:create');
+
+    await expect(handler({}, {
+      taskId: 'missing_task',
+      name: 'Phase.md',
+      path: 'Task Records/Phase.md',
+      kind: 'task_record',
+      content: 'handoff notes',
+    })).rejects.toThrow('Task not found: missing_task');
+
+    expect(servicesMock.taskFileRepository.create).not.toHaveBeenCalled();
+    expect(emitAppEventMock).not.toHaveBeenCalled();
+  });
+
+  it('blocks manual artifact creation when the task binding cannot be resolved', async () => {
+    servicesMock.taskService.getDetail.mockResolvedValueOnce(null);
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; title: string; content?: string }],
+      unknown
+    >('artifact:createManual');
+
+    await expect(handler({}, {
+      taskId: 'missing_task',
+      title: 'AI 项目拆解自检.md',
+      content: 'review output',
+    })).rejects.toThrow('Task not found: missing_task');
+
+    expect(servicesMock.artifactRepository.createManualNote).not.toHaveBeenCalled();
+    expect(emitAppEventMock).not.toHaveBeenCalled();
+  });
+
   it('imports legacy work habits without emitting task events', async () => {
     servicesMock.workHabitService.importLegacy.mockResolvedValue({
       version: 3,
