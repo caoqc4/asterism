@@ -172,9 +172,9 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Runtime must decide whether execution is panel-lightweight, Run-backed, Code Agent, operator-started browser QA, or future scheduled/event execution.',
     ],
     gaps: [
-      'pre_step, post_step, and subtask_start verification exist as shared evaluators; run_start, run creation target-readiness, paused-run continuation, direct running transitions, persisted step checks, phase closeout, task capture, task file proposal confirmation, primary task state transitions, Tasks file actions/content saves, project decomposition writes, and AgentToolRegistry durable tools are wired, but not every retained execution surface yet.',
-      'Core task update and transition paths already write repository timeline events, Tasks activity presents RuntimeEventRecord projections, and Run detail exposes RuntimeEventRecord replay data.',
-      'Legacy WorkbenchPage has been removed from the active renderer entry set; its retained responsibilities are covered by TasksPage, RightPanel, Runs, Activity, and Decisions surfaces.',
+      'Runtime guards now cover the current retained execution and durable-write surfaces; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly opt into the same pre_step, post_step, and subtask_start gates.',
+      'RuntimeEventRecord projection and replay grouping are data-level capabilities; only existing retained activity surfaces consume the projection today.',
+      'Legacy WorkbenchPage remains retired; new runtime behavior must stay within TasksPage, RightPanel, Runs, Activity, or Decisions surfaces.',
     ],
     nextImplementation: [
       'Keep RuntimeEventRecord replay grouping data-only until UI work is explicitly requested.',
@@ -251,11 +251,11 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Runtime must verify not only Agent completion, but user-triggered state changes, project progress, and UI context transitions.',
     ],
     gaps: [
-      'Project verification is wired into the completion modal and project detail structure surface, but not every state mutation uses verification.',
-      'Pre-step and post-step verification are not yet consumed by every Run and panel action path.',
+      'Project verification is wired into completion and structure views; future project-level state transitions must consume the same verification before adding new completion paths.',
+      'Pre-step and post-step verification cover current Run, generated artifact, panel durable action, and tool durable-write paths; future execution surfaces must opt in rather than adding direct writes.',
     ],
     nextImplementation: [
-      'Wire pre_step and post_step checks into execution services and panel durable actions.',
+      'Keep verification gates as a required boundary for any future execution service or panel durable action.',
     ],
   },
   {

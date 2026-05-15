@@ -39,7 +39,7 @@ describe('agent principles compliance matrix', () => {
     expect(AGENT_PRINCIPLES_COMPLIANCE.some((item) => item.gaps.length > 0)).toBe(true);
     expect(AGENT_PRINCIPLES_COMPLIANCE.some((item) => (
       item.section === 'Verification Protocol' &&
-      item.gaps.some((gap) => gap.includes('Project-level verification'))
+      item.gaps.some((gap) => gap.includes('future project-level state transitions'))
     ))).toBe(true);
   });
 
@@ -54,7 +54,7 @@ describe('agent principles compliance matrix', () => {
   it('does not route future runtime work into the legacy WorkbenchPage', () => {
     const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
 
-    expect(text).toContain('Legacy WorkbenchPage has been removed from the active renderer entry set');
+    expect(text).toContain('Legacy WorkbenchPage remains retired');
     expect(text).not.toContain('Workbench write paths');
     expect(text).not.toContain('Implement Decisions workbench');
   });

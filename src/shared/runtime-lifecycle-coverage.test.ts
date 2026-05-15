@@ -49,7 +49,7 @@ describe('runtime lifecycle coverage matrix', () => {
   it('treats the old WorkbenchPage as retired instead of a runtime-deepening target', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 
-    expect(text).toContain('Legacy WorkbenchPage has been removed from the active renderer entry set');
+    expect(text).toContain('Legacy WorkbenchPage remains retired');
     expect(text).not.toContain('remaining Workbench');
     expect(text).not.toContain('Workbench write paths');
     expect(text).not.toContain('Implement Decisions Workbench');

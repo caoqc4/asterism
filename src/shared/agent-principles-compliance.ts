@@ -203,12 +203,12 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TasksPage project membership changes and completion handoffs now persist panel.* timeline events with task-to-task context.',
     ],
     gaps: [
-      'pre_step verification is wired into run_start, primary task state transitions, task capture, Tasks file/content/project writes, RightPanel internal record writes, and AgentToolRegistry durable tools, and can consume capability snapshots, but not yet every meaningful retained execution action passes capability state.',
-      'Core task update and transition paths already write repository timeline events, Tasks activity presents RuntimeEventRecord projections, and Run detail exposes RuntimeEventRecord replay data.',
-      'Legacy WorkbenchPage has been removed from the active renderer entry set; new runtime behavior must land in TasksPage, RightPanel, Runs, Activity, or Decisions instead.',
+      'Current retained execution and durable-write paths are guarded; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly pass the same verification gates.',
+      'RuntimeEventRecord projection and replay grouping are available as data, but retained UI surfaces render only the existing activity projection until UI work is explicitly requested.',
+      'Legacy WorkbenchPage remains retired; new runtime behavior must land in TasksPage, RightPanel, Runs, Activity, or Decisions instead.',
     ],
     nextVerification: [
-      'Wire pre_step and post_step verification into Run services and panel durable actions.',
+      'Require any future execution service or panel durable action to opt into pre_step/post_step verification before persistence.',
       'Keep RuntimeEventRecord replay grouping data-only until UI work is explicitly requested.',
     ],
   },
@@ -291,14 +291,14 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     priority: 'p0',
     implementedBy: [
       'runtime-verification normalizes run, run_step, pre_step, post_step, subtask_start, task_closeout, project, and context_clear checks.',
-      'Run verification persistence, completion modal, project completion checks, phase closeout, and context clearing consume runtime verification.',
+      'Run verification persistence, completion modal, project completion checks, phase closeout, context clearing, generated artifact writes, panel durable actions, and tool durable writes consume runtime verification.',
     ],
     gaps: [
-      'Project-level verification is wired into the completion modal and project detail structure surface.',
-      'Pre-step and post-step verification are not yet consumed by every execution path.',
+      'Project-level verification is wired into completion and structure views; future project-level state transitions must consume the same verification before adding new completion paths.',
+      'Pre-step and post-step verification cover current retained execution paths; future execution surfaces must opt in rather than adding direct writes.',
     ],
     nextVerification: [
-      'Wire pre_step and post_step runtime verification into execution services.',
+      'Keep pre_step and post_step runtime verification as the required boundary for future execution services.',
     ],
   },
   {
