@@ -152,11 +152,12 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeResumePlan can carry an optional subtask_start verdict for phase-closeout handoff to a child or successor task before entering the target task.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService run subtask_start target-readiness checks before creating task-bound work.',
       'Paused run continuation validates the resume checkpoint first, then rechecks the target task with subtask_start before resuming tools.',
+      'Approved checkpoint Decisions recheck target-task readiness with subtask_start before resuming tool, browser, or patch-promotion execution.',
       'TaskService blocks direct transitions into running when target readiness still shows an active blocker, dependency, or waiting state.',
       'Project decomposition and task closeout flows already prefer existing child tasks and handoffs instead of creating generic follow-up tasks.',
     ],
     gaps: [
-      'SubtaskStartEvaluation now guards phase-closeout handoff, completion handoff, direct running transitions, paused run continuation, ordinary Run starts, Code Agent starts, and operator-started runs, but some retained task-entry paths still need to pass full parent/handoff/context signals before every subtask start.',
+      'SubtaskStartEvaluation now guards phase-closeout handoff, completion handoff, direct running transitions, approved checkpoint resume, paused run continuation, ordinary Run starts, Code Agent starts, and operator-started runs, but some retained task-entry paths still need to pass full parent/handoff/context signals before every subtask start.',
       'Context cleanliness and context sufficiency are represented in one runtime verdict, but run-start service checks currently use a deliberately minimal target-readiness input to avoid overblocking older tasks.',
     ],
     nextVerification: [

@@ -452,7 +452,7 @@ describe('DecisionService', () => {
       act: vi.fn(),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn(),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -495,7 +495,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -533,7 +533,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -713,6 +713,90 @@ describe('DecisionService', () => {
     }));
   });
 
+  it('blocks approved checkpoint resume when the target task cannot continue', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord(),
+        status: 'approved',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildTaskDetail('running'),
+        activeBlocker: {
+          id: 'blocker_1',
+          taskId: 'task_1',
+          title: '等待评审',
+          kind: 'approval',
+          detail: null,
+          owner: null,
+          responsibility: null,
+          responsibilityLabel: null,
+          sourceContextId: null,
+          status: 'active',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          resolvedAt: null,
+        },
+      }),
+      annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+      annotateRunCompleted: vi.fn(),
+    };
+    const runCheckpointRepository = {
+      findOpenByDecisionId: vi.fn().mockResolvedValue({
+        id: 'run_checkpoint_1',
+        runId: 'run_1',
+        stepId: 'run_step_1',
+        kind: 'tool_permission',
+        status: 'open',
+        payload: JSON.stringify({
+          version: 1,
+          kind: 'tool_permission',
+          tool: 'artifact.create_note',
+          input: { title: 'Agent note', content: 'Captured note' },
+          decisionId: 'decision_1',
+        }),
+        createdAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      }),
+      updateStatus: vi.fn(),
+    };
+    const runStepRepository = {
+      create: vi.fn(),
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
+    const runRepository = {
+      getDetail: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const agentToolRegistry = {
+      execute: vi.fn(),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+      undefined,
+      runCheckpointRepository as never,
+      runStepRepository as never,
+      runRepository as never,
+      agentToolRegistry as never,
+    );
+
+    await expect(service.act({
+      id: 'decision_1',
+      action: 'approve',
+    })).rejects.toThrow('仍有阻塞、依赖或等待状态');
+
+    expect(agentToolRegistry.execute).not.toHaveBeenCalled();
+    expect(runCheckpointRepository.updateStatus).not.toHaveBeenCalled();
+    expect(runRepository.updateResult).not.toHaveBeenCalled();
+  });
+
   it('records actionable evidence when an approved checkpoint tool cannot resume', async () => {
     const decisionRepository = {
       list: vi.fn(),
@@ -723,7 +807,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -801,7 +885,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -899,7 +983,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -988,7 +1072,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -1081,7 +1165,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -1172,7 +1256,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -1275,7 +1359,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -1371,7 +1455,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -1469,7 +1553,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -1552,7 +1636,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -1627,7 +1711,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -1689,7 +1773,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -1783,7 +1867,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn(),
@@ -1864,7 +1948,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn(),
       annotateDecisionDeferred: vi.fn().mockResolvedValue(buildTaskRecord('waiting_external')),
       annotateDecisionCancelled: vi.fn(),
@@ -1898,7 +1982,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn(),
       annotateDecisionDeferred: vi.fn().mockResolvedValue(buildTaskRecord('waiting_external')),
       annotateDecisionCancelled: vi.fn(),
@@ -1997,7 +2081,7 @@ describe('DecisionService', () => {
       }),
     };
     const taskService = {
-      getDetail: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
       annotateDecisionApproved: vi.fn(),
       annotateDecisionDeferred: vi.fn(),
       annotateDecisionCancelled: vi.fn().mockResolvedValue(buildTaskRecord('planned')),

@@ -45,6 +45,7 @@ import {
   type DecisionProcessTemplateSelectionResult,
 } from './process-template-selector.js';
 import { normalizeCreateDecisionInput } from '../../../shared/runtime-surface-routing.js';
+import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import { deriveTaskDetailPriorityLane, getPriorityLanePromptGuidance } from '../../../shared/working-context/priority-lanes.js';
 
 const decisionDraftSchema = z.object({
@@ -396,6 +397,8 @@ export class DecisionService {
       return;
     }
 
+    await this.assertCheckpointTargetCanResume(decision, checkpoint.runId);
+
     if (checkpoint.kind === 'patch_promotion' || payload?.kind === 'patch_promotion') {
       await this.settlePatchPromotionCheckpoint(decision, checkpoint.id, checkpoint.runId);
       return;
@@ -523,6 +526,44 @@ export class DecisionService {
         Boolean((result.output ?? result.summary).trim()),
         checkpoint.runId,
       );
+    }
+  }
+
+  private async assertCheckpointTargetCanResume(
+    decision: DecisionRecord,
+    runId: string,
+  ): Promise<void> {
+    let taskId = decision.taskId ?? null;
+
+    if (!taskId) {
+      const run = await this.runRepository?.getDetail(runId);
+      taskId = run?.taskId ?? null;
+    }
+
+    if (!taskId) {
+      throw new Error(`Checkpoint resume requires task context for run: ${runId}.`);
+    }
+
+    const task = await this.taskService.getDetail(taskId);
+    if (!task) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
+
+    const verification = evaluateRuntimeVerification({
+      mode: 'subtask_start',
+      targetTask: task,
+      contextSignals: {
+        activeTaskId: task.id,
+        targetTaskId: task.id,
+      },
+      availableContext: {
+        taskState: true,
+        decisions: true,
+      },
+    });
+
+    if (!verification.canProceed) {
+      throw new Error(verification.detail);
     }
   }
 
