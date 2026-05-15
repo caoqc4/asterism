@@ -5,6 +5,9 @@ import {
   evaluateRuntimeHandoff,
 } from './runtime-handoff.js';
 import type { TaskCloseoutEvaluation } from './task-closeout-evaluator.js';
+import type { TaskListItemRecord } from './types/task.js';
+
+const now = '2026-01-01T00:00:00.000Z';
 
 function closeout(overrides: Partial<TaskCloseoutEvaluation> = {}): TaskCloseoutEvaluation {
   return {
@@ -19,6 +22,29 @@ function closeout(overrides: Partial<TaskCloseoutEvaluation> = {}): TaskCloseout
     runVerificationLabel: '阶段收尾检查：交接到子任务',
     runVerificationDetail: '已找到可交接子任务：子任务 A',
     ...overrides,
+  };
+}
+
+function task(overrides: Partial<TaskListItemRecord> = {}): TaskListItemRecord {
+  return {
+    id: overrides.id ?? 'child-1',
+    title: overrides.title ?? '子任务 A',
+    summary: overrides.summary ?? null,
+    taskType: overrides.taskType,
+    taskFacets: overrides.taskFacets,
+    parentTaskId: overrides.parentTaskId ?? 'parent-1',
+    childTaskIds: overrides.childTaskIds,
+    state: overrides.state ?? 'planned',
+    nextStep: overrides.nextStep ?? '继续推进',
+    waitingReason: overrides.waitingReason ?? null,
+    riskLevel: overrides.riskLevel ?? 'none',
+    riskNote: overrides.riskNote ?? null,
+    activeWaitingItem: overrides.activeWaitingItem ?? null,
+    activeBlocker: overrides.activeBlocker ?? null,
+    activeDependency: overrides.activeDependency ?? null,
+    dependencyReevaluation: overrides.dependencyReevaluation ?? null,
+    createdAt: overrides.createdAt ?? now,
+    updatedAt: overrides.updatedAt ?? now,
   };
 }
 
@@ -109,6 +135,75 @@ describe('runtime handoff', () => {
     expect(result.action).toBe('handoff_to_task');
     expect(result.toTaskId).toBe('child-1');
     expect(buildRuntimeResumePlan(result).source).toBe('handoff');
+  });
+
+  it('can attach subtask start readiness to a handoff resume plan', () => {
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'phase_closeout',
+      fromTaskId: 'parent-1',
+      closeout: closeout(),
+      recordPath: 'Task Records/phase.md',
+    });
+
+    const plan = buildRuntimeResumePlan(handoff, {
+      subtaskStartInput: {
+        targetTask: task({ id: 'child-1', parentTaskId: 'parent-1' }),
+        parentTask: task({ id: 'parent-1', parentTaskId: null, title: '父任务' }),
+        expectedParentTaskId: 'parent-1',
+        contextSignals: { activeTaskId: 'child-1' },
+        availableContext: {
+          taskState: true,
+          taskMd: true,
+          completionCriteria: true,
+          nextStep: true,
+          parentConstraints: true,
+        },
+      },
+    });
+
+    expect(plan).toMatchObject({
+      taskId: 'child-1',
+      source: 'handoff',
+      subtaskStart: {
+        canProceed: true,
+        label: '子任务启动检查通过',
+        suggestedNextAction: 'continue',
+      },
+      nextAction: '进入目标任务并重新装配上下文。',
+    });
+  });
+
+  it('keeps handoff resume blocked when the target subtask start context is stale', () => {
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'phase_closeout',
+      fromTaskId: 'parent-1',
+      closeout: closeout(),
+      recordPath: 'Task Records/phase.md',
+    });
+
+    const plan = buildRuntimeResumePlan(handoff, {
+      subtaskStartInput: {
+        targetTask: task({ id: 'child-1', parentTaskId: 'parent-1' }),
+        expectedParentTaskId: 'parent-1',
+        contextSignals: { activeTaskId: 'parent-1', inputPromptTaskId: 'parent-1' },
+        availableContext: {
+          taskState: true,
+          taskMd: true,
+          completionCriteria: true,
+          nextStep: true,
+        },
+      },
+    });
+
+    expect(plan).toMatchObject({
+      taskId: 'child-1',
+      subtaskStart: {
+        canProceed: false,
+        label: '子任务启动前需刷新上下文',
+        suggestedNextAction: 'inspect',
+      },
+      nextAction: '先处理子任务启动检查，再进入目标任务。',
+    });
   });
 
   it('hands off phase closeout to an existing successor task', () => {

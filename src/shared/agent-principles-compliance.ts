@@ -149,11 +149,12 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'SubtaskStartEvaluation provides a shared runtime object for target task boundary, blockers/dependencies, pending decisions, handoff review, context cleanliness, and context sufficiency.',
       'RuntimeContextAssemblyGate, RuntimeHandoff, RuntimeResumePlan, and runtime verification already provide pieces of task-bound context refresh, handoff, and pre-step checks.',
       'runtime-verification exposes subtask_start mode so subtask start readiness can be evaluated through the same verification surface as execution and closeout checks.',
+      'RuntimeResumePlan can carry an optional subtask_start verdict for phase-closeout handoff to a child or successor task before entering the target task.',
       'Project decomposition and task closeout flows already prefer existing child tasks and handoffs instead of creating generic follow-up tasks.',
     ],
     gaps: [
-      'SubtaskStartEvaluation exists as a shared evaluator and runtime-verification mode, but retained task-entry and execution paths do not yet consume it before every subtask start.',
-      'Context cleanliness and context sufficiency are now represented in one runtime verdict, but UI and provider-visible execution starts still need to call that verdict.',
+      'SubtaskStartEvaluation exists as a shared evaluator, runtime-verification mode, and optional RuntimeResumePlan gate, but retained task-entry and execution paths do not yet pass target task details through it before every subtask start.',
+      'Context cleanliness and context sufficiency are now represented in one runtime verdict, but UI and provider-visible execution starts still need to provide the input signals for that verdict.',
     ],
     nextVerification: [
       'Route subtask handoff, explicit task-enter actions, and task-bound execution start through SubtaskStartEvaluation before provider-visible execution.',
@@ -297,6 +298,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Phase closeout writes a Task Record and hands off to an existing child when available.',
       'Context switching refreshes around the target task instead of carrying stale chat by default.',
       'runtime-handoff provides a shared RuntimeHandoff and RuntimeResumePlan for context refresh, task switch, phase closeout, and run resume planning.',
+      'RuntimeResumePlan can carry a subtask_start gate when phase closeout hands off to a target task and the caller provides target task context.',
       'RightPanel consumes RuntimeHandoff for refresh, manual refresh, leave-context, start-global, task-switch confirmation, and phase-closeout child handoff.',
       'RunService paused-run continuation consumes RuntimeHandoff and RuntimeResumePlan before executing checkpoint resume tools.',
       'runtime-event-record projects timeline events, Runs, Run steps, Task Records, Decisions without timeline coverage, and runtime resume projections into a shared RuntimeEventRecord audit stream for retained activity surfaces.',

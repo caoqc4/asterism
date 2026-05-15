@@ -1,5 +1,6 @@
 import { evaluateRuntimeAction } from './runtime-action-evaluator.js';
-import { evaluateRuntimeVerification } from './runtime-verification.js';
+import { evaluateRuntimeVerification, type RuntimeVerificationResult } from './runtime-verification.js';
+import type { SubtaskStartEvaluationInput } from './subtask-start-evaluator.js';
 import type { TaskCloseoutEvaluation } from './task-closeout-evaluator.js';
 
 export type RuntimeHandoffIntent =
@@ -40,8 +41,13 @@ export type RuntimeResumePlan = {
   source: 'handoff' | 'run_checkpoint' | 'context_refresh';
   contextMustBeReassembled: boolean;
   preservePreviousChat: boolean;
+  subtaskStart?: Pick<RuntimeVerificationResult, 'canProceed' | 'detail' | 'label' | 'suggestedNextAction'> | null;
   nextAction: string;
   summary: string;
+};
+
+export type RuntimeResumePlanOptions = {
+  subtaskStartInput?: SubtaskStartEvaluationInput | null;
 };
 
 export type RuntimeHandoffArchiveSnapshot = {
@@ -188,13 +194,32 @@ export function evaluateRuntimeHandoff(input: BaseInput & {
   };
 }
 
-export function buildRuntimeResumePlan(handoff: RuntimeHandoff): RuntimeResumePlan {
+export function buildRuntimeResumePlan(handoff: RuntimeHandoff, options: RuntimeResumePlanOptions = {}): RuntimeResumePlan {
+  const subtaskStart = handoff.action === 'handoff_to_task' && options.subtaskStartInput
+    ? evaluateRuntimeVerification({
+      mode: 'subtask_start',
+      ...options.subtaskStartInput,
+    })
+    : null;
+  const subtaskStartSummary = subtaskStart
+    ? {
+      canProceed: subtaskStart.canProceed,
+      detail: subtaskStart.detail,
+      label: subtaskStart.label,
+      suggestedNextAction: subtaskStart.suggestedNextAction,
+    }
+    : null;
+  const blockedSubtaskStart = subtaskStartSummary && !subtaskStartSummary.canProceed;
+
   return {
     taskId: handoff.toTaskId ?? handoff.fromTaskId,
     source: handoff.action === 'resume_run' ? 'run_checkpoint' : handoff.action === 'handoff_to_task' ? 'handoff' : 'context_refresh',
     contextMustBeReassembled: true,
     preservePreviousChat: false,
-    nextAction: handoff.action === 'handoff_to_task'
+    subtaskStart: subtaskStartSummary,
+    nextAction: blockedSubtaskStart
+      ? '先处理子任务启动检查，再进入目标任务。'
+      : handoff.action === 'handoff_to_task'
       ? '进入目标任务并重新装配上下文。'
       : handoff.action === 'resume_run'
         ? '从 checkpoint 恢复前重新装配上下文。'
