@@ -23,6 +23,7 @@ function isClosedTask(task: TaskHierarchyNode): boolean {
 }
 
 export function legacyPhaseFollowupParentForTask<T extends TaskHierarchyNode>(task: T, allTasks: T[]): T | null {
+  if (Object.prototype.hasOwnProperty.call(task, 'parentTaskId')) return null;
   if (task.parentTaskId) return null;
   const match = LEGACY_PHASE_FOLLOWUP_PREFIX.exec(task.title.trim());
   const parentTitle = match?.[2]?.trim();

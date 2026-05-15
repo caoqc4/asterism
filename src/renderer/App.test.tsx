@@ -45,6 +45,10 @@ function buildTask(partial: Partial<TaskListItemRecord> = {}): TaskListItemRecor
     dependencyReevaluation: partial.dependencyReevaluation ?? null,
     riskLevel: partial.riskLevel ?? 'none',
     riskNote: partial.riskNote ?? null,
+    taskType: partial.taskType,
+    taskFacets: partial.taskFacets,
+    parentTaskId: partial.parentTaskId,
+    childTaskIds: partial.childTaskIds,
     createdAt: partial.createdAt ?? now,
     updatedAt: partial.updatedAt ?? now,
   };
@@ -1496,17 +1500,20 @@ describe('App redesign v1', () => {
     }));
   });
 
-  it('repairs existing phase follow-up tasks and keeps the explorer/queue at parent-task level', async () => {
+  it('does not silently repair phase follow-up tasks from title patterns', async () => {
     const project = buildTask({
       id: 'task_project_repair',
       title: '开发小程序',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: ['existing_child_1', 'existing_child_2', 'existing_child_3', 'existing_child_4', 'existing_child_5'],
       state: 'planned',
       updatedAt: '2026-05-13T12:00:00.000Z',
     });
     const followups = [
-      buildTask({ id: 'task_followup_repair_1', title: '拆解下一步：开发小程序', state: 'planned' }),
-      buildTask({ id: 'task_followup_repair_2', title: '实现调整：开发小程序', state: 'planned' }),
-      buildTask({ id: 'task_followup_repair_3', title: '验收回归：开发小程序', state: 'planned' }),
+      buildTask({ id: 'task_followup_repair_1', title: '拆解下一步：开发小程序', taskType: 'simple', parentTaskId: null, childTaskIds: [], state: 'planned' }),
+      buildTask({ id: 'task_followup_repair_2', title: '实现调整：开发小程序', taskType: 'simple', parentTaskId: null, childTaskIds: [], state: 'planned' }),
+      buildTask({ id: 'task_followup_repair_3', title: '验收回归：开发小程序', taskType: 'simple', parentTaskId: null, childTaskIds: [], state: 'planned' }),
     ];
     harness.tasks.unshift(project, ...followups);
     harness.details[project.id] = buildTaskDetail(project);
@@ -1533,29 +1540,14 @@ describe('App redesign v1', () => {
       'existing_child_3',
       'existing_child_4',
       'existing_child_5',
-      'task_followup_repair_1',
-      'task_followup_repair_2',
-      'task_followup_repair_3',
     ]);
     for (const task of followups) {
       expect(attrs[task.id]).toMatchObject({
-        type: 'simple',
+        type: 'project',
         typeConfirmed: true,
-        parentTaskId: project.id,
+        parentTaskId: null,
       });
     }
-
-    const typeTree = document.querySelector('.task-type-tree') as HTMLElement;
-    expect(within(typeTree).getByRole('button', { name: '开发小程序' })).toBeTruthy();
-    expect(within(typeTree).queryByRole('button', { name: '拆解下一步：开发小程序' })).toBeNull();
-    expect(within(typeTree).queryByRole('button', { name: '实现调整：开发小程序' })).toBeNull();
-    expect(within(typeTree).queryByRole('button', { name: '验收回归：开发小程序' })).toBeNull();
-
-    const queueText = document.querySelector('.execution-queue')?.textContent ?? '';
-    expect(queueText).toContain('开发小程序');
-    expect(queueText).not.toContain('拆解下一步：开发小程序');
-    expect(queueText).not.toContain('实现调整：开发小程序');
-    expect(queueText).not.toContain('验收回归：开发小程序');
   });
 
   it('suggests a fresh task session when recent AI replies stay generic', async () => {

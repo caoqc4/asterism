@@ -42,7 +42,6 @@ import {
   buildTaskPlanningPrompt,
   defaultScheduleForType,
   defaultTriggerForType,
-  inferTaskExecutionType,
   inferTaskTypeProfile,
   loadTaskAttributes,
   moveTaskToProject,
@@ -805,36 +804,6 @@ function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): 
   };
 }
 
-function repairTaskAttributesForRecords(records: TaskListItemRecord[]): Record<string, TaskAttributeRecord> {
-  let attrs = loadTaskAttributes();
-  const projectByTitle = new Map<string, TaskListItemRecord>();
-  for (const record of records) {
-    const attr = attrs[record.id];
-    const inferredType = attr?.type ?? inferTaskExecutionType(record.title);
-    if (inferredType === 'project' && !attr?.parentTaskId) {
-      projectByTitle.set(record.title.trim(), record);
-    }
-  }
-
-  let repaired = false;
-  for (const record of records) {
-    const current = attrs[record.id];
-    if (current?.parentTaskId) continue;
-    const match = /^(拆解下一步|实现调整|验收回归)：(.+)$/.exec(record.title.trim());
-    if (!match) continue;
-    const parentTitle = match[2]?.trim();
-    if (!parentTitle) continue;
-    const parent = projectByTitle.get(parentTitle);
-    if (!parent || parent.id === record.id) continue;
-    saveTaskAttributes(record.id, { type: 'simple', typeConfirmed: true });
-    moveTaskToProject(record.id, parent.id);
-    repaired = true;
-  }
-
-  if (repaired) attrs = loadTaskAttributes();
-  return attrs;
-}
-
 function confirmedTaskRecords(records: TaskListItemRecord[]): TaskListItemRecord[] {
   return records.filter((record) => !isUnconfirmedPanelCaptureRecord(record));
 }
@@ -907,7 +876,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   function reloadTasks() {
     window.api?.listTasks().then((records) => {
       const confirmedRecords = confirmedTaskRecords(records);
-      const attrs = repairTaskAttributesForRecords(confirmedRecords);
+      const attrs = loadTaskAttributes();
       setAllTasks(confirmedRecords
         .map((record) => fromRecord(record, attrs[record.id]))
         .filter((task) => task.visibility !== 'hidden'));
@@ -983,7 +952,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     window.api.listTasks()
       .then((records) => {
         const confirmedRecords = confirmedTaskRecords(records);
-        const attrs = repairTaskAttributesForRecords(confirmedRecords);
+        const attrs = loadTaskAttributes();
         setAllTasks(confirmedRecords.map((record) => fromRecord(record, attrs[record.id])));
       })
       .catch(() => {})

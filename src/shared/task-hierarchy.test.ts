@@ -9,25 +9,41 @@ import {
 } from './task-hierarchy.js';
 
 function node(partial: Partial<TaskHierarchyNode>): TaskHierarchyNode {
-  return {
+  const result: TaskHierarchyNode = {
     id: partial.id ?? 'task_1',
     title: partial.title ?? '任务',
     type: partial.type ?? 'simple',
     state: partial.state ?? 'planned',
     status: partial.status ?? 'idle',
-    parentTaskId: partial.parentTaskId ?? null,
     childTaskIds: partial.childTaskIds ?? [],
     updatedAtIso: partial.updatedAtIso ?? '2026-01-01T00:00:00.000Z',
   };
+  if (Object.prototype.hasOwnProperty.call(partial, 'parentTaskId')) {
+    result.parentTaskId = partial.parentTaskId ?? null;
+  }
+  return result;
 }
 
 describe('task hierarchy helpers', () => {
-  it('treats legacy phase follow-up tasks as children of their named project parent', () => {
+  it('treats legacy phase follow-up tasks as children only when parent field is absent', () => {
     const project = node({ id: 'project_1', title: '开发小程序', type: 'project' });
     const followup = node({ id: 'followup_1', title: '拆解下一步：开发小程序', type: 'simple' });
 
     expect(effectiveParentTaskId(followup, [project, followup])).toBe(project.id);
     expect(isTopLevelTask(followup, [project, followup])).toBe(false);
+  });
+
+  it('does not infer a legacy parent when the record explicitly has no parent', () => {
+    const project = node({ id: 'project_1', title: '开发小程序', type: 'project', parentTaskId: null });
+    const followup = node({
+      id: 'followup_1',
+      title: '拆解下一步：开发小程序',
+      type: 'simple',
+      parentTaskId: null,
+    });
+
+    expect(effectiveParentTaskId(followup, [project, followup])).toBeNull();
+    expect(isTopLevelTask(followup, [project, followup])).toBe(true);
   });
 
   it('orders children by parent child ids before falling back to update time', () => {
