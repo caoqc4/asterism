@@ -17,6 +17,7 @@ import type {
   RunRecord,
   RunStatus,
 } from '../../../shared/types/run.js';
+import { evaluateRuntimeContextAssemblyGate } from '../../../shared/runtime-context-assembly-gate.js';
 import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import type { RunRepository } from '../../db/repositories/run-repository.js';
@@ -94,6 +95,15 @@ export class OperatorStartedRunService {
     if (!preStepVerification.canProceed) {
       throw new Error(preStepVerification.detail);
     }
+    const contextAssemblyGate = evaluateRuntimeContextAssemblyGate({
+      executionLabel: `operator-started ${request.kind}`,
+      modelExposure: request.modelExposure,
+      providerCallAllowed: request.providerCallAllowed,
+      providerVisibleTaskContext: false,
+    });
+    if (!contextAssemblyGate.canProceed) {
+      throw new Error(contextAssemblyGate.summary);
+    }
 
     const runInput: CreateRunInput = {
       taskId: request.taskId,
@@ -108,7 +118,11 @@ export class OperatorStartedRunService {
       status: 'completed',
       title: 'operator-started run accepted',
       input: validation.summary,
-      output: `descriptor=${request.descriptorId} / ${orchestrationValidation.summary}`,
+      output: [
+        `descriptor=${request.descriptorId}`,
+        orchestrationValidation.summary,
+        contextAssemblyGate.summary,
+      ].join(' / '),
     });
 
     if (request.kind === 'browser_controlled_local_qa') {

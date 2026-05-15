@@ -62,7 +62,7 @@ describe('OperatorStartedRunService', () => {
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'plan',
-      output: 'descriptor=browser.readonly_evidence / Orchestration request / lane=browser_evidence / source=browser_evidence_smoke / start=operator_started / providerCall=no / queue=no / autoStart=no',
+      output: 'descriptor=browser.readonly_evidence / Orchestration request / lane=browser_evidence / source=browser_evidence_smoke / start=operator_started / providerCall=no / queue=no / autoStart=no / operator-started browser_evidence_smoke context assembly gate not required: providerCall=no / modelExposure=hidden',
       runId: 'run_operator_1',
       status: 'completed',
       title: 'operator-started run accepted',
@@ -222,7 +222,7 @@ describe('OperatorStartedRunService', () => {
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'plan',
-      output: 'descriptor=browser.controlled_interaction / Orchestration request / lane=browser_evidence / source=browser_controlled_local_qa / start=operator_started / providerCall=no / queue=no / autoStart=no',
+      output: 'descriptor=browser.controlled_interaction / Orchestration request / lane=browser_evidence / source=browser_controlled_local_qa / start=operator_started / providerCall=no / queue=no / autoStart=no / operator-started browser_controlled_local_qa context assembly gate not required: providerCall=no / modelExposure=hidden',
       runId: 'run_operator_1',
       status: 'completed',
       title: 'operator-started run accepted',

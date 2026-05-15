@@ -51,12 +51,14 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'SourceFreshnessEvaluation classifies source materials as include, caution, or exclude, and RuntimeContextManifest can carry source inclusion decisions and reasons.',
       'SelectedFileRelevanceEvaluation classifies selected files as include, caution, or exclude, and RuntimeContextManifest can carry selected-file relevance reasons.',
       'buildRuntimeContextAssemblyPolicy evaluates product principles, task state, Task.md, Task Records, selected file, structured signals, and work habits against the required read order.',
+      'RuntimeContextAssemblyGate requires read-order assembly for provider-visible task execution and explicitly exempts hidden non-model entries.',
       'RunOrchestrator blocks ordinary model execution when required runtime context inputs are missing.',
       'CodeAgentRunService blocks model-producer execution when required task recovery context is missing and passes selected source-context metadata into RuntimeContextManifest.',
+      'OperatorStartedRunService keeps browser evidence and local QA outside provider-visible context assembly only while providerCall=no and modelExposure=hidden.',
     ],
     gaps: [
-      'The shared read-order evaluator is enforced for ordinary model Runs and Code Agent model-producer runs, but not yet for every execution boundary.',
-      'Source freshness and selected-file relevance reasons are represented in the manifest, ordinary Run working context and Code Agent model-producer runs pass source metadata, but retained execution entry points still need to pass full source/file metadata consistently.',
+      'The shared read-order evaluator is enforced for ordinary model Runs and Code Agent model-producer runs; future provider-visible execution boundaries must use the same gate.',
+      'Source freshness and selected-file relevance reasons are represented in the manifest, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points still need to pass full source/file metadata consistently.',
     ],
     nextVerification: [
       'Add RuntimeContextAssemblyPolicy with ordered required/optional inputs.',

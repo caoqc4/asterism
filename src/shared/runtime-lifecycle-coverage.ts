@@ -90,8 +90,10 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'SourceMaterialQualityEvaluation classifies traceability, credibility, duplication, and sensitivity; RuntimeContextManifest combines it with freshness before including source context content.',
       'AgentWorkingContext retains source uri metadata so source-quality traceability checks can use original source locations when available.',
       'SelectedFileRelevanceEvaluation classifies selected files as include, caution, or exclude, and RuntimeContextManifest can attach selected-file relevance reasons.',
+      'RuntimeContextAssemblyGate distinguishes provider-visible task execution from hidden non-model runtime entries.',
       'RunOrchestrator blocks model execution when runtime context assembly is missing required inputs.',
       'CodeAgentRunService blocks model-producer execution when required task recovery context is missing and passes selected source-context metadata into RuntimeContextManifest before execution.',
+      'OperatorStartedRunService records that browser evidence and local QA entries do not require provider-visible context assembly only when providerCall=no and modelExposure=hidden.',
       'Code Agent has provider-visible context manifest logic.',
     ],
     outOfAgentPrinciplesScope: [
@@ -99,11 +101,11 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Runtime must handle UI visibility, model visibility, and durable context separately.',
     ],
     gaps: [
-      'RuntimeContextAssemblyPolicy blocks ordinary Run and Code Agent model-producer execution, but not every execution entry point blocks on it yet.',
-      'Source freshness, source quality, and selected-file relevance are now represented as first-class inclusion reasons, ordinary Run working context and Code Agent model-producer runs pass source metadata, but not every retained execution entry point passes full context metadata yet.',
+      'RuntimeContextAssemblyPolicy blocks ordinary Run and Code Agent model-producer execution; RuntimeContextAssemblyGate keeps hidden non-model entries out of provider-visible context assembly.',
+      'Source freshness, source quality, and selected-file relevance are now represented as first-class inclusion reasons, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points must also pass full context metadata.',
     ],
     nextImplementation: [
-      'Pass full source and selected-file metadata into RuntimeContextManifest from retained execution entry points.',
+      'Require any future provider-visible execution entry point to pass full source and selected-file metadata into RuntimeContextManifest before model/provider execution.',
     ],
   },
   {
