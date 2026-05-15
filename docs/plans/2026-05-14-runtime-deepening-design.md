@@ -541,6 +541,7 @@ Implemented:
 - `TaskService.update` now reuses the same evaluator when a task title or parent scope changes, preventing duplicate sibling tasks during project moves.
 - Project decomposition generation now uses the same `runtime-subtask-evaluator` as confirmed child creation, so projects with existing open or legacy follow-up children do not generate another decomposition draft.
 - RightPanel task-context follow-up task capture now passes explicit follow-up proposals through task closeout evaluation before creating a new task, so existing child handoff can block duplicate follow-up creation.
+- Added `PriorityAttentionProjection` so Brief and Tasks consume the same priority order, with Brief using an explicit capped attention summary and Tasks using the full ordered queue.
 - TasksPage explicit task creation now passes through the shared `task_capture` pre-step guard before persistence.
 - Added `RuntimeCapabilitySnapshot` for model availability, workspace checks, feature flags, and tool scaffold exposure; `RuntimeContextManifest` can now include it as a capability context item.
 - `pre_step` runtime verification can now consume `RuntimeCapabilitySnapshot` when an execution explicitly requires model execution or workspace verification.

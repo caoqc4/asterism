@@ -30,6 +30,14 @@ export type PriorityRecommendationRanking = {
   score: number;
 };
 
+export type PriorityAttentionProjection<T extends PriorityRecommendationCandidate> = {
+  items: T[];
+  totalCount: number;
+  displayedCount: number;
+  truncated: boolean;
+  displayLimit: number | null;
+};
+
 export const PRIORITY_RECOMMENDATION_LANE_ORDER: Record<PriorityLane, number> = {
   escalate_now: 0,
   unblock_or_decide: 1,
@@ -182,4 +190,29 @@ export function comparePriorityRecommendations(
   }
 
   return left.order - right.order;
+}
+
+export function sortPriorityRecommendations<T extends PriorityRecommendationCandidate>(
+  candidates: T[],
+  taskById: Map<string, PriorityRecommendationTaskSignal>,
+): T[] {
+  return [...candidates].sort((left, right) => comparePriorityRecommendations(left, right, taskById));
+}
+
+export function projectPriorityAttention<T extends PriorityRecommendationCandidate>(params: {
+  candidates: T[];
+  taskById: Map<string, PriorityRecommendationTaskSignal>;
+  displayLimit?: number | null;
+}): PriorityAttentionProjection<T> {
+  const sorted = sortPriorityRecommendations(params.candidates, params.taskById);
+  const displayLimit = params.displayLimit ?? null;
+  const items = typeof displayLimit === 'number' ? sorted.slice(0, displayLimit) : sorted;
+
+  return {
+    items,
+    totalCount: sorted.length,
+    displayedCount: items.length,
+    truncated: typeof displayLimit === 'number' && sorted.length > displayLimit,
+    displayLimit,
+  };
 }

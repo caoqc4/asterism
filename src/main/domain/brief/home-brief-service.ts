@@ -45,8 +45,7 @@ import { getResponsibilitySummary } from '../../../shared/working-context/respon
 import { parseTimelinePayload } from '../../../shared/working-context/timeline.js';
 import { isUnconfirmedPanelCaptureRecord } from '../../../shared/panel-capture.js';
 import {
-  comparePriorityRecommendations,
-  type PriorityRecommendationCandidate,
+  projectPriorityAttention,
   type PriorityRecommendationTaskSignal,
 } from '../../../shared/priority-recommendation-ranking.js';
 
@@ -504,13 +503,11 @@ function buildRecommendedActions(params: {
     });
   }
 
-  return actions
-    .sort((left, right) => comparePriorityRecommendations(
-      left as PriorityRecommendationCandidate,
-      right as PriorityRecommendationCandidate,
-      taskById as Map<string, PriorityRecommendationTaskSignal>,
-    ))
-    .slice(0, 5)
+  return projectPriorityAttention({
+    candidates: actions,
+    taskById: taskById as Map<string, PriorityRecommendationTaskSignal>,
+    displayLimit: 5,
+  }).items
     .map(({ order: _order, ...action }) => action);
 }
 

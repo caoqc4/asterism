@@ -25,7 +25,7 @@ import {
 } from '@shared/task-hierarchy';
 import { selectApplicableWorkHabits as selectApplicableWorkHabitsFromList } from '@shared/work-habit-rules';
 import {
-  comparePriorityRecommendations,
+  projectPriorityAttention,
   type PriorityRecommendationCandidate,
   type PriorityRecommendationTaskSignal,
 } from '@shared/priority-recommendation-ranking';
@@ -496,12 +496,14 @@ function buildExecutionQueueItems(tasks: Task[], allTasks: Task[], decisions: De
       .map((item, index) => [item.task.id, index]),
   );
 
-  return items
-    .sort((left, right) => {
-      const leftCandidate = priorityCandidateForExecutionItem(left, fallbackOrderByTaskId.get(left.task.id) ?? 0, decisions);
-      const rightCandidate = priorityCandidateForExecutionItem(right, fallbackOrderByTaskId.get(right.task.id) ?? 0, decisions);
-      return comparePriorityRecommendations(leftCandidate, rightCandidate, taskSignalById);
-    });
+  return projectPriorityAttention({
+    candidates: items.map((item) => ({
+      item,
+      ...priorityCandidateForExecutionItem(item, fallbackOrderByTaskId.get(item.task.id) ?? 0, decisions),
+    })),
+    taskById: taskSignalById,
+  }).items
+    .map((candidate) => candidate.item);
 }
 
 function rootTaskFor(task: Task, allTasks: Task[]): Task {
