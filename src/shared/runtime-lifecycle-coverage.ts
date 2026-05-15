@@ -280,6 +280,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     coveredBy: [
       'Task data model now has taskType, taskFacets, parentTaskId, and childTaskIds.',
       'Task hierarchy helpers keep parent/child views and priority recommendations from duplicating children into top-level lists.',
+      'TaskService.create and TaskService.update keep child parentTaskId and parent childTaskIds in sync at the service boundary.',
       'runtime-subtask-evaluator blocks duplicate, generic, parent-overlapping, or underspecified project child drafts before creation.',
       'Project decomposition generation and confirmation both consult runtime-subtask-evaluator, so existing children block another decomposition round before a new draft appears.',
       'Project decomposition generation now detects existing children from the full task list, including children linked only by parentTaskId.',
@@ -289,7 +290,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Some task structure still relies on renderer-local attributes.',
-      'Project progress and child ordering are not fully data-authoritative.',
+      'Project progress and child ordering are closer to data-authoritative, but legacy local attributes still need migration cleanup.',
       'Subtask draft evaluation is enforced for project decomposition generation and confirmation, but not yet every future child-task creation path.',
     ],
     nextImplementation: [

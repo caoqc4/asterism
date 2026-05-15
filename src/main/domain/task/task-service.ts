@@ -564,6 +564,60 @@ export class TaskService {
     return detail;
   }
 
+  private findTaskInList(tasks: TaskRecord[], taskId: string): TaskRecord | null {
+    return tasks.find((task) => task.id === taskId) ?? null;
+  }
+
+  private async addChildLinkToParent(
+    parentTaskId: string | null | undefined,
+    childTaskId: string,
+    existingTasks: TaskRecord[],
+  ): Promise<void> {
+    if (!parentTaskId) return;
+    const parent = this.findTaskInList(existingTasks, parentTaskId);
+    if (!parent) {
+      throw new Error(`Parent task not found: ${parentTaskId}`);
+    }
+    const childTaskIds = parent.childTaskIds ?? [];
+    if (childTaskIds.includes(childTaskId)) return;
+    await this.repository.update({
+      id: parentTaskId,
+      childTaskIds: [...childTaskIds, childTaskId],
+    });
+  }
+
+  private async removeChildLinkFromParent(
+    parentTaskId: string | null | undefined,
+    childTaskId: string,
+    existingTasks: TaskRecord[],
+  ): Promise<void> {
+    if (!parentTaskId) return;
+    const parent = this.findTaskInList(existingTasks, parentTaskId);
+    if (!parent) return;
+    const childTaskIds = parent.childTaskIds ?? [];
+    if (!childTaskIds.includes(childTaskId)) return;
+    await this.repository.update({
+      id: parentTaskId,
+      childTaskIds: childTaskIds.filter((id) => id !== childTaskId),
+    });
+  }
+
+  private async syncParentChildLinksAfterMove(params: {
+    taskId: string;
+    previousParentTaskId: string | null | undefined;
+    nextParentTaskId: string | null | undefined;
+    existingTasks: TaskRecord[];
+  }): Promise<void> {
+    const previousParentTaskId = params.previousParentTaskId ?? null;
+    const nextParentTaskId = params.nextParentTaskId ?? null;
+    if (previousParentTaskId === nextParentTaskId) return;
+    if (nextParentTaskId && !this.findTaskInList(params.existingTasks, nextParentTaskId)) {
+      throw new Error(`Parent task not found: ${nextParentTaskId}`);
+    }
+    await this.removeChildLinkFromParent(previousParentTaskId, params.taskId, params.existingTasks);
+    await this.addChildLinkToParent(nextParentTaskId, params.taskId, params.existingTasks);
+  }
+
   private async restoreTaskAfterRun(detail: TaskDetailBase): Promise<TaskDetailBase> {
     if (detail.state !== 'running') {
       return detail;
@@ -595,10 +649,14 @@ export class TaskService {
   }
 
   async create(input: CreateTaskInput): Promise<TaskListItemRecord> {
+    const existingTasks = await this.repository.list() ?? [];
+    if (input.parentTaskId && !this.findTaskInList(existingTasks, input.parentTaskId)) {
+      throw new Error(`Parent task not found: ${input.parentTaskId}`);
+    }
     const captureEvaluation = evaluateRuntimeTaskCapture({
       title: input.title,
       summary: input.summary,
-      existingTasks: await this.repository.list(),
+      existingTasks,
       parentTaskId: input.parentTaskId ?? null,
     });
     if (!captureEvaluation.allowed) {
@@ -606,6 +664,7 @@ export class TaskService {
     }
 
     const created = await this.repository.create(input);
+    await this.addChildLinkToParent(input.parentTaskId, created.id, existingTasks);
     return this.attachActiveWaitingItem(created);
   }
 
@@ -636,12 +695,20 @@ export class TaskService {
 
   async update(input: UpdateTaskInput): Promise<TaskListItemRecord> {
     const detail = await this.getExistingTaskOrThrow(input.id);
+    let existingTasks: TaskRecord[] | null = null;
     if (input.title !== undefined || input.parentTaskId !== undefined) {
-      const existingTasks = await this.repository.list();
+      existingTasks = await this.repository.list() ?? [];
+      if (
+        input.parentTaskId !== undefined
+        && input.parentTaskId
+        && !this.findTaskInList(existingTasks, input.parentTaskId)
+      ) {
+        throw new Error(`Parent task not found: ${input.parentTaskId}`);
+      }
       const captureEvaluation = evaluateRuntimeTaskCapture({
         title: input.title ?? detail.title,
         summary: input.summary === undefined ? detail.summary : input.summary,
-        existingTasks: (existingTasks ?? []).filter((task) => task.id !== input.id),
+        existingTasks: existingTasks.filter((task) => task.id !== input.id),
         parentTaskId: input.parentTaskId === undefined ? detail.parentTaskId ?? null : input.parentTaskId ?? null,
       });
       if (!captureEvaluation.allowed) {
@@ -668,6 +735,15 @@ export class TaskService {
       ...input,
       riskNote: nextRiskNote,
     });
+
+    if (input.parentTaskId !== undefined) {
+      await this.syncParentChildLinksAfterMove({
+        taskId: input.id,
+        previousParentTaskId: detail.parentTaskId,
+        nextParentTaskId: input.parentTaskId,
+        existingTasks: existingTasks ?? await this.repository.list(),
+      });
+    }
 
     if (input.waitingReason !== undefined || detail.state === 'waiting_external') {
       await this.syncWaitingItem(updated.id, detail.state, updated.waitingReason);
