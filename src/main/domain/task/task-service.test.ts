@@ -407,6 +407,45 @@ describe('TaskService', () => {
     expect(repository.create).not.toHaveBeenCalled();
   });
 
+  it('returns hierarchy consistency diagnostics from current task records', async () => {
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('running'),
+          id: 'project_1',
+          title: '项目一',
+          childTaskIds: [],
+        },
+        {
+          ...buildRecord('running'),
+          id: 'child_1',
+          title: '需求分析',
+          parentTaskId: 'project_1',
+        },
+      ]),
+      create: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    await expect(service.getHierarchyConsistency()).resolves.toMatchObject({
+      consistent: false,
+      issues: [
+        {
+          code: 'missing_parent_child_link',
+          taskId: 'project_1',
+          relatedTaskId: 'child_1',
+        },
+      ],
+    });
+  });
+
   it('builds a task resume card from current signals, materials, methods, and timeline', async () => {
     const repository = {
       list: vi.fn(),

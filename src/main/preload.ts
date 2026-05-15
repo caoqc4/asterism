@@ -10,6 +10,7 @@ const api: ElectronApi = {
   setAiConfig: (input) => ipcRenderer.invoke('settings:setAiConfig', input),
   probeSandboxBackend: () => ipcRenderer.invoke('settings:probeSandboxBackend'),
   listTasks: () => ipcRenderer.invoke('task:list'),
+  getTaskHierarchyConsistency: () => ipcRenderer.invoke('task:getHierarchyConsistency'),
   createTask: (input) => ipcRenderer.invoke('task:create', input),
   getTaskDetail: (taskId) => ipcRenderer.invoke('task:getDetail', taskId),
   updateTask: (input) => ipcRenderer.invoke('task:update', input),

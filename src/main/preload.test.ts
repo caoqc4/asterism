@@ -226,6 +226,7 @@ describe('preload bridge', () => {
     await api.setAiConfig(aiInput);
     await api.probeSandboxBackend();
     await api.listTasks();
+    await api.getTaskHierarchyConsistency();
     await api.createTask(createTaskInput);
     await api.getTaskDetail('task_1');
     await api.updateTask(updateTaskInput);
@@ -284,6 +285,7 @@ describe('preload bridge', () => {
       ['settings:setAiConfig', aiInput],
       ['settings:probeSandboxBackend'],
       ['task:list'],
+      ['task:getHierarchyConsistency'],
       ['task:create', createTaskInput],
       ['task:getDetail', 'task_1'],
       ['task:update', updateTaskInput],

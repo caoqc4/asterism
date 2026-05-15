@@ -61,7 +61,7 @@ Strongest areas:
 - service-level child task capture now blocks generic phase-template titles and parent-title repeats.
 - project decomposition generation checks the full task list for existing children, including `parentTaskId` links.
 - task creation, parent moves, and parent-side child list updates keep `parentTaskId` and parent `childTaskIds` synchronized at the service boundary.
-- hierarchy consistency diagnostics can find old parent/child mismatches before any repair flow mutates records.
+- hierarchy consistency diagnostics can find old parent/child mismatches through the service/IPC boundary before any repair flow mutates records.
 - ordinary task files stay in the task-file class instead of being projected as artifacts.
 
 Weakest areas:

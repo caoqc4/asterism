@@ -37,6 +37,10 @@ import type {
   UpdateSourceContextInput,
 } from '../../../shared/types/source-context.js';
 import { evaluateRuntimeTaskCapture } from '../../../shared/runtime-task-capture-evaluator.js';
+import {
+  evaluateTaskHierarchyConsistency,
+  type TaskHierarchyConsistencyEvaluation,
+} from '../../../shared/task-hierarchy-consistency.js';
 import { normalizeCreateSourceContextInput } from '../../../shared/runtime-surface-routing.js';
 import { assertKnownPanelRuntimeTimelineEventType } from '../../../shared/runtime-panel-events.js';
 import type { RunType } from '../../../shared/types/run.js';
@@ -697,6 +701,10 @@ export class TaskService {
     const taskSlices = await Promise.all(tasks.map((task) => this.attachActiveWaitingItem(task)));
 
     return this.attachDependencyReevaluations(taskSlices);
+  }
+
+  async getHierarchyConsistency(): Promise<TaskHierarchyConsistencyEvaluation> {
+    return evaluateTaskHierarchyConsistency(await this.repository.list());
   }
 
   async create(input: CreateTaskInput): Promise<TaskListItemRecord> {

@@ -27,6 +27,7 @@ const {
     },
     taskService: {
       list: vi.fn(),
+      getHierarchyConsistency: vi.fn(),
       create: vi.fn(),
       getDetail: vi.fn(),
       update: vi.fn(),
@@ -189,6 +190,29 @@ describe('registerIpcHandlers', () => {
     servicesMock.taskService.list.mockResolvedValue([]);
 
     registerIpcHandlers();
+  });
+
+  it('returns task hierarchy consistency diagnostics through IPC', async () => {
+    servicesMock.taskService.getHierarchyConsistency.mockResolvedValue({
+      consistent: false,
+      issues: [
+        {
+          code: 'missing_parent_child_link',
+          taskId: 'project_1',
+          relatedTaskId: 'child_1',
+          message: '父任务没有列出子任务。',
+        },
+      ],
+      issueCount: 1,
+      summary: '任务层级存在 1 个一致性问题。',
+    });
+
+    const handler = getRegisteredHandler<[], unknown>('task:getHierarchyConsistency');
+
+    await expect(handler({})).resolves.toMatchObject({
+      consistent: false,
+      issueCount: 1,
+    });
   });
 
   it('runs the sandbox backend probe only through the explicit settings channel', async () => {
