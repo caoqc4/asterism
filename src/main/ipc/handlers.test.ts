@@ -107,6 +107,14 @@ const {
     artifactRepository: {
       createPatchFromRun: vi.fn(),
       createManualNote: vi.fn(),
+      findById: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    taskFileRepository: {
+      listForTask: vi.fn(),
+      findById: vi.fn(),
+      create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     },
@@ -191,6 +199,13 @@ describe('registerIpcHandlers', () => {
       });
     });
     servicesMock.taskService.list.mockResolvedValue([]);
+    servicesMock.taskService.getDetail.mockResolvedValue({
+      id: 'task_1',
+      title: 'Task 1',
+      state: 'planned',
+    });
+    servicesMock.artifactRepository.findById.mockResolvedValue(null);
+    servicesMock.taskFileRepository.findById.mockResolvedValue(null);
 
     registerIpcHandlers();
   });

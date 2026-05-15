@@ -64,6 +64,8 @@ import {
 import { TASKPLANE_AGENT_PRINCIPLES } from '../../shared/agent-principles.js';
 import { normalizeCreateManualArtifactInput } from '../../shared/runtime-surface-routing.js';
 import { evaluateRuntimeSubtaskDraft } from '../../shared/runtime-subtask-evaluator.js';
+import { evaluateRuntimeAction } from '../../shared/runtime-action-evaluator.js';
+import { evaluateRuntimeVerification } from '../../shared/runtime-verification.js';
 
 const PING_CHANNEL = 'app:ping';
 
@@ -152,6 +154,27 @@ function normalizeProjectDecomposition(value: unknown): ProjectDecompositionResu
     review: readString(record.review, '已检查子任务边界、依赖和粒度。'),
     nextStep: readString(record.nextStep, '请确认是否创建这些子任务。'),
   };
+}
+
+async function assertTaskBoundMutationAllowed(taskId: string): Promise<void> {
+  const task = await getServices().taskService.getDetail(taskId);
+  if (!task) {
+    throw new Error(`Task not found: ${taskId}`);
+  }
+
+  const action = evaluateRuntimeAction({
+    action: 'task_mutation',
+    fromTaskId: taskId,
+  });
+  const verification = evaluateRuntimeVerification({
+    mode: 'pre_step',
+    action,
+    confirmationSatisfied: true,
+  });
+
+  if (!verification.canProceed) {
+    throw new Error(verification.detail);
+  }
 }
 
 export function registerIpcHandlers(): void {
@@ -391,6 +414,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('artifact:createManual', async (_event, input: CreateManualArtifactInput) => {
     const normalizedInput = normalizeCreateManualArtifactInput(input);
+    await assertTaskBoundMutationAllowed(normalizedInput.taskId);
     const created = await getServices().artifactRepository.createManualNote({
       taskId: normalizedInput.taskId,
       title: normalizedInput.title,
@@ -401,12 +425,20 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('artifact:update', async (_event, input: UpdateArtifactInput) => {
+    const existing = await getServices().artifactRepository.findById(input.id);
+    if (existing) {
+      await assertTaskBoundMutationAllowed(existing.taskId);
+    }
     const updated = await getServices().artifactRepository.update(input);
     emitAppEvent('task.changed', updated.taskId);
     return updated;
   });
 
   ipcMain.handle('artifact:delete', async (_event, id: string) => {
+    const existing = await getServices().artifactRepository.findById(id);
+    if (existing) {
+      await assertTaskBoundMutationAllowed(existing.taskId);
+    }
     const deleted = await getServices().artifactRepository.delete(id);
     emitAppEvent('task.changed', deleted.taskId);
     return deleted;
@@ -417,18 +449,27 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('taskFile:create', async (_event, input: CreateTaskFileInput) => {
+    await assertTaskBoundMutationAllowed(input.taskId);
     const created = await getServices().taskFileRepository.create(input);
     emitAppEvent('task.changed', created.taskId);
     return created;
   });
 
   ipcMain.handle('taskFile:update', async (_event, input: UpdateTaskFileInput) => {
+    const existing = await getServices().taskFileRepository.findById(input.id);
+    if (existing) {
+      await assertTaskBoundMutationAllowed(existing.taskId);
+    }
     const updated = await getServices().taskFileRepository.update(input);
     emitAppEvent('task.changed', updated.taskId);
     return updated;
   });
 
   ipcMain.handle('taskFile:delete', async (_event, id: string) => {
+    const existing = await getServices().taskFileRepository.findById(id);
+    if (existing) {
+      await assertTaskBoundMutationAllowed(existing.taskId);
+    }
     const deleted = await getServices().taskFileRepository.delete(id);
     emitAppEvent('task.changed', deleted.taskId);
     return deleted;

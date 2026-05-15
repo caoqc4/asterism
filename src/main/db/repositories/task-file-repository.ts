@@ -36,6 +36,17 @@ export class TaskFileRepository {
     return rows.map(toRecord);
   }
 
+  async findById(id: string): Promise<TaskFileRecord | null> {
+    const db = initDatabase();
+    const [row] = await db
+      .select()
+      .from(taskFiles)
+      .where(eq(taskFiles.id, id))
+      .limit(1);
+
+    return row ? toRecord(row) : null;
+  }
+
   async create(input: CreateTaskFileInput): Promise<TaskFileRecord> {
     const db = initDatabase();
     const timestamp = nowIso();

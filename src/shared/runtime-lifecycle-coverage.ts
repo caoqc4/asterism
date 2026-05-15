@@ -153,6 +153,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Tasks and Brief task state transitions now use shared renderer runtime guards backed by pre_step verification.',
       'Tasks special mutation paths for Task.md sync, risk updates, project moves, and project parent updates now use shared mutation guards.',
       'Tasks file actions for create, rename, move, delete, source key toggles, source archive, and artifact creation now use durable panel action guards.',
+      'Main IPC task-file and manual-artifact write boundaries guard task_mutation before repository writes.',
       'Tasks file content saves for Task.md/Task Records, task files, sources, and artifacts now use durable panel action guards plus post-step completion checks.',
       'Tasks project decomposition confirmation now guards child task creation, child planning transitions, dependency creation, parent updates, task records, and completion criteria writes.',
       'TaskService completion criteria creation and updates now reject empty, generic, or duplicate open completion criteria before persistence.',
