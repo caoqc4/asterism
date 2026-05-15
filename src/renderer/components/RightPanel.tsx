@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ChatMessage } from '@shared/types/ipc';
 import type { RunStepRecord } from '@shared/types/run';
+import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import { selectApplicableWorkHabits as selectApplicableWorkHabitsFromList } from '@shared/work-habit-rules';
 import { CONTEXT_COMPRESSION_THRESHOLD } from '@shared/settings-defaults';
 import { PANEL_CAPTURE_SUMMARY_PREFIX } from '@shared/panel-capture';
@@ -141,6 +142,19 @@ const GENERIC_ASSISTANT_REPLY_PATTERNS = [
   /当前任务处于正常推进中/,
   /需要我展开.*部分/,
 ];
+
+function hasTaskMdFile(task: TaskDetail | null): boolean | undefined {
+  if (!task?.taskFiles) return undefined;
+  return task.taskFiles.some((file) => file.path === 'Task.md');
+}
+
+function hasKnownCompletionOrNextStep(task: TaskDetail | TaskListItemRecord | null): boolean | undefined {
+  if (!task) return undefined;
+  if ('completionCriteria' in task && task.completionCriteria.length > 0) return true;
+  if (task.nextStep?.trim()) return true;
+  if ('completionCriteria' in task) return false;
+  return undefined;
+}
 const USER_CORRECTION_PATTERNS = [
   /不对/,
   /不是/,
@@ -1250,7 +1264,6 @@ export function RightPanel({
         appendSysMsg(`阶段收尾已暂停：${handoff.reason}`);
         return;
       }
-      const resumePlan = buildRuntimeResumePlan(handoff);
       await window.api?.recordTaskCompletionCheck?.({
         taskId: closeoutTaskId,
         action: 'passed',
@@ -1268,7 +1281,57 @@ export function RightPanel({
       const nextTask = evaluation.nextTaskId
         ? tasks.find((task) => task.id === evaluation.nextTaskId) ?? null
         : null;
+      const nextTaskDetail = nextTask
+        ? await window.api?.getTaskDetail?.(nextTask.id).catch(() => null) ?? null
+        : null;
+      const nextTaskAttrs = nextTask ? getTaskAttributes(nextTask.id) : null;
+      const nextTaskStartRecord = nextTask
+        ? {
+          ...(nextTaskDetail ?? nextTask),
+          parentTaskId: (nextTaskDetail ?? nextTask).parentTaskId
+            ?? nextTaskAttrs?.parentTaskId
+            ?? (evaluation.nextTaskKind === 'existing_child' ? closeoutTaskId : null),
+        }
+        : null;
+      const resumePlan = buildRuntimeResumePlan(handoff, handoff.action === 'handoff_to_task' && nextTask
+        ? {
+          subtaskStartInput: {
+            targetTask: nextTaskStartRecord,
+            parentTask: taskDetail,
+            expectedParentTaskId: evaluation.nextTaskKind === 'existing_child' ? closeoutTaskId : null,
+            previousTask: taskListRecord,
+            requiresPreviousHandoff: true,
+            previousHandoffAvailable: Boolean(preserved.recordPath),
+            contextSignals: {
+              targetTaskId: nextTask.id,
+            },
+            availableContext: {
+              taskState: true,
+              taskMd: hasTaskMdFile(nextTaskDetail),
+              completionCriteria: hasKnownCompletionOrNextStep(nextTaskDetail ?? nextTask),
+              nextStep: Boolean((nextTaskDetail ?? nextTask).nextStep?.trim()),
+              parentConstraints: true,
+              handoffNotes: Boolean(preserved.recordPath),
+              sourceMaterials: nextTaskDetail ? nextTaskDetail.sourceContexts.length > 0 : undefined,
+              decisions: true,
+              files: nextTaskDetail?.taskFiles ? nextTaskDetail.taskFiles.length > 0 : undefined,
+            },
+          },
+        }
+        : {});
       if (handoff.action === 'handoff_to_task' && nextTask) {
+        if (resumePlan.subtaskStart && !resumePlan.subtaskStart.canProceed) {
+          setPhaseCloseoutNotice(`阶段收尾已保存，但进入下一任务前需要处理：${resumePlan.subtaskStart.detail}`);
+          setMessages([
+            {
+              id: nextId(),
+              role: 'assistant',
+              text: `已完成「${taskName}」的阶段收尾：阶段记录已保存，质量检查已记录。进入「${nextTask.title}」前需要先处理：${resumePlan.subtaskStart.detail}`,
+              ts: now(),
+            },
+          ]);
+          return;
+        }
         applyTaskContext(nextTask.id, nextTask.title, { addMessage: false });
         setPendingSwitch(null);
         setSessionRefreshDismissed(false);

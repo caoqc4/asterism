@@ -1507,6 +1507,54 @@ describe('App redesign v1', () => {
     }));
   });
 
+  it('does not enter the next child task after phase closeout when subtask start is blocked', async () => {
+    const blockedChild = buildTask({
+      id: 'blocked_child_1',
+      title: '等待评审子任务',
+      state: 'planned',
+      updatedAt: '2026-01-01T01:00:00.000Z',
+      activeBlocker: {
+        id: 'blocker_child_1',
+        taskId: 'blocked_child_1',
+        title: '等待评审确认',
+        kind: 'approval',
+        detail: null,
+        owner: null,
+        responsibility: null,
+        responsibilityLabel: null,
+        sourceContextId: null,
+        status: 'active',
+        createdAt: now,
+        updatedAt: now,
+        resolvedAt: null,
+      },
+    });
+    harness.tasks.push(blockedChild);
+    harness.details[blockedChild.id] = buildTaskDetail(blockedChild);
+    saveTaskAttributes('task_risk', {
+      type: 'project',
+      typeConfirmed: true,
+      childTaskIds: ['blocked_child_1'],
+    });
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
+    await user.type(input, '这轮已经收尾，可以进入下一项子任务');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+    expect(await screen.findByText(/这段任务讨论可以收成阶段记录/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '收尾本阶段' }));
+
+    expect(await screen.findByText(/进入「等待评审子任务」前需要先处理/)).toBeTruthy();
+    expect((await screen.findAllByText(/仍有阻塞、依赖或等待状态/)).length).toBeGreaterThan(0);
+    expect(harness.api.transitionTask).not.toHaveBeenCalledWith({
+      id: 'blocked_child_1',
+      nextState: 'running',
+    });
+  });
+
   it('does not silently repair phase follow-up tasks from title patterns', async () => {
     const project = buildTask({
       id: 'task_project_repair',
