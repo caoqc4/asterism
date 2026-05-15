@@ -572,6 +572,19 @@ export function registerIpcHandlers(): void {
     if ((task.childTaskIds?.length ?? 0) > 0) {
       throw new Error('这个项目已经有子任务，应先推进或调整现有子任务，不应继续生成另一批拆解结果。');
     }
+    const existingTasks = await getServices().taskService.list();
+    const existingTaskNodes = [
+      task,
+      ...existingTasks.filter((existingTask) => existingTask.id !== task.id),
+    ];
+    const existingChildEvaluation = evaluateRuntimeSubtaskDraft({
+      parentTask: task,
+      proposedSubtasks: [],
+      existingTasks: existingTaskNodes,
+    });
+    if (!existingChildEvaluation.allowed) {
+      throw new Error(existingChildEvaluation.summary);
+    }
     const keySources = selectPromptKeySources(task.sourceContexts);
     let habitSnapshot: Awaited<ReturnType<ReturnType<typeof getServices>['workHabitService']['getSnapshot']>> | null = null;
     try {
@@ -634,7 +647,7 @@ export function registerIpcHandlers(): void {
     const draftEvaluation = evaluateRuntimeSubtaskDraft({
       parentTask: task,
       proposedSubtasks: decomposition.subtasks,
-      existingTasks: [task],
+      existingTasks: existingTaskNodes,
     });
     if (!draftEvaluation.allowed) {
       throw new Error(draftEvaluation.summary);

@@ -186,6 +186,7 @@ describe('registerIpcHandlers', () => {
         }
       });
     });
+    servicesMock.taskService.list.mockResolvedValue([]);
 
     registerIpcHandlers();
   });
@@ -510,6 +511,72 @@ describe('registerIpcHandlers', () => {
     expect(prompt).not.toContain('待确认规则不进入拆解提示');
     expect(prompt).not.toContain('旧邮件');
     expect(servicesMock.workHabitService.recordApplications).toHaveBeenCalledWith(['habit_sop_board']);
+  });
+
+  it('blocks project decomposition when existing children are linked by parent task id', async () => {
+    servicesMock.taskService.getDetail.mockResolvedValue({
+      id: 'project_1',
+      childTaskIds: [],
+      nextStep: '继续推进',
+      riskLevel: 'none',
+      riskNote: null,
+      sourceContexts: [],
+      summary: '开发小程序',
+      timeline: [],
+      title: '开发小程序',
+      state: 'planned',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    servicesMock.taskService.list.mockResolvedValue([
+      {
+        id: 'project_1',
+        title: '开发小程序',
+        summary: '开发小程序',
+        state: 'planned',
+        nextStep: null,
+        waitingReason: null,
+        riskLevel: 'none',
+        riskNote: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        taskType: 'project',
+        taskFacets: ['project'],
+        parentTaskId: null,
+        childTaskIds: [],
+        activeWaitingItem: null,
+        activeBlocker: null,
+        activeDependency: null,
+        dependencyReevaluation: null,
+      },
+      {
+        id: 'child_1',
+        title: '小程序需求分析与功能设计',
+        summary: '明确小程序范围',
+        state: 'planned',
+        nextStep: null,
+        waitingReason: null,
+        riskLevel: 'none',
+        riskNote: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T01:00:00.000Z',
+        taskType: 'simple',
+        taskFacets: ['simple'],
+        parentTaskId: 'project_1',
+        childTaskIds: [],
+        activeWaitingItem: null,
+        activeBlocker: null,
+        activeDependency: null,
+        dependencyReevaluation: null,
+      },
+    ]);
+
+    const handler = getRegisteredHandler<
+      [{ taskId: string; instructions?: string | null }],
+      unknown
+    >('ai:decomposeProject');
+
+    await expect(handler({}, { taskId: 'project_1' })).rejects.toThrow('父任务已有 1 个未完成子任务');
+    expect(generateTextMock).not.toHaveBeenCalled();
   });
 
   it('emits decision and task events after decision actions', async () => {
