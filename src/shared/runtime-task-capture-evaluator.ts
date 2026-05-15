@@ -3,7 +3,9 @@ import type { TaskListItemRecord, TaskState } from './types/task.js';
 export type RuntimeTaskCaptureIssueCode =
   | 'missing_title'
   | 'duplicate_open_task'
-  | 'generic_title';
+  | 'generic_title'
+  | 'generic_child_title'
+  | 'child_title_matches_parent';
 
 export type RuntimeTaskCaptureIssue = {
   code: RuntimeTaskCaptureIssueCode;
@@ -24,6 +26,7 @@ type ExistingTask = Pick<TaskListItemRecord, 'id' | 'title' | 'state'> & {
 
 const CLOSED_STATES = new Set<TaskState>(['completed', 'archived']);
 const GENERIC_CAPTURE_TITLE_PATTERN = /^(下一步|后续任务|继续|推进|处理|实现|优化|调整|检查|评估|设计|开发|修复|完成|todo|task)$/i;
+const GENERIC_CHILD_TITLE_PATTERN = /^(拆解下一步|实现调整|验收回归|下一步|后续任务|执行任务|实现任务|验收任务)(：|:|\s|$)/i;
 
 function normalizeTitle(value: string): string {
   return value
@@ -60,6 +63,11 @@ export function evaluateRuntimeTaskCapture(params: {
   const normalizedTitle = normalizeTitle(title);
   const targetParentTaskId = params.parentTaskId ?? null;
   if (normalizedTitle) {
+    const parentTask = targetParentTaskId
+      ? (params.existingTasks ?? []).find((task) => task.id === targetParentTaskId) ?? null
+      : null;
+    const normalizedParentTitle = parentTask ? normalizeTitle(parentTask.title) : '';
+
     const duplicate = (params.existingTasks ?? [])
       .filter(isOpenTask)
       .find((task) => (
@@ -80,6 +88,22 @@ export function evaluateRuntimeTaskCapture(params: {
       issues.push(issue({
         code: 'generic_title',
         message: '任务标题过于泛化，缺少对象、交付物或验收边界。',
+      }));
+    }
+
+    if (targetParentTaskId && GENERIC_CHILD_TITLE_PATTERN.test(title)) {
+      issues.push(issue({
+        code: 'generic_child_title',
+        message: '子任务标题像阶段模板，不应作为真实子任务创建。请先交接到已有子任务，或提供具体独立目标和验收边界。',
+      }));
+    }
+
+    if (targetParentTaskId && normalizedParentTitle && normalizedTitle === normalizedParentTitle) {
+      issues.push(issue({
+        code: 'child_title_matches_parent',
+        message: `子任务标题与父任务「${parentTask?.title ?? '当前父任务'}」相同，缺少独立边界。`,
+        matchedTaskId: parentTask?.id,
+        matchedTaskTitle: parentTask?.title,
       }));
     }
   }

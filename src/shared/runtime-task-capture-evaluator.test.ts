@@ -95,4 +95,41 @@ describe('runtime task capture evaluator', () => {
       ],
     });
   });
+
+  it('blocks generic phase-template children under a project parent', () => {
+    expect(evaluateRuntimeTaskCapture({
+      title: '拆解下一步：开发小程序',
+      summary: '继续拆分下一步。',
+      parentTaskId: 'project_1',
+      existingTasks: [
+        task({ id: 'project_1', title: '开发小程序' }),
+      ],
+    })).toMatchObject({
+      allowed: false,
+      issues: [
+        {
+          code: 'generic_child_title',
+        },
+      ],
+    });
+  });
+
+  it('blocks child tasks that only repeat the parent title', () => {
+    expect(evaluateRuntimeTaskCapture({
+      title: '开发小程序',
+      summary: '继续推进开发小程序。',
+      parentTaskId: 'project_1',
+      existingTasks: [
+        task({ id: 'project_1', title: '开发小程序' }),
+      ],
+    })).toMatchObject({
+      allowed: false,
+      issues: [
+        {
+          code: 'child_title_matches_parent',
+          matchedTaskId: 'project_1',
+        },
+      ],
+    });
+  });
 });
