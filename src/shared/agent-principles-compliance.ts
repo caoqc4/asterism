@@ -366,7 +366,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'AutoContextClearReadiness turns memory coverage into automatic-clear readiness outcomes without using a hard message-count rule.',
       'AutoContextClearReadiness can consume TaskMemoryGuidanceState so unresolved task-memory guidance blocks clearing until matching memory writes exist.',
       'RuntimeHandoff context refresh, leave-context, and global-conversation paths consume AutoContextClearReadiness before clearing task chat.',
-      'RuntimeHandoff task-switch checks TaskMemoryCoverageEvaluation before leaving the previous task context.',
+      'RuntimeHandoff task-switch checks TaskMemoryCoverageEvaluation before leaving the previous task context, and also blocks unresolved TaskMemoryGuidanceState through AutoContextClearReadiness.',
       'RightPanel phase closeout consumes TaskMemoryCoverageEvaluation so handoff signals must be written before chat refresh or next-task handoff.',
       'Task completion modal consumes TaskMemoryCoverageEvaluation for completion evidence and memory sufficiency.',
       'TaskService direct transitions into running consume TaskMemoryCoverageEvaluation for task-start memory sufficiency.',

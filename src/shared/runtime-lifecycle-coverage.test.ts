@@ -62,4 +62,11 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('providerCall=no and modelExposure=hidden');
     expect(text).not.toContain('not every execution entry point blocks on it yet');
   });
+
+  it('tracks pending-memory checks for task switching', () => {
+    const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
+
+    expect(text).toContain('TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes');
+    expect(text).toContain('task-switch also consumes pending TaskMemoryGuidanceState through AutoContextClearReadiness');
+  });
 });

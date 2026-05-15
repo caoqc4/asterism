@@ -556,6 +556,11 @@ as pending until a matching Task.md or Task Record write exists after that
 guidance. This prevents automatic clearing from mistaking "please update memory"
 for "memory has been updated."
 
+Task switching should follow the same memory boundary for the task being left:
+if the current task has unresolved task-memory guidance, runtime must block or
+ask before leaving that task context, instead of silently carrying the gap into
+another task.
+
 UI may display Task Dynamics as structured task replay, but that display is not
 required for this memory contract to hold. The contract is about durable task
 recovery first and presentation second.

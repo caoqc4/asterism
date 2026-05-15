@@ -203,6 +203,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskMemoryGuidanceState distinguishes persisted task-memory guidance from completed Task.md or Task Record writes, so automatic context clearing can treat unresolved guidance as pending memory work.',
       'TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes to runtime checks and is now consumed by context-clear, task-start, run-start, task-switch, task-completion modal, and RightPanel phase-closeout paths.',
       'AutoContextClearReadiness wraps TaskMemoryCoverageEvaluation into safe_to_clear, needs_memory_write, needs_user_decision, keep_context, and not_applicable outcomes without introducing a hard message-count rule.',
+      'RuntimeHandoff task-switch also consumes pending TaskMemoryGuidanceState through AutoContextClearReadiness before leaving the previous task context.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime owns durable data model boundaries and UI labels for files, records, sources, and generated output.',

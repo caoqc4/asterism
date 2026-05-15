@@ -80,4 +80,11 @@ describe('agent principles compliance matrix', () => {
     expect(text).toContain('SubtaskStartEvaluation provides a shared runtime object');
     expect(text).not.toContain('Add shared SubtaskStartEvaluation');
   });
+
+  it('records that task switching uses the same pending-memory boundary', () => {
+    const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
+
+    expect(text).toContain('task-switch checks TaskMemoryCoverageEvaluation');
+    expect(text).toContain('blocks unresolved TaskMemoryGuidanceState through AutoContextClearReadiness');
+  });
 });
