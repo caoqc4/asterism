@@ -2742,6 +2742,7 @@ describe('App redesign v1', () => {
     await createTaskFileViaMenu(user, '普通文件');
     expect(promptSpy).toHaveBeenCalledWith('新建文件名', 'notes.md');
     await user.click(await findTaskFileButton(/notes.md/));
+    await expectOpenFileKind('文件');
     const localEditor = document.querySelector('.file-editor') as HTMLTextAreaElement;
     fireEvent.change(localEditor, { target: { value: '本地任务文件内容' } });
     await user.click(screen.getByRole('button', { name: '保存' }));
@@ -2754,7 +2755,10 @@ describe('App redesign v1', () => {
     await user.click(await findTaskFileButton(/Task.md/));
     expect(await screen.findByDisplayValue(/持久化后的任务摘要/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '返回任务' }));
+    const relatedSection = document.querySelector('.related-files') as HTMLElement;
+    expect(within(relatedSection).getByRole('tab', { name: /任务文件/ })).toBeTruthy();
     await user.click(await findTaskFileButton(/notes.md/));
+    await expectOpenFileKind('文件');
     expect(await screen.findByDisplayValue('本地任务文件内容')).toBeTruthy();
     promptSpy.mockRestore();
   });

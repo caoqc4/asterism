@@ -75,7 +75,7 @@ type ViewMode = 'lane' | 'list' | 'timeline';
 type TaskDetailViewMode = 'manage' | 'timeline';
 type CapturedTaskSummary = { id: string; title: string; type: TaskType };
 type SelectedObject = 'task-list' | 'task' | 'file';
-type TaskFileFilter = 'all' | 'task' | 'record' | 'ai_output' | 'artifact' | 'source';
+type TaskFileFilter = 'all' | 'task' | 'record' | 'ai_output' | 'artifact' | 'source' | 'file';
 type TaskFileClass = RuntimeFileSurfaceKind;
 type VirtualTaskFile = {
   id: string;
@@ -93,7 +93,7 @@ type VirtualTaskFile = {
   artifactId?: string;
   artifactKind?: ArtifactRecord['kind'];
 };
-type RelatedFileCategory = 'task' | 'record' | 'ai_output' | 'artifact' | 'source';
+type RelatedFileCategory = 'task' | 'record' | 'ai_output' | 'artifact' | 'source' | 'file';
 type RelatedTaskFileItem = {
   file: VirtualTaskFile;
   category: RelatedFileCategory;
@@ -197,6 +197,7 @@ const RELATED_FILE_CATEGORY_ORDER: Array<{ key: RelatedFileCategory; label: stri
   { key: 'ai_output', label: 'AI 产出' },
   { key: 'artifact', label: '产物文件' },
   { key: 'source', label: '来源材料' },
+  { key: 'file', label: '任务文件' },
 ];
 
 const TASK_FILE_FILTERS: Array<{ key: TaskFileFilter; label: string }> = [
@@ -206,6 +207,7 @@ const TASK_FILE_FILTERS: Array<{ key: TaskFileFilter; label: string }> = [
   { key: 'ai_output', label: 'AI 产出' },
   { key: 'artifact', label: '产物' },
   { key: 'source', label: '来源' },
+  { key: 'file', label: '文件' },
 ];
 
 function deferLabel(value: string): string {
@@ -3037,9 +3039,7 @@ function classifyTaskFile(file: VirtualTaskFile): TaskFileClass {
 }
 
 function taskFileCategory(file: VirtualTaskFile): RelatedFileCategory {
-  const classification = classifyTaskFile(file);
-  if (classification === 'file') return 'artifact';
-  return classification;
+  return classifyTaskFile(file);
 }
 
 function constrainFloatingMenuPosition(x: number, y: number, width: number, height: number): { x: number; y: number } {
@@ -3054,8 +3054,7 @@ function constrainFloatingMenuPosition(x: number, y: number, width: number, heig
 }
 
 function taskFileFilterForFile(file: VirtualTaskFile): Exclude<TaskFileFilter, 'all'> | null {
-  const classification = classifyTaskFile(file);
-  return classification === 'file' ? null : classification;
+  return classifyTaskFile(file);
 }
 
 function taskFileKindLabel(file: VirtualTaskFile): string {
