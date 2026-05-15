@@ -1,6 +1,10 @@
 import { evaluateRuntimeAction } from './runtime-action-evaluator.js';
 import { evaluateRuntimeVerification, type RuntimeVerificationResult } from './runtime-verification.js';
 import { evaluateTaskMemoryCoverage } from './task-memory-coverage.js';
+import {
+  evaluateAutoContextClearReadiness,
+  type AutoContextClearEvaluation,
+} from './auto-context-clear-readiness.js';
 import type { SubtaskStartEvaluationInput } from './subtask-start-evaluator.js';
 import type { TaskCloseoutEvaluation } from './task-closeout-evaluator.js';
 
@@ -34,6 +38,7 @@ export type RuntimeHandoff = {
   canProceed: boolean;
   reason: string;
   notice: string;
+  autoContextClear?: AutoContextClearEvaluation | null;
   recordPath?: string | null;
 };
 
@@ -68,9 +73,13 @@ export type RuntimeHandoffPreview = {
 type BaseInput = {
   archived?: boolean;
   fromTaskId?: string | null;
+  hasBlocker?: boolean;
+  hasOpenDecision?: boolean;
+  hasPendingRecoveryGuidance?: boolean;
   hasSpecificHandoffSignal?: boolean;
   messageCount?: number;
   recordPath?: string | null;
+  shortTermReasoningActive?: boolean;
   toTaskId?: string | null;
 };
 
@@ -164,13 +173,35 @@ export function evaluateRuntimeHandoff(input: BaseInput & {
     };
   }
 
+  const autoContextClear = evaluateAutoContextClearReadiness({
+    hasTaskContext: Boolean(fromTaskId),
+    chatMessageCount: messageCount,
+    hasSpecificHandoffSignal,
+    memoryWriteCompleted: archived,
+    hasOpenDecision: input.hasOpenDecision,
+    hasBlocker: input.hasBlocker,
+    hasPendingRecoveryGuidance: input.hasPendingRecoveryGuidance,
+    shortTermReasoningActive: input.shortTermReasoningActive,
+  });
+  if (!autoContextClear.shouldAutoClear && autoContextClear.outcome !== 'not_applicable') {
+    return {
+      ...blocked(input, autoContextClear.reason),
+      autoContextClear,
+    };
+  }
+
   const actionEvaluation = evaluateRuntimeAction({
     action: 'context_clear',
     fromTaskId,
     messageCount,
     hasSpecificHandoffSignal,
   });
-  if (!actionEvaluation.allowed) return blocked(input, actionEvaluation.reason);
+  if (!actionEvaluation.allowed) {
+    return {
+      ...blocked(input, actionEvaluation.reason),
+      autoContextClear,
+    };
+  }
 
   const verification = evaluateRuntimeVerification({
     mode: 'context_clear',
@@ -179,15 +210,24 @@ export function evaluateRuntimeHandoff(input: BaseInput & {
     hasSpecificHandoffSignal,
     memoryWriteCompleted: archived,
   });
-  if (!verification.canProceed) return blocked(input, verification.detail);
+  if (!verification.canProceed) {
+    return {
+      ...blocked(input, verification.detail),
+      autoContextClear,
+    };
+  }
 
   if (actionEvaluation.shouldPersistTaskRecord && !archived) {
-    return blocked(input, '清理任务会话前需要先成功保全关键恢复上下文。');
+    return {
+      ...blocked(input, '清理任务会话前需要先成功保全关键恢复上下文。'),
+      autoContextClear,
+    };
   }
 
   if (input.intent === 'start_global_conversation' || input.intent === 'leave_task_context') {
     return {
       ...base(input, 'clear_global'),
+      autoContextClear,
       canProceed: true,
       reason: '任务会话已满足离开当前上下文的条件。',
       notice: '已离开任务上下文。',
@@ -197,6 +237,7 @@ export function evaluateRuntimeHandoff(input: BaseInput & {
 
   return {
     ...base(input, 'clear_same_task'),
+    autoContextClear,
     canProceed: true,
     reason: '任务会话已满足刷新条件。',
     notice: input.intent === 'manual_context_refresh'

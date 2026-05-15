@@ -363,6 +363,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Context clear now combines runtime action evaluation with context-clear runtime verification.',
       'TaskMemoryCoverageEvaluation enforces the Task Memory Spec outcomes for context clearing before chat context can be discarded.',
       'AutoContextClearReadiness turns memory coverage into automatic-clear readiness outcomes without using a hard message-count rule.',
+      'RuntimeHandoff context refresh, leave-context, and global-conversation paths consume AutoContextClearReadiness before clearing task chat.',
       'RuntimeHandoff task-switch checks TaskMemoryCoverageEvaluation before leaving the previous task context.',
       'RightPanel phase closeout consumes TaskMemoryCoverageEvaluation so handoff signals must be written before chat refresh or next-task handoff.',
       'Task completion modal consumes TaskMemoryCoverageEvaluation for completion evidence and memory sufficiency.',

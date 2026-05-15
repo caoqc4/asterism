@@ -278,6 +278,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Phase closeout requires TaskMemoryCoverageEvaluation to pass before chat refresh or next-task handoff.',
       'Task closeout evaluation can hand off to existing successors when no child task is available, and new follow-up proposals require evidence plus confirmation instead of automatic creation.',
       'runtime-handoff now provides a shared RuntimeHandoff and RuntimeResumePlan evaluator for context refresh, task switching, phase closeout, and run resume planning.',
+      'RuntimeHandoff context refresh, leave-context, and global-conversation paths consume AutoContextClearReadiness before clearing task chat.',
       'Task switch handoff consumes TaskMemoryCoverageEvaluation before leaving the previous task context.',
       'RuntimeResumePlan can include a subtask_start gate when phase closeout hands off to a child or successor task and target context is provided.',
       'RuntimeHandoffPreview now turns handoff plus archive snapshot data into reusable manual-refresh preview text instead of leaving the archive preview assembled only in RightPanel.',

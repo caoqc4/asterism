@@ -75,6 +75,45 @@ describe('runtime handoff', () => {
     expect(result.canProceed).toBe(true);
     expect(result.action).toBe('clear_same_task');
     expect(result.shouldClearMessages).toBe(true);
+    expect(result.autoContextClear).toMatchObject({
+      outcome: 'safe_to_clear',
+      shouldAutoClear: true,
+    });
+  });
+
+  it('blocks context refresh when task memory guidance is still pending', () => {
+    const result = evaluateRuntimeHandoff({
+      intent: 'context_refresh',
+      fromTaskId: 'task-1',
+      messageCount: 3,
+      hasSpecificHandoffSignal: true,
+      archived: true,
+      hasPendingRecoveryGuidance: true,
+    });
+
+    expect(result.canProceed).toBe(false);
+    expect(result.action).toBe('block');
+    expect(result.autoContextClear).toMatchObject({
+      outcome: 'needs_memory_write',
+      shouldAsk: true,
+    });
+  });
+
+  it('blocks context refresh while short-term reasoning is active', () => {
+    const result = evaluateRuntimeHandoff({
+      intent: 'context_refresh',
+      fromTaskId: 'task-1',
+      messageCount: 3,
+      hasSpecificHandoffSignal: true,
+      archived: true,
+      shortTermReasoningActive: true,
+    });
+
+    expect(result.canProceed).toBe(false);
+    expect(result.autoContextClear).toMatchObject({
+      outcome: 'keep_context',
+      shouldKeep: true,
+    });
   });
 
   it('prompts task switch when the old task has low-signal chat', () => {
