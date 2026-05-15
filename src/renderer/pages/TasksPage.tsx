@@ -123,6 +123,7 @@ type PostCompletionHandoff = {
   nextTask: Task | null;
   parentTask: Task | null;
   evaluation: TaskCloseoutEvaluation | null;
+  startVerification?: RuntimeVerificationResult | null;
 };
 type FileContextMenuState = {
   fileId: string;
@@ -718,7 +719,38 @@ function completionHandoffFromEvaluation(task: Task, allTasks: Task[]): PostComp
     nextTask,
     parentTask,
     evaluation,
+    startVerification: null,
   };
+}
+
+function evaluateCompletionHandoffStart(params: {
+  completedTask: Task;
+  nextTask: Task;
+  parentTask: Task | null;
+}): RuntimeVerificationResult {
+  const expectedParentTaskId = params.parentTask?.id ?? null;
+  const nextRecord = {
+    ...toTaskListItemRecord(params.nextTask),
+    parentTaskId: params.nextTask.parentTaskId ?? expectedParentTaskId,
+  };
+  return evaluateRuntimeVerification({
+    mode: 'subtask_start',
+    targetTask: nextRecord,
+    parentTask: params.parentTask ? toTaskListItemRecord(params.parentTask) : null,
+    expectedParentTaskId,
+    previousTask: toTaskListItemRecord(params.completedTask),
+    requiresPreviousHandoff: true,
+    previousHandoffAvailable: true,
+    contextSignals: {
+      targetTaskId: params.nextTask.id,
+    },
+    availableContext: {
+      taskState: true,
+      parentConstraints: Boolean(params.parentTask),
+      handoffNotes: true,
+      decisions: true,
+    },
+  });
 }
 
 const TASK_TYPE_LABELS: Record<TaskType, string> = {
@@ -1857,6 +1889,14 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   async function continueToNextTaskFromCompletion() {
     if (!postCompletionHandoff?.nextTask) return;
     const { completedTask, nextTask, parentTask } = postCompletionHandoff;
+    const startVerification = evaluateCompletionHandoffStart({ completedTask, nextTask, parentTask });
+    if (!startVerification.canProceed) {
+      setPostCompletionHandoff({
+        ...postCompletionHandoff,
+        startVerification,
+      });
+      return;
+    }
     const content = buildCompletionHandoffContent(completedTask, nextTask, parentTask);
     const today = new Date().toISOString().slice(0, 10);
     const handoffRecord = await window.api?.createTaskFile?.({
@@ -2831,6 +2871,9 @@ function resetCaptureDraft() {
                   <span className="completion-check-label">运行时交接建议</span>
                   <strong>{postCompletionHandoff.nextTask.title}</strong>
                   <p>{postCompletionHandoff.evaluation?.reason ?? '将保存一条轻量交接记录，并把右侧 AI 面板切换到这项任务。不会自动执行下一任务。'}</p>
+                  {postCompletionHandoff.startVerification && !postCompletionHandoff.startVerification.canProceed && (
+                    <p>{postCompletionHandoff.startVerification.detail}</p>
+                  )}
                 </div>
               ) : (
                 <div className="completion-handoff-next quiet">
