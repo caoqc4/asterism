@@ -312,6 +312,8 @@ function buildTaskServiceMock() {
     annotateRunFailed: vi.fn(),
     getDetail: vi.fn().mockResolvedValue({
       id: 'task_1',
+      summary: 'Task recovery summary.',
+      nextStep: 'Run operator-started evidence capture.',
       title: 'Task 1',
     }),
   };

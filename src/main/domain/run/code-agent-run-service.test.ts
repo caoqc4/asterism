@@ -366,6 +366,7 @@ describe('CodeAgentRunService', () => {
     process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
     taskService.getDetail.mockResolvedValue({
       ...buildTask(),
+      summary: 'Recovery summary exists, but Task.md is intentionally absent.',
       taskFiles: [],
     });
     const failedRun = buildFailedRun(

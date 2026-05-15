@@ -73,6 +73,19 @@ describe('task memory coverage', () => {
     });
   });
 
+  it('does not treat a title alone as an equivalent recovery summary', () => {
+    expect(evaluateTaskMemoryCoverage({
+      action: 'task_start',
+      hasTaskContext: true,
+      hasTaskMd: false,
+      hasEquivalentRecoverySummary: false,
+      hasNextStep: true,
+    })).toMatchObject({
+      outcome: 'needs_user_clarification',
+      missing: ['缺少 Task.md 或等价恢复摘要。'],
+    });
+  });
+
   it('blocks execution when a pending decision exists', () => {
     expect(evaluateTaskMemoryCoverage({
       action: 'run_start',

@@ -372,7 +372,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
     nextVerification: [
       'When UI state work is allowed, move RightPanel task context transitions behind a small reducer backed by RuntimeContextSnapshot and RuntimeHandoff.',
-      'Route the remaining task lifecycle boundaries through TaskMemoryCoverageEvaluation without adding extra UI steps.',
+      'Route any new task lifecycle boundary through TaskMemoryCoverageEvaluation without adding extra UI steps.',
     ],
   },
   {

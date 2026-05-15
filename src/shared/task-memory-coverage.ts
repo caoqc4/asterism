@@ -59,7 +59,7 @@ export function buildTaskMemoryCoverageInputForTask(
   const taskFiles = task.taskFiles ?? [];
   const hasTaskMd = taskFiles.some((file) => file.kind === 'file' && file.path === 'Task.md');
   const resumeCard = 'resumeCard' in task ? task.resumeCard : null;
-  const hasEquivalentRecoverySummary = Boolean(task.summary?.trim() || resumeCard?.summary?.trim() || task.title?.trim());
+  const hasEquivalentRecoverySummary = Boolean(task.summary?.trim() || resumeCard?.summary?.trim());
   const hasNextStep = Boolean(task.nextStep?.trim() || resumeCard?.nextSuggestedMove?.trim());
   const sourceContexts = task.sourceContexts ?? [];
   const artifacts = task.artifacts ?? [];
