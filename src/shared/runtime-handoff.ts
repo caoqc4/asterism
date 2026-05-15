@@ -167,6 +167,20 @@ export function evaluateRuntimeHandoff(input: BaseInput & {
   if (input.intent === 'phase_closeout') {
     const closeout = input.closeout ?? null;
     if (!closeout) return blocked(input, '阶段收尾缺少任务检查结果。');
+    if (input.taskMemoryGuidance?.outcome === 'pending' || input.hasPendingRecoveryGuidance) {
+      const autoContextClear = evaluateAutoContextClearReadiness({
+        hasTaskContext: Boolean(fromTaskId),
+        chatMessageCount: messageCount,
+        hasSpecificHandoffSignal: true,
+        memoryWriteCompleted: Boolean(input.recordPath),
+        hasPendingRecoveryGuidance: input.hasPendingRecoveryGuidance,
+        taskMemoryGuidance: input.taskMemoryGuidance,
+      });
+      return {
+        ...blocked(input, autoContextClear.reason),
+        autoContextClear,
+      };
+    }
     if (
       (closeout.outcome === 'handoff_to_existing_child' || closeout.outcome === 'handoff_to_existing_successor')
       && closeout.nextTaskId

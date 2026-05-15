@@ -1297,11 +1297,13 @@ export function RightPanel({
       if (!evaluation) {
         throw new Error('阶段收尾检查未返回任务收尾结论。');
       }
+      const taskMemoryGuidance = await getBlockingTaskMemoryGuidance(closeoutTaskId);
       const handoff = evaluateRuntimeHandoff({
         intent: 'phase_closeout',
         fromTaskId: closeoutTaskId,
         closeout: evaluation,
         recordPath: preserved.recordPath,
+        taskMemoryGuidance,
       });
       if (!handoff.canProceed) {
         setPhaseCloseoutNotice(`阶段收尾已暂停：${handoff.reason}`);

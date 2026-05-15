@@ -69,4 +69,10 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes');
     expect(text).toContain('task-switch also consumes pending TaskMemoryGuidanceState through AutoContextClearReadiness');
   });
+
+  it('tracks pending-memory checks for phase closeout handoff', () => {
+    const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
+
+    expect(text).toContain('Phase closeout requires TaskMemoryCoverageEvaluation and pending TaskMemoryGuidanceState checks');
+  });
 });

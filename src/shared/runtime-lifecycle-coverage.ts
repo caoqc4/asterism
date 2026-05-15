@@ -277,7 +277,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Context clearing requires specific handoff signals.',
       'Run resume passes through runtime action evaluation.',
       'Phase closeout writes Task Records and can hand off to existing child tasks.',
-      'Phase closeout requires TaskMemoryCoverageEvaluation to pass before chat refresh or next-task handoff.',
+      'Phase closeout requires TaskMemoryCoverageEvaluation and pending TaskMemoryGuidanceState checks to pass before chat refresh or next-task handoff.',
       'Task closeout evaluation can hand off to existing successors when no child task is available, and new follow-up proposals require evidence plus confirmation instead of automatic creation.',
       'runtime-handoff now provides a shared RuntimeHandoff and RuntimeResumePlan evaluator for context refresh, task switching, phase closeout, and run resume planning.',
       'RuntimeHandoff context refresh, leave-context, and global-conversation paths consume AutoContextClearReadiness before clearing task chat.',

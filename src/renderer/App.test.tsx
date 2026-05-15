@@ -1505,6 +1505,40 @@ describe('App redesign v1', () => {
     }));
   });
 
+  it('blocks phase closeout handoff while latest task memory guidance is pending', async () => {
+    const user = userEvent.setup();
+    const pendingGuidance: TaskMemoryGuidanceState = {
+      latestGuidanceAt: now,
+      outcome: 'pending',
+      pendingTargets: ['task_md'],
+      reason: '最新任务记忆建议仍缺少对应写入：Task.md。',
+      targets: ['task_md'],
+    };
+    harness.api.getRunDetail = vi.fn().mockImplementation(async (runId) => {
+      const run = harness.runs.find((item) => item.id === runId);
+      if (!run) return null;
+      return buildRunDetail(run, { taskMemoryGuidance: pendingGuidance });
+    });
+    window.api = harness.api;
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
+    await user.type(input, '这轮已经确定三份优化文档，可以进入下一步任务拆解');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+    await waitFor(() => {
+      expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: 'task_risk',
+      }));
+    });
+
+    await user.click(await screen.findByRole('button', { name: '收尾本阶段' }));
+
+    expect(await screen.findByText(/最新任务记忆建议仍缺少对应写入：Task.md/)).toBeTruthy();
+    expect(harness.api.recordTaskCompletionCheck).not.toHaveBeenCalled();
+    expect(await screen.findByPlaceholderText(/关于「董事会材料修订」/)).toBeTruthy();
+  });
+
   it('does not create generic phase follow-up tasks when a project already has child tasks', async () => {
     const firstChild = buildTask({
       id: 'existing_child_1',

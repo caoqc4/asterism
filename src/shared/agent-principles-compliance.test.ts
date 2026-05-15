@@ -87,4 +87,10 @@ describe('agent principles compliance matrix', () => {
     expect(text).toContain('task-switch checks TaskMemoryCoverageEvaluation');
     expect(text).toContain('blocks unresolved TaskMemoryGuidanceState through AutoContextClearReadiness');
   });
+
+  it('records that phase closeout uses the same pending-memory boundary', () => {
+    const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
+
+    expect(text).toContain('phase closeout consumes TaskMemoryCoverageEvaluation and pending TaskMemoryGuidanceState');
+  });
 });

@@ -561,6 +561,11 @@ if the current task has unresolved task-memory guidance, runtime must block or
 ask before leaving that task context, instead of silently carrying the gap into
 another task.
 
+Phase closeout follows the same boundary. A closeout record may satisfy pending
+Task Record guidance, but if the latest guidance still requires Task.md or
+another Task Record after closeout persistence, runtime must pause before
+refreshing chat or handing off to the next task.
+
 UI may display Task Dynamics as structured task replay, but that display is not
 required for this memory contract to hold. The contract is about durable task
 recovery first and presentation second.

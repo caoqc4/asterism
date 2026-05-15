@@ -224,6 +224,29 @@ describe('runtime handoff', () => {
     expect(buildRuntimeResumePlan(result).source).toBe('handoff');
   });
 
+  it('blocks phase closeout handoff when task memory guidance is still pending', () => {
+    const result = evaluateRuntimeHandoff({
+      intent: 'phase_closeout',
+      fromTaskId: 'parent-1',
+      closeout: closeout(),
+      recordPath: 'Task Records/phase.md',
+      taskMemoryGuidance: {
+        latestGuidanceAt: '2026-05-15T01:00:00.000Z',
+        outcome: 'pending',
+        pendingTargets: ['task_md'],
+        reason: '最新任务记忆建议仍缺少对应写入：Task.md。',
+        targets: ['task_md'],
+      },
+    });
+
+    expect(result.canProceed).toBe(false);
+    expect(result.action).toBe('block');
+    expect(result.autoContextClear).toMatchObject({
+      outcome: 'needs_memory_write',
+      reason: '最新任务记忆建议仍缺少对应写入：Task.md。',
+    });
+  });
+
   it('can attach subtask start readiness to a handoff resume plan', () => {
     const handoff = evaluateRuntimeHandoff({
       intent: 'phase_closeout',
