@@ -620,6 +620,22 @@ export class TaskService {
     }
   }
 
+  private assertTaskMutationActionAllowed(taskId: string): void {
+    const actionEvaluation = evaluateRuntimeAction({
+      action: 'task_mutation',
+      fromTaskId: taskId,
+    });
+    const verification = evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: actionEvaluation,
+      confirmationSatisfied: true,
+    });
+
+    if (!verification.canProceed) {
+      throw new Error(verification.detail);
+    }
+  }
+
   private findTaskInList(tasks: TaskRecord[], taskId: string): TaskRecord | null {
     return tasks.find((task) => task.id === taskId) ?? null;
   }
@@ -986,6 +1002,7 @@ export class TaskService {
 
   async update(input: UpdateTaskInput): Promise<TaskListItemRecord> {
     const detail = await this.getExistingTaskOrThrow(input.id);
+    this.assertTaskMutationActionAllowed(input.id);
     let existingTasks: TaskRecord[] | null = null;
     let normalizedChildTaskIds: string[] | undefined;
     if (input.childTaskIds !== undefined) {
@@ -1387,6 +1404,7 @@ export class TaskService {
 
   async createSourceContext(input: CreateSourceContextInput): Promise<SourceContextRecord> {
     await this.getExistingTaskOrThrow(input.taskId);
+    this.assertTaskMutationActionAllowed(input.taskId);
 
     if (!this.sourceContextRepository) {
       throw new Error('Source context repository is not configured');
@@ -1416,6 +1434,7 @@ export class TaskService {
     }
 
     const updated = await this.sourceContextRepository.update(input);
+    this.assertTaskMutationActionAllowed(updated.taskId);
 
     await this.repository.appendTimelineEvent(updated.taskId, 'source_context.updated', {
       sourceContextId: updated.id,
@@ -1438,6 +1457,7 @@ export class TaskService {
     }
 
     const archived = await this.sourceContextRepository.archive(id);
+    this.assertTaskMutationActionAllowed(archived.taskId);
 
     await this.repository.appendTimelineEvent(archived.taskId, 'source_context.archived', {
       sourceContextId: archived.id,
@@ -1451,6 +1471,7 @@ export class TaskService {
 
   async createBlocker(input: CreateBlockerInput): Promise<BlockerRecord> {
     await this.getExistingTaskOrThrow(input.taskId);
+    this.assertTaskMutationActionAllowed(input.taskId);
 
     if (!this.blockerRepository) {
       throw new Error('Blocker repository is not configured');
@@ -1505,6 +1526,7 @@ export class TaskService {
     }
 
     const blocker = await this.blockerRepository.update(input);
+    this.assertTaskMutationActionAllowed(blocker.taskId);
 
     await this.repository.appendTimelineEvent(blocker.taskId, 'blocker.updated', {
       blockerId: blocker.id,
@@ -1525,6 +1547,7 @@ export class TaskService {
     }
 
     const blocker = await this.blockerRepository.resolve(id);
+    this.assertTaskMutationActionAllowed(blocker.taskId);
 
     await this.repository.appendTimelineEvent(blocker.taskId, 'blocker.resolved', {
       blockerId: blocker.id,
@@ -1544,6 +1567,7 @@ export class TaskService {
     input: CreateCompletionCriteriaInput,
   ): Promise<CompletionCriteriaRecord> {
     await this.getExistingTaskOrThrow(input.taskId);
+    this.assertTaskMutationActionAllowed(input.taskId);
 
     if (!this.completionCriteriaRepository) {
       throw new Error('Completion criteria repository is not configured');
@@ -1578,6 +1602,7 @@ export class TaskService {
     if (!current) {
       throw new Error(`Completion criteria not found: ${input.id}`);
     }
+    this.assertTaskMutationActionAllowed(current.taskId);
     const existingCriteria = await this.completionCriteriaRepository.listForTask(current.taskId);
     const evaluation = evaluateCompletionCriteria({
       text: input.text,
@@ -1605,6 +1630,7 @@ export class TaskService {
     }
 
     const satisfied = await this.completionCriteriaRepository.satisfy(id);
+    this.assertTaskMutationActionAllowed(satisfied.taskId);
 
     await this.repository.appendTimelineEvent(
       satisfied.taskId,
@@ -1626,6 +1652,7 @@ export class TaskService {
     }
 
     const reopened = await this.completionCriteriaRepository.reopen(id);
+    this.assertTaskMutationActionAllowed(reopened.taskId);
 
     await this.repository.appendTimelineEvent(
       reopened.taskId,
@@ -1650,6 +1677,7 @@ export class TaskService {
     }
     await this.getExistingTaskOrThrow(input.taskId);
     await this.getExistingTaskOrThrow(input.blockedByTaskId);
+    this.assertTaskMutationActionAllowed(input.taskId);
 
     if (!this.taskDependencyRepository) {
       throw new Error('Task dependency repository is not configured');
@@ -1688,6 +1716,7 @@ export class TaskService {
     if (!current) {
       throw new Error(`Task dependency not found: ${input.id}`);
     }
+    this.assertTaskMutationActionAllowed(current.taskId);
     const boundary = evaluateTaskDependencyBoundary({
       taskId: current.taskId,
       blockedByTaskId: input.blockedByTaskId ?? current.blockedByTaskId,
@@ -1719,6 +1748,7 @@ export class TaskService {
     }
 
     const dependency = await this.taskDependencyRepository.resolve(id);
+    this.assertTaskMutationActionAllowed(dependency.taskId);
 
     await this.repository.appendTimelineEvent(dependency.taskId, 'task_dependency.resolved', {
       dependencyId: dependency.id,
@@ -1760,6 +1790,7 @@ export class TaskService {
     if (!this.taskProcessBindingRepository) {
       throw new Error('Task process binding repository not configured');
     }
+    this.assertTaskMutationActionAllowed(input.taskId);
 
     const result = await this.taskProcessBindingRepository.apply(input);
 
@@ -1781,6 +1812,7 @@ export class TaskService {
     }
 
     const removed = await this.taskProcessBindingRepository.remove(bindingId);
+    this.assertTaskMutationActionAllowed(removed.taskId);
     await this.repository.appendTimelineEvent(removed.taskId, 'process_template.removed', {
       templateId: removed.id,
       bindingId: removed.bindingId,
