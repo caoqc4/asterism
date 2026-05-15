@@ -64,6 +64,7 @@ Strongest areas:
 - hierarchy consistency diagnostics can find old parent/child mismatches through the service/IPC boundary, can produce a non-mutating repair plan, can apply only revalidated safe repairs, can explain manual-review conflicts, and can apply explicit manual hierarchy resolutions through a data-layer maintenance command.
 - renderer hierarchy projection treats persisted task type, facets, parent id, and child ids as authoritative, with local attributes retained only as a legacy missing-field fallback.
 - legacy title-pattern phase follow-up inference is now limited to objects without a parent field, and Tasks no longer mutates local hierarchy attributes during list loading.
+- Brief focus projection, RightPanel closeout checks, and task completion checks now share the same persisted-field hierarchy authority instead of reading local task attributes directly.
 - ordinary task files stay in the task-file class instead of being projected as artifacts.
 
 Weakest areas:

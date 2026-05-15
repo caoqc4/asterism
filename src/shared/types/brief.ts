@@ -117,7 +117,18 @@ export type HomeTaskResumePreviewRecord = {
 
 export type HomeTaskSliceRecord = Pick<
   TaskRecord,
-  'id' | 'title' | 'summary' | 'state' | 'nextStep' | 'waitingReason' | 'riskLevel' | 'riskNote'
+  | 'id'
+  | 'title'
+  | 'summary'
+  | 'taskType'
+  | 'taskFacets'
+  | 'parentTaskId'
+  | 'childTaskIds'
+  | 'state'
+  | 'nextStep'
+  | 'waitingReason'
+  | 'riskLevel'
+  | 'riskNote'
 > & {
   activeWaitingItem?: WaitingItemRecord | null;
   activeBlocker?: BlockerRecord | null;

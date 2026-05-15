@@ -10,7 +10,11 @@ import type { RunDetailRecord, RunRecord, RunVerificationRecord } from '@shared/
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import { recordCompletionOverrideLearningSignal } from '../lib/workHabits';
 import { getTaskAttributes } from '../lib/taskAttributes';
-import { orderedChildRecordsForTask } from '../lib/taskHierarchyAdapter';
+import {
+  authoritativeChildTaskIds,
+  authoritativeTaskType,
+  orderedChildRecordsForTask,
+} from '../lib/taskHierarchyAdapter';
 
 interface TaskCompletionCheckModalProps {
   taskId: string;
@@ -58,7 +62,7 @@ function buildWaitingReason(detail: TaskDetail | null, runCheck: RuntimeVerifica
 }
 
 function isProjectTask(taskId: string, detail: TaskDetail | null): boolean {
-  return detail?.taskType === 'project' || getTaskAttributes(taskId)?.type === 'project';
+  return Boolean(detail && authoritativeTaskType(detail, getTaskAttributes(taskId)) === 'project');
 }
 
 function projectTrace(project: RuntimeProjectVerification): string[] {
@@ -129,11 +133,12 @@ export function TaskCompletionCheckModal({
               }));
               setCloseoutEvaluation(null);
             } else {
+              const taskAttrs = getTaskAttributes(taskId);
               setCloseoutEvaluation(evaluateRuntimeVerification({
                 mode: 'task_closeout',
                 intent: 'task_completion',
                 task: taskDetail,
-                childTaskIds: getTaskAttributes(taskId)?.childTaskIds ?? [],
+                childTaskIds: authoritativeChildTaskIds(taskListRecord, taskAttrs),
                 childTasks,
               }).taskCloseout ?? null);
               setProjectVerification(null);

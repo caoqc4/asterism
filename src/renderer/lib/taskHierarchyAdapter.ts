@@ -1,32 +1,33 @@
 import { orderedTaskChildren, type TaskHierarchyNode } from '@shared/task-hierarchy';
-import type { TaskExecutionType, TaskListItemRecord } from '@shared/types/task';
+import type { TaskExecutionType, TaskListItemRecord, TaskRecord } from '@shared/types/task';
 import { getTaskAttributes, loadTaskAttributes, type TaskAttributeRecord } from './taskAttributes';
 
 export type TaskHierarchyRecord = TaskListItemRecord & TaskHierarchyNode;
+type TaskHierarchyAuthorityRecord = Pick<TaskRecord, 'taskType' | 'taskFacets' | 'parentTaskId' | 'childTaskIds'>;
 
 export function authoritativeTaskType(
-  task: TaskListItemRecord,
+  task: TaskHierarchyAuthorityRecord,
   attrs: TaskAttributeRecord | null | undefined,
 ): TaskExecutionType | null {
   return task.taskType ?? attrs?.type ?? null;
 }
 
 export function authoritativeTaskFacets(
-  task: TaskListItemRecord,
+  task: TaskHierarchyAuthorityRecord,
   attrs: TaskAttributeRecord | null | undefined,
 ): TaskExecutionType[] | null {
   return task.taskFacets !== undefined ? task.taskFacets : attrs?.facets ?? null;
 }
 
 export function authoritativeParentTaskId(
-  task: TaskListItemRecord,
+  task: TaskHierarchyAuthorityRecord,
   attrs: TaskAttributeRecord | null | undefined,
 ): string | null {
   return task.parentTaskId !== undefined ? task.parentTaskId ?? null : attrs?.parentTaskId ?? null;
 }
 
 export function authoritativeChildTaskIds(
-  task: TaskListItemRecord,
+  task: TaskHierarchyAuthorityRecord,
   attrs: TaskAttributeRecord | null | undefined,
 ): string[] {
   return task.childTaskIds !== undefined ? task.childTaskIds ?? [] : attrs?.childTaskIds ?? [];

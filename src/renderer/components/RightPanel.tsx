@@ -45,7 +45,10 @@ import {
   guardTaskStateTransition,
   verifyDurablePanelActionCompleted,
 } from '../lib/runtimeActionGuards';
-import { orderedChildRecordsForTask } from '../lib/taskHierarchyAdapter';
+import {
+  authoritativeChildTaskIds,
+  orderedChildRecordsForTask,
+} from '../lib/taskHierarchyAdapter';
 
 type MessageRole = 'user' | 'assistant';
 type ContextStrategy = 'auto' | 'manual' | 'reminder';
@@ -1066,17 +1069,17 @@ export function RightPanel({
         Promise.resolve(existingTasks),
       ]);
       if (taskDetail) {
-        const taskAttrs = getTaskAttributes(activeTaskId);
         const childAttrsByTaskId = Object.fromEntries(
           tasks.map((task) => [task.id, getTaskAttributes(task.id)]),
         );
         const taskListRecord = tasks.find((task) => task.id === activeTaskId) ?? taskDetail;
+        const taskAttrs = getTaskAttributes(activeTaskId);
         const orderedChildren = orderedChildRecordsForTask(taskListRecord, tasks, childAttrsByTaskId);
         const closeoutVerification = evaluateRuntimeVerification({
           mode: 'task_closeout',
           intent: 'phase_closeout',
           task: taskDetail,
-          childTaskIds: taskAttrs?.childTaskIds ?? [],
+          childTaskIds: authoritativeChildTaskIds(taskListRecord, taskAttrs),
           childTasks: orderedChildren,
           proposedFollowUpTasks: [{
             title: candidateTitle,
@@ -1211,17 +1214,17 @@ export function RightPanel({
         ]);
         return;
       }
-      const taskAttrs = getTaskAttributes(closeoutTaskId);
       const childAttrsByTaskId = Object.fromEntries(
         tasks.map((task) => [task.id, getTaskAttributes(task.id)]),
       );
       const taskListRecord = tasks.find((task) => task.id === closeoutTaskId) ?? taskDetail;
+      const taskAttrs = getTaskAttributes(closeoutTaskId);
       const orderedChildren = orderedChildRecordsForTask(taskListRecord, tasks, childAttrsByTaskId);
       const evaluation = evaluateRuntimeVerification({
         mode: 'task_closeout',
         intent: 'phase_closeout',
         task: taskDetail,
-        childTaskIds: taskAttrs?.childTaskIds ?? [],
+        childTaskIds: authoritativeChildTaskIds(taskListRecord, taskAttrs),
         childTasks: orderedChildren,
       }).taskCloseout;
       if (!evaluation) {

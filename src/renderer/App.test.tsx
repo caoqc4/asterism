@@ -1046,6 +1046,9 @@ describe('App redesign v1', () => {
       id: 'task_project_parent',
       title: '开发小程序',
       summary: '开发一个微信小程序。',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: ['task_project_child'],
       state: 'planned',
       nextStep: '推进项目',
     });
@@ -1053,18 +1056,22 @@ describe('App redesign v1', () => {
       id: 'task_project_child',
       title: '小程序需求分析与功能设计',
       summary: '明确核心功能和业务流程。',
+      taskType: 'simple',
+      taskFacets: ['simple'],
+      parentTaskId: parent.id,
+      childTaskIds: [],
       state: 'planned',
       nextStep: '确认需求',
     });
     saveTaskAttributes(parent.id, {
-      type: 'project',
-      typeConfirmed: true,
-      childTaskIds: [child.id],
-    });
-    saveTaskAttributes(child.id, {
       type: 'simple',
       typeConfirmed: true,
-      parentTaskId: parent.id,
+      childTaskIds: [],
+    });
+    saveTaskAttributes(child.id, {
+      type: 'project',
+      typeConfirmed: true,
+      parentTaskId: null,
     });
     vi.mocked(harness.api.getHomeBrief).mockResolvedValue(buildBriefData([child, parent], []));
 
@@ -2533,18 +2540,29 @@ describe('App redesign v1', () => {
     const project = buildTask({
       id: 'task_project_completion_check',
       title: '产品发布项目',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: ['task_project_done_child', 'task_project_open_child'],
       state: 'planned',
       updatedAt: '2026-05-13T12:00:00.000Z',
     });
     const doneChild = buildTask({
       id: 'task_project_done_child',
       title: '1 需求确认',
+      taskType: 'simple',
+      taskFacets: ['simple'],
+      parentTaskId: project.id,
+      childTaskIds: [],
       state: 'completed',
       updatedAt: '2026-05-13T12:01:00.000Z',
     });
     const openChild = buildTask({
       id: 'task_project_open_child',
       title: '2 发布回归',
+      taskType: 'simple',
+      taskFacets: ['simple'],
+      parentTaskId: project.id,
+      childTaskIds: [],
       state: 'planned',
       updatedAt: '2026-05-13T12:02:00.000Z',
     });
@@ -2560,12 +2578,12 @@ describe('App redesign v1', () => {
     harness.details[doneChild.id] = buildTaskDetail(doneChild);
     harness.details[openChild.id] = buildTaskDetail(openChild);
     saveTaskAttributes(project.id, {
-      type: 'project',
+      type: 'simple',
       typeConfirmed: true,
-      childTaskIds: [doneChild.id, openChild.id],
+      childTaskIds: [],
     });
-    saveTaskAttributes(doneChild.id, { type: 'simple', typeConfirmed: true, parentTaskId: project.id });
-    saveTaskAttributes(openChild.id, { type: 'simple', typeConfirmed: true, parentTaskId: project.id });
+    saveTaskAttributes(doneChild.id, { type: 'project', typeConfirmed: true, parentTaskId: null });
+    saveTaskAttributes(openChild.id, { type: 'project', typeConfirmed: true, parentTaskId: null });
 
     const user = userEvent.setup();
     render(<App />);
