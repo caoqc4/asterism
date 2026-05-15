@@ -36,6 +36,18 @@ function buildTask() {
     dependencies: [],
     processTemplates: [],
     sourceContexts: [],
+    taskFiles: [
+      {
+        id: 'task_file_1',
+        taskId: 'task_1',
+        name: 'Task.md',
+        path: 'Task.md',
+        kind: 'file',
+        content: '# Task\n\nCurrent recovery context.',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+    ],
     timeline: [],
   };
 }
@@ -316,6 +328,42 @@ describe('CodeAgentRunService', () => {
       'Code Agent workspace context blocked: Code Agent workspace context path is not allowed: ../escape.md.',
       'system',
       'Code Agent workspace context path is not allowed: ../escape.md.',
+    );
+    expect(result).toBe(failedRun);
+  });
+
+  it('blocks model-backed runs when required task recovery context is missing', async () => {
+    process.env.TASKPLANE_ENABLE_CODE_AGENT_MODEL_PRODUCER = 'true';
+    taskService.getDetail.mockResolvedValue({
+      ...buildTask(),
+      taskFiles: [],
+    });
+    const failedRun = buildFailedRun(
+      'Code Agent model producer runtime blocked: Runtime context assembly missing required inputs: task_md.',
+      'Runtime context assembly missing required inputs: task_md.',
+    );
+    runRepository.updateResult.mockResolvedValue(failedRun);
+
+    const result = await createService().trigger({
+      contextFiles: ['docs/notes.md'],
+      operatorConfirmed: true,
+      patchIntent: 'Prepare a staged notes patch.',
+      requestedChecks: ['test'],
+      taskId: 'task_1',
+      useModelProducer: true,
+    });
+
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(executionService.run).not.toHaveBeenCalled();
+    expect(runStepRepository.create).not.toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Code Agent provider-visible context manifest',
+    }));
+    expect(runRepository.updateResult).toHaveBeenCalledWith(
+      'run_code_agent_1',
+      'failed',
+      'Code Agent model producer runtime blocked: Runtime context assembly missing required inputs: task_md.',
+      'system',
+      'Runtime context assembly missing required inputs: task_md.',
     );
     expect(result).toBe(failedRun);
   });

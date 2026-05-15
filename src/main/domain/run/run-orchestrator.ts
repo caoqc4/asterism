@@ -27,6 +27,7 @@ import {
 } from './process-template-selector.js';
 import {
   buildAgentRunRequest,
+  evaluateAgentRunContextAssembly,
   formatAgentRunRequestForStep,
   LOCAL_AGENT_TOOL_POLICY,
 } from './agent-working-context.js';
@@ -96,16 +97,29 @@ export class RunOrchestrator {
       input,
       applicableWorkHabitSummaries: params.applicableWorkHabitSummaries,
     });
+    const contextAssembly = evaluateAgentRunContextAssembly(request);
 
     await this.createRunStepFromAgentEvent({
       type: 'plan.proposed',
       runId: run.id,
-      summary: '已读取任务上下文，并准备进入模型执行。',
+      summary: contextAssembly.canExecuteTaskWork
+        ? '已读取任务上下文，并准备进入模型执行。'
+        : '任务上下文装配未通过，已阻止模型执行。',
       source: 'fallback',
     }, {
+      status: contextAssembly.canExecuteTaskWork ? 'completed' : 'failed',
       title: '准备执行上下文',
       input: formatAgentRunRequestForStep(request),
+      error: contextAssembly.canExecuteTaskWork ? null : contextAssembly.summary,
     });
+
+    if (!contextAssembly.canExecuteTaskWork) {
+      return {
+        status: 'failed',
+        message: contextAssembly.summary,
+        selection: null,
+      };
+    }
 
     let modelStep: RunStepRecord | null = null;
     let selection: ProcessTemplateSelectionResult | null = null;

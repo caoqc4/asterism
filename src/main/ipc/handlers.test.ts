@@ -32,6 +32,7 @@ const {
       update: vi.fn(),
       transition: vi.fn(),
       recordCompletionCheck: vi.fn(),
+      recordTimelineEvent: vi.fn(),
       createBlocker: vi.fn(),
       updateBlocker: vi.fn(),
       resolveBlocker: vi.fn(),
@@ -57,6 +58,7 @@ const {
       update: vi.fn(),
       delete: vi.fn(),
       createManual: vi.fn(),
+      propose: vi.fn(),
       resolveConflict: vi.fn(),
       recordCompletionOverride: vi.fn(),
       recordSopTemplate: vi.fn(),
@@ -541,6 +543,9 @@ describe('registerIpcHandlers', () => {
       taskId: 'task_1',
       title: 'Approve launch note',
       rationale: 'Current task needs explicit stakeholder approval.',
+      suggestedScope: 'task',
+      suggestedKind: 'direction_choice',
+      suggestedSourceType: 'manual',
       source: 'ai',
       selectedTemplateIds: ['process_template_1'],
       selectedTemplateTitles: ['Approval skill'],
@@ -698,6 +703,26 @@ describe('registerIpcHandlers', () => {
     expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
   });
 
+  it('emits task.changed after task timeline event records', async () => {
+    const handler = getRegisteredHandler<
+      [{ taskId: string; type: string; payload?: Record<string, unknown> }],
+      void
+    >('task:recordTimelineEvent');
+
+    await handler({}, {
+      taskId: 'task_1',
+      type: 'panel.phase_closeout',
+      payload: { recordPath: 'Task Records/phase.md' },
+    });
+
+    expect(servicesMock.taskService.recordTimelineEvent).toHaveBeenCalledWith({
+      taskId: 'task_1',
+      type: 'panel.phase_closeout',
+      payload: { recordPath: 'Task Records/phase.md' },
+    });
+    expect(emitAppEventMock).toHaveBeenCalledWith('task.changed', 'task_1');
+  });
+
   it('imports legacy work habits without emitting task events', async () => {
     servicesMock.workHabitService.importLegacy.mockResolvedValue({
       version: 3,
@@ -720,6 +745,26 @@ describe('registerIpcHandlers', () => {
     });
     expect(emitAppEventMock).not.toHaveBeenCalled();
     expect(result.storage).toBe('main_db');
+  });
+
+  it('routes work habit proposals without emitting task events', async () => {
+    servicesMock.workHabitService.propose.mockResolvedValue([]);
+
+    const handler = getRegisteredHandler<
+      [{ rule: string; taskTitle?: string }],
+      Awaited<ReturnType<typeof servicesMock.workHabitService.propose>>
+    >('workHabit:propose');
+
+    await handler({}, {
+      rule: '以后类似任务先内部评审再对外发送',
+      taskTitle: '客户周报',
+    });
+
+    expect(servicesMock.workHabitService.propose).toHaveBeenCalledWith({
+      rule: '以后类似任务先内部评审再对外发送',
+      taskTitle: '客户周报',
+    });
+    expect(emitAppEventMock).not.toHaveBeenCalled();
   });
 
   it('emits task.changed for both sides after task dependency writes', async () => {

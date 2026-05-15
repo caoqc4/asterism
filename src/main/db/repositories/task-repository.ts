@@ -3,6 +3,7 @@ import { desc, eq } from 'drizzle-orm';
 import type {
   CreateTaskInput,
   TaskDetailBase,
+  TaskExecutionType,
   TaskRecord,
   TransitionTaskInput,
   UpdateTaskInput,
@@ -13,6 +14,70 @@ import { generateId, nowIso } from './repository-utils.js';
 
 function hasFieldChanged(currentValue: string | null, nextValue: string | null): boolean {
   return (currentValue ?? null) !== (nextValue ?? null);
+}
+
+function normalizeTaskType(value: string | null | undefined): TaskExecutionType {
+  if (
+    value === 'simple' ||
+    value === 'project' ||
+    value === 'scheduled' ||
+    value === 'event' ||
+    value === 'routine'
+  ) {
+    return value;
+  }
+  return 'simple';
+}
+
+function normalizeTaskFacets(value: unknown, primaryType: TaskExecutionType): TaskExecutionType[] {
+  const values = Array.isArray(value) ? value : [];
+  const ordered: TaskExecutionType[] = [primaryType];
+  for (const item of values) {
+    const type = normalizeTaskType(typeof item === 'string' ? item : null);
+    if (!ordered.includes(type)) ordered.push(type);
+  }
+  return ordered;
+}
+
+function parseTaskFacets(value: string | null | undefined, primaryType: TaskExecutionType): TaskExecutionType[] {
+  try {
+    return normalizeTaskFacets(value ? JSON.parse(value) : [], primaryType);
+  } catch {
+    return [primaryType];
+  }
+}
+
+function parseChildTaskIds(value: string | null | undefined): string[] {
+  try {
+    const parsed = value ? JSON.parse(value) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === 'string' && Boolean(item.trim()))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+type TaskRow = typeof tasks.$inferSelect;
+
+function taskRecordFromRow(row: TaskRow): TaskRecord {
+  const taskType = normalizeTaskType(row.taskType);
+  return {
+    id: row.id,
+    title: row.title,
+    summary: row.summary,
+    taskType,
+    taskFacets: parseTaskFacets(row.taskFacets, taskType),
+    parentTaskId: row.parentTaskId,
+    childTaskIds: parseChildTaskIds(row.childTaskIds),
+    state: row.state as TaskRecord['state'],
+    nextStep: row.nextStep,
+    waitingReason: row.waitingReason,
+    riskLevel: row.riskLevel as TaskRecord['riskLevel'],
+    riskNote: row.riskNote,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
 }
 
 export class TaskRepository {
@@ -36,18 +101,7 @@ export class TaskRepository {
     const db = initDatabase();
     const rows = await db.select().from(tasks).orderBy(desc(tasks.updatedAt));
 
-    return rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      summary: row.summary,
-      state: row.state as TaskRecord['state'],
-      nextStep: row.nextStep,
-      waitingReason: row.waitingReason,
-      riskLevel: row.riskLevel as TaskRecord['riskLevel'],
-      riskNote: row.riskNote,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-    }));
+    return rows.map(taskRecordFromRow);
   }
 
   async create(input: CreateTaskInput): Promise<TaskRecord> {
@@ -59,6 +113,10 @@ export class TaskRepository {
       id,
       title: input.title.trim(),
       summary: input.summary?.trim() || null,
+      taskType: input.taskType ?? 'simple',
+      taskFacets: JSON.stringify(normalizeTaskFacets(input.taskFacets, input.taskType ?? 'simple')),
+      parentTaskId: input.parentTaskId ?? null,
+      childTaskIds: JSON.stringify(input.childTaskIds ?? []),
       state: 'captured',
       nextStep: null,
       waitingReason: null,
@@ -78,18 +136,7 @@ export class TaskRepository {
 
     const [created] = await db.select().from(tasks).where(eq(tasks.id, id)).limit(1);
 
-    return {
-      id: created.id,
-      title: created.title,
-      summary: created.summary,
-      state: created.state as TaskRecord['state'],
-      nextStep: created.nextStep,
-      waitingReason: created.waitingReason,
-      riskLevel: created.riskLevel as TaskRecord['riskLevel'],
-      riskNote: created.riskNote,
-      createdAt: created.createdAt,
-      updatedAt: created.updatedAt,
-    };
+    return taskRecordFromRow(created);
   }
 
   async getDetail(taskId: string): Promise<TaskDetailBase | null> {
@@ -110,6 +157,10 @@ export class TaskRepository {
       id: task.id,
       title: task.title,
       summary: task.summary,
+      taskType: normalizeTaskType(task.taskType),
+      taskFacets: parseTaskFacets(task.taskFacets, normalizeTaskType(task.taskType)),
+      parentTaskId: task.parentTaskId,
+      childTaskIds: parseChildTaskIds(task.childTaskIds),
       state: task.state as TaskRecord['state'],
       nextStep: task.nextStep,
       waitingReason: task.waitingReason,
@@ -146,6 +197,15 @@ export class TaskRepository {
     const nextTitle = input.title?.trim() ? input.title.trim() : current.title;
     const nextSummary =
       input.summary === undefined ? current.summary : input.summary?.trim() || null;
+    const nextTaskType = input.taskType ?? normalizeTaskType(current.taskType);
+    const nextTaskFacets =
+      input.taskFacets === undefined
+        ? parseTaskFacets(current.taskFacets, nextTaskType)
+        : normalizeTaskFacets(input.taskFacets, nextTaskType);
+    const nextParentTaskId =
+      input.parentTaskId === undefined ? current.parentTaskId : input.parentTaskId?.trim() || null;
+    const nextChildTaskIds =
+      input.childTaskIds === undefined ? parseChildTaskIds(current.childTaskIds) : input.childTaskIds;
     const nextStep =
       input.nextStep === undefined ? current.nextStep : input.nextStep?.trim() || null;
     const nextWaitingReason =
@@ -162,6 +222,10 @@ export class TaskRepository {
       .set({
         title: nextTitle,
         summary: nextSummary,
+        taskType: nextTaskType,
+        taskFacets: JSON.stringify(nextTaskFacets),
+        parentTaskId: nextParentTaskId,
+        childTaskIds: JSON.stringify(nextChildTaskIds),
         nextStep,
         waitingReason: nextWaitingReason,
         riskLevel: nextRiskLevel,
@@ -178,6 +242,10 @@ export class TaskRepository {
         payload: JSON.stringify({
           title: nextTitle,
           summary: nextSummary,
+          taskType: nextTaskType,
+          taskFacets: nextTaskFacets,
+          parentTaskId: nextParentTaskId,
+          childTaskIds: nextChildTaskIds,
           nextStep,
           waitingReason: nextWaitingReason,
           riskLevel: nextRiskLevel,
@@ -239,18 +307,7 @@ export class TaskRepository {
 
     const [updated] = await db.select().from(tasks).where(eq(tasks.id, input.id)).limit(1);
 
-    return {
-      id: updated.id,
-      title: updated.title,
-      summary: updated.summary,
-      state: updated.state as TaskRecord['state'],
-      nextStep: updated.nextStep,
-      waitingReason: updated.waitingReason,
-      riskLevel: updated.riskLevel as TaskRecord['riskLevel'],
-      riskNote: updated.riskNote,
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
-    };
+    return taskRecordFromRow(updated);
   }
 
   async transition(input: TransitionTaskInput): Promise<TaskRecord> {
@@ -311,17 +368,6 @@ export class TaskRepository {
 
     const [updated] = await db.select().from(tasks).where(eq(tasks.id, input.id)).limit(1);
 
-    return {
-      id: updated.id,
-      title: updated.title,
-      summary: updated.summary,
-      state: updated.state as TaskRecord['state'],
-      nextStep: updated.nextStep,
-      waitingReason: updated.waitingReason,
-      riskLevel: updated.riskLevel as TaskRecord['riskLevel'],
-      riskNote: updated.riskNote,
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
-    };
+    return taskRecordFromRow(updated);
   }
 }

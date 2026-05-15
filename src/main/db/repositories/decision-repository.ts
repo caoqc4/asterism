@@ -12,6 +12,7 @@ import type {
   DecisionSourceType,
   DecisionStatus,
 } from '../../../shared/types/decision.js';
+import { normalizeCreateDecisionInput } from '../../../shared/runtime-surface-routing.js';
 import { decisionRequests, timelineEvents } from '../schema.js';
 import { initDatabase } from '../client.js';
 import { generateId, nowIso } from './repository-utils.js';
@@ -28,19 +29,6 @@ function parseJsonField<T>(value: string | null, fallback: T): T {
 function serializeJsonField(value: unknown): string | null {
   if (value == null) return null;
   return JSON.stringify(value);
-}
-
-function normalizeScope(input: CreateDecisionInput): DecisionScope {
-  if (input.scope) return input.scope;
-  if (input.taskId?.trim()) return 'task';
-  if (input.sourceType === 'agent_checkpoint') return 'agent';
-  return 'global';
-}
-
-function normalizeKind(input: CreateDecisionInput): DecisionKind {
-  if (input.kind) return input.kind;
-  if (input.sourceType === 'agent_checkpoint') return 'agent_resume';
-  return 'direction_choice';
 }
 
 function toRecord(row: typeof decisionRequests.$inferSelect): DecisionRecord {
@@ -73,23 +61,22 @@ export class DecisionRepository {
     const db = initDatabase();
     const timestamp = nowIso();
     const id = generateId('decision');
-    const taskId = input.taskId?.trim() || '';
-    const scope = normalizeScope(input);
-    const kind = normalizeKind(input);
+    const normalizedInput = normalizeCreateDecisionInput(input);
+    const taskId = normalizedInput.taskId ?? '';
 
     await db.insert(decisionRequests).values({
       id,
       taskId,
-      title: input.title.trim(),
+      title: normalizedInput.title,
       status: 'pending',
-      scope,
-      kind,
-      sourceType: input.sourceType ?? null,
-      sourceId: input.sourceId?.trim() || null,
-      sourceLabel: input.sourceLabel?.trim() || null,
-      context: serializeJsonField(input.context),
-      options: serializeJsonField(input.options ?? []),
-      recommendation: serializeJsonField(input.recommendation),
+      scope: normalizedInput.scope,
+      kind: normalizedInput.kind,
+      sourceType: normalizedInput.sourceType ?? null,
+      sourceId: normalizedInput.sourceId ?? null,
+      sourceLabel: normalizedInput.sourceLabel ?? null,
+      context: serializeJsonField(normalizedInput.context),
+      options: serializeJsonField(normalizedInput.options ?? []),
+      recommendation: serializeJsonField(normalizedInput.recommendation),
       createdAt: timestamp,
       updatedAt: timestamp,
     });
@@ -101,12 +88,12 @@ export class DecisionRepository {
         type: 'decision.created',
         payload: JSON.stringify({
           decisionId: id,
-          title: input.title.trim(),
-          scope,
-          kind,
-          sourceType: input.sourceType ?? null,
-          sourceId: input.sourceId?.trim() || null,
-          sourceLabel: input.sourceLabel?.trim() || null,
+          title: normalizedInput.title,
+          scope: normalizedInput.scope,
+          kind: normalizedInput.kind,
+          sourceType: normalizedInput.sourceType ?? null,
+          sourceId: normalizedInput.sourceId ?? null,
+          sourceLabel: normalizedInput.sourceLabel ?? null,
         }),
         createdAt: timestamp,
       });

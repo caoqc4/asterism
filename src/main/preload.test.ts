@@ -38,11 +38,13 @@ function getExposedApi() {
     updateTask: (input: unknown) => Promise<unknown>;
     transitionTask: (input: unknown) => Promise<unknown>;
     recordTaskCompletionCheck: (input: unknown) => Promise<unknown>;
+    recordTaskTimelineEvent: (input: unknown) => Promise<unknown>;
     getWorkHabitSnapshot: () => Promise<unknown>;
     importLegacyWorkHabits: (input: unknown) => Promise<unknown>;
     updateWorkHabit: (input: unknown) => Promise<unknown>;
     deleteWorkHabit: (id: string) => Promise<unknown>;
     createManualWorkHabit: (input: unknown) => Promise<unknown>;
+    proposeWorkHabit: (input: unknown) => Promise<unknown>;
     resolveWorkHabitConflict: (input: unknown) => Promise<unknown>;
     recordCompletionOverrideLearningSignal: (input: unknown) => Promise<unknown>;
     recordSopTemplateHabit: (input: unknown) => Promise<unknown>;
@@ -121,6 +123,7 @@ describe('preload bridge', () => {
     const updateWorkHabitInput = { id: 'habit_1', status: 'confirmed' };
     const importLegacyWorkHabitsInput = { habits: [{ id: 'habit_1', rule: 'Run checks first' }] };
     const createManualWorkHabitInput = { rule: 'Run checks first', scope: 'global', scopeLabel: '全局' };
+    const proposeWorkHabitInput = { rule: 'Review before sending', taskTitle: 'Weekly report' };
     const resolveWorkHabitConflictInput = { candidateId: 'habit_1', decision: 'accept_candidate' };
     const completionOverrideInput = { taskId: 'task_1', taskTitle: 'Task', reason: 'Enough evidence' };
     const sopHabitInput = { taskId: 'task_1', taskTitle: 'Task', steps: ['Draft', 'Review'] };
@@ -228,11 +231,13 @@ describe('preload bridge', () => {
     await api.updateTask(updateTaskInput);
     await api.transitionTask(transitionTaskInput);
     await api.recordTaskCompletionCheck(completionCheckInput);
+    await api.recordTaskTimelineEvent({ taskId: 'task_1', type: 'panel.context_refreshed', payload: { ok: true } });
     await api.getWorkHabitSnapshot();
     await api.importLegacyWorkHabits(importLegacyWorkHabitsInput);
     await api.updateWorkHabit(updateWorkHabitInput);
     await api.deleteWorkHabit('habit_1');
     await api.createManualWorkHabit(createManualWorkHabitInput);
+    await api.proposeWorkHabit(proposeWorkHabitInput);
     await api.resolveWorkHabitConflict(resolveWorkHabitConflictInput);
     await api.recordCompletionOverrideLearningSignal(completionOverrideInput);
     await api.recordSopTemplateHabit(sopHabitInput);
@@ -284,11 +289,13 @@ describe('preload bridge', () => {
       ['task:update', updateTaskInput],
       ['task:transition', transitionTaskInput],
       ['task:recordCompletionCheck', completionCheckInput],
+      ['task:recordTimelineEvent', { taskId: 'task_1', type: 'panel.context_refreshed', payload: { ok: true } }],
       ['workHabit:getSnapshot'],
       ['workHabit:importLegacy', importLegacyWorkHabitsInput],
       ['workHabit:update', updateWorkHabitInput],
       ['workHabit:delete', 'habit_1'],
       ['workHabit:createManual', createManualWorkHabitInput],
+      ['workHabit:propose', proposeWorkHabitInput],
       ['workHabit:resolveConflict', resolveWorkHabitConflictInput],
       ['workHabit:recordCompletionOverride', completionOverrideInput],
       ['workHabit:recordSopTemplate', sopHabitInput],

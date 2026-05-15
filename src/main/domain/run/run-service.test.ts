@@ -58,6 +58,18 @@ function buildTaskDetail(state: TaskDetail['state'] = 'planned'): TaskDetail {
     },
     artifacts: [],
     completionCriteria: [],
+    taskFiles: [
+      {
+        id: 'task_file_1',
+        taskId: 'task_1',
+        name: 'Task.md',
+        path: 'Task.md',
+        kind: 'file',
+        content: '# Task\n\nCurrent recovery context.',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+    ],
     sourceContexts: [],
     processTemplates: [],
     availableProcessTemplates: [],
@@ -317,6 +329,7 @@ describe('RunService', () => {
       runId: 'run_1',
       targetType: 'step',
       targetId: 'run_step_1',
+      label: '执行后检查通过',
       source: 'lightweight_rule_engine',
     }));
     expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
@@ -329,6 +342,11 @@ describe('RunService', () => {
     expect(result?.artifacts).toEqual([{ id: 'artifact_1' }]);
     expect(result?.verifications).toEqual([{ id: 'run_verification_1' }]);
     expect(result?.agentSessions).toEqual([{ id: 'agent_session_1' }]);
+    expect(result?.runtimeEvents?.map((event) => event.type)).toEqual([
+      'run.completed',
+      'run_step.final.completed',
+    ]);
+    expect(result?.runtimeReplayGroups?.some((group) => group.kind === 'execution_recovery')).toBe(true);
   });
 
   it('completes a run when the executor succeeds', async () => {
@@ -546,6 +564,14 @@ describe('RunService', () => {
     });
     const aiConfigService = {
       getStatus: vi.fn().mockResolvedValue({
+        configured: true,
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-latest',
+        workspaceRoot: null,
+        codeAgentWorkspaceChecks: {
+          lint: { available: false, reason: 'not configured' },
+          test: { available: false, reason: 'not configured' },
+        },
         featureFlags: {
           enableSelfCheck: false,
         },

@@ -1,5 +1,6 @@
 import type { AgentSessionEvent } from '../../../shared/types/agent-execution.js';
 import type { RunStepKind, RunStepStatus } from '../../../shared/types/run.js';
+import { classifyRuntimeActionEvent } from '../../../shared/runtime-surface-routing.js';
 
 export type AgentRuntimeRunStepDraft = {
   runId: string;
@@ -47,7 +48,7 @@ export function mapAgentRuntimeEventToRunStep(
     case 'session.started':
       return {
         runId: event.runId,
-        kind: 'plan',
+        kind: classifyRuntimeActionEvent({ kind: 'session_started' }).runStepKind,
         status: 'running',
         title: 'Agent session started',
         output: `mode=${event.mode}`,
@@ -55,7 +56,7 @@ export function mapAgentRuntimeEventToRunStep(
     case 'plan.proposed':
       return {
         runId: event.runId,
-        kind: 'plan',
+        kind: classifyRuntimeActionEvent({ kind: 'plan_proposed', text: event.summary }).runStepKind,
         status: 'completed',
         title: 'Agent plan proposed',
         input: event.detail ?? `source=${event.source}`,
@@ -64,7 +65,7 @@ export function mapAgentRuntimeEventToRunStep(
     case 'model.completed':
       return {
         runId: event.runId,
-        kind: 'model',
+        kind: classifyRuntimeActionEvent({ kind: 'model_completed', text: event.output }).runStepKind,
         status: 'completed',
         title: 'Model output',
         input: [
@@ -76,7 +77,7 @@ export function mapAgentRuntimeEventToRunStep(
     case 'tool.started':
       return {
         runId: event.runId,
-        kind: 'tool_call',
+        kind: classifyRuntimeActionEvent({ kind: 'tool_started', operation: event.tool }).runStepKind,
         status: 'running',
         title: `Tool started: ${event.tool}`,
         input: stringifyInput(event.input),
@@ -84,7 +85,11 @@ export function mapAgentRuntimeEventToRunStep(
     case 'tool.completed':
       return {
         runId: event.runId,
-        kind: 'tool_result',
+        kind: classifyRuntimeActionEvent({
+          kind: 'tool_completed',
+          operation: event.tool,
+          text: event.result.output ?? event.result.summary,
+        }).runStepKind,
         status: 'completed',
         title: `Tool completed: ${event.tool}`,
         output: event.result.output ?? event.result.summary,
@@ -92,7 +97,11 @@ export function mapAgentRuntimeEventToRunStep(
     case 'tool.failed':
       return {
         runId: event.runId,
-        kind: 'tool_result',
+        kind: classifyRuntimeActionEvent({
+          kind: 'tool_failed',
+          operation: event.tool,
+          text: event.result?.output ?? event.result?.summary ?? event.error,
+        }).runStepKind,
         status: 'failed',
         title: `Tool failed: ${event.tool}`,
         output: event.result?.output ?? event.result?.summary ?? null,
@@ -101,7 +110,13 @@ export function mapAgentRuntimeEventToRunStep(
     case 'checkpoint.created':
       return {
         runId: event.runId,
-        kind: 'checkpoint',
+        kind: classifyRuntimeActionEvent({
+          kind: 'checkpoint_created',
+          checkpointKind: event.checkpointKind,
+          operation: event.tool ?? event.checkpointKind,
+          text: event.reason,
+          requiresConfirmation: true,
+        }).runStepKind,
         status: 'pending',
         title: `Checkpoint created: ${event.checkpointKind}`,
         input: checkpointInput(event),
@@ -110,7 +125,7 @@ export function mapAgentRuntimeEventToRunStep(
     case 'session.heartbeat':
       return {
         runId: event.runId,
-        kind: 'plan',
+        kind: classifyRuntimeActionEvent({ kind: 'session_heartbeat', text: event.summary }).runStepKind,
         status: 'running',
         title: 'Agent session heartbeat',
         output: event.summary,
@@ -118,7 +133,11 @@ export function mapAgentRuntimeEventToRunStep(
     case 'session.paused':
       return {
         runId: event.runId,
-        kind: 'checkpoint',
+        kind: classifyRuntimeActionEvent({
+          kind: 'session_paused',
+          text: event.message,
+          requiresConfirmation: true,
+        }).runStepKind,
         status: 'pending',
         title: 'Agent session paused',
         input: pausedSessionInput(event),
@@ -127,7 +146,7 @@ export function mapAgentRuntimeEventToRunStep(
     case 'session.completed':
       return {
         runId: event.runId,
-        kind: 'final',
+        kind: classifyRuntimeActionEvent({ kind: 'session_completed', text: event.output }).runStepKind,
         status: 'completed',
         title: 'Agent session completed',
         output: event.output,
@@ -135,7 +154,7 @@ export function mapAgentRuntimeEventToRunStep(
     case 'session.failed':
       return {
         runId: event.runId,
-        kind: 'final',
+        kind: classifyRuntimeActionEvent({ kind: 'session_failed', text: event.message }).runStepKind,
         status: 'failed',
         title: 'Agent session failed',
         error: event.message,
@@ -143,7 +162,7 @@ export function mapAgentRuntimeEventToRunStep(
     case 'session.interrupted':
       return {
         runId: event.runId,
-        kind: 'final',
+        kind: classifyRuntimeActionEvent({ kind: 'session_interrupted', text: event.reason }).runStepKind,
         status: 'failed',
         title: 'Agent session interrupted',
         error: event.reason,
@@ -151,7 +170,7 @@ export function mapAgentRuntimeEventToRunStep(
     case 'session.cancelled':
       return {
         runId: event.runId,
-        kind: 'final',
+        kind: classifyRuntimeActionEvent({ kind: 'session_cancelled', text: event.reason }).runStepKind,
         status: 'failed',
         title: 'Agent session cancelled',
         error: event.reason,

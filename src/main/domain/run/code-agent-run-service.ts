@@ -9,6 +9,13 @@ import {
   buildCodeAgentProviderVisibleContextManifest,
   formatCodeAgentProviderVisibleContextManifestForStep,
 } from '../../../shared/code-agent-model-context.js';
+import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
+import { buildRuntimeCapabilitySnapshot } from '../../../shared/runtime-capability-snapshot.js';
+import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
+import {
+  buildRuntimeContextAssemblyPolicy,
+  buildRuntimeContextManifest,
+} from '../../../shared/runtime-context.js';
 import type { ArtifactRecord } from '../../../shared/types/artifact.js';
 import type {
   CreateCodeAgentRunInput,
@@ -75,7 +82,23 @@ export class CodeAgentRunService {
       throw new Error(`Task not found: ${input.taskId}`);
     }
 
+    const actionEvaluation = evaluateRuntimeAction({
+      action: 'run_start',
+      fromTaskId: task.id,
+      targetTaskId: task.id,
+    });
     const aiStatus = await this.aiConfigService.getStatus();
+    const preStepVerification = evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: actionEvaluation,
+      capabilities: buildRuntimeCapabilitySnapshot({ aiStatus }),
+      requiresModelExecution: input.useModelProducer === true,
+      requiresWorkspaceVerification: true,
+    });
+    if (!preStepVerification.canProceed) {
+      throw new Error(preStepVerification.detail);
+    }
+
     const workspaceRoot = aiStatus.workspaceRoot?.trim();
     const requestedChecks = normalizeCodeAgentChecks(
       input.requestedChecks,
@@ -171,6 +194,30 @@ export class CodeAgentRunService {
         'system',
         'Model-backed Code Agent preview requires at least one selected context file.',
       );
+    }
+
+    if (modelProducerOptIn) {
+      const contextAssembly = buildRuntimeContextAssemblyPolicy({
+        manifest: buildRuntimeContextManifest({
+          currentRunId: run.id,
+          sourceContexts: selectedSourceContexts.items.map((source) => ({
+            ...source,
+            contentPreview: source.content ? source.content.slice(0, 600) : null,
+            selected: true,
+          })),
+          task,
+          taskFiles: task.taskFiles ?? [],
+        }),
+      });
+      if (!contextAssembly.canExecuteTaskWork) {
+        return this.updateRunResult(
+          run.id,
+          'failed',
+          `Code Agent model producer runtime blocked: ${contextAssembly.summary}`,
+          'system',
+          contextAssembly.summary,
+        );
+      }
     }
 
     if (modelProducerOptIn && selectedSourceContexts.status === 'blocked') {

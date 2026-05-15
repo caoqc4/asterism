@@ -1,6 +1,7 @@
 import {
   buildWorkHabitStorageSnapshot,
   createManualWorkHabitInList,
+  createWorkHabitProposalInList,
   deleteWorkHabitFromList,
   recordCompletionOverrideLearningSignalInList,
   recordWorkHabitApplicationsInList,
@@ -12,6 +13,7 @@ import {
 import type {
   CompletionOverrideLearningSignalInput,
   CreateManualWorkHabitInput,
+  CreateWorkHabitProposalInput,
   ResolveWorkHabitConflictInput,
   ImportLegacyWorkHabitsInput,
   SopTemplateHabitInput,
@@ -19,6 +21,7 @@ import type {
   WorkHabitRecord,
   WorkHabitStorageSnapshot,
 } from '../../../shared/types/work-habit.js';
+import { normalizeCreateWorkHabitProposalInput } from '../../../shared/runtime-surface-routing.js';
 import type { WorkHabitRepository } from '../../db/repositories/work-habit-repository.js';
 
 export class WorkHabitService {
@@ -39,6 +42,16 @@ export class WorkHabitService {
 
   async createManual(input: CreateManualWorkHabitInput): Promise<WorkHabitRecord[]> {
     return this.replace(createManualWorkHabitInList(await this.ensureSeeded(), input));
+  }
+
+  async propose(input: CreateWorkHabitProposalInput): Promise<WorkHabitRecord[]> {
+    const normalized = normalizeCreateWorkHabitProposalInput(input);
+    if (!normalized?.scope || !normalized.scopeLabel) return this.ensureSeeded();
+    return this.replace(createWorkHabitProposalInList(await this.ensureSeeded(), {
+      ...normalized,
+      scope: normalized.scope,
+      scopeLabel: normalized.scopeLabel,
+    }));
   }
 
   async resolveConflict(input: ResolveWorkHabitConflictInput): Promise<WorkHabitRecord[]> {

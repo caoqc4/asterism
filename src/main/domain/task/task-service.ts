@@ -21,6 +21,7 @@ import type {
 import type {
   CreateTaskInput,
   RecordTaskCompletionCheckInput,
+  RecordTaskTimelineEventInput,
   TaskDetail,
   TaskDetailBase,
   TaskListItemRecord,
@@ -35,6 +36,9 @@ import type {
   SourceContextRecord,
   UpdateSourceContextInput,
 } from '../../../shared/types/source-context.js';
+import { evaluateRuntimeTaskCapture } from '../../../shared/runtime-task-capture-evaluator.js';
+import { normalizeCreateSourceContextInput } from '../../../shared/runtime-surface-routing.js';
+import { assertKnownPanelRuntimeTimelineEventType } from '../../../shared/runtime-panel-events.js';
 import type { RunType } from '../../../shared/types/run.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import { BlockerRepository } from '../../db/repositories/blocker-repository.js';
@@ -591,6 +595,16 @@ export class TaskService {
   }
 
   async create(input: CreateTaskInput): Promise<TaskListItemRecord> {
+    const captureEvaluation = evaluateRuntimeTaskCapture({
+      title: input.title,
+      summary: input.summary,
+      existingTasks: await this.repository.list(),
+      parentTaskId: input.parentTaskId ?? null,
+    });
+    if (!captureEvaluation.allowed) {
+      throw new Error(captureEvaluation.summary);
+    }
+
     const created = await this.repository.create(input);
     return this.attachActiveWaitingItem(created);
   }
@@ -622,6 +636,19 @@ export class TaskService {
 
   async update(input: UpdateTaskInput): Promise<TaskListItemRecord> {
     const detail = await this.getExistingTaskOrThrow(input.id);
+    if (input.title !== undefined || input.parentTaskId !== undefined) {
+      const existingTasks = await this.repository.list();
+      const captureEvaluation = evaluateRuntimeTaskCapture({
+        title: input.title ?? detail.title,
+        summary: input.summary === undefined ? detail.summary : input.summary,
+        existingTasks: (existingTasks ?? []).filter((task) => task.id !== input.id),
+        parentTaskId: input.parentTaskId === undefined ? detail.parentTaskId ?? null : input.parentTaskId ?? null,
+      });
+      if (!captureEvaluation.allowed) {
+        throw new Error(captureEvaluation.summary);
+      }
+    }
+
     const nextRiskLevel = input.riskLevel ?? detail.riskLevel;
     const providedRiskNote = input.riskNote?.trim() || null;
     const nextRiskNote =
@@ -693,6 +720,12 @@ export class TaskService {
       source: input.source ?? 'task_completion_modal',
       checkedAt: input.checkedAt ?? new Date().toISOString(),
     });
+  }
+
+  async recordTimelineEvent(input: RecordTaskTimelineEventInput): Promise<void> {
+    await this.getExistingTaskOrThrow(input.taskId);
+    assertKnownPanelRuntimeTimelineEventType(input.type);
+    await this.repository.appendTimelineEvent(input.taskId, input.type, input.payload ?? {});
   }
 
   async transitionIfAllowed(id: string, nextState: TaskState): Promise<TaskListItemRecord | null> {
@@ -957,9 +990,10 @@ export class TaskService {
       throw new Error('Source context repository is not configured');
     }
 
-    const created = await this.sourceContextRepository.create(input);
+    const normalizedInput = normalizeCreateSourceContextInput(input);
+    const created = await this.sourceContextRepository.create(normalizedInput);
 
-    await this.repository.appendTimelineEvent(input.taskId, 'source_context.created', {
+    await this.repository.appendTimelineEvent(normalizedInput.taskId, 'source_context.created', {
       sourceContextId: created.id,
       title: created.title,
       kind: created.kind,

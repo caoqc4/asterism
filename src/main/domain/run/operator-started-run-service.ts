@@ -17,6 +17,8 @@ import type {
   RunRecord,
   RunStatus,
 } from '../../../shared/types/run.js';
+import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
+import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import type { RunRepository } from '../../db/repositories/run-repository.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import type { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
@@ -78,6 +80,19 @@ export class OperatorStartedRunService {
     const task = await this.taskService.getDetail(request.taskId);
     if (!task) {
       throw new Error(`Task not found: ${request.taskId}`);
+    }
+
+    const actionEvaluation = evaluateRuntimeAction({
+      action: 'run_start',
+      fromTaskId: task.id,
+      targetTaskId: task.id,
+    });
+    const preStepVerification = evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: actionEvaluation,
+    });
+    if (!preStepVerification.canProceed) {
+      throw new Error(preStepVerification.detail);
     }
 
     const runInput: CreateRunInput = {

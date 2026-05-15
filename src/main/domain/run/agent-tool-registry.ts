@@ -9,7 +9,12 @@ import type {
   AgentToolRisk,
   AgentWorkingContext,
 } from '../../../shared/types/agent-execution.js';
+import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
+import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
+import { evaluateTaskMdUpdateNeed } from '../../../shared/task-md-update-need.js';
+import { evaluateTaskRecordWorthiness } from '../../../shared/task-record-worthiness.js';
 import type { DecisionDraftRecord, DraftDecisionInput } from '../../../shared/types/decision.js';
+import type { RunStepRecord } from '../../../shared/types/run.js';
 import type { SourceContextKind, SourceContextRole } from '../../../shared/types/source-context.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import type { DecisionRepository } from '../../db/repositories/decision-repository.js';
@@ -618,6 +623,99 @@ function formatTimelineEventObservation(
   return `${index + 1}. ${prefix} · ${event.type} · ${event.summary}`;
 }
 
+function assertTaskMutationAllowed(context: ToolExecutionContext): void {
+  const evaluation = evaluateRuntimeAction({
+    action: 'task_mutation',
+    fromTaskId: context.taskId,
+    targetTaskId: context.taskId,
+  });
+  const verification = evaluateRuntimeVerification({
+    mode: 'pre_step',
+    action: evaluation,
+    hasRequiredContext: true,
+  });
+
+  if (!verification.canProceed) {
+    throw new Error(verification.detail);
+  }
+}
+
+const durableAgentTools = new Set<AgentToolName>([
+  'task.update_next_step',
+  'task.create_completion_criterion',
+  'artifact.create_note',
+  'source_context.create',
+]);
+
+function buildAgentToolPostStep(name: AgentToolName, result: AgentToolResult, context: ToolExecutionContext): RunStepRecord {
+  const timestamp = new Date().toISOString();
+  return {
+    id: `agent_tool_post_step_${timestamp}`,
+    runId: context.runId,
+    index: 1,
+    kind: 'tool_result',
+    status: result.success ? 'completed' : 'failed',
+    title: `工具后置检查：${name}`,
+    input: null,
+    output: result.output ?? result.summary,
+    error: result.error ?? null,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+}
+
+function verifyDurableAgentToolResult(name: AgentToolName, result: AgentToolResult, context: ToolExecutionContext): void {
+  if (!durableAgentTools.has(name) || !result.success) return;
+  const verification = evaluateRuntimeVerification({
+    mode: 'post_step',
+    step: buildAgentToolPostStep(name, result, context),
+    producedDurableChange: true,
+    hasRecoveryNote: Boolean((result.output ?? result.summary).trim()),
+  });
+  if (!verification.canProceed) {
+    throw new Error(verification.detail);
+  }
+}
+
+function withRuntimeRecoveryGuidance(
+  name: AgentToolName,
+  result: AgentToolResult,
+  context: ToolExecutionContext,
+): AgentToolResult {
+  if (!durableAgentTools.has(name) || !result.success) return result;
+  const text = [result.summary, result.output].filter(Boolean).join('\n');
+  const guidance: string[] = [];
+
+  const taskMdReason = name === 'task.update_next_step'
+    ? 'next_step'
+    : name === 'artifact.create_note'
+      ? 'important_file'
+      : 'durable_state_change';
+  const taskMdUpdate = evaluateTaskMdUpdateNeed({
+    changeText: text,
+    hasTaskContext: Boolean(context.taskId),
+    importantFilePath: name === 'artifact.create_note' ? result.artifactId ?? result.summary : null,
+    producedDurableChange: true,
+    reasonHint: taskMdReason,
+  });
+  if (taskMdUpdate.shouldUpdateTaskMd) {
+    guidance.push(`Task.md update recommended: ${taskMdUpdate.reason}`);
+  }
+
+  if (name === 'source_context.create') {
+    const taskRecord = evaluateTaskRecordWorthiness({
+      text,
+      hasTaskContext: Boolean(context.taskId),
+      reasonHint: 'external_signal',
+    });
+    if (taskRecord.shouldCreateTaskRecord) {
+      guidance.push(`Task Record may be useful: ${taskRecord.reason}`);
+    }
+  }
+
+  return guidance.length ? { ...result, recoveryGuidance: guidance } : result;
+}
+
 function isPotentialCompletionEvidence(event: AgentWorkingContext['recentTimeline'][number]): boolean {
   return (
     event.type === 'task.decision_approved' ||
@@ -1024,7 +1122,12 @@ export class AgentToolRegistry {
         };
       }
 
-      const result = await this.executeKnownTool(name, input, context, policy);
+      const result = withRuntimeRecoveryGuidance(
+        name,
+        await this.executeKnownTool(name, input, context, policy),
+        context,
+      );
+      verifyDurableAgentToolResult(name, result, context);
       await this.runStepRepository.update(callStep.id, {
         status: 'completed',
         output: result.summary,
@@ -1112,6 +1215,7 @@ export class AgentToolRegistry {
           throw new Error('task.update_next_step requires TaskService.');
         }
 
+        assertTaskMutationAllowed(context);
         const parsed = parseTaskUpdateNextStepInput(input);
         const updated = await this.taskService.update({
           id: context.taskId,
@@ -1130,6 +1234,7 @@ export class AgentToolRegistry {
           throw new Error('task.create_completion_criterion requires TaskService.');
         }
 
+        assertTaskMutationAllowed(context);
         const parsed = parseTaskCreateCompletionCriterionInput(input);
         const created = await this.taskService.createCompletionCriteria({
           taskId: context.taskId,
@@ -1144,6 +1249,7 @@ export class AgentToolRegistry {
         };
       }
       case 'artifact.create_note': {
+        assertTaskMutationAllowed(context);
         const parsed = parseArtifactCreateNoteInput(input);
         const artifact = await this.artifactRepository.createNoteFromRun({
           taskId: context.taskId,
@@ -1172,6 +1278,9 @@ export class AgentToolRegistry {
         const output = [
           `Title: ${draft.title}`,
           `Rationale: ${draft.rationale}`,
+          `Suggested kind: ${draft.suggestedKind}`,
+          `Suggested scope: ${draft.suggestedScope}`,
+          `Suggested source: ${draft.suggestedSourceType}`,
           `Source: ${draft.source}`,
           draft.selectedTemplateTitles.length
             ? `Templates: ${draft.selectedTemplateTitles.join(', ')}`
@@ -1191,6 +1300,7 @@ export class AgentToolRegistry {
           throw new Error('source_context.create requires TaskService.');
         }
 
+        assertTaskMutationAllowed(context);
         const parsed = parseSourceContextCreateInput(input);
         const sourceContext = await this.taskService.createSourceContext({
           taskId: context.taskId,

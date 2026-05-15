@@ -35,6 +35,10 @@ function bootstrapTables(connection: Database.Database): void {
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       summary TEXT,
+      task_type TEXT NOT NULL DEFAULT 'simple',
+      task_facets TEXT NOT NULL DEFAULT '[]',
+      parent_task_id TEXT,
+      child_task_ids TEXT NOT NULL DEFAULT '[]',
       state TEXT NOT NULL DEFAULT 'captured',
       next_step TEXT,
       waiting_reason TEXT,
@@ -304,6 +308,10 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'decision_requests', 'options', 'TEXT');
   ensureColumn(connection, 'decision_requests', 'recommendation', 'TEXT');
   ensureColumn(connection, 'tasks', 'next_step', 'TEXT');
+  ensureColumn(connection, 'tasks', 'task_type', "TEXT NOT NULL DEFAULT 'simple'");
+  ensureColumn(connection, 'tasks', 'task_facets', "TEXT NOT NULL DEFAULT '[]'");
+  ensureColumn(connection, 'tasks', 'parent_task_id', 'TEXT');
+  ensureColumn(connection, 'tasks', 'child_task_ids', "TEXT NOT NULL DEFAULT '[]'");
   ensureColumn(connection, 'tasks', 'waiting_reason', 'TEXT');
   ensureColumn(connection, 'tasks', 'risk_level', "TEXT NOT NULL DEFAULT 'none'");
   ensureColumn(connection, 'tasks', 'risk_note', 'TEXT');

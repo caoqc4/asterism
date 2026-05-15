@@ -39,6 +39,18 @@ function buildTaskDetail(): TaskDetail {
     },
     artifacts: [],
     completionCriteria: [],
+    taskFiles: [
+      {
+        id: 'task_file_1',
+        taskId: 'task_1',
+        name: 'Task.md',
+        path: 'Task.md',
+        kind: 'file',
+        content: '# Task\n\nCurrent recovery context.',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+    ],
     sourceContexts: [],
     processTemplates: [buildAppliedTemplate()],
     availableProcessTemplates: [],
@@ -137,6 +149,46 @@ function buildRunStepRepositoryMock() {
 }
 
 describe('RunOrchestrator', () => {
+  it('blocks model execution when required runtime context inputs are missing', async () => {
+    const aiConfigService = {
+      resolveRuntimeConfig: vi.fn(),
+    };
+    const textExecutor = {
+      execute: vi.fn(),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const orchestrator = new RunOrchestrator(
+      aiConfigService as never,
+      textExecutor as never,
+      undefined,
+      runStepRepository as never,
+    );
+    const task = {
+      ...buildTaskDetail(),
+      taskFiles: [],
+    };
+
+    const result = await orchestrator.executeTextRun({
+      run: buildRun(),
+      task,
+      input: buildInput(),
+    });
+
+    expect(result).toMatchObject({
+      status: 'failed',
+      message: 'Runtime context assembly missing required inputs: task_md.',
+      selection: null,
+    });
+    expect(aiConfigService.resolveRuntimeConfig).not.toHaveBeenCalled();
+    expect(textExecutor.execute).not.toHaveBeenCalled();
+    expect(runStepRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      kind: 'plan',
+      status: 'failed',
+      title: '准备执行上下文',
+      error: 'Runtime context assembly missing required inputs: task_md.',
+    }));
+  });
+
   it('writes plan/model/final steps around a successful text run', async () => {
     const aiConfigService = {
       resolveRuntimeConfig: vi.fn().mockResolvedValue({

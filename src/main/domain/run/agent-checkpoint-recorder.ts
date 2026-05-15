@@ -5,6 +5,7 @@ import type {
   AgentToolRisk,
 } from '../../../shared/types/agent-execution.js';
 import type { AgentToolExecutionPolicy } from '../../../shared/agent-tool-scaffold.js';
+import { classifyRuntimeActionEvent } from '../../../shared/runtime-surface-routing.js';
 import type { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
@@ -98,7 +99,18 @@ export class AgentCheckpointRecorder {
     });
     await this.runStepRepository.create({
       runId: params.runId,
-      kind: 'checkpoint',
+      kind: classifyRuntimeActionEvent({
+        kind: 'checkpoint_created',
+        checkpointKind: 'tool_permission',
+        operation: params.tool,
+        text: summary,
+        risk: params.risk === 'external_write'
+          ? 'external_write'
+          : params.risk === 'local_write' || params.risk === 'local_command' || params.risk === 'sensitive'
+            ? 'local_write'
+            : 'none',
+        requiresConfirmation: true,
+      }).runStepKind,
       status: 'pending',
       title: `等待确认：${params.tool}`,
       input: params.preview ?? null,
@@ -135,7 +147,13 @@ export class AgentCheckpointRecorder {
   }): Promise<AgentResumeCheckpointResult> {
     const step = await this.runStepRepository.create({
       runId: params.runId,
-      kind: 'checkpoint',
+      kind: classifyRuntimeActionEvent({
+        kind: 'checkpoint_created',
+        checkpointKind: 'resume',
+        operation: params.nextTool,
+        text: params.reason,
+        requiresConfirmation: true,
+      }).runStepKind,
       status: 'pending',
       title: '等待恢复 agent run',
       input: JSON.stringify({
@@ -190,7 +208,14 @@ export class AgentCheckpointRecorder {
   }): Promise<AgentPatchPromotionCheckpointResult> {
     const step = await this.runStepRepository.create({
       runId: params.runId,
-      kind: 'checkpoint',
+      kind: classifyRuntimeActionEvent({
+        kind: 'checkpoint_created',
+        checkpointKind: 'patch_promotion',
+        operation: 'workspace.staged_patch',
+        text: params.decisionTitle,
+        risk: 'local_write',
+        requiresConfirmation: true,
+      }).runStepKind,
       status: 'pending',
       title: '等待确认：sandbox patch promotion',
       input: params.preview ?? params.artifactSummary,

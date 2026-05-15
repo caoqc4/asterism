@@ -37,9 +37,20 @@ describe('TaskFileRepository integration', () => {
       taskId: task.id,
       name: 'drafts',
       kind: 'folder',
+      content: '# ignored',
+    });
+    const taskRecord = await taskFileRepository.create({
+      taskId: task.id,
+      name: 'task-notes.md',
+      path: 'Task.md',
+      kind: 'file',
+      content: '# Task',
     });
 
     expect(folder.path).toBe('drafts/');
+    expect(folder.content).toBe('');
+    expect(taskRecord.name).toBe('Task.md');
+    expect(taskRecord.path).toBe('Task.md');
 
     const updated = await taskFileRepository.update({
       id: file.id,
@@ -50,10 +61,10 @@ describe('TaskFileRepository integration', () => {
 
     expect(updated.name).toBe('notes-final.md');
     expect(updated.content).toBe('# Final');
-    expect(await taskFileRepository.listForTask(task.id)).toHaveLength(2);
+    expect(await taskFileRepository.listForTask(task.id)).toHaveLength(3);
 
     const deleted = await taskFileRepository.delete(file.id);
     expect(deleted.id).toBe(file.id);
-    expect((await taskFileRepository.listForTask(task.id)).map((item) => item.id)).toEqual([folder.id]);
+    expect((await taskFileRepository.listForTask(task.id)).map((item) => item.id).sort()).toEqual([folder.id, taskRecord.id].sort());
   });
 });

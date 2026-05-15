@@ -13,6 +13,7 @@ import { RunRepository } from '../../db/repositories/run-repository.js';
 import { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { SourceContextRepository } from '../../db/repositories/source-context-repository.js';
 import { TaskDependencyRepository } from '../../db/repositories/task-dependency-repository.js';
+import { TaskFileRepository } from '../../db/repositories/task-file-repository.js';
 import { TaskProcessBindingRepository } from '../../db/repositories/task-process-binding-repository.js';
 import { TaskRepository } from '../../db/repositories/task-repository.js';
 import { WaitingItemRepository } from '../../db/repositories/waiting-item-repository.js';
@@ -39,6 +40,16 @@ describe('RunService integration', () => {
     fs.rmSync(workspaceRoot, { recursive: true, force: true });
   });
 
+  async function createTaskMd(taskFileRepository: TaskFileRepository, taskId: string, title: string) {
+    await taskFileRepository.create({
+      taskId,
+      name: 'Task.md',
+      path: 'Task.md',
+      kind: 'file',
+      content: `# Task\n\n## Goal\n${title}\n\n## Current Progress\nReady for agent execution.\n`,
+    });
+  }
+
   it('runs an opted-in read-only workspace agent path through persisted run detail', async () => {
     fs.mkdirSync(path.join(workspaceRoot, 'docs'));
     fs.writeFileSync(
@@ -55,6 +66,7 @@ describe('RunService integration', () => {
     const blockerRepository = new BlockerRepository();
     const taskDependencyRepository = new TaskDependencyRepository();
     const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const taskFileRepository = new TaskFileRepository();
     const runRepository = new RunRepository();
     const runStepRepository = new RunStepRepository();
     const runCheckpointRepository = new RunCheckpointRepository();
@@ -69,6 +81,7 @@ describe('RunService integration', () => {
       blockerRepository,
       taskDependencyRepository,
       completionCriteriaRepository,
+      taskFileRepository,
     );
     const agentToolRegistry = new AgentToolRegistry(
       artifactRepository,
@@ -128,6 +141,7 @@ describe('RunService integration', () => {
       title: 'Workspace alpha agent path',
       summary: 'Validate local read-only workspace agent execution.',
     });
+    await createTaskMd(taskFileRepository, task.id, task.title);
 
     const run = await service.trigger({
       taskId: task.id,
@@ -189,6 +203,7 @@ describe('RunService integration', () => {
     const blockerRepository = new BlockerRepository();
     const taskDependencyRepository = new TaskDependencyRepository();
     const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const taskFileRepository = new TaskFileRepository();
     const runRepository = new RunRepository();
     const runStepRepository = new RunStepRepository();
     const runCheckpointRepository = new RunCheckpointRepository();
@@ -203,6 +218,7 @@ describe('RunService integration', () => {
       blockerRepository,
       taskDependencyRepository,
       completionCriteriaRepository,
+      taskFileRepository,
     );
     const agentToolRegistry = new AgentToolRegistry(
       artifactRepository,
@@ -259,6 +275,7 @@ describe('RunService integration', () => {
       title: 'Task mutation alpha agent path',
       summary: 'Validate task mutation tool opt-in.',
     });
+    await createTaskMd(taskFileRepository, task.id, task.title);
 
     const run = await service.trigger({
       taskId: task.id,
@@ -318,6 +335,7 @@ describe('RunService integration', () => {
     const blockerRepository = new BlockerRepository();
     const taskDependencyRepository = new TaskDependencyRepository();
     const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const taskFileRepository = new TaskFileRepository();
     const runRepository = new RunRepository();
     const runStepRepository = new RunStepRepository();
     const runCheckpointRepository = new RunCheckpointRepository();
@@ -332,6 +350,7 @@ describe('RunService integration', () => {
       blockerRepository,
       taskDependencyRepository,
       completionCriteriaRepository,
+      taskFileRepository,
     );
     const agentToolRegistry = new AgentToolRegistry(
       artifactRepository,
@@ -387,6 +406,7 @@ describe('RunService integration', () => {
       title: 'Completion evidence review agent path',
       summary: 'Validate read-only closeout review through RunService.',
     });
+    await createTaskMd(taskFileRepository, task.id, task.title);
     await taskService.createCompletionCriteria({
       taskId: task.id,
       text: 'Owner approved the final result',
@@ -451,6 +471,7 @@ describe('RunService integration', () => {
     const blockerRepository = new BlockerRepository();
     const taskDependencyRepository = new TaskDependencyRepository();
     const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const taskFileRepository = new TaskFileRepository();
     const runRepository = new RunRepository();
     const runStepRepository = new RunStepRepository();
     const runCheckpointRepository = new RunCheckpointRepository();
@@ -465,6 +486,7 @@ describe('RunService integration', () => {
       blockerRepository,
       taskDependencyRepository,
       completionCriteriaRepository,
+      taskFileRepository,
     );
     const agentToolRegistry = new AgentToolRegistry(
       artifactRepository,
@@ -542,6 +564,7 @@ describe('RunService integration', () => {
       title: 'Provider native persisted session',
       summary: 'Validate provider-native agent session persistence.',
     });
+    await createTaskMd(taskFileRepository, task.id, task.title);
 
     const run = await service.trigger({
       taskId: task.id,
@@ -599,6 +622,7 @@ describe('RunService integration', () => {
     const blockerRepository = new BlockerRepository();
     const taskDependencyRepository = new TaskDependencyRepository();
     const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const taskFileRepository = new TaskFileRepository();
     const runRepository = new RunRepository();
     const runStepRepository = new RunStepRepository();
     const runCheckpointRepository = new RunCheckpointRepository();
@@ -613,6 +637,7 @@ describe('RunService integration', () => {
       blockerRepository,
       taskDependencyRepository,
       completionCriteriaRepository,
+      taskFileRepository,
     );
     const agentToolRegistry = new AgentToolRegistry(
       artifactRepository,
@@ -662,6 +687,7 @@ describe('RunService integration', () => {
       title: 'Provider native missing payload fallback',
       summary: 'Validate text-only fallback when no provider payload exists.',
     });
+    await createTaskMd(taskFileRepository, task.id, task.title);
 
     const run = await service.trigger({
       taskId: task.id,
@@ -710,6 +736,7 @@ describe('RunService integration', () => {
     const blockerRepository = new BlockerRepository();
     const taskDependencyRepository = new TaskDependencyRepository();
     const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const taskFileRepository = new TaskFileRepository();
     const runRepository = new RunRepository();
     const runStepRepository = new RunStepRepository();
     const runCheckpointRepository = new RunCheckpointRepository();
@@ -724,6 +751,7 @@ describe('RunService integration', () => {
       blockerRepository,
       taskDependencyRepository,
       completionCriteriaRepository,
+      taskFileRepository,
     );
     const agentToolRegistry = new AgentToolRegistry(
       artifactRepository,
@@ -800,6 +828,7 @@ describe('RunService integration', () => {
       title: 'Provider native denied task tool',
       summary: 'Validate policy fallback for provider-native task tools.',
     });
+    await createTaskMd(taskFileRepository, task.id, task.title);
 
     const run = await service.trigger({
       taskId: task.id,
@@ -857,6 +886,7 @@ describe('RunService integration', () => {
     const blockerRepository = new BlockerRepository();
     const taskDependencyRepository = new TaskDependencyRepository();
     const completionCriteriaRepository = new CompletionCriteriaRepository();
+    const taskFileRepository = new TaskFileRepository();
     const runRepository = new RunRepository();
     const runStepRepository = new RunStepRepository();
     const runCheckpointRepository = new RunCheckpointRepository();
@@ -871,6 +901,7 @@ describe('RunService integration', () => {
       blockerRepository,
       taskDependencyRepository,
       completionCriteriaRepository,
+      taskFileRepository,
     );
     const agentToolRegistry = new AgentToolRegistry(
       artifactRepository,
@@ -967,6 +998,7 @@ describe('RunService integration', () => {
       title: 'Provider native denied workspace tools',
       summary: 'Validate policy fallback for provider-native workspace write and command tools.',
     });
+    await createTaskMd(taskFileRepository, task.id, task.title);
 
     const run = await service.trigger({
       taskId: task.id,

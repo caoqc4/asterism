@@ -1,4 +1,5 @@
-import { evaluateRunSelfCheck, evaluateRunStepSelfCheck } from '../../../shared/run-self-check.js';
+import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
+import { evaluateRuntimeStepEffect } from '../../../shared/runtime-step-effect-evaluator.js';
 import type { RunDetailRecord, RunRecord } from '../../../shared/types/run.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import type { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
@@ -21,7 +22,12 @@ export async function persistLightweightRunVerifications(
   const steps = detail.steps ?? [];
   for (const step of steps) {
     if (!['completed', 'failed', 'skipped'].includes(step.status)) continue;
-    const check = evaluateRunStepSelfCheck(step, {
+    const stepEffect = evaluateRuntimeStepEffect(step);
+    const check = evaluateRuntimeVerification({
+      mode: 'post_step',
+      step,
+      producedDurableChange: stepEffect.producedDurableChange,
+      hasRecoveryNote: stepEffect.hasRecoveryNote,
       applicableWorkHabitCount: options.applicableWorkHabitSummaries?.length,
     });
     await runVerificationRepository.upsert({
@@ -38,7 +44,10 @@ export async function persistLightweightRunVerifications(
   if (options.includeRunLevel === false) return;
   if (detail.status !== 'completed' && detail.status !== 'failed') return;
 
-  const runCheck = evaluateRunSelfCheck(detail, detail, {
+  const runCheck = evaluateRuntimeVerification({
+    mode: 'run',
+    run: detail,
+    detail,
     applicableWorkHabitCount: options.applicableWorkHabitSummaries?.length,
   });
   await runVerificationRepository.upsert({

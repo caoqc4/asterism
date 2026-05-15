@@ -33,6 +33,7 @@ import type {
 import type {
   CompletionOverrideLearningSignalInput,
   CreateManualWorkHabitInput,
+  CreateWorkHabitProposalInput,
   ImportLegacyWorkHabitsInput,
   RecordWorkHabitApplicationsInput,
   ResolveWorkHabitConflictInput,
@@ -42,6 +43,7 @@ import type {
 import type {
   CreateTaskInput,
   RecordTaskCompletionCheckInput,
+  RecordTaskTimelineEventInput,
   TransitionTaskInput,
   UpdateTaskInput,
 } from '../../shared/types/task.js';
@@ -59,6 +61,8 @@ import {
   summarizeWorkHabitsForPrompt,
 } from '../../shared/work-habit-rules.js';
 import { TASKPLANE_AGENT_PRINCIPLES } from '../../shared/agent-principles.js';
+import { normalizeCreateManualArtifactInput } from '../../shared/runtime-surface-routing.js';
+import { evaluateRuntimeSubtaskDraft } from '../../shared/runtime-subtask-evaluator.js';
 
 const PING_CHANNEL = 'app:ping';
 
@@ -246,6 +250,11 @@ export function registerIpcHandlers(): void {
     emitAppEvent('task.changed', input.taskId);
   });
 
+  ipcMain.handle('task:recordTimelineEvent', async (_event, input: RecordTaskTimelineEventInput) => {
+    await getServices().taskService.recordTimelineEvent(input);
+    emitAppEvent('task.changed', input.taskId);
+  });
+
   ipcMain.handle('workHabit:getSnapshot', async () => getServices().workHabitService.getSnapshot());
 
   ipcMain.handle('workHabit:importLegacy', async (_event, input: ImportLegacyWorkHabitsInput) =>
@@ -259,6 +268,9 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('workHabit:createManual', async (_event, input: CreateManualWorkHabitInput) =>
     getServices().workHabitService.createManual(input));
+
+  ipcMain.handle('workHabit:propose', async (_event, input: CreateWorkHabitProposalInput) =>
+    getServices().workHabitService.propose(input));
 
   ipcMain.handle('workHabit:resolveConflict', async (_event, input: ResolveWorkHabitConflictInput) =>
     getServices().workHabitService.resolveConflict(input));
@@ -354,10 +366,11 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('artifact:createManual', async (_event, input: CreateManualArtifactInput) => {
+    const normalizedInput = normalizeCreateManualArtifactInput(input);
     const created = await getServices().artifactRepository.createManualNote({
-      taskId: input.taskId,
-      title: input.title,
-      content: input.content ?? '',
+      taskId: normalizedInput.taskId,
+      title: normalizedInput.title,
+      content: normalizedInput.content ?? '',
     });
     emitAppEvent('task.changed', created.taskId);
     return created;
@@ -556,6 +569,9 @@ export function registerIpcHandlers(): void {
     const model = getLanguageModel(config);
     const task = await getServices().taskService.getDetail(input.taskId);
     if (!task) throw new Error(`Task not found: ${input.taskId}`);
+    if ((task.childTaskIds?.length ?? 0) > 0) {
+      throw new Error('这个项目已经有子任务，应先推进或调整现有子任务，不应继续生成另一批拆解结果。');
+    }
     const keySources = selectPromptKeySources(task.sourceContexts);
     let habitSnapshot: Awaited<ReturnType<ReturnType<typeof getServices>['workHabitService']['getSnapshot']>> | null = null;
     try {
@@ -615,6 +631,14 @@ export function registerIpcHandlers(): void {
     });
 
     const decomposition = normalizeProjectDecomposition(extractJsonObject(result.text));
+    const draftEvaluation = evaluateRuntimeSubtaskDraft({
+      parentTask: task,
+      proposedSubtasks: decomposition.subtasks,
+      existingTasks: [task],
+    });
+    if (!draftEvaluation.allowed) {
+      throw new Error(draftEvaluation.summary);
+    }
     const appliedHabitIds = applicableWorkHabits.map((habit) => habit.id);
     if (appliedHabitIds.length > 0) {
       try {

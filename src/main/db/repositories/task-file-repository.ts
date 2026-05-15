@@ -6,6 +6,7 @@ import type {
   TaskFileRecord,
   UpdateTaskFileInput,
 } from '../../../shared/types/task-file.js';
+import { normalizeCreateTaskFileInput } from '../../../shared/runtime-surface-routing.js';
 import { taskFiles } from '../schema.js';
 import { initDatabase } from '../client.js';
 import { generateId, nowIso } from './repository-utils.js';
@@ -21,11 +22,6 @@ function toRecord(row: typeof taskFiles.$inferSelect): TaskFileRecord {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
-}
-
-function normalizePath(input: CreateTaskFileInput): string {
-  const rawPath = input.path?.trim() || input.name.trim();
-  return input.kind === 'folder' && !rawPath.endsWith('/') ? `${rawPath}/` : rawPath;
 }
 
 export class TaskFileRepository {
@@ -44,15 +40,15 @@ export class TaskFileRepository {
     const db = initDatabase();
     const timestamp = nowIso();
     const id = generateId('task_file');
-    const path = normalizePath(input);
+    const normalizedInput = normalizeCreateTaskFileInput(input);
 
     await db.insert(taskFiles).values({
       id,
-      taskId: input.taskId,
-      name: input.name.trim(),
-      path,
-      kind: input.kind,
-      content: input.kind === 'folder' ? '' : input.content ?? '',
+      taskId: normalizedInput.taskId,
+      name: normalizedInput.name,
+      path: normalizedInput.path ?? normalizedInput.name,
+      kind: normalizedInput.kind,
+      content: normalizedInput.content ?? '',
       createdAt: timestamp,
       updatedAt: timestamp,
     });

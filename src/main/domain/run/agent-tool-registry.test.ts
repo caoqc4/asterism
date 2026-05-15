@@ -378,6 +378,7 @@ describe('AgentToolRegistry', () => {
       status: 'completed',
       summary: '已更新任务下一步：Review the agent output with the owner',
       output: 'Review the agent output with the owner',
+      recoveryGuidance: ['Task.md update recommended: next_step'],
     });
     expect(taskService.update).toHaveBeenCalledWith({
       id: 'task_1',
@@ -437,6 +438,9 @@ describe('AgentToolRegistry', () => {
         taskId: 'task_1',
         title: 'Approve launch wording',
         rationale: 'Need a formal sign-off before publishing.',
+        suggestedScope: 'task',
+        suggestedKind: 'direction_choice',
+        suggestedSourceType: 'manual',
         source: 'fallback',
         selectedTemplateIds: [],
         selectedTemplateTitles: [],
@@ -462,6 +466,7 @@ describe('AgentToolRegistry', () => {
       summary: '已草拟 Decision：Approve launch wording',
     });
     expect(result.output).toContain('Title: Approve launch wording');
+    expect(result.output).toContain('Suggested kind: direction_choice');
     expect(result.output).toContain('Source: fallback');
     expect(decisionDraftService.draft).toHaveBeenCalledWith({
       taskId: 'task_1',
@@ -545,6 +550,10 @@ describe('AgentToolRegistry', () => {
       status: 'completed',
       summary: '已创建来源上下文：Owner notes',
       output: 'Use this as the next source',
+      recoveryGuidance: [
+        'Task.md update recommended: durable_state_change',
+        'Task Record may be useful: external_signal',
+      ],
     });
     expect(taskService.createSourceContext).toHaveBeenCalledWith({
       taskId: 'task_1',
@@ -638,6 +647,7 @@ describe('AgentToolRegistry', () => {
       status: 'completed',
       summary: '已创建完成标准：Owner has reviewed the final draft',
       output: 'Owner has reviewed the final draft',
+      recoveryGuidance: ['Task.md update recommended: durable_state_change'],
     });
     expect(taskService.createCompletionCriteria).toHaveBeenCalledWith({
       taskId: 'task_1',
@@ -792,6 +802,7 @@ describe('AgentToolRegistry', () => {
       success: true,
       artifactId: 'artifact_1',
       output: 'Captured note',
+      recoveryGuidance: ['Task.md update recommended: important_file'],
     });
     expect(artifactRepository.createNoteFromRun).toHaveBeenCalledWith({
       taskId: 'task_1',

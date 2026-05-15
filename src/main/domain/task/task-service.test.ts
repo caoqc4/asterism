@@ -206,6 +206,130 @@ function buildAppliedProcessTemplateRecord(
 }
 
 describe('TaskService', () => {
+  it('blocks duplicate open task creation at the service boundary', async () => {
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        buildRecord('running'),
+      ]),
+      create: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    await expect(service.create({ title: 'Task 1' })).rejects.toThrow(
+      '任务捕获暂不能继续：已有未完成任务「Task 1」，不应重复捕获同名任务。',
+    );
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+
+  it('allows specific new task creation after the service capture guard passes', async () => {
+    const created = {
+      ...buildRecord('captured'),
+      id: 'task_new',
+      title: '整理验收清单',
+      summary: '汇总现有子任务的验收标准。',
+    };
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        buildRecord('running'),
+      ]),
+      create: vi.fn().mockResolvedValue(created),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    await expect(service.create({
+      title: '整理验收清单',
+      summary: '汇总现有子任务的验收标准。',
+    })).resolves.toMatchObject({
+      id: 'task_new',
+      title: '整理验收清单',
+    });
+    expect(repository.create).toHaveBeenCalledWith({
+      title: '整理验收清单',
+      summary: '汇总现有子任务的验收标准。',
+    });
+  });
+
+  it('allows same child title under a different project scope', async () => {
+    const created = {
+      ...buildRecord('captured'),
+      id: 'child_2',
+      title: '需求分析',
+      parentTaskId: 'project_2',
+    };
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('running'),
+          id: 'child_1',
+          title: '需求分析',
+          parentTaskId: 'project_1',
+        },
+      ]),
+      create: vi.fn().mockResolvedValue(created),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    await expect(service.create({
+      title: '需求分析',
+      summary: '确认项目二的需求范围。',
+      parentTaskId: 'project_2',
+    })).resolves.toMatchObject({
+      id: 'child_2',
+      parentTaskId: 'project_2',
+    });
+    expect(repository.create).toHaveBeenCalled();
+  });
+
+  it('blocks duplicate child titles under the same project scope', async () => {
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('running'),
+          id: 'child_1',
+          title: '需求分析',
+          parentTaskId: 'project_1',
+        },
+      ]),
+      create: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    await expect(service.create({
+      title: '需求分析',
+      summary: '重复创建同一项目下的需求分析。',
+      parentTaskId: 'project_1',
+    })).rejects.toThrow('已有未完成任务「需求分析」');
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+
   it('builds a task resume card from current signals, materials, methods, and timeline', async () => {
     const repository = {
       list: vi.fn(),
@@ -1123,6 +1247,84 @@ describe('TaskService', () => {
     expect(result.riskNote).toBe('Existing high risk note');
   });
 
+  it('blocks moving a task into a project that already has an open child with the same title', async () => {
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('running'),
+          id: 'child_2',
+          title: '需求分析',
+          parentTaskId: 'project_1',
+        },
+      ]),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('planned'),
+        id: 'child_1',
+        title: '需求分析',
+        parentTaskId: 'project_2',
+      }),
+      update: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
+
+    await expect(service.update({
+      id: 'child_1',
+      parentTaskId: 'project_1',
+    })).rejects.toThrow('已有未完成任务「需求分析」');
+    expect(repository.update).not.toHaveBeenCalled();
+  });
+
+  it('allows moving a task when the duplicate title is in a different parent scope', async () => {
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('running'),
+          id: 'child_2',
+          title: '需求分析',
+          parentTaskId: 'project_2',
+        },
+      ]),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('planned'),
+        id: 'child_1',
+        title: '需求分析',
+        parentTaskId: null,
+      }),
+      update: vi.fn().mockResolvedValue({
+        ...buildRecord('planned'),
+        id: 'child_1',
+        title: '需求分析',
+        parentTaskId: 'project_1',
+      }),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
+
+    await expect(service.update({
+      id: 'child_1',
+      parentTaskId: 'project_1',
+    })).resolves.toMatchObject({
+      id: 'child_1',
+      parentTaskId: 'project_1',
+    });
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'child_1',
+      parentTaskId: 'project_1',
+      riskNote: null,
+    });
+  });
+
   it('syncs the active waiting item when updating waiting reason on a waiting task', async () => {
     const repository = {
       list: vi.fn(),
@@ -1559,6 +1761,7 @@ describe('TaskService', () => {
       kind: 'doc',
       uri: 'https://example.com/prd',
       note: 'Primary doc',
+      sourceRole: 'raw',
     });
 
     expect(sourceContexts.create).toHaveBeenCalledWith({
@@ -1567,6 +1770,7 @@ describe('TaskService', () => {
       kind: 'doc',
       uri: 'https://example.com/prd',
       note: 'Primary doc',
+      sourceRole: 'raw',
     });
     expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'source_context.created', {
       sourceContextId: 'source_context_1',
@@ -1580,6 +1784,48 @@ describe('TaskService', () => {
       sourceRole: 'raw',
     });
     expect(result.id).toBe('source_context_1');
+  });
+
+  it('normalizes generated source contexts into digest role before persistence', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const sourceContexts = {
+      listActiveForTask: vi.fn().mockResolvedValue([]),
+      create: vi.fn().mockResolvedValue(buildSourceContextRecord({ sourceRole: 'digest' })),
+      update: vi.fn(),
+      archive: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      sourceContexts as never,
+    );
+
+    await service.createSourceContext({
+      taskId: 'task_1',
+      title: '阶段收尾记录',
+      kind: 'note',
+      note: '任务记录：阶段收尾、质量检查和执行交接。',
+    });
+
+    expect(sourceContexts.create).toHaveBeenCalledWith(expect.objectContaining({
+      title: '阶段收尾记录',
+      sourceRole: 'digest',
+    }));
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'source_context.created', expect.objectContaining({
+      sourceRole: 'digest',
+    }));
   });
 
   it('archives a source context item and records a lifecycle event', async () => {

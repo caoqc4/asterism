@@ -27,6 +27,10 @@ describe('TaskRepository integration', () => {
     });
 
     expect(created.state).toBe('captured');
+    expect(created.taskType).toBe('simple');
+    expect(created.taskFacets).toEqual(['simple']);
+    expect(created.parentTaskId).toBeNull();
+    expect(created.childTaskIds).toEqual([]);
     expect(created.nextStep).toBeNull();
     expect(created.waitingReason).toBeNull();
     expect(created.riskLevel).toBe('none');
@@ -37,6 +41,38 @@ describe('TaskRepository integration', () => {
     expect(detail).not.toBeNull();
     expect(detail?.timeline).toHaveLength(1);
     expect(detail?.timeline[0]?.type).toBe('task.created');
+  });
+
+  it('persists task hierarchy and execution type fields', async () => {
+    const project = await repository.create({
+      title: '开发小程序',
+      taskType: 'project',
+      taskFacets: ['project'],
+    });
+    const child = await repository.create({
+      title: '需求分析',
+      taskType: 'simple',
+      taskFacets: ['simple'],
+      parentTaskId: project.id,
+    });
+
+    const updatedProject = await repository.update({
+      id: project.id,
+      childTaskIds: [child.id],
+    });
+
+    expect(updatedProject).toMatchObject({
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: [child.id],
+    });
+
+    const listed = await repository.list();
+    const listedChild = listed.find((task) => task.id === child.id);
+    const detail = await repository.getDetail(project.id);
+
+    expect(listedChild?.parentTaskId).toBe(project.id);
+    expect(detail?.childTaskIds).toEqual([child.id]);
   });
 
   it('updates structured task signals and writes an update timeline event', async () => {

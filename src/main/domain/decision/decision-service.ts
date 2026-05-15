@@ -44,6 +44,7 @@ import {
   DecisionProcessTemplateSelector,
   type DecisionProcessTemplateSelectionResult,
 } from './process-template-selector.js';
+import { normalizeCreateDecisionInput } from '../../../shared/runtime-surface-routing.js';
 import { deriveTaskDetailPriorityLane, getPriorityLanePromptGuidance } from '../../../shared/working-context/priority-lanes.js';
 
 const decisionDraftSchema = z.object({
@@ -158,6 +159,45 @@ function buildDraftPrompt(
   ].join('\n');
 }
 
+function decisionDraftRoutingSuggestion(params: {
+  taskId: string;
+  title: string;
+  rationale: string;
+  note?: string | null;
+}) {
+  return normalizeCreateDecisionInput({
+    taskId: params.taskId,
+    title: params.title,
+    context: {
+      whyNow: params.rationale,
+      impact: params.note?.trim() || null,
+    },
+  });
+}
+
+function buildDecisionDraftRecord(params: {
+  taskId: string;
+  title: string;
+  rationale: string;
+  note?: string | null;
+  source: DecisionDraftRecord['source'];
+  selection: DecisionProcessTemplateSelectionResult;
+}): DecisionDraftRecord {
+  const suggestion = decisionDraftRoutingSuggestion(params);
+  return {
+    taskId: params.taskId,
+    title: params.title,
+    rationale: params.rationale,
+    suggestedScope: suggestion.scope!,
+    suggestedKind: suggestion.kind!,
+    suggestedSourceType: suggestion.sourceType!,
+    source: params.source,
+    selectedTemplateIds: params.selection.selectedTemplates.map((item) => item.id),
+    selectedTemplateTitles: params.selection.selectedTemplates.map((item) => item.title),
+    selectionReason: params.selection.reason,
+  };
+}
+
 export class DecisionService {
   constructor(
     private readonly decisionRepository: DecisionRepository,
@@ -235,33 +275,34 @@ export class DecisionService {
         prompt: buildDraftPrompt(task, input, selection),
       });
 
-      return {
+      return buildDecisionDraftRecord({
         taskId: input.taskId,
         title: object.title.trim(),
         rationale: object.rationale.trim(),
+        note: input.note,
         source: 'ai',
-        selectedTemplateIds: selection.selectedTemplates.map((item) => item.id),
-        selectedTemplateTitles: selection.selectedTemplates.map((item) => item.title),
-        selectionReason: selection.reason,
-      };
+        selection,
+      });
     } catch {
-      return {
+      const title = buildFallbackDraftTitle(task.title, input.note);
+      const rationale = input.note?.trim()
+        ? `建议围绕“${input.note.trim()}”尽快发起拍板，避免任务继续在当前状态下悬置。`
+        : '建议尽快明确这条任务当前需要拍板的关键点，以便后续推进。';
+      return buildDecisionDraftRecord({
         taskId: input.taskId,
-        title: buildFallbackDraftTitle(task.title, input.note),
-        rationale: input.note?.trim()
-          ? `建议围绕“${input.note.trim()}”尽快发起拍板，避免任务继续在当前状态下悬置。`
-          : '建议尽快明确这条任务当前需要拍板的关键点，以便后续推进。',
+        title,
+        rationale,
+        note: input.note,
         source: 'fallback',
-        selectedTemplateIds: selection.selectedTemplates.map((item) => item.id),
-        selectedTemplateTitles: selection.selectedTemplates.map((item) => item.title),
-        selectionReason: selection.reason,
-      };
+        selection,
+      });
     }
   }
 
   async create(input: CreateDecisionInput): Promise<DecisionRecord> {
-    const taskId = input.taskId?.trim() || null;
-    const requiresTask = (input.scope ?? (taskId ? 'task' : 'global')) === 'task';
+    const normalizedInput = normalizeCreateDecisionInput(input);
+    const taskId = normalizedInput.taskId ?? null;
+    const requiresTask = normalizedInput.scope === 'task';
 
     if (requiresTask && !taskId) {
       throw new Error('Task-scoped Decision requires taskId.');
@@ -275,7 +316,7 @@ export class DecisionService {
       }
     }
 
-    return this.decisionRepository.create({ ...input, taskId });
+    return this.decisionRepository.create(normalizedInput);
   }
 
   async act(input: DecisionActionInput): Promise<DecisionRecord> {

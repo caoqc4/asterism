@@ -324,6 +324,9 @@ describe('DecisionService', () => {
     expect(result).toMatchObject({
       taskId: 'task_1',
       title: 'Approve launch note',
+      suggestedScope: 'task',
+      suggestedKind: 'direction_choice',
+      suggestedSourceType: 'manual',
       source: 'ai',
       selectedTemplateIds: ['process_template_1'],
       selectedTemplateTitles: ['Approval skill'],
@@ -366,6 +369,9 @@ describe('DecisionService', () => {
     expect(result).toMatchObject({
       taskId: 'task_1',
       title: 'Task 1：Need stakeholder sign-off',
+      suggestedScope: 'task',
+      suggestedKind: 'direction_choice',
+      suggestedSourceType: 'manual',
       source: 'fallback',
     });
   });
@@ -397,6 +403,13 @@ describe('DecisionService', () => {
     expect(decisionRepository.create).toHaveBeenCalledWith({
       taskId: 'task_1',
       title: 'Need approval',
+      scope: 'task',
+      kind: 'direction_choice',
+      sourceType: 'manual',
+      sourceId: null,
+      sourceLabel: null,
+      options: [],
+      recommendation: null,
     });
     expect(result.id).toBe('decision_1');
   });
@@ -463,6 +476,11 @@ describe('DecisionService', () => {
       title: 'Approve connector write',
       scope: 'external_access',
       kind: 'external_write',
+      sourceType: 'manual',
+      sourceId: null,
+      sourceLabel: null,
+      options: [],
+      recommendation: null,
     });
     expect(result.taskId).toBeNull();
   });

@@ -6,6 +6,11 @@ import type {
 import type { CreateRunInput, RunRecord } from '../../../shared/types/run.js';
 import type { TaskDetail, TimelineEventRecord } from '../../../shared/types/task.js';
 import { TASKPLANE_AGENT_PRINCIPLES } from '../../../shared/agent-principles.js';
+import {
+  buildRuntimeContextAssemblyPolicy,
+  buildRuntimeContextManifest,
+  formatRuntimeContextManifestForStep,
+} from '../../../shared/runtime-context.js';
 import { deriveTaskDetailPriorityLane } from '../../../shared/working-context/priority-lanes.js';
 import {
   formatTaskTimelineEventSummary,
@@ -113,11 +118,18 @@ export function buildAgentWorkingContext(task: TaskDetail): AgentWorkingContext 
       : [],
     sources: selectedSources
       .map((source) => ({
+        capturedAt: source.capturedAt ?? null,
+        createdAt: source.createdAt,
+        id: source.id,
         title: source.title,
         kind: source.kind,
         isKey: source.isKey,
         note: source.note,
         contentPreview: preview(source.content),
+        runId: source.runId ?? null,
+        sourceRole: source.sourceRole ?? null,
+        status: source.status,
+        updatedAt: source.updatedAt,
       })),
     artifacts: [...task.artifacts]
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
@@ -167,6 +179,16 @@ export function buildAgentRunRequest(params: {
   };
 }
 
+export function evaluateAgentRunContextAssembly(request: AgentRunRequest) {
+  const runtimeContextManifest = buildRuntimeContextManifest({
+    workingContext: request.context,
+    applicableWorkHabits: request.applicableWorkHabits,
+  });
+  return buildRuntimeContextAssemblyPolicy({
+    manifest: runtimeContextManifest,
+  });
+}
+
 function getRunGoal(type: CreateRunInput['type']): string {
   switch (type) {
     case 'draft':
@@ -179,10 +201,17 @@ function getRunGoal(type: CreateRunInput['type']): string {
 }
 
 export function formatAgentRunRequestForStep(request: AgentRunRequest): string {
+  const runtimeContextManifest = buildRuntimeContextManifest({
+    workingContext: request.context,
+    applicableWorkHabits: request.applicableWorkHabits,
+  });
+  const runtimeContextAssemblyPolicy = evaluateAgentRunContextAssembly(request);
   return [
     `Run 模式：${request.mode}`,
     `目标：${request.goal}`,
     request.instructions ? `附加要求：${request.instructions}` : '附加要求：无',
+    formatRuntimeContextManifestForStep(runtimeContextManifest),
+    `上下文装配：${runtimeContextAssemblyPolicy.summary}`,
     '产品原则：read-only',
     request.context.productPrinciples,
     `任务状态：${request.context.task.state}`,

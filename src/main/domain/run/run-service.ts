@@ -1,6 +1,17 @@
 import { TextExecutor } from '../../executors/text-executor.js';
 import { AiConfigService } from '../../keychain/ai-config-service.js';
 import { evaluatePausedRunResumeEligibility } from '../../../shared/run-resume-eligibility.js';
+import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
+import {
+  buildRuntimeCapabilitySnapshot,
+  type RuntimeCapabilitySnapshot,
+} from '../../../shared/runtime-capability-snapshot.js';
+import {
+  groupRuntimeEventsForReplay,
+  projectRuntimeEvents,
+} from '../../../shared/runtime-event-record.js';
+import { buildRuntimeResumePlan, evaluateRuntimeHandoff } from '../../../shared/runtime-handoff.js';
+import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type {
   CreateRunInput,
@@ -72,10 +83,11 @@ export class RunService {
       return null;
     }
 
+    const steps = await this.runStepRepository.listForRun(runId);
     const detail = {
       ...run,
       artifacts: await this.artifactRepository.listForRun(runId),
-      steps: await this.runStepRepository.listForRun(runId),
+      steps,
       checkpoints: await this.runCheckpointRepository.listForRun(runId),
       agentSessions: await this.agentSessionStore.listForRun(runId),
     };
@@ -83,15 +95,40 @@ export class RunService {
       includeRunLevel: await this.shouldPersistRunLevelSelfCheck(),
     });
 
+    const runtimeEvents = projectRuntimeEvents({
+      taskId: run.taskId,
+      runs: [run],
+      runStepsByRunId: {
+        [run.id]: steps,
+      },
+    });
+
     return {
       ...detail,
       verifications: this.runVerificationRepository
         ? await this.runVerificationRepository.listForRun(runId)
         : [],
+      runtimeEvents,
+      runtimeReplayGroups: groupRuntimeEventsForReplay(runtimeEvents),
     };
   }
 
   async trigger(input: CreateRunInput): Promise<RunRecord> {
+    const actionEvaluation = evaluateRuntimeAction({
+      action: 'run_start',
+      fromTaskId: input.taskId,
+    });
+    const capabilities = await this.readRuntimeCapabilitySnapshot();
+    const preStepVerification = evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: actionEvaluation,
+      capabilities,
+      requiresModelExecution: true,
+    });
+    if (!preStepVerification.canProceed) {
+      throw new Error(preStepVerification.detail);
+    }
+
     const task = await this.taskService.getDetail(input.taskId);
 
     if (!task) {
@@ -185,6 +222,19 @@ export class RunService {
     return failed;
   }
 
+  private async readRuntimeCapabilitySnapshot(): Promise<RuntimeCapabilitySnapshot | null> {
+    const getStatus = (this.aiConfigService as Partial<Pick<AiConfigService, 'getStatus'>>).getStatus;
+    if (typeof getStatus !== 'function') return null;
+
+    try {
+      return buildRuntimeCapabilitySnapshot({
+        aiStatus: await getStatus.call(this.aiConfigService),
+      });
+    } catch {
+      return null;
+    }
+  }
+
   async continuePausedRun(runId: string): Promise<RunRecord> {
     const run = await this.getDetail(runId);
 
@@ -194,6 +244,31 @@ export class RunService {
 
     if (run.status !== 'paused') {
       throw new Error(`Run is not paused: ${runId}`);
+    }
+
+    const actionEvaluation = evaluateRuntimeAction({
+      action: 'run_resume',
+      fromTaskId: run.taskId,
+    });
+    if (!actionEvaluation.allowed) {
+      throw new Error(actionEvaluation.reason);
+    }
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'resume_run',
+      fromTaskId: run.taskId,
+    });
+    if (!handoff.canProceed) {
+      throw new Error(handoff.reason);
+    }
+    const resumePlan = buildRuntimeResumePlan(handoff);
+    const preStepVerification = evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: actionEvaluation,
+      hasRequiredContext: resumePlan.contextMustBeReassembled,
+      confirmationSatisfied: true,
+    });
+    if (!preStepVerification.canProceed) {
+      throw new Error(preStepVerification.detail);
     }
 
     if (!this.agentToolRegistry) {
@@ -244,7 +319,7 @@ export class RunService {
       kind: 'final',
       status: 'completed',
       title: '完成 paused run 续跑',
-      output: '已从 resume checkpoint 继续执行并完成 Run。',
+      output: `已从 resume checkpoint 继续执行并完成 Run。${resumePlan.nextAction}`,
     });
 
     const completed = await this.runRepository.updateResult(

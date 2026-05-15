@@ -110,6 +110,18 @@ function buildTaskDetail(): TaskDetail {
       },
     ],
     completionCriteria: [],
+    taskFiles: [
+      {
+        id: 'task_file_1',
+        taskId: 'task_1',
+        name: 'Task.md',
+        path: 'Task.md',
+        kind: 'file',
+        content: '# Task\n\nCurrent recovery context.',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+    ],
     sourceContexts: [
       buildSourceContext({
         content: 'This is the source content that should be summarized for the agent context.',
@@ -167,7 +179,13 @@ describe('agent working context', () => {
       nextOpenCriterion: 'Legal approved the launch claim',
     });
     expect(context.blockers[0]).toMatchObject({ title: 'Legal review', owner: 'Legal' });
-    expect(context.sources[0]).toMatchObject({ title: 'Launch source', isKey: true });
+    expect(context.sources[0]).toMatchObject({
+      id: 'source_1',
+      title: 'Launch source',
+      isKey: true,
+      status: 'active',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
     expect(context.artifacts.map((artifact) => artifact.title)).toEqual([
       'qa_screenshot.png',
       'launch_note.md',
@@ -239,6 +257,7 @@ describe('agent working context', () => {
     expect(formatAgentRunRequestForStep(request)).toContain('可用方法模板：1');
     expect(formatAgentRunRequestForStep(request)).toContain('适用工作习惯：1');
     expect(formatAgentRunRequestForStep(request)).toContain('产品原则：read-only');
+    expect(formatAgentRunRequestForStep(request)).toContain('上下文装配：Runtime context assembly ready.');
     expect(formatAgentRunRequestForStep(request)).toContain('Do not store full chat transcripts');
     expect(formatAgentRunRequestForStep(request)).toContain(
       '- 对外材料发布前先做一次事实核对（范围：全局；例：公告初稿）',
