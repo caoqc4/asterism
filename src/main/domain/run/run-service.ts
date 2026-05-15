@@ -13,6 +13,7 @@ import {
 import { buildRuntimeResumePlan, evaluateRuntimeHandoff } from '../../../shared/runtime-handoff.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from '../../../shared/task-memory-coverage.js';
+import { evaluateTaskMemoryGuidanceState } from '../../../shared/task-memory-guidance-state.js';
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type {
   CreateRunInput,
@@ -104,6 +105,22 @@ export class RunService {
         [run.id]: steps,
       },
     });
+    const taskDetailReader = (this.taskService as Partial<Pick<TaskService, 'getDetail'>>).getDetail;
+    const taskDetail = typeof taskDetailReader === 'function'
+      ? await Promise.resolve(taskDetailReader.call(this.taskService, run.taskId)).catch(() => null)
+      : null;
+    const taskMemoryGuidance = evaluateTaskMemoryGuidanceState({
+      guidanceSignals: steps,
+      memoryWrites: (taskDetail?.taskFiles ?? [])
+        .filter((file) => file.path === 'Task.md' || file.path.startsWith('Task Records/'))
+        .map((file) => ({
+          createdAt: file.updatedAt,
+          path: file.path,
+          status: 'completed',
+          target: file.path === 'Task.md' ? 'task_md' : 'task_record',
+          title: file.name,
+        })),
+    });
 
     return {
       ...detail,
@@ -112,6 +129,7 @@ export class RunService {
         : [],
       runtimeEvents,
       runtimeReplayGroups: groupRuntimeEventsForReplay(runtimeEvents),
+      taskMemoryGuidance,
     };
   }
 

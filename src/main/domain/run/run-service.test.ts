@@ -350,6 +350,66 @@ describe('RunService', () => {
     expect(result?.runtimeReplayGroups?.some((group) => group.kind === 'execution_recovery')).toBe(true);
   });
 
+  it('projects task memory guidance state into run detail', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildRunRecord('completed')),
+      create: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const runStepRepository = {
+      listForRun: vi.fn().mockResolvedValue([{
+        id: 'run_step_memory',
+        runId: 'run_1',
+        index: 1,
+        kind: 'plan',
+        status: 'completed',
+        title: '任务记忆建议',
+        input: null,
+        output: '- Task.md update recommended: next_step',
+        error: null,
+        createdAt: '2026-01-01T00:01:00.000Z',
+        updatedAt: '2026-01-01T00:01:00.000Z',
+      }]),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildTaskDetail('running'),
+        taskFiles: [{
+          id: 'task_file_1',
+          taskId: 'task_1',
+          name: 'Task.md',
+          path: 'Task.md',
+          kind: 'file',
+          content: '# Task\n\nUpdated recovery context.',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:02:00.000Z',
+        }],
+      }),
+    };
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      buildArtifactRepositoryMock() as never,
+      {} as never,
+      {} as never,
+      undefined,
+      runStepRepository as never,
+      null,
+      { listForRun: vi.fn().mockResolvedValue([]) } as never,
+      { listForRun: vi.fn().mockResolvedValue([]) } as never,
+      { upsert: vi.fn(), listForRun: vi.fn().mockResolvedValue([]) } as never,
+    );
+
+    const result = await service.getDetail('run_1');
+
+    expect(taskService.getDetail).toHaveBeenCalledWith('task_1');
+    expect(result?.taskMemoryGuidance).toMatchObject({
+      outcome: 'satisfied',
+      targets: ['task_md'],
+    });
+  });
+
   it('completes a run when the executor succeeds', async () => {
     const runRepository = {
       list: vi.fn(),
