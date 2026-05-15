@@ -550,6 +550,12 @@ from task memory coverage. It should not use a fixed message-count rule. Message
 count may trigger inspection, but clearing is allowed only when the verdict says
 the current task chat can be discarded without reducing task recovery quality.
 
+Persisted task-memory guidance, such as a Run Step titled `任务记忆建议`, is not
+the same as a completed memory write. Runtime should treat the latest guidance
+as pending until a matching Task.md or Task Record write exists after that
+guidance. This prevents automatic clearing from mistaking "please update memory"
+for "memory has been updated."
+
 UI may display Task Dynamics as structured task replay, but that display is not
 required for this memory contract to hold. The contract is about durable task
 recovery first and presentation second.

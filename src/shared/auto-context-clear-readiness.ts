@@ -2,6 +2,7 @@ import {
   evaluateTaskMemoryCoverage,
   type TaskMemoryCoverageEvaluation,
 } from './task-memory-coverage.js';
+import type { TaskMemoryGuidanceState } from './task-memory-guidance-state.js';
 
 export type AutoContextClearOutcome =
   | 'safe_to_clear'
@@ -18,6 +19,7 @@ export type AutoContextClearInput = {
   hasOpenDecision?: boolean;
   hasBlocker?: boolean;
   hasPendingRecoveryGuidance?: boolean;
+  taskMemoryGuidance?: TaskMemoryGuidanceState | null;
   shortTermReasoningActive?: boolean;
 };
 
@@ -33,6 +35,10 @@ export type AutoContextClearEvaluation = {
 export function evaluateAutoContextClearReadiness(
   input: AutoContextClearInput,
 ): AutoContextClearEvaluation {
+  const hasPendingRecoveryGuidance = Boolean(
+    input.hasPendingRecoveryGuidance
+    || input.taskMemoryGuidance?.outcome === 'pending',
+  );
   const coverage = evaluateTaskMemoryCoverage({
     action: 'context_clear',
     hasTaskContext: input.hasTaskContext,
@@ -71,10 +77,12 @@ export function evaluateAutoContextClearReadiness(
     });
   }
 
-  if (input.hasPendingRecoveryGuidance) {
+  if (hasPendingRecoveryGuidance) {
     return result('needs_memory_write', {
       coverage,
-      reason: '当前存在尚未处理的任务记忆建议，应先确认是否写入 Task.md 或 Task Record。',
+      reason: input.taskMemoryGuidance?.outcome === 'pending'
+        ? input.taskMemoryGuidance.reason
+        : '当前存在尚未处理的任务记忆建议，应先确认是否写入 Task.md 或 Task Record。',
     });
   }
 

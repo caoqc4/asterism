@@ -5,6 +5,7 @@ import {
   evaluateAutoContextClearReadiness,
   type AutoContextClearEvaluation,
 } from './auto-context-clear-readiness.js';
+import type { TaskMemoryGuidanceState } from './task-memory-guidance-state.js';
 import type { SubtaskStartEvaluationInput } from './subtask-start-evaluator.js';
 import type { TaskCloseoutEvaluation } from './task-closeout-evaluator.js';
 
@@ -80,6 +81,7 @@ type BaseInput = {
   messageCount?: number;
   recordPath?: string | null;
   shortTermReasoningActive?: boolean;
+  taskMemoryGuidance?: TaskMemoryGuidanceState | null;
   toTaskId?: string | null;
 };
 
@@ -182,6 +184,7 @@ export function evaluateRuntimeHandoff(input: BaseInput & {
     hasBlocker: input.hasBlocker,
     hasPendingRecoveryGuidance: input.hasPendingRecoveryGuidance,
     shortTermReasoningActive: input.shortTermReasoningActive,
+    taskMemoryGuidance: input.taskMemoryGuidance,
   });
   if (!autoContextClear.shouldAutoClear && autoContextClear.outcome !== 'not_applicable') {
     return {

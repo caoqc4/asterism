@@ -99,6 +99,29 @@ describe('runtime handoff', () => {
     });
   });
 
+  it('blocks context refresh from structured pending memory guidance state', () => {
+    const result = evaluateRuntimeHandoff({
+      intent: 'context_refresh',
+      fromTaskId: 'task-1',
+      messageCount: 3,
+      hasSpecificHandoffSignal: true,
+      archived: true,
+      taskMemoryGuidance: {
+        latestGuidanceAt: '2026-05-15T01:00:00.000Z',
+        outcome: 'pending',
+        pendingTargets: ['task_record'],
+        reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
+        targets: ['task_record'],
+      },
+    });
+
+    expect(result.canProceed).toBe(false);
+    expect(result.autoContextClear).toMatchObject({
+      outcome: 'needs_memory_write',
+      reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
+    });
+  });
+
   it('blocks context refresh while short-term reasoning is active', () => {
     const result = evaluateRuntimeHandoff({
       intent: 'context_refresh',

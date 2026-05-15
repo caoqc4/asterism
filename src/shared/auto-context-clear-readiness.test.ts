@@ -109,4 +109,23 @@ describe('auto context clear readiness', () => {
       shouldAsk: true,
     });
   });
+
+  it('uses structured task memory guidance state when available', () => {
+    expect(evaluateAutoContextClearReadiness({
+      hasTaskContext: true,
+      chatMessageCount: 2,
+      hasSpecificHandoffSignal: true,
+      memoryWriteCompleted: true,
+      taskMemoryGuidance: {
+        latestGuidanceAt: '2026-05-15T01:00:00.000Z',
+        outcome: 'pending',
+        pendingTargets: ['task_md'],
+        reason: '最新任务记忆建议仍缺少对应写入：Task.md。',
+        targets: ['task_md'],
+      },
+    })).toMatchObject({
+      outcome: 'needs_memory_write',
+      reason: '最新任务记忆建议仍缺少对应写入：Task.md。',
+    });
+  });
 });
