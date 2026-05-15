@@ -73,4 +73,11 @@ describe('agent principles compliance matrix', () => {
     expect(text).toContain('TaskMdUpdateNeedEvaluation centralizes Task.md update needs');
     expect(text).not.toContain('Add TaskMdUpdateNeed evaluator');
   });
+
+  it('does not keep completed subtask-start evaluator work as a future task', () => {
+    const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
+
+    expect(text).toContain('SubtaskStartEvaluation provides a shared runtime object');
+    expect(text).not.toContain('Add shared SubtaskStartEvaluation');
+  });
 });
