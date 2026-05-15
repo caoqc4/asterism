@@ -1344,9 +1344,17 @@ describe('App redesign v1', () => {
       reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
       targets: ['task_record'],
     };
+    harness.runs.push(buildRun({
+      id: 'run_newer_without_guidance',
+      taskId: 'task_risk',
+      updatedAt: '2026-01-01T00:05:00.000Z',
+    }));
     harness.api.getRunDetail = vi.fn().mockImplementation(async (runId) => {
       const run = harness.runs.find((item) => item.id === runId);
-      return run ? buildRunDetail(run, { taskMemoryGuidance: pendingGuidance }) : null;
+      if (!run) return null;
+      return buildRunDetail(run, {
+        taskMemoryGuidance: run.id === 'run_newer_without_guidance' ? undefined : pendingGuidance,
+      });
     });
     window.api = harness.api;
     render(<App />);

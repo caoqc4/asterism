@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   detectTaskMemoryGuidanceTargets,
   evaluateTaskMemoryGuidanceState,
+  selectBlockingTaskMemoryGuidance,
 } from './task-memory-guidance-state.js';
 
 describe('task memory guidance state', () => {
@@ -85,6 +86,35 @@ describe('task memory guidance state', () => {
       }],
     })).toMatchObject({
       outcome: 'none',
+    });
+  });
+
+  it('selects the newest pending guidance across run states', () => {
+    expect(selectBlockingTaskMemoryGuidance([
+      {
+        latestGuidanceAt: '2026-05-15T01:00:00.000Z',
+        outcome: 'pending',
+        pendingTargets: ['task_md'],
+        reason: '旧建议待处理',
+        targets: ['task_md'],
+      },
+      {
+        latestGuidanceAt: '2026-05-15T01:03:00.000Z',
+        outcome: 'satisfied',
+        pendingTargets: [],
+        reason: '最新任务记忆建议已有对应的 Task.md 或 Task Record 写入。',
+        targets: ['task_record'],
+      },
+      {
+        latestGuidanceAt: '2026-05-15T01:02:00.000Z',
+        outcome: 'pending',
+        pendingTargets: ['task_record'],
+        reason: '新建议待处理',
+        targets: ['task_record'],
+      },
+    ])).toMatchObject({
+      latestGuidanceAt: '2026-05-15T01:02:00.000Z',
+      reason: '新建议待处理',
     });
   });
 });

@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { ChatMessage } from '@shared/types/ipc';
 import type { RunStepRecord } from '@shared/types/run';
-import type { TaskMemoryGuidanceState } from '@shared/task-memory-guidance-state';
+import {
+  selectBlockingTaskMemoryGuidance,
+  type TaskMemoryGuidanceState,
+} from '@shared/task-memory-guidance-state';
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import { selectApplicableWorkHabits as selectApplicableWorkHabitsFromList } from '@shared/work-habit-rules';
 import { CONTEXT_COMPRESSION_THRESHOLD } from '@shared/settings-defaults';
@@ -898,15 +901,17 @@ export function RightPanel({
     };
   }
 
-  async function getLatestTaskMemoryGuidance(taskId: string | null): Promise<TaskMemoryGuidanceState | null> {
+  async function getBlockingTaskMemoryGuidance(taskId: string | null): Promise<TaskMemoryGuidanceState | null> {
     if (!taskId || !window.api?.listRuns || !window.api?.getRunDetail) return null;
     const runs = await window.api.listRuns().catch(() => []);
-    const latestRun = runs
+    const taskRuns = runs
       .filter((run) => run.taskId === taskId)
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null;
-    if (!latestRun) return null;
-    const detail = await window.api.getRunDetail(latestRun.id).catch(() => null);
-    return detail?.taskMemoryGuidance ?? null;
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    if (taskRuns.length === 0) return null;
+    const details = await Promise.all(
+      taskRuns.map((run) => window.api!.getRunDetail(run.id).catch(() => null)),
+    );
+    return selectBlockingTaskMemoryGuidance(details.map((detail) => detail?.taskMemoryGuidance));
   }
 
   function clearTaskSessionAfterArchive(taskName: string | null) {
@@ -931,7 +936,7 @@ export function RightPanel({
 
   async function refreshTaskSession() {
     const { taskName, archived, hasSpecificSignal, userMessageCount } = await archiveTaskConversationIfNeeded();
-    const taskMemoryGuidance = await getLatestTaskMemoryGuidance(activeTaskId);
+    const taskMemoryGuidance = await getBlockingTaskMemoryGuidance(activeTaskId);
     const handoff = evaluateRuntimeHandoff({
       intent: 'context_refresh',
       fromTaskId: activeTaskId,
@@ -955,7 +960,7 @@ export function RightPanel({
       userMessageCount,
       recentFocus,
     } = await archiveTaskConversationIfNeeded();
-    const taskMemoryGuidance = await getLatestTaskMemoryGuidance(activeTaskId);
+    const taskMemoryGuidance = await getBlockingTaskMemoryGuidance(activeTaskId);
     const handoff = evaluateRuntimeHandoff({
       intent: 'manual_context_refresh',
       fromTaskId: activeTaskId,
@@ -983,7 +988,7 @@ export function RightPanel({
 
   async function startNewConversation() {
     const { archived, hasSpecificSignal, userMessageCount } = await archiveTaskConversationIfNeeded();
-    const taskMemoryGuidance = await getLatestTaskMemoryGuidance(activeTaskId);
+    const taskMemoryGuidance = await getBlockingTaskMemoryGuidance(activeTaskId);
     const handoff = evaluateRuntimeHandoff({
       intent: 'start_global_conversation',
       fromTaskId: activeTaskId,
@@ -1014,7 +1019,7 @@ export function RightPanel({
 
   async function leaveTaskContext() {
     const { archived, hasSpecificSignal, userMessageCount } = await archiveTaskConversationIfNeeded();
-    const taskMemoryGuidance = await getLatestTaskMemoryGuidance(activeTaskId);
+    const taskMemoryGuidance = await getBlockingTaskMemoryGuidance(activeTaskId);
     const handoff = evaluateRuntimeHandoff({
       intent: 'leave_task_context',
       fromTaskId: activeTaskId,

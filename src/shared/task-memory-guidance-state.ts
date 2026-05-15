@@ -91,6 +91,18 @@ export function detectTaskMemoryGuidanceTargets(text: string): TaskMemoryGuidanc
   return uniqueTargets(targets);
 }
 
+export function selectBlockingTaskMemoryGuidance(
+  states: Array<TaskMemoryGuidanceState | null | undefined>,
+): TaskMemoryGuidanceState | null {
+  const pending = states
+    .filter((state): state is TaskMemoryGuidanceState => Boolean(state && state.outcome === 'pending'));
+  if (pending.length === 0) return null;
+
+  return pending.reduce((current, state) => (
+    compareOptionalIso(state.latestGuidanceAt, current.latestGuidanceAt) > 0 ? state : current
+  ));
+}
+
 function inferWriteTarget(write: TaskMemoryWriteSignal): TaskMemoryGuidanceTarget | null {
   const text = [write.title ?? '', write.path ?? ''].join('\n');
   const targets = detectTaskMemoryGuidanceTargets(text);
@@ -120,4 +132,11 @@ function uniqueTargets(targets: TaskMemoryGuidanceTarget[]): TaskMemoryGuidanceT
 
 function labelTarget(target: TaskMemoryGuidanceTarget): string {
   return target === 'task_md' ? 'Task.md' : 'Task Record';
+}
+
+function compareOptionalIso(a: string | null, b: string | null): number {
+  if (a && b && a !== b) return a > b ? 1 : -1;
+  if (a && !b) return 1;
+  if (!a && b) return -1;
+  return 0;
 }
