@@ -84,7 +84,7 @@ describe('runtime event record projection', () => {
         id: 'file-1',
         taskId: 'task-1',
         name: 'phase-closeout.md',
-        path: 'Task Records/phase-closeout.md',
+        path: ' Task Records\\phase-closeout.md ',
         kind: 'file',
         content: '# closeout',
         createdAt: '2026-05-14T08:05:00.000Z',

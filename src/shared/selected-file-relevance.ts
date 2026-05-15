@@ -1,3 +1,5 @@
+import { isTaskMdPath, isTaskRecordPath, normalizeTaskMemoryPath } from './task-memory-path.js';
+
 export type SelectedFileRelevanceDecision = 'include' | 'caution' | 'exclude';
 export type SelectedFileRelevanceReason =
   | 'task_record'
@@ -20,7 +22,7 @@ export type SelectedFileRelevanceInput = {
 };
 
 export function evaluateSelectedFileRelevance(input: SelectedFileRelevanceInput): SelectedFileRelevanceEvaluation {
-  const path = input.path?.trim() ?? '';
+  const path = normalizeTaskMemoryPath(input.path) ?? '';
   const label = path || '当前选中文件';
 
   if (/^Archive\//i.test(path) || /\/Archive\//i.test(path)) {
@@ -31,7 +33,7 @@ export function evaluateSelectedFileRelevance(input: SelectedFileRelevanceInput)
     };
   }
 
-  if (path === 'Task.md') {
+  if (isTaskMdPath(path)) {
     return {
       decision: 'include',
       reason: 'task_md',
@@ -39,7 +41,7 @@ export function evaluateSelectedFileRelevance(input: SelectedFileRelevanceInput)
     };
   }
 
-  if (path.startsWith('Task Records/')) {
+  if (isTaskRecordPath(path)) {
     return {
       decision: 'include',
       reason: 'task_record',

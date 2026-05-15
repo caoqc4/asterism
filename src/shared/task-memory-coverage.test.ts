@@ -1,8 +1,41 @@
 import { describe, expect, it } from 'vitest';
 
-import { evaluateTaskMemoryCoverage } from './task-memory-coverage.js';
+import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from './task-memory-coverage.js';
 
 describe('task memory coverage', () => {
+  it('detects Task.md from normalized task file paths', () => {
+    expect(buildTaskMemoryCoverageInputForTask('run_start', {
+      id: 'task-1',
+      title: 'Task',
+      summary: null,
+      state: 'running',
+      nextStep: null,
+      waitingReason: null,
+      riskLevel: 'none',
+      riskNote: null,
+      createdAt: '2026-05-15T01:00:00.000Z',
+      updatedAt: '2026-05-15T01:00:00.000Z',
+      activeWaitingItem: null,
+      activeBlocker: null,
+      artifacts: [],
+      completionCriteria: [],
+      sourceContexts: [],
+      processTemplates: [],
+      availableProcessTemplates: [],
+      timeline: [],
+      taskFiles: [{
+        id: 'file-1',
+        taskId: 'task-1',
+        name: 'Task.md',
+        path: ' Task.md ',
+        kind: 'file',
+        content: '# Task',
+        createdAt: '2026-05-15T01:00:00.000Z',
+        updatedAt: '2026-05-15T01:00:00.000Z',
+      }],
+    }).hasTaskMd).toBe(true);
+  });
+
   it('treats global context as not applicable', () => {
     expect(evaluateTaskMemoryCoverage({
       action: 'context_clear',

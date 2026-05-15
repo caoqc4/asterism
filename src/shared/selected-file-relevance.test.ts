@@ -15,6 +15,14 @@ describe('selected file relevance', () => {
       decision: 'include',
       reason: 'task_record',
     });
+    expect(evaluateSelectedFileRelevance({
+      path: ' Task Records\\phase-closeout.md ',
+      contentPreview: '# Closeout',
+    })).toMatchObject({
+      decision: 'include',
+      reason: 'task_record',
+      summary: expect.stringContaining('Task Records/phase-closeout.md'),
+    });
   });
 
   it('warns on generated output and files without preview', () => {

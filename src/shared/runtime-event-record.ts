@@ -4,6 +4,7 @@ import type { TimelineEventRecord } from './types/task.js';
 import type { TaskFileRecord } from './types/task-file.js';
 import { buildRuntimeResumePlan, evaluateRuntimeHandoff } from './runtime-handoff.js';
 import { getPanelRuntimeTimelineEventTitle, isPanelRuntimeTimelineEventType } from './runtime-panel-events.js';
+import { isTaskRecordPath } from './task-memory-path.js';
 
 export type RuntimeEventPriority = 'p1' | 'p2' | 'p3';
 
@@ -229,7 +230,7 @@ function higherPriority(left: RuntimeEventPriority, right: RuntimeEventPriority)
 }
 
 function isTaskRecordFile(file: TaskFileRecord): boolean {
-  return file.kind === 'file' && file.path.replace(/\\/g, '/').startsWith('Task Records/');
+  return file.kind === 'file' && isTaskRecordPath(file.path);
 }
 
 function projectTaskRecordFile(file: TaskFileRecord): RuntimeEventRecord {

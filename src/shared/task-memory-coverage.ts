@@ -1,3 +1,5 @@
+import { isTaskMdPath } from './task-memory-path.js';
+
 export type TaskMemoryCoverageAction =
   | 'task_start'
   | 'subtask_start'
@@ -57,7 +59,7 @@ export function buildTaskMemoryCoverageInputForTask(
   overrides: Partial<Omit<TaskMemoryCoverageInput, 'action' | 'hasTaskContext'>> = {},
 ): TaskMemoryCoverageInput {
   const taskFiles = task.taskFiles ?? [];
-  const hasTaskMd = taskFiles.some((file) => file.kind === 'file' && file.path === 'Task.md');
+  const hasTaskMd = taskFiles.some((file) => file.kind === 'file' && isTaskMdPath(file.path));
   const resumeCard = 'resumeCard' in task ? task.resumeCard : null;
   const hasEquivalentRecoverySummary = Boolean(task.summary?.trim() || resumeCard?.summary?.trim());
   const hasNextStep = Boolean(task.nextStep?.trim() || resumeCard?.nextSuggestedMove?.trim());

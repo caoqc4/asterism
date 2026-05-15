@@ -1,3 +1,5 @@
+import { isTaskMdPath, isTaskRecordPath, normalizeTaskMemoryPath } from './task-memory-path.js';
+
 export type TaskMemoryGuidanceTarget = 'task_md' | 'task_record';
 
 export type TaskMemoryGuidanceSignal = {
@@ -122,12 +124,12 @@ export function buildTaskMemoryGuidanceStateForTaskFiles(params: {
         ...file,
         path: normalizeTaskMemoryPath(file.path),
       }))
-      .filter((file) => file.path === 'Task.md' || Boolean(file.path?.startsWith('Task Records/')))
+      .filter((file) => isTaskMdPath(file.path) || isTaskRecordPath(file.path))
       .map((file) => ({
         createdAt: file.updatedAt ?? null,
         path: file.path ?? null,
         status: 'completed',
-        target: file.path === 'Task.md' ? 'task_md' : 'task_record',
+        target: isTaskMdPath(file.path) ? 'task_md' : 'task_record',
         title: file.name ?? file.path ?? null,
       })),
   });
@@ -137,11 +139,6 @@ function inferWriteTarget(write: TaskMemoryWriteSignal): TaskMemoryGuidanceTarge
   const text = [write.title ?? '', normalizeTaskMemoryPath(write.path) ?? ''].join('\n');
   const targets = detectTaskMemoryGuidanceTargets(text);
   return targets[0] ?? null;
-}
-
-function normalizeTaskMemoryPath(path: string | null | undefined): string | null {
-  const normalized = path?.trim().replace(/\\/g, '/') ?? '';
-  return normalized || null;
 }
 
 function isCompletedSignal(signal: { status?: string | null }): boolean {
