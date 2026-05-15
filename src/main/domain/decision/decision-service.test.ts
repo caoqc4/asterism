@@ -797,6 +797,83 @@ describe('DecisionService', () => {
     expect(runRepository.updateResult).not.toHaveBeenCalled();
   });
 
+  it('blocks approved checkpoint resume when task memory guidance is still pending', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      act: vi.fn().mockResolvedValue({
+        ...buildDecisionRecord(),
+        status: 'approved',
+      }),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail()),
+      annotateDecisionApproved: vi.fn().mockResolvedValue(buildTaskRecord('planned')),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+    };
+    const runCheckpointRepository = {
+      findOpenByDecisionId: vi.fn().mockResolvedValue({
+        id: 'run_checkpoint_1',
+        runId: 'run_1',
+        stepId: 'run_step_1',
+        kind: 'tool_permission',
+        status: 'open',
+        payload: JSON.stringify({
+          agentSessionId: 'agent_session_paused_old_created',
+          tool: 'artifact.create_note',
+          input: { title: 'Agent note', content: 'Captured note' },
+          decisionId: 'decision_1',
+        }),
+        createdAt: '2026-01-01T00:00:00.000Z',
+        resolvedAt: null,
+      }),
+      updateStatus: vi.fn(),
+    };
+    const runStepRepository = {
+      create: vi.fn(),
+      listForRun: vi.fn().mockResolvedValue([{
+        createdAt: '2026-01-01T00:01:00.000Z',
+        error: null,
+        id: 'run_step_memory',
+        index: 1,
+        input: null,
+        kind: 'final',
+        output: '- Task.md update recommended: next_step',
+        runId: 'run_1',
+        status: 'completed',
+        title: '任务记忆建议',
+        updatedAt: '2026-01-01T00:01:00.000Z',
+      }]),
+    };
+    const runRepository = {
+      getDetail: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const agentToolRegistry = {
+      execute: vi.fn(),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+      undefined,
+      runCheckpointRepository as never,
+      runStepRepository as never,
+      runRepository as never,
+      agentToolRegistry as never,
+    );
+
+    await expect(service.act({
+      id: 'decision_1',
+      action: 'approve',
+    })).rejects.toThrow('最新任务记忆建议仍缺少对应写入：Task.md。');
+
+    expect(agentToolRegistry.execute).not.toHaveBeenCalled();
+    expect(runCheckpointRepository.updateStatus).not.toHaveBeenCalled();
+    expect(runStepRepository.create).not.toHaveBeenCalled();
+  });
+
   it('records actionable evidence when an approved checkpoint tool cannot resume', async () => {
     const decisionRepository = {
       list: vi.fn(),

@@ -46,7 +46,12 @@ import {
 } from './process-template-selector.js';
 import { normalizeCreateDecisionInput } from '../../../shared/runtime-surface-routing.js';
 import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
+import { evaluateRuntimeHandoff } from '../../../shared/runtime-handoff.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
+import {
+  buildTaskMemoryGuidanceStateForTaskFiles,
+  type TaskMemoryGuidanceState,
+} from '../../../shared/task-memory-guidance-state.js';
 import { deriveTaskDetailPriorityLane, getPriorityLanePromptGuidance } from '../../../shared/working-context/priority-lanes.js';
 
 const decisionDraftSchema = z.object({
@@ -579,6 +584,34 @@ export class DecisionService {
     if (!verification.canProceed) {
       throw new Error(verification.detail);
     }
+
+    const taskMemoryGuidance = await this.buildTaskMemoryGuidance(runId, taskId, task);
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'resume_run',
+      fromTaskId: taskId,
+      taskMemoryGuidance,
+    });
+    if (!handoff.canProceed) {
+      throw new Error(handoff.reason);
+    }
+  }
+
+  private async buildTaskMemoryGuidance(
+    runId: string,
+    taskId: string,
+    taskDetail?: Awaited<ReturnType<TaskService['getDetail']>> | null,
+  ): Promise<TaskMemoryGuidanceState | null> {
+    if (!this.runStepRepository || typeof this.runStepRepository.listForRun !== 'function') return null;
+    const [steps, task] = await Promise.all([
+      this.runStepRepository.listForRun(runId),
+      taskDetail === undefined
+        ? this.taskService.getDetail(taskId).catch(() => null)
+        : Promise.resolve(taskDetail),
+    ]);
+    return buildTaskMemoryGuidanceStateForTaskFiles({
+      guidanceSignals: steps,
+      taskFiles: task?.taskFiles,
+    });
   }
 
   private async settleBrowserControlledResumeCheckpoint(
@@ -844,10 +877,17 @@ export class DecisionService {
       this.runVerificationRepository &&
       (status === 'completed' || status === 'failed')
     ) {
+      const steps = await this.runStepRepository.listForRun(updated.id);
+      const taskDetail = await this.taskService.getDetail(updated.taskId).catch(() => null);
       await persistTerminalRunVerifications({
         run: updated,
         runStepRepository: this.runStepRepository,
         runVerificationRepository: this.runVerificationRepository,
+        steps,
+        taskMemoryGuidance: buildTaskMemoryGuidanceStateForTaskFiles({
+          guidanceSignals: steps,
+          taskFiles: taskDetail?.taskFiles,
+        }),
       });
     }
 

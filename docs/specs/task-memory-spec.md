@@ -570,6 +570,11 @@ Paused Run resume also follows this boundary. Resuming from a checkpoint may
 execute tools, so unresolved task-memory guidance must be handled before the
 checkpoint continuation runs.
 
+Approved Decision checkpoint resume follows the same boundary, because approving
+the Decision can resume a pending tool, browser, command, or patch checkpoint.
+Runtime must check unresolved task-memory guidance before executing that
+continuation.
+
 UI may display Task Dynamics as structured task replay, but that display is not
 required for this memory contract to hold. The contract is about durable task
 recovery first and presentation second.

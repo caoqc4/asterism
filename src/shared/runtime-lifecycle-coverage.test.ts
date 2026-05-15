@@ -81,4 +81,10 @@ describe('runtime lifecycle coverage matrix', () => {
 
     expect(text).toContain('Run resume passes through runtime action evaluation and pending TaskMemoryGuidanceState checks');
   });
+
+  it('tracks pending-memory checks for approved decision checkpoint resume', () => {
+    const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
+
+    expect(text).toContain('Approved Decision checkpoint resume passes through pending TaskMemoryGuidanceState checks');
+  });
 });

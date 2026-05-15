@@ -276,6 +276,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     coveredBy: [
       'Context clearing requires specific handoff signals.',
       'Run resume passes through runtime action evaluation and pending TaskMemoryGuidanceState checks before checkpoint execution.',
+      'Approved Decision checkpoint resume passes through pending TaskMemoryGuidanceState checks before checkpoint execution.',
       'Phase closeout writes Task Records and can hand off to existing child tasks.',
       'Phase closeout requires TaskMemoryCoverageEvaluation and pending TaskMemoryGuidanceState checks to pass before chat refresh or next-task handoff.',
       'Task closeout evaluation can hand off to existing successors when no child task is available, and new follow-up proposals require evidence plus confirmation instead of automatic creation.',
