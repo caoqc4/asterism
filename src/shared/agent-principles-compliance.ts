@@ -86,6 +86,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     gaps: [
       'TaskMdUpdateNeedEvaluation exists and covers RightPanel important-file references, TasksPage direct Task.md saves, and AgentToolRegistry recovery guidance through RuntimeRecoveryGuidance, but not every durable write asks whether Task.md also needs an update.',
       'TaskRecordWorthinessEvaluation is consumed by RightPanel context-refresh/phase-closeout writes, TasksPage manual Task Record creation, and AgentToolRegistry recovery guidance, but remaining write paths still need to consume it consistently.',
+      'AgentToolRegistry persists recovery guidance as Run Step evidence, but confirmed Task.md or Task Record write-through is still future work.',
     ],
     nextVerification: [
       'Add information-routing tests for task mutation, Task.md update recommendation, and Task Record worthiness.',

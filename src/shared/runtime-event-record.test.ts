@@ -256,4 +256,43 @@ describe('runtime event record projection', () => {
     expect(groups.find((group) => group.kind === 'handoff')?.relatedTaskIds).toEqual(['task-2']);
     expect(groups.find((group) => group.kind === 'execution_recovery')?.priority).toBe('p2');
   });
+
+  it('groups task memory guidance run steps as durable record replay', () => {
+    const events = projectRuntimeEvents({
+      runs: [{
+        id: 'run-1',
+        taskId: 'task-1',
+        type: 'agent',
+        status: 'completed',
+        instructions: 'Update task memory',
+        output: 'done',
+        outputSource: 'system',
+        failureReason: null,
+        createdAt: '2026-05-14T08:00:00.000Z',
+        updatedAt: '2026-05-14T08:03:00.000Z',
+      }],
+      runStepsByRunId: {
+        'run-1': [{
+          id: 'step-memory',
+          runId: 'run-1',
+          index: 1,
+          kind: 'plan',
+          status: 'completed',
+          title: '任务记忆建议',
+          input: null,
+          output: '- Task.md: next_step',
+          error: null,
+          createdAt: '2026-05-14T08:01:00.000Z',
+          updatedAt: '2026-05-14T08:01:00.000Z',
+        }],
+      },
+    });
+
+    const group = groupRuntimeEventsForReplay(events).find((item) => item.kind === 'durable_record');
+
+    expect(group).toMatchObject({
+      title: '任务记忆建议',
+      eventIds: ['run_step:step-memory'],
+    });
+  });
 });

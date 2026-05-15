@@ -199,6 +199,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TasksPage manual Task Record creation now passes through TaskRecordWorthinessEvaluation before creating Task Records files.',
       'RuntimeRecoveryGuidance centralizes structured Task.md and Task Record recovery recommendations, while preserving legacy guidance messages.',
       'AgentToolRegistry durable tool results now expose structured recoveryGuidanceItems plus legacy recoveryGuidance messages from RuntimeRecoveryGuidance without silently mutating Task.md.',
+      'AgentToolRegistry persists recoveryGuidanceItems as a separate Run Step so task-memory recommendations remain auditable without silently mutating Task.md or Task Records.',
       'TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes to runtime checks and is now consumed by context-clear, task-start, run-start, task-switch, task-completion modal, and RightPanel phase-closeout paths.',
     ],
     outOfAgentPrinciplesScope: [
@@ -210,7 +211,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskMemoryCoverageEvaluation is wired to current lifecycle boundaries; future task lifecycle boundaries must opt into the same evaluator instead of adding direct state changes.',
     ],
     nextImplementation: [
-      'Add a confirmed writer for AgentToolRegistry recoveryGuidance through retained TasksPage/RightPanel flows.',
+      'Add a confirmed writer for persisted AgentToolRegistry recoveryGuidance through retained TasksPage/RightPanel flows.',
       'Keep new lifecycle boundaries routed through TaskMemoryCoverageEvaluation before adding direct state changes.',
     ],
   },

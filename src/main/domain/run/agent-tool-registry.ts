@@ -712,6 +712,16 @@ function withRuntimeRecoveryGuidance(
     : result;
 }
 
+function formatRuntimeRecoveryGuidance(result: AgentToolResult): string | null {
+  if (!result.recoveryGuidanceItems?.length) return null;
+  return result.recoveryGuidanceItems
+    .map((item) => {
+      const target = item.target === 'task_md' ? 'Task.md' : 'Task Record';
+      return `- ${target}: ${item.reason}`;
+    })
+    .join('\n');
+}
+
 function isPotentialCompletionEvidence(event: AgentWorkingContext['recentTimeline'][number]): boolean {
   return (
     event.type === 'task.decision_approved' ||
@@ -1135,6 +1145,16 @@ export class AgentToolRegistry {
         title: `工具结果：${name}`,
         output: result.output ?? result.summary,
       });
+      const recoveryGuidanceOutput = formatRuntimeRecoveryGuidance(result);
+      if (recoveryGuidanceOutput) {
+        await this.runStepRepository.create({
+          runId: context.runId,
+          kind: 'plan',
+          status: 'completed',
+          title: '任务记忆建议',
+          output: recoveryGuidanceOutput,
+        });
+      }
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown agent tool error';

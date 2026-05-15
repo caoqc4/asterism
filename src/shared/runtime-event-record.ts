@@ -150,6 +150,15 @@ function classifyRuntimeReplayEvent(event: RuntimeEventRecord): {
     };
   }
 
+  if (/任务记忆建议|Task\.md|Task Record/.test(event.title) || /Task\.md|Task Record/.test(event.detail ?? '')) {
+    return {
+      bucket: 'durable_record',
+      kind: 'durable_record',
+      summary: '任务记忆或恢复文件需要更新。',
+      title: '任务记忆建议',
+    };
+  }
+
   if (
     event.sourceType === 'run'
     || event.sourceType === 'run_step'

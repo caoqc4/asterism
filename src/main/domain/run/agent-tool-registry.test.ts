@@ -396,11 +396,19 @@ describe('AgentToolRegistry', () => {
         output: '已更新任务下一步：Review the agent output with the owner',
       }),
     );
-    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+    expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'tool_result',
         status: 'completed',
         output: 'Review the agent output with the owner',
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        kind: 'plan',
+        status: 'completed',
+        title: '任务记忆建议',
+        output: '- Task.md: next_step',
       }),
     );
   });
@@ -585,11 +593,22 @@ describe('AgentToolRegistry', () => {
       batchId: 'run:run_1',
       sourceRole: 'raw',
     });
-    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+    expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'tool_result',
         status: 'completed',
         output: 'Use this as the next source',
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        kind: 'plan',
+        status: 'completed',
+        title: '任务记忆建议',
+        output: [
+          '- Task.md: durable_state_change',
+          '- Task Record: external_signal',
+        ].join('\n'),
       }),
     );
   });
@@ -675,11 +694,19 @@ describe('AgentToolRegistry', () => {
       taskId: 'task_1',
       text: 'Owner has reviewed the final draft',
     });
-    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+    expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'tool_result',
         status: 'completed',
         output: 'Owner has reviewed the final draft',
+      }),
+    );
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        kind: 'plan',
+        status: 'completed',
+        title: '任务记忆建议',
+        output: '- Task.md: durable_state_change',
       }),
     );
   });
