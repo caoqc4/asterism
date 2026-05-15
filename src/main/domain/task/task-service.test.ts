@@ -1512,6 +1512,157 @@ describe('TaskService', () => {
     expect(repository.update).not.toHaveBeenCalled();
   });
 
+  it('syncs child parent ids when updating a parent child list', async () => {
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('running'),
+          id: 'project_1',
+          title: '项目一',
+          parentTaskId: null,
+          childTaskIds: [],
+        },
+        {
+          ...buildRecord('running'),
+          id: 'child_1',
+          title: '需求分析',
+          parentTaskId: null,
+          childTaskIds: [],
+        },
+      ]),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('planned'),
+        id: 'project_1',
+        title: '项目一',
+        parentTaskId: null,
+        childTaskIds: [],
+      }),
+      update: vi.fn().mockResolvedValue({
+        ...buildRecord('planned'),
+        id: 'project_1',
+        title: '项目一',
+        childTaskIds: ['child_1'],
+      }),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
+
+    await service.update({
+      id: 'project_1',
+      childTaskIds: ['child_1', 'child_1'],
+    });
+
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'project_1',
+      childTaskIds: ['child_1'],
+      riskNote: null,
+    });
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'child_1',
+      parentTaskId: 'project_1',
+    });
+  });
+
+  it('clears child parent ids when removing children from a parent list', async () => {
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('running'),
+          id: 'project_1',
+          title: '项目一',
+          parentTaskId: null,
+          childTaskIds: ['child_1'],
+        },
+        {
+          ...buildRecord('running'),
+          id: 'child_1',
+          title: '需求分析',
+          parentTaskId: 'project_1',
+          childTaskIds: [],
+        },
+      ]),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('planned'),
+        id: 'project_1',
+        title: '项目一',
+        parentTaskId: null,
+        childTaskIds: ['child_1'],
+      }),
+      update: vi.fn().mockResolvedValue({
+        ...buildRecord('planned'),
+        id: 'project_1',
+        title: '项目一',
+        childTaskIds: [],
+      }),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
+
+    await service.update({
+      id: 'project_1',
+      childTaskIds: [],
+    });
+
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'project_1',
+      childTaskIds: [],
+      riskNote: null,
+    });
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'child_1',
+      parentTaskId: null,
+    });
+  });
+
+  it('blocks parent child-list updates that reference missing or self child ids', async () => {
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('running'),
+          id: 'project_1',
+          title: '项目一',
+          parentTaskId: null,
+          childTaskIds: [],
+        },
+      ]),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('planned'),
+        id: 'project_1',
+        title: '项目一',
+        parentTaskId: null,
+        childTaskIds: [],
+      }),
+      update: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
+
+    await expect(service.update({
+      id: 'project_1',
+      childTaskIds: ['missing_child'],
+    })).rejects.toThrow('Child task not found: missing_child');
+    await expect(service.update({
+      id: 'project_1',
+      childTaskIds: ['project_1'],
+    })).rejects.toThrow('A task cannot be its own child');
+    expect(repository.update).not.toHaveBeenCalled();
+  });
+
   it('syncs the active waiting item when updating waiting reason on a waiting task', async () => {
     const repository = {
       list: vi.fn(),

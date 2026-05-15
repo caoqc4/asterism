@@ -60,7 +60,7 @@ Strongest areas:
 - first-pass project child draft validation before confirmed subtask creation.
 - service-level child task capture now blocks generic phase-template titles and parent-title repeats.
 - project decomposition generation checks the full task list for existing children, including `parentTaskId` links.
-- task creation and parent moves keep `parentTaskId` and parent `childTaskIds` synchronized at the service boundary.
+- task creation, parent moves, and parent-side child list updates keep `parentTaskId` and parent `childTaskIds` synchronized at the service boundary.
 - ordinary task files stay in the task-file class instead of being projected as artifacts.
 
 Weakest areas:
@@ -72,7 +72,7 @@ Weakest areas:
 - Decision judgment-center effect presentation after approval/defer/cancel;
 - Decisions judgment center;
 - unified runtime handoff shape;
-- legacy local task hierarchy attributes still need cleanup after the database relationship becomes authoritative.
+- legacy local task hierarchy attributes and old inconsistent relationship records still need cleanup after the database relationship becomes authoritative.
 - capability state in context/action evaluation;
 - activity timeline as a complete runtime audit projection.
 

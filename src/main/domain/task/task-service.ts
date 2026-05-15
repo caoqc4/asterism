@@ -618,6 +618,57 @@ export class TaskService {
     await this.addChildLinkToParent(nextParentTaskId, params.taskId, params.existingTasks);
   }
 
+  private normalizeChildTaskIds(childTaskIds: string[]): string[] {
+    return [...new Set(childTaskIds.map((id) => id.trim()).filter(Boolean))];
+  }
+
+  private validateChildTaskIds(parentTaskId: string, childTaskIds: string[], existingTasks: TaskRecord[]): void {
+    for (const childTaskId of childTaskIds) {
+      if (childTaskId === parentTaskId) {
+        throw new Error('A task cannot be its own child');
+      }
+      if (!this.findTaskInList(existingTasks, childTaskId)) {
+        throw new Error(`Child task not found: ${childTaskId}`);
+      }
+    }
+  }
+
+  private async syncChildParentLinksAfterParentUpdate(params: {
+    parentTaskId: string;
+    previousChildTaskIds: string[];
+    nextChildTaskIds: string[];
+    existingTasks: TaskRecord[];
+  }): Promise<void> {
+    const previousIds = new Set(params.previousChildTaskIds);
+    const nextIds = new Set(params.nextChildTaskIds);
+    const addedIds = params.nextChildTaskIds.filter((id) => !previousIds.has(id));
+    const removedIds = params.previousChildTaskIds.filter((id) => !nextIds.has(id));
+
+    for (const childTaskId of addedIds) {
+      const child = this.findTaskInList(params.existingTasks, childTaskId);
+      if (!child) continue;
+      if (child.parentTaskId && child.parentTaskId !== params.parentTaskId) {
+        await this.removeChildLinkFromParent(child.parentTaskId, childTaskId, params.existingTasks);
+      }
+      if (child.parentTaskId !== params.parentTaskId) {
+        await this.repository.update({
+          id: childTaskId,
+          parentTaskId: params.parentTaskId,
+        });
+      }
+    }
+
+    for (const childTaskId of removedIds) {
+      const child = this.findTaskInList(params.existingTasks, childTaskId);
+      if (child?.parentTaskId === params.parentTaskId) {
+        await this.repository.update({
+          id: childTaskId,
+          parentTaskId: null,
+        });
+      }
+    }
+  }
+
   private async restoreTaskAfterRun(detail: TaskDetailBase): Promise<TaskDetailBase> {
     if (detail.state !== 'running') {
       return detail;
@@ -696,7 +747,11 @@ export class TaskService {
   async update(input: UpdateTaskInput): Promise<TaskListItemRecord> {
     const detail = await this.getExistingTaskOrThrow(input.id);
     let existingTasks: TaskRecord[] | null = null;
-    if (input.title !== undefined || input.parentTaskId !== undefined) {
+    let normalizedChildTaskIds: string[] | undefined;
+    if (input.childTaskIds !== undefined) {
+      normalizedChildTaskIds = this.normalizeChildTaskIds(input.childTaskIds);
+    }
+    if (input.title !== undefined || input.parentTaskId !== undefined || input.childTaskIds !== undefined) {
       existingTasks = await this.repository.list() ?? [];
       if (
         input.parentTaskId !== undefined
@@ -713,6 +768,9 @@ export class TaskService {
       });
       if (!captureEvaluation.allowed) {
         throw new Error(captureEvaluation.summary);
+      }
+      if (normalizedChildTaskIds !== undefined) {
+        this.validateChildTaskIds(input.id, normalizedChildTaskIds, existingTasks);
       }
     }
 
@@ -733,6 +791,7 @@ export class TaskService {
 
     const updated = await this.repository.update({
       ...input,
+      childTaskIds: normalizedChildTaskIds ?? input.childTaskIds,
       riskNote: nextRiskNote,
     });
 
@@ -741,6 +800,15 @@ export class TaskService {
         taskId: input.id,
         previousParentTaskId: detail.parentTaskId,
         nextParentTaskId: input.parentTaskId,
+        existingTasks: existingTasks ?? await this.repository.list(),
+      });
+    }
+
+    if (normalizedChildTaskIds !== undefined) {
+      await this.syncChildParentLinksAfterParentUpdate({
+        parentTaskId: input.id,
+        previousChildTaskIds: detail.childTaskIds ?? [],
+        nextChildTaskIds: normalizedChildTaskIds,
         existingTasks: existingTasks ?? await this.repository.list(),
       });
     }
