@@ -34,7 +34,9 @@ function getExposedApi() {
     probeSandboxBackend: () => Promise<unknown>;
     listTasks: () => Promise<unknown>;
     getTaskHierarchyConsistency: () => Promise<unknown>;
+    getTaskHierarchyManualReviewPolicy: () => Promise<unknown>;
     applySafeTaskHierarchyRepairs: () => Promise<unknown>;
+    applyTaskHierarchyManualResolution: (input: unknown) => Promise<unknown>;
     createTask: (input: unknown) => Promise<unknown>;
     getTaskDetail: (taskId: string) => Promise<unknown>;
     updateTask: (input: unknown) => Promise<unknown>;
@@ -222,6 +224,11 @@ describe('preload bridge', () => {
     };
     const chatInput = { messages: [{ role: 'user', content: 'Next?' }], taskId: 'task_1' };
     const decomposeProjectInput = { taskId: 'task_1' };
+    const hierarchyManualResolutionInput = {
+      kind: 'set_unique_parent',
+      taskId: 'child_1',
+      targetParentTaskId: 'project_1',
+    };
 
     await api.ping();
     await api.getAiConfigStatus();
@@ -229,7 +236,9 @@ describe('preload bridge', () => {
     await api.probeSandboxBackend();
     await api.listTasks();
     await api.getTaskHierarchyConsistency();
+    await api.getTaskHierarchyManualReviewPolicy();
     await api.applySafeTaskHierarchyRepairs();
+    await api.applyTaskHierarchyManualResolution(hierarchyManualResolutionInput);
     await api.createTask(createTaskInput);
     await api.getTaskDetail('task_1');
     await api.updateTask(updateTaskInput);
@@ -289,7 +298,9 @@ describe('preload bridge', () => {
       ['settings:probeSandboxBackend'],
       ['task:list'],
       ['task:getHierarchyConsistency'],
+      ['task:getHierarchyManualReviewPolicy'],
       ['task:applySafeHierarchyRepairs'],
+      ['task:applyHierarchyManualResolution', hierarchyManualResolutionInput],
       ['task:create', createTaskInput],
       ['task:getDetail', 'task_1'],
       ['task:update', updateTaskInput],

@@ -4,6 +4,7 @@ import {
   buildTaskHierarchyManualReviewPolicy,
   buildTaskHierarchyRepairPlan,
   evaluateTaskHierarchyConsistency,
+  matchesTaskHierarchyManualReviewItem,
 } from './task-hierarchy-consistency.js';
 import type { TaskHierarchyNode } from './task-hierarchy.js';
 
@@ -157,5 +158,29 @@ describe('task hierarchy consistency', () => {
       items: [],
       summary: '没有需要人工确认的层级关系。',
     });
+  });
+
+  it('matches explicit manual-resolution input to current manual-review items', () => {
+    const result = buildTaskHierarchyManualReviewPolicy([
+      task({ id: 'project_1', title: '开发小程序', childTaskIds: ['missing_child'] }),
+      task({ id: 'project_2', title: '运营计划', childTaskIds: ['child_1'] }),
+      task({ id: 'child_1', title: '需求分析', parentTaskId: 'project_1' }),
+    ]);
+
+    expect(result.items.some((item) => matchesTaskHierarchyManualReviewItem(item, {
+      kind: 'remove_child_reference',
+      taskId: 'project_1',
+      relatedTaskId: 'missing_child',
+    }))).toBe(true);
+    expect(result.items.some((item) => matchesTaskHierarchyManualReviewItem(item, {
+      kind: 'set_unique_parent',
+      taskId: 'child_1',
+      targetParentTaskId: 'project_1',
+    }))).toBe(true);
+    expect(result.items.some((item) => matchesTaskHierarchyManualReviewItem(item, {
+      kind: 'clear_parent_reference',
+      taskId: 'child_1',
+      relatedTaskId: 'project_1',
+    }))).toBe(false);
   });
 });

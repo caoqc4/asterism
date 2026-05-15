@@ -38,10 +38,15 @@ import type {
 } from '../../../shared/types/source-context.js';
 import { evaluateRuntimeTaskCapture } from '../../../shared/runtime-task-capture-evaluator.js';
 import {
+  type AppliedTaskHierarchyManualResolutionResult,
   buildTaskHierarchyRepairPlan,
+  buildTaskHierarchyManualReviewPolicy,
   evaluateTaskHierarchyConsistency,
+  type ApplyTaskHierarchyManualResolutionInput,
   type AppliedTaskHierarchyRepairResult,
   type TaskHierarchyConsistencyEvaluation,
+  type TaskHierarchyManualReviewPolicy,
+  matchesTaskHierarchyManualReviewItem,
 } from '../../../shared/task-hierarchy-consistency.js';
 import { normalizeCreateSourceContextInput } from '../../../shared/runtime-surface-routing.js';
 import { assertKnownPanelRuntimeTimelineEventType } from '../../../shared/runtime-panel-events.js';
@@ -709,6 +714,10 @@ export class TaskService {
     return evaluateTaskHierarchyConsistency(await this.repository.list());
   }
 
+  async getHierarchyManualReviewPolicy(): Promise<TaskHierarchyManualReviewPolicy> {
+    return buildTaskHierarchyManualReviewPolicy(await this.repository.list());
+  }
+
   async applySafeHierarchyRepairs(): Promise<AppliedTaskHierarchyRepairResult> {
     const currentTasks = await this.repository.list();
     const before = buildTaskHierarchyRepairPlan(currentTasks);
@@ -762,6 +771,126 @@ export class TaskService {
       appliedActionCount,
       skippedManualReviewCount: before.manualReviewCount,
       summary: `已应用 ${appliedActionCount} 项安全层级修复，保留 ${before.manualReviewCount} 项人工确认。`,
+    };
+  }
+
+  async applyHierarchyManualResolution(
+    input: ApplyTaskHierarchyManualResolutionInput,
+  ): Promise<AppliedTaskHierarchyManualResolutionResult> {
+    const currentTasks = await this.repository.list();
+    const before = buildTaskHierarchyManualReviewPolicy(currentTasks);
+    const matchingItem = before.items.find((item) => matchesTaskHierarchyManualReviewItem(item, input));
+    if (!matchingItem) {
+      throw new Error('Manual hierarchy resolution does not match a current review item');
+    }
+
+    const tasksById = new Map(currentTasks.map((task) => [task.id, task]));
+
+    if (input.kind === 'set_unique_parent') {
+      if (!input.targetParentTaskId) {
+        throw new Error('targetParentTaskId is required for set_unique_parent');
+      }
+      const child = tasksById.get(input.taskId);
+      const targetParent = tasksById.get(input.targetParentTaskId);
+      if (!child) {
+        throw new Error(`Task not found: ${input.taskId}`);
+      }
+      if (!targetParent) {
+        throw new Error(`Parent task not found: ${input.targetParentTaskId}`);
+      }
+      if (child.id === targetParent.id) {
+        throw new Error('A task cannot be its own parent');
+      }
+
+      for (const task of currentTasks) {
+        const childTaskIds = task.childTaskIds ?? [];
+        if (task.id !== targetParent.id && childTaskIds.includes(child.id)) {
+          await this.repository.update({
+            id: task.id,
+            childTaskIds: childTaskIds.filter((childTaskId) => childTaskId !== child.id),
+          });
+        }
+      }
+
+      if (!(targetParent.childTaskIds ?? []).includes(child.id)) {
+        await this.repository.update({
+          id: targetParent.id,
+          childTaskIds: [...(targetParent.childTaskIds ?? []), child.id],
+        });
+      }
+
+      if (child.parentTaskId !== targetParent.id) {
+        await this.repository.update({
+          id: child.id,
+          parentTaskId: targetParent.id,
+        });
+      }
+    }
+
+    if (input.kind === 'remove_child_reference') {
+      if (!input.relatedTaskId) {
+        throw new Error('relatedTaskId is required for remove_child_reference');
+      }
+      const parent = tasksById.get(input.taskId);
+      if (!parent) {
+        throw new Error(`Task not found: ${input.taskId}`);
+      }
+      await this.repository.update({
+        id: parent.id,
+        childTaskIds: (parent.childTaskIds ?? []).filter((childTaskId) => childTaskId !== input.relatedTaskId),
+      });
+    }
+
+    if (input.kind === 'clear_parent_reference') {
+      const child = tasksById.get(input.taskId);
+      if (!child) {
+        throw new Error(`Task not found: ${input.taskId}`);
+      }
+      await this.repository.update({
+        id: child.id,
+        parentTaskId: null,
+      });
+    }
+
+    if (input.kind === 'remove_self_reference') {
+      const task = tasksById.get(input.taskId);
+      if (!task) {
+        throw new Error(`Task not found: ${input.taskId}`);
+      }
+      await this.repository.update({
+        id: task.id,
+        parentTaskId: task.parentTaskId === task.id ? null : task.parentTaskId,
+        childTaskIds: (task.childTaskIds ?? []).filter((childTaskId) => childTaskId !== task.id),
+      });
+    }
+
+    if (input.kind === 'dedupe_child_reference') {
+      if (!input.relatedTaskId) {
+        throw new Error('relatedTaskId is required for dedupe_child_reference');
+      }
+      const parent = tasksById.get(input.taskId);
+      if (!parent) {
+        throw new Error(`Task not found: ${input.taskId}`);
+      }
+      const seenChildIds = new Set<string>();
+      await this.repository.update({
+        id: parent.id,
+        childTaskIds: (parent.childTaskIds ?? []).filter((childTaskId) => {
+          if (childTaskId !== input.relatedTaskId) return true;
+          if (seenChildIds.has(childTaskId)) return false;
+          seenChildIds.add(childTaskId);
+          return true;
+        }),
+      });
+    }
+
+    const after = buildTaskHierarchyManualReviewPolicy(await this.repository.list());
+
+    return {
+      before,
+      after,
+      applied: true,
+      summary: '已应用人工确认的层级维护动作。',
     };
   }
 

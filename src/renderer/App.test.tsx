@@ -434,6 +434,11 @@ function createMockApi() {
       issueCount: 0,
       summary: '任务层级关系一致。',
     }),
+    getTaskHierarchyManualReviewPolicy: vi.fn().mockResolvedValue({
+      required: false,
+      items: [],
+      summary: '没有需要人工确认的层级关系。',
+    }),
     applySafeTaskHierarchyRepairs: vi.fn().mockResolvedValue({
       before: {
         canAutoApplyAll: false,
@@ -452,6 +457,20 @@ function createMockApi() {
       appliedActionCount: 0,
       skippedManualReviewCount: 0,
       summary: '已应用 0 项安全层级修复，保留 0 项人工确认。',
+    }),
+    applyTaskHierarchyManualResolution: vi.fn().mockResolvedValue({
+      before: {
+        required: false,
+        items: [],
+        summary: '没有需要人工确认的层级关系。',
+      },
+      after: {
+        required: false,
+        items: [],
+        summary: '没有需要人工确认的层级关系。',
+      },
+      applied: true,
+      summary: '已应用人工确认的层级维护动作。',
     }),
     createTask: vi.fn().mockImplementation(async (input) => {
       const created = buildTask({

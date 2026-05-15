@@ -28,7 +28,9 @@ const {
     taskService: {
       list: vi.fn(),
       getHierarchyConsistency: vi.fn(),
+      getHierarchyManualReviewPolicy: vi.fn(),
       applySafeHierarchyRepairs: vi.fn(),
+      applyHierarchyManualResolution: vi.fn(),
       create: vi.fn(),
       getDetail: vi.fn(),
       update: vi.fn(),
@@ -242,6 +244,67 @@ describe('registerIpcHandlers', () => {
     await expect(handler({})).resolves.toMatchObject({
       appliedActionCount: 1,
     });
+    expect(emitAppEventMock).toHaveBeenCalledWith('task.changed');
+  });
+
+  it('returns hierarchy manual-review policy through IPC', async () => {
+    servicesMock.taskService.getHierarchyManualReviewPolicy.mockResolvedValue({
+      required: true,
+      items: [
+        {
+          reason: 'missing_record',
+          decisionQuestion: '缺失的任务记录是否应恢复，还是应移除这条层级引用？',
+          recommendedResolution: '先确认缺失记录来源；无法恢复时再移除悬空引用。',
+          issue: {
+            code: 'missing_child_record',
+            taskId: 'project_1',
+            relatedTaskId: 'missing_child',
+            message: '任务引用了不存在的子任务。',
+          },
+        },
+      ],
+      summary: '有 1 个层级关系需要人工确认。',
+    });
+
+    const handler = getRegisteredHandler<[], unknown>('task:getHierarchyManualReviewPolicy');
+
+    await expect(handler({})).resolves.toMatchObject({
+      required: true,
+      items: [
+        {
+          reason: 'missing_record',
+        },
+      ],
+    });
+  });
+
+  it('applies explicit hierarchy manual resolution through IPC and emits a task change', async () => {
+    const input = {
+      kind: 'set_unique_parent',
+      taskId: 'child_1',
+      targetParentTaskId: 'project_1',
+    };
+    servicesMock.taskService.applyHierarchyManualResolution.mockResolvedValue({
+      before: {
+        required: true,
+        items: [],
+        summary: '有 1 个层级关系需要人工确认。',
+      },
+      after: {
+        required: false,
+        items: [],
+        summary: '没有需要人工确认的层级关系。',
+      },
+      applied: true,
+      summary: '已应用人工确认的层级维护动作。',
+    });
+
+    const handler = getRegisteredHandler<[typeof input], unknown>('task:applyHierarchyManualResolution');
+
+    await expect(handler({}, input)).resolves.toMatchObject({
+      applied: true,
+    });
+    expect(servicesMock.taskService.applyHierarchyManualResolution).toHaveBeenCalledWith(input);
     expect(emitAppEventMock).toHaveBeenCalledWith('task.changed');
   });
 

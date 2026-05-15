@@ -47,6 +47,7 @@ import type {
   TransitionTaskInput,
   UpdateTaskInput,
 } from '../../shared/types/task.js';
+import type { ApplyTaskHierarchyManualResolutionInput } from '../../shared/task-hierarchy-consistency.js';
 
 import { generateText } from 'ai';
 import { buildAgentSandboxBackendStatus } from '../../shared/agent-sandbox-provider.js';
@@ -227,8 +228,21 @@ export function registerIpcHandlers(): void {
     return getServices().taskService.getHierarchyConsistency();
   });
 
+  ipcMain.handle('task:getHierarchyManualReviewPolicy', async () => {
+    return getServices().taskService.getHierarchyManualReviewPolicy();
+  });
+
   ipcMain.handle('task:applySafeHierarchyRepairs', async () => {
     const result = await getServices().taskService.applySafeHierarchyRepairs();
+    emitAppEvent('task.changed');
+    return result;
+  });
+
+  ipcMain.handle('task:applyHierarchyManualResolution', async (
+    _event,
+    input: ApplyTaskHierarchyManualResolutionInput,
+  ) => {
+    const result = await getServices().taskService.applyHierarchyManualResolution(input);
     emitAppEvent('task.changed');
     return result;
   });

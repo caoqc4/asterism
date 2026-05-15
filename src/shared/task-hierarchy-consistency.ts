@@ -72,6 +72,27 @@ export type TaskHierarchyManualReviewPolicy = {
   summary: string;
 };
 
+export type TaskHierarchyManualResolutionKind =
+  | 'set_unique_parent'
+  | 'remove_child_reference'
+  | 'clear_parent_reference'
+  | 'remove_self_reference'
+  | 'dedupe_child_reference';
+
+export type ApplyTaskHierarchyManualResolutionInput = {
+  kind: TaskHierarchyManualResolutionKind;
+  taskId: string;
+  relatedTaskId?: string | null;
+  targetParentTaskId?: string | null;
+};
+
+export type AppliedTaskHierarchyManualResolutionResult = {
+  before: TaskHierarchyManualReviewPolicy;
+  after: TaskHierarchyManualReviewPolicy;
+  applied: boolean;
+  summary: string;
+};
+
 function issue(params: TaskHierarchyConsistencyIssue): TaskHierarchyConsistencyIssue {
   return params;
 }
@@ -343,4 +364,51 @@ export function buildTaskHierarchyManualReviewPolicy(
       ? `有 ${items.length} 个层级关系需要人工确认。`
       : '没有需要人工确认的层级关系。',
   };
+}
+
+export function matchesTaskHierarchyManualReviewItem(
+  item: TaskHierarchyManualReviewItem,
+  input: ApplyTaskHierarchyManualResolutionInput,
+): boolean {
+  if (
+    input.kind === 'set_unique_parent'
+    && input.targetParentTaskId
+  ) {
+    return item.reason === 'conflicting_parentage'
+      && (
+        item.issue.taskId === input.taskId
+        || item.issue.relatedTaskId === input.taskId
+      );
+  }
+
+  if (item.issue.taskId !== input.taskId) {
+    return false;
+  }
+
+  if (
+    input.relatedTaskId !== undefined
+    && (item.issue.relatedTaskId ?? null) !== (input.relatedTaskId ?? null)
+  ) {
+    return false;
+  }
+
+  if (input.kind === 'remove_child_reference') {
+    return item.issue.code === 'missing_child_record'
+      || item.issue.code === 'child_listed_under_multiple_parents';
+  }
+
+  if (input.kind === 'clear_parent_reference') {
+    return item.issue.code === 'missing_parent_record'
+      || item.issue.code === 'missing_parent_backlink';
+  }
+
+  if (input.kind === 'remove_self_reference') {
+    return item.issue.code === 'self_child';
+  }
+
+  if (input.kind === 'dedupe_child_reference') {
+    return item.issue.code === 'duplicate_child_id';
+  }
+
+  return false;
 }

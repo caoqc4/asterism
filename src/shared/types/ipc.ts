@@ -117,8 +117,11 @@ import type {
   UpdateTaskInput,
 } from './task.js';
 import type {
+  AppliedTaskHierarchyManualResolutionResult,
   AppliedTaskHierarchyRepairResult,
+  ApplyTaskHierarchyManualResolutionInput,
   TaskHierarchyConsistencyEvaluation,
+  TaskHierarchyManualReviewPolicy,
 } from '../task-hierarchy-consistency.js';
 
 export type ElectronApi = {
@@ -128,7 +131,11 @@ export type ElectronApi = {
   probeSandboxBackend?: () => Promise<AgentSandboxBackendStatus>;
   listTasks: () => Promise<TaskListItemRecord[]>;
   getTaskHierarchyConsistency: () => Promise<TaskHierarchyConsistencyEvaluation>;
+  getTaskHierarchyManualReviewPolicy: () => Promise<TaskHierarchyManualReviewPolicy>;
   applySafeTaskHierarchyRepairs: () => Promise<AppliedTaskHierarchyRepairResult>;
+  applyTaskHierarchyManualResolution: (
+    input: ApplyTaskHierarchyManualResolutionInput,
+  ) => Promise<AppliedTaskHierarchyManualResolutionResult>;
   createTask: (input: CreateTaskInput) => Promise<TaskListItemRecord>;
   getTaskDetail: (taskId: string) => Promise<TaskDetail | null>;
   updateTask: (input: UpdateTaskInput) => Promise<TaskListItemRecord>;

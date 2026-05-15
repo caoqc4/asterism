@@ -534,6 +534,168 @@ describe('TaskService', () => {
     });
   });
 
+  it('returns manual-review policy for hierarchy conflicts', async () => {
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('running'),
+          id: 'project_1',
+          title: '项目一',
+          childTaskIds: ['missing_child'],
+        },
+      ]),
+      create: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    await expect(service.getHierarchyManualReviewPolicy()).resolves.toMatchObject({
+      required: true,
+      items: [
+        {
+          reason: 'missing_record',
+          issue: {
+            code: 'missing_child_record',
+            taskId: 'project_1',
+            relatedTaskId: 'missing_child',
+          },
+        },
+      ],
+    });
+  });
+
+  it('applies an explicit manual hierarchy resolution for unique parentage', async () => {
+    const projectOne = {
+      ...buildRecord('running'),
+      id: 'project_1',
+      title: '项目一',
+      childTaskIds: ['child_1'],
+    };
+    const projectTwo = {
+      ...buildRecord('running'),
+      id: 'project_2',
+      title: '项目二',
+      childTaskIds: ['child_1'],
+    };
+    const child = {
+      ...buildRecord('running'),
+      id: 'child_1',
+      title: '需求分析',
+      parentTaskId: 'project_2',
+      childTaskIds: [],
+    };
+    const repository = {
+      list: vi.fn()
+        .mockResolvedValueOnce([projectOne, projectTwo, child])
+        .mockResolvedValueOnce([
+          { ...projectOne, childTaskIds: [] },
+          projectTwo,
+          child,
+        ]),
+      create: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    await expect(service.applyHierarchyManualResolution({
+      kind: 'set_unique_parent',
+      taskId: 'child_1',
+      targetParentTaskId: 'project_2',
+    })).resolves.toMatchObject({
+      applied: true,
+    });
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'project_1',
+      childTaskIds: [],
+    });
+  });
+
+  it('applies explicit manual hierarchy cleanup for missing and malformed references', async () => {
+    const project = {
+      ...buildRecord('running'),
+      id: 'project_1',
+      title: '项目一',
+      childTaskIds: ['child_1', 'child_1', 'missing_child'],
+    };
+    const loop = {
+      ...buildRecord('running'),
+      id: 'loop',
+      title: '循环任务',
+      parentTaskId: 'loop',
+      childTaskIds: ['loop'],
+    };
+    const repository = {
+      list: vi.fn()
+        .mockResolvedValueOnce([project, loop])
+        .mockResolvedValueOnce([{
+          ...project,
+          childTaskIds: ['child_1', 'child_1'],
+        }, loop])
+        .mockResolvedValueOnce([project, loop])
+        .mockResolvedValueOnce([{
+          ...project,
+          childTaskIds: ['child_1', 'missing_child'],
+        }, loop])
+        .mockResolvedValueOnce([project, loop])
+        .mockResolvedValueOnce([project, {
+          ...loop,
+          parentTaskId: null,
+          childTaskIds: [],
+        }]),
+      create: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    await service.applyHierarchyManualResolution({
+      kind: 'remove_child_reference',
+      taskId: 'project_1',
+      relatedTaskId: 'missing_child',
+    });
+    await service.applyHierarchyManualResolution({
+      kind: 'dedupe_child_reference',
+      taskId: 'project_1',
+      relatedTaskId: 'child_1',
+    });
+    await service.applyHierarchyManualResolution({
+      kind: 'remove_self_reference',
+      taskId: 'loop',
+      relatedTaskId: 'loop',
+    });
+
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'project_1',
+      childTaskIds: ['child_1', 'child_1'],
+    });
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'project_1',
+      childTaskIds: ['child_1', 'missing_child'],
+    });
+    expect(repository.update).toHaveBeenCalledWith({
+      id: 'loop',
+      parentTaskId: null,
+      childTaskIds: [],
+    });
+  });
+
   it('builds a task resume card from current signals, materials, methods, and timeline', async () => {
     const repository = {
       list: vi.fn(),
