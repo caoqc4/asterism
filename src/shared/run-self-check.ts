@@ -89,6 +89,14 @@ export function evaluateRunSelfCheck(
         source,
       };
     }
+    if (detail?.taskMemoryGuidance?.outcome === 'pending') {
+      return {
+        tone: 'warn',
+        label: 'Run 任务记忆待处理',
+        detail: appendWorkHabitContext(detail.taskMemoryGuidance.reason, options),
+        source,
+      };
+    }
     return {
       tone: hasEvidence ? 'pass' : 'warn',
       label: hasEvidence ? 'Run 验证通过' : 'Run 需补验证',

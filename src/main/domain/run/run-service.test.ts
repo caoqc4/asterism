@@ -410,6 +410,66 @@ describe('RunService', () => {
     });
   });
 
+  it('persists run-level warning when task memory guidance is still pending', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildRunRecord('completed')),
+      create: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const runStepRepository = {
+      listForRun: vi.fn().mockResolvedValue([{
+        id: 'run_step_memory',
+        runId: 'run_1',
+        index: 1,
+        kind: 'plan',
+        status: 'completed',
+        title: '任务记忆建议',
+        input: null,
+        output: '- Task Record may be useful: context_archive',
+        error: null,
+        createdAt: '2026-01-01T00:01:00.000Z',
+        updatedAt: '2026-01-01T00:01:00.000Z',
+      }]),
+    };
+    const runVerificationRepository = {
+      upsert: vi.fn(),
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
+    const service = new RunService(
+      runRepository as never,
+      {
+        getDetail: vi.fn().mockResolvedValue({
+          ...buildTaskDetail('running'),
+          taskFiles: [],
+        }),
+      } as never,
+      buildArtifactRepositoryMock() as never,
+      {} as never,
+      {} as never,
+      undefined,
+      runStepRepository as never,
+      null,
+      { listForRun: vi.fn().mockResolvedValue([]) } as never,
+      { listForRun: vi.fn().mockResolvedValue([]) } as never,
+      runVerificationRepository as never,
+    );
+
+    const result = await service.getDetail('run_1');
+
+    expect(result?.taskMemoryGuidance).toMatchObject({
+      outcome: 'pending',
+      pendingTargets: ['task_record'],
+    });
+    expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      targetType: 'run',
+      targetId: 'run_1',
+      tone: 'warn',
+      label: 'Run 任务记忆待处理',
+      detail: '最新任务记忆建议仍缺少对应写入：Task Record。',
+    }));
+  });
+
   it('completes a run when the executor succeeds', async () => {
     const runRepository = {
       list: vi.fn(),

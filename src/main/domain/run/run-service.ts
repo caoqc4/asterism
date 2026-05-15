@@ -87,24 +87,6 @@ export class RunService {
     }
 
     const steps = await this.runStepRepository.listForRun(runId);
-    const detail = {
-      ...run,
-      artifacts: await this.artifactRepository.listForRun(runId),
-      steps,
-      checkpoints: await this.runCheckpointRepository.listForRun(runId),
-      agentSessions: await this.agentSessionStore.listForRun(runId),
-    };
-    await persistLightweightRunVerifications(detail, this.runVerificationRepository, {
-      includeRunLevel: await this.shouldPersistRunLevelSelfCheck(),
-    });
-
-    const runtimeEvents = projectRuntimeEvents({
-      taskId: run.taskId,
-      runs: [run],
-      runStepsByRunId: {
-        [run.id]: steps,
-      },
-    });
     const taskDetailReader = (this.taskService as Partial<Pick<TaskService, 'getDetail'>>).getDetail;
     const taskDetail = typeof taskDetailReader === 'function'
       ? await Promise.resolve(taskDetailReader.call(this.taskService, run.taskId)).catch(() => null)
@@ -121,7 +103,25 @@ export class RunService {
           title: file.name,
         })),
     });
+    const detail = {
+      ...run,
+      artifacts: await this.artifactRepository.listForRun(runId),
+      steps,
+      checkpoints: await this.runCheckpointRepository.listForRun(runId),
+      agentSessions: await this.agentSessionStore.listForRun(runId),
+      taskMemoryGuidance,
+    };
+    await persistLightweightRunVerifications(detail, this.runVerificationRepository, {
+      includeRunLevel: await this.shouldPersistRunLevelSelfCheck(),
+    });
 
+    const runtimeEvents = projectRuntimeEvents({
+      taskId: run.taskId,
+      runs: [run],
+      runStepsByRunId: {
+        [run.id]: steps,
+      },
+    });
     return {
       ...detail,
       verifications: this.runVerificationRepository

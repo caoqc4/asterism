@@ -100,6 +100,32 @@ describe('runtime verification', () => {
     });
   });
 
+  it('warns when a completed run still has pending task memory guidance', () => {
+    expect(evaluateRuntimeVerification({
+      mode: 'run',
+      run: buildRun(),
+      detail: {
+        ...buildRun(),
+        steps: [buildStep()],
+        taskMemoryGuidance: {
+          latestGuidanceAt: '2026-05-15T01:00:00.000Z',
+          outcome: 'pending',
+          pendingTargets: ['task_md'],
+          reason: '最新任务记忆建议仍缺少对应写入：Task.md。',
+          targets: ['task_md'],
+        },
+      },
+    })).toMatchObject({
+      mode: 'run',
+      tone: 'warn',
+      label: 'Run 任务记忆待处理',
+      detail: '最新任务记忆建议仍缺少对应写入：Task.md。',
+      canProceed: true,
+      requiresUserConfirmation: true,
+      suggestedNextAction: 'confirm',
+    });
+  });
+
   it('normalizes failed run steps into confirmation-oriented verification results', () => {
     expect(evaluateRuntimeVerification({
       mode: 'run_step',
