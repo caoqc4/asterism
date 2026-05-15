@@ -80,6 +80,7 @@ export type AgentWorkingContext = {
     sourceRole?: SourceContextRole | null;
     status?: SourceContextStatus | string | null;
     updatedAt?: string | null;
+    uri?: string | null;
   }>;
   artifacts: Array<{
     title: string;

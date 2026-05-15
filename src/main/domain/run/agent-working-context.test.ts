@@ -128,6 +128,7 @@ function buildTaskDetail(): TaskDetail {
         id: 'source_1',
         note: 'Primary source',
         title: 'Launch source',
+        uri: 'https://example.com/launch',
       }),
     ],
     processTemplates: [
@@ -185,6 +186,7 @@ describe('agent working context', () => {
       isKey: true,
       status: 'active',
       updatedAt: '2026-01-01T00:00:00.000Z',
+      uri: 'https://example.com/launch',
     });
     expect(context.artifacts.map((artifact) => artifact.title)).toEqual([
       'qa_screenshot.png',

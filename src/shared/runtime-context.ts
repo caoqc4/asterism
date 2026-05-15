@@ -244,6 +244,7 @@ export function buildRuntimeContextManifest(params: {
           sourceRole: source.sourceRole,
           status: source.status,
           title: source.title,
+          uri: source.uri,
         });
         const inclusionDecision = combineSourceInclusion(freshness.decision, quality.decision);
         const inclusionReason = sourceInclusionReason(freshness, quality);

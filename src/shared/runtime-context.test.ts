@@ -45,6 +45,7 @@ function buildWorkingContext(): AgentWorkingContext {
         sourceRole: 'raw',
         status: 'active',
         updatedAt: '2026-01-01T00:00:00.000Z',
+        uri: 'https://example.com/launch',
       },
     ],
     artifacts: [

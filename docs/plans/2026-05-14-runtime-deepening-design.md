@@ -550,7 +550,7 @@ Implemented:
 - Added `SourceFreshnessEvaluation`; `RuntimeContextManifest` can now carry source inclusion decisions and reasons such as selected, current-run, key, stable reference, recent, stale, archived, or undated.
 - Added `SourceMaterialQualityEvaluation`; `RuntimeContextManifest` now combines freshness with traceability, credibility, duplicate, and sensitivity checks before including source context content.
 - Added `SelectedFileRelevanceEvaluation`; `RuntimeContextManifest` can now carry selected-file relevance reasons such as Task.md, Task Record, explicit selected file, generated output, empty preview, or archived path.
-- `AgentWorkingContext` now retains source id/status/capturedAt/run/sourceRole metadata so ordinary Run context manifests can evaluate source freshness instead of relying only on title-level summaries.
+- `AgentWorkingContext` now retains source id/status/capturedAt/run/sourceRole/uri metadata so ordinary Run context manifests can evaluate source freshness and source-quality traceability instead of relying only on title-level summaries.
 - Code Agent model-producer preflight now passes selected source-context metadata into `RuntimeContextManifest`, so source freshness/relevance is evaluated before execution rather than only in the provider-visible manifest.
 - Added `TaskRecordWorthinessEvaluation` so Task Record-worthy handoffs, closeouts, user corrections, option rationale, failure reviews, context archives, external signals, and durable state changes are classified by one shared runtime object.
 - RightPanel context-refresh and phase-closeout Task Record writes now consume `TaskRecordWorthinessEvaluation` before creating `Task Records/` files.

@@ -130,6 +130,7 @@ export function buildAgentWorkingContext(task: TaskDetail): AgentWorkingContext 
         sourceRole: source.sourceRole ?? null,
         status: source.status,
         updatedAt: source.updatedAt,
+        uri: source.uri,
       })),
     artifacts: [...task.artifacts]
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
