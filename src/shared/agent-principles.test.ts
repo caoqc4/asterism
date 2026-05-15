@@ -12,6 +12,10 @@ describe('Taskplane Agent product principles', () => {
     expect(TASKPLANE_AGENT_PRINCIPLES_TITLE).toBe('Taskplane Agent Operating Principles');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Write policy: read-only for Agents and ordinary task execution');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('before creating tasks, executing tasks, updating task memory, clearing context, delegating subagents, or closing work');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('## First Principles And Simplicity');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('identify the real object being managed');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Prefer explicit structured state over title patterns');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Do not introduce new categories, folders, statuses, queues, prompts, agents, or confirmation steps unless');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('## Required Read Order');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('## Information Routing Protocol');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('route it to the smallest durable surface');

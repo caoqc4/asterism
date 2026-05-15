@@ -19,6 +19,27 @@ export type AgentPrinciplesComplianceItem = {
 
 export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
   {
+    section: 'First Principles And Simplicity',
+    status: 'partial',
+    priority: 'p0',
+    implementedBy: [
+      'Task creation and update paths use runtime-task-capture-evaluator to block duplicates, generic title-only candidates, generic phase templates, and child titles that merely repeat the parent.',
+      'Project decomposition uses runtime-subtask-evaluator before generation and confirmed child creation to avoid duplicate or underspecified subtasks.',
+      'Task hierarchy projection treats persisted taskType, taskFacets, parentTaskId, and childTaskIds as authoritative over stale renderer-local attributes.',
+      'Legacy title-pattern phase follow-up inference is limited to records without a parent field, and Tasks no longer mutates local hierarchy attributes during list loading.',
+      'TaskHierarchyConsistencyEvaluation, TaskHierarchyRepairPlan, and manual resolution commands separate diagnostics, safe repair, and explicit human confirmation instead of silently guessing structure.',
+      'No default Artifacts/ folder is required; output folders are created only when useful for the task.',
+    ],
+    gaps: [
+      'Some retained runtime and renderer branches still need review for title-pattern inference, implicit task creation, or local fallback state that can override structured records.',
+      'Not every execution path has an explicit simplicity check before creating new files, records, decisions, prompts, or follow-up tasks.',
+    ],
+    nextVerification: [
+      'Add regression tests for no implicit hierarchy mutation, no generic follow-up task creation, and no local fallback override when structured record fields are present.',
+      'Review remaining creation and persistence paths for unnecessary categories, files, records, or confirmation steps.',
+    ],
+  },
+  {
     section: 'Required Read Order',
     status: 'partial',
     priority: 'p0',

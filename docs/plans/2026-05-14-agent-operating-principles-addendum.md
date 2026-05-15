@@ -49,6 +49,13 @@ Use the documents as a layered system:
 
 Future changes should avoid expanding the original Agent document into an all-purpose product spec.
 
+First-principles and simplicity guidance belongs in the Agent document because it constrains Agent behavior across all stages:
+
+- identify the real object, user-visible outcome, authoritative data source, and smallest durable state change before acting;
+- prefer explicit structured state over title patterns, chat implication, or inferred workflow phases;
+- avoid creating extra tasks, files, records, statuses, queues, prompts, agents, or confirmation steps unless they remove real ambiguity, reduce repeated user effort, or protect against meaningful risk;
+- when uncertain, keep the system reversible and inspectable through proposals, trade-off explanation, or user confirmation instead of silent structural mutation.
+
 When a new rule is about Agent behavior, add it through a clearly versioned addendum or a future version of the Agent principles.
 
 When a new rule is about product runtime behavior, add it to runtime lifecycle design and coverage instead.

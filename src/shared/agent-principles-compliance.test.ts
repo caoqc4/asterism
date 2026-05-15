@@ -6,6 +6,7 @@ import {
 } from './agent-principles-compliance.js';
 
 const requiredSections = [
+  'First Principles And Simplicity',
   'Required Read Order',
   'Information Routing Protocol',
   'Task Creation Protocol',
