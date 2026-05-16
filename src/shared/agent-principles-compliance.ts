@@ -446,9 +446,11 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Decision effect grouping organizes related decision effects by task first and source when no task is bound.',
       'Decisions page approve/defer/cancel actions use shared decision action guards backed by pre_step and post_step verification.',
       'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
+      'DecisionJudgmentProjection prefers explicit Decision context impact, reversibility, and recommendation reason before generic judgment labels.',
       'DecisionService.listJudgments exposes the pending judgment-center projection at the domain boundary.',
       'Decisions page action results summarize approved, deferred, and cancelled effects using decision-effect-evaluator.',
       'DecisionJudgmentProjection attaches grouped pending-decision context by task/source, and the Decisions page shows same-source pending counts and effect detail inside the judgment card.',
+      'Decisions page keeps failed action attempts visible with retry feedback and disables duplicate actions while a decision action is pending.',
     ],
     gaps: [
       'Decisions page now shows grouped pending-decision context; batch approve/defer/cancel remains intentionally deferred until a real multi-decision workflow appears.',

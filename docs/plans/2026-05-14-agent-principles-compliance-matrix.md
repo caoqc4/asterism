@@ -72,3 +72,14 @@ The next runtime-deepening packages should follow this order:
 5. Build the Decisions judgment center on top of the existing Decision/checkpoint data model.
 
 This keeps the work aligned with the principle document instead of creating isolated fixes.
+
+## Status Update - 2026-05-16
+
+The Decisions judgment-center baseline is now implemented.
+
+- `DecisionJudgmentProjection` centralizes category, urgency, task signal, options, recommendation, impact, reversibility, grouping, and ordering semantics.
+- `DecisionService.listJudgments` exposes the projection from the domain boundary, so the renderer does not rebuild judgment semantics from raw Decisions.
+- The Decisions page shows context, options, recommendation, grouped pending-decision context, and action effects after approve/defer/cancel.
+- Decision actions are guarded, failed actions remain visible with retry feedback, and duplicate action clicks are disabled while an action is pending.
+
+The remaining Decisions work is intentionally narrow: keep grouped Decisions read-only until a real multi-decision workflow requires batch approve/defer/cancel.

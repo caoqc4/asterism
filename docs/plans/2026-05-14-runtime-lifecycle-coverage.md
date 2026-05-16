@@ -108,3 +108,13 @@ Both are needed.
 5. Implement Decisions judgment center.
 6. Add `RuntimeCapabilitySnapshot`.
 7. Finish data model migration for task hierarchy and facets, and route every child-task creation path through shared child draft evaluation.
+
+## Status Update - 2026-05-16
+
+The Decisions judgment-center baseline is now implemented.
+
+- Pending Decisions are projected through `DecisionJudgmentProjection` and exposed by `DecisionService.listJudgments`.
+- The Decisions page now presents judgment context, options, recommendation, grouped pending-decision context, and approve/defer/cancel effects.
+- The page keeps failed action attempts visible with retry feedback and disables duplicate actions while an action is pending.
+
+The remaining lifecycle gap is not a generic Decisions inbox gap anymore. It is limited to future multi-decision workflows, which should stay deferred until users need batch approve/defer/cancel.
