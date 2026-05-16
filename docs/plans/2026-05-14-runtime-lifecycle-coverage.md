@@ -91,6 +91,8 @@ Provider-visible planning is tracked separately from provider-visible execution.
 
 Product-level durable configuration is also tracked separately from task mutation. AI runtime settings, Work Habit preference memory, and reusable process-template library writes affect future runtime behavior, but they do not mutate a specific task and should not be forced through `task_mutation`.
 
+Capability probes are tracked separately from execution. A sandbox backend probe may inspect local runtime readiness, but it must remain read-only: no Run start, no task mutation, and no implicit scheduler decision.
+
 ## Design Rule
 
 Do not treat Agent Principles compliance as equivalent to runtime lifecycle completion.

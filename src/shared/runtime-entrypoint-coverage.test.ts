@@ -94,6 +94,19 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
+  it('keeps capability probes read-only and out of execution gates', () => {
+    expect(requiredRuntimeEntrypointGatesForKind('capability_probe')).toEqual([
+      'simplicity_check',
+      'capability_probe_boundary',
+    ]);
+    for (const entry of runtimeEntrypointsByKind('capability_probe')) {
+      expect(entry.requiredGates).toContain('capability_probe_boundary');
+      expect(entry.requiredGates).not.toContain('runtime_action');
+      expect(entry.requiredGates).not.toContain('runtime_context_assembly');
+      expect(entry.requiredGates).not.toContain('task_mutation');
+    }
+  });
+
   it('requires resumed execution paths to check handoff or decision state before continuing', () => {
     const resumed = [
       ...runtimeEntrypointsByKind('execution_resume'),
@@ -156,6 +169,7 @@ describe('runtime entrypoint coverage', () => {
       'run.triggerCodeAgent',
       'run.triggerOperatorStarted',
       'settings.aiRuntimeConfig',
+      'settings.sandboxBackendProbe',
       'task.capture',
       'task.completionTransition',
       'task.fileAndArtifactWrites',

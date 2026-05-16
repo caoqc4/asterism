@@ -5,6 +5,7 @@ export type RuntimeEntrypointKind =
   | 'product_configuration'
   | 'preference_memory'
   | 'method_library'
+  | 'capability_probe'
   | 'execution_resume'
   | 'decision_resume'
   | 'decision_action'
@@ -32,7 +33,8 @@ export type RuntimeEntrypointGate =
   | 'panel_event_allowlist'
   | 'product_config_boundary'
   | 'preference_boundary'
-  | 'method_library_boundary';
+  | 'method_library_boundary'
+  | 'capability_probe_boundary';
 
 export type RuntimeEntrypointCoverage = {
   id: string;
@@ -95,6 +97,10 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
   method_library: [
     'simplicity_check',
     'method_library_boundary',
+  ],
+  capability_probe: [
+    'simplicity_check',
+    'capability_probe_boundary',
   ],
   execution_resume: [
     'simplicity_check',
@@ -458,6 +464,21 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'product_config_boundary',
     ],
     notes: 'Read-only status and sandbox probes are exempt. The write path is explicit settings IPC and emits settings.changed after the config and scheduler state settle.',
+  },
+  {
+    id: 'settings.sandboxBackendProbe',
+    owner: 'IPC settings:probeSandboxBackend',
+    kind: 'capability_probe',
+    description: 'Probe local sandbox backend readiness without starting task execution or mutating task state.',
+    requiredGates: [
+      'simplicity_check',
+      'capability_probe_boundary',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'capability_probe_boundary',
+    ],
+    notes: 'The probe returns backend status and producer readiness through explicit settings IPC; it does not start runs, mutate tasks, or persist scheduler decisions.',
   },
   {
     id: 'workHabit.preferenceMemory',
