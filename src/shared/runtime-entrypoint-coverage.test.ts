@@ -136,6 +136,22 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
+  it('separates decision draft and decision creation from decision actions', () => {
+    for (const entry of runtimeEntrypointsByKind('decision_draft')) {
+      expect(entry.requiredGates).toContain('runtime_context_assembly');
+      expect(entry.requiredGates).toContain('task_memory_guidance');
+      expect(entry.requiredGates).toContain('task_mutation');
+      expect(entry.requiredGates).toContain('decision_draft_boundary');
+      expect(entry.requiredGates).not.toContain('decision_action');
+    }
+    for (const entry of runtimeEntrypointsByKind('decision_write')) {
+      expect(entry.requiredGates).toContain('decision_write_boundary');
+      expect(entry.requiredGates).toContain('pre_step');
+      expect(entry.requiredGates).not.toContain('decision_action');
+      expect(entry.requiredGates).not.toContain('runtime_context_assembly');
+    }
+  });
+
   it('requires durable writes to pass task mutation boundaries', () => {
     for (const entry of runtimeEntrypointsByKind('durable_write')) {
       expect(entry.requiredGates).toContain('simplicity_check');
@@ -174,6 +190,8 @@ describe('runtime entrypoint coverage', () => {
       'context.clearOrSwitch',
       'decision.action',
       'decision.approvedCheckpointResume',
+      'decision.create',
+      'decision.draft',
       'panel.timelineEventWrite',
       'processTemplate.libraryWrites',
       'project.decompositionConfirm',

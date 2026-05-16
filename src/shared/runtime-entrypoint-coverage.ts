@@ -9,6 +9,8 @@ export type RuntimeEntrypointKind =
   | 'capability_probe'
   | 'execution_resume'
   | 'decision_resume'
+  | 'decision_draft'
+  | 'decision_write'
   | 'decision_action'
   | 'task_capture'
   | 'task_state_transition'
@@ -30,6 +32,8 @@ export type RuntimeEntrypointGate =
   | 'task_completion'
   | 'project_verification'
   | 'decision_action'
+  | 'decision_draft_boundary'
+  | 'decision_write_boundary'
   | 'checkpoint_eligibility'
   | 'panel_event_allowlist'
   | 'product_config_boundary'
@@ -124,6 +128,19 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
     'post_step',
     'subtask_start',
     'checkpoint_eligibility',
+  ],
+  decision_draft: [
+    'simplicity_check',
+    'runtime_context_assembly',
+    'task_memory_guidance',
+    'task_mutation',
+    'pre_step',
+    'decision_draft_boundary',
+  ],
+  decision_write: [
+    'simplicity_check',
+    'decision_write_boundary',
+    'pre_step',
   ],
   decision_action: [
     'simplicity_check',
@@ -297,6 +314,46 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'subtask_start',
       'checkpoint_eligibility',
     ],
+  },
+  {
+    id: 'decision.draft',
+    owner: 'DecisionService.draft',
+    kind: 'decision_draft',
+    description: 'Generate a task-bound Decision draft, optionally with provider-visible process-template assistance.',
+    requiredGates: [
+      'simplicity_check',
+      'runtime_context_assembly',
+      'task_memory_guidance',
+      'task_mutation',
+      'pre_step',
+      'decision_draft_boundary',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'runtime_context_assembly',
+      'task_memory_guidance',
+      'task_mutation',
+      'pre_step',
+      'decision_draft_boundary',
+    ],
+    notes: 'Drafting requires an existing task, selected/skipped process-template annotations now pass task_mutation, and Decision persistence remains behind decision.create.',
+  },
+  {
+    id: 'decision.create',
+    owner: 'DecisionService.create',
+    kind: 'decision_write',
+    description: 'Persist a new Decision in the judgment center without approving or executing it.',
+    requiredGates: [
+      'simplicity_check',
+      'decision_write_boundary',
+      'pre_step',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'decision_write_boundary',
+      'pre_step',
+    ],
+    notes: 'Task-scoped Decisions require an existing task; global Decisions remain allowed when their normalized scope is not task-bound.',
   },
   {
     id: 'task.capture',

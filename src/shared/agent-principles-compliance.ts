@@ -51,7 +51,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     status: 'partial',
     priority: 'p0',
     implementedBy: [
-      'RuntimeEntrypointCoverage keeps retained entrypoints explicit for provider-visible execution, provider-visible planning, provider-visible assistance, hidden local execution, task capture, task transition, hierarchy maintenance, project decomposition, decision action, agent tools, durable writes, product configuration, preference memory, method-library writes, capability probes, context transitions, task dynamics, and capability checks.',
+      'RuntimeEntrypointCoverage keeps retained entrypoints explicit for provider-visible execution, provider-visible planning, provider-visible assistance, hidden local execution, task capture, task transition, hierarchy maintenance, project decomposition, decision draft, decision creation, decision action, agent tools, durable writes, product configuration, preference memory, method-library writes, capability probes, context transitions, task dynamics, and capability checks.',
       'RuntimeEntrypointCoverage defines kind-level gate baselines so an entrypoint cannot be treated as covered below its class minimum.',
       'RuntimeEntrypointCoverage requires simplicity_check on every retained entrypoint and every kind baseline.',
       'runtime-entrypoint-coverage tests fail when registered entrypoints are missing required gates, fall below their kind baseline, duplicate ownership, or omit simplicity_check.',
@@ -231,6 +231,8 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     implementedBy: [
       'Runs and run steps record plans, tool calls, tool results, checkpoints, failures, and terminal verification.',
       'Agent tool registry gates risky local command/write tools through checkpoints and Decisions.',
+      'DecisionService draft requires an existing task and routes process-template annotations through task_mutation before returning an AI or fallback draft.',
+      'DecisionService create normalizes Decision scope and requires task existence before task-scoped Decision persistence.',
       'Runtime action evaluator now covers run start/resume, task mutation, task state transition, context clear, phase closeout, and file proposals.',
       'runtime-verification has first-pass pre_step and post_step modes for execution permission and durable-change recovery notes.',
       'pre_step runtime verification can consume RuntimeCapabilitySnapshot when an execution explicitly requires model execution or workspace verification.',
@@ -264,7 +266,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TasksPage file/source/artifact actions and project decomposition confirmation now persist panel.* timeline events for RuntimeEventRecord audit projection.',
       'TasksPage project membership changes and completion handoffs now persist panel.* timeline events with task-to-task context.',
       'TaskService recordTimelineEvent guards panel.* task dynamic writes with task_mutation before persistence.',
-      'RuntimeEntrypointCoverage keeps retained execution, planning, assistance, resume, capability-probe, context-transition, task-capture, task-transition, project-decomposition, decision-action, agent-tool, product-configuration, preference-memory, method-library, and durable-write entrypoints explicit with required runtime gates.',
+      'RuntimeEntrypointCoverage keeps retained execution, planning, assistance, resume, capability-probe, context-transition, task-capture, task-transition, project-decomposition, decision-draft, decision-write, decision-action, agent-tool, product-configuration, preference-memory, method-library, and durable-write entrypoints explicit with required runtime gates.',
       'RuntimeEntrypointCoverage defines kind-level gate baselines so future entrypoints cannot register below their class minimum without a failing regression test.',
       'RuntimeEntrypointCoverage includes simplicity_check in every kind-level baseline and retained entrypoint, tying execution expansion back to the first-principles smallest-state-change rule.',
       'RuntimeEntrypointCoverage is intentionally a regression registry; future runtime entrypoints must be added there and wired to the kind-level baseline rather than relying on dynamic discovery.',

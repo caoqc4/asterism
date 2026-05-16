@@ -1522,6 +1522,7 @@ export class TaskService {
     titles: string[],
     reason: string,
   ): Promise<void> {
+    this.assertTaskMutationActionAllowed(taskId);
     await this.repository.appendTimelineEvent(taskId, 'process_template.selected', {
       sourceType,
       sourceId,
@@ -1538,6 +1539,7 @@ export class TaskService {
     reason: string,
     candidateCount: number,
   ): Promise<void> {
+    this.assertTaskMutationActionAllowed(taskId);
     await this.repository.appendTimelineEvent(taskId, 'process_template.skipped', {
       sourceType,
       sourceId,
