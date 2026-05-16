@@ -876,6 +876,14 @@ describe('AgentToolRegistry', () => {
       2,
       expect.objectContaining({ kind: 'tool_result', status: 'completed' }),
     );
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        kind: 'plan',
+        status: 'completed',
+        title: '任务记忆建议',
+        output: '- Task.md: important_file',
+      }),
+    );
   });
 
   it('records failed tool validation as tool result failure', async () => {
