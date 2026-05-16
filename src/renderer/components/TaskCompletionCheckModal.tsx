@@ -73,6 +73,19 @@ function buildWaitingReason(detail: TaskDetail | null, runCheck: RuntimeVerifica
   return '完成检查需要补充完成标准';
 }
 
+export function buildTaskCompletionMemoryCoverage(
+  detail: TaskDetail,
+  recentRunCheck: RuntimeVerificationResult | null,
+) {
+  const coverageInput = buildTaskMemoryCoverageInputForTask('task_completion', detail);
+  return evaluateTaskMemoryCoverage({
+    ...coverageInput,
+    hasRecentRunEvidence: recentRunCheck
+      ? recentRunCheck.tone !== 'fail'
+      : coverageInput.hasRecentRunEvidence,
+  });
+}
+
 function isProjectTask(taskId: string, detail: TaskDetail | null): boolean {
   return Boolean(detail && authoritativeTaskType(detail, getTaskAttributes(taskId)) === 'project');
 }
@@ -197,11 +210,7 @@ export function TaskCompletionCheckModal({
   const open = criteria.filter((item) => item.status === 'open');
   const projectResult = projectVerification?.project ?? null;
   const hasRunConcern = recentRunCheck?.tone === 'fail' || recentRunCheck?.tone === 'warn';
-  const taskMemoryCoverage = detail
-    ? evaluateTaskMemoryCoverage(buildTaskMemoryCoverageInputForTask('task_completion', detail, {
-      hasRecentRunEvidence: Boolean(recentRunCheck && recentRunCheck.tone !== 'fail'),
-    }))
-    : null;
+  const taskMemoryCoverage = detail ? buildTaskCompletionMemoryCoverage(detail, recentRunCheck) : null;
   const hasEvaluationConcern = Boolean(closeoutEvaluation && closeoutEvaluation.outcome !== 'ready_to_complete');
   const hasProjectConcern = Boolean(projectVerification && !projectVerification.canProceed);
   const hasCriteriaConcern = !projectVerification && (open.length > 0 || criteria.length === 0);
