@@ -2,6 +2,7 @@ import { and, desc, eq, inArray } from 'drizzle-orm';
 
 import type {
   CreateSourceContextInput,
+  SourceContextCredibility,
   SourceContextRole,
   SourceContextRecord,
   UpdateSourceContextInput,
@@ -22,6 +23,7 @@ function sortSourceContexts(rows: SourceContextRecord[]): SourceContextRecord[] 
 
 function toRecord(row: typeof sourceContexts.$inferSelect): SourceContextRecord {
   const sourceRole = row.sourceRole as SourceContextRole | null;
+  const credibility = row.credibility as SourceContextCredibility | null;
   return {
     id: row.id,
     taskId: row.taskId,
@@ -36,6 +38,9 @@ function toRecord(row: typeof sourceContexts.$inferSelect): SourceContextRecord 
     runId: row.runId,
     batchId: row.batchId,
     sourceRole: sourceRole ?? 'raw',
+    credibility: credibility ?? null,
+    isDuplicate: row.isDuplicate === 'true',
+    containsSensitiveData: row.containsSensitiveData === 'true',
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     archivedAt: row.archivedAt,
@@ -106,6 +111,9 @@ export class SourceContextRepository {
       runId,
       batchId: normalizeValue(input.batchId) ?? (runId ? `run:${runId}` : null),
       sourceRole: input.sourceRole ?? 'raw',
+      credibility: input.credibility ?? null,
+      isDuplicate: input.isDuplicate ? 'true' : 'false',
+      containsSensitiveData: input.containsSensitiveData ? 'true' : 'false',
       createdAt: timestamp,
       updatedAt: timestamp,
       archivedAt: null,

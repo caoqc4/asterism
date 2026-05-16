@@ -1,4 +1,9 @@
-import type { SourceContextKind, SourceContextRole, SourceContextStatus } from './types/source-context.js';
+import type {
+  SourceContextCredibility,
+  SourceContextKind,
+  SourceContextRole,
+  SourceContextStatus,
+} from './types/source-context.js';
 
 export type SourceMaterialQualityDecision = 'include' | 'caution' | 'exclude';
 
@@ -13,7 +18,7 @@ export type SourceMaterialQualityReason =
   | 'traceable'
   | 'ordinary_note';
 
-export type SourceMaterialCredibility = 'verified' | 'unknown' | 'low';
+export type SourceMaterialCredibility = SourceContextCredibility;
 
 export type SourceMaterialQualityEvaluation = {
   decision: SourceMaterialQualityDecision;

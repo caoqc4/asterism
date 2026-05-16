@@ -52,6 +52,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through TaskMemoryCoverageEvaluation before execution.',
       'SourceFreshnessEvaluation classifies source materials as include, caution, or exclude, and RuntimeContextManifest can carry source inclusion decisions and reasons.',
       'SelectedFileRelevanceEvaluation classifies selected files as include, caution, or exclude, and RuntimeContextManifest can carry selected-file relevance reasons.',
+      'SourceContext records and creation inputs can carry explicit credibility, duplicate, and sensitive-data signals for source-quality evaluation.',
       'buildRuntimeContextAssemblyPolicy evaluates product principles, task state, Task.md, Task Records, selected file, structured signals, and work habits against the required read order.',
       'RuntimeContextAssemblyGate requires read-order assembly for provider-visible task execution and explicitly exempts hidden non-model entries.',
       'RunOrchestrator blocks ordinary model execution when required runtime context inputs are missing.',
@@ -61,6 +62,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     gaps: [
       'The shared read-order evaluator is enforced for ordinary model Runs and Code Agent model-producer runs; future provider-visible execution boundaries must use the same gate.',
       'Source freshness and selected-file relevance reasons are represented in the manifest, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points still need to pass full source/file metadata consistently.',
+      'Explicit source quality signals exist for retained source contexts, but future connector ingestion paths still need to populate them consistently.',
     ],
     nextVerification: [
       'Keep tests that task-bound execution manifests include product principles, task state, Task.md when present, and relevant Task Records.',
@@ -283,9 +285,10 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'SourceFreshnessEvaluation scores archived, selected, current-run, key, stable, recent, stale, and undated sources.',
       'SourceMaterialQualityEvaluation scores traceability, credibility, duplication, and sensitivity before source material is included in runtime context.',
       'RuntimeContextManifest combines source freshness and quality decisions into source-context inclusion metadata.',
+      'SourceContext records, creation inputs, Agent working context, and Agent source_context.create can carry explicit credibility, duplicate, and sensitive-data signals.',
     ],
     gaps: [
-      'Source material quality checks are shared and represented in context manifests, but source creation flows do not yet collect explicit credibility or duplicate signals from every connector.',
+      'Source material quality checks are shared and represented in context manifests, but future connector ingestion paths still need to populate explicit credibility, duplicate, and sensitivity signals consistently.',
       'Source inclusion metadata is data-level only; retained UI surfaces do not yet expose full source-quality explanations.',
     ],
     nextVerification: [

@@ -1530,6 +1530,9 @@ export class TaskService {
       runId: created.runId ?? null,
       batchId: created.batchId ?? null,
       sourceRole: created.sourceRole ?? 'raw',
+      credibility: created.credibility ?? null,
+      isDuplicate: Boolean(created.isDuplicate),
+      containsSensitiveData: Boolean(created.containsSensitiveData),
     });
 
     return created;

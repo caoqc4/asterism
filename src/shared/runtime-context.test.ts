@@ -315,6 +315,24 @@ describe('runtime context manifest', () => {
           contentPreview: '客户似乎改变想法',
           updatedAt: '2026-05-14T00:00:00.000Z',
         },
+        {
+          id: 'source_duplicate',
+          title: '重复来源',
+          kind: 'doc',
+          contentPreview: 'duplicate',
+          isDuplicate: true,
+          uri: 'https://example.com/duplicate',
+          updatedAt: '2026-05-14T00:00:00.000Z',
+        },
+        {
+          id: 'source_low_credibility',
+          title: '低可信来源',
+          kind: 'doc',
+          contentPreview: 'low credibility',
+          credibility: 'low',
+          uri: 'https://example.com/low',
+          updatedAt: '2026-05-14T00:00:00.000Z',
+        },
       ],
       task: { id: 'task_1', title: 'Launch task', state: 'running' },
       taskFiles: [{ path: 'Task.md', kind: 'file', contentPreview: '# Task' }],
@@ -329,6 +347,16 @@ describe('runtime context manifest', () => {
       contentIncluded: true,
       inclusionDecision: 'caution',
       inclusionReason: 'missing_trace',
+    });
+    expect(manifest.items.find((item) => item.id === 'source_duplicate')).toMatchObject({
+      contentIncluded: false,
+      inclusionDecision: 'exclude',
+      inclusionReason: 'duplicate',
+    });
+    expect(manifest.items.find((item) => item.id === 'source_low_credibility')).toMatchObject({
+      contentIncluded: true,
+      inclusionDecision: 'caution',
+      inclusionReason: 'low_credibility',
     });
   });
 

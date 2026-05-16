@@ -91,6 +91,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RunService, CodeAgentRunService, and OperatorStartedRunService block run_start when prior task-memory guidance is still pending.',
       'SourceFreshnessEvaluation classifies source materials as include, caution, or exclude, and RuntimeContextManifest can attach inclusion decisions and reasons to source context items.',
       'SourceMaterialQualityEvaluation classifies traceability, credibility, duplication, and sensitivity; RuntimeContextManifest combines it with freshness before including source context content.',
+      'SourceContext records and creation inputs can now carry explicit credibility, duplicate, and sensitive-data signals, and Agent source_context.create can pass those signals into runtime context assembly.',
       'AgentWorkingContext retains source uri metadata so source-quality traceability checks can use original source locations when available.',
       'SelectedFileRelevanceEvaluation classifies selected files as include, caution, or exclude, and RuntimeContextManifest can attach selected-file relevance reasons.',
       'RuntimeContextAssemblyGate distinguishes provider-visible task execution from hidden non-model runtime entries.',
@@ -105,6 +106,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Source freshness, source quality, and selected-file relevance are now represented as first-class inclusion reasons, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points must also pass full context metadata.',
+      'Explicit source quality signals exist for retained source contexts, but future connector ingestion paths still need to populate them consistently.',
     ],
     nextImplementation: [
       'Require any future provider-visible execution entry point to pass full source and selected-file metadata into RuntimeContextManifest before model/provider execution.',

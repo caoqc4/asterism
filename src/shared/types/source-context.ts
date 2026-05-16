@@ -4,6 +4,8 @@ export type SourceContextStatus = 'active' | 'archived';
 
 export type SourceContextRole = 'raw' | 'digest' | 'stable_reference';
 
+export type SourceContextCredibility = 'verified' | 'unknown' | 'low';
+
 export type SourceContextRecord = {
   id: string;
   taskId: string;
@@ -18,6 +20,9 @@ export type SourceContextRecord = {
   runId?: string | null;
   batchId?: string | null;
   sourceRole?: SourceContextRole;
+  credibility?: SourceContextCredibility | null;
+  isDuplicate?: boolean;
+  containsSensitiveData?: boolean;
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
@@ -35,6 +40,9 @@ export type CreateSourceContextInput = {
   runId?: string | null;
   batchId?: string | null;
   sourceRole?: SourceContextRole;
+  credibility?: SourceContextCredibility | null;
+  isDuplicate?: boolean;
+  containsSensitiveData?: boolean;
 };
 
 export type UpdateSourceContextInput = {

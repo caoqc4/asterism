@@ -240,6 +240,9 @@ function bootstrapTables(connection: Database.Database): void {
       run_id TEXT,
       batch_id TEXT,
       source_role TEXT NOT NULL DEFAULT 'raw',
+      credibility TEXT,
+      is_duplicate TEXT NOT NULL DEFAULT 'false',
+      contains_sensitive_data TEXT NOT NULL DEFAULT 'false',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       archived_at TEXT
@@ -350,6 +353,9 @@ function bootstrapTables(connection: Database.Database): void {
   ensureColumn(connection, 'source_contexts', 'run_id', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'batch_id', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'source_role', "TEXT NOT NULL DEFAULT 'raw'");
+  ensureColumn(connection, 'source_contexts', 'credibility', 'TEXT');
+  ensureColumn(connection, 'source_contexts', 'is_duplicate', "TEXT NOT NULL DEFAULT 'false'");
+  ensureColumn(connection, 'source_contexts', 'contains_sensitive_data', "TEXT NOT NULL DEFAULT 'false'");
   ensureColumn(connection, 'source_contexts', 'updated_at', 'TEXT');
   ensureColumn(connection, 'source_contexts', 'archived_at', 'TEXT');
   ensureColumn(connection, 'process_templates', 'summary', 'TEXT');

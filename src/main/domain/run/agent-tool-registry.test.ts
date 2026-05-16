@@ -555,6 +555,8 @@ describe('AgentToolRegistry', () => {
         isKey: true,
         content: 'Owner wants a shorter draft',
         note: 'Use this as the next source',
+        credibility: 'verified',
+        containsSensitiveData: true,
       },
       { runId: 'run_1', taskId: 'task_1' },
     );
@@ -585,6 +587,9 @@ describe('AgentToolRegistry', () => {
       runId: 'run_1',
       batchId: 'run:run_1',
       sourceRole: 'raw',
+      credibility: 'verified',
+      isDuplicate: undefined,
+      containsSensitiveData: true,
     });
     expect(runStepRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -707,6 +712,33 @@ describe('AgentToolRegistry', () => {
         error: 'source_context.create received unsupported kind: unsupported',
       }),
     );
+  });
+
+  it('rejects invalid source context quality signals', async () => {
+    const taskService = {
+      update: vi.fn(),
+      createCompletionCriteria: vi.fn(),
+      createSourceContext: vi.fn(),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const registry = new AgentToolRegistry(
+      {} as never,
+      runStepRepository as never,
+      undefined,
+      null,
+      undefined,
+      taskService as never,
+    );
+
+    const result = await registry.execute(
+      'source_context.create',
+      { title: 'Source', containsSensitiveData: 'true' },
+      { runId: 'run_1', taskId: 'task_1' },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('source_context.create requires containsSensitiveData to be boolean when provided.');
+    expect(taskService.createSourceContext).not.toHaveBeenCalled();
   });
 
   it('creates a completion criterion through TaskService', async () => {

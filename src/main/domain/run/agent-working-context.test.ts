@@ -124,8 +124,11 @@ function buildTaskDetail(): TaskDetail {
     ],
     sourceContexts: [
       buildSourceContext({
+        containsSensitiveData: true,
         content: 'This is the source content that should be summarized for the agent context.',
+        credibility: 'low',
         id: 'source_1',
+        isDuplicate: true,
         note: 'Primary source',
         title: 'Launch source',
         uri: 'https://example.com/launch',
@@ -185,6 +188,9 @@ describe('agent working context', () => {
       title: 'Launch source',
       isKey: true,
       status: 'active',
+      credibility: 'low',
+      isDuplicate: true,
+      containsSensitiveData: true,
       updatedAt: '2026-01-01T00:00:00.000Z',
       uri: 'https://example.com/launch',
     });

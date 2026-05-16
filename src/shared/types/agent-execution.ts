@@ -1,6 +1,6 @@
 import type { PriorityLane } from './brief.js';
 import type { RunCheckpointKind, RunType } from './run.js';
-import type { SourceContextRole, SourceContextStatus } from './source-context.js';
+import type { SourceContextCredibility, SourceContextRole, SourceContextStatus } from './source-context.js';
 import type { TaskRiskLevel, TaskState } from './task.js';
 
 export type AgentRunMode = RunType;
@@ -79,6 +79,9 @@ export type AgentWorkingContext = {
     selected?: boolean;
     sourceRole?: SourceContextRole | null;
     status?: SourceContextStatus | string | null;
+    credibility?: SourceContextCredibility | null;
+    isDuplicate?: boolean;
+    containsSensitiveData?: boolean;
     updatedAt?: string | null;
     uri?: string | null;
   }>;

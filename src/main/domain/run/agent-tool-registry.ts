@@ -14,7 +14,11 @@ import { evaluateRuntimeVerification } from '../../../shared/runtime-verificatio
 import { buildRuntimeRecoveryGuidance } from '../../../shared/runtime-recovery-guidance.js';
 import type { DecisionDraftRecord, DraftDecisionInput } from '../../../shared/types/decision.js';
 import type { RunStepRecord } from '../../../shared/types/run.js';
-import type { SourceContextKind, SourceContextRole } from '../../../shared/types/source-context.js';
+import type {
+  SourceContextCredibility,
+  SourceContextKind,
+  SourceContextRole,
+} from '../../../shared/types/source-context.js';
 import { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import type { DecisionRepository } from '../../db/repositories/decision-repository.js';
 import { RunCheckpointRepository } from '../../db/repositories/run-checkpoint-repository.js';
@@ -67,6 +71,9 @@ type SourceContextCreateInput = {
   capturedAt?: string | null;
   batchId?: string | null;
   sourceRole?: SourceContextRole;
+  credibility?: SourceContextCredibility | null;
+  isDuplicate?: boolean;
+  containsSensitiveData?: boolean;
 };
 
 type WorkspaceReadFileInput = {
@@ -102,6 +109,7 @@ const PRODUCT_PRINCIPLES_PROTECTED_FILES = new Set([
 ]);
 const sourceContextKinds = new Set<SourceContextKind>(['link', 'doc', 'issue', 'pr', 'website_list', 'note']);
 const sourceContextRoles = new Set<SourceContextRole>(['raw', 'digest', 'stable_reference']);
+const sourceContextCredibilities = new Set<SourceContextCredibility>(['verified', 'unknown', 'low']);
 const WORKSPACE_COMMAND_ALLOWED_SCRIPTS = new Set([
   'test',
   'lint',
@@ -210,6 +218,18 @@ function parseSourceContextCreateInput(input: unknown): Required<Pick<SourceCont
     throw new Error(`source_context.create received unsupported sourceRole: ${candidate.sourceRole}`);
   }
 
+  if (candidate.credibility !== undefined && candidate.credibility !== null && !sourceContextCredibilities.has(candidate.credibility)) {
+    throw new Error(`source_context.create received unsupported credibility: ${candidate.credibility}`);
+  }
+
+  if (candidate.isDuplicate !== undefined && typeof candidate.isDuplicate !== 'boolean') {
+    throw new Error('source_context.create requires isDuplicate to be boolean when provided.');
+  }
+
+  if (candidate.containsSensitiveData !== undefined && typeof candidate.containsSensitiveData !== 'boolean') {
+    throw new Error('source_context.create requires containsSensitiveData to be boolean when provided.');
+  }
+
   return {
     title,
     kind,
@@ -220,6 +240,9 @@ function parseSourceContextCreateInput(input: unknown): Required<Pick<SourceCont
     capturedAt: candidate.capturedAt,
     batchId: candidate.batchId,
     sourceRole: candidate.sourceRole,
+    credibility: candidate.credibility,
+    isDuplicate: candidate.isDuplicate,
+    containsSensitiveData: candidate.containsSensitiveData,
   };
 }
 
@@ -1338,6 +1361,9 @@ export class AgentToolRegistry {
           runId: context.runId,
           batchId: parsed.batchId ?? `run:${context.runId}`,
           sourceRole: parsed.sourceRole ?? 'raw',
+          credibility: parsed.credibility,
+          isDuplicate: parsed.isDuplicate,
+          containsSensitiveData: parsed.containsSensitiveData,
         });
 
         return {

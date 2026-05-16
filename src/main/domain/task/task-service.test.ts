@@ -162,10 +162,13 @@ function buildSourceContextRecord(partial: Partial<SourceContextRecord> = {}): S
     note: partial.note ?? 'Primary doc',
     status: partial.status ?? 'active',
     capturedAt: partial.capturedAt ?? '2026-01-01T00:00:00.000Z',
-    runId: partial.runId ?? null,
-    batchId: partial.batchId ?? null,
-    sourceRole: partial.sourceRole ?? 'raw',
-    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+      runId: partial.runId ?? null,
+      batchId: partial.batchId ?? null,
+      sourceRole: partial.sourceRole ?? 'raw',
+      credibility: partial.credibility ?? null,
+      isDuplicate: partial.isDuplicate ?? false,
+      containsSensitiveData: partial.containsSensitiveData ?? false,
+      createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
     archivedAt: partial.archivedAt ?? null,
   };
@@ -2848,6 +2851,8 @@ describe('TaskService', () => {
       uri: 'https://example.com/prd',
       note: 'Primary doc',
       sourceRole: 'raw',
+      credibility: 'verified',
+      containsSensitiveData: true,
     });
 
     expect(sourceContexts.create).toHaveBeenCalledWith({
@@ -2857,6 +2862,8 @@ describe('TaskService', () => {
       uri: 'https://example.com/prd',
       note: 'Primary doc',
       sourceRole: 'raw',
+      credibility: 'verified',
+      containsSensitiveData: true,
     });
     expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'source_context.created', {
       sourceContextId: 'source_context_1',
@@ -2868,6 +2875,9 @@ describe('TaskService', () => {
       runId: null,
       batchId: null,
       sourceRole: 'raw',
+      credibility: null,
+      isDuplicate: false,
+      containsSensitiveData: false,
     });
     expect(result.id).toBe('source_context_1');
   });

@@ -36,6 +36,16 @@ describe('source material quality evaluator', () => {
     });
 
     expect(evaluateSourceMaterialQuality({
+      title: '手动标记敏感来源',
+      containsSensitiveData: true,
+      uri: 'https://example.com/restricted',
+    })).toMatchObject({
+      decision: 'caution',
+      reason: 'sensitive',
+      sensitive: true,
+    });
+
+    expect(evaluateSourceMaterialQuality({
       title: '口头备注',
       kind: 'note',
       content: '客户好像改了想法',

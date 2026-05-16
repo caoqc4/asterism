@@ -13,7 +13,7 @@ import {
   type SourceMaterialQualityReason,
 } from './source-material-quality-evaluator.js';
 import { isTaskMdPath, isTaskRecordPath } from './task-memory-path.js';
-import type { SourceContextRole, SourceContextStatus } from './types/source-context.js';
+import type { SourceContextCredibility, SourceContextRole, SourceContextStatus } from './types/source-context.js';
 import type { TaskState } from './types/task.js';
 
 export type RuntimeContextManifestItemKind =
@@ -121,6 +121,9 @@ type RuntimeContextSourceContext = {
   selected?: boolean;
   sourceRole?: SourceContextRole | null;
   status?: SourceContextStatus | string | null;
+  credibility?: SourceContextCredibility | null;
+  isDuplicate?: boolean;
+  containsSensitiveData?: boolean;
   title: string;
   updatedAt?: string | null;
   uri?: string | null;
@@ -246,6 +249,9 @@ export function buildRuntimeContextManifest(params: {
           status: source.status,
           title: source.title,
           uri: source.uri,
+          credibility: source.credibility,
+          isDuplicate: source.isDuplicate,
+          containsSensitiveData: source.containsSensitiveData,
         });
         const inclusionDecision = combineSourceInclusion(freshness.decision, quality.decision);
         const inclusionReason = sourceInclusionReason(freshness, quality);
@@ -315,6 +321,9 @@ export function buildRuntimeContextManifest(params: {
           status: source.status,
           title: source.title,
           uri: source.uri,
+          credibility: source.credibility,
+          isDuplicate: source.isDuplicate,
+          containsSensitiveData: source.containsSensitiveData,
         });
         const inclusionDecision = combineSourceInclusion(freshness.decision, quality.decision);
         const inclusionReason = sourceInclusionReason(freshness, quality);

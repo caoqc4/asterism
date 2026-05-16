@@ -72,6 +72,9 @@ describe('SourceContextRepository integration', () => {
       runId: 'run_daily_1',
       batchId: 'daily:2026-05-13',
       sourceRole: 'digest',
+      credibility: 'verified',
+      isDuplicate: true,
+      containsSensitiveData: true,
       note: 'Summarized sources from the morning batch',
     });
 
@@ -82,6 +85,9 @@ describe('SourceContextRepository integration', () => {
       runId: 'run_daily_1',
       batchId: 'daily:2026-05-13',
       sourceRole: 'digest',
+      credibility: 'verified',
+      isDuplicate: true,
+      containsSensitiveData: true,
     });
     expect(listed[0]).toMatchObject({
       title: 'Morning source digest',
@@ -89,6 +95,9 @@ describe('SourceContextRepository integration', () => {
       runId: 'run_daily_1',
       batchId: 'daily:2026-05-13',
       sourceRole: 'digest',
+      credibility: 'verified',
+      isDuplicate: true,
+      containsSensitiveData: true,
     });
   });
 
