@@ -348,7 +348,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'Subagent handoff has a shared evaluator, but it is not wired to a product delegation entry point because that surface is not active yet.',
       'Follow-up proposal gating exists in the shared closeout evaluator and RightPanel task-context capture consumes it; future task-context creation entry points must use the same boundary before creating follow-up tasks.',
-      'Replay grouping is consumed by Tasks task dynamics, but Run detail and broader retained task-dynamics surfaces do not yet render the grouped replay layer.',
+      'Replay grouping is consumed by Tasks task dynamics; future Run-side audit surfaces should reuse that layer only when they are explicitly reintroduced.',
     ],
     nextImplementation: [
       'Keep future task-context follow-up creation entry points wired into the shared closeout evaluator.',

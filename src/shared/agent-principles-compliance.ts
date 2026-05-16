@@ -379,7 +379,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Successor-task handoff beyond child tasks has closeout and replay metadata, while new follow-up task creation remains confirmation-gated.',
     ],
     gaps: [
-      'Run checkpoint resume has a shared resume-plan shape and RuntimeEventRecord projection data, but retained Run-side task-dynamics surfaces do not yet render replay-oriented event groupings.',
+      'Run checkpoint resume has a shared resume-plan shape and RuntimeEventRecord projection data; future Run-side audit surfaces should reuse the task-dynamics replay layer only if they are explicitly reintroduced.',
       'Follow-up proposal gating exists in the shared closeout evaluator and RightPanel task-context capture consumes it; future task-context creation entry points must use the same boundary before creating follow-up tasks.',
     ],
     nextVerification: [
