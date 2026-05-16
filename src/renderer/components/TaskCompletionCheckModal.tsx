@@ -80,8 +80,8 @@ export function buildTaskCompletionMemoryCoverage(
   const coverageInput = buildTaskMemoryCoverageInputForTask('task_completion', detail);
   return evaluateTaskMemoryCoverage({
     ...coverageInput,
-    hasRecentRunEvidence: recentRunCheck
-      ? recentRunCheck.tone !== 'fail'
+    hasRecentRunEvidence: recentRunCheck?.tone === 'fail'
+      ? false
       : coverageInput.hasRecentRunEvidence,
   });
 }

@@ -121,4 +121,32 @@ describe('buildTaskCompletionMemoryCoverage', () => {
       canProceed: false,
     });
   });
+
+  it('does not let a passing recent run check override stale timeline evidence', () => {
+    const coverage = buildTaskCompletionMemoryCoverage(buildDetail({
+      completionCriteria: [{
+        id: 'criteria-1',
+        taskId: 'task-1',
+        text: 'Done',
+        verificationResponsibility: null,
+        verificationResponsibilityLabel: null,
+        status: 'satisfied',
+        createdAt: now,
+        updatedAt: '2026-05-15T01:03:00.000Z',
+        satisfiedAt: '2026-05-15T01:03:00.000Z',
+      }],
+      timeline: [{
+        id: 'event-1',
+        taskId: 'task-1',
+        type: 'run.completed',
+        payload: null,
+        createdAt: '2026-05-15T01:01:00.000Z',
+      }],
+    }), runCheck('pass'));
+
+    expect(coverage).toMatchObject({
+      outcome: 'needs_memory_write',
+      canProceed: false,
+    });
+  });
 });
