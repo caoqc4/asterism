@@ -10,7 +10,11 @@ import { isUnconfirmedPanelCaptureRecord } from '@shared/panel-capture';
 import { summarizeDecisionEffects } from '@shared/decision-effect-evaluator';
 import type { TaskCloseoutEvaluation } from '@shared/task-closeout-evaluator';
 import { evaluateRuntimeVerification, type RuntimeVerificationResult } from '@shared/runtime-verification';
-import { classifyRuntimeFileSurface, type RuntimeFileSurfaceKind } from '@shared/runtime-surface-routing';
+import {
+  classifyRuntimeFileSurface,
+  classifySourceContextSurface,
+  type RuntimeFileSurfaceKind,
+} from '@shared/runtime-surface-routing';
 import { evaluateRuntimeSubtaskDraft } from '@shared/runtime-subtask-evaluator';
 import { evaluateTaskMdUpdateNeed } from '@shared/task-md-update-need';
 import { evaluateTaskRecordWorthiness } from '@shared/task-record-worthiness';
@@ -3155,9 +3159,12 @@ function sourceBatchSegment(source: SourceContextRecord): string | null {
 }
 
 function sourceToVirtualFile(taskId: string, source: SourceContextRecord): VirtualTaskFile {
-  const isTaskRecord = source.title === '会话刷新前保全'
-    || source.title === '阶段收尾记录'
-    || source.note?.startsWith('任务记录：');
+  const sourceSurface = classifySourceContextSurface({
+    title: source.title,
+    note: source.note,
+    sourceRole: source.sourceRole,
+  });
+  const isTaskRecord = sourceSurface === 'task_record';
   const sourcePathParts = [
     'Sources',
     sourceCapturedDate(source),
