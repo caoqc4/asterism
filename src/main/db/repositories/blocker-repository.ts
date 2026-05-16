@@ -28,6 +28,12 @@ function toRecord(row: typeof blockers.$inferSelect): BlockerRecord {
 }
 
 export class BlockerRepository {
+  async get(id: string): Promise<BlockerRecord | null> {
+    const db = initDatabase();
+    const [row] = await db.select().from(blockers).where(eq(blockers.id, id)).limit(1);
+    return row ? toRecord(row) : null;
+  }
+
   async getActiveForTask(taskId: string): Promise<BlockerRecord | null> {
     const db = initDatabase();
     const [row] = await db

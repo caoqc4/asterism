@@ -34,6 +34,27 @@ function toAppliedRecord(
 }
 
 export class TaskProcessBindingRepository {
+  async get(bindingId: string): Promise<AppliedProcessTemplateRecord | null> {
+    const db = initDatabase();
+    const [binding] = await db
+      .select()
+      .from(taskProcessBindings)
+      .where(eq(taskProcessBindings.id, bindingId))
+      .limit(1);
+
+    if (!binding) {
+      return null;
+    }
+
+    const [template] = await db
+      .select()
+      .from(processTemplates)
+      .where(eq(processTemplates.id, binding.templateId))
+      .limit(1);
+
+    return template ? toAppliedRecord(binding, template) : null;
+  }
+
   async listActiveForTask(taskId: string): Promise<AppliedProcessTemplateRecord[]> {
     const db = initDatabase();
     const bindings = await db

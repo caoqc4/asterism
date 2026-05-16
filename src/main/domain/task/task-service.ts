@@ -1495,8 +1495,13 @@ export class TaskService {
       throw new Error('Source context repository is not configured');
     }
 
+    const current = await this.sourceContextRepository.get(input.id);
+    if (!current) {
+      throw new Error(`Source context not found: ${input.id}`);
+    }
+    this.assertTaskMutationActionAllowed(current.taskId);
+
     const updated = await this.sourceContextRepository.update(input);
-    this.assertTaskMutationActionAllowed(updated.taskId);
 
     await this.repository.appendTimelineEvent(updated.taskId, 'source_context.updated', {
       sourceContextId: updated.id,
@@ -1518,8 +1523,13 @@ export class TaskService {
       throw new Error('Source context repository is not configured');
     }
 
+    const current = await this.sourceContextRepository.get(id);
+    if (!current) {
+      throw new Error(`Source context not found: ${id}`);
+    }
+    this.assertTaskMutationActionAllowed(current.taskId);
+
     const archived = await this.sourceContextRepository.archive(id);
-    this.assertTaskMutationActionAllowed(archived.taskId);
 
     await this.repository.appendTimelineEvent(archived.taskId, 'source_context.archived', {
       sourceContextId: archived.id,
@@ -1587,8 +1597,13 @@ export class TaskService {
       }
     }
 
+    const current = await this.blockerRepository.get(input.id);
+    if (!current) {
+      throw new Error(`Blocker not found: ${input.id}`);
+    }
+    this.assertTaskMutationActionAllowed(current.taskId);
+
     const blocker = await this.blockerRepository.update(input);
-    this.assertTaskMutationActionAllowed(blocker.taskId);
 
     await this.repository.appendTimelineEvent(blocker.taskId, 'blocker.updated', {
       blockerId: blocker.id,
@@ -1608,8 +1623,13 @@ export class TaskService {
       throw new Error('Blocker repository is not configured');
     }
 
+    const current = await this.blockerRepository.get(id);
+    if (!current) {
+      throw new Error(`Blocker not found: ${id}`);
+    }
+    this.assertTaskMutationActionAllowed(current.taskId);
+
     const blocker = await this.blockerRepository.resolve(id);
-    this.assertTaskMutationActionAllowed(blocker.taskId);
 
     await this.repository.appendTimelineEvent(blocker.taskId, 'blocker.resolved', {
       blockerId: blocker.id,
@@ -1819,8 +1839,13 @@ export class TaskService {
       throw new Error('Task dependency repository is not configured');
     }
 
+    const current = await this.taskDependencyRepository.get(id);
+    if (!current) {
+      throw new Error(`Task dependency not found: ${id}`);
+    }
+    this.assertTaskMutationActionAllowed(current.taskId);
+
     const dependency = await this.taskDependencyRepository.resolve(id);
-    this.assertTaskMutationActionAllowed(dependency.taskId);
 
     await this.repository.appendTimelineEvent(dependency.taskId, 'task_dependency.resolved', {
       dependencyId: dependency.id,
@@ -1883,8 +1908,13 @@ export class TaskService {
       throw new Error('Task process binding repository not configured');
     }
 
+    const current = await this.taskProcessBindingRepository.get(bindingId);
+    if (!current) {
+      throw new Error(`Process template binding not found: ${bindingId}`);
+    }
+    this.assertTaskMutationActionAllowed(current.taskId);
+
     const removed = await this.taskProcessBindingRepository.remove(bindingId);
-    this.assertTaskMutationActionAllowed(removed.taskId);
     await this.repository.appendTimelineEvent(removed.taskId, 'process_template.removed', {
       templateId: removed.id,
       bindingId: removed.bindingId,

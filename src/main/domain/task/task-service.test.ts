@@ -1275,6 +1275,7 @@ describe('TaskService', () => {
     };
     const blockers = {
       getActiveForTask: vi.fn().mockResolvedValueOnce(null),
+      get: vi.fn().mockResolvedValue(buildBlockerRecord()),
       create: vi.fn().mockResolvedValue(
         buildBlockerRecord({
           title: 'Legal approval pending',
@@ -1395,6 +1396,7 @@ describe('TaskService', () => {
     };
     const dependencies = {
       getActiveForTask: vi.fn().mockResolvedValueOnce(null),
+      get: vi.fn().mockResolvedValue(buildTaskDependencyRecord()),
       create: vi.fn().mockResolvedValue(
         buildTaskDependencyRecord({
           blockedByTaskId: 'task_upstream',
@@ -2928,6 +2930,7 @@ describe('TaskService', () => {
     };
     const sourceContexts = {
       listActiveForTask: vi.fn().mockResolvedValue([]),
+      get: vi.fn().mockResolvedValue(buildSourceContextRecord()),
       create: vi.fn(),
       update: vi.fn(),
       archive: vi.fn().mockResolvedValue(
@@ -3021,6 +3024,7 @@ describe('TaskService', () => {
     };
     const processBindings = {
       listActiveForTask: vi.fn().mockResolvedValue([]),
+      get: vi.fn().mockResolvedValue(buildAppliedProcessTemplateRecord()),
       apply: vi.fn(),
       remove: vi.fn().mockResolvedValue(
         buildAppliedProcessTemplateRecord({
@@ -3048,6 +3052,80 @@ describe('TaskService', () => {
       kind: 'skill',
     });
     expect(result.bindingStatus).toBe('removed');
+  });
+
+  it('guards adjunct task state changes before persistence', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+
+    const sourceContexts = {
+      get: vi.fn().mockResolvedValue(buildSourceContextRecord({ taskId: '' })),
+      archive: vi.fn(),
+    };
+    await expect(new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      sourceContexts as never,
+    ).archiveSourceContext('source_context_1')).rejects.toThrow('任务变更需要绑定任务上下文');
+    expect(sourceContexts.archive).not.toHaveBeenCalled();
+
+    const blockers = {
+      get: vi.fn().mockResolvedValue(buildBlockerRecord({ taskId: '' })),
+      resolve: vi.fn(),
+    };
+    await expect(new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      blockers as never,
+    ).resolveBlocker('blocker_1')).rejects.toThrow('任务变更需要绑定任务上下文');
+    expect(blockers.resolve).not.toHaveBeenCalled();
+
+    const dependencies = {
+      get: vi.fn().mockResolvedValue(buildTaskDependencyRecord({ taskId: '' })),
+      resolve: vi.fn(),
+    };
+    await expect(new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      null,
+      dependencies as never,
+    ).resolveTaskDependency('task_dependency_1')).rejects.toThrow('任务变更需要绑定任务上下文');
+    expect(dependencies.resolve).not.toHaveBeenCalled();
+
+    const processBindings = {
+      get: vi.fn().mockResolvedValue(buildAppliedProcessTemplateRecord({ taskId: '' })),
+      remove: vi.fn(),
+    };
+    await expect(new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      processBindings as never,
+    ).removeProcessTemplate('task_process_binding_1')).rejects.toThrow('任务变更需要绑定任务上下文');
+    expect(processBindings.remove).not.toHaveBeenCalled();
+    expect(repository.appendTimelineEvent).not.toHaveBeenCalled();
   });
 
   it('creates and satisfies completion criteria while recording lifecycle events', async () => {

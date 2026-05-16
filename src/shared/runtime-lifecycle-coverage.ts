@@ -157,6 +157,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Task completion coverage ignores Run and completion-check evidence older than the latest completion-criteria update.',
       'TaskService direct and guarded waiting transitions require a waiting reason before writing waiting_external state.',
       'TaskService task updates, task-bound source contexts, blockers, completion criteria, dependencies, and process-template bindings guard task_mutation at the service boundary.',
+      'TaskService source-context archive/update, blocker update/resolve, dependency resolve, and process-template removal now read the owning task and guard task_mutation before repository writes.',
       'Tasks and Brief task state transitions now use shared renderer runtime guards backed by pre_step verification.',
       'Tasks special mutation paths for Task.md sync, risk updates, project moves, and project parent updates now use shared mutation guards.',
       'Tasks file actions for create, rename, move, delete, source key toggles, source archive, and artifact creation now use durable panel action guards.',

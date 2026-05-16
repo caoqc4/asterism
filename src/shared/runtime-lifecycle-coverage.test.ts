@@ -83,6 +83,7 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('completion transitions require task_completion memory coverage');
     expect(text).toContain('ignores Run and completion-check evidence older than the latest completion-criteria update');
     expect(text).toContain('waiting transitions require a waiting reason');
+    expect(text).toContain('guard task_mutation before repository writes');
   });
 
   it('tracks service-boundary hierarchy ownership guards', () => {

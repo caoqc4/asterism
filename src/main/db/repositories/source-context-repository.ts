@@ -43,6 +43,17 @@ function toRecord(row: typeof sourceContexts.$inferSelect): SourceContextRecord 
 }
 
 export class SourceContextRepository {
+  async get(id: string): Promise<SourceContextRecord | null> {
+    const db = initDatabase();
+    const [row] = await db
+      .select()
+      .from(sourceContexts)
+      .where(eq(sourceContexts.id, id))
+      .limit(1);
+
+    return row ? toRecord(row) : null;
+  }
+
   async listActiveForTask(taskId: string): Promise<SourceContextRecord[]> {
     const db = initDatabase();
     const rows = await db
