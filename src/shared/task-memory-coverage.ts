@@ -72,12 +72,13 @@ export function buildTaskMemoryCoverageInputForTask(
     file.kind === 'file' && !isTaskMdPath(file.path) && !isTaskRecordPath(file.path)
   ));
   const hasImportantFilesOrSources = hasNonMemoryTaskFile || sourceContexts.length > 0 || artifacts.length > 0;
-  const hasRecentRunEvidence = timeline.some((event) => (
-    event.type === 'run.completed' || event.type === 'task.run_completed'
-  ));
   const latestCompletionCriteriaUpdatedAt = latestTimestamp(
     (task.completionCriteria ?? []).map((criterion) => criterion.updatedAt),
   );
+  const hasRecentRunEvidence = timeline.some((event) => (
+    (event.type === 'run.completed' || event.type === 'task.run_completed')
+    && eventIsNotOlderThan(event.createdAt, latestCompletionCriteriaUpdatedAt)
+  ));
   const hasCompletionCheckEvidence = timeline.some((event) => (
     event.type === 'task.completion_check'
     && completionCheckActionIsEvidence(event.payload)

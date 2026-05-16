@@ -185,6 +185,48 @@ describe('task memory coverage', () => {
     });
   });
 
+  it('does not count stale run completion evidence older than completion criteria updates', () => {
+    expect(buildTaskMemoryCoverageInputForTask('task_completion', {
+      id: 'task-1',
+      title: 'Task',
+      summary: 'Ready to complete',
+      state: 'running',
+      nextStep: 'Complete',
+      waitingReason: null,
+      riskLevel: 'none',
+      riskNote: null,
+      createdAt: '2026-05-15T01:00:00.000Z',
+      updatedAt: '2026-05-15T01:00:00.000Z',
+      activeWaitingItem: null,
+      activeBlocker: null,
+      artifacts: [],
+      completionCriteria: [{
+        id: 'criteria-1',
+        taskId: 'task-1',
+        text: 'Done',
+        verificationResponsibility: null,
+        verificationResponsibilityLabel: null,
+        status: 'satisfied',
+        createdAt: '2026-05-15T01:00:00.000Z',
+        updatedAt: '2026-05-15T01:03:00.000Z',
+        satisfiedAt: '2026-05-15T01:03:00.000Z',
+      }],
+      sourceContexts: [],
+      processTemplates: [],
+      availableProcessTemplates: [],
+      taskFiles: [],
+      timeline: [{
+        id: 'event-1',
+        taskId: 'task-1',
+        type: 'task.run_completed',
+        payload: null,
+        createdAt: '2026-05-15T01:01:00.000Z',
+      }],
+    })).toMatchObject({
+      hasRecentRunEvidence: false,
+    });
+  });
+
   it('counts passed or overridden completion checks as completion evidence', () => {
     const baseTask = {
       id: 'task-1',

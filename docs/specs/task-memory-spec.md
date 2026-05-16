@@ -290,9 +290,11 @@ needed:
 - relevant Task Records for recent handoff, closeout, correction, or context
   refresh;
 - important files, sources, artifacts, or source digests needed for continuation;
-- recent execution evidence when work was run;
+- recent execution evidence when work was run and not invalidated by later
+  completion-criteria changes;
 - completion-check evidence when the user or runtime explicitly confirmed
-  completion despite missing run evidence;
+  completion despite missing run evidence, provided the check is not older than
+  the latest completion-criteria update;
 - applicable Work Habits.
 
 The check should be lightweight. It should prevent unsafe clearing or execution,
