@@ -1938,6 +1938,13 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       return;
     }
     const content = buildCompletionHandoffContent(completedTask, nextTask, parentTask);
+    const handoffWorthiness = evaluateTaskRecordWorthiness({
+      text: content,
+      hasTaskContext: true,
+      producedDurableChange: true,
+      reasonHint: 'handoff',
+    });
+    if (!handoffWorthiness.shouldCreateTaskRecord) return;
     const today = new Date().toISOString().slice(0, 10);
     const handoffRecord = await window.api?.createTaskFile?.({
       taskId: completedTask.id,
@@ -2217,28 +2224,37 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
         title: '更新项目结构',
         output: `项目「${project.title}」已关联 ${childIds.length} 个子任务。`,
       });
-      const projectRecord = await window.api.createTaskFile?.({
+      const projectRecordContent = [
+        '# Record: AI 项目拆解自检',
+        '',
+        '## Trigger',
+        '用户确认创建项目拆解子任务。',
+        '',
+        '## Summary',
+        draft.review,
+        '',
+        '## Confirmed',
+        `- 已创建 ${draft.subtasks.length} 个子任务。`,
+        '',
+        '## Next',
+        `- ${draft.nextStep}`,
+        '',
+      ].join('\n');
+      const projectRecordWorthiness = evaluateTaskRecordWorthiness({
+        text: projectRecordContent,
+        hasTaskContext: true,
+        producedDurableChange: true,
+        reasonHint: 'durable_state_change',
+      });
+      const projectRecord = projectRecordWorthiness.shouldCreateTaskRecord
+        ? await window.api.createTaskFile?.({
           taskId: project.id,
           name: 'AI 项目拆解自检.md',
           path: 'Task Records/AI 项目拆解自检.md',
           kind: 'file',
-          content: [
-            '# Record: AI 项目拆解自检',
-            '',
-            '## Trigger',
-            '用户确认创建项目拆解子任务。',
-            '',
-            '## Summary',
-            draft.review,
-            '',
-            '## Confirmed',
-            `- 已创建 ${draft.subtasks.length} 个子任务。`,
-            '',
-            '## Next',
-            `- ${draft.nextStep}`,
-            '',
-          ].join('\n'),
-        }).catch(() => null);
+          content: projectRecordContent,
+        }).catch(() => null)
+        : null;
       if (projectRecord) {
         verifyDurablePanelActionCompleted({
           title: '保存项目拆解记录',
