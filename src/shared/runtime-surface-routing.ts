@@ -4,6 +4,7 @@ import type { RunCheckpointKind, RunStepKind } from './types/run.js';
 import type { CreateSourceContextInput, SourceContextRole } from './types/source-context.js';
 import type { CreateTaskFileInput, TaskFileKind } from './types/task-file.js';
 import type { CreateWorkHabitProposalInput, WorkHabitScope } from './types/work-habit.js';
+import { isTaskMdPath, isTaskRecordPath, normalizeTaskMemoryPath } from './task-memory-path.js';
 
 export type RuntimeSurfaceKind =
   | 'task_state'
@@ -111,12 +112,8 @@ const DECISION_PATTERN = /拍板|决定|选择|批准|审批|确认|是否|要�
 const WORK_HABIT_PATTERN = /以后|以后都|每次|总是|默认|习惯|偏好|规则|流程|不要再|下次|所有任务|类似任务|cross-task/i;
 const EXPLORATORY_PATTERN = /怎么想|聊聊|讨论|看看|可能|也许|思路|brainstorm|explore|想法/i;
 
-function startsWithPath(path: string | null | undefined, prefix: string): boolean {
-  return Boolean(path?.startsWith(prefix));
-}
-
 function isTaskRecordCandidate(candidate: RuntimeSurfaceCandidate): boolean {
-  return candidate.kind === 'records_folder' || startsWithPath(candidate.path, 'Task Records/');
+  return candidate.kind === 'records_folder' || isTaskRecordPath(candidate.path);
 }
 
 function isAiOutputCandidate(candidate: RuntimeSurfaceCandidate): boolean {
@@ -127,7 +124,7 @@ function isAiOutputCandidate(candidate: RuntimeSurfaceCandidate): boolean {
 }
 
 export function classifyRuntimeFileSurface(candidate: RuntimeSurfaceCandidate): RuntimeSurfaceDecision {
-  if (candidate.kind === 'task_record' || candidate.path === 'Task.md') {
+  if (candidate.kind === 'task_record' || isTaskMdPath(candidate.path)) {
     return {
       surface: 'task_state',
       fileClass: 'task',
@@ -170,7 +167,7 @@ export function classifyRuntimeFileSurface(candidate: RuntimeSurfaceCandidate): 
     };
   }
 
-  if (candidate.kind === 'artifact' || startsWithPath(candidate.path, 'Artifacts/')) {
+  if (candidate.kind === 'artifact' || Boolean(candidate.path?.trim().replace(/\\/g, '/').startsWith('Artifacts/'))) {
     return {
       surface: 'artifact',
       fileClass: 'artifact',
@@ -219,11 +216,11 @@ export function normalizeCreateSourceContextInput(input: CreateSourceContextInpu
 
 export function normalizeCreateTaskFileInput(input: CreateTaskFileInput): CreateTaskFileInput {
   const name = input.name.trim();
-  const rawPath = input.path?.trim() || name;
+  const rawPath = normalizeTaskMemoryPath(input.path) ?? name;
   const path = input.kind === 'folder' && !rawPath.endsWith('/') ? `${rawPath}/` : rawPath;
   return {
     ...input,
-    name: path === 'Task.md' ? 'Task.md' : name,
+    name: isTaskMdPath(path) ? 'Task.md' : name,
     path,
     content: input.kind === 'folder' ? '' : input.content ?? '',
   };
@@ -232,7 +229,7 @@ export function normalizeCreateTaskFileInput(input: CreateTaskFileInput): Create
 export function classifyCreateTaskFileSurface(input: CreateTaskFileInput): RuntimeSurfaceKind {
   const normalized = normalizeCreateTaskFileInput(input);
   return classifyRuntimeFileSurface({
-    kind: normalized.path === 'Task.md' ? 'task_record' : 'local_file',
+    kind: isTaskMdPath(normalized.path) ? 'task_record' : 'local_file',
     path: normalized.path,
     name: normalized.name,
     taskFileKind: normalized.kind,

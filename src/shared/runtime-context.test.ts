@@ -180,6 +180,20 @@ describe('runtime context manifest', () => {
     ]);
   });
 
+  it('normalizes task memory paths in context assembly checks', () => {
+    const manifest = buildRuntimeContextManifest({
+      task: { id: 'task_1', title: 'Launch task', state: 'running' },
+      taskFiles: [
+        { path: ' Task.md ', kind: 'file', contentPreview: '# Task' },
+        { path: ' Task Records\\handoff.md ', kind: 'file', contentPreview: '# Handoff' },
+      ],
+    });
+    const policy = buildRuntimeContextAssemblyPolicy({ manifest });
+
+    expect(policy.requirements.map((item) => [item.kind, item.status])).toContainEqual(['task_md', 'included']);
+    expect(policy.requirements.map((item) => [item.kind, item.status])).toContainEqual(['task_records', 'included']);
+  });
+
   it('blocks task execution policy when required inputs are missing', () => {
     const manifest = buildRuntimeContextManifest({
       task: { id: 'task_1', title: 'Launch task', state: 'running' },

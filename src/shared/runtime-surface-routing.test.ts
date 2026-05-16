@@ -21,10 +21,18 @@ describe('runtime surface routing', () => {
       fileClass: 'task',
       label: '任务说明',
     });
+    expect(classifyRuntimeFileSurface({ kind: 'local_file', path: ' Task.md ' })).toMatchObject({
+      surface: 'task_state',
+      fileClass: 'task',
+    });
   });
 
   it('classifies Task Records paths as task records', () => {
     expect(classifyRuntimeFileSurface({ kind: 'local_file', path: 'Task Records/phase-closeout.md' })).toMatchObject({
+      surface: 'task_record',
+      fileClass: 'record',
+    });
+    expect(classifyRuntimeFileSurface({ kind: 'local_file', path: ' Task Records\\phase-closeout.md ' })).toMatchObject({
       surface: 'task_record',
       fileClass: 'record',
     });

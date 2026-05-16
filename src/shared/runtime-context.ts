@@ -12,6 +12,7 @@ import {
   type SourceMaterialQualityEvaluation,
   type SourceMaterialQualityReason,
 } from './source-material-quality-evaluator.js';
+import { isTaskMdPath, isTaskRecordPath } from './task-memory-path.js';
 import type { SourceContextRole, SourceContextStatus } from './types/source-context.js';
 import type { TaskState } from './types/task.js';
 
@@ -401,12 +402,12 @@ export function buildRuntimeContextAssemblyPolicy(params: {
     {
       kind: 'task_md',
       status: taskBound
-        ? has('task_file', (item) => item.label === 'Task.md' || item.id === 'Task.md')
+        ? has('task_file', (item) => isTaskMdPath(item.label) || isTaskMdPath(item.id))
           ? 'included'
           : 'missing'
         : 'not_applicable',
       reason: taskBound
-        ? has('task_file', (item) => item.label === 'Task.md' || item.id === 'Task.md')
+        ? has('task_file', (item) => isTaskMdPath(item.label) || isTaskMdPath(item.id))
           ? '已包含 Task.md 主恢复文件。'
           : '任务执行前应读取或创建 Task.md 主恢复文件。'
         : '全局上下文不读取任务恢复文件。',
@@ -414,12 +415,12 @@ export function buildRuntimeContextAssemblyPolicy(params: {
     {
       kind: 'task_records',
       status: taskBound
-        ? has('task_file', (item) => item.label.startsWith('Task Records/') || item.id.startsWith('Task Records/'))
+        ? has('task_file', (item) => isTaskRecordPath(item.label) || isTaskRecordPath(item.id))
           ? 'included'
           : 'optional'
         : 'not_applicable',
       reason: taskBound
-        ? has('task_file', (item) => item.label.startsWith('Task Records/') || item.id.startsWith('Task Records/'))
+        ? has('task_file', (item) => isTaskRecordPath(item.label) || isTaskRecordPath(item.id))
           ? '已包含相关 Task Records。'
           : '没有相关 Task Records；仅在任务含糊、长期运行、刚清理或明确引用历史时必需。'
         : '全局上下文不读取任务记录。',

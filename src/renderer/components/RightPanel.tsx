@@ -32,6 +32,7 @@ import {
 } from '@shared/task-record-worthiness';
 import { evaluateTaskMemoryCoverage } from '@shared/task-memory-coverage';
 import { evaluateTaskMdUpdateNeed } from '@shared/task-md-update-need';
+import { isTaskMdPath } from '@shared/task-memory-path';
 import { evaluateRuntimeVerification } from '@shared/runtime-verification';
 import {
   classifyCreateTaskFileSurface,
@@ -150,7 +151,7 @@ const GENERIC_ASSISTANT_REPLY_PATTERNS = [
 
 function hasTaskMdFile(task: TaskDetail | null): boolean | undefined {
   if (!task?.taskFiles) return undefined;
-  return task.taskFiles.some((file) => file.path === 'Task.md');
+  return task.taskFiles.some((file) => isTaskMdPath(file.path));
 }
 
 function hasKnownCompletionOrNextStep(task: TaskDetail | TaskListItemRecord | null): boolean | undefined {
@@ -601,7 +602,7 @@ async function referenceTaskFileFromTaskRecord(params: {
   if (!window.api?.listTaskFiles || !window.api.createTaskFile || !window.api.updateTaskFile) return;
   if (!guardDurablePanelAction({ taskId: params.taskId, confirmed: true }).allowed) return;
   const files = await window.api.listTaskFiles(params.taskId).catch(() => []);
-  const taskRecord = files.find((file) => file.path === 'Task.md');
+  const taskRecord = files.find((file) => isTaskMdPath(file.path));
   if (taskRecord) {
     const updateNeed = evaluateTaskMdUpdateNeed({
       hasTaskContext: true,

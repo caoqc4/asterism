@@ -14,6 +14,7 @@ import { classifyRuntimeFileSurface, type RuntimeFileSurfaceKind } from '@shared
 import { evaluateRuntimeSubtaskDraft } from '@shared/runtime-subtask-evaluator';
 import { evaluateTaskMdUpdateNeed } from '@shared/task-md-update-need';
 import { evaluateTaskRecordWorthiness } from '@shared/task-record-worthiness';
+import { isTaskMdPath } from '@shared/task-memory-path';
 import type { PanelRuntimeTimelineEventType } from '@shared/runtime-panel-events';
 import { projectRuntimeEvents, type RuntimeEventRecord } from '@shared/runtime-event-record';
 import {
@@ -3125,7 +3126,7 @@ function taskFileRecordToLocalRecord(record: TaskFileRecord): LocalTaskFileRecor
 }
 
 function isPersistedTaskRecordFile(file: LocalTaskFileRecord): boolean {
-  return file.path === 'Task.md';
+  return isTaskMdPath(file.path);
 }
 
 function truncateFileContext(value: string, limit = 1600): string | null {
