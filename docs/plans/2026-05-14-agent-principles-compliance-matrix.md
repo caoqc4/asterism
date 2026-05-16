@@ -36,19 +36,19 @@ The current runtime deepening work has made meaningful progress on information r
 3. Project-level verification is only partially wired.
    Runtime verification now covers run, run step, task closeout, project, and context clear. Project completion uses project verification in the completion modal, and the project detail structure surface shows the same verification summary before completion. Project verification now includes artifact/source evidence counts and Decision effect summaries for pending, approved, deferred, and cancelled decisions. A first child-draft evaluator blocks duplicate, generic, parent-overlapping, or underspecified subtasks before confirmed project-child creation, including the case where existing children are linked by `parentTaskId` rather than only `childTaskIds`. Task creation, parent moves, and parent-side child list updates now keep both relationship fields synchronized at the service boundary. The remaining gap is routing more project state transitions through the same verification, not only completion/detail surfaces.
 
-4. Pre-step and post-step verification are not fully wired.
-   First-pass `pre_step` and `post_step` modes now exist in `runtime-verification`, covering action permission, pending decisions, required context, and durable-change recovery notes. The remaining gap is wiring them into every Run service and panel durable action path.
+4. Future execution and write entry points must keep opting into runtime gates.
+   `pre_step`, `post_step`, and `subtask_start` are wired into the current retained Run services, resume paths, Decision actions, panel durable actions, task transitions, and Agent durable tools. The remaining risk is future scheduled/event execution, new provider-visible tools, or new panel write paths bypassing those gates.
 
-5. Future execution and write entry points must keep opting into runtime gates.
-   Current retained execution, context-transition, decision-action, durable-write, and task-dynamics paths are covered by shared runtime gates and regression registries. The remaining risk is future scheduled/event execution, new provider-visible tools, or new panel write paths bypassing those gates.
+5. Runtime entrypoint coverage is a regression registry, not automatic enforcement.
+   Current retained execution, context-transition, decision-action, durable-write, and task-dynamics paths are covered by shared runtime gates and regression registries. Future entrypoints must be registered with their kind-level gate baseline before they are treated as covered.
 
 ### P1
 
-1. Task.md update recommendations are not systematic.
-   Task.md is classified correctly and can sync edits back to task fields, but runtime does not yet ask whether Task.md should be updated after every durable state change.
+1. Task.md update recommendations are partially systematic.
+   Task.md is classified correctly, direct Task.md saves and important-file references use `TaskMdUpdateNeedEvaluation`, Agent durable-tool guidance can propose Task.md recovery writes, and ordinary file creation cannot bypass the reserved Task.md path. The remaining gap is keeping new durable state changes wired into the same evaluator.
 
-2. Task Record worthiness is not centralized.
-   Context clearing and phase closeout behave better, but user corrections, option comparisons, failure reviews, and external signals need a shared evaluator.
+2. Task Record worthiness is centralized for current retained creation paths.
+   Context refresh, phase closeout, manual Task Record creation, completion handoff, project decomposition self-check, and Agent source-context recovery guidance use `TaskRecordWorthinessEvaluation`. Generic file creation cannot create `Task Records/` files. The remaining gap is preserving that boundary for future retained tool-driven Task Record creation paths.
 
 3. Source ingestion needs richer connector signals.
    Freshness and source-quality checks now exist as shared runtime evaluators, and RuntimeContextManifest combines them into inclusion metadata. The remaining gap is passing explicit credibility, duplicate, and sensitivity signals from future connector ingestion paths.
@@ -65,10 +65,10 @@ The current runtime deepening work has made meaningful progress on information r
 
 The next runtime-deepening packages should follow this order:
 
-1. Add `RuntimeContextAssemblyPolicy` for required read order and source inclusion reasons.
-2. Extend `runtime-verification` with `project`, `pre_step`, and `post_step` modes.
-3. Extend task creation and subtask creation evaluators beyond the initial RightPanel intake path.
-4. Add Task.md update and Task Record worthiness evaluators.
+1. Keep future provider-visible execution boundaries on `RuntimeContextAssemblyPolicy` with full source and selected-file metadata.
+2. Keep future execution services and panel durable actions registered in `RuntimeEntrypointCoverage` with their kind-level gate baseline.
+3. Preserve the task creation boundary: intake for task capture, closeout gating for follow-up capture, and child-draft evaluation for project children.
+4. Keep Task.md update and Task Record worthiness evaluators on every new retained memory write surface.
 5. Keep Decisions grouped-context display read-only until a real multi-decision workflow needs batch action support.
 
 This keeps the work aligned with the principle document instead of creating isolated fixes.

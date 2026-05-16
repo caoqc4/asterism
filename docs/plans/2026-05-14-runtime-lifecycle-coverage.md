@@ -76,12 +76,11 @@ Weakest areas:
 
 - full task intake and pre-create evaluation across every retained creation entry point;
 - a single confirmation boundary for all child-task creation paths beyond project decomposition;
-- full context snapshot ownership;
-- source freshness and context inclusion reasons;
+- future provider-visible entry points preserving full context snapshot metadata;
+- future connector ingestion preserving source quality signals;
 - future multi-decision workflows, if a concrete batch approve/defer/cancel need appears;
-- unified runtime handoff shape;
 - legacy local task hierarchy attributes and manual-review hierarchy conflicts still need a user-facing confirmation surface after the database relationship becomes authoritative.
-- capability state in context/action evaluation;
+- future entry points preserving capability state in context/action evaluation;
 - Run-side grouped replay presentation if retained Run-side runtime views are resumed.
 
 ## Design Rule
@@ -100,12 +99,12 @@ Both are needed.
 
 ## Recommended Order
 
-1. Add `RuntimeContextSnapshot` and `RuntimeContextAssemblyPolicy`.
-2. Extend `RuntimeIntakeEvaluation` beyond the initial RightPanel capture flow to project decomposition and every task creation entry point.
-3. Wire `pre_step` and `post_step` verification into execution services and panel durable actions, and route more project state transitions through project verification.
-4. Add `RuntimeHandoff` and `RuntimeResumePlan`.
+1. Keep future provider-visible entry points on `RuntimeContextSnapshot` and `RuntimeContextAssemblyPolicy`.
+2. Preserve task creation routing through intake, closeout gating, or child-draft evaluation according to context.
+3. Keep `pre_step`, `post_step`, and `subtask_start` as the required baseline for future execution services and panel durable actions.
+4. Keep project state transitions on project verification before adding new completion paths.
 5. Keep Decisions grouped context read-only until a real multi-decision workflow needs batch action support.
-6. Add `RuntimeCapabilitySnapshot`.
+6. Keep future model, external-access, workspace, or tool-exposure changes on `RuntimeCapabilitySnapshot`.
 7. Finish data model migration for task hierarchy and facets, and route every child-task creation path through shared child draft evaluation.
 
 ## Status Update - 2026-05-16
