@@ -323,11 +323,11 @@ It should not expose long internal prompts as input text.
 3. Information routing is not centralized.
    File classification and source/artifact/task-record routing still have scattered logic and can drift.
 
-4. Runtime task-dynamics projection is only partly surfaced.
-   Core RightPanel and TasksPage durable actions now go through shared guards and persist `panel.*` timeline events. Tasks task dynamics consumes `RuntimeEventRecord`; Run detail exposes replay data. Rendering replay groups in retained Run-side surfaces remains future UI work.
+4. Runtime task-dynamics projection is surfaced through the retained task view.
+   Core RightPanel and TasksPage durable actions now go through shared guards and persist `panel.*` timeline events. Tasks task dynamics consumes `RuntimeEventRecord` and replay groups; Run detail exposes the same replay data for future consumers without requiring a standalone Run Detail page.
 
-5. Verification is still mostly terminal.
-   Completion and closeout are covered better now, but before-step, after-step, context-clear, and project-level verification are still not unified.
+5. Verification is now shared across the retained execution boundaries.
+   Completion, closeout, before-step, after-step, context-clear, project-level completion, task switching, run start, and checkpoint resume now use shared runtime evaluators. The remaining risk is future entry points bypassing the same gates, not a missing core evaluator.
 
 6. Decisions has a judgment-center baseline, with richer batch handling deferred.
    Decisions now projects category, urgency, task signal, options, recommendation, effect after action, and grouped pending context. Batch approve/defer/cancel should remain deferred until a real multi-decision workflow appears.
@@ -338,8 +338,8 @@ It should not expose long internal prompts as input text.
 8. Task hierarchy is now moving into the data model, but migration is partial.
    `taskType`, `taskFacets`, `parentTaskId`, and `childTaskIds` are in DB, while some renderer-local attributes still exist for commitment/schedule/trigger/owner/visibility and legacy fallback.
 
-9. Task intake is only partially separated from discussion.
-   A first shared intake evaluator exists for RightPanel capture, but project decomposition and other creation entry points still need the same boundary plus duplicate and granularity checks.
+9. Task intake is separated from discussion for the retained creation paths.
+   RightPanel capture, explicit task creation, service-level task creation/update, and project decomposition now use shared intake, capture, or child-draft boundaries. Future creation entry points still need to declare which existing boundary owns them before writing tasks.
 
 ## Recommended Implementation Order
 
@@ -436,8 +436,8 @@ Implemented:
 
 Remaining:
 
-- Continue wiring the evaluator into remaining state-mutating panel actions beyond context clearing.
-- Extend action coverage to remaining source/artifact/file write tools where the mutation target needs more than existing tool-risk policy.
+- Keep future state-mutating panel actions registered in `RuntimeEntrypointCoverage` with the smallest matching gate.
+- Keep future source/artifact/file write tools on the existing durable-write guards instead of adding direct persistence.
 
 ### Package C2: Runtime Intake Evaluator
 
@@ -458,8 +458,8 @@ Implemented:
 
 Remaining:
 
-- Apply the same intake boundary to every task creation entry point.
-- Add a stricter child-task evaluator for duplicate, over-broad, and wrong-parent subtasks.
+- Preserve the same intake boundary for future task creation entry points.
+- Keep child-task creation paths on the stricter child-task evaluator for duplicate, over-broad, and wrong-parent subtasks.
 
 Implemented follow-up:
 
@@ -483,8 +483,8 @@ Implemented verification follow-up:
 
 Remaining verification follow-up:
 
-- Route remaining project state transitions through project verification, not only completion/detail surfaces.
-- Wire `pre_step` and `post_step` into Run services and panel durable actions.
+- Route future project state transitions through project verification when they affect readiness or completion.
+- Keep future Run services and panel durable actions on `pre_step` / `post_step` instead of adding direct writes.
 
 ### Package D: Verification Unification
 
@@ -563,8 +563,8 @@ Implemented:
 
 Remaining:
 
-- Wire project, pre-step, and post-step verification into the remaining execution and state-transition paths.
-- Keep replay grouping data-only until UI work is explicitly requested.
+- Keep future execution and state-transition paths on the existing project, pre-step, and post-step verification gates.
+- Keep replay grouping in the retained task-dynamics surface; only add Run-side presentation if a retained Run-side view returns.
 - Keep future task-context follow-up proposal entry points wired into the shared closeout evaluator.
 
 ### Package E: Decisions Judgment Center

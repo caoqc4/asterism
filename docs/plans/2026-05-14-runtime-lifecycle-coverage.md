@@ -135,3 +135,16 @@ The Decisions judgment-center baseline is now implemented.
 The remaining lifecycle gap is not a generic Decisions inbox gap anymore. It is limited to future multi-decision workflows, which should stay deferred until users need batch approve/defer/cancel.
 
 Task dynamics has also moved closer to the intended task-memory/audit role: the Tasks task-dynamics view now consumes selected Run details and projects Run steps into the same visible `RuntimeEventRecord` stream as task timeline events, Task Records, and Decisions. The remaining replay gap is limited to future Run-side grouped replay presentation if retained Run-side runtime views are resumed.
+
+## Status Update - 2026-05-17
+
+The retained runtime boundaries now have end-to-end regression scenarios for the core task-memory and user-judgment lifecycle:
+
+- phase closeout hands off to existing child tasks and does not create generic follow-up tasks;
+- task completion remains blocked until completion evidence is durable;
+- task switching remains blocked until recoverable current-task discussion is archived;
+- run start remains blocked until recovery context and next-step state exist;
+- pending Decisions block run start, task switch, automatic context refresh, and run resume instead of being hidden by memory coverage;
+- run resume also respects blockers and active short-term reasoning before restoring checkpoint execution.
+
+The remaining runtime work should be treated as preservation work for future entry points, not a reason to add broader present-day workflows. New creation, execution, clearing, decision, durable-write, or task-dynamic surfaces must register in `RuntimeEntrypointCoverage` and reuse the smallest matching evaluator.

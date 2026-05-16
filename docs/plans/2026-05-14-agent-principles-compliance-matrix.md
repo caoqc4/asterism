@@ -21,14 +21,14 @@ Current status is intentionally conservative:
 - Partially implemented: most core runtime areas.
 - Missing: none tracked as fully absent, though every section still has known gaps.
 
-The current runtime deepening work has made meaningful progress on information routing, context clearing, task closeout, run verification, confirmation boundaries, task creation checks, source inclusion checks, Decisions judgment, task dynamics, and subagent handoff boundaries. It has not yet fully enforced every future execution boundary, every future task creation entry point, connector-level source quality signal, or product entry-point wiring for subagent handoffs.
+The current runtime deepening work has made meaningful progress on information routing, context clearing, task closeout, run verification, confirmation boundaries, task creation checks, source inclusion checks, Decisions judgment, task dynamics, and subagent handoff boundaries. Current retained execution and creation entry points are guarded by shared evaluators or service-boundary checks; the remaining risk is preserving those boundaries for future execution surfaces, future creation paths, connector-level source quality signals, or future product entry points for subagent handoffs.
 
 ## Highest Priority Gaps
 
 ### P0
 
-1. Required read order is not yet enforced by a shared runtime policy.
-   A first `RuntimeContextAssemblyPolicy` now exists; ordinary Run model execution and Code Agent model-producer execution are blocked when required inputs such as Task.md are missing. The remaining gap is enforcement at every execution boundary, plus source freshness and inclusion/exclusion reasons.
+1. Required read order is enforced for retained provider-visible execution.
+   `RuntimeContextAssemblyPolicy` exists; ordinary Run model execution and Code Agent model-producer execution are blocked when required inputs such as Task.md are missing. Source freshness, source quality, and selected-file relevance reasons are now represented in context manifests. The remaining gap is preserving this policy for future provider-visible execution boundaries and future connector ingestion paths.
 
 2. Future task creation and subtask creation entry points must keep the shared pre-create evaluator.
    A first `RuntimeIntakeEvaluation` now routes RightPanel task capture away from Task Records, task files, Decisions, Work Habits, and discussion-only input. `TaskService.create` now enforces duplicate/generic capture checks, and child-task capture blocks generic phase-template titles or titles that only repeat the parent. Project decomposition also checks the full task list for existing children before generating another draft. The remaining gap is preserving this boundary for future retained child-task creation paths.
