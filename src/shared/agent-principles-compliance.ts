@@ -243,6 +243,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TaskService completion transitions require task_completion memory coverage before writing completed state.',
       'Task completion memory coverage ignores Run and completion-check evidence older than the latest completion-criteria update.',
       'TaskService completion-check records pass task_mutation before appending durable completion-check timeline evidence.',
+      'Runtime end-to-end scenario tests verify completion remains blocked without durable evidence and passes after a recorded completion check.',
       'TaskService task metadata updates are registered separately from task capture, state transitions, hierarchy maintenance, and file/artifact writes.',
       'TaskService waiting transitions require a waiting reason before writing waiting_external state.',
       'TaskService task updates, task-bound source contexts, blockers, completion criteria, dependencies, and process-template bindings pass task_mutation through pre-step verification at the service boundary.',

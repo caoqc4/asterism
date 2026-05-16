@@ -163,6 +163,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskService completion transitions require task_completion memory coverage, including passed or overridden completion-check evidence.',
       'Task completion coverage ignores Run and completion-check evidence older than the latest completion-criteria update.',
       'TaskService completion-check records pass task_mutation before appending durable completion-check timeline evidence.',
+      'Runtime end-to-end scenario tests verify that task completion remains blocked without durable completion evidence and passes after a recorded completion check.',
       'TaskService task metadata updates are registered as their own durable-write entrypoint instead of being folded into file/artifact writes.',
       'TaskService direct and guarded waiting transitions require a waiting reason before writing waiting_external state.',
       'TaskService task updates, task-bound source contexts, blockers, completion criteria, dependencies, and process-template bindings guard task_mutation at the service boundary.',

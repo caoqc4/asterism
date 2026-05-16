@@ -5,6 +5,10 @@ import {
   buildRuntimeResumePlan,
   evaluateRuntimeHandoff,
 } from './runtime-handoff.js';
+import {
+  buildTaskMemoryCoverageInputForTask,
+  evaluateTaskMemoryCoverage,
+} from './task-memory-coverage.js';
 import type { TaskDetail, TaskListItemRecord } from './types/task.js';
 
 const now = '2026-01-01T00:00:00.000Z';
@@ -199,6 +203,74 @@ describe('runtime end-to-end task workflow scenarios', () => {
       action: 'block',
       canProceed: false,
       requiresUserConfirmation: true,
+    });
+  });
+
+  it('blocks task completion until completion evidence has been recorded in task memory', () => {
+    const completionCandidate = detail({
+      completionCriteria: [{
+        id: 'criteria_1',
+        taskId: 'task_1',
+        text: '用户已经验收核心功能。',
+        status: 'satisfied',
+        verificationResponsibility: 'self',
+        verificationResponsibilityLabel: '我自己确认',
+        createdAt: now,
+        updatedAt: now,
+        satisfiedAt: now,
+      }],
+      taskFiles: [],
+      sourceContexts: [],
+      artifacts: [],
+      timeline: [],
+    });
+
+    expect(evaluateTaskMemoryCoverage(
+      buildTaskMemoryCoverageInputForTask('task_completion', completionCandidate),
+    )).toMatchObject({
+      outcome: 'needs_memory_write',
+      canProceed: false,
+      recommendedWrites: ['run', 'source_digest', 'artifact_reference'],
+    });
+  });
+
+  it('allows task completion after a passed completion check becomes durable evidence', () => {
+    const checkedTask = detail({
+      completionCriteria: [{
+        id: 'criteria_1',
+        taskId: 'task_1',
+        text: '用户已经验收核心功能。',
+        status: 'satisfied',
+        verificationResponsibility: 'self',
+        verificationResponsibilityLabel: '我自己确认',
+        createdAt: now,
+        updatedAt: now,
+        satisfiedAt: now,
+      }],
+      taskFiles: [],
+      sourceContexts: [],
+      artifacts: [],
+      timeline: [{
+        id: 'event_completion_check',
+        taskId: 'task_1',
+        type: 'task.completion_check',
+        payload: JSON.stringify({
+          action: 'passed',
+          criteriaTotal: 1,
+          criteriaSatisfied: 1,
+          criteriaOpen: 0,
+          source: 'task_completion_modal',
+        }),
+        createdAt: '2026-01-01T00:01:00.000Z',
+      }],
+    });
+
+    expect(evaluateTaskMemoryCoverage(
+      buildTaskMemoryCoverageInputForTask('task_completion', checkedTask),
+    )).toMatchObject({
+      outcome: 'pass',
+      canProceed: true,
+      reason: '完成边界和恢复证据已具备。',
     });
   });
 });
