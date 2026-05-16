@@ -117,6 +117,7 @@ Use them for:
 
 - task creation and state changes;
 - Run and Run step events;
+- task completion checks, including passed checks and explicit user overrides;
 - Decision creation or resolution events;
 - file, source, artifact, or Task Record writes;
 - context refresh, task switch, and handoff events;
@@ -290,6 +291,8 @@ needed:
   refresh;
 - important files, sources, artifacts, or source digests needed for continuation;
 - recent execution evidence when work was run;
+- completion-check evidence when the user or runtime explicitly confirmed
+  completion despite missing run evidence;
 - applicable Work Habits.
 
 The check should be lightweight. It should prevent unsafe clearing or execution,
@@ -493,10 +496,12 @@ summarize the archive before clearing. Reminder-only mode must not clear.
 Before marking a task complete:
 
 1. Verify completion criteria and residual risks.
-2. Preserve important final outputs and Decisions.
-3. Update Task.md or write a final Task Record only when future recovery,
+2. Record the completion check result when completing through a confirmation
+   flow, including explicit user overrides.
+3. Preserve important final outputs and Decisions.
+4. Update Task.md or write a final Task Record only when future recovery,
    auditing, or follow-up work would benefit.
-4. Avoid creating a completion note when structured state, Runs, and existing
+5. Avoid creating a completion note when structured state, Runs, and existing
    records already preserve enough recovery context.
 
 ## Write Thresholds
