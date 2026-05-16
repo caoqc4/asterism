@@ -7,6 +7,7 @@ import {
 
 const requiredSections = [
   'First Principles And Simplicity',
+  'Runtime Entrypoint Gate Protocol',
   'Required Read Order',
   'Information Routing Protocol',
   'Task Creation Protocol',
@@ -79,6 +80,17 @@ describe('agent principles compliance matrix', () => {
 
     expect(text).toContain('SubtaskStartEvaluation provides a shared runtime object');
     expect(text).not.toContain('Add shared SubtaskStartEvaluation');
+  });
+
+  it('records the runtime entrypoint gate protocol as a product execution constraint', () => {
+    const item = AGENT_PRINCIPLES_COMPLIANCE.find((entry) => entry.section === 'Runtime Entrypoint Gate Protocol');
+    const text = JSON.stringify(item);
+
+    expect(item).toBeTruthy();
+    expect(text).toContain('RuntimeEntrypointCoverage keeps retained entrypoints explicit');
+    expect(text).toContain('simplicity_check');
+    expect(text).toContain('defensive service and domain boundary gates');
+    expect(text).toContain('future entrypoints must be registered');
   });
 
   it('records that task switching uses the same pending-memory boundary', () => {

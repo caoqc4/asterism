@@ -42,6 +42,9 @@ The current runtime deepening work has made meaningful progress on information r
 5. Runtime entrypoint coverage is a regression registry, not automatic enforcement.
    Current retained execution, context-transition, decision-action, durable-write, and task-dynamics paths are covered by shared runtime gates and regression registries. Future entrypoints must be registered with their kind-level gate baseline before they are treated as covered.
 
+6. Runtime entrypoint gate protocol now belongs to the Agent execution contract.
+   Before a retained entrypoint mutates durable state, starts or resumes execution, clears context, or changes a decision, it must be classified by affected object/boundary, routed through the smallest applicable shared gate, and registered in `RuntimeEntrypointCoverage`. UI-only read/filter/selection/display paths remain exempt unless they also change state.
+
 ### P1
 
 1. Task.md update recommendations are partially systematic.

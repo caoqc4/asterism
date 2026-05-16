@@ -56,6 +56,15 @@ First-principles and simplicity guidance belongs in the Agent document because i
 - avoid creating extra tasks, files, records, statuses, queues, prompts, agents, or confirmation steps unless they remove real ambiguity, reduce repeated user effort, or protect against meaningful risk;
 - when uncertain, keep the system reversible and inspectable through proposals, trade-off explanation, or user confirmation instead of silent structural mutation.
 
+Runtime entrypoint gate guidance also belongs in the Agent document as an execution constraint, while the detailed implementation lives in runtime lifecycle coverage:
+
+- any retained entrypoint must first be classified by the durable object or execution boundary it can affect;
+- the entrypoint should attach the smallest applicable shared gate before mutation or execution;
+- UI-only read, filter, selection, and display paths do not need gates unless they change durable state, execution state, task context, or decision state;
+- service/domain boundaries still need defensive gates even when a UI caller already checked the action;
+- every retained mutating, executing, context-clearing, checkpoint-resuming, or decision-changing entrypoint must be registered in `RuntimeEntrypointCoverage`;
+- `RuntimeEntrypointCoverage` remains a regression registry, not dynamic discovery.
+
 When a new rule is about Agent behavior, add it through a clearly versioned addendum or a future version of the Agent principles.
 
 When a new rule is about product runtime behavior, add it to runtime lifecycle design and coverage instead.

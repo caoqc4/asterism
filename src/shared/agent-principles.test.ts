@@ -18,6 +18,11 @@ describe('Taskplane Agent product principles', () => {
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('identify the real object being managed');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Prefer explicit structured state over title patterns');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Do not introduce new categories, folders, statuses, queues, prompts, agents, or confirmation steps unless');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('## Runtime Entrypoint Gate Protocol');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('classify the entrypoint by the durable object or execution boundary it can affect');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Attach the smallest applicable runtime gate before the entrypoint mutates state or starts execution.');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('RuntimeEntrypointCoverage with its kind-level gate baseline');
+    expect(TASKPLANE_AGENT_PRINCIPLES).toContain('Service or domain boundaries must keep a defensive gate');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('## Required Read Order');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('## Information Routing Protocol');
     expect(TASKPLANE_AGENT_PRINCIPLES).toContain('route it to the smallest durable surface');

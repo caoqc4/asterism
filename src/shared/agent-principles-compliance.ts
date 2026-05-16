@@ -47,6 +47,28 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
   },
   {
+    section: 'Runtime Entrypoint Gate Protocol',
+    status: 'partial',
+    priority: 'p0',
+    implementedBy: [
+      'RuntimeEntrypointCoverage keeps retained entrypoints explicit for provider-visible execution, hidden local execution, task capture, task transition, project decomposition, decision action, agent tools, durable writes, context transitions, task dynamics, and capability checks.',
+      'RuntimeEntrypointCoverage defines kind-level gate baselines so an entrypoint cannot be treated as covered below its class minimum.',
+      'RuntimeEntrypointCoverage requires simplicity_check on every retained entrypoint and every kind baseline.',
+      'runtime-entrypoint-coverage tests fail when registered entrypoints are missing required gates, fall below their kind baseline, duplicate ownership, or omit simplicity_check.',
+      'Renderer entrypoints use shared guards for task capture, task transitions, durable panel actions, project decomposition, task-file writes, task-context switching, automatic clearing, and Decision actions.',
+      'TaskService, RunService, CodeAgentRunService, OperatorStartedRunService, AgentToolRegistry, artifact writers, and task repositories keep defensive service and domain boundary gates even when UI callers already checked an action.',
+      'Legacy ContextPage and WorkbenchPage are retired, so new entrypoints are expected to land in retained TasksPage, RightPanel, Runs, task dynamics, Decisions, or explicit service boundaries.',
+    ],
+    gaps: [
+      'RuntimeEntrypointCoverage is a regression registry, not dynamic discovery; future entrypoints must be registered and reviewed explicitly.',
+      'Future scheduler, connector, provider-visible tool, task-context creation, and Run-side audit surfaces must choose the smallest existing evaluator or design a narrow new evaluator before persistence or execution.',
+    ],
+    nextVerification: [
+      'Keep runtime-entrypoint coverage tests failing when future entrypoints miss their kind baseline or simplicity_check.',
+      'During review of any new UI, scheduler, connector, Agent tool, or service write path, require an entrypoint classification and a RuntimeEntrypointCoverage registration before treating it as retained behavior.',
+    ],
+  },
+  {
     section: 'Required Read Order',
     status: 'partial',
     priority: 'p0',
