@@ -57,6 +57,17 @@ export class DecisionRepository {
     return rows.map(toRecord);
   }
 
+  async get(id: string): Promise<DecisionRecord | null> {
+    const db = initDatabase();
+    const [row] = await db
+      .select()
+      .from(decisionRequests)
+      .where(eq(decisionRequests.id, id))
+      .limit(1);
+
+    return row ? toRecord(row) : null;
+  }
+
   async create(input: CreateDecisionInput): Promise<DecisionRecord> {
     const db = initDatabase();
     const timestamp = nowIso();

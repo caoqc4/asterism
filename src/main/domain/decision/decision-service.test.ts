@@ -523,6 +523,37 @@ describe('DecisionService', () => {
     expect(result.status).toBe('approved');
   });
 
+  it('preflights task memory annotation before changing a task-bound decision', async () => {
+    const decisionRepository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      get: vi.fn().mockResolvedValue(buildDecisionRecord()),
+      act: vi.fn(),
+    };
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue(buildTaskDetail('running')),
+      preflightDecisionAnnotation: vi.fn().mockRejectedValue(new Error('任务记忆写入不可用')),
+      annotateDecisionApproved: vi.fn(),
+      annotateDecisionDeferred: vi.fn(),
+      annotateDecisionCancelled: vi.fn(),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+    );
+
+    await expect(service.act({
+      id: 'decision_1',
+      action: 'approve',
+    })).rejects.toThrow('任务记忆写入不可用');
+
+    expect(decisionRepository.get).toHaveBeenCalledWith('decision_1');
+    expect(taskService.preflightDecisionAnnotation).toHaveBeenCalledWith('task_1', 'approve');
+    expect(decisionRepository.act).not.toHaveBeenCalled();
+    expect(taskService.annotateDecisionApproved).not.toHaveBeenCalled();
+  });
+
   it('resumes an approved checkpoint decision through the pending tool', async () => {
     const decisionRepository = {
       list: vi.fn(),

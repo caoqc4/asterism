@@ -327,6 +327,11 @@ export class DecisionService {
   }
 
   async act(input: DecisionActionInput): Promise<DecisionRecord> {
+    const current = await this.getDecisionBeforeAction(input.id);
+    if (current?.taskId && typeof this.taskService.preflightDecisionAnnotation === 'function') {
+      await this.taskService.preflightDecisionAnnotation(current.taskId, input.action);
+    }
+
     const actionEvaluation = evaluateRuntimeAction({
       action: 'decision_action',
       decisionAction: input.action,
@@ -362,6 +367,14 @@ export class DecisionService {
     await this.settleLinkedCheckpoint(updated, input.action);
 
     return updated;
+  }
+
+  private async getDecisionBeforeAction(id: string): Promise<DecisionRecord | null> {
+    const repository = this.decisionRepository as DecisionRepository & {
+      get?: (id: string) => Promise<DecisionRecord | null>;
+    };
+    if (typeof repository.get !== 'function') return null;
+    return repository.get(id);
   }
 
   private async settleLinkedCheckpoint(

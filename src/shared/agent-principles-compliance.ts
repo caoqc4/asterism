@@ -414,6 +414,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     implementedBy: [
       'Decision creation and drafts use shared routing normalization.',
       'Decision actions pass through runtime action evaluation.',
+      'Task-bound Decision actions preflight the target task memory annotation before changing the Decision status.',
       'Checkpointed risky tools create Decisions and resume only after approval.',
       'Decision effect summaries feed project verification for pending, approved, deferred, and cancelled decisions.',
       'Decisions page approve/defer/cancel actions use shared decision action guards backed by pre_step and post_step verification.',

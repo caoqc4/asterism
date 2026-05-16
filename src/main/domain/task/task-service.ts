@@ -1250,6 +1250,7 @@ export class TaskService {
     decisionId?: string,
   ): Promise<TaskListItemRecord> {
     const detail = await this.getExistingTaskOrThrow(taskId);
+    this.assertDecisionAnnotationAllowed(detail, 'cancel');
 
     const updated = await this.repository.update({
       id: taskId,
@@ -1276,6 +1277,7 @@ export class TaskService {
     decisionId?: string,
   ): Promise<TaskListItemRecord> {
     const detail = await this.getExistingTaskOrThrow(taskId);
+    this.assertDecisionAnnotationAllowed(detail, 'approve');
     const nextState =
       detail.state === 'waiting_external'
         ? 'planned'
@@ -1326,7 +1328,8 @@ export class TaskService {
     decisionTitle: string,
     decisionId?: string,
   ): Promise<TaskListItemRecord> {
-    await this.getExistingTaskOrThrow(taskId);
+    const detail = await this.getExistingTaskOrThrow(taskId);
+    this.assertDecisionAnnotationAllowed(detail, 'defer');
 
     const waitingReason = `等待重新拍板：${decisionTitle}`;
     const transitioned = await this.repository.transition({
@@ -1351,6 +1354,47 @@ export class TaskService {
     });
 
     return this.attachActiveWaitingItem(updated);
+  }
+
+  async preflightDecisionAnnotation(
+    taskId: string,
+    action: 'approve' | 'defer' | 'cancel',
+  ): Promise<void> {
+    const detail = await this.getExistingTaskOrThrow(taskId);
+    this.assertDecisionAnnotationAllowed(detail, action);
+  }
+
+  private assertDecisionAnnotationAllowed(
+    detail: TaskDetailBase,
+    action: 'approve' | 'defer' | 'cancel',
+  ): void {
+    if (action === 'approve') {
+      const nextState =
+        detail.state === 'waiting_external'
+          ? 'planned'
+          : detail.state === 'running'
+            ? 'running'
+            : 'planned';
+      if (detail.state !== nextState) {
+        this.assertStateTransitionActionAllowed({
+          taskId: detail.id,
+          nextState,
+        });
+      }
+      this.assertTaskMutationActionAllowed(detail.id);
+      return;
+    }
+
+    if (action === 'defer') {
+      this.assertStateTransitionActionAllowed({
+        taskId: detail.id,
+        nextState: 'waiting_external',
+      });
+      this.assertTaskMutationActionAllowed(detail.id);
+      return;
+    }
+
+    this.assertTaskMutationActionAllowed(detail.id);
   }
 
   async annotateRunFailed(
