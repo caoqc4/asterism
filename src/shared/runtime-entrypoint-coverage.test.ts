@@ -29,6 +29,7 @@ describe('runtime entrypoint coverage', () => {
 
   it('requires provider-visible execution to pass context assembly and task start gates', () => {
     expect(requiredRuntimeEntrypointGatesForKind('provider_visible_execution')).toEqual([
+      'simplicity_check',
       'runtime_action',
       'runtime_context_assembly',
       'task_memory_coverage',
@@ -48,6 +49,7 @@ describe('runtime entrypoint coverage', () => {
 
   it('requires hidden local execution to keep memory and start gates without provider context assembly', () => {
     for (const entry of runtimeEntrypointsByKind('hidden_local_execution')) {
+      expect(entry.requiredGates).toContain('simplicity_check');
       expect(entry.requiredGates).not.toContain('runtime_context_assembly');
       expect(entry.requiredGates).toContain('task_memory_coverage');
       expect(entry.requiredGates).toContain('task_memory_guidance');
@@ -64,6 +66,7 @@ describe('runtime entrypoint coverage', () => {
 
     expect(resumed.length).toBeGreaterThan(0);
     for (const entry of resumed) {
+      expect(entry.requiredGates).toContain('simplicity_check');
       expect(entry.requiredGates).toContain('task_memory_guidance');
       expect(entry.requiredGates).toContain('pre_step');
       expect(entry.requiredGates).toContain('subtask_start');
@@ -73,6 +76,7 @@ describe('runtime entrypoint coverage', () => {
 
   it('requires durable writes to pass task mutation boundaries', () => {
     for (const entry of runtimeEntrypointsByKind('durable_write')) {
+      expect(entry.requiredGates).toContain('simplicity_check');
       expect(entry.requiredGates).toContain('task_mutation');
       expect(entry.requiredGates).toContain('pre_step');
     }
@@ -80,15 +84,24 @@ describe('runtime entrypoint coverage', () => {
 
   it('requires task capture and decision actions to use their own runtime boundaries', () => {
     for (const entry of runtimeEntrypointsByKind('task_capture')) {
+      expect(entry.requiredGates).toContain('simplicity_check');
       expect(entry.requiredGates).toContain('runtime_action');
       expect(entry.requiredGates).toContain('task_memory_guidance');
       expect(entry.requiredGates).toContain('pre_step');
     }
     for (const entry of runtimeEntrypointsByKind('decision_action')) {
+      expect(entry.requiredGates).toContain('simplicity_check');
       expect(entry.requiredGates).toContain('decision_action');
       expect(entry.requiredGates).toContain('task_memory_guidance');
       expect(entry.requiredGates).toContain('pre_step');
       expect(entry.requiredGates).toContain('post_step');
+    }
+  });
+
+  it('requires every retained runtime entrypoint to declare the simplicity gate', () => {
+    for (const entry of RUNTIME_ENTRYPOINT_COVERAGE) {
+      expect(entry.requiredGates).toContain('simplicity_check');
+      expect(entry.coveredGates).toContain('simplicity_check');
     }
   });
 

@@ -182,6 +182,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskService recordTimelineEvent now guards panel.* task dynamic writes with task_mutation before appending timeline events.',
       'RuntimeEntrypointCoverage keeps retained execution, resume, context-transition, task-capture, task-transition, project-decomposition, decision-action, agent-tool, and durable-write entrypoints explicit with required runtime gates.',
       'RuntimeEntrypointCoverage also defines kind-level gate baselines so future entrypoints cannot register below their class minimum without a failing regression test.',
+      'RuntimeEntrypointCoverage requires simplicity_check across every retained entrypoint and kind baseline, so new execution or durable-write surfaces must declare the smallest-state-change boundary before they are considered covered.',
       'RuntimeEntrypointCoverage is intentionally a regression registry; new runtime entrypoints must be added to the registry and covered by the baseline tests rather than discovered dynamically.',
     ],
     outOfAgentPrinciplesScope: [

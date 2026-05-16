@@ -34,14 +34,15 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'No default Artifacts/ folder is required; output folders are created only when useful for the task.',
       'RuntimeTaskCaptureEvaluation blocks generic phase-template task titles even when a faulty flow tries to create them as top-level tasks.',
       'Runtime surface routing has regression coverage that explicit Decision kind, scope, and sourceType are not overridden by title-pattern inference.',
+      'RuntimeEntrypointCoverage now requires every retained runtime entrypoint to declare a simplicity_check gate, so future execution, creation, decision, write, resume, and context-transition surfaces cannot register without the smallest-state-change boundary.',
     ],
     gaps: [
       'Renderer-local hierarchy attributes remain only as legacy missing-field fallback data for old records; future cleanup is limited to deleting compatibility reads when old records no longer need support.',
-      'Not every execution path has an explicit simplicity check before creating new files, records, decisions, prompts, or follow-up tasks.',
+      'Current retained entrypoints declare the simplicity boundary; future implementation work must keep each concrete surface backed by the smallest applicable evaluator instead of adding broad new workflow steps.',
     ],
     nextVerification: [
       'Add remaining regression tests for no implicit hierarchy mutation, no generic follow-up task creation, and no local fallback override when structured record fields are present.',
-      'Review remaining creation and persistence paths for unnecessary categories, files, records, or confirmation steps.',
+      'Keep runtime-entrypoint coverage tests failing when a future entrypoint omits simplicity_check.',
     ],
   },
   {
@@ -241,6 +242,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TaskService recordTimelineEvent guards panel.* task dynamic writes with task_mutation before persistence.',
       'RuntimeEntrypointCoverage keeps retained execution, resume, context-transition, task-capture, task-transition, project-decomposition, decision-action, agent-tool, and durable-write entrypoints explicit with required runtime gates.',
       'RuntimeEntrypointCoverage defines kind-level gate baselines so future entrypoints cannot register below their class minimum without a failing regression test.',
+      'RuntimeEntrypointCoverage includes simplicity_check in every kind-level baseline and retained entrypoint, tying execution expansion back to the first-principles smallest-state-change rule.',
       'RuntimeEntrypointCoverage is intentionally a regression registry; future runtime entrypoints must be added there and wired to the kind-level baseline rather than relying on dynamic discovery.',
     ],
     gaps: [

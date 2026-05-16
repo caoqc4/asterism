@@ -10,6 +10,7 @@ export type RuntimeEntrypointKind =
   | 'context_transition';
 
 export type RuntimeEntrypointGate =
+  | 'simplicity_check'
   | 'runtime_action'
   | 'runtime_context_assembly'
   | 'task_memory_coverage'
@@ -51,6 +52,7 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
   RuntimeEntrypointGate[]
 > = {
   provider_visible_execution: [
+    'simplicity_check',
     'runtime_action',
     'runtime_context_assembly',
     'task_memory_coverage',
@@ -60,6 +62,7 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
     'post_step',
   ],
   hidden_local_execution: [
+    'simplicity_check',
     'runtime_action',
     'task_memory_coverage',
     'task_memory_guidance',
@@ -68,6 +71,7 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
     'post_step',
   ],
   execution_resume: [
+    'simplicity_check',
     'runtime_action',
     'runtime_handoff',
     'task_memory_guidance',
@@ -76,6 +80,7 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
     'checkpoint_eligibility',
   ],
   decision_resume: [
+    'simplicity_check',
     'decision_action',
     'task_memory_guidance',
     'pre_step',
@@ -84,25 +89,30 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
     'checkpoint_eligibility',
   ],
   decision_action: [
+    'simplicity_check',
     'decision_action',
     'task_memory_guidance',
     'pre_step',
     'post_step',
   ],
   task_capture: [
+    'simplicity_check',
     'runtime_action',
     'task_memory_guidance',
     'pre_step',
   ],
   task_state_transition: [
+    'simplicity_check',
     'runtime_action',
     'pre_step',
   ],
   durable_write: [
+    'simplicity_check',
     'task_mutation',
     'pre_step',
   ],
   context_transition: [
+    'simplicity_check',
     'runtime_action',
     'runtime_handoff',
     'task_memory_coverage',
@@ -117,6 +127,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     kind: 'provider_visible_execution',
     description: 'Ordinary text or Agent run execution for a task.',
     requiredGates: [
+      'simplicity_check',
       'runtime_action',
       'runtime_context_assembly',
       'task_memory_coverage',
@@ -126,6 +137,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'post_step',
     ],
     coveredGates: [
+      'simplicity_check',
       'runtime_action',
       'runtime_context_assembly',
       'task_memory_coverage',
@@ -141,6 +153,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     kind: 'provider_visible_execution',
     description: 'Code Agent execution, including model-producer mode when enabled.',
     requiredGates: [
+      'simplicity_check',
       'runtime_action',
       'runtime_context_assembly',
       'task_memory_coverage',
@@ -150,6 +163,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'post_step',
     ],
     coveredGates: [
+      'simplicity_check',
       'runtime_action',
       'runtime_context_assembly',
       'task_memory_coverage',
@@ -165,6 +179,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     kind: 'hidden_local_execution',
     description: 'Operator-started local/browser QA run that records evidence without provider-visible model context.',
     requiredGates: [
+      'simplicity_check',
       'runtime_action',
       'task_memory_coverage',
       'task_memory_guidance',
@@ -173,6 +188,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'post_step',
     ],
     coveredGates: [
+      'simplicity_check',
       'runtime_action',
       'task_memory_coverage',
       'task_memory_guidance',
@@ -188,6 +204,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     kind: 'execution_resume',
     description: 'Resume a paused run from a checkpoint.',
     requiredGates: [
+      'simplicity_check',
       'runtime_action',
       'runtime_handoff',
       'task_memory_guidance',
@@ -196,6 +213,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'checkpoint_eligibility',
     ],
     coveredGates: [
+      'simplicity_check',
       'runtime_action',
       'runtime_handoff',
       'task_memory_guidance',
@@ -210,6 +228,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     kind: 'decision_resume',
     description: 'Approve a checkpoint Decision and resume paused tool, browser, or patch-promotion execution.',
     requiredGates: [
+      'simplicity_check',
       'decision_action',
       'task_memory_guidance',
       'pre_step',
@@ -218,6 +237,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'checkpoint_eligibility',
     ],
     coveredGates: [
+      'simplicity_check',
       'decision_action',
       'task_memory_guidance',
       'pre_step',
@@ -232,11 +252,13 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     kind: 'task_capture',
     description: 'Create a retained task from explicit user input or confirmed panel capture.',
     requiredGates: [
+      'simplicity_check',
       'runtime_action',
       'task_memory_guidance',
       'pre_step',
     ],
     coveredGates: [
+      'simplicity_check',
       'runtime_action',
       'task_memory_guidance',
       'pre_step',
@@ -248,12 +270,14 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     kind: 'task_state_transition',
     description: 'Move a task into running state outside a RunService-created execution.',
     requiredGates: [
+      'simplicity_check',
       'runtime_action',
       'task_memory_coverage',
       'pre_step',
       'subtask_start',
     ],
     coveredGates: [
+      'simplicity_check',
       'runtime_action',
       'task_memory_coverage',
       'pre_step',
@@ -266,12 +290,14 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     kind: 'task_state_transition',
     description: 'Move a task into completed state.',
     requiredGates: [
+      'simplicity_check',
       'runtime_action',
       'task_completion',
       'project_verification',
       'pre_step',
     ],
     coveredGates: [
+      'simplicity_check',
       'runtime_action',
       'task_completion',
       'project_verification',
@@ -284,12 +310,14 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     kind: 'decision_action',
     description: 'Approve, defer, or cancel a retained Decision without checkpoint resume.',
     requiredGates: [
+      'simplicity_check',
       'decision_action',
       'task_memory_guidance',
       'pre_step',
       'post_step',
     ],
     coveredGates: [
+      'simplicity_check',
       'decision_action',
       'task_memory_guidance',
       'pre_step',
@@ -302,11 +330,13 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     kind: 'durable_write',
     description: 'Append retained panel.* task dynamic events for audit/replay.',
     requiredGates: [
+      'simplicity_check',
       'task_mutation',
       'pre_step',
       'panel_event_allowlist',
     ],
     coveredGates: [
+      'simplicity_check',
       'task_mutation',
       'pre_step',
       'panel_event_allowlist',
@@ -318,6 +348,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     kind: 'durable_write',
     description: 'Confirm generated project children, dependencies, criteria, records, and parent updates.',
     requiredGates: [
+      'simplicity_check',
       'task_mutation',
       'pre_step',
       'post_step',
@@ -325,6 +356,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'panel_event_allowlist',
     ],
     coveredGates: [
+      'simplicity_check',
       'task_mutation',
       'pre_step',
       'post_step',
@@ -338,11 +370,13 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     kind: 'durable_write',
     description: 'Create, update, move, archive, or delete task-bound files, source contexts, artifacts, criteria, blockers, dependencies, and process bindings.',
     requiredGates: [
+      'simplicity_check',
       'task_mutation',
       'pre_step',
       'post_step',
     ],
     coveredGates: [
+      'simplicity_check',
       'task_mutation',
       'pre_step',
       'post_step',
@@ -354,11 +388,13 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     kind: 'durable_write',
     description: 'Agent tool writes for task records, Task.md guidance, source context, and artifacts.',
     requiredGates: [
+      'simplicity_check',
       'task_mutation',
       'pre_step',
       'post_step',
     ],
     coveredGates: [
+      'simplicity_check',
       'task_mutation',
       'pre_step',
       'post_step',
@@ -370,12 +406,14 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     kind: 'context_transition',
     description: 'Refresh, clear, leave, or switch task chat context.',
     requiredGates: [
+      'simplicity_check',
       'runtime_action',
       'runtime_handoff',
       'task_memory_coverage',
       'task_memory_guidance',
     ],
     coveredGates: [
+      'simplicity_check',
       'runtime_action',
       'runtime_handoff',
       'task_memory_coverage',
