@@ -87,6 +87,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'AgentToolRegistry persists recoveryGuidanceItems as a separate Run Step so task-memory recommendations remain auditable without silently mutating Task.md or Task Records.',
       'TaskMemoryGuidanceState reads structured guidance targets from Run Step input before falling back to guidance text parsing.',
       'TaskMemoryWriteProposal projects pending guidance into minimal confirmed-write proposals for Task.md or Task Records without automatically changing task memory.',
+      'RunDetailRecord exposes taskMemoryWriteProposals derived from pending TaskMemoryGuidanceState, so runtime consumers can route the missing memory write without recomputing it.',
       'TaskMemoryGuidanceState distinguishes unresolved task-memory guidance from completed Task.md or Task Record writes.',
       'TaskMemoryGuidanceState tracks Task.md and Task Record guidance per target so one newer recommendation cannot mask another pending memory surface.',
       'TaskRecordWorthiness tests cover should-create and should-not-create cases for handoff, closeout, correction, option rationale, failures, external signals, duplicates, generic notes, and unbound notes.',

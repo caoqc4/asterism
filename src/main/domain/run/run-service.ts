@@ -17,6 +17,10 @@ import {
   buildTaskMemoryGuidanceStateForTaskFiles,
   type TaskMemoryGuidanceState,
 } from '../../../shared/task-memory-guidance-state.js';
+import {
+  buildTaskMemoryWriteProposals,
+  type TaskMemoryWriteProposal,
+} from '../../../shared/task-memory-write-proposal.js';
 import type { AgentSessionRecord } from '../../../shared/types/agent-execution.js';
 import type {
   CreateRunInput,
@@ -90,7 +94,8 @@ export class RunService {
     }
 
     const steps = await this.runStepRepository.listForRun(runId);
-    const taskMemoryGuidance = await this.buildTaskMemoryGuidance(run.taskId, steps);
+    const taskMemory = await this.buildTaskMemoryForRunDetail(run.taskId, steps);
+    const taskMemoryGuidance = taskMemory.guidance;
     const detail = {
       ...run,
       artifacts: await this.artifactRepository.listForRun(runId),
@@ -98,6 +103,7 @@ export class RunService {
       checkpoints: await this.runCheckpointRepository.listForRun(runId),
       agentSessions: await this.agentSessionStore.listForRun(runId),
       taskMemoryGuidance,
+      taskMemoryWriteProposals: taskMemory.writeProposals,
     };
     await persistLightweightRunVerifications(detail, this.runVerificationRepository, {
       includeRunLevel: await this.shouldPersistRunLevelSelfCheck(),
@@ -118,6 +124,7 @@ export class RunService {
       runtimeEvents,
       runtimeReplayGroups: groupRuntimeEventsForReplay(runtimeEvents),
       taskMemoryGuidance,
+      taskMemoryWriteProposals: taskMemory.writeProposals,
     };
   }
 
@@ -254,14 +261,32 @@ export class RunService {
     taskId: string,
     steps: Awaited<ReturnType<RunStepRepository['listForRun']>>,
   ): Promise<TaskMemoryGuidanceState> {
+    return (await this.buildTaskMemoryForRunDetail(taskId, steps)).guidance;
+  }
+
+  private async buildTaskMemoryForRunDetail(
+    taskId: string,
+    steps: Awaited<ReturnType<RunStepRepository['listForRun']>>,
+  ): Promise<{
+    guidance: TaskMemoryGuidanceState;
+    writeProposals: TaskMemoryWriteProposal[];
+  }> {
     const taskDetailReader = (this.taskService as Partial<Pick<TaskService, 'getDetail'>>).getDetail;
     const taskDetail = typeof taskDetailReader === 'function'
       ? await Promise.resolve(taskDetailReader.call(this.taskService, taskId)).catch(() => null)
       : null;
-    return buildTaskMemoryGuidanceStateForTaskFiles({
+    const guidance = buildTaskMemoryGuidanceStateForTaskFiles({
       guidanceSignals: steps,
       taskFiles: taskDetail?.taskFiles,
     });
+    return {
+      guidance,
+      writeProposals: buildTaskMemoryWriteProposals({
+        guidance,
+        taskFiles: taskDetail?.taskFiles,
+        taskTitle: taskDetail?.title,
+      }),
+    };
   }
 
   private async buildTaskMemoryGuidanceForTask(task: TaskDetail): Promise<TaskMemoryGuidanceState> {

@@ -2,6 +2,7 @@ import type { AgentSessionRecord } from './agent-execution.js';
 import type { ArtifactRecord } from './artifact.js';
 import type { RuntimeEventRecord, RuntimeReplayGroup } from '../runtime-event-record.js';
 import type { TaskMemoryGuidanceState } from '../task-memory-guidance-state.js';
+import type { TaskMemoryWriteProposal } from '../task-memory-write-proposal.js';
 
 export type RunType = 'draft' | 'summarize' | 'agent';
 
@@ -51,6 +52,7 @@ export type RunDetailRecord = RunRecord & {
   runtimeEvents?: RuntimeEventRecord[];
   runtimeReplayGroups?: RuntimeReplayGroup[];
   taskMemoryGuidance?: TaskMemoryGuidanceState;
+  taskMemoryWriteProposals?: TaskMemoryWriteProposal[];
 };
 
 export type RunCheckpointRecord = {

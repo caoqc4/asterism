@@ -410,6 +410,7 @@ describe('RunService', () => {
       outcome: 'satisfied',
       targets: ['task_md'],
     });
+    expect(result?.taskMemoryWriteProposals).toEqual([]);
   });
 
   it('persists run-level warning when task memory guidance is still pending', async () => {
@@ -463,6 +464,12 @@ describe('RunService', () => {
       outcome: 'pending',
       pendingTargets: ['task_record'],
     });
+    expect(result?.taskMemoryWriteProposals).toMatchObject([{
+      operation: 'create',
+      path: expect.stringMatching(/^Task Records\/\d{4}-\d{2}-\d{2}-memory-guidance\.md$/),
+      target: 'task_record',
+      title: '创建任务记录',
+    }]);
     expect(runVerificationRepository.upsert).toHaveBeenCalledWith(expect.objectContaining({
       targetType: 'run',
       targetId: 'run_1',
