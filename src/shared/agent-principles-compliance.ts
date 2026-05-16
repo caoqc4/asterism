@@ -108,11 +108,12 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TasksPage explicit task creation forwards the same task summary used by the capture evaluator to the service boundary.',
       'TaskService.create enforces the same duplicate/generic task-capture evaluator before repository persistence.',
       'TaskService.update reuses the same evaluator for title changes and parent moves, preventing duplicate sibling tasks.',
+      'TaskService blocks child creation and child moves unless the parent is an open top-level project task.',
       'Project decomposition creates draft subtasks before real child task creation.',
     ],
     gaps: [
       'RightPanel capture uses the shared intake evaluator and TasksPage explicit creation uses the shared task_capture guard; both now consume duplicate/generic candidate checks, but some retained creation entry points are not routed through intake yet.',
-      'Subtask creation has service-level generic child guards, but still needs a stronger shared confirmation boundary for every retained child-task creation path.',
+      'Subtask creation has service-level generic child and parent-ownership guards, but future child-task creation paths must keep using shared confirmation boundaries.',
     ],
     nextVerification: [
       'Route remaining task creation entry points through RuntimeIntakeEvaluation or a stricter child-task evaluator.',
@@ -130,6 +131,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Project decomposition generation and confirmation both consult runtime-subtask-evaluator so existing children block another decomposition round before new drafts appear.',
       'Project decomposition generation detects existing children from the full task list, including children linked only by parentTaskId.',
       'TaskService keeps child parentTaskId and parent childTaskIds synchronized when child tasks are created, moved, or changed from the parent child list.',
+      'TaskService blocks child creation, child moves, and parent child-list writes unless the parent is an open top-level project task.',
       'TaskService safe hierarchy repairs and explicit manual hierarchy resolutions pass parent/child structure writes through task_mutation guards.',
       'runtime-verification has an initial project mode for child completion, blocker/waiting counts, parent criteria, pending decisions, and risk confirmation.',
       'decision-effect-evaluator summarizes pending, approved, deferred, and cancelled decisions for project verification.',
@@ -138,7 +140,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
     gaps: [
       'Project-level verification includes artifact/source counts and Decision effect summaries, but other project state transitions still need to consume it.',
-      'Subtask draft evaluation exists for project decomposition generation and confirmed project child creation, while service-level capture guards cover generic child-title mistakes; remaining child-task paths still need a common confirmation boundary.',
+      'Subtask draft evaluation exists for project decomposition generation and confirmed project child creation, while service-level capture and hierarchy guards cover generic child-title and invalid parent ownership mistakes; future child-task paths still need a common confirmation boundary.',
     ],
     nextVerification: [
       'Route remaining project state transitions through project verification.',

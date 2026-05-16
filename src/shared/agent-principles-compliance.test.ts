@@ -96,6 +96,12 @@ describe('agent principles compliance matrix', () => {
     expect(text).toContain('waiting transitions require a waiting reason');
   });
 
+  it('records service-boundary project child ownership guards', () => {
+    const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
+
+    expect(text).toContain('parent is an open top-level project task');
+  });
+
   it('records that phase closeout uses the same pending-memory boundary', () => {
     const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
 
