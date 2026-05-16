@@ -21,7 +21,7 @@ Current status is intentionally conservative:
 - Partially implemented: most core runtime areas.
 - Missing: none tracked as fully absent, though every section still has known gaps.
 
-The current runtime deepening work has made meaningful progress on information routing, context clearing, task closeout, run verification, confirmation boundaries, source inclusion checks, Decisions judgment, task dynamics, and subagent handoff boundaries. It has not yet fully enforced every future execution boundary, every future task creation entry point, connector-level source quality signals, or product entry-point wiring for subagent handoffs.
+The current runtime deepening work has made meaningful progress on information routing, context clearing, task closeout, run verification, confirmation boundaries, task creation checks, source inclusion checks, Decisions judgment, task dynamics, and subagent handoff boundaries. It has not yet fully enforced every future execution boundary, every future task creation entry point, connector-level source quality signal, or product entry-point wiring for subagent handoffs.
 
 ## Highest Priority Gaps
 

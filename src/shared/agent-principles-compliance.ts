@@ -132,7 +132,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Project decomposition creates draft subtasks before real child task creation.',
     ],
     gaps: [
-      'RightPanel capture uses the shared intake evaluator and TasksPage explicit creation uses the shared task_capture guard; both now consume duplicate/generic candidate checks, but some retained creation entry points are not routed through intake yet.',
+      'RightPanel capture uses the shared intake evaluator, TasksPage explicit creation uses the shared task_capture guard, and TaskService.create enforces duplicate/generic candidate checks at the service boundary.',
       'Current retained task creation entry points are scoped: TasksPage explicit capture uses intake/capture guards, RightPanel task-context follow-up capture uses closeout gating, and project child creation uses the subtask draft evaluator.',
       'Subtask creation has service-level generic child and parent-ownership guards; future child-task creation paths must keep using the same shared confirmation boundaries.',
     ],

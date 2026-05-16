@@ -46,7 +46,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'The UI must distinguish capture, draft, confirm, and enter-task states.',
     ],
     gaps: [
-      'Current retained creation entry points are covered by intake, closeout, or subtask draft gates; future creation entry points must declare which gate owns them before writing tasks.',
+      'Current retained creation entry points are covered by intake, closeout, service-boundary capture checks, or subtask draft gates; future creation entry points must declare which gate owns them before writing tasks.',
       'Service-level guards now block duplicate and near-duplicate open-task captures, generic title-only candidates, generic phase-template titles, generic child phase-template titles, and child titles that repeat the parent; broader semantic duplicate detection remains intentionally conservative.',
     ],
     nextImplementation: [
