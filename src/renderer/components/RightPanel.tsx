@@ -847,6 +847,11 @@ export function RightPanel({
     sessionRefreshDismissed,
     taskFileProposal,
   } = sessionState;
+  const activeTaskIdRef = useRef(activeTaskId);
+
+  useEffect(() => {
+    activeTaskIdRef.current = activeTaskId;
+  }, [activeTaskId]);
 
   function patchSession(patch: PanelSessionPatch) {
     dispatchSession({ type: 'patch', patch });
@@ -1096,6 +1101,7 @@ export function RightPanel({
         archived,
         taskMemoryGuidance,
       });
+      if (activeTaskIdRef.current !== autoTaskId) return;
       if (!handoff.canProceed) {
         appendSysMsg(`自动刷新已暂停：${reason} ${handoff.reason}`);
         patchSession({ sessionRefreshDismissed: true });
