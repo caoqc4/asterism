@@ -269,6 +269,20 @@ describe('runtime surface routing', () => {
     });
   });
 
+  it('does not let title-pattern inference override explicit decision fields', () => {
+    expect(normalizeCreateDecisionInput({
+      title: '是否批准外部写入和验收完成',
+      scope: 'task',
+      kind: 'direction_choice',
+      sourceType: 'manual',
+      taskId: 'task_1',
+    })).toMatchObject({
+      scope: 'task',
+      kind: 'direction_choice',
+      sourceType: 'manual',
+    });
+  });
+
   it('normalizes work habit proposals as pending candidates', () => {
     expect(normalizeCreateWorkHabitProposalInput({
       rule: '以后类似任务先内部评审再对外发送',

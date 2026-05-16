@@ -39,6 +39,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskService.update reuses the same evaluator when title or parent scope changes, preventing duplicate siblings during project moves.',
       'runtime-task-capture-evaluator blocks near-duplicate compact titles in the same parent scope when word order changes but the title identity is effectively the same.',
       'Current retained task creation entry points are scoped: TasksPage explicit capture uses intake/capture guards, RightPanel task-context follow-up capture uses closeout gating, and project child creation uses the subtask draft evaluator.',
+      'Runtime surface routing preserves explicit Decision kind, scope, and sourceType even when a title contains approval, external-write, or completion keywords.',
     ],
     outOfAgentPrinciplesScope: [
       'Product-level intake must decide whether the user is creating work, browsing existing work, asking for status, or discussing direction.',
