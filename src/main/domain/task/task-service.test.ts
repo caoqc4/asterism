@@ -1785,6 +1785,29 @@ describe('TaskService', () => {
     expect(waitingItems.upsertActive).not.toHaveBeenCalled();
   });
 
+  it('requires an existing waiting reason when transitionIfAllowed enters waiting_external', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('running')),
+      update: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
+
+    await expect(
+      service.transitionIfAllowed('task_1', 'waiting_external'),
+    ).rejects.toThrow('Waiting reason is required when transitioning to waiting_external');
+
+    expect(repository.transition).not.toHaveBeenCalled();
+    expect(waitingItems.upsertActive).not.toHaveBeenCalled();
+  });
+
   it('clears waiting reason when transitioning out of waiting_external', async () => {
     const repository = {
       list: vi.fn(),

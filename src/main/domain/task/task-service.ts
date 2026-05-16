@@ -1199,6 +1199,10 @@ export class TaskService {
       nextState,
     });
 
+    if (nextState === 'waiting_external' && !detail.waitingReason?.trim()) {
+      throw new Error('Waiting reason is required when transitioning to waiting_external');
+    }
+
     if (nextState === 'running') {
       await this.assertTaskCanEnterRunning(detail);
     }
