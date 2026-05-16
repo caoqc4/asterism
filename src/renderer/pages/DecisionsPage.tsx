@@ -32,6 +32,7 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterKey, setFilterKey] = useState<DecisionFilterKey>('all');
   const [actionEffect, setActionEffect] = useState<DecisionActionEffect | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [actingDecisionIds, setActingDecisionIds] = useState<Set<string>>(() => new Set());
   const [loading, setLoading] = useState(true);
 
@@ -86,6 +87,7 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
       taskId: decision?.taskId ?? null,
     });
     if (!guard.allowed) return;
+    setActionError(null);
     setActingDecisionIds((current) => new Set(current).add(id));
     window.api?.actOnDecision({ id, action })
       .then((updated) => {
@@ -96,7 +98,9 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
           action,
         });
       })
-      .catch(() => {})
+      .catch(() => {
+        setActionError('拍板没有完成，事项已保留在列表中。请检查后重试。');
+      })
       .finally(() => {
         setActingDecisionIds((current) => {
           const next = new Set(current);
@@ -130,6 +134,15 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
         <h2 className="decisions-title">Decisions</h2>
         <p className="decisions-subtitle">跨任务汇总所有需要你拍板的事项；AI 只给建议，不替你选择</p>
       </div>
+
+      {actionError && (
+        <div className="dec-overview" aria-label="拍板失败">
+          <div className="dec-overview-chip">
+            <span className="dec-overview-value">未完成</span>
+            <span>{actionError}</span>
+          </div>
+        </div>
+      )}
 
       {actionEffect && (
         <div className="dec-overview" aria-label="拍板结果">

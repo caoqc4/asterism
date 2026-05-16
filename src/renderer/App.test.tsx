@@ -2220,6 +2220,8 @@ describe('App redesign v1', () => {
     });
     expect(await screen.findByText('是否批准本轮材料修改方案')).toBeTruthy();
     expect(screen.queryByLabelText('拍板结果')).toBeNull();
+    expect(await screen.findByLabelText('拍板失败')).toBeTruthy();
+    expect(screen.getByText(/事项已保留在列表中/)).toBeTruthy();
   });
 
   it('prevents duplicate decision actions while a decision is being processed', async () => {
