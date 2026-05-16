@@ -104,6 +104,15 @@ function makeWelcomeMessage(taskTitle: string): Message {
   };
 }
 
+function makeTaskSessionRefreshedMessage(taskTitle: string): Message {
+  return {
+    id: nextId(),
+    role: 'assistant',
+    text: `已自动整理并刷新「${taskTitle}」的任务会话。关键恢复信息已写入任务记忆，接下来会从任务记忆重新组装上下文。`,
+    ts: now(),
+  };
+}
+
 function now() {
   return new Date().toLocaleTimeString('zh', { hour: '2-digit', minute: '2-digit' });
 }
@@ -764,6 +773,8 @@ export function RightPanel({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastAutoSentDraftPromptRef = useRef<string | null>(null);
+  const lastAutoRefreshKeyRef = useRef<string | null>(null);
+  const autoRefreshInFlightRef = useRef(false);
 
   // Fetch task title and seed welcome message when panel first opens with a task
   useEffect(() => {
@@ -942,8 +953,13 @@ export function RightPanel({
     return selectBlockingTaskMemoryGuidance(details.map((detail) => detail?.taskMemoryGuidance));
   }
 
-  function clearTaskSessionAfterArchive(taskName: string | null) {
-    setMessages(taskName ? [makeWelcomeMessage(taskName)] : []);
+  function clearTaskSessionAfterArchive(taskName: string | null, options: { auto?: boolean } = {}) {
+    setMessages(taskName
+      ? [
+          makeWelcomeMessage(taskName),
+          ...(options.auto ? [makeTaskSessionRefreshedMessage(taskName)] : []),
+        ]
+      : []);
     setHistoryOpen(false);
     setSessionRefreshDismissed(false);
     setManualRefreshReady(null);
@@ -978,6 +994,37 @@ export function RightPanel({
       return;
     }
     clearTaskSessionAfterArchive(taskName);
+  }
+
+  async function autoRefreshTaskSession(reason: string) {
+    if (!activeTaskId || autoRefreshInFlightRef.current) return;
+    autoRefreshInFlightRef.current = true;
+    const autoTaskId = activeTaskId;
+    try {
+      const { taskName, archived, hasSpecificSignal, userMessageCount } = await archiveTaskConversationIfNeeded();
+      const taskMemoryGuidance = await getBlockingTaskMemoryGuidance(autoTaskId);
+      const handoff = evaluateRuntimeHandoff({
+        intent: 'context_refresh',
+        fromTaskId: autoTaskId,
+        messageCount: userMessageCount,
+        hasSpecificHandoffSignal: hasSpecificSignal,
+        archived,
+        taskMemoryGuidance,
+      });
+      if (!handoff.canProceed) {
+        appendSysMsg(`自动刷新已暂停：${reason} ${handoff.reason}`);
+        setSessionRefreshDismissed(true);
+        return;
+      }
+      if (!handoff.autoContextClear?.shouldAutoClear) {
+        appendSysMsg(`自动刷新已保留当前会话：${reason} ${handoff.autoContextClear?.reason ?? handoff.reason}`);
+        setSessionRefreshDismissed(true);
+        return;
+      }
+      clearTaskSessionAfterArchive(taskName, { auto: true });
+    } finally {
+      autoRefreshInFlightRef.current = false;
+    }
   }
 
   async function prepareManualTaskSessionRefresh() {
@@ -1753,6 +1800,30 @@ export function RightPanel({
         { label: '最近有什么需要跟进的？', prompt: '最近有什么需要跟进的？' },
       ];
   const hasSessionActivity = Boolean(activeTaskId || messages.length > 0 || input.trim());
+
+  useEffect(() => {
+    if (
+      !activeTaskId
+      || contextStrategy !== 'auto'
+      || !sessionRefreshSuggestion
+      || sessionRefreshDismissed
+      || thinking
+    ) {
+      return;
+    }
+    const userSignal = userMessageTexts.join('\n');
+    const refreshKey = `${activeTaskId}:${sessionRefreshSuggestion.reason}:${userSignal}`;
+    if (!userSignal || lastAutoRefreshKeyRef.current === refreshKey) return;
+    lastAutoRefreshKeyRef.current = refreshKey;
+    void autoRefreshTaskSession(sessionRefreshSuggestion.reason);
+  }, [
+    activeTaskId,
+    contextStrategy,
+    sessionRefreshDismissed,
+    sessionRefreshSuggestion,
+    thinking,
+    userMessageTexts,
+  ]);
 
   return (
     <div className={`right-panel${fullScreen ? ' fullscreen' : ''}${hidden ? ' hidden' : ''}`}>

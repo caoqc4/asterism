@@ -143,6 +143,29 @@ Use them for:
 Runs explain what execution did. They should not replace Task.md or Task Records
 when a durable recovery summary or rationale is needed.
 
+### Run Detail Routing
+
+Run detail is structured execution detail, not a Task Record by default.
+
+Persist or project Run detail by recovery value:
+
+- Write to Task.md only when the run changes the current goal, state, next
+  step, blocker, risk, completion criteria, or important file reference.
+- Write to a Task Record only when the run produces durable rationale or
+  recovery material: failure review, rollback explanation, phase closeout,
+  handoff, context-clear archive, decision rationale, or source digest.
+- Show in Task Dynamics when the information explains what happened but does
+  not need a user file: run started, step completed, verification result,
+  checkpoint, tool action, file write, artifact creation, or replay grouping.
+- Keep only as Run or Run step detail when it is useful for audit or debugging
+  but not needed for normal task recovery.
+- Drop transient execution noise when it has no recovery, audit, verification,
+  source, or user-facing value.
+
+Do not copy a full Run detail into Task Records. If a future Agent needs it,
+write the smallest recovery summary and link or reference the relevant run,
+step, file, source, or artifact.
+
 ### Decisions
 
 Decisions preserve user judgment and authorization.

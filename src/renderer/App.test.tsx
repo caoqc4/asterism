@@ -1253,7 +1253,7 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/已放弃这条待确认任务/)).toBeTruthy();
   });
 
-  it('suggests a fresh task session when the right-panel conversation gets repetitive', async () => {
+  it('keeps low-signal repetitive task chat instead of auto clearing it', async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -1268,12 +1268,8 @@ describe('App redesign v1', () => {
       });
     }
 
-    expect(await screen.findByText(/刷新前会先保全关键决策、偏好变化和未解决问题/)).toBeTruthy();
-    expect(screen.getByText(/只保存精选信号，不保存完整聊天全文/)).toBeTruthy();
-    expect(screen.getByText(/同一个问题已重复出现 3 次/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '刷新任务会话' }));
-
-    expect(await screen.findByText(/保全信息还不够具体/)).toBeTruthy();
+    expect(await screen.findByText(/自动刷新已暂停/)).toBeTruthy();
+    expect(screen.getByText(/缺少明确可恢复信号/)).toBeTruthy();
     expect(harness.api.createSourceContext).not.toHaveBeenCalledWith(expect.objectContaining({
       title: '会话刷新前保全',
     }));
@@ -1378,8 +1374,6 @@ describe('App redesign v1', () => {
         expect(harness.api.chatWithAI).toHaveBeenCalledTimes(i + 1);
       });
     }
-
-    await user.click(await screen.findByRole('button', { name: '刷新任务会话' }));
 
     expect((await screen.findAllByText(/最新任务记忆建议仍缺少对应写入：Task Record/)).length).toBeGreaterThan(0);
     expect(await screen.findByText('任务记忆写入提案')).toBeTruthy();
@@ -1737,8 +1731,12 @@ describe('App redesign v1', () => {
       });
     }
 
-    expect(await screen.findByText(/刷新前会先保全关键决策、偏好变化和未解决问题/)).toBeTruthy();
-    expect(screen.getByText(/最近 3 次回复都偏泛化/)).toBeTruthy();
+    expect(await screen.findByText(/已自动整理并刷新/)).toBeTruthy();
+    expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_risk',
+      path: expect.stringMatching(/^Task Records\/\d{4}-\d{2}-\d{2}-context-refresh-handoff\.md$/),
+      content: expect.stringContaining('帮我判断推进路径'),
+    }));
   });
 
   it('suggests a fresh task session when the task discussion keeps correcting itself', async () => {
@@ -1759,8 +1757,12 @@ describe('App redesign v1', () => {
       });
     }
 
-    expect(await screen.findByText(/刷新前会先保全关键决策、偏好变化和未解决问题/)).toBeTruthy();
-    expect(screen.getByText(/最近多次出现改口或纠正/)).toBeTruthy();
+    expect(await screen.findByText(/已自动整理并刷新/)).toBeTruthy();
+    expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_risk',
+      path: expect.stringMatching(/^Task Records\/\d{4}-\d{2}-\d{2}-context-refresh-handoff\.md$/),
+      content: expect.stringContaining('改成先补法务意见'),
+    }));
   });
 
   it('uses the compression threshold preference for right-panel session refresh suggestions', async () => {
@@ -1789,8 +1791,9 @@ describe('App redesign v1', () => {
       });
     }
 
-    expect(await screen.findByText(/刷新前会先保全关键决策、偏好变化和未解决问题/)).toBeTruthy();
+    expect(await screen.findByText(/自动刷新已暂停/)).toBeTruthy();
     expect(screen.getByText(/达到会话检查阈值 3/)).toBeTruthy();
+    expect(screen.getByText(/缺少明确可恢复信号/)).toBeTruthy();
   });
 
   it('persists selected task completion from the Tasks inline row action', async () => {
