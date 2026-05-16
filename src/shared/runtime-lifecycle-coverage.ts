@@ -292,13 +292,14 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Task completion modal, project completion checks, RightPanel phase closeout, and Run verification persistence consume runtime-verification.',
       'Project detail surfaces display project verification next to the child task structure.',
       'Project verification includes artifact/source evidence counts and Decision effect summaries.',
+      'TaskService project completion transitions consume project verification before persisting completed state.',
       'RightPanel phase closeout also checks TaskMemoryCoverageEvaluation after writing the phase record and before refreshing or handing off.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime must verify not only Agent completion, but user-triggered state changes, project progress, and UI context transitions.',
     ],
     gaps: [
-      'Project verification is wired into completion and structure views; future project-level state transitions must consume the same verification before adding new completion paths.',
+      'Project verification is wired into completion, structure views, and TaskService project completion; future project-level state transitions must consume the same verification before adding new readiness paths.',
       'Pre-step and post-step verification cover current Run, generated artifact, panel durable action, and tool durable-write paths; future execution surfaces must opt in rather than adding direct writes.',
     ],
     nextImplementation: [

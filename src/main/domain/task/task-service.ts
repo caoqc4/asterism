@@ -611,12 +611,49 @@ export class TaskService {
     }
   }
 
-  private assertTaskCanComplete(detail: TaskDetailBase): void {
+  private async assertTaskCanComplete(detail: TaskDetailBase): Promise<void> {
     const memoryCoverage = evaluateTaskMemoryCoverage(
       buildTaskMemoryCoverageInputForTask('task_completion', detail),
     );
     if (!memoryCoverage.canProceed) {
       throw new Error(memoryCoverage.reason);
+    }
+    await this.assertProjectCanComplete(detail);
+  }
+
+  private async assertProjectCanComplete(detail: TaskDetailBase): Promise<void> {
+    if (detail.taskType !== 'project') return;
+
+    const allTasks = await this.repository.list();
+    const childIds = new Set(detail.childTaskIds ?? []);
+    const childRecords = allTasks.filter((task) => (
+      task.parentTaskId === detail.id || childIds.has(task.id)
+    ));
+    const childTasks = await this.attachDependencyReevaluations(
+      await Promise.all(childRecords.map((task) => this.attachActiveWaitingItem(task))),
+    );
+    const enriched = await this.attachSourceContexts(
+      await this.attachCompletionCriteria(await this.attachArtifacts(detail)),
+    );
+    const verification = evaluateRuntimeVerification({
+      mode: 'project',
+      task: {
+        ...enriched,
+        resumeCard: this.buildResumeCard(enriched),
+      },
+      childTasks,
+      artifactCount: enriched.artifacts.length,
+      keySourceCount: enriched.sourceContexts.filter((source) => source.isKey && source.status !== 'archived').length,
+      pendingDecisionCount: 0,
+    });
+
+    if (
+      verification.project?.outcome === 'missing_structure' ||
+      verification.project?.outcome === 'blocked_or_waiting' ||
+      verification.project?.outcome === 'continue_children' ||
+      verification.project?.outcome === 'continue_parent'
+    ) {
+      throw new Error(verification.detail);
     }
   }
 
@@ -1154,7 +1191,7 @@ export class TaskService {
       await this.assertTaskCanEnterRunning(detail);
     }
     if (input.nextState === 'completed') {
-      this.assertTaskCanComplete(detail);
+      await this.assertTaskCanComplete(detail);
     }
 
     const updated = await this.repository.transition({
@@ -1231,7 +1268,7 @@ export class TaskService {
       await this.assertTaskCanEnterRunning(detail);
     }
     if (nextState === 'completed') {
-      this.assertTaskCanComplete(detail);
+      await this.assertTaskCanComplete(detail);
     }
 
     const updated = await this.repository.transition({

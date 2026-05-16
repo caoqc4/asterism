@@ -1781,6 +1781,119 @@ describe('TaskService', () => {
     expect(result.state).toBe('completed');
   });
 
+  it('blocks project completion when child tasks are still open', async () => {
+    const project = {
+      ...buildDetail('running'),
+      taskType: 'project' as const,
+      childTaskIds: ['child_1'],
+      completionCriteria: [buildCompletionCriteriaRecord({
+        status: 'satisfied',
+        satisfiedAt: '2026-05-15T01:00:00.000Z',
+      })],
+      timeline: [{
+        id: 'event_1',
+        taskId: 'task_1',
+        type: 'task.completion_check',
+        payload: JSON.stringify({ action: 'passed' }),
+        createdAt: '2026-05-15T01:01:00.000Z',
+      }],
+    };
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('running'),
+          id: 'child_1',
+          title: 'Child 1',
+          parentTaskId: 'task_1',
+          childTaskIds: [],
+        },
+      ]),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(project),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
+
+    await expect(service.transition({
+      id: 'task_1',
+      nextState: 'completed',
+    })).rejects.toThrow('项目仍有 1 个未完成子任务，应继续推进子任务。');
+
+    expect(repository.transition).not.toHaveBeenCalled();
+  });
+
+  it('allows project completion after child tasks and parent criteria are complete', async () => {
+    const project = {
+      ...buildDetail('running'),
+      taskType: 'project' as const,
+      childTaskIds: ['child_1'],
+      completionCriteria: [buildCompletionCriteriaRecord({
+        status: 'satisfied',
+        satisfiedAt: '2026-05-15T01:00:00.000Z',
+      })],
+      artifacts: [{
+        id: 'artifact_1',
+        taskId: 'task_1',
+        sourceType: 'run',
+        sourceId: 'run_1',
+        kind: 'run_output',
+        title: 'Project output',
+        content: 'Output',
+        createdAt: '2026-05-15T01:00:00.000Z',
+        updatedAt: '2026-05-15T01:00:00.000Z',
+      }],
+      sourceContexts: [buildSourceContextRecord({
+        isKey: true,
+      })],
+      timeline: [{
+        id: 'event_1',
+        taskId: 'task_1',
+        type: 'task.completion_check',
+        payload: JSON.stringify({ action: 'passed' }),
+        createdAt: '2026-05-15T01:01:00.000Z',
+      }],
+    };
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('completed'),
+          id: 'child_1',
+          title: 'Child 1',
+          parentTaskId: 'task_1',
+          childTaskIds: [],
+        },
+      ]),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(project),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn().mockResolvedValue(buildRecord('completed')),
+    };
+    const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
+
+    const result = await service.transition({
+      id: 'task_1',
+      nextState: 'completed',
+    });
+
+    expect(repository.transition).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextState: 'completed',
+      waitingReason: null,
+    });
+    expect(result.state).toBe('completed');
+  });
+
   it('blocks running transition when task memory is not sufficient to start', async () => {
     const repository = {
       list: vi.fn(),

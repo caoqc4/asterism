@@ -162,9 +162,10 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'decision-effect-evaluator summarizes pending, approved, deferred, and cancelled decisions for project verification.',
       'Task completion modal uses project verification for project parent completion checks.',
       'Project detail surfaces display project verification next to the child task structure.',
+      'TaskService completion transitions run project verification for project parents before writing completed state.',
     ],
     gaps: [
-      'Project-level verification includes artifact/source counts and Decision effect summaries, but other project state transitions still need to consume it.',
+      'Project-level verification now guards project completion transitions; future non-completion project state transitions must consume the same verifier when they affect project readiness.',
       'Subtask draft evaluation exists for project decomposition generation and confirmed project child creation, while service-level capture and hierarchy guards cover generic child-title and invalid parent ownership mistakes; future child-task paths must preserve that common confirmation boundary.',
     ],
     nextVerification: [
@@ -339,9 +340,10 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     implementedBy: [
       'runtime-verification normalizes run, run_step, pre_step, post_step, subtask_start, task_closeout, project, and context_clear checks.',
       'Run verification persistence, completion modal, project completion checks, phase closeout, context clearing, generated artifact writes, panel durable actions, and tool durable writes consume runtime verification.',
+      'TaskService project completion transitions consume project verification before persisting completed state.',
     ],
     gaps: [
-      'Project-level verification is wired into completion and structure views; future project-level state transitions must consume the same verification before adding new completion paths.',
+      'Project-level verification is wired into completion, structure views, and TaskService project completion; future project-level state transitions must consume the same verification before adding new readiness paths.',
       'Pre-step and post-step verification cover current retained execution paths; future execution surfaces must opt in rather than adding direct writes.',
     ],
     nextVerification: [
