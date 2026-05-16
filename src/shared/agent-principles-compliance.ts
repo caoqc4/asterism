@@ -215,9 +215,11 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TasksPage file/source/artifact actions and project decomposition confirmation now persist panel.* timeline events for RuntimeEventRecord audit projection.',
       'TasksPage project membership changes and completion handoffs now persist panel.* timeline events with task-to-task context.',
       'TaskService recordTimelineEvent guards panel.* task dynamic writes with task_mutation before persistence.',
+      'RuntimeEntrypointCoverage keeps retained execution, resume, context-transition, task-transition, and durable-write entrypoints explicit with required runtime gates.',
     ],
     gaps: [
       'Current retained execution and durable-write paths are guarded; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly pass the same verification gates.',
+      'RuntimeEntrypointCoverage is a regression registry, not dynamic enforcement; future runtime entrypoints must be added to the registry and wired to the listed gates.',
       'RuntimeEventRecord projection and replay grouping are available as data, but retained UI surfaces render only the existing activity projection until UI work is explicitly requested.',
       'Legacy WorkbenchPage remains retired; new runtime behavior must land in TasksPage, RightPanel, Runs, Activity, or Decisions instead.',
     ],
