@@ -79,6 +79,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'buildAgentWorkingContext and buildRuntimeContextManifest project task state, sources with freshness metadata, artifacts, files, timeline, and work habits.',
       'RuntimeCapabilitySnapshot can be included in RuntimeContextManifest so model, workspace, flags, and tool scaffold state become explicit context assembly inputs.',
       'RunService and CodeAgentRunService pass RuntimeCapabilitySnapshot into run_start pre-step verification for model/workspace capability checks.',
+      'CapabilityRegistry projects runtime capability snapshots into explicit capability entries with status, visibility, access type, approval requirement, and runtime gate.',
       'pre_step verification blocks capability-required execution when RuntimeCapabilitySnapshot is omitted, so future model or workspace entry points cannot silently bypass capability checks.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through TaskMemoryCoverageEvaluation before execution.',
       'Runtime end-to-end scenario tests cover run start blocking without recovery context and next-step state, then passing after Task.md and next-step context exist.',
@@ -98,8 +99,10 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'The shared read-order evaluator is enforced for ordinary model Runs and Code Agent model-producer runs; future provider-visible execution boundaries must use the same gate.',
       'Source freshness and selected-file relevance reasons are represented in the manifest, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points still need to pass full source/file metadata consistently.',
       'Explicit source quality signals exist for retained source contexts, but future connector ingestion paths still need to populate them consistently.',
+      'External Access, Skills, MCP, and browser/operator capability rows are intentionally hidden/deferred until their product surfaces expose structured registry status.',
     ],
     nextVerification: [
+      'Keep capability registry tests blocking disabled or unconfigured capabilities from becoming model-visible.',
       'Keep tests that task-bound execution manifests include product principles, task state, Task.md when present, and relevant Task Records.',
       'Require any future provider-visible execution boundary to use RuntimeContextAssemblyGate and pass full source/file metadata.',
     ],

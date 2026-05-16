@@ -134,6 +134,13 @@ Acceptance criteria:
 - adding a new capability requires choosing visibility, permission, and gate;
 - no capability is enabled merely because a page renders it.
 
+Initial implementation: `CapabilityRegistry` projects the current runtime
+capability snapshot into explicit capability entries for model provider, Code
+Agent model producer, workspace, verification checks, scheduler, sandbox coding
+agent, self-check, model-visible tools, checkpointed tools, and deferred
+External Access / Skills / MCP / browser capability rows. Disabled or
+unconfigured capabilities remain hidden from model-visible exposure.
+
 ## Package C: Search, Retrieval, And Reference Index
 
 Goal: make task memory findable without relying on chat context length.
