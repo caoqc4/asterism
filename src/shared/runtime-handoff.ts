@@ -225,13 +225,22 @@ export function evaluateRuntimeHandoff(input: BaseInput & {
   }
 
   if (input.intent === 'resume_run') {
-    if (input.taskMemoryGuidance?.outcome === 'pending' || input.hasPendingRecoveryGuidance) {
+    if (
+      input.hasOpenDecision
+      || input.hasBlocker
+      || input.shortTermReasoningActive
+      || input.taskMemoryGuidance?.outcome === 'pending'
+      || input.hasPendingRecoveryGuidance
+    ) {
       const autoContextClear = evaluateAutoContextClearReadiness({
         hasTaskContext: Boolean(fromTaskId),
         chatMessageCount: messageCount,
         hasSpecificHandoffSignal: true,
         memoryWriteCompleted: false,
+        hasOpenDecision: input.hasOpenDecision,
+        hasBlocker: input.hasBlocker,
         hasPendingRecoveryGuidance: input.hasPendingRecoveryGuidance,
+        shortTermReasoningActive: input.shortTermReasoningActive,
         taskMemoryGuidance: input.taskMemoryGuidance,
       });
       return {

@@ -453,6 +453,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Runtime end-to-end scenario tests cover pending Decisions blocking task switch and automatic context refresh even after task memory has been archived.',
       'RuntimeHandoff context refresh, leave-context, and global-conversation paths consume AutoContextClearReadiness before clearing task chat.',
       'RuntimeHandoff task-switch checks TaskMemoryCoverageEvaluation before leaving the previous task context, and also blocks unresolved TaskMemoryGuidanceState through AutoContextClearReadiness.',
+      'RuntimeHandoff resume_run blocks pending Decisions, blockers, unresolved task-memory guidance, and active short-term reasoning before checkpoint execution can continue.',
       'RightPanel phase closeout consumes TaskMemoryCoverageEvaluation and pending TaskMemoryGuidanceState so handoff signals and task-memory suggestions must be written before chat refresh or next-task handoff.',
       'RuntimeHandoff phase closeout blocks chat clearing when the closeout result still has blocker, dependency, user-confirmation, or follow-up-confirmation work.',
       'Run start pre-step verification consumes pending TaskMemoryGuidanceState so unresolved task-memory writes block new execution.',

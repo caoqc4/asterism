@@ -247,6 +247,36 @@ describe('runtime handoff', () => {
     });
   });
 
+  it('blocks run resume when a pending user decision still owns the boundary', () => {
+    const result = evaluateRuntimeHandoff({
+      intent: 'resume_run',
+      fromTaskId: 'task-1',
+      hasOpenDecision: true,
+    });
+
+    expect(result.canProceed).toBe(false);
+    expect(result.action).toBe('block');
+    expect(result.autoContextClear).toMatchObject({
+      outcome: 'needs_user_decision',
+      shouldAsk: true,
+    });
+  });
+
+  it('blocks run resume when the task still has an active blocker', () => {
+    const result = evaluateRuntimeHandoff({
+      intent: 'resume_run',
+      fromTaskId: 'task-1',
+      hasBlocker: true,
+    });
+
+    expect(result.canProceed).toBe(false);
+    expect(result.action).toBe('block');
+    expect(result.autoContextClear).toMatchObject({
+      outcome: 'keep_context',
+      shouldKeep: true,
+    });
+  });
+
   it('can attach subtask start readiness to a handoff resume plan', () => {
     const handoff = evaluateRuntimeHandoff({
       intent: 'phase_closeout',
