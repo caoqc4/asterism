@@ -219,7 +219,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RuntimeRecoveryGuidance centralizes structured Task.md and Task Record recovery recommendations, while preserving legacy guidance messages.',
       'RuntimeRecoveryGuidance accepts structured durable task fields, and AgentToolRegistry durable tools pass those fields into task-memory guidance.',
       'AgentToolRegistry durable tool results now expose structured recoveryGuidanceItems plus legacy recoveryGuidance messages from RuntimeRecoveryGuidance without silently mutating Task.md.',
-      'RunService writes structured Task.md guidance Run Steps for run-output artifacts, preserving artifact references without automatically editing Task.md.',
+      'Run output, sandbox patch review, and browser evidence artifact writes share the same structured Task.md guidance Run Step helper, preserving artifact references without automatically editing Task.md.',
       'AgentToolRegistry source-context writes use TaskRecordWorthinessEvaluation before recommending Task Record guidance, so raw source capture does not automatically become a task record.',
       'AgentToolRegistry persists recoveryGuidanceItems as a separate Run Step so task-memory recommendations remain auditable without silently mutating Task.md or Task Records.',
       'TaskMemoryGuidanceState distinguishes persisted task-memory guidance from completed Task.md or Task Record writes, so automatic context clearing can treat unresolved guidance as pending memory work.',

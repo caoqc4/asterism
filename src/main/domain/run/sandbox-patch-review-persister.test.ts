@@ -176,6 +176,21 @@ describe('SandboxPatchReviewPersister', () => {
       input: 'notes.md',
       output: 'artifact_patch_1',
     });
+    expect(runStepRepository.create).toHaveBeenNthCalledWith(4, expect.objectContaining({
+      runId: 'run_1',
+      kind: 'plan',
+      status: 'completed',
+      title: '任务记忆建议',
+      input: JSON.stringify({
+        targets: ['task_md'],
+        items: [{
+          target: 'task_md',
+          reason: 'important_file',
+          referencePath: 'artifact_patch_1',
+        }],
+      }),
+      output: '- Task.md: important_file / reference=artifact_patch_1',
+    }));
     expect(checkpointRecorder.createPatchPromotionCheckpoint).toHaveBeenCalledWith({
       runId: 'run_1',
       taskId: 'task_1',
@@ -190,6 +205,7 @@ describe('SandboxPatchReviewPersister', () => {
     });
     expect(result.artifact.id).toBe('artifact_patch_1');
     expect(result.checkpoint?.checkpointId).toBe('run_checkpoint_patch_1');
+    expect(result.steps.memoryGuidance?.output).toBe('- Task.md: important_file / reference=artifact_patch_1');
   });
 
   it('persists failed sandbox checks without creating a promotion checkpoint', async () => {

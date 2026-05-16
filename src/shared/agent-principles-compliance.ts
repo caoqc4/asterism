@@ -96,7 +96,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeRecoveryGuidance can derive Task.md recommendations from structured durable task fields, and AgentToolRegistry durable tools pass field metadata instead of hard-coded generic reasons.',
       'AgentToolRegistry durable tool results expose recoveryGuidanceItems and legacy recoveryGuidance from RuntimeRecoveryGuidance without silently mutating Task.md.',
       'AgentToolRegistry persists recoveryGuidanceItems as a separate Run Step so task-memory recommendations remain auditable without silently mutating Task.md or Task Records.',
-      'RunService persists run-output artifact references as structured Task.md guidance Run Steps without silently mutating Task.md.',
+      'Run output, sandbox patch review, and browser evidence artifacts persist structured Task.md guidance Run Steps without silently mutating Task.md.',
       'TaskMemoryGuidanceState reads structured guidance targets from Run Step input before falling back to guidance text parsing.',
       'TaskMemoryGuidanceState preserves structured reference paths from guidance input for concrete Task.md recovery references.',
       'TaskMemoryWriteProposal projects pending guidance into minimal confirmed-write proposals for Task.md or Task Records without automatically changing task memory.',
@@ -326,10 +326,10 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'AI output, source material, task record, artifact, and ordinary file labels come from shared classification.',
     ],
     gaps: [
-      'Important output references from durable tools are preserved through structured task-memory guidance; future output surfaces must reuse the same reference propagation path.',
+      'Important output references from durable tools, Run output artifacts, sandbox patch review artifacts, and browser evidence artifacts are preserved through structured task-memory guidance; future output surfaces must reuse the same reference propagation path.',
     ],
     nextVerification: [
-      'Add output-reference verification after file proposal confirmation and code-agent artifact creation.',
+      'Keep output-reference verification aligned when new artifact-producing surfaces are added.',
     ],
   },
   {

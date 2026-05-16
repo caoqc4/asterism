@@ -153,8 +153,12 @@ describe('SandboxPatchReviewPersister integration', () => {
       ['plan', 'completed', '准备 sandbox patch review'],
       ['tool_result', 'completed', 'sandbox targeted checks'],
       ['artifact', 'completed', '记录 sandbox patch artifact'],
+      ['plan', 'completed', '任务记忆建议'],
       ['checkpoint', 'pending', '等待确认：sandbox patch promotion'],
     ]);
+    expect(steps.find((step) => step.title === '任务记忆建议')?.output).toBe(
+      `- Task.md: important_file / reference=${result.artifact.id}`,
+    );
     expect(checkpoints).toHaveLength(1);
     expect(checkpoints[0]).toMatchObject({
       kind: 'patch_promotion',

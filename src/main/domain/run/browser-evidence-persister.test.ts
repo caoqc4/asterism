@@ -159,6 +159,22 @@ describe('BrowserEvidencePersister', () => {
         status: 'completed',
         title: 'record browser evidence artifact',
       },
+      {
+        input: JSON.stringify({
+          targets: ['task_md'],
+          items: [{
+            target: 'task_md',
+            reason: 'important_file',
+            referencePath: 'artifact_browser_1',
+          }],
+        }),
+        kind: 'plan',
+        output: '- Task.md: important_file / reference=artifact_browser_1',
+        runId: 'run_1',
+        status: 'completed',
+        title: '任务记忆建议',
+      },
     ]);
+    expect(persisted.steps.memoryGuidance?.output).toBe('- Task.md: important_file / reference=artifact_browser_1');
   });
 });

@@ -101,6 +101,7 @@ describe('SandboxPatchReviewRunAdapter integration', () => {
         'plan',
         'tool_result',
         'artifact',
+        'plan',
         'checkpoint',
       ]);
       expect(steps[0]?.input).toContain('audit=internal_sandbox_patch_review');
@@ -109,6 +110,9 @@ describe('SandboxPatchReviewRunAdapter integration', () => {
         kind: 'patch',
         title: 'Adapter reviewable sandbox patch',
       });
+      expect(steps.find((step) => step.title === '任务记忆建议')?.output).toBe(
+        `- Task.md: important_file / reference=${artifacts[0]?.id}`,
+      );
       expect(checkpoints[0]).toMatchObject({
         kind: 'patch_promotion',
         status: 'open',

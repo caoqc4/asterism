@@ -14,6 +14,7 @@ import type {
 } from './agent-checkpoint-recorder.js';
 import type { LocalContainerSandboxPatchReviewPreparation } from './local-container-sandbox-backend.js';
 import { assertRunArtifactWriteAllowed } from './run-artifact-write-guard.js';
+import { persistRunArtifactMemoryGuidanceStep } from './run-memory-guidance-step.js';
 
 export type PersistSandboxPatchReviewResult = {
   artifact: ArtifactRecord;
@@ -22,6 +23,7 @@ export type PersistSandboxPatchReviewResult = {
     session: RunStepRecord;
     checks: RunStepRecord;
     artifact: RunStepRecord;
+    memoryGuidance: RunStepRecord | null;
   };
 };
 
@@ -87,6 +89,12 @@ export class SandboxPatchReviewPersister {
       input: preparation.artifact.files.join(', '),
       output: artifact.id,
     });
+    const memoryGuidanceStep = await persistRunArtifactMemoryGuidanceStep(this.runStepRepository, {
+      artifactId: artifact.id,
+      output: preparation.artifact.summary,
+      runId: params.runId,
+      taskId: params.taskId,
+    });
     const checksPassed = preparation.checkRun.results.every((result) => result.status !== 'failed');
     const checkpoint = checksPassed
       ? await this.checkpointRecorder.createPatchPromotionCheckpoint({
@@ -109,6 +117,7 @@ export class SandboxPatchReviewPersister {
       steps: {
         artifact: artifactStep,
         checks: checkStep,
+        memoryGuidance: memoryGuidanceStep,
         session: sessionStep,
       },
     };

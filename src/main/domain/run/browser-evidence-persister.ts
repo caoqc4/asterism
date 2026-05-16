@@ -8,6 +8,7 @@ import type { RunStepRecord } from '../../../shared/types/run.js';
 import type { ArtifactRepository } from '../../db/repositories/artifact-repository.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import { assertRunArtifactWriteAllowed } from './run-artifact-write-guard.js';
+import { persistRunArtifactMemoryGuidanceStep } from './run-memory-guidance-step.js';
 
 export type BrowserEvidenceArtifactContent = {
   artifacts: BrowserEvidenceArtifact[];
@@ -34,6 +35,7 @@ export type PersistBrowserEvidenceResult = {
   steps: {
     artifact: RunStepRecord;
     capture: RunStepRecord;
+    memoryGuidance: RunStepRecord | null;
   };
 };
 
@@ -81,12 +83,19 @@ export class BrowserEvidencePersister {
       input: params.result.artifacts.map((artifactItem) => artifactItem.kind).join(', '),
       output: artifact.id,
     });
+    const memoryGuidanceStep = await persistRunArtifactMemoryGuidanceStep(this.runStepRepository, {
+      artifactId: artifact.id,
+      output: params.result.summary,
+      runId: params.runId,
+      taskId: params.taskId,
+    });
 
     return {
       artifact,
       steps: {
         artifact: artifactStep,
         capture: captureStep,
+        memoryGuidance: memoryGuidanceStep,
       },
     };
   }
