@@ -117,7 +117,7 @@ Both are needed.
 
 1. Keep future provider-visible entry points on `RuntimeContextSnapshot` and `RuntimeContextAssemblyPolicy`.
 2. Preserve task creation routing through intake, closeout gating, or child-draft evaluation according to context.
-3. Keep `pre_step`, `post_step`, and `subtask_start` as the required baseline for future execution services and panel durable actions.
+3. Keep `pre_step`, `post_step`, and `subtask_start` as the required baseline for future execution services and panel durable actions; direct task-bound service writes use `task_mutation` plus `pre_step` as their minimum boundary.
 4. Keep project state transitions on project verification before adding new completion paths.
 5. Keep Decisions grouped context read-only until a real multi-decision workflow needs batch action support.
 6. Keep future model, external-access, workspace, or tool-exposure changes on `RuntimeCapabilitySnapshot`.

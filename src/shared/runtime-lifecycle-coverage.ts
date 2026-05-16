@@ -194,7 +194,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Runtime must decide whether execution is panel-lightweight, Run-backed, Code Agent, operator-started browser QA, or future scheduled/event execution.',
     ],
     gaps: [
-      'Runtime guards now cover the current retained execution and durable-write surfaces; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly opt into the same pre_step, post_step, and subtask_start gates.',
+      'Runtime guards now cover the current retained execution and durable-write surfaces; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly opt into the smallest matching pre_step, post_step, and subtask_start gates.',
       'RuntimeEventRecord projection and replay grouping are consumed in Tasks task dynamics; future Run-side and retained task-dynamics surfaces must reuse the same projection.',
       'Legacy WorkbenchPage remains retired; new runtime behavior must stay within TasksPage, RightPanel, Runs, task dynamics, or Decisions surfaces.',
     ],
@@ -309,10 +309,10 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Project verification is wired into completion, structure views, and TaskService project completion; future project-level state transitions must consume the same verification before adding new readiness paths.',
-      'Pre-step and post-step verification cover current Run, generated artifact, panel durable action, and tool durable-write paths; future execution surfaces must opt in rather than adding direct writes.',
+      'Pre-step verification covers task-bound durable writes, while post-step verification covers Run, generated artifact, panel durable action, and tool durable-write paths that have durable-change recovery context; future execution surfaces must opt in rather than adding direct writes.',
     ],
     nextImplementation: [
-      'Keep verification gates as a required boundary for any future execution service or panel durable action.',
+      'Keep verification gates as a required boundary for any future execution service or panel durable action, and keep direct task-bound writes behind task_mutation plus pre_step.',
     ],
   },
   {

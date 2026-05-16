@@ -281,7 +281,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Legacy WorkbenchPage remains retired; new runtime behavior must land in TasksPage, RightPanel, Runs, task dynamics, or Decisions instead.',
     ],
     nextVerification: [
-      'Require any future execution service or panel durable action to opt into pre_step/post_step verification before persistence.',
+      'Require any future execution service or panel durable action to opt into the matching pre_step/post_step verification before persistence, while direct task-bound service writes stay behind task_mutation plus pre_step.',
       'Require any future task-dynamic surface to consume RuntimeEventRecord and groupRuntimeEventsForReplay rather than raw timeline-only data.',
     ],
   },
@@ -381,7 +381,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Pre-step and post-step verification cover current retained execution paths; future execution surfaces must opt in rather than adding direct writes.',
     ],
     nextVerification: [
-      'Keep pre_step and post_step runtime verification as the required boundary for future execution services.',
+      'Keep pre_step and post_step runtime verification as the required boundary for future execution services, and use task_mutation plus pre_step as the minimum service boundary for direct task-bound durable writes.',
     ],
   },
   {

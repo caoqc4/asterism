@@ -575,14 +575,13 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'simplicity_check',
       'task_mutation',
       'pre_step',
-      'post_step',
     ],
     coveredGates: [
       'simplicity_check',
       'task_mutation',
       'pre_step',
-      'post_step',
     ],
+    notes: 'This is the service/IPC minimum for task-bound durable resource writes. Renderer panel flows and Agent tool writes may add post_step verification when they have durable-change recovery context.',
   },
   {
     id: 'task.metadataUpdate',
