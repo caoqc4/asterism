@@ -20,7 +20,12 @@ import { evaluateTaskMdUpdateNeed } from '@shared/task-md-update-need';
 import { evaluateTaskRecordWorthiness } from '@shared/task-record-worthiness';
 import { isTaskMdPath } from '@shared/task-memory-path';
 import type { PanelRuntimeTimelineEventType } from '@shared/runtime-panel-events';
-import { projectRuntimeEvents, type RuntimeEventRecord } from '@shared/runtime-event-record';
+import {
+  groupRuntimeEventsForReplay,
+  projectRuntimeEvents,
+  type RuntimeEventRecord,
+  type RuntimeReplayGroup,
+} from '@shared/runtime-event-record';
 import {
   effectiveParentTaskId,
   findNextOpenChildAfter,
@@ -3303,6 +3308,7 @@ function TaskTimelineView({
 }) {
   const ordered = [...events].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const groupedEvents = groupRuntimeEventsByDate(ordered);
+  const replayGroups = groupRuntimeEventsForReplay(ordered);
   const scopeCopy = parentTask
     ? `当前显示子任务动态；父任务「${parentTask.title}」保留项目层汇总。任务动态由任务事件、执行、任务记录和拍板项统一投影。`
     : task.type === 'project'
@@ -3336,34 +3342,87 @@ function TaskTimelineView({
             <p>当前任务还没有任务动态。</p>
           </div>
         ) : (
-          <div className="task-timeline-list">
-            {groupedEvents.map((group) => (
-              <section className="task-timeline-day" key={group.date}>
-                <div className="task-timeline-date">{group.date}</div>
-                <div className="task-timeline-day-items">
-                  {group.events.map((event) => {
-                    return (
-                      <div key={event.id} className="task-timeline-item">
-                        <span className={`task-timeline-marker ${runtimeEventTone(event)}`} />
-                        <span className="task-timeline-time">{formatIsoTime(event.createdAt)}</span>
+          <>
+            {replayGroups.length > 0 && (
+              <div className="task-timeline-list" aria-label="任务动态关键脉络">
+                <section className="task-timeline-day">
+                  <div className="task-timeline-date">关键脉络</div>
+                  <div className="task-timeline-day-items">
+                    {replayGroups.slice(0, 5).map((group) => (
+                      <div key={group.id} className="task-timeline-item">
+                        <span className={`task-timeline-marker ${runtimeReplayGroupTone(group)}`} />
+                        <span className="task-timeline-time">{formatIsoTime(group.updatedAt)}</span>
                         <div className="task-timeline-content">
                           <div className="task-timeline-title-row">
-                            <strong>{event.title}</strong>
-                            <span>{formatRuntimeEventScope(event)}</span>
+                            <strong>{group.title}</strong>
+                            <span>{formatRuntimeReplayGroupScope(group)}</span>
                           </div>
-                          {event.detail && <p>{event.detail}</p>}
+                          <p>{group.summary ?? '相关任务动态已归并到同一条脉络。'}</p>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-          </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            )}
+            <div className="task-timeline-list">
+              {groupedEvents.map((group) => (
+                <section className="task-timeline-day" key={group.date}>
+                  <div className="task-timeline-date">{group.date}</div>
+                  <div className="task-timeline-day-items">
+                    {group.events.map((event) => {
+                      return (
+                        <div key={event.id} className="task-timeline-item">
+                          <span className={`task-timeline-marker ${runtimeEventTone(event)}`} />
+                          <span className="task-timeline-time">{formatIsoTime(event.createdAt)}</span>
+                          <div className="task-timeline-content">
+                            <div className="task-timeline-title-row">
+                              <strong>{event.title}</strong>
+                              <span>{formatRuntimeEventScope(event)}</span>
+                            </div>
+                            {event.detail && <p>{event.detail}</p>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
   );
+}
+
+function formatRuntimeReplayGroupScope(group: RuntimeReplayGroup): string {
+  const parts = [
+    `${group.eventIds.length} 条动态`,
+    formatRuntimeReplayGroupKind(group.kind),
+    group.relatedTaskIds.length > 0 ? `${group.relatedTaskIds.length} 个关联任务` : null,
+  ].filter(Boolean);
+  return parts.join(' · ');
+}
+
+function formatRuntimeReplayGroupKind(kind: RuntimeReplayGroup['kind']): string {
+  switch (kind) {
+    case 'handoff': return '交接';
+    case 'project_structure': return '结构';
+    case 'execution_recovery': return '执行';
+    case 'decision': return '拍板';
+    case 'durable_record': return '记录';
+    case 'source_context': return '上下文';
+    case 'task_state': return '状态';
+    default: return '一般';
+  }
+}
+
+function runtimeReplayGroupTone(group: RuntimeReplayGroup): 'risk' | 'wait' | 'running' | '' {
+  if (group.priority === 'p1') return 'risk';
+  if (group.kind === 'decision' || group.priority === 'p2') return 'wait';
+  if (group.kind === 'execution_recovery') return 'running';
+  return '';
 }
 
 function groupRuntimeEventsByDate(events: RuntimeEventRecord[]): Array<{ date: string; events: RuntimeEventRecord[] }> {

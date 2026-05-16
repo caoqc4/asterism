@@ -305,6 +305,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Activity/audit projection is modeled by RuntimeEventRecord; Tasks activity consumes it and retained Run-side views should follow it.',
       'RuntimeEventRecord now has replay-oriented grouping for handoff, project structure changes, execution recovery, Decisions, durable records, source context, and task state changes.',
       'RunDetailRecord now carries optional runtimeEvents and runtimeReplayGroups from RunService.getDetail without requiring UI layout changes.',
+      'Tasks task dynamics now consumes replay grouping as a compact key-context layer before the flat event timeline.',
       'RightPanel context refresh, context switch confirmation/dismissal, phase closeout, and task file proposal writes now persist panel.* timeline events for RuntimeEventRecord audit projection.',
       'RuntimeEventRecord preserves relatedTaskId for task-to-task completion handoff and accepted context-switch events, and replay groups retain relatedTaskIds for task A to task B recovery.',
       'RuntimeHandoff is shared across RightPanel context clear, manual refresh preview, phase closeout, task switch flows, RunService checkpoint resume, and RuntimeEventRecord projection.',
@@ -316,7 +317,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'Subagent handoff has a shared evaluator, but it is not wired to a product delegation entry point because that surface is not active yet.',
       'Follow-up proposal gating exists in the shared closeout evaluator and RightPanel task-context capture consumes it; other retained creation entry points still need the same boundary when they create follow-up tasks from task context.',
-      'Replay grouping exists in shared runtime data but is not yet consumed by retained activity surfaces.',
+      'Replay grouping is consumed by Tasks task dynamics, but Run detail and broader retained activity surfaces do not yet render the grouped replay layer.',
     ],
     nextImplementation: [
       'Wire retained follow-up task proposal entry points into the shared closeout evaluator.',
@@ -366,19 +367,19 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     coveredBy: [
       'Activity records, run steps, completion checks, Decisions, and Task Records all exist as durable audit surfaces.',
       'runtime-event-record projects timeline events, Runs, Run steps, Task Records, Decisions without timeline coverage, and runtime resume projections into one audit stream.',
-      'RuntimeEventRecord is the shared activity/audit projection; Tasks activity consumes it, and Run-side surfaces should follow it.',
-      'groupRuntimeEventsForReplay creates shared replay-oriented stories without changing UI layout or interaction.',
+      'RuntimeEventRecord is the shared task dynamics/audit projection; Tasks task dynamics consumes it, and Run-side surfaces should follow it.',
+      'groupRuntimeEventsForReplay creates shared replay-oriented stories, and Tasks task dynamics renders those groups before the flat timeline.',
       'Task A to task B handoff replay is covered by relatedTaskId/relatedTaskIds projection tests.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime must decide what belongs in timeline vs run step vs Task Record, and how users audit changes later.',
     ],
     gaps: [
-      'RuntimeEventRecord covers timeline, run, run step, task record, decision, resume projection, RightPanel events, and core TasksPage file/source/artifact/project/handoff events; Tasks activity consumes it and Run detail now exposes Run-side projection data.',
-      'Replay grouping exists in shared runtime data and Run detail data, but is not yet rendered by retained activity surfaces.',
+      'RuntimeEventRecord covers timeline, run, run step, task record, decision, resume projection, RightPanel events, and core TasksPage file/source/artifact/project/handoff events; Tasks task dynamics consumes it and Run detail now exposes Run-side projection data.',
+      'Replay grouping is rendered in Tasks task dynamics, while Run detail and broader retained activity surfaces still need grouped replay presentation.',
     ],
     nextImplementation: [
-      'Keep replay grouping data-only until UI work is explicitly requested.',
+      'Reuse the grouped replay layer in Run detail when Run-side runtime views are resumed.',
     ],
   },
   {

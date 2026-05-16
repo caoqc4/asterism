@@ -2381,6 +2381,9 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByRole('button', { name: '任务动态' }));
     expect(screen.getByRole('button', { name: '任务动态' }).className).toContain('active');
+    expect(screen.getByLabelText('任务动态关键脉络')).toBeTruthy();
+    expect(screen.getByText('关键脉络')).toBeTruthy();
+    expect(screen.getByText('任务状态变化')).toBeTruthy();
     expect(screen.getByText(/1 条执行记录/)).toBeTruthy();
     expect(screen.getByText('任务信息已更新')).toBeTruthy();
 
