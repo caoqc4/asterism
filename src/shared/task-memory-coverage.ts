@@ -47,6 +47,7 @@ export type TaskMemoryCoverageInput = {
   hasOpenDecision?: boolean;
   hasBlocker?: boolean;
   hasRecentRunEvidence?: boolean;
+  hasCompletionCheckEvidence?: boolean;
   hasImportantFilesOrSources?: boolean;
   hasSpecificHandoffSignal?: boolean;
   memoryWriteCompleted?: boolean;
@@ -74,6 +75,10 @@ export function buildTaskMemoryCoverageInputForTask(
   const hasRecentRunEvidence = timeline.some((event) => (
     event.type === 'run.completed' || event.type === 'task.run_completed'
   ));
+  const hasCompletionCheckEvidence = timeline.some((event) => (
+    event.type === 'task.completion_check'
+    && completionCheckActionIsEvidence(event.payload)
+  ));
 
   return {
     action,
@@ -92,8 +97,19 @@ export function buildTaskMemoryCoverageInputForTask(
     ),
     hasImportantFilesOrSources,
     hasRecentRunEvidence,
+    hasCompletionCheckEvidence,
     ...overrides,
   };
+}
+
+function completionCheckActionIsEvidence(payload: string | null): boolean {
+  if (!payload) return false;
+  try {
+    const parsed = JSON.parse(payload) as { action?: unknown };
+    return parsed.action === 'passed' || parsed.action === 'override_completed';
+  } catch {
+    return false;
+  }
 }
 
 export function evaluateTaskMemoryCoverage(input: TaskMemoryCoverageInput): TaskMemoryCoverageEvaluation {
@@ -202,7 +218,7 @@ export function evaluateTaskMemoryCoverage(input: TaskMemoryCoverageInput): Task
         reason: '任务完成前需要可核对的完成标准或用户确认边界。',
       });
     }
-    if (!input.hasRecentRunEvidence && !input.hasImportantFilesOrSources) {
+    if (!input.hasRecentRunEvidence && !input.hasImportantFilesOrSources && !input.hasCompletionCheckEvidence) {
       return result(input.action, 'needs_memory_write', {
         missing: ['缺少近期执行证据、重要输出或来源引用。'],
         recommendedWrites: ['run', 'source_digest', 'artifact_reference'],

@@ -185,6 +185,58 @@ describe('task memory coverage', () => {
     });
   });
 
+  it('counts passed or overridden completion checks as completion evidence', () => {
+    const baseTask = {
+      id: 'task-1',
+      title: 'Task',
+      summary: 'Ready to complete',
+      state: 'running' as const,
+      nextStep: 'Complete',
+      waitingReason: null,
+      riskLevel: 'none' as const,
+      riskNote: null,
+      createdAt: '2026-05-15T01:00:00.000Z',
+      updatedAt: '2026-05-15T01:00:00.000Z',
+      activeWaitingItem: null,
+      activeBlocker: null,
+      artifacts: [],
+      completionCriteria: [{
+        id: 'criteria-1',
+        taskId: 'task-1',
+        text: 'Done',
+        verificationResponsibility: null,
+        verificationResponsibilityLabel: null,
+        status: 'satisfied' as const,
+        createdAt: '2026-05-15T01:00:00.000Z',
+        updatedAt: '2026-05-15T01:00:00.000Z',
+        satisfiedAt: '2026-05-15T01:00:00.000Z',
+      }],
+      sourceContexts: [],
+      processTemplates: [],
+      availableProcessTemplates: [],
+      taskFiles: [],
+    };
+
+    const input = buildTaskMemoryCoverageInputForTask('task_completion', {
+      ...baseTask,
+      timeline: [{
+        id: 'event-1',
+        taskId: 'task-1',
+        type: 'task.completion_check',
+        payload: JSON.stringify({ action: 'override_completed' }),
+        createdAt: '2026-05-15T01:01:00.000Z',
+      }],
+    });
+
+    expect(input).toMatchObject({
+      hasCompletionCheckEvidence: true,
+    });
+    expect(evaluateTaskMemoryCoverage(input)).toMatchObject({
+      outcome: 'pass',
+      canProceed: true,
+    });
+  });
+
   it('treats global context as not applicable', () => {
     expect(evaluateTaskMemoryCoverage({
       action: 'context_clear',

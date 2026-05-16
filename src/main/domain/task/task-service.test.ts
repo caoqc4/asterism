@@ -1639,6 +1639,73 @@ describe('TaskService', () => {
     );
   });
 
+  it('blocks completion transition when completion memory evidence is missing', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('running'),
+        completionCriteria: [buildCompletionCriteriaRecord({ status: 'satisfied' })],
+      }),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
+
+    await expect(service.transition({
+      id: 'task_1',
+      nextState: 'completed',
+    })).rejects.toThrow('任务完成前应保留足够的完成证据或输出引用');
+
+    expect(repository.transition).not.toHaveBeenCalled();
+  });
+
+  it('allows completion transition after a passed completion check is recorded', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('running'),
+        completionCriteria: [buildCompletionCriteriaRecord({
+          status: 'satisfied',
+          satisfiedAt: '2026-05-15T01:00:00.000Z',
+        })],
+        timeline: [{
+          id: 'event_1',
+          taskId: 'task_1',
+          type: 'task.completion_check',
+          payload: JSON.stringify({ action: 'passed' }),
+          createdAt: '2026-05-15T01:01:00.000Z',
+        }],
+      }),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn().mockResolvedValue(buildRecord('completed')),
+    };
+    const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
+
+    const result = await service.transition({
+      id: 'task_1',
+      nextState: 'completed',
+    });
+
+    expect(repository.transition).toHaveBeenCalledWith({
+      id: 'task_1',
+      nextState: 'completed',
+      waitingReason: null,
+    });
+    expect(result.state).toBe('completed');
+  });
+
   it('blocks running transition when task memory is not sufficient to start', async () => {
     const repository = {
       list: vi.fn(),

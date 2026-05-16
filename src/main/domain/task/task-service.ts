@@ -611,6 +611,15 @@ export class TaskService {
     }
   }
 
+  private assertTaskCanComplete(detail: TaskDetailBase): void {
+    const memoryCoverage = evaluateTaskMemoryCoverage(
+      buildTaskMemoryCoverageInputForTask('task_completion', detail),
+    );
+    if (!memoryCoverage.canProceed) {
+      throw new Error(memoryCoverage.reason);
+    }
+  }
+
   private assertStateTransitionActionAllowed(params: {
     taskId: string;
     nextState: TaskState;
@@ -1121,6 +1130,9 @@ export class TaskService {
     if (input.nextState === 'running') {
       await this.assertTaskCanEnterRunning(detail);
     }
+    if (input.nextState === 'completed') {
+      this.assertTaskCanComplete(detail);
+    }
 
     const updated = await this.repository.transition({
       ...input,
@@ -1189,6 +1201,9 @@ export class TaskService {
 
     if (nextState === 'running') {
       await this.assertTaskCanEnterRunning(detail);
+    }
+    if (nextState === 'completed') {
+      this.assertTaskCanComplete(detail);
     }
 
     const updated = await this.repository.transition({
