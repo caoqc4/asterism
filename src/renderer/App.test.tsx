@@ -1609,6 +1609,41 @@ describe('App redesign v1', () => {
     }));
   });
 
+  it('does not offer task capture for task-context follow-up discussion', async () => {
+    const child = buildTask({
+      id: 'existing_child_for_capture',
+      title: '整理需求边界',
+      state: 'planned',
+      updatedAt: '2026-01-01T01:00:00.000Z',
+    });
+    const parent = harness.tasks.find((task) => task.id === 'task_risk')!;
+    parent.taskType = 'project';
+    parent.taskFacets = ['project'];
+    parent.childTaskIds = [child.id];
+    child.parentTaskId = parent.id;
+    harness.tasks.push(child);
+    harness.details[parent.id] = buildTaskDetail(parent);
+    harness.details[child.id] = buildTaskDetail(child);
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /继续推进/ }));
+    const input = await screen.findByPlaceholderText(/关于「董事会材料修订」/);
+    await user.type(input, '把这个作为后续任务创建：补充验收回归');
+    await user.click(screen.getByRole('button', { name: '发送' }));
+
+    await waitFor(() => {
+      expect(harness.api.chatWithAI).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: 'task_risk',
+      }));
+    });
+    expect(screen.queryByRole('button', { name: '捕获为任务' })).toBeNull();
+    expect(harness.api.createTask).not.toHaveBeenCalledWith(expect.objectContaining({
+      title: '把这个作为后续任务创建：补充验收回归',
+    }));
+  });
+
   it('does not enter the next child task after phase closeout when subtask start is blocked', async () => {
     const blockedChild = buildTask({
       id: 'blocked_child_1',

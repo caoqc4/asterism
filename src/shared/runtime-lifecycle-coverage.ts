@@ -38,7 +38,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskService.create enforces the same task-capture evaluator at the service boundary before repository persistence.',
       'TaskService.update reuses the same evaluator when title or parent scope changes, preventing duplicate siblings during project moves.',
       'runtime-task-capture-evaluator blocks near-duplicate compact titles in the same parent scope when word order changes but the title identity is effectively the same.',
-      'Current retained task creation entry points are scoped: TasksPage explicit capture uses intake/capture guards, RightPanel task-context follow-up capture uses closeout gating, and project child creation uses the subtask draft evaluator.',
+      'Current retained task creation entry points are scoped: TasksPage explicit capture uses intake/capture guards, RightPanel task capture remains global-only, and project child creation uses the subtask draft evaluator.',
       'Runtime surface routing preserves explicit Decision kind, scope, and sourceType even when a title contains approval, external-write, or completion keywords.',
     ],
     outOfAgentPrinciplesScope: [
@@ -177,7 +177,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'AgentToolRegistry task/source/artifact durable tools now use pre_step and post_step runtime verification.',
       'RightPanel session refresh, phase closeout, and Task.md reference writes now guard their internal source/task-record persistence.',
       'RightPanel task capture, captured-task confirmation, and captured-task abandonment now use runtime verification guards.',
-      'RightPanel task-context follow-up task capture now passes explicit follow-up proposals through task closeout evaluation before creating a new task.',
+      'RightPanel does not expose task capture inside an active task context, and follow-up task proposals remain behind the shared closeout evaluator for future task-context creation entry points.',
       'TasksPage file/source/artifact actions and project decomposition confirmation now persist panel.* timeline events for RuntimeEventRecord audit projection.',
       'TasksPage project membership changes and completion handoffs now persist panel.* timeline events for task-to-task replay.',
       'TaskService recordTimelineEvent now guards panel.* task dynamic writes with task_mutation before appending timeline events.',
@@ -350,7 +350,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Subagent handoff has a shared evaluator, but it is not wired to a product delegation entry point because that surface is not active yet.',
-      'Follow-up proposal gating exists in the shared closeout evaluator and RightPanel task-context capture consumes it; future task-context creation entry points must use the same boundary before creating follow-up tasks.',
+      'Follow-up proposal gating exists in the shared closeout evaluator; future task-context creation entry points must use the same boundary before creating follow-up tasks.',
       'Replay grouping is consumed by Tasks task dynamics; future Run-side audit surfaces should reuse that layer only when they are explicitly reintroduced.',
     ],
     nextImplementation: [

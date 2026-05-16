@@ -141,7 +141,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
     gaps: [
       'RightPanel capture uses the shared intake evaluator, TasksPage explicit creation uses the shared task_capture guard, and TaskService.create enforces duplicate/generic candidate checks at the service boundary.',
-      'Current retained task creation entry points are scoped: TasksPage explicit capture uses intake/capture guards, RightPanel task-context follow-up capture uses closeout gating, and project child creation uses the subtask draft evaluator.',
+      'Current retained task creation entry points are scoped: TasksPage explicit capture uses intake/capture guards, RightPanel task capture remains global-only, and project child creation uses the subtask draft evaluator.',
       'Subtask creation has service-level generic child and parent-ownership guards; future child-task creation paths must keep using the same shared confirmation boundaries.',
     ],
     nextVerification: [
@@ -237,7 +237,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'AgentToolRegistry task/source/artifact durable tools use pre_step and post_step runtime verification.',
       'RightPanel internal phase/context record writes use durable panel action guards.',
       'RightPanel task capture, captured-task confirmation, and captured-task abandonment use runtime verification guards.',
-      'RightPanel task-context follow-up task capture now passes explicit follow-up proposals through task closeout evaluation before creating a new task.',
+      'RightPanel does not expose task capture inside an active task context, and follow-up task proposals remain behind the shared closeout evaluator for future task-context creation entry points.',
       'Known panel runtime timeline event types are constrained through runtime-panel-events and rejected in TaskService when unknown panel.* types are written.',
       'TasksPage file/source/artifact actions and project decomposition confirmation now persist panel.* timeline events for RuntimeEventRecord audit projection.',
       'TasksPage project membership changes and completion handoffs now persist panel.* timeline events with task-to-task context.',
@@ -384,7 +384,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
     gaps: [
       'Run checkpoint resume has a shared resume-plan shape and RuntimeEventRecord projection data; future Run-side audit surfaces should reuse the task-dynamics replay layer only if they are explicitly reintroduced.',
-      'Follow-up proposal gating exists in the shared closeout evaluator and RightPanel task-context capture consumes it; future task-context creation entry points must use the same boundary before creating follow-up tasks.',
+      'Follow-up proposal gating exists in the shared closeout evaluator; future task-context creation entry points must use the same boundary before creating follow-up tasks.',
     ],
     nextVerification: [
       'Keep future task-context follow-up creation entry points wired into the shared closeout evaluator.',
