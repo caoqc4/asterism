@@ -203,7 +203,7 @@ export function evaluateTaskMemoryCoverage(input: TaskMemoryCoverageInput): Task
     if (!input.hasRecentRunEvidence && !input.hasImportantFilesOrSources) {
       return result(input.action, 'needs_memory_write', {
         missing: ['缺少近期执行证据、重要输出或来源引用。'],
-        recommendedWrites: ['run', 'artifact_reference'],
+        recommendedWrites: ['run', 'source_digest', 'artifact_reference'],
         reason: '任务完成前应保留足够的完成证据或输出引用。',
       });
     }

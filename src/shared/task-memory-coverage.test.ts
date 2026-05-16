@@ -133,7 +133,7 @@ describe('task memory coverage', () => {
     });
     expect(evaluateTaskMemoryCoverage(input)).toMatchObject({
       outcome: 'needs_memory_write',
-      recommendedWrites: ['run', 'artifact_reference'],
+      recommendedWrites: ['run', 'source_digest', 'artifact_reference'],
     });
   });
 
