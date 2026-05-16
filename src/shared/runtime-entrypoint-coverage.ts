@@ -469,6 +469,23 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     ],
   },
   {
+    id: 'task.completionCheckRecord',
+    owner: 'TaskService.recordCompletionCheck',
+    kind: 'durable_write',
+    description: 'Append a retained task completion-check event that can serve as task-memory evidence.',
+    requiredGates: [
+      'simplicity_check',
+      'task_mutation',
+      'pre_step',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'task_mutation',
+      'pre_step',
+    ],
+    notes: 'Completion-check records are durable audit events and can count toward task completion memory coverage; completion state transition remains a separate task_completion gate.',
+  },
+  {
     id: 'project.decompositionDraft',
     owner: 'IPC ai:decomposeProject',
     kind: 'provider_visible_planning',

@@ -203,6 +203,7 @@ describe('runtime entrypoint coverage', () => {
       'settings.aiRuntimeConfig',
       'settings.sandboxBackendProbe',
       'task.capture',
+      'task.completionCheckRecord',
       'task.completionTransition',
       'task.fileAndArtifactWrites',
       'task.hierarchyMaintenance',

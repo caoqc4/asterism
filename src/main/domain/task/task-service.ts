@@ -1209,6 +1209,7 @@ export class TaskService {
 
   async recordCompletionCheck(input: RecordTaskCompletionCheckInput): Promise<void> {
     await this.getExistingTaskOrThrow(input.taskId);
+    this.assertTaskMutationActionAllowed(input.taskId);
 
     await this.repository.appendTimelineEvent(input.taskId, 'task.completion_check', {
       action: input.action,
