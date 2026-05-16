@@ -2458,6 +2458,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('关键脉络')).toBeTruthy();
     expect(screen.getByText('任务状态变化')).toBeTruthy();
     expect(screen.getByText(/1 条执行记录/)).toBeTruthy();
+    expect(await screen.findByText(/整理反馈/)).toBeTruthy();
     expect(screen.getByText('任务信息已更新')).toBeTruthy();
 
     await user.click(await screen.findByRole('button', { name: /合同盖章跟进/ }));

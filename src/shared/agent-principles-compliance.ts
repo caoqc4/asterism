@@ -355,6 +355,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'runtime-event-record groups projected events into replay-oriented stories for handoff, project structure, execution recovery, Decisions, durable records, source context, and task state.',
       'RunService.getDetail exposes optional runtimeEvents and runtimeReplayGroups with task-bound timeline and Task Record context on RunDetailRecord for Run-side data consumers.',
       'Tasks task dynamics consumes RuntimeEventRecord projection and replay groups instead of raw task timeline only.',
+      'Tasks task dynamics loads selected Run details and feeds Run steps into RuntimeEventRecord so execution steps remain visible in the same task-bound audit stream.',
       'RightPanel context refresh, context switch confirmation/dismissal, phase closeout, and task file proposal writes persist panel.* timeline events for RuntimeEventRecord audit projection.',
       'TasksPage file/source/artifact actions and project decomposition confirmation persist panel.* timeline events for the same RuntimeEventRecord audit projection.',
       'TasksPage project membership changes and completion handoffs persist panel.* timeline events for task-to-task replay.',

@@ -5,7 +5,7 @@ import type { SourceContextRecord } from '@shared/types/source-context';
 import type { ArtifactRecord } from '@shared/types/artifact';
 import type { TaskFileRecord } from '@shared/types/task-file';
 import type { DecisionRecord } from '@shared/types/decision';
-import type { RunRecord } from '@shared/types/run';
+import type { RunDetailRecord, RunRecord } from '@shared/types/run';
 import { isUnconfirmedPanelCaptureRecord } from '@shared/panel-capture';
 import { summarizeDecisionEffects } from '@shared/decision-effect-evaluator';
 import type { TaskCloseoutEvaluation } from '@shared/task-closeout-evaluator';
@@ -912,6 +912,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   const [selectedSources, setSelectedSources] = useState<SourceContextRecord[]>([]);
   const [selectedArtifacts, setSelectedArtifacts] = useState<ArtifactRecord[]>([]);
   const [selectedRuns, setSelectedRuns] = useState<RunRecord[]>([]);
+  const [selectedRunDetailsById, setSelectedRunDetailsById] = useState<Record<string, RunDetailRecord>>({});
   const [allDecisions, setAllDecisions] = useState<DecisionRecord[]>([]);
   const [pendingDecisions, setPendingDecisions] = useState<DecisionRecord[]>([]);
   const [deferOpenId, setDeferOpenId] = useState<string | null>(null);
@@ -981,17 +982,30 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   function reloadRunsForTask(taskId: string | null = selectedId) {
     if (!taskId || !window.api?.listRuns) {
       setSelectedRuns([]);
+      setSelectedRunDetailsById({});
       return;
     }
     window.api.listRuns()
-      .then((runs) => {
+      .then(async (runs) => {
         const taskRuns = runs
           .filter((run) => run.taskId === taskId)
           .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+        if (selectedIdRef.current !== taskId) return;
         setSelectedRuns(taskRuns);
+        if (!window.api?.getRunDetail || taskRuns.length === 0) {
+          setSelectedRunDetailsById({});
+          return;
+        }
+        const detailEntries = await Promise.all(taskRuns.map(async (run) => {
+          const detail = await window.api!.getRunDetail!(run.id).catch(() => null);
+          return detail ? ([run.id, detail] as const) : null;
+        }));
+        if (selectedIdRef.current !== taskId) return;
+        setSelectedRunDetailsById(Object.fromEntries(detailEntries.filter(Boolean) as Array<readonly [string, RunDetailRecord]>));
       })
       .catch(() => {
         setSelectedRuns([]);
+        setSelectedRunDetailsById({});
       });
   }
 
@@ -1440,6 +1454,10 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
         taskId: selectedTask.id,
         timeline: selectedTaskDetail?.timeline ?? [],
         runs: selectedRuns,
+        runStepsByRunId: Object.fromEntries(selectedRuns.map((run) => [
+          run.id,
+          selectedRunDetailsById[run.id]?.steps ?? [],
+        ])),
         taskFiles: projectedTaskFiles,
         decisions: allDecisions.filter((decision) => decision.taskId === selectedTask.id),
       })

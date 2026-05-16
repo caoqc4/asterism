@@ -329,6 +329,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RuntimeEventRecord now has replay-oriented grouping for handoff, project structure changes, execution recovery, Decisions, durable records, source context, and task state changes.',
       'RunDetailRecord now carries optional runtimeEvents and runtimeReplayGroups from RunService.getDetail without requiring UI layout changes.',
       'Tasks task dynamics now consumes replay grouping as a compact key-context layer before the flat event timeline.',
+      'Tasks task dynamics loads selected Run details and feeds Run steps into RuntimeEventRecord, so step-level execution records appear in the same task-dynamics projection.',
       'RightPanel context refresh, context switch confirmation/dismissal, phase closeout, and task file proposal writes now persist panel.* timeline events for RuntimeEventRecord audit projection.',
       'RuntimeEventRecord preserves relatedTaskId for task-to-task completion handoff and accepted context-switch events, and replay groups retain relatedTaskIds for task A to task B recovery.',
       'RuntimeHandoff is shared across RightPanel context clear, manual refresh preview, phase closeout, task switch flows, RunService checkpoint resume, and RuntimeEventRecord projection.',
@@ -394,6 +395,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RuntimeEventRecord is the shared task dynamics/audit projection; Tasks task dynamics consumes it, and Run-side surfaces should follow it.',
       'Run detail exposes runtime events and replay groups that include the run, run steps, task timeline events, and Task Records for the same task.',
       'groupRuntimeEventsForReplay creates shared replay-oriented stories, and Tasks task dynamics renders those groups before the flat timeline.',
+      'Tasks task dynamics loads selected Run details and projects Run steps into the same visible task-dynamics stream as task timeline, Task Records, and Decisions.',
       'Task A to task B handoff replay is covered by relatedTaskId/relatedTaskIds projection tests.',
     ],
     outOfAgentPrinciplesScope: [
