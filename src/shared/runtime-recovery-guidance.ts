@@ -1,5 +1,7 @@
 import {
   evaluateTaskMdUpdateNeed,
+  evaluateTaskMdUpdateNeedForDurableFields,
+  type TaskMdDurableField,
   type TaskMdUpdateNeedEvaluation,
   type TaskMdUpdateNeedReason,
 } from './task-md-update-need.js';
@@ -34,18 +36,27 @@ export function buildRuntimeRecoveryGuidance(params: {
   importantFilePath?: string | null;
   producedDurableChange?: boolean;
   taskRecordProducedDurableChange?: boolean;
+  taskMdDurableFields?: TaskMdDurableField[];
   taskMdReasonHint?: TaskMdUpdateNeedReason | null;
   taskRecordReasonHint?: TaskRecordWorthinessReason | null;
   includeTaskRecord?: boolean;
 }): RuntimeRecoveryGuidance {
   const items: RuntimeRecoveryGuidanceItem[] = [];
-  const taskMdUpdate = evaluateTaskMdUpdateNeed({
-    changeText: params.text,
-    hasTaskContext: params.hasTaskContext,
-    importantFilePath: params.importantFilePath,
-    producedDurableChange: params.producedDurableChange,
-    reasonHint: params.taskMdReasonHint,
-  });
+  const taskMdUpdate = params.taskMdDurableFields?.length
+    ? evaluateTaskMdUpdateNeedForDurableFields({
+        fields: params.taskMdDurableFields,
+        changeText: params.text,
+        hasTaskContext: params.hasTaskContext,
+        importantFilePath: params.importantFilePath,
+        producedDurableChange: params.producedDurableChange,
+      })
+    : evaluateTaskMdUpdateNeed({
+        changeText: params.text,
+        hasTaskContext: params.hasTaskContext,
+        importantFilePath: params.importantFilePath,
+        producedDurableChange: params.producedDurableChange,
+        reasonHint: params.taskMdReasonHint,
+      });
 
   if (taskMdUpdate.shouldUpdateTaskMd) {
     items.push({

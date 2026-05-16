@@ -217,6 +217,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TasksPage ordinary task-file creation blocks reserved Task.md and Task Records paths so task memory surfaces keep using their dedicated evaluators.',
       'TasksPage manual Task Record creation now passes through TaskRecordWorthinessEvaluation and normalizes nested prompts back under Task Records before creating files.',
       'RuntimeRecoveryGuidance centralizes structured Task.md and Task Record recovery recommendations, while preserving legacy guidance messages.',
+      'RuntimeRecoveryGuidance accepts structured durable task fields, and AgentToolRegistry durable tools pass those fields into task-memory guidance.',
       'AgentToolRegistry durable tool results now expose structured recoveryGuidanceItems plus legacy recoveryGuidance messages from RuntimeRecoveryGuidance without silently mutating Task.md.',
       'AgentToolRegistry source-context writes use TaskRecordWorthinessEvaluation before recommending Task Record guidance, so raw source capture does not automatically become a task record.',
       'AgentToolRegistry persists recoveryGuidanceItems as a separate Run Step so task-memory recommendations remain auditable without silently mutating Task.md or Task Records.',
@@ -239,7 +240,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Runtime owns durable data model boundaries and UI labels for files, records, sources, and generated output.',
     ],
     gaps: [
-      'TaskMdUpdateNeedEvaluation covers RightPanel references, TasksPage Task.md saves, reserved Task.md path protection, AgentToolRegistry durable tool guidance, and structured durable-field reasons; remaining retained durable state changes should pass changed fields and reference metadata through TasksPage, RightPanel, Runs, or Decisions.',
+      'TaskMdUpdateNeedEvaluation covers RightPanel references, TasksPage Task.md saves, reserved Task.md path protection, AgentToolRegistry durable tool guidance, and structured durable-field reasons; remaining retained durable state changes outside durable tools should pass changed fields and reference metadata through TasksPage, RightPanel, Runs, or Decisions.',
       'Output-reference propagation to Task.md or Task Records is now recommended by tool guidance, preserved as structured reference metadata, and can be persisted through the reusable confirmed-write plan; automatic persistence remains intentionally disabled.',
       'TaskMemoryCoverageEvaluation is wired to current lifecycle boundaries; future task lifecycle boundaries must opt into the same evaluator instead of adding direct state changes.',
     ],

@@ -566,12 +566,12 @@ describe('AgentToolRegistry', () => {
       status: 'completed',
       summary: '已创建来源上下文：Owner notes',
       output: 'Use this as the next source',
-      recoveryGuidance: ['Task.md update recommended: durable_state_change'],
+      recoveryGuidance: ['Task.md update recommended: important_file'],
       recoveryGuidanceItems: [
         {
           target: 'task_md',
-          message: 'Task.md update recommended: durable_state_change',
-          reason: 'durable_state_change',
+          message: 'Task.md update recommended: important_file',
+          reason: 'important_file',
         },
       ],
     });
@@ -604,7 +604,7 @@ describe('AgentToolRegistry', () => {
         status: 'completed',
         title: '任务记忆建议',
         input: JSON.stringify({ targets: ['task_md'] }),
-        output: '- Task.md: durable_state_change',
+        output: '- Task.md: important_file',
       }),
     );
   });
@@ -653,13 +653,13 @@ describe('AgentToolRegistry', () => {
     expect(result).toMatchObject({
       success: true,
       recoveryGuidance: [
-        'Task.md update recommended: durable_state_change',
+        'Task.md update recommended: important_file',
         'Task Record may be useful: external_signal',
       ],
       recoveryGuidanceItems: [
         {
           target: 'task_md',
-          reason: 'durable_state_change',
+          reason: 'important_file',
         },
         {
           target: 'task_record',
@@ -673,7 +673,7 @@ describe('AgentToolRegistry', () => {
         title: '任务记忆建议',
         input: JSON.stringify({ targets: ['task_md', 'task_record'] }),
         output: [
-          '- Task.md: durable_state_change',
+          '- Task.md: important_file',
           '- Task Record: external_signal',
         ].join('\n'),
       }),
@@ -777,11 +777,11 @@ describe('AgentToolRegistry', () => {
       status: 'completed',
       summary: '已创建完成标准：Owner has reviewed the final draft',
       output: 'Owner has reviewed the final draft',
-      recoveryGuidance: ['Task.md update recommended: durable_state_change'],
+      recoveryGuidance: ['Task.md update recommended: goal_or_scope'],
       recoveryGuidanceItems: [{
         target: 'task_md',
-        message: 'Task.md update recommended: durable_state_change',
-        reason: 'durable_state_change',
+        message: 'Task.md update recommended: goal_or_scope',
+        reason: 'goal_or_scope',
       }],
     });
     expect(taskService.createCompletionCriteria).toHaveBeenCalledWith({
@@ -801,7 +801,7 @@ describe('AgentToolRegistry', () => {
         status: 'completed',
         title: '任务记忆建议',
         input: JSON.stringify({ targets: ['task_md'] }),
-        output: '- Task.md: durable_state_change',
+        output: '- Task.md: goal_or_scope',
       }),
     );
   });

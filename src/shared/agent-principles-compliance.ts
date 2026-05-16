@@ -93,6 +93,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TasksPage ordinary file creation blocks reserved Task.md and Task Records paths so users cannot bypass the dedicated task-memory evaluators through the generic file entrypoint.',
       'TasksPage manual Task Record creation consumes TaskRecordWorthinessEvaluation and normalizes nested prompts back under Task Records before persistence.',
       'RuntimeRecoveryGuidance centralizes structured Task.md and Task Record recovery recommendations while preserving legacy guidance messages.',
+      'RuntimeRecoveryGuidance can derive Task.md recommendations from structured durable task fields, and AgentToolRegistry durable tools pass field metadata instead of hard-coded generic reasons.',
       'AgentToolRegistry durable tool results expose recoveryGuidanceItems and legacy recoveryGuidance from RuntimeRecoveryGuidance without silently mutating Task.md.',
       'AgentToolRegistry persists recoveryGuidanceItems as a separate Run Step so task-memory recommendations remain auditable without silently mutating Task.md or Task Records.',
       'TaskMemoryGuidanceState reads structured guidance targets from Run Step input before falling back to guidance text parsing.',

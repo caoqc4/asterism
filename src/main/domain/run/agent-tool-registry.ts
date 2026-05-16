@@ -12,6 +12,7 @@ import type {
 import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import { buildRuntimeRecoveryGuidance } from '../../../shared/runtime-recovery-guidance.js';
+import type { TaskMdDurableField } from '../../../shared/task-md-update-need.js';
 import type { DecisionDraftRecord, DraftDecisionInput } from '../../../shared/types/decision.js';
 import type { RunStepRecord } from '../../../shared/types/run.js';
 import type {
@@ -707,18 +708,13 @@ function withRuntimeRecoveryGuidance(
   if (!durableAgentTools.has(name) || !result.success) return result;
   const text = [result.summary, result.output].filter(Boolean).join('\n');
 
-  const taskMdReason = name === 'task.update_next_step'
-    ? 'next_step'
-    : name === 'artifact.create_note'
-      ? 'important_file'
-      : 'durable_state_change';
   const guidance = buildRuntimeRecoveryGuidance({
     text,
     hasTaskContext: Boolean(context.taskId),
     importantFilePath: name === 'artifact.create_note' ? result.artifactId ?? result.summary : null,
     producedDurableChange: true,
     taskRecordProducedDurableChange: name === 'source_context.create' ? false : undefined,
-    taskMdReasonHint: taskMdReason,
+    taskMdDurableFields: durableTaskMdFieldsForTool(name),
     includeTaskRecord: name === 'source_context.create',
   });
 
@@ -734,6 +730,21 @@ function withRuntimeRecoveryGuidance(
         })),
       }
     : result;
+}
+
+function durableTaskMdFieldsForTool(name: AgentToolName): TaskMdDurableField[] {
+  switch (name) {
+    case 'task.update_next_step':
+      return ['nextStep'];
+    case 'task.create_completion_criterion':
+      return ['completionCriteria'];
+    case 'artifact.create_note':
+      return ['artifact'];
+    case 'source_context.create':
+      return ['sourceContext'];
+    default:
+      return [];
+  }
 }
 
 function formatRuntimeRecoveryGuidance(result: AgentToolResult): string | null {

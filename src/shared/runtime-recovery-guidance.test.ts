@@ -86,4 +86,22 @@ describe('runtime recovery guidance', () => {
     expect(guidance.messages).toEqual(['Task.md update recommended: durable_state_change']);
     expect(guidance.items.map((item) => item.target)).toEqual(['task_md']);
   });
+
+  it('can derive Task.md guidance from structured durable fields', () => {
+    const guidance = buildRuntimeRecoveryGuidance({
+      text: '工具写入了任务字段。',
+      hasTaskContext: true,
+      producedDurableChange: true,
+      taskMdDurableFields: ['completionCriteria', 'nextStep'],
+    });
+
+    expect(guidance.items[0]).toMatchObject({
+      target: 'task_md',
+      message: 'Task.md update recommended: next_step',
+      evaluation: {
+        reason: 'next_step',
+        confidence: 'high',
+      },
+    });
+  });
 });
