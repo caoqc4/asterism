@@ -237,6 +237,54 @@ describe('task memory coverage', () => {
     });
   });
 
+  it('does not count stale completion checks older than completion criteria updates', () => {
+    const input = buildTaskMemoryCoverageInputForTask('task_completion', {
+      id: 'task-1',
+      title: 'Task',
+      summary: 'Ready to complete',
+      state: 'running',
+      nextStep: 'Complete',
+      waitingReason: null,
+      riskLevel: 'none',
+      riskNote: null,
+      createdAt: '2026-05-15T01:00:00.000Z',
+      updatedAt: '2026-05-15T01:00:00.000Z',
+      activeWaitingItem: null,
+      activeBlocker: null,
+      artifacts: [],
+      completionCriteria: [{
+        id: 'criteria-1',
+        taskId: 'task-1',
+        text: 'Done',
+        verificationResponsibility: null,
+        verificationResponsibilityLabel: null,
+        status: 'satisfied',
+        createdAt: '2026-05-15T01:00:00.000Z',
+        updatedAt: '2026-05-15T01:03:00.000Z',
+        satisfiedAt: '2026-05-15T01:03:00.000Z',
+      }],
+      sourceContexts: [],
+      processTemplates: [],
+      availableProcessTemplates: [],
+      taskFiles: [],
+      timeline: [{
+        id: 'event-1',
+        taskId: 'task-1',
+        type: 'task.completion_check',
+        payload: JSON.stringify({ action: 'passed' }),
+        createdAt: '2026-05-15T01:01:00.000Z',
+      }],
+    });
+
+    expect(input).toMatchObject({
+      hasCompletionCheckEvidence: false,
+    });
+    expect(evaluateTaskMemoryCoverage(input)).toMatchObject({
+      outcome: 'needs_memory_write',
+      canProceed: false,
+    });
+  });
+
   it('treats global context as not applicable', () => {
     expect(evaluateTaskMemoryCoverage({
       action: 'context_clear',

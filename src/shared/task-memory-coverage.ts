@@ -75,9 +75,13 @@ export function buildTaskMemoryCoverageInputForTask(
   const hasRecentRunEvidence = timeline.some((event) => (
     event.type === 'run.completed' || event.type === 'task.run_completed'
   ));
+  const latestCompletionCriteriaUpdatedAt = latestTimestamp(
+    (task.completionCriteria ?? []).map((criterion) => criterion.updatedAt),
+  );
   const hasCompletionCheckEvidence = timeline.some((event) => (
     event.type === 'task.completion_check'
     && completionCheckActionIsEvidence(event.payload)
+    && eventIsNotOlderThan(event.createdAt, latestCompletionCriteriaUpdatedAt)
   ));
 
   return {
@@ -110,6 +114,19 @@ function completionCheckActionIsEvidence(payload: string | null): boolean {
   } catch {
     return false;
   }
+}
+
+function latestTimestamp(values: Array<string | null | undefined>): string | null {
+  const timestamps = values
+    .map((value) => value?.trim() ?? '')
+    .filter(Boolean)
+    .sort();
+  return timestamps.at(-1) ?? null;
+}
+
+function eventIsNotOlderThan(eventTimestamp: string, boundaryTimestamp: string | null): boolean {
+  if (!boundaryTimestamp) return true;
+  return eventTimestamp >= boundaryTimestamp;
 }
 
 export function evaluateTaskMemoryCoverage(input: TaskMemoryCoverageInput): TaskMemoryCoverageEvaluation {
