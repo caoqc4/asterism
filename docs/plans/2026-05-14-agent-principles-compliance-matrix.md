@@ -81,5 +81,6 @@ The Decisions judgment-center baseline is now implemented.
 - `DecisionService.listJudgments` exposes the projection from the domain boundary, so the renderer does not rebuild judgment semantics from raw Decisions.
 - The Decisions page shows context, options, recommendation, grouped pending-decision context, and action effects after approve/defer/cancel.
 - Decision actions are guarded, failed actions remain visible with retry feedback, and duplicate action clicks are disabled while an action is pending.
+- Task hierarchy manual-review items and safe hierarchy repairs are surfaced in the Decisions page, so parent/child structure conflicts are handled as explicit user judgments instead of silent task-list mutations.
 
 The remaining Decisions work is intentionally narrow: keep grouped Decisions read-only until a real multi-decision workflow requires batch approve/defer/cancel.

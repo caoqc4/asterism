@@ -2202,6 +2202,57 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/汇总到这里等待你拍板/)).toBeTruthy();
   });
 
+  it('surfaces task hierarchy manual review in Decisions without using the task list', async () => {
+    const user = userEvent.setup();
+    harness.decisions.length = 0;
+    vi.mocked(harness.api.getTaskHierarchyConsistency).mockResolvedValue({
+      consistent: false,
+      issues: [],
+      issueCount: 2,
+      summary: '任务层级存在 2 个一致性问题。',
+    });
+    vi.mocked(harness.api.getTaskHierarchyManualReviewPolicy).mockResolvedValue({
+      required: true,
+      items: [
+        {
+          reason: 'missing_record',
+          decisionQuestion: '缺失的任务记录是否应恢复，还是应移除这条层级引用？',
+          recommendedResolution: '先确认缺失记录来源；无法恢复时再移除悬空引用。',
+          issue: {
+            code: 'missing_child_record',
+            taskId: 'task_risk',
+            relatedTaskId: 'missing_child',
+            message: '任务引用了不存在的子任务。',
+          },
+        },
+      ],
+      summary: '有 1 个层级关系需要人工确认。',
+    });
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Decisions/ }));
+
+    expect(await screen.findByText('任务结构待确认')).toBeTruthy();
+    expect(screen.queryByText('当前没有待拍板事项。')).toBeNull();
+    expect(screen.getByText('存在可安全修复的任务层级关系')).toBeTruthy();
+    expect(screen.getByText('缺失的任务记录是否应恢复，还是应移除这条层级引用？')).toBeTruthy();
+    expect(screen.getByText('先确认缺失记录来源；无法恢复时再移除悬空引用。')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '应用安全修复 →' }));
+    await waitFor(() => {
+      expect(harness.api.applySafeTaskHierarchyRepairs).toHaveBeenCalledTimes(1);
+    });
+
+    await user.click(screen.getByRole('button', { name: '移除悬空引用 →' }));
+    await waitFor(() => {
+      expect(harness.api.applyTaskHierarchyManualResolution).toHaveBeenCalledWith({
+        kind: 'remove_child_reference',
+        taskId: 'task_risk',
+        relatedTaskId: 'missing_child',
+      });
+    });
+  });
+
   it('keeps a decision visible when the formal action fails', async () => {
     const user = userEvent.setup();
     vi.mocked(harness.api.actOnDecision).mockRejectedValueOnce(new Error('network failed'));

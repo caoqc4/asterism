@@ -61,7 +61,7 @@ Strongest areas:
 - service-level child task capture now blocks generic phase-template titles and parent-title repeats.
 - project decomposition generation checks the full task list for existing children, including `parentTaskId` links.
 - task creation, parent moves, and parent-side child list updates keep `parentTaskId` and parent `childTaskIds` synchronized at the service boundary.
-- hierarchy consistency diagnostics can find old parent/child mismatches through the service/IPC boundary, can produce a non-mutating repair plan, can apply only revalidated safe repairs, can explain manual-review conflicts, and can apply explicit manual hierarchy resolutions through a data-layer maintenance command.
+- hierarchy consistency diagnostics can find old parent/child mismatches through the service/IPC boundary, can produce a non-mutating repair plan, can apply only revalidated safe repairs, can explain manual-review conflicts, and can apply explicit manual hierarchy resolutions through Decisions judgment-center maintenance actions.
 - renderer hierarchy projection treats persisted task type, facets, parent id, and child ids as authoritative, with local attributes retained only as a legacy missing-field fallback.
 - legacy title-pattern phase follow-up inference is now limited to objects without a parent field, and Tasks no longer mutates local hierarchy attributes during list loading.
 - Brief focus projection, RightPanel closeout checks, and task completion checks now share the same persisted-field hierarchy authority instead of reading local task attributes directly.
@@ -79,7 +79,7 @@ Weakest areas:
 - future provider-visible entry points preserving full context snapshot metadata;
 - future connector ingestion preserving source quality signals;
 - future multi-decision workflows, if a concrete batch approve/defer/cancel need appears;
-- legacy local task hierarchy attributes and manual-review hierarchy conflicts still need a user-facing confirmation surface after the database relationship becomes authoritative.
+- legacy local task hierarchy attributes still need final migration cleanup after the database relationship becomes authoritative.
 - future entry points preserving capability state in context/action evaluation;
 - Run-side grouped replay presentation if retained Run-side runtime views are resumed.
 
@@ -113,6 +113,7 @@ The Decisions judgment-center baseline is now implemented.
 
 - Pending Decisions are projected through `DecisionJudgmentProjection` and exposed by `DecisionService.listJudgments`.
 - The Decisions page now presents judgment context, options, recommendation, grouped pending-decision context, and approve/defer/cancel effects.
+- The Decisions page now also surfaces task hierarchy manual-review items and safe repair actions, so historical parent/child conflicts have a user-facing judgment-center path without adding another Tasks page workflow.
 - The page keeps failed action attempts visible with retry feedback and disables duplicate actions while an action is pending.
 
 The remaining lifecycle gap is not a generic Decisions inbox gap anymore. It is limited to future multi-decision workflows, which should stay deferred until users need batch approve/defer/cancel.

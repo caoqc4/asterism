@@ -28,6 +28,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Task hierarchy projection treats persisted taskType, taskFacets, parentTaskId, and childTaskIds as authoritative over stale renderer-local attributes.',
       'Legacy title-pattern phase follow-up inference is limited to records without a parent field, and Tasks no longer mutates local hierarchy attributes during list loading.',
       'TaskHierarchyConsistencyEvaluation, TaskHierarchyRepairPlan, and manual resolution commands separate diagnostics, safe repair, and explicit human confirmation instead of silently guessing structure.',
+      'Decisions page surfaces hierarchy manual-review items and safe hierarchy repair actions as explicit user judgments.',
       'No default Artifacts/ folder is required; output folders are created only when useful for the task.',
       'RuntimeTaskCaptureEvaluation blocks generic phase-template task titles even when a faulty flow tries to create them as top-level tasks.',
       'Runtime surface routing has regression coverage that explicit Decision kind, scope, and sourceType are not overridden by title-pattern inference.',

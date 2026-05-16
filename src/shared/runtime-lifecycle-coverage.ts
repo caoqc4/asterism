@@ -361,8 +361,9 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskHierarchyConsistencyEvaluation can diagnose historical hierarchy mismatches before a repair flow mutates old records, and TaskService exposes the diagnostics through IPC.',
       'TaskHierarchyRepairPlan can turn diagnostics into non-mutating safe repair actions or manual-review items before any confirmed maintenance writer exists.',
       'TaskService.applySafeHierarchyRepairs applies only revalidated safe TaskHierarchyRepairPlan actions through the service/IPC boundary and leaves manual-review items untouched.',
-      'TaskHierarchyManualReviewPolicy explains conflicting parentage, missing records, self references, and duplicate references before any human-confirmed resolution UI exists.',
-      'TaskService.applyHierarchyManualResolution accepts explicit manual hierarchy resolutions for unique parentage, missing references, self references, and duplicate child references without adding UI.',
+      'TaskHierarchyManualReviewPolicy explains conflicting parentage, missing records, self references, and duplicate references before any human-confirmed resolution is applied.',
+      'TaskService.applyHierarchyManualResolution accepts explicit manual hierarchy resolutions for unique parentage, missing references, self references, and duplicate child references.',
+      'Decisions page surfaces TaskHierarchyManualReviewPolicy items and safe hierarchy repairs as judgment-center maintenance actions instead of adding another Tasks page workflow.',
       'TaskService safe hierarchy repairs and manual hierarchy resolutions pass task structure writes through task_mutation guards before repository updates.',
       'Renderer task hierarchy projection now treats persisted taskType, taskFacets, parentTaskId, and childTaskIds as authoritative and uses local task attributes only for genuinely missing legacy fields.',
       'Legacy title-pattern phase follow-up inference no longer runs when a task explicitly has no parent, and TasksPage no longer mutates local hierarchy attributes during list loading.',
@@ -377,12 +378,12 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Some task structure still relies on renderer-local attributes.',
-      'Project progress and child ordering are closer to data-authoritative, but legacy local attributes still need migration cleanup and manual-review hierarchy resolution still needs a user-facing confirmation surface.',
+      'Project progress and child ordering are closer to data-authoritative, but legacy local attributes still need final migration cleanup.',
       'Subtask draft evaluation is enforced for project decomposition generation and confirmation, but not yet every future child-task creation path.',
     ],
     nextImplementation: [
       'Finish Package F data model migration cleanup.',
-      'Add a user-facing confirmation surface for TaskHierarchyManualReviewPolicy items when UI work is allowed.',
+      'Keep hierarchy repair actions in Decisions unless a stronger task-structure maintenance workflow appears.',
     ],
   },
   {

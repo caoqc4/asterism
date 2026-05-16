@@ -5,6 +5,12 @@ import {
   type DecisionJudgmentProjection,
 } from '@shared/decision-judgment-projection';
 import { summarizeDecisionEffects } from '@shared/decision-effect-evaluator';
+import type {
+  ApplyTaskHierarchyManualResolutionInput,
+  TaskHierarchyConsistencyEvaluation,
+  TaskHierarchyManualReviewItem,
+  TaskHierarchyManualReviewPolicy,
+} from '@shared/task-hierarchy-consistency';
 import type { DecisionRecord } from '@shared/types/decision';
 import { guardDecisionAction, verifyDecisionActionCompleted } from '../lib/runtimeActionGuards';
 
@@ -33,6 +39,11 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
   const [filterKey, setFilterKey] = useState<DecisionFilterKey>('all');
   const [actionEffect, setActionEffect] = useState<DecisionActionEffect | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [hierarchyConsistency, setHierarchyConsistency] = useState<TaskHierarchyConsistencyEvaluation | null>(null);
+  const [hierarchyPolicy, setHierarchyPolicy] = useState<TaskHierarchyManualReviewPolicy | null>(null);
+  const [hierarchyNotice, setHierarchyNotice] = useState<string | null>(null);
+  const [hierarchyError, setHierarchyError] = useState<string | null>(null);
+  const [applyingHierarchyAction, setApplyingHierarchyAction] = useState<string | null>(null);
   const [actingDecisionIds, setActingDecisionIds] = useState<Set<string>>(() => new Set());
   const [loading, setLoading] = useState(true);
 
@@ -50,13 +61,19 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
             const tasksById = new Map(tasks.map((task) => [task.id, task]));
             return projectDecisionJudgments(records, tasksById);
           });
-      loadJudgments
-        .then((judgments) => {
+      Promise.all([
+        loadJudgments,
+        window.api!.getTaskHierarchyConsistency?.() ?? Promise.resolve(null),
+        window.api!.getTaskHierarchyManualReviewPolicy?.() ?? Promise.resolve(null),
+      ])
+        .then(([judgments, hierarchy, policy]) => {
           if (cancelled) return;
           setDecisions(judgments.map((judgment) => ({
             ...judgment,
             expanded: false,
           })));
+          setHierarchyConsistency(hierarchy);
+          setHierarchyPolicy(policy);
         })
         .catch(() => {})
         .finally(() => {
@@ -110,6 +127,54 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
       });
   }
 
+  function refreshHierarchyPolicy() {
+    if (!window.api) return;
+    Promise.all([
+      window.api.getTaskHierarchyConsistency?.() ?? Promise.resolve(null),
+      window.api.getTaskHierarchyManualReviewPolicy?.() ?? Promise.resolve(null),
+    ]).then(([hierarchy, policy]) => {
+      setHierarchyConsistency(hierarchy);
+      setHierarchyPolicy(policy);
+    }).catch(() => {
+      setHierarchyError('任务结构检查没有完成，请稍后重试。');
+    });
+  }
+
+  function applySafeHierarchyRepairs() {
+    if (!window.api?.applySafeTaskHierarchyRepairs || applyingHierarchyAction) return;
+    setHierarchyError(null);
+    setApplyingHierarchyAction('safe');
+    window.api.applySafeTaskHierarchyRepairs()
+      .then((result) => {
+        setHierarchyNotice(result.summary);
+        refreshHierarchyPolicy();
+      })
+      .catch(() => {
+        setHierarchyError('安全修复没有完成，任务结构未被修改。');
+      })
+      .finally(() => {
+        setApplyingHierarchyAction(null);
+      });
+  }
+
+  function applyHierarchyResolution(input: ApplyTaskHierarchyManualResolutionInput) {
+    if (!window.api?.applyTaskHierarchyManualResolution || applyingHierarchyAction) return;
+    const actionKey = `${input.kind}:${input.taskId}:${input.relatedTaskId ?? ''}:${input.targetParentTaskId ?? ''}`;
+    setHierarchyError(null);
+    setApplyingHierarchyAction(actionKey);
+    window.api.applyTaskHierarchyManualResolution(input)
+      .then((result) => {
+        setHierarchyNotice(result.summary);
+        refreshHierarchyPolicy();
+      })
+      .catch(() => {
+        setHierarchyError('人工确认动作没有完成，任务结构未被修改。');
+      })
+      .finally(() => {
+        setApplyingHierarchyAction(null);
+      });
+  }
+
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const searchedDecisions = normalizedQuery
     ? decisions.filter((d) => `${d.title} ${d.taskTitle}`.toLowerCase().includes(normalizedQuery))
@@ -127,6 +192,9 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
     acc[decision.category.key] += 1;
     return acc;
   }, { all: 0, agent: 0, risk: 0, completion: 0, direction: 0 });
+  const hierarchyIssueCount = hierarchyConsistency?.issueCount ?? hierarchyPolicy?.items.length ?? 0;
+  const hierarchyManualCount = hierarchyPolicy?.items.length ?? 0;
+  const hasHierarchyConcern = hierarchyIssueCount > 0 || hierarchyManualCount > 0 || Boolean(hierarchyNotice || hierarchyError);
 
   return (
     <div className="decisions-page">
@@ -157,6 +225,15 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
           <div className="dec-overview-chip">
             <span className="dec-overview-value">来源</span>
             <span>{actionEffect.sourceLabel}</span>
+          </div>
+        </div>
+      )}
+
+      {(hierarchyNotice || hierarchyError) && (
+        <div className="dec-overview" aria-label="任务结构维护结果">
+          <div className="dec-overview-chip">
+            <span className="dec-overview-value">{hierarchyError ? '未完成' : '已处理'}</span>
+            <span>{hierarchyError ?? hierarchyNotice}</span>
           </div>
         </div>
       )}
@@ -205,6 +282,52 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
             />
           </div>
         </>
+      )}
+
+      {hasHierarchyConcern && (
+        <section className="dec-section" aria-label="任务结构待确认">
+          <div className="dec-section-head">
+            <div className="dec-section-label">
+              <span className="dot waiting" style={{ flexShrink: 0 }} />
+              任务结构待确认
+              <span className="dec-count">{hierarchyIssueCount}</span>
+            </div>
+            <div className="dec-section-note">只处理父子关系一致性；不会替你重排任务策略</div>
+          </div>
+
+          {hierarchyIssueCount > hierarchyManualCount && (
+            <div className="dec-card">
+              <div className="dec-card-head">
+                <div className="dec-card-left">
+                  <div className="dec-card-title">存在可安全修复的任务层级关系</div>
+                  <div className="dec-card-meta">
+                    <span className="dec-category completion">结构维护</span>
+                    <span className="dec-rank-chip">{hierarchyConsistency?.summary ?? '任务层级需要检查。'}</span>
+                  </div>
+                </div>
+                <div className="dec-card-right">
+                  <button
+                    className="btn primary"
+                    disabled={Boolean(applyingHierarchyAction)}
+                    onClick={applySafeHierarchyRepairs}
+                  >
+                    {applyingHierarchyAction === 'safe' ? '处理中…' : '应用安全修复 →'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {hierarchyPolicy?.items.map((item, index) => (
+            <HierarchyReviewCard
+              key={`${item.issue.code}:${item.issue.taskId}:${item.issue.relatedTaskId ?? ''}:${index}`}
+              item={item}
+              applyingAction={applyingHierarchyAction}
+              onApply={applyHierarchyResolution}
+              onOpenTask={() => onOpenTask(item.issue.taskId)}
+            />
+          ))}
+        </section>
       )}
 
       {today.length > 0 && (
@@ -261,7 +384,7 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
         </div>
       )}
 
-      {!loading && decisions.length === 0 && (
+      {!loading && decisions.length === 0 && !hasHierarchyConcern && (
         <div className="decisions-empty">
           <p>当前没有待拍板事项。</p>
           <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>这里不是任务列表；只有当 AI 遇到风险操作、方向分歧、执行恢复或验收确认时，才会汇总到这里等待你拍板。</p>
@@ -283,6 +406,122 @@ function buildDecisionActionEffect(
     sourceLabel: decision.sourceLabel ?? decision.sourceType ?? decision.scope,
     title: decision.title,
   };
+}
+
+function hierarchyResolutionForItem(
+  item: TaskHierarchyManualReviewItem,
+): { label: string; input: ApplyTaskHierarchyManualResolutionInput } | null {
+  if (item.issue.code === 'missing_child_record' && item.issue.relatedTaskId) {
+    return {
+      label: '移除悬空引用',
+      input: {
+        kind: 'remove_child_reference',
+        taskId: item.issue.taskId,
+        relatedTaskId: item.issue.relatedTaskId,
+      },
+    };
+  }
+
+  if (item.issue.code === 'missing_parent_record') {
+    return {
+      label: '清除无效父任务',
+      input: {
+        kind: 'clear_parent_reference',
+        taskId: item.issue.taskId,
+        relatedTaskId: item.issue.relatedTaskId,
+      },
+    };
+  }
+
+  if (item.issue.code === 'self_child') {
+    return {
+      label: '移除自引用',
+      input: {
+        kind: 'remove_self_reference',
+        taskId: item.issue.taskId,
+        relatedTaskId: item.issue.relatedTaskId,
+      },
+    };
+  }
+
+  if (item.issue.code === 'duplicate_child_id' && item.issue.relatedTaskId) {
+    return {
+      label: '去重子任务引用',
+      input: {
+        kind: 'dedupe_child_reference',
+        taskId: item.issue.taskId,
+        relatedTaskId: item.issue.relatedTaskId,
+      },
+    };
+  }
+
+  if (item.issue.code === 'child_listed_under_multiple_parents' && item.issue.relatedTaskId) {
+    return {
+      label: '从当前父任务移除',
+      input: {
+        kind: 'remove_child_reference',
+        taskId: item.issue.taskId,
+        relatedTaskId: item.issue.relatedTaskId,
+      },
+    };
+  }
+
+  return null;
+}
+
+interface HierarchyReviewCardProps {
+  applyingAction: string | null;
+  item: TaskHierarchyManualReviewItem;
+  onApply: (input: ApplyTaskHierarchyManualResolutionInput) => void;
+  onOpenTask: () => void;
+}
+
+function HierarchyReviewCard({ applyingAction, item, onApply, onOpenTask }: HierarchyReviewCardProps) {
+  const resolution = hierarchyResolutionForItem(item);
+  const actionKey = resolution
+    ? `${resolution.input.kind}:${resolution.input.taskId}:${resolution.input.relatedTaskId ?? ''}:${resolution.input.targetParentTaskId ?? ''}`
+    : null;
+
+  return (
+    <div className="dec-card expanded">
+      <div className="dec-card-head">
+        <div className="dec-card-left">
+          <div className="dec-card-title">{item.decisionQuestion}</div>
+          <div className="dec-card-meta">
+            <span className="dec-category direction">结构确认</span>
+            <span className="dec-rank-chip">{item.reason}</span>
+            <span className="dec-rank-chip">{item.issue.code}</span>
+          </div>
+        </div>
+        <div className="dec-card-right">
+          {resolution && (
+            <button
+              className="btn primary"
+              disabled={Boolean(applyingAction)}
+              onClick={() => onApply(resolution.input)}
+            >
+              {applyingAction === actionKey ? '处理中…' : `${resolution.label} →`}
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="dec-options">
+        <div className="dec-context">
+          <div className="dec-context-item">
+            <span className="dec-context-label">发现的问题</span>
+            <span className="dec-context-text">{item.issue.message}</span>
+          </div>
+          <div className="dec-context-item">
+            <span className="dec-context-label">建议处理</span>
+            <span className="dec-context-text">{item.recommendedResolution}</span>
+          </div>
+        </div>
+        <div className="dec-actions">
+          <button className="btn sm ghost" onClick={onOpenTask}>查看相关任务</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /* ─── Decision Card ─── */
