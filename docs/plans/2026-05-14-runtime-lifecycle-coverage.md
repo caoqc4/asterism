@@ -85,6 +85,8 @@ Weakest areas:
 - future entry points preserving capability state in context/action evaluation;
 - Run-side grouped replay presentation if retained Run-side runtime views are resumed.
 
+`RuntimeEntrypointCoverage` remains a regression registry by design, not a dynamic discovery system. New runtime entrypoints should be added explicitly and fail tests if they do not meet their kind-level gate baseline.
+
 ## Design Rule
 
 Do not treat Agent Principles compliance as equivalent to runtime lifecycle completion.
