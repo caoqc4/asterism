@@ -149,6 +149,13 @@ export class SourceContextRepository {
         uri: input.uri === undefined ? current.uri : normalizeValue(input.uri),
         content: input.content === undefined ? current.content : normalizeValue(input.content),
         note: input.note === undefined ? current.note : normalizeValue(input.note),
+        capturedAt: input.capturedAt === undefined ? current.capturedAt : normalizeValue(input.capturedAt),
+        sourceRole: input.sourceRole ?? current.sourceRole,
+        credibility: input.credibility === undefined ? current.credibility : input.credibility,
+        isDuplicate: input.isDuplicate === undefined ? current.isDuplicate : input.isDuplicate ? 'true' : 'false',
+        containsSensitiveData: input.containsSensitiveData === undefined
+          ? current.containsSensitiveData
+          : input.containsSensitiveData ? 'true' : 'false',
         updatedAt: nowIso(),
       })
       .where(eq(sourceContexts.id, input.id));

@@ -39,6 +39,10 @@ describe('SourceContextRepository integration', () => {
       isKey: true,
       note: 'Updated note',
       content: 'Key product assumptions',
+      sourceRole: 'stable_reference',
+      credibility: 'verified',
+      isDuplicate: true,
+      containsSensitiveData: true,
     });
 
     const activeBeforeArchive = await sourceContextRepository.listActiveForTask(task.id);
@@ -52,6 +56,10 @@ describe('SourceContextRepository integration', () => {
     expect(updated.isKey).toBe(true);
     expect(updated.note).toBe('Updated note');
     expect(updated.content).toBe('Key product assumptions');
+    expect(updated.sourceRole).toBe('stable_reference');
+    expect(updated.credibility).toBe('verified');
+    expect(updated.isDuplicate).toBe(true);
+    expect(updated.containsSensitiveData).toBe(true);
     expect(activeBeforeArchive).toHaveLength(1);
     expect(activeBeforeArchive[0]?.id).toBe(created.id);
     expect(activeBeforeArchive[0]?.isKey).toBe(true);

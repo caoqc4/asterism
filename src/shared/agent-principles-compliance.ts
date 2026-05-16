@@ -91,6 +91,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RunOrchestrator blocks ordinary model execution when required runtime context inputs are missing.',
       'CodeAgentRunService blocks model-producer execution when required task recovery context is missing and passes selected source-context metadata into RuntimeContextManifest.',
       'RuntimeContextManifest tests cover source-quality metadata propagated through AgentWorkingContext sources, including duplicate, sensitive, and low-credibility signals.',
+      'SourceContextMemoryMetadata normalizes source role, credibility, duplicate, and sensitive-data signals before source-context creation or update reaches persistence.',
       'OperatorStartedRunService keeps browser evidence and local QA outside provider-visible context assembly only while providerCall=no and modelExposure=hidden.',
     ],
     gaps: [
@@ -142,12 +143,14 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TaskMemoryGuidanceState tracks Task.md and Task Record guidance per target so one newer recommendation cannot mask another pending memory surface.',
       'TaskRecordWorthiness tests cover should-create and should-not-create cases for handoff, closeout, correction, option rationale, failures, external signals, duplicates, generic notes, and unbound notes.',
       'Memory-surface write coverage tests keep recovery memory behind dedicated evaluators, source/AI output behind explicit source capture, and artifacts behind artifact writers.',
+      'Source-context metadata tests keep unknown credibility explicit, detect sensitive content, preserve existing sensitivity flags, and keep generated task records in digest role.',
     ],
     gaps: [
       'TaskMdUpdateNeedEvaluation covers RightPanel important-file references, TasksPage direct Task.md saves, reserved Task.md path protection, AgentToolRegistry durable tool guidance through structured fields, and TaskRepository update timeline changed-field metadata; remaining retained durable writes outside durable tools must pass changed fields and reference metadata consistently.',
       'TaskRecordWorthinessEvaluation is consumed by current retained Task Record writers, including RightPanel context-refresh/phase-closeout, TasksPage manual records, completion handoff, project decomposition self-check, and AgentToolRegistry recovery guidance; future Task Record writers must keep using the same evaluator.',
       'RightPanel can confirm task memory write proposals; TasksPage and any future retained surfaces still need to reuse TaskMemoryWriteApplyPlan instead of rebuilding proposal write inputs.',
       'MemorySurfaceWriteCoverage is an explicit registry, so future durable writers must be added there before they count as covered.',
+      'Future connector ingestion paths still need connector-specific credibility and duplication signals; the retained source-context boundary now has the fields and normalization needed to accept them.',
     ],
     nextVerification: [
       'Keep memory-surface write coverage tests failing when a future writer omits its surface, write policy, guard, or simplicity_check.',

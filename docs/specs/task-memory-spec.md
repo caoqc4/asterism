@@ -192,8 +192,12 @@ Use them for:
   or captured notes that influence the task;
 - source digests when a run collects many items.
 
-Every recorded source should preserve a captured-at time and the best available
-origin label. Do not record every transient snippet or duplicate source.
+Every recorded source should preserve a captured-at time, source role, and the
+best available origin label. When known, also preserve credibility, duplicate,
+and sensitive-data signals. Unknown credibility should stay explicit as
+`unknown`; do not treat missing metadata as verified evidence.
+
+Do not record every transient snippet or duplicate source.
 
 Promote a source into a Task Record, task file, or artifact only when it has
 been synthesized into durable task knowledge, rationale, or output.

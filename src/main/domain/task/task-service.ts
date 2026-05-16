@@ -56,7 +56,10 @@ import {
   type TaskHierarchyManualReviewPolicy,
   matchesTaskHierarchyManualReviewItem,
 } from '../../../shared/task-hierarchy-consistency.js';
-import { normalizeCreateSourceContextInput } from '../../../shared/runtime-surface-routing.js';
+import {
+  normalizeCreateSourceContextMemoryMetadata,
+  normalizeUpdateSourceContextMemoryMetadata,
+} from '../../../shared/source-context-memory-metadata.js';
 import { assertKnownPanelRuntimeTimelineEventType } from '../../../shared/runtime-panel-events.js';
 import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
 import type { RunType } from '../../../shared/types/run.js';
@@ -1557,7 +1560,7 @@ export class TaskService {
       throw new Error('Source context repository is not configured');
     }
 
-    const normalizedInput = normalizeCreateSourceContextInput(input);
+    const normalizedInput = normalizeCreateSourceContextMemoryMetadata(input);
     const created = await this.sourceContextRepository.create(normalizedInput);
 
     await this.repository.appendTimelineEvent(normalizedInput.taskId, 'source_context.created', {
@@ -1589,7 +1592,8 @@ export class TaskService {
     }
     this.assertTaskMutationActionAllowed(current.taskId);
 
-    const updated = await this.sourceContextRepository.update(input);
+    const normalizedInput = normalizeUpdateSourceContextMemoryMetadata(current, input);
+    const updated = await this.sourceContextRepository.update(normalizedInput);
 
     await this.repository.appendTimelineEvent(updated.taskId, 'source_context.updated', {
       sourceContextId: updated.id,
@@ -1601,6 +1605,9 @@ export class TaskService {
       runId: updated.runId ?? null,
       batchId: updated.batchId ?? null,
       sourceRole: updated.sourceRole ?? 'raw',
+      credibility: updated.credibility ?? null,
+      isDuplicate: Boolean(updated.isDuplicate),
+      containsSensitiveData: Boolean(updated.containsSensitiveData),
     });
 
     return updated;

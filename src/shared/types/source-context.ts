@@ -53,4 +53,9 @@ export type UpdateSourceContextInput = {
   uri?: string | null;
   content?: string | null;
   note?: string | null;
+  capturedAt?: string | null;
+  sourceRole?: SourceContextRole;
+  credibility?: SourceContextCredibility | null;
+  isDuplicate?: boolean;
+  containsSensitiveData?: boolean;
 };

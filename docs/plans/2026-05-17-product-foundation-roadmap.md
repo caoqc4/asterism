@@ -390,7 +390,14 @@ Start with Package A, but keep the slice narrow:
    - artifact vs ordinary local file;
    - Task Record vs source capture;
    - reserved Task.md / Task Records paths.
-4. Update only data/routing helpers and tests unless a current UI component is
+4. Register retained write entrypoints with surface, write policy, and guard
+   coverage so future durable writers cannot bypass the classification matrix.
+5. Normalize source-context quality metadata at the service boundary:
+   - source role;
+   - explicit unknown credibility;
+   - duplicate signal;
+   - sensitive-data signal.
+6. Update only data/routing helpers and tests unless a current UI component is
    already rendering the wrong label from existing data.
 
 Do not start with connector ingestion, semantic search, batch Decisions, or new

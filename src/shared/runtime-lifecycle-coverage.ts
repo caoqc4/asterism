@@ -218,6 +218,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Tasks file projections keep ordinary task files separate from artifacts while preserving Task.md, Task Records, AI output, source material, and artifact classes.',
       'Tasks source-context file projections use shared source-context routing before deciding whether a source appears as Task Record, AI output, or source material.',
       'Source-context routing preserves explicit sourceRole before applying task-record-like title or note heuristics.',
+      'SourceContextMemoryMetadata normalizes source role, credibility, duplicate, and sensitive-data signals before source-context creation or update reaches persistence.',
       'Memory-surface regression tests cover AI output vs source material, artifact vs ordinary file, Task Record vs source capture, and reserved Task.md / Task Records paths.',
       'Memory-surface write coverage tests require each retained write entrypoint to declare surfaces, write policies, guards, and the simplicity boundary.',
       'TaskRecordWorthinessEvaluation centralizes when handoff, closeout, correction, option rationale, failure review, context archive, external signal, or durable state changes deserve Task Records.',
@@ -261,6 +262,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Output-reference propagation to Task.md or Task Records is now recommended by tool guidance, preserved as structured reference metadata, and can be persisted through the reusable confirmed-write plan; automatic persistence remains intentionally disabled.',
       'TaskMemoryCoverageEvaluation is wired to current lifecycle boundaries; future task lifecycle boundaries must opt into the same evaluator instead of adding direct state changes.',
       'MemorySurfaceWriteCoverage is an explicit regression registry; future durable write paths must add their surface, write policy, and guard coverage instead of relying on path or title inference.',
+      'SourceContextMemoryMetadata covers retained source-context creation and update paths; future connector ingestion still needs to pass connector-specific credibility and duplication signals when available.',
     ],
     nextImplementation: [
       'Require future durable information write paths to be registered in MemorySurfaceWriteCoverage before treating the write surface as retained behavior.',
