@@ -45,11 +45,35 @@ describe('runtime surface routing', () => {
     });
   });
 
+  it('does not treat AI output text as source material when source role is inferred', () => {
+    expect(normalizeCreateSourceContextInput({
+      taskId: 'task_1',
+      title: 'AI 项目拆解自检',
+      kind: 'note',
+      content: 'Note: 5 个子任务；用户已确认创建。',
+      note: 'AI 生成的项目拆解自检。',
+    })).toMatchObject({
+      sourceRole: 'digest',
+    });
+    expect(classifySourceContextSurface({
+      title: 'AI 项目拆解自检',
+      note: 'AI 生成的项目拆解自检。',
+    })).toBe('ai_output');
+  });
+
   it('classifies raw source contexts as source materials', () => {
     expect(classifyRuntimeFileSurface({ kind: 'source', sourceRole: 'raw', name: '访谈记录.md' })).toMatchObject({
       surface: 'source_material',
       fileClass: 'source',
     });
+  });
+
+  it('keeps traceable raw source material as source material even when the title asks for approval', () => {
+    expect(classifySourceContextSurface({
+      title: '客户确认是否上线的邮件',
+      note: '来自客户邮箱的原始邮件内容。',
+      sourceRole: 'raw',
+    })).toBe('source_material');
   });
 
   it('classifies artifacts separately from task files', () => {
@@ -75,6 +99,13 @@ describe('runtime surface routing', () => {
       title: '阶段收尾记录',
       note: '任务记录：阶段收尾、质量检查和执行交接。',
     })).toBe('task_record');
+  });
+
+  it('does not promote generic source captures to task records without record-worthy wording', () => {
+    expect(classifySourceContextSurface({
+      title: '客户访谈原文',
+      note: '用户提供的一手访谈材料。',
+    })).toBe('source_material');
   });
 
   it('does not let source-context title patterns override explicit source roles', () => {
@@ -125,6 +156,24 @@ describe('runtime surface routing', () => {
       content: '',
     });
     expect(classifyCreateTaskFileSurface(input)).toBe('task_record');
+  });
+
+  it('keeps reserved Task.md and Task Records paths out of ordinary task-file classification', () => {
+    expect(classifyCreateTaskFileSurface({
+      taskId: 'task_1',
+      name: 'anything.md',
+      path: 'Task.md',
+      kind: 'file',
+      content: '# Task',
+    })).toBe('task_state');
+
+    expect(classifyCreateTaskFileSurface({
+      taskId: 'task_1',
+      name: 'handoff.md',
+      path: 'Task Records/handoff.md',
+      kind: 'file',
+      content: 'handoff',
+    })).toBe('task_record');
   });
 
   it('normalizes folder task files with trailing slash and empty content', () => {

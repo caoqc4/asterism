@@ -212,10 +212,12 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     scope: 'data_runtime',
     coveredBy: [
       'runtime-surface-routing classifies files, source materials, AI output, artifacts, decisions, work habits, and run steps.',
+      'MemorySurfacePolicy maps each runtime surface to a stable memory category, write policy, reuse policy, task-context requirement, and quality-metadata requirement.',
       'Task file, source context, artifact, Decision, and Work Habit creation paths use shared normalization.',
       'Tasks file projections keep ordinary task files separate from artifacts while preserving Task.md, Task Records, AI output, source material, and artifact classes.',
       'Tasks source-context file projections use shared source-context routing before deciding whether a source appears as Task Record, AI output, or source material.',
       'Source-context routing preserves explicit sourceRole before applying task-record-like title or note heuristics.',
+      'Memory-surface regression tests cover AI output vs source material, artifact vs ordinary file, Task Record vs source capture, and reserved Task.md / Task Records paths.',
       'TaskRecordWorthinessEvaluation centralizes when handoff, closeout, correction, option rationale, failure review, context archive, external signal, or durable state changes deserve Task Records.',
       'RightPanel context-refresh and phase-closeout Task Record writes now pass through TaskRecordWorthinessEvaluation before creating files.',
       'TasksPage completion handoff and project decomposition self-check Task Records now pass through TaskRecordWorthinessEvaluation before creating files.',

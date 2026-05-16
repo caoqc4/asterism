@@ -375,6 +375,10 @@ Start with Package A, but keep the slice narrow:
 1. Inventory retained write paths for task files, source contexts, artifacts,
    Task.md, and Task Records.
 2. Create a shared "memory surface classification matrix" as code or docs.
+   Initial implementation: `MemorySurfacePolicy` maps runtime surfaces to
+   recovery memory, evidence source, generated output, user artifact,
+   supporting file, decision boundary, execution event, cross-task rule, or
+   discussion-only.
 3. Add regression tests for the known confusing cases:
    - AI output vs source material;
    - artifact vs ordinary local file;

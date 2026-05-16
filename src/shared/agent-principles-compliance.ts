@@ -108,7 +108,9 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     priority: 'p0',
     implementedBy: [
       'runtime-surface-routing classifies Task.md, Task Records, source materials, AI output, artifacts, decisions, work habits, run steps, and discussion-only candidates.',
+      'MemorySurfacePolicy gives each runtime surface an explicit memory category, write policy, reuse policy, task-context requirement, and quality-metadata requirement.',
       'Artifact classification requires an explicit artifact surface or artifact kind; ordinary task files are not promoted to artifacts by an Artifacts/ path alone.',
+      'Memory-surface tests keep AI output distinct from source material, generic source captures distinct from Task Records, and reserved Task.md / Task Records paths out of ordinary file handling.',
       'Source-context routing preserves explicit sourceRole before applying task-record-like title or note heuristics.',
       'Decision, source context, artifact, task file, and work habit creation paths consume shared routing normalization.',
       'Tasks source-context projections consume shared source-context routing instead of maintaining renderer-local Task Record keywords.',
