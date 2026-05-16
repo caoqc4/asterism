@@ -3193,6 +3193,43 @@ describe('App redesign v1', () => {
     promptSpy.mockRestore();
   });
 
+  it('keeps reserved task-memory paths out of the ordinary file entrypoint', async () => {
+    const user = userEvent.setup();
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValueOnce('Task.md');
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByRole('button', { name: /董事会材料修订/ }));
+    await createTaskFileViaMenu(user, '普通文件');
+
+    expect(promptSpy).toHaveBeenCalledWith('新建文件名', 'notes.md');
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('任务记忆保留路径'));
+    expect(harness.api.createTaskFile).not.toHaveBeenCalledWith(expect.objectContaining({
+      name: 'Task.md',
+    }));
+    promptSpy.mockRestore();
+    alertSpy.mockRestore();
+  });
+
+  it('keeps Task Records reserved for the task-record entrypoint', async () => {
+    const user = userEvent.setup();
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValueOnce('Task Records/manual.md');
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByRole('button', { name: /董事会材料修订/ }));
+    await createTaskFileViaMenu(user, '普通文件');
+
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('任务记忆保留路径'));
+    expect(harness.api.createTaskFile).not.toHaveBeenCalledWith(expect.objectContaining({
+      name: 'Task Records/manual.md',
+    }));
+    promptSpy.mockRestore();
+    alertSpy.mockRestore();
+  });
+
   it('opens the right panel with the current task and selected file context from Tasks', async () => {
     const user = userEvent.setup();
     render(<App />);

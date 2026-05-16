@@ -87,6 +87,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TaskMdUpdateNeedEvaluation centralizes Task.md update needs for recovery fields and important file references.',
       'RightPanel Task.md important-file references consume TaskMdUpdateNeedEvaluation before persistence.',
       'TasksPage direct Task.md saves consume TaskMdUpdateNeedEvaluation before persistence.',
+      'TasksPage ordinary file creation blocks reserved Task.md and Task Records paths so users cannot bypass the dedicated task-memory evaluators through the generic file entrypoint.',
       'TasksPage manual Task Record creation consumes TaskRecordWorthinessEvaluation before persistence.',
       'RuntimeRecoveryGuidance centralizes structured Task.md and Task Record recovery recommendations while preserving legacy guidance messages.',
       'AgentToolRegistry durable tool results expose recoveryGuidanceItems and legacy recoveryGuidance from RuntimeRecoveryGuidance without silently mutating Task.md.',
@@ -104,7 +105,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TaskRecordWorthiness tests cover should-create and should-not-create cases for handoff, closeout, correction, option rationale, failures, external signals, duplicates, generic notes, and unbound notes.',
     ],
     gaps: [
-      'TaskMdUpdateNeedEvaluation exists and covers RightPanel important-file references, TasksPage direct Task.md saves, and AgentToolRegistry recovery guidance through RuntimeRecoveryGuidance, but not every durable write asks whether Task.md also needs an update.',
+      'TaskMdUpdateNeedEvaluation exists and covers RightPanel important-file references, TasksPage direct Task.md saves, reserved Task.md path protection, and AgentToolRegistry recovery guidance through RuntimeRecoveryGuidance, but not every durable write asks whether Task.md also needs an update.',
       'TaskRecordWorthinessEvaluation is consumed by RightPanel context-refresh/phase-closeout writes, TasksPage manual Task Record creation, and AgentToolRegistry recovery guidance, but remaining write paths still need to consume it consistently.',
       'RightPanel can confirm task memory write proposals; TasksPage and any future retained surfaces still need to reuse TaskMemoryWriteApplyPlan instead of rebuilding proposal write inputs.',
     ],
@@ -254,6 +255,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RightPanel can ensure Task.md exists and reference phase records from task memory.',
       'RightPanel important-file reference writes are gated by TaskMdUpdateNeedEvaluation.',
       'TasksPage direct Task.md saves are gated by TaskMdUpdateNeedEvaluation.',
+      'TasksPage generic file creation rejects reserved Task.md paths before persistence.',
       'AgentToolRegistry durable tool results recommend Task.md recovery updates when tool writes affect next step, completion criteria, artifacts, sources, or durable state.',
     ],
     gaps: [
@@ -276,6 +278,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RightPanel phase closeout also checks TaskMemoryCoverageEvaluation after record persistence before refreshing context or handing off.',
       'TasksPage manual Task Record creation is gated by TaskRecordWorthinessEvaluation.',
       'TasksPage completion handoff and project decomposition self-check records are gated by TaskRecordWorthinessEvaluation.',
+      'TasksPage generic file creation rejects Task Records paths so Task Record files stay behind TaskRecordWorthinessEvaluation.',
       'Task completion modal checks TaskMemoryCoverageEvaluation before treating completion as clean; insufficient memory becomes a recorded override concern.',
       'AgentToolRegistry source-context writes pass through TaskRecordWorthinessEvaluation before recommending Task Record creation, so ordinary raw sources stay source context and only recovery-worthy external signals become Task Record guidance.',
       'TaskRecordWorthiness tests cover positive and negative creation boundaries.',

@@ -1527,6 +1527,10 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     if (!rawName) return;
     if (!guardDurablePanelAction({ taskId: selectedTask.id, confirmed: true }).allowed) return;
     const normalizedName = kind === 'folder' && !rawName.endsWith('/') ? `${rawName}/` : rawName;
+    if (isTaskMdPath(normalizedName) || isTaskRecordPath(normalizedName)) {
+      window.alert('Task.md 和 Task Records/ 是任务记忆保留路径。请使用任务说明或任务记录入口创建。');
+      return;
+    }
     const persisted = window.api?.createTaskFile
       ? await window.api.createTaskFile({
         taskId: selectedTask.id,
