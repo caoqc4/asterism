@@ -3128,6 +3128,39 @@ describe('TaskService', () => {
     expect(repository.appendTimelineEvent).not.toHaveBeenCalled();
   });
 
+  it('guards panel timeline events before persistence', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const service = new TaskService(repository as never, waitingItems as never);
+
+    await service.recordTimelineEvent({
+      taskId: 'task_1',
+      type: 'panel.task_file_written',
+      payload: { path: 'Task.md' },
+    });
+    expect(repository.appendTimelineEvent).toHaveBeenCalledWith('task_1', 'panel.task_file_written', {
+      path: 'Task.md',
+    });
+
+    await expect(service.recordTimelineEvent({
+      taskId: '',
+      type: 'panel.task_file_written',
+      payload: { path: 'Task.md' },
+    })).rejects.toThrow('任务变更需要绑定任务上下文');
+    expect(repository.appendTimelineEvent).toHaveBeenCalledTimes(1);
+  });
+
   it('creates and satisfies completion criteria while recording lifecycle events', async () => {
     const repository = {
       list: vi.fn(),

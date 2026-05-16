@@ -1190,6 +1190,7 @@ export class TaskService {
   async recordTimelineEvent(input: RecordTaskTimelineEventInput): Promise<void> {
     await this.getExistingTaskOrThrow(input.taskId);
     assertKnownPanelRuntimeTimelineEventType(input.type);
+    this.assertTaskMutationActionAllowed(input.taskId);
     await this.repository.appendTimelineEvent(input.taskId, input.type, input.payload ?? {});
   }
 

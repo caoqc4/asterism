@@ -213,6 +213,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Known panel runtime timeline event types are constrained through runtime-panel-events and rejected in TaskService when unknown panel.* types are written.',
       'TasksPage file/source/artifact actions and project decomposition confirmation now persist panel.* timeline events for RuntimeEventRecord audit projection.',
       'TasksPage project membership changes and completion handoffs now persist panel.* timeline events with task-to-task context.',
+      'TaskService recordTimelineEvent guards panel.* task dynamic writes with task_mutation before persistence.',
     ],
     gaps: [
       'Current retained execution and durable-write paths are guarded; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly pass the same verification gates.',
@@ -336,6 +337,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TasksPage file/source/artifact actions and project decomposition confirmation persist panel.* timeline events for the same RuntimeEventRecord audit projection.',
       'TasksPage project membership changes and completion handoffs persist panel.* timeline events for task-to-task replay.',
       'runtime-panel-events constrains known panel.* event types before TaskService writes them to timeline.',
+      'TaskService recordTimelineEvent guards panel.* task dynamic writes with task_mutation before persistence.',
       'RuntimeEventRecord preserves task-to-task relatedTaskId for completion handoff and accepted context switch events, and replay groups retain relatedTaskIds.',
     ],
     gaps: [
