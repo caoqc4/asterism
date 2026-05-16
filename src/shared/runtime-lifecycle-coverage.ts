@@ -153,6 +153,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RightPanel task file proposal confirmation now passes through pre_step and post_step verification.',
       'TaskService transition and transitionIfAllowed guard task_state_transition at the service boundary.',
       'TaskService completion transitions require task_completion memory coverage, including passed or overridden completion-check evidence.',
+      'Task completion coverage ignores Run and completion-check evidence older than the latest completion-criteria update.',
       'TaskService direct and guarded waiting transitions require a waiting reason before writing waiting_external state.',
       'TaskService task updates, task-bound source contexts, blockers, completion criteria, dependencies, and process-template bindings guard task_mutation at the service boundary.',
       'Tasks and Brief task state transitions now use shared renderer runtime guards backed by pre_step verification.',

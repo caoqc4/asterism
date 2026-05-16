@@ -92,6 +92,7 @@ describe('agent principles compliance matrix', () => {
     const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
 
     expect(text).toContain('completion transitions require task_completion memory coverage');
+    expect(text).toContain('ignores Run and completion-check evidence older than the latest completion-criteria update');
     expect(text).toContain('waiting transitions require a waiting reason');
   });
 

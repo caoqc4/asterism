@@ -183,6 +183,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'DecisionService approve/defer/cancel actions pass through decision_action pre-step verification at the service boundary.',
       'TaskService transition and transitionIfAllowed pass task_state_transition through pre-step verification at the service boundary.',
       'TaskService completion transitions require task_completion memory coverage before writing completed state.',
+      'Task completion memory coverage ignores Run and completion-check evidence older than the latest completion-criteria update.',
       'TaskService waiting transitions require a waiting reason before writing waiting_external state.',
       'TaskService task updates, task-bound source contexts, blockers, completion criteria, dependencies, and process-template bindings pass task_mutation through pre-step verification at the service boundary.',
       'Main IPC task-file and manual-artifact write boundaries pass task_mutation through pre-step verification before repository writes.',
