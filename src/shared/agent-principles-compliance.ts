@@ -394,6 +394,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Context switching refreshes around the target task instead of carrying stale chat by default.',
       'runtime-handoff provides a shared RuntimeHandoff and RuntimeResumePlan for context refresh, task switch, phase closeout, and run resume planning.',
       'RuntimeResumePlan can carry a subtask_start gate when phase closeout hands off to a target task and the caller provides target task context.',
+      'Runtime end-to-end scenario tests cover phase closeout to an existing child, pending memory-guidance blocking, and confirmation-gated follow-up task creation.',
       'RightPanel consumes RuntimeHandoff for refresh, manual refresh, leave-context, start-global, task-switch confirmation, and phase-closeout child handoff.',
       'RunService paused-run continuation consumes RuntimeHandoff and RuntimeResumePlan before executing checkpoint resume tools.',
       'runtime-event-record projects timeline events, Runs, Run steps, Task Records, Decisions without timeline coverage, and runtime resume projections into a shared RuntimeEventRecord audit stream for retained task-dynamics surfaces.',

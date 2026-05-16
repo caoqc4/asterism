@@ -1,0 +1,204 @@
+import { describe, expect, it } from 'vitest';
+
+import { evaluateTaskCloseout } from './task-closeout-evaluator.js';
+import {
+  buildRuntimeResumePlan,
+  evaluateRuntimeHandoff,
+} from './runtime-handoff.js';
+import type { TaskDetail, TaskListItemRecord } from './types/task.js';
+
+const now = '2026-01-01T00:00:00.000Z';
+
+function task(partial: Partial<TaskListItemRecord> = {}): TaskListItemRecord {
+  return {
+    id: partial.id ?? 'task_1',
+    title: partial.title ?? '开发小程序',
+    summary: partial.summary ?? '开发一个微信小程序，从需求分析到最终上线。',
+    taskType: partial.taskType,
+    taskFacets: partial.taskFacets,
+    parentTaskId: partial.parentTaskId,
+    childTaskIds: partial.childTaskIds,
+    state: partial.state ?? 'planned',
+    nextStep: partial.nextStep ?? '继续推进',
+    waitingReason: partial.waitingReason ?? null,
+    riskLevel: partial.riskLevel ?? 'none',
+    riskNote: partial.riskNote ?? null,
+    createdAt: partial.createdAt ?? now,
+    updatedAt: partial.updatedAt ?? now,
+    activeWaitingItem: partial.activeWaitingItem ?? null,
+    activeBlocker: partial.activeBlocker ?? null,
+    activeDependency: partial.activeDependency ?? null,
+    dependencyReevaluation: partial.dependencyReevaluation ?? null,
+  };
+}
+
+function detail(partial: Partial<TaskDetail> = {}): TaskDetail {
+  const base = task(partial);
+  return {
+    ...base,
+    artifacts: partial.artifacts ?? [],
+    availableProcessTemplates: partial.availableProcessTemplates ?? [],
+    completionCriteria: partial.completionCriteria ?? [],
+    processTemplates: partial.processTemplates ?? [],
+    sourceContexts: partial.sourceContexts ?? [],
+    taskFiles: partial.taskFiles ?? [],
+    timeline: partial.timeline ?? [],
+    resumeCard: partial.resumeCard ?? {
+      summary: '项目已拆解，需要从第一项子任务开始推进。',
+      currentState: '推进中',
+      latestChange: { summary: '完成项目拆解', action: { label: null, targetType: null, targetId: null } },
+      completionStatus: { total: 0, satisfied: 0, open: 0, summary: '0/0' },
+      currentBlocker: { blockerId: null, title: '无', detail: null },
+      keySource: { sourceContextId: null, title: '无', detail: null, priorityReason: null },
+      currentMethod: { templateId: null, title: '无', detail: null, selectionReason: null },
+      nextSuggestedMove: '进入第一项子任务',
+    },
+  };
+}
+
+describe('runtime end-to-end task workflow scenarios', () => {
+  it('closes a project decomposition phase by handing off to the existing first child task', () => {
+    const parent = detail({
+      id: 'parent_1',
+      title: '开发小程序',
+      taskType: 'project',
+      childTaskIds: ['child_1', 'child_2'],
+    });
+    const firstChild = task({
+      id: 'child_1',
+      title: '小程序需求分析与功能设计',
+      parentTaskId: 'parent_1',
+      nextStep: '明确核心功能和验收标准。',
+    });
+    const secondChild = task({
+      id: 'child_2',
+      title: '小程序界面设计与用户体验优化',
+      parentTaskId: 'parent_1',
+    });
+
+    const closeout = evaluateTaskCloseout({
+      intent: 'phase_closeout',
+      task: parent,
+      childTaskIds: parent.childTaskIds,
+      childTasks: [secondChild, firstChild],
+    });
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'phase_closeout',
+      fromTaskId: parent.id,
+      closeout,
+      messageCount: 5,
+      recordPath: 'Task Records/2026-01-01-phase-closeout.md',
+    });
+    const resumePlan = buildRuntimeResumePlan(handoff, {
+      subtaskStartInput: {
+        targetTask: firstChild,
+        parentTask: parent,
+        expectedParentTaskId: parent.id,
+        previousHandoffAvailable: true,
+        requiresPreviousHandoff: true,
+        contextSignals: {
+          activeTaskId: firstChild.id,
+          inputPromptTaskId: firstChild.id,
+          selectedFileTaskId: firstChild.id,
+          targetTaskId: firstChild.id,
+        },
+        availableContext: {
+          completionCriteria: true,
+          decisions: true,
+          files: true,
+          handoffNotes: true,
+          nextStep: true,
+          parentConstraints: true,
+          taskMd: true,
+          taskState: true,
+          workHabits: true,
+        },
+      },
+    });
+
+    expect(closeout).toMatchObject({
+      outcome: 'handoff_to_existing_child',
+      nextTaskId: 'child_1',
+      recordNeeded: true,
+    });
+    expect(handoff).toMatchObject({
+      action: 'handoff_to_task',
+      canProceed: true,
+      fromTaskId: 'parent_1',
+      toTaskId: 'child_1',
+      recordPath: 'Task Records/2026-01-01-phase-closeout.md',
+    });
+    expect(resumePlan).toMatchObject({
+      taskId: 'child_1',
+      source: 'handoff',
+      contextMustBeReassembled: true,
+      subtaskStart: {
+        canProceed: true,
+        label: '子任务启动检查通过',
+      },
+      nextAction: '进入目标任务并重新装配上下文。',
+    });
+  });
+
+  it('blocks phase closeout handoff when pending task-memory guidance has not been written', () => {
+    const closeout = evaluateTaskCloseout({
+      intent: 'phase_closeout',
+      task: detail({ id: 'parent_1', childTaskIds: ['child_1'] }),
+      childTaskIds: ['child_1'],
+      childTasks: [task({ id: 'child_1', parentTaskId: 'parent_1' })],
+    });
+
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'phase_closeout',
+      fromTaskId: 'parent_1',
+      closeout,
+      messageCount: 5,
+      recordPath: 'Task Records/2026-01-01-phase-closeout.md',
+      taskMemoryGuidance: {
+        latestGuidanceAt: now,
+        outcome: 'pending',
+        pendingTargets: ['task_record'],
+        reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
+        targets: ['task_record'],
+      },
+    });
+
+    expect(handoff).toMatchObject({
+      action: 'block',
+      canProceed: false,
+      autoContextClear: {
+        outcome: 'needs_memory_write',
+        shouldAsk: true,
+      },
+    });
+  });
+
+  it('does not turn phase closeout into automatic follow-up task creation', () => {
+    const closeout = evaluateTaskCloseout({
+      intent: 'phase_closeout',
+      task: detail(),
+      proposedFollowUpTasks: [{
+        title: '继续完善小程序',
+        summary: '范围还不明确',
+      }],
+    });
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'phase_closeout',
+      fromTaskId: 'parent_1',
+      closeout,
+      messageCount: 5,
+      recordPath: 'Task Records/2026-01-01-phase-closeout.md',
+    });
+
+    expect(closeout).toMatchObject({
+      outcome: 'needs_follow_up_confirmation',
+      followUpProposalAllowed: false,
+      recordNeeded: true,
+    });
+    expect(handoff).toMatchObject({
+      action: 'block',
+      canProceed: false,
+      requiresUserConfirmation: true,
+    });
+  });
+});
