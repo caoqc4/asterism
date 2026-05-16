@@ -5,8 +5,10 @@ export type TaskMemoryGuidanceTarget = 'task_md' | 'task_record';
 export type TaskMemoryGuidanceSignal = {
   createdAt?: string | null;
   id?: string | null;
+  input?: string | null;
   output?: string | null;
   status?: string | null;
+  targets?: TaskMemoryGuidanceTarget[] | null;
   title?: string | null;
 };
 
@@ -44,10 +46,12 @@ export function evaluateTaskMemoryGuidanceState(params: {
     .map((signal, index) => ({
       index,
       createdAt: signal.createdAt ?? null,
-      targets: detectTaskMemoryGuidanceTargets([
-        signal.title ?? '',
-        signal.output ?? '',
-      ].join('\n')),
+      targets: normalizeGuidanceTargets(signal.targets)
+        ?? parseStructuredGuidanceTargets(signal.input)
+        ?? detectTaskMemoryGuidanceTargets([
+          signal.title ?? '',
+          signal.output ?? '',
+        ].join('\n')),
     }))
     .filter((signal) => signal.targets.length > 0);
 
@@ -97,6 +101,24 @@ export function detectTaskMemoryGuidanceTargets(text: string): TaskMemoryGuidanc
     targets.push('task_record');
   }
   return uniqueTargets(targets);
+}
+
+function parseStructuredGuidanceTargets(input?: string | null): TaskMemoryGuidanceTarget[] | null {
+  if (!input) return null;
+  try {
+    const parsed = JSON.parse(input) as { targets?: unknown };
+    return normalizeGuidanceTargets(parsed.targets);
+  } catch {
+    return null;
+  }
+}
+
+function normalizeGuidanceTargets(value: unknown): TaskMemoryGuidanceTarget[] | null {
+  if (!Array.isArray(value)) return null;
+  const targets = value.filter((target): target is TaskMemoryGuidanceTarget => (
+    target === 'task_md' || target === 'task_record'
+  ));
+  return targets.length ? uniqueTargets(targets) : null;
 }
 
 export function selectBlockingTaskMemoryGuidance(

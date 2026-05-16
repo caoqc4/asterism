@@ -46,6 +46,22 @@ describe('task memory guidance state', () => {
     });
   });
 
+  it('prefers structured guidance targets over human-readable output text', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        input: JSON.stringify({ targets: ['task_record'] }),
+        output: '- 请检查 Task.md 但不把它作为本次必写目标',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'pending',
+      pendingTargets: ['task_record'],
+      targets: ['task_record'],
+    });
+  });
+
   it('treats guidance as satisfied when matching write happens after the guidance', () => {
     expect(evaluateTaskMemoryGuidanceState({
       guidanceSignals: [{

@@ -722,6 +722,13 @@ function formatRuntimeRecoveryGuidance(result: AgentToolResult): string | null {
     .join('\n');
 }
 
+function formatRuntimeRecoveryGuidanceInput(result: AgentToolResult): string | null {
+  if (!result.recoveryGuidanceItems?.length) return null;
+  return JSON.stringify({
+    targets: Array.from(new Set(result.recoveryGuidanceItems.map((item) => item.target))),
+  });
+}
+
 function isPotentialCompletionEvidence(event: AgentWorkingContext['recentTimeline'][number]): boolean {
   return (
     event.type === 'task.decision_approved' ||
@@ -1152,6 +1159,7 @@ export class AgentToolRegistry {
           kind: 'plan',
           status: 'completed',
           title: '任务记忆建议',
+          input: formatRuntimeRecoveryGuidanceInput(result),
           output: recoveryGuidanceOutput,
         });
       }

@@ -408,6 +408,7 @@ describe('AgentToolRegistry', () => {
         kind: 'plan',
         status: 'completed',
         title: '任务记忆建议',
+        input: JSON.stringify({ targets: ['task_md'] }),
         output: '- Task.md: next_step',
       }),
     );
@@ -597,6 +598,7 @@ describe('AgentToolRegistry', () => {
         kind: 'plan',
         status: 'completed',
         title: '任务记忆建议',
+        input: JSON.stringify({ targets: ['task_md'] }),
         output: '- Task.md: durable_state_change',
       }),
     );
@@ -664,6 +666,7 @@ describe('AgentToolRegistry', () => {
       expect.objectContaining({
         kind: 'plan',
         title: '任务记忆建议',
+        input: JSON.stringify({ targets: ['task_md', 'task_record'] }),
         output: [
           '- Task.md: durable_state_change',
           '- Task Record: external_signal',
@@ -765,6 +768,7 @@ describe('AgentToolRegistry', () => {
         kind: 'plan',
         status: 'completed',
         title: '任务记忆建议',
+        input: JSON.stringify({ targets: ['task_md'] }),
         output: '- Task.md: durable_state_change',
       }),
     );
@@ -940,6 +944,7 @@ describe('AgentToolRegistry', () => {
         kind: 'plan',
         status: 'completed',
         title: '任务记忆建议',
+        input: JSON.stringify({ targets: ['task_md'] }),
         output: '- Task.md: important_file',
       }),
     );
