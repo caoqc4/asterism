@@ -82,6 +82,8 @@ describe('decision judgment projection', () => {
       context: {
         whyNow: '必须在发布前确认。',
         ifDeferred: '发布保持暂停。',
+        impact: '影响发布节奏',
+        reversibility: '可回退但需记录',
       },
       options: [{
         id: 'approve',
@@ -100,6 +102,9 @@ describe('decision judgment projection', () => {
       ifDeferred: '发布保持暂停。',
     });
     expect(projected.recommendation).toBe('按 A 方案');
+    expect(projected.recommendationReason).toBe('风险较低。');
+    expect(projected.impactLabel).toBe('影响发布节奏');
+    expect(projected.reversibilityLabel).toBe('可回退但需记录');
     expect(projected.options).toEqual([{
       label: '按 A 方案',
       desc: '使用 A 方案推进。',

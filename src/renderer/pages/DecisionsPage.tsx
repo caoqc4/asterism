@@ -329,7 +329,7 @@ function DecisionCard({ acting, decision: d, onToggle, onDecide, onOpenPanel, on
             <div className="dec-judgement-primary">
               <span>推荐判断</span>
               <strong>{d.recommendation}</strong>
-              <p>{d.options.find((option) => option.label === d.recommendation || option.label.includes(d.recommendation))?.desc ?? d.context.whyNow}</p>
+              <p>{d.recommendationReason ?? d.options.find((option) => option.label === d.recommendation || option.label.includes(d.recommendation))?.desc ?? d.context.whyNow}</p>
             </div>
             <div className="dec-judgement-facts">
               <div>

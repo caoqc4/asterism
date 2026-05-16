@@ -39,6 +39,7 @@ export type DecisionJudgmentProjection = {
   options: DecisionJudgmentOption[];
   recommendation: string;
   recommendationClarity: 'clear' | 'review';
+  recommendationReason: string | null;
   impactLabel: string;
   reversibilityLabel: string;
   sortScore: number;
@@ -107,8 +108,9 @@ export function projectDecisionJudgment(
     options,
     recommendation,
     recommendationClarity: isAgentCheckpoint ? 'review' : 'clear',
-    impactLabel: impactLabelFor(category, task),
-    reversibilityLabel: reversibilityLabelFor(category),
+    recommendationReason: decision.recommendation?.reason ?? null,
+    impactLabel: decision.context?.impact ?? impactLabelFor(category, task),
+    reversibilityLabel: decision.context?.reversibility ?? reversibilityLabelFor(category),
     sortScore: scoreDecision(decision, task, category),
     group: group ?? {
       key: decision.taskId
