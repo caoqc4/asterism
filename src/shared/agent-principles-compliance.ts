@@ -276,7 +276,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeEntrypointCoverage is intentionally a regression registry; future runtime entrypoints must be added there and wired to the kind-level baseline rather than relying on dynamic discovery.',
     ],
     gaps: [
-      'Current retained execution and durable-write paths are guarded; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly pass the same verification gates.',
+      'Current retained execution and durable-write paths are guarded; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly pass the smallest matching verification gates.',
       'RuntimeEventRecord projection and replay grouping are consumed in Tasks task dynamics; Run-side and other future retained surfaces must reuse the same projection instead of introducing parallel task-dynamics logic.',
       'Legacy WorkbenchPage remains retired; new runtime behavior must land in TasksPage, RightPanel, Runs, task dynamics, or Decisions instead.',
     ],
@@ -378,7 +378,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
     gaps: [
       'Project-level verification is wired into completion, structure views, and TaskService project completion; future project-level state transitions must consume the same verification before adding new readiness paths.',
-      'Pre-step and post-step verification cover current retained execution paths; future execution surfaces must opt in rather than adding direct writes.',
+      'Pre-step and post-step verification cover current retained execution paths, while direct task-bound durable writes use task_mutation plus pre_step; future execution surfaces must opt in rather than adding direct writes.',
     ],
     nextVerification: [
       'Keep pre_step and post_step runtime verification as the required boundary for future execution services, and use task_mutation plus pre_step as the minimum service boundary for direct task-bound durable writes.',
