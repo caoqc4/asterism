@@ -15,6 +15,7 @@ import {
   evaluateTaskMemoryCoverage,
   type TaskMemoryCoverageEvaluation,
 } from './task-memory-coverage.js';
+import type { TaskMemoryGuidanceState } from './task-memory-guidance-state.js';
 import {
   evaluateSubtaskStart,
   type SubtaskStartEvaluation,
@@ -99,6 +100,7 @@ export type RuntimeVerificationInput =
       hasPendingDecision?: boolean;
       confirmationSatisfied?: boolean;
       taskMemoryCoverage?: TaskMemoryCoverageEvaluation | null;
+      taskMemoryGuidance?: TaskMemoryGuidanceState | null;
       requiresModelExecution?: boolean;
       requiresWorkspaceVerification?: boolean;
     }
@@ -233,6 +235,19 @@ export function evaluateRuntimeVerification(input: RuntimeVerificationInput): Ru
               ? 'inspect'
               : 'confirm',
           taskMemoryCoverage: input.taskMemoryCoverage,
+        };
+      }
+      if (input.taskMemoryGuidance?.outcome === 'pending') {
+        return {
+          mode: input.mode,
+          tone: 'warn',
+          label: '执行前任务记忆待处理',
+          detail: input.taskMemoryGuidance.reason,
+          source: 'lightweight_rule_engine',
+          canProceed: false,
+          requiresUserConfirmation: false,
+          shouldPersistTaskRecord: input.taskMemoryGuidance.pendingTargets.includes('task_record'),
+          suggestedNextAction: 'handoff',
         };
       }
       if (input.requiresModelExecution && input.capabilities && !capabilitySnapshotAllowsModelExecution(input.capabilities)) {

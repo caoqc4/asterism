@@ -6,7 +6,7 @@ import type {
   RunStepStatus,
 } from '../../../shared/types/run.js';
 import { initDatabase } from '../client.js';
-import { runSteps } from '../schema.js';
+import { runs, runSteps } from '../schema.js';
 import { generateId, nowIso } from './repository-utils.js';
 
 type CreateRunStepInput = {
@@ -51,6 +51,18 @@ export class RunStepRepository {
       .orderBy(asc(runSteps.index), asc(runSteps.createdAt));
 
     return rows.map(toRecord);
+  }
+
+  async listForTask(taskId: string): Promise<RunStepRecord[]> {
+    const db = initDatabase();
+    const rows = await db
+      .select({ step: runSteps })
+      .from(runSteps)
+      .innerJoin(runs, eq(runs.id, runSteps.runId))
+      .where(eq(runs.taskId, taskId))
+      .orderBy(asc(runSteps.createdAt), asc(runSteps.index));
+
+    return rows.map((row) => toRecord(row.step));
   }
 
   async create(input: CreateRunStepInput): Promise<RunStepRecord> {

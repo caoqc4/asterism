@@ -13,7 +13,10 @@ import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.
 import { buildRuntimeCapabilitySnapshot } from '../../../shared/runtime-capability-snapshot.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from '../../../shared/task-memory-coverage.js';
-import { buildTaskMemoryGuidanceStateForTaskFiles } from '../../../shared/task-memory-guidance-state.js';
+import {
+  buildTaskMemoryGuidanceStateForTaskFiles,
+  type TaskMemoryGuidanceState,
+} from '../../../shared/task-memory-guidance-state.js';
 import {
   buildRuntimeContextAssemblyPolicy,
   buildRuntimeContextManifest,
@@ -105,6 +108,7 @@ export class CodeAgentRunService {
       targetTaskId: task.id,
     });
     const aiStatus = await this.aiConfigService.getStatus();
+    const taskMemoryGuidance = await this.buildTaskMemoryGuidanceForTask(task);
     const preStepVerification = evaluateRuntimeVerification({
       mode: 'pre_step',
       action: actionEvaluation,
@@ -112,6 +116,7 @@ export class CodeAgentRunService {
       taskMemoryCoverage: evaluateTaskMemoryCoverage(buildTaskMemoryCoverageInputForTask('run_start', task, {
         hasNextStep: Boolean(task.nextStep?.trim() || task.resumeCard?.nextSuggestedMove?.trim() || input.patchIntent?.trim()),
       })),
+      taskMemoryGuidance,
       requiresModelExecution: input.useModelProducer === true,
       requiresWorkspaceVerification: true,
     });
@@ -469,6 +474,22 @@ export class CodeAgentRunService {
     }
 
     return updated;
+  }
+
+  private async buildTaskMemoryGuidanceForTask(
+    task: NonNullable<Awaited<ReturnType<TaskService['getDetail']>>>,
+  ): Promise<TaskMemoryGuidanceState> {
+    const listForTask = (
+      this.runStepRepository as Partial<Pick<RunStepRepository, 'listForTask'>>
+    ).listForTask;
+    const steps = typeof listForTask === 'function'
+      ? await listForTask.call(this.runStepRepository, task.id)
+      : [];
+
+    return buildTaskMemoryGuidanceStateForTaskFiles({
+      guidanceSignals: steps,
+      taskFiles: task.taskFiles,
+    });
   }
 
   private async persistPatchReview(params: {

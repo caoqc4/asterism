@@ -132,6 +132,7 @@ export class RunService {
       fromTaskId: input.taskId,
     });
     const capabilities = await this.readRuntimeCapabilitySnapshot();
+    const taskMemoryGuidance = await this.buildTaskMemoryGuidanceForTask(task);
     const preStepVerification = evaluateRuntimeVerification({
       mode: 'pre_step',
       action: actionEvaluation,
@@ -139,6 +140,7 @@ export class RunService {
       taskMemoryCoverage: evaluateTaskMemoryCoverage(buildTaskMemoryCoverageInputForTask('run_start', task, {
         hasNextStep: Boolean(task.nextStep?.trim() || task.resumeCard?.nextSuggestedMove?.trim() || input.instructions?.trim()),
       })),
+      taskMemoryGuidance,
       requiresModelExecution: true,
     });
     if (!preStepVerification.canProceed) {
@@ -259,6 +261,20 @@ export class RunService {
     return buildTaskMemoryGuidanceStateForTaskFiles({
       guidanceSignals: steps,
       taskFiles: taskDetail?.taskFiles,
+    });
+  }
+
+  private async buildTaskMemoryGuidanceForTask(task: TaskDetail): Promise<TaskMemoryGuidanceState> {
+    const listForTask = (
+      this.runStepRepository as Partial<Pick<RunStepRepository, 'listForTask'>>
+    ).listForTask;
+    const steps = typeof listForTask === 'function'
+      ? await listForTask.call(this.runStepRepository, task.id)
+      : [];
+
+    return buildTaskMemoryGuidanceStateForTaskFiles({
+      guidanceSignals: steps,
+      taskFiles: task.taskFiles,
     });
   }
 

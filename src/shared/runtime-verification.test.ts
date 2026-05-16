@@ -203,6 +203,30 @@ describe('runtime verification', () => {
     });
   });
 
+  it('blocks pre-step execution when task memory guidance is still pending', () => {
+    expect(evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: evaluateRuntimeAction({
+        action: 'run_start',
+        fromTaskId: 'task_1',
+      }),
+      taskMemoryGuidance: {
+        latestGuidanceAt: '2026-05-15T01:00:00.000Z',
+        outcome: 'pending',
+        pendingTargets: ['task_record'],
+        reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
+        targets: ['task_record'],
+      },
+    })).toMatchObject({
+      mode: 'pre_step',
+      tone: 'warn',
+      label: '执行前任务记忆待处理',
+      canProceed: false,
+      shouldPersistTaskRecord: true,
+      suggestedNextAction: 'handoff',
+    });
+  });
+
   it('blocks model-required pre-step execution when model capability is missing', () => {
     expect(evaluateRuntimeVerification({
       mode: 'pre_step',

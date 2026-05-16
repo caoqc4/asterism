@@ -21,7 +21,10 @@ import { evaluateRuntimeContextAssemblyGate } from '../../../shared/runtime-cont
 import { evaluateRuntimeAction } from '../../../shared/runtime-action-evaluator.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from '../../../shared/task-memory-coverage.js';
-import { buildTaskMemoryGuidanceStateForTaskFiles } from '../../../shared/task-memory-guidance-state.js';
+import {
+  buildTaskMemoryGuidanceStateForTaskFiles,
+  type TaskMemoryGuidanceState,
+} from '../../../shared/task-memory-guidance-state.js';
 import type { RunRepository } from '../../db/repositories/run-repository.js';
 import type { RunStepRepository } from '../../db/repositories/run-step-repository.js';
 import type { RunVerificationRepository } from '../../db/repositories/run-verification-repository.js';
@@ -105,12 +108,14 @@ export class OperatorStartedRunService {
       fromTaskId: task.id,
       targetTaskId: task.id,
     });
+    const taskMemoryGuidance = await this.buildTaskMemoryGuidanceForTask(task);
     const preStepVerification = evaluateRuntimeVerification({
       mode: 'pre_step',
       action: actionEvaluation,
       taskMemoryCoverage: evaluateTaskMemoryCoverage(buildTaskMemoryCoverageInputForTask('run_start', task, {
         hasNextStep: Boolean(task.nextStep?.trim() || task.resumeCard?.nextSuggestedMove?.trim() || request.reason.trim()),
       })),
+      taskMemoryGuidance,
     });
     if (!preStepVerification.canProceed) {
       throw new Error(preStepVerification.detail);
@@ -268,5 +273,21 @@ export class OperatorStartedRunService {
     }
 
     return updated;
+  }
+
+  private async buildTaskMemoryGuidanceForTask(
+    task: NonNullable<Awaited<ReturnType<TaskService['getDetail']>>>,
+  ): Promise<TaskMemoryGuidanceState> {
+    const listForTask = (
+      this.runStepRepository as Partial<Pick<RunStepRepository, 'listForTask'>>
+    ).listForTask;
+    const steps = typeof listForTask === 'function'
+      ? await listForTask.call(this.runStepRepository, task.id)
+      : [];
+
+    return buildTaskMemoryGuidanceStateForTaskFiles({
+      guidanceSignals: steps,
+      taskFiles: task.taskFiles,
+    });
   }
 }
