@@ -273,4 +273,42 @@ describe('runtime end-to-end task workflow scenarios', () => {
       reason: '完成边界和恢复证据已具备。',
     });
   });
+
+  it('blocks task switching when recoverable current-task discussion has not been archived', () => {
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'switch_task',
+      fromTaskId: 'task_current',
+      toTaskId: 'task_next',
+      messageCount: 6,
+      hasSpecificHandoffSignal: true,
+      archived: false,
+    });
+
+    expect(handoff).toMatchObject({
+      action: 'block',
+      canProceed: false,
+      requiresArchive: true,
+      shouldClearMessages: false,
+    });
+  });
+
+  it('allows task switching after recoverable discussion has been archived', () => {
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'switch_task',
+      fromTaskId: 'task_current',
+      toTaskId: 'task_next',
+      messageCount: 6,
+      hasSpecificHandoffSignal: true,
+      archived: true,
+      recordPath: 'Task Records/2026-01-01-context-switch.md',
+    });
+
+    expect(handoff).toMatchObject({
+      action: 'switch_task',
+      canProceed: true,
+      fromTaskId: 'task_current',
+      toTaskId: 'task_next',
+      shouldClearMessages: false,
+    });
+  });
 });

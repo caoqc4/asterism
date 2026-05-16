@@ -335,6 +335,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Task switch handoff consumes TaskMemoryCoverageEvaluation before leaving the previous task context.',
       'RuntimeResumePlan can include a subtask_start gate when phase closeout hands off to a child or successor task and target context is provided.',
       'Runtime end-to-end scenario tests now verify that project phase closeout hands off to an existing child, pending task-memory guidance blocks handoff, and new follow-up tasks are not auto-created during closeout.',
+      'Runtime end-to-end scenario tests verify that task switching is blocked until recoverable current-task discussion has been archived.',
       'TasksPage completion handoff reads the next task detail and checks task memory, completion criteria or next step through subtask_start before entering the next child task.',
       'RuntimeHandoffPreview now turns handoff plus archive snapshot data into reusable manual-refresh preview text instead of leaving the archive preview assembled only in RightPanel.',
       'RightPanel context refresh, manual refresh, global conversation reset, leave-task-context, task switch confirmation, and phase-closeout handoff now consume RuntimeHandoff results.',
