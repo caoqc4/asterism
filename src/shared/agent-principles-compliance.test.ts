@@ -103,6 +103,12 @@ describe('agent principles compliance matrix', () => {
     expect(text).toContain('phase closeout blocks chat clearing when the closeout result still has blocker');
   });
 
+  it('records that new run start uses the same pending-memory boundary', () => {
+    const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
+
+    expect(text).toContain('Run start pre-step verification consumes pending TaskMemoryGuidanceState');
+  });
+
   it('records that paused run resume uses the same pending-memory boundary', () => {
     const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
 

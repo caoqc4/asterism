@@ -568,6 +568,11 @@ if the current task has unresolved task-memory guidance, runtime must block or
 ask before leaving that task context, instead of silently carrying the gap into
 another task.
 
+Run start follows the same boundary for the task being executed. If the latest
+task-memory guidance for that task still requires Task.md or Task Record writes,
+runtime must block new execution until the smallest required memory write is
+completed. This prevents a new Run from compounding missing recovery context.
+
 Phase closeout follows the same boundary. A closeout record may satisfy pending
 Task Record guidance, but if the latest guidance still requires Task.md or
 another Task Record after closeout persistence, runtime must pause before
