@@ -49,7 +49,10 @@ export function evaluateTaskMemoryGuidanceState(params: {
     .map((signal, index) => ({
       index,
       createdAt: signal.createdAt ?? null,
-      referencePathsByTarget: parseStructuredGuidanceReferences(signal.input),
+      referencePathsByTarget: mergeReferenceMaps(
+        parseStructuredGuidanceReferences(signal.input),
+        parseHumanReadableGuidanceReferences(signal.output),
+      ),
       targets: normalizeGuidanceTargets(signal.targets)
         ?? parseStructuredGuidanceTargets(signal.input)
         ?? detectTaskMemoryGuidanceTargets([
@@ -134,6 +137,22 @@ function parseStructuredGuidanceReferences(input?: string | null): Partial<Recor
   } catch {
     return {};
   }
+}
+
+function parseHumanReadableGuidanceReferences(output?: string | null): Partial<Record<TaskMemoryGuidanceTarget, string[]>> {
+  const result: Partial<Record<TaskMemoryGuidanceTarget, string[]>> = {};
+  for (const line of output?.split(/\r?\n/) ?? []) {
+    const target = /Task\.md/i.test(line)
+      ? 'task_md'
+      : /Task Record/i.test(line)
+        ? 'task_record'
+        : null;
+    if (!target) continue;
+    const referencePath = line.match(/(?:reference|引用)\s*=\s*([^/\s].*?)\s*$/i)?.[1]?.trim();
+    if (!referencePath) continue;
+    result[target] = uniqueStrings([...(result[target] ?? []), referencePath]);
+  }
+  return result;
 }
 
 function normalizeGuidanceItemReferences(

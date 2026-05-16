@@ -87,6 +87,23 @@ describe('task memory guidance state', () => {
     });
   });
 
+  it('recovers reference paths from human-readable guidance output', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [{
+        status: 'completed',
+        title: '任务记忆建议',
+        output: '- Task.md: important_file / reference=artifact_1',
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+    })).toMatchObject({
+      outcome: 'pending',
+      pendingTargets: ['task_md'],
+      referencePathsByTarget: {
+        task_md: ['artifact_1'],
+      },
+    });
+  });
+
   it('treats guidance as satisfied when matching write happens after the guidance', () => {
     expect(evaluateTaskMemoryGuidanceState({
       guidanceSignals: [{
