@@ -40,6 +40,23 @@ function normalizeTitle(value: string): string {
     .replace(/[：:，,。.、\s_-]+/g, '');
 }
 
+function titleSimilarity(a: string, b: string): number {
+  const left = new Set(Array.from(a));
+  const right = new Set(Array.from(b));
+  if (left.size === 0 || right.size === 0) return 0;
+  let intersection = 0;
+  for (const token of left) {
+    if (right.has(token)) intersection += 1;
+  }
+  return intersection / new Set([...left, ...right]).size;
+}
+
+function isLikelyDuplicateTitle(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (Math.min(a.length, b.length) < 4) return false;
+  return titleSimilarity(a, b) >= 0.9;
+}
+
 function textHasMeaning(value: string | null | undefined): boolean {
   return Boolean(value?.trim());
 }
@@ -90,8 +107,13 @@ export function evaluateRuntimeSubtaskDraft(params: {
     ));
   }
 
-  const seenDraftTitles = new Map<string, string>();
-  const existingTitles = new Map(existingTasks.map((task) => [normalizeTitle(task.title), task.title]));
+  const seenDraftTitles: Array<{ normalizedTitle: string; title: string }> = [];
+  const existingTitles = existingTasks
+    .filter((task) => task.id !== params.parentTask.id)
+    .map((task) => ({
+      normalizedTitle: normalizeTitle(task.title),
+      title: task.title,
+    }));
   const parentTitle = normalizeTitle(params.parentTask.title);
   const draftTitles = new Set<string>();
 
@@ -105,13 +127,13 @@ export function evaluateRuntimeSubtaskDraft(params: {
       return;
     }
 
-    const firstSeen = seenDraftTitles.get(normalizedTitle);
+    const firstSeen = seenDraftTitles.find((item) => isLikelyDuplicateTitle(item.normalizedTitle, normalizedTitle));
     if (firstSeen) {
-      issues.push(issue('error', 'duplicate_title', title, `草稿中存在重复子任务：「${firstSeen}」和「${title}」。`));
+      issues.push(issue('error', 'duplicate_title', title, `草稿中存在重复子任务：「${firstSeen.title}」和「${title}」。`));
     }
-    seenDraftTitles.set(normalizedTitle, title);
+    seenDraftTitles.push({ normalizedTitle, title });
 
-    const existingTitle = existingTitles.get(normalizedTitle);
+    const existingTitle = existingTitles.find((item) => isLikelyDuplicateTitle(item.normalizedTitle, normalizedTitle))?.title;
     if (existingTitle) {
       issues.push(issue('error', 'duplicate_title', title, `已有任务「${existingTitle}」，不应重复创建同名子任务。`));
     }
@@ -138,7 +160,7 @@ export function evaluateRuntimeSubtaskDraft(params: {
     if (!dependency) return;
     const dependencyKey = normalizeTitle(dependency);
     const knownDraft = Array.from(draftTitles).some((title) => dependencyKey.includes(title) || title.includes(dependencyKey));
-    const knownExisting = Array.from(existingTitles.keys()).some((title) => dependencyKey.includes(title) || title.includes(dependencyKey));
+    const knownExisting = existingTitles.some((item) => dependencyKey.includes(item.normalizedTitle) || item.normalizedTitle.includes(dependencyKey));
     if (!knownDraft && !knownExisting) {
       issues.push(issue('warning', 'unknown_dependency', subtask.title, `依赖「${dependency}」没有匹配到草稿或现有任务，创建前应确认依赖关系。`));
     }

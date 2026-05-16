@@ -140,7 +140,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Project drafts include title, summary, acceptance criteria, dependency, and rationale.',
       'Phase closeout now prefers handoff to existing child tasks instead of generating generic follow-up tasks.',
       'Task closeout evaluation can hand off to an existing successor when no child is available, and new follow-up proposals require evidence and confirmation instead of being created during closeout.',
-      'runtime-subtask-evaluator blocks duplicate, generic, parent-overlapping, or underspecified subtask drafts before confirmed child creation.',
+      'runtime-subtask-evaluator blocks duplicate, near-duplicate, generic, parent-overlapping, or underspecified subtask drafts before confirmed child creation.',
       'Project decomposition generation and confirmation both consult runtime-subtask-evaluator so existing children block another decomposition round before new drafts appear.',
       'Project decomposition generation detects existing children from the full task list, including children linked only by parentTaskId.',
       'TaskService keeps child parentTaskId and parent childTaskIds synchronized when child tasks are created, moved, or changed from the parent child list.',

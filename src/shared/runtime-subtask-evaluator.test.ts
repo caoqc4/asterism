@@ -128,6 +128,79 @@ describe('runtime subtask evaluator', () => {
     ]));
   });
 
+  it('blocks near-duplicate child drafts and existing children with reordered compact titles', () => {
+    const parent = task({ id: 'project_1', title: '产品发布', type: 'project' });
+    const existingChild = task({
+      id: 'child_1',
+      title: '需求分析',
+      parentTaskId: parent.id,
+      state: 'completed',
+    });
+
+    const result = evaluateRuntimeSubtaskDraft({
+      parentTask: parent,
+      existingTasks: [parent, existingChild],
+      proposedSubtasks: [
+        {
+          title: '分析需求',
+          summary: '确认需求范围、用户目标和验收边界。',
+          acceptanceCriteria: '需求范围和验收边界被确认。',
+          dependency: null,
+          rationale: '需求分析是后续设计的输入。',
+        },
+        {
+          title: '开发验证',
+          summary: '完成核心流程开发后的验证。',
+          acceptanceCriteria: '核心流程验证结果被记录。',
+          dependency: '分析需求',
+          rationale: '验证结果决定是否进入发布准备。',
+        },
+        {
+          title: '验证开发',
+          summary: '重复表达同一个验证工作。',
+          acceptanceCriteria: '验证结果被记录。',
+          dependency: '分析需求',
+          rationale: '重复草稿。',
+        },
+      ],
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.issues.filter((item) => item.code === 'duplicate_title')).toHaveLength(2);
+    expect(result.issues.map((item) => item.message)).toEqual(expect.arrayContaining([
+      '已有任务「需求分析」，不应重复创建同名子任务。',
+      '草稿中存在重复子任务：「开发验证」和「验证开发」。',
+    ]));
+  });
+
+  it('allows related but distinct child drafts', () => {
+    const parent = task({ id: 'project_1', title: '开发小程序', type: 'project' });
+
+    expect(evaluateRuntimeSubtaskDraft({
+      parentTask: parent,
+      existingTasks: [parent],
+      proposedSubtasks: [
+        {
+          title: '小程序开发',
+          summary: '实现小程序核心流程。',
+          acceptanceCriteria: '核心流程可以完成主要操作。',
+          dependency: null,
+          rationale: '开发任务提供可运行版本。',
+        },
+        {
+          title: '小程序测试',
+          summary: '验证小程序核心流程和异常状态。',
+          acceptanceCriteria: '测试结果和遗留风险被记录。',
+          dependency: '小程序开发',
+          rationale: '测试任务验证开发结果。',
+        },
+      ],
+    })).toMatchObject({
+      allowed: true,
+      errorCount: 0,
+    });
+  });
+
   it('warns when a dependency cannot be matched', () => {
     const parent = task({ id: 'project_1', title: '发布项目', type: 'project' });
 

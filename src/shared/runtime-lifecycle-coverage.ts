@@ -356,6 +356,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Legacy title-pattern phase follow-up inference no longer runs when a task explicitly has no parent, and TasksPage no longer mutates local hierarchy attributes during list loading.',
       'Brief focus projection, RightPanel closeout checks, and task completion modal checks now use the same persisted-field hierarchy authority instead of reading local task attributes directly.',
       'runtime-subtask-evaluator blocks duplicate, generic, parent-overlapping, or underspecified project child drafts before creation.',
+      'runtime-subtask-evaluator blocks near-duplicate child drafts and existing child titles when compact titles only change word order.',
       'Project decomposition generation and confirmation both consult runtime-subtask-evaluator, so existing children block another decomposition round before a new draft appears.',
       'Project decomposition generation now detects existing children from the full task list, including children linked only by parentTaskId.',
     ],
