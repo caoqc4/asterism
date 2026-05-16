@@ -2806,6 +2806,67 @@ describe('App redesign v1', () => {
     }));
   });
 
+  it('blocks completion handoff when the next child lacks enough recovery context', async () => {
+    const project = buildTask({
+      id: 'task_context_handoff_project',
+      title: '上线项目',
+      state: 'planned',
+      updatedAt: '2026-05-13T12:00:00.000Z',
+    });
+    const first = buildTask({
+      id: 'task_context_handoff_first',
+      title: '1 需求确认',
+      state: 'planned',
+      updatedAt: '2026-05-13T12:05:00.000Z',
+    });
+    const second = buildTask({
+      id: 'task_context_handoff_second',
+      title: '2 界面设计',
+      state: 'planned',
+      nextStep: null,
+      updatedAt: '2026-05-13T12:04:00.000Z',
+    });
+    harness.tasks.unshift(second, first, project);
+    harness.details[project.id] = buildTaskDetail(project);
+    harness.details[first.id] = buildTaskDetail(first);
+    harness.details[second.id] = {
+      ...buildTaskDetail(second),
+      nextStep: null,
+      completionCriteria: [],
+      taskFiles: [],
+    };
+    saveTaskAttributes(project.id, {
+      type: 'project',
+      typeConfirmed: true,
+      childTaskIds: [first.id, second.id],
+    });
+    saveTaskAttributes(first.id, { type: 'simple', typeConfirmed: true, parentTaskId: project.id });
+    saveTaskAttributes(second.id, { type: 'simple', typeConfirmed: true, parentTaskId: project.id });
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(screen.getByRole('button', { name: /项目型/ }));
+    await user.click(await screen.findByRole('button', { name: '上线项目' }));
+    const childList = document.querySelector('.project-child-list') as HTMLElement;
+    await user.click(await within(childList).findByRole('button', { name: /1 需求确认/ }));
+    await user.click(await screen.findByRole('button', { name: '完成' }));
+    await user.click(await screen.findByRole('button', { name: '仍然完成' }));
+
+    expect(await screen.findByText('任务已完成')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '进入下一任务' }));
+
+    expect(await screen.findByText(/当前运行时上下文不足以安全开始目标子任务/)).toBeTruthy();
+    expect(harness.api.createTaskFile).not.toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_context_handoff_first',
+      path: expect.stringMatching(/completion-handoff/),
+    }));
+    expect(harness.api.chatWithAI).not.toHaveBeenCalledWith(expect.objectContaining({
+      taskId: 'task_context_handoff_second',
+    }));
+  });
+
   it('uses project verification before completing a project parent', async () => {
     const project = buildTask({
       id: 'task_project_completion_check',

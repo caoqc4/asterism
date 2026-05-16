@@ -18,7 +18,7 @@ import {
 import { evaluateRuntimeSubtaskDraft } from '@shared/runtime-subtask-evaluator';
 import { evaluateTaskMdUpdateNeed } from '@shared/task-md-update-need';
 import { evaluateTaskRecordWorthiness } from '@shared/task-record-worthiness';
-import { isTaskMdPath } from '@shared/task-memory-path';
+import { isTaskMdPath, isTaskRecordPath } from '@shared/task-memory-path';
 import type { PanelRuntimeTimelineEventType } from '@shared/runtime-panel-events';
 import {
   groupRuntimeEventsForReplay,
@@ -736,11 +736,13 @@ function completionHandoffFromEvaluation(task: Task, allTasks: Task[]): PostComp
 function evaluateCompletionHandoffStart(params: {
   completedTask: Task;
   nextTask: Task;
+  nextTaskDetail: TaskDetail | null;
   parentTask: Task | null;
 }): RuntimeVerificationResult {
   const expectedParentTaskId = params.parentTask?.id ?? null;
+  const nextContextRecord = params.nextTaskDetail ?? toTaskListItemRecord(params.nextTask);
   const nextRecord = {
-    ...toTaskListItemRecord(params.nextTask),
+    ...nextContextRecord,
     parentTaskId: params.nextTask.parentTaskId ?? expectedParentTaskId,
   };
   return evaluateRuntimeVerification({
@@ -756,11 +758,33 @@ function evaluateCompletionHandoffStart(params: {
     },
     availableContext: {
       taskState: true,
+      taskMd: hasTaskMdFile(params.nextTaskDetail),
+      relevantTaskRecords: hasRelevantTaskRecordFile(params.nextTaskDetail),
+      completionCriteria: hasKnownCompletionOrNextStep(nextContextRecord),
+      nextStep: Boolean(nextContextRecord.nextStep?.trim()),
       parentConstraints: Boolean(params.parentTask),
       handoffNotes: true,
       decisions: true,
     },
   });
+}
+
+function hasTaskMdFile(task: TaskDetail | null): boolean | undefined {
+  if (!task?.taskFiles) return undefined;
+  return task.taskFiles.some((file) => isTaskMdPath(file.path));
+}
+
+function hasRelevantTaskRecordFile(task: TaskDetail | null): boolean | undefined {
+  if (!task?.taskFiles) return undefined;
+  return task.taskFiles.some((file) => isTaskRecordPath(file.path));
+}
+
+function hasKnownCompletionOrNextStep(task: TaskDetail | TaskListItemRecord | null): boolean | undefined {
+  if (!task) return undefined;
+  if ('completionCriteria' in task && task.completionCriteria.length > 0) return true;
+  if (task.nextStep?.trim()) return true;
+  if ('completionCriteria' in task) return false;
+  return undefined;
 }
 
 const TASK_TYPE_LABELS: Record<TaskType, string> = {
@@ -1899,7 +1923,13 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   async function continueToNextTaskFromCompletion() {
     if (!postCompletionHandoff?.nextTask) return;
     const { completedTask, nextTask, parentTask } = postCompletionHandoff;
-    const startVerification = evaluateCompletionHandoffStart({ completedTask, nextTask, parentTask });
+    const nextTaskDetail = await window.api?.getTaskDetail?.(nextTask.id).catch(() => null) ?? null;
+    const startVerification = evaluateCompletionHandoffStart({
+      completedTask,
+      nextTask,
+      nextTaskDetail,
+      parentTask,
+    });
     if (!startVerification.canProceed) {
       setPostCompletionHandoff({
         ...postCompletionHandoff,

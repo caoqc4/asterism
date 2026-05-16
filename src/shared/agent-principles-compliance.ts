@@ -171,6 +171,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeContextAssemblyGate, RuntimeHandoff, RuntimeResumePlan, and runtime verification already provide pieces of task-bound context refresh, handoff, and pre-step checks.',
       'runtime-verification exposes subtask_start mode so subtask start readiness can be evaluated through the same verification surface as execution and closeout checks.',
       'RuntimeResumePlan can carry an optional subtask_start verdict for phase-closeout handoff to a child or successor task before entering the target task.',
+      'TasksPage completion handoff reads the next task detail and checks task memory, completion criteria or next step through subtask_start before entering the next child task.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService run subtask_start target-readiness checks before creating task-bound work.',
       'Paused run continuation validates the resume checkpoint first, then rechecks the target task with subtask_start before resuming tools.',
       'Approved checkpoint Decisions recheck target-task readiness with subtask_start before resuming tool, browser, or patch-promotion execution.',
@@ -178,11 +179,11 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Project decomposition and task closeout flows already prefer existing child tasks and handoffs instead of creating generic follow-up tasks.',
     ],
     gaps: [
-      'SubtaskStartEvaluation now guards phase-closeout handoff, completion handoff, direct running transitions, approved checkpoint resume, paused run continuation, ordinary Run starts, Code Agent starts, and operator-started runs, but some retained task-entry paths still need to pass full parent/handoff/context signals before every subtask start.',
+      'SubtaskStartEvaluation now guards phase-closeout handoff, completion handoff, direct running transitions, approved checkpoint resume, paused run continuation, ordinary Run starts, Code Agent starts, and operator-started runs; future retained task-entry paths must pass parent, handoff, and context signals before starting.',
       'Context cleanliness and context sufficiency are represented in one runtime verdict, but run-start service checks currently use a deliberately minimal target-readiness input to avoid overblocking older tasks.',
     ],
     nextVerification: [
-      'Route remaining explicit task-enter actions through SubtaskStartEvaluation before provider-visible execution.',
+      'Route future explicit task-enter actions through SubtaskStartEvaluation before provider-visible execution.',
     ],
   },
   {
