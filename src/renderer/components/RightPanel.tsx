@@ -5,6 +5,10 @@ import {
   selectBlockingTaskMemoryGuidance,
   type TaskMemoryGuidanceState,
 } from '@shared/task-memory-guidance-state';
+import {
+  buildTaskMemoryWriteApplyPlan,
+  type TaskMemoryWriteProposal,
+} from '@shared/task-memory-write-proposal';
 import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import { selectApplicableWorkHabits as selectApplicableWorkHabitsFromList } from '@shared/work-habit-rules';
 import { CONTEXT_COMPRESSION_THRESHOLD } from '@shared/settings-defaults';
@@ -86,6 +90,7 @@ interface TaskFileWriteProposal {
   content: string;
   surface: RuntimeSurfaceKind;
   surfaceLabel: string;
+  taskMemoryProposal?: TaskMemoryWriteProposal | null;
 }
 
 function taskTitle(taskId: string | null, cache: Record<string, string>): string | null {
@@ -530,6 +535,18 @@ function buildTaskFileWriteProposal(params: {
   };
 }
 
+function taskMemoryProposalToFileProposal(proposal: TaskMemoryWriteProposal): TaskFileWriteProposal {
+  const surface = proposal.target === 'task_md' ? 'task_state' : 'task_record';
+  return {
+    path: proposal.path,
+    summary: proposal.reason,
+    content: proposal.contentTemplate,
+    surface,
+    surfaceLabel: taskFileProposalSurfaceLabel(surface),
+    taskMemoryProposal: proposal,
+  };
+}
+
 function buildMinimalTaskRecord(taskName: string, importantFilePath: string): string {
   return [
     '# Task',
@@ -919,6 +936,12 @@ export function RightPanel({
     const details = await Promise.all(
       taskRuns.map((run) => window.api!.getRunDetail(run.id).catch(() => null)),
     );
+    const proposal = details
+      .flatMap((detail) => detail?.taskMemoryWriteProposals ?? [])
+      .find(Boolean);
+    if (proposal) {
+      setTaskFileProposal((current) => current ?? taskMemoryProposalToFileProposal(proposal));
+    }
     return selectBlockingTaskMemoryGuidance(details.map((detail) => detail?.taskMemoryGuidance));
   }
 
@@ -1442,7 +1465,21 @@ export function RightPanel({
       content: taskFileProposal.content,
     });
     const path = normalizedInput.path ?? normalizedInput.name;
-    if (!path || !/\.(md|txt)$/i.test(path)) {
+    const memoryApplyPlan = taskFileProposal.taskMemoryProposal
+      ? buildTaskMemoryWriteApplyPlan({
+        proposal: {
+          ...taskFileProposal.taskMemoryProposal,
+          contentTemplate: taskFileProposal.content,
+          path,
+        },
+        taskId: activeTaskId,
+      })
+      : null;
+    if (memoryApplyPlan?.status === 'blocked') {
+      appendSysMsg(`任务记忆写入已暂停：${memoryApplyPlan.reason}`);
+      return;
+    }
+    if (!path || (!taskFileProposal.taskMemoryProposal && !/\.(md|txt)$/i.test(path))) {
       appendSysMsg('任务文件写入已暂停：当前 v1 只允许新建 .md 或 .txt 文件。');
       return;
     }
@@ -1466,24 +1503,41 @@ export function RightPanel({
       const existing = window.api.listTaskFiles
         ? await window.api.listTaskFiles(activeTaskId).catch(() => [])
         : [];
-      if (existing.some((file) => file.path === path)) {
+      if (
+        (!taskFileProposal.taskMemoryProposal || memoryApplyPlan?.status === 'ready' && memoryApplyPlan.action === 'create')
+        && existing.some((file) => file.path === path)
+      ) {
         appendSysMsg(`任务文件写入已暂停：\`${path}\` 已存在。请换一个文件名后再确认写入。`);
         return;
       }
-      await window.api.createTaskFile({
-        ...normalizedInput,
-        taskId: activeTaskId,
-      });
-      await referenceTaskFileFromTaskRecord({
-        taskId: activeTaskId,
-        taskName: title ?? titleCache[activeTaskId] ?? activeTaskId,
-        filePath: path,
-      });
+      if (memoryApplyPlan?.status === 'ready') {
+        if (memoryApplyPlan.action === 'update') {
+          if (!window.api.updateTaskFile) {
+            appendSysMsg('任务记忆写入已暂停：当前环境不支持更新任务文件。');
+            return;
+          }
+          await window.api.updateTaskFile(memoryApplyPlan.input);
+        } else {
+          await window.api.createTaskFile(memoryApplyPlan.input);
+        }
+      } else {
+        await window.api.createTaskFile({
+          ...normalizedInput,
+          taskId: activeTaskId,
+        });
+        await referenceTaskFileFromTaskRecord({
+          taskId: activeTaskId,
+          taskName: title ?? titleCache[activeTaskId] ?? activeTaskId,
+          filePath: path,
+        });
+      }
       const postStepVerification = evaluateRuntimeVerification({
         mode: 'post_step',
         step: buildPanelRuntimeStep({
-          title: '任务文件写入',
-          output: `已写入任务文件：${path}`,
+          title: taskFileProposal.taskMemoryProposal ? '任务记忆写入' : '任务文件写入',
+          output: taskFileProposal.taskMemoryProposal
+            ? `已补写任务记忆：${path}`
+            : `已写入任务文件：${path}`,
         }),
         producedDurableChange: true,
         hasRecoveryNote: true,
@@ -1495,9 +1549,12 @@ export function RightPanel({
         path,
         surface: taskFileProposal.surface,
         surfaceLabel: taskFileProposal.surfaceLabel,
+        source: taskFileProposal.taskMemoryProposal ? 'task_memory_write_proposal' : 'right_panel_file_proposal',
       });
       setTaskFileProposal(null);
-      appendSysMsg(`已写入任务文件：\`${path}\`。`);
+      appendSysMsg(taskFileProposal.taskMemoryProposal
+        ? `已补写任务记忆：\`${path}\`。`
+        : `已写入任务文件：\`${path}\`。`);
     } finally {
       setSavingTaskFileProposal(false);
     }
@@ -1867,8 +1924,14 @@ export function RightPanel({
         {taskFileProposal && (
           <div className="panel-file-proposal">
             <div className="panel-file-proposal-head">
-              <strong>任务文件写入提案</strong>
-              <span>新建文件，不覆盖现有文件</span>
+              <strong>{taskFileProposal.taskMemoryProposal ? '任务记忆写入提案' : '任务文件写入提案'}</strong>
+              <span>
+                {taskFileProposal.taskMemoryProposal
+                  ? taskFileProposal.taskMemoryProposal.operation === 'update'
+                    ? '确认后更新现有任务记忆'
+                    : '确认后创建任务记忆'
+                  : '新建文件，不覆盖现有文件'}
+              </span>
             </div>
             <input
               className="panel-file-proposal-path"
@@ -1905,7 +1968,7 @@ export function RightPanel({
                 onClick={() => void confirmTaskFileWrite()}
                 disabled={savingTaskFileProposal}
               >
-                {savingTaskFileProposal ? '写入中…' : '确认写入文件'}
+                {savingTaskFileProposal ? '写入中…' : taskFileProposal.taskMemoryProposal ? '确认补写记忆' : '确认写入文件'}
               </button>
             </div>
           </div>

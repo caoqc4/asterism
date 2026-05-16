@@ -15,6 +15,7 @@ import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import type { TaskDependencyRecord } from '@shared/types/task-dependency';
 import type { TaskFileRecord } from '@shared/types/task-file';
 import type { TaskMemoryGuidanceState } from '@shared/task-memory-guidance-state';
+import type { TaskMemoryWriteProposal } from '@shared/task-memory-write-proposal';
 import { App } from './App';
 import {
   createManualWorkHabit,
@@ -273,7 +274,7 @@ function buildRun(partial: Partial<RunRecord> = {}): RunRecord {
 
 function buildRunDetail(
   run: RunRecord,
-  partial: Partial<Pick<RunDetailRecord, 'taskMemoryGuidance'>> = {},
+  partial: Partial<Pick<RunDetailRecord, 'taskMemoryGuidance' | 'taskMemoryWriteProposals'>> = {},
 ): RunDetailRecord {
   return {
     ...run,
@@ -1344,6 +1345,14 @@ describe('App redesign v1', () => {
       reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
       targets: ['task_record'],
     };
+    const pendingProposal: TaskMemoryWriteProposal = {
+      contentTemplate: '# Task Record: 董事会材料修订\n\n## Trigger\n最新任务记忆建议仍缺少对应写入：Task Record。\n',
+      operation: 'create',
+      path: 'Task Records/2026-01-01-memory-guidance.md',
+      reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
+      target: 'task_record',
+      title: '创建任务记录',
+    };
     harness.runs.push(buildRun({
       id: 'run_newer_without_guidance',
       taskId: 'task_risk',
@@ -1354,6 +1363,7 @@ describe('App redesign v1', () => {
       if (!run) return null;
       return buildRunDetail(run, {
         taskMemoryGuidance: run.id === 'run_newer_without_guidance' ? undefined : pendingGuidance,
+        taskMemoryWriteProposals: run.id === 'run_newer_without_guidance' ? [] : [pendingProposal],
       });
     });
     window.api = harness.api;
@@ -1371,7 +1381,20 @@ describe('App redesign v1', () => {
 
     await user.click(await screen.findByRole('button', { name: '刷新任务会话' }));
 
-    expect(await screen.findByText(/最新任务记忆建议仍缺少对应写入：Task Record/)).toBeTruthy();
+    expect((await screen.findAllByText(/最新任务记忆建议仍缺少对应写入：Task Record/)).length).toBeGreaterThan(0);
+    expect(await screen.findByText('任务记忆写入提案')).toBeTruthy();
+    expect(await screen.findByText('建议归类：任务记录')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '确认补写记忆' }));
+    await waitFor(() => {
+      expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: 'task_risk',
+        name: '2026-01-01-memory-guidance.md',
+        path: 'Task Records/2026-01-01-memory-guidance.md',
+        kind: 'file',
+        content: expect.stringContaining('最新任务记忆建议仍缺少对应写入'),
+      }));
+    });
+    expect(await screen.findByText(/已补写任务记忆/)).toBeTruthy();
     expect(await screen.findByPlaceholderText(/关于「董事会材料修订」/)).toBeTruthy();
   });
 
