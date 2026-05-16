@@ -242,6 +242,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'decision-effect-evaluator summarizes pending, approved, deferred, and cancelled decisions for verification consumers.',
       'Approved checkpoint Decisions recheck target-task readiness with subtask_start before resuming tool, browser, or patch-promotion execution.',
       'Decisions page approve/defer/cancel actions use shared decision action guards backed by pre_step and post_step verification.',
+      'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
     ],
     outOfAgentPrinciplesScope: [
       'The Decisions page must behave like a judgment center, not only a list of task statuses.',
@@ -252,7 +253,6 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Decision effect summaries and action guards exist, but the Decisions page is not yet a full effect-oriented decision surface.',
     ],
     nextImplementation: [
-      'Implement Package E Decisions judgment center.',
       'Show decision effect after approve/defer/cancel in the Decisions page.',
     ],
   },

@@ -427,12 +427,13 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Checkpointed risky tools create Decisions and resume only after approval.',
       'Decision effect summaries feed project verification for pending, approved, deferred, and cancelled decisions.',
       'Decisions page approve/defer/cancel actions use shared decision action guards backed by pre_step and post_step verification.',
+      'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
     ],
     gaps: [
-      'Decisions page is not yet a full judgment center with context/options/recommendation/effect grouped by source.',
+      'Decisions page still needs post-action effect presentation grouped by source before it is a full judgment center.',
     ],
     nextVerification: [
-      'Implement Decisions judgment center Package E and add decision-action effect tests.',
+      'Add decision-action effect tests when post-action effect presentation is implemented.',
     ],
   },
 ];
