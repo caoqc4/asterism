@@ -196,6 +196,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'runtime-surface-routing classifies files, source materials, AI output, artifacts, decisions, work habits, and run steps.',
       'Task file, source context, artifact, Decision, and Work Habit creation paths use shared normalization.',
       'Tasks file projections keep ordinary task files separate from artifacts while preserving Task.md, Task Records, AI output, source material, and artifact classes.',
+      'Tasks source-context file projections use shared source-context routing before deciding whether a source appears as Task Record, AI output, or source material.',
       'TaskRecordWorthinessEvaluation centralizes when handoff, closeout, correction, option rationale, failure review, context archive, external signal, or durable state changes deserve Task Records.',
       'RightPanel context-refresh and phase-closeout Task Record writes now pass through TaskRecordWorthinessEvaluation before creating files.',
       'TaskMdUpdateNeedEvaluation centralizes when Task.md should be updated for recovery fields and important file references.',
