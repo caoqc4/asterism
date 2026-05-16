@@ -53,7 +53,7 @@ import {
   type TaskMemoryGuidanceState,
 } from '../../../shared/task-memory-guidance-state.js';
 import {
-  projectDecisionJudgment,
+  projectDecisionJudgments,
   type DecisionJudgmentProjection,
 } from '../../../shared/decision-judgment-projection.js';
 import { deriveTaskDetailPriorityLane, getPriorityLanePromptGuidance } from '../../../shared/working-context/priority-lanes.js';
@@ -238,16 +238,7 @@ export class DecisionService {
     ]);
     const tasksById = new Map(tasks.map((task) => [task.id, task]));
 
-    return decisions
-      .filter((decision) => decision.status === 'pending')
-      .map((decision) => projectDecisionJudgment(
-        decision,
-        decision.taskId ? tasksById.get(decision.taskId) ?? null : null,
-      ))
-      .sort((left, right) => (
-        right.sortScore - left.sortScore
-        || right.updatedLabel.localeCompare(left.updatedLabel)
-      ));
+    return projectDecisionJudgments(decisions, tasksById);
   }
 
   async draft(input: DraftDecisionInput): Promise<DecisionDraftRecord> {

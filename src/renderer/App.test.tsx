@@ -2146,6 +2146,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('需要复核')).toBeTruthy();
     expect(screen.getAllByText('高影响').length).toBeGreaterThan(0);
     expect(screen.getByText('需谨慎恢复')).toBeTruthy();
+    expect(screen.getAllByText('同组 2 项').length).toBeGreaterThan(0);
     expect(screen.getByText('恢复执行')).toBeTruthy();
     expect(screen.getByText('人工决策')).toBeTruthy();
     expect(screen.getByText('推荐路径清晰')).toBeTruthy();
@@ -2159,6 +2160,7 @@ describe('App redesign v1', () => {
 
     await user.click(screen.getByText('是否恢复暂停的 Agent 执行'));
     expect(await screen.findByText(/Agent 在「董事会材料修订」的执行检查点暂停/)).toBeTruthy();
+    expect(screen.getByText(/仍有 2 个待决策事项/)).toBeTruthy();
     expect(screen.getAllByText(/不会授予后续同类动作的长期权限/).length).toBeGreaterThan(0);
     expect(screen.getByText('暂停等待')).toBeTruthy();
     expect(screen.getByText('取消本次执行')).toBeTruthy();

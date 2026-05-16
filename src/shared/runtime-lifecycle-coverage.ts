@@ -257,16 +257,17 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
       'DecisionService.listJudgments exposes the judgment-center projection from the domain boundary so the renderer does not have to rebuild pending-decision semantics from raw decisions and tasks.',
       'Decisions page action results now summarize approved, deferred, and cancelled effects using decision-effect-evaluator.',
+      'DecisionJudgmentProjection now attaches grouped pending-decision context by task/source, and the Decisions page shows same-source pending counts and effect detail inside the judgment card.',
     ],
     outOfAgentPrinciplesScope: [
       'The Decisions page must behave like a judgment center, not only a list of task statuses.',
       'Approvals must explain effect after approval, rejection, defer, or cancel.',
     ],
     gaps: [
-      'Decision effect grouping is available as shared data, but retained UI surfaces still need to decide where grouped multi-decision effects should be shown.',
+      'Decisions page now shows grouped pending-decision context; richer batch handling can still be added later if a real multi-approve workflow appears.',
     ],
     nextImplementation: [
-      'Reuse grouped decision effects when adding multi-decision batch handling or richer decision audit displays.',
+      'Keep grouped Decisions read-only until there is a clear user need for batch approve/defer/cancel.',
     ],
   },
   {

@@ -2166,6 +2166,37 @@ a { color: inherit; text-decoration: none; }
   line-height: 1.45;
   color: var(--ink-2);
 }
+.dec-group-note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 3px 8px;
+  align-items: baseline;
+  padding: 10px 12px;
+  background: var(--bg-elev);
+  border: 1px solid var(--amber-line);
+  border-radius: 6px;
+}
+.dec-group-note span {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--amber);
+}
+.dec-group-note strong {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dec-group-note p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.45;
+}
 @media (max-width: 680px) {
   .dec-judgement-strip { grid-template-columns: 1fr; }
   .dec-context { grid-template-columns: 1fr; }

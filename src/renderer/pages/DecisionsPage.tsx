@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  projectDecisionJudgment,
+  projectDecisionJudgments,
   type DecisionCategoryKey,
   type DecisionJudgmentProjection,
 } from '@shared/decision-judgment-projection';
@@ -46,13 +46,7 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
             window.api!.listTasks?.() ?? Promise.resolve([]),
           ]).then(([records, tasks]) => {
             const tasksById = new Map(tasks.map((task) => [task.id, task]));
-            return records
-              .filter((r) => r.status === 'pending')
-              .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-              .map((record) => projectDecisionJudgment(
-                record,
-                record.taskId ? tasksById.get(record.taskId) ?? null : null,
-              ));
+            return projectDecisionJudgments(records, tasksById);
           });
       loadJudgments
         .then((judgments) => {
@@ -293,6 +287,9 @@ function DecisionCard({ decision: d, onToggle, onDecide, onOpenPanel, onOpenTask
             </span>
             <span className="dec-rank-chip">{d.impactLabel}</span>
             <span className="dec-rank-chip">{d.reversibilityLabel}</span>
+            {d.group.pendingCount > 1 && (
+              <span className="dec-rank-chip">同组 {d.group.pendingCount} 项</span>
+            )}
             <span className="dec-updated">{d.updatedLabel}</span>
             {d.deadline && (
               <span className="dec-deadline">截止：{d.deadline}</span>
@@ -350,6 +347,14 @@ function DecisionCard({ decision: d, onToggle, onDecide, onOpenPanel, onOpenTask
               <span className="dec-context-text">{d.taskSignal}</span>
             </div>
           </div>
+
+          {d.group.pendingCount > 1 && (
+            <div className="dec-group-note">
+              <span>同一来源</span>
+              <strong>{d.group.label}</strong>
+              <p>{d.group.effectDetail}</p>
+            </div>
+          )}
 
           {d.options.map((opt) => (
             <div key={opt.label} className={`dec-option${opt.label === d.recommendation || opt.label.includes(d.recommendation) ? ' recommended' : ''}`}>

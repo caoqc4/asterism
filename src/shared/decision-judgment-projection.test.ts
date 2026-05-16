@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { projectDecisionJudgment } from './decision-judgment-projection.js';
+import { projectDecisionJudgment, projectDecisionJudgments } from './decision-judgment-projection.js';
 import type { DecisionRecord } from './types/decision.js';
 import type { TaskListItemRecord } from './types/task.js';
 
@@ -105,5 +105,22 @@ describe('decision judgment projection', () => {
       desc: '使用 A 方案推进。',
       risk: undefined,
     }]);
+  });
+
+  it('adds grouped pending decision context by task', () => {
+    const projected = projectDecisionJudgments([
+      decision({ id: 'decision_1', taskId: 'task_1', title: '确认风险' }),
+      decision({ id: 'decision_2', taskId: 'task_1', title: '确认恢复' }),
+      decision({ id: 'decision_done', taskId: 'task_1', status: 'approved' }),
+    ], new Map([['task_1', task({ id: 'task_1', title: '发布官网' })]]));
+
+    expect(projected).toHaveLength(2);
+    expect(projected[0]?.group).toMatchObject({
+      key: 'task:task_1',
+      label: '发布官网',
+      pendingCount: 2,
+      effectLabel: '待拍板阻断',
+      decisionIds: ['decision_1', 'decision_2'],
+    });
   });
 });

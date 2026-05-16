@@ -282,6 +282,10 @@ describe('DecisionService', () => {
       taskTitle: 'Agent 任务',
       urgency: 'today',
     });
+    expect(judgments[0]?.group).toMatchObject({
+      key: 'task:task_2',
+      pendingCount: 1,
+    });
   });
 
   it('drafts a decision with selected process templates', async () => {

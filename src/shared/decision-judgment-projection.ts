@@ -1,5 +1,6 @@
 import type { DecisionRecord } from './types/decision.js';
 import type { TaskListItemRecord } from './types/task.js';
+import { groupDecisionEffects } from './decision-effect-evaluator.js';
 
 export type DecisionCategoryKey = 'agent' | 'risk' | 'completion' | 'direction';
 
@@ -41,11 +42,22 @@ export type DecisionJudgmentProjection = {
   impactLabel: string;
   reversibilityLabel: string;
   sortScore: number;
+  group: DecisionJudgmentGroup;
+};
+
+export type DecisionJudgmentGroup = {
+  key: string;
+  label: string;
+  pendingCount: number;
+  effectLabel: string;
+  effectDetail: string;
+  decisionIds: string[];
 };
 
 export function projectDecisionJudgment(
   decision: DecisionRecord,
   task: TaskListItemRecord | null,
+  group?: DecisionJudgmentGroup,
 ): DecisionJudgmentProjection {
   const isAgentCheckpoint = decision.sourceType === 'agent_checkpoint';
   const category = classifyDecisionJudgment(decision, task);
@@ -98,7 +110,53 @@ export function projectDecisionJudgment(
     impactLabel: impactLabelFor(category, task),
     reversibilityLabel: reversibilityLabelFor(category),
     sortScore: scoreDecision(decision, task, category),
+    group: group ?? {
+      key: decision.taskId
+        ? `task:${decision.taskId}`
+        : decision.sourceType && decision.sourceId
+          ? `source:${decision.sourceType}:${decision.sourceId}`
+          : 'global',
+      label: taskTitle,
+      pendingCount: 1,
+      effectLabel: '待拍板阻断',
+      effectDetail: '这条决策需要用户拍板后才能继续。',
+      decisionIds: [decision.id],
+    },
   };
+}
+
+export function projectDecisionJudgments(
+  decisions: DecisionRecord[],
+  tasksById: Map<string, TaskListItemRecord>,
+): DecisionJudgmentProjection[] {
+  const pendingDecisions = decisions.filter((decision) => decision.status === 'pending');
+  const groupByDecisionId = new Map<string, DecisionJudgmentGroup>();
+
+  for (const group of groupDecisionEffects(pendingDecisions)) {
+    const taskTitle = group.taskId ? tasksById.get(group.taskId)?.title : null;
+    const projectedGroup: DecisionJudgmentGroup = {
+      key: group.key,
+      label: taskTitle ?? group.label,
+      pendingCount: group.summary.pendingCount,
+      effectLabel: group.summary.effectLabel,
+      effectDetail: group.summary.effectDetail,
+      decisionIds: group.decisionIds,
+    };
+    for (const decisionId of group.decisionIds) {
+      groupByDecisionId.set(decisionId, projectedGroup);
+    }
+  }
+
+  return pendingDecisions
+    .map((decision) => projectDecisionJudgment(
+      decision,
+      decision.taskId ? tasksById.get(decision.taskId) ?? null : null,
+      groupByDecisionId.get(decision.id),
+    ))
+    .sort((left, right) => (
+      right.sortScore - left.sortScore
+      || right.updatedLabel.localeCompare(left.updatedLabel)
+    ));
 }
 
 export function classifyDecisionJudgment(
