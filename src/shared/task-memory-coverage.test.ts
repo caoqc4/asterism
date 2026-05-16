@@ -137,6 +137,54 @@ describe('task memory coverage', () => {
     });
   });
 
+  it('counts completed run events, but not failed run events, as completion evidence', () => {
+    const baseTask = {
+      id: 'task-1',
+      title: 'Task',
+      summary: 'Ready to complete',
+      state: 'running' as const,
+      nextStep: 'Complete',
+      waitingReason: null,
+      riskLevel: 'none' as const,
+      riskNote: null,
+      createdAt: '2026-05-15T01:00:00.000Z',
+      updatedAt: '2026-05-15T01:00:00.000Z',
+      activeWaitingItem: null,
+      activeBlocker: null,
+      artifacts: [],
+      completionCriteria: [],
+      sourceContexts: [],
+      processTemplates: [],
+      availableProcessTemplates: [],
+      taskFiles: [],
+    };
+
+    expect(buildTaskMemoryCoverageInputForTask('task_completion', {
+      ...baseTask,
+      timeline: [{
+        id: 'event-1',
+        taskId: 'task-1',
+        type: 'run.failed',
+        payload: null,
+        createdAt: '2026-05-15T01:00:00.000Z',
+      }],
+    })).toMatchObject({
+      hasRecentRunEvidence: false,
+    });
+    expect(buildTaskMemoryCoverageInputForTask('task_completion', {
+      ...baseTask,
+      timeline: [{
+        id: 'event-2',
+        taskId: 'task-1',
+        type: 'task.run_completed',
+        payload: null,
+        createdAt: '2026-05-15T01:01:00.000Z',
+      }],
+    })).toMatchObject({
+      hasRecentRunEvidence: true,
+    });
+  });
+
   it('treats global context as not applicable', () => {
     expect(evaluateTaskMemoryCoverage({
       action: 'context_clear',
