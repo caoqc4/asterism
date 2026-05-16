@@ -436,6 +436,76 @@ describe('TaskService', () => {
     expect(repository.create).not.toHaveBeenCalled();
   });
 
+  it('blocks child task creation under a non-project parent', async () => {
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('running'),
+          id: 'task_parent',
+          title: '普通任务',
+          taskType: 'simple',
+          parentTaskId: null,
+          childTaskIds: [],
+        },
+      ]),
+      create: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    await expect(service.create({
+      title: '补充步骤',
+      summary: '补充普通任务的执行步骤。',
+      parentTaskId: 'task_parent',
+    })).rejects.toThrow('必须是项目型任务');
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+
+  it('blocks child task creation under an existing child task', async () => {
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('running'),
+          id: 'project_1',
+          title: '项目一',
+          taskType: 'project',
+          parentTaskId: null,
+          childTaskIds: ['child_1'],
+        },
+        {
+          ...buildRecord('running'),
+          id: 'child_1',
+          title: '需求分析',
+          taskType: 'simple',
+          parentTaskId: 'project_1',
+          childTaskIds: [],
+        },
+      ]),
+      create: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      { getActiveForTask: vi.fn().mockResolvedValue(null) } as never,
+    );
+
+    await expect(service.create({
+      title: '三级任务',
+      summary: '不应创建第三层任务。',
+      parentTaskId: 'child_1',
+    })).rejects.toThrow('不能继续创建第三层子任务');
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+
   it('returns hierarchy consistency diagnostics from current task records', async () => {
     const repository = {
       list: vi.fn().mockResolvedValue([
@@ -2150,6 +2220,41 @@ describe('TaskService', () => {
       id: 'child_1',
       parentTaskId: 'missing_project',
     })).rejects.toThrow('Parent task not found: missing_project');
+    expect(repository.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks moving a task under a non-project parent', async () => {
+    const repository = {
+      list: vi.fn().mockResolvedValue([
+        {
+          ...buildRecord('running'),
+          id: 'task_parent',
+          title: '普通任务',
+          taskType: 'simple',
+          parentTaskId: null,
+          childTaskIds: [],
+        },
+      ]),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue({
+        ...buildDetail('planned'),
+        id: 'child_1',
+        title: '需求分析',
+        parentTaskId: null,
+      }),
+      update: vi.fn(),
+      transition: vi.fn(),
+    };
+    const service = new TaskService(repository as never, {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    } as never);
+
+    await expect(service.update({
+      id: 'child_1',
+      parentTaskId: 'task_parent',
+    })).rejects.toThrow('必须是项目型任务');
     expect(repository.update).not.toHaveBeenCalled();
   });
 

@@ -85,6 +85,12 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('waiting transitions require a waiting reason');
   });
 
+  it('tracks service-boundary hierarchy ownership guards', () => {
+    const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
+
+    expect(text).toContain('parent is an open top-level project task');
+  });
+
   it('tracks pending-memory checks for phase closeout handoff', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 

@@ -715,6 +715,10 @@ export class TaskService {
   }
 
   private validateChildTaskIds(parentTaskId: string, childTaskIds: string[], existingTasks: TaskRecord[]): void {
+    const parent = this.findTaskInList(existingTasks, parentTaskId);
+    if (parent) {
+      this.assertTaskCanOwnChildren(parent);
+    }
     for (const childTaskId of childTaskIds) {
       if (childTaskId === parentTaskId) {
         throw new Error('A task cannot be its own child');
@@ -722,6 +726,18 @@ export class TaskService {
       if (!this.findTaskInList(existingTasks, childTaskId)) {
         throw new Error(`Child task not found: ${childTaskId}`);
       }
+    }
+  }
+
+  private assertTaskCanOwnChildren(parent: TaskRecord): void {
+    if (parent.parentTaskId) {
+      throw new Error(`父任务「${parent.title}」本身已经是子任务，不能继续创建第三层子任务`);
+    }
+    if (parent.state === 'completed' || parent.state === 'archived') {
+      throw new Error(`父任务「${parent.title}」已关闭，不能继续添加子任务`);
+    }
+    if (parent.taskType !== undefined && parent.taskType !== 'project') {
+      throw new Error(`父任务「${parent.title}」必须是项目型任务，才能添加子任务`);
     }
   }
 
@@ -986,8 +1002,12 @@ export class TaskService {
 
   async create(input: CreateTaskInput): Promise<TaskListItemRecord> {
     const existingTasks = await this.repository.list() ?? [];
-    if (input.parentTaskId && !this.findTaskInList(existingTasks, input.parentTaskId)) {
-      throw new Error(`Parent task not found: ${input.parentTaskId}`);
+    if (input.parentTaskId) {
+      const parent = this.findTaskInList(existingTasks, input.parentTaskId);
+      if (!parent) {
+        throw new Error(`Parent task not found: ${input.parentTaskId}`);
+      }
+      this.assertTaskCanOwnChildren(parent);
     }
     const captureEvaluation = evaluateRuntimeTaskCapture({
       title: input.title,
@@ -1042,9 +1062,12 @@ export class TaskService {
       if (
         input.parentTaskId !== undefined
         && input.parentTaskId
-        && !this.findTaskInList(existingTasks, input.parentTaskId)
       ) {
-        throw new Error(`Parent task not found: ${input.parentTaskId}`);
+        const parent = this.findTaskInList(existingTasks, input.parentTaskId);
+        if (!parent) {
+          throw new Error(`Parent task not found: ${input.parentTaskId}`);
+        }
+        this.assertTaskCanOwnChildren(parent);
       }
       const captureEvaluation = evaluateRuntimeTaskCapture({
         title: input.title ?? detail.title,
