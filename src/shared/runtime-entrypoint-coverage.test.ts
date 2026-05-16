@@ -74,6 +74,26 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
+  it('keeps product configuration, preference memory, and method-library writes out of task mutation gates', () => {
+    const boundaries = [
+      ['product_configuration', 'product_config_boundary'],
+      ['preference_memory', 'preference_boundary'],
+      ['method_library', 'method_library_boundary'],
+    ] as const;
+
+    for (const [kind, boundary] of boundaries) {
+      expect(requiredRuntimeEntrypointGatesForKind(kind)).toEqual([
+        'simplicity_check',
+        boundary,
+      ]);
+      for (const entry of runtimeEntrypointsByKind(kind)) {
+        expect(entry.requiredGates).toContain(boundary);
+        expect(entry.requiredGates).not.toContain('task_mutation');
+        expect(entry.requiredGates).not.toContain('runtime_context_assembly');
+      }
+    }
+  });
+
   it('requires resumed execution paths to check handoff or decision state before continuing', () => {
     const resumed = [
       ...runtimeEntrypointsByKind('execution_resume'),
@@ -128,17 +148,20 @@ describe('runtime entrypoint coverage', () => {
       'decision.action',
       'decision.approvedCheckpointResume',
       'panel.timelineEventWrite',
+      'processTemplate.libraryWrites',
       'project.decompositionConfirm',
       'project.decompositionDraft',
       'run.continuePaused',
       'run.trigger',
       'run.triggerCodeAgent',
       'run.triggerOperatorStarted',
+      'settings.aiRuntimeConfig',
       'task.capture',
       'task.completionTransition',
       'task.fileAndArtifactWrites',
       'task.hierarchyMaintenance',
       'task.transitionToRunning',
+      'workHabit.preferenceMemory',
     ]);
   });
 });

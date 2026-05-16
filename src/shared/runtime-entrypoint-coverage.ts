@@ -2,6 +2,9 @@ export type RuntimeEntrypointKind =
   | 'provider_visible_execution'
   | 'provider_visible_planning'
   | 'hidden_local_execution'
+  | 'product_configuration'
+  | 'preference_memory'
+  | 'method_library'
   | 'execution_resume'
   | 'decision_resume'
   | 'decision_action'
@@ -26,7 +29,10 @@ export type RuntimeEntrypointGate =
   | 'project_verification'
   | 'decision_action'
   | 'checkpoint_eligibility'
-  | 'panel_event_allowlist';
+  | 'panel_event_allowlist'
+  | 'product_config_boundary'
+  | 'preference_boundary'
+  | 'method_library_boundary';
 
 export type RuntimeEntrypointCoverage = {
   id: string;
@@ -77,6 +83,18 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
     'pre_step',
     'subtask_start',
     'post_step',
+  ],
+  product_configuration: [
+    'simplicity_check',
+    'product_config_boundary',
+  ],
+  preference_memory: [
+    'simplicity_check',
+    'preference_boundary',
+  ],
+  method_library: [
+    'simplicity_check',
+    'method_library_boundary',
   ],
   execution_resume: [
     'simplicity_check',
@@ -425,6 +443,51 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'pre_step',
     ],
     notes: 'Read-only hierarchy diagnostics are exempt; only safe repair and explicit manual resolution writers are registered here.',
+  },
+  {
+    id: 'settings.aiRuntimeConfig',
+    owner: 'IPC settings:setAiConfig / AiConfigService.setConfig',
+    kind: 'product_configuration',
+    description: 'Persist AI provider/model/feature-flag configuration and start or stop scheduler behavior.',
+    requiredGates: [
+      'simplicity_check',
+      'product_config_boundary',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'product_config_boundary',
+    ],
+    notes: 'Read-only status and sandbox probes are exempt. The write path is explicit settings IPC and emits settings.changed after the config and scheduler state settle.',
+  },
+  {
+    id: 'workHabit.preferenceMemory',
+    owner: 'WorkHabitService',
+    kind: 'preference_memory',
+    description: 'Create, propose, update, resolve, delete, import, or apply cross-task Work Habit memory.',
+    requiredGates: [
+      'simplicity_check',
+      'preference_boundary',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'preference_boundary',
+    ],
+    notes: 'Work Habit rules keep proposals pending by default, normalize candidate routing, preserve the local privacy boundary, and stay separate from task files.',
+  },
+  {
+    id: 'processTemplate.libraryWrites',
+    owner: 'TaskService process template library methods',
+    kind: 'method_library',
+    description: 'Create, update, or archive reusable process templates that can influence future runs and decisions.',
+    requiredGates: [
+      'simplicity_check',
+      'method_library_boundary',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'method_library_boundary',
+    ],
+    notes: 'Applying or removing a process template binding on a task remains a task mutation; this entrypoint covers library-level template writes only.',
   },
   {
     id: 'agent.toolDurableWrites',

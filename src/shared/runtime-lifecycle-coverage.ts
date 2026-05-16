@@ -182,7 +182,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TasksPage file/source/artifact actions and project decomposition confirmation now persist panel.* timeline events for RuntimeEventRecord audit projection.',
       'TasksPage project membership changes and completion handoffs now persist panel.* timeline events for task-to-task replay.',
       'TaskService recordTimelineEvent now guards panel.* task dynamic writes with task_mutation before appending timeline events.',
-      'RuntimeEntrypointCoverage keeps retained execution, planning, resume, context-transition, task-capture, task-transition, project-decomposition, decision-action, agent-tool, and durable-write entrypoints explicit with required runtime gates.',
+      'RuntimeEntrypointCoverage keeps retained execution, planning, resume, context-transition, task-capture, task-transition, project-decomposition, decision-action, agent-tool, product-configuration, preference-memory, method-library, and durable-write entrypoints explicit with required runtime gates.',
       'RuntimeEntrypointCoverage also defines kind-level gate baselines so future entrypoints cannot register below their class minimum without a failing regression test.',
       'RuntimeEntrypointCoverage requires simplicity_check across every retained entrypoint and kind baseline, so new execution or durable-write surfaces must declare the smallest-state-change boundary before they are considered covered.',
       'RuntimeEntrypointCoverage is intentionally a regression registry; new runtime entrypoints must be added to the registry and covered by the baseline tests rather than discovered dynamically.',
@@ -436,6 +436,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RuntimeCapabilitySnapshot captures model availability, workspace verification checks, feature flags, and tool scaffold exposure for runtime consumers.',
       'pre_step verification blocks model-required or workspace-verification-required execution when the caller omits RuntimeCapabilitySnapshot.',
       'RunService and CodeAgentRunService provide RuntimeCapabilitySnapshot before model or workspace-sensitive execution.',
+      'RuntimeEntrypointCoverage registers AI runtime configuration writes, Work Habit preference memory writes, and process-template library writes as product-level durable entrypoints instead of task mutations.',
     ],
     outOfAgentPrinciplesScope: [
       'Capability availability, connector status, model settings, and external access policy are product runtime concerns.',
