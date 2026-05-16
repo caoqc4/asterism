@@ -2202,6 +2202,26 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/汇总到这里等待你拍板/)).toBeTruthy();
   });
 
+  it('keeps a decision visible when the formal action fails', async () => {
+    const user = userEvent.setup();
+    vi.mocked(harness.api.actOnDecision).mockRejectedValueOnce(new Error('network failed'));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Decisions/ }));
+    expect(await screen.findByText('是否批准本轮材料修改方案')).toBeTruthy();
+    await user.click(await screen.findByText('是否批准本轮材料修改方案'));
+    await user.click((await screen.findAllByRole('button', { name: '选择此方案' }))[0]!);
+
+    await waitFor(() => {
+      expect(harness.api.actOnDecision).toHaveBeenCalledWith({
+        id: 'decision_pending',
+        action: 'approve',
+      });
+    });
+    expect(await screen.findByText('是否批准本轮材料修改方案')).toBeTruthy();
+    expect(screen.queryByLabelText('拍板结果')).toBeNull();
+  });
+
   it('counts only active task-linked decisions in the task decision lens', async () => {
     const user = userEvent.setup();
     harness.decisions.length = 0;

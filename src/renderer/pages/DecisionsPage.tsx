@@ -84,9 +84,9 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
       taskId: decision?.taskId ?? null,
     });
     if (!guard.allowed) return;
-    setDecisions((prev) => prev.filter((d) => d.id !== id));
     window.api?.actOnDecision({ id, action })
       .then((updated) => {
+        setDecisions((prev) => prev.filter((d) => d.id !== id));
         setActionEffect(buildDecisionActionEffect(updated, action));
         verifyDecisionActionCompleted({
           title: updated.title,
