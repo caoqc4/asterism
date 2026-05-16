@@ -84,6 +84,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'AgentToolRegistry durable tool results expose recoveryGuidanceItems and legacy recoveryGuidance from RuntimeRecoveryGuidance without silently mutating Task.md.',
       'AgentToolRegistry persists recoveryGuidanceItems as a separate Run Step so task-memory recommendations remain auditable without silently mutating Task.md or Task Records.',
       'TaskMemoryGuidanceState distinguishes unresolved task-memory guidance from completed Task.md or Task Record writes.',
+      'TaskRecordWorthiness tests cover should-create and should-not-create cases for handoff, closeout, correction, option rationale, failures, external signals, duplicates, generic notes, and unbound notes.',
     ],
     gaps: [
       'TaskMdUpdateNeedEvaluation exists and covers RightPanel important-file references, TasksPage direct Task.md saves, and AgentToolRegistry recovery guidance through RuntimeRecoveryGuidance, but not every durable write asks whether Task.md also needs an update.',
@@ -91,7 +92,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'AgentToolRegistry persists recovery guidance as Run Step evidence, but confirmed Task.md or Task Record write-through is still future work.',
     ],
     nextVerification: [
-      'Add information-routing tests for task mutation, Task.md update recommendation, and Task Record worthiness.',
+      'Keep information-routing tests in place for task mutation, Task.md update recommendation, and Task Record worthiness when adding new durable write surfaces.',
     ],
   },
   {
@@ -253,12 +254,13 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TasksPage manual Task Record creation is gated by TaskRecordWorthinessEvaluation.',
       'Task completion modal checks TaskMemoryCoverageEvaluation before treating completion as clean; insufficient memory becomes a recorded override concern.',
       'AgentToolRegistry source-context writes can recommend Task Record creation through recoveryGuidance when the write represents an external signal.',
+      'TaskRecordWorthiness tests cover positive and negative creation boundaries.',
     ],
     gaps: [
       'TaskRecordWorthinessEvaluation still needs to be wired into retained tool-driven Task Record creation entry points.',
     ],
     nextVerification: [
-      'Add tests for when Task Records should and should not be created.',
+      'Keep Task Record worthiness tests aligned with any new retained tool-driven Task Record entry point.',
     ],
   },
   {
