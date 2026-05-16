@@ -410,6 +410,23 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     ],
   },
   {
+    id: 'task.hierarchyMaintenance',
+    owner: 'TaskService.applySafeHierarchyRepairs / applyHierarchyManualResolution',
+    kind: 'durable_write',
+    description: 'Repair or manually resolve persisted parent/child task hierarchy inconsistencies.',
+    requiredGates: [
+      'simplicity_check',
+      'task_mutation',
+      'pre_step',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'task_mutation',
+      'pre_step',
+    ],
+    notes: 'Read-only hierarchy diagnostics are exempt; only safe repair and explicit manual resolution writers are registered here.',
+  },
+  {
     id: 'agent.toolDurableWrites',
     owner: 'AgentToolRegistry task/source/artifact tools',
     kind: 'durable_write',

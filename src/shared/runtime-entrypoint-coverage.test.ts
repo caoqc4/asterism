@@ -137,6 +137,7 @@ describe('runtime entrypoint coverage', () => {
       'task.capture',
       'task.completionTransition',
       'task.fileAndArtifactWrites',
+      'task.hierarchyMaintenance',
       'task.transitionToRunning',
     ]);
   });

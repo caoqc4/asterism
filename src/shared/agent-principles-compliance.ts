@@ -51,7 +51,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     status: 'partial',
     priority: 'p0',
     implementedBy: [
-      'RuntimeEntrypointCoverage keeps retained entrypoints explicit for provider-visible execution, provider-visible planning, hidden local execution, task capture, task transition, project decomposition, decision action, agent tools, durable writes, context transitions, task dynamics, and capability checks.',
+      'RuntimeEntrypointCoverage keeps retained entrypoints explicit for provider-visible execution, provider-visible planning, hidden local execution, task capture, task transition, hierarchy maintenance, project decomposition, decision action, agent tools, durable writes, context transitions, task dynamics, and capability checks.',
       'RuntimeEntrypointCoverage defines kind-level gate baselines so an entrypoint cannot be treated as covered below its class minimum.',
       'RuntimeEntrypointCoverage requires simplicity_check on every retained entrypoint and every kind baseline.',
       'runtime-entrypoint-coverage tests fail when registered entrypoints are missing required gates, fall below their kind baseline, duplicate ownership, or omit simplicity_check.',

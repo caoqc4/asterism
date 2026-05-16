@@ -375,6 +375,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskService.applyHierarchyManualResolution accepts explicit manual hierarchy resolutions for unique parentage, missing references, self references, and duplicate child references.',
       'Decisions page surfaces TaskHierarchyManualReviewPolicy items and safe hierarchy repairs as judgment-center maintenance actions instead of adding another Tasks page workflow.',
       'TaskService safe hierarchy repairs and manual hierarchy resolutions pass task structure writes through task_mutation guards before repository updates.',
+      'RuntimeEntrypointCoverage registers task hierarchy maintenance as an explicit durable-write entrypoint while leaving read-only diagnostics exempt.',
       'Renderer task hierarchy projection now treats persisted taskType, taskFacets, parentTaskId, and childTaskIds as authoritative and uses local task attributes only for genuinely missing legacy fields.',
       'Legacy title-pattern phase follow-up inference no longer runs when a task explicitly has no parent, and TasksPage no longer mutates local hierarchy attributes during list loading.',
       'Brief focus projection, RightPanel closeout checks, and task completion modal checks now use the same persisted-field hierarchy authority instead of reading local task attributes directly.',
