@@ -31,9 +31,9 @@ than reaching into local resources directly.
 The renderer owns the user interface:
 
 - Home control surface;
-- task management views for priority handling, task directory, task detail, task files, and activity;
+- task management views for priority handling, task directory, task detail, task files, and task dynamics;
 - right-panel task conversation and runtime handoff UI;
-- Decisions judgment inbox and retained Runs/activity projections;
+- Decisions judgment inbox and retained Runs/task-dynamics projections;
 - Context, Settings, and capability configuration views;
 - no separate task workspace entry: task context, files, execution handoff, and AI collaboration are handled by Tasks plus the right panel.
 

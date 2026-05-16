@@ -186,12 +186,12 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'Runtime guards now cover the current retained execution and durable-write surfaces; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly opt into the same pre_step, post_step, and subtask_start gates.',
       'RuntimeEntrypointCoverage is a regression registry, not dynamic enforcement; future runtime entrypoints must be added to the registry and wired to at least their kind-level gate baseline.',
-      'RuntimeEventRecord projection and replay grouping are consumed in Tasks task dynamics; future Run-side and retained activity surfaces must reuse the same projection.',
-      'Legacy WorkbenchPage remains retired; new runtime behavior must stay within TasksPage, RightPanel, Runs, Activity, or Decisions surfaces.',
+      'RuntimeEventRecord projection and replay grouping are consumed in Tasks task dynamics; future Run-side and retained task-dynamics surfaces must reuse the same projection.',
+      'Legacy WorkbenchPage remains retired; new runtime behavior must stay within TasksPage, RightPanel, Runs, task dynamics, or Decisions surfaces.',
     ],
     nextImplementation: [
       'Require future task-dynamic surfaces to consume RuntimeEventRecord and groupRuntimeEventsForReplay rather than raw timeline-only data.',
-      'Keep legacy WorkbenchPage retired; new runtime behavior must land in retained TasksPage, RightPanel, Runs, Activity, or Decisions surfaces.',
+      'Keep legacy WorkbenchPage retired; new runtime behavior must land in retained TasksPage, RightPanel, Runs, task dynamics, or Decisions surfaces.',
     ],
   },
   {
@@ -316,7 +316,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RunService paused-run continuation now consumes RuntimeHandoff and RuntimeResumePlan before checkpoint resume execution.',
       'SubagentHandoffEvaluation now models subagent scope, inherited-principles, confirmation-boundary, and handoff-completeness checks before future subagent results can be integrated.',
       'runtime-event-record now projects persisted timeline events, Runs, Run steps, Task Records, Decisions without timeline coverage, and runtime resume projections into a shared RuntimeEventRecord audit stream.',
-      'Activity/audit projection is modeled by RuntimeEventRecord; Tasks activity consumes it and retained Run-side views should follow it.',
+      'Task-dynamics/audit projection is modeled by RuntimeEventRecord; Tasks task dynamics consumes it and retained Run-side views should follow it.',
       'RuntimeEventRecord now has replay-oriented grouping for handoff, project structure changes, execution recovery, Decisions, durable records, source context, and task state changes.',
       'RunDetailRecord now carries optional runtimeEvents and runtimeReplayGroups from RunService.getDetail without requiring UI layout changes.',
       'Tasks task dynamics now consumes replay grouping as a compact key-context layer before the flat event timeline.',
@@ -331,7 +331,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'Subagent handoff has a shared evaluator, but it is not wired to a product delegation entry point because that surface is not active yet.',
       'Follow-up proposal gating exists in the shared closeout evaluator and RightPanel task-context capture consumes it; other retained creation entry points still need the same boundary when they create follow-up tasks from task context.',
-      'Replay grouping is consumed by Tasks task dynamics, but Run detail and broader retained activity surfaces do not yet render the grouped replay layer.',
+      'Replay grouping is consumed by Tasks task dynamics, but Run detail and broader retained task-dynamics surfaces do not yet render the grouped replay layer.',
     ],
     nextImplementation: [
       'Wire retained follow-up task proposal entry points into the shared closeout evaluator.',
@@ -375,12 +375,12 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
   },
   {
-    phase: 'activity_timeline_and_audit',
+    phase: 'task_dynamics_and_audit',
     status: 'partial',
     priority: 'p1',
     scope: 'data_runtime',
     coveredBy: [
-      'Activity records, run steps, completion checks, Decisions, and Task Records all exist as durable audit surfaces.',
+      'Task dynamic records, run steps, completion checks, Decisions, and Task Records all exist as durable audit surfaces.',
       'runtime-event-record projects timeline events, Runs, Run steps, Task Records, Decisions without timeline coverage, and runtime resume projections into one audit stream.',
       'RuntimeEventRecord is the shared task dynamics/audit projection; Tasks task dynamics consumes it, and Run-side surfaces should follow it.',
       'Run detail exposes runtime events and replay groups that include the run, run steps, task timeline events, and Task Records for the same task.',
@@ -392,7 +392,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'RuntimeEventRecord covers timeline, run, run step, task record, decision, resume projection, RightPanel events, and core TasksPage file/source/artifact/project/handoff events; Tasks task dynamics consumes it and Run detail now exposes task-bound projection data.',
-      'Replay grouping is rendered in Tasks task dynamics, while Run detail and broader retained activity surfaces still need grouped replay presentation.',
+      'Replay grouping is rendered in Tasks task dynamics, while Run detail and broader retained task-dynamics surfaces still need grouped replay presentation.',
     ],
     nextImplementation: [
       'Reuse the grouped replay layer in Run detail when Run-side runtime views are resumed.',

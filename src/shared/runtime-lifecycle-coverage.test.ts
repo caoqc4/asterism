@@ -16,7 +16,7 @@ const requiredPhases = [
   'verification_and_closeout',
   'pause_resume_and_handoff',
   'project_and_hierarchy_runtime',
-  'activity_timeline_and_audit',
+  'task_dynamics_and_audit',
   'capabilities_and_external_access',
 ];
 

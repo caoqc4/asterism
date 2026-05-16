@@ -2705,7 +2705,7 @@ function resetCaptureDraft() {
                 onOpenPanel(selectedTask.id, selectedTaskPlanningPrompt.prompt, selectedTask.title);
               }}
               runCount={selectedRuns.length}
-              onShowActivity={() => setTaskDetailViewMode('timeline')}
+              onShowTaskDynamics={() => setTaskDetailViewMode('timeline')}
               onOpenDecision={onOpenDecision}
               deferOpen={deferOpenId === selectedTask.id}
               onDeferToggle={() => setDeferOpenId((prev) => (prev === selectedTask.id ? null : selectedTask.id))}
@@ -4097,7 +4097,7 @@ interface TaskPreviewProps {
   hasPendingDecision: boolean;
   planningLabel: string;
   onOpenPanel: () => void;
-  onShowActivity: () => void;
+  onShowTaskDynamics: () => void;
   onOpenDecision: () => void;
   deferOpen: boolean;
   onDeferToggle: () => void;
@@ -4130,7 +4130,7 @@ function TaskPreview({
   hasPendingDecision,
   planningLabel,
   onOpenPanel,
-  onShowActivity,
+  onShowTaskDynamics,
   onOpenDecision,
   deferOpen,
   onDeferToggle,
@@ -4169,7 +4169,7 @@ function TaskPreview({
   const primaryAction = isCompletedTask
     ? {
         label: '查看任务动态 →',
-        onClick: onShowActivity,
+        onClick: onShowTaskDynamics,
           disabled: false,
         tone: 'plan' as const,
       }

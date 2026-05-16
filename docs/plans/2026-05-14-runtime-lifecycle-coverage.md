@@ -6,7 +6,7 @@ Date: 2026-05-14
 
 Runtime deepening is broader than Agent execution compliance.
 
-The Agent Operating Principles describe how Agents should behave during task work. The runtime lifecycle describes how the product should coordinate task intake, context, execution, memory, verification, decisions, hierarchy, activity, and capabilities across UI, data, and Agent surfaces.
+The Agent Operating Principles describe how Agents should behave during task work. The runtime lifecycle describes how the product should coordinate task intake, context, execution, memory, verification, decisions, hierarchy, task dynamics, and capabilities across UI, data, and Agent surfaces.
 
 Source of truth in code:
 
@@ -31,7 +31,7 @@ The current coverage matrix tracks these phases:
 8. Verification and closeout
 9. Pause, resume, and handoff
 10. Project and hierarchy runtime
-11. Activity timeline and audit
+11. Task dynamics and audit
 12. Capabilities and external access
 
 Each phase records:
@@ -83,7 +83,7 @@ Weakest areas:
 - unified runtime handoff shape;
 - legacy local task hierarchy attributes and manual-review hierarchy conflicts still need a user-facing confirmation surface after the database relationship becomes authoritative.
 - capability state in context/action evaluation;
-- activity timeline as a complete runtime audit projection.
+- task dynamics as a complete runtime audit projection.
 
 ## Design Rule
 

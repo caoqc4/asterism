@@ -323,14 +323,14 @@ It should not expose long internal prompts as input text.
 3. Information routing is not centralized.
    File classification and source/artifact/task-record routing still have scattered logic and can drift.
 
-4. Runtime activity projection is only partly surfaced.
-   Core RightPanel and TasksPage durable actions now go through shared guards and persist `panel.*` timeline events. Tasks activity consumes `RuntimeEventRecord`; Run detail exposes replay data. Rendering replay groups remains future UI work.
+4. Runtime task-dynamics projection is only partly surfaced.
+   Core RightPanel and TasksPage durable actions now go through shared guards and persist `panel.*` timeline events. Tasks task dynamics consumes `RuntimeEventRecord`; Run detail exposes replay data. Rendering replay groups in retained Run-side surfaces remains future UI work.
 
 5. Verification is still mostly terminal.
    Completion and closeout are covered better now, but before-step, after-step, context-clear, and project-level verification are still not unified.
 
-6. Decisions are structurally present but product flow is incomplete.
-   Decisions exists as a page and repository, but the page does not yet behave like a real judgment center.
+6. Decisions has a judgment-center baseline, with richer batch handling deferred.
+   Decisions now projects category, urgency, task signal, options, recommendation, effect after action, and grouped pending context. Batch approve/defer/cancel should remain deferred until a real multi-decision workflow appears.
 
 7. Source freshness and context boundaries are not visible enough.
    The principles describe freshness and relevance, but UI/runtime does not consistently expose why a source was included or excluded.
@@ -476,7 +476,7 @@ Implemented verification follow-up:
 
 - `runtime-verification` now has an initial `project` mode.
 - Project verification checks missing structure, child completion, blocked/waiting children, parent completion criteria, pending decisions, and risk confirmation.
-- Project parent completion now uses project verification in the completion modal and records child completion counts into the completion-check activity.
+- Project parent completion now uses project verification in the completion modal and records child completion counts into the completion-check task dynamic.
 - Project detail now displays the same project verification summary next to the child task structure.
 - Project verification includes artifact/source evidence counts and Decision effect summaries for pending, approved, deferred, and cancelled decisions.
 - `runtime-verification` now has first-pass `pre_step` and `post_step` modes for action permission, pending decisions, required context, and durable-change recovery notes.
@@ -525,8 +525,8 @@ Implemented:
 - Added `RuntimeHandoffPreview` so manual refresh/archive preview text is generated from the shared handoff result and archive snapshot instead of being assembled only in RightPanel.
 - RunService paused-run continuation now consumes `RuntimeHandoff` and `RuntimeResumePlan` before executing checkpoint resume tools.
 - Added shared `RuntimeEventRecord` projection for timeline events, Runs, Run steps, Task Records, Decisions without timeline coverage, and runtime resume projections.
-- `RuntimeEventRecord` is now the shared activity/audit projection; Tasks activity consumes it, and retained Run-side views should follow the same projection instead of legacy Workbench-specific activity logic.
-- Tasks activity view now consumes `RuntimeEventRecord`, so timeline events, Runs, Task Records, Decisions, runtime resume projections, and `panel.*` events share one display stream.
+- `RuntimeEventRecord` is now the shared task-dynamics/audit projection; Tasks task dynamics consumes it, and retained Run-side views should follow the same projection instead of legacy Workbench-specific activity logic.
+- Tasks task dynamics view now consumes `RuntimeEventRecord`, so timeline events, Runs, Task Records, Decisions, runtime resume projections, and `panel.*` events share one display stream.
 - Added shared replay grouping for `RuntimeEventRecord` so handoff, project structure changes, execution recovery, Decisions, durable records, source context, and task state changes can be replayed consistently without changing UI layout.
 - Run detail now exposes optional `runtimeEvents` and `runtimeReplayGroups`, so retained Run-side consumers can use the same projection data without changing UI layout.
 - Added `recordTaskTimelineEvent` IPC/service path so panel-only durable actions can persist RuntimeEventRecord-compatible timeline events.
@@ -559,7 +559,7 @@ Implemented:
 - TasksPage direct `Task.md` saves now consume `TaskMdUpdateNeedEvaluation`, and manual Task Record creation consumes `TaskRecordWorthinessEvaluation`.
 - Added `RuntimeRecoveryGuidance` so durable tool recovery recommendations have structured `recoveryGuidanceItems` plus legacy `recoveryGuidance` messages, without silently mutating `Task.md`.
 - Added `SubagentHandoffEvaluation` as a data-only runtime boundary for future subagent delegation: it checks inherited principles, task context, assigned scope, allowed action/file scope, confirmation-boundary violations, and handoff completeness before main-Agent integration.
-- Legacy WorkbenchPage has been retired from active renderer code and should not receive new runtime-deepening implementation. Its responsibilities are covered by TasksPage, RightPanel, Runs/activity projections, and Decisions.
+- Legacy WorkbenchPage has been retired from active renderer code and should not receive new runtime-deepening implementation. Its responsibilities are covered by TasksPage, RightPanel, Runs/task-dynamics projections, and Decisions.
 
 Remaining:
 
@@ -569,13 +569,14 @@ Remaining:
 
 ### Package E: Decisions Judgment Center
 
-Make Decisions a real judgment inbox.
+Make Decisions a real judgment inbox. The baseline is now implemented; keep future additions focused on concrete multi-decision workflows rather than adding generic approval UI.
 
 Deliverables:
 
 - grouped pending decisions by source: task, run checkpoint, file write, external operation, risk approval
 - show context, options, recommendation, effect after approval/rejection
 - link decisions back to task/run/checkpoint
+- defer batch actions unless users actually need to approve or defer multiple related decisions at once
 
 ### Package F: Data Model Migration Cleanup
 

@@ -28,7 +28,7 @@ The following concerns exceed the Agent principles and should be governed by run
 - selected task, active panel task, selected file, and prompt-context synchronization;
 - priority and attention projections;
 - project directory and hierarchy data authority;
-- activity timeline projection and audit UX;
+- task-dynamics projection and audit UX;
 - capability availability, connector state, model settings, and external-access policy;
 - product-level pause, resume, retry, and state recovery.
 

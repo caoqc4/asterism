@@ -230,8 +230,8 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     gaps: [
       'Current retained execution and durable-write paths are guarded; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly pass the same verification gates.',
       'RuntimeEntrypointCoverage is a regression registry, not dynamic enforcement; future runtime entrypoints must be added to the registry and wired to at least their kind-level gate baseline.',
-      'RuntimeEventRecord projection and replay grouping are consumed in Tasks task dynamics; Run-side and other future retained surfaces must reuse the same projection instead of introducing parallel activity logic.',
-      'Legacy WorkbenchPage remains retired; new runtime behavior must land in TasksPage, RightPanel, Runs, Activity, or Decisions instead.',
+      'RuntimeEventRecord projection and replay grouping are consumed in Tasks task dynamics; Run-side and other future retained surfaces must reuse the same projection instead of introducing parallel task-dynamics logic.',
+      'Legacy WorkbenchPage remains retired; new runtime behavior must land in TasksPage, RightPanel, Runs, task dynamics, or Decisions instead.',
     ],
     nextVerification: [
       'Require any future execution service or panel durable action to opt into pre_step/post_step verification before persistence.',
@@ -343,7 +343,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeResumePlan can carry a subtask_start gate when phase closeout hands off to a target task and the caller provides target task context.',
       'RightPanel consumes RuntimeHandoff for refresh, manual refresh, leave-context, start-global, task-switch confirmation, and phase-closeout child handoff.',
       'RunService paused-run continuation consumes RuntimeHandoff and RuntimeResumePlan before executing checkpoint resume tools.',
-      'runtime-event-record projects timeline events, Runs, Run steps, Task Records, Decisions without timeline coverage, and runtime resume projections into a shared RuntimeEventRecord audit stream for retained activity surfaces.',
+      'runtime-event-record projects timeline events, Runs, Run steps, Task Records, Decisions without timeline coverage, and runtime resume projections into a shared RuntimeEventRecord audit stream for retained task-dynamics surfaces.',
       'runtime-event-record groups projected events into replay-oriented stories for handoff, project structure, execution recovery, Decisions, durable records, source context, and task state.',
       'RunService.getDetail exposes optional runtimeEvents and runtimeReplayGroups with task-bound timeline and Task Record context on RunDetailRecord for Run-side data consumers.',
       'Tasks task dynamics consumes RuntimeEventRecord projection and replay groups instead of raw task timeline only.',
@@ -356,7 +356,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Successor-task handoff beyond child tasks has closeout and replay metadata, while new follow-up task creation remains confirmation-gated.',
     ],
     gaps: [
-      'Run checkpoint resume has a shared resume-plan shape and RuntimeEventRecord projection data, but retained activity surfaces do not yet render replay-oriented event groupings.',
+      'Run checkpoint resume has a shared resume-plan shape and RuntimeEventRecord projection data, but retained Run-side task-dynamics surfaces do not yet render replay-oriented event groupings.',
       'Follow-up proposal gating exists in the shared closeout evaluator and RightPanel task-context capture consumes it; other retained creation entry points still need the same boundary when they create follow-up tasks from task context.',
     ],
     nextVerification: [
