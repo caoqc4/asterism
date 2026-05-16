@@ -182,11 +182,11 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'Runtime guards now cover the current retained execution and durable-write surfaces; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly opt into the same pre_step, post_step, and subtask_start gates.',
       'RuntimeEntrypointCoverage is a regression registry, not dynamic enforcement; future runtime entrypoints must be added to the registry and wired to the listed gates.',
-      'RuntimeEventRecord projection and replay grouping are data-level capabilities; only existing retained activity surfaces consume the projection today.',
+      'RuntimeEventRecord projection and replay grouping are consumed in Tasks task dynamics; future Run-side and retained activity surfaces must reuse the same projection.',
       'Legacy WorkbenchPage remains retired; new runtime behavior must stay within TasksPage, RightPanel, Runs, Activity, or Decisions surfaces.',
     ],
     nextImplementation: [
-      'Keep RuntimeEventRecord replay grouping data-only until UI work is explicitly requested.',
+      'Require future task-dynamic surfaces to consume RuntimeEventRecord and groupRuntimeEventsForReplay rather than raw timeline-only data.',
       'Keep legacy WorkbenchPage retired; new runtime behavior must land in retained TasksPage, RightPanel, Runs, Activity, or Decisions surfaces.',
     ],
   },
@@ -243,6 +243,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Approved checkpoint Decisions recheck target-task readiness with subtask_start before resuming tool, browser, or patch-promotion execution.',
       'Decisions page approve/defer/cancel actions use shared decision action guards backed by pre_step and post_step verification.',
       'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
+      'Decisions page action results now summarize approved, deferred, and cancelled effects using decision-effect-evaluator.',
     ],
     outOfAgentPrinciplesScope: [
       'The Decisions page must behave like a judgment center, not only a list of task statuses.',
@@ -250,10 +251,10 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Decision judgment-center UI is incomplete.',
-      'Decision effect summaries and action guards exist, but the Decisions page is not yet a full effect-oriented decision surface.',
+      'Decision effects are summarized after actions, but richer effect grouping across multiple related decisions is still future work.',
     ],
     nextImplementation: [
-      'Show decision effect after approve/defer/cancel in the Decisions page.',
+      'Group decision action effects by task/source when multiple related decisions are handled together.',
     ],
   },
   {

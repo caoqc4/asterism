@@ -4,12 +4,22 @@ import {
   type DecisionCategoryKey,
   type DecisionJudgmentProjection,
 } from '@shared/decision-judgment-projection';
+import { summarizeDecisionEffects } from '@shared/decision-effect-evaluator';
+import type { DecisionRecord } from '@shared/types/decision';
 import { guardDecisionAction, verifyDecisionActionCompleted } from '../lib/runtimeActionGuards';
 
 type DecisionFilterKey = 'all' | DecisionCategoryKey;
 
 type Decision = DecisionJudgmentProjection & {
   expanded: boolean;
+};
+
+type DecisionActionEffect = {
+  actionLabel: string;
+  detail: string;
+  effectLabel: string;
+  sourceLabel: string;
+  title: string;
 };
 
 interface DecisionsPageProps {
@@ -21,6 +31,7 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterKey, setFilterKey] = useState<DecisionFilterKey>('all');
+  const [actionEffect, setActionEffect] = useState<DecisionActionEffect | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -74,6 +85,7 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
     setDecisions((prev) => prev.filter((d) => d.id !== id));
     window.api?.actOnDecision({ id, action })
       .then((updated) => {
+        setActionEffect(buildDecisionActionEffect(updated, action));
         verifyDecisionActionCompleted({
           title: updated.title,
           action,
@@ -106,6 +118,23 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
         <h2 className="decisions-title">Decisions</h2>
         <p className="decisions-subtitle">跨任务汇总所有需要你拍板的事项；AI 只给建议，不替你选择</p>
       </div>
+
+      {actionEffect && (
+        <div className="dec-overview" aria-label="拍板结果">
+          <div className="dec-overview-chip">
+            <span className="dec-overview-value">{actionEffect.actionLabel}</span>
+            <span>{actionEffect.title}</span>
+          </div>
+          <div className="dec-overview-chip">
+            <span className="dec-overview-value">{actionEffect.effectLabel}</span>
+            <span>{actionEffect.detail}</span>
+          </div>
+          <div className="dec-overview-chip">
+            <span className="dec-overview-value">来源</span>
+            <span>{actionEffect.sourceLabel}</span>
+          </div>
+        </div>
+      )}
 
       {decisions.length > 0 && (
         <>
@@ -213,6 +242,20 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
       )}
     </div>
   );
+}
+
+function buildDecisionActionEffect(
+  decision: DecisionRecord,
+  action: 'approve' | 'defer' | 'cancel',
+): DecisionActionEffect {
+  const effect = summarizeDecisionEffects([decision]);
+  return {
+    actionLabel: action === 'approve' ? '已批准' : action === 'defer' ? '已延后' : '已取消',
+    detail: effect.effectDetail,
+    effectLabel: effect.effectLabel,
+    sourceLabel: decision.sourceLabel ?? decision.sourceType ?? decision.scope,
+    title: decision.title,
+  };
 }
 
 /* ─── Decision Card ─── */

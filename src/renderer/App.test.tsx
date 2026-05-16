@@ -2160,6 +2160,10 @@ describe('App redesign v1', () => {
         action: 'approve',
       });
     });
+    expect(await screen.findByLabelText('拍板结果')).toBeTruthy();
+    expect(screen.getByText('已批准')).toBeTruthy();
+    expect(screen.getByText('拍板已通过')).toBeTruthy();
+    expect(screen.getByText(/已有 1 个决策通过/)).toBeTruthy();
   });
 
   it('keeps the empty Decisions state anchored on user approval', async () => {

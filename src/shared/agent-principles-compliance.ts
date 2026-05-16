@@ -220,12 +220,12 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     gaps: [
       'Current retained execution and durable-write paths are guarded; future scheduled/event execution, new provider-visible tools, or new panel write paths must explicitly pass the same verification gates.',
       'RuntimeEntrypointCoverage is a regression registry, not dynamic enforcement; future runtime entrypoints must be added to the registry and wired to the listed gates.',
-      'RuntimeEventRecord projection and replay grouping are available as data, but retained UI surfaces render only the existing activity projection until UI work is explicitly requested.',
+      'RuntimeEventRecord projection and replay grouping are consumed in Tasks task dynamics; Run-side and other future retained surfaces must reuse the same projection instead of introducing parallel activity logic.',
       'Legacy WorkbenchPage remains retired; new runtime behavior must land in TasksPage, RightPanel, Runs, Activity, or Decisions instead.',
     ],
     nextVerification: [
       'Require any future execution service or panel durable action to opt into pre_step/post_step verification before persistence.',
-      'Keep RuntimeEventRecord replay grouping data-only until UI work is explicitly requested.',
+      'Require any future task-dynamic surface to consume RuntimeEventRecord and groupRuntimeEventsForReplay rather than raw timeline-only data.',
     ],
   },
   {
@@ -428,12 +428,13 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Decision effect summaries feed project verification for pending, approved, deferred, and cancelled decisions.',
       'Decisions page approve/defer/cancel actions use shared decision action guards backed by pre_step and post_step verification.',
       'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
+      'Decisions page action results summarize approved, deferred, and cancelled effects using decision-effect-evaluator.',
     ],
     gaps: [
-      'Decisions page still needs post-action effect presentation grouped by source before it is a full judgment center.',
+      'Decisions page still needs richer effect grouping by task/source when several related decisions are handled together.',
     ],
     nextVerification: [
-      'Add decision-action effect tests when post-action effect presentation is implemented.',
+      'Add grouped decision-effect tests when multi-decision action handling is implemented.',
     ],
   },
 ];
