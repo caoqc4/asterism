@@ -1,4 +1,4 @@
-import { isTaskMdPath } from './task-memory-path.js';
+import { isTaskMdPath, isTaskRecordPath } from './task-memory-path.js';
 
 export type TaskMemoryCoverageAction =
   | 'task_start'
@@ -60,6 +60,7 @@ export function buildTaskMemoryCoverageInputForTask(
 ): TaskMemoryCoverageInput {
   const taskFiles = task.taskFiles ?? [];
   const hasTaskMd = taskFiles.some((file) => file.kind === 'file' && isTaskMdPath(file.path));
+  const hasRelevantTaskRecord = taskFiles.some((file) => file.kind === 'file' && isTaskRecordPath(file.path));
   const resumeCard = 'resumeCard' in task ? task.resumeCard : null;
   const hasEquivalentRecoverySummary = Boolean(task.summary?.trim() || resumeCard?.summary?.trim());
   const hasNextStep = Boolean(task.nextStep?.trim() || resumeCard?.nextSuggestedMove?.trim());
@@ -73,6 +74,7 @@ export function buildTaskMemoryCoverageInputForTask(
     action,
     hasTaskContext: true,
     hasTaskMd,
+    hasRelevantTaskRecord,
     hasEquivalentRecoverySummary,
     hasNextStep,
     hasCompletionCriteria: (task.completionCriteria ?? []).length > 0,
@@ -92,7 +94,7 @@ export function buildTaskMemoryCoverageInputForTask(
 export function evaluateTaskMemoryCoverage(input: TaskMemoryCoverageInput): TaskMemoryCoverageEvaluation {
   const messageCount = input.chatMessageCount ?? 0;
   const hasActiveTaskDiscussion = input.hasTaskContext && messageCount > 0;
-  const hasRecoverySummary = Boolean(input.hasTaskMd || input.hasEquivalentRecoverySummary);
+  const hasRecoverySummary = Boolean(input.hasTaskMd || input.hasEquivalentRecoverySummary || input.hasRelevantTaskRecord);
   const hasSpecificHandoffSignal = Boolean(input.hasSpecificHandoffSignal);
   const memoryWriteCompleted = Boolean(input.memoryWriteCompleted);
 
@@ -145,7 +147,7 @@ export function evaluateTaskMemoryCoverage(input: TaskMemoryCoverageInput): Task
 
   if (input.action === 'task_start' || input.action === 'subtask_start' || input.action === 'run_start') {
     const missing: string[] = [];
-    if (!hasRecoverySummary) missing.push('缺少 Task.md 或等价恢复摘要。');
+    if (!hasRecoverySummary) missing.push('缺少 Task.md、相关 Task Record 或等价恢复摘要。');
     if (!input.hasNextStep) missing.push('缺少明确下一步。');
 
     if (missing.length > 0) {

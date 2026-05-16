@@ -36,6 +36,42 @@ describe('task memory coverage', () => {
     }).hasTaskMd).toBe(true);
   });
 
+  it('detects relevant Task Records from normalized task file paths', () => {
+    expect(buildTaskMemoryCoverageInputForTask('run_start', {
+      id: 'task-1',
+      title: 'Task',
+      summary: null,
+      state: 'running',
+      nextStep: 'Continue',
+      waitingReason: null,
+      riskLevel: 'none',
+      riskNote: null,
+      createdAt: '2026-05-15T01:00:00.000Z',
+      updatedAt: '2026-05-15T01:00:00.000Z',
+      activeWaitingItem: null,
+      activeBlocker: null,
+      artifacts: [],
+      completionCriteria: [],
+      sourceContexts: [],
+      processTemplates: [],
+      availableProcessTemplates: [],
+      timeline: [],
+      taskFiles: [{
+        id: 'file-1',
+        taskId: 'task-1',
+        name: 'handoff.md',
+        path: ' Task Records\\handoff.md ',
+        kind: 'file',
+        content: '# Handoff',
+        createdAt: '2026-05-15T01:00:00.000Z',
+        updatedAt: '2026-05-15T01:00:00.000Z',
+      }],
+    })).toMatchObject({
+      hasTaskMd: false,
+      hasRelevantTaskRecord: true,
+    });
+  });
+
   it('treats global context as not applicable', () => {
     expect(evaluateTaskMemoryCoverage({
       action: 'context_clear',
@@ -90,7 +126,7 @@ describe('task memory coverage', () => {
     });
   });
 
-  it('requires recovery summary and next step before task execution', () => {
+  it('requires recovery context and next step before task execution', () => {
     expect(evaluateTaskMemoryCoverage({
       action: 'run_start',
       hasTaskContext: true,
@@ -100,9 +136,22 @@ describe('task memory coverage', () => {
       outcome: 'needs_user_clarification',
       canStartExecution: false,
       missing: [
-        '缺少 Task.md 或等价恢复摘要。',
+        '缺少 Task.md、相关 Task Record 或等价恢复摘要。',
         '缺少明确下一步。',
       ],
+    });
+  });
+
+  it('allows task execution with a relevant Task Record and next step when Task.md is absent', () => {
+    expect(evaluateTaskMemoryCoverage({
+      action: 'run_start',
+      hasTaskContext: true,
+      hasTaskMd: false,
+      hasRelevantTaskRecord: true,
+      hasNextStep: true,
+    })).toMatchObject({
+      outcome: 'pass',
+      canStartExecution: true,
     });
   });
 
@@ -115,7 +164,7 @@ describe('task memory coverage', () => {
       hasNextStep: true,
     })).toMatchObject({
       outcome: 'needs_user_clarification',
-      missing: ['缺少 Task.md 或等价恢复摘要。'],
+      missing: ['缺少 Task.md、相关 Task Record 或等价恢复摘要。'],
     });
   });
 
