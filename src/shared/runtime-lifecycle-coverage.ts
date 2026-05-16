@@ -37,6 +37,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TasksPage explicit task creation passes the same summary used by the capture evaluator into TaskService.create.',
       'TaskService.create enforces the same task-capture evaluator at the service boundary before repository persistence.',
       'TaskService.update reuses the same evaluator when title or parent scope changes, preventing duplicate siblings during project moves.',
+      'runtime-task-capture-evaluator blocks near-duplicate compact titles in the same parent scope when word order changes but the title identity is effectively the same.',
     ],
     outOfAgentPrinciplesScope: [
       'Product-level intake must decide whether the user is creating work, browsing existing work, asking for status, or discussing direction.',
@@ -44,7 +45,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'RightPanel capture uses shared intake routing and TasksPage explicit creation uses the shared task_capture guard, but some retained creation entry points are not fully covered by intake yet.',
-      'Service-level guards now block duplicate open-task captures, generic title-only candidates, generic phase-template titles, generic child phase-template titles, and child titles that repeat the parent; broader semantic duplicate detection remains limited to normalized titles.',
+      'Service-level guards now block duplicate and near-duplicate open-task captures, generic title-only candidates, generic phase-template titles, generic child phase-template titles, and child titles that repeat the parent; broader semantic duplicate detection remains intentionally conservative.',
     ],
     nextImplementation: [
       'Route remaining creation entry points through shared intake checks.',

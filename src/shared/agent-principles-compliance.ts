@@ -23,7 +23,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     status: 'partial',
     priority: 'p0',
     implementedBy: [
-      'Task creation and update paths use runtime-task-capture-evaluator to block duplicates, generic title-only candidates, generic phase templates, and child titles that merely repeat the parent.',
+      'Task creation and update paths use runtime-task-capture-evaluator to block duplicate and near-duplicate compact titles, generic title-only candidates, generic phase templates, and child titles that merely repeat the parent.',
       'Project decomposition uses runtime-subtask-evaluator before generation and confirmed child creation to avoid duplicate or underspecified subtasks.',
       'Task hierarchy projection treats persisted taskType, taskFacets, parentTaskId, and childTaskIds as authoritative over stale renderer-local attributes.',
       'Legacy title-pattern phase follow-up inference is limited to records without a parent field, and Tasks no longer mutates local hierarchy attributes during list loading.',
@@ -115,7 +115,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Global panel task capture routes through task_capture action evaluation.',
       'TasksPage explicit task creation now passes through the shared task_capture pre-step guard before persistence.',
       'runtime-intake-evaluator classifies user input before task capture as task, Task Record, task file, Decision, Work Habit, or discussion.',
-      'runtime-task-capture-evaluator blocks duplicate open-task captures and generic title-only candidates before persistence.',
+      'runtime-task-capture-evaluator blocks duplicate and near-duplicate open-task captures plus generic title-only candidates before persistence.',
       'runtime-task-capture-evaluator blocks generic phase-template task titles, generic phase-template child titles, and child titles that only repeat the parent.',
       'TasksPage explicit task creation and RightPanel conversation capture consume the shared task-capture evaluator.',
       'TasksPage explicit task creation forwards the same task summary used by the capture evaluator to the service boundary.',

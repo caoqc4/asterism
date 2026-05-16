@@ -45,6 +45,30 @@ describe('runtime task capture evaluator', () => {
     });
   });
 
+  it('blocks near-duplicate open tasks with reordered compact titles', () => {
+    expect(evaluateRuntimeTaskCapture({
+      title: '小程序开发',
+      existingTasks: [task({ id: 'task_1', title: '开发小程序' })],
+    })).toMatchObject({
+      allowed: false,
+      issues: [
+        {
+          code: 'duplicate_open_task',
+          matchedTaskId: 'task_1',
+        },
+      ],
+    });
+  });
+
+  it('does not treat related but distinct titles as duplicates', () => {
+    expect(evaluateRuntimeTaskCapture({
+      title: '小程序测试',
+      existingTasks: [task({ id: 'task_1', title: '小程序开发' })],
+    })).toMatchObject({
+      allowed: true,
+    });
+  });
+
   it('scopes duplicate checks to the same parent task', () => {
     expect(evaluateRuntimeTaskCapture({
       title: '需求分析',

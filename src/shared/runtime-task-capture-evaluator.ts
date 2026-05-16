@@ -36,6 +36,23 @@ function normalizeTitle(value: string): string {
     .replace(/[：:，,。.、\s_-]+/g, '');
 }
 
+function titleSimilarity(a: string, b: string): number {
+  const left = new Set(Array.from(a));
+  const right = new Set(Array.from(b));
+  if (left.size === 0 || right.size === 0) return 0;
+  let intersection = 0;
+  for (const token of left) {
+    if (right.has(token)) intersection += 1;
+  }
+  return intersection / new Set([...left, ...right]).size;
+}
+
+function isLikelyDuplicateTitle(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (Math.min(a.length, b.length) < 4) return false;
+  return titleSimilarity(a, b) >= 0.9;
+}
+
 function isOpenTask(task: ExistingTask): boolean {
   return !CLOSED_STATES.has(task.state);
 }
@@ -72,7 +89,7 @@ export function evaluateRuntimeTaskCapture(params: {
     const duplicate = (params.existingTasks ?? [])
       .filter(isOpenTask)
       .find((task) => (
-        normalizeTitle(task.title) === normalizedTitle
+        isLikelyDuplicateTitle(normalizeTitle(task.title), normalizedTitle)
         && (task.parentTaskId ?? null) === targetParentTaskId
       ));
 
