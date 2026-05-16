@@ -79,7 +79,7 @@ function missingRequiredContext(input: SubtaskStartEvaluationInput): string[] {
   const missing: string[] = [];
 
   if (available.taskState === false) missing.push('task_state');
-  if (available.taskMd === false) missing.push('task_md');
+  if (available.taskMd === false && available.relevantTaskRecords !== true) missing.push('task_md');
   if (available.completionCriteria === false && available.nextStep === false) {
     missing.push('completion_criteria_or_next_step');
   }

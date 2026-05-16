@@ -32,7 +32,7 @@ import {
 } from '@shared/task-record-worthiness';
 import { evaluateTaskMemoryCoverage } from '@shared/task-memory-coverage';
 import { evaluateTaskMdUpdateNeed } from '@shared/task-md-update-need';
-import { isTaskMdPath } from '@shared/task-memory-path';
+import { isTaskMdPath, isTaskRecordPath } from '@shared/task-memory-path';
 import { evaluateRuntimeVerification } from '@shared/runtime-verification';
 import {
   classifyCreateTaskFileSurface,
@@ -152,6 +152,11 @@ const GENERIC_ASSISTANT_REPLY_PATTERNS = [
 function hasTaskMdFile(task: TaskDetail | null): boolean | undefined {
   if (!task?.taskFiles) return undefined;
   return task.taskFiles.some((file) => isTaskMdPath(file.path));
+}
+
+function hasRelevantTaskRecordFile(task: TaskDetail | null): boolean | undefined {
+  if (!task?.taskFiles) return undefined;
+  return task.taskFiles.some((file) => isTaskRecordPath(file.path));
 }
 
 function hasKnownCompletionOrNextStep(task: TaskDetail | TaskListItemRecord | null): boolean | undefined {
@@ -1355,6 +1360,7 @@ export function RightPanel({
             availableContext: {
               taskState: true,
               taskMd: hasTaskMdFile(nextTaskDetail),
+              relevantTaskRecords: hasRelevantTaskRecordFile(nextTaskDetail),
               completionCriteria: hasKnownCompletionOrNextStep(nextTaskDetail ?? nextTask),
               nextStep: Boolean((nextTaskDetail ?? nextTask).nextStep?.trim()),
               parentConstraints: true,

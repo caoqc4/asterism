@@ -164,4 +164,23 @@ describe('evaluateSubtaskStart', () => {
       missingContext: ['task_md', 'completion_criteria_or_next_step'],
     });
   });
+
+  it('accepts relevant Task Records as recovery context when Task.md is absent', () => {
+    expect(evaluateSubtaskStart({
+      targetTask: buildTask(),
+      contextSignals: { activeTaskId: 'child_1' },
+      availableContext: {
+        taskState: true,
+        taskMd: false,
+        relevantTaskRecords: true,
+        completionCriteria: false,
+        nextStep: true,
+      },
+    })).toMatchObject({
+      outcome: 'ready_to_start',
+      contextClean: true,
+      contextSufficient: true,
+      missingContext: [],
+    });
+  });
 });
