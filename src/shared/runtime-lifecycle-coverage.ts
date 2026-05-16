@@ -404,15 +404,17 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'External access, MCP, skills, model, settings, and work habits are separate navigation capabilities.',
       'Risky local command/write tools use confirmation checkpoints.',
       'RuntimeCapabilitySnapshot captures model availability, workspace verification checks, feature flags, and tool scaffold exposure for runtime consumers.',
+      'pre_step verification blocks model-required or workspace-verification-required execution when the caller omits RuntimeCapabilitySnapshot.',
+      'RunService and CodeAgentRunService provide RuntimeCapabilitySnapshot before model or workspace-sensitive execution.',
     ],
     outOfAgentPrinciplesScope: [
       'Capability availability, connector status, model settings, and external access policy are product runtime concerns.',
     ],
     gaps: [
-      'Capability state can now be represented in runtime context assembly and pre_step verification, but retained execution entry points still need to pass snapshots consistently.',
+      'Current retained execution entry points pass or intentionally avoid RuntimeCapabilitySnapshot according to provider visibility and local-only execution mode; future entry points must keep the same boundary explicit.',
     ],
     nextImplementation: [
-      'Pass RuntimeCapabilitySnapshot from retained execution entry points where model, external access, workspace checks, or tool exposure changes execution permission.',
+      'Require RuntimeCapabilitySnapshot from any future entry point where model, external access, workspace checks, or tool exposure changes execution permission.',
     ],
   },
 ];

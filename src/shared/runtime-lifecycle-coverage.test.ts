@@ -33,7 +33,7 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(summary.partial).toBeGreaterThan(0);
     expect(RUNTIME_LIFECYCLE_COVERAGE.some((item) => (
       item.phase === 'capabilities_and_external_access' &&
-      item.gaps.some((gap) => gap.includes('Capability state'))
+      item.gaps.some((gap) => gap.includes('future entry points'))
     ))).toBe(true);
   });
 

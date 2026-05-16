@@ -258,6 +258,38 @@ describe('runtime verification', () => {
     });
   });
 
+  it('blocks capability-required pre-step execution when capability snapshot is missing', () => {
+    expect(evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: evaluateRuntimeAction({
+        action: 'run_start',
+        fromTaskId: 'task_1',
+      }),
+      requiresModelExecution: true,
+    })).toMatchObject({
+      mode: 'pre_step',
+      tone: 'fail',
+      label: '执行前缺少能力快照',
+      canProceed: false,
+      suggestedNextAction: 'inspect',
+    });
+
+    expect(evaluateRuntimeVerification({
+      mode: 'pre_step',
+      action: evaluateRuntimeAction({
+        action: 'run_start',
+        fromTaskId: 'task_1',
+      }),
+      requiresWorkspaceVerification: true,
+    })).toMatchObject({
+      mode: 'pre_step',
+      tone: 'fail',
+      label: '执行前缺少能力快照',
+      canProceed: false,
+      suggestedNextAction: 'inspect',
+    });
+  });
+
   it('requires confirmation when workspace verification capability is missing', () => {
     expect(evaluateRuntimeVerification({
       mode: 'pre_step',

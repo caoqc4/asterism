@@ -250,12 +250,45 @@ export function evaluateRuntimeVerification(input: RuntimeVerificationInput): Ru
           suggestedNextAction: 'handoff',
         };
       }
-      if (input.requiresModelExecution && input.capabilities && !capabilitySnapshotAllowsModelExecution(input.capabilities)) {
+      if (input.requiresModelExecution && !input.capabilities) {
+        return {
+          mode: input.mode,
+          tone: 'fail',
+          label: '执行前缺少能力快照',
+          detail: '当前动作需要模型执行，但运行时没有提供模型能力快照。',
+          source: 'lightweight_rule_engine',
+          canProceed: false,
+          requiresUserConfirmation: false,
+          shouldPersistTaskRecord: false,
+          suggestedNextAction: 'inspect',
+        };
+      }
+      if (
+        input.requiresModelExecution
+        && input.capabilities
+        && !capabilitySnapshotAllowsModelExecution(input.capabilities)
+      ) {
         return {
           mode: input.mode,
           tone: 'fail',
           label: '执行前缺少模型能力',
           detail: '当前动作需要模型执行，但模型或 API Key 尚未配置。',
+          source: 'lightweight_rule_engine',
+          canProceed: false,
+          requiresUserConfirmation: false,
+          shouldPersistTaskRecord: false,
+          suggestedNextAction: 'inspect',
+        };
+      }
+      if (
+        input.requiresWorkspaceVerification
+        && !input.capabilities
+      ) {
+        return {
+          mode: input.mode,
+          tone: 'fail',
+          label: '执行前缺少能力快照',
+          detail: '当前动作需要工作区校验，但运行时没有提供工作区能力快照。',
           source: 'lightweight_rule_engine',
           canProceed: false,
           requiresUserConfirmation: false,

@@ -92,6 +92,28 @@ function buildTaskRecord(state: TaskRecord['state']): TaskRecord {
   };
 }
 
+function buildConfiguredAiStatus(partial: Record<string, unknown> = {}) {
+  return {
+    configured: true,
+    apiKeyStored: true,
+    apiKeySource: 'env',
+    provider: 'anthropic',
+    model: 'claude-3-5-sonnet-latest',
+    baseUrl: null,
+    workspaceRoot: '/workspace',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    configPath: '/config.json',
+    codeAgentModelProducerEnabled: false,
+    featureFlags: {
+      enableScheduler: false,
+      enableSandboxCodingAgent: false,
+      enableSelfCheck: true,
+    },
+    toolScaffoldSummaries: [],
+    ...partial,
+  };
+}
+
 function buildRunRecord(status: RunRecord['status']): RunRecord {
   return {
     id: 'run_1',
@@ -578,6 +600,7 @@ describe('RunService', () => {
       createFromRun: vi.fn().mockResolvedValue(buildArtifactRecord()),
     });
     const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'anthropic',
         model: 'claude-3-5-sonnet-latest',
@@ -792,6 +815,7 @@ describe('RunService', () => {
         createFromRun: vi.fn().mockResolvedValue(buildArtifactRecord()),
       }) as never,
       {
+        getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
         resolveRuntimeConfig: vi.fn().mockResolvedValue({
           provider: 'anthropic',
           model: 'claude-3-5-sonnet-latest',
@@ -1064,6 +1088,10 @@ describe('RunService', () => {
     };
     const artifactRepository = buildArtifactRepositoryMock();
     const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus({
+        provider: 'openai',
+        model: 'gpt-4.1',
+      })),
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'openai',
         model: 'gpt-4.1',
@@ -1161,7 +1189,9 @@ describe('RunService', () => {
       runRepository as never,
       taskService as never,
       artifactRepository as never,
-      {} as never,
+      {
+        getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
+      } as never,
       {} as never,
       undefined,
       buildRunStepRepositoryMock() as never,
@@ -1837,6 +1867,7 @@ describe('RunService', () => {
     };
     const artifactRepository = buildArtifactRepositoryMock();
     const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
       resolveRuntimeConfig: vi.fn(),
     };
     const textExecutor = {
@@ -1891,6 +1922,7 @@ describe('RunService', () => {
       createFromRun: vi.fn().mockResolvedValue(buildArtifactRecord()),
     });
     const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'anthropic',
         model: 'claude-3-5-sonnet-latest',

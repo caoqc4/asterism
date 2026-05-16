@@ -50,6 +50,32 @@ describe('RunService integration', () => {
     });
   }
 
+  function buildConfiguredAiStatus(partial: Record<string, unknown> = {}) {
+    return {
+      configured: true,
+      apiKeyStored: true,
+      apiKeySource: 'env',
+      provider: 'openai-compatible',
+      model: 'local-alpha-model',
+      baseUrl: null,
+      workspaceRoot,
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      configPath: path.join(workspaceRoot, 'ai-config.json'),
+      codeAgentModelProducerEnabled: false,
+      codeAgentWorkspaceChecks: {
+        lint: { available: true, reason: 'ok' },
+        test: { available: true, reason: 'ok' },
+      },
+      featureFlags: {
+        enableScheduler: false,
+        enableSandboxCodingAgent: false,
+        enableSelfCheck: false,
+      },
+      toolScaffoldSummaries: [],
+      ...partial,
+    };
+  }
+
   it('runs an opted-in read-only workspace agent path through persisted run detail', async () => {
     fs.mkdirSync(path.join(workspaceRoot, 'docs'));
     fs.writeFileSync(
@@ -91,6 +117,7 @@ describe('RunService integration', () => {
       () => workspaceRoot,
     );
     const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'openai-compatible',
         model: 'local-alpha-model',
@@ -229,6 +256,7 @@ describe('RunService integration', () => {
       taskService,
     );
     const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'openai-compatible',
         model: 'local-alpha-model',
@@ -361,6 +389,7 @@ describe('RunService integration', () => {
       taskService,
     );
     const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'openai-compatible',
         model: 'local-alpha-model',
@@ -497,6 +526,7 @@ describe('RunService integration', () => {
       taskService,
     );
     const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'openai-compatible',
         model: 'local-alpha-model',
@@ -648,6 +678,7 @@ describe('RunService integration', () => {
       taskService,
     );
     const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'openai-compatible',
         model: 'local-alpha-model',
@@ -762,6 +793,7 @@ describe('RunService integration', () => {
       taskService,
     );
     const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'openai-compatible',
         model: 'local-alpha-model',
@@ -912,6 +944,7 @@ describe('RunService integration', () => {
       taskService,
     );
     const aiConfigService = {
+      getStatus: vi.fn().mockResolvedValue(buildConfiguredAiStatus()),
       resolveRuntimeConfig: vi.fn().mockResolvedValue({
         provider: 'openai-compatible',
         model: 'local-alpha-model',
