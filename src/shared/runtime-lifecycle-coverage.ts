@@ -217,6 +217,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskMemoryGuidanceState tracks pending Task.md and Task Record guidance per target, so newer guidance for one memory surface does not hide unresolved guidance for another.',
       'TaskMemoryGuidanceState reads structured guidance targets from Run Step input before falling back to human-readable guidance text.',
       'TaskMemoryWriteProposal projects pending guidance into minimal confirmed-write proposals for Task.md or Task Records without performing automatic writes.',
+      'TaskMemoryWriteProposal preserves existing Task.md content on update proposals and appends only the smallest missing memory note.',
       'TaskMemoryWriteApplyPlan turns a confirmed TaskMemoryWriteProposal into a create/update TaskFile input, while blocking unsafe updates without an existing file id.',
       'RunDetailRecord carries taskMemoryWriteProposals next to taskMemoryGuidance so runtime detail reads can reuse the same missing-memory write plan.',
       'RightPanel can surface pending RunDetail taskMemoryWriteProposals through the existing task-file proposal confirmation card and apply the shared TaskMemoryWriteApplyPlan after user confirmation.',

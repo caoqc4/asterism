@@ -542,6 +542,8 @@ Avoid:
   evidence or digest;
 - creating new folders, task records, Decisions, or prompts when one existing
   memory update would preserve recovery;
+- replacing an existing Task.md with a fresh template when only a small memory
+  supplement is needed;
 - clearing context because the message count is high without checking memory
   coverage;
 - carrying unrelated previous-task chat into the next task.
@@ -571,6 +573,11 @@ task memory is changed. Prefer the smallest write that satisfies recovery:
 update existing `Task.md` when the concise recovery file is missing information,
 or create one Task Record when detailed handoff, rationale, correction, or
 context archive material is required.
+
+When updating an existing `Task.md`, the update must preserve current content by
+default. Append or surgically update the smallest recovery section needed. Do not
+overwrite the file with a new scaffold unless the existing file is empty or the
+user explicitly asks for a rewrite.
 
 Task switching should follow the same memory boundary for the task being left:
 if the current task has unresolved task-memory guidance, runtime must block or
