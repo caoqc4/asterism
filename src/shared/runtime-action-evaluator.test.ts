@@ -92,6 +92,30 @@ describe('runtime action evaluator', () => {
     });
   });
 
+  it('keeps task capture global-only so task-context follow-ups use closeout gates', () => {
+    expect(evaluateRuntimeAction({
+      action: 'task_capture',
+      fromTaskId: null,
+      messageCount: 1,
+    })).toMatchObject({
+      allowed: true,
+      surface: 'timeline',
+      shouldPersistTaskRecord: false,
+      shouldRefreshContext: true,
+    });
+
+    expect(evaluateRuntimeAction({
+      action: 'task_capture',
+      fromTaskId: 'task_1',
+      messageCount: 1,
+    })).toMatchObject({
+      allowed: false,
+      surface: 'timeline',
+      shouldPersistTaskRecord: false,
+      shouldRefreshContext: true,
+    });
+  });
+
   it('routes decision actions through the decision checkpoint surface', () => {
     expect(evaluateRuntimeAction({
       action: 'decision_action',

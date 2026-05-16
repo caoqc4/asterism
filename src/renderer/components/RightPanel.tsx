@@ -16,7 +16,6 @@ import { PANEL_CAPTURE_SUMMARY_PREFIX } from '@shared/panel-capture';
 import { evaluateRuntimeAction } from '@shared/runtime-action-evaluator';
 import {
   evaluateRuntimeIntake,
-  isRuntimeFollowUpTaskProposal,
   type RuntimeIntakeEvaluation,
 } from '@shared/runtime-intake-evaluator';
 import {
@@ -1256,40 +1255,6 @@ export function RightPanel({
     if (!preStepVerification.canProceed) {
       appendSysMsg(`捕获任务已暂停：${preStepVerification.detail}`);
       return;
-    }
-    if (activeTaskId && isRuntimeFollowUpTaskProposal(lastUserText)) {
-      const [taskDetail, tasks] = await Promise.all([
-        window.api?.getTaskDetail?.(activeTaskId).catch(() => null) ?? Promise.resolve(null),
-        Promise.resolve(existingTasks),
-      ]);
-      if (taskDetail) {
-        const taskListRecord = tasks.find((task) => task.id === activeTaskId) ?? taskDetail;
-        const orderedChildren = orderedChildRecordsForTask(taskListRecord, tasks, {});
-        const closeoutVerification = evaluateRuntimeVerification({
-          mode: 'task_closeout',
-          intent: 'phase_closeout',
-          task: taskDetail,
-          childTaskIds: taskListRecord.childTaskIds ?? [],
-          childTasks: orderedChildren,
-          proposedFollowUpTasks: [{
-            title: candidateTitle,
-            summary: lastUserText,
-            evidence: [lastUserText],
-          }],
-        });
-        const closeout = closeoutVerification.taskCloseout;
-        if (
-          closeout?.outcome === 'handoff_to_existing_child'
-          || closeout?.outcome === 'handoff_to_existing_successor'
-        ) {
-          appendSysMsg(`后续任务创建已暂停：${closeout.reason} 请优先交接到已有任务，避免重复创建。`);
-          return;
-        }
-        if (closeout?.outcome === 'needs_follow_up_confirmation' && !closeout.followUpProposalAllowed) {
-          appendSysMsg(`后续任务创建已暂停：${closeout.reason}`);
-          return;
-        }
-      }
     }
     setCapturingTask(true);
     try {
