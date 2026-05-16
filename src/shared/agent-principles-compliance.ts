@@ -134,7 +134,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     gaps: [
       'RightPanel capture uses the shared intake evaluator and TasksPage explicit creation uses the shared task_capture guard; both now consume duplicate/generic candidate checks, but some retained creation entry points are not routed through intake yet.',
       'Current retained task creation entry points are scoped: TasksPage explicit capture uses intake/capture guards, RightPanel task-context follow-up capture uses closeout gating, and project child creation uses the subtask draft evaluator.',
-      'Subtask creation has service-level generic child and parent-ownership guards, and future child-task creation paths must keep using shared confirmation boundaries.',
+      'Subtask creation has service-level generic child and parent-ownership guards; future child-task creation paths must keep using the same shared confirmation boundaries.',
     ],
     nextVerification: [
       'Route future task creation entry points through RuntimeIntakeEvaluation, TaskCloseoutEvaluation, or a stricter child-task evaluator according to context.',
@@ -161,7 +161,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
     gaps: [
       'Project-level verification includes artifact/source counts and Decision effect summaries, but other project state transitions still need to consume it.',
-      'Subtask draft evaluation exists for project decomposition generation and confirmed project child creation, while service-level capture and hierarchy guards cover generic child-title and invalid parent ownership mistakes; future child-task paths still need a common confirmation boundary.',
+      'Subtask draft evaluation exists for project decomposition generation and confirmed project child creation, while service-level capture and hierarchy guards cover generic child-title and invalid parent ownership mistakes; future child-task paths must preserve that common confirmation boundary.',
     ],
     nextVerification: [
       'Route remaining project state transitions through project verification.',

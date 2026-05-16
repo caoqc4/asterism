@@ -75,7 +75,7 @@ Strongest areas:
 Weakest areas:
 
 - full task intake and pre-create evaluation across every retained creation entry point;
-- a single confirmation boundary for all child-task creation paths beyond project decomposition;
+- future child-task creation entry points preserving the same service-boundary capture checks and project child-draft evaluation;
 - future provider-visible entry points preserving full context snapshot metadata;
 - future connector ingestion preserving source quality signals;
 - future multi-decision workflows, if a concrete batch approve/defer/cancel need appears;

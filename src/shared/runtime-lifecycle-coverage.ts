@@ -379,7 +379,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'Some task structure still relies on renderer-local attributes.',
       'Project progress and child ordering are closer to data-authoritative, but legacy local attributes still need final migration cleanup.',
-      'Subtask draft evaluation is enforced for project decomposition generation and confirmation, but not yet every future child-task creation path.',
+      'Future child-task creation paths must keep using TaskService capture checks and stricter project child-draft evaluation when they create project children.',
     ],
     nextImplementation: [
       'Finish Package F data model migration cleanup.',
