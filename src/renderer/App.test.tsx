@@ -3535,6 +3535,26 @@ describe('App redesign v1', () => {
     promptSpy.mockRestore();
   });
 
+  it('normalizes nested task-record prompts back under Task Records', async () => {
+    const user = userEvent.setup();
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValueOnce('Other/manual.md');
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Tasks/ }));
+    await user.click(await screen.findByRole('button', { name: /董事会材料修订/ }));
+    await createTaskFileViaMenu(user, '任务记录');
+
+    await waitFor(() => {
+      expect(harness.api.createTaskFile).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: 'task_risk',
+        name: 'manual.md',
+        path: 'Task Records/manual.md',
+        kind: 'file',
+      }));
+    });
+    promptSpy.mockRestore();
+  });
+
   it('lets users resolve conflicting learned work habits from Work Habits', async () => {
     const user = userEvent.setup();
     saveWorkHabits([

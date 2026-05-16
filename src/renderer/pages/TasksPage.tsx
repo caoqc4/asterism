@@ -1572,9 +1572,10 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     if (!rawName) return;
     if (!guardDurablePanelAction({ taskId: selectedTask.id, confirmed: true }).allowed) return;
     const normalizedName = rawName.endsWith('.md') ? rawName : `${rawName}.md`;
-    const recordPath = normalizedName.includes('/')
+    const recordFileName = normalizedName.split('/').filter(Boolean).at(-1) ?? normalizedName;
+    const recordPath = isTaskRecordPath(normalizedName)
       ? normalizedName
-      : `Task Records/${normalizedName}`;
+      : `Task Records/${recordFileName}`;
     const displayName = recordPath.split('/').filter(Boolean).at(-1) ?? normalizedName;
     const content = [
       `# Record: ${displayName.replace(/\.md$/i, '')}`,

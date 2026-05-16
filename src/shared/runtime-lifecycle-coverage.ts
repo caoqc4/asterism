@@ -214,7 +214,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RightPanel Task.md important-file reference writes now pass through TaskMdUpdateNeedEvaluation before creating or updating Task.md.',
       'TasksPage direct Task.md saves now pass through TaskMdUpdateNeedEvaluation before persisting the primary recovery file.',
       'TasksPage ordinary task-file creation blocks reserved Task.md and Task Records paths so task memory surfaces keep using their dedicated evaluators.',
-      'TasksPage manual Task Record creation now passes through TaskRecordWorthinessEvaluation before creating Task Records files.',
+      'TasksPage manual Task Record creation now passes through TaskRecordWorthinessEvaluation and normalizes nested prompts back under Task Records before creating files.',
       'RuntimeRecoveryGuidance centralizes structured Task.md and Task Record recovery recommendations, while preserving legacy guidance messages.',
       'AgentToolRegistry durable tool results now expose structured recoveryGuidanceItems plus legacy recoveryGuidance messages from RuntimeRecoveryGuidance without silently mutating Task.md.',
       'AgentToolRegistry source-context writes use TaskRecordWorthinessEvaluation before recommending Task Record guidance, so raw source capture does not automatically become a task record.',
