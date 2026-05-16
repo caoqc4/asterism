@@ -187,6 +187,26 @@ export function buildCapabilityRegistry(params: {
   ];
 }
 
+export function capabilityRegistryAllowsModelExecution(
+  registry: CapabilityRegistryEntry[],
+): boolean {
+  return registry.some((entry) => (
+    entry.id === 'model.provider'
+    && entry.status === 'available'
+    && entry.requiredGate === 'runtime_context_assembly'
+  ));
+}
+
+export function capabilityRegistryAllowsWorkspaceVerification(
+  registry: CapabilityRegistryEntry[],
+): boolean {
+  return registry.some((entry) => (
+    entry.id === 'workspace.checks'
+    && entry.status === 'available'
+    && entry.requiredGate === 'runtime_pre_step'
+  ));
+}
+
 function statusFromSnapshot(
   status: RuntimeCapabilitySnapshot['model']['producer'] | undefined,
   requiredConfigured = true,

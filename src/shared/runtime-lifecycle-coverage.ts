@@ -453,6 +453,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Risky local command/write tools use confirmation checkpoints.',
       'RuntimeCapabilitySnapshot captures model availability, workspace verification checks, feature flags, and tool scaffold exposure for runtime consumers.',
       'CapabilityRegistry projects runtime capability snapshots into stable capability entries with status, visibility, access type, approval requirement, and runtime gate.',
+      'Runtime pre-step verification uses CapabilityRegistry checks for model execution and workspace verification readiness instead of reading ad hoc snapshot fields directly.',
       'pre_step verification blocks model-required or workspace-verification-required execution when the caller omits RuntimeCapabilitySnapshot.',
       'RunService and CodeAgentRunService provide RuntimeCapabilitySnapshot before model or workspace-sensitive execution.',
       'RuntimeEntrypointCoverage registers AI runtime configuration writes, Work Habit preference memory writes, and process-template library writes as product-level durable entrypoints instead of task mutations.',

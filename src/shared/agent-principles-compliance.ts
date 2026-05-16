@@ -80,6 +80,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeCapabilitySnapshot can be included in RuntimeContextManifest so model, workspace, flags, and tool scaffold state become explicit context assembly inputs.',
       'RunService and CodeAgentRunService pass RuntimeCapabilitySnapshot into run_start pre-step verification for model/workspace capability checks.',
       'CapabilityRegistry projects runtime capability snapshots into explicit capability entries with status, visibility, access type, approval requirement, and runtime gate.',
+      'Runtime pre-step verification now checks model execution and workspace verification readiness through CapabilityRegistry.',
       'pre_step verification blocks capability-required execution when RuntimeCapabilitySnapshot is omitted, so future model or workspace entry points cannot silently bypass capability checks.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through TaskMemoryCoverageEvaluation before execution.',
       'Runtime end-to-end scenario tests cover run start blocking without recovery context and next-step state, then passing after Task.md and next-step context exist.',

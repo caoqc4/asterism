@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildCapabilityRegistry } from './capability-registry.js';
+import {
+  buildCapabilityRegistry,
+  capabilityRegistryAllowsModelExecution,
+  capabilityRegistryAllowsWorkspaceVerification,
+} from './capability-registry.js';
 import { buildRuntimeCapabilitySnapshot } from './runtime-capability-snapshot.js';
 import type { AgentToolScaffoldFamilySummary } from './agent-tool-scaffold.js';
 import type { AiConfigStatus } from './types/settings.js';
@@ -39,6 +43,8 @@ describe('capability registry', () => {
       requiresApproval: true,
       summary: 'modelVisibleTools=1',
     });
+    expect(capabilityRegistryAllowsModelExecution(registry)).toBe(true);
+    expect(capabilityRegistryAllowsWorkspaceVerification(registry)).toBe(true);
   });
 
   it('keeps disabled or unconfigured capabilities hidden from model-visible exposure', () => {
@@ -69,6 +75,8 @@ describe('capability registry', () => {
       status: 'unconfigured',
       missingReason: 'No configured model provider.',
     });
+    expect(capabilityRegistryAllowsModelExecution(registry)).toBe(false);
+    expect(capabilityRegistryAllowsWorkspaceVerification(registry)).toBe(false);
   });
 
   it('requires a runtime gate and approval declaration for every capability', () => {

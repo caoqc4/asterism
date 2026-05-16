@@ -6,10 +6,13 @@ import {
 } from './task-closeout-evaluator.js';
 import type { DecisionEffectSummary } from './decision-effect-evaluator.js';
 import {
-  capabilitySnapshotAllowsModelExecution,
-  capabilitySnapshotAllowsWorkspaceVerification,
   type RuntimeCapabilitySnapshot,
 } from './runtime-capability-snapshot.js';
+import {
+  buildCapabilityRegistry,
+  capabilityRegistryAllowsModelExecution,
+  capabilityRegistryAllowsWorkspaceVerification,
+} from './capability-registry.js';
 import type { RuntimeActionEvaluation } from './runtime-action-evaluator.js';
 import {
   evaluateTaskMemoryCoverage,
@@ -266,7 +269,7 @@ export function evaluateRuntimeVerification(input: RuntimeVerificationInput): Ru
       if (
         input.requiresModelExecution
         && input.capabilities
-        && !capabilitySnapshotAllowsModelExecution(input.capabilities)
+        && !capabilityRegistryAllowsModelExecution(buildCapabilityRegistry({ snapshot: input.capabilities }))
       ) {
         return {
           mode: input.mode,
@@ -299,7 +302,7 @@ export function evaluateRuntimeVerification(input: RuntimeVerificationInput): Ru
       if (
         input.requiresWorkspaceVerification
         && input.capabilities
-        && !capabilitySnapshotAllowsWorkspaceVerification(input.capabilities)
+        && !capabilityRegistryAllowsWorkspaceVerification(buildCapabilityRegistry({ snapshot: input.capabilities }))
       ) {
         return {
           mode: input.mode,
