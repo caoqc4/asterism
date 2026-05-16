@@ -1,11 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { HomeBriefData } from '@shared/types/brief';
 import { TaskCompletionCheckModal } from '../components/TaskCompletionCheckModal';
-import { loadTaskAttributes } from '../lib/taskAttributes';
-import {
-  authoritativeChildTaskIds,
-  authoritativeParentTaskId,
-} from '../lib/taskHierarchyAdapter';
 import { guardTaskStateTransition } from '../lib/runtimeActionGuards';
 import {
   recordBriefRecommendationOrderAdjustment,
@@ -135,7 +130,6 @@ function titleFromRecommendedAction(action: HomeBriefData['recommendedActions'][
 }
 
 function focusTasksFromBriefData(data: HomeBriefData): FocusTask[] {
-  const taskAttrs = loadTaskAttributes();
   const titleById = new Map<string, string>();
   for (const task of data.recentTasks) {
     titleById.set(task.id, task.title);
@@ -156,8 +150,7 @@ function focusTasksFromBriefData(data: HomeBriefData): FocusTask[] {
     .map((a) => {
       const task = data.recentTasks.find((t) => t.id === a.taskId);
       const status = statusFromBriefTask(task) ?? statusFromRecommendedAction(a);
-      const attrs = taskAttrs[a.taskId!];
-      const parentTaskId = task ? authoritativeParentTaskId(task, attrs) : attrs?.parentTaskId ?? null;
+      const parentTaskId = task?.parentTaskId ?? null;
       return {
         id: a.taskId!,
         title: task?.title ?? titleById.get(a.taskId!) ?? titleFromRecommendedAction(a),
@@ -179,11 +172,10 @@ function focusTasksFromBriefData(data: HomeBriefData): FocusTask[] {
 
   return candidates
     .filter((task) => {
-      const attrs = taskAttrs[task.id];
       const record = data.recentTasks.find((candidate) => candidate.id === task.id);
       const isProjectParentWithVisibleChild =
         !task.parentTaskId &&
-        (record ? authoritativeChildTaskIds(record, attrs) : attrs?.childTaskIds ?? []).length > 0 &&
+        (record?.childTaskIds ?? []).length > 0 &&
         visibleChildParentIds.has(task.id);
 
       if (!isProjectParentWithVisibleChild) {

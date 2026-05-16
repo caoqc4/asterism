@@ -60,10 +60,7 @@ import {
   guardTaskStateTransition,
   verifyDurablePanelActionCompleted,
 } from '../lib/runtimeActionGuards';
-import {
-  authoritativeChildTaskIds,
-  orderedChildRecordsForTask,
-} from '../lib/taskHierarchyAdapter';
+import { orderedChildRecordsForTask } from '../lib/taskHierarchyAdapter';
 
 type MessageRole = 'user' | 'assistant';
 type ContextStrategy = 'auto' | 'manual' | 'reminder';
@@ -1149,17 +1146,13 @@ export function RightPanel({
         Promise.resolve(existingTasks),
       ]);
       if (taskDetail) {
-        const childAttrsByTaskId = Object.fromEntries(
-          tasks.map((task) => [task.id, getTaskAttributes(task.id)]),
-        );
         const taskListRecord = tasks.find((task) => task.id === activeTaskId) ?? taskDetail;
-        const taskAttrs = getTaskAttributes(activeTaskId);
-        const orderedChildren = orderedChildRecordsForTask(taskListRecord, tasks, childAttrsByTaskId);
+        const orderedChildren = orderedChildRecordsForTask(taskListRecord, tasks, {});
         const closeoutVerification = evaluateRuntimeVerification({
           mode: 'task_closeout',
           intent: 'phase_closeout',
           task: taskDetail,
-          childTaskIds: authoritativeChildTaskIds(taskListRecord, taskAttrs),
+          childTaskIds: taskListRecord.childTaskIds ?? [],
           childTasks: orderedChildren,
           proposedFollowUpTasks: [{
             title: candidateTitle,
@@ -1310,17 +1303,13 @@ export function RightPanel({
         ]);
         return;
       }
-      const childAttrsByTaskId = Object.fromEntries(
-        tasks.map((task) => [task.id, getTaskAttributes(task.id)]),
-      );
       const taskListRecord = tasks.find((task) => task.id === closeoutTaskId) ?? taskDetail;
-      const taskAttrs = getTaskAttributes(closeoutTaskId);
-      const orderedChildren = orderedChildRecordsForTask(taskListRecord, tasks, childAttrsByTaskId);
+      const orderedChildren = orderedChildRecordsForTask(taskListRecord, tasks, {});
       const evaluation = evaluateRuntimeVerification({
         mode: 'task_closeout',
         intent: 'phase_closeout',
         task: taskDetail,
-        childTaskIds: authoritativeChildTaskIds(taskListRecord, taskAttrs),
+        childTaskIds: taskListRecord.childTaskIds ?? [],
         childTasks: orderedChildren,
       }).taskCloseout;
       if (!evaluation) {
@@ -1359,12 +1348,10 @@ export function RightPanel({
       const nextTaskDetail = nextTask
         ? await window.api?.getTaskDetail?.(nextTask.id).catch(() => null) ?? null
         : null;
-      const nextTaskAttrs = nextTask ? getTaskAttributes(nextTask.id) : null;
       const nextTaskStartRecord = nextTask
         ? {
           ...(nextTaskDetail ?? nextTask),
           parentTaskId: (nextTaskDetail ?? nextTask).parentTaskId
-            ?? nextTaskAttrs?.parentTaskId
             ?? (evaluation.nextTaskKind === 'existing_child' ? closeoutTaskId : null),
         }
         : null;

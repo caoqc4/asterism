@@ -1575,13 +1575,19 @@ describe('App redesign v1', () => {
       state: 'planned',
       updatedAt: '2026-01-01T02:00:00.000Z',
     });
+    const parent = harness.tasks.find((task) => task.id === 'task_risk')!;
+    parent.taskType = 'project';
+    parent.taskFacets = ['project'];
+    parent.childTaskIds = [firstChild.id, secondChild.id];
+    firstChild.parentTaskId = parent.id;
+    secondChild.parentTaskId = parent.id;
     harness.tasks.push(firstChild, secondChild);
+    harness.details[parent.id] = buildTaskDetail(parent);
     harness.details[firstChild.id] = buildTaskDetail(firstChild);
     harness.details[secondChild.id] = buildTaskDetail(secondChild);
     saveTaskAttributes('task_risk', {
       type: 'project',
       typeConfirmed: true,
-      childTaskIds: ['existing_child_1', 'existing_child_2'],
     });
     const user = userEvent.setup();
     render(<App />);
@@ -1600,8 +1606,7 @@ describe('App redesign v1', () => {
     });
     expect(screen.queryByRole('button', { name: '创建后续任务' })).toBeNull();
 
-    const attrs = loadTaskAttributes();
-    expect(attrs.task_risk?.childTaskIds).toEqual([
+    expect(harness.tasks.find((task) => task.id === 'task_risk')?.childTaskIds).toEqual([
       'existing_child_1',
       'existing_child_2',
     ]);
@@ -1632,12 +1637,17 @@ describe('App redesign v1', () => {
         resolvedAt: null,
       },
     });
+    const parent = harness.tasks.find((task) => task.id === 'task_risk')!;
+    parent.taskType = 'project';
+    parent.taskFacets = ['project'];
+    parent.childTaskIds = [blockedChild.id];
+    blockedChild.parentTaskId = parent.id;
     harness.tasks.push(blockedChild);
+    harness.details[parent.id] = buildTaskDetail(parent);
     harness.details[blockedChild.id] = buildTaskDetail(blockedChild);
     saveTaskAttributes('task_risk', {
       type: 'project',
       typeConfirmed: true,
-      childTaskIds: ['blocked_child_1'],
     });
 
     const user = userEvent.setup();
@@ -2052,16 +2062,21 @@ describe('App redesign v1', () => {
       id: 'task_project_chain',
       title: '开发小程序',
       nextStep: '推进项目',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: ['task_chain_requirement', 'task_chain_development', 'task_chain_testing', 'task_chain_launch'],
     });
     const requirement = buildTask({
       id: 'task_chain_requirement',
       title: '小程序需求分析与功能设计',
       nextStep: '确认需求',
+      parentTaskId: project.id,
       updatedAt: '2026-01-01T00:00:00.000Z',
     });
     const development = buildTask({
       id: 'task_chain_development',
       title: '小程序前后端开发与联调',
+      parentTaskId: project.id,
       activeDependency: buildTaskDependency({
         id: 'dependency_development',
         taskId: 'task_chain_development',
@@ -2073,6 +2088,7 @@ describe('App redesign v1', () => {
     const testing = buildTask({
       id: 'task_chain_testing',
       title: '小程序测试、安全加固与性能优化',
+      parentTaskId: project.id,
       activeDependency: buildTaskDependency({
         id: 'dependency_testing',
         taskId: 'task_chain_testing',
@@ -2084,6 +2100,7 @@ describe('App redesign v1', () => {
     const launch = buildTask({
       id: 'task_chain_launch',
       title: '小程序上线准备与发布',
+      parentTaskId: project.id,
       activeDependency: buildTaskDependency({
         id: 'dependency_launch',
         taskId: 'task_chain_launch',
@@ -2561,24 +2578,30 @@ describe('App redesign v1', () => {
     const project = buildTask({
       id: 'task_project_order',
       title: '上线项目',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: ['task_project_order_first', 'task_project_order_second', 'task_project_order_third'],
       state: 'planned',
       updatedAt: '2026-05-13T12:00:00.000Z',
     });
     const first = buildTask({
       id: 'task_project_order_first',
       title: '1 需求确认',
+      parentTaskId: project.id,
       state: 'planned',
       updatedAt: '2026-05-13T12:05:00.000Z',
     });
     const second = buildTask({
       id: 'task_project_order_second',
       title: '2 界面设计',
+      parentTaskId: project.id,
       state: 'planned',
       updatedAt: '2026-05-13T12:04:00.000Z',
     });
     const third = buildTask({
       id: 'task_project_order_third',
       title: '3 开发联调',
+      parentTaskId: project.id,
       state: 'planned',
       updatedAt: '2026-05-13T12:03:00.000Z',
     });
@@ -2629,12 +2652,16 @@ describe('App redesign v1', () => {
     const project = buildTask({
       id: 'task_project_panel_parent',
       title: '开发小程序',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: ['task_project_panel_child'],
       state: 'planned',
       updatedAt: '2026-05-13T12:00:00.000Z',
     });
     const child = buildTask({
       id: 'task_project_panel_child',
       title: '小程序需求分析与功能设计',
+      parentTaskId: project.id,
       state: 'planned',
       nextStep: '确认需求范围',
       updatedAt: '2026-05-13T12:01:00.000Z',
@@ -2698,12 +2725,16 @@ describe('App redesign v1', () => {
     const project = buildTask({
       id: 'task_related_project',
       title: '资料整理项目',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: ['task_related_child'],
       state: 'planned',
       updatedAt: '2026-05-13T12:00:00.000Z',
     });
     const child = buildTask({
       id: 'task_related_child',
       title: '测试评估子任务',
+      parentTaskId: project.id,
       state: 'planned',
       updatedAt: '2026-05-13T12:05:00.000Z',
     });
@@ -2761,18 +2792,23 @@ describe('App redesign v1', () => {
     const project = buildTask({
       id: 'task_handoff_project',
       title: '上线项目',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: ['task_handoff_first', 'task_handoff_second'],
       state: 'planned',
       updatedAt: '2026-05-13T12:00:00.000Z',
     });
     const first = buildTask({
       id: 'task_handoff_first',
       title: '1 需求确认',
+      parentTaskId: project.id,
       state: 'planned',
       updatedAt: '2026-05-13T12:05:00.000Z',
     });
     const second = buildTask({
       id: 'task_handoff_second',
       title: '2 界面设计',
+      parentTaskId: project.id,
       state: 'planned',
       updatedAt: '2026-05-13T12:04:00.000Z',
     });
@@ -2836,18 +2872,23 @@ describe('App redesign v1', () => {
     const project = buildTask({
       id: 'task_blocked_handoff_project',
       title: '上线项目',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: ['task_blocked_handoff_first', 'task_blocked_handoff_second'],
       state: 'planned',
       updatedAt: '2026-05-13T12:00:00.000Z',
     });
     const first = buildTask({
       id: 'task_blocked_handoff_first',
       title: '1 需求确认',
+      parentTaskId: project.id,
       state: 'planned',
       updatedAt: '2026-05-13T12:05:00.000Z',
     });
     const second = buildTask({
       id: 'task_blocked_handoff_second',
       title: '2 界面设计',
+      parentTaskId: project.id,
       state: 'planned',
       updatedAt: '2026-05-13T12:04:00.000Z',
       activeBlocker: {
@@ -2906,18 +2947,23 @@ describe('App redesign v1', () => {
     const project = buildTask({
       id: 'task_context_handoff_project',
       title: '上线项目',
+      taskType: 'project',
+      taskFacets: ['project'],
+      childTaskIds: ['task_context_handoff_first', 'task_context_handoff_second'],
       state: 'planned',
       updatedAt: '2026-05-13T12:00:00.000Z',
     });
     const first = buildTask({
       id: 'task_context_handoff_first',
       title: '1 需求确认',
+      parentTaskId: project.id,
       state: 'planned',
       updatedAt: '2026-05-13T12:05:00.000Z',
     });
     const second = buildTask({
       id: 'task_context_handoff_second',
       title: '2 界面设计',
+      parentTaskId: project.id,
       state: 'planned',
       nextStep: null,
       updatedAt: '2026-05-13T12:04:00.000Z',

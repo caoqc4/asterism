@@ -368,6 +368,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Renderer task hierarchy projection now treats persisted taskType, taskFacets, parentTaskId, and childTaskIds as authoritative and uses local task attributes only for genuinely missing legacy fields.',
       'Legacy title-pattern phase follow-up inference no longer runs when a task explicitly has no parent, and TasksPage no longer mutates local hierarchy attributes during list loading.',
       'Brief focus projection, RightPanel closeout checks, and task completion modal checks now use the same persisted-field hierarchy authority instead of reading local task attributes directly.',
+      'TasksPage project moves, project decomposition, workspace selection context, completion handoff, Brief projection, RightPanel closeout, and task completion checks no longer write or consume renderer-local parent/child hierarchy attributes for active workflows.',
       'runtime-subtask-evaluator blocks duplicate, generic, parent-overlapping, or underspecified project child drafts before creation.',
       'runtime-subtask-evaluator blocks near-duplicate child drafts and existing child titles when compact titles only change word order.',
       'Project decomposition generation and confirmation both consult runtime-subtask-evaluator, so existing children block another decomposition round before a new draft appears.',
@@ -377,12 +378,12 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Runtime must keep directory views, priority lists, detail pages, and project progress consistent.',
     ],
     gaps: [
-      'Some task structure still relies on renderer-local attributes.',
-      'Project progress and child ordering are closer to data-authoritative, but legacy local attributes still need final migration cleanup.',
+      'Renderer-local hierarchy attributes remain as a read-only legacy missing-field fallback for older records and regression coverage; active retained workflows should not write new parent/child hierarchy there.',
+      'Project progress and child ordering are data-authoritative for retained workflows, but future import/migration utilities still need to retire or backfill old renderer-local hierarchy records explicitly.',
       'Future child-task creation paths must keep using TaskService capture checks and stricter project child-draft evaluation when they create project children.',
     ],
     nextImplementation: [
-      'Finish Package F data model migration cleanup.',
+      'Add an explicit one-time legacy hierarchy backfill/removal path before deleting the compatibility fallback.',
       'Keep hierarchy repair actions in Decisions unless a stronger task-structure maintenance workflow appears.',
     ],
   },

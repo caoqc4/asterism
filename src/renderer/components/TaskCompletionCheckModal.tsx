@@ -16,7 +16,6 @@ import type { TaskDetail, TaskListItemRecord } from '@shared/types/task';
 import { recordCompletionOverrideLearningSignal } from '../lib/workHabits';
 import { getTaskAttributes } from '../lib/taskAttributes';
 import {
-  authoritativeChildTaskIds,
   authoritativeTaskType,
   orderedChildRecordsForTask,
 } from '../lib/taskHierarchyAdapter';
@@ -144,7 +143,7 @@ export function TaskCompletionCheckModal({
           const decisions = await window.api?.listDecisions?.().catch(() => []) ?? [];
           if (!cancelled) {
             const taskListRecord = tasks.find((task) => task.id === taskId) ?? taskDetail;
-            const childTasks = orderedChildRecordsForTask(taskListRecord, tasks);
+            const childTasks = orderedChildRecordsForTask(taskListRecord, tasks, {});
             if (isProjectTask(taskId, taskDetail)) {
               const decisionEffect = summarizeDecisionEffects(decisions.filter((decision) => decision.taskId === taskId));
               setProjectVerification(evaluateRuntimeVerification({
@@ -158,12 +157,11 @@ export function TaskCompletionCheckModal({
               }));
               setCloseoutEvaluation(null);
             } else {
-              const taskAttrs = getTaskAttributes(taskId);
               setCloseoutEvaluation(evaluateRuntimeVerification({
                 mode: 'task_closeout',
                 intent: 'task_completion',
                 task: taskDetail,
-                childTaskIds: authoritativeChildTaskIds(taskListRecord, taskAttrs),
+                childTaskIds: taskListRecord.childTaskIds ?? [],
                 childTasks,
               }).taskCloseout ?? null);
               setProjectVerification(null);

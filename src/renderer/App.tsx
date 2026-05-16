@@ -10,7 +10,6 @@ import { ModelPage } from './pages/ModelPage';
 import { McpPage } from './pages/McpPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { RightPanel } from './components/RightPanel';
-import { getTaskAttributes } from './lib/taskAttributes';
 
 const ROUTE_LABELS: Record<AppRoute, string> = {
   brief: 'Brief',
@@ -37,6 +36,8 @@ export function App() {
   const [workspaceSelection, setWorkspaceSelection] = useState<TaskWorkspaceSelectionContext>({
     taskId: null,
     taskTitle: null,
+    parentTaskId: null,
+    childTaskIds: [],
     selectedFile: null,
   });
   const [taskFocusId, setTaskFocusId] = useState<string | null>(null);
@@ -47,7 +48,7 @@ export function App() {
     setRoute(r);
     setTaskFocusId(null);
     if (r !== 'tasks') {
-      setWorkspaceSelection({ taskId: null, taskTitle: null, selectedFile: null });
+      setWorkspaceSelection({ taskId: null, taskTitle: null, parentTaskId: null, childTaskIds: [], selectedFile: null });
     }
   }, []);
 
@@ -105,8 +106,7 @@ export function App() {
         : null,
     );
     if (!workspaceSelection.taskId || workspaceSelection.taskId === panelTaskId) return;
-    const panelTaskParentId = panelTaskId ? getTaskAttributes(panelTaskId)?.parentTaskId ?? null : null;
-    if (panelTaskParentId && workspaceSelection.taskId === panelTaskParentId) return;
+    if (panelTaskId && workspaceSelection.childTaskIds.includes(panelTaskId)) return;
     setPanelTaskId(workspaceSelection.taskId);
     setPanelTaskTitle(workspaceSelection.taskTitle);
     setPanelDraftPrompt(null);

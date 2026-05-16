@@ -54,7 +54,6 @@ import {
   defaultTriggerForType,
   inferTaskTypeProfile,
   loadTaskAttributes,
-  moveTaskToProject,
   normalizeTaskTypeFacets,
   saveTaskAttributes,
   type TaskAttributeRecord,
@@ -77,8 +76,6 @@ import {
   type LocalTaskFileRecord,
 } from '../lib/taskFileWorkspace';
 import {
-  authoritativeChildTaskIds,
-  authoritativeParentTaskId,
   authoritativeTaskFacets,
   authoritativeTaskType,
 } from '../lib/taskHierarchyAdapter';
@@ -143,6 +140,8 @@ type FileContextMenuState = {
 export type TaskWorkspaceSelectionContext = {
   taskId: string | null;
   taskTitle: string | null;
+  parentTaskId: string | null;
+  childTaskIds: string[];
   selectedFile: {
     path: string;
     kind: string;
@@ -708,13 +707,12 @@ function completionHandoffFromEvaluation(task: Task, allTasks: Task[]): PostComp
       nextSuggestedMove: task.nextStep ?? '继续推进',
     },
   } satisfies TaskDetail;
-  const attrs = loadTaskAttributes();
   const children = allTasks.filter((candidate) => effectiveParentTaskId(candidate, allTasks) === task.id);
   const evaluation = evaluateRuntimeVerification({
     mode: 'task_closeout',
     intent: 'task_completion',
     task: taskDetail,
-    childTaskIds: attrs[task.id]?.childTaskIds ?? [],
+    childTaskIds: task.childTaskIds,
     childTasks: children.map(toTaskListItemRecord),
   }).taskCloseout;
   if (!evaluation) {
@@ -848,8 +846,8 @@ function fromRecord(r: TaskListItemRecord, attrs?: TaskAttributeRecord | null): 
     facets,
     owner: attrs?.owner ?? 'user',
     visibility: attrs?.visibility ?? 'visible',
-    parentTaskId: authoritativeParentTaskId(r, attrs) ?? undefined,
-    childTaskIds: authoritativeChildTaskIds(r, attrs),
+    parentTaskId: r.parentTaskId ?? undefined,
+    childTaskIds: r.childTaskIds ?? [],
     whyNow: r.summary ?? undefined,
     nextStep: r.nextStep ?? undefined,
     riskLevel: r.riskLevel,
@@ -1486,6 +1484,8 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     onSelectionContextChange?.({
       taskId: selectedTask?.id ?? null,
       taskTitle: selectedTask?.title ?? null,
+      parentTaskId: selectedTask?.parentTaskId ?? null,
+      childTaskIds: selectedTask?.childTaskIds ?? [],
       selectedFile: selectedFileContext,
     });
   }, [
@@ -1497,6 +1497,8 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     selectedFile?.path,
     selectedObject,
     selectedTask?.id,
+    selectedTask?.childTaskIds,
+    selectedTask?.parentTaskId,
     selectedTask?.title,
   ]);
 
@@ -2066,31 +2068,41 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   }
 
   function moveIntoProject(taskId: string, projectId: string | null) {
-    const result = moveTaskToProject(taskId, projectId);
+    const currentTask = allTasks.find((task) => task.id === taskId);
+    if (!currentTask) return;
+    const previousProject = currentTask.parentTaskId
+      ? allTasks.find((task) => task.id === currentTask.parentTaskId) ?? null
+      : null;
+    const nextProject = projectId
+      ? allTasks.find((task) => task.id === projectId) ?? null
+      : null;
+    const nextChildTaskIds = nextProject && !nextProject.childTaskIds.includes(taskId)
+      ? [...nextProject.childTaskIds, taskId]
+      : nextProject?.childTaskIds ?? [];
+    const previousChildTaskIds = previousProject
+      ? previousProject.childTaskIds.filter((id) => id !== taskId)
+      : [];
     if (guardTaskMutation({ taskId }).allowed) {
       void window.api?.updateTask?.({
         id: taskId,
-        parentTaskId: result.task.parentTaskId,
-        taskType: result.task.type,
-        taskFacets: result.task.facets,
-        childTaskIds: result.task.childTaskIds,
+        parentTaskId: projectId,
       }).catch(() => undefined);
     }
-    if (result.previousProject) {
-      if (guardTaskMutation({ taskId: result.previousProject.taskId }).allowed) {
+    if (previousProject) {
+      if (guardTaskMutation({ taskId: previousProject.id }).allowed) {
         void window.api?.updateTask?.({
-          id: result.previousProject.taskId,
-          childTaskIds: result.previousProject.childTaskIds,
+          id: previousProject.id,
+          childTaskIds: previousChildTaskIds,
         }).catch(() => undefined);
       }
     }
-    if (result.nextProject) {
-      if (guardTaskMutation({ taskId: result.nextProject.taskId }).allowed) {
+    if (nextProject) {
+      if (guardTaskMutation({ taskId: nextProject.id }).allowed) {
         void window.api?.updateTask?.({
-          id: result.nextProject.taskId,
+          id: nextProject.id,
           taskType: 'project',
-          taskFacets: result.nextProject.facets,
-          childTaskIds: result.nextProject.childTaskIds,
+          taskFacets: nextProject.facets,
+          childTaskIds: nextChildTaskIds,
         }).catch(() => undefined);
       }
     }
@@ -2098,21 +2110,21 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     setSelectedId(taskId);
     setAllTasks((prev) => prev.map((task) => {
       if (task.id === taskId) {
-        return { ...task, parentTaskId: result.task.parentTaskId ?? undefined };
+        return { ...task, parentTaskId: projectId ?? undefined };
       }
-      if (result.previousProject && task.id === result.previousProject.taskId) {
-        return { ...task, childTaskIds: result.previousProject.childTaskIds };
+      if (previousProject && task.id === previousProject.id) {
+        return { ...task, childTaskIds: previousChildTaskIds };
       }
-      if (result.nextProject && task.id === result.nextProject.taskId) {
-        return { ...task, type: 'project', childTaskIds: result.nextProject.childTaskIds };
+      if (nextProject && task.id === nextProject.id) {
+        return { ...task, type: 'project', childTaskIds: nextChildTaskIds };
       }
       return task;
     }));
     void recordPanelTimelineEvent(taskId, 'panel.project_membership_changed', {
       taskId,
-      previousProjectId: result.previousProject?.taskId ?? null,
-      nextProjectId: result.nextProject?.taskId ?? projectId,
-      parentTaskId: result.task.parentTaskId ?? null,
+      previousProjectId: previousProject?.id ?? null,
+      nextProjectId: nextProject?.id ?? projectId,
+      parentTaskId: projectId,
       source: 'tasks_page',
     });
   }
@@ -2234,7 +2246,11 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
       }));
 
       const childIds = [...project.childTaskIds, ...plannedChildRecords.map((child) => child.id)];
-      const parentAttrs = saveTaskAttributes(project.id, { childTaskIds: childIds });
+      const parentAttrs = saveTaskAttributes(project.id, {
+        type: 'project',
+        facets: project.facets,
+        typeConfirmed: true,
+      });
       const updatedParent = await window.api.updateTask({
         id: project.id,
         summary: draft.parentGoal,
@@ -2303,7 +2319,6 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
         const childAttrs = saveTaskAttributes(child.id, {
           type: 'simple',
           typeConfirmed: true,
-          parentTaskId: project.id,
         });
         const dependencyTitle = draftSubtask?.dependency?.trim() ?? '';
         const dependency = dependencyTitle
@@ -2329,7 +2344,6 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
                   activeDependency: null,
                   dependencyReevaluation: null,
                 }, parentAttrs),
-                childTaskIds: parentAttrs.childTaskIds,
               }
             : task
         ));
