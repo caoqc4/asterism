@@ -258,6 +258,7 @@ export type AgentToolResult = {
     target: 'task_md' | 'task_record';
     message: string;
     reason: string;
+    referencePath?: string | null;
   }>;
   checkpointId?: string | null;
   checkpointKind?: RunCheckpointKind | null;

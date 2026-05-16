@@ -13,6 +13,7 @@ export type TaskMemoryWriteProposal = {
   existingFileId?: string | null;
   operation: TaskMemoryWriteProposalOperation;
   path: string;
+  referencePaths?: string[];
   reason: string;
   target: TaskMemoryGuidanceTarget;
   title: string;
@@ -53,15 +54,17 @@ export function buildTaskMemoryWriteProposals(params: {
   const taskTitle = params.taskTitle?.trim() || '当前任务';
 
   return guidance.pendingTargets.map((target) => {
+    const referencePaths = guidance.referencePathsByTarget?.[target] ?? [];
     if (target === 'task_md') {
       const existingTaskMd = normalizedFiles.find((file) => isTaskMdPath(file.path));
       return {
         contentTemplate: existingTaskMd
-          ? buildTaskMdUpdateContent(existingTaskMd.content, taskTitle, guidance.reason)
-          : buildTaskMdProposalContent(taskTitle, guidance.reason),
+          ? buildTaskMdUpdateContent(existingTaskMd.content, taskTitle, guidance.reason, referencePaths)
+          : buildTaskMdProposalContent(taskTitle, guidance.reason, referencePaths),
         existingFileId: existingTaskMd?.id ?? null,
         operation: existingTaskMd ? 'update' : 'create',
         path: 'Task.md',
+        referencePaths,
         reason: guidance.reason,
         target,
         title: existingTaskMd ? '更新 Task.md' : '创建 Task.md',
@@ -73,6 +76,7 @@ export function buildTaskMemoryWriteProposals(params: {
       existingFileId: null,
       operation: 'create',
       path: `Task Records/${formatTaskRecordDate(params.nowIso)}-memory-guidance.md`,
+      referencePaths,
       reason: guidance.reason,
       target,
       title: '创建任务记录',
@@ -129,7 +133,7 @@ export function buildTaskMemoryWriteApplyPlan(params: {
   };
 }
 
-function buildTaskMdProposalContent(taskTitle: string, reason: string): string {
+function buildTaskMdProposalContent(taskTitle: string, reason: string, referencePaths: string[] = []): string {
   return [
     '# Task',
     '',
@@ -139,7 +143,7 @@ function buildTaskMdProposalContent(taskTitle: string, reason: string): string {
     '## Current Progress',
     '',
     '## Key Context',
-    `- 待补任务记忆：${reason}`,
+    referencePaths.length ? '' : `- 待补任务记忆：${reason}`,
     '',
     '## Decisions',
     '',
@@ -150,15 +154,22 @@ function buildTaskMdProposalContent(taskTitle: string, reason: string): string {
     '## Next Step',
     '',
     '## Important Files',
+    ...referencePaths.map((path) => `- ${path}`),
     '',
     '## Recent Records',
     '',
   ].join('\n');
 }
 
-function buildTaskMdUpdateContent(currentContent: string | null | undefined, taskTitle: string, reason: string): string {
+function buildTaskMdUpdateContent(
+  currentContent: string | null | undefined,
+  taskTitle: string,
+  reason: string,
+  referencePaths: string[] = [],
+): string {
   const trimmed = currentContent?.trimEnd();
-  if (!trimmed) return buildTaskMdProposalContent(taskTitle, reason);
+  if (!trimmed) return buildTaskMdProposalContent(taskTitle, reason, referencePaths);
+  if (referencePaths.length) return appendImportantFileReferences(trimmed, referencePaths);
   const note = `- 待补任务记忆：${reason}`;
   if (trimmed.includes(note)) return `${trimmed}\n`;
 
@@ -173,6 +184,42 @@ function buildTaskMdUpdateContent(currentContent: string | null | undefined, tas
     heading,
     note,
     '',
+  ].join('\n');
+}
+
+function appendImportantFileReferences(content: string, referencePaths: string[]): string {
+  const missingPaths = uniqueStrings(referencePaths.filter((path) => !content.includes(path)));
+  if (!missingPaths.length) return `${content.trimEnd()}\n`;
+
+  const marker = '## Important Files';
+  const lines = content.replace(/\r\n/g, '\n').trimEnd().split('\n');
+  const start = lines.findIndex((line) => line.trim() === marker);
+  if (start === -1) {
+    return [
+      lines.join('\n'),
+      '',
+      marker,
+      ...missingPaths.map((path) => `- ${path}`),
+      '',
+    ].join('\n');
+  }
+
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^##\s+/.test(lines[index]?.trim() ?? '')) {
+      end = index;
+      break;
+    }
+  }
+
+  const placeholders = new Set(['No important files linked yet.', '暂无']);
+  const section = lines.slice(start + 1, end).map((line) => line.trim()).filter(Boolean);
+  const before = placeholders.has(section.join('\n')) ? lines.slice(0, start + 1) : lines.slice(0, end);
+  const after = lines.slice(end);
+  return [
+    ...before,
+    ...missingPaths.map((path) => `- ${path}`),
+    ...after,
   ].join('\n');
 }
 
@@ -205,6 +252,10 @@ function formatTaskRecordDate(nowIso?: string): string {
 
 function fileNameFromPath(path: string): string {
   return (path.replace(/\\/g, '/').split('/').filter(Boolean).at(-1) ?? path.trim()) || 'Task.md';
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return Array.from(new Set(values));
 }
 
 export function hasTaskMemoryWriteForTarget(

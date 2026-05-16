@@ -25,6 +25,7 @@ export type TaskMemoryGuidanceState = {
   outcome: 'none' | 'pending' | 'satisfied';
   pendingTargets: TaskMemoryGuidanceTarget[];
   reason: string;
+  referencePathsByTarget?: Partial<Record<TaskMemoryGuidanceTarget, string[]>>;
   targets: TaskMemoryGuidanceTarget[];
 };
 
@@ -48,6 +49,7 @@ export function evaluateTaskMemoryGuidanceState(params: {
     .map((signal, index) => ({
       index,
       createdAt: signal.createdAt ?? null,
+      referencePathsByTarget: parseStructuredGuidanceReferences(signal.input),
       targets: normalizeGuidanceTargets(signal.targets)
         ?? parseStructuredGuidanceTargets(signal.input)
         ?? detectTaskMemoryGuidanceTargets([
@@ -63,6 +65,7 @@ export function evaluateTaskMemoryGuidanceState(params: {
       outcome: 'none',
       pendingTargets: [],
       reason: '没有发现待处理的任务记忆建议。',
+      referencePathsByTarget: {},
       targets: [],
     };
   }
@@ -83,6 +86,7 @@ export function evaluateTaskMemoryGuidanceState(params: {
       outcome: 'satisfied',
       pendingTargets: [],
       reason: '最新任务记忆建议已有对应的 Task.md 或 Task Record 写入。',
+      referencePathsByTarget: referencePathsForTargets(targets, latestByTarget),
       targets,
     };
   }
@@ -92,6 +96,7 @@ export function evaluateTaskMemoryGuidanceState(params: {
     outcome: 'pending',
     pendingTargets,
     reason: `最新任务记忆建议仍缺少对应写入：${pendingTargets.map(labelTarget).join('、')}。`,
+    referencePathsByTarget: referencePathsForTargets(pendingTargets, latestByTarget),
     targets,
   };
 }
@@ -113,6 +118,63 @@ function parseStructuredGuidanceTargets(input?: string | null): TaskMemoryGuidan
   } catch {
     return null;
   }
+}
+
+function parseStructuredGuidanceReferences(input?: string | null): Partial<Record<TaskMemoryGuidanceTarget, string[]>> {
+  if (!input) return {};
+  try {
+    const parsed = JSON.parse(input) as {
+      items?: Array<{ target?: unknown; referencePath?: unknown }>;
+      referencePathsByTarget?: unknown;
+    };
+    return mergeReferenceMaps(
+      normalizeReferenceMap(parsed.referencePathsByTarget),
+      normalizeGuidanceItemReferences(parsed.items),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function normalizeGuidanceItemReferences(
+  items: Array<{ target?: unknown; referencePath?: unknown }> | undefined,
+): Partial<Record<TaskMemoryGuidanceTarget, string[]>> {
+  const result: Partial<Record<TaskMemoryGuidanceTarget, string[]>> = {};
+  for (const item of items ?? []) {
+    if (item.target !== 'task_md' && item.target !== 'task_record') continue;
+    const referencePath = typeof item.referencePath === 'string' ? item.referencePath.trim() : '';
+    if (!referencePath) continue;
+    result[item.target] = uniqueStrings([...(result[item.target] ?? []), referencePath]);
+  }
+  return result;
+}
+
+function normalizeReferenceMap(value: unknown): Partial<Record<TaskMemoryGuidanceTarget, string[]>> {
+  if (!value || typeof value !== 'object') return {};
+  const record = value as Partial<Record<TaskMemoryGuidanceTarget, unknown>>;
+  return {
+    task_md: normalizeReferencePaths(record.task_md),
+    task_record: normalizeReferencePaths(record.task_record),
+  };
+}
+
+function normalizeReferencePaths(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const paths = value
+    .filter((path): path is string => typeof path === 'string')
+    .map((path) => path.trim())
+    .filter(Boolean);
+  return paths.length ? uniqueStrings(paths) : undefined;
+}
+
+function mergeReferenceMaps(
+  first: Partial<Record<TaskMemoryGuidanceTarget, string[]>>,
+  second: Partial<Record<TaskMemoryGuidanceTarget, string[]>>,
+): Partial<Record<TaskMemoryGuidanceTarget, string[]>> {
+  return {
+    task_md: uniqueStrings([...(first.task_md ?? []), ...(second.task_md ?? [])]),
+    task_record: uniqueStrings([...(first.task_record ?? []), ...(second.task_record ?? [])]),
+  };
 }
 
 function normalizeGuidanceTargets(value: unknown): TaskMemoryGuidanceTarget[] | null {
@@ -186,14 +248,31 @@ function latestSignal<T extends { createdAt: string | null; index: number }>(sig
 }
 
 function latestGuidanceByTarget(
-  signals: Array<{ createdAt: string | null; index: number; targets: TaskMemoryGuidanceTarget[] }>,
-): Map<TaskMemoryGuidanceTarget, { createdAt: string | null; index: number }> {
-  const byTarget = new Map<TaskMemoryGuidanceTarget, { createdAt: string | null; index: number }>();
+  signals: Array<{
+    createdAt: string | null;
+    index: number;
+    referencePathsByTarget?: Partial<Record<TaskMemoryGuidanceTarget, string[]>>;
+    targets: TaskMemoryGuidanceTarget[];
+  }>,
+): Map<TaskMemoryGuidanceTarget, {
+  createdAt: string | null;
+  index: number;
+  referencePaths: string[];
+}> {
+  const byTarget = new Map<TaskMemoryGuidanceTarget, {
+    createdAt: string | null;
+    index: number;
+    referencePaths: string[];
+  }>();
   for (const signal of signals) {
     for (const target of signal.targets) {
       const current = byTarget.get(target);
       if (!current || compareSignalOrder(signal, current) > 0) {
-        byTarget.set(target, signal);
+        byTarget.set(target, {
+          createdAt: signal.createdAt,
+          index: signal.index,
+          referencePaths: signal.referencePathsByTarget?.[target] ?? [],
+        });
       }
     }
   }
@@ -210,6 +289,18 @@ function latestPendingGuidanceAt(
   return pendingSignals.length ? latestSignal(pendingSignals).createdAt : null;
 }
 
+function referencePathsForTargets(
+  targets: TaskMemoryGuidanceTarget[],
+  latestByTarget: Map<TaskMemoryGuidanceTarget, { referencePaths: string[] }>,
+): Partial<Record<TaskMemoryGuidanceTarget, string[]>> {
+  const result: Partial<Record<TaskMemoryGuidanceTarget, string[]>> = {};
+  for (const target of targets) {
+    const paths = latestByTarget.get(target)?.referencePaths ?? [];
+    if (paths.length) result[target] = paths;
+  }
+  return result;
+}
+
 function compareSignalOrder(
   a: { createdAt: string | null; index: number },
   b: { createdAt: string | null; index: number },
@@ -224,6 +315,10 @@ function compareSignalOrder(
 
 function uniqueTargets(targets: TaskMemoryGuidanceTarget[]): TaskMemoryGuidanceTarget[] {
   return Array.from(new Set(targets));
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return Array.from(new Set(values));
 }
 
 function labelTarget(target: TaskMemoryGuidanceTarget): string {

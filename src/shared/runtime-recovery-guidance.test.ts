@@ -19,6 +19,25 @@ describe('runtime recovery guidance', () => {
         shouldUpdateTaskMd: true,
         reason: 'next_step',
       },
+      referencePath: null,
+    });
+  });
+
+  it('keeps important file references as structured guidance metadata', () => {
+    const guidance = buildRuntimeRecoveryGuidance({
+      text: '创建了交付说明。',
+      hasTaskContext: true,
+      importantFilePath: 'Artifacts/release-note.md',
+      producedDurableChange: true,
+      taskMdReasonHint: 'important_file',
+    });
+
+    expect(guidance.items[0]).toMatchObject({
+      target: 'task_md',
+      referencePath: 'Artifacts/release-note.md',
+      evaluation: {
+        reason: 'important_file',
+      },
     });
   });
 

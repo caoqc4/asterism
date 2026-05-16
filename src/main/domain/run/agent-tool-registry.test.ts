@@ -976,8 +976,15 @@ describe('AgentToolRegistry', () => {
         kind: 'plan',
         status: 'completed',
         title: '任务记忆建议',
-        input: JSON.stringify({ targets: ['task_md'] }),
-        output: '- Task.md: important_file',
+        input: JSON.stringify({
+          targets: ['task_md'],
+          items: [{
+            target: 'task_md',
+            reason: 'important_file',
+            referencePath: 'artifact_1',
+          }],
+        }),
+        output: '- Task.md: important_file / reference=artifact_1',
       }),
     );
   });

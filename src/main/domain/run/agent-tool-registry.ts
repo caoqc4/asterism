@@ -730,6 +730,7 @@ function withRuntimeRecoveryGuidance(
           target: item.target,
           message: item.message,
           reason: item.evaluation.reason,
+          referencePath: item.referencePath ?? null,
         })),
       }
     : result;
@@ -740,15 +741,24 @@ function formatRuntimeRecoveryGuidance(result: AgentToolResult): string | null {
   return result.recoveryGuidanceItems
     .map((item) => {
       const target = item.target === 'task_md' ? 'Task.md' : 'Task Record';
-      return `- ${target}: ${item.reason}`;
+      const reference = item.referencePath ? ` / reference=${item.referencePath}` : '';
+      return `- ${target}: ${item.reason}${reference}`;
     })
     .join('\n');
 }
 
 function formatRuntimeRecoveryGuidanceInput(result: AgentToolResult): string | null {
   if (!result.recoveryGuidanceItems?.length) return null;
+  const referencedItems = result.recoveryGuidanceItems
+    .filter((item) => Boolean(item.referencePath))
+    .map((item) => ({
+      target: item.target,
+      reason: item.reason,
+      referencePath: item.referencePath ?? null,
+    }));
   return JSON.stringify({
     targets: Array.from(new Set(result.recoveryGuidanceItems.map((item) => item.target))),
+    ...(referencedItems.length ? { items: referencedItems } : {}),
   });
 }
 

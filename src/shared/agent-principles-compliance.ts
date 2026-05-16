@@ -90,8 +90,10 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'AgentToolRegistry durable tool results expose recoveryGuidanceItems and legacy recoveryGuidance from RuntimeRecoveryGuidance without silently mutating Task.md.',
       'AgentToolRegistry persists recoveryGuidanceItems as a separate Run Step so task-memory recommendations remain auditable without silently mutating Task.md or Task Records.',
       'TaskMemoryGuidanceState reads structured guidance targets from Run Step input before falling back to guidance text parsing.',
+      'TaskMemoryGuidanceState preserves structured reference paths from guidance input for concrete Task.md recovery references.',
       'TaskMemoryWriteProposal projects pending guidance into minimal confirmed-write proposals for Task.md or Task Records without automatically changing task memory.',
       'TaskMemoryWriteProposal preserves existing Task.md content and appends the smallest missing memory note instead of replacing the recovery file.',
+      'TaskMemoryWriteProposal writes concrete Important Files entries when pending Task.md guidance carries reference paths.',
       'TaskMemoryWriteApplyPlan converts confirmed proposals into create/update TaskFile inputs and blocks Task.md updates that lack an existing file id.',
       'RunDetailRecord exposes taskMemoryWriteProposals derived from pending TaskMemoryGuidanceState, so runtime consumers can route the missing memory write without recomputing it.',
       'RightPanel routes pending taskMemoryWriteProposals through its existing confirmed task-file proposal card and applies TaskMemoryWriteApplyPlan only after user confirmation.',
@@ -254,7 +256,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
     gaps: [
       'Task.md update recommendations are not generated for every durable state change.',
-      'Important created/modified files are not always referenced from Task.md or a Task Record.',
+      'Important created/modified files are routed through structured task-memory guidance when produced by durable tools; future write surfaces must preserve the same reference metadata.',
     ],
     nextVerification: [
       'Keep TaskMdUpdateNeed coverage for goal/scope/progress/decision/blocker/next-step/file-reference changes as new write paths are added.',
@@ -313,7 +315,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'AI output, source material, task record, artifact, and ordinary file labels come from shared classification.',
     ],
     gaps: [
-      'Important output references are not always propagated to Task.md or Task Records.',
+      'Important output references from durable tools are preserved through structured task-memory guidance; future output surfaces must reuse the same reference propagation path.',
     ],
     nextVerification: [
       'Add output-reference verification after file proposal confirmation and code-agent artifact creation.',

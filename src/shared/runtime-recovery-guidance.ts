@@ -14,11 +14,13 @@ export type RuntimeRecoveryGuidanceItem =
       target: 'task_md';
       message: string;
       evaluation: TaskMdUpdateNeedEvaluation;
+      referencePath?: string | null;
     }
   | {
       target: 'task_record';
       message: string;
       evaluation: TaskRecordWorthinessEvaluation;
+      referencePath?: string | null;
     };
 
 export type RuntimeRecoveryGuidance = {
@@ -50,6 +52,7 @@ export function buildRuntimeRecoveryGuidance(params: {
       target: 'task_md',
       message: `Task.md update recommended: ${taskMdUpdate.reason}`,
       evaluation: taskMdUpdate,
+      referencePath: params.importantFilePath ?? null,
     });
   }
 

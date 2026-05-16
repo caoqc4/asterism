@@ -13,6 +13,7 @@ function pendingGuidance(partial: Partial<TaskMemoryGuidanceState> = {}): TaskMe
     outcome: partial.outcome ?? 'pending',
     pendingTargets: partial.pendingTargets ?? ['task_md'],
     reason: partial.reason ?? '最新任务记忆建议仍缺少对应写入：Task.md。',
+    referencePathsByTarget: partial.referencePathsByTarget,
     targets: partial.targets ?? partial.pendingTargets ?? ['task_md'],
   };
 }
@@ -54,6 +55,28 @@ describe('task memory write proposal', () => {
     expect(proposals[0]!.contentTemplate).toContain('## Recent Records');
     expect(proposals[0]!.contentTemplate).toContain('待补任务记忆');
     expect(proposals[0]!.contentTemplate.match(/# Task/g)).toHaveLength(1);
+  });
+
+  it('uses structured reference paths as concrete Task.md important files', () => {
+    const proposals = buildTaskMemoryWriteProposals({
+      guidance: pendingGuidance({
+        referencePathsByTarget: {
+          task_md: ['Artifacts/release-note.md'],
+        },
+      }),
+      taskFiles: [{
+        content: '# Task\n\n## Goal\n开发小程序\n\n## Important Files\nNo important files linked yet.\n\n## Recent Records\n',
+        id: 'task_file_1',
+        path: 'Task.md',
+        updatedAt: '2026-05-16T09:00:00.000Z',
+      }],
+      taskTitle: '开发小程序',
+    });
+
+    expect(proposals[0]!.referencePaths).toEqual(['Artifacts/release-note.md']);
+    expect(proposals[0]!.contentTemplate).toContain('## Important Files\n- Artifacts/release-note.md');
+    expect(proposals[0]!.contentTemplate).not.toContain('No important files linked yet.');
+    expect(proposals[0]!.contentTemplate).not.toContain('待补任务记忆');
   });
 
   it('builds a Task Record creation proposal for pending record guidance', () => {
