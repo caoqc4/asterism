@@ -1779,7 +1779,7 @@ describe('App redesign v1', () => {
     }
 
     expect(await screen.findByText(/刷新前会先保全关键决策、偏好变化和未解决问题/)).toBeTruthy();
-    expect(screen.getByText(/达到刷新阈值 3/)).toBeTruthy();
+    expect(screen.getByText(/达到会话检查阈值 3/)).toBeTruthy();
   });
 
   it('persists selected task completion from the Tasks inline row action', async () => {

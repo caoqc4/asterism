@@ -242,7 +242,7 @@ function shouldSuggestSessionRefresh(
     counts.set(message, next);
   }
   if (userMessages.length >= messageLimit) {
-    return { reason: `触发原因：当前会话已有 ${userMessages.length} 条用户消息，达到刷新阈值 ${messageLimit}。` };
+    return { reason: `触发原因：当前会话已有 ${userMessages.length} 条用户消息，达到会话检查阈值 ${messageLimit}。` };
   }
 
   const recentCorrectionCount = userMessages
