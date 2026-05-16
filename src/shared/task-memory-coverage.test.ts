@@ -72,6 +72,71 @@ describe('task memory coverage', () => {
     });
   });
 
+  it('does not count Task.md or Task Records as completion evidence files', () => {
+    const input = buildTaskMemoryCoverageInputForTask('task_completion', {
+      id: 'task-1',
+      title: 'Task',
+      summary: 'Ready to complete',
+      state: 'running',
+      nextStep: 'Complete',
+      waitingReason: null,
+      riskLevel: 'none',
+      riskNote: null,
+      createdAt: '2026-05-15T01:00:00.000Z',
+      updatedAt: '2026-05-15T01:00:00.000Z',
+      activeWaitingItem: null,
+      activeBlocker: null,
+      artifacts: [],
+      completionCriteria: [{
+        id: 'criteria-1',
+        taskId: 'task-1',
+        text: 'Done',
+        verificationResponsibility: null,
+        verificationResponsibilityLabel: null,
+        status: 'satisfied',
+        createdAt: '2026-05-15T01:00:00.000Z',
+        updatedAt: '2026-05-15T01:00:00.000Z',
+        satisfiedAt: '2026-05-15T01:00:00.000Z',
+      }],
+      sourceContexts: [],
+      processTemplates: [],
+      availableProcessTemplates: [],
+      timeline: [],
+      taskFiles: [
+        {
+          id: 'file-1',
+          taskId: 'task-1',
+          name: 'Task.md',
+          path: 'Task.md',
+          kind: 'file',
+          content: '# Task',
+          createdAt: '2026-05-15T01:00:00.000Z',
+          updatedAt: '2026-05-15T01:00:00.000Z',
+        },
+        {
+          id: 'file-2',
+          taskId: 'task-1',
+          name: 'handoff.md',
+          path: 'Task Records/handoff.md',
+          kind: 'file',
+          content: '# Handoff',
+          createdAt: '2026-05-15T01:00:00.000Z',
+          updatedAt: '2026-05-15T01:00:00.000Z',
+        },
+      ],
+    });
+
+    expect(input).toMatchObject({
+      hasImportantFilesOrSources: false,
+      hasTaskMd: true,
+      hasRelevantTaskRecord: true,
+    });
+    expect(evaluateTaskMemoryCoverage(input)).toMatchObject({
+      outcome: 'needs_memory_write',
+      recommendedWrites: ['run', 'artifact_reference'],
+    });
+  });
+
   it('treats global context as not applicable', () => {
     expect(evaluateTaskMemoryCoverage({
       action: 'context_clear',

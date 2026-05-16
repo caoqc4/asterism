@@ -67,7 +67,10 @@ export function buildTaskMemoryCoverageInputForTask(
   const sourceContexts = task.sourceContexts ?? [];
   const artifacts = task.artifacts ?? [];
   const timeline = task.timeline ?? [];
-  const hasImportantFilesOrSources = taskFiles.length > 0 || sourceContexts.length > 0 || artifacts.length > 0;
+  const hasNonMemoryTaskFile = taskFiles.some((file) => (
+    file.kind === 'file' && !isTaskMdPath(file.path) && !isTaskRecordPath(file.path)
+  ));
+  const hasImportantFilesOrSources = hasNonMemoryTaskFile || sourceContexts.length > 0 || artifacts.length > 0;
   const hasRecentRunEvidence = timeline.some((event) => event.type.startsWith('run.'));
 
   return {
