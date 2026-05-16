@@ -174,7 +174,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TasksPage file/source/artifact actions and project decomposition confirmation now persist panel.* timeline events for RuntimeEventRecord audit projection.',
       'TasksPage project membership changes and completion handoffs now persist panel.* timeline events for task-to-task replay.',
       'TaskService recordTimelineEvent now guards panel.* task dynamic writes with task_mutation before appending timeline events.',
-      'RuntimeEntrypointCoverage keeps retained execution, resume, context-transition, task-transition, and durable-write entrypoints explicit with required runtime gates.',
+      'RuntimeEntrypointCoverage keeps retained execution, resume, context-transition, task-capture, task-transition, project-decomposition, decision-action, agent-tool, and durable-write entrypoints explicit with required runtime gates.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime must decide whether execution is panel-lightweight, Run-backed, Code Agent, operator-started browser QA, or future scheduled/event execution.',

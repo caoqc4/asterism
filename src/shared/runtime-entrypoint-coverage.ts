@@ -3,6 +3,8 @@ export type RuntimeEntrypointKind =
   | 'hidden_local_execution'
   | 'execution_resume'
   | 'decision_resume'
+  | 'decision_action'
+  | 'task_capture'
   | 'task_state_transition'
   | 'durable_write'
   | 'context_transition';
@@ -154,6 +156,22 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     ],
   },
   {
+    id: 'task.capture',
+    owner: 'TasksPage / RightPanel task capture',
+    kind: 'task_capture',
+    description: 'Create a retained task from explicit user input or confirmed panel capture.',
+    requiredGates: [
+      'runtime_action',
+      'task_memory_guidance',
+      'pre_step',
+    ],
+    coveredGates: [
+      'runtime_action',
+      'task_memory_guidance',
+      'pre_step',
+    ],
+  },
+  {
     id: 'task.transitionToRunning',
     owner: 'TaskService.transition / transitionIfAllowed',
     kind: 'task_state_transition',
@@ -188,6 +206,24 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     ],
   },
   {
+    id: 'decision.action',
+    owner: 'DecisionService.act / DecisionsPage',
+    kind: 'decision_action',
+    description: 'Approve, defer, or cancel a retained Decision without checkpoint resume.',
+    requiredGates: [
+      'decision_action',
+      'task_memory_guidance',
+      'pre_step',
+      'post_step',
+    ],
+    coveredGates: [
+      'decision_action',
+      'task_memory_guidance',
+      'pre_step',
+      'post_step',
+    ],
+  },
+  {
     id: 'panel.timelineEventWrite',
     owner: 'TaskService.recordTimelineEvent',
     kind: 'durable_write',
@@ -204,10 +240,46 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     ],
   },
   {
+    id: 'project.decompositionConfirm',
+    owner: 'TasksPage project decomposition confirmation',
+    kind: 'durable_write',
+    description: 'Confirm generated project children, dependencies, criteria, records, and parent updates.',
+    requiredGates: [
+      'task_mutation',
+      'pre_step',
+      'post_step',
+      'subtask_start',
+      'panel_event_allowlist',
+    ],
+    coveredGates: [
+      'task_mutation',
+      'pre_step',
+      'post_step',
+      'subtask_start',
+      'panel_event_allowlist',
+    ],
+  },
+  {
     id: 'task.fileAndArtifactWrites',
     owner: 'TasksPage / RightPanel / IPC taskFile/artifact/source handlers',
     kind: 'durable_write',
     description: 'Create, update, move, archive, or delete task-bound files, source contexts, artifacts, criteria, blockers, dependencies, and process bindings.',
+    requiredGates: [
+      'task_mutation',
+      'pre_step',
+      'post_step',
+    ],
+    coveredGates: [
+      'task_mutation',
+      'pre_step',
+      'post_step',
+    ],
+  },
+  {
+    id: 'agent.toolDurableWrites',
+    owner: 'AgentToolRegistry task/source/artifact tools',
+    kind: 'durable_write',
+    description: 'Agent tool writes for task records, Task.md guidance, source context, and artifacts.',
     requiredGates: [
       'task_mutation',
       'pre_step',
