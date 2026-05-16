@@ -28,6 +28,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Task hierarchy projection treats persisted taskType, taskFacets, parentTaskId, and childTaskIds as authoritative over stale renderer-local attributes.',
       'Legacy title-pattern phase follow-up inference is limited to records without a parent field, and Tasks no longer mutates local hierarchy attributes during list loading.',
       'TasksPage project moves, project decomposition, workspace selection context, completion handoff, Brief projection, RightPanel closeout, and task completion checks use persisted hierarchy fields for active parent/child workflows instead of writing renderer-local hierarchy attributes.',
+      'Task attribute storage keeps local hierarchy fields optional, stops writing empty parent/child fields by default, and clears legacy local hierarchy fields after persisted task records provide the hierarchy authority.',
       'TaskHierarchyConsistencyEvaluation, TaskHierarchyRepairPlan, and manual resolution commands separate diagnostics, safe repair, and explicit human confirmation instead of silently guessing structure.',
       'Decisions page surfaces hierarchy manual-review items and safe hierarchy repair actions as explicit user judgments.',
       'No default Artifacts/ folder is required; output folders are created only when useful for the task.',
@@ -35,7 +36,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Runtime surface routing has regression coverage that explicit Decision kind, scope, and sourceType are not overridden by title-pattern inference.',
     ],
     gaps: [
-      'Renderer-local hierarchy attributes remain only as legacy missing-field fallback data; future cleanup needs an explicit backfill/removal path before deleting compatibility reads.',
+      'Renderer-local hierarchy attributes remain only as legacy missing-field fallback data for old records; future cleanup is limited to deleting compatibility reads when old records no longer need support.',
       'Not every execution path has an explicit simplicity check before creating new files, records, decisions, prompts, or follow-up tasks.',
     ],
     nextVerification: [

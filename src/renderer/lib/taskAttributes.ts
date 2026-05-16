@@ -1,3 +1,5 @@
+import type { TaskRecord } from '@shared/types/task';
+
 export type TaskExecutionType = 'simple' | 'project' | 'scheduled' | 'event' | 'routine';
 
 export type TaskOwner = 'user' | 'system';
@@ -25,8 +27,8 @@ export type TaskAttributeRecord = {
   owner?: TaskOwner;
   visibility?: TaskVisibility;
   typeConfirmed?: boolean;
-  parentTaskId: string | null;
-  childTaskIds: string[];
+  parentTaskId?: string | null;
+  childTaskIds?: string[];
   commitment: string | null;
   schedule: string | null;
   trigger: string | null;
@@ -72,19 +74,67 @@ export function saveTaskAttributes(
     owner: patch.owner ?? existing?.owner ?? 'user',
     visibility: patch.visibility ?? existing?.visibility ?? 'visible',
     typeConfirmed: patch.typeConfirmed ?? (patch.type !== undefined ? true : existing?.typeConfirmed ?? false),
-    parentTaskId: patch.parentTaskId !== undefined ? patch.parentTaskId ?? null : existing?.parentTaskId ?? null,
-    childTaskIds: patch.childTaskIds ?? existing?.childTaskIds ?? [],
     commitment: patch.commitment !== undefined ? normalizeText(patch.commitment) : existing?.commitment ?? null,
     schedule: patch.schedule !== undefined ? normalizeText(patch.schedule) : existing?.schedule ?? null,
     trigger: patch.trigger !== undefined ? normalizeText(patch.trigger) : existing?.trigger ?? null,
     updatedAt: new Date().toISOString(),
   };
+  if (patch.parentTaskId !== undefined) {
+    next.parentTaskId = patch.parentTaskId ?? null;
+  } else if (existing && Object.prototype.hasOwnProperty.call(existing, 'parentTaskId')) {
+    next.parentTaskId = existing.parentTaskId ?? null;
+  }
+  if (patch.childTaskIds !== undefined) {
+    next.childTaskIds = patch.childTaskIds;
+  } else if (existing && Object.prototype.hasOwnProperty.call(existing, 'childTaskIds')) {
+    next.childTaskIds = existing.childTaskIds ?? [];
+  }
 
   all[taskId] = next;
   if (canUseLocalStorage()) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
   }
   return next;
+}
+
+export function clearTaskHierarchyAttributes(taskIds?: string[]): {
+  clearedTaskIds: string[];
+  remaining: Record<string, TaskAttributeRecord>;
+} {
+  const all = loadTaskAttributes();
+  const targetIds = taskIds ?? Object.keys(all);
+  const clearedTaskIds: string[] = [];
+  for (const taskId of targetIds) {
+    const existing = all[taskId];
+    if (!existing) continue;
+    const hadParent = Object.prototype.hasOwnProperty.call(existing, 'parentTaskId');
+    const hadChildren = Object.prototype.hasOwnProperty.call(existing, 'childTaskIds');
+    if (!hadParent && !hadChildren) continue;
+    const next: TaskAttributeRecord = { ...existing, updatedAt: new Date().toISOString() };
+    delete next.parentTaskId;
+    delete next.childTaskIds;
+    all[taskId] = next;
+    clearedTaskIds.push(taskId);
+  }
+  if (clearedTaskIds.length && canUseLocalStorage()) {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  }
+  return { clearedTaskIds, remaining: all };
+}
+
+export function clearTaskHierarchyAttributesForPersistedTasks(
+  tasks: Array<Pick<TaskRecord, 'id' | 'parentTaskId' | 'childTaskIds'>>,
+): {
+  clearedTaskIds: string[];
+  remaining: Record<string, TaskAttributeRecord>;
+} {
+  const taskIdsWithPersistedHierarchy = tasks
+    .filter((task) => (
+      Object.prototype.hasOwnProperty.call(task, 'parentTaskId')
+      || Object.prototype.hasOwnProperty.call(task, 'childTaskIds')
+    ))
+    .map((task) => task.id);
+  return clearTaskHierarchyAttributes(taskIdsWithPersistedHierarchy);
 }
 
 export function normalizeTaskTypeFacets(

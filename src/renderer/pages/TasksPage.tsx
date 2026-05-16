@@ -53,6 +53,7 @@ import {
   defaultScheduleForType,
   defaultTriggerForType,
   inferTaskTypeProfile,
+  clearTaskHierarchyAttributesForPersistedTasks,
   loadTaskAttributes,
   normalizeTaskTypeFacets,
   saveTaskAttributes,
@@ -943,6 +944,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
   function reloadTasks() {
     window.api?.listTasks().then((records) => {
       const confirmedRecords = confirmedTaskRecords(records);
+      clearTaskHierarchyAttributesForPersistedTasks(confirmedRecords);
       const attrs = loadTaskAttributes();
       setAllTasks(confirmedRecords
         .map((record) => fromRecord(record, attrs[record.id]))
@@ -1032,6 +1034,7 @@ export function TasksPage({ onOpenPanel, onOpenDecision, onSelectionContextChang
     window.api.listTasks()
       .then((records) => {
         const confirmedRecords = confirmedTaskRecords(records);
+        clearTaskHierarchyAttributesForPersistedTasks(confirmedRecords);
         const attrs = loadTaskAttributes();
         setAllTasks(confirmedRecords.map((record) => fromRecord(record, attrs[record.id])));
       })
@@ -2420,7 +2423,7 @@ function resetCaptureDraft() {
           id: newId, title, lane: 'clarify', status: 'idle',
           type: attrs.type,
           facets: attrs.facets ?? [attrs.type],
-          childTaskIds: attrs.childTaskIds,
+          childTaskIds: attrs.childTaskIds ?? [],
           commitment: attrs.commitment ?? undefined,
           schedule: attrs.schedule ?? undefined,
           trigger: attrs.trigger ?? undefined,

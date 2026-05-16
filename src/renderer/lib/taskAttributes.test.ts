@@ -1,13 +1,23 @@
-import { describe, expect, it } from 'vitest';
+// @vitest-environment jsdom
+
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   buildTaskTypeProfile,
   buildProjectDecompositionGuidance,
   buildProjectDecompositionPrompt,
   buildTaskPlanningPrompt,
+  clearTaskHierarchyAttributes,
+  clearTaskHierarchyAttributesForPersistedTasks,
   inferTaskExecutionType,
   inferTaskTypeProfile,
+  loadTaskAttributes,
+  saveTaskAttributes,
 } from './taskAttributes';
+
+beforeEach(() => {
+  window.localStorage.clear();
+});
 
 describe('buildProjectDecompositionPrompt', () => {
   it('keeps project decomposition counts flexible instead of hard-coding child tasks', () => {
@@ -82,5 +92,69 @@ describe('task type profiles', () => {
 
     expect(profile.primaryType).toBe('routine');
     expect(profile.facets).toEqual(['routine', 'scheduled', 'event']);
+  });
+});
+
+describe('task attribute hierarchy compatibility', () => {
+  it('does not write empty hierarchy fields unless hierarchy is explicitly patched', () => {
+    const attrs = saveTaskAttributes('task_1', {
+      type: 'project',
+      typeConfirmed: true,
+      commitment: '今晚前推进',
+    });
+
+    expect(attrs.parentTaskId).toBeUndefined();
+    expect(attrs.childTaskIds).toBeUndefined();
+    expect(loadTaskAttributes().task_1).not.toHaveProperty('parentTaskId');
+    expect(loadTaskAttributes().task_1).not.toHaveProperty('childTaskIds');
+  });
+
+  it('preserves explicit legacy hierarchy fields until the cleanup helper clears them', () => {
+    saveTaskAttributes('project_1', {
+      type: 'project',
+      typeConfirmed: true,
+      childTaskIds: ['child_1'],
+    });
+    saveTaskAttributes('child_1', {
+      type: 'simple',
+      typeConfirmed: true,
+      parentTaskId: 'project_1',
+    });
+
+    const before = loadTaskAttributes();
+    expect(before.project_1?.childTaskIds).toEqual(['child_1']);
+    expect(before.child_1?.parentTaskId).toBe('project_1');
+
+    const result = clearTaskHierarchyAttributes(['project_1', 'child_1']);
+
+    expect(result.clearedTaskIds).toEqual(['project_1', 'child_1']);
+    const after = loadTaskAttributes();
+    expect(after.project_1).not.toHaveProperty('childTaskIds');
+    expect(after.project_1?.type).toBe('project');
+    expect(after.child_1).not.toHaveProperty('parentTaskId');
+    expect(after.child_1?.type).toBe('simple');
+  });
+
+  it('clears legacy hierarchy fields only for records with persisted hierarchy authority', () => {
+    saveTaskAttributes('persisted_project', {
+      type: 'project',
+      typeConfirmed: true,
+      childTaskIds: ['child_1'],
+    });
+    saveTaskAttributes('legacy_only', {
+      type: 'project',
+      typeConfirmed: true,
+      childTaskIds: ['legacy_child'],
+    });
+
+    const result = clearTaskHierarchyAttributesForPersistedTasks([
+      { id: 'persisted_project', parentTaskId: null, childTaskIds: ['child_1'] },
+      { id: 'legacy_only' },
+    ]);
+
+    expect(result.clearedTaskIds).toEqual(['persisted_project']);
+    const after = loadTaskAttributes();
+    expect(after.persisted_project).not.toHaveProperty('childTaskIds');
+    expect(after.legacy_only?.childTaskIds).toEqual(['legacy_child']);
   });
 });

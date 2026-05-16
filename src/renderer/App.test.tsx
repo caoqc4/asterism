@@ -1702,19 +1702,20 @@ describe('App redesign v1', () => {
     expect(await screen.findByText('开发小程序')).toBeTruthy();
 
     const attrs = loadTaskAttributes();
-    expect(attrs.task_project_repair?.childTaskIds).toEqual([
+    expect(project.childTaskIds).toEqual([
       'existing_child_1',
       'existing_child_2',
       'existing_child_3',
       'existing_child_4',
       'existing_child_5',
     ]);
+    expect(attrs.task_project_repair).not.toHaveProperty('childTaskIds');
     for (const task of followups) {
       expect(attrs[task.id]).toMatchObject({
         type: 'project',
         typeConfirmed: true,
-        parentTaskId: null,
       });
+      expect(attrs[task.id]).not.toHaveProperty('parentTaskId');
     }
   });
 

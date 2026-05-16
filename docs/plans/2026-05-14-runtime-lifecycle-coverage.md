@@ -66,6 +66,7 @@ Strongest areas:
 - legacy title-pattern phase follow-up inference is now limited to objects without a parent field, and Tasks no longer mutates local hierarchy attributes during list loading.
 - Brief focus projection, RightPanel closeout checks, and task completion checks now share the same persisted-field hierarchy authority instead of reading local task attributes directly.
 - Tasks project moves, project decomposition, workspace selection context, completion handoff, Brief projection, RightPanel closeout, and task completion checks no longer write or consume renderer-local parent/child hierarchy attributes for active workflows.
+- task attribute storage no longer writes empty local hierarchy fields by default, and Tasks clears legacy local hierarchy fields once persisted task records provide parent/child authority.
 - PriorityAttentionProjection now centralizes shared priority ordering plus optional display limits, so Tasks can use the full queue while Brief uses the same ordered queue as a capped attention summary.
 - RuntimeHandoffPreview now centralizes manual refresh/archive preview generation from the shared handoff result plus archive snapshot, while preserving the existing RightPanel layout.
 - RuntimeRecoveryGuidance now centralizes structured Task.md / Task Record recovery recommendations for durable Agent tools, while preserving the existing legacy guidance strings.
@@ -80,7 +81,7 @@ Weakest areas:
 - future provider-visible entry points preserving full context snapshot metadata;
 - future connector ingestion preserving source quality signals;
 - future multi-decision workflows, if a concrete batch approve/defer/cancel need appears;
-- renderer-local task hierarchy attributes are now compatibility fallback data only; an explicit backfill/removal path is still needed before deleting the fallback.
+- renderer-local task hierarchy attributes are now compatibility fallback data only for old records that still lack persisted hierarchy fields; the remaining cleanup is deleting that fallback when old-record support can end.
 - future entry points preserving capability state in context/action evaluation;
 - Run-side grouped replay presentation if retained Run-side runtime views are resumed.
 
