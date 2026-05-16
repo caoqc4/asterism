@@ -126,10 +126,11 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
     gaps: [
       'RightPanel capture uses the shared intake evaluator and TasksPage explicit creation uses the shared task_capture guard; both now consume duplicate/generic candidate checks, but some retained creation entry points are not routed through intake yet.',
-      'Subtask creation has service-level generic child and parent-ownership guards, but future child-task creation paths must keep using shared confirmation boundaries.',
+      'Current retained task creation entry points are scoped: TasksPage explicit capture uses intake/capture guards, RightPanel task-context follow-up capture uses closeout gating, and project child creation uses the subtask draft evaluator.',
+      'Subtask creation has service-level generic child and parent-ownership guards, and future child-task creation paths must keep using shared confirmation boundaries.',
     ],
     nextVerification: [
-      'Route remaining task creation entry points through RuntimeIntakeEvaluation or a stricter child-task evaluator.',
+      'Route future task creation entry points through RuntimeIntakeEvaluation, TaskCloseoutEvaluation, or a stricter child-task evaluator according to context.',
     ],
   },
   {
@@ -357,10 +358,10 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
     gaps: [
       'Run checkpoint resume has a shared resume-plan shape and RuntimeEventRecord projection data, but retained Run-side task-dynamics surfaces do not yet render replay-oriented event groupings.',
-      'Follow-up proposal gating exists in the shared closeout evaluator and RightPanel task-context capture consumes it; other retained creation entry points still need the same boundary when they create follow-up tasks from task context.',
+      'Follow-up proposal gating exists in the shared closeout evaluator and RightPanel task-context capture consumes it; future task-context creation entry points must use the same boundary before creating follow-up tasks.',
     ],
     nextVerification: [
-      'Wire retained follow-up task proposal entry points into the shared closeout evaluator.',
+      'Keep future task-context follow-up creation entry points wired into the shared closeout evaluator.',
     ],
   },
   {
@@ -442,12 +443,13 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
       'DecisionService.listJudgments exposes the pending judgment-center projection at the domain boundary.',
       'Decisions page action results summarize approved, deferred, and cancelled effects using decision-effect-evaluator.',
+      'DecisionJudgmentProjection attaches grouped pending-decision context by task/source, and the Decisions page shows same-source pending counts and effect detail inside the judgment card.',
     ],
     gaps: [
-      'Decision effect grouping is available as shared data, but retained UI surfaces still need to decide where grouped multi-decision effects should be shown.',
+      'Decisions page now shows grouped pending-decision context; batch approve/defer/cancel remains intentionally deferred until a real multi-decision workflow appears.',
     ],
     nextVerification: [
-      'Reuse grouped decision effects when multi-decision action handling or richer decision audit displays are added.',
+      'Keep grouped Decisions read-only unless a concrete multi-decision workflow requires batch actions.',
     ],
   },
 ];

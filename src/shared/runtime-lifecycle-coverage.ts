@@ -38,17 +38,18 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskService.create enforces the same task-capture evaluator at the service boundary before repository persistence.',
       'TaskService.update reuses the same evaluator when title or parent scope changes, preventing duplicate siblings during project moves.',
       'runtime-task-capture-evaluator blocks near-duplicate compact titles in the same parent scope when word order changes but the title identity is effectively the same.',
+      'Current retained task creation entry points are scoped: TasksPage explicit capture uses intake/capture guards, RightPanel task-context follow-up capture uses closeout gating, and project child creation uses the subtask draft evaluator.',
     ],
     outOfAgentPrinciplesScope: [
       'Product-level intake must decide whether the user is creating work, browsing existing work, asking for status, or discussing direction.',
       'The UI must distinguish capture, draft, confirm, and enter-task states.',
     ],
     gaps: [
-      'RightPanel capture uses shared intake routing and TasksPage explicit creation uses the shared task_capture guard, but some retained creation entry points are not fully covered by intake yet.',
+      'Current retained creation entry points are covered by intake, closeout, or subtask draft gates; future creation entry points must declare which gate owns them before writing tasks.',
       'Service-level guards now block duplicate and near-duplicate open-task captures, generic title-only candidates, generic phase-template titles, generic child phase-template titles, and child titles that repeat the parent; broader semantic duplicate detection remains intentionally conservative.',
     ],
     nextImplementation: [
-      'Route remaining creation entry points through shared intake checks.',
+      'Route future creation entry points through shared intake checks, closeout gating, or the stricter child-task evaluator according to context.',
       'Extend duplicate detection beyond exact normalized titles when enough semantic context is available.',
     ],
   },
@@ -330,11 +331,11 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'Subagent handoff has a shared evaluator, but it is not wired to a product delegation entry point because that surface is not active yet.',
-      'Follow-up proposal gating exists in the shared closeout evaluator and RightPanel task-context capture consumes it; other retained creation entry points still need the same boundary when they create follow-up tasks from task context.',
+      'Follow-up proposal gating exists in the shared closeout evaluator and RightPanel task-context capture consumes it; future task-context creation entry points must use the same boundary before creating follow-up tasks.',
       'Replay grouping is consumed by Tasks task dynamics, but Run detail and broader retained task-dynamics surfaces do not yet render the grouped replay layer.',
     ],
     nextImplementation: [
-      'Wire retained follow-up task proposal entry points into the shared closeout evaluator.',
+      'Keep future task-context follow-up creation entry points wired into the shared closeout evaluator.',
     ],
   },
   {

@@ -565,7 +565,7 @@ Remaining:
 
 - Wire project, pre-step, and post-step verification into the remaining execution and state-transition paths.
 - Keep replay grouping data-only until UI work is explicitly requested.
-- Wire any remaining retained follow-up task proposal entry points into the shared closeout evaluator.
+- Keep future task-context follow-up proposal entry points wired into the shared closeout evaluator.
 
 ### Package E: Decisions Judgment Center
 
