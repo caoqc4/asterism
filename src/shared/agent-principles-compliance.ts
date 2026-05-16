@@ -112,7 +112,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     ],
     gaps: [
       'TaskMdUpdateNeedEvaluation covers RightPanel important-file references, TasksPage direct Task.md saves, reserved Task.md path protection, AgentToolRegistry durable tool guidance through structured fields, and TaskRepository update timeline changed-field metadata; remaining retained durable writes outside durable tools must pass changed fields and reference metadata consistently.',
-      'TaskRecordWorthinessEvaluation is consumed by RightPanel context-refresh/phase-closeout writes, TasksPage manual Task Record creation, and AgentToolRegistry recovery guidance, but remaining write paths still need to consume it consistently.',
+      'TaskRecordWorthinessEvaluation is consumed by current retained Task Record writers, including RightPanel context-refresh/phase-closeout, TasksPage manual records, completion handoff, project decomposition self-check, and AgentToolRegistry recovery guidance; future Task Record writers must keep using the same evaluator.',
       'RightPanel can confirm task memory write proposals; TasksPage and any future retained surfaces still need to reuse TaskMemoryWriteApplyPlan instead of rebuilding proposal write inputs.',
     ],
     nextVerification: [
