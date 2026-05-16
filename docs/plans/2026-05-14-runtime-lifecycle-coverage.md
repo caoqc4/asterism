@@ -85,7 +85,7 @@ Weakest areas:
 - future entry points preserving capability state in context/action evaluation;
 - Run-side grouped replay presentation if retained Run-side runtime views are resumed.
 
-`RuntimeEntrypointCoverage` remains a regression registry by design, not a dynamic discovery system. New runtime entrypoints should be added explicitly and fail tests if they do not meet their kind-level gate baseline.
+`RuntimeEntrypointCoverage` remains a regression registry by design, not a dynamic discovery system. New runtime entrypoints should be added explicitly and fail tests if they do not meet their kind-level gate baseline. Retained mutable/capability IPC handlers are also mapped back to registered entrypoints, while read-only list/detail/filter channels stay explicitly exempt.
 
 Provider-visible planning is tracked separately from provider-visible execution. A draft-only planner such as project decomposition generation must assemble task context, include task-memory guidance, and pass subtask-draft checks, while durable creation stays behind a separate mutation entrypoint.
 

@@ -46,6 +46,7 @@ export type RuntimeEntrypointCoverage = {
   owner: string;
   kind: RuntimeEntrypointKind;
   description: string;
+  ipcChannels?: string[];
   requiredGates: RuntimeEntrypointGate[];
   coveredGates: RuntimeEntrypointGate[];
   notes?: string;
@@ -180,6 +181,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'IPC ai:chat',
     kind: 'provider_visible_assistance',
     description: 'Provider-visible read-only task or global chat assistance.',
+    ipcChannels: ['ai:chat'],
     requiredGates: [
       'simplicity_check',
       'runtime_context_assembly',
@@ -195,6 +197,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'RunService.trigger',
     kind: 'provider_visible_execution',
     description: 'Ordinary text or Agent run execution for a task.',
+    ipcChannels: ['run:trigger'],
     requiredGates: [
       'simplicity_check',
       'runtime_action',
@@ -221,6 +224,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'CodeAgentRunService.trigger',
     kind: 'provider_visible_execution',
     description: 'Code Agent execution, including model-producer mode when enabled.',
+    ipcChannels: ['run:triggerCodeAgent'],
     requiredGates: [
       'simplicity_check',
       'runtime_action',
@@ -247,6 +251,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'OperatorStartedRunService.trigger',
     kind: 'hidden_local_execution',
     description: 'Operator-started local/browser QA run that records evidence without provider-visible model context.',
+    ipcChannels: ['run:triggerOperatorStarted'],
     requiredGates: [
       'simplicity_check',
       'runtime_action',
@@ -272,6 +277,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'RunService.continuePausedRun',
     kind: 'execution_resume',
     description: 'Resume a paused run from a checkpoint.',
+    ipcChannels: ['run:continuePaused'],
     requiredGates: [
       'simplicity_check',
       'runtime_action',
@@ -296,6 +302,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'DecisionService.act',
     kind: 'decision_resume',
     description: 'Approve a checkpoint Decision and resume paused tool, browser, or patch-promotion execution.',
+    ipcChannels: ['decision:act'],
     requiredGates: [
       'simplicity_check',
       'decision_action',
@@ -320,6 +327,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'DecisionService.draft',
     kind: 'decision_draft',
     description: 'Generate a task-bound Decision draft, optionally with provider-visible process-template assistance.',
+    ipcChannels: ['decision:draft'],
     requiredGates: [
       'simplicity_check',
       'runtime_context_assembly',
@@ -343,6 +351,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'DecisionService.create',
     kind: 'decision_write',
     description: 'Persist a new Decision in the judgment center without approving or executing it.',
+    ipcChannels: ['decision:create'],
     requiredGates: [
       'simplicity_check',
       'decision_write_boundary',
@@ -360,6 +369,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'TasksPage / RightPanel task capture',
     kind: 'task_capture',
     description: 'Create a retained task from explicit user input or confirmed panel capture.',
+    ipcChannels: ['task:create'],
     requiredGates: [
       'simplicity_check',
       'runtime_action',
@@ -378,6 +388,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'TaskService.transition / transitionIfAllowed',
     kind: 'task_state_transition',
     description: 'Move a task into running state outside a RunService-created execution.',
+    ipcChannels: ['task:transition'],
     requiredGates: [
       'simplicity_check',
       'runtime_action',
@@ -398,6 +409,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'TaskService.transition / transitionIfAllowed',
     kind: 'task_state_transition',
     description: 'Move a task through ordinary planned, waiting, or archived state transitions.',
+    ipcChannels: ['task:transition'],
     requiredGates: [
       'simplicity_check',
       'runtime_action',
@@ -415,6 +427,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'TaskService.transition / transitionIfAllowed',
     kind: 'task_state_transition',
     description: 'Move a task into completed state.',
+    ipcChannels: ['task:transition'],
     requiredGates: [
       'simplicity_check',
       'runtime_action',
@@ -435,6 +448,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'DecisionService.act / DecisionsPage',
     kind: 'decision_action',
     description: 'Approve, defer, or cancel a retained Decision without checkpoint resume.',
+    ipcChannels: ['decision:act'],
     requiredGates: [
       'simplicity_check',
       'decision_action',
@@ -455,6 +469,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'TaskService.recordTimelineEvent',
     kind: 'durable_write',
     description: 'Append retained panel.* task dynamic events for audit/replay.',
+    ipcChannels: ['task:recordTimelineEvent'],
     requiredGates: [
       'simplicity_check',
       'task_mutation',
@@ -473,6 +488,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'TaskService.recordCompletionCheck',
     kind: 'durable_write',
     description: 'Append a retained task completion-check event that can serve as task-memory evidence.',
+    ipcChannels: ['task:recordCompletionCheck'],
     requiredGates: [
       'simplicity_check',
       'task_mutation',
@@ -490,6 +506,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'IPC ai:decomposeProject',
     kind: 'provider_visible_planning',
     description: 'Generate a provider-visible project decomposition draft without creating child tasks.',
+    ipcChannels: ['ai:decomposeProject'],
     requiredGates: [
       'simplicity_check',
       'runtime_context_assembly',
@@ -531,6 +548,29 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'TasksPage / RightPanel / IPC taskFile/artifact/source handlers',
     kind: 'durable_write',
     description: 'Create, update, move, archive, or delete task-bound files, source contexts, artifacts, criteria, blockers, dependencies, and process bindings.',
+    ipcChannels: [
+      'artifact:createManual',
+      'artifact:delete',
+      'artifact:update',
+      'blocker:create',
+      'blocker:resolve',
+      'blocker:update',
+      'completionCriteria:create',
+      'completionCriteria:reopen',
+      'completionCriteria:satisfy',
+      'completionCriteria:update',
+      'processTemplate:apply',
+      'processTemplate:remove',
+      'sourceContext:archive',
+      'sourceContext:create',
+      'sourceContext:update',
+      'taskDependency:create',
+      'taskDependency:resolve',
+      'taskDependency:update',
+      'taskFile:create',
+      'taskFile:delete',
+      'taskFile:update',
+    ],
     requiredGates: [
       'simplicity_check',
       'task_mutation',
@@ -545,10 +585,32 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     ],
   },
   {
+    id: 'task.metadataUpdate',
+    owner: 'TaskService.update',
+    kind: 'durable_write',
+    description: 'Update retained task metadata such as title, summary, risk, hierarchy fields, or next-step state outside task transitions.',
+    ipcChannels: ['task:update'],
+    requiredGates: [
+      'simplicity_check',
+      'task_mutation',
+      'pre_step',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'task_mutation',
+      'pre_step',
+    ],
+    notes: 'Task creation, state transitions, hierarchy maintenance, and file/artifact writes remain separate entrypoints because they add different runtime responsibilities.',
+  },
+  {
     id: 'task.hierarchyMaintenance',
     owner: 'TaskService.applySafeHierarchyRepairs / applyHierarchyManualResolution',
     kind: 'durable_write',
     description: 'Repair or manually resolve persisted parent/child task hierarchy inconsistencies.',
+    ipcChannels: [
+      'task:applyHierarchyManualResolution',
+      'task:applySafeHierarchyRepairs',
+    ],
     requiredGates: [
       'simplicity_check',
       'task_mutation',
@@ -566,6 +628,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'IPC settings:setAiConfig / AiConfigService.setConfig',
     kind: 'product_configuration',
     description: 'Persist AI provider/model/feature-flag configuration and start or stop scheduler behavior.',
+    ipcChannels: ['settings:setAiConfig'],
     requiredGates: [
       'simplicity_check',
       'product_config_boundary',
@@ -581,6 +644,7 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'IPC settings:probeSandboxBackend',
     kind: 'capability_probe',
     description: 'Probe local sandbox backend readiness without starting task execution or mutating task state.',
+    ipcChannels: ['settings:probeSandboxBackend'],
     requiredGates: [
       'simplicity_check',
       'capability_probe_boundary',
@@ -596,6 +660,17 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'WorkHabitService',
     kind: 'preference_memory',
     description: 'Create, propose, update, resolve, delete, import, or apply cross-task Work Habit memory.',
+    ipcChannels: [
+      'workHabit:createManual',
+      'workHabit:delete',
+      'workHabit:importLegacy',
+      'workHabit:propose',
+      'workHabit:recordApplications',
+      'workHabit:recordCompletionOverride',
+      'workHabit:recordSopTemplate',
+      'workHabit:resolveConflict',
+      'workHabit:update',
+    ],
     requiredGates: [
       'simplicity_check',
       'preference_boundary',
@@ -611,6 +686,11 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     owner: 'TaskService process template library methods',
     kind: 'method_library',
     description: 'Create, update, or archive reusable process templates that can influence future runs and decisions.',
+    ipcChannels: [
+      'processTemplate:archive',
+      'processTemplate:create',
+      'processTemplate:update',
+    ],
     requiredGates: [
       'simplicity_check',
       'method_library_boundary',
