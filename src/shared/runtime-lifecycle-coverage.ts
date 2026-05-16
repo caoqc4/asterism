@@ -213,6 +213,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskMemoryGuidanceState distinguishes persisted task-memory guidance from completed Task.md or Task Record writes, so automatic context clearing can treat unresolved guidance as pending memory work.',
       'TaskMemoryGuidanceState tracks pending Task.md and Task Record guidance per target, so newer guidance for one memory surface does not hide unresolved guidance for another.',
       'TaskMemoryGuidanceState reads structured guidance targets from Run Step input before falling back to human-readable guidance text.',
+      'TaskMemoryWriteProposal projects pending guidance into minimal confirmed-write proposals for Task.md or Task Records without performing automatic writes.',
       'Run start pre-step verification consumes pending TaskMemoryGuidanceState, so new execution cannot bypass unresolved task-memory writes.',
       'TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes to runtime checks and is now consumed by context-clear, task-start, run-start, task-switch, task-completion modal, and RightPanel phase-closeout paths.',
       'AutoContextClearReadiness wraps TaskMemoryCoverageEvaluation into safe_to_clear, needs_memory_write, needs_user_decision, keep_context, and not_applicable outcomes without introducing a hard message-count rule.',

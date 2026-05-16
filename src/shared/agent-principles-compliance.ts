@@ -86,6 +86,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'AgentToolRegistry durable tool results expose recoveryGuidanceItems and legacy recoveryGuidance from RuntimeRecoveryGuidance without silently mutating Task.md.',
       'AgentToolRegistry persists recoveryGuidanceItems as a separate Run Step so task-memory recommendations remain auditable without silently mutating Task.md or Task Records.',
       'TaskMemoryGuidanceState reads structured guidance targets from Run Step input before falling back to guidance text parsing.',
+      'TaskMemoryWriteProposal projects pending guidance into minimal confirmed-write proposals for Task.md or Task Records without automatically changing task memory.',
       'TaskMemoryGuidanceState distinguishes unresolved task-memory guidance from completed Task.md or Task Record writes.',
       'TaskMemoryGuidanceState tracks Task.md and Task Record guidance per target so one newer recommendation cannot mask another pending memory surface.',
       'TaskRecordWorthiness tests cover should-create and should-not-create cases for handoff, closeout, correction, option rationale, failures, external signals, duplicates, generic notes, and unbound notes.',
@@ -93,7 +94,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     gaps: [
       'TaskMdUpdateNeedEvaluation exists and covers RightPanel important-file references, TasksPage direct Task.md saves, and AgentToolRegistry recovery guidance through RuntimeRecoveryGuidance, but not every durable write asks whether Task.md also needs an update.',
       'TaskRecordWorthinessEvaluation is consumed by RightPanel context-refresh/phase-closeout writes, TasksPage manual Task Record creation, and AgentToolRegistry recovery guidance, but remaining write paths still need to consume it consistently.',
-      'AgentToolRegistry persists recovery guidance as Run Step evidence, but confirmed Task.md or Task Record write-through is still future work.',
+      'TaskMemoryWriteProposal is data-level only; retained UI surfaces still need to route proposal confirmation into existing Task.md or Task Record write paths.',
     ],
     nextVerification: [
       'Keep information-routing tests in place for task mutation, Task.md update recommendation, and Task Record worthiness when adding new durable write surfaces.',

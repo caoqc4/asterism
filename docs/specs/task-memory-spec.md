@@ -563,6 +563,15 @@ as pending until a matching Task.md or Task Record write exists after that
 guidance. This prevents automatic clearing from mistaking "please update memory"
 for "memory has been updated."
 
+When runtime finds pending task-memory guidance, it may prepare a minimal write
+proposal for the missing surface. A proposal is not a write. It must name the
+target (`Task.md` or Task Record), operation, path, reason, and content template,
+and it must still pass the normal confirmation/write boundary before durable
+task memory is changed. Prefer the smallest write that satisfies recovery:
+update existing `Task.md` when the concise recovery file is missing information,
+or create one Task Record when detailed handoff, rationale, correction, or
+context archive material is required.
+
 Task switching should follow the same memory boundary for the task being left:
 if the current task has unresolved task-memory guidance, runtime must block or
 ask before leaving that task context, instead of silently carrying the gap into
