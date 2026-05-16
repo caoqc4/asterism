@@ -39,6 +39,76 @@ export type RuntimeEntrypointCoverageIssue = {
   missingGates: RuntimeEntrypointGate[];
 };
 
+export type RuntimeEntrypointPolicyIssue = {
+  entrypointId: string;
+  kind: RuntimeEntrypointKind;
+  missingRequiredGates: RuntimeEntrypointGate[];
+};
+
+export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
+  RuntimeEntrypointKind,
+  RuntimeEntrypointGate[]
+> = {
+  provider_visible_execution: [
+    'runtime_action',
+    'runtime_context_assembly',
+    'task_memory_coverage',
+    'task_memory_guidance',
+    'pre_step',
+    'subtask_start',
+    'post_step',
+  ],
+  hidden_local_execution: [
+    'runtime_action',
+    'task_memory_coverage',
+    'task_memory_guidance',
+    'pre_step',
+    'subtask_start',
+    'post_step',
+  ],
+  execution_resume: [
+    'runtime_action',
+    'runtime_handoff',
+    'task_memory_guidance',
+    'pre_step',
+    'subtask_start',
+    'checkpoint_eligibility',
+  ],
+  decision_resume: [
+    'decision_action',
+    'task_memory_guidance',
+    'pre_step',
+    'post_step',
+    'subtask_start',
+    'checkpoint_eligibility',
+  ],
+  decision_action: [
+    'decision_action',
+    'task_memory_guidance',
+    'pre_step',
+    'post_step',
+  ],
+  task_capture: [
+    'runtime_action',
+    'task_memory_guidance',
+    'pre_step',
+  ],
+  task_state_transition: [
+    'runtime_action',
+    'pre_step',
+  ],
+  durable_write: [
+    'task_mutation',
+    'pre_step',
+  ],
+  context_transition: [
+    'runtime_action',
+    'runtime_handoff',
+    'task_memory_coverage',
+    'task_memory_guidance',
+  ],
+};
+
 export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
   {
     id: 'run.trigger',
@@ -320,6 +390,27 @@ export function findRuntimeEntrypointCoverageIssues(
       missingGates: entry.requiredGates.filter((gate) => !entry.coveredGates.includes(gate)),
     }))
     .filter((issue) => issue.missingGates.length > 0);
+}
+
+export function requiredRuntimeEntrypointGatesForKind(
+  kind: RuntimeEntrypointKind,
+): RuntimeEntrypointGate[] {
+  return RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND[kind];
+}
+
+export function findRuntimeEntrypointPolicyIssues(
+  entries: RuntimeEntrypointCoverage[] = RUNTIME_ENTRYPOINT_COVERAGE,
+): RuntimeEntrypointPolicyIssue[] {
+  return entries
+    .map((entry) => {
+      const baseline = requiredRuntimeEntrypointGatesForKind(entry.kind);
+      return {
+        entrypointId: entry.id,
+        kind: entry.kind,
+        missingRequiredGates: baseline.filter((gate) => !entry.requiredGates.includes(gate)),
+      };
+    })
+    .filter((issue) => issue.missingRequiredGates.length > 0);
 }
 
 export function runtimeEntrypointsByKind(

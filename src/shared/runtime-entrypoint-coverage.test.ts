@@ -3,12 +3,18 @@ import { describe, expect, it } from 'vitest';
 import {
   RUNTIME_ENTRYPOINT_COVERAGE,
   findRuntimeEntrypointCoverageIssues,
+  findRuntimeEntrypointPolicyIssues,
+  requiredRuntimeEntrypointGatesForKind,
   runtimeEntrypointsByKind,
 } from './runtime-entrypoint-coverage.js';
 
 describe('runtime entrypoint coverage', () => {
   it('has no registered entrypoint with missing required gates', () => {
     expect(findRuntimeEntrypointCoverageIssues()).toEqual([]);
+  });
+
+  it('has no registered entrypoint below its kind-level gate baseline', () => {
+    expect(findRuntimeEntrypointPolicyIssues()).toEqual([]);
   });
 
   it('keeps registered entrypoints uniquely owned and described', () => {
@@ -22,6 +28,15 @@ describe('runtime entrypoint coverage', () => {
   });
 
   it('requires provider-visible execution to pass context assembly and task start gates', () => {
+    expect(requiredRuntimeEntrypointGatesForKind('provider_visible_execution')).toEqual([
+      'runtime_action',
+      'runtime_context_assembly',
+      'task_memory_coverage',
+      'task_memory_guidance',
+      'pre_step',
+      'subtask_start',
+      'post_step',
+    ]);
     for (const entry of runtimeEntrypointsByKind('provider_visible_execution')) {
       expect(entry.requiredGates).toContain('runtime_context_assembly');
       expect(entry.requiredGates).toContain('task_memory_coverage');
