@@ -109,7 +109,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TaskRecordWorthiness tests cover should-create and should-not-create cases for handoff, closeout, correction, option rationale, failures, external signals, duplicates, generic notes, and unbound notes.',
     ],
     gaps: [
-      'TaskMdUpdateNeedEvaluation exists and covers RightPanel important-file references, TasksPage direct Task.md saves, reserved Task.md path protection, and AgentToolRegistry recovery guidance through RuntimeRecoveryGuidance, but not every durable write asks whether Task.md also needs an update.',
+      'TaskMdUpdateNeedEvaluation covers RightPanel important-file references, TasksPage direct Task.md saves, reserved Task.md path protection, and AgentToolRegistry durable tool guidance through structured fields; remaining retained durable writes outside durable tools must pass changed fields and reference metadata consistently.',
       'TaskRecordWorthinessEvaluation is consumed by RightPanel context-refresh/phase-closeout writes, TasksPage manual Task Record creation, and AgentToolRegistry recovery guidance, but remaining write paths still need to consume it consistently.',
       'RightPanel can confirm task memory write proposals; TasksPage and any future retained surfaces still need to reuse TaskMemoryWriteApplyPlan instead of rebuilding proposal write inputs.',
     ],
