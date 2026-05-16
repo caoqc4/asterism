@@ -77,6 +77,19 @@ describe('runtime surface routing', () => {
     })).toBe('task_record');
   });
 
+  it('does not let source-context title patterns override explicit source roles', () => {
+    expect(classifySourceContextSurface({
+      title: '阶段收尾记录',
+      note: '用户提供的原始会议记录。',
+      sourceRole: 'raw',
+    })).toBe('source_material');
+    expect(classifySourceContextSurface({
+      title: '客户访谈原文',
+      note: 'AI digest for later recovery.',
+      sourceRole: 'digest',
+    })).toBe('ai_output');
+  });
+
   it('defaults AI-generated source contexts to digest role', () => {
     expect(normalizeCreateSourceContextInput({
       taskId: 'task_1',

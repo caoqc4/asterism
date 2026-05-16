@@ -78,6 +78,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     implementedBy: [
       'runtime-surface-routing classifies Task.md, Task Records, source materials, AI output, artifacts, decisions, work habits, run steps, and discussion-only candidates.',
       'Artifact classification requires an explicit artifact surface or artifact kind; ordinary task files are not promoted to artifacts by an Artifacts/ path alone.',
+      'Source-context routing preserves explicit sourceRole before applying task-record-like title or note heuristics.',
       'Decision, source context, artifact, task file, and work habit creation paths consume shared routing normalization.',
       'Tasks source-context projections consume shared source-context routing instead of maintaining renderer-local Task Record keywords.',
       'TaskRecordWorthinessEvaluation centralizes Task Record-worthy recovery contexts such as handoff, closeout, user correction, option rationale, failure review, context archive, external signal, and durable state change.',

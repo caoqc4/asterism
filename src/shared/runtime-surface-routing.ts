@@ -195,14 +195,16 @@ export function routeRuntimeInformation(candidate: RuntimeSurfaceCandidate): Run
 export function classifySourceContextSurface(
   input: Pick<CreateSourceContextInput, 'title' | 'note' | 'sourceRole'>,
 ): RuntimeSurfaceKind {
-  const text = `${input.title ?? ''} ${input.note ?? ''}`;
-  if (TASK_RECORD_PATTERN.test(text)) return 'task_record';
-  return classifyRuntimeFileSurface({
+  const structuredSurface = classifyRuntimeFileSurface({
     kind: 'source',
     name: input.title,
     sourceNote: input.note,
     sourceRole: input.sourceRole,
   }).surface;
+  if (input.sourceRole) return structuredSurface;
+  const text = `${input.title ?? ''} ${input.note ?? ''}`;
+  if (TASK_RECORD_PATTERN.test(text)) return 'task_record';
+  return structuredSurface;
 }
 
 export function normalizeCreateSourceContextInput(input: CreateSourceContextInput): CreateSourceContextInput {
