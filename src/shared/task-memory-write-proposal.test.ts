@@ -21,15 +21,39 @@ describe('task memory write proposal', () => {
   it('builds the smallest Task.md update proposal for pending Task.md guidance', () => {
     expect(buildTaskMemoryWriteProposals({
       guidance: pendingGuidance(),
-      taskFiles: [{ id: 'task_file_1', path: 'Task.md', updatedAt: '2026-05-16T09:00:00.000Z' }],
+      taskFiles: [{
+        content: '# Task\n\n## Goal\n开发小程序',
+        id: 'task_file_1',
+        path: 'Task.md',
+        updatedAt: '2026-05-16T09:00:00.000Z',
+      }],
       taskTitle: '开发小程序',
     })).toMatchObject([{
+      contentTemplate: expect.stringContaining('## Goal\n开发小程序'),
       existingFileId: 'task_file_1',
       operation: 'update',
       path: 'Task.md',
       target: 'task_md',
       title: '更新 Task.md',
     }]);
+  });
+
+  it('appends pending Task.md guidance without replacing existing Task.md content', () => {
+    const proposals = buildTaskMemoryWriteProposals({
+      guidance: pendingGuidance(),
+      taskFiles: [{
+        content: '# Task\n\n## Goal\n开发小程序\n\n## Current Progress\n已有进展',
+        id: 'task_file_1',
+        path: 'Task.md',
+        updatedAt: '2026-05-16T09:00:00.000Z',
+      }],
+      taskTitle: '开发小程序',
+    });
+
+    expect(proposals[0]!.contentTemplate).toContain('## Current Progress\n已有进展');
+    expect(proposals[0]!.contentTemplate).toContain('## Recent Records');
+    expect(proposals[0]!.contentTemplate).toContain('待补任务记忆');
+    expect(proposals[0]!.contentTemplate.match(/# Task/g)).toHaveLength(1);
   });
 
   it('builds a Task Record creation proposal for pending record guidance', () => {

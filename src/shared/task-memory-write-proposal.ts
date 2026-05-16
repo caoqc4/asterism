@@ -56,7 +56,9 @@ export function buildTaskMemoryWriteProposals(params: {
     if (target === 'task_md') {
       const existingTaskMd = normalizedFiles.find((file) => isTaskMdPath(file.path));
       return {
-        contentTemplate: buildTaskMdProposalContent(taskTitle, guidance.reason),
+        contentTemplate: existingTaskMd
+          ? buildTaskMdUpdateContent(existingTaskMd.content, taskTitle, guidance.reason)
+          : buildTaskMdProposalContent(taskTitle, guidance.reason),
         existingFileId: existingTaskMd?.id ?? null,
         operation: existingTaskMd ? 'update' : 'create',
         path: 'Task.md',
@@ -150,6 +152,26 @@ function buildTaskMdProposalContent(taskTitle: string, reason: string): string {
     '## Important Files',
     '',
     '## Recent Records',
+    '',
+  ].join('\n');
+}
+
+function buildTaskMdUpdateContent(currentContent: string | null | undefined, taskTitle: string, reason: string): string {
+  const trimmed = currentContent?.trimEnd();
+  if (!trimmed) return buildTaskMdProposalContent(taskTitle, reason);
+  const note = `- 待补任务记忆：${reason}`;
+  if (trimmed.includes(note)) return `${trimmed}\n`;
+
+  const heading = '## Recent Records';
+  if (trimmed.includes(heading)) {
+    return `${trimmed}\n${note}\n`;
+  }
+
+  return [
+    trimmed,
+    '',
+    heading,
+    note,
     '',
   ].join('\n');
 }
