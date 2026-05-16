@@ -304,13 +304,13 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RunDetailRecord now carries optional runtimeEvents and runtimeReplayGroups from RunService.getDetail without requiring UI layout changes.',
       'RightPanel context refresh, context switch confirmation/dismissal, phase closeout, and task file proposal writes now persist panel.* timeline events for RuntimeEventRecord audit projection.',
       'RuntimeEventRecord preserves relatedTaskId for task-to-task completion handoff and accepted context-switch events, and replay groups retain relatedTaskIds for task A to task B recovery.',
+      'RuntimeHandoff is shared across RightPanel context clear, manual refresh preview, phase closeout, task switch flows, RunService checkpoint resume, and RuntimeEventRecord projection.',
+      'Successor-task handoff outside parent-child hierarchy has closeout and replay metadata.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime must distinguish pause, refresh, leave context, switch task, resume paused run, and start new global conversation.',
     ],
     gaps: [
-      'RuntimeHandoff is now shared across RightPanel context clear, manual refresh preview, phase closeout, task switch flows, RunService checkpoint resume, and RuntimeEventRecord projection.',
-      'Successor-task handoff outside parent-child hierarchy now has closeout and replay metadata.',
       'Subagent handoff has a shared evaluator, but it is not wired to a product delegation entry point because that surface is not active yet.',
       'Follow-up proposal gating exists in the shared closeout evaluator and RightPanel task-context capture consumes it; other retained creation entry points still need the same boundary when they create follow-up tasks from task context.',
       'Replay grouping exists in shared runtime data but is not yet consumed by retained activity surfaces.',

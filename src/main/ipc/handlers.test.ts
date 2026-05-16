@@ -260,6 +260,7 @@ describe('registerIpcHandlers', () => {
       appliedActionCount: 1,
     });
     expect(emitAppEventMock).toHaveBeenCalledWith('task.changed');
+    expect(emitAppEventMock).toHaveBeenCalledTimes(1);
   });
 
   it('returns hierarchy manual-review policy through IPC', async () => {

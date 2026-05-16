@@ -339,9 +339,9 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'runtime-panel-events constrains known panel.* event types before TaskService writes them to timeline.',
       'TaskService recordTimelineEvent guards panel.* task dynamic writes with task_mutation before persistence.',
       'RuntimeEventRecord preserves task-to-task relatedTaskId for completion handoff and accepted context switch events, and replay groups retain relatedTaskIds.',
+      'Successor-task handoff beyond child tasks has closeout and replay metadata, while new follow-up task creation remains confirmation-gated.',
     ],
     gaps: [
-      'Successor-task handoff beyond child tasks now has closeout and replay metadata, while new follow-up task creation is still confirmation-gated.',
       'Run checkpoint resume has a shared resume-plan shape and RuntimeEventRecord projection data, but retained activity surfaces do not yet render replay-oriented event groupings.',
       'Follow-up proposal gating exists in the shared closeout evaluator and RightPanel task-context capture consumes it; other retained creation entry points still need the same boundary when they create follow-up tasks from task context.',
     ],
