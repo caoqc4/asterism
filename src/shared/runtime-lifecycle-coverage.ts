@@ -93,6 +93,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RunService run_start passes RuntimeCapabilitySnapshot for model execution checks, and CodeAgentRunService passes it for model/workspace capability checks.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through TaskMemoryCoverageEvaluation before execution.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService block run_start when prior task-memory guidance is still pending.',
+      'Runtime end-to-end scenario tests verify that run start is blocked without recovery context and a next step, then allowed once Task.md and next-step context exist.',
       'SourceFreshnessEvaluation classifies source materials as include, caution, or exclude, and RuntimeContextManifest can attach inclusion decisions and reasons to source context items.',
       'SourceMaterialQualityEvaluation classifies traceability, credibility, duplication, and sensitivity; RuntimeContextManifest combines it with freshness before including source context content.',
       'SourceContext records and creation inputs can now carry explicit credibility, duplicate, and sensitive-data signals, and Agent source_context.create can pass those signals into runtime context assembly.',

@@ -17,13 +17,13 @@ function task(partial: Partial<TaskListItemRecord> = {}): TaskListItemRecord {
   return {
     id: partial.id ?? 'task_1',
     title: partial.title ?? '开发小程序',
-    summary: partial.summary ?? '开发一个微信小程序，从需求分析到最终上线。',
+    summary: 'summary' in partial ? partial.summary ?? null : '开发一个微信小程序，从需求分析到最终上线。',
     taskType: partial.taskType,
     taskFacets: partial.taskFacets,
     parentTaskId: partial.parentTaskId,
     childTaskIds: partial.childTaskIds,
     state: partial.state ?? 'planned',
-    nextStep: partial.nextStep ?? '继续推进',
+    nextStep: 'nextStep' in partial ? partial.nextStep ?? null : '继续推进',
     waitingReason: partial.waitingReason ?? null,
     riskLevel: partial.riskLevel ?? 'none',
     riskNote: partial.riskNote ?? null,
@@ -309,6 +309,69 @@ describe('runtime end-to-end task workflow scenarios', () => {
       fromTaskId: 'task_current',
       toTaskId: 'task_next',
       shouldClearMessages: false,
+    });
+  });
+
+  it('blocks run start when the task lacks recovery context and a next step', () => {
+    const runnableTask = detail({
+      id: 'task_run',
+      summary: null,
+      nextStep: null,
+      taskFiles: [],
+      resumeCard: {
+        summary: '',
+        currentState: '未开始',
+        latestChange: { summary: '暂无', action: { label: null, targetType: null, targetId: null } },
+        completionStatus: { total: 0, satisfied: 0, open: 0, summary: '0/0' },
+        currentBlocker: { blockerId: null, title: '无', detail: null },
+        keySource: { sourceContextId: null, title: '无', detail: null, priorityReason: null },
+        currentMethod: { templateId: null, title: '无', detail: null, selectionReason: null },
+        nextSuggestedMove: '',
+      },
+    });
+
+    expect(evaluateTaskMemoryCoverage(
+      buildTaskMemoryCoverageInputForTask('run_start', runnableTask),
+    )).toMatchObject({
+      outcome: 'needs_user_clarification',
+      canStartExecution: false,
+      missing: ['缺少 Task.md、相关 Task Record 或等价恢复摘要。', '缺少明确下一步。'],
+    });
+  });
+
+  it('allows run start when the task has recovery context and a next step', () => {
+    const runnableTask = detail({
+      id: 'task_run',
+      summary: null,
+      nextStep: '先完成需求核对。',
+      taskFiles: [{
+        id: 'file_task_md',
+        taskId: 'task_run',
+        kind: 'file',
+        path: 'Task.md',
+        name: 'Task.md',
+        content: '# Task\n\n## Next Step\n先完成需求核对。',
+        createdAt: now,
+        updatedAt: now,
+      }],
+      resumeCard: {
+        summary: '',
+        currentState: '推进中',
+        latestChange: { summary: '已有任务说明', action: { label: null, targetType: null, targetId: null } },
+        completionStatus: { total: 0, satisfied: 0, open: 0, summary: '0/0' },
+        currentBlocker: { blockerId: null, title: '无', detail: null },
+        keySource: { sourceContextId: null, title: '无', detail: null, priorityReason: null },
+        currentMethod: { templateId: null, title: '无', detail: null, selectionReason: null },
+        nextSuggestedMove: '先完成需求核对。',
+      },
+    });
+
+    expect(evaluateTaskMemoryCoverage(
+      buildTaskMemoryCoverageInputForTask('run_start', runnableTask),
+    )).toMatchObject({
+      outcome: 'pass',
+      canStartExecution: true,
+      reason: '任务恢复摘要和下一步已具备，可以开始执行。',
     });
   });
 });
