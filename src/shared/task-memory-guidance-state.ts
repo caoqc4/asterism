@@ -29,6 +29,7 @@ export type TaskMemoryGuidanceState = {
 };
 
 export type TaskMemoryFileSignal = {
+  id?: string | null;
   name?: string | null;
   path?: string | null;
   updatedAt?: string | null;

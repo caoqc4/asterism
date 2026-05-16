@@ -217,6 +217,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskMemoryGuidanceState tracks pending Task.md and Task Record guidance per target, so newer guidance for one memory surface does not hide unresolved guidance for another.',
       'TaskMemoryGuidanceState reads structured guidance targets from Run Step input before falling back to human-readable guidance text.',
       'TaskMemoryWriteProposal projects pending guidance into minimal confirmed-write proposals for Task.md or Task Records without performing automatic writes.',
+      'TaskMemoryWriteApplyPlan turns a confirmed TaskMemoryWriteProposal into a create/update TaskFile input, while blocking unsafe updates without an existing file id.',
       'RunDetailRecord carries taskMemoryWriteProposals next to taskMemoryGuidance so runtime detail reads can reuse the same missing-memory write plan.',
       'Run start pre-step verification consumes pending TaskMemoryGuidanceState, so new execution cannot bypass unresolved task-memory writes.',
       'TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes to runtime checks and is now consumed by context-clear, task-start, run-start, task-switch, task-completion modal, and RightPanel phase-closeout paths.',
@@ -228,11 +229,11 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     ],
     gaps: [
       'TaskMdUpdateNeedEvaluation covers RightPanel references, TasksPage Task.md saves, and AgentToolRegistry durable tool guidance through RuntimeRecoveryGuidance; remaining retained durable state changes should consume it through TasksPage, RightPanel, Runs, or Decisions.',
-      'Output-reference propagation to Task.md or Task Records is now recommended by tool guidance and can be classified as pending guidance, but it is not automatically persisted.',
+      'Output-reference propagation to Task.md or Task Records is now recommended by tool guidance and can be classified as pending guidance with a reusable confirmed-write plan, but it is not automatically persisted.',
       'TaskMemoryCoverageEvaluation is wired to current lifecycle boundaries; future task lifecycle boundaries must opt into the same evaluator instead of adding direct state changes.',
     ],
     nextImplementation: [
-      'Add a confirmed writer for persisted AgentToolRegistry recoveryGuidance through retained TasksPage/RightPanel flows.',
+      'Connect retained TasksPage/RightPanel confirmation controls to TaskMemoryWriteApplyPlan when UI work resumes.',
       'Keep new lifecycle boundaries routed through TaskMemoryCoverageEvaluation before adding direct state changes.',
       'Keep automatic context clearing as runtime readiness data until a retained UI or scheduler explicitly consumes it.',
     ],

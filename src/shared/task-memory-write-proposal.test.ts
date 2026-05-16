@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildTaskMemoryWriteProposals, hasTaskMemoryWriteForTarget } from './task-memory-write-proposal.js';
+import {
+  buildTaskMemoryWriteApplyPlan,
+  buildTaskMemoryWriteProposals,
+  hasTaskMemoryWriteForTarget,
+} from './task-memory-write-proposal.js';
 import type { TaskMemoryGuidanceState } from './task-memory-guidance-state.js';
 
 function pendingGuidance(partial: Partial<TaskMemoryGuidanceState> = {}): TaskMemoryGuidanceState {
@@ -17,9 +21,10 @@ describe('task memory write proposal', () => {
   it('builds the smallest Task.md update proposal for pending Task.md guidance', () => {
     expect(buildTaskMemoryWriteProposals({
       guidance: pendingGuidance(),
-      taskFiles: [{ path: 'Task.md', updatedAt: '2026-05-16T09:00:00.000Z' }],
+      taskFiles: [{ id: 'task_file_1', path: 'Task.md', updatedAt: '2026-05-16T09:00:00.000Z' }],
       taskTitle: '开发小程序',
     })).toMatchObject([{
+      existingFileId: 'task_file_1',
       operation: 'update',
       path: 'Task.md',
       target: 'task_md',
@@ -59,5 +64,65 @@ describe('task memory write proposal', () => {
     expect(hasTaskMemoryWriteForTarget('task_md', [{ path: 'Task.md' }])).toBe(true);
     expect(hasTaskMemoryWriteForTarget('task_record', [{ path: ' Task Records\\handoff.md ' }])).toBe(true);
     expect(hasTaskMemoryWriteForTarget('task_record', [{ path: 'AI Outputs/handoff.md' }])).toBe(false);
+  });
+
+  it('builds confirmed create and update inputs without applying them', () => {
+    const updateProposal = buildTaskMemoryWriteProposals({
+      guidance: pendingGuidance(),
+      taskFiles: [{ id: 'task_file_1', path: 'Task.md', updatedAt: '2026-05-16T09:00:00.000Z' }],
+      taskTitle: '开发小程序',
+    })[0]!;
+    const createProposal = buildTaskMemoryWriteProposals({
+      guidance: pendingGuidance({
+        pendingTargets: ['task_record'],
+        reason: '最新任务记忆建议仍缺少对应写入：Task Record。',
+        targets: ['task_record'],
+      }),
+      nowIso: '2026-05-16T11:00:00.000Z',
+      taskTitle: '开发小程序',
+    })[0]!;
+
+    expect(buildTaskMemoryWriteApplyPlan({
+      proposal: updateProposal,
+      taskId: 'task_1',
+    })).toMatchObject({
+      action: 'update',
+      input: {
+        id: 'task_file_1',
+        content: expect.stringContaining('待补任务记忆'),
+      },
+      status: 'ready',
+    });
+    expect(buildTaskMemoryWriteApplyPlan({
+      proposal: createProposal,
+      taskId: 'task_1',
+    })).toMatchObject({
+      action: 'create',
+      input: {
+        taskId: 'task_1',
+        name: '2026-05-16-memory-guidance.md',
+        path: 'Task Records/2026-05-16-memory-guidance.md',
+        kind: 'file',
+        content: expect.stringContaining('## Trigger'),
+      },
+      status: 'ready',
+    });
+  });
+
+  it('blocks update plans when the existing file id is missing', () => {
+    expect(buildTaskMemoryWriteApplyPlan({
+      proposal: {
+        contentTemplate: '# Task',
+        operation: 'update',
+        path: 'Task.md',
+        reason: '需要更新 Task.md。',
+        target: 'task_md',
+        title: '更新 Task.md',
+      },
+      taskId: 'task_1',
+    })).toMatchObject({
+      reason: 'Task memory update proposal requires existingFileId.',
+      status: 'blocked',
+    });
   });
 });
