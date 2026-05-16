@@ -424,14 +424,15 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TaskService direct transitions into running consume TaskMemoryCoverageEvaluation for task-start memory sufficiency.',
       'RuntimeHandoffPreview represents manual refresh/archive preview as reusable runtime data instead of RightPanel-only text assembly.',
       'RightPanel automatic context mode consumes AutoContextClearReadiness through RuntimeHandoff after refresh triggers, clearing only when recoverable signals were archived and the readiness verdict is safe.',
+      'RightPanel task-session transitions now share one reducer for active task, pending switch, input, manual refresh, captured-task confirmation, phase closeout, and task-file proposal state.',
     ],
     gaps: [
-      'Manual refresh preview is shared, but RightPanel context state transitions still live in separate component state values instead of one reducer/store.',
+      'Selected file is still parent-owned outside the RightPanel session reducer; only promote it into a parent runtime context store if cross-surface context bugs reappear.',
       'New lifecycle boundaries must continue to opt into TaskMemoryCoverageEvaluation instead of bypassing the shared evaluator.',
       'Automatic context clearing is consumed by the retained RightPanel task-chat surface; future background schedulers must reuse the same readiness verdict instead of adding a second clearing rule.',
     ],
     nextVerification: [
-      'When UI state work is allowed, move RightPanel task context transitions behind a small reducer backed by RuntimeContextSnapshot and RuntimeHandoff.',
+      'When UI state work is allowed, keep new task context transitions on the RightPanel reducer or a parent runtime context store backed by RuntimeContextSnapshot and RuntimeHandoff.',
       'Route any new task lifecycle boundary through TaskMemoryCoverageEvaluation without adding extra UI steps.',
       'Keep RightPanel automatic clearing and any future scheduler on AutoContextClearReadiness rather than reintroducing fixed-round clearing.',
     ],

@@ -66,16 +66,17 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RuntimeHandoff evaluates task switch, refresh, leave-context, and global conversation transitions.',
       'RightPanel separates refresh, manual refresh, leave task context, and new conversation.',
       'RightPanel confirmed and dismissed task context switches now persist panel.* timeline events for audit projection.',
+      'RightPanel task-session transitions now share one reducer for active task, pending switch, input, refresh prompts, captured-task confirmation, phase closeout, and task-file proposals.',
     ],
     outOfAgentPrinciplesScope: [
       'Product runtime must synchronize selected task, active panel task, selected file, and input context.',
       'The UI must prevent double-selected navigation state and stale prompt context.',
     ],
     gaps: [
-      'RuntimeContextSnapshot exists, but RightPanel still keeps activeTaskId, pendingSwitch, selected file, and input state as separate React state values instead of one reducer/store.',
+      'Selected file remains parent-owned; if cross-surface context bugs return, promote selected task and selected file into a parent-level runtime context store.',
     ],
     nextImplementation: [
-      'Move RightPanel context state transitions behind a small reducer backed by RuntimeContextSnapshot.',
+      'Keep future context entry points on the RightPanel reducer or a parent-level runtime context store instead of adding isolated component state.',
     ],
   },
   {

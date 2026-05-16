@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useReducer } from 'react';
 import type { ChatMessage } from '@shared/types/ipc';
 import type { RunStepRecord } from '@shared/types/run';
 import {
@@ -88,6 +88,76 @@ interface TaskFileWriteProposal {
   surface: RuntimeSurfaceKind;
   surfaceLabel: string;
   taskMemoryProposal?: TaskMemoryWriteProposal | null;
+}
+
+interface PanelSessionState {
+  abandonConfirmOpen: boolean;
+  activeTaskId: string | null;
+  input: string;
+  manualRefreshReady: ManualRefreshReady | null;
+  pendingCapturedTaskId: string | null;
+  pendingSwitch: PendingCtxSwitch | null;
+  phaseCloseoutNotice: string | null;
+  phaseCloseoutSaved: boolean;
+  sessionRefreshDismissed: boolean;
+  taskFileProposal: TaskFileWriteProposal | null;
+}
+
+type PanelSessionPatch = Partial<PanelSessionState>;
+
+type PanelSessionAction =
+  | { type: 'patch'; patch: PanelSessionPatch }
+  | { type: 'apply_task_context'; taskId: string }
+  | { type: 'clear_task_context' }
+  | { type: 'reset_task_transients' };
+
+function createPanelSessionState(taskId: string | null): PanelSessionState {
+  return {
+    abandonConfirmOpen: false,
+    activeTaskId: taskId,
+    input: '',
+    manualRefreshReady: null,
+    pendingCapturedTaskId: null,
+    pendingSwitch: null,
+    phaseCloseoutNotice: null,
+    phaseCloseoutSaved: false,
+    sessionRefreshDismissed: false,
+    taskFileProposal: null,
+  };
+}
+
+function clearTaskScopedTransients(state: PanelSessionState): PanelSessionState {
+  return {
+    ...state,
+    abandonConfirmOpen: false,
+    input: '',
+    manualRefreshReady: null,
+    pendingCapturedTaskId: null,
+    pendingSwitch: null,
+    phaseCloseoutNotice: null,
+    phaseCloseoutSaved: false,
+    sessionRefreshDismissed: false,
+    taskFileProposal: null,
+  };
+}
+
+function panelSessionReducer(state: PanelSessionState, action: PanelSessionAction): PanelSessionState {
+  switch (action.type) {
+    case 'patch':
+      return { ...state, ...action.patch };
+    case 'apply_task_context':
+      return {
+        ...clearTaskScopedTransients(state),
+        activeTaskId: action.taskId,
+      };
+    case 'clear_task_context':
+      return {
+        ...clearTaskScopedTransients(state),
+        activeTaskId: null,
+      };
+    case 'reset_task_transients':
+      return clearTaskScopedTransients(state);
+  }
 }
 
 function taskTitle(taskId: string | null, cache: Record<string, string>): string | null {
@@ -746,35 +816,56 @@ export function RightPanel({
   onClose,
   onClearTask,
 }: RightPanelProps) {
-  const [activeTaskId, setActiveTaskId] = useState<string | null>(taskId);
+  const [sessionState, dispatchSession] = useReducer(panelSessionReducer, taskId, createPanelSessionState);
   const [titleCache, setTitleCache] = useState<Record<string, string>>({});
   const [messages, setMessages] = useState<Message[]>([]);
-  const [pendingSwitch, setPendingSwitch] = useState<PendingCtxSwitch | null>(null);
   const [fullScreen, setFullScreen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [sessionRefreshDismissed, setSessionRefreshDismissed] = useState(false);
   const [contextStrategy, setContextStrategy] = useState<ContextStrategy>('auto');
-  const [manualRefreshReady, setManualRefreshReady] = useState<ManualRefreshReady | null>(null);
   const [compressionThreshold, setCompressionThreshold] = useState<number>(
     CONTEXT_COMPRESSION_THRESHOLD.default,
   );
   const [capturingTask, setCapturingTask] = useState(false);
   const [confirmingCapturedTask, setConfirmingCapturedTask] = useState(false);
-  const [pendingCapturedTaskId, setPendingCapturedTaskId] = useState<string | null>(null);
-  const [abandonConfirmOpen, setAbandonConfirmOpen] = useState(false);
   const [abandoningCapturedTask, setAbandoningCapturedTask] = useState(false);
-  const [phaseCloseoutSaved, setPhaseCloseoutSaved] = useState(false);
-  const [phaseCloseoutNotice, setPhaseCloseoutNotice] = useState<string | null>(null);
   const [savingPhaseCloseout, setSavingPhaseCloseout] = useState(false);
-  const [taskFileProposal, setTaskFileProposal] = useState<TaskFileWriteProposal | null>(null);
   const [savingTaskFileProposal, setSavingTaskFileProposal] = useState(false);
-  const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastAutoSentDraftPromptRef = useRef<string | null>(null);
   const lastAutoRefreshKeyRef = useRef<string | null>(null);
   const autoRefreshInFlightRef = useRef(false);
+  const {
+    abandonConfirmOpen,
+    activeTaskId,
+    input,
+    manualRefreshReady,
+    pendingCapturedTaskId,
+    pendingSwitch,
+    phaseCloseoutNotice,
+    phaseCloseoutSaved,
+    sessionRefreshDismissed,
+    taskFileProposal,
+  } = sessionState;
+
+  function patchSession(patch: PanelSessionPatch) {
+    dispatchSession({ type: 'patch', patch });
+  }
+
+  function setSessionInput(value: string) {
+    patchSession({ input: value });
+  }
+
+  function updateTaskFileProposal(
+    updater: TaskFileWriteProposal | null | ((current: TaskFileWriteProposal | null) => TaskFileWriteProposal | null),
+  ) {
+    patchSession({
+      taskFileProposal: typeof updater === 'function'
+        ? updater(taskFileProposal)
+        : updater,
+    });
+  }
 
   // Fetch task title and seed welcome message when panel first opens with a task
   useEffect(() => {
@@ -814,13 +905,11 @@ export function RightPanel({
   // When taskId changes from outside (e.g. clicking a different task)
   useEffect(() => {
     if (taskId === activeTaskId) {
-      setPendingSwitch((current) => current ? null : current);
+      if (pendingSwitch) patchSession({ pendingSwitch: null });
       return;
     }
     if (taskId === null) {
-      setActiveTaskId(null);
-      setPendingSwitch(null);
-      setManualRefreshReady(null);
+      dispatchSession({ type: 'clear_task_context' });
       return;
     }
     // Fetch title if not cached, then propose soft context switch
@@ -838,21 +927,16 @@ export function RightPanel({
           setTitleCache((prev) => ({ ...prev, [taskId]: title }));
         }
       }
-      if (title) setPendingSwitch({ taskId, taskTitle: title });
+      if (title && (pendingSwitch?.taskId !== taskId || pendingSwitch.taskTitle !== title)) {
+        patchSession({ pendingSwitch: { taskId, taskTitle: title } });
+      }
     };
     void fetchAndPropose();
-  }, [activeTaskId, taskId, taskTitleHint, titleCache]);
+  }, [activeTaskId, pendingSwitch, taskId, taskTitleHint, titleCache]);
 
   function applyTaskContext(nextTaskId: string, nextTitle: string, options: { addMessage?: boolean } = {}) {
-    setActiveTaskId(nextTaskId);
     setTitleCache((current) => ({ ...current, [nextTaskId]: nextTitle }));
-    setPendingSwitch(null);
-    setSessionRefreshDismissed(false);
-    setManualRefreshReady(null);
-    setPhaseCloseoutSaved(false);
-    setPhaseCloseoutNotice(null);
-    setTaskFileProposal(null);
-    setInput('');
+    dispatchSession({ type: 'apply_task_context', taskId: nextTaskId });
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
     if (options.addMessage !== false) {
       appendSysMsg(`已切换到任务：**${nextTitle}**`);
@@ -899,7 +983,7 @@ export function RightPanel({
         reason: '用户选择保留当前上下文。',
       });
     }
-    setPendingSwitch(null);
+    patchSession({ pendingSwitch: null });
     onClearTask();
   }
 
@@ -948,7 +1032,7 @@ export function RightPanel({
       .flatMap((detail) => detail?.taskMemoryWriteProposals ?? [])
       .find(Boolean);
     if (proposal) {
-      setTaskFileProposal((current) => current ?? taskMemoryProposalToFileProposal(proposal));
+      updateTaskFileProposal((current) => current ?? taskMemoryProposalToFileProposal(proposal));
     }
     return selectBlockingTaskMemoryGuidance(details.map((detail) => detail?.taskMemoryGuidance));
   }
@@ -961,9 +1045,11 @@ export function RightPanel({
         ]
       : []);
     setHistoryOpen(false);
-    setSessionRefreshDismissed(false);
-    setManualRefreshReady(null);
-    setInput('');
+    patchSession({
+      input: '',
+      manualRefreshReady: null,
+      sessionRefreshDismissed: false,
+    });
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   }
 
@@ -974,7 +1060,7 @@ export function RightPanel({
         reason && reason !== '任务会话缺少可恢复信号，暂不应清理。' ? reason : null,
         '请先补充已确认结论、候选方案、未解决问题或下一步动作。',
       ].filter(Boolean).join(' '));
-      setSessionRefreshDismissed(true);
+      patchSession({ sessionRefreshDismissed: true });
     }
   }
 
@@ -1013,12 +1099,12 @@ export function RightPanel({
       });
       if (!handoff.canProceed) {
         appendSysMsg(`自动刷新已暂停：${reason} ${handoff.reason}`);
-        setSessionRefreshDismissed(true);
+        patchSession({ sessionRefreshDismissed: true });
         return;
       }
       if (!handoff.autoContextClear?.shouldAutoClear) {
         appendSysMsg(`自动刷新已保留当前会话：${reason} ${handoff.autoContextClear?.reason ?? handoff.reason}`);
-        setSessionRefreshDismissed(true);
+        patchSession({ sessionRefreshDismissed: true });
         return;
       }
       clearTaskSessionAfterArchive(taskName, { auto: true });
@@ -1053,7 +1139,7 @@ export function RightPanel({
       messageCount: userMessageCount,
       recentFocus,
     });
-    setManualRefreshReady({ taskName });
+    patchSession({ manualRefreshReady: { taskName } });
     appendSysMsg([
       preview.title,
       preview.detail,
@@ -1077,17 +1163,8 @@ export function RightPanel({
       return;
     }
     setMessages([]);
-    setActiveTaskId(null);
-    setPendingSwitch(null);
-    setPendingCapturedTaskId(null);
-    setAbandonConfirmOpen(false);
     setHistoryOpen(false);
-    setSessionRefreshDismissed(false);
-    setManualRefreshReady(null);
-    setPhaseCloseoutSaved(false);
-    setPhaseCloseoutNotice(null);
-    setTaskFileProposal(null);
-    setInput('');
+    dispatchSession({ type: 'clear_task_context' });
     onClearTask();
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   }
@@ -1107,14 +1184,7 @@ export function RightPanel({
       handleMissingRefreshArchive(handoff.reason);
       return;
     }
-    setActiveTaskId(null);
-    setPendingSwitch(null);
-    setManualRefreshReady(null);
-    setSessionRefreshDismissed(false);
-    setPhaseCloseoutSaved(false);
-    setPhaseCloseoutNotice(null);
-    setTaskFileProposal(null);
-    setInput('');
+    dispatchSession({ type: 'clear_task_context' });
     onClearTask();
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   }
@@ -1231,9 +1301,11 @@ export function RightPanel({
         title: '捕获任务',
         output: `已捕获任务：${created.title}`,
       });
-      setActiveTaskId(created.id);
-      setPendingCapturedTaskId(created.id);
-      setAbandonConfirmOpen(false);
+      patchSession({
+        abandonConfirmOpen: false,
+        activeTaskId: created.id,
+        pendingCapturedTaskId: created.id,
+      });
       setTitleCache((prev) => ({ ...prev, [created.id]: created.title }));
       onTaskCaptured?.(created.id);
       appendSysMsg(`已捕获为任务：**${created.title}**（待确认）。接下来先让 AI 判断任务类型，必要时补齐上下文或拆解；确认后才进入 Tasks，真实子任务仍需你确认。`);
@@ -1258,8 +1330,10 @@ export function RightPanel({
     setConfirmingCapturedTask(true);
     try {
       await window.api?.transitionTask({ id: activeTaskId, nextState: 'planned' });
-      setPendingCapturedTaskId(null);
-      setAbandonConfirmOpen(false);
+      patchSession({
+        abandonConfirmOpen: false,
+        pendingCapturedTaskId: null,
+      });
       appendSysMsg('已确认加入 Tasks。你可以继续在这里规划，也可以回到任务列表推进。');
     } catch {
       appendSysMsg('确认任务失败，请稍后再试。');
@@ -1306,7 +1380,7 @@ export function RightPanel({
         memoryWriteCompleted: Boolean(preserved.recordPath),
       });
       if (!phaseCloseoutMemory.canProceed) {
-        setPhaseCloseoutNotice(`阶段收尾已暂停：${phaseCloseoutMemory.reason}`);
+        patchSession({ phaseCloseoutNotice: `阶段收尾已暂停：${phaseCloseoutMemory.reason}` });
         appendSysMsg(`阶段收尾已暂停：${phaseCloseoutMemory.reason}`);
         return;
       }
@@ -1322,7 +1396,7 @@ export function RightPanel({
         hasRecoveryNote: Boolean(preserved.recordPath),
       });
       if (!postStepVerification.canProceed) {
-        setPhaseCloseoutNotice(`阶段收尾已暂停：${postStepVerification.detail}`);
+        patchSession({ phaseCloseoutNotice: `阶段收尾已暂停：${postStepVerification.detail}` });
         appendSysMsg(`阶段收尾已暂停：${postStepVerification.detail}`);
         return;
       }
@@ -1338,8 +1412,10 @@ export function RightPanel({
         window.api?.listTasks?.().catch(() => []) ?? Promise.resolve([]),
       ]);
       if (!taskDetail) {
-        setPhaseCloseoutSaved(true);
-        setPhaseCloseoutNotice('阶段记录已保存，但暂时没有读取到完整任务详情。请回到任务详情确认状态后再继续交接。');
+        patchSession({
+          phaseCloseoutNotice: '阶段记录已保存，但暂时没有读取到完整任务详情。请回到任务详情确认状态后再继续交接。',
+          phaseCloseoutSaved: true,
+        });
         setMessages([
           {
             id: nextId(),
@@ -1371,7 +1447,7 @@ export function RightPanel({
         taskMemoryGuidance,
       });
       if (!handoff.canProceed) {
-        setPhaseCloseoutNotice(`阶段收尾已暂停：${handoff.reason}`);
+        patchSession({ phaseCloseoutNotice: `阶段收尾已暂停：${handoff.reason}` });
         appendSysMsg(`阶段收尾已暂停：${handoff.reason}`);
         return;
       }
@@ -1387,8 +1463,10 @@ export function RightPanel({
         runVerificationDetail: evaluation.runVerificationDetail,
         source: 'lightweight_rule_engine',
       }).catch(() => undefined);
-      setPhaseCloseoutSaved(true);
-      setPhaseCloseoutNotice(`阶段记录已保存，质量检查已记录，会话已刷新。${evaluation.reason}`);
+      patchSession({
+        phaseCloseoutNotice: `阶段记录已保存，质量检查已记录，会话已刷新。${evaluation.reason}`,
+        phaseCloseoutSaved: true,
+      });
       const nextTask = evaluation.nextTaskId
         ? tasks.find((task) => task.id === evaluation.nextTaskId) ?? null
         : null;
@@ -1431,7 +1509,7 @@ export function RightPanel({
         : {});
       if (handoff.action === 'handoff_to_task' && nextTask) {
         if (resumePlan.subtaskStart && !resumePlan.subtaskStart.canProceed) {
-          setPhaseCloseoutNotice(`阶段收尾已保存，但进入下一任务前需要处理：${resumePlan.subtaskStart.detail}`);
+          patchSession({ phaseCloseoutNotice: `阶段收尾已保存，但进入下一任务前需要处理：${resumePlan.subtaskStart.detail}` });
           setMessages([
             {
               id: nextId(),
@@ -1443,11 +1521,6 @@ export function RightPanel({
           return;
         }
         applyTaskContext(nextTask.id, nextTask.title, { addMessage: false });
-        setPendingSwitch(null);
-        setSessionRefreshDismissed(false);
-        setManualRefreshReady(null);
-        setPhaseCloseoutSaved(false);
-        setPhaseCloseoutNotice(null);
         setMessages([
           makeWelcomeMessage(nextTask.title),
           {
@@ -1482,7 +1555,7 @@ export function RightPanel({
   function proposeTaskFileWrite() {
     if (!activeTaskId) return;
     const taskName = title ?? titleCache[activeTaskId] ?? activeTaskId;
-    setTaskFileProposal(buildTaskFileWriteProposal({
+    updateTaskFileProposal(buildTaskFileWriteProposal({
       taskTitle: taskName,
       messages,
       selectedFilePath: selectedFile?.path ?? null,
@@ -1585,7 +1658,7 @@ export function RightPanel({
         surfaceLabel: taskFileProposal.surfaceLabel,
         source: taskFileProposal.taskMemoryProposal ? 'task_memory_write_proposal' : 'right_panel_file_proposal',
       });
-      setTaskFileProposal(null);
+      updateTaskFileProposal(null);
       appendSysMsg(taskFileProposal.taskMemoryProposal
         ? `已补写任务记忆：\`${path}\`。`
         : `已写入任务文件：\`${path}\`。`);
@@ -1597,7 +1670,7 @@ export function RightPanel({
   async function abandonCapturedTask() {
     if (!activeTaskId || pendingCapturedTaskId !== activeTaskId || abandoningCapturedTask) return;
     if (!abandonConfirmOpen) {
-      setAbandonConfirmOpen(true);
+      patchSession({ abandonConfirmOpen: true });
       return;
     }
     const guard = guardTaskStateTransition({
@@ -1612,10 +1685,7 @@ export function RightPanel({
     setAbandoningCapturedTask(true);
     try {
       await window.api?.transitionTask({ id: activeTaskId, nextState: 'archived' });
-      setPendingCapturedTaskId(null);
-      setAbandonConfirmOpen(false);
-      setActiveTaskId(null);
-      setManualRefreshReady(null);
+      dispatchSession({ type: 'clear_task_context' });
       onClearTask();
       appendSysMsg('已放弃这条待确认任务，当前会话已回到全局。');
     } catch {
@@ -1648,8 +1718,10 @@ export function RightPanel({
   async function send(forcedText?: string) {
     const text = (forcedText ?? input).trim();
     if (!text || thinking) return;
-    setManualRefreshReady(null);
-    setTaskFileProposal(null);
+    patchSession({
+      manualRefreshReady: null,
+      taskFileProposal: null,
+    });
 
     const userMsg: Message = { id: nextId(), role: 'user', text, ts: now() };
     const historyForAI: ChatMessage[] = [
@@ -1658,7 +1730,7 @@ export function RightPanel({
     ];
 
     setMessages((prev) => [...prev, userMsg]);
-    setInput('');
+    setSessionInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
     setThinking(true);
 
@@ -1891,7 +1963,7 @@ export function RightPanel({
             <span className="muted">重要内容会进入任务记忆，不依赖聊天窗口长期保存。</span>
             <div className="panel-prompts">
               {quickPrompts.map((p) => (
-                <button key={p.label} className="panel-prompt-chip" onClick={() => { setInput(p.prompt); textareaRef.current?.focus(); }}>
+                <button key={p.label} className="panel-prompt-chip" onClick={() => { setSessionInput(p.prompt); textareaRef.current?.focus(); }}>
                   {p.label}
                 </button>
               ))}
@@ -1933,7 +2005,7 @@ export function RightPanel({
               {contextStrategy === 'auto' && (
                 <button className="btn sm primary" onClick={() => void refreshTaskSession()}>刷新任务会话</button>
               )}
-              <button className="btn sm ghost" onClick={() => setSessionRefreshDismissed(true)}>继续当前会话</button>
+              <button className="btn sm ghost" onClick={() => patchSession({ sessionRefreshDismissed: true })}>继续当前会话</button>
             </div>
           </div>
         )}
@@ -1994,7 +2066,7 @@ export function RightPanel({
             <input
               className="panel-file-proposal-path"
               value={taskFileProposal.path}
-              onChange={(event) => setTaskFileProposal((proposal) => (
+              onChange={(event) => updateTaskFileProposal((proposal) => (
                 proposal
                   ? {
                       ...proposal,
@@ -2012,13 +2084,13 @@ export function RightPanel({
             <textarea
               className="panel-file-proposal-content"
               value={taskFileProposal.content}
-              onChange={(event) => setTaskFileProposal((proposal) => (
+              onChange={(event) => updateTaskFileProposal((proposal) => (
                 proposal ? { ...proposal, content: event.target.value } : proposal
               ))}
               aria-label="任务文件内容"
             />
             <div className="panel-refresh-actions">
-              <button className="btn sm ghost" onClick={() => setTaskFileProposal(null)}>
+              <button className="btn sm ghost" onClick={() => updateTaskFileProposal(null)}>
                 放弃
               </button>
               <button
@@ -2100,8 +2172,10 @@ export function RightPanel({
               className={`panel-context-strategy-btn${contextStrategy === value ? ' active' : ''}`}
               onClick={() => {
                 setContextStrategy(value);
-                setSessionRefreshDismissed(false);
-                setManualRefreshReady(null);
+                patchSession({
+                  manualRefreshReady: null,
+                  sessionRefreshDismissed: false,
+                });
               }}
             >
               {label}
@@ -2134,7 +2208,7 @@ export function RightPanel({
             {taskTypeReviewPrompt && (
               <button
                 className="panel-prompt-chip"
-                onClick={() => { setInput(taskTypeReviewPrompt); textareaRef.current?.focus(); }}
+                onClick={() => { setSessionInput(taskTypeReviewPrompt); textareaRef.current?.focus(); }}
               >
                 判断任务类型
               </button>
@@ -2142,7 +2216,7 @@ export function RightPanel({
             {taskPlanningPrompt && (
               <button
                 className="panel-prompt-chip"
-                onClick={() => { setInput(taskPlanningPrompt.prompt); textareaRef.current?.focus(); }}
+                onClick={() => { setSessionInput(taskPlanningPrompt.prompt); textareaRef.current?.focus(); }}
               >
                 {taskPlanningPrompt.label}
               </button>
@@ -2155,7 +2229,7 @@ export function RightPanel({
           placeholder={activeTaskId ? `关于「${title ?? activeTaskId}」…` : '搜索、提问或捕获任务想法…'}
           value={input}
           rows={1}
-          onChange={(e) => { setInput(e.target.value); autoResize(); }}
+          onChange={(e) => { setSessionInput(e.target.value); autoResize(); }}
           onKeyDown={handleKeyDown}
         />
         <div className="panel-input-foot">
