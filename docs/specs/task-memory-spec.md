@@ -566,6 +566,12 @@ Task Record guidance, but if the latest guidance still requires Task.md or
 another Task Record after closeout persistence, runtime must pause before
 refreshing chat or handing off to the next task.
 
+Writing a closeout record does not make an unresolved closeout result safe. If
+the closeout result still indicates a blocker, dependency, required user
+confirmation, or follow-up confirmation, runtime must preserve the current task
+context and wait for that boundary to be handled before clearing chat or handing
+off.
+
 Paused Run resume also follows this boundary. Resuming from a checkpoint may
 execute tools, so unresolved task-memory guidance must be handled before the
 checkpoint continuation runs.
