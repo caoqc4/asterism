@@ -36,6 +36,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Task hierarchy tests cover explicit no-parent records, explicit top-level phase follow-ups, and renderer stale hierarchy attributes not overriding persisted parent/child fields.',
       'Runtime surface routing has regression coverage that explicit Decision kind, scope, and sourceType are not overridden by title-pattern inference.',
       'RuntimeEntrypointCoverage now requires every retained runtime entrypoint to declare a simplicity_check gate, so future execution, creation, decision, write, resume, and context-transition surfaces cannot register without the smallest-state-change boundary.',
+      'MemorySurfaceWriteCoverage requires every retained durable information writer to declare its smallest surface, write policy, and simplicity boundary.',
     ],
     gaps: [
       'Renderer-local hierarchy attributes remain only as legacy missing-field fallback data for old records; future cleanup is limited to deleting compatibility reads when old records no longer need support.',
@@ -109,6 +110,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
     implementedBy: [
       'runtime-surface-routing classifies Task.md, Task Records, source materials, AI output, artifacts, decisions, work habits, run steps, and discussion-only candidates.',
       'MemorySurfacePolicy gives each runtime surface an explicit memory category, write policy, reuse policy, task-context requirement, and quality-metadata requirement.',
+      'MemorySurfaceWriteCoverage registers retained durable information writers and verifies their surfaces, write policies, and required guards.',
       'Artifact classification requires an explicit artifact surface or artifact kind; ordinary task files are not promoted to artifacts by an Artifacts/ path alone.',
       'Memory-surface tests keep AI output distinct from source material, generic source captures distinct from Task Records, and reserved Task.md / Task Records paths out of ordinary file handling.',
       'Source-context routing preserves explicit sourceRole before applying task-record-like title or note heuristics.',
@@ -139,13 +141,16 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TaskMemoryGuidanceState distinguishes unresolved task-memory guidance from completed Task.md or Task Record writes.',
       'TaskMemoryGuidanceState tracks Task.md and Task Record guidance per target so one newer recommendation cannot mask another pending memory surface.',
       'TaskRecordWorthiness tests cover should-create and should-not-create cases for handoff, closeout, correction, option rationale, failures, external signals, duplicates, generic notes, and unbound notes.',
+      'Memory-surface write coverage tests keep recovery memory behind dedicated evaluators, source/AI output behind explicit source capture, and artifacts behind artifact writers.',
     ],
     gaps: [
       'TaskMdUpdateNeedEvaluation covers RightPanel important-file references, TasksPage direct Task.md saves, reserved Task.md path protection, AgentToolRegistry durable tool guidance through structured fields, and TaskRepository update timeline changed-field metadata; remaining retained durable writes outside durable tools must pass changed fields and reference metadata consistently.',
       'TaskRecordWorthinessEvaluation is consumed by current retained Task Record writers, including RightPanel context-refresh/phase-closeout, TasksPage manual records, completion handoff, project decomposition self-check, and AgentToolRegistry recovery guidance; future Task Record writers must keep using the same evaluator.',
       'RightPanel can confirm task memory write proposals; TasksPage and any future retained surfaces still need to reuse TaskMemoryWriteApplyPlan instead of rebuilding proposal write inputs.',
+      'MemorySurfaceWriteCoverage is an explicit registry, so future durable writers must be added there before they count as covered.',
     ],
     nextVerification: [
+      'Keep memory-surface write coverage tests failing when a future writer omits its surface, write policy, guard, or simplicity_check.',
       'Keep information-routing tests in place for task mutation, Task.md update recommendation, and Task Record worthiness when adding new durable write surfaces.',
     ],
   },

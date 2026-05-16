@@ -67,14 +67,20 @@ Tasks:
    - source captures must not become Task Records unless record-worthy;
    - ordinary local files must not become artifacts by path alone;
    - Task.md and Task Records must not be created through generic file paths.
-4. Make source-quality metadata mandatory where it is known:
+4. Register retained write entry points against the matrix:
+   - surface;
+   - write policy;
+   - required guard;
+   - whether the write is recovery memory, evidence, generated output, artifact,
+     ordinary support, or judgment state.
+5. Make source-quality metadata mandatory where it is known:
    - captured time;
    - source role;
    - traceability;
    - credibility;
    - duplicate signal;
    - sensitivity signal.
-5. Update docs so each memory surface has a clear write/read standard.
+6. Update docs so each memory surface has a clear write/read standard.
 
 Acceptance criteria:
 
