@@ -2962,6 +2962,7 @@ describe('TaskService', () => {
     const completionCriteriaRepository = {
       listForTask: vi.fn().mockResolvedValue([]),
       create: vi.fn().mockResolvedValue(buildCompletionCriteriaRecord()),
+      get: vi.fn().mockResolvedValue(buildCompletionCriteriaRecord()),
       update: vi.fn(),
       satisfy: vi.fn().mockResolvedValue(
         buildCompletionCriteriaRecord({
@@ -2994,6 +2995,7 @@ describe('TaskService', () => {
       taskId: 'task_1',
       text: 'Stakeholder approved final brief',
     });
+    expect(completionCriteriaRepository.get).toHaveBeenCalledWith('criteria_1');
     expect(repository.appendTimelineEvent).toHaveBeenNthCalledWith(
       1,
       'task_1',
@@ -3016,6 +3018,82 @@ describe('TaskService', () => {
       },
     );
     expect(satisfied.status).toBe('satisfied');
+  });
+
+  it('guards completion criteria satisfaction before persistence', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const completionCriteriaRepository = {
+      get: vi.fn().mockResolvedValue(buildCompletionCriteriaRecord({ taskId: '' })),
+      satisfy: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      completionCriteriaRepository as never,
+    );
+
+    await expect(service.satisfyCompletionCriteria('criteria_1')).rejects.toThrow(
+      '任务变更需要绑定任务上下文',
+    );
+
+    expect(completionCriteriaRepository.satisfy).not.toHaveBeenCalled();
+    expect(repository.appendTimelineEvent).not.toHaveBeenCalled();
+  });
+
+  it('guards completion criteria reopening before persistence', async () => {
+    const repository = {
+      list: vi.fn(),
+      create: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildDetail('planned')),
+      update: vi.fn(),
+      appendTimelineEvent: vi.fn(),
+      transition: vi.fn(),
+    };
+    const waitingItems = {
+      getActiveForTask: vi.fn().mockResolvedValue(null),
+      upsertActive: vi.fn(),
+      resolveActive: vi.fn(),
+    };
+    const completionCriteriaRepository = {
+      get: vi.fn().mockResolvedValue(buildCompletionCriteriaRecord({ taskId: '' })),
+      reopen: vi.fn(),
+    };
+    const service = new TaskService(
+      repository as never,
+      waitingItems as never,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      completionCriteriaRepository as never,
+    );
+
+    await expect(service.reopenCompletionCriteria('criteria_1')).rejects.toThrow(
+      '任务变更需要绑定任务上下文',
+    );
+
+    expect(completionCriteriaRepository.reopen).not.toHaveBeenCalled();
+    expect(repository.appendTimelineEvent).not.toHaveBeenCalled();
   });
 
   it('blocks generic or duplicate completion criteria before persistence', async () => {

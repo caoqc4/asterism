@@ -1668,8 +1668,13 @@ export class TaskService {
       throw new Error('Completion criteria repository is not configured');
     }
 
+    const current = await this.completionCriteriaRepository.get(id);
+    if (!current) {
+      throw new Error(`Completion criteria not found: ${id}`);
+    }
+    this.assertTaskMutationActionAllowed(current.taskId);
+
     const satisfied = await this.completionCriteriaRepository.satisfy(id);
-    this.assertTaskMutationActionAllowed(satisfied.taskId);
 
     await this.repository.appendTimelineEvent(
       satisfied.taskId,
@@ -1690,8 +1695,13 @@ export class TaskService {
       throw new Error('Completion criteria repository is not configured');
     }
 
+    const current = await this.completionCriteriaRepository.get(id);
+    if (!current) {
+      throw new Error(`Completion criteria not found: ${id}`);
+    }
+    this.assertTaskMutationActionAllowed(current.taskId);
+
     const reopened = await this.completionCriteriaRepository.reopen(id);
-    this.assertTaskMutationActionAllowed(reopened.taskId);
 
     await this.repository.appendTimelineEvent(
       reopened.taskId,
