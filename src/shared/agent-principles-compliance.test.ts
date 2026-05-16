@@ -92,6 +92,7 @@ describe('agent principles compliance matrix', () => {
     const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
 
     expect(text).toContain('phase closeout consumes TaskMemoryCoverageEvaluation and pending TaskMemoryGuidanceState');
+    expect(text).toContain('phase closeout blocks chat clearing when the closeout result still has blocker');
   });
 
   it('records that paused run resume uses the same pending-memory boundary', () => {

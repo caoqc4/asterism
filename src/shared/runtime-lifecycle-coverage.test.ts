@@ -74,6 +74,7 @@ describe('runtime lifecycle coverage matrix', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 
     expect(text).toContain('Phase closeout requires TaskMemoryCoverageEvaluation and pending TaskMemoryGuidanceState checks');
+    expect(text).toContain('unresolved blocker, dependency, user-confirmation, and follow-up-confirmation outcomes');
   });
 
   it('tracks pending-memory checks for paused run resume', () => {
