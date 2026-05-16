@@ -20,6 +20,7 @@ export type RuntimeEntrypointGate =
   | 'subtask_start'
   | 'task_mutation'
   | 'task_completion'
+  | 'project_verification'
   | 'decision_action'
   | 'checkpoint_eligibility'
   | 'panel_event_allowlist';
@@ -267,11 +268,13 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     requiredGates: [
       'runtime_action',
       'task_completion',
+      'project_verification',
       'pre_step',
     ],
     coveredGates: [
       'runtime_action',
       'task_completion',
+      'project_verification',
       'pre_step',
     ],
   },
