@@ -366,6 +366,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RunService paused-run continuation consumes RuntimeHandoff and RuntimeResumePlan before executing checkpoint resume tools.',
       'runtime-event-record projects timeline events, Runs, Run steps, Task Records, Decisions without timeline coverage, and runtime resume projections into a shared RuntimeEventRecord audit stream for retained task-dynamics surfaces.',
       'runtime-event-record groups projected events into replay-oriented stories for handoff, project structure, execution recovery, Decisions, durable records, source context, and task state.',
+      'runtime-event-record formats completion-criteria, dependency, blocker, and source-context payloads into readable task dynamics instead of exposing raw event names or JSON.',
       'RunService.getDetail exposes optional runtimeEvents and runtimeReplayGroups with task-bound timeline and Task Record context on RunDetailRecord for Run-side data consumers.',
       'Tasks task dynamics consumes RuntimeEventRecord projection and replay groups instead of raw task timeline only.',
       'Tasks task dynamics loads selected Run details and feeds Run steps into RuntimeEventRecord so execution steps remain visible in the same task-bound audit stream.',

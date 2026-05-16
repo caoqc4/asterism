@@ -362,11 +362,18 @@ function timelineTitle(type: string, payload: string | null): string {
     case 'run.completed': return 'AI 执行完成';
     case 'run.failed': return 'AI 执行失败';
     case 'run.paused': return 'AI 执行暂停';
-    case 'source_context.created': return payloadText ? `上下文已添加：${payloadText}` : '上下文已添加';
-    case 'source_context.updated': return payloadText ? `上下文已更新：${payloadText}` : '上下文已更新';
-    case 'task_dependency.created': return payloadText ? `新增依赖：${payloadText}` : '新增任务依赖';
+    case 'source_context.created': return timelinePayloadTitle(payload, '上下文已添加', 'title');
+    case 'source_context.updated': return timelinePayloadTitle(payload, '上下文已更新', 'title');
+    case 'source_context.archived': return timelinePayloadTitle(payload, '上下文已归档', 'title');
+    case 'completion_criteria.created': return timelinePayloadTitle(payload, '完成标准已添加', 'text');
+    case 'completion_criteria.updated': return timelinePayloadTitle(payload, '完成标准已更新', 'text');
+    case 'completion_criteria.satisfied': return timelinePayloadTitle(payload, '完成标准已满足', 'text');
+    case 'completion_criteria.reopened': return timelinePayloadTitle(payload, '完成标准已重开', 'text');
+    case 'task_dependency.created': return timelinePayloadTitle(payload, '新增依赖', 'blockedByTaskTitle');
+    case 'task_dependency.updated': return timelinePayloadTitle(payload, '依赖已更新', 'blockedByTaskTitle');
     case 'task_dependency.resolved': return '依赖已解除';
-    case 'blocker.created': return payloadText ? `阻塞：${payloadText}` : '发现阻塞项';
+    case 'blocker.created': return timelinePayloadTitle(payload, '发现阻塞项', 'title');
+    case 'blocker.updated': return timelinePayloadTitle(payload, '阻塞已更新', 'title');
     case 'blocker.resolved': return '阻塞已解除';
     case 'decision.created': return 'AI 提交决策请求';
     case 'decision.acted': return '决策已拍板';
@@ -380,6 +387,10 @@ function timelineTitle(type: string, payload: string | null): string {
 function timelineDetail(type: string, payload: string | null): string | null {
   if (!payload) return null;
   if (type === 'task.updated') return formatTaskUpdatedDetail(payload);
+  if (type.startsWith('completion_criteria.')) return formatCompletionCriteriaDetail(payload);
+  if (type.startsWith('task_dependency.')) return formatTaskDependencyDetail(payload);
+  if (type.startsWith('blocker.')) return formatBlockerDetail(payload);
+  if (type.startsWith('source_context.')) return formatSourceContextDetail(payload);
   if (type !== 'task.completion_check') return null;
   try {
     const parsed = JSON.parse(payload) as Record<string, unknown>;
@@ -391,6 +402,14 @@ function timelineDetail(type: string, payload: string | null): string | null {
   } catch {
     return null;
   }
+}
+
+function timelinePayloadTitle(payload: string | null, fallback: string, field: string): string {
+  const parsed = parsePayload(payload);
+  const value = parsed?.[field];
+  return typeof value === 'string' && value.trim()
+    ? `${fallback}：${value.trim()}`
+    : fallback;
 }
 
 function formatTaskUpdatedTitle(payload: string | null): string {
@@ -427,6 +446,79 @@ function extractChangedTaskFieldLabels(payload: string | null): string[] {
   return parsed.changedFields
     .map((field) => typeof field === 'string' ? TASK_FIELD_LABELS[field] : null)
     .filter((label): label is string => Boolean(label));
+}
+
+function formatCompletionCriteriaDetail(payload: string): string | null {
+  const parsed = parsePayload(payload);
+  if (!parsed) return null;
+  const status = typeof parsed.status === 'string' && parsed.status.trim()
+    ? `状态：${formatCompletionCriteriaStatus(parsed.status.trim())}`
+    : null;
+  const satisfiedAt = typeof parsed.satisfiedAt === 'string' && parsed.satisfiedAt.trim()
+    ? `满足于：${parsed.satisfiedAt.trim()}`
+    : null;
+  return [status, satisfiedAt].filter(Boolean).join(' / ') || null;
+}
+
+function formatTaskDependencyDetail(payload: string): string | null {
+  const parsed = parsePayload(payload);
+  if (!parsed) return null;
+  const upstream = typeof parsed.blockedByTaskTitle === 'string' && parsed.blockedByTaskTitle.trim()
+    ? `上游：${parsed.blockedByTaskTitle.trim()}`
+    : typeof parsed.blockedByTaskId === 'string' && parsed.blockedByTaskId.trim()
+      ? `上游：${parsed.blockedByTaskId.trim()}`
+      : null;
+  const reason = typeof parsed.reason === 'string' && parsed.reason.trim()
+    ? `原因：${parsed.reason.trim()}`
+    : null;
+  const status = typeof parsed.status === 'string' && parsed.status.trim()
+    ? `状态：${parsed.status.trim()}`
+    : null;
+  return [upstream, reason, status].filter(Boolean).join(' / ') || null;
+}
+
+function formatBlockerDetail(payload: string): string | null {
+  const parsed = parsePayload(payload);
+  if (!parsed) return null;
+  const kind = typeof parsed.kind === 'string' && parsed.kind.trim()
+    ? `类型：${parsed.kind.trim()}`
+    : null;
+  const detail = typeof parsed.detail === 'string' && parsed.detail.trim()
+    ? `说明：${parsed.detail.trim()}`
+    : null;
+  const owner = typeof parsed.owner === 'string' && parsed.owner.trim()
+    ? `负责人：${parsed.owner.trim()}`
+    : null;
+  const status = typeof parsed.status === 'string' && parsed.status.trim()
+    ? `状态：${parsed.status.trim()}`
+    : null;
+  return [kind, detail, owner, status].filter(Boolean).join(' / ') || null;
+}
+
+function formatSourceContextDetail(payload: string): string | null {
+  const parsed = parsePayload(payload);
+  if (!parsed) return null;
+  const role = typeof parsed.sourceRole === 'string' && parsed.sourceRole.trim()
+    ? `角色：${parsed.sourceRole.trim()}`
+    : null;
+  const kind = typeof parsed.kind === 'string' && parsed.kind.trim()
+    ? `类型：${parsed.kind.trim()}`
+    : null;
+  const uri = typeof parsed.uri === 'string' && parsed.uri.trim()
+    ? `位置：${parsed.uri.trim()}`
+    : null;
+  const flags = [
+    parsed.isKey === true ? '关键来源' : null,
+    parsed.isDuplicate === true ? '重复来源' : null,
+    parsed.containsSensitiveData === true ? '含敏感信息' : null,
+  ].filter(Boolean).join('、');
+  return [role, kind, uri, flags || null].filter(Boolean).join(' / ') || null;
+}
+
+function formatCompletionCriteriaStatus(status: string): string {
+  if (status === 'satisfied') return '已满足';
+  if (status === 'open') return '未满足';
+  return status;
 }
 
 const TASK_FIELD_LABELS: Record<string, string> = {

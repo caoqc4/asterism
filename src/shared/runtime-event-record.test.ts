@@ -167,6 +167,52 @@ describe('runtime event record projection', () => {
     });
   });
 
+  it('formats durable task memory timeline events as readable task dynamics', () => {
+    const events = projectRuntimeEvents({
+      timeline: [
+        {
+          id: 'criteria-created',
+          taskId: 'task-1',
+          type: 'completion_criteria.created',
+          payload: JSON.stringify({ text: '完成核心验收清单', status: 'open' }),
+          createdAt: '2026-05-14T08:00:00.000Z',
+        },
+        {
+          id: 'dependency-created',
+          taskId: 'task-1',
+          type: 'task_dependency.created',
+          payload: JSON.stringify({
+            blockedByTaskTitle: '接口联调',
+            reason: '等待接口完成',
+            status: 'active',
+          }),
+          createdAt: '2026-05-14T08:01:00.000Z',
+        },
+        {
+          id: 'source-archived',
+          taskId: 'task-1',
+          type: 'source_context.archived',
+          payload: JSON.stringify({
+            title: '旧调研材料',
+            kind: 'note',
+            sourceRole: 'raw',
+            isKey: false,
+          }),
+          createdAt: '2026-05-14T08:02:00.000Z',
+        },
+      ],
+    });
+
+    expect(events.map((event) => event.title)).toEqual([
+      '上下文已归档：旧调研材料',
+      '新增依赖：接口联调',
+      '完成标准已添加：完成核心验收清单',
+    ]);
+    expect(events.find((event) => event.type === 'completion_criteria.created')?.detail).toBe('状态：未满足');
+    expect(events.find((event) => event.type === 'task_dependency.created')?.detail).toBe('上游：接口联调 / 原因：等待接口完成 / 状态：active');
+    expect(events.find((event) => event.type === 'source_context.archived')?.detail).toBe('角色：raw / 类型：note');
+  });
+
   it('preserves task-to-task handoff targets for replay grouping', () => {
     const events = projectRuntimeEvents({
       taskId: 'task-a',
