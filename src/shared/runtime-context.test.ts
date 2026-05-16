@@ -151,6 +151,54 @@ describe('runtime context manifest', () => {
     );
   });
 
+  it('preserves source quality metadata from agent working context sources', () => {
+    const workingContext = buildWorkingContext();
+    workingContext.sources = [
+      {
+        ...workingContext.sources[0],
+        id: 'source_duplicate',
+        title: '重复来源',
+        contentPreview: 'duplicate source',
+        isDuplicate: true,
+        uri: 'https://example.com/duplicate',
+      },
+      {
+        ...workingContext.sources[0],
+        id: 'source_sensitive',
+        title: '敏感来源',
+        contentPreview: 'token=secret',
+        containsSensitiveData: true,
+        uri: 'https://example.com/private',
+      },
+      {
+        ...workingContext.sources[0],
+        id: 'source_low_credibility',
+        title: '低可信来源',
+        contentPreview: 'unverified',
+        credibility: 'low',
+        uri: 'https://example.com/low',
+      },
+    ];
+
+    const manifest = buildRuntimeContextManifest({ workingContext });
+
+    expect(manifest.items.find((item) => item.id === 'source_duplicate')).toMatchObject({
+      contentIncluded: false,
+      inclusionDecision: 'exclude',
+      inclusionReason: 'duplicate',
+    });
+    expect(manifest.items.find((item) => item.id === 'source_sensitive')).toMatchObject({
+      contentIncluded: true,
+      inclusionDecision: 'caution',
+      inclusionReason: 'sensitive',
+    });
+    expect(manifest.items.find((item) => item.id === 'source_low_credibility')).toMatchObject({
+      contentIncluded: true,
+      inclusionDecision: 'caution',
+      inclusionReason: 'low_credibility',
+    });
+  });
+
   it('describes global context without task-bound durable inputs', () => {
     expect(buildRuntimeContextManifest({}).userFacingSummary).toBe(
       '全局上下文：不会读取具体任务文件；可以捕获新任务或讨论方向。',

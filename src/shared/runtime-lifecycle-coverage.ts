@@ -101,6 +101,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RuntimeContextAssemblyGate distinguishes provider-visible task execution from hidden non-model runtime entries.',
       'RunOrchestrator blocks model execution when runtime context assembly is missing required inputs.',
       'CodeAgentRunService blocks model-producer execution when required task recovery context is missing and passes selected source-context metadata into RuntimeContextManifest before execution.',
+      'RuntimeContextManifest tests verify AgentWorkingContext source metadata for duplicate, sensitive, and low-credibility sources is preserved in provider-visible context assembly.',
       'OperatorStartedRunService records that browser evidence and local QA entries do not require provider-visible context assembly only when providerCall=no and modelExposure=hidden.',
       'Code Agent has provider-visible context manifest logic.',
     ],

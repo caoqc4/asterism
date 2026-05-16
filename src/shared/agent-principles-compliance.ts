@@ -64,6 +64,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeContextAssemblyGate requires read-order assembly for provider-visible task execution and explicitly exempts hidden non-model entries.',
       'RunOrchestrator blocks ordinary model execution when required runtime context inputs are missing.',
       'CodeAgentRunService blocks model-producer execution when required task recovery context is missing and passes selected source-context metadata into RuntimeContextManifest.',
+      'RuntimeContextManifest tests cover source-quality metadata propagated through AgentWorkingContext sources, including duplicate, sensitive, and low-credibility signals.',
       'OperatorStartedRunService keeps browser evidence and local QA outside provider-visible context assembly only while providerCall=no and modelExposure=hidden.',
     ],
     gaps: [
