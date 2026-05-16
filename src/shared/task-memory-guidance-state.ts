@@ -61,17 +61,15 @@ export function evaluateTaskMemoryGuidanceState(params: {
     };
   }
 
-  const latest = guidance.reduce((current, signal) => (
-    compareSignalOrder(signal, current) > 0 ? signal : current
-  ));
-  const targets = uniqueTargets(latest.targets);
+  const latest = latestSignal(guidance);
+  const latestByTarget = latestGuidanceByTarget(guidance);
+  const targets = uniqueTargets(Array.from(latestByTarget.keys()));
   const writes = (params.memoryWrites ?? []).filter(isCompletedSignal);
-  const pendingTargets = targets.filter((target) => !writes.some((write) => {
-    const writeTarget = write.target ?? inferWriteTarget(write);
-    if (writeTarget !== target) return false;
-    if (!latest.createdAt || !write.createdAt) return true;
-    return write.createdAt >= latest.createdAt;
-  }));
+  const pendingTargets = targets.filter((target) => {
+    const targetGuidance = latestByTarget.get(target);
+    if (!targetGuidance) return false;
+    return !writes.some((write) => isWriteAfterGuidanceForTarget(write, target, targetGuidance.createdAt));
+  });
 
   if (pendingTargets.length === 0) {
     return {
@@ -84,7 +82,7 @@ export function evaluateTaskMemoryGuidanceState(params: {
   }
 
   return {
-    latestGuidanceAt: latest.createdAt,
+    latestGuidanceAt: latestPendingGuidanceAt(pendingTargets, latestByTarget),
     outcome: 'pending',
     pendingTargets,
     reason: `最新任务记忆建议仍缺少对应写入：${pendingTargets.map(labelTarget).join('、')}。`,
@@ -141,9 +139,51 @@ function inferWriteTarget(write: TaskMemoryWriteSignal): TaskMemoryGuidanceTarge
   return targets[0] ?? null;
 }
 
+function isWriteAfterGuidanceForTarget(
+  write: TaskMemoryWriteSignal,
+  target: TaskMemoryGuidanceTarget,
+  guidanceCreatedAt: string | null,
+): boolean {
+  const writeTarget = write.target ?? inferWriteTarget(write);
+  if (writeTarget !== target) return false;
+  if (!guidanceCreatedAt || !write.createdAt) return true;
+  return write.createdAt >= guidanceCreatedAt;
+}
+
 function isCompletedSignal(signal: { status?: string | null }): boolean {
   if (FAILED_STATUSES.has(signal.status ?? '')) return false;
   return COMPLETED_OR_UNKNOWN.has(signal.status);
+}
+
+function latestSignal<T extends { createdAt: string | null; index: number }>(signals: T[]): T {
+  return signals.reduce((current, signal) => (
+    compareSignalOrder(signal, current) > 0 ? signal : current
+  ));
+}
+
+function latestGuidanceByTarget(
+  signals: Array<{ createdAt: string | null; index: number; targets: TaskMemoryGuidanceTarget[] }>,
+): Map<TaskMemoryGuidanceTarget, { createdAt: string | null; index: number }> {
+  const byTarget = new Map<TaskMemoryGuidanceTarget, { createdAt: string | null; index: number }>();
+  for (const signal of signals) {
+    for (const target of signal.targets) {
+      const current = byTarget.get(target);
+      if (!current || compareSignalOrder(signal, current) > 0) {
+        byTarget.set(target, signal);
+      }
+    }
+  }
+  return byTarget;
+}
+
+function latestPendingGuidanceAt(
+  pendingTargets: TaskMemoryGuidanceTarget[],
+  latestByTarget: Map<TaskMemoryGuidanceTarget, { createdAt: string | null; index: number }>,
+): string | null {
+  const pendingSignals = pendingTargets
+    .map((target) => latestByTarget.get(target))
+    .filter((signal): signal is { createdAt: string | null; index: number } => Boolean(signal));
+  return pendingSignals.length ? latestSignal(pendingSignals).createdAt : null;
 }
 
 function compareSignalOrder(

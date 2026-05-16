@@ -86,6 +86,36 @@ describe('task memory guidance state', () => {
     });
   });
 
+  it('keeps older target-specific guidance pending when a newer guidance mentions a different target', () => {
+    expect(evaluateTaskMemoryGuidanceState({
+      guidanceSignals: [
+        {
+          status: 'completed',
+          title: '任务记忆建议',
+          output: '- Task Record may be useful: external_signal',
+          createdAt: '2026-05-15T01:00:00.000Z',
+        },
+        {
+          status: 'completed',
+          title: '任务记忆建议',
+          output: '- Task.md update recommended: next_step',
+          createdAt: '2026-05-15T01:05:00.000Z',
+        },
+      ],
+      memoryWrites: [{
+        status: 'completed',
+        target: 'task_md',
+        path: 'Task.md',
+        createdAt: '2026-05-15T01:06:00.000Z',
+      }],
+    })).toMatchObject({
+      latestGuidanceAt: '2026-05-15T01:00:00.000Z',
+      outcome: 'pending',
+      pendingTargets: ['task_record'],
+      targets: ['task_record', 'task_md'],
+    });
+  });
+
   it('ignores failed or skipped guidance signals', () => {
     expect(evaluateTaskMemoryGuidanceState({
       guidanceSignals: [{
