@@ -167,7 +167,7 @@ export function classifyRuntimeFileSurface(candidate: RuntimeSurfaceCandidate): 
     };
   }
 
-  if (candidate.kind === 'artifact' || Boolean(candidate.path?.trim().replace(/\\/g, '/').startsWith('Artifacts/'))) {
+  if (candidate.kind === 'artifact' || Boolean(candidate.artifactKind)) {
     return {
       surface: 'artifact',
       fileClass: 'artifact',

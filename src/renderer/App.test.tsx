@@ -2622,10 +2622,10 @@ describe('App redesign v1', () => {
     const childList = document.querySelector('.project-child-list') as HTMLElement;
     await user.click(await within(childList).findByRole('button', { name: /测试评估子任务/ }));
     const childRelatedSection = document.querySelector('.related-files') as HTMLElement;
-    await user.click(await within(childRelatedSection).findByRole('tab', { name: /产物文件/ }));
+    await user.click(await within(childRelatedSection).findByRole('tab', { name: /任务文件/ }));
 
     await user.click(await within(childRelatedSection).findByRole('button', { name: /测试优化方案/ }));
-    await expectOpenFileKind('产物');
+    await expectOpenFileKind('文件');
     expect(await screen.findByDisplayValue('# 测试优化方案')).toBeTruthy();
   });
 

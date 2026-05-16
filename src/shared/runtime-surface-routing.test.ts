@@ -56,6 +56,13 @@ describe('runtime surface routing', () => {
     expect(routeRuntimeInformation({ kind: 'artifact', artifactKind: 'note', name: '测试方案.md' })).toBe('artifact');
   });
 
+  it('does not classify ordinary Artifacts folder files as artifacts by path alone', () => {
+    expect(classifyRuntimeFileSurface({ kind: 'local_file', path: 'Artifacts/notes.md' })).toMatchObject({
+      surface: 'task_file',
+      fileClass: 'file',
+    });
+  });
+
   it('keeps ordinary local files as task files', () => {
     expect(classifyRuntimeFileSurface({ kind: 'local_file', path: 'drafts/notes.md' })).toMatchObject({
       surface: 'task_file',
