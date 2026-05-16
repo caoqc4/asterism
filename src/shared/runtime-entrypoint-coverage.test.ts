@@ -206,6 +206,7 @@ describe('runtime entrypoint coverage', () => {
       'task.completionTransition',
       'task.fileAndArtifactWrites',
       'task.hierarchyMaintenance',
+      'task.stateTransition',
       'task.transitionToRunning',
       'workHabit.preferenceMemory',
     ]);

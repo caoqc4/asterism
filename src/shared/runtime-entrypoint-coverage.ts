@@ -394,6 +394,23 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     ],
   },
   {
+    id: 'task.stateTransition',
+    owner: 'TaskService.transition / transitionIfAllowed',
+    kind: 'task_state_transition',
+    description: 'Move a task through ordinary planned, waiting, or archived state transitions.',
+    requiredGates: [
+      'simplicity_check',
+      'runtime_action',
+      'pre_step',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'runtime_action',
+      'pre_step',
+    ],
+    notes: 'Waiting transitions require a waiting reason; running and completed transitions are registered separately because they add target-readiness or completion/project verification.',
+  },
+  {
     id: 'task.completionTransition',
     owner: 'TaskService.transition / transitionIfAllowed',
     kind: 'task_state_transition',
