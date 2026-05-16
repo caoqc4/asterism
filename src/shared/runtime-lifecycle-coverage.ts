@@ -211,6 +211,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RightPanel context-refresh and phase-closeout Task Record writes now pass through TaskRecordWorthinessEvaluation before creating files.',
       'TasksPage completion handoff and project decomposition self-check Task Records now pass through TaskRecordWorthinessEvaluation before creating files.',
       'TaskMdUpdateNeedEvaluation centralizes when Task.md should be updated for recovery fields and important file references.',
+      'TaskMdUpdateNeedEvaluation can consume structured durable task fields, so task memory recommendations do not depend only on language-pattern inference.',
       'RightPanel Task.md important-file reference writes now pass through TaskMdUpdateNeedEvaluation before creating or updating Task.md.',
       'TasksPage direct Task.md saves now pass through TaskMdUpdateNeedEvaluation before persisting the primary recovery file.',
       'TasksPage ordinary task-file creation blocks reserved Task.md and Task Records paths so task memory surfaces keep using their dedicated evaluators.',
@@ -238,7 +239,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Runtime owns durable data model boundaries and UI labels for files, records, sources, and generated output.',
     ],
     gaps: [
-      'TaskMdUpdateNeedEvaluation covers RightPanel references, TasksPage Task.md saves, reserved Task.md path protection, and AgentToolRegistry durable tool guidance through RuntimeRecoveryGuidance; remaining retained durable state changes should consume it through TasksPage, RightPanel, Runs, or Decisions.',
+      'TaskMdUpdateNeedEvaluation covers RightPanel references, TasksPage Task.md saves, reserved Task.md path protection, AgentToolRegistry durable tool guidance, and structured durable-field reasons; remaining retained durable state changes should pass changed fields and reference metadata through TasksPage, RightPanel, Runs, or Decisions.',
       'Output-reference propagation to Task.md or Task Records is now recommended by tool guidance, preserved as structured reference metadata, and can be persisted through the reusable confirmed-write plan; automatic persistence remains intentionally disabled.',
       'TaskMemoryCoverageEvaluation is wired to current lifecycle boundaries; future task lifecycle boundaries must opt into the same evaluator instead of adding direct state changes.',
     ],

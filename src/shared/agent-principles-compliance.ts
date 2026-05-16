@@ -260,9 +260,10 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TasksPage direct Task.md saves are gated by TaskMdUpdateNeedEvaluation.',
       'TasksPage generic file creation rejects reserved Task.md paths before persistence.',
       'AgentToolRegistry durable tool results recommend Task.md recovery updates when tool writes affect next step, completion criteria, artifacts, sources, or durable state.',
+      'TaskMdUpdateNeedEvaluation can consume structured durable task fields so future write paths do not need to infer Task.md reasons from prompt text.',
     ],
     gaps: [
-      'Task.md update recommendations are not generated for every durable state change.',
+      'Future durable write surfaces must pass structured changed fields and reference metadata into TaskMdUpdateNeedEvaluation instead of relying on text-only heuristics.',
       'Important created/modified files are routed through structured task-memory guidance when produced by durable tools; future write surfaces must preserve the same reference metadata.',
     ],
     nextVerification: [

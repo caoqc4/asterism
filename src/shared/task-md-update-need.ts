@@ -19,6 +19,59 @@ export type TaskMdUpdateNeedEvaluation = {
   missing: string[];
 };
 
+export type TaskMdDurableField =
+  | 'title'
+  | 'summary'
+  | 'taskType'
+  | 'taskFacets'
+  | 'status'
+  | 'parentTaskId'
+  | 'childTaskIds'
+  | 'completionCriteria'
+  | 'nextStep'
+  | 'waitingReason'
+  | 'riskLevel'
+  | 'riskNote'
+  | 'blocker'
+  | 'dependency'
+  | 'decision'
+  | 'openQuestion'
+  | 'importantFile'
+  | 'sourceContext'
+  | 'artifact';
+
+const DURABLE_FIELD_REASON_PRIORITY: TaskMdUpdateNeedReason[] = [
+  'decision',
+  'constraint_or_blocker',
+  'open_question',
+  'next_step',
+  'important_file',
+  'goal_or_scope',
+  'current_progress',
+];
+
+const DURABLE_FIELD_REASON: Record<TaskMdDurableField, TaskMdUpdateNeedReason> = {
+  title: 'goal_or_scope',
+  summary: 'goal_or_scope',
+  taskType: 'goal_or_scope',
+  taskFacets: 'goal_or_scope',
+  status: 'current_progress',
+  parentTaskId: 'goal_or_scope',
+  childTaskIds: 'goal_or_scope',
+  completionCriteria: 'goal_or_scope',
+  nextStep: 'next_step',
+  waitingReason: 'constraint_or_blocker',
+  riskLevel: 'constraint_or_blocker',
+  riskNote: 'constraint_or_blocker',
+  blocker: 'constraint_or_blocker',
+  dependency: 'constraint_or_blocker',
+  decision: 'decision',
+  openQuestion: 'open_question',
+  importantFile: 'important_file',
+  sourceContext: 'important_file',
+  artifact: 'important_file',
+};
+
 const MIN_MEANINGFUL_LENGTH = 4;
 
 const GOAL_SCOPE_PATTERN = /目标|范围|需求边界|scope|goal|requirement/i;
@@ -97,6 +150,34 @@ export function evaluateTaskMdUpdateNeed(params: {
   });
 }
 
+export function taskMdReasonForDurableField(field: TaskMdDurableField): TaskMdUpdateNeedReason {
+  return DURABLE_FIELD_REASON[field];
+}
+
+export function evaluateTaskMdUpdateNeedForDurableFields(params: {
+  fields: TaskMdDurableField[];
+  changeText?: string | null;
+  existingTaskMdContent?: string | null;
+  hasTaskContext?: boolean;
+  importantFilePath?: string | null;
+  producedDurableChange?: boolean;
+}): TaskMdUpdateNeedEvaluation {
+  const uniqueFields = [...new Set(params.fields)];
+  const reasonHint = reasonForDurableFields(uniqueFields);
+  const fieldSummary = uniqueFields.length > 0
+    ? `durable fields changed: ${uniqueFields.join(', ')}`
+    : '';
+
+  return evaluateTaskMdUpdateNeed({
+    changeText: normalizeText([params.changeText ?? '', fieldSummary].filter(Boolean).join(' ')),
+    existingTaskMdContent: params.existingTaskMdContent,
+    hasTaskContext: params.hasTaskContext,
+    importantFilePath: params.importantFilePath,
+    producedDurableChange: params.producedDurableChange ?? uniqueFields.length > 0,
+    reasonHint,
+  });
+}
+
 function firstMatchingReason(text: string): TaskMdUpdateNeedReason | null {
   if (GOAL_SCOPE_PATTERN.test(text)) return 'goal_or_scope';
   if (PROGRESS_PATTERN.test(text)) return 'current_progress';
@@ -106,6 +187,11 @@ function firstMatchingReason(text: string): TaskMdUpdateNeedReason | null {
   if (NEXT_STEP_PATTERN.test(text)) return 'next_step';
   if (IMPORTANT_FILE_PATTERN.test(text)) return 'important_file';
   return null;
+}
+
+function reasonForDurableFields(fields: TaskMdDurableField[]): TaskMdUpdateNeedReason | null {
+  const reasons = new Set(fields.map((field) => taskMdReasonForDurableField(field)));
+  return DURABLE_FIELD_REASON_PRIORITY.find((reason) => reasons.has(reason)) ?? null;
 }
 
 function result(params: {
