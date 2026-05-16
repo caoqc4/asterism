@@ -88,6 +88,13 @@ describe('agent principles compliance matrix', () => {
     expect(text).toContain('blocks unresolved TaskMemoryGuidanceState through AutoContextClearReadiness');
   });
 
+  it('records service-boundary completion and waiting-state guards', () => {
+    const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
+
+    expect(text).toContain('completion transitions require task_completion memory coverage');
+    expect(text).toContain('waiting transitions require a waiting reason');
+  });
+
   it('records that phase closeout uses the same pending-memory boundary', () => {
     const text = JSON.stringify(AGENT_PRINCIPLES_COMPLIANCE);
 

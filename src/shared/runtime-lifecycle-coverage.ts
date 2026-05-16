@@ -152,6 +152,8 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'RightPanel phase closeout now passes through pre_step before saving and post_step before quality-check handoff.',
       'RightPanel task file proposal confirmation now passes through pre_step and post_step verification.',
       'TaskService transition and transitionIfAllowed guard task_state_transition at the service boundary.',
+      'TaskService completion transitions require task_completion memory coverage, including passed or overridden completion-check evidence.',
+      'TaskService direct and guarded waiting transitions require a waiting reason before writing waiting_external state.',
       'TaskService task updates, task-bound source contexts, blockers, completion criteria, dependencies, and process-template bindings guard task_mutation at the service boundary.',
       'Tasks and Brief task state transitions now use shared renderer runtime guards backed by pre_step verification.',
       'Tasks special mutation paths for Task.md sync, risk updates, project moves, and project parent updates now use shared mutation guards.',

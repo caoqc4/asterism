@@ -70,6 +70,13 @@ describe('runtime lifecycle coverage matrix', () => {
     expect(text).toContain('task-switch also consumes pending TaskMemoryGuidanceState through AutoContextClearReadiness');
   });
 
+  it('tracks service-boundary task completion and waiting-state guards', () => {
+    const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
+
+    expect(text).toContain('completion transitions require task_completion memory coverage');
+    expect(text).toContain('waiting transitions require a waiting reason');
+  });
+
   it('tracks pending-memory checks for phase closeout handoff', () => {
     const text = JSON.stringify(RUNTIME_LIFECYCLE_COVERAGE);
 
