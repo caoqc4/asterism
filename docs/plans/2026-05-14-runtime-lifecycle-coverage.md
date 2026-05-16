@@ -89,6 +89,8 @@ Weakest areas:
 
 Provider-visible planning is tracked separately from provider-visible execution. A draft-only planner such as project decomposition generation must assemble task context, include task-memory guidance, and pass subtask-draft checks, while durable creation stays behind a separate mutation entrypoint.
 
+Provider-visible assistance is tracked separately from execution and planning. Global assistance can rely on product principles, but task-bound assistance must load persisted task detail before model exposure and must stay read-only.
+
 Product-level durable configuration is also tracked separately from task mutation. AI runtime settings, Work Habit preference memory, and reusable process-template library writes affect future runtime behavior, but they do not mutate a specific task and should not be forced through `task_mutation`.
 
 Capability probes are tracked separately from execution. A sandbox backend probe may inspect local runtime readiness, but it must remain read-only: no Run start, no task mutation, and no implicit scheduler decision.

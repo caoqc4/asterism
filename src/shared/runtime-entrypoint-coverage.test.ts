@@ -63,6 +63,19 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
+  it('requires provider-visible assistance to assemble context without execution gates', () => {
+    expect(requiredRuntimeEntrypointGatesForKind('provider_visible_assistance')).toEqual([
+      'simplicity_check',
+      'runtime_context_assembly',
+    ]);
+    for (const entry of runtimeEntrypointsByKind('provider_visible_assistance')) {
+      expect(entry.requiredGates).toContain('runtime_context_assembly');
+      expect(entry.requiredGates).not.toContain('runtime_action');
+      expect(entry.requiredGates).not.toContain('task_mutation');
+      expect(entry.requiredGates).not.toContain('post_step');
+    }
+  });
+
   it('requires hidden local execution to keep memory and start gates without provider context assembly', () => {
     for (const entry of runtimeEntrypointsByKind('hidden_local_execution')) {
       expect(entry.requiredGates).toContain('simplicity_check');
@@ -157,6 +170,7 @@ describe('runtime entrypoint coverage', () => {
   it('keeps the retained top-level runtime entrypoints explicit', () => {
     expect(RUNTIME_ENTRYPOINT_COVERAGE.map((entry) => entry.id).sort()).toEqual([
       'agent.toolDurableWrites',
+      'ai.taskChat',
       'context.clearOrSwitch',
       'decision.action',
       'decision.approvedCheckpointResume',

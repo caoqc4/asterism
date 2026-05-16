@@ -1,6 +1,7 @@
 export type RuntimeEntrypointKind =
   | 'provider_visible_execution'
   | 'provider_visible_planning'
+  | 'provider_visible_assistance'
   | 'hidden_local_execution'
   | 'product_configuration'
   | 'preference_memory'
@@ -76,6 +77,10 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
     'runtime_context_assembly',
     'task_memory_guidance',
     'subtask_draft',
+  ],
+  provider_visible_assistance: [
+    'simplicity_check',
+    'runtime_context_assembly',
   ],
   hidden_local_execution: [
     'simplicity_check',
@@ -153,6 +158,21 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
 };
 
 export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
+  {
+    id: 'ai.taskChat',
+    owner: 'IPC ai:chat',
+    kind: 'provider_visible_assistance',
+    description: 'Provider-visible read-only task or global chat assistance.',
+    requiredGates: [
+      'simplicity_check',
+      'runtime_context_assembly',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'runtime_context_assembly',
+    ],
+    notes: 'Global assistance includes product principles. Task-bound assistance must load persisted task detail before model exposure and stays read-only.',
+  },
   {
     id: 'run.trigger',
     owner: 'RunService.trigger',

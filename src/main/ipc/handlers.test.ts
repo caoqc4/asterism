@@ -546,6 +546,30 @@ describe('registerIpcHandlers', () => {
     expect(system).not.toContain('普通备注');
   });
 
+  it('blocks task-bound chat when persisted task detail is unavailable', async () => {
+    servicesMock.aiConfigService.resolveRuntimeConfig.mockResolvedValue({
+      provider: 'openai',
+      model: 'gpt-test',
+      apiKey: 'sk-test',
+      baseUrl: null,
+      featureFlags: {
+        enableScheduler: false,
+      },
+    });
+    servicesMock.taskService.getDetail.mockResolvedValue(null);
+
+    const handler = getRegisteredHandler<
+      [{ messages: Array<{ role: 'user' | 'assistant'; content: string }>; taskId?: string | null }],
+      { text: string }
+    >('ai:chat');
+
+    await expect(handler({}, {
+      taskId: 'missing_task',
+      messages: [{ role: 'user', content: '继续这个任务' }],
+    })).rejects.toThrow('Task not found: missing_task');
+    expect(generateTextMock).not.toHaveBeenCalled();
+  });
+
   it('uses the latest active key sources in project decomposition prompts', async () => {
     servicesMock.aiConfigService.resolveRuntimeConfig.mockResolvedValue({
       provider: 'openai',

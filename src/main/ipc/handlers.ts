@@ -577,8 +577,11 @@ export function registerIpcHandlers(): void {
     const config = await getServices().aiConfigService.resolveRuntimeConfig();
     const model = getLanguageModel(config);
     const task = input.taskId
-      ? await getServices().taskService.getDetail(input.taskId).catch(() => null)
+      ? await getServices().taskService.getDetail(input.taskId)
       : null;
+    if (input.taskId && !task) {
+      throw new Error(`Task not found: ${input.taskId}`);
+    }
     const keySources = task ? selectPromptKeySources(task.sourceContexts) : [];
     const completionCriteria = task?.completionCriteria?.slice(0, 5)
       .map((criterion) => `${criterion.status}: ${criterion.text}`)
