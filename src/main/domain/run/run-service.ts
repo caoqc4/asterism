@@ -10,6 +10,7 @@ import {
   groupRuntimeEventsForReplay,
   projectRuntimeEvents,
 } from '../../../shared/runtime-event-record.js';
+import { buildRuntimeRecoveryGuidance } from '../../../shared/runtime-recovery-guidance.js';
 import { buildRuntimeResumePlan, evaluateRuntimeHandoff } from '../../../shared/runtime-handoff.js';
 import { evaluateRuntimeVerification } from '../../../shared/runtime-verification.js';
 import { buildTaskMemoryCoverageInputForTask, evaluateTaskMemoryCoverage } from '../../../shared/task-memory-coverage.js';
@@ -210,11 +211,17 @@ export class RunService {
       const completed = await this.runRepository.updateResult(created.id, 'completed', result.output, 'ai');
       if (result.output?.trim()) {
         this.assertRunOutputArtifactWriteAllowed(completed, result.output);
-        await this.artifactRepository.createFromRun({
+        const artifact = await this.artifactRepository.createFromRun({
           taskId: input.taskId,
           runId: completed.id,
           runType: input.type,
           content: result.output,
+        });
+        await this.persistRunOutputMemoryGuidance({
+          artifactId: artifact.id,
+          output: result.output,
+          runId: completed.id,
+          taskId: input.taskId,
         });
       }
       await this.taskService.annotateRunCompleted(
@@ -313,6 +320,45 @@ export class RunService {
       runId: run.id,
       title: '保存 Run 输出产物',
       output,
+    });
+  }
+
+  private async persistRunOutputMemoryGuidance(params: {
+    artifactId: string;
+    output: string;
+    runId: string;
+    taskId: string;
+  }): Promise<void> {
+    const guidance = buildRuntimeRecoveryGuidance({
+      text: params.output,
+      hasTaskContext: Boolean(params.taskId),
+      importantFilePath: params.artifactId,
+      producedDurableChange: true,
+      taskMdDurableFields: ['artifact'],
+    });
+    if (!guidance.items.length) return;
+    const referencedItems = guidance.items
+      .filter((item) => Boolean(item.referencePath))
+      .map((item) => ({
+        target: item.target,
+        reason: item.evaluation.reason,
+        referencePath: item.referencePath ?? null,
+      }));
+
+    await this.runStepRepository.create({
+      runId: params.runId,
+      kind: 'plan',
+      status: 'completed',
+      title: '任务记忆建议',
+      input: JSON.stringify({
+        targets: Array.from(new Set(guidance.items.map((item) => item.target))),
+        ...(referencedItems.length ? { items: referencedItems } : {}),
+      }),
+      output: guidance.items.map((item) => {
+        const target = item.target === 'task_md' ? 'Task.md' : 'Task Record';
+        const reference = item.referencePath ? ` / reference=${item.referencePath}` : '';
+        return `- ${target}: ${item.evaluation.reason}${reference}`;
+      }).join('\n'),
     });
   }
 

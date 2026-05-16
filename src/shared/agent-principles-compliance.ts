@@ -96,6 +96,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RuntimeRecoveryGuidance can derive Task.md recommendations from structured durable task fields, and AgentToolRegistry durable tools pass field metadata instead of hard-coded generic reasons.',
       'AgentToolRegistry durable tool results expose recoveryGuidanceItems and legacy recoveryGuidance from RuntimeRecoveryGuidance without silently mutating Task.md.',
       'AgentToolRegistry persists recoveryGuidanceItems as a separate Run Step so task-memory recommendations remain auditable without silently mutating Task.md or Task Records.',
+      'RunService persists run-output artifact references as structured Task.md guidance Run Steps without silently mutating Task.md.',
       'TaskMemoryGuidanceState reads structured guidance targets from Run Step input before falling back to guidance text parsing.',
       'TaskMemoryGuidanceState preserves structured reference paths from guidance input for concrete Task.md recovery references.',
       'TaskMemoryWriteProposal projects pending guidance into minimal confirmed-write proposals for Task.md or Task Records without automatically changing task memory.',
