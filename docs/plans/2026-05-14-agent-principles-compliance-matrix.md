@@ -21,7 +21,7 @@ Current status is intentionally conservative:
 - Partially implemented: most core runtime areas.
 - Missing: none tracked as fully absent, though every section still has known gaps.
 
-The current runtime deepening work has made meaningful progress on information routing, context clearing, task closeout, run verification, confirmation boundaries, source inclusion checks, and subagent handoff boundaries. It has not yet fully enforced required read order, Task.md update policy, project-level verification, connector-level source quality signals, or product entry-point wiring for subagent handoffs.
+The current runtime deepening work has made meaningful progress on information routing, context clearing, task closeout, run verification, confirmation boundaries, source inclusion checks, Decisions judgment, task dynamics, and subagent handoff boundaries. It has not yet fully enforced every future execution boundary, every future task creation entry point, connector-level source quality signals, or product entry-point wiring for subagent handoffs.
 
 ## Highest Priority Gaps
 
@@ -39,8 +39,8 @@ The current runtime deepening work has made meaningful progress on information r
 4. Pre-step and post-step verification are not fully wired.
    First-pass `pre_step` and `post_step` modes now exist in `runtime-verification`, covering action permission, pending decisions, required context, and durable-change recovery notes. The remaining gap is wiring them into every Run service and panel durable action path.
 
-5. Decisions judgment center is incomplete.
-   Decisions exist as records and checkpoint gates, but the Decisions page is not yet a full judgment inbox with context, options, recommendation, and effect after approval or rejection.
+5. Future execution and write entry points must keep opting into runtime gates.
+   Current retained execution, context-transition, decision-action, durable-write, and task-dynamics paths are covered by shared runtime gates and regression registries. The remaining risk is future scheduled/event execution, new provider-visible tools, or new panel write paths bypassing those gates.
 
 ### P1
 
@@ -69,7 +69,7 @@ The next runtime-deepening packages should follow this order:
 2. Extend `runtime-verification` with `project`, `pre_step`, and `post_step` modes.
 3. Extend task creation and subtask creation evaluators beyond the initial RightPanel intake path.
 4. Add Task.md update and Task Record worthiness evaluators.
-5. Build the Decisions judgment center on top of the existing Decision/checkpoint data model.
+5. Keep Decisions grouped-context display read-only until a real multi-decision workflow needs batch action support.
 
 This keeps the work aligned with the principle document instead of creating isolated fixes.
 

@@ -78,12 +78,11 @@ Weakest areas:
 - a single confirmation boundary for all child-task creation paths beyond project decomposition;
 - full context snapshot ownership;
 - source freshness and context inclusion reasons;
-- Decision judgment-center effect presentation after approval/defer/cancel;
-- Decisions judgment center;
+- future multi-decision workflows, if a concrete batch approve/defer/cancel need appears;
 - unified runtime handoff shape;
 - legacy local task hierarchy attributes and manual-review hierarchy conflicts still need a user-facing confirmation surface after the database relationship becomes authoritative.
 - capability state in context/action evaluation;
-- task dynamics as a complete runtime audit projection.
+- Run-side grouped replay presentation if retained Run-side runtime views are resumed.
 
 ## Design Rule
 
@@ -105,7 +104,7 @@ Both are needed.
 2. Extend `RuntimeIntakeEvaluation` beyond the initial RightPanel capture flow to project decomposition and every task creation entry point.
 3. Wire `pre_step` and `post_step` verification into execution services and panel durable actions, and route more project state transitions through project verification.
 4. Add `RuntimeHandoff` and `RuntimeResumePlan`.
-5. Implement Decisions judgment center.
+5. Keep Decisions grouped context read-only until a real multi-decision workflow needs batch action support.
 6. Add `RuntimeCapabilitySnapshot`.
 7. Finish data model migration for task hierarchy and facets, and route every child-task creation path through shared child draft evaluation.
 
@@ -118,3 +117,5 @@ The Decisions judgment-center baseline is now implemented.
 - The page keeps failed action attempts visible with retry feedback and disables duplicate actions while an action is pending.
 
 The remaining lifecycle gap is not a generic Decisions inbox gap anymore. It is limited to future multi-decision workflows, which should stay deferred until users need batch approve/defer/cancel.
+
+Task dynamics has also moved closer to the intended task-memory/audit role: the Tasks task-dynamics view now consumes selected Run details and projects Run steps into the same visible `RuntimeEventRecord` stream as task timeline events, Task Records, and Decisions. The remaining replay gap is limited to future Run-side grouped replay presentation if retained Run-side runtime views are resumed.
