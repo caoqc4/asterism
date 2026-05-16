@@ -47,6 +47,21 @@ the user explicitly changes the product rule.
 
 ## Memory Surfaces
 
+| Surface | Write Standard | Read / Reuse Standard |
+| --- | --- | --- |
+| Structured Task State | Write through task services and mutation gates. Use structured fields for status, hierarchy, blockers, dependencies, criteria, next step, and dates. | Treat as authoritative current state before reading narrative memory. |
+| Task.md | Write through the dedicated Task.md update evaluator. Keep only concise recovery fields and important references. | Read for task resume, context assembly, handoff, and context-clear checks. |
+| Task Records | Write only when Task Record worthiness is met: handoff, closeout, correction, option rationale, failure review, source digest, or durable state change. | Read as recovery history and rationale, with recent and relevant records preferred. |
+| Task Dynamics | Write from structured runtime, timeline, run, decision, file, source, artifact, and handoff events. Do not edit as user files. | Read for replay, audit, verification, and explaining what happened. |
+| Runs / Run Steps | Write through Run services, tool execution, checkpoint, verification, and recovery-guidance writers. | Read for execution replay, debugging, and evidence; promote only the smallest durable recovery summary when needed. |
+| Decisions | Write through Decision services or checkpoint approval boundaries. Never hide required user judgment only in chat. | Block or guide execution until resolved; read for approval effects and rationale. |
+| Source Materials | Write through explicit source capture with role, captured-at time, origin, credibility, duplicate, and sensitive-data metadata when known. | Read as evidence only after freshness, traceability, credibility, duplicate, and sensitivity checks. |
+| AI Output | Write as generated context or run output, not as external evidence. | Read as generated context or recovery clue, with lower authority than user/source evidence. |
+| Artifacts | Write through artifact writers or explicit artifact metadata. Do not infer artifact status from a folder name alone. | Read as produced output reference; link from Task.md or Task Records when needed for recovery. |
+| Task Files | Write as ordinary task-bound support files. Reserved Task.md and Task Records paths are not ordinary file paths. | Read when selected, referenced, or relevant to the current task. |
+| Work Habits | Write through proposal/confirmation for cross-task rules. Do not infer durable habits from one task fact. | Read only when applicable to the current task or execution mode. |
+| Discussion | Do not persist by default. Persist only after routing decides it belongs to another surface. | Keep as temporary working context until captured, dismissed, or cleared. |
+
 ### Structured Task State
 
 Structured task state is the authoritative current state.
