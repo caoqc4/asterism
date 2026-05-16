@@ -351,6 +351,48 @@ describe('runtime handoff', () => {
     expect(result.toTaskId).toBe(null);
   });
 
+  it('does not clear phase closeout when the closeout result still has a blocker handoff', () => {
+    const result = evaluateRuntimeHandoff({
+      intent: 'phase_closeout',
+      fromTaskId: 'task-1',
+      closeout: closeout({
+        outcome: 'pause_with_handoff',
+        nextTaskId: undefined,
+        reason: '当前仍有阻塞项：等待评审。',
+      }),
+      recordPath: 'Task Records/phase.md',
+    });
+
+    expect(result).toMatchObject({
+      canProceed: false,
+      action: 'block',
+      requiresUserConfirmation: false,
+      shouldClearMessages: false,
+      recordPath: 'Task Records/phase.md',
+    });
+  });
+
+  it('does not clear phase closeout when user confirmation is required', () => {
+    const result = evaluateRuntimeHandoff({
+      intent: 'phase_closeout',
+      fromTaskId: 'task-1',
+      closeout: closeout({
+        outcome: 'needs_user_confirmation',
+        nextTaskId: undefined,
+        reason: '任务风险为 medium，完成或交接前需要用户确认。',
+      }),
+      recordPath: 'Task Records/phase.md',
+    });
+
+    expect(result).toMatchObject({
+      canProceed: false,
+      action: 'block',
+      requiresUserConfirmation: true,
+      shouldClearMessages: false,
+      recordPath: 'Task Records/phase.md',
+    });
+  });
+
   it('blocks run resume when task memory guidance is still pending', () => {
     const result = evaluateRuntimeHandoff({
       intent: 'resume_run',

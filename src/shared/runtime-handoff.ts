@@ -195,6 +195,25 @@ export function evaluateRuntimeHandoff(input: BaseInput & {
         recordPath: input.recordPath ?? null,
       };
     }
+    if (closeout.outcome === 'pause_with_handoff') {
+      return {
+        ...base(input, 'block'),
+        canProceed: false,
+        reason: closeout.reason,
+        notice: '阶段收尾已记录，但当前任务仍有阻塞或依赖，保留当前上下文。',
+        recordPath: input.recordPath ?? null,
+      };
+    }
+    if (closeout.outcome === 'needs_user_confirmation' || closeout.outcome === 'needs_follow_up_confirmation') {
+      return {
+        ...base(input, 'block'),
+        canProceed: false,
+        requiresUserConfirmation: true,
+        reason: closeout.reason,
+        notice: '阶段收尾已记录，等待用户确认后再刷新或交接。',
+        recordPath: input.recordPath ?? null,
+      };
+    }
     return {
       ...base(input, 'clear_same_task'),
       canProceed: true,
