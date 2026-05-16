@@ -352,7 +352,7 @@ function timelineTitle(type: string, payload: string | null): string {
   const payloadText = payload ? payload.slice(0, 48) : '';
   switch (type) {
     case 'task.created': return '任务已创建';
-    case 'task.updated': return '任务信息已更新';
+    case 'task.updated': return formatTaskUpdatedTitle(payload);
     case 'task.next_step_changed': return payloadText ? `下一步：${payloadText}` : '下一步已更新';
     case 'task.waiting_changed': return payloadText ? `等待：${payloadText}` : '等待状态已变更';
     case 'task.risk_changed': return payloadText ? `风险等级：${payloadText}` : '风险等级已变更';
@@ -378,7 +378,9 @@ function timelineTitle(type: string, payload: string | null): string {
 }
 
 function timelineDetail(type: string, payload: string | null): string | null {
-  if (!payload || type !== 'task.completion_check') return null;
+  if (!payload) return null;
+  if (type === 'task.updated') return formatTaskUpdatedDetail(payload);
+  if (type !== 'task.completion_check') return null;
   try {
     const parsed = JSON.parse(payload) as Record<string, unknown>;
     const reason = typeof parsed.reason === 'string' ? parsed.reason.trim() : '';
@@ -386,6 +388,67 @@ function timelineDetail(type: string, payload: string | null): string | null {
       ? parsed.runVerificationDetail.trim()
       : '';
     return [reason, runVerificationDetail].filter(Boolean).join(' · ') || null;
+  } catch {
+    return null;
+  }
+}
+
+function formatTaskUpdatedTitle(payload: string | null): string {
+  const fields = extractChangedTaskFieldLabels(payload);
+  return fields.length
+    ? `任务字段已更新：${fields.join('、')}`
+    : '任务信息已更新';
+}
+
+function formatTaskUpdatedDetail(payload: string): string | null {
+  const parsed = parsePayload(payload);
+  if (!parsed) return null;
+  const parts = [
+    typeof parsed.summary === 'string' && parsed.summary.trim()
+      ? `摘要：${parsed.summary.trim()}`
+      : null,
+    typeof parsed.nextStep === 'string' && parsed.nextStep.trim()
+      ? `下一步：${parsed.nextStep.trim()}`
+      : null,
+    typeof parsed.waitingReason === 'string' && parsed.waitingReason.trim()
+      ? `等待：${parsed.waitingReason.trim()}`
+      : null,
+    typeof parsed.riskLevel === 'string' && parsed.riskLevel !== 'none'
+      ? `风险：${parsed.riskLevel}${typeof parsed.riskNote === 'string' && parsed.riskNote.trim() ? ` · ${parsed.riskNote.trim()}` : ''}`
+      : null,
+  ].filter((value): value is string => Boolean(value));
+
+  return parts.join(' / ') || null;
+}
+
+function extractChangedTaskFieldLabels(payload: string | null): string[] {
+  const parsed = parsePayload(payload);
+  if (!parsed || !Array.isArray(parsed.changedFields)) return [];
+  return parsed.changedFields
+    .map((field) => typeof field === 'string' ? TASK_FIELD_LABELS[field] : null)
+    .filter((label): label is string => Boolean(label));
+}
+
+const TASK_FIELD_LABELS: Record<string, string> = {
+  title: '标题',
+  summary: '摘要',
+  taskType: '任务类型',
+  taskFacets: '任务视图',
+  parentTaskId: '父任务',
+  childTaskIds: '子任务',
+  nextStep: '下一步',
+  waitingReason: '等待原因',
+  riskLevel: '风险等级',
+  riskNote: '风险说明',
+};
+
+function parsePayload(payload: string | null): Record<string, unknown> | null {
+  if (!payload) return null;
+  try {
+    const parsed = JSON.parse(payload);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : null;
   } catch {
     return null;
   }

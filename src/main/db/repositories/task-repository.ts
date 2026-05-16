@@ -8,12 +8,18 @@ import type {
   TransitionTaskInput,
   UpdateTaskInput,
 } from '../../../shared/types/task.js';
+import type { TaskMdDurableField } from '../../../shared/task-md-update-need.js';
 import { tasks, timelineEvents } from '../schema.js';
 import { initDatabase } from '../client.js';
 import { generateId, nowIso } from './repository-utils.js';
 
 function hasFieldChanged(currentValue: string | null, nextValue: string | null): boolean {
   return (currentValue ?? null) !== (nextValue ?? null);
+}
+
+function haveArraysChanged(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return true;
+  return left.some((value, index) => value !== right[index]);
 }
 
 function normalizeTaskType(value: string | null | undefined): TaskExecutionType {
@@ -197,7 +203,8 @@ export class TaskRepository {
     const nextTitle = input.title?.trim() ? input.title.trim() : current.title;
     const nextSummary =
       input.summary === undefined ? current.summary : input.summary?.trim() || null;
-    const nextTaskType = input.taskType ?? normalizeTaskType(current.taskType);
+    const currentTaskType = normalizeTaskType(current.taskType);
+    const nextTaskType = input.taskType ?? currentTaskType;
     const nextTaskFacets =
       input.taskFacets === undefined
         ? parseTaskFacets(current.taskFacets, nextTaskType)
@@ -216,6 +223,22 @@ export class TaskRepository {
     const nextRiskNote =
       input.riskNote === undefined ? current.riskNote : input.riskNote?.trim() || null;
     const timestamp = nowIso();
+    const changedFields: TaskMdDurableField[] = [];
+
+    if (hasFieldChanged(current.title, nextTitle)) changedFields.push('title');
+    if (hasFieldChanged(current.summary, nextSummary)) changedFields.push('summary');
+    if (currentTaskType !== nextTaskType) changedFields.push('taskType');
+    if (haveArraysChanged(parseTaskFacets(current.taskFacets, currentTaskType), nextTaskFacets)) {
+      changedFields.push('taskFacets');
+    }
+    if (hasFieldChanged(current.parentTaskId, nextParentTaskId)) changedFields.push('parentTaskId');
+    if (haveArraysChanged(parseChildTaskIds(current.childTaskIds), nextChildTaskIds)) {
+      changedFields.push('childTaskIds');
+    }
+    if (hasFieldChanged(current.nextStep, nextStep)) changedFields.push('nextStep');
+    if (hasFieldChanged(current.waitingReason, nextWaitingReason)) changedFields.push('waitingReason');
+    if (current.riskLevel !== nextRiskLevel) changedFields.push('riskLevel');
+    if (hasFieldChanged(current.riskNote, nextRiskNote)) changedFields.push('riskNote');
 
     await db
       .update(tasks)
@@ -250,6 +273,7 @@ export class TaskRepository {
           waitingReason: nextWaitingReason,
           riskLevel: nextRiskLevel,
           riskNote: nextRiskNote,
+          changedFields,
         }),
         createdAt: timestamp,
       },

@@ -101,6 +101,13 @@ describe('TaskRepository integration', () => {
     expect(detail?.timeline.map((event) => event.type)).toContain('task.risk_changed');
     expect(detail?.timeline.map((event) => event.type)).toContain('task.created');
     expect(detail?.timeline).toHaveLength(5);
+    const updateEvent = detail?.timeline.find((event) => event.type === 'task.updated');
+    expect(updateEvent?.payload ? JSON.parse(updateEvent.payload).changedFields : []).toEqual([
+      'nextStep',
+      'waitingReason',
+      'riskLevel',
+      'riskNote',
+    ]);
   });
 
   it('transitions task state and preserves structured fields', async () => {

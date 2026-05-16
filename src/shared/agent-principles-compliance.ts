@@ -90,6 +90,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TaskMdUpdateNeedEvaluation centralizes Task.md update needs for recovery fields and important file references.',
       'RightPanel Task.md important-file references consume TaskMdUpdateNeedEvaluation before persistence.',
       'TasksPage direct Task.md saves consume TaskMdUpdateNeedEvaluation before persistence.',
+      'TaskRepository update timeline records include changed durable task fields so task dynamics can distinguish summary, next-step, risk, and hierarchy changes.',
       'TasksPage ordinary file creation blocks reserved Task.md and Task Records paths so users cannot bypass the dedicated task-memory evaluators through the generic file entrypoint.',
       'TasksPage manual Task Record creation consumes TaskRecordWorthinessEvaluation and normalizes nested prompts back under Task Records before persistence.',
       'RuntimeRecoveryGuidance centralizes structured Task.md and Task Record recovery recommendations while preserving legacy guidance messages.',
@@ -110,7 +111,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TaskRecordWorthiness tests cover should-create and should-not-create cases for handoff, closeout, correction, option rationale, failures, external signals, duplicates, generic notes, and unbound notes.',
     ],
     gaps: [
-      'TaskMdUpdateNeedEvaluation covers RightPanel important-file references, TasksPage direct Task.md saves, reserved Task.md path protection, and AgentToolRegistry durable tool guidance through structured fields; remaining retained durable writes outside durable tools must pass changed fields and reference metadata consistently.',
+      'TaskMdUpdateNeedEvaluation covers RightPanel important-file references, TasksPage direct Task.md saves, reserved Task.md path protection, AgentToolRegistry durable tool guidance through structured fields, and TaskRepository update timeline changed-field metadata; remaining retained durable writes outside durable tools must pass changed fields and reference metadata consistently.',
       'TaskRecordWorthinessEvaluation is consumed by RightPanel context-refresh/phase-closeout writes, TasksPage manual Task Record creation, and AgentToolRegistry recovery guidance, but remaining write paths still need to consume it consistently.',
       'RightPanel can confirm task memory write proposals; TasksPage and any future retained surfaces still need to reuse TaskMemoryWriteApplyPlan instead of rebuilding proposal write inputs.',
     ],
@@ -264,6 +265,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'TasksPage generic file creation rejects reserved Task.md paths before persistence.',
       'AgentToolRegistry durable tool results recommend Task.md recovery updates when tool writes affect next step, completion criteria, artifacts, sources, or durable state.',
       'TaskMdUpdateNeedEvaluation can consume structured durable task fields so future write paths do not need to infer Task.md reasons from prompt text.',
+      'TaskRepository update timeline records expose structured changed durable fields for direct task updates.',
     ],
     gaps: [
       'Future durable write surfaces must pass structured changed fields and reference metadata into TaskMdUpdateNeedEvaluation instead of relying on text-only heuristics.',

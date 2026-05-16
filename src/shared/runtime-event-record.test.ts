@@ -144,6 +144,29 @@ describe('runtime event record projection', () => {
     expect(events[0]?.relatedTaskId).toBe('task-2');
   });
 
+  it('shows changed durable task fields in task update events', () => {
+    const events = projectRuntimeEvents({
+      timeline: [{
+        id: 'timeline-update',
+        taskId: 'task-1',
+        type: 'task.updated',
+        payload: JSON.stringify({
+          summary: '完成需求确认。',
+          nextStep: '推进设计方案。',
+          riskLevel: 'medium',
+          riskNote: '等待外部接口确认。',
+          changedFields: ['summary', 'nextStep', 'riskLevel', 'riskNote'],
+        }),
+        createdAt: '2026-05-14T08:00:00.000Z',
+      }],
+    });
+
+    expect(events[0]).toMatchObject({
+      title: '任务字段已更新：摘要、下一步、风险等级、风险说明',
+      detail: '摘要：完成需求确认。 / 下一步：推进设计方案。 / 风险：medium · 等待外部接口确认。',
+    });
+  });
+
   it('preserves task-to-task handoff targets for replay grouping', () => {
     const events = projectRuntimeEvents({
       taskId: 'task-a',
