@@ -245,6 +245,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Checkpointed risky tools create Decisions and resume only after approval.',
       'Decision actions pass through runtime-action-evaluator at the service boundary and in the Decisions page.',
       'decision-effect-evaluator summarizes pending, approved, deferred, and cancelled decisions for verification consumers.',
+      'decision-effect-evaluator groups related decision effects by task first and source when no task is bound, so multiple related decisions can be audited together without UI-specific logic.',
       'Approved checkpoint Decisions recheck target-task readiness with subtask_start before resuming tool, browser, or patch-promotion execution.',
       'Decisions page approve/defer/cancel actions use shared decision action guards backed by pre_step and post_step verification.',
       'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
@@ -256,10 +257,10 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Approvals must explain effect after approval, rejection, defer, or cancel.',
     ],
     gaps: [
-      'Decision effects are summarized after actions, but richer effect grouping across multiple related decisions is still future work.',
+      'Decision effect grouping is available as shared data, but retained UI surfaces still need to decide where grouped multi-decision effects should be shown.',
     ],
     nextImplementation: [
-      'Group decision action effects by task/source when multiple related decisions are handled together.',
+      'Reuse grouped decision effects when adding multi-decision batch handling or richer decision audit displays.',
     ],
   },
   {

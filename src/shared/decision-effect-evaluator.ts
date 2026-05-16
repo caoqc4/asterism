@@ -20,9 +20,69 @@ export type DecisionEffectSummary = {
   requiresUserAction: boolean;
 };
 
+export type DecisionEffectGroup = {
+  key: string;
+  label: string;
+  taskId: string | null;
+  sourceType: DecisionRecord['sourceType'] | null;
+  sourceId: string | null;
+  sourceLabel: string | null;
+  decisionIds: string[];
+  latestUpdatedAt: string;
+  summary: DecisionEffectSummary;
+};
+
 function latestDecisionTitle(decisions: DecisionRecord[]): string | null {
   const latest = [...decisions].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
   return latest?.title ?? null;
+}
+
+export function groupDecisionEffects(decisions: DecisionRecord[]): DecisionEffectGroup[] {
+  const groups = new Map<string, DecisionRecord[]>();
+
+  for (const decision of decisions) {
+    const key = decision.taskId
+      ? `task:${decision.taskId}`
+      : decision.sourceType && decision.sourceId
+        ? `source:${decision.sourceType}:${decision.sourceId}`
+        : 'global';
+    groups.set(key, [...(groups.get(key) ?? []), decision]);
+  }
+
+  return [...groups.entries()]
+    .map(([key, items]) => {
+      const latest = [...items].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]!;
+      return {
+        key,
+        label: decisionGroupLabel(latest),
+        taskId: latest.taskId,
+        sourceType: latest.sourceType ?? null,
+        sourceId: latest.sourceId ?? null,
+        sourceLabel: latest.sourceLabel ?? null,
+        decisionIds: items.map((item) => item.id),
+        latestUpdatedAt: latest.updatedAt,
+        summary: summarizeDecisionEffects(items),
+      };
+    })
+    .sort((left, right) => (
+      decisionEffectGroupRank(right.summary) - decisionEffectGroupRank(left.summary)
+      || right.latestUpdatedAt.localeCompare(left.latestUpdatedAt)
+    ));
+}
+
+function decisionGroupLabel(decision: DecisionRecord): string {
+  if (decision.taskId) return decision.sourceLabel ?? decision.title;
+  if (decision.sourceLabel) return decision.sourceLabel;
+  if (decision.sourceType) return decision.sourceType;
+  return '全局拍板';
+}
+
+function decisionEffectGroupRank(summary: DecisionEffectSummary): number {
+  if (summary.tone === 'blocking') return 4;
+  if (summary.tone === 'deferred') return 3;
+  if (summary.tone === 'cancelled') return 2;
+  if (summary.tone === 'accepted') return 1;
+  return 0;
 }
 
 export function summarizeDecisionEffects(decisions: DecisionRecord[]): DecisionEffectSummary {

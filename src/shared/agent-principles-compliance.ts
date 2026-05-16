@@ -430,16 +430,17 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Task-bound Decision actions preflight the target task memory annotation before changing the Decision status.',
       'Checkpointed risky tools create Decisions and resume only after approval.',
       'Decision effect summaries feed project verification for pending, approved, deferred, and cancelled decisions.',
+      'Decision effect grouping organizes related decision effects by task first and source when no task is bound.',
       'Decisions page approve/defer/cancel actions use shared decision action guards backed by pre_step and post_step verification.',
       'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
       'DecisionService.listJudgments exposes the pending judgment-center projection at the domain boundary.',
       'Decisions page action results summarize approved, deferred, and cancelled effects using decision-effect-evaluator.',
     ],
     gaps: [
-      'Decisions page still needs richer effect grouping by task/source when several related decisions are handled together.',
+      'Decision effect grouping is available as shared data, but retained UI surfaces still need to decide where grouped multi-decision effects should be shown.',
     ],
     nextVerification: [
-      'Add grouped decision-effect tests when multi-decision action handling is implemented.',
+      'Reuse grouped decision effects when multi-decision action handling or richer decision audit displays are added.',
     ],
   },
 ];
