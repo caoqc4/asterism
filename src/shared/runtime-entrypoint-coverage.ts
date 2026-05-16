@@ -1,5 +1,6 @@
 export type RuntimeEntrypointKind =
   | 'provider_visible_execution'
+  | 'provider_visible_planning'
   | 'hidden_local_execution'
   | 'execution_resume'
   | 'decision_resume'
@@ -19,6 +20,7 @@ export type RuntimeEntrypointGate =
   | 'pre_step'
   | 'post_step'
   | 'subtask_start'
+  | 'subtask_draft'
   | 'task_mutation'
   | 'task_completion'
   | 'project_verification'
@@ -60,6 +62,12 @@ export const RUNTIME_ENTRYPOINT_REQUIRED_GATES_BY_KIND: Record<
     'pre_step',
     'subtask_start',
     'post_step',
+  ],
+  provider_visible_planning: [
+    'simplicity_check',
+    'runtime_context_assembly',
+    'task_memory_guidance',
+    'subtask_draft',
   ],
   hidden_local_execution: [
     'simplicity_check',
@@ -341,6 +349,25 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
       'pre_step',
       'panel_event_allowlist',
     ],
+  },
+  {
+    id: 'project.decompositionDraft',
+    owner: 'IPC ai:decomposeProject',
+    kind: 'provider_visible_planning',
+    description: 'Generate a provider-visible project decomposition draft without creating child tasks.',
+    requiredGates: [
+      'simplicity_check',
+      'runtime_context_assembly',
+      'task_memory_guidance',
+      'subtask_draft',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'runtime_context_assembly',
+      'task_memory_guidance',
+      'subtask_draft',
+    ],
+    notes: 'Draft generation reads task state, key sources, recent timeline, work habits, and Agent principles, then validates both existing children and proposed child drafts before returning JSON. Durable creation remains behind project.decompositionConfirm.',
   },
   {
     id: 'project.decompositionConfirm',

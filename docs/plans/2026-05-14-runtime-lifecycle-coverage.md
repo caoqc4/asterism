@@ -87,6 +87,8 @@ Weakest areas:
 
 `RuntimeEntrypointCoverage` remains a regression registry by design, not a dynamic discovery system. New runtime entrypoints should be added explicitly and fail tests if they do not meet their kind-level gate baseline.
 
+Provider-visible planning is tracked separately from provider-visible execution. A draft-only planner such as project decomposition generation must assemble task context, include task-memory guidance, and pass subtask-draft checks, while durable creation stays behind a separate mutation entrypoint.
+
 ## Design Rule
 
 Do not treat Agent Principles compliance as equivalent to runtime lifecycle completion.

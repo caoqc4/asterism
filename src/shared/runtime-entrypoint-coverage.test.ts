@@ -47,6 +47,22 @@ describe('runtime entrypoint coverage', () => {
     }
   });
 
+  it('requires provider-visible planning to stay draft-only and pass subtask draft checks', () => {
+    expect(requiredRuntimeEntrypointGatesForKind('provider_visible_planning')).toEqual([
+      'simplicity_check',
+      'runtime_context_assembly',
+      'task_memory_guidance',
+      'subtask_draft',
+    ]);
+    for (const entry of runtimeEntrypointsByKind('provider_visible_planning')) {
+      expect(entry.requiredGates).toContain('runtime_context_assembly');
+      expect(entry.requiredGates).toContain('task_memory_guidance');
+      expect(entry.requiredGates).toContain('subtask_draft');
+      expect(entry.requiredGates).not.toContain('task_mutation');
+      expect(entry.requiredGates).not.toContain('post_step');
+    }
+  });
+
   it('requires hidden local execution to keep memory and start gates without provider context assembly', () => {
     for (const entry of runtimeEntrypointsByKind('hidden_local_execution')) {
       expect(entry.requiredGates).toContain('simplicity_check');
@@ -113,6 +129,7 @@ describe('runtime entrypoint coverage', () => {
       'decision.approvedCheckpointResume',
       'panel.timelineEventWrite',
       'project.decompositionConfirm',
+      'project.decompositionDraft',
       'run.continuePaused',
       'run.trigger',
       'run.triggerCodeAgent',

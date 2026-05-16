@@ -63,6 +63,7 @@ Runtime entrypoint gate guidance also belongs in the Agent document as an execut
 - UI-only read, filter, selection, and display paths do not need gates unless they change durable state, execution state, task context, or decision state;
 - service/domain boundaries still need defensive gates even when a UI caller already checked the action;
 - every retained mutating, executing, context-clearing, checkpoint-resuming, or decision-changing entrypoint must be registered in `RuntimeEntrypointCoverage`;
+- provider-visible planning entrypoints that only produce drafts should use the planning baseline rather than masquerading as full execution, and any durable follow-up creation must remain a separate gated mutation;
 - `RuntimeEntrypointCoverage` remains a regression registry, not dynamic discovery.
 
 When a new rule is about Agent behavior, add it through a clearly versioned addendum or a future version of the Agent principles.
