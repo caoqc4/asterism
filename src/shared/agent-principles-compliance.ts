@@ -423,16 +423,17 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Task completion modal consumes TaskMemoryCoverageEvaluation for completion evidence and memory sufficiency.',
       'TaskService direct transitions into running consume TaskMemoryCoverageEvaluation for task-start memory sufficiency.',
       'RuntimeHandoffPreview represents manual refresh/archive preview as reusable runtime data instead of RightPanel-only text assembly.',
+      'RightPanel automatic context mode consumes AutoContextClearReadiness through RuntimeHandoff after refresh triggers, clearing only when recoverable signals were archived and the readiness verdict is safe.',
     ],
     gaps: [
       'Manual refresh preview is shared, but RightPanel context state transitions still live in separate component state values instead of one reducer/store.',
       'New lifecycle boundaries must continue to opt into TaskMemoryCoverageEvaluation instead of bypassing the shared evaluator.',
-      'Automatic context clearing readiness exists as runtime data only; no retained UI or scheduler consumes it yet.',
+      'Automatic context clearing is consumed by the retained RightPanel task-chat surface; future background schedulers must reuse the same readiness verdict instead of adding a second clearing rule.',
     ],
     nextVerification: [
       'When UI state work is allowed, move RightPanel task context transitions behind a small reducer backed by RuntimeContextSnapshot and RuntimeHandoff.',
       'Route any new task lifecycle boundary through TaskMemoryCoverageEvaluation without adding extra UI steps.',
-      'When automatic clearing is productized, consume AutoContextClearReadiness rather than reintroducing fixed-round clearing.',
+      'Keep RightPanel automatic clearing and any future scheduler on AutoContextClearReadiness rather than reintroducing fixed-round clearing.',
     ],
   },
   {

@@ -237,6 +237,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskMemoryCoverageEvaluation maps the Task Memory Spec outcomes to runtime checks and is now consumed by context-clear, task-start, run-start, task-switch, task-completion modal, and RightPanel phase-closeout paths.',
       'AutoContextClearReadiness wraps TaskMemoryCoverageEvaluation into safe_to_clear, needs_memory_write, needs_user_decision, keep_context, and not_applicable outcomes without introducing a hard message-count rule.',
       'RuntimeHandoff task-switch also consumes pending TaskMemoryGuidanceState through AutoContextClearReadiness before leaving the previous task context.',
+      'RightPanel automatic context mode now consumes RuntimeHandoff and AutoContextClearReadiness after session-refresh triggers, so automatic clearing runs only after successful memory preservation and safe readiness.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime owns durable data model boundaries and UI labels for files, records, sources, and generated output.',
@@ -249,7 +250,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     nextImplementation: [
       'Connect any future TasksPage task-memory proposal confirmation controls to TaskMemoryWriteApplyPlan instead of rebuilding write inputs locally.',
       'Keep new lifecycle boundaries routed through TaskMemoryCoverageEvaluation before adding direct state changes.',
-      'Keep automatic context clearing as runtime readiness data until a retained UI or scheduler explicitly consumes it.',
+      'Keep any future background scheduler or non-panel clearing entry point wired to AutoContextClearReadiness instead of adding a second clearing rule.',
     ],
   },
   {
@@ -412,11 +413,11 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Runtime must decide what belongs in timeline vs run step vs Task Record, and how users audit changes later.',
     ],
     gaps: [
-      'RuntimeEventRecord covers timeline, run, run step, task record, decision, resume projection, RightPanel events, and core TasksPage file/source/artifact/project/handoff events; Tasks task dynamics consumes it and Run detail now exposes task-bound projection data.',
-      'Replay grouping is rendered in Tasks task dynamics, while Run detail and broader retained task-dynamics surfaces still need grouped replay presentation.',
+      'RuntimeEventRecord covers timeline, run, run step, task record, decision, resume projection, RightPanel events, and core TasksPage file/source/artifact/project/handoff events; Tasks task dynamics consumes it and Run detail exposes task-bound projection data without requiring a standalone Run Detail page.',
+      'Replay grouping is rendered in Tasks task dynamics; if future retained Run-side surfaces return, they should reuse this grouped replay layer rather than copy full Run details into Task Records.',
     ],
     nextImplementation: [
-      'Reuse the grouped replay layer in Run detail when Run-side runtime views are resumed.',
+      'Keep Run detail as structured execution data and reuse grouped replay only when a future Run-side audit surface is explicitly needed.',
     ],
   },
   {
