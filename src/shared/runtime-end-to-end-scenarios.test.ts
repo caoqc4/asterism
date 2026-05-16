@@ -312,6 +312,49 @@ describe('runtime end-to-end task workflow scenarios', () => {
     });
   });
 
+  it('blocks task switching when a pending user decision still owns the boundary', () => {
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'switch_task',
+      fromTaskId: 'task_current',
+      toTaskId: 'task_next',
+      messageCount: 6,
+      hasSpecificHandoffSignal: true,
+      archived: true,
+      hasOpenDecision: true,
+      recordPath: 'Task Records/2026-01-01-context-switch.md',
+    });
+
+    expect(handoff).toMatchObject({
+      action: 'block',
+      canProceed: false,
+      autoContextClear: {
+        outcome: 'needs_user_decision',
+        shouldAsk: true,
+      },
+    });
+  });
+
+  it('blocks automatic context refresh when a pending user decision exists', () => {
+    const handoff = evaluateRuntimeHandoff({
+      intent: 'context_refresh',
+      fromTaskId: 'task_current',
+      messageCount: 6,
+      hasSpecificHandoffSignal: true,
+      archived: true,
+      hasOpenDecision: true,
+      recordPath: 'Task Records/2026-01-01-context-refresh.md',
+    });
+
+    expect(handoff).toMatchObject({
+      action: 'block',
+      canProceed: false,
+      autoContextClear: {
+        outcome: 'needs_user_decision',
+        shouldAsk: true,
+      },
+    });
+  });
+
   it('blocks run start when the task lacks recovery context and a next step', () => {
     const runnableTask = detail({
       id: 'task_run',
@@ -372,6 +415,32 @@ describe('runtime end-to-end task workflow scenarios', () => {
       outcome: 'pass',
       canStartExecution: true,
       reason: '任务恢复摘要和下一步已具备，可以开始执行。',
+    });
+  });
+
+  it('blocks run start when a pending user decision exists even with task memory ready', () => {
+    const runnableTask = detail({
+      id: 'task_decision',
+      nextStep: '等待用户选择发布方案后继续。',
+      taskFiles: [{
+        id: 'file_task_md',
+        taskId: 'task_decision',
+        kind: 'file',
+        path: 'Task.md',
+        name: 'Task.md',
+        content: '# Task\n\n## Next Step\n等待用户选择发布方案后继续。',
+        createdAt: now,
+        updatedAt: now,
+      }],
+    });
+
+    expect(evaluateTaskMemoryCoverage(
+      buildTaskMemoryCoverageInputForTask('run_start', runnableTask, { hasOpenDecision: true }),
+    )).toMatchObject({
+      outcome: 'blocked',
+      canStartExecution: false,
+      missing: ['存在待处理的用户判断或授权。'],
+      reason: '任务仍有待拍板事项，不能用记忆覆盖检查绕过判断边界。',
     });
   });
 });
