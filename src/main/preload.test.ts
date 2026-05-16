@@ -278,6 +278,7 @@ describe('preload bridge', () => {
     await api.applyProcessTemplate(applyProcessTemplateInput);
     await api.removeProcessTemplate('task_process_binding_1');
     await api.listDecisions();
+    await api.listDecisionJudgments?.();
     await api.draftDecision(draftDecisionInput);
     await api.createDecision(createDecisionInput);
     await api.actOnDecision(decisionActionInput);
@@ -340,6 +341,7 @@ describe('preload bridge', () => {
       ['processTemplate:apply', applyProcessTemplateInput],
       ['processTemplate:remove', 'task_process_binding_1'],
       ['decision:list'],
+      ['decision:listJudgments'],
       ['decision:draft', draftDecisionInput],
       ['decision:create', createDecisionInput],
       ['decision:act', decisionActionInput],

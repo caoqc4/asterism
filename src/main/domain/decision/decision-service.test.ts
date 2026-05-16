@@ -12,7 +12,7 @@ import type { DecisionRecord } from '../../../shared/types/decision.js';
 import type { AppliedProcessTemplateRecord } from '../../../shared/types/process-template.js';
 import type { RunCheckpointRecord } from '../../../shared/types/run.js';
 import type { SourceContextRecord } from '../../../shared/types/source-context.js';
-import type { TaskDetail, TaskRecord } from '../../../shared/types/task.js';
+import type { TaskDetail, TaskListItemRecord, TaskRecord } from '../../../shared/types/task.js';
 import { DecisionService } from './decision-service.js';
 
 function buildSourceContext(partial: Partial<SourceContextRecord>): SourceContextRecord {
@@ -125,6 +125,12 @@ function buildDecisionRecord(partial: Partial<DecisionRecord> = {}): DecisionRec
     status: partial.status ?? 'pending',
     scope: partial.scope ?? (partial.taskId === null ? 'global' : 'task'),
     kind: partial.kind ?? 'direction_choice',
+    sourceType: partial.sourceType ?? null,
+    sourceId: partial.sourceId ?? null,
+    sourceLabel: partial.sourceLabel ?? null,
+    context: partial.context ?? null,
+    options: partial.options,
+    recommendation: partial.recommendation ?? null,
     createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z',
   };
@@ -213,7 +219,71 @@ function buildPatchPromotionCheckpoint(
   };
 }
 
+function buildTaskListItem(partial: Partial<TaskListItemRecord> = {}): TaskListItemRecord {
+  return {
+    ...buildTaskRecord(partial.state ?? 'planned'),
+    id: partial.id ?? 'task_1',
+    title: partial.title ?? 'Task 1',
+    riskLevel: partial.riskLevel ?? 'none',
+    activeWaitingItem: partial.activeWaitingItem ?? null,
+    activeBlocker: partial.activeBlocker ?? null,
+    activeDependency: partial.activeDependency ?? null,
+    dependencyReevaluation: partial.dependencyReevaluation ?? null,
+  };
+}
+
 describe('DecisionService', () => {
+  it('projects pending decisions into judgment-center records', async () => {
+    const decisionRepository = {
+      list: vi.fn().mockResolvedValue([
+        buildDecisionRecord({
+          id: 'decision_old',
+          status: 'approved',
+          taskId: 'task_1',
+          title: 'Already approved',
+        }),
+        buildDecisionRecord({
+          id: 'decision_direction',
+          kind: 'direction_choice',
+          taskId: 'task_1',
+          title: '确认产品方向',
+          updatedAt: '2026-01-01T00:02:00.000Z',
+        }),
+        buildDecisionRecord({
+          id: 'decision_agent',
+          kind: 'agent_resume',
+          scope: 'agent',
+          sourceType: 'agent_checkpoint',
+          sourceLabel: '工具确认',
+          taskId: 'task_2',
+          title: '恢复 Agent 执行',
+          updatedAt: '2026-01-01T00:01:00.000Z',
+        }),
+      ]),
+    };
+    const taskService = {
+      list: vi.fn().mockResolvedValue([
+        buildTaskListItem({ id: 'task_1', title: '产品方向' }),
+        buildTaskListItem({ id: 'task_2', title: 'Agent 任务' }),
+      ]),
+    };
+    const service = new DecisionService(
+      decisionRepository as never,
+      taskService as never,
+      {} as never,
+    );
+
+    const judgments = await service.listJudgments();
+
+    expect(taskService.list).toHaveBeenCalled();
+    expect(judgments.map((judgment) => judgment.id)).toEqual(['decision_agent', 'decision_direction']);
+    expect(judgments[0]).toMatchObject({
+      category: { key: 'agent' },
+      taskTitle: 'Agent 任务',
+      urgency: 'today',
+    });
+  });
+
   it('drafts a decision with selected process templates', async () => {
     generateObjectMock.mockResolvedValue({
       object: {

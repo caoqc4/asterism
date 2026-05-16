@@ -39,20 +39,28 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
     let cancelled = false;
     function reload() {
       setLoading(true);
-      Promise.all([
-        window.api!.listDecisions(),
-        window.api!.listTasks?.() ?? Promise.resolve([]),
-      ])
-        .then(([records, tasks]) => {
+      const loadJudgments = window.api!.listDecisionJudgments
+        ? window.api!.listDecisionJudgments()
+        : Promise.all([
+            window.api!.listDecisions(),
+            window.api!.listTasks?.() ?? Promise.resolve([]),
+          ]).then(([records, tasks]) => {
+            const tasksById = new Map(tasks.map((task) => [task.id, task]));
+            return records
+              .filter((r) => r.status === 'pending')
+              .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+              .map((record) => projectDecisionJudgment(
+                record,
+                record.taskId ? tasksById.get(record.taskId) ?? null : null,
+              ));
+          });
+      loadJudgments
+        .then((judgments) => {
           if (cancelled) return;
-          const tasksById = new Map(tasks.map((task) => [task.id, task]));
-          setDecisions(records
-            .filter((r) => r.status === 'pending')
-            .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-            .map((record) => ({
-              ...projectDecisionJudgment(record, record.taskId ? tasksById.get(record.taskId) ?? null : null),
-              expanded: false,
-            })));
+          setDecisions(judgments.map((judgment) => ({
+            ...judgment,
+            expanded: false,
+          })));
         })
         .catch(() => {})
         .finally(() => {

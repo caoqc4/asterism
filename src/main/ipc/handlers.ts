@@ -507,6 +507,10 @@ export function registerIpcHandlers(): void {
     return getServices().decisionService.list();
   });
 
+  ipcMain.handle('decision:listJudgments', async () => {
+    return getServices().decisionService.listJudgments();
+  });
+
   ipcMain.handle('decision:draft', async (_event, input: DraftDecisionInput) => {
     return getServices().decisionService.draft(input);
   });

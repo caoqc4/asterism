@@ -431,6 +431,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Decision effect summaries feed project verification for pending, approved, deferred, and cancelled decisions.',
       'Decisions page approve/defer/cancel actions use shared decision action guards backed by pre_step and post_step verification.',
       'DecisionJudgmentProjection centralizes decision category, urgency, task signal, options, recommendation, impact, reversibility, and sorting semantics for the Decisions page.',
+      'DecisionService.listJudgments exposes the pending judgment-center projection at the domain boundary.',
       'Decisions page action results summarize approved, deferred, and cancelled effects using decision-effect-evaluator.',
     ],
     gaps: [

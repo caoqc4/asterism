@@ -52,6 +52,10 @@ import {
   buildTaskMemoryGuidanceStateForTaskFiles,
   type TaskMemoryGuidanceState,
 } from '../../../shared/task-memory-guidance-state.js';
+import {
+  projectDecisionJudgment,
+  type DecisionJudgmentProjection,
+} from '../../../shared/decision-judgment-projection.js';
 import { deriveTaskDetailPriorityLane, getPriorityLanePromptGuidance } from '../../../shared/working-context/priority-lanes.js';
 
 const decisionDraftSchema = z.object({
@@ -225,6 +229,25 @@ export class DecisionService {
 
   list(): Promise<DecisionRecord[]> {
     return this.decisionRepository.list();
+  }
+
+  async listJudgments(): Promise<DecisionJudgmentProjection[]> {
+    const [decisions, tasks] = await Promise.all([
+      this.decisionRepository.list(),
+      this.taskService.list(),
+    ]);
+    const tasksById = new Map(tasks.map((task) => [task.id, task]));
+
+    return decisions
+      .filter((decision) => decision.status === 'pending')
+      .map((decision) => projectDecisionJudgment(
+        decision,
+        decision.taskId ? tasksById.get(decision.taskId) ?? null : null,
+      ))
+      .sort((left, right) => (
+        right.sortScore - left.sortScore
+        || right.updatedLabel.localeCompare(left.updatedLabel)
+      ));
   }
 
   async draft(input: DraftDecisionInput): Promise<DecisionDraftRecord> {

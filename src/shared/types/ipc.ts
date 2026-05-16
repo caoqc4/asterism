@@ -67,6 +67,7 @@ import type {
   DecisionRecord,
   DraftDecisionInput,
 } from './decision.js';
+import type { DecisionJudgmentProjection } from '../decision-judgment-projection.js';
 import type { AppEvent } from './events.js';
 import type {
   ArtifactRecord,
@@ -184,6 +185,7 @@ export type ElectronApi = {
   applyProcessTemplate: (input: ApplyProcessTemplateInput) => Promise<AppliedProcessTemplateRecord>;
   removeProcessTemplate: (bindingId: string) => Promise<AppliedProcessTemplateRecord>;
   listDecisions: () => Promise<DecisionRecord[]>;
+  listDecisionJudgments?: () => Promise<DecisionJudgmentProjection[]>;
   draftDecision: (input: DraftDecisionInput) => Promise<DecisionDraftRecord>;
   createDecision: (input: CreateDecisionInput) => Promise<DecisionRecord>;
   actOnDecision: (input: DecisionActionInput) => Promise<DecisionRecord>;
