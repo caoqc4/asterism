@@ -2436,7 +2436,7 @@ describe('App redesign v1', () => {
     expect(screen.getByText('选择任务后显示文件')).toBeTruthy();
   });
 
-  it('keeps task management and activity log as task-level tabs without exposing Run', async () => {
+  it('keeps task management and task dynamics as task-level tabs without exposing Run', async () => {
     const user = userEvent.setup();
     render(<App />);
 

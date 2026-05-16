@@ -526,7 +526,7 @@ Implemented:
 - RunService paused-run continuation now consumes `RuntimeHandoff` and `RuntimeResumePlan` before executing checkpoint resume tools.
 - Added shared `RuntimeEventRecord` projection for timeline events, Runs, Run steps, Task Records, Decisions without timeline coverage, and runtime resume projections.
 - `RuntimeEventRecord` is now the shared task-dynamics/audit projection; Tasks task dynamics consumes it, and retained Run-side views should follow the same projection instead of legacy Workbench-specific activity logic.
-- Tasks task dynamics view now consumes `RuntimeEventRecord`, so timeline events, Runs, Task Records, Decisions, runtime resume projections, and `panel.*` events share one display stream.
+- Tasks task dynamics view now consumes `RuntimeEventRecord`, so timeline events, Runs, Run steps, Task Records, Decisions, runtime resume projections, and `panel.*` events share one display stream.
 - Added shared replay grouping for `RuntimeEventRecord` so handoff, project structure changes, execution recovery, Decisions, durable records, source context, and task state changes can be replayed consistently without changing UI layout.
 - Run detail now exposes optional `runtimeEvents` and `runtimeReplayGroups`, so retained Run-side consumers can use the same projection data without changing UI layout.
 - Added `recordTaskTimelineEvent` IPC/service path so panel-only durable actions can persist RuntimeEventRecord-compatible timeline events.

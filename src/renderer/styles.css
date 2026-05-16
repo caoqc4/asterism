@@ -2840,7 +2840,7 @@ a { color: inherit; text-decoration: none; }
   width: fit-content;
 }
 
-/* Activity */
+/* Task Dynamics */
 .activity-list { display: flex; flex-direction: column; }
 .activity-item {
   display: flex;
