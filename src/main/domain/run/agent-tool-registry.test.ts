@@ -563,20 +563,12 @@ describe('AgentToolRegistry', () => {
       status: 'completed',
       summary: '已创建来源上下文：Owner notes',
       output: 'Use this as the next source',
-      recoveryGuidance: [
-        'Task.md update recommended: durable_state_change',
-        'Task Record may be useful: external_signal',
-      ],
+      recoveryGuidance: ['Task.md update recommended: durable_state_change'],
       recoveryGuidanceItems: [
         {
           target: 'task_md',
           message: 'Task.md update recommended: durable_state_change',
           reason: 'durable_state_change',
-        },
-        {
-          target: 'task_record',
-          message: 'Task Record may be useful: external_signal',
-          reason: 'external_signal',
         },
       ],
     });
@@ -604,6 +596,73 @@ describe('AgentToolRegistry', () => {
       expect.objectContaining({
         kind: 'plan',
         status: 'completed',
+        title: '任务记忆建议',
+        output: '- Task.md: durable_state_change',
+      }),
+    );
+  });
+
+  it('recommends Task Records for source context only when the source has recovery value', async () => {
+    const taskService = {
+      update: vi.fn(),
+      createCompletionCriteria: vi.fn(),
+      createSourceContext: vi.fn().mockResolvedValue({
+        id: 'source_context_external',
+        taskId: 'task_1',
+        title: '客户邮件',
+        kind: 'note',
+        isKey: true,
+        uri: null,
+        content: '外部邮件确认发布范围变更，后续恢复时需要参考。',
+        note: '外部邮件确认发布范围变更，后续恢复时需要参考。',
+        status: 'active',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        archivedAt: null,
+      }),
+    };
+    const runStepRepository = buildRunStepRepositoryMock();
+    const registry = new AgentToolRegistry(
+      {} as never,
+      runStepRepository as never,
+      undefined,
+      null,
+      undefined,
+      taskService as never,
+    );
+
+    const result = await registry.execute(
+      'source_context.create',
+      {
+        title: '客户邮件',
+        kind: 'note',
+        isKey: true,
+        content: '外部邮件确认发布范围变更，后续恢复时需要参考。',
+        note: '外部邮件确认发布范围变更，后续恢复时需要参考。',
+      },
+      { runId: 'run_1', taskId: 'task_1' },
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      recoveryGuidance: [
+        'Task.md update recommended: durable_state_change',
+        'Task Record may be useful: external_signal',
+      ],
+      recoveryGuidanceItems: [
+        {
+          target: 'task_md',
+          reason: 'durable_state_change',
+        },
+        {
+          target: 'task_record',
+          reason: 'external_signal',
+        },
+      ],
+    });
+    expect(runStepRepository.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        kind: 'plan',
         title: '任务记忆建议',
         output: [
           '- Task.md: durable_state_change',

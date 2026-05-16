@@ -31,6 +31,7 @@ export function buildRuntimeRecoveryGuidance(params: {
   hasTaskContext: boolean;
   importantFilePath?: string | null;
   producedDurableChange?: boolean;
+  taskRecordProducedDurableChange?: boolean;
   taskMdReasonHint?: TaskMdUpdateNeedReason | null;
   taskRecordReasonHint?: TaskRecordWorthinessReason | null;
   includeTaskRecord?: boolean;
@@ -56,7 +57,7 @@ export function buildRuntimeRecoveryGuidance(params: {
     const taskRecord = evaluateTaskRecordWorthiness({
       text: params.text,
       hasTaskContext: params.hasTaskContext,
-      producedDurableChange: params.producedDurableChange,
+      producedDurableChange: params.taskRecordProducedDurableChange ?? params.producedDurableChange,
       reasonHint: params.taskRecordReasonHint,
     });
 

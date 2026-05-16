@@ -694,8 +694,8 @@ function withRuntimeRecoveryGuidance(
     hasTaskContext: Boolean(context.taskId),
     importantFilePath: name === 'artifact.create_note' ? result.artifactId ?? result.summary : null,
     producedDurableChange: true,
+    taskRecordProducedDurableChange: name === 'source_context.create' ? false : undefined,
     taskMdReasonHint: taskMdReason,
-    taskRecordReasonHint: name === 'source_context.create' ? 'external_signal' : null,
     includeTaskRecord: name === 'source_context.create',
   });
 

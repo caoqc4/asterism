@@ -259,11 +259,11 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RightPanel phase closeout also checks TaskMemoryCoverageEvaluation after record persistence before refreshing context or handing off.',
       'TasksPage manual Task Record creation is gated by TaskRecordWorthinessEvaluation.',
       'Task completion modal checks TaskMemoryCoverageEvaluation before treating completion as clean; insufficient memory becomes a recorded override concern.',
-      'AgentToolRegistry source-context writes can recommend Task Record creation through recoveryGuidance when the write represents an external signal.',
+      'AgentToolRegistry source-context writes pass through TaskRecordWorthinessEvaluation before recommending Task Record creation, so ordinary raw sources stay source context and only recovery-worthy external signals become Task Record guidance.',
       'TaskRecordWorthiness tests cover positive and negative creation boundaries.',
     ],
     gaps: [
-      'TaskRecordWorthinessEvaluation still needs to be wired into retained tool-driven Task Record creation entry points.',
+      'Future retained tool-driven Task Record creation entry points must keep using TaskRecordWorthinessEvaluation instead of creating records from generic summaries.',
     ],
     nextVerification: [
       'Keep Task Record worthiness tests aligned with any new retained tool-driven Task Record entry point.',

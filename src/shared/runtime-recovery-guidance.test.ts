@@ -53,4 +53,18 @@ describe('runtime recovery guidance', () => {
     expect(guidance.messages).toEqual([]);
     expect(guidance.items).toEqual([]);
   });
+
+  it('can keep Task Record guidance from using durable-change fallback', () => {
+    const guidance = buildRuntimeRecoveryGuidance({
+      text: '已创建普通来源材料，后续可按需读取。',
+      hasTaskContext: true,
+      producedDurableChange: true,
+      taskRecordProducedDurableChange: false,
+      taskMdReasonHint: 'durable_state_change',
+      includeTaskRecord: true,
+    });
+
+    expect(guidance.messages).toEqual(['Task.md update recommended: durable_state_change']);
+    expect(guidance.items.map((item) => item.target)).toEqual(['task_md']);
+  });
 });
