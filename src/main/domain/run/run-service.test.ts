@@ -352,6 +352,79 @@ describe('RunService', () => {
     expect(result?.runtimeReplayGroups?.some((group) => group.kind === 'execution_recovery')).toBe(true);
   });
 
+  it('projects task memory events into run detail runtime replay data', async () => {
+    const runRepository = {
+      list: vi.fn(),
+      getDetail: vi.fn().mockResolvedValue(buildRunRecord('completed')),
+      create: vi.fn(),
+      updateResult: vi.fn(),
+    };
+    const taskDetail = buildTaskDetail('running');
+    taskDetail.timeline = [{
+      id: 'timeline_1',
+      taskId: 'task_1',
+      type: 'panel.completion_handoff',
+      payload: JSON.stringify({ nextTaskId: 'task_2', nextTaskTitle: 'Next task' }),
+      createdAt: '2026-01-01T00:01:00.000Z',
+    }];
+    taskDetail.taskFiles = [
+      ...(taskDetail.taskFiles ?? []),
+      {
+        id: 'task_record_1',
+        taskId: 'task_1',
+        name: '2026-01-01-completion-handoff.md',
+        path: 'Task Records/2026-01-01-completion-handoff.md',
+        kind: 'file',
+        content: '# Handoff',
+        createdAt: '2026-01-01T00:02:00.000Z',
+        updatedAt: '2026-01-01T00:02:00.000Z',
+      },
+    ];
+    const taskService = {
+      getDetail: vi.fn().mockResolvedValue(taskDetail),
+    };
+    const runStepRepository = {
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
+    const runCheckpointRepository = {
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
+    const agentSessionRepository = {
+      listForRun: vi.fn().mockResolvedValue([]),
+    };
+    const artifactRepository = buildArtifactRepositoryMock({
+      listForRun: vi.fn().mockResolvedValue([]),
+    });
+    const service = new RunService(
+      runRepository as never,
+      taskService as never,
+      artifactRepository as never,
+      {} as never,
+      {} as never,
+      undefined,
+      runStepRepository as never,
+      null,
+      runCheckpointRepository as never,
+      agentSessionRepository as never,
+    );
+
+    const result = await service.getDetail('run_1');
+
+    expect(taskService.getDetail).toHaveBeenCalledWith('task_1');
+    expect(result?.runtimeEvents?.map((event) => event.type)).toEqual([
+      'task_record.updated',
+      'panel.completion_handoff',
+      'run.completed',
+    ]);
+    expect(result?.runtimeReplayGroups?.find((group) => group.kind === 'handoff')).toMatchObject({
+      eventIds: [
+        'timeline:timeline_1',
+        'task_record:task_record_1',
+      ],
+      relatedTaskIds: ['task_2'],
+    });
+  });
+
   it('projects task memory guidance state into run detail', async () => {
     const runRepository = {
       list: vi.fn(),

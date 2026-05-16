@@ -377,6 +377,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Activity records, run steps, completion checks, Decisions, and Task Records all exist as durable audit surfaces.',
       'runtime-event-record projects timeline events, Runs, Run steps, Task Records, Decisions without timeline coverage, and runtime resume projections into one audit stream.',
       'RuntimeEventRecord is the shared task dynamics/audit projection; Tasks task dynamics consumes it, and Run-side surfaces should follow it.',
+      'Run detail exposes runtime events and replay groups that include the run, run steps, task timeline events, and Task Records for the same task.',
       'groupRuntimeEventsForReplay creates shared replay-oriented stories, and Tasks task dynamics renders those groups before the flat timeline.',
       'Task A to task B handoff replay is covered by relatedTaskId/relatedTaskIds projection tests.',
     ],
@@ -384,7 +385,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Runtime must decide what belongs in timeline vs run step vs Task Record, and how users audit changes later.',
     ],
     gaps: [
-      'RuntimeEventRecord covers timeline, run, run step, task record, decision, resume projection, RightPanel events, and core TasksPage file/source/artifact/project/handoff events; Tasks task dynamics consumes it and Run detail now exposes Run-side projection data.',
+      'RuntimeEventRecord covers timeline, run, run step, task record, decision, resume projection, RightPanel events, and core TasksPage file/source/artifact/project/handoff events; Tasks task dynamics consumes it and Run detail now exposes task-bound projection data.',
       'Replay grouping is rendered in Tasks task dynamics, while Run detail and broader retained activity surfaces still need grouped replay presentation.',
     ],
     nextImplementation: [

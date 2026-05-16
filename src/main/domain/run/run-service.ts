@@ -96,6 +96,7 @@ export class RunService {
     const steps = await this.runStepRepository.listForRun(runId);
     const taskMemory = await this.buildTaskMemoryForRunDetail(run.taskId, steps);
     const taskMemoryGuidance = taskMemory.guidance;
+    const taskDetail = taskMemory.taskDetail;
     const detail = {
       ...run,
       artifacts: await this.artifactRepository.listForRun(runId),
@@ -115,6 +116,8 @@ export class RunService {
       runStepsByRunId: {
         [run.id]: steps,
       },
+      taskFiles: taskDetail?.taskFiles,
+      timeline: taskDetail?.timeline,
     });
     return {
       ...detail,
@@ -269,6 +272,7 @@ export class RunService {
     steps: Awaited<ReturnType<RunStepRepository['listForRun']>>,
   ): Promise<{
     guidance: TaskMemoryGuidanceState;
+    taskDetail: TaskDetail | null;
     writeProposals: TaskMemoryWriteProposal[];
   }> {
     const taskDetailReader = (this.taskService as Partial<Pick<TaskService, 'getDetail'>>).getDetail;
@@ -281,6 +285,7 @@ export class RunService {
     });
     return {
       guidance,
+      taskDetail,
       writeProposals: buildTaskMemoryWriteProposals({
         guidance,
         taskFiles: taskDetail?.taskFiles,
