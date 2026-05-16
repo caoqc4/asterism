@@ -46,6 +46,18 @@ describe('task hierarchy helpers', () => {
     expect(isTopLevelTask(followup, [project, followup])).toBe(true);
   });
 
+  it('does not include explicit top-level phase follow-ups as project children', () => {
+    const project = node({ id: 'project_1', title: '开发小程序', type: 'project', parentTaskId: null });
+    const followup = node({
+      id: 'followup_1',
+      title: '拆解下一步：开发小程序',
+      type: 'simple',
+      parentTaskId: null,
+    });
+
+    expect(orderedTaskChildren(project, [project, followup])).toEqual([]);
+  });
+
   it('orders children by parent child ids before falling back to update time', () => {
     const project = node({ id: 'project_1', title: '开发小程序', type: 'project', childTaskIds: ['child_2', 'child_1'] });
     const first = node({ id: 'child_1', title: '需求分析', parentTaskId: project.id, updatedAtIso: '2026-01-01T01:00:00.000Z' });

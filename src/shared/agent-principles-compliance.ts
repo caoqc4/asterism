@@ -33,6 +33,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Decisions page surfaces hierarchy manual-review items and safe hierarchy repair actions as explicit user judgments.',
       'No default Artifacts/ folder is required; output folders are created only when useful for the task.',
       'RuntimeTaskCaptureEvaluation blocks generic phase-template task titles even when a faulty flow tries to create them as top-level tasks.',
+      'Task hierarchy tests cover explicit no-parent records, explicit top-level phase follow-ups, and renderer stale hierarchy attributes not overriding persisted parent/child fields.',
       'Runtime surface routing has regression coverage that explicit Decision kind, scope, and sourceType are not overridden by title-pattern inference.',
       'RuntimeEntrypointCoverage now requires every retained runtime entrypoint to declare a simplicity_check gate, so future execution, creation, decision, write, resume, and context-transition surfaces cannot register without the smallest-state-change boundary.',
     ],
@@ -41,7 +42,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Current retained entrypoints declare the simplicity boundary; future implementation work must keep each concrete surface backed by the smallest applicable evaluator instead of adding broad new workflow steps.',
     ],
     nextVerification: [
-      'Add remaining regression tests for no implicit hierarchy mutation, no generic follow-up task creation, and no local fallback override when structured record fields are present.',
+      'Keep hierarchy regression tests blocking title-pattern parenting and renderer-local fallback override when structured record fields are present.',
       'Keep runtime-entrypoint coverage tests failing when a future entrypoint omits simplicity_check.',
     ],
   },

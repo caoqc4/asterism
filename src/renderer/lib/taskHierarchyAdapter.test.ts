@@ -89,6 +89,35 @@ describe('task hierarchy adapter', () => {
     expect(authoritativeChildTaskIds(record, attrs)).toEqual([]);
   });
 
+  it('does not let stale renderer child ids override explicit persisted hierarchy', () => {
+    const parent = task({
+      id: 'project_1',
+      title: '开发小程序',
+      taskType: 'project',
+      parentTaskId: null,
+      childTaskIds: [],
+    });
+    const followup = task({
+      id: 'followup_1',
+      title: '拆解下一步：开发小程序',
+      taskType: 'simple',
+      parentTaskId: null,
+      childTaskIds: [],
+    });
+    saveTaskAttributes(parent.id, {
+      type: 'project',
+      typeConfirmed: true,
+      childTaskIds: [followup.id],
+    });
+    saveTaskAttributes(followup.id, {
+      type: 'simple',
+      typeConfirmed: true,
+      parentTaskId: parent.id,
+    });
+
+    expect(orderedChildRecordsForTask(parent, [parent, followup]).map((item) => item.id)).toEqual([]);
+  });
+
   it('uses renderer attributes only when persisted hierarchy fields are absent', () => {
     const record = task({ id: 'legacy_task' });
     saveTaskAttributes(record.id, {
