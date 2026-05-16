@@ -32,6 +32,7 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterKey, setFilterKey] = useState<DecisionFilterKey>('all');
   const [actionEffect, setActionEffect] = useState<DecisionActionEffect | null>(null);
+  const [actingDecisionIds, setActingDecisionIds] = useState<Set<string>>(() => new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -78,12 +79,14 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
   }
 
   function decide(id: string, action: 'approve' | 'defer' | 'cancel' = 'approve') {
+    if (actingDecisionIds.has(id)) return;
     const decision = decisions.find((item) => item.id === id);
     const guard = guardDecisionAction({
       action,
       taskId: decision?.taskId ?? null,
     });
     if (!guard.allowed) return;
+    setActingDecisionIds((current) => new Set(current).add(id));
     window.api?.actOnDecision({ id, action })
       .then((updated) => {
         setDecisions((prev) => prev.filter((d) => d.id !== id));
@@ -93,7 +96,14 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
           action,
         });
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        setActingDecisionIds((current) => {
+          const next = new Set(current);
+          next.delete(id);
+          return next;
+        });
+      });
   }
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -200,6 +210,7 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
               decision={d}
               onToggle={() => toggleExpand(d.id)}
               onDecide={(action) => decide(d.id, action)}
+              acting={actingDecisionIds.has(d.id)}
               onOpenPanel={() => onOpenPanel(d.taskId)}
               onOpenTask={() => onOpenTask(d.taskId)}
             />
@@ -223,6 +234,7 @@ export function DecisionsPage({ onOpenPanel, onOpenTask }: DecisionsPageProps) {
               decision={d}
               onToggle={() => toggleExpand(d.id)}
               onDecide={(action) => decide(d.id, action)}
+              acting={actingDecisionIds.has(d.id)}
               onOpenPanel={() => onOpenPanel(d.taskId)}
               onOpenTask={() => onOpenTask(d.taskId)}
             />
@@ -263,6 +275,7 @@ function buildDecisionActionEffect(
 /* ─── Decision Card ─── */
 
 interface DecisionCardProps {
+  acting: boolean;
   decision: Decision;
   onToggle: () => void;
   onDecide: (action?: 'approve' | 'defer' | 'cancel') => void;
@@ -270,7 +283,7 @@ interface DecisionCardProps {
   onOpenTask: () => void;
 }
 
-function DecisionCard({ decision: d, onToggle, onDecide, onOpenPanel, onOpenTask }: DecisionCardProps) {
+function DecisionCard({ acting, decision: d, onToggle, onDecide, onOpenPanel, onOpenTask }: DecisionCardProps) {
   return (
     <div className={`dec-card${d.expanded ? ' expanded' : ''}`}>
       {/* Card header */}
@@ -302,8 +315,8 @@ function DecisionCard({ decision: d, onToggle, onDecide, onOpenPanel, onOpenTask
             <span className="dec-rec-value">{d.recommendation}</span>
             <span className="dec-rec-hint">展开可比较备选</span>
           </div>
-          <button className="btn primary" onClick={(e) => { e.stopPropagation(); onDecide('approve'); }}>
-            拍板 →
+          <button className="btn primary" disabled={acting} onClick={(e) => { e.stopPropagation(); onDecide('approve'); }}>
+            {acting ? '处理中…' : '拍板 →'}
           </button>
           <span className="dec-chevron">{d.expanded ? '▴' : '▾'}</span>
         </div>
@@ -368,6 +381,7 @@ function DecisionCard({ decision: d, onToggle, onDecide, onOpenPanel, onOpenTask
               <p className="dec-option-desc">{opt.desc}</p>
               <button
                 className="btn sm"
+                disabled={acting}
                 onClick={() => onDecide(
                   opt.label === '稍后再定' || opt.label === '暂停等待'
                     ? 'defer'

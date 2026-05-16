@@ -2222,6 +2222,28 @@ describe('App redesign v1', () => {
     expect(screen.queryByLabelText('拍板结果')).toBeNull();
   });
 
+  it('prevents duplicate decision actions while a decision is being processed', async () => {
+    const user = userEvent.setup();
+    let resolveAction: (decision: DecisionRecord) => void = () => {};
+    vi.mocked(harness.api.actOnDecision).mockImplementationOnce(() => new Promise((resolve) => {
+      resolveAction = resolve;
+    }));
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Decisions/ }));
+    const decisionTitle = await screen.findByText('是否批准本轮材料修改方案');
+    await user.click(decisionTitle);
+    const approveButton = (await screen.findAllByRole('button', { name: '选择此方案' }))[0]!;
+    await user.click(approveButton);
+
+    expect((await screen.findByRole('button', { name: '处理中…' }) as HTMLButtonElement).disabled).toBe(true);
+    await user.click(approveButton);
+    expect(harness.api.actOnDecision).toHaveBeenCalledTimes(1);
+
+    resolveAction(buildDecision({ id: 'decision_pending', status: 'approved' }));
+    expect(await screen.findByLabelText('拍板结果')).toBeTruthy();
+  });
+
   it('counts only active task-linked decisions in the task decision lens', async () => {
     const user = userEvent.setup();
     harness.decisions.length = 0;
