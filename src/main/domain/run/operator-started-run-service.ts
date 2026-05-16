@@ -109,7 +109,6 @@ export class OperatorStartedRunService {
       mode: 'pre_step',
       action: actionEvaluation,
       taskMemoryCoverage: evaluateTaskMemoryCoverage(buildTaskMemoryCoverageInputForTask('run_start', task, {
-        hasBlocker: false,
         hasNextStep: Boolean(task.nextStep?.trim() || task.resumeCard?.nextSuggestedMove?.trim() || request.reason.trim()),
       })),
     });

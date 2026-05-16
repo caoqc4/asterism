@@ -799,7 +799,7 @@ describe('RunService', () => {
       taskId: 'task_1',
       type: 'draft',
       instructions: 'Please draft this',
-    })).rejects.toThrow('仍有阻塞、依赖或等待状态');
+    })).rejects.toThrow('不能安全开始执行');
     expect(runRepository.create).not.toHaveBeenCalled();
     expect(taskService.transitionIfAllowed).not.toHaveBeenCalled();
   });

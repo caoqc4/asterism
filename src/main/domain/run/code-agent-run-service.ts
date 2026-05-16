@@ -110,7 +110,6 @@ export class CodeAgentRunService {
       action: actionEvaluation,
       capabilities: buildRuntimeCapabilitySnapshot({ aiStatus }),
       taskMemoryCoverage: evaluateTaskMemoryCoverage(buildTaskMemoryCoverageInputForTask('run_start', task, {
-        hasBlocker: false,
         hasNextStep: Boolean(task.nextStep?.trim() || task.resumeCard?.nextSuggestedMove?.trim() || input.patchIntent?.trim()),
       })),
       requiresModelExecution: input.useModelProducer === true,
