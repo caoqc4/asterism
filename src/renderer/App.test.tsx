@@ -901,6 +901,34 @@ describe('App redesign v1', () => {
 
   it('clarifies enabled Skills are only available tools, not automatic execution', async () => {
     const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      capabilityRegistry: [{
+        id: 'skills.catalogue',
+        label: 'Skills',
+        family: 'skill',
+        status: 'unconfigured',
+        configured: false,
+        missingReason: 'Capability family is not configured for model-visible use.',
+        visibility: 'hidden',
+        access: 'read_only',
+        requiresApproval: true,
+        requiredGate: 'runtime_context_assembly',
+        summary: 'reserved=4 / exposed=0',
+      }],
+      configurationSafetyReport: {
+        secretExposureSafe: true,
+        blockedReasons: ['skills.catalogue: Capability family is not configured for model-visible use.'],
+        summary: 'configured=0 / approvalRequired=0 / blocked=1',
+        surfaces: [{
+          id: 'skills.catalogue',
+          state: 'missing',
+          reason: 'Capability family is not configured for model-visible use.',
+          requiresApproval: true,
+          startupProbePolicy: 'manual_only',
+          exposesSecretValue: false,
+        }],
+      },
+    }));
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /Skills/ }));
@@ -908,10 +936,41 @@ describe('App redesign v1', () => {
     expect(await screen.findByText(/AI 执行任务时可调用的工具模块/)).toBeTruthy();
     expect(screen.getByText(/启用技能只会把工具加入 AI 能力库/)).toBeTruthy();
     expect(screen.getByText(/是否调用仍由任务上下文、用户指令和执行确认决定/)).toBeTruthy();
+    expect(screen.getByText('能力状态')).toBeTruthy();
+    expect(screen.getByText('未配置')).toBeTruthy();
+    expect(screen.getByText(/Capability family is not configured/)).toBeTruthy();
   });
 
   it('clarifies MCP servers expose tools without automatic execution', async () => {
     const user = userEvent.setup();
+    vi.mocked(harness.api.getAiConfigStatus).mockResolvedValue(buildAiStatus({
+      capabilityRegistry: [{
+        id: 'mcp.servers',
+        label: 'MCP Servers',
+        family: 'mcp',
+        status: 'disabled',
+        configured: false,
+        missingReason: 'No connected MCP server exposes tools.',
+        visibility: 'hidden',
+        access: 'mixed',
+        requiresApproval: true,
+        requiredGate: 'runtime_context_assembly',
+        summary: 'connectedServers=0 / tools=0 / errors=0',
+      }],
+      configurationSafetyReport: {
+        secretExposureSafe: true,
+        blockedReasons: ['mcp.servers: No connected MCP server exposes tools.'],
+        summary: 'configured=0 / approvalRequired=0 / blocked=1',
+        surfaces: [{
+          id: 'mcp.servers',
+          state: 'disabled_by_flag',
+          reason: 'No connected MCP server exposes tools.',
+          requiresApproval: true,
+          startupProbePolicy: 'manual_only',
+          exposesSecretValue: false,
+        }],
+      },
+    }));
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: /MCP/ }));
@@ -920,6 +979,9 @@ describe('App redesign v1', () => {
     expect(screen.getByText(/连接服务器只会让工具进入 AI 能力库/)).toBeTruthy();
     expect(screen.getByText(/具体调用仍由任务上下文、用户指令和执行确认决定/)).toBeTruthy();
     expect(screen.getByText(/可将工具注册到 AI 能力库/)).toBeTruthy();
+    expect(screen.getByText('能力状态')).toBeTruthy();
+    expect(screen.getByText('已关闭')).toBeTruthy();
+    expect(screen.getByText(/No connected MCP server exposes tools/)).toBeTruthy();
   });
 
   it('does not expose committed tasks as a first-version Brief stat', async () => {

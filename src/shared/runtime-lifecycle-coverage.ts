@@ -521,7 +521,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'ExternalAccessStatusService defines the minimal connector adapter contract and routes connected adapter evidence through ConnectorSourceIngestionPlan before source-context persistence.',
       'Settings consumes ConfigurationSafetyReport as a read-only configuration safety boundary with secret exposure, manual-probe, approval-required, and blocked capability states.',
       'External Access consumes the same AiConfigStatus capability and ConfigurationSafetyReport surfaces to show connector status, manual probe policy, and source-ingestion confirmation boundaries without starting connector probes.',
-      'ConfigurationSafetyReport includes Skills and MCP safety surfaces from CapabilityRegistry, keeping tool catalogues manual-probe and approval-bound.',
+      'ConfigurationSafetyReport includes Skills and MCP safety surfaces from CapabilityRegistry, and the Skills/MCP pages consume those rows as read-only capability safety strips.',
     ],
     outOfAgentPrinciplesScope: [
       'Capability availability, connector status, model settings, and external access policy are product runtime concerns.',
@@ -530,7 +530,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Current retained execution entry points pass or intentionally avoid RuntimeCapabilitySnapshot according to provider visibility and local-only execution mode; future entry points must keep the same boundary explicit.',
       'External Access now has a structured connector status service and adapter contract; future real connector services still need concrete provider adapters, persistence wiring, and connector-backed smoke coverage.',
       'Sandbox coding capability remains hidden until both the feature flag and backend readiness support the capability.',
-      'ConfigurationSafetyReport is exposed through AiConfigStatus and consumed by Settings and External Access; Skills and MCP are present in the shared report and their retained pages can reuse it when UI work resumes.',
+      'ConfigurationSafetyReport is exposed through AiConfigStatus and consumed by Settings, External Access, Skills, and MCP; retained capability pages can reuse the same safety projection.',
     ],
     nextImplementation: [
       'Connect future real External Access provider adapters to ExternalAccessStatusService, and connect richer Skills, MCP, and browser/operator pages or services to the existing CapabilityRegistry product-surface status input.',

@@ -24,7 +24,7 @@ user workflow.
 - Task dynamics has structured replay data and a task-centered timeline UI.
 - External Access has a safe empty state and explicit authorization boundaries.
 - Packaged app smoke coverage includes Brief recovery, task dynamics replay UI, External Access, Decisions, and task file open/save.
-- Capability safety is projected through `ConfigurationSafetyReport`; Settings and External Access consume it, while Skills/MCP can reuse the same projection when their UI work resumes.
+- Capability safety is projected through `ConfigurationSafetyReport`; Settings, External Access, Skills, and MCP consume the shared projection.
 
 ## Verification
 
@@ -73,7 +73,9 @@ runtime deepening in isolation. Recommended order:
    connector through the existing capability and source-ingestion boundaries,
    then add connector-backed smoke coverage.
 2. Skills/MCP capability pages: reuse `ConfigurationSafetyReport` and
-   `CapabilityRegistry` without changing settled Tasks-page layout.
+   `CapabilityRegistry` without changing settled Tasks-page layout. The first
+   read-only safety strip is in place; future work should connect real
+   structured Skills/MCP status when those services exist.
 3. Retrieval/search foundation: make growing task memory easier to find and
    reuse before adding more automation.
 4. Decisions batch handling or richer navigation: only if a real multi-decision

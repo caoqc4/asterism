@@ -100,7 +100,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'ExternalAccessStatusService defines the minimal connector adapter contract and routes connected adapter evidence through ConnectorSourceIngestionPlan before source-context persistence.',
       'Settings consumes ConfigurationSafetyReport as a read-only safety boundary for configured, approval-required, blocked, manual-probe, and secret-exposure-safe states.',
       'External Access consumes AiConfigStatus capability and ConfigurationSafetyReport surfaces to show connector status, manual probe policy, and source-ingestion confirmation boundaries without live connector probes.',
-      'ConfigurationSafetyReport includes Skills and MCP safety surfaces from CapabilityRegistry, keeping them manual-probe and approval-bound instead of implicit model-visible tools.',
+      'ConfigurationSafetyReport includes Skills and MCP safety surfaces from CapabilityRegistry, and the retained Skills/MCP pages consume those rows as read-only safety strips instead of implicit model-visible tools.',
       'Runtime pre-step verification now checks model execution and workspace verification readiness through CapabilityRegistry.',
       'pre_step verification blocks capability-required execution when RuntimeCapabilitySnapshot is omitted, so future model or workspace entry points cannot silently bypass capability checks.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through TaskMemoryCoverageEvaluation before execution.',
@@ -126,7 +126,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'Source freshness and selected-file relevance reasons are represented in the manifest, ordinary Run working context and Code Agent model-producer runs pass source metadata, but future provider-visible entry points still need to pass full source/file metadata consistently.',
       'Explicit source quality signals exist for retained source contexts and connector ingestion has a shared plan; future real connector services must call it before persistence.',
       'External Access has a structured connector status service and adapter contract; future real connector services still need concrete provider adapters, persistence wiring, and connector-backed smoke coverage.',
-      'ConfigurationSafetyReport is consumed by Settings and External Access, and includes Skills and MCP safety surfaces; remaining capability pages can reuse it when their UI work resumes.',
+      'ConfigurationSafetyReport is consumed by Settings, External Access, Skills, and MCP; remaining capability pages can reuse the same safety projection when their UI work resumes.',
     ],
     nextVerification: [
       'Keep capability registry tests blocking disabled or unconfigured capabilities from becoming model-visible.',

@@ -355,6 +355,11 @@ explicitly opted in.
 `AiConfigService` now attaches this report to `AiConfigStatus`, so existing
 settings/model/capability service consumers can read one shared safety
 projection without a new UI or IPC boundary.
+Skills and MCP now read the same `AiConfigStatus` capability and safety rows as
+read-only page strips, so those capability pages no longer depend only on static
+boundary copy. They still do not probe or expose real tools at startup; future
+service work should feed structured Skills/MCP product-surface status into the
+same registry path.
 
 ## Package F: Work Habits, SOPs, And Method Library
 

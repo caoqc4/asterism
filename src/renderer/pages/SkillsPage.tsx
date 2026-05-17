@@ -1,4 +1,6 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { AiConfigStatus } from '@shared/types/settings';
+import { CapabilitySafetyStrip } from '../components/CapabilitySafetyStrip';
 
 /* ─── Types ─── */
 
@@ -91,9 +93,18 @@ export function SkillsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showHttpForm, setShowHttpForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'builtin' | 'local' | 'http'>('builtin');
+  const [configStatus, setConfigStatus] = useState<AiConfigStatus | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const allEnabled = [...builtins, ...localSkills, ...httpSkills].filter((s) => s.enabled);
+  const skillsSafety = configStatus?.configurationSafetyReport?.surfaces
+    .find((surface) => surface.id === 'skills.catalogue') ?? null;
+  const skillsCapability = configStatus?.capabilityRegistry
+    ?.find((entry) => entry.id === 'skills.catalogue') ?? null;
+
+  useEffect(() => {
+    window.api?.getAiConfigStatus().then(setConfigStatus).catch(() => {});
+  }, []);
 
   function toggleBuiltin(id: string) {
     setBuiltins((prev) => prev.map((s) => s.id === id ? { ...s, enabled: !s.enabled } : s));
@@ -178,6 +189,8 @@ export function SkillsPage() {
           </span>
         )}
       </div>
+
+      <CapabilitySafetyStrip safety={skillsSafety} capability={skillsCapability} />
 
       {/* Tab bar */}
       <div className="skills-tabs">

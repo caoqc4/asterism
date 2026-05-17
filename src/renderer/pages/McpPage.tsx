@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { AiConfigStatus } from '@shared/types/settings';
+import { CapabilitySafetyStrip } from '../components/CapabilitySafetyStrip';
 
 interface McpServer {
   id: string;
@@ -20,6 +22,15 @@ export function McpPage() {
   const [servers, setServers] = useState<McpServer[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [configStatus, setConfigStatus] = useState<AiConfigStatus | null>(null);
+  const mcpSafety = configStatus?.configurationSafetyReport?.surfaces
+    .find((surface) => surface.id === 'mcp.servers') ?? null;
+  const mcpCapability = configStatus?.capabilityRegistry
+    ?.find((entry) => entry.id === 'mcp.servers') ?? null;
+
+  useEffect(() => {
+    window.api?.getAiConfigStatus().then(setConfigStatus).catch(() => {});
+  }, []);
 
   function addServer(s: McpServer) {
     setServers((prev) => [...prev, s]);
@@ -51,6 +62,8 @@ export function McpPage() {
           + 添加服务器
         </button>
       </div>
+
+      <CapabilitySafetyStrip safety={mcpSafety} capability={mcpCapability} />
 
       {showForm && (
         <AddServerForm onAdd={addServer} onCancel={() => setShowForm(false)} />
