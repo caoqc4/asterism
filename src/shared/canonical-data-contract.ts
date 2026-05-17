@@ -39,6 +39,45 @@ export type CanonicalDataContract = {
   notes: string[];
 };
 
+export type CanonicalDataDiagnosticIssueCode =
+  | 'missing_canonical_field'
+  | 'orphan_task_reference'
+  | 'missing_task_binding';
+
+export type CanonicalDataDiagnosticSeverity = 'info' | 'warning' | 'error';
+
+export type CanonicalDataDiagnosticIssue = {
+  code: CanonicalDataDiagnosticIssueCode;
+  domain: CanonicalDomain;
+  recordId: string;
+  field?: string | null;
+  severity: CanonicalDataDiagnosticSeverity;
+  repairRoute: RepairRoute;
+  message: string;
+};
+
+export type CanonicalDataDiagnosticEvaluation = {
+  issues: CanonicalDataDiagnosticIssue[];
+  safeAutoRepairCount: number;
+  manualReviewCount: number;
+  readOnlyDiagnosticCount: number;
+  summary: string;
+};
+
+type CanonicalDataDiagnosticRecord = Record<string, unknown>;
+
+export type CanonicalDataDiagnosticInput = {
+  tasks?: CanonicalDataDiagnosticRecord[];
+  taskFiles?: CanonicalDataDiagnosticRecord[];
+  sourceContexts?: CanonicalDataDiagnosticRecord[];
+  artifacts?: CanonicalDataDiagnosticRecord[];
+  decisions?: CanonicalDataDiagnosticRecord[];
+  runEvents?: CanonicalDataDiagnosticRecord[];
+  taskDynamics?: CanonicalDataDiagnosticRecord[];
+  workHabits?: CanonicalDataDiagnosticRecord[];
+  processTemplates?: CanonicalDataDiagnosticRecord[];
+};
+
 export const CANONICAL_DATA_CONTRACTS: CanonicalDataContract[] = [
   {
     domain: 'task',
@@ -268,4 +307,115 @@ export function isLegacyFallbackAllowed(params: {
   if (!rule || rule.mode === 'not_allowed') return false;
   if (rule.mode === 'read_only_when_canonical_missing') return !params.canonicalFieldPresent;
   return true;
+}
+
+export function evaluateCanonicalDataDiagnostics(
+  input: CanonicalDataDiagnosticInput,
+): CanonicalDataDiagnosticEvaluation {
+  const issues: CanonicalDataDiagnosticIssue[] = [];
+  const taskIds = new Set((input.tasks ?? [])
+    .map((task) => stringField(task, 'id'))
+    .filter(Boolean) as string[]);
+
+  issues.push(
+    ...missingCanonicalFieldIssues('task', input.tasks ?? []),
+    ...missingCanonicalFieldIssues('task_hierarchy', input.tasks ?? []),
+    ...missingCanonicalFieldIssues('task_file', input.taskFiles ?? []),
+    ...missingCanonicalFieldIssues('source_context', input.sourceContexts ?? []),
+    ...missingCanonicalFieldIssues('artifact', input.artifacts ?? []),
+    ...missingCanonicalFieldIssues('decision', input.decisions ?? []),
+    ...missingCanonicalFieldIssues('run_event', input.runEvents ?? []),
+    ...missingCanonicalFieldIssues('task_dynamic', input.taskDynamics ?? []),
+    ...missingCanonicalFieldIssues('work_habit', input.workHabits ?? []),
+    ...missingCanonicalFieldIssues('process_template', input.processTemplates ?? []),
+    ...orphanTaskReferenceIssues('task_file', input.taskFiles ?? [], taskIds),
+    ...orphanTaskReferenceIssues('source_context', input.sourceContexts ?? [], taskIds),
+    ...orphanTaskReferenceIssues('artifact', input.artifacts ?? [], taskIds),
+    ...orphanTaskReferenceIssues('task_dynamic', input.taskDynamics ?? [], taskIds),
+    ...taskScopedDecisionBindingIssues(input.decisions ?? [], taskIds),
+  );
+
+  const safeAutoRepairCount = issues.filter((issue) => issue.repairRoute === 'mechanical_auto_repair').length;
+  const manualReviewCount = issues.filter((issue) => issue.repairRoute === 'decision_manual_review').length;
+  const readOnlyDiagnosticCount = issues.filter((issue) => issue.repairRoute === 'read_only_diagnostic').length;
+
+  return {
+    issues,
+    safeAutoRepairCount,
+    manualReviewCount,
+    readOnlyDiagnosticCount,
+    summary: `canonicalDataDiagnostics issues=${issues.length} / manualReview=${manualReviewCount} / readOnly=${readOnlyDiagnosticCount} / safeAutoRepair=${safeAutoRepairCount}`,
+  };
+}
+
+function missingCanonicalFieldIssues(
+  domain: CanonicalDomain,
+  records: CanonicalDataDiagnosticRecord[],
+): CanonicalDataDiagnosticIssue[] {
+  const contract = contractForCanonicalDomain(domain);
+  return records.flatMap((record, index) => contract.canonicalFields
+    .filter((field) => !Object.prototype.hasOwnProperty.call(record, field))
+    .map((field) => ({
+      code: 'missing_canonical_field' as const,
+      domain,
+      recordId: recordId(record, index),
+      field,
+      severity: contract.repairRoute === 'decision_manual_review' ? 'warning' as const : 'info' as const,
+      repairRoute: contract.repairRoute,
+      message: `${domain} record is missing canonical field ${field}; use ${contract.repairRoute} before relying on legacy fallback.`,
+    })));
+}
+
+function orphanTaskReferenceIssues(
+  domain: CanonicalDomain,
+  records: CanonicalDataDiagnosticRecord[],
+  taskIds: Set<string>,
+): CanonicalDataDiagnosticIssue[] {
+  const contract = contractForCanonicalDomain(domain);
+  return records.flatMap((record, index) => {
+    const taskId = stringField(record, 'taskId');
+    if (!taskId || taskIds.has(taskId)) return [];
+    return [{
+      code: 'orphan_task_reference' as const,
+      domain,
+      recordId: recordId(record, index),
+      field: 'taskId',
+      severity: 'error' as const,
+      repairRoute: contract.repairRoute,
+      message: `${domain} record references missing task ${taskId}.`,
+    }];
+  });
+}
+
+function taskScopedDecisionBindingIssues(
+  decisions: CanonicalDataDiagnosticRecord[],
+  taskIds: Set<string>,
+): CanonicalDataDiagnosticIssue[] {
+  const contract = contractForCanonicalDomain('decision');
+  return decisions.flatMap((decision, index) => {
+    const scope = stringField(decision, 'scope');
+    const taskId = stringField(decision, 'taskId');
+    if (scope !== 'task') return [];
+    if (taskId && taskIds.has(taskId)) return [];
+    return [{
+      code: taskId ? 'orphan_task_reference' as const : 'missing_task_binding' as const,
+      domain: 'decision' as const,
+      recordId: recordId(decision, index),
+      field: 'taskId',
+      severity: 'warning' as const,
+      repairRoute: contract.repairRoute,
+      message: taskId
+        ? `task-scoped Decision references missing task ${taskId}.`
+        : 'task-scoped Decision is missing taskId.',
+    }];
+  });
+}
+
+function stringField(record: CanonicalDataDiagnosticRecord, field: string): string | null {
+  const value = record[field];
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function recordId(record: CanonicalDataDiagnosticRecord, index: number): string {
+  return stringField(record, 'id') ?? `record:${index}`;
 }

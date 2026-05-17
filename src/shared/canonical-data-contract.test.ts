@@ -4,6 +4,7 @@ import {
   CANONICAL_DATA_CONTRACTS,
   canonicalFieldsForDomain,
   contractForCanonicalDomain,
+  evaluateCanonicalDataDiagnostics,
   isLegacyFallbackAllowed,
   legacyFallbacksForDomain,
 } from './canonical-data-contract.js';
@@ -100,5 +101,92 @@ describe('canonical data contract', () => {
     expect(contractForCanonicalDomain('decision').repairRoute).toBe('decision_manual_review');
     expect(contractForCanonicalDomain('task_hierarchy').repairRoute).toBe('decision_manual_review');
     expect(contractForCanonicalDomain('task_file').repairRoute).toBe('read_only_diagnostic');
+  });
+
+  it('diagnoses missing canonical fields and orphan task-bound records', () => {
+    const result = evaluateCanonicalDataDiagnostics({
+      tasks: [
+        {
+          id: 'task_1',
+          title: 'Task',
+          summary: null,
+          state: 'running',
+          taskType: 'project',
+          taskFacets: ['project'],
+          parentTaskId: null,
+          childTaskIds: [],
+          nextStep: 'Continue',
+          waitingReason: null,
+          riskLevel: 'none',
+          riskNote: null,
+          createdAt: '2026-05-17T00:00:00.000Z',
+          updatedAt: '2026-05-17T00:00:00.000Z',
+        },
+      ],
+      taskFiles: [
+        {
+          id: 'file_1',
+          taskId: 'missing_task',
+          name: 'Task.md',
+          path: 'Task.md',
+          kind: 'file',
+          content: '# Task',
+          createdAt: '2026-05-17T00:00:00.000Z',
+          updatedAt: '2026-05-17T00:00:00.000Z',
+        },
+      ],
+      decisions: [
+        {
+          id: 'decision_1',
+          taskId: null,
+          title: 'Confirm direction',
+          status: 'pending',
+          scope: 'task',
+          kind: 'direction_choice',
+          sourceType: 'manual',
+          sourceId: null,
+          context: {},
+          options: [],
+          recommendation: null,
+          createdAt: '2026-05-17T00:00:00.000Z',
+          updatedAt: '2026-05-17T00:00:00.000Z',
+        },
+        {
+          id: 'decision_legacy',
+          taskId: 'task_1',
+          title: 'Missing source fields',
+          status: 'pending',
+          scope: 'task',
+          kind: 'direction_choice',
+          createdAt: '2026-05-17T00:00:00.000Z',
+          updatedAt: '2026-05-17T00:00:00.000Z',
+        },
+      ],
+    });
+
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: 'orphan_task_reference',
+        domain: 'task_file',
+        recordId: 'file_1',
+        field: 'taskId',
+        repairRoute: 'read_only_diagnostic',
+      }),
+      expect.objectContaining({
+        code: 'missing_task_binding',
+        domain: 'decision',
+        recordId: 'decision_1',
+        repairRoute: 'decision_manual_review',
+      }),
+      expect.objectContaining({
+        code: 'missing_canonical_field',
+        domain: 'decision',
+        recordId: 'decision_legacy',
+        field: 'sourceType',
+      }),
+    ]));
+    expect(result.summary).toContain('canonicalDataDiagnostics issues=');
+    expect(result.manualReviewCount).toBeGreaterThan(0);
+    expect(result.readOnlyDiagnosticCount).toBeGreaterThan(0);
   });
 });
