@@ -417,6 +417,14 @@ Acceptance criteria:
 - Brief can explain inclusion and display-limit behavior;
 - Brief does not own task state transitions beyond existing guarded actions.
 
+Initial implementation: `BriefAttentionBoundary` consumes the shared
+`PriorityAttentionProjection` rather than introducing a separate Brief sorter.
+It maps displayed candidates into explicit Brief lanes: unblock/decide,
+continue next step, review evidence, external signal, and recent outcome. The
+projection preserves total count, displayed count, truncation, and display
+limit so Brief can remain a capped attention summary while Tasks owns the full
+queue.
+
 ## Recommended Execution Order
 
 1. Package A: Information, Files, Sources, And Artifacts.
