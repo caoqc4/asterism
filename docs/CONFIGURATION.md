@@ -169,7 +169,10 @@ the refresh token. `createGmailOAuthLoopbackListener` provides the local
 loopback callback receiver for that future browser flow: it listens on
 `127.0.0.1` with an ephemeral port, validates state, captures only the OAuth
 code, returns a close-browser page, and closes itself. These pieces are still
-not wired into UI actions.
+not wired into UI actions. `createGmailOAuthAuthorizationSession` composes those
+pieces into a browser-flow session for future callers: it returns the
+authorization URL and completes only after the loopback callback is received and
+the code exchange stores the refresh token.
 `GmailConnectorAdapter` can accept an access-token provider for the future OAuth
 path. Status reads still do not refresh tokens or call Gmail; the provider is
 called only when task-bound source ingestion lists Gmail evidence.
