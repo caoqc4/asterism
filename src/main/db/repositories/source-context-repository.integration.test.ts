@@ -109,6 +109,17 @@ describe('SourceContextRepository integration', () => {
     });
   });
 
+  it('rejects non-canonical source context write fields', async () => {
+    const task = await taskRepository.create({ title: 'Validate source writes' });
+
+    await expect(sourceContextRepository.create({
+      taskId: task.id,
+      title: 'Raw source',
+      kind: 'doc',
+      legacySourceBucket: 'Sources/',
+    } as Parameters<SourceContextRepository['create']>[0])).rejects.toThrow(/legacySourceBucket/);
+  });
+
   it('lists key source context items before newer non-key items', async () => {
     const task = await taskRepository.create({ title: 'Prioritize key materials' });
 

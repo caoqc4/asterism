@@ -7,6 +7,7 @@ import type {
   SourceContextRecord,
   UpdateSourceContextInput,
 } from '../../../shared/types/source-context.js';
+import { assertCanonicalWriteInput } from '../../../shared/canonical-data-contract.js';
 import { sourceContexts } from '../schema.js';
 import { initDatabase } from '../client.js';
 import { generateId, normalizeValue, nowIso } from './repository-utils.js';
@@ -91,6 +92,12 @@ export class SourceContextRepository {
   }
 
   async create(input: CreateSourceContextInput): Promise<SourceContextRecord> {
+    assertCanonicalWriteInput({
+      domain: 'source_context',
+      input: input as Record<string, unknown>,
+      allowedFields: ['taskId', 'title', 'kind', 'isKey', 'uri', 'content', 'note', 'capturedAt', 'runId', 'batchId', 'sourceRole', 'credibility', 'isDuplicate', 'containsSensitiveData'],
+      requiredFields: ['taskId', 'title', 'kind'],
+    });
     const db = initDatabase();
     const timestamp = nowIso();
     const id = generateId('source_context');
@@ -129,6 +136,12 @@ export class SourceContextRepository {
   }
 
   async update(input: UpdateSourceContextInput): Promise<SourceContextRecord> {
+    assertCanonicalWriteInput({
+      domain: 'source_context',
+      input: input as Record<string, unknown>,
+      allowedFields: ['id', 'title', 'kind', 'isKey', 'uri', 'content', 'note', 'capturedAt', 'sourceRole', 'credibility', 'isDuplicate', 'containsSensitiveData'],
+      requiredFields: ['id'],
+    });
     const db = initDatabase();
     const [current] = await db
       .select()

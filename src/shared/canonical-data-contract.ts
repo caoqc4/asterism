@@ -184,6 +184,7 @@ export const CANONICAL_DATA_CONTRACTS: CanonicalDataContract[] = [
       'status',
       'capturedAt',
       'runId',
+      'batchId',
       'sourceRole',
       'credibility',
       'isDuplicate',

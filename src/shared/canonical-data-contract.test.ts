@@ -113,6 +113,16 @@ describe('canonical data contract', () => {
     ]));
   });
 
+  it('keeps source batch metadata in the canonical contract', () => {
+    expect(canonicalFieldsForDomain('source_context')).toEqual(expect.arrayContaining([
+      'capturedAt',
+      'runId',
+      'batchId',
+      'sourceRole',
+      'credibility',
+    ]));
+  });
+
   it('validates write-boundary fields without treating every canonical field as caller-writable', () => {
     const valid = evaluateCanonicalWriteInput({
       domain: 'task_file',

@@ -139,4 +139,12 @@ describe('ArtifactRepository integration', () => {
     const detail = await taskRepository.getDetail(task.id);
     expect(detail?.timeline.map((event) => event.type)).toContain('artifact.created');
   });
+
+  it('rejects non-canonical artifact update fields', async () => {
+    await expect(artifactRepository.update({
+      id: 'artifact_1',
+      title: 'Updated',
+      artifactFolder: 'Artifacts/',
+    } as Parameters<ArtifactRepository['update']>[0])).rejects.toThrow(/artifactFolder/);
+  });
 });
