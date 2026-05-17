@@ -584,6 +584,23 @@ export const RUNTIME_ENTRYPOINT_COVERAGE: RuntimeEntrypointCoverage[] = [
     notes: 'This is the service/IPC minimum for task-bound durable resource writes. Renderer panel flows and Agent tool writes may add post_step verification when they have durable-change recovery context.',
   },
   {
+    id: 'externalAccess.sourceIngestionCommit',
+    owner: 'ExternalAccessSourceIngestionService.commit',
+    kind: 'durable_write',
+    description: 'Confirmed External Access evidence ingestion into task-bound Source Context memory.',
+    requiredGates: [
+      'simplicity_check',
+      'task_mutation',
+      'pre_step',
+    ],
+    coveredGates: [
+      'simplicity_check',
+      'task_mutation',
+      'pre_step',
+    ],
+    notes: 'Connectors only produce ConnectorSourceIngestionPlan previews. Confirmed commits reuse TaskService.createSourceContext so task existence, mutation boundary, canonical source metadata, and timeline recording stay centralized.',
+  },
+  {
     id: 'task.metadataUpdate',
     owner: 'TaskService.update',
     kind: 'durable_write',

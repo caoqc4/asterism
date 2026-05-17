@@ -125,10 +125,11 @@ npm run accept:external-access:gmail-oauth-local
 
 This command covers the local OAuth control chain without real Google
 credentials: connect/disconnect confirmation boundaries, authorization-session
-composition, loopback callback handling, token refresh/disconnect behavior, IPC,
-preload exposure, and the External Access page controls. It does not contact
-Google, does not open a real browser in tests, and is not part of the default
-local alpha gate.
+composition, loopback callback handling, token refresh/disconnect behavior, the
+confirmed source-ingestion bridge into task Source Context memory, IPC, preload
+exposure, and the External Access page controls. It does not contact Google,
+does not open a real browser in tests, and is not part of the default local
+alpha gate.
 
 Release readiness preflight:
 

@@ -148,3 +148,9 @@ The retained runtime boundaries now have end-to-end regression scenarios for the
 - run resume also respects blockers and active short-term reasoning before restoring checkpoint execution.
 
 The remaining runtime work should be treated as preservation work for future entry points, not a reason to add broader present-day workflows. New creation, execution, clearing, decision, durable-write, or task-dynamic surfaces must register in `RuntimeEntrypointCoverage` and reuse the smallest matching evaluator.
+
+External Access now preserves that boundary for connector evidence: connectors
+produce `ConnectorSourceIngestionPlan` previews, and confirmed ingestion uses
+`ExternalAccessSourceIngestionService` to call the existing
+`TaskService.createSourceContext` memory write path. This keeps provider access,
+review, task mutation gates, and durable task memory separate.

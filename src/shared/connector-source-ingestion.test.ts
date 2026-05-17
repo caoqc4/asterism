@@ -19,6 +19,7 @@ describe('connector source ingestion', () => {
     });
 
     expect(plan).toMatchObject({
+      planId: 'connector:gmail:message_1',
       decision: 'create',
       trace: {
         connectorId: 'gmail',

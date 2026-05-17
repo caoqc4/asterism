@@ -102,8 +102,9 @@ OAuth is a capability configuration flow, not a task mutation. Runtime gates:
   `ConnectorSourceIngestionPlan`.
 
 No OAuth step may write task memory. Gmail evidence can become task source
-material only after the existing connector ingestion plan marks it reviewable
-and a persistence path accepts it.
+material only after `ConnectorSourceIngestionPlan` marks it reviewable and a
+confirmed `ExternalAccessSourceIngestionService` commit routes it through
+`TaskService.createSourceContext`.
 
 ## Scope Choice
 

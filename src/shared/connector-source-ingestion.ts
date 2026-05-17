@@ -36,6 +36,7 @@ export type ConnectorSourceTrace = {
 };
 
 export type ConnectorSourceIngestionPlan = {
+  planId: string;
   decision: ConnectorSourceIngestionDecision;
   trace: ConnectorSourceTrace;
   sourceContext: CreateSourceContextInput;
@@ -66,7 +67,7 @@ export function planConnectorSourceIngestion(
     content: input.content ?? null,
     note: withConnectorTraceNote(input.note, trace),
     capturedAt,
-    batchId: connectorBatchId(trace),
+    batchId: connectorBatchId(trace, input),
     sourceRole: 'raw',
     credibility: input.credibility ?? null,
     isDuplicate: input.isDuplicate ?? false,
@@ -80,6 +81,7 @@ export function planConnectorSourceIngestion(
       : 'create';
 
   return {
+    planId: sourceContext.batchId ?? connectorBatchId(trace, input),
     decision,
     trace,
     sourceContext,
@@ -108,14 +110,20 @@ function buildConnectorSourceTrace(input: ConnectorSourceIngestionInput): Connec
   };
 }
 
-function connectorBatchId(trace: ConnectorSourceTrace): string {
+function connectorBatchId(trace: ConnectorSourceTrace, input: ConnectorSourceIngestionInput): string {
   return trace.externalId
     ? `connector:${trace.connectorId}:${trace.externalId}`
-    : `connector:${trace.connectorId}`;
+    : `connector:${trace.connectorId}:${stableEvidenceFragment(input)}`;
 }
 
 function withConnectorTraceNote(note: string | null | undefined, trace: ConnectorSourceTrace): string {
   const base = note?.trim();
   const connectorNote = `Connector source: ${trace.originLabel}`;
   return base ? `${base}\n${connectorNote}` : connectorNote;
+}
+
+function stableEvidenceFragment(input: ConnectorSourceIngestionInput): string {
+  return encodeURIComponent(`${input.title.trim()}:${input.capturedAt?.trim() ?? ''}`)
+    .replace(/%/g, '')
+    .slice(0, 80) || 'evidence';
 }
