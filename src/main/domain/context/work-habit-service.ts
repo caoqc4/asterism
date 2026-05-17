@@ -21,6 +21,7 @@ import type {
   WorkHabitRecord,
   WorkHabitStorageSnapshot,
 } from '../../../shared/types/work-habit.js';
+import { evaluateCrossTaskLearningBoundary } from '../../../shared/cross-task-learning-boundary.js';
 import { normalizeCreateWorkHabitProposalInput } from '../../../shared/runtime-surface-routing.js';
 import type { WorkHabitRepository } from '../../db/repositories/work-habit-repository.js';
 
@@ -47,6 +48,8 @@ export class WorkHabitService {
   async propose(input: CreateWorkHabitProposalInput): Promise<WorkHabitRecord[]> {
     const normalized = normalizeCreateWorkHabitProposalInput(input);
     if (!normalized?.scope || !normalized.scopeLabel) return this.ensureSeeded();
+    const boundary = evaluateCrossTaskLearningBoundary(normalized.rule);
+    if (boundary.surface !== 'work_habit_proposal') return this.ensureSeeded();
     return this.replace(createWorkHabitProposalInList(await this.ensureSeeded(), {
       ...normalized,
       scope: normalized.scope,
@@ -63,6 +66,8 @@ export class WorkHabitService {
   }
 
   async recordSopTemplate(input: SopTemplateHabitInput): Promise<WorkHabitRecord[]> {
+    const boundary = evaluateCrossTaskLearningBoundary(`流程：${input.steps.join(' / ')}`);
+    if (boundary.surface !== 'process_template_proposal') return this.ensureSeeded();
     return this.replace(recordSopTemplateHabitInList(await this.ensureSeeded(), input));
   }
 

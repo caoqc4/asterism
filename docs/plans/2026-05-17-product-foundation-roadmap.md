@@ -388,6 +388,9 @@ global preference wording becomes a pending Work Habit proposal; reusable
 step/process language becomes a process-template proposal; and temporary
 brainstorming stays out of durable cross-task memory. All cross-task learning
 surfaces require confirmation before they affect future execution.
+`WorkHabitService` now consumes the boundary before retained Work Habit
+proposal and SOP-template writes, so task-specific corrections are rejected at
+the service boundary instead of relying on UI or prompt discipline.
 
 ## Package G: Brief And Attention System
 
