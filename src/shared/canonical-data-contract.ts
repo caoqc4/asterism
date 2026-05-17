@@ -5,6 +5,8 @@ export type CanonicalDomain =
   | 'source_context'
   | 'artifact'
   | 'decision'
+  | 'blocker'
+  | 'dependency'
   | 'run_event'
   | 'task_dynamic'
   | 'work_habit'
@@ -92,6 +94,8 @@ export type CanonicalDataDiagnosticInput = {
   sourceContexts?: CanonicalDataDiagnosticRecord[];
   artifacts?: CanonicalDataDiagnosticRecord[];
   decisions?: CanonicalDataDiagnosticRecord[];
+  blockers?: CanonicalDataDiagnosticRecord[];
+  dependencies?: CanonicalDataDiagnosticRecord[];
   runEvents?: CanonicalDataDiagnosticRecord[];
   taskDynamics?: CanonicalDataDiagnosticRecord[];
   workHabits?: CanonicalDataDiagnosticRecord[];
@@ -250,6 +254,53 @@ export const CANONICAL_DATA_CONTRACTS: CanonicalDataContract[] = [
     ],
   },
   {
+    domain: 'blocker',
+    canonicalFields: [
+      'id',
+      'taskId',
+      'title',
+      'kind',
+      'detail',
+      'owner',
+      'responsibility',
+      'responsibilityLabel',
+      'sourceContextId',
+      'status',
+      'createdAt',
+      'updatedAt',
+      'resolvedAt',
+    ],
+    writeAuthority: 'BlockerRepository through TaskService blocker flows',
+    readAuthority: 'BlockerRecord active/resolved status plus source/responsibility metadata',
+    legacyFallbacks: [],
+    repairRoute: 'read_only_diagnostic',
+    notes: [
+      'Blockers are execution constraints and retrieval signals, not task state replacements.',
+      'A blocker must stay bound to a task; orphaned blockers cannot safely influence priority or execution.',
+    ],
+  },
+  {
+    domain: 'dependency',
+    canonicalFields: [
+      'id',
+      'taskId',
+      'blockedByTaskId',
+      'reason',
+      'status',
+      'createdAt',
+      'updatedAt',
+      'resolvedAt',
+    ],
+    writeAuthority: 'TaskDependencyRepository through TaskService dependency flows',
+    readAuthority: 'TaskDependencyRecord active/resolved status and blockedByTaskId',
+    legacyFallbacks: [],
+    repairRoute: 'read_only_diagnostic',
+    notes: [
+      'Dependencies describe task-to-task execution order and must not be inferred from title text.',
+      'Orphaned dependency endpoints should be diagnosed before they affect priority or retrieval.',
+    ],
+  },
+  {
     domain: 'run_event',
     canonicalFields: ['runId', 'stepId', 'kind', 'input', 'output', 'status', 'createdAt'],
     writeAuthority: 'RunService, CodeAgentRunService, OperatorStartedRunService, and AgentToolRegistry',
@@ -404,6 +455,8 @@ export function evaluateCanonicalDataDiagnostics(
     ...missingCanonicalFieldIssues('source_context', input.sourceContexts ?? []),
     ...missingCanonicalFieldIssues('artifact', input.artifacts ?? []),
     ...missingCanonicalFieldIssues('decision', input.decisions ?? []),
+    ...missingCanonicalFieldIssues('blocker', input.blockers ?? []),
+    ...missingCanonicalFieldIssues('dependency', input.dependencies ?? []),
     ...missingCanonicalFieldIssues('run_event', input.runEvents ?? []),
     ...missingCanonicalFieldIssues('task_dynamic', input.taskDynamics ?? []),
     ...missingCanonicalFieldIssues('work_habit', input.workHabits ?? []),
@@ -412,6 +465,9 @@ export function evaluateCanonicalDataDiagnostics(
     ...orphanTaskReferenceIssues('source_context', input.sourceContexts ?? [], taskIds),
     ...orphanTaskReferenceIssues('artifact', input.artifacts ?? [], taskIds),
     ...orphanTaskReferenceIssues('task_dynamic', input.taskDynamics ?? [], taskIds),
+    ...orphanTaskReferenceIssues('blocker', input.blockers ?? [], taskIds),
+    ...orphanTaskReferenceIssues('dependency', input.dependencies ?? [], taskIds),
+    ...orphanDependencyTargetIssues(input.dependencies ?? [], taskIds),
     ...taskScopedDecisionBindingIssues(input.decisions ?? [], taskIds),
   );
 
@@ -487,6 +543,26 @@ function taskScopedDecisionBindingIssues(
       message: taskId
         ? `task-scoped Decision references missing task ${taskId}.`
         : 'task-scoped Decision is missing taskId.',
+    }];
+  });
+}
+
+function orphanDependencyTargetIssues(
+  dependencies: CanonicalDataDiagnosticRecord[],
+  taskIds: Set<string>,
+): CanonicalDataDiagnosticIssue[] {
+  const contract = contractForCanonicalDomain('dependency');
+  return dependencies.flatMap((dependency, index) => {
+    const blockedByTaskId = stringField(dependency, 'blockedByTaskId');
+    if (!blockedByTaskId || taskIds.has(blockedByTaskId)) return [];
+    return [{
+      code: 'orphan_task_reference' as const,
+      domain: 'dependency' as const,
+      recordId: recordId(dependency, index),
+      field: 'blockedByTaskId',
+      severity: 'error' as const,
+      repairRoute: contract.repairRoute,
+      message: `dependency record references missing upstream task ${blockedByTaskId}.`,
     }];
   });
 }

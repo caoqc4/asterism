@@ -20,6 +20,8 @@ describe('canonical data contract', () => {
       'source_context',
       'artifact',
       'decision',
+      'blocker',
+      'dependency',
       'run_event',
       'task_dynamic',
       'work_habit',
@@ -103,6 +105,8 @@ describe('canonical data contract', () => {
     expect(contractForCanonicalDomain('decision').repairRoute).toBe('decision_manual_review');
     expect(contractForCanonicalDomain('task_hierarchy').repairRoute).toBe('decision_manual_review');
     expect(contractForCanonicalDomain('task_file').repairRoute).toBe('read_only_diagnostic');
+    expect(contractForCanonicalDomain('blocker').repairRoute).toBe('read_only_diagnostic');
+    expect(contractForCanonicalDomain('dependency').repairRoute).toBe('read_only_diagnostic');
   });
 
   it('keeps decision source labels in the canonical contract', () => {
@@ -261,6 +265,35 @@ describe('canonical data contract', () => {
           updatedAt: '2026-05-17T00:00:00.000Z',
         },
       ],
+      blockers: [
+        {
+          id: 'blocker_1',
+          taskId: 'missing_task',
+          title: 'Waiting on approval',
+          kind: 'approval',
+          detail: null,
+          owner: null,
+          responsibility: null,
+          responsibilityLabel: null,
+          sourceContextId: null,
+          status: 'active',
+          createdAt: '2026-05-17T00:00:00.000Z',
+          updatedAt: '2026-05-17T00:00:00.000Z',
+          resolvedAt: null,
+        },
+      ],
+      dependencies: [
+        {
+          id: 'dependency_1',
+          taskId: 'task_1',
+          blockedByTaskId: 'missing_upstream_task',
+          reason: 'Waiting on upstream delivery.',
+          status: 'active',
+          createdAt: '2026-05-17T00:00:00.000Z',
+          updatedAt: '2026-05-17T00:00:00.000Z',
+          resolvedAt: null,
+        },
+      ],
     });
 
     expect(result.issues).toEqual(expect.arrayContaining([
@@ -282,6 +315,18 @@ describe('canonical data contract', () => {
         domain: 'decision',
         recordId: 'decision_legacy',
         field: 'sourceType',
+      }),
+      expect.objectContaining({
+        code: 'orphan_task_reference',
+        domain: 'blocker',
+        recordId: 'blocker_1',
+        field: 'taskId',
+      }),
+      expect.objectContaining({
+        code: 'orphan_task_reference',
+        domain: 'dependency',
+        recordId: 'dependency_1',
+        field: 'blockedByTaskId',
       }),
     ]));
     expect(result.summary).toContain('canonicalDataDiagnostics issues=');

@@ -152,6 +152,31 @@ try {
       ['created_at', 'createdAt'],
       ['updated_at', 'updatedAt'],
     ]),
+    blockers: selectMapped(database, 'blockers', [
+      ['id', 'id'],
+      ['task_id', 'taskId'],
+      ['title', 'title'],
+      ['kind', 'kind'],
+      ['detail', 'detail'],
+      ['owner', 'owner'],
+      ['responsibility', 'responsibility'],
+      ['responsibility_label', 'responsibilityLabel'],
+      ['source_context_id', 'sourceContextId'],
+      ['status', 'status'],
+      ['created_at', 'createdAt'],
+      ['updated_at', 'updatedAt'],
+      ['resolved_at', 'resolvedAt'],
+    ]),
+    dependencies: selectMapped(database, 'task_dependencies', [
+      ['id', 'id'],
+      ['task_id', 'taskId'],
+      ['blocked_by_task_id', 'blockedByTaskId'],
+      ['reason', 'reason'],
+      ['status', 'status'],
+      ['created_at', 'createdAt'],
+      ['updated_at', 'updatedAt'],
+      ['resolved_at', 'resolvedAt'],
+    ]),
     runEvents: [
       ...list(database, 'run_steps', `
         SELECT
