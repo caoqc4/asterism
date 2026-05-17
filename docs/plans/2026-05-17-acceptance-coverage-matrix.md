@@ -9,6 +9,7 @@ This matrix keeps local alpha acceptance grounded in first principles: protect t
 | Area | Current Coverage | Command / Evidence | Status |
 | --- | --- | --- | --- |
 | Unit, integration, type, renderer build | Full automated test suite, TypeScript checks, Electron/renderer build | `npm run verify` | Covered |
+| Canonical local data health | Read-only diagnostics against the local SQLite database and canonical data contract | `npm run diagnostics:canonical-data` | Covered |
 | Runtime and agent execution core | Agent lifecycle, checkpoints, runtime gates, provider-native tool adapters, sandbox coding orchestration | `npm run accept:agent-local` | Covered |
 | Model-producer preflight | Verifies live-provider/Docker/workspace mutation gates before real execution | `npm run accept:sandbox-coding:model-producer-preflight` | Covered, environment-gated |
 | macOS packaged runtime | Builds packaged app and checks config, database schema, timeline scan, packaged boot | `npm run smoke:release:mac` | Covered |
@@ -24,12 +25,13 @@ This matrix keeps local alpha acceptance grounded in first principles: protect t
 `npm run accept:alpha-local` is the local alpha gate. It now runs:
 
 1. `verify`
-2. `accept:agent-local`
-3. `accept:sandbox-coding:model-producer-preflight`
-4. `smoke:release:mac`
-5. `accept:packaged-recovery:mac`
-6. `accept:product-surfaces:mac`
-7. `accept:release:mac-preflight`
+2. `diagnostics:canonical-data`
+3. `accept:agent-local`
+4. `accept:sandbox-coding:model-producer-preflight`
+5. `smoke:release:mac`
+6. `accept:packaged-recovery:mac`
+7. `accept:product-surfaces:mac`
+8. `accept:release:mac-preflight`
 
 ## Product-Surface Smoke Intent
 

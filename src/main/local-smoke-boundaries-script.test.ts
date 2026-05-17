@@ -294,7 +294,7 @@ describe('local smoke script default boundaries', () => {
     const scripts = readPackageScripts();
 
     expect(scripts['accept:alpha-local']).toBe(
-      'npm run verify && npm run accept:agent-local && npm run accept:sandbox-coding:model-producer-preflight && npm run smoke:release:mac && npm run accept:packaged-recovery:mac && npm run accept:product-surfaces:mac && npm run accept:release:mac-preflight',
+      'npm run verify && npm run diagnostics:canonical-data && npm run accept:agent-local && npm run accept:sandbox-coding:model-producer-preflight && npm run smoke:release:mac && npm run accept:packaged-recovery:mac && npm run accept:product-surfaces:mac && npm run accept:release:mac-preflight',
     );
 
     expect(scripts['accept:alpha-local']).not.toContain('accept:provider-native-live');

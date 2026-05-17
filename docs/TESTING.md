@@ -30,9 +30,10 @@ For local alpha readiness on macOS, run the broader acceptance gate:
 npm run accept:alpha-local
 ```
 
-This includes `verify`, local agent/runtime gates, packaged release smoke,
-packaged recovery smoke, product-surface packaged smoke, and the read-only macOS
-release preflight.
+This includes `verify`, read-only canonical data diagnostics against the local
+SQLite database, local agent/runtime gates, packaged release smoke, packaged
+recovery smoke, product-surface packaged smoke, and the read-only macOS release
+preflight.
 
 ## Focused Test Commands
 
