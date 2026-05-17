@@ -67,6 +67,11 @@ describe('runtime capability snapshot', () => {
         sandboxCodingAgent: 'available',
         selfCheck: 'available',
       },
+      sandbox: {
+        backendProbed: false,
+        backendReady: false,
+        producerBackendReady: false,
+      },
       tools: {
         familyCount: 1,
         modelVisibleCount: 1,
@@ -75,6 +80,7 @@ describe('runtime capability snapshot', () => {
       },
     });
     expect(snapshot.summary).toContain('model=configured');
+    expect(snapshot.summary).toContain('sandbox=not_probed');
     expect(capabilitySnapshotAllowsModelExecution(snapshot)).toBe(true);
     expect(capabilitySnapshotAllowsWorkspaceVerification(snapshot)).toBe(true);
   });
@@ -96,5 +102,48 @@ describe('runtime capability snapshot', () => {
     expect(snapshot.summary).toContain('workspace=missing');
     expect(capabilitySnapshotAllowsModelExecution(snapshot)).toBe(false);
     expect(capabilitySnapshotAllowsWorkspaceVerification(snapshot)).toBe(false);
+  });
+
+  it('summarizes sandbox backend readiness when a probe is available', () => {
+    const snapshot = buildRuntimeCapabilitySnapshot({
+      aiStatus: aiStatus({
+        sandboxBackendStatus: {
+          probe: {
+            backendId: 'local-container',
+            environmentPolicy: 'empty',
+            isolation: 'container',
+            kind: 'local_container',
+            networkMode: 'disabled',
+            status: 'available',
+            supportsOutputLimits: true,
+            supportsPatchArtifacts: true,
+            supportsStagedWrites: true,
+            supportsStructuredCommands: true,
+            supportsTargetedCommands: true,
+            supportsWorkspaceMount: true,
+          },
+          profile: null,
+          readiness: {
+            ready: true,
+            summary: 'Sandbox backend ready: local-container.',
+            blockedReasons: [],
+          },
+          producerBackendReadiness: {
+            ready: true,
+            summary: 'Sandbox producer backend ready.',
+            blockedReasons: [],
+          },
+          summary: 'Sandbox backend ready: local-container.',
+        },
+      }),
+    });
+
+    expect(snapshot.sandbox).toMatchObject({
+      backendProbed: true,
+      backendReady: true,
+      producerBackendReady: true,
+      summary: 'Sandbox producer backend ready.',
+    });
+    expect(snapshot.summary).toContain('sandbox=ready');
   });
 });

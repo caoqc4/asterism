@@ -81,6 +81,7 @@ export const AGENT_PRINCIPLES_COMPLIANCE: AgentPrinciplesComplianceItem[] = [
       'RunService and CodeAgentRunService pass RuntimeCapabilitySnapshot into run_start pre-step verification for model/workspace capability checks.',
       'CapabilityRegistry projects runtime capability snapshots into explicit capability entries with status, visibility, access type, approval requirement, and runtime gate.',
       'AiConfigStatus carries CapabilityRegistry so existing model/settings consumers can read the shared capability status without rebuilding local capability semantics.',
+      'Sandbox coding capability now depends on sandbox backend probe/readiness in RuntimeCapabilitySnapshot, not just the feature flag.',
       'Runtime pre-step verification now checks model execution and workspace verification readiness through CapabilityRegistry.',
       'pre_step verification blocks capability-required execution when RuntimeCapabilitySnapshot is omitted, so future model or workspace entry points cannot silently bypass capability checks.',
       'RunService, CodeAgentRunService, and OperatorStartedRunService pass run_start through TaskMemoryCoverageEvaluation before execution.',

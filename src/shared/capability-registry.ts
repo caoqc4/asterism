@@ -55,6 +55,8 @@ export function buildCapabilityRegistry(params: {
   const snapshot = params.snapshot ?? null;
   const modelConfigured = Boolean(snapshot?.model.configured);
   const workspaceConfigured = Boolean(snapshot?.workspace.rootConfigured);
+  const sandboxFlagAvailable = snapshot?.flags.sandboxCodingAgent === 'available';
+  const sandboxReady = Boolean(snapshot?.sandbox.producerBackendReady || snapshot?.sandbox.backendReady);
   const modelVisibleToolCount = snapshot?.tools.modelVisibleCount ?? 0;
   const checkpointToolCount = snapshot?.tools.checkpointRequiredCount ?? 0;
 
@@ -132,14 +134,14 @@ export function buildCapabilityRegistry(params: {
       id: 'sandbox.coding_agent',
       label: 'Sandbox Coding Agent',
       family: 'sandbox',
-      status: statusFromSnapshot(snapshot?.flags.sandboxCodingAgent),
-      configured: snapshot?.flags.sandboxCodingAgent === 'available',
-      missingReason: snapshot?.flags.sandboxCodingAgent === 'available' ? null : 'Sandbox coding agent is disabled or unknown.',
-      visibility: 'policy_gated',
+      status: sandboxCapabilityStatus(snapshot),
+      configured: sandboxFlagAvailable && sandboxReady,
+      missingReason: sandboxMissingReason(snapshot),
+      visibility: sandboxFlagAvailable && sandboxReady ? 'policy_gated' : 'hidden',
       access: 'mutating',
       requiresApproval: true,
       requiredGate: 'capability_probe',
-      summary: `sandboxCodingAgent=${snapshot?.flags.sandboxCodingAgent ?? 'unknown'}`,
+      summary: snapshot?.sandbox.summary ?? `sandboxCodingAgent=${snapshot?.flags.sandboxCodingAgent ?? 'unknown'}`,
     },
     {
       id: 'runtime.self_check',
@@ -215,6 +217,23 @@ function statusFromSnapshot(
   if (status === 'available') return 'available';
   if (status === 'disabled') return 'disabled';
   return 'unknown';
+}
+
+function sandboxCapabilityStatus(snapshot: RuntimeCapabilitySnapshot | null): CapabilityRegistryStatus {
+  if (!snapshot) return 'unknown';
+  if (snapshot.flags.sandboxCodingAgent === 'disabled') return 'disabled';
+  if (snapshot.flags.sandboxCodingAgent === 'unknown') return 'unknown';
+  if (!snapshot.sandbox.backendProbed) return 'unknown';
+  return snapshot.sandbox.producerBackendReady || snapshot.sandbox.backendReady ? 'available' : 'disabled';
+}
+
+function sandboxMissingReason(snapshot: RuntimeCapabilitySnapshot | null): string | null {
+  if (!snapshot) return 'Sandbox capability status is unknown.';
+  if (snapshot.flags.sandboxCodingAgent === 'disabled') return 'Sandbox coding agent is disabled.';
+  if (snapshot.flags.sandboxCodingAgent === 'unknown') return 'Sandbox coding agent flag is unknown.';
+  if (!snapshot.sandbox.backendProbed) return 'Sandbox backend has not been probed.';
+  if (snapshot.sandbox.producerBackendReady || snapshot.sandbox.backendReady) return null;
+  return snapshot.sandbox.blockedReasons.join(' ') || 'Sandbox backend is not ready.';
 }
 
 function deferredCapability(

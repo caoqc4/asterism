@@ -452,6 +452,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'External access, MCP, skills, model, settings, and work habits are separate navigation capabilities.',
       'Risky local command/write tools use confirmation checkpoints.',
       'RuntimeCapabilitySnapshot captures model availability, workspace verification checks, feature flags, and tool scaffold exposure for runtime consumers.',
+      'RuntimeCapabilitySnapshot also carries sandbox backend probe and producer readiness so sandbox availability is not inferred from feature flags alone.',
       'CapabilityRegistry projects runtime capability snapshots into stable capability entries with status, visibility, access type, approval requirement, and runtime gate.',
       'AiConfigStatus now carries CapabilityRegistry so Model, Settings, RightPanel, and future capability pages can consume the same structured capability data.',
       'Runtime pre-step verification uses CapabilityRegistry checks for model execution and workspace verification readiness instead of reading ad hoc snapshot fields directly.',
@@ -466,6 +467,7 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
     gaps: [
       'Current retained execution entry points pass or intentionally avoid RuntimeCapabilitySnapshot according to provider visibility and local-only execution mode; future entry points must keep the same boundary explicit.',
       'External Access, Skills, MCP, and browser/operator capability rows are represented as deferred hidden entries until those product surfaces provide structured status.',
+      'Sandbox coding capability remains hidden until both the feature flag and backend readiness support the capability.',
     ],
     nextImplementation: [
       'Map External Access, Skills, MCP, sandbox backend probe details, and browser/operator surfaces into concrete CapabilityRegistry rows instead of deferred hidden rows.',

@@ -141,7 +141,9 @@ agent, self-check, model-visible tools, checkpointed tools, and deferred
 External Access / Skills / MCP / browser capability rows. Disabled or
 unconfigured capabilities remain hidden from model-visible exposure. The
 existing AI config status boundary now returns this registry so current and
-future capability-facing UI can consume one shared data model.
+future capability-facing UI can consume one shared data model. Sandbox coding
+availability is based on feature flag plus backend probe/readiness, not the
+feature flag alone.
 
 ## Package C: Search, Retrieval, And Reference Index
 

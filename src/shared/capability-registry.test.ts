@@ -43,6 +43,12 @@ describe('capability registry', () => {
       requiresApproval: true,
       summary: 'modelVisibleTools=1',
     });
+    expect(registry.find((entry) => entry.id === 'sandbox.coding_agent')).toMatchObject({
+      status: 'unknown',
+      configured: false,
+      visibility: 'hidden',
+      missingReason: 'Sandbox backend has not been probed.',
+    });
     expect(capabilityRegistryAllowsModelExecution(registry)).toBe(true);
     expect(capabilityRegistryAllowsWorkspaceVerification(registry)).toBe(true);
   });
@@ -85,6 +91,51 @@ describe('capability registry', () => {
       expect(typeof entry.requiresApproval).toBe('boolean');
       expect(entry.summary.length).toBeGreaterThan(0);
     }
+  });
+
+  it('requires sandbox backend readiness before exposing sandbox coding as available', () => {
+    const registry = buildCapabilityRegistry({
+      snapshot: buildRuntimeCapabilitySnapshot({
+        aiStatus: aiStatus({
+          sandboxBackendStatus: {
+            probe: {
+              backendId: 'local-container',
+              environmentPolicy: 'empty',
+              isolation: 'container',
+              kind: 'local_container',
+              networkMode: 'disabled',
+              status: 'available',
+              supportsOutputLimits: true,
+              supportsPatchArtifacts: true,
+              supportsStagedWrites: true,
+              supportsStructuredCommands: true,
+              supportsTargetedCommands: true,
+              supportsWorkspaceMount: true,
+            },
+            profile: null,
+            readiness: {
+              ready: true,
+              summary: 'Sandbox backend ready.',
+              blockedReasons: [],
+            },
+            producerBackendReadiness: {
+              ready: true,
+              summary: 'Sandbox producer backend ready.',
+              blockedReasons: [],
+            },
+            summary: 'Sandbox backend ready.',
+          },
+        }),
+      }),
+    });
+
+    expect(registry.find((entry) => entry.id === 'sandbox.coding_agent')).toMatchObject({
+      status: 'available',
+      configured: true,
+      visibility: 'policy_gated',
+      requiredGate: 'capability_probe',
+      summary: 'Sandbox producer backend ready.',
+    });
   });
 });
 
