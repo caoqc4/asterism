@@ -24,6 +24,8 @@ describe('runtime entrypoint coverage', () => {
       expect(entry.owner.trim()).not.toBe('');
       expect(entry.description.trim()).not.toBe('');
       expect(entry.requiredGates.length).toBeGreaterThan(0);
+      expect(new Set(entry.requiredGates).size).toBe(entry.requiredGates.length);
+      expect(new Set(entry.coveredGates).size).toBe(entry.coveredGates.length);
     }
   });
 
