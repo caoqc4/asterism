@@ -370,6 +370,14 @@ Acceptance criteria:
 - task-specific corrections do not leak into global behavior;
 - execution context can explain which habits were applied.
 
+Initial implementation: `CrossTaskLearningBoundary` classifies candidate
+learning text into task records, Work Habit proposals, process-template/SOP
+proposals, or discussion-only. Task-specific corrections stay task-bound;
+global preference wording becomes a pending Work Habit proposal; reusable
+step/process language becomes a process-template proposal; and temporary
+brainstorming stays out of durable cross-task memory. All cross-task learning
+surfaces require confirmation before they affect future execution.
+
 ## Package G: Brief And Attention System
 
 Goal: keep Brief as an attention summary, not a second task manager.

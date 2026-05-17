@@ -258,6 +258,8 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'Runtime end-to-end scenario tests verify that pending user Decisions block run start, task switch, and automatic context refresh rather than being hidden by memory coverage.',
       'RuntimeHandoff task-switch also consumes pending TaskMemoryGuidanceState through AutoContextClearReadiness before leaving the previous task context.',
       'RightPanel automatic context mode now consumes RuntimeHandoff and AutoContextClearReadiness after session-refresh triggers, so automatic clearing runs only after successful memory preservation and safe readiness.',
+      'CrossTaskLearningBoundary classifies candidate learning text into task records, Work Habit proposals, process-template proposals, or discussion-only before durable cross-task memory is allowed.',
+      'CrossTaskLearningBoundary keeps task-specific corrections task-bound and requires confirmation for Work Habit and process-template proposals.',
     ],
     outOfAgentPrinciplesScope: [
       'Runtime owns durable data model boundaries and UI labels for files, records, sources, and generated output.',
@@ -268,12 +270,14 @@ export const RUNTIME_LIFECYCLE_COVERAGE: RuntimeLifecycleCoverageItem[] = [
       'TaskMemoryCoverageEvaluation is wired to current lifecycle boundaries; future task lifecycle boundaries must opt into the same evaluator instead of adding direct state changes.',
       'MemorySurfaceWriteCoverage is an explicit regression registry; future durable write paths must add their surface, write policy, and guard coverage instead of relying on path or title inference.',
       'SourceContextMemoryMetadata covers retained source-context creation and update paths; future connector ingestion still needs to pass connector-specific credibility and duplication signals when available.',
+      'CrossTaskLearningBoundary is a data classifier; future Work Habit and SOP write paths should consume it before creating proposals.',
     ],
     nextImplementation: [
       'Require future durable information write paths to be registered in MemorySurfaceWriteCoverage before treating the write surface as retained behavior.',
       'Connect any future TasksPage task-memory proposal confirmation controls to TaskMemoryWriteApplyPlan instead of rebuilding write inputs locally.',
       'Keep new lifecycle boundaries routed through TaskMemoryCoverageEvaluation before adding direct state changes.',
       'Keep any future background scheduler or non-panel clearing entry point wired to AutoContextClearReadiness instead of adding a second clearing rule.',
+      'Keep cross-task learning tests ensuring task-specific corrections do not become global rules.',
     ],
   },
   {
